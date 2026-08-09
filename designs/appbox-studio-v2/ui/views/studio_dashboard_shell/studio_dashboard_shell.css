@@ -1,0 +1,85 @@
+/* studio_dashboard_shell.css — the dashboard shell's OWN styles: the main
+   panel content card, the design viewer, and the display/gate/chart
+   typography its surface consumes. The frame contract lives with the hub:
+   ui/views/studio_application_hub/studio_application_hub.css. */
+
+/* display headlines · tracked-caps labels — families come from
+   var(--font-display) / var(--font-label), see assets/css/fonts.css */
+.display {
+  font-family: var(--font-display);
+  font-weight: 300; letter-spacing: -.015em; line-height: 1.16;
+  font-size: clamp(1.65rem, 3vw, 2.5rem);
+  margin: 0;
+}
+
+/* gate artifact */
+.gate-artifact .display { max-width: 24ch; }
+.gate-actions { display: flex; flex-direction: column; gap: .7rem; max-width: 26rem; }
+
+/* chart artifact — one hue, hairline grids, red only on failure */
+.bars { display: flex; flex-direction: column; gap: .65rem; margin-top: .4rem; }
+
+/* ---------- re-homed from the hub on de-chrome: the main panel content card
+   and the design viewer canvas tokens are the dashboard shell's, not the
+   widget host's. Consumers: ui/widgets/studio_dashboard_widgets/main_panel.tsx and the
+   viewer artifact rendered in the main panel. ---------- */
+/* ---------- the main panel content: artifact stage, full-bleed ---------- */
+/* The main panel's card for everything that is NOT a full-bleed artifact — a
+   doc, a code read, an image. It is a panel like the composer and the activity
+   panel, so it carries the same card framing; without this, main matched its
+   neighbours on the design canvas and then visibly did not on a file read. */
+.mp-content {
+  overflow-y: auto; padding: 1.2rem 1.4rem;
+  display: flex; flex-direction: column;
+  background: var(--bg); border: 1px solid var(--border);
+  border-radius: var(--radius); box-shadow: var(--shadow-2);
+  /* The card is the containing block for its own absolute descendants (the
+     wizard's visually-hidden checkboxes, any future overlay). Without this
+     they resolve at .panel-main and their static-position boxes escape the
+     scroller — invisible overgrowth past the viewport lock, caught by the
+     scroll-ownership probe. */
+  position: relative;
+}
+/* A full-bleed artifact brings its own border and radius (the design viewer,
+   the build loop's evidence pane), so .mp-content's 1.2rem/1.4rem pad insets
+   its card 19.2px inside the main panel while the activity and composer cards
+   sit flush to the panel row — three cards, three different edges. Drop the
+   pad for this artifact only; the padded default still applies to docs, code
+   and every other main-panel read. */
+/* ...except when the artifact inside IS the panel (the design viewer, the
+   build loop's evidence pane). Then this element is a pass-through wrapper,
+   not a card: it drops the pad AND the framing, or you get a card inside a
+   card with two borders and two shadows. */
+.mp-content:has(> .evidence-artifact) {
+  padding: 0; background: none; border: 0; box-shadow: none;
+}
+
+/* ---------- the design viewer: live iframe + toolbar + filmstrip ---------- */
+/* The viewer's card framing now comes from .panel (panels.css) like every
+   other panel's, so the border, radius and the hand-tuned asymmetric padding
+   that used to live here are all gone. The old `padding: .7rem .7rem 0` was
+   compensating for exactly the thing the section contract removes: a card pad
+   that stacked under the bottom bar but not above it. Sections own their own
+   padding and sit flush to the card edge, so the asymmetry cannot recur. */
+/* Canvas field tones — Flexoki steps only, this design's own palette (the
+   old #f4ead8 cream and cool #2b3038 slate were foreign hues against the
+   warm scale, and "slate" became "ink" when the hue did). Tokens live on
+   .panel-viewer per theme; the BODY stage rules below and the topbar
+   swatches (viewer.css) consume the same tokens — one source for both.
+   `warm` is an amber wash over the canvas step: the palette's own accent
+   via color-mix, so it re-derives in each theme instead of hardcoding a
+   second pair of hexes. */
+.panel-viewer {
+  --dv-bg-canvas: #E6E4D9;                                       /* base-100 */
+  --dv-bg-warm: color-mix(in oklab, var(--amber) 18%, #E6E4D9);
+  --dv-bg-ink: #343331;                                          /* base-850 */
+}
+[data-theme="dark"] .panel-viewer {
+  --dv-bg-canvas: #282726;                                       /* base-900 */
+  --dv-bg-warm: color-mix(in oklab, var(--amber) 18%, #282726);
+  --dv-bg-ink: #100F0F;                                          /* black */
+}
+/* The bg paints ONLY the panel body — the scrollable stage the artboards
+   sit on (all four lens stages; canvas.js's own selector list) — never the
+   card itself, so the top and bottom bars keep the .panel surface. */
+.dv-bg-canvas :is(.dv-stage, .dv-rungs, .dv-flow-canvas, .dv-proto-stage) { background: var(--dv-bg-canvas); }

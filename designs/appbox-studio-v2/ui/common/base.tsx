@@ -1,19 +1,61 @@
-// base.tsx — layout component wrapping all pages.
-// Replaces ui/common/base.html ({% extends "base.html" %}).
+// base.tsx — root layout component (replaces ui/common/base.html).
+// Wraps every surface with <html><head><body>. Child views extend this by
+// passing title/locale/accent and their content as children; the head_extra
+// block becomes the headExtra prop.
 import { raw } from 'hono/utils/html';
 import { Fragment, type FC, type Child } from 'hono/jsx';
+import { inspectAttrs } from '../widgets/common/studio_primitives/primitives.tsx';
+
+// htmx 4 config. v2's responseHandling has no meta-config equivalent in v4 —
+// the per-status rules live on <body> as hx-status:<pattern> attributes (see
+// below). `transitions` is the renamed globalViewTransitions. v4 turns OFF
+// v2's attribute inheritance by default; without implicitInheritance the
+// body's hx-boost/hx-sync/hx-status would apply to nothing inside it.
+// allowEval and historyRestoreAsHxRequest are gone entirely: v4 evaluates
+// hx-on/hx-confirm expressions through htmx.initSecurity() Function
+// constructors (the only switch, and it is custom JS — banned here by
+// ADR-0002); this artifact never uses hx-on, so the eval path stays dead by
+// convention instead.
+const HTMX_CONFIG = '{"transitions":true,"implicitInheritance":true}';
+
+// Cache-busted vendor script URL (content hash from worker_shim boot).
+const vendorSrc = (name: string) => {
+  const rev = (globalThis as any).__vendorRev?.[name];
+  return `/assets/vendor/${name}${rev ? `?v=${rev}` : ''}`;
+};
+
+// The v2 responseHandling rules, restated for htmx 4: hx-status:<pattern> on
+// <body> (inherited by every request source). Patterns try exact → "40x" →
+// "4xx", first hit wins. 404 and 5xx retarget into #toasts instead of
+// clobbering the panel that made the request — the server sends a toast
+// fragment, the good panel stays. 422 escapes the 4xx blackout (empty merge)
+// so form validation renders where the form is. 204/304 stay no-swap via the
+// default noSwap config. Colon attributes are not valid JSX names, so the
+// spread form it is.
+const HTMX_RESPONSE_RULES = {
+  'hx-status:404': '{"target":"#toasts","swap":"innerHTML"}',
+  'hx-status:5xx': '{"target":"#toasts","swap":"innerHTML"}',
+  'hx-status:4xx': '{"swap":"none"}',
+  'hx-status:422': '{}',
+};
 
 interface BaseProps {
   title?: string;
   locale?: string;
   accent?: string;
+  theme?: string;
+  font?: string;
+  headExtra?: Child;
   children?: Child;
 }
 
 const Base: FC<BaseProps> = ({
-  title = 'appbox studio',
+  title = 'appbox',
   locale = 'en',
-  accent = 'blueviolet',
+  accent = 'cyan',
+  theme = 'light',
+  font = 'lexend',
+  headExtra,
   children,
 }) => (
   <Fragment>
@@ -22,32 +64,45 @@ const Base: FC<BaseProps> = ({
       <head>
         <meta charset="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
-        {/* htmx 4 config: transitions (renamed from globalViewTransitions);
-            implicitInheritance restores v2's attribute inheritance (v4 turns
-            it off — without it the body's hx-boost/hx-sync reach nothing);
-            noSwap restates the old responseHandling blackout — 4xx/5xx never
-            clobber a panel (204/304 are v4 defaults). v4 validates forms with
-            reportValidity() natively (reportValidityOfForms is gone), and
-            allowEval/historyRestoreAsHxRequest have no v4 equivalent — the
-            eval switch is htmx.initSecurity(), custom JS this artifact bans
-            (ADR-0002); hx-on is simply never used. */}
-        <meta name="htmx-config" content='{"transitions":true,"implicitInheritance":true,"noSwap":[204,304,"4xx","5xx"]}' />
-        <title>{title}</title>
+        <meta name="htmx-config" content={HTMX_CONFIG} />
+        <title {...inspectAttrs('base:title', { role: 'text' })}>{title}</title>
         <script
           src="/assets/vendor/htmx4.min.js"
           integrity="sha384-6lyVbhrs13b9z7mLOpt/N6R76rtkEBWgCjAXRs/DSWyi2AMnQSs10ijWk+PI8n7W"
           crossorigin="anonymous"
         ></script>
+        {/* htmx 4: morph is a core swap style (outerMorph), not an extension.
+            Morphing exists for one reason: viewer screen iframes live INSIDE
+            swap targets, and a replace-style swap destroys them, so every
+            interaction would re-fetch all frames and discard whatever the
+            user had navigated to inside a live tile. The v2 preload/head-
+            support extensions are gone — hx-ext does not exist in v4, the
+            studio never used hx-preload, and v4 core lifts <title> itself. */}
+        <script src={vendorSrc('canvas.js')} defer></script>
+        <script src={vendorSrc('drag.js')} defer></script>
+        <script src={vendorSrc('reveal.js')} defer></script>
+        <link rel="stylesheet" href="/assets/css/fonts.css" />
         <link rel="stylesheet" href="/assets/css/app.css" />
+        <link rel="stylesheet" href="/assets/css/theme.css" />
+        <link rel="stylesheet" href="/assets/css/intake.css" />
+        <link rel="stylesheet" href="/assets/css/design.css" />
+        <link rel="stylesheet" href="/assets/css/viewer.css" />
+        <link rel="stylesheet" href="/ui/widgets/studio_dashboard_widgets/studio_dashboard_widgets.css" />
+        <link rel="stylesheet" href="/assets/css/panels.css" />
+        <link rel="stylesheet" href="/assets/css/widgets.css" />
+        <link rel="stylesheet" href="/assets/css/composer.css" />
+        <link rel="stylesheet" href="/assets/css/build.css" />
+        <link rel="stylesheet" href="/assets/css/appshell.css" />
+        <link rel="stylesheet" href="/assets/css/error_surface.css" />
+        {headExtra}
       </head>
-      {/* hx-status:422 escapes the 4xx no-swap blackout (empty merge) so a
-          validation response swaps in place — the old responseHandling
-          `{"code":"422","swap":true}` rule restated for htmx 4. */}
-      <body hx-boost="true" hx-sync="this:replace" {...{ 'hx-status:422': '{}' }}>
-        <div id="app" style={`--accent: ${accent}`}>
+      <body hx-boost="true" hx-sync="this:replace" {...HTMX_RESPONSE_RULES}>
+        <div id="app" data-theme={theme} data-accent={accent} data-font={font} {...inspectAttrs('base:app-root', { role: 'group' })}>
           {children}
         </div>
-        <div id="toasts"></div>
+        {/* OOB/retarget tray. aria-live polite: a toast swapped in here is
+            announced but must not interrupt (Material snackbar rule). */}
+        <div id="toasts" aria-live="polite" aria-atomic="true"></div>
       </body>
     </html>
   </Fragment>

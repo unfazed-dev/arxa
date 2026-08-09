@@ -1,0 +1,108 @@
+/* The error surface: the toast htmx retargets 404/5xx into (#toasts, see
+   ui/common/base.html) and the full-page failure. Layout/animation for the
+   base .toast lives in app.css — this file only adds the error variant, so
+   nothing here restyles a success toast.
+
+   Zero client JS (ADR-0002): dismiss is a checkbox + CSS, not a listener. */
+
+/* ---------- the error toast ---------- */
+.toast-error {
+  /* app.css animates .toast with --toast-ttl; 4s per Material, not the 5s
+     default. The fade is opacity-only and `forwards`, so the element stays
+     in the DOM — harmless, because the retarget is innerHTML: one at a time. */
+  --toast-ttl: 4s;
+  display: flex;
+  align-items: center;
+  gap: .75rem;
+  /* single line — a toast is a notice, not a report; the detail is in the log */
+  max-width: min(36rem, calc(100vw - 2rem));
+  background: var(--danger, #b3261e);
+  color: #fff;
+}
+
+.toast-error-msg {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* The dismiss control IS the checkbox: keyboard users tab to it and press
+   Space, pointer users hit the label. Kept in the a11y tree (not
+   display:none) so it stays focusable. */
+.toast-error-cb {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.toast-error-x {
+  flex: none;
+  cursor: pointer;
+  line-height: 1;
+  font-size: 1.1rem;
+  padding: .15rem .35rem;
+  border-radius: var(--radius-s);
+  opacity: .85;
+}
+
+.toast-error-x:hover { opacity: 1; background: rgb(255 255 255 / .16); }
+/* the focus ring has to come from the checkbox — it is the focusable thing */
+.toast-error-cb:focus-visible + .toast-error-msg + .toast-error-x {
+  outline: 2px solid #fff;
+  outline-offset: 2px;
+  opacity: 1;
+}
+
+#toasts:has(.toast-error-cb:checked) .toast-error { display: none; }
+
+/* Above the bottom nav. Scoped to compact (where the nav exists) and to an
+   error being shown, so the tray's resting position is untouched elsewhere. */
+@media (max-width: 599px) {
+  #toasts:has(.toast-error) { bottom: calc(var(--nav-h, 3.4rem) + 1rem); }
+}
+
+/* ---------- the full-page failure ---------- */
+/* A fatal error gets a page, not a toast: there is no good panel left to
+   preserve, so there is nothing for a toast to sit politely beside. */
+.error-page {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: .6rem;
+  padding: 2rem 1.5rem;
+  text-align: center;
+}
+
+.error-page-code {
+  font-size: .78rem;
+  font-weight: 600;
+  letter-spacing: .08em;
+  color: var(--tx-2);
+}
+
+.error-page-msg {
+  font-size: 1.15rem;
+  font-weight: 600;
+  max-width: 34rem;
+}
+
+.error-page-hint {
+  font-size: .85rem;
+  color: var(--tx-2);
+  max-width: 34rem;
+}
+
+.error-page-home {
+  margin-top: .6rem;
+  font-size: .85rem;
+  font-weight: 500;
+}

@@ -1,4 +1,4 @@
-import * as hub from './ui/views/studio_application_hub/studio_stage_board/studio_stage_board_viewmodel.js';
+import * as dashboard from './ui/views/studio_dashboard_shell/studio_dashboard/studio_dashboard_viewmodel.js';
 import * as startup from './ui/views/studio_startup_shell/studio_startup/studio_startup_viewmodel.js';
 import * as prefs from './ui/common/prefs_viewmodel.js';
 
@@ -8,14 +8,17 @@ import * as prefs from './ui/common/prefs_viewmodel.js';
 // Shells appear here as they land. Q-v2-5 cuts over ceremony shells one at a
 // time behind explicit user validation, so unknown/auth/intake/design are
 // absent rather than stubbed: an unbuilt shell is a disabled stage card in the
-// hub registry, never a route that resolves to a placeholder.
+// dashboard registry, never a route that resolves to a placeholder.
 export const shellRoots = {
-  studio_application_hub: '/',
+  studio_dashboard_shell: '/',
   studio_startup_shell: '/startup',
 };
 
 export default [
-  ['GET', '/', hub.view],
+  ['GET', '/', dashboard.view],
+  ['POST', '/gates/decide', dashboard.decideGate],
+  ['POST', '/projects/use', dashboard.useProject],
+  ['POST', '/projects/create', dashboard.createProject],
   ['GET', '/startup', startup.view],
   ['GET', '/startup/progress', startup.progress],
   ['POST', '/startup/proceed', startup.proceed],

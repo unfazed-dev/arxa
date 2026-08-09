@@ -1,7 +1,7 @@
 {
   "app": "studio",
-  "vocabulary": "hub > shell > view > widgets",
-  "note": "Derived from Q-v2-1/Q-v2-3. `enabled: false` marks a shell that has not landed yet \u2014 Q-v2-5 cuts shells over one at a time behind explicit user validation, so the hub shows the full pipeline but only routes to what exists.",
+  "vocabulary": "shell > view > widgets; hub hosts only widgets shared across every shell (header, tabbar, rail)",
+  "note": "Derived from Q-v2-1/Q-v2-3. `enabled: false` marks a shell that has not landed yet — Q-v2-5 cuts shells over one at a time behind explicit user validation, so the hub shows the full pipeline but only routes to what exists.",
   "stages": [
     {
       "id": "startup",
@@ -42,14 +42,20 @@
   ],
   "shells": [
     {
-      "id": "studio_application_hub",
-      "kind": "hub",
+      "id": "studio_dashboard_shell",
+      "kind": "shell",
       "views": [
-        "studio_stage_board_view"
+        "studio_dashboard_view"
       ],
       "widgets": [
-        "stage_board",
-        "stage_card"
+        "header_panel",
+        "footer_panel",
+        "main_panel",
+        "gate_strip",
+        "project_grid",
+        "stats_row",
+        "pairing_modal",
+        "wizard"
       ]
     },
     {

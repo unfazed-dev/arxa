@@ -1,0 +1,216 @@
+/* composer.css — the Composer Panel (ui/common/composer_panel.html) + the
+   shared composer card (ui/common/composer.html).
+   Single-state, permanent: the right furnishings panel in every shell, always
+   mounted, never closed. The thread takes the spare height, the composer
+   card pins to the panel floor.
+   Caller contract: the panel lives inside .panels (panels.css); the thread
+   uses .chat-thread, the composer card is ui/common/composer.html. */
+
+.panel-composer {
+  --composer-w: 390px;
+  flex: none;
+  width: var(--composer-w);
+  /* Floor = the starting width: this panel widens from its default, it does
+     not narrow below it (the activity panel is built the same way — see
+     `--panel-w`, "default = minimum width"). */
+  min-width: var(--composer-w);
+  /* The SAME ceiling as the activity panel, from panels.css. It used to be
+     `calc(var(--composer-w) * 1.6)` — a multiplier, so the cap silently moved
+     whenever the default did, and landed on 576px against the activity
+     panel's 600px for no reason either number could explain. */
+  max-width: var(--panel-max-w);
+  /* The card furnishings, the section grid, overflow and position:relative all
+     come from .panel (panels.css). What survives here is only what is true of
+     THIS panel: its width, and its own view-transition name.
+
+     The name must stay unique per panel and must never move onto .panel — a
+     view-transition-name duplicated across two simultaneously-rendered
+     elements makes the browser abort the entire transition, which would
+     silently disable view transitions app-wide rather than just here. */
+  view-transition-name: panel-composer;
+}
+/* The body carries this panel's padding, not the panel. A pad on .panel would
+   inset the top section's bottom border away from the card's edges, so the
+   rule would float in space instead of spanning the panel. */
+.panel-composer .panel-body { padding: .7rem .9rem .9rem; gap: .5rem; }
+.panel-composer .chat-thread { flex: 1 1 auto; min-height: 0; overflow-y: auto; }
+
+/* ---------- the top section: eyebrow + context chips ----------
+   Was `.chat-head`, a bare flex row that happened to sit at the top of this
+   panel while the activity panel's equivalent was a bordered <header> with a
+   different class. They are the same box now; only the wrap differs, because
+   pinned chips can run to a second line. */
+.panel-composer .panel-top { flex-wrap: wrap; gap: .6rem .9rem; }
+.chat-ctx { flex: 1 1 auto; }
+
+/* ---------- context chips: one tone per pinned artifact, cycling ---------- */
+/* Base chip layout lives in assets/css/widgets.css (D2 migration). */
+.ctx-x {
+  width: 1.25rem; height: 1.25rem; border-radius: 50%;
+  display: inline-grid; place-items: center;
+  color: var(--accent); text-decoration: none; font-size: .8rem; line-height: 1;
+}
+
+/* Scoped to the composer's TOP SECTION, not to the retired `.chat-head`.
+   These carry the per-screen tone, so losing the scope silently drops every
+   pinned chip back to the generic accent — a miss that renders fine and is
+   only wrong if you know what colour it should have been. widgets.css holds
+   the .panel-composer .panel-top .ctx-chip tone override too. */
+.panel-composer .panel-top .ctx-x { color: var(--ctx, var(--accent)); }
+.panel-composer .panel-top .ctx-x:hover { background: var(--ctx, var(--accent)); color: var(--on-accent, #FFFCF0); }
+
+.ctx-cyan   { --ctx: #0C87A8; --ctx-soft: rgba(12, 135, 168, .12); }
+.ctx-olive  { --ctx: #66800B; --ctx-soft: rgba(102, 128, 11, .11); }
+.ctx-amber, .ctx-gate { --ctx: #AD8301; --ctx-soft: rgba(173, 131, 1, .11); }
+.ctx-violet { --ctx: #4E28D5; --ctx-soft: rgba(78, 40, 213, .10); }
+#app[data-theme="dark"] .ctx-cyan   { --ctx: #45D5F5; --ctx-soft: rgba(69, 213, 245, .16); }
+#app[data-theme="dark"] .ctx-olive  { --ctx: #879A39; --ctx-soft: rgba(135, 154, 57, .15); }
+#app[data-theme="dark"] .ctx-amber,
+#app[data-theme="dark"] .ctx-gate   { --ctx: #D0A215; --ctx-soft: rgba(208, 162, 21, .14); }
+#app[data-theme="dark"] .ctx-violet { --ctx: #9A82F0; --ctx-soft: rgba(154, 130, 240, .18); }
+
+/* ---------- screens filmstrip: every screen as a thumb, over the composer ----------
+   Reuses the viewer's .dv-thumb furnishings (app.css) at its compact scale; the
+   strip layout itself lives here so any chat can render it. In-context thumbs
+   carry their screen's ctx tone; a thumb click toggles the pin (flow) or
+   picks the proto screen — no × control. */
+.cs-strip {
+  display: flex; gap: .6rem; align-items: flex-start; flex: none;
+  overflow-x: auto; scrollbar-width: none;
+  /* UA-rendered bars are killed STRUCTURALLY (some UAs ignore
+     scrollbar-width): the padding pushes the bar below the content edge and
+     the negative margin pulls it outside .cm-tray-clip's box, whose
+     overflow:hidden clips it. Works in every UA; horizontal scroll native. */
+  padding: .2rem .2rem 1.2rem; margin-bottom: -1.2rem;
+}
+.cs-strip::-webkit-scrollbar { display: none; }
+.cs-strip .dv-thumb { width: 5.6rem; flex: none; text-decoration: none; }
+.cs-strip .dv-thumb-clip {
+  height: 7.2rem;
+  border-color: var(--ctx, var(--border));
+  box-shadow: 0 0 0 1.5px var(--ctx, transparent);
+}
+.cs-strip .dv-thumb-clip iframe { transform: scale(.221); }
+
+/* below expanded the composer is one of the panel bar's three panels:
+   full-width when it's the visible one — and the resize rail goes with the
+   side-by-side layout it exists to arbitrate (panels.css hides the activity
+   panel's for the same reason) */
+@media (max-width: 839px) {
+  /* Width and the rail are handled once in panels.css for every panel — but
+     only because that rule is scoped `.panels .panel-composer` to outrank the
+     `.panel-composer` block at the top of THIS file, which the document loads
+     after panels.css. It did not used to be, and this comment used to claim
+     the release worked while the panel kept its desktop width. If you add a
+     width to .panel-composer above, check that block still wins. */
+}
+
+/* ---------- the composer card (ui/common/composer.html) ----------
+   Restyles app.css's .composer pill into the reference card: the context
+   tray on top, a borderless textarea, the action bar below (+ tools, the
+   model menu, the round send). Zero-JS menus: <details> opens, the
+   option's hx-get swap closes it; every menu opens UPWARD — the composer
+   sits at the stage floor, downward menus spill past the viewport. */
+.composer {
+  flex-direction: column; align-items: stretch; gap: 0;
+  padding: .35rem .5rem .4rem;
+  margin: 0; /* the chat stage's own gap owns the spacing */
+  border-radius: 1.4rem;
+}
+.composer textarea { padding: .45rem .55rem .3rem; }
+.composer-bar { display: flex; align-items: center; gap: .3rem; }
+.composer-spacer { flex: 1; }
+.composer-send {
+  background: var(--bg-2); color: var(--tx);
+  box-shadow: inset 0 0 0 1px var(--border);
+}
+.composer-send:hover { background: var(--accent-soft); color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+
+/* the model chip: one summary idiom */
+.composer-model { position: relative; flex: none; }
+.composer-chev { font-size: .66rem; opacity: .65; }
+
+/* the dropdown menu: one card idiom, opening UP from the bar */
+.composer-menu {
+  position: absolute; bottom: calc(100% + .5rem); left: 0; z-index: 7;
+  display: none; flex-direction: column; gap: .1rem;
+  min-width: 15.5rem; padding: .4rem;
+  background: var(--bg); border: 1px solid var(--border);
+  border-radius: 14px; box-shadow: var(--shadow-2);
+}
+.composer-menu-right { left: auto; right: 0; }
+details[open] > .composer-menu { display: flex; }
+.composer-opt {
+  display: flex; flex-direction: column; gap: .1rem; position: relative;
+  padding: .45rem 2rem .45rem .6rem; border-radius: 10px;
+  text-decoration: none; color: var(--tx);
+}
+a.composer-opt:hover { background: var(--bg-2); }
+.composer-opt-label { font-size: .8rem; }
+.composer-opt.on .composer-opt-label { font-weight: 500; }
+.composer-opt-blurb { font-size: .7rem; color: var(--tx-2); }
+.composer-opt-check { position: absolute; right: .7rem; top: .55rem; color: var(--accent); font-size: .75rem; }
+
+/* ---------- the context tray: the filmstrip at the top of the card ----------
+   The zero-JS AnimatedContainer (Flutter's effect, CSS edition): a hidden
+   checkbox flips grid-template-rows 0fr → 1fr on the SAME element
+   (CSS-Tricks' auto-height idiom — Furnishings 117+/Safari 17.4+/Firefox 121+),
+   so the expand/collapse height transition visibly runs both ways. The
+   label trigger also hx-gets the toggle route; the swap returns with
+   matching :checked state, so persistence never fights the animation.
+   Auto-expand on pin renders :checked server-side; that swap animates via
+   #panel-composer's view transition (globalViewTransitions on in base.html).
+   Future tray components reuse .cm-tray/.cm-tray-clip as-is. */
+.cm-tray-cb { position: absolute; opacity: 0; pointer-events: none; }
+.cm-tray-cb:focus-visible ~ .cm-tray-head { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 8px; }
+.cm-tray-head {
+  display: flex; align-items: center; justify-content: space-between; gap: .5rem;
+  padding: .15rem .55rem .3rem;
+  font-size: .7rem; color: var(--tx-2); cursor: pointer;
+}
+.cm-tray-head:hover { color: var(--tx); }
+/* The summary with nothing to expand (canvas surfaces: the thumbs are in the
+   viewer's right-hand column and no element is pinned). Same line, no
+   affordance. */
+.cm-tray-head.is-static { margin: 0; cursor: default; }
+.cm-tray-head.is-static:hover { color: var(--tx-2); }
+.cm-tray-head .composer-chev { transition: rotate var(--motion-med) var(--motion-ease); }
+.cm-tray-cb:checked ~ .cm-tray-head .composer-chev { rotate: 180deg; }
+.cm-tray { display: grid; grid-template-rows: 0fr; }
+.cm-tray-cb:checked ~ .cm-tray { grid-template-rows: 1fr; }
+.cm-tray-clip { overflow: hidden; min-height: 0; }
+@media (prefers-reduced-motion: no-preference) {
+  .cm-tray { transition: grid-template-rows var(--motion-med) var(--motion-ease); }
+}
+
+/* ---------- pinned-screen context chips ----------
+   ONE row, horizontal scroll, never wrap: the composer is a fixed-height card
+   in the panel stack, and a wrapping chip list pushes the thread up as pins
+   accumulate. Same scrollbar-hiding pair as .cs-strip — `scrollbar-width` for
+   the UAs that honour it, and the padding/negative-margin trick pushes a
+   UA-drawn bar out of the visible box for the ones that don't (here the clip
+   is .composer's own overflow, not .cm-tray-clip's).
+   Tone comes from `.ctx-<tone>` on the chip (the --ctx / --ctx-soft pair at
+   the top of this file), so the chip, the canvas tile and the viewer thumb
+   are the same colour for the same screen. */
+.cs-ctx-strip {
+  display: flex; gap: .3rem; align-items: center; flex-wrap: nowrap;
+  overflow-x: auto; scrollbar-width: none;
+  padding: .15rem .55rem 1.2rem; margin-bottom: -1.1rem;
+}
+.cs-ctx-strip::-webkit-scrollbar { display: none; }
+/* .cs-ctx-chip box model lives in assets/css/widgets.css (D2 migration) —
+   stays standalone there too, per probe-context-sync.mjs's exact-string
+   regex on this element's class attribute. */
+.cs-ctx-name { white-space: nowrap; }
+
+/* ---------- element context chips ---------- */
+.cs-el-strip {
+  display: flex; gap: .3rem; flex-wrap: wrap; padding-top: .4rem;
+}
+/* .cs-el-chip box model lives in assets/css/widgets.css (D2 migration),
+   composed with .chip in markup. */
+.cs-el-name { font-size: .68rem; }
+.cs-el-kind { font-size: .6rem; text-transform: uppercase; letter-spacing: .04em; opacity: .6; }
+.cs-el-screen { font-size: .62rem; opacity: .7; }
+.composer-undo-redo { display: inline-flex; gap: .1rem; align-items: center; }

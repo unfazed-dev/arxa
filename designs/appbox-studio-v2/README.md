@@ -26,6 +26,12 @@ by anatomy §1.
 everywhere, including DOM attributes. The emit-time inspect triple is
 `data-inspect-view` / `data-inspect-surface` / `data-inspect-widget` (Q-v2-5).
 
+**rung** = one width variant of a view on the viewport ladder
+(`rung--desktop` / `rung--tablet` / `rung--mobile`); all three are in the DOM
+and CSS displays exactly one. Ratified skill vocabulary
+(`.claude/skills/appbox-designer/references/viewport-ladder.md`) — kept after a
+rename evaluation (`docs/plans/rung-to-viewport-sweep.md`).
+
 ## How a factor variant is selected
 
 The design runtime has **no `<factor>` resolver** — `design_server.dart` serves

@@ -1,0 +1,29 @@
+# NOTICE — vendored webfonts (Increment 4: font menu)
+
+Lexend is NOT listed here: it was already vendored before this increment and
+its provenance is recorded in FONTS.md alongside the other pre-existing assets.
+
+Its @font-face blocks did live in assets/css/app.css; this increment MOVED all
+six (Lexend, Lexend Giga, Lexend Deca × latin/latin-ext) into assets/css/fonts.css
+so that every family the menu offers is declared in exactly one file. app.css
+now carries no @font-face at all — only a pointer comment. The twelve faces in
+fonts.css are the complete set: four menu families, six css families, two
+subsets each.
+
+## Space Grotesk
+css2: https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300..700&display=swap
+  space-grotesk-var-latin-ext.woff2  18924B  <- https://fonts.gstatic.com/s/spacegrotesk/v22/V8mDoQDjQSkFtoMM3T6r8E7mPb94C_k3HqUtEw.woff2
+  space-grotesk-var-latin.woff2  22320B  <- https://fonts.gstatic.com/s/spacegrotesk/v22/V8mDoQDjQSkFtoMM3T6r8E7mPbF4C_k3HqU.woff2
+  license: OFL-space-grotesk.txt (SIL Open Font License 1.1)
+
+## Lora
+css2: https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400..700&display=swap
+  lora-var-latin-ext.woff2  20176B  <- https://fonts.gstatic.com/s/lora/v37/0QIvMX1D_JOuMwT7I_FMl_GW8g.woff2
+  lora-var-latin.woff2  37792B  <- https://fonts.gstatic.com/s/lora/v37/0QIvMX1D_JOuMwr7I_FMl_E.woff2
+  license: OFL-lora.txt (SIL Open Font License 1.1)
+
+## JetBrains Mono
+css2: https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300..700&display=swap
+  jetbrains-mono-var-latin-ext.woff2  15204B  <- https://fonts.gstatic.com/s/jetbrainsmono/v24/tDbV2o-flEEny0FZhsfKu5WU4xD1OwGtT0rU3BE.woff2
+  jetbrains-mono-var-latin.woff2  40480B  <- https://fonts.gstatic.com/s/jetbrainsmono/v24/tDbV2o-flEEny0FZhsfKu5WU4xD7OwGtT0rU.woff2
+  license: OFL-jetbrains-mono.txt (SIL Open Font License 1.1)

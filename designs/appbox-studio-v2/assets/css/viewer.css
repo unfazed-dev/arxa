@@ -1,0 +1,510 @@
+/* ---------- design viewer: the artboard canvas (views/flows) + floating furnishings
+   The shared screen stage (ui/common/design_viewer.html — views grid, flows
+   rows, proto preview). The zoom island's target: assets/vendor/canvas.js (the
+   ADR-0002 amendment's one sanctioned script) scales .dv-zoom on pinch
+   (ctrl+wheel) and pans the scroll container on drag. transform-origin 0 0
+   keeps the scroll-anchored zoom math exact; the wrapper's layout position
+   never changes under scale, so native overflow pan keeps working at any
+   zoom. */
+
+/* ---------- context tones: chip ⇄ outline ⇄ thumb share one hue ----------
+   composer.css owns the shared palette (cyan/violet/olive/amber, with
+   --ctx-soft for the chips). The design facade's TONES extends it with
+   blue/ember so 11 screens collide less; the extensions live here with both
+   tokens. */
+.ctx-blue   { --ctx: #3473DF; --ctx-soft: rgba(52, 115, 223, .12); }
+.ctx-ember  { --ctx: #BC5215; --ctx-soft: rgba(188, 82, 21, .09); }
+#app[data-theme="dark"] .ctx-blue   { --ctx: #7FA5F0; --ctx-soft: rgba(127, 165, 240, .18); }
+#app[data-theme="dark"] .ctx-ember  { --ctx: #DA702C; --ctx-soft: rgba(218, 112, 44, .13); }
+
+
+/* context-picker thumbs: the pinned screen carries its chip tone */
+.dv-thumb.in-ctx .dv-thumb-clip { border-color: var(--ctx); box-shadow: 0 0 0 1.5px var(--ctx); }
+.dv-thumb.is-dim { opacity: .55; }
+.dv-thumb.is-dim:hover { opacity: .85; }
+
+/* ---------- views + flows: every screen as a tile ---------- */
+/* Three stacked panels: the shell's top bar, the canvas, the docked bottom bar.
+   A flex column so the canvas takes the slack and both bars keep their natural
+   height — and so the two bars are INSIDE the fullscreen target (canvas.js
+   fullscreens .panel-viewer), which is why the lens switch and the exit
+   button do not vanish when you go fullscreen. */
+/* The viewer IS the main panel's card — .panel (panels.css) supplies the
+   section grid, the card furnishings and position:relative. Nothing about the
+   stacking is restated here; the sections place themselves. */
+.dv-topbar { padding: .5rem .8rem; }   /* tighter than the default top section */
+.dv-topbar-title {
+  font-size: .68rem; text-transform: uppercase; letter-spacing: .06em;
+  color: var(--tx-3);
+}
+.dv-topbar-actions { margin-left: auto; display: flex; gap: .35rem; align-items: center; }
+.dv-botbar {
+  display: flex; flex-direction: column; align-items: center;
+  /* No side padding: the mini panel is sized at 50% and centred, and side
+     padding here would make that 50% of the PADDED box — i.e. visibly
+     narrower than half the viewer. The foot line is centred text, so it
+     loses nothing. This is the one thing a generic bottom section must not
+     inherit, and the reason `dv-botbar` survives as a modifier at all. */
+  padding: .5rem 0;
+}
+/* The canvas is the panel's BODY section. It used to sit inside a `.dv-flow`
+   wrapper whose only job was to be a flex row holding the canvas and the
+   screens rail side by side; the panel grid places both directly, so the
+   wrapper is gone. */
+.dv-flow-canvas {
+  /* min-width:0 lets the rail take its width off the canvas. Without it the
+     canvas's min-content floor (a tile) wins and the rail
+     is pushed out of the viewer instead. */
+  position: relative; overflow: auto; min-width: 0; min-height: 32rem;
+  /* even padding: the 11rem bottom pad existed ONLY to let the last tile row
+     scroll clear of the floating mini panel. The panel is docked in .dv-botbar
+     now and consumes real layout height, so the hack is dead. */
+  padding: 1rem; cursor: default;
+  /* Figma canvas: wheel/trackpad pans both axes, no scrollbars — the global
+     `* { scrollbar-width: thin }` (app.css) otherwise renders a horizontal
+     bar right under the floating mini panel */
+  scrollbar-width: none;
+}
+.dv-flow-canvas::-webkit-scrollbar { display: none; }
+.dv-flow-canvas:active { cursor: grabbing; }
+.dv-flow-canvas .dv-zoom {
+  position: relative; width: max-content; min-width: 100%;
+  min-height: 100%; transform-origin: 0 0;
+  display: flex; flex-direction: column; gap: 1.2rem; align-items: flex-start;
+}
+/* VIEWS — one row per screen: the screen card (tile + tucked reveal-drawer).
+   Note the direction is `column` and that is now CORRECT — the flex children
+   here are ROWS. The old rule asked for `flex-direction: row` to make a flat
+   wrapping grid and never got it: `.dv-flow-canvas .dv-zoom` (0,2,0) outranks
+   `.dv-zoom-views` (0,1,0), so the computed value was always `column` and the
+   grid rendered as one tile per line. That rule is deleted rather than fixed —
+   the flat grid it wanted is not the layout any more. */
+.dv-zoom-views { width: 100%; gap: 1.2rem; }
+.dv-views-row { width: 100%; }
+/* FLOWS — one dashed row per project flow, column-stacked with a clear gap;
+   the label chip sits on the row's top-left corner, over the dashed border. */
+.dv-flow-row {
+  position: relative;
+  display: flex; flex-wrap: wrap; gap: 1rem; align-items: flex-start;
+  border: 1.5px dashed var(--border); border-radius: var(--radius);
+  padding: 1.4rem 1rem 1rem;
+}
+/* the label's PLACEMENT is the row's business; its pill shape lives in
+   widgets.css with the other viewer pills (W5). */
+.dv-flow-label { position: absolute; top: -.7rem; left: .8rem; }
+/* the connector between consecutive tiles: trigger label over a horizontal
+   line with a CSS-triangle arrowhead — zero JS measurement */
+.dv-connector {
+  align-self: center;
+  display: flex; flex-direction: column; align-items: center; gap: .3rem;
+  max-width: 8rem;
+}
+.dv-connector-label {
+  font-size: .64rem; color: var(--tx-3); text-align: center; line-height: 1.25;
+}
+.dv-connector-line { position: relative; width: 3rem; height: 1.5px; background: var(--border); }
+.dv-connector-line::after {
+  content: ''; position: absolute; right: -.05rem; top: 50%;
+  transform: translateY(-50%);
+  border: .3rem solid transparent; border-left-color: var(--border);
+}
+/* .dv-fb (the transition toast) is a pill — it lives in widgets.css (W5).
+   Only its tints stay here, with the connector it belongs to. */
+.dv-fb-success { color: #0b804b; }
+.dv-fb-error   { color: #cc3a21; }
+.dv-fb-info    { color: var(--tx-3); }
+/* row end: the OTHER flows that continue from the last screen. Flows are
+   joined by shared screen ids, so these chips ARE the inter-flow graph — no
+   authored key, nothing that can disagree with the ids. Stacked, because a
+   screen can head more than one flow. */
+.dv-handoffs {
+  align-self: center;
+  display: flex; flex-direction: column; align-items: flex-start; gap: .25rem;
+  padding-left: .4rem; max-width: 11rem;
+}
+.dv-handoff-cap {
+  font-size: .6rem; text-transform: uppercase; letter-spacing: .06em;
+  color: var(--tx-3);
+}
+/* .dv-handoff is a pill — shape in widgets.css (W5), hover state here. */
+.dv-handoff:hover { color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+.dv-tile-label { flex: 1; min-width: 0; }
+.dv-tile {
+  position: relative; flex: none; display: flex; flex-direction: column; gap: .35rem;
+  padding: .5rem; border-radius: var(--radius);
+  background: var(--bg); border: 1px solid var(--border);
+  box-shadow: var(--shadow-1);
+  outline: 2px solid transparent; outline-offset: 4px;
+  transition: outline-color .12s, box-shadow .12s;
+}
+/* only flow-row tiles drag (axis-locked, drag.js) — views/evidence tiles don't */
+.dv-flow-row .dv-tile { cursor: grab; }
+.dv-tile:hover { box-shadow: var(--shadow-2, 0 2px 12px rgba(0,0,0,.12)); }
+.dv-tile.is-selected { outline-color: var(--accent, #0891b2); }
+.dv-tile.is-live { outline-color: var(--accent, #0891b2); }
+.dv-tile.in-ctx { outline-color: var(--ctx); }
+.dv-tile.is-dim { opacity: .45; }
+.dv-tile.is-dim:hover { opacity: .8; }
+/* read-only canvas (build evidence): no drag cursor, no dim states */
+.dv-flow-canvas[data-static] .dv-tile { cursor: default; }
+.dv-tile-frame {
+  display: flex; gap: .4rem; align-items: center;
+  font-size: .72rem; color: var(--tx-2);
+}
+.dv-tile-frame code { font-size: .64rem; }
+.dv-tile-frame {
+  width: 100%; border: none; border-radius: calc(var(--radius) - 2px);
+  pointer-events: none; background: var(--bg);
+}
+/* live / inspected tiles: the frame takes pointer input again (the live
+   render is interactive; inspect.js lives inside the stub and needs
+   hover/click) */
+.dv-tile.is-live .dv-tile-frame,
+.dv-tile.is-inspecting .dv-tile-frame { pointer-events: auto; }
+/* interact-in-place (views + flows lenses): every tile frame takes pointer
+   input — scroll, hover, taps — while canvas.js cancels navigation inside
+   still frames from the parent (stubs stay script-free). The data-static
+   evidence canvas keeps the base fence above. */
+.dv-flow-canvas:not([data-static]) .dv-tile-frame { pointer-events: auto; }
+
+/* ---------- per-tile hover toolbar (the only per-tile furnishings) ----------
+   Revealed on :hover/:focus-within, pure CSS; opacity-only so the header
+   never reflows. pointer-events:none while hidden so a hidden button never
+   swallows a canvas gesture. */
+.dv-tile-tools {
+  display: inline-flex; gap: .15rem; align-items: center; flex: none;
+  opacity: 0; pointer-events: none; transition: opacity .12s;
+}
+.dv-tile:hover .dv-tile-tools,
+.dv-tile:focus-within .dv-tile-tools { opacity: 1; pointer-events: auto; }
+.dv-tool { width: 1.6rem; height: 1.6rem; }
+.dv-tool.on { color: var(--accent, #0891b2); }
+/* the add-to-flow menu: a zero-JS <details> dropdown anchored to its summary */
+.dv-tool-menu { position: relative; display: inline-flex; }
+.dv-tool-menu summary { list-style: none; cursor: pointer; }
+.dv-tool-menu summary::-webkit-details-marker { display: none; }
+.dv-menu {
+  position: absolute; top: calc(100% + .3rem); left: 0; z-index: 25;
+  display: flex; flex-direction: column; min-width: 9rem;
+  padding: .3rem; border-radius: var(--radius);
+  background: var(--bg); border: 1px solid var(--border);
+  box-shadow: var(--shadow-2, 0 2px 12px rgba(0,0,0,.12));
+  font-size: .72rem;
+}
+.dv-menu-item {
+  display: block; width: 100%; padding: .3rem .5rem; border: none; border-radius: calc(var(--radius) - 2px);
+  background: none; font: inherit; text-align: left; cursor: pointer; color: var(--tx-2);
+}
+.dv-menu-item:hover { background: var(--bg-2, rgba(0,0,0,.04)); color: var(--tx); }
+.dv-live-close { flex: none; width: 1.6rem; height: 1.6rem; color: var(--accent, #0891b2); }
+
+/* marquee selection */
+.dv-marquee {
+  position: absolute; border: 1.5px solid var(--accent, #0891b2);
+  background: rgba(8, 145, 178, .08); pointer-events: none; z-index: 10;
+}
+/* marquee bulk-pin: drag.js appends it to .dv-flow-canvas (position:relative)
+   and positions it in canvas content coordinates — absolute, not fixed. */
+/* Placement only; the pill itself is in widgets.css (W5). */
+.dv-bulk-pin { position: absolute; z-index: 20; }
+
+/* ---------- mini panel: DOCKED into .dv-botbar ---------- */
+/* Was absolutely positioned over the canvas's bottom edge. Now a normal flow
+   child of .dv-botbar: no absolute, no transform, no z-index, and no shadow —
+   the bar's own top border separates it from the canvas. The float is what
+   forced `.dv-flow-canvas { padding-bottom: 11rem }`; that padding is deleted
+   with it. Still a card radius, NOT a 999px pill: with a panel open the bar is
+   far taller than it is deep, and a pill radius renders as an ellipse. */
+/* ONE ROW, half the viewer's width, centred: .dv-botbar is a centring flex
+   column, so width:50% is half the viewer. min-width floors it so narrow
+   viewports don't crush the controls; max-width keeps it inside the bar. */
+.mini-panel {
+  /* Half the bar's width, with a floor at the row's natural content width
+     (measured 517px / ~32rem at `en`). Half is the target; the floor is what
+     stops half from HIDING a control — at a 791px viewer half is 383px and
+     the row needs 517px, so the bg swatches would sit off-screen behind an
+     invisible scroll. Above ~1090px of bar the 50% wins outright.
+     CSS cannot derive this: the bar is a scroll container, so min-content /
+     max-content on the panel both resolve to 0 (measured — every
+     `width: max(50%, min-content)` variant returned exactly the 50% box).
+     Hence the literal. Consequence: a locale wider than the floor (qps-ploc)
+     scrolls again — raise the floor if a real locale needs it. */
+  width: 50%; min-width: min(33rem, 100%); max-width: 100%;
+  background: var(--bg); border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+/* nowrap is load-bearing: at 50% width the default wrap re-creates the second
+   row this change deleted. Cramped => scroll sideways, never stack. The bar
+   scrolls with no visible scrollbar, like .cs-strip. */
+.mini-panel-bar {
+  display: flex; gap: .15rem; align-items: center; padding: .5rem .55rem;
+  flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none;
+  /* Eleven controls do not fit in half a viewer at every layout. No mask/fade
+     affordance: a mask paints unconditionally, so it would dim the last
+     swatch even when everything fits. The clipped-mid-control edge is the
+     cue, and the groups below are compacted so fewer layouts need it. */
+}
+.mini-panel-bar::-webkit-scrollbar { display: none; }
+.mini-panel-tab {
+  display: inline-flex; align-items: center; justify-content: center;
+  /* padding:0 — the app.css global button rule's .45rem/1.05rem padding eats
+     the whole 2rem box and flex-shrinks the icon svg to width 0 */
+  width: 2rem; height: 2rem; padding: 0; border: none; border-radius: var(--radius);
+  background: transparent; color: var(--tx-3); cursor: pointer;
+}
+.mini-panel-tab:hover { background: var(--bg-2, rgba(0,0,0,.04)); color: var(--tx); }
+.mini-panel-tab.is-active { background: var(--accent-soft, rgba(8,145,178,.12)); color: var(--accent, #0891b2); }
+/* bar-right cluster: device rung icons (proto mode) — divider — bg swatches */
+.mini-panel-bar-right { margin-left: auto; display: flex; gap: .5rem; align-items: center; }
+.mini-panel-divider { width: 1px; height: 1.25rem; background: var(--border); }
+.mini-swatch {
+  width: 1.25rem; height: 1.25rem; border-radius: 50%;
+  box-shadow: inset 0 0 0 1px var(--border);
+}
+.mini-swatch.on { box-shadow: inset 0 0 0 1px var(--border), 0 0 0 2px var(--accent, #0891b2); }
+/* Dots show the same tokens the canvas paints (app.css, .panel-viewer);
+   fallbacks are the light-theme values for standalone renders. */
+.mini-swatch-canvas { background: var(--dv-bg-canvas, #E6E4D9); }
+.mini-swatch-warm { background: var(--dv-bg-warm, #DFD3BA); }
+.mini-swatch-ink { background: var(--dv-bg-ink, #343331); }
+/* The controller is now a flex CHILD of .mini-panel-bar, not its own row:
+   no padding of its own, and nowrap for the same reason the bar has it. */
+/* Gaps and divider padding halved from the two-row layout: at half width the
+   whole row is the budget, and .8rem × 5 separators was 64px of it. */
+.mini-panel-body {
+  display: flex; gap: .4rem; align-items: center; flex-wrap: nowrap;
+  font-size: .78rem;
+}
+.mini-panel-group { display: inline-flex; gap: .25rem; align-items: center; flex: none; }
+.mini-panel-group + .mini-panel-group { border-left: 1px solid var(--border); padding-left: .4rem; }
+.mini-panel-bar-right { gap: .4rem; }
+
+/* ---------- screens filmstrip: the viewer's RIGHT COLUMN ----------
+   Not an overlay — a real flex child of .dv-flow, last in source order so the
+   row flex puts it on the right. It is IN the viewer, so it takes real width
+   from the canvas; align-self:stretch gives it exactly
+   the rows' height. Views lens only.
+   It keeps .cs-strip's thumb sizing (7.2rem clip / 5.6rem thumb / scale .221)
+   — the tray's original size, only the axis and the mount changed.
+   All rules carry the .dv-flow ancestor: composer.css loads AFTER viewer.css,
+   so a bare .dv-vstrip would lose every tie to .cs-strip on source order. */
+.panel-viewer .dv-vstrip {
+  flex: none; align-self: stretch;
+  flex-direction: column; align-items: center;
+  overflow-x: hidden; overflow-y: auto;
+  /* .cs-strip hides the UA scrollbar with a 1.2rem pad + matching negative
+     margin, which only works inside .cm-tray-clip's overflow:hidden. There is
+     no clip here — reset the pair; scrollbar-width:none carries the hiding. */
+  padding: .6rem .5rem;
+  /* Same card idiom as .mini-panel and .panel-composer: full border + the
+     shared radius. The margin is what the radius needs — flush against the
+     viewer's edge the rounded corners have nothing to round against, and it
+     doubles as the seam between the rail and the canvas. Overrides
+     .cs-strip's negative margin-bottom, which only works inside a clip. */
+  margin: .6rem;
+  background: var(--bg); border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+.panel-viewer .dv-vstrip::-webkit-scrollbar { display: none; }
+/* long screen ids (portalo.mediamodel3d) overflow the 5.6rem thumb and paint
+   over the neighbor — clip them with an ellipsis instead */
+.dv-thumb-label { min-width: 0; }
+.dv-thumb-label code { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+/* .ico-btn base + :hover live in studio_dashboard_widgets.css (circular icon button); these add
+   the disabled and active-on variants the mini panel controller buttons need */
+.ico-btn:disabled { opacity: .35; cursor: default; }
+.ico-btn.on { color: var(--accent, #0891b2); }
+
+/* ---------- inspect overlay (inside iframe documents) ---------- */
+.inspect-outline { position: fixed; pointer-events: none; z-index: 99998; }
+.inspect-label { position: fixed; pointer-events: none; z-index: 99999; }
+
+/* ---------- proto: the wired-app lens (one live screen in device furnishings) ----
+   The stage pans when the frame is oversized and centers it when it fits —
+   margin:auto on the flex child, never clamped. Device furnishings ported from
+   the retired prototype mode (phone island/home, tablet bezel, window
+   titlebar); the frame fills the furnishings's content box. */
+.dv-proto { display: flex; flex-direction: column; flex: 1; min-height: 32rem; }
+.dv-proto-bar {
+  display: flex; align-items: center; gap: .8rem; flex-wrap: wrap;
+  padding: .5rem .8rem; border-bottom: 1px solid var(--border);
+}
+.dv-proto-bar .dv-screen { color: var(--tx-3); }
+.dv-proto-stage { flex: 1; overflow: auto; display: flex; padding: 1rem 1rem 11rem; }
+.dv-proto-stage > .device { margin: auto; }
+
+.device {
+  position: relative; display: flex; flex-direction: column; flex: none;
+  border: 3px solid #232326; background: #232326;
+  box-shadow: var(--shadow-2);
+}
+.device-ios { border-radius: 2.4rem; overflow: hidden; }
+.device-ios .device-island {
+  position: absolute; top: .55rem; left: 50%; transform: translateX(-50%);
+  width: 5.6rem; height: 1.35rem; border-radius: 999px; /* w5:not-a-chip */ background: #0a0a0c; z-index: 2;
+}
+.device-ios .device-home {
+  position: absolute; bottom: .35rem; left: 50%; transform: translateX(-50%);
+  width: 6.4rem; height: .22rem; border-radius: 999px; /* w5:not-a-chip */ background: rgba(128,128,128,.55); z-index: 2;
+}
+.device-tablet { border-radius: 1.1rem; overflow: hidden; border-width: .55rem; }
+.device-win { border-radius: .6rem .6rem 0 0; overflow: hidden; border-width: 0; }
+.device-win .device-titlebar {
+  display: flex; gap: .38rem; align-items: center;
+  padding: .5rem .7rem; background: var(--bg-2); border-bottom: 1px solid var(--border);
+}
+.device-win .device-titlebar i { width: .62rem; height: .62rem; border-radius: 50%; background: var(--tx-3, var(--border)); }
+.device-win .device-titlebar i:first-child { background: #ec6a5e; }
+.device-win .device-titlebar i:nth-child(2) { background: #f4bf4f; }
+.device-win .device-titlebar i:nth-child(3) { background: #61c454; }
+.device .dv-frame { width: 100%; flex: 1; border: 0; }
+
+/* the active screen's thumb in proto mode (the picker state) */
+.dv-thumb.on .dv-thumb-clip { border-color: var(--accent, #0891b2); box-shadow: 0 0 0 1.5px var(--accent, #0891b2); }
+/* strip-sync's other half: canvas.js puts the same `.on` on the current tile */
+.dv-tile.on { outline: 2px solid var(--accent, #0891b2); outline-offset: 3px; }
+
+/* ---------- fullscreen: the viewer IS the fullscreen element ----------
+   The close affordance exists only while :fullscreen matches — Esc drops the
+   pseudo-class and hides it again for free, no JS state to keep honest. The
+   hide needs .panel-viewer scope: bare .dv-fs-close ties .ico-btn's
+   display:inline-flex (studio_dashboard_widgets.css) and loses to load order. */
+.panel-viewer .dv-fs-close { display: none; position: absolute; top: .8rem; right: .8rem; z-index: 30; }
+.panel-viewer:fullscreen { border: none; border-radius: 0; }
+.panel-viewer:fullscreen .dv-fs-close { display: inline-grid; }
+
+/* ---------- widget editor (drawer Tools tab, views lens) ---------- */
+/* The inline property editor mounted in the drawer's .dv-tools-wedit wrap.
+   Chips are the k steps (widgets.css Auto Layout contract); `.on` marks
+   the source element's current value — accent vocabulary, same as the strip. */
+.dv-wedit:empty { display: none; }
+.dv-wedit-card { margin-top: .5rem; border: 1px solid var(--border); border-radius: 10px; padding: .55rem .65rem; background: var(--bg); display: flex; flex-direction: column; gap: .45rem; }
+.dv-wedit-head { display: flex; align-items: baseline; gap: .5rem; min-width: 0; }
+.dv-wedit-head b { font-size: .8rem; }
+.dv-wedit-file { font-size: .65rem; color: var(--tx-3); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dv-wedit-prov { margin: 0; font-size: .68rem; color: var(--tx-2); }
+.dv-wedit-row { display: flex; align-items: center; gap: .5rem; }
+.dv-wedit-label { font-size: .7rem; color: var(--tx-2); min-width: 3.5rem; }
+.dv-wedit-steps { display: flex; gap: .25rem; }
+.dv-wedit-step { font-size: .7rem; padding: .1rem .5rem; }
+.dv-wedit-step.on { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
+
+/* Sizing-mode chips reuse .dv-wedit-step wholesale — same control, same
+   toggle-off rule, so they get no visual dialect of their own. Only the label
+   column widens, because "Width"/"Height" sit beside word chips, not digits. */
+.dv-wedit-mode { text-transform: lowercase; }
+
+/* Edit arming (D2). The armed chip is the ONLY persistent cue that a canvas
+   click now selects instead of reaching the app, so it takes the full accent
+   treatment rather than a subtle outline. */
+.dv-arm-chip[aria-pressed="true"] { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
+
+/* Resize handles. position: fixed and parented to <body>, OUTSIDE .dv-zoom:
+   the box is placed from getBoundingClientRect, which is already
+   post-transform, so living inside the zoomed subtree would scale it twice.
+   pointer-events stay off the frame itself — only the eight grips take the
+   pointer, so the tile underneath keeps hover/scroll while armed. */
+   The box is parented to #app (where --accent/--bg are declared), but the
+   literal fallbacks stay: a custom property that fails to resolve makes the
+   whole declaration invalid at computed-value time, which would silently
+   give transparent grips rather than an obvious break. */
+.dv-wedit-handles { position: fixed; z-index: 40; pointer-events: none; outline: 1px solid var(--accent, #0891b2); outline-offset: 1px; }
+.dv-wedit-handles .dv-wh { position: absolute; width: 9px; height: 9px; background: var(--bg, #fffcf0); border: 1.5px solid var(--accent, #0891b2); border-radius: 2px; pointer-events: auto; }
+.dv-wh-nw { top: -5px; left: -5px; cursor: nwse-resize; }
+.dv-wh-n  { top: -5px; left: 50%; margin-left: -4.5px; cursor: ns-resize; }
+.dv-wh-ne { top: -5px; right: -5px; cursor: nesw-resize; }
+.dv-wh-w  { top: 50%; left: -5px; margin-top: -4.5px; cursor: ew-resize; }
+.dv-wh-e  { top: 50%; right: -5px; margin-top: -4.5px; cursor: ew-resize; }
+.dv-wh-sw { bottom: -5px; left: -5px; cursor: nesw-resize; }
+.dv-wh-s  { bottom: -5px; left: 50%; margin-left: -4.5px; cursor: ns-resize; }
+.dv-wh-se { bottom: -5px; right: -5px; cursor: nwse-resize; }
+/* Live intent readout: the commit is a MODE, not a measurement, so the drag
+   names the mode it will write instead of showing a pixel figure it has no
+   attribute to store. */
+.dv-wedit-handles.is-dragging::after { content: attr(data-intent); position: absolute; top: -1.35rem; left: 0; font-size: .65rem; padding: .05rem .35rem; border-radius: 4px; background: var(--accent, #0891b2); color: var(--on-accent, #fffcf0); }
+.dv-wedit-handles.is-dragging[data-intent=""]::after { content: none; }
+
+/* ---------- the screen card's reveal-drawer (Screen Reveal-Drawer plan) ----
+   D3 mechanic, verbatim: screen fixed at z2; drawer behind at z1; tucked =
+   translateX(0) (fully hidden behind the card), out = translateX(100% + gap);
+   transition on TRANSFORM ONLY; visibility flips at transition end (the 0s
+   visibility transition is delayed by the transform's duration on close and
+   not at all on open); prefers-reduced-motion collapses both to an instant
+   swap. No scrim, no screen movement or scaling — a too-narrow viewport pans
+   the canvas horizontally (.dv-zoom already scrolls), never covers the card. */
+.dv-reveal { position: relative; }
+/* Above the rows that follow while out, so the revealed panel is never read
+   through the next screen card it happens to overlap. */
+.dv-reveal.is-open { z-index: 3; }
+.dv-reveal .dv-tile { position: relative; z-index: 2; }
+.dv-drawer {
+  position: absolute; top: 0; left: 0; z-index: 1;
+  width: min(100%, 420px); height: 100%;
+  display: flex; flex-direction: column; gap: .5rem;
+  box-sizing: border-box; padding: .6rem .7rem;
+  border-radius: var(--radius-m, .6rem);
+  box-shadow: inset 0 0 0 1px var(--border);
+  background: var(--bg);
+  transform: translateX(0);
+  visibility: hidden;
+  transition: transform .28s ease, visibility 0s linear .28s;
+}
+.dv-reveal.is-open .dv-drawer {
+  transform: translateX(calc(100% + .75rem));
+  visibility: visible;
+  transition: transform .28s ease, visibility 0s linear 0s;
+}
+@media (prefers-reduced-motion: reduce) {
+  .dv-drawer, .dv-reveal.is-open .dv-drawer { transition: none; }
+}
+.dv-drawer-tabs { display: flex; gap: .25rem; flex: none; }
+.dv-drawer-body {
+  min-height: 0; flex: 1; overflow: auto;
+  display: flex; flex-direction: column; justify-content: flex-end;
+}
+.dv-drawer-stub { font-size: .72rem; color: var(--tx-3); margin: auto 0; text-align: center; }
+/* The mounted composer card is the tab's whole content; keep it from
+   inheriting the panel-composer's fixed-stage assumptions. */
+.dv-drawer-body .composer { width: 100%; box-sizing: border-box; }
+
+/* The Tools tab (Screen Reveal-Drawer plan, increment 3). The body's flex-end
+   serves the composer; margin-bottom:auto docks the tools pane to the TOP
+   without a second body variant. The wedit card reuses the shared
+   .dv-wedit-* styles wholesale — same pane as the old components column. */
+.dv-tools { margin-bottom: auto; width: 100%; min-width: 0; display: flex; flex-direction: column; gap: .55rem; }
+.dv-tools-strip { display: flex; flex-wrap: wrap; align-items: center; gap: .25rem; }
+.dv-tools-crumb { font-size: .68rem; color: var(--tx-2); margin-right: .25rem; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dv-tools-sib { font-size: .7rem; padding: .1rem .5rem; }
+.dv-tools-sib.on { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
+.dv-tools-h { margin: 0; font-size: .68rem; text-transform: uppercase; letter-spacing: .04em; color: var(--tx-2); }
+.dv-tools-ro-attrs, .dv-tools-copy { display: flex; flex-direction: column; gap: .3rem; }
+.dv-tools-ro-row { margin: 0; display: flex; gap: .5rem; font-size: .7rem; }
+.dv-tools-ro-row code { color: var(--tx-2); }
+.dv-tools-ro { margin: 0; font-size: .68rem; color: var(--tx-3); }
+.dv-tools-copy-form { display: flex; gap: .3rem; }
+.dv-tools-copy-input { flex: 1; min-width: 0; font-size: .72rem; padding: .25rem .4rem; border: 1px solid var(--border); border-radius: 6px; background: var(--bg); color: inherit; }
+.dv-tools-copy-text { margin: 0; font-size: .72rem; }
+.dv-tools-prov { margin: 0; font-size: .65rem; color: var(--tx-3); }
+.dv-tools-wedit .dv-wedit-card { margin-top: 0; }
+/* Logic tab (reveal-drawer increment 4): the deterministic wiring graph.
+   Each fact renders as a technical code line over a plain sentence; the
+   honest states (unwired / unknown) share the .is-honest muted treatment. */
+.dv-logic { margin-bottom: auto; width: 100%; min-width: 0; display: flex; flex-direction: column; gap: .55rem; }
+.dv-logic-screen, .dv-logic-widgets { display: flex; flex-direction: column; gap: .3rem; }
+.dv-logic-facts { margin: 0; display: flex; flex-direction: column; gap: .15rem; }
+.dv-logic-fact { display: flex; gap: .5rem; font-size: .7rem; }
+.dv-logic-fact dt { color: var(--tx-2); flex: none; }
+.dv-logic-fact dd { margin: 0; display: flex; gap: .3rem; flex-wrap: wrap; min-width: 0; }
+.dv-logic-none { color: var(--tx-3); }
+.dv-logic-plain { display: block; font-size: .7rem; }
+p.dv-logic-plain { margin: 0; }
+.dv-logic-tech { display: block; font-size: .65rem; color: var(--tx-2); overflow-wrap: anywhere; }
+.dv-logic-widget { border-top: 1px solid var(--border); padding-top: .35rem; display: flex; flex-direction: column; gap: .15rem; }
+.dv-logic-widget.on { box-shadow: inset 2px 0 0 var(--accent); padding-left: .4rem; }
+.dv-logic-widget-head { display: flex; gap: .4rem; align-items: baseline; font-size: .72rem; min-width: 0; }
+.dv-logic-widget-head code { overflow-wrap: anywhere; }
+.dv-logic-widget-head em { color: var(--tx-2); font-size: .68rem; font-style: normal; }
+.dv-logic-fn, .dv-logic-edge { margin: 0; }
+.dv-logic-fn .dv-logic-tech { display: inline; }
+.dv-logic-edge.is-honest .dv-logic-plain { color: var(--tx-3); }

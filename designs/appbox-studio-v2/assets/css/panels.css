@@ -1,0 +1,397 @@
+/* panels.css · THE PANEL CONTRACT.
+   Vocabulary is fixed in ui/common/_integration_panels.md — read it before
+   adding a name here. In one line: a shell is built from panels, a panel is
+   built from sections.
+
+   Five panels per shell, each named by ROLE, never by position, so a panel
+   that moves does not get renamed: header, composer, main, activity, footer.
+   Five sections per panel: top, side-start, body, side-end, bottom. Only body
+   is required.
+
+   Width is SERVER state, not a CSS drag: three steps (s = default min,
+   m ≈ 1.25×, l ≈ 1.5×) rendered as panel-size-* classes from the shell's
+   session — so the width persists across swaps, navigations and reloads. A
+   CSS resize handle can't persist without client JS, which the artifact
+   contract forbids. */
+
+/* ---------- the panel: a card, laid out as a 3×3 grid ----------
+   GRID, not nested flex. The sides have to be full height of the body while
+   the top and bottom span the whole panel — as flex that needs a wrapper row
+   around [side-start | body | side-end], i.e. a DOM level that exists purely
+   to hold a layout. As grid the sections place themselves by area and an
+   absent section leaves its track at zero width, so the markup is identical
+   whether or not a side is present. That is what makes "any section can be
+   turned off" true structurally rather than by a stack of :has() rules. */
+.panel {
+  /* The shared width ceiling for the two side panels, declared on .panel so it
+     resolves for every panel by contract (the header, footer and main slot
+     simply never reference it). ONE value because there was never a reason for
+     two: the composer used to cap at 576px purely because its width happened to
+     be multiplied by 1.6, and the activity panel at 600px because that constant
+     sat in drag.js. Neither number was chosen. This one is.
+     Killed below 840px, where a single panel is full-width — see the media
+     query further down. */
+  --panel-max-w: 500px;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  grid-template-areas:
+    "top        top    top"
+    "side-start body   side-end"
+    "bottom     bottom bottom";
+  min-width: 0; min-height: 0;
+  /* Indirected through a custom property so a panel can restate its fill
+     without fighting the cascade: panels.css loads after studio_dashboard_widgets.css, so a
+     plain `background` here would beat .panel-header's own rule at equal
+     specificity and silently flatten the header's translucent backdrop.
+     Setting a VARIABLE means the two files touch different properties and
+     neither can clobber the other, whatever the link order becomes. */
+  background: var(--panel-bg, var(--bg));
+  border: 1px solid var(--border); border-radius: var(--radius);
+  box-shadow: var(--shadow-2);
+  overflow: hidden;
+  position: relative; /* anchors .panel-resize to the panel's own edge */
+}
+
+.panel-top    { grid-area: top; }
+.panel-body   { grid-area: body; }
+.panel-bottom { grid-area: bottom; }
+.panel-side-start { grid-area: side-start; }
+.panel-side-end   { grid-area: side-end; }
+
+/* top / bottom: full width, natural height, a rule against the body */
+.panel-top {
+  display: flex; gap: .6rem; align-items: center;
+  padding: .7rem .9rem; border-bottom: 1px solid var(--border);
+}
+.panel-bottom { padding: .55rem .7rem; border-top: 1px solid var(--border); }
+
+/* body: the panel's content scrolls HERE, never the page */
+.panel-body {
+  min-width: 0; min-height: 0; overflow-y: auto;
+  display: flex; flex-direction: column;
+}
+
+/* sides: natural width, full height of the body row — they stop short of the
+   top and bottom bars by construction, which is the geometry the screens
+   filmstrip already had before it had a name. */
+.panel-side-start, .panel-side-end {
+  min-height: 0; overflow-y: auto; overflow-x: hidden;
+}
+
+/* Header and footer are full-bleed furnishings, not floating cards: they span the
+   viewport edge to edge, so a radius and a drop shadow would be drawing a
+   card that has nowhere to float. They keep the grid and the section names;
+   they drop the card. */
+.panel-header, .panel-footer {
+  border-radius: 0; box-shadow: none; border-width: 0;
+}
+.panel-header { border-bottom-width: 1px; }
+.panel-footer { border-top-width: 1px; }
+/* CLIPPING MUST BE OFF for these two. .panel sets overflow:hidden so a tall
+   panel's sections scroll inside the card instead of spilling past its
+   rounded corners — correct there, fatal here: the header is exactly
+   var(--nav-h) tall and hosts two <details> menus (the drawer and the
+   overflow), which open DOWNWARD out of that 3.4rem box. Inherit the clip and
+   both menus are invisible — and only at ≤839px, where they're the entire
+   navigation, so a desktop render looks perfectly fine while small screens
+   have no way to move between shells. */
+.panel-header, .panel-footer { overflow: visible; }
+/* Both are single-strip panels whose body runs horizontally; .panel-body's
+   column default is for the tall panels. Overflow visible for the same
+   reason as above — the menus are children of this box. */
+.panel-header > .panel-body, .panel-footer > .panel-body {
+  flex-direction: row; align-items: center; overflow: visible;
+}
+
+/* ---------- the three content panels (composer / main / activity) ----------
+   One full-bleed row per stage shell, left to right: composer, main, activity.
+   That order is DOM order in each shell's `.panels` block, not a CSS `order`
+   — visual order and focus order must not disagree. #panels is the htmx swap
+   unit for every stage interaction. The activity panel's width comes from
+   .panel-activity, the composer panel's from .panel-composer — the main panel
+   takes the rest. */
+.panels {
+  display: flex; gap: 1rem; padding: 1rem;
+  /* The row takes what the header and the footer leave, and NOT
+     `calc(100dvh - var(--nav-h) - var(--tl-h))`: that made this element's
+     height depend on two tokens describing siblings it does not own, and they
+     were already out by 1px — `--tl-h` measures .timeline, the strip, while
+     the footer PANEL wrapping it adds a border. The column summed to
+     100.97dvh and the app scrolled by a pixel. Flex asks the layout instead of
+     re-deriving it, so a furnishings change can never desync this again.
+     `min-height: 0` because a flex item defaults to min-height: auto and
+     would refuse to shrink below its content — the panels would grow the
+     column and push the footer off-screen instead of scrolling internally. */
+  flex: 1; min-height: 0;
+}
+/* `.panel-main` names TWO things, and they are both correct: the transparent
+   SLOT (main_panel.html) and the main ROLE MARKER the base puts on the card
+   that fills it (design_viewer.html's demoted viewer, phase 5). Fill, measure
+   and positioning are right for both, so they stay unscoped. The column flex
+   is NOT: the card is also a `.panel`, whose `display: grid` builds the 3×3
+   section skeleton, and this rule wins on source order at equal specificity —
+   unscoped it silently collapses every panel section into a flex column. */
+.panel-main {
+  flex: 1; min-width: 0; min-height: 0; position: relative;
+}
+.panel-main:not(.panel) { display: flex; flex-direction: column; }
+.panel-main .mp-content { flex: 1 1 auto; min-height: 0; }
+.mp-empty { align-items: center; justify-content: center; }
+
+/* ---------- the file viewer (render:* modes, server-picked) ---------- */
+.mp-file { gap: .9rem; }
+.mp-file-head {
+  display: flex; gap: .7rem; align-items: center; flex: none; flex-wrap: wrap;
+  padding-bottom: .7rem; border-bottom: 1px solid var(--border);
+}
+.mp-file-path { font-size: .8rem; overflow-wrap: anywhere; }
+.mp-file-back {
+  margin-left: auto; display: inline-flex; gap: .25rem; align-items: center;
+  color: var(--tx-2); text-decoration: none; font-size: .78rem;
+}
+.mp-file-back:hover { color: var(--accent); }
+.mp-code {
+  flex: 1; margin: 0; padding: 1rem; overflow: auto;
+  background: var(--bg-2); border-radius: var(--radius);
+  font-size: .78rem; line-height: 1.55;
+}
+.mp-doc { max-width: 42rem; margin: 0 auto; line-height: 1.65; }
+.mp-doc pre { padding: .8rem; overflow: auto; background: var(--bg-2); border-radius: var(--radius); }
+.mp-media { max-width: 100%; max-height: 100%; margin: auto; border-radius: var(--radius); }
+.mp-svg { background: var(--bg-2); }
+.mp-pdf { width: 100%; min-height: 32rem; border: 0; }
+video.mp-media { width: 100%; background: #000; }
+
+/* file rows in the activity panel */
+.rv-file, .file-link {
+  display: flex; gap: .55rem; align-items: center; justify-content: space-between;
+  color: var(--tx); text-decoration: none; border-radius: var(--radius);
+}
+.rv-file:hover, .file-link:hover { background: var(--bg-2); }
+.rv-file.is-active, .file-link.is-active { box-shadow: inset 0 0 0 1.5px var(--accent); }
+
+/* below expanded the panels come under panel-bar control: one content panel
+   at a time, picked by ?panel= (data-panel on the swap unit) */
+@media (max-width: 839px) {
+  /* THE VIEWPORT LOCK IS DESKTOP-ONLY. Down here the panels stack, only one
+     shows at a time, and .mp-content deliberately gives up its own scroll
+     (next line) — so the PAGE is the scroller and locking #app to 100dvh
+     would simply clip whatever did not fit. Both selectors are #app at
+     (1,0,0) and a media query adds no specificity, so this wins on load
+     order: base.html links app.css (34) before panels.css (39). */
+  #app { height: auto; min-height: 100dvh; overflow: visible; }
+  /* flex:none too — `flex: 1` above would grow the row straight back to the
+     height `height: auto` is releasing it from. */
+  .panels { flex: none; flex-direction: column; height: auto; }
+  .panel-main .mp-content { overflow: visible; }
+  /* Full-width down here: one panel at a time, stacked, so every fixed width
+     from the desktop layout has to be released.
+     SCOPED THROUGH .panels TO WIN ON SPECIFICITY (0,2,0), not on source order,
+     because at one class it lost BOTH ways round and this rule did nothing at
+     all: `.panel-activity` is declared further down THIS file, and
+     `.panel-composer` is declared in composer.css, which the document loads
+     after panels.css — so a later rule beat it inside the file and a later
+     FILE beat it outside. The symptom was silent and desktop-invisible: below
+     840px the composer sat at its 390px desktop width inside a 700px column.
+     Anything added to this block needs the same scope for the same reason. */
+  .panels .panel-activity, .panels .panel-composer { width: auto; min-width: 0; max-width: none; }
+  /* one panel at a time down here — there is no neighbour to resize against */
+  .panel-resize { display: none; }
+  .panels[data-panel="activity"] .panel-main, .panels[data-panel="activity"] .panel-composer { display: none; }
+  .panels[data-panel="main"] .panel-activity, .panels[data-panel="main"] .panel-composer { display: none; }
+  .panels[data-panel="composer"] .panel-activity, .panels[data-panel="composer"] .panel-main { display: none; }
+}
+
+/* ---------- the panel bar (compact/medium segmented switcher) ---------- */
+.panel-bar { display: none; }
+@media (max-width: 839px) {
+  .panel-bar {
+    display: flex; gap: .25rem; flex: none;
+    padding: .2rem; margin: 0 0 .25rem;
+    background: var(--bg-2); border-radius: 999px; /* w5:not-a-chip */
+  }
+  .panel-bar-item {
+    flex: 1; display: flex; gap: .35rem; align-items: center; justify-content: center;
+    padding: .42rem .6rem; border-radius: 999px; /* w5:not-a-chip */
+    color: var(--tx-2); text-decoration: none; font-size: .78rem; white-space: nowrap;
+  }
+  .panel-bar-item.is-active { background: var(--bg); color: var(--tx); box-shadow: var(--shadow-1); }
+}
+
+.panel-activity {
+  --panel-w: 340px;                       /* s: default = minimum width */
+  width: var(--panel-w);
+  min-width: var(--panel-w);
+  /* The drag ceiling, stated HERE because CSS owns a panel's width limits and
+     drag.js reads them off the computed style. It used to live as a constant
+     in the island instead, where it could not be reconciled with the floor
+     three lines up — and wasn't: the rail counted down to 200px against a
+     340px min-width. A limit the layout enforces belongs with the layout. */
+  max-width: var(--panel-max-w);
+  transition: width .18s ease;
+}
+.panel-size-m { --panel-w: 425px; }       /* ≈1.25× */
+/* The largest step IS the ceiling, and must never exceed it: --panel-w also
+   feeds min-width above, and a min-width beats a max-width in the cascade —
+   so a step wider than --panel-max-w would not be clamped, it would silently
+   win and the cap would be a lie at exactly one size. Was 510px, which is
+   why this is spelled out rather than left as a number to keep in step. */
+.panel-size-l { --panel-w: var(--panel-max-w); }
+
+/* The active view's label. Lives in the panel's top section; the resize
+   affordance is the panel's own edge, not something the top section hosts. */
+.panel-label { font-weight: 500; font-size: .92rem; min-width: 0; }
+.panel-top { justify-content: space-between; }
+
+/* the views carousel — one button per registered view, in the activity
+   panel's bottom section. Scrolls sideways when crowded; its own scrollbar
+   never shows. */
+.panel-views {
+  display: flex; gap: .35rem; align-items: center;
+  overflow-x: auto; scrollbar-width: none;
+}
+.panel-views::-webkit-scrollbar { display: none; }
+.panel-views-icon {
+  flex: none; width: 2rem; height: 2rem; border-radius: 50%;
+  display: inline-grid; place-items: center;
+  background: transparent; color: var(--tx-2);
+  box-shadow: inset 0 0 0 1px var(--border);
+  font-size: .85rem; line-height: 1; text-decoration: none;
+}
+.panel-views-icon:hover { color: var(--tx); box-shadow: inset 0 0 0 1px var(--tx-3); }
+.panel-views-icon.is-active {
+  color: var(--accent); background: var(--accent-soft);
+  box-shadow: inset 0 0 0 1.5px var(--accent);
+}
+
+/* below expanded the panel bar picks the single visible content panel (see
+   the .panels[data-panel=…] rules above) — the activity panel is reachable
+   on every rung */
+
+/* ---------- panel resize rail: the panel's own EDGE is the handle ----------
+   No icon. A full-height strip pinned to one edge of the panel: the cursor
+   turns col-resize on hover and the edge itself lights up in the accent, so
+   the affordance is the thing you actually grab.
+
+   Keyed on [data-edge], NOT on which panel hosts it. That is the whole point
+   of the attribute: the previous rules named `.panel-frame` and
+   `.panel-composer` explicitly, so swapping the two panels' columns silently
+   left both rails on the wrong edges and the drag sign inverted. An edge is a
+   property of the rail, so the rail is what carries it — a panel can move
+   columns now without a single CSS change.
+
+   `start`/`end` are the panel's own edges, resolved through logical
+   properties, so this survives an RTL locale for free. The host panel must be
+   position:relative; `.panel` sets that for every panel. */
+/* Panel-level furnishings that belongs to the panel but to none of its five
+   sections — today the viewer's fullscreen-exit button. Taken OUT OF FLOW on
+   purpose: a direct child of the panel with no grid area is a grid item, and
+   as a grid item it once claimed a row and took 33px off the viewer canvas
+   (recorded in probe-panel-contract's header). Absolute positioning gives it a
+   home without a share of the layout. Same anchor as .panel-resize: `.panel`
+   is position:relative for every panel. */
+.panel-overlay {
+  position: absolute; top: 0; inset-inline-end: 0; z-index: 7;
+}
+
+.panel-resize {
+  position: absolute; top: 0; bottom: 0; width: 7px; z-index: 6;
+  cursor: col-resize;
+  /* The lit edge is an inset shadow, not a background: it paints a crisp 2px
+     rule ON the panel border rather than a 7px band beside it. The strip
+     stays wide so the pointer target is comfortable. */
+  transition: box-shadow .12s ease;
+}
+.panel-resize[data-edge="start"] { inset-inline-start: 0; }
+.panel-resize[data-edge="end"]   { inset-inline-end: 0; }
+.panel-resize[data-edge="start"]:hover { box-shadow: inset 2px 0 0 var(--accent); }
+.panel-resize[data-edge="end"]:hover   { box-shadow: inset -2px 0 0 var(--accent); }
+
+/* live width readout while dragging (drag.js appends it) — floated off the
+   rail so a 7px strip doesn't have to contain it */
+.panel-resize-width {
+  position: absolute; top: 50%; translate: 0 -50%;
+  padding: .1rem .3rem; border-radius: var(--radius);
+  background: var(--accent); color: var(--on-accent, #FFFCF0);
+  font-size: .64rem; white-space: nowrap;
+}
+.panel-resize[data-edge="start"] .panel-resize-width { inset-inline-start: .6rem; }
+.panel-resize[data-edge="end"]   .panel-resize-width { inset-inline-end: .6rem; }
+
+/* ---- the scaffold contract (re-homed from the hub: panel-* consumers span
+   features — main_panel.tsx and the hub's panel frames) ---- */
+/* scaffold.css · THE SCAFFOLD SHELL'S LAYOUT CONTRACT.
+
+   The panel VOCABULARY is fixed in ui/common/_integration_panels.md and the
+   panel's own 3×3 section skeleton lives in panels.css — neither is restated
+   here. This file adds one thing: the scaffold shell's panel ROW is a named
+   grid rather than the flex row `.panels` gives every other stage shell.
+
+   Named areas, never positions, so a panel that moves does not get renamed:
+
+     "header  header  header"
+     "compose main    activity"
+     "footer  footer  footer"
+
+   Any panel may render nothing — an area nothing is placed into collapses to
+   zero (the header and footer rows are `auto`), which is why the areas are
+   declared even though main_shell_view.html mounts the header and the footer
+   panels OUTSIDE this row. `mini_panel` is a widget nested in a panel's
+   section, not a sixth area; it never appears here.
+
+   Scoped through `.panels-scaffold` so nothing in this file can reach the
+   intake / design / build shells, whose flex row stays exactly as it was. */
+
+.panels-scaffold {
+  display: grid;
+  /* The brief's literal areas string, all five names. The footer row is
+     declared even though the shell's own footer renders outside this
+     container: an `auto` row with no child collapses to zero, so naming it
+     costs nothing and keeps `grid-area: footer` from landing in an implicit
+     cell the day a surface mounts its own footer panel. */
+  grid-template-areas:
+    "header  header  header"
+    "compose main    activity"
+    "footer  footer  footer";
+  grid-template-columns: minmax(240px, 280px) 1fr minmax(280px, 340px);
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  /* gap and padding repeat `.panels` rather than inherit it: the flex
+     shorthand there is display-dependent and the grid must not read as a
+     different rhythm from the shells beside it. */
+  gap: 1rem; padding: 1rem;
+  min-height: 0;
+}
+
+/* The panel bar (main_panel.html) is the panel-width control strip, and it is
+   a direct child of the row. Placing it in the header area is deliberate:
+   without an explicit area it would land in an implicit cell and push the
+   three content panels out of their columns. */
+.panels-scaffold > .panel-bar { grid-area: header; }
+
+/* Role → area. The two side panels drop the width/max-width the flex row
+   gives them: in a grid the COLUMN owns the width, and leaving `--panel-max-w`
+   in play would cap a track that is already bounded by minmax(). */
+.panels-scaffold > .panel-composer {
+  grid-area: compose; width: auto; min-width: 0; max-width: none;
+}
+.panels-scaffold > .panel-main { grid-area: main; min-width: 0; min-height: 0; }
+.panels-scaffold > .panel-activity {
+  grid-area: activity; width: auto; min-width: 0; max-width: none;
+}
+/* Declared for the contract's sake: if a scaffold surface ever mounts its own
+   header or footer panel INSIDE the row (rather than inheriting the shell's),
+   it lands in the right area instead of an implicit cell. */
+.panels-scaffold > .panel-header { grid-area: header; }
+.panels-scaffold > .panel-footer { grid-area: footer; }
+
+/* Below the breakpoint panels.css already uses, a single panel is full width:
+   one column, source order, every area on its own row. */
+@media (max-width: 840px) {
+  .panels-scaffold {
+    grid-template-areas: "header" "compose" "main" "activity" "footer";
+    grid-template-columns: 1fr;
+    grid-template-rows: auto;
+  }
+}
+

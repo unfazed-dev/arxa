@@ -10,7 +10,7 @@
 export const surfaceId = 'studio_startup';
 export const viewId = 'studio_startup_view';
 
-import { chrome } from '../studio_startup_shell_viewmodel.js';
+import { shellProps } from '../studio_startup_shell_viewmodel.js';
 import { bootProgress } from '../../../../services/studio_startup_services/facades/studio_startup_facade_service.js';
 
 const VIEW = 'ui/views/studio_startup_shell/studio_startup/studio_startup_view.html';
@@ -31,7 +31,7 @@ const elapsedOf = (c) => {
 export const view = (c, h) => {
   const t = h.t(c);
   return h.render(c, VIEW, {
-    ...chrome(t),
+    ...shellProps(t),
     build: t('buildIdentity'),
     title: t('startupTitle'),
     subtitle: t('startupSubtitle'),
