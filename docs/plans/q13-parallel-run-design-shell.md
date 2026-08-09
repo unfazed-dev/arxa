@@ -349,5 +349,62 @@ Cutover units = the three design views, flipped independently:
 | freeze | `/design/freeze` | `freeze.page` | pending | pending |
 | prototype | `/design` | `prototype.page` | pending | pending |
 
-Flip = change `activeShell` value in that view's `page` handler. Flip back =
-toggle the same value, not a revert.
+Flip = swap the `VIEW` template path in that view's `page` handler (see
+finding 6 — **not** the `activeShell` value). Flip back = swap the path back:
+toggle, not revert.
+
+---
+
+## Finding 6 — `activeShell` is NOT a shell selector (retracts finding 5)
+
+Finding 5 claimed `activeShell` was the existing flag. **It is not.** Every one
+of its ~38 uses is navigation-chrome state:
+
+    // common/widgets/chrome.tsx
+    const activeLabel = dests.find((d) => d.id === activeShell)?.label ?? activeShell;
+    class={`shell-link${activeShell === d.id ? ' is-active' : ''}`}
+    aria-current={activeShell === d.id ? 'page' : undefined}
+
+It highlights which destination is current in the rail / tabbar / drawer. It
+selects nothing and dispatches to no component. Setting `activeShell: 'anatomy'`
+would render the *same* shell with *broken nav highlighting* — no destination
+id would match, so no link would be marked active and `activeLabel` would fall
+back to the raw string. A silent cosmetic regression, not a shell switch.
+
+**`activeShell` must therefore stay `'design'` in BOTH shells.** This is not
+optional: changing it alters chrome markup and would pollute the structural
+diff with nav deltas — the diff would report differences that have nothing to do
+with the shell rewrite.
+
+This also gives R3's "reject a `design2` value" a stronger reason than the one
+recorded: it is not merely that `design2` widens a closed vocabulary, it is that
+`activeShell` is the wrong *kind* of thing to encode a shell variant in. The
+vocabulary is closed because it enumerates **nav destinations**.
+
+### The actual seam
+
+`VIEW` is a module-level **template path string**:
+
+    const VIEW = 'ui/views/main_shell/design/chat/chat_view.html';
+    export const page = (c, h) => h.render(c, VIEW, { activeShell: 'design', ... });
+
+`h.render(c, VIEW, props)` resolves that path. Shell selection is therefore
+**which template path the handler passes** — already a variable, already
+per-view, already the exact granularity of the cutover unit. The flag becomes:
+
+    const VIEW         = 'ui/views/main_shell/design/chat/chat_view.html';
+    const VIEW_ANATOMY = 'ui/views/main_shell/design/anatomy/chat/chat_view.html';
+    export const page = (c, h) =>
+      h.render(c, abxResolveShellView(c, 'chat', VIEW, VIEW_ANATOMY),
+               { activeShell: 'design', ... });
+
+with `abxResolveShellView` in `design/anatomy_flag.ts` reading
+`c.req.query('abxShell')` then falling back to `abxAnatomyViews`.
+
+### Open item this raises
+
+`VIEW` points at `.html`, but authoring is `.tsx` — there is a compile step
+between them that I have not yet traced. The new shell's `.tsx` must be wired
+into whatever produces those `.html` templates, or `h.render` will 404 at
+probe time. **This is the next thing that would fail late** and must be resolved
+before emitting `_shared_anatomy.tsx`.
