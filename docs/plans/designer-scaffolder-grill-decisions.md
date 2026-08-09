@@ -228,3 +228,35 @@ binding"), designer SKILL.md (compose-time rule), scaffolder SKILL.md
   the app's `appbox_kit_assets.dart` (`abxImg*` consts).
 - No uploads → the appbox defaults ship as-is (appbox brand icon, Inter/
   JetBrains Mono via Google Fonts).
+
+
+## Studio v2 — hub + shell roster (Q-v2-1, user-confirmed)
+
+- **Prefix A: `studio_`** — one-word app prefix, same convention as
+  `showcase_`.
+- **Roster (derived from studio function, v1 views were candidates only):**
+  ```
+  lib/ui/views/
+    studio_application_hub/    hub — routes/nav host (showcase recipe)
+    studio_startup_shell/      ceremony: boot/loading
+    studio_unknown_shell/      ceremony: 404/unknown route
+    studio_auth_shell/         ceremony: sign-in
+    studio_intake_shell/       intake interview + uploads (brand assets, Q10 door)
+    studio_design_shell/       working surface: canvas + inspector + composer
+                               slider panel (portalo renders here)
+  ```
+- Splashscreen = surface, not a shell (standing ruling). Portalo is NOT a
+  shell — it is the simulated design rendered inside `studio_design_shell`,
+  assets under `assets/portalo/`.
+- **Pipeline ↔ shell coherence (user-ruled):** the appbox pipeline must
+  reflect each shell and its **declared input/output** — every stage a shell
+  fronts (intake → design → scaffold/eject) names the artifact it consumes
+  and the artifact it produces, so the shell roster and the pipeline stay one
+  vocabulary.
+- **Per-shell manual triggers (user-ruled):** appbox studio provides a manual
+  "proceed to next stage" trigger per shell in the studio design — stage
+  advancement is user-gated, never implicit, maintaining appbox coherence.
+
+## Q-v2-2 — shell↔pipeline mapping (DEFERRED)
+- User ruling 2026-08-09: defer. The studio is a UI to operate on the pipeline; the FSM (`appboxd/lib/pipeline_fsm.dart`, 7 phases, human gate on prototype) stays SSOT untouched.
+- Not decided: registry `pipeline` section, all-phase manual advance, which shell fronts machine phases. Reopen when studio v2 wires stage controls.
