@@ -126,8 +126,9 @@ render both shells, which is what the diff needs.
 
 1. Nothing in `primitives.tsx`. The widget-level `inspectAttrs` function is
    correct as-is; the triple is a surface-level const stamp (see finding 1).
-2. `design/anatomy_flag.ts` (default empty ⇒ no behaviour change) +
-   `?abxShell=` query-param selector in `routes.design.js`.
+2. **No new flag mechanism — `activeShell` already is one.** See finding 5.
+   Read `c.req.query('abxShell')` in each view's `page` handler, defaulting via
+   `abxAnatomyViews`, and pass `activeShell: 'design' | 'anatomy'`.
 3. New shell composition `design/anatomy/_shared_anatomy.tsx` mirroring
    `_shared.tsx` in the hub > shell > view > widgets vocabulary, emitting the
    triple on every surface, `shell.surface` spelling for shell-level surfaces.
@@ -137,6 +138,28 @@ render both shells, which is what the diff needs.
    the inspect attribute trees. Reuse existing `ProbeReport` / `ProbeTarget`;
    no new harness (Q11 rule).
 6. Flip views in `abxAnatomyViews` only as each probe goes green.
+
+## Finding 5 — the flag already exists; it is `activeShell`
+
+`routes.design.js` is a **static `[method, path, handler]` array**, not a request
+handler — it cannot read a query param. My earlier "selector in
+`routes.design.js`" placement was wrong.
+
+The real seam is one level down, and it is already built. Every view's page
+handler has the shape:
+
+    export const page = (c, h) =>
+      h.render(c, VIEW, { activeShell: 'design', ...facade.stageContext(...) });
+
+`activeShell` is an existing render prop threaded through the shell composition.
+Selecting a shell is therefore a **value change on a prop that already exists**,
+not a new mechanism — which is exactly the "find the existing flag; do not
+invent a framework" instruction. `c.req.query('...')` is likewise the
+established pattern (`prototype_viewmodel.js` uses it ~10×).
+
+Consequence: the cutover unit is the `page` handler of each view, which lines up
+with view-by-view cutover with no extra indirection. `abxAnatomyViews` supplies
+the default when `?abxShell=` is absent.
 
 ## Constraints carried into every step
 
