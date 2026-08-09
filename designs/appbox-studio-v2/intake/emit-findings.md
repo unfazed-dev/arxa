@@ -170,6 +170,36 @@ F0 clears.
   different layers (viewport ladder vs. Flutter factor suffixes); flagged so the
   emit does not silently conflate them.
 
+- **F6 — INCIDENT: commit `49249e9` over-captured another agent's in-flight
+  work. Needs operator cleanup.**
+  - Before committing I checked `git status --short designs/appbox-studio-v2/`,
+    which reported a single line — `?? designs/appbox-studio-v2/`. Git collapses
+    an untracked *directory* to one entry, so the check hid its contents, and a
+    `find -newermt '-3 minutes'` returned nothing because the files had been
+    written slightly earlier. Both checks passed while the directory was in fact
+    being written by a teammate.
+  - `git add designs/appbox-studio-v2/` therefore swept in 9 files I did not
+    author: `README.md`, `app.routes.js`, `assets/css/app.css`,
+    `assets/{portalo,studio}/.gitkeep`, `runtime/routes.js`,
+    `services/studio_common_services/repositories/fixture_reader.js`,
+    `ui/common/base.tsx`, `ui/common/prefs_viewmodel.js`.
+  - Caught by the post-commit content verification (HEAD contents vs. the commit
+    message's claim), which is the only reason this is visible.
+  - **Not self-corrected:** `git reset` was denied by the sandbox classifier and
+    I did not work around it. No content was lost or altered — the files are
+    committed exactly as their author wrote them; the defects are a commit
+    message that describes only the blockers, and a teammate's work committed
+    before they chose to commit it.
+  - **Operator/teammate action:** if the emitting agent wants those files back
+    as untracked work-in-progress, `git reset --mixed 49249e9~1` and re-commit
+    `intake/design-brief.md` + `intake/emit-findings.md` alone.
+  - **Second-order finding (more important than the incident):** those files are
+    a *partial studio-v2 emit already in progress* by another agent. Combined
+    with the untracked `docs/plans/studio-v2-emit-blockers.md`, this suggests
+    duplicate work against the same artifact path. Their `app.routes.js` +
+    `ui/common/` layout should be reconciled against the roster above, and
+    against F0 — whoever wrote them faced the same missing registry.
+
 ## Recommended next action (operator)
 
 1. Have a **composer** author + pin `intake/registry.json` (+ `flows.json`) for
