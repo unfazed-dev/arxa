@@ -11,7 +11,7 @@
 /// History: git log --follow -- kit/showcase_app/lib/ui/widgets/showcase_unknown_widgets/showcase_unknown_body_widget.dart
 library;
 
-import 'package:appbox_kit_core/common/appbox_kit_ui_helpers.dart';
+import 'package:appbox_kit_showcase_app/ui/common/appbox_kit_ui_helpers.dart';
 import 'package:flutter/material.dart';
 
 class ShowcaseUnknownBodyWidget extends StatelessWidget {

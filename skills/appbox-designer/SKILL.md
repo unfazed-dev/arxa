@@ -165,10 +165,12 @@ a gate failure on both sides, **never improvise a mapping**. Start from
 and the drop-in widgets in `starter-partials/widgets/` — surfaces compose
 only from that library.
 
-Design **against the kit as always-available**: colors, spacing, glyphs, fonts
-and constants come from the generated kit mirror, never from a local duplicate
-(`lib/ui/common` was deleted from showcase for exactly that drift). If the
-mirror lacks a symbol, extend the generator — do not define the value locally.
+Design **against the kit as always-available**: colors, spacing, glyphs, fonts,
+constants and strings come from the generated kit mirror, never from a local
+duplicate. (In the Flutter tree, each app's `lib/ui/common/` is a verbatim
+scaffold-time copy of kit common plus the app's `appbox_kit_app_strings.dart` —
+refreshed from kit, never hand-edited.) If the mirror lacks a symbol, extend
+the generator — do not define the value locally.
 `AppBoxKitNative*` and `appbox_kit_ui_library` are **not** mirrored: you design
 web, and which native a `kind` resolves to is the scaffolder's call, not yours
 to pre-empt. See `references/showcase-anatomy.md` §4.

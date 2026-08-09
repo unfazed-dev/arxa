@@ -213,16 +213,27 @@ theoretical: two entries were authored twice, and because `json.load()` silently
 the last duplicate, the careful entry vanished with no error and no merge conflict.
 Prose review missed it both times.
 
-## Design vocabulary: import, don't generate (Q6)
+## Design vocabulary: copy from kit, never author (Q6, revised)
 
-Tier 1 — colors, spacing, glyphs, fonts, app constants — **imports** from
-`kit/core/lib/common/`. Scaffolded output never generates local duplicates.
-Showcase's `lib/ui/common` was deleted for exactly this reason, and
-`kit/core/lib/utils/formatters/` is kit-owned for the same one.
+Tier 1 — colors, spacing, glyphs, fonts, app constants, strings — is
+**kit-owned**: `kit/core/lib/common/` is the single SSOT. The stacked CLI
+generates `lib/ui/common/` (including its own `app_strings.dart`) in every new
+app; the scaffolder **deletes every stacked-generated file in that folder and
+replaces them with a verbatim copy of the kit common set**, plus one app-specific
+`appbox_kit_app_strings.dart` (`abxStr`-prefixed `const String` named copy,
+e.g. `abxStrNotesEmptyTitle` — the kit carries a generic template of the same
+file). App code imports its **own
+copy**: `package:<app_package>/ui/common/…` — never
+`package:appbox_kit_core/common/…`. The registry keeps kit-canonical paths;
+rewrite the package prefix to the app's copy at emit time (one rule, no per-app
+registry churn). Showcase demonstrates this end-to-end.
 
-Emitting `lib/ui/common/**`, `*_colors.dart`, `*_spacing.dart` or `*_ui_helpers.dart`
-is a **FAIL**, not a style preference — duplicated vocabulary is how a design system
-silently forks.
+**Hand-authoring or hand-editing any copied vocabulary file is a FAIL** — the
+only file with app-authored content is `appbox_kit_app_strings.dart`. Emitting
+new `*_colors.dart`, `*_spacing.dart` or `*_ui_helpers.dart` variants is a
+**FAIL**, not a style preference — duplicated vocabulary is how a design system
+silently forks. The copy is refreshed from kit, never edited in place.
+`kit/core/lib/utils/formatters/` remains kit-owned with no per-app copy.
 
 ## Frontmatter is normative (Q5)
 

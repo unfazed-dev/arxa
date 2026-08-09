@@ -13,9 +13,11 @@ local duplicate of what the kit provides.
 `kit/core/lib/common/`: colors (`appbox_kit_colors.dart`), spacing/ui helpers
 (`appbox_kit_ui_helpers.dart`), app constants, glyphs (incl. lucide) and fonts —
 same symbol names on both sides. **Never hand-author these.** They are generated
-from the Dart and gated by `kitCatalogMirrorCheck`; a hand-written copy is the
-exact drift that got `lib/ui/common` deleted from showcase. Missing symbol ⇒
-extend the generator, never define the value locally.
+from the Dart and gated by `kitCatalogMirrorCheck`; a hand-written copy is
+exactly the drift the copy-from-kit rule forbids — `lib/ui/common` in every
+app is a verbatim kit copy (plus the app's `appbox_kit_app_strings.dart`),
+never hand-maintained. Missing symbol ⇒ extend the generator, never define the
+value locally.
 
 **Tier 2 — service kits.** Everything catalogued below (auth, payments, maps,
 deploy, i18n, …), reaching the design medium through this catalog plus

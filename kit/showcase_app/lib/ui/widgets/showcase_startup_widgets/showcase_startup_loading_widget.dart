@@ -11,7 +11,7 @@
 /// History: git log --follow -- kit/showcase_app/lib/ui/widgets/showcase_startup_widgets/showcase_startup_loading_widget.dart
 library;
 
-import 'package:appbox_kit_core/common/appbox_kit_ui_helpers.dart'
+import 'package:appbox_kit_showcase_app/ui/common/appbox_kit_ui_helpers.dart'
     show appBoxKitHorizontalSpaceSmall;
 import 'package:flutter/material.dart';
 

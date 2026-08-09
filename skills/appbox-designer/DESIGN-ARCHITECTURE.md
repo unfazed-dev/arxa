@@ -165,9 +165,11 @@ Widgets come first. Before any surface is composed, the design's repeated patter
   > **Name collision — read once, then never confuse them.** This `ui/common/`
   > is the **design artifact's** tree (`.tsx`, htmx, served by the studio) and
   > it is correct here. The **Flutter app** tree in
-  > `references/showcase-anatomy.md` has no `lib/ui/common/` — that folder was
-  > deleted from showcase so colors and helpers resolve to kit-common instead
-  > of a local duplicate. Flutter's only `common` is
+  > `references/showcase-anatomy.md` carries `lib/ui/common/` as a verbatim
+  > scaffold-time copy of `kit/core/lib/common/` (plus the app's
+  > `appbox_kit_app_strings.dart`) — replaced from kit, never hand-edited, so
+  > colors and helpers never fork into a local duplicate. Flutter's other
+  > `common` is
   > `lib/ui/widgets/common/<group>/`, the promoted-widget tier. When a rule
   > mentions `ui/common/`, check which tree it is talking about: `.tsx` ⇒
   > design artifact, `.dart` ⇒ Flutter, and in Flutter it is always

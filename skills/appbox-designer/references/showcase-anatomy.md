@@ -305,8 +305,12 @@ Rules, mirror-exact with showcase:
 ## 4. Kit awareness (Q6 — two tiers, natives excluded)
 
 The designer designs **against the kit as always-available** and never invents
-a local duplicate of anything the kit provides. `lib/ui/common` was deleted
-from showcase precisely because it duplicated kit colors and helpers.
+a local duplicate of anything the kit provides. Every scaffolded app carries
+`lib/ui/common/` as a **verbatim copy of `kit/core/lib/common/`** (the stacked
+CLI generates that folder; the scaffolder wipes its generated files and refills
+it from kit, adding one app-authored `appbox_kit_app_strings.dart`). The copy
+is refreshed from kit, never hand-edited — a hand-maintained divergent copy is
+the drift this rule exists to prevent.
 
 **Tier 1 — design vocabulary mirror.** A **generated**, parity-gated JS mirror
 of `kit/core/lib/common/`, same symbol names, generated from the Dart:
@@ -320,9 +324,10 @@ of `kit/core/lib/common/`, same symbol names, generated from the Dart:
 | `appbox_kit_fonts.dart` | fonts |
 
 **Never hand-author these files.** They are generated from Dart and gated by
-`kitCatalogMirrorCheck`; a hand-written copy is the exact drift that deleted
-`lib/ui/common`. If the mirror is missing a symbol you need, the fix is to
-extend the generator, not to define the value locally.
+`kitCatalogMirrorCheck`; a hand-written copy is exactly the drift the
+copy-from-kit rule forbids in `lib/ui/common`. If the mirror is missing a
+symbol you need, the fix is to extend the generator, not to define the value
+locally.
 
 **Tier 2 — service kits** (auth, payments, maps, …) reach the design medium
 through `references/kit-catalog.md` plus `runtime/kit-facades/*.js`. Declare

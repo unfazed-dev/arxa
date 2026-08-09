@@ -19,9 +19,9 @@
 library;
 
 import 'package:flutter/material.dart';
-import 'package:appbox_kit_core/common/appbox_kit_app_constants.dart';
-import 'package:appbox_kit_core/common/appbox_kit_glyphs.dart';
-import 'package:appbox_kit_core/common/appbox_kit_ui_helpers.dart';
+import 'package:appbox_kit_showcase_app/ui/common/appbox_kit_app_constants.dart';
+import 'package:appbox_kit_showcase_app/ui/common/appbox_kit_glyphs.dart';
+import 'package:appbox_kit_showcase_app/ui/common/appbox_kit_ui_helpers.dart';
 
 class ShowcaseNotesFormErrorRowWidget extends StatelessWidget {
   const ShowcaseNotesFormErrorRowWidget({super.key, required this.message});
