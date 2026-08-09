@@ -188,7 +188,8 @@ probe refuses a non-disposable project; it mutates whatever it is pointed at).
 | `design lint` (no-ad-hoc-JS + W1–W7) | clean; W3/W4 skip — no `_panel.tsx` yet |
 | `lens shoot /` and `/startup` | 3 rungs, 0 problems each |
 | `lens net /` and `/startup` | PASS both (6 requests; only `/favicon.ico` 404) |
-| `design probe contract` | **2/3 suites** — `contract-panels` and `contract-chips` ALL PASSED (vacuous: 0 panels, 0 chips); `q11-shells` 1 FAILED |
+| `design probe contract` | **2 of the 3 probes in the single `contract` suite** — `contract-panels` and `contract-chips` ALL PASSED (vacuously: 0 panels, 0 chips exist yet); `q11-shells` 1 FAILED |
+| `design probe inspect` | not applicable to v2; **ALL PASSED against v1** — see below |
 
 ### The one probe failure is not v2's, and it indicts the naming law
 
@@ -227,3 +228,58 @@ factors, CSS-gated to one visible. That is the locked shell→view composition
 contract (Q-v2-3, preview containment ladder), so restructuring it here would
 pre-empt the user-validated cutover. Removing the id made it a bloat cost
 rather than a validity defect. Flagged for the cutover decision.
+
+### Route coverage is complete, not partial
+
+The probe asserted 2 document surfaces and that is the whole table.
+`app.routes.js` declares exactly two GET document routes:
+
+```
+['GET', '/',                 hub.view]        studio_application_hub
+['GET', '/startup',          startup.view]    studio_startup_shell
+['GET', '/startup/progress', startup.progress]   fragment
+['POST','/startup/proceed'], ['POST','/prefs/accent']
+```
+
+**The stage board is not a missing route** — it is the hub's landing view
+(`studio_application_hub/studio_stage_board`), served at `/`. So shoot+net on
+`/` and `/startup` covers every document surface v2 serves.
+
+**Loose end:** `/startup/progress` is now referenced by nothing but a comment
+and the route table — removing the self-poll orphaned it. Left in place rather
+than deleted: whether the startup ceremony keeps a fragment endpoint for real
+step advancement is a Q-v2 shell-shape decision, not a cleanup.
+
+### The `inspect` probe — where it ran and what it did not prove
+
+It is the **studio** suite's smoke test through its reference design, not part
+of `contract`. Against v2 it fails at step 1 and errors at step 2 (`no iframe
+in the portalo.home tile`) — v2 has no inspector pane, no canvas tiles, because
+the intake and design shells are deliberately absent under Q-v2-5. Not a v2
+defect; the probe has no subject there.
+
+Run against **v1** (`designs/appbox-studio`, disposable project
+`portalo-inspect-probe`, port 4331) it is **EXIT 0, ALL PASSED** — 40+ checks
+including arm/hover/lock/morph/pin/unlock and the 204 guard. Task #19's
+`probe_inspect.dart` changes therefore execute green.
+
+**But two of its checks passed over an empty set:**
+
+```
+[PASS] every stamped node id is in the closed registry vocabulary — stamped: 0 (legacy shell — N/A-unstamped)
+[PASS] every stamped element carries the full triple (screen+surface+node) — stamped: 0, incomplete: 0
+```
+
+v1's legacy shell stamps nothing, so on v1 those assertions are vacuous. The
+non-vacuous coverage of the identity triple lives in `q11-shells` 4/4b (20
+showcase + 13 spike views, all stamped).
+
+The **renamed** annotation attrs are live on v2 and nowhere else — `/` carries
+`data-inspect-view`×3, `data-inspect-surface`×9, `data-inspect-widget`×45
+(`/startup`: 3 / 9 / 18); v1 carries none. They are stamped **one tier each**
+(view root, shell surface, widget), so no single element carries all three —
+that is the nesting design, not an omission. Net: the rename has static
+coverage but **no runtime probe has yet asserted it against a live surface**,
+because the only design that carries it is the one the inspect probe cannot
+drive. Closing that needs either an inspector on v2 or a contract-suite check
+that walks the renamed attrs. Recorded, not silently accepted.
