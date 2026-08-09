@@ -426,9 +426,51 @@ registry. Directionally my guess was right; the part that matters — whether a
 brand-new `design/anatomy/chat/` path is picked up automatically or must be
 registered — is **still untraced**.
 
-**OPEN / BLOCKING.** Before emitting `_shared_anatomy.tsx`, trace what
-`surfaceFiles()` enumerates and how `globalThis.__templates` is populated. If
-either is driven by `structure.json` / `_d_meta.json` (both are read by
-`scaffold_repository.js`, `files_repository.js`, `scaffold_facade.js`), then the
-new shell needs a registry entry and "no build wiring" is false. `h.render` would
-otherwise 404 at probe time — the late failure this note exists to prevent.
+### RESOLVED — no registry entry needed, and now verified rather than inferred
+
+Traced. Two of the three candidates were red herrings:
+
+- **`surfaceFiles()` / `screenFile()` is not this subsystem.** It reads
+  `project-src/index.json` and resolves `design/surfaces/<name>.tsx` — the
+  *user's project* surfaces, not the studio's own `ui/views/**`.
+- **`globalThis.__templates` renders nothing.** `worker.dart:134` calls it a
+  "project-surface presence map", and line 218 states outright: *"templates map
+  is presence-only now (nothing renders from it)"*.
+
+The real path is a **generated render bundle** (`design_tools.dart`,
+`generateRenderTsx`). It walks the artifact tree —
+
+    // design_tools.dart:1439 (and :546)
+    if (!f.path.endsWith('.html') && !f.path.endsWith('.tsx')) continue;
+
+— and emits a static import plus a registry entry per view:
+
+    const registry: Record<string, ComponentMap> = {
+      'ui/views/main_shell/design/chat/chat_view.html': { default: ChatView, ... },
+    };
+    export function render(viewRef, ctx) {
+      const hash = viewRef.indexOf('#');
+      const file = hash === -1 ? viewRef : viewRef.slice(0, hash);
+      ...
+
+**This is a directory scan, not a manifest.** A new `.tsx` under the scanned
+tree is picked up automatically. `htmlKey` is the `.html`-normalized registry
+key regardless of whether the source is `.tsx` — which is precisely why
+`VIEW = '.../chat_view.html'` resolves a `chat_view.tsx` file
+(`design_tools.dart:587` — *"Try the literal path first, then .tsx"*).
+
+So: **no build wiring, no registry entry.** Emitting
+`design/anatomy/chat/chat_view.tsx` and pointing `VIEW_ANATOMY` at
+`design/anatomy/chat/chat_view.html` is sufficient. The conclusion matches my
+first guess; the difference is that it now rests on the generator source rather
+than on absence-of-grep-output. Recording both the guess and the verification
+because the guess was not yet knowledge when I made it.
+
+### Incidental find — viewRef supports `#fragment`
+
+`render()` splits `viewRef` on `#` and selects a named export. So
+`'chat_view.html#anatomy'` is a *second* viable seam: both shells in one file,
+selected by fragment. **Not chosen** — separate files keep the two trees
+independently diffable, which is the whole point of the parallel run (and is
+what R2's "old-shell markup must stay byte-stable" requires). Recorded so the
+next reader doesn't rediscover it and assume it was overlooked.
