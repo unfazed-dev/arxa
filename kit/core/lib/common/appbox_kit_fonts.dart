@@ -4,24 +4,24 @@ import 'package:flutter/services.dart' show rootBundle;
 
 /// The kit's selectable text faces.
 ///
-/// MIRRORS `designs/appbox-studio/models/fonts.json` — the designer-side
-/// catalogue. That file is NOT in the repo yet: authoring it (and vendoring the
-/// woff2) is Increment 4's deliverable. This list is the approved decision —
-/// Lexend default plus Space Grotesk, Lora and JetBrains Mono, all OFL — written
-/// down so the pipeline and the kit name the same faces by the same ids. When
-/// fonts.json lands, `emit_structure` lifts it into structure@2 as a `fonts`
-/// block and this list must be reconciled against it.
+/// Font law v2 (ratified): type families are **Google Fonts by name** on both
+/// sides of the pipeline. The designer emits a css2 stylesheet link from the
+/// Google Fonts CDN (no vendored `.woff2`); a scaffolded Flutter app resolves
+/// families through the `google_fonts` package, driven by
+/// `assets.manifest.json` font roles. Nobody vendors binaries — the sole
+/// exception is a custom brand font uploaded at intake (manifest
+/// `"source": "file"`), which ships in the app's `assets/fonts/` with a real
+/// pubspec `fonts:` block.
 ///
 /// -- What this file does and does not give you ----------------------------
 /// It gives you the CATALOGUE: ids, labels, the family name a renderer
-/// resolves, role slots and licences. It does NOT bundle font binaries.
-/// The designer side vendors `.woff2` (web); Flutter needs `.ttf`/`.otf`
-/// declared under `flutter: fonts:` in a pubspec. No host bundles them yet, so
-/// [appBoxKitFontIsBundled] is false for every face today and [AppBoxKitFontFamily.cssName]
-/// passed to Flutter's `fontFamily:` resolves to nothing — Flutter SILENTLY
-/// falls back to the platform default: no error, just the wrong face.
-/// [appBoxKitFontIsBundled] is the honest test, and [registerAppBoxKitFontLicenses] is what
-/// a host calls once it has bundled them.
+/// resolves (`cssName` — also the name handed to `google_fonts`), role slots
+/// and licences. It does NOT bundle font binaries. [appBoxKitFontIsBundled]
+/// probes the kit-bundled `.ttf` path and is therefore false for every face
+/// under the law's default path (google_fonts resolves at runtime instead);
+/// it only turns true for the "source": "file" exception, and
+/// [registerAppBoxKitFontLicenses] is what a host calls in that case — OFL
+/// requires the licence travel with a bundled binary.
 
 /// The role slots declared by fonts.json `roles`.
 enum AppBoxKitFontRole {

@@ -241,6 +241,19 @@ which are the design's family SSOT — the css2 link and that menu must stay
 scaffolder's `google_fonts` emission (its skill already mandates it) requests
 exactly the families the design showed.
 
+## Brand assets (kit defaults)
+
+Designer-side half of the assets law (ratified v2): intake uploads merge over
+the passive SSOT `kit/assets_default/` — uploads REPLACE defaults — and every
+emitted design carries the merged `assets/` folder + `assets.manifest.json`
+even when no uploads arrived, so the appbox brand icon
+(`brand-icons/appbox-icon.{png,svg}`) guarantees there is always a brand to
+work with. The brand icon is dual-role: the launcher-icon master (the
+scaffolder wires `flutter_launcher_icons` from the manifest's `brandIcon`)
+AND a runtime asset — designs may show it in-app (splash, startup brand
+logo), which is why the scaffolder registers `assets/brand-icons/` under
+`flutter: assets:` and names it `abxImgBrandIcon`.
+
 ## One application hub
 
 Every designed app has two-plus shells and **exactly one** application hub —

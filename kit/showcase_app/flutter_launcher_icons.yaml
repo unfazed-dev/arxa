@@ -1,0 +1,17 @@
+# Launcher-icon config (scaffolder law: MANDATORY per-app config pointing at
+# the app's own assets/brand-icons/ master; values mirror
+# assets.manifest.json brandIcon. Derived platform icons are committed —
+# regenerate with: dart run flutter_launcher_icons).
+flutter_launcher_icons:
+  image_path: "assets/brand-icons/appbox-icon.png"
+  android: true
+  ios: true
+  remove_alpha_ios: true
+  background_color_ios: "#0B0B0F"
+  adaptive_icon_background: "#0B0B0F"
+  adaptive_icon_foreground: "assets/brand-icons/appbox-icon.png"
+  web:
+    generate: true
+    image_path: "assets/brand-icons/appbox-icon.png"
+    background_color: "#0B0B0F"
+    theme_color: "#0B0B0F"

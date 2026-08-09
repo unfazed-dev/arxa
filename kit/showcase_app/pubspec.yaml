@@ -117,6 +117,9 @@ dev_dependencies:
   # Matches kit/auth (repo mocking convention).
   mocktail: ^1.0.4
   stacked_generator: ^2.0.4
+  # Launcher-icon chain demo (scaffolder law): derives ALL platform icons
+  # from the assets/brand-icons/ master; config in flutter_launcher_icons.yaml.
+  flutter_launcher_icons: ^0.14.3
 flutter:
   # Standalone app: bundles the MaterialIcons font (appbox_kit + the M3E
   # packages require it, else Material icons render as tofu).
@@ -124,8 +127,12 @@ flutter:
   assets:
     - data/seed/
     # Type-first asset layout (grill ruling: apps use Flutter-standard layout).
-    # App-owned assets are images/media ONLY — fonts ship inside the kit
-    # package (appbox_kit_fonts.dart), icons are kit glyphs
+    # App-owned assets: images/media + the brand icon. Fonts are Google Fonts
+    # by name (google_fonts, families from assets.manifest.json roles — no
+    # binaries unless "source": "file"); UI icons are kit glyphs
     # (appbox_kit_glyphs.dart). Referenced in code only via abxImg* constants
     # in appbox_kit_assets.dart.
     - assets/images/
+    # Brand icon: flutter_launcher_icons master AND runtime asset
+    # (splash / startup brand logo) — abxImgBrandIcon.
+    - assets/brand-icons/
