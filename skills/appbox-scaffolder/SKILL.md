@@ -248,9 +248,14 @@ by `assets.manifest.json`:
   case emit a real `fonts:` block for `assets/fonts/` instead.
 - **Brand icons:** wire `flutter_launcher_icons` (dev-dependency + per-app
   config yaml redirected to `assets/brand-icons/`, master from the manifest's
-  `brandIcon`) to derive ALL iOS/Android/web launcher icons. Brand only —
-  UI icons still resolve to kit code glyphs (`appbox_kit_glyphs.dart`); a
-  hand-authored per-platform icon set is a FAIL.
+  `brandIcon`) to derive ALL iOS/Android/web launcher icons. **The config
+  yaml update is a MANDATORY step of EVERY scaffold — never skipped, never
+  left at a template/default path**: on every scaffold (and every re-scaffold
+  after a brand-icon change) the scaffolder rewrites the config to point at
+  the app's `assets/brand-icons/` master and re-runs icon generation. A
+  scaffolded app whose launcher-icons config still points anywhere else is a
+  FAIL. Brand only — UI icons still resolve to kit code glyphs
+  (`appbox_kit_glyphs.dart`); a hand-authored per-platform icon set is a FAIL.
 - **Images:** register `assets/images/` (and any sibling type dirs present in
   the copied folder) in `pubspec.yaml`; emit `appbox_kit_assets.dart` into
   `lib/ui/common/` (app-authored copy of the kit generic template, the

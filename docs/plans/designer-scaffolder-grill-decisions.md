@@ -214,7 +214,11 @@ binding"), designer SKILL.md (compose-time rule), scaffolder SKILL.md
 - **Brand icons = brand identity ONLY** (launcher/app icons), distinct from UI
   glyph management. Scaffolder wires `flutter_launcher_icons` (dev-dep +
   per-app config yaml redirecting to `assets/brand-icons/`) covering
-  iOS/Android/web. One master image; platform variants always derived, never
+  iOS/Android/web. **Standing rule: updating that config yaml is a mandatory
+  step of every scaffold and every re-scaffold after a brand-icon change —
+  the scaffolder always rewrites it to the app's `assets/brand-icons/` master
+  and re-runs generation; a config left at a default/template path is a
+  FAIL.** One master image; platform variants always derived, never
   hand-authored. Intake ALWAYS asks for brand png + svg (svg optional).
 - **Flow:** intake uploads (organized per taxonomy) → designer merges uploads
   over `kit/assets_default/` (user-provided entries REPLACE defaults in the
