@@ -260,3 +260,26 @@ binding"), designer SKILL.md (compose-time rule), scaffolder SKILL.md
 ## Q-v2-2 — shell↔pipeline mapping (DEFERRED)
 - User ruling 2026-08-09: defer. The studio is a UI to operate on the pipeline; the FSM (`appboxd/lib/pipeline_fsm.dart`, 7 phases, human gate on prototype) stays SSOT untouched.
 - Not decided: registry `pipeline` section, all-phase manual advance, which shell fronts machine phases. Reopen when studio v2 wires stage controls.
+
+## Q-v2-3 — views/widgets per shell + surface capability ladder (user-confirmed)
+
+- Shell → views → widgets per showcase recipe. Inspector and composer are **widgets/panels,
+  never views** (only routable things are views).
+  - `studio_application_hub/` — hub view only (routes/nav host)
+  - `studio_startup_shell/` → `studio_startup_view`
+  - `studio_unknown_shell/` → `studio_unknown_view`
+  - `studio_auth_shell/` → `studio_auth_view`
+  - `studio_intake_shell/` → `studio_intake_view` (widgets: interview_thread, asset_upload_dropzone)
+  - `studio_design_shell/` → `studio_design_view` (widgets: design_canvas [portalo renders here],
+    inspector_panel, composer_slider_panel, needs_you_strip, activity)
+- **Studio is recipe-conforming — NO desktop-only exception.** Every studio view emits
+  desktop/mobile/tablet variants like any showcase app (appbox functions remotely).
+- **Preview containment rule:** a studio surface previews only designs of its own device class
+  or smaller — desktop ⊇ tablet ⊇ mobile.
+  - desktop (default): canvas previews portalo desktop/tablet/mobile; inspector panel,
+    composer slider panel, needs-you strip, activity — everything.
+  - tablet: canvas previews tablet + mobile designs only; composer + activity as drawers.
+  - mobile: portalo's mobile design full-screen as canvas/viewer; composer + activity as drawers.
+- **Inspect works on ALL surfaces including mobile** (user-ruled): interaction is hover on
+  desktop, tap on touch; the Q12 emit-time triple is pointer-agnostic. On tablet/mobile the
+  inspector presents as a drawer like composer/activity.
