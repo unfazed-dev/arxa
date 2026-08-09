@@ -1,0 +1,8 @@
+/* styles.css — barrel for studio_dashboard_shell; parts load in original cascade order */
+@import url('/ui/styles/studio_dashboard_shell/app.css');
+@import url('/ui/styles/studio_dashboard_shell/design.css');
+@import url('/ui/styles/studio_dashboard_shell/studio_dashboard_widgets.css');
+@import url('/ui/styles/studio_dashboard_shell/panels.css');
+@import url('/ui/styles/studio_dashboard_shell/widgets.css');
+@import url('/ui/styles/studio_dashboard_shell/appshell.css');
+@import url('/ui/styles/studio_dashboard_shell/studio_dashboard_shell.css');

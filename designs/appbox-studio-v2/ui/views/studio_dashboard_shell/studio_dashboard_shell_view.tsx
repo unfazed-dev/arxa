@@ -39,7 +39,6 @@ interface StudioDashboardShellViewProps {
 const StudioDashboardShellView: FC<StudioDashboardShellViewProps> = (props) => (
   <Hub
     {...props}
-    headExtra={<link rel="stylesheet" href="/ui/views/studio_dashboard_shell/studio_dashboard_shell.css" />}
     footerSpec={{ bodyTag: 'ol', bodyClass: 'timeline', bodyId: 'timeline' }}
   />
 );

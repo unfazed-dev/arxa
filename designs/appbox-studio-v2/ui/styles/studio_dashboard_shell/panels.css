@@ -1,0 +1,40 @@
+/* panels.css — rules owned by studio_dashboard_shell, split from assets/css/panels.css by the ui/styles law */
+.panel-main {
+  flex: 1; min-width: 0; min-height: 0; position: relative;
+}
+.panel-main:not(.panel) { display: flex; flex-direction: column; }
+.panel-main .mp-content { flex: 1 1 auto; min-height: 0; }
+.mp-empty { align-items: center; justify-content: center; }
+.mp-file { gap: .9rem; }
+.mp-file-head {
+  display: flex; gap: .7rem; align-items: center; flex: none; flex-wrap: wrap;
+  padding-bottom: .7rem; border-bottom: 1px solid var(--border);
+}
+.mp-file-path { font-size: .8rem; overflow-wrap: anywhere; }
+.mp-file-back {
+  margin-left: auto; display: inline-flex; gap: .25rem; align-items: center;
+  color: var(--tx-2); text-decoration: none; font-size: .78rem;
+}
+.mp-file-back:hover { color: var(--accent); }
+.mp-code {
+  flex: 1; margin: 0; padding: 1rem; overflow: auto;
+  background: var(--bg-2); border-radius: var(--radius);
+  font-size: .78rem; line-height: 1.55;
+}
+.mp-doc { max-width: 42rem; margin: 0 auto; line-height: 1.65; }
+.mp-doc pre { padding: .8rem; overflow: auto; background: var(--bg-2); border-radius: var(--radius); }
+.mp-media { max-width: 100%; max-height: 100%; margin: auto; border-radius: var(--radius); }
+.mp-svg { background: var(--bg-2); }
+.mp-pdf { width: 100%; min-height: 32rem; border: 0; }
+video.mp-media { width: 100%; background: #000; }
+@media (max-width: 839px) {
+.panel-main .mp-content { overflow: visible; }
+}
+.panel-bar { display: none; }
+@media (max-width: 839px) {
+.panel-bar {
+    display: flex; gap: .25rem; flex: none;
+    padding: .2rem; margin: 0 0 .25rem;
+    background: var(--bg-2); border-radius: 999px; /* w5:not-a-chip */
+  }
+}

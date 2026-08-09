@@ -1,0 +1,8 @@
+/* composer.css — rules owned by common, split from assets/css/composer.css by the ui/styles law */
+.composer {
+  flex-direction: column; align-items: stretch; gap: 0;
+  padding: .35rem .5rem .4rem;
+  margin: 0; /* the chat stage's own gap owns the spacing */
+  border-radius: 1.4rem;
+}
+.composer textarea { padding: .45rem .55rem .3rem; }

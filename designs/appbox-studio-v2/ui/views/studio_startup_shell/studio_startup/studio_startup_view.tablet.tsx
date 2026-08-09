@@ -7,7 +7,7 @@
 // History: created for studio v2; v1 splash port replaced the plain title
 //   frame.
 import type { FC } from 'hono/jsx';
-import Checklist from '../../../widgets/studio_startup_widgets/boot_checklist.tsx';
+import { BootChecklist as Checklist } from '../../../widgets/studio_startup_widgets/widgets.tsx';
 import type { StartupProps } from './studio_startup_view.desktop.tsx';
 
 const StudioStartupViewTablet: FC<StartupProps> = ({ steps, ready, title, proceedLabel }) => (

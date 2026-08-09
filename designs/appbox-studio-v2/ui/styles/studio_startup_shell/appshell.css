@@ -1,0 +1,28 @@
+/* appshell.css — rules owned by studio_startup_shell, split from assets/css/appshell.css by the ui/styles law */
+.splash {
+  flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: .9rem; padding: 2rem; text-align: center;
+}
+.splash-brand {
+  font-family: var(--font-display); font-size: 2.6rem;
+  background: linear-gradient(100deg, #21BFE9, #4E28D5);
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+.startup-bar {
+  width: 10rem; height: 4px; border-radius: 999px; /* w5:not-a-chip */ background: var(--bg-2); overflow: hidden;
+}
+.startup-bar::after { content: ''; display: block; height: 100%; width: 0; background: var(--accent); }
+@media (prefers-reduced-motion: no-preference) {
+.startup-bar::after { animation: startup-fill 2.8s linear forwards; }
+}
+@media (prefers-reduced-motion: reduce) {
+.startup-bar::after { width: 100%; }
+}
+.startup-steps { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: .35rem; font-size: .82rem; color: var(--tx-3); }
+.startup-step { display: flex; align-items: center; gap: .45rem; }
+.startup-step.is-done { color: var(--tx-2); }
+.startup-step.is-current { color: var(--tx); }
+.startup-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); display: inline-block; }
+.startup.is-still .startup-bar::after { animation: none; width: 100%; }
+.startup.is-still .startup-done { animation: none; opacity: 1; }
+.startup.is-still .splash-tagline { display: none; }

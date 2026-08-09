@@ -1,0 +1,22 @@
+/* widgets.css — rules owned by studio_application_hub, split from assets/css/widgets.css by the ui/styles law */
+.shell-project {
+  display: flex; gap: .5rem; align-items: baseline; min-width: 0;
+  padding: .3rem .75rem; border-radius: 999px;
+  color: var(--tx); text-decoration: none; font-size: .84rem;
+  box-shadow: inset 0 0 0 1px var(--border);
+}
+.shell-project:hover { box-shadow: inset 0 0 0 1px var(--tx-3); }
+.fab-action {
+  padding: .42rem .9rem; border-radius: 999px;
+  background: var(--bg); border: 1px solid var(--border);
+  box-shadow: var(--shadow-2);
+  color: var(--tx); text-decoration: none; font-size: .82rem; font-weight: 500;
+  white-space: nowrap;
+}
+.fab-action:hover { color: var(--accent); box-shadow: var(--shadow-2), inset 0 0 0 1px var(--accent); }
+.railbar-strip {
+  display: flex; flex-direction: column; gap: .15rem;
+  padding: .35rem; cursor: pointer;
+  background: var(--bg); border: 1px solid var(--border);
+  border-radius: 999px; box-shadow: var(--shadow-2);
+}

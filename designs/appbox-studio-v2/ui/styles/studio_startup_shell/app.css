@@ -1,0 +1,47 @@
+/* app.css — rules owned by studio_startup_shell, split from assets/css/app.css by the ui/styles law */
+.brand__mark {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  background: var(--accent);
+}
+.subtitle { margin: 0; color: var(--ink-muted); }
+.checklist { list-style: none; margin: var(--gap-m) 0 0; padding: 0; display: grid; gap: var(--gap-s); }
+.button--block { width: 100%; }
+.ceremony {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+.ceremony__stage {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--gap-l);
+}
+.ceremony__split {
+  display: grid;
+  grid-template-columns: minmax(280px, 380px) minmax(0, 1fr);
+  gap: var(--gap-xl);
+  align-items: center;
+  width: min(1100px, 100%);
+}
+.ceremony__brand-rail {
+  border-right: 1px solid var(--line);
+  padding-right: var(--gap-xl);
+}
+.ceremony__card {
+  width: min(560px, 100%);
+  background: var(--bg-raised);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: var(--gap-l);
+}
+.ceremony__column {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap-m);
+}
+.ceremony__spacer { flex: 1; }

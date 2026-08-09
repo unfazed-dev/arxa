@@ -1,0 +1,34 @@
+/* panels.css — rules owned by common, split from assets/css/panels.css by the ui/styles law */
+.panel {
+  /* The shared width ceiling for the two side panels, declared on .panel so it
+     resolves for every panel by contract (the header, footer and main slot
+     simply never reference it). ONE value because there was never a reason for
+     two: the composer used to cap at 576px purely because its width happened to
+     be multiplied by 1.6, and the activity panel at 600px because that constant
+     sat in drag.js. Neither number was chosen. This one is.
+     Killed below 840px, where a single panel is full-width — see the media
+     query further down. */
+  --panel-max-width: 500px;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  grid-template-areas:
+    "top        top    top"
+    "side-start body   side-end"
+    "bottom     bottom bottom";
+  min-width: 0; min-height: 0;
+  /* Indirected through a custom property so a panel can restate its fill
+     without fighting the cascade: panels.css loads after studio_dashboard_widgets.css, so a
+     plain `background` here would beat .panel-header's own rule at equal
+     specificity and silently flatten the header's translucent backdrop.
+     Setting a VARIABLE means the two files touch different properties and
+     neither can clobber the other, whatever the link order becomes. */
+  background: var(--panel-bg, var(--bg));
+  border: 1px solid var(--border); border-radius: var(--radius);
+  box-shadow: var(--shadow-2);
+  overflow: hidden;
+  position: relative; /* anchors .panel-resize to the panel's own edge */
+}
+@media (max-width: 839px) {
+#app { height: auto; min-height: 100dvh; overflow: visible; }
+}

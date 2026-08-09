@@ -26,7 +26,7 @@
 //   aria-labelledby/for reference, which is worse.
 import type { FC } from 'hono/jsx';
 import StudioDashboardShellView from '../studio_dashboard_shell_view.tsx';
-import { Open } from '../../../widgets/studio_dashboard_widgets/main_panel.tsx';
+import { Open } from '../../../widgets/studio_dashboard_widgets/widgets.tsx';
 import Desktop from './studio_dashboard_view.desktop.tsx';
 import Tablet from './studio_dashboard_view.tablet.tsx';
 import Mobile from './studio_dashboard_view.mobile.tsx';

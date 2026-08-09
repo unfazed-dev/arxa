@@ -10,7 +10,7 @@ import Shell from '../studio_startup_shell_view.tsx';
 import Desktop from './studio_startup_view.desktop.tsx';
 import Tablet from './studio_startup_view.tablet.tsx';
 import Mobile from './studio_startup_view.mobile.tsx';
-import Checklist from '../../../widgets/studio_startup_widgets/boot_checklist.tsx';
+import { BootChecklist as Checklist } from '../../../widgets/studio_startup_widgets/widgets.tsx';
 import type { StartupProps } from './studio_startup_view.desktop.tsx';
 
 const StudioStartupView: FC<StartupProps & { brand: string; tagline: string; build?: string; locale?: string }> = (

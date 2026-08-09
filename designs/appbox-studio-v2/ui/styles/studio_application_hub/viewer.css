@@ -1,0 +1,33 @@
+/* viewer.css — rules owned by studio_application_hub, split from assets/css/viewer.css by the ui/styles law */
+.dv-botbar {
+  display: flex; flex-direction: column; align-items: center;
+  /* No side padding: the mini panel is sized at 50% and centred, and side
+     padding here would make that 50% of the PADDED box — i.e. visibly
+     narrower than half the viewer. The foot line is centred text, so it
+     loses nothing. This is the one thing a generic bottom section must not
+     inherit, and the reason `dv-botbar` survives as a modifier at all. */
+  padding: .5rem 0;
+}
+.panel-viewer .dv-vstrip {
+  flex: none; align-self: stretch;
+  flex-direction: column; align-items: center;
+  overflow-x: hidden; overflow-y: auto;
+  /* .cs-strip hides the UA scrollbar with a 1.2rem pad + matching negative
+     margin, which only works inside .cm-tray-clip's overflow:hidden. There is
+     no clip here — reset the pair; scrollbar-width:none carries the hiding. */
+  padding: .6rem .5rem;
+  /* Same card idiom as .mini-panel and .panel-composer: full border + the
+     shared radius. The margin is what the radius needs — flush against the
+     viewer's edge the rounded corners have nothing to round against, and it
+     doubles as the seam between the rail and the canvas. Overrides
+     .cs-strip's negative margin-bottom, which only works inside a clip. */
+  margin: .6rem;
+  background: var(--bg); border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+.panel-viewer .dv-vstrip::-webkit-scrollbar { display: none; }
+.ico-btn:disabled { opacity: .35; cursor: default; }
+.ico-btn.on { color: var(--accent, #0891b2); }
+.panel-viewer .dv-fs-close { display: none; position: absolute; top: .8rem; right: .8rem; z-index: 30; }
+.panel-viewer:fullscreen { border: none; border-radius: 0; }
+.panel-viewer:fullscreen .dv-fs-close { display: inline-grid; }

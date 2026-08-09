@@ -4,7 +4,7 @@
 // block becomes the headExtra prop.
 import { raw } from 'hono/utils/html';
 import { Fragment, type FC, type Child } from 'hono/jsx';
-import { inspectAttributes } from '../widgets/common/studio_primitives/primitives.tsx';
+import { inspectAttributes } from '../widgets/common/studio_primitives/widgets.tsx';
 
 // htmx 4 config. v2's responseHandling has no meta-config equivalent in v4 —
 // the per-status rules live on <body> as hx-status:<pattern> attributes (see
@@ -81,19 +81,10 @@ const Base: FC<BaseProps> = ({
         <script src={vendorSrc('canvas.js')} defer></script>
         <script src={vendorSrc('drag.js')} defer></script>
         <script src={vendorSrc('reveal.js')} defer></script>
-        <link rel="stylesheet" href="/assets/css/fonts.css" />
-        <link rel="stylesheet" href="/assets/css/app.css" />
-        <link rel="stylesheet" href="/assets/css/theme.css" />
-        <link rel="stylesheet" href="/assets/css/intake.css" />
-        <link rel="stylesheet" href="/assets/css/design.css" />
-        <link rel="stylesheet" href="/assets/css/viewer.css" />
-        <link rel="stylesheet" href="/ui/widgets/studio_dashboard_widgets/studio_dashboard_widgets.css" />
-        <link rel="stylesheet" href="/assets/css/panels.css" />
-        <link rel="stylesheet" href="/assets/css/widgets.css" />
-        <link rel="stylesheet" href="/assets/css/composer.css" />
-        <link rel="stylesheet" href="/assets/css/build.css" />
-        <link rel="stylesheet" href="/assets/css/appshell.css" />
-        <link rel="stylesheet" href="/assets/css/error_surface.css" />
+        <link rel="stylesheet" href="/ui/styles/common/styles.css" />
+        <link rel="stylesheet" href="/ui/styles/studio_application_hub/styles.css" />
+        <link rel="stylesheet" href="/ui/styles/studio_dashboard_shell/styles.css" />
+        <link rel="stylesheet" href="/ui/styles/studio_startup_shell/styles.css" />
         {headExtra}
       </head>
       <body hx-boost="true" hx-sync="this:replace" {...HTMX_RESPONSE_RULES}>

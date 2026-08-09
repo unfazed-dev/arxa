@@ -1,0 +1,24 @@
+/* widgets.css — rules owned by common, split from assets/css/widgets.css by the ui/styles law */
+.chip {
+  --chip-font: .72rem; --chip-pad-y: .16rem; --chip-pad-x: .6rem; --chip-gap: .35rem;
+  display: inline-flex; align-items: center; gap: var(--chip-gap);
+  font: inherit; font-size: var(--chip-font); font-weight: 400; line-height: 1.3;
+  padding: var(--chip-pad-y) var(--chip-pad-x);
+  border: 0; border-radius: 999px; white-space: nowrap; text-decoration: none;
+  cursor: default;
+}
+button.chip, a.chip { cursor: pointer; }
+.chip.chip--sm { --chip-font: .62rem; --chip-pad-y: .12rem; --chip-pad-x: .45rem; --chip-gap: .25rem; }
+.chip.chip--lg { --chip-font: .8rem; --chip-pad-y: .3rem; --chip-pad-x: .8rem; --chip-gap: .4rem; }
+a):hover { background: var(--accent); color: var(--on-accent, #FFFCF0); }
+.chip.is-set { color: var(--accent); box-shadow: inset 0 0 0 1.5px var(--accent); font-weight: 600; }
+.type-badge {
+  font-family: var(--font-label);
+  --chip-font: .58rem; font-weight: 500; letter-spacing: .09em; text-transform: uppercase;
+  --chip-pad-y: .12rem; --chip-pad-x: .5rem;
+}
+.status-pill {
+  font-family: var(--font-label);
+  --chip-font: .68rem; color: var(--tx-2); background: var(--bg-2);
+}
+.status-dot { flex: none; display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }

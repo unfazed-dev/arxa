@@ -11,9 +11,7 @@
 //   body outlet + footer: an outlet inside each rung mounted the hosted
 //   surface ×3 (×9 DOM for surfaces with their own rung block, tripled ids).
 import type { FC } from 'hono/jsx';
-import { Header } from '../../widgets/studio_application_widgets/header.tsx';
-import { Tabbar } from '../../widgets/studio_application_widgets/tabbar.tsx';
-import HeaderPanel from '../../widgets/studio_application_widgets/header_panel.tsx';
+import { Header, Tabbar, HeaderPanel } from '../../widgets/studio_application_hub_widgets/widgets.tsx';
 import type { HubFrameProps } from './studio_application_hub_view.tsx';
 
 const StudioApplicationHubViewMobile: FC<HubFrameProps> = ({

@@ -1,0 +1,39 @@
+/* appshell.css — rules owned by common, split from assets/css/appshell.css by the ui/styles law */
+@media (prefers-reduced-motion: no-preference) {
+@keyframes splash-shimmer { from { transform: translateX(-100%); } to { transform: translateX(350%); } }
+}
+@media (prefers-reduced-motion: no-preference) {
+@keyframes startup-fill { from { width: 0; } to { width: 100%; } }
+}
+@media (prefers-reduced-motion: no-preference) {
+@keyframes startup-reveal { 0%, 85% { opacity: 0; } 100% { opacity: 1; } }
+}
+.modal { position: relative; }
+.modal-trigger {
+  list-style: none; cursor: pointer; display: inline-block;
+  font: inherit; font-weight: 500; color: var(--on-accent); background: var(--accent);
+  border-radius: var(--radius-s); padding: .5rem 1rem;
+}
+.modal-trigger::-webkit-details-marker { display: none; }
+.modal-close-label { display: none; }
+.modal[open] .modal-trigger {
+  position: fixed; inset: 0; z-index: 60; padding: 0; border-radius: 0;
+  background: rgba(16, 15, 15, .45); color: var(--tx);
+}
+.modal[open] .modal-open-label { display: none; }
+.modal[open] .modal-close-label {
+  display: grid; place-items: center; position: absolute; top: 1rem; right: 1rem;
+  width: 2.2rem; height: 2.2rem; border-radius: 50%; font-size: 1.2rem;
+  background: var(--bg-2); box-shadow: var(--shadow-1);
+}
+.modal-card {
+  position: fixed; z-index: 61; top: 50%; left: 50%; transform: translate(-50%, -50%);
+  width: min(22rem, calc(100vw - 2rem)); max-height: calc(100dvh - 2rem); overflow: auto;
+  background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius);
+  box-shadow: var(--shadow-2); padding: 1.4rem;
+  display: flex; flex-direction: column; gap: .6rem;
+}
+.modal-card h2 { margin: 0; font-size: 1.1rem; }
+.modal-card > .muted { margin: 0; }
+.bar { flex: 1; height: var(--bar-height); min-height: 3px; background: var(--accent); border-radius: 3px 3px 0 0; opacity: .85; }
+.bar:hover { opacity: 1; }

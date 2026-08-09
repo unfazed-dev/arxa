@@ -1,0 +1,3 @@
+/* widgets.css — rules owned by studio_startup_shell, split from assets/css/widgets.css by the ui/styles law */
+.cta-link { display: inline-flex; align-items: center; gap: .2rem; color: var(--accent); font-weight: 500; text-decoration: none; }
+.cta-link:hover { text-decoration: underline; }

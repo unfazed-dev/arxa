@@ -1,0 +1,4 @@
+/* widgets.css — rules owned by studio_dashboard_shell, split from assets/css/widgets.css by the ui/styles law */
+.chip--muted { color: var(--tx-2); background: var(--bg-2); box-shadow: inset 0 0 0 1px var(--border); }
+.wizard-chip input:checked + .chip { color: var(--accent); box-shadow: inset 0 0 0 1.5px var(--accent); background: var(--accent-soft); }
+.wizard-chip input:focus-visible + .chip { outline: 2px solid var(--accent); outline-offset: 2px; }

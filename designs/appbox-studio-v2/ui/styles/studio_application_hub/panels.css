@@ -1,0 +1,37 @@
+/* panels.css — rules owned by studio_application_hub, split from assets/css/panels.css by the ui/styles law */
+.panel-body { grid-area: body; }
+.panel-bottom { grid-area: bottom; }
+.panel-bottom { padding: .55rem .7rem; border-top: 1px solid var(--border); }
+.panel-body {
+  min-width: 0; min-height: 0; overflow-y: auto;
+  display: flex; flex-direction: column;
+}
+.panel-header, .panel-footer {
+  border-radius: 0; box-shadow: none; border-width: 0;
+}
+.panel-header { border-bottom-width: 1px; }
+.panel-footer { border-top-width: 1px; }
+.panel-header, .panel-footer { overflow: visible; }
+.panel-header > .panel-body, .panel-footer > .panel-body {
+  flex-direction: row; align-items: center; overflow: visible;
+}
+@media (max-width: 839px) {
+.panel-resize { display: none; }
+}
+.panel-overlay {
+  position: absolute; top: 0; inset-inline-end: 0; z-index: 7;
+}
+.panel-resize {
+  position: absolute; top: 0; bottom: 0; width: 7px; z-index: 6;
+  cursor: col-resize;
+  /* The lit edge is an inset shadow, not a background: it paints a crisp 2px
+     rule ON the panel border rather than a 7px band beside it. The strip
+     stays wide so the pointer target is comfortable. */
+  transition: box-shadow .12s ease;
+}
+.panel-resize[data-edge="start"] { inset-inline-start: 0; }
+.panel-resize[data-edge="end"] { inset-inline-end: 0; }
+.panel-resize[data-edge="start"]:hover { box-shadow: inset 2px 0 0 var(--accent); }
+.panel-resize[data-edge="end"]:hover { box-shadow: inset -2px 0 0 var(--accent); }
+.panel-resize[data-edge="start"] .panel-resize-width { inset-inline-start: .6rem; }
+.panel-resize[data-edge="end"]   .panel-resize-width { inset-inline-end: .6rem; }

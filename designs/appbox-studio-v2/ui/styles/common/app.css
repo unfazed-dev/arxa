@@ -1,0 +1,195 @@
+/* app.css — rules owned by common, split from assets/css/app.css by the ui/styles law */
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: 'Lexend', -apple-system, "PingFang SC", "Noto Sans SC", sans-serif;
+  font-size: 14.5px; line-height: 1.5; font-weight: 400;
+  -webkit-font-smoothing: antialiased;
+}
+#app {
+  height: 100dvh; overflow: hidden;
+  display: flex; flex-direction: column;
+  /* (stub documents release this clamp — see `.stub-body #app` by the stub
+     rules: a screen must scroll like the designed app, and the clamp was
+     silently clipping every screen taller than the frame.) */
+  /* Flexoki light — "Paper" */
+  --bg: #FFFCF0;
+  --bg-2: #F2F0E5;
+  --border: #E6E4D9;
+  --tx: #100F0F;
+  --tx-2: #6F6E69;
+  --tx-3: #B7B5AC;
+  --amber: #AD8301;
+  --amber-soft: rgba(173, 131, 1, .11);
+  --fail: #AF3029;
+  --fail-soft: rgba(175, 48, 41, .09);
+  --ok: #66800B;
+  --ok-soft: rgba(102, 128, 11, .11);
+  --nav-height: 3.4rem;
+  --shadow-1: 0 1px 2px rgba(16, 15, 15, .05), 0 2px 10px rgba(16, 15, 15, .04);
+  --shadow-2: 0 4px 14px rgba(16, 15, 15, .07), 0 14px 36px rgba(16, 15, 15, .08);
+  --radius: 16px;
+  --radius-s: 10px;
+  background: var(--bg); color: var(--tx);
+}
+#app[data-theme="dark"] {
+  /* Flexoki dark — "Warm charcoal" */
+  --bg: #100F0F;
+  --bg-2: #1C1B1A;
+  --border: #282726;
+  --tx: #CECDC3;
+  --tx-2: #878580;
+  --tx-3: #575653;
+  --amber: #D0A215;
+  --amber-soft: rgba(208, 162, 21, .14);
+  --fail: #D14D41;
+  --fail-soft: rgba(209, 77, 65, .13);
+  --ok: #879A39;
+  --ok-soft: rgba(135, 154, 57, .15);
+  --shadow-1: 0 1px 2px rgba(0, 0, 0, .35), 0 2px 10px rgba(0, 0, 0, .3);
+  --shadow-2: 0 4px 14px rgba(0, 0, 0, .4), 0 14px 36px rgba(0, 0, 0, .45);
+}
+#app { color-scheme: light; }
+#app[data-theme="dark"] { color-scheme: dark; }
+* { scrollbar-width: thin; scrollbar-color: color-mix(in oklab, var(--tx, currentColor) 22%, transparent) transparent; }
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: color-mix(in oklab, var(--tx, currentColor) 22%, transparent);
+  border-radius: 999px; /* w5:not-a-chip */
+  /* The thumb stays as short as the UA will draw it. Chromium's own floor is
+     around 20px; this releases that floor so a long thread or file reads as a
+     small nub rather than a bar. Note what this canNOT do: min-height is a
+     FLOOR, so it only bites on long content — on short content the thumb is
+     proportional and near-full-track, and nothing in CSS shrinks it. Making
+     the thumb a fixed size at every scroll length needs a scripted custom
+     scrollbar, which the zero-custom-JS boundary (ADR-0002) forbids.
+     Chromium-only: Firefox's `scrollbar-width: thin` above has no
+     thumb-length control at all, so it keeps the UA default there. */
+  min-height: .75rem;
+}
+code { font-family: var(--font-mono); font-size: .88em; }
+.muted { color: var(--tx-2); }
+h1 { font-size: 1.6rem; margin: 0 0 .25rem; }
+h2 { font-size: 1.1rem; margin: 1.5rem 0 .5rem; }
+h3 { font-size: .95rem; margin: 1rem 0 .35rem; color: var(--tx-2); }
+p { margin: 0; text-wrap: pretty; }
+a { color: var(--accent); }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
+button {
+  background: var(--accent); color: var(--on-accent, #FFFCF0); border: 0; border-radius: 999px; /* w5:not-a-chip */
+  padding: .45rem 1.05rem; font: inherit; font-weight: 500; cursor: pointer;
+  /* icon-bearing controls center their glyph like chips do — flex, never
+     baseline (a 14px svg on the text baseline rides visibly high) */
+  display: inline-flex; align-items: center; justify-content: center; gap: .35rem;
+}
+button.ghost {
+  background: transparent; color: var(--tx-2);
+  box-shadow: inset 0 0 0 1px var(--border);
+}
+button:hover { filter: brightness(1.05); }
+button:active { transform: translateY(1px); }
+.composer {
+  display: flex; align-items: flex-end; gap: .35rem;
+  margin: .55rem .75rem .75rem; padding: .35rem .4rem .35rem .55rem;
+  background: var(--bg); border: 1px solid var(--border);
+  border-radius: 1.5rem; box-shadow: var(--shadow-1);
+}
+.composer:focus-within { border-color: var(--accent); }
+.composer textarea {
+  flex: 1; min-width: 0; border: 0; background: transparent;
+  font: inherit; font-size: .85rem; color: var(--tx);
+  resize: none; padding: .5rem .2rem; margin: 0;
+  field-sizing: content; max-height: 7rem;
+}
+.composer textarea:focus { outline: none; }
+.artifact {
+  width: 100%; max-width: 45rem; margin: auto; /* reading artifacts stay centered in the stage */
+  display: flex; flex-direction: column; gap: .9rem;
+}
+.artifact.evidence-artifact { max-width: none; margin: 0; height: 100%; }
+.artifact .display { font-size: clamp(1.5rem, 2.4vw, 2.2rem); }
+.bar {
+  display: block; height: 100%; width: calc(var(--pct) * 1%);
+  background: var(--accent); border-radius: 7px; opacity: .88;
+}
+#toasts { position: fixed; right: 1rem; bottom: 1rem; display: flex; flex-direction: column; gap: .5rem; z-index: 20; }
+.toast {
+  padding: .65rem 1rem; border-radius: var(--radius-s);
+  background: var(--tx); color: var(--bg); font-weight: 500; font-size: .82rem;
+  box-shadow: var(--shadow-2);
+}
+@media (max-width: 599px) {
+.artifact { gap: .9rem; }
+}
+@media (prefers-reduced-motion: no-preference) {
+@keyframes ab-fade-in { from { opacity: 0; } }
+::view-transition-old(root), ::view-transition-new(root) {
+    animation-duration: var(--motion-vt); animation-timing-function: var(--motion-ease);
+  }
+@keyframes ab-disclose { from { opacity: 0; transform: translateY(6px); } }
+.modal[open] .modal-trigger { animation: ab-fade-in var(--motion-med) var(--motion-ease); }
+.modal[open] .modal-card { animation: ab-reveal var(--motion-med) var(--motion-ease); }
+@keyframes ab-reveal { from { opacity: 0; translate: 0 8px; } }
+@keyframes ab-pulse {
+    0%, 100% { box-shadow: 0 0 0 2px var(--accent-soft); }
+    50% { box-shadow: 0 0 0 5px var(--accent-soft); }
+  }
+.toast {
+    animation: ab-toast-in var(--motion-med) var(--motion-ease),
+               ab-toast-out var(--motion-slow) var(--motion-ease) var(--toast-ttl) forwards;
+  }
+@keyframes ab-toast-in { from { opacity: 0; transform: translateY(8px); } }
+@keyframes ab-toast-out { to { opacity: 0; transform: translateY(8px); } }
+}
+:root {
+  --accent: blueviolet;
+  --bg: #12131a;
+  --bg-raised: #1b1d27;
+  --bg-sunken: #0d0e13;
+  --line: #2a2d3a;
+  --ink: #e8e9f0;
+  --ink-muted: #9a9db0;
+  --radius: 10px;
+  --gap-s: 8px;
+  --gap-m: 16px;
+  --gap-l: 24px;
+  --gap-xl: 40px;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font: 15px/1.5 ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+.rung { display: none; }
+@media (max-width: 599px) {
+.rung--mobile { display: block; }
+}
+@media (min-width: 600px) and (max-width: 839px) {
+.rung--tablet { display: block; }
+}
+@media (min-width: 840px) {
+.rung--desktop { display: block; }
+}
+.brand {
+  display: flex;
+  align-items: center;
+  gap: var(--gap-s);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+.title { margin: 0 0 var(--gap-s); font-size: 24px; font-weight: 600; }
+.muted { color: var(--ink-muted); }
+#toasts { position: fixed; inset-inline: 0; bottom: 0; display: grid; gap: var(--gap-s); padding: var(--gap-m); }
+.button {
+  display: inline-flex; align-items: center; justify-content: center;
+  gap: var(--gap-s);
+  padding: 10px 18px;
+  border: 1px solid var(--accent);
+  border-radius: var(--radius);
+  background: var(--accent);
+  color: #fff; font: inherit; font-weight: 600;
+  cursor: pointer; text-decoration: none;
+}

@@ -1,0 +1,10 @@
+/* viewer.css — rules owned by common, split from assets/css/viewer.css by the ui/styles law */
+.device {
+  position: relative; display: flex; flex-direction: column; flex: none;
+  border: 3px solid #232326; background: #232326;
+  box-shadow: var(--shadow-2);
+}
+.device .dv-frame { width: 100%; flex: 1; border: 0; }
+The box is parented to #app (where --accent/--bg are declared), but the
+   literal fallbacks stay: a custom property that fails to resolve makes the
+   whole declaration invalid at computed-value time { position: fixed; z-index: 40; pointer-events: none; outline: 1px solid var(--accent, #0891b2); outline-offset: 1px; }

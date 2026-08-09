@@ -1,0 +1,4 @@
+/* styles.css — barrel for studio_startup_shell; parts load in original cascade order */
+@import url('/ui/styles/studio_startup_shell/app.css');
+@import url('/ui/styles/studio_startup_shell/widgets.css');
+@import url('/ui/styles/studio_startup_shell/appshell.css');

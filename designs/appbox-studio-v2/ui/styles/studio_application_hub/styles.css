@@ -1,0 +1,4 @@
+/* styles.css — barrel for studio_application_hub; parts load in original cascade order */
+@import url('/ui/styles/studio_application_hub/viewer.css');
+@import url('/ui/styles/studio_application_hub/panels.css');
+@import url('/ui/styles/studio_application_hub/widgets.css');

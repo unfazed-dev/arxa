@@ -11,7 +11,7 @@
 //   </Wrap>
 import type { Child } from 'hono/jsx';
 import Icon from '../../runtime/icon.tsx';
-import { inspectAttributes } from '../widgets/common/studio_primitives/primitives.tsx';
+import { inspectAttributes } from '../widgets/common/studio_primitives/widgets.tsx';
 
 type TFn = (key: string, vars?: Record<string, unknown>) => unknown;
 

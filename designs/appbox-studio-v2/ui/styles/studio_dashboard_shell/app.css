@@ -1,0 +1,9 @@
+/* app.css — rules owned by studio_dashboard_shell, split from assets/css/app.css by the ui/styles law */
+.eyebrow {
+  font-family: var(--font-label);
+  font-size: .68rem; font-weight: 500; letter-spacing: .1em;
+  text-transform: uppercase; color: var(--tx-2);
+}
+@media (max-width: 599px) {
+.mp-content { overflow: visible; padding: 1.2rem 1rem 4.6rem; display: block; }
+}
