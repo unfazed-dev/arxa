@@ -1,0 +1,170 @@
+/* appbox studio v2 — chrome, rung selection, ceremony stage.
+   Constants and strings come from the generated kit mirror; nothing here is a
+   local duplicate of a kit token. */
+
+:root {
+  --accent: blueviolet;
+  --bg: #12131a;
+  --bg-raised: #1b1d27;
+  --bg-sunken: #0d0e13;
+  --line: #2a2d3a;
+  --ink: #e8e9f0;
+  --ink-muted: #9a9db0;
+  --radius: 10px;
+  --gap-s: 8px;
+  --gap-m: 16px;
+  --gap-l: 24px;
+  --gap-xl: 40px;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font: 15px/1.5 ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+/* ---- rung selection -------------------------------------------------------
+   The design runtime has no <factor> resolver: a view renders all three
+   variants and CSS shows exactly one. Boundaries are the Material 3 window
+   size classes, so a render at any ladder width lands unambiguously in one
+   class. Never author a width anywhere else. */
+
+.rung { display: none; }
+
+@media (max-width: 599px)                      { .rung--mobile  { display: block; } }
+@media (min-width: 600px) and (max-width: 839px) { .rung--tablet  { display: block; } }
+@media (min-width: 840px)                      { .rung--desktop { display: block; } }
+
+/* ---- ceremony stage -------------------------------------------------------
+   Shared by the startup / unknown / auth shells. Ceremony surfaces have no
+   navigation: they are pre-hub states, so they carry brand + one action. */
+
+.ceremony {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.ceremony__stage {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--gap-l);
+}
+
+/* desktop: brand rail beside the content, content never full-bleed */
+.ceremony__split {
+  display: grid;
+  grid-template-columns: minmax(280px, 380px) minmax(0, 1fr);
+  gap: var(--gap-xl);
+  align-items: center;
+  width: min(1100px, 100%);
+}
+
+.ceremony__brand-rail {
+  border-right: 1px solid var(--line);
+  padding-right: var(--gap-xl);
+}
+
+/* tablet: one centred card, brand stacked above */
+.ceremony__card {
+  width: min(560px, 100%);
+  background: var(--bg-raised);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: var(--gap-l);
+}
+
+/* mobile: full-bleed column, action pinned to the bottom */
+.ceremony__column {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap-m);
+}
+
+.ceremony__spacer { flex: 1; }
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: var(--gap-s);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.brand__mark {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  background: var(--accent);
+}
+
+.title   { margin: 0 0 var(--gap-s); font-size: 24px; font-weight: 600; }
+.subtitle{ margin: 0; color: var(--ink-muted); }
+.muted   { color: var(--ink-muted); }
+
+/* ---- progress checklist (startup) ---- */
+.checklist { list-style: none; margin: var(--gap-m) 0 0; padding: 0; display: grid; gap: var(--gap-s); }
+.checklist__item { display: flex; gap: var(--gap-s); align-items: baseline; }
+.checklist__dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--line); flex: none; transform: translateY(-2px);
+}
+.checklist__item[data-state="done"]    .checklist__dot { background: var(--accent); }
+.checklist__item[data-state="running"] .checklist__dot { background: var(--ink-muted); }
+
+/* ---- controls ---- */
+.button {
+  display: inline-flex; align-items: center; justify-content: center;
+  gap: var(--gap-s);
+  padding: 10px 18px;
+  border: 1px solid var(--accent);
+  border-radius: var(--radius);
+  background: var(--accent);
+  color: #fff; font: inherit; font-weight: 600;
+  cursor: pointer; text-decoration: none;
+}
+.button--quiet { background: transparent; color: var(--ink); border-color: var(--line); }
+.button--block { width: 100%; }
+
+.field { display: grid; gap: 6px; margin-bottom: var(--gap-m); }
+.field__label { font-size: 13px; color: var(--ink-muted); }
+.field__input {
+  padding: 10px 12px;
+  background: var(--bg-sunken);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  color: var(--ink); font: inherit;
+}
+.field__input:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+/* ---- hub ---- */
+.hub { min-height: 100vh; display: flex; flex-direction: column; }
+.hub__bar {
+  display: flex; align-items: center; gap: var(--gap-m);
+  padding: var(--gap-m) var(--gap-l);
+  border-bottom: 1px solid var(--line);
+}
+.hub__body { flex: 1; padding: var(--gap-l); }
+.hub__grid { display: grid; gap: var(--gap-m); }
+@media (min-width: 840px) { .hub__grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (min-width: 600px) and (max-width: 839px) { .hub__grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+.stage-card {
+  display: block;
+  background: var(--bg-raised);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: var(--gap-m);
+  color: inherit; text-decoration: none;
+}
+.stage-card:hover { border-color: var(--accent); }
+.stage-card__name { font-weight: 600; margin-bottom: 4px; }
+.stage-card__io { font-size: 13px; color: var(--ink-muted); }
+
+#toasts { position: fixed; inset-inline: 0; bottom: 0; display: grid; gap: var(--gap-s); padding: var(--gap-m); }
