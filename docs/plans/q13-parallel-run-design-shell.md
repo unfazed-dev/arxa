@@ -474,3 +474,71 @@ selected by fragment. **Not chosen** — separate files keep the two trees
 independently diffable, which is the whole point of the parallel run (and is
 what R2's "old-shell markup must stay byte-stable" requires). Recorded so the
 next reader doesn't rediscover it and assume it was overlooked.
+
+---
+
+## Ruling ledger — authoritative state (supersedes scattered messages)
+
+Three team-lead messages arrived out of order; two were written before my
+retraction landed. **Reading any one of them alone will produce the wrong
+implementation.** This section is the single authoritative copy.
+
+### SUPERSEDED — do not implement
+
+> *"activeShell finding: approved. Value change on the existing render prop is
+> the right seam; deleting `anatomy_flag.ts` from the plan is correct."*
+
+This approved my **retracted** finding 5. It predates the retraction and is
+**void on both clauses**:
+
+- Value-change on `activeShell` is *not* the seam (finding 6 — it is nav-chrome
+  state; changing it breaks nav highlighting and pollutes the diff).
+- `anatomy_flag.ts` is **not** deleted — it is reinstated as the shared-helper
+  module by the later ruling below.
+
+Later message: *"Retraction accepted. `activeShell` stays `'design'` in both
+shells — locked."* That governs.
+
+### LOCKED rulings
+
+| # | Ruling |
+|---|---|
+| R-a | `activeShell` frozen at `'design'` in both shells. Rationale of record: it enumerates **nav destinations**, so it is the wrong *kind* of field for a shell variant, and changing it would pollute the structural diff with nav-chrome deltas. |
+| R-b | Seam = `VIEW` template-path swap, per-view, toggle-not-revert. |
+| R-c | Query read lives in each view's `page` handler. `routes.design.js` is a static array that cannot read a request — letter and spirit agree, no drift. |
+| R-d | **One shared helper**, single module, imported by all three handlers — no copy-pasted resolution logic: `abxResolveShellView(c, viewName, VIEW, VIEW_ANATOMY)`, falling back to `abxAnatomyViews` when the query param is absent. |
+| R-e | Triple spelling `data-inspect-screen` / `data-inspect-surface` / `data-inspect-node`. Record DOM spelling alongside JS (`nodeId`) and Dart (`anatomyNodeId`) — three carriers, one slot. |
+| R-f | Enforcement is **new-shell only**. Old shell untouched; its probe runs report identity **N/A-unstamped** — never PASS, never FAIL. |
+| R-g | **Back-stamp skipped by user ruling.** Old shell dies at cutover, so stamping it is wasted work. N/A-unstamped stands through end of life. |
+| R-h | `app-architecture.md:180` amended **in the same commit** as the probe extension: enforcement applies to stamped surfaces, old shell deliberately unstamped **pending its removal at cutover** — *not* "pending user ruling" (that ruling has landed). Claim must never be true-by-anticipation (bb451c5 precedent). |
+
+### Correction to the trace instruction (R-i)
+
+The trace was ordered as: *"Resolve whether `surfaceFiles()` +
+`globalThis.__templates` auto-enumerate a new `design/anatomy/` path or require
+a registry entry."*
+
+Already done — commit `95f4a81`. **But the instruction's premise was itself
+wrong**, and that matters for anyone re-deriving it: *neither* named mechanism
+is the resolver. `surfaceFiles()` is the user project's surfaces;
+`globalThis.__templates` is presence-only and renders nothing
+(`worker.dart:218`). The real resolver is the generated render bundle, and it
+**directory-scans**. Answer is favourable — no registry entry, no wiring — but
+it was reached by discarding both candidates, not by checking them.
+
+Ruling anticipated this cost: *"fourth instance of the only-fails-after-build
+class; spending one step on it is exactly the discipline the last three findings
+bought."* Confirmed — the step paid for itself by killing a false premise.
+
+---
+
+## Remaining work (handoff state)
+
+Everything is unblocked. Not started — deliberately left for a fresh context
+budget rather than half-emitted:
+
+1. `design/anatomy_flag.ts` — `abxResolveShellView(c, viewName, VIEW, VIEW_ANATOMY)`, one module (R-d).
+2. New shell `design/anatomy/{chat,freeze,prototype}/*_view.tsx` + `_shared_anatomy.tsx`, emitting the R-e triple, `activeShell` hard-frozen at `'design'` (R-a).
+3. Add `VIEW_ANATOMY` const + helper call to the three `page` handlers (R-b, R-c).
+4. Extend `probe_inspect.dart` to read the three attributes and assert the node slot against the closed registry vocabulary; unstamped surfaces → N/A, not PASS (R-f, R-g).
+5. Amend `app-architecture.md:180` **in the same commit as 4** (R-h).
