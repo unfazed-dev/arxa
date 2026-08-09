@@ -172,3 +172,26 @@ first-class kit constants: `abxHug` / `abxFill` / `abxFixed` (`const String`s in
 concern, carries the `abx` prefix. Bound in DESIGN-ARCHITECTURE.md ("Kit token
 binding"), designer SKILL.md (compose-time rule), scaffolder SKILL.md
 (emit-time FAIL on raw literals). Showcase common copy re-synced from kit.
+
+
+## Assets ruling (user-confirmed)
+
+- **Apps = B, type-first, the way Flutter manages assets.** `assets/` beside
+  `lib/`; the only app-owned class is images/media (`assets/images/`, sibling
+  type dirs only on real need), registered as pubspec directories. The kit
+  already manages the rest: fonts ship inside the kit package
+  (`appbox_kit_fonts.dart` catalogue + vendored binaries), icons are kit code
+  glyphs (`appbox_kit_glyphs.dart`). An app declares NO font or icon assets.
+- **Named-asset vocabulary:** `appbox_kit_assets.dart` — generic kit template
+  in `kit/core/lib/common/` + app-authored copy in `lib/ui/common/`
+  (the `appbox_kit_app_strings.dart` pattern). Consts are `abxImg*`; code and
+  designs reference the name, never a loose path. Showcase seed:
+  `abxImgShowcaseLogo` → `assets/images/showcase_logo.png`.
+- **Studio exception (A, user-ratified as exception):** the studio design tree
+  is ownership-scoped — `designs/appbox-studio-v2/assets/{studio,portalo}/`,
+  `portalo/` feature-scoped internally — because the studio hosts two owners:
+  its own chrome and the design it simulates (portalo). This exception is
+  studio-only; generated apps never use ownership folders.
+- **Studio v2 root (ratified):** `designs/appbox-studio-v2/{lib,assets}` —
+  everything code under `lib/` mirroring the showcase recipe
+  (hub > shells > views > widgets), assets as above.

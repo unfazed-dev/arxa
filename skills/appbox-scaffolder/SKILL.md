@@ -234,6 +234,21 @@ new `*_colors.dart`, `*_spacing.dart` or `*_ui_helpers.dart` variants is a
 **FAIL**, not a style preference — duplicated vocabulary is how a design system
 silently forks. The copy is refreshed from kit, never edited in place.
 
+### Assets (ratified)
+
+Apps are **type-first, images-only**: the scaffolder creates `assets/images/`
+beside `lib/` and registers it as a directory in `pubspec.yaml` (add sibling
+type folders like `assets/audio/` only when a feature actually ships such an
+asset — and register each new directory in the same change). It emits
+`appbox_kit_assets.dart` into `lib/ui/common/` (app-authored copy of the kit
+generic template, the `appbox_kit_app_strings.dart` pattern): every bundled
+path is an `abxImg*` const and emitted code references the NAME, never a
+loose path string. The scaffolder NEVER emits font or icon assets — fonts
+ship inside the kit package (`appbox_kit_fonts.dart`), icons resolve to kit
+code glyphs (`appbox_kit_glyphs.dart`); an app-level font/icon asset is a
+FAIL. Showcase demonstrates end-to-end: `abxImgShowcaseLogo` →
+`assets/images/showcase_logo.png`.
+
 **Layout tokens are names, never numbers.** Every layout value arriving in
 `design.json` is a kit constant name and is emitted verbatim as that
 identifier: `abxPad*` for padding, `abxGap*` for gaps (numeric ladder, no tier

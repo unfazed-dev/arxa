@@ -123,3 +123,9 @@ flutter:
   uses-material-design: true
   assets:
     - data/seed/
+    # Type-first asset layout (grill ruling: apps use Flutter-standard layout).
+    # App-owned assets are images/media ONLY — fonts ship inside the kit
+    # package (appbox_kit_fonts.dart), icons are kit glyphs
+    # (appbox_kit_glyphs.dart). Referenced in code only via abxImg* constants
+    # in appbox_kit_assets.dart.
+    - assets/images/

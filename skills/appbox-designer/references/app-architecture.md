@@ -179,12 +179,15 @@ principle as Flutter's `--track-widget-creation`. The triple
 mandatory on **every** emitted surface, shells included. In the DOM the
 triple is spelled `data-inspect-screen` / `data-inspect-surface` /
 `data-inspect-node`, and its presence is mechanically enforced:
-`appboxd/lib/probes/studio/probe_inspect.dart` (section 18) reads those three
-attributes off every stamped element and fails on any node id outside the
-registry vocabulary, or on any stamped element missing part of the triple.
-Legacy (pre-anatomy) shells are deliberately unstamped and read as
-N/A-unstamped, not as failures — stamping arrives with each view's anatomy
-cutover (Q13 parallel-run).
+`appboxd/lib/probes/studio/probe_inspect.dart` (section 18) dual-renders each
+design view `?abxShell=legacy` vs `?abxShell=anatomy` against the running
+server, strips the three attributes before the structural diff (the stamp is
+the only licensed delta), and asserts every stamped node id on the anatomy
+side against the registry vocabulary — an unstamped anatomy render is a
+failure, and an off-vocabulary or incomplete triple is a failure. The legacy
+side is deliberately unstamped and reads as a skip (N/A-unstamped), never a
+pass and never a failure — stamping arrives with each view's anatomy cutover
+(Q13 parallel-run).
 
 The anatomy-node vocabulary is CLOSED, not open: the valid ids are exactly
 those in `skills/appbox-scaffolder/kind-resolution.registry.json#/anatomyNodes/vocabulary`

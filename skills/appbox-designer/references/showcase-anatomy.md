@@ -312,6 +312,19 @@ it from kit, adding one app-authored `appbox_kit_app_strings.dart`). The copy
 is refreshed from kit, never hand-edited — a hand-maintained divergent copy is
 the drift this rule exists to prevent.
 
+**Assets (ratified).** `assets/` sits beside `lib/`, type-first the way
+Flutter manages it — the only app-owned class is images/media
+(`assets/images/`, more type folders only when a real need lands), registered
+as directories in `pubspec.yaml`. Fonts ship inside the kit package
+(`appbox_kit_fonts.dart`); icons are kit code glyphs (`appbox_kit_glyphs.dart`)
+— an app declares NO font or icon assets. Every bundled path is named as an
+`abxImg*` const in `appbox_kit_assets.dart` (kit generic template +
+app-authored copy, the `appbox_kit_app_strings.dart` pattern); designer and
+scaffolder emit the NAME, never a loose path. Exception (studio-only,
+user-ratified): appbox studio's design tree keeps ownership-scoped
+`assets/studio/` + `assets/portalo/` (portalo feature-scoped) because the
+studio hosts two owners — itself and the design it simulates.
+
 **Tier 1 — design vocabulary mirror.** A **generated**, parity-gated JS mirror
 of `kit/core/lib/common/`, same symbol names, generated from the Dart:
 
@@ -322,6 +335,7 @@ of `kit/core/lib/common/`, same symbol names, generated from the Dart:
 | `appbox_kit_app_constants.dart` | app constants |
 | `appbox_kit_glyphs.dart`, `appbox_kit_glyphs_lucide.dart` | glyphs |
 | `appbox_kit_fonts.dart` | fonts |
+| `appbox_kit_assets.dart` | bundled-asset names |
 
 **Never hand-author these files.** They are generated from Dart and gated by
 `kitCatalogMirrorCheck`; a hand-written copy is exactly the drift the
