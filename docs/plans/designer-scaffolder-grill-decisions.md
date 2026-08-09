@@ -297,3 +297,25 @@ binding"), designer SKILL.md (compose-time rule), scaffolder SKILL.md
 - Q5 frontmatter/comment conventions apply verbatim; Q12 `inspectAttrs` stamped at emit.
 - The Q8 manifest itself stays Dart-only and untouched — the studio *follows* the recipe
   as discipline; only apps are *generated* from it. Extension map lives here + studio README.
+
+## Q-v2-5 — v1→v2 cutover (user-confirmed: A, amended)
+
+- v2 built fresh at `designs/appbox-studio-v2/` per Q-v2-1…4; v1 untouched and running
+  throughout; v1 views are candidates only, never copied wholesale.
+- **No flip/toggle mechanism** (user-ruled): probe green is a precondition, but a shell goes
+  live only on explicit **user validation** — manual, per shell. No automated flip, nothing
+  to flip back.
+- Cutover order: ceremony shells first (startup, unknown, auth), then intake, then design
+  shell last. v1 deleted only when every shell is user-validated. No back-stamping of v1.
+- **Inspect attrs rename to the ratified vocabulary** (user-ruled): the emit-time triple
+  becomes (viewId, surfaceId, widgetId) → `data-inspect-view | data-inspect-surface |
+  data-inspect-widget`. screen/page stays out of vocabulary; shell is derivable from the
+  view (inspector operates on widgets-in-a-view only, per standing ruling).
+  `probe_inspect.dart` + app-architecture doc updated together in ONE commit when v2 emit
+  lands (both-trees rule).
+- Carry-over: probe-side plumbing and Q13 findings (fragment-export constraints, viewmodel
+  cutover unit) carry as contracts/knowledge, not files.
+
+## GRILL COMPLETE
+Q1–Q15, audit resolutions, ratifications, and Q-v2-1…5 locked (Q-v2-2 deferred, reopen
+point recorded). Next: execute studio v2 build-out per this log.
