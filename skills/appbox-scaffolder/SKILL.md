@@ -233,6 +233,16 @@ only file with app-authored content is `appbox_kit_app_strings.dart`. Emitting
 new `*_colors.dart`, `*_spacing.dart` or `*_ui_helpers.dart` variants is a
 **FAIL**, not a style preference — duplicated vocabulary is how a design system
 silently forks. The copy is refreshed from kit, never edited in place.
+
+**Layout tokens are names, never numbers.** Every layout value arriving in
+`design.json` is a kit constant name and is emitted verbatim as that
+identifier: `abxPad*` for padding, `abxGap*` for gaps (numeric ladder, no tier
+aliases), `abxHug` / `abxFill` / `abxFixed` for sizing modes,
+`appBoxKitVerticalSpace*` / `appBoxKitHorizontalSpace*` for spacers,
+`abxButtonHeight*` / `abxDefault*` for role sizes. Emitting a raw numeric
+literal where a kit constant exists is a **FAIL**. A value with no matching
+constant is a blocker to surface, not a number to inline — new constants are
+added to kit deliberately and always carry the `abx` prefix.
 `kit/core/lib/utils/formatters/` remains kit-owned with no per-app copy.
 
 ## Frontmatter is normative (Q5)

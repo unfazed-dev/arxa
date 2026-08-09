@@ -185,7 +185,13 @@ the library** (DESIGN-ARCHITECTURE, "Auto Layout"): each component's container
 carries the `data-layout` attribute set and its children size with
 `data-resize-x` / `data-resize-y`. To turn it off per frame, omit
 `data-layout` (art-directed frames); to exempt a single child, give it
-`data-layout-ignore`. **You compose; you never resolve** (DESIGN-ARCHITECTURE,
+`data-layout-ignore`. Layout values in `design.json` are **kit constant names,
+never raw numbers or bare keywords**: `abxPad*` / `abxGap*` (numeric ladder, no
+tier aliases), sizing modes `abxHug` / `abxFill` / `abxFixed`, spacers
+`appBoxKitVerticalSpace*` / `appBoxKitHorizontalSpace*` — e.g. `"layout":
+{ "pad": "abxPad16", "gap": "abxGap8", "width": "abxFill", "height": "abxHug" }`
+(DESIGN-ARCHITECTURE, "Kit token binding"). An off-ladder value is a request to
+add a kit constant (always `abx`-prefixed), never a literal to inline. **You compose; you never resolve** (DESIGN-ARCHITECTURE,
 "Compositions are recipes"): a `kind` may land on one kit widget, on a variant
 you must name, on several widgets, or on a presentation mode — so name the
 variant and author the recipe (parts, slots, arrangement) in design terms.

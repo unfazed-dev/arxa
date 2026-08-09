@@ -388,6 +388,12 @@ const double abxGap4 = 4.0;
 const double abxGap2 = 2.0;
 const double abxGap0 = 0.0;
 
+// Auto Layout sizing modes (ratified: every design.json layout token is an abx
+// constant name — names, never raw numbers or bare keywords)
+const String abxHug = 'hug';
+const String abxFill = 'fill';
+const String abxFixed = 'fixed';
+
 // Sigma
 const double abxSigma100 = 100.0;
 const double abxSigma98 = 98.0;

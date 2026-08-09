@@ -279,6 +279,8 @@ Auto Layout is the medium's default layout discipline for widget-library widgets
 
 `data-gap="auto"` *is* the main-axis alignment — never combine it with `data-align-x`.
 
+**Kit token binding (ratified).** The data-attributes above are the HTML/CSS spelling only. Everywhere layout crosses the pipeline boundary — `design.json`, studio inspector round-trips, scaffolder emission — values are **kit constant names, never raw numbers or bare keywords**: padding → `abxPad*` (`abxPad1`–`abxPad80`), gap → `abxGap*` (`abxGap0`–`abxGap100`; numeric ladder is the vocabulary, no tier aliases), sizing modes → `abxHug` / `abxFill` / `abxFixed` (const Strings in `appbox_kit_app_constants.dart`), spacer emission → `appBoxKitVerticalSpace*` / `appBoxKitHorizontalSpace*`, role heights → `abxButtonHeight*` / `abxDefault*`. Example: `"layout": { "pad": "abxPad16", "gap": "abxGap8", "width": "abxFill", "height": "abxHug" }`. The inspector's drag handles quantize to the ladder — an off-ladder value cannot be authored visually; wanting one means adding a kit constant deliberately (closed set, trail-leaving escape — same discipline as the registry and `abxStr`). Every new constant, whatever its concern, carries the `abx` prefix.
+
 **Default scope — ON vs OFF.** Auto Layout is **default-ON** for every widget-library widget: buttons, cards, inputs, list rows, navs, modals, forms, toolbars. A widget component authored without `data-layout` on its container is a bug in the widget-library pass. It is **default-OFF** at the screen/artboard level and wherever layout is art direction rather than relationship:
 
 - top-level surfaces and artboards — they compose the Layout Template's named containers via `grid-template-areas`, not flow;

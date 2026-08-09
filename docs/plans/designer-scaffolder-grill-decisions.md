@@ -162,3 +162,13 @@ Reverses the Q6 "lib/ui/common deleted, import kit core directly" mechanism. The
 - **Doc surfaces updated:** scaffolder SKILL.md (Q6 section), designer SKILL.md, DESIGN-ARCHITECTURE.md (name-collision note), references/showcase-anatomy.md (§4, two spots), references/kit-catalog.md.
 - **ARB reconciliation (ruled, confirm A).** Studio widget-editing plan Decision 14 ("ARB-keyed chrome copy") amended: `abxStr` is the authoring SSOT for copy; ARB is derived-only (keys mechanically from const names, consts swapped for l10n lookups only at an app's i18n gate). No ARB exists in kit/showcase today; the only `.arb` files are appbox-studio's own UI localization. Amendment recorded in `widget-editing-autolayout-and-manager.md` below the decisions table.
 - **Pending:** portalo (and any future app) follows the same recipe at scaffold time. (Studio-side `abxStr` reference: done — the widget-editing plan is the studio inspector's doc surface; `appbox-studio/README.md` has no copy/inspector section to update.)
+
+## Amendment — sizing-mode tokens join the abx vocabulary (ratified)
+
+`design.json` layout slots carry kit constant names only. Sizing modes are now
+first-class kit constants: `abxHug` / `abxFill` / `abxFixed` (`const String`s in
+`appbox_kit_app_constants.dart`), replacing the bare keywords `"hug"` /
+`"fill"` / `"fixed"`. Standing rule: **every** new constant, whatever its
+concern, carries the `abx` prefix. Bound in DESIGN-ARCHITECTURE.md ("Kit token
+binding"), designer SKILL.md (compose-time rule), scaffolder SKILL.md
+(emit-time FAIL on raw literals). Showcase common copy re-synced from kit.
