@@ -207,8 +207,147 @@ collisions already taken by the vendor runtime:
     data-inspect-screen   data-inspect-surface   data-inspect-node
 
 with `probe_inspect.dart` extended to read those three and assert the closed
-vocabulary for the node slot. Awaiting team-lead confirmation on the spelling.
+vocabulary for the node slot.
+
+**RULED (team-lead + user, 2026-08-08):**
+1. Spelling approved as proposed: `data-inspect-screen` / `data-inspect-surface`
+   / `data-inspect-node`. Three carriers, one slot — record next to the JS
+   (`nodeId`) and Dart (`anatomyNodeId`) spellings.
+2. Enforcement is in Q13 scope for the NEW shell only: new emit path writes the
+   triple; `probe_inspect.dart` reads the three attributes and asserts the node
+   slot against the closed registry vocabulary.
+3. **Back-stamp of the old shell: skipped, by user ruling** — old shell dies at
+   cutover, stamping it is wasted work. Old-shell probe runs report identity as
+   N/A-unstamped (never PASS, never FAIL) through end of life.
+4. `app-architecture.md:180` amended in the same commit as the probe extension:
+   enforced-for-stamped-surfaces; old shell deliberately unstamped pending
+   removal at cutover.
 
 ("Stamped at emit time" is no longer open — identity is a module-level const on
 each surface, "never inferred at runtime". No route-level prop threading, no
 TSX-rewriting build step.)
+
+---
+
+# RULINGS (team-lead) — operative authority for this run
+
+Three ruling messages arrived, written against successive states of my
+corrections. Where they disagree, **the later one wins**, because the earlier
+was reasoning from premises I subsequently disproved. Reconciled below.
+
+## R1 — Sibling `anatomyAttrs`: NOT built
+
+Msg1 approved a sibling emitter; msg2 retracted it ("disregard the sibling")
+after accepting that `inspectAttrs` is a name collision. **Msg2 governs.**
+`primitives.tsx` is untouched, old-shell markup is byte-stable for free.
+
+Both messages reach the same *goal* by different means — msg1 wanted the diff
+baseline uncontaminated via a sibling, msg2 gets it for free because the triple
+was never a widget-level concern. Recorded as debt: if the two attr emitters
+should merge post-cutover, that is a deliberate follow-up, not mid-run work.
+
+**Also recorded as pre-existing (predates Q13, not mine to fix):** `inspectAttrs`
+names two different things — a per-widget *function* in `primitives.tsx`
+(`data-el`, `data-inspect-role|style|fn`) and a per-surface *module const* in
+`app-architecture.md` (`{screenId, surfaceId, nodeId}`). Anyone grepping the
+name needs this warning.
+
+## R2 — Emit mechanism: surface-level module const (msg1 point 4 superseded)
+
+Msg1 ruled "route-level threading IS emit time", reasoning that props flowing
+from `routes.design.js` are statically determined. Msg2 ruled "the triple is a
+surface-level module const per app-architecture.md". **These are different
+mechanisms and cannot both be built.** Msg2 governs, for two independent
+reasons:
+
+1. It is later and it is what the primary source shows (`app-architecture.md`
+   §"Every surface stamps its inspect identity" — an `export const` in the
+   surface module).
+2. Msg1's mechanism is not physically available: `routes.design.js` is a static
+   `[method, path, handler]` array with no request object (finding 5). It cannot
+   thread anything.
+
+Msg1's *principle* is preserved and is the part that mattered: identity must
+never be inferred at runtime from DOM heuristics. A module const satisfies that
+more strictly than threading does.
+
+## R3 — Flag: `abxAnatomyViews`, but no env override for probes
+
+Approved: `design/anatomy_flag.ts` exporting `abxAnatomyViews` (default empty ⇒
+byte-identical today), `abx` prefix retained, and request-level
+`?abxShell=anatomy|legacy` overriding it. Rejecting a `design2` `activeShell`
+value is confirmed correct — wrong granularity, and it would widen a closed
+vocabulary.
+
+**One approved item is inert and must not be relied on:** `APPBOX_ANATOMY_VIEWS`
+as a *probe* override cannot work — probes attach to an already-running server
+(finding 2), so an env var in the probe process never reaches the renderer. It
+survives only as a *server-process* default, read at server start. The
+probe-side selector is the query param. Building it as approved would reproduce
+exactly the silent-green failure msg2 credited me for catching.
+
+## R4 — Identity slot: three carriers, one slot
+
+Per msg2 plus `app-architecture.md:184`. Listed together so all three spellings
+of the single slot are findable in one place:
+
+| Carrier | Screen | Surface | Node |
+|---|---|---|---|
+| JS / TSX | `screenId` | `surfaceId` | `nodeId` |
+| Dart | `screenId` | `surfaceId` | `anatomyNodeId` |
+| DOM | `data-inspect-screen` | `data-inspect-surface` | `data-inspect-node` |
+
+Node value carries the `anatomy:` prefix (`anatomy:view.body`); vocabulary
+CLOSED at 1 member, registry v1.2.0.
+
+**No escalation needed on L145.** Msg2 offered to take the "1:1" wording to the
+user if I read it as forbidding the spelling split. I do not: `app-architecture.md:184`
+states the split explicitly — "Dart spells this slot `anatomyNodeId`, JS spells
+it `nodeId` — one slot, two spellings" — so shape-and-values 1:1 is the reading
+the source already ratifies. Dart is not renamed. Question closed, not escalated.
+
+## R5 — Enforcement scope: new shell only
+
+- **IN:** new shell's emit path writes the three attrs; `probe_inspect.dart`
+  extended to read them and assert the node slot against the closed registry
+  vocabulary. Additive; does not touch old-shell markup.
+- **OUT:** back-stamping the old shell. Crosses "do not delete" into "modify".
+  Pending user ruling.
+- **Old-shell identity verdict is `N/A-unstamped`, never `PASS`.** Absence is
+  the expected-and-recorded state. A green identity verdict on an unstamped
+  shell would be precisely the vacuous pass this run exists to prevent.
+
+## R6 — Diff normalization rule
+
+When diffing old vs new shell output, **strip `data-inspect-screen`,
+`data-inspect-surface`, `data-inspect-node` before the structural comparison.**
+The new shell legitimately carries attributes the old one does not; the diff
+verdict is about rendered structure and behaviour, not about the identity attrs
+I was told to add. Without this rule a future reader would read attr deltas as
+regressions.
+
+Note the interaction with R5: identity is *stripped* from the structural diff
+and asserted *separately* on the new side only. Two verdicts per view, never
+merged into one.
+
+## R7 — `app-architecture.md:180` must be amended in the same commit
+
+The line claims enforcement exists; it does not (finding 4). Amend to state the
+mechanism precisely — enforced by the probe for surfaces carrying
+`data-inspect-*` stamps; old-shell back-stamp pending user ruling — landing in
+the **same commit** as the probe extension so the doc is never true-by-
+anticipation (bb451c5 precedent).
+
+## R8 — Cutover table (authoritative)
+
+`activeShell` enumerated set: `app, build, design, intake, scaffold, workspace`.
+Cutover units = the three design views, flipped independently:
+
+| View | Route root | Handler | Shell verdict | Identity verdict |
+|---|---|---|---|---|
+| chat | `/design/chat` | `chat.page` | pending | pending |
+| freeze | `/design/freeze` | `freeze.page` | pending | pending |
+| prototype | `/design` | `prototype.page` | pending | pending |
+
+Flip = change `activeShell` value in that view's `page` handler. Flip back =
+toggle the same value, not a revert.
