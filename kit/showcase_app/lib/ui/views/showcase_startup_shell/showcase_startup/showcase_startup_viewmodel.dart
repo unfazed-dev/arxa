@@ -54,7 +54,7 @@ class ShowcaseStartupViewModel extends AppBoxKitViewModel {
         ShowcaseStartupOp.boot.name,
         () async {
           await AppData.initialize();
-          await _routerService.replaceWith(ShowcaseApplicationShellViewRoute());
+          await _routerService.replaceWith(ShowcaseApplicationHubViewRoute());
         },
         errorNotification: 'Startup failed — please restart the app',
         errorMessage: 'Startup failed',

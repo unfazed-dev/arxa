@@ -21,7 +21,7 @@ void main() {
   const pathProviderChannel = MethodChannel('plugins.flutter.io/path_provider');
 
   // PageRouteInfo needs a fallback for any()/captureAny() on replaceWith.
-  registerFallbackValue(ShowcaseApplicationShellViewRoute());
+  registerFallbackValue(ShowcaseApplicationHubViewRoute());
 
   group('ShowcaseStartupViewModel Tests -', () {
     late MockRouterService router;
@@ -67,7 +67,7 @@ void main() {
       // then
       final captured =
           verify(() => router.replaceWith(captureAny())).captured.single;
-      expect(captured, isA<ShowcaseApplicationShellViewRoute>());
+      expect(captured, isA<ShowcaseApplicationHubViewRoute>());
     });
 
     test(

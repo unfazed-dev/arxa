@@ -23,7 +23,7 @@ import 'package:flutter/material.dart';
 import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
 
 import 'package:appbox_kit_showcase_app/enums/showcase_application_enums/enums.dart';
-import 'package:appbox_kit_showcase_app/ui/views/showcase_application_shell/showcase_application_shell_view.dart';
+import 'package:appbox_kit_showcase_app/ui/views/showcase_application_hub/showcase_application_hub_view.dart';
 
 class ShowcaseApplicationTabHostWidget extends StatelessWidget {
   const ShowcaseApplicationTabHostWidget({super.key});
@@ -31,7 +31,7 @@ class ShowcaseApplicationTabHostWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return StackedTabsRouter.builder(
-      routes: ShowcaseApplicationShellView.tabs,
+      routes: ShowcaseApplicationHubView.tabs,
       homeIndex: 0,
       // `children` are the four tab shells — each already a full chrome
       // Scaffold. No app bar / FAB / fade here: the host stays structurally

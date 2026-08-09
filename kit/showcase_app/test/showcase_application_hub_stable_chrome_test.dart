@@ -1,6 +1,6 @@
 // Regression guard for the Notes-tab "reload on tap" fix.
 //
-// Root cause: ShowcaseApplicationShellView used to own the per-tab chrome conditionally —
+// Root cause: ShowcaseApplicationHubView used to own the per-tab chrome conditionally —
 //   appBar: inNotes ? null : PreferredSize(... AppBoxKitNativeAppBar ...)
 //   floatingActionButton: index == 3 ? null : SizedBox(... AppBoxKitNativeFabMenu ...)
 // so every Notes tap unmounted/remounted native chrome (platform views) and
@@ -8,7 +8,7 @@
 // into each tab shell (the host's Train/Shop shell paradigm), leaving the
 // outer shell a stable body + bottom-nav host.
 //
-// This test pins the contract: the outer ShowcaseApplicationShellView Scaffold (the one
+// This test pins the contract: the outer ShowcaseApplicationHubView Scaffold (the one
 // holding the bottom tab bar) must NOT carry an appBar or a floating action
 // button. If either returns, conditional chrome was re-added to the host and
 // the reload-on-tap symptom will be back.
@@ -25,7 +25,7 @@ void main() {
 
   tearDownAll(teardownShowcase);
 
-  testWidgets('outer ShowcaseApplicationShellView owns no per-tab chrome (stable host)',
+  testWidgets('outer ShowcaseApplicationHubView owns no per-tab chrome (stable host)',
       (tester) async {
     await bootShell(tester);
 

@@ -21,7 +21,7 @@
 ///       └─────────────────────────────┘
 ///         ════════ abxAction ════════
 ///
-/// History: git log --follow -- kit/showcase_app/lib/ui/views/showcase_application_shell/showcase_application_shell_view.dart
+/// History: git log --follow -- kit/showcase_app/lib/ui/views/showcase_application_hub/showcase_application_hub_view.dart
 library;
 
 import 'package:flutter/material.dart';
@@ -29,13 +29,13 @@ import 'package:responsive_builder/responsive_builder.dart';
 import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
 
 import 'package:appbox_kit_showcase_app/enums/showcase_application_enums/enums.dart';
-import 'package:appbox_kit_showcase_app/ui/views/showcase_application_shell/showcase_application_shell_view.desktop.dart';
-import 'package:appbox_kit_showcase_app/ui/views/showcase_application_shell/showcase_application_shell_view.tablet.dart';
-import 'package:appbox_kit_showcase_app/ui/views/showcase_application_shell/showcase_application_shell_view.mobile.dart';
-import 'package:appbox_kit_showcase_app/ui/views/showcase_application_shell/showcase_application_shell_viewmodel.dart';
+import 'package:appbox_kit_showcase_app/ui/views/showcase_application_hub/showcase_application_hub_view.desktop.dart';
+import 'package:appbox_kit_showcase_app/ui/views/showcase_application_hub/showcase_application_hub_view.tablet.dart';
+import 'package:appbox_kit_showcase_app/ui/views/showcase_application_hub/showcase_application_hub_view.mobile.dart';
+import 'package:appbox_kit_showcase_app/ui/views/showcase_application_hub/showcase_application_hub_viewmodel.dart';
 
-class ShowcaseApplicationShellView extends StackedView<ShowcaseApplicationShellViewModel> {
-  const ShowcaseApplicationShellView({super.key});
+class ShowcaseApplicationHubView extends StackedView<ShowcaseApplicationHubViewModel> {
+  const ShowcaseApplicationHubView({super.key});
 
   /// Identity stamped at emit time (Q12 triple).
   static const AppBoxKitInspectAttrs inspectAttrs = AppBoxKitInspectAttrs(
@@ -56,19 +56,19 @@ class ShowcaseApplicationShellView extends StackedView<ShowcaseApplicationShellV
   @override
   Widget builder(
     BuildContext context,
-    ShowcaseApplicationShellViewModel viewModel,
+    ShowcaseApplicationHubViewModel viewModel,
     Widget? child,
   ) {
     return ScreenTypeLayout.builder(
-      mobile: (_) => const ShowcaseApplicationShellViewMobile(),
-      tablet: (_) => const ShowcaseApplicationShellViewTablet(),
-      desktop: (_) => const ShowcaseApplicationShellViewDesktop(),
+      mobile: (_) => const ShowcaseApplicationHubViewMobile(),
+      tablet: (_) => const ShowcaseApplicationHubViewTablet(),
+      desktop: (_) => const ShowcaseApplicationHubViewDesktop(),
     );
   }
 
   @override
-  ShowcaseApplicationShellViewModel viewModelBuilder(
+  ShowcaseApplicationHubViewModel viewModelBuilder(
     BuildContext context,
   ) =>
-      ShowcaseApplicationShellViewModel();
+      ShowcaseApplicationHubViewModel();
 }

@@ -19,9 +19,9 @@
 ///       └─────────────────────────────┘
 ///         ════════ abxAction ════════
 ///
-/// History: git log --follow -- kit/showcase_app/lib/ui/views/showcase_application_shell/showcase_application_shell_viewmodel.dart
+/// History: git log --follow -- kit/showcase_app/lib/ui/views/showcase_application_hub/showcase_application_hub_viewmodel.dart
 library;
 
 import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
 
-class ShowcaseApplicationShellViewModel extends BaseViewModel {}
+class ShowcaseApplicationHubViewModel extends BaseViewModel {}

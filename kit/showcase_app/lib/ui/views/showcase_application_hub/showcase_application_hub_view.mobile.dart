@@ -18,29 +18,21 @@
 ///       └─────────────────────────────┘
 ///         ════════ abxAction ════════
 ///
-/// History: git log --follow -- kit/showcase_app/lib/ui/views/showcase_application_shell/showcase_application_shell_view.desktop.dart
+/// History: git log --follow -- kit/showcase_app/lib/ui/views/showcase_application_hub/showcase_application_hub_view.mobile.dart
 library;
 
 import 'package:flutter/material.dart';
 import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
 
-import 'package:appbox_kit_showcase_app/ui/views/showcase_application_shell/showcase_application_shell_viewmodel.dart';
+import 'package:appbox_kit_showcase_app/ui/widgets/showcase_application_widgets/widgets.dart';
 
-class ShowcaseApplicationShellViewDesktop extends ViewModelWidget<ShowcaseApplicationShellViewModel> {
-  const ShowcaseApplicationShellViewDesktop({super.key});
+import 'package:appbox_kit_showcase_app/ui/views/showcase_application_hub/showcase_application_hub_viewmodel.dart';
+
+class ShowcaseApplicationHubViewMobile extends ViewModelWidget<ShowcaseApplicationHubViewModel> {
+  const ShowcaseApplicationHubViewMobile({super.key});
 
   @override
-  Widget build(BuildContext context, ShowcaseApplicationShellViewModel viewModel) {
-    return const Scaffold(
-      body: Center(
-        child: Text(
-          'Hello, DESKTOP UI - ShowcaseApplicationShellView!',
-          style: TextStyle(
-            fontSize: 35,
-            fontWeight: FontWeight.w900,
-          ),
-        ),
-      ),
-    );
+  Widget build(BuildContext context, ShowcaseApplicationHubViewModel viewModel) {
+    return const ShowcaseApplicationTabHostWidget();
   }
 }

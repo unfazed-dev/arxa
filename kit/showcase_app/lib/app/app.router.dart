@@ -10,7 +10,7 @@ import 'package:flutter/material.dart' as _i21;
 import 'package:stacked/stacked.dart' as _i20;
 import 'package:stacked_services/stacked_services.dart' as _i19;
 
-import '../ui/views/showcase_application_shell/showcase_application_shell_view.dart'
+import '../ui/views/showcase_application_hub/showcase_application_hub_view.dart'
     as _i2;
 import '../ui/views/showcase_home_shell/showcase_home/showcase_home_view.dart'
     as _i9;
@@ -63,12 +63,12 @@ class StackedRouterWeb extends _i20.RootStackRouter {
         opaque: true,
       );
     },
-    ShowcaseApplicationShellViewRoute.name: (routeData) {
-      final args = routeData.argsAs<ShowcaseApplicationShellViewArgs>(
-          orElse: () => const ShowcaseApplicationShellViewArgs());
+    ShowcaseApplicationHubViewRoute.name: (routeData) {
+      final args = routeData.argsAs<ShowcaseApplicationHubViewArgs>(
+          orElse: () => const ShowcaseApplicationHubViewArgs());
       return _i20.AdaptivePage<dynamic>(
         routeData: routeData,
-        child: _i2.ShowcaseApplicationShellView(key: args.key),
+        child: _i2.ShowcaseApplicationHubView(key: args.key),
         opaque: true,
       );
     },
@@ -232,20 +232,20 @@ class StackedRouterWeb extends _i20.RootStackRouter {
           ],
         ),
         _i20.RouteConfig(
-          ShowcaseApplicationShellViewRoute.name,
+          ShowcaseApplicationHubViewRoute.name,
           path: '/',
           children: [
             _i20.RouteConfig(
               '#redirect',
               path: '',
-              parent: ShowcaseApplicationShellViewRoute.name,
+              parent: ShowcaseApplicationHubViewRoute.name,
               redirectTo: 'home',
               fullMatch: true,
             ),
             _i20.RouteConfig(
               ShowcaseHomeShellViewRoute.name,
               path: 'home',
-              parent: ShowcaseApplicationShellViewRoute.name,
+              parent: ShowcaseApplicationHubViewRoute.name,
               children: [
                 _i20.RouteConfig(
                   ShowcaseHomeViewRoute.name,
@@ -257,7 +257,7 @@ class StackedRouterWeb extends _i20.RootStackRouter {
             _i20.RouteConfig(
               ShowcaseSearchShellViewRoute.name,
               path: 'search',
-              parent: ShowcaseApplicationShellViewRoute.name,
+              parent: ShowcaseApplicationHubViewRoute.name,
               children: [
                 _i20.RouteConfig(
                   ShowcaseSearchViewRoute.name,
@@ -269,7 +269,7 @@ class StackedRouterWeb extends _i20.RootStackRouter {
             _i20.RouteConfig(
               ShowcaseProfileShellViewRoute.name,
               path: 'profile',
-              parent: ShowcaseApplicationShellViewRoute.name,
+              parent: ShowcaseApplicationHubViewRoute.name,
               children: [
                 _i20.RouteConfig(
                   ShowcaseProfileViewRoute.name,
@@ -296,7 +296,7 @@ class StackedRouterWeb extends _i20.RootStackRouter {
             _i20.RouteConfig(
               ShowcaseNotesShellViewRoute.name,
               path: 'notes',
-              parent: ShowcaseApplicationShellViewRoute.name,
+              parent: ShowcaseApplicationHubViewRoute.name,
               children: [
                 _i20.RouteConfig(
                   ShowcaseNotesViewRoute.name,
@@ -366,30 +366,30 @@ class ShowcaseStartupShellViewArgs {
 }
 
 /// generated route for
-/// [_i2.ShowcaseApplicationShellView]
-class ShowcaseApplicationShellViewRoute
-    extends _i20.PageRouteInfo<ShowcaseApplicationShellViewArgs> {
-  ShowcaseApplicationShellViewRoute({
+/// [_i2.ShowcaseApplicationHubView]
+class ShowcaseApplicationHubViewRoute
+    extends _i20.PageRouteInfo<ShowcaseApplicationHubViewArgs> {
+  ShowcaseApplicationHubViewRoute({
     _i21.Key? key,
     List<_i20.PageRouteInfo>? children,
   }) : super(
-          ShowcaseApplicationShellViewRoute.name,
+          ShowcaseApplicationHubViewRoute.name,
           path: '/',
-          args: ShowcaseApplicationShellViewArgs(key: key),
+          args: ShowcaseApplicationHubViewArgs(key: key),
           initialChildren: children,
         );
 
-  static const String name = 'ShowcaseApplicationShellView';
+  static const String name = 'ShowcaseApplicationHubView';
 }
 
-class ShowcaseApplicationShellViewArgs {
-  const ShowcaseApplicationShellViewArgs({this.key});
+class ShowcaseApplicationHubViewArgs {
+  const ShowcaseApplicationHubViewArgs({this.key});
 
   final _i21.Key? key;
 
   @override
   String toString() {
-    return 'ShowcaseApplicationShellViewArgs{key: $key}';
+    return 'ShowcaseApplicationHubViewArgs{key: $key}';
   }
 }
 
@@ -818,12 +818,12 @@ extension RouterStateExtension on _i19.RouterService {
     );
   }
 
-  Future<dynamic> navigateToShowcaseApplicationShellView({
+  Future<dynamic> navigateToShowcaseApplicationHubView({
     _i21.Key? key,
     void Function(_i20.NavigationFailure)? onFailure,
   }) async {
     return navigateTo(
-      ShowcaseApplicationShellViewRoute(
+      ShowcaseApplicationHubViewRoute(
         key: key,
       ),
       onFailure: onFailure,
@@ -1045,12 +1045,12 @@ extension RouterStateExtension on _i19.RouterService {
     );
   }
 
-  Future<dynamic> replaceWithShowcaseApplicationShellView({
+  Future<dynamic> replaceWithShowcaseApplicationHubView({
     _i21.Key? key,
     void Function(_i20.NavigationFailure)? onFailure,
   }) async {
     return replaceWith(
-      ShowcaseApplicationShellViewRoute(
+      ShowcaseApplicationHubViewRoute(
         key: key,
       ),
       onFailure: onFailure,
