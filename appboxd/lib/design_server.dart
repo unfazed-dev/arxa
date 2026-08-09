@@ -865,10 +865,24 @@ class DesignServer {
     _debounce?.cancel();
     _debounce = Timer(const Duration(milliseconds: 200), () {
       if (_stopped) return;
-      unawaited(_worker.reload().catchError((Object e) {
+      unawaited(_reloadAndRefreshRoutes().catchError((Object e) {
         stderr.writeln('[design-server] hot reload failed: $e');
       }));
     });
+  }
+
+  /// Reload the worker, then re-register the route table from the reloaded
+  /// `app.routes.js`. The table is data derived from the artifact, exactly like
+  /// the served views — a reload that renames or adds a route path would
+  /// otherwise leave the server matching the boot-time table, 404ing the new
+  /// path until a human restarts the process (observed live: renaming
+  /// `POST /prefs/accent` to `POST /preferences/accent` hot-reloaded the view
+  /// but the route stayed dead). Refresh AFTER the reload settles so the table
+  /// and the module cache always describe the same artifact generation.
+  Future<void> _reloadAndRefreshRoutes() async {
+    await _worker.reload();
+    if (_stopped) return;
+    _routeTable = await _worker.routes();
   }
 
   void _startWatcher(String dir) {
@@ -896,7 +910,8 @@ class DesignServer {
   }
 
   /// Reload the worker now (used by tests; production uses the file watcher).
-  Future<void> reload() => _worker.reload();
+  /// Same contract as the watcher path: routes re-register with the reload.
+  Future<void> reload() => _reloadAndRefreshRoutes();
 
   /// Put the worker tab into the lost-realm state task #51 recovers from.
   /// Test-only; see [JsWorker.breakDispatchForTest].

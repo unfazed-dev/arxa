@@ -61,12 +61,12 @@ export function createL10n(artifactDirOrPreload) {
 
   /**
    * @param {string} locale
-   * @param {number} n
+   * @param {number} count
    * @returns {string}
    */
-  const selectPlural = (locale, n) => {
+  const selectPlural = (locale, count) => {
     if (!pluralRules.has(locale)) pluralRules.set(locale, new Intl.PluralRules(locale));
-    return pluralRules.get(locale).select(n);
+    return pluralRules.get(locale).select(count);
   };
 
   // ICU subset by design: plural + {var} only (known ceiling) — swap in
@@ -115,8 +115,8 @@ export function createL10n(artifactDirOrPreload) {
         level === 'plain' ? [key + 'Plain', key]
         : level === 'technical' ? [key + 'Technical', key]
         : [key];
-      for (const k of variants) {
-        const hit = translate(cat, locale, k, vars) ?? translate(en, 'en', k, vars);
+      for (const variantKey of variants) {
+        const hit = translate(cat, locale, variantKey, vars) ?? translate(en, 'en', variantKey, vars);
         if (hit !== undefined) return hit;
       }
       return key;

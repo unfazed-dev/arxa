@@ -186,7 +186,17 @@ references to the v1 Dart medium (`screens.dart`). Legacy ratified identifiers
 `models/screens_model/`) survive only until their coordinated rename lands
 with a gate re-run — see `docs/plans/screen-vocabulary-identifier-rename.md`.
 
-**tsconfig is designer output.** Every emitted artifact includes an
+**Filename law (locked).** Designer-emitted filenames follow the showcase-app
+naming conventions (`references/showcase-anatomy.md`), with two absolute bans:
+no filename starts with `_` (there is no "private module" convention in the
+emitted tree — `_panel.tsx` was illegal; the base is `panel.tsx`), and no
+filename carries a version or era prefix (`v1_strings.tsx` was illegal —
+strings ride in the kit-mirror name the scaffolder will emit,
+`appbox_kit_app_strings.*`). Names describe the module's role in showcase
+vocabulary, nothing about its history or visibility. Applies to every file the
+designer writes into an artifact — code, styles, docs alike. Ruled 2026-08-09;
+rationale trail in `docs/plans/design-filename-law.md`. The mechanical check
+rides the naming gate (see the single-letter identifier law's gate). Every emitted artifact includes an
 artifact-root `tsconfig.json` produced at emit time (jsx via
 `jsxImportSource: "hono/jsx"`, no react types), and the artifact must
 type-check clean (`npx tsc -p <artifact>`) before gates report. A missing or

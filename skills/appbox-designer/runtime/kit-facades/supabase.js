@@ -52,11 +52,11 @@ export function createSupabase(env) {
    * @returns {Promise<unknown[]>} resolved rows (typed by Supabase SDK)
    */
   async function queryAll(table, opts = {}) {
-    let q = client.from(table).select(opts.select ?? '*');
-    if (opts.filter) q = q.match(opts.filter);
-    if (opts.order) q = q.order(opts.order.column, { ascending: opts.order.ascending ?? false });
-    if (opts.limit) q = q.limit(opts.limit);
-    const { data, error } = await q;
+    let queryBuilder = client.from(table).select(opts.select ?? '*');
+    if (opts.filter) queryBuilder = queryBuilder.match(opts.filter);
+    if (opts.order) queryBuilder = queryBuilder.order(opts.order.column, { ascending: opts.order.ascending ?? false });
+    if (opts.limit) queryBuilder = queryBuilder.limit(opts.limit);
+    const { data, error } = await queryBuilder;
     if (error) throw new Error(`supabase query failed: ${error.message}`);
     return data ?? [];
   }
@@ -66,19 +66,19 @@ export function createSupabase(env) {
    * secret header, then republishes the change onto the SSE bus: channel
    * `db.<table>`, event `db.insert|db.update|db.delete`, data = the record.
    * Clients listen with hx-sse on /__events?channel=db.<table>.
-   * @param {import('hono').Context} c
+   * @param {import('hono').Context} context
    */
-  async function handleDatabaseWebhook(c) {
+  async function handleDatabaseWebhook(context) {
     const secret = env.SUPABASE_WEBHOOK_SECRET;
-    if (!secret || c.req.header('x-webhook-secret') !== secret) {
-      return c.text('unauthorized', 401);
+    if (!secret || context.req.header('x-webhook-secret') !== secret) {
+      return context.text('unauthorized', 401);
     }
     /** @type {{ type?: string, table?: string, record?: unknown }} */
-    const payload = await c.req.json();
+    const payload = await context.req.json();
     const table = payload.table ?? 'default';
     const type = String(payload.type ?? 'unknown').toLowerCase();
     publishEvent(`db.${table}`, `db.${type}`, JSON.stringify(payload.record ?? {}));
-    return c.text('ok');
+    return context.text('ok');
   }
 
   return { client, queryAll, handleDatabaseWebhook };

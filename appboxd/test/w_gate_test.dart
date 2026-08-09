@@ -18,18 +18,18 @@ import 'package:test/test.dart';
 
 /// A minimal artifact that satisfies every rule, in the post-migration TSX
 /// shape the studio itself uses:
-///   - `_panel.tsx` (the W3 base) and two role panels in ui/common/widgets/,
+///   - `_panel.tsx` (the W3 base) and two role panels in `ui/widgets/common/panels/`,
 ///     each consumed by both shells. A role panel exports `Open` — the frame —
 ///     re-exported as default; a shell MOUNTS the role by rendering that
 ///     component.
-///   - a shell widget used by two surfaces of main_shell.
-///   - a surface widget used by exactly one surface.
+///   - a feature widget (`ui/widgets/main_shell_widgets/`) used by two surfaces of main_shell.
+///   - a feature widget used by exactly one surface.
 ///   - two shell views, each mounting header + main once.
 ///   - widgets.css holding the only pill radius.
 ///   - viewmodels writing only `<shell>.*` / `app.*` keys.
 final _cleanTree = <String, String>{
   // ── the panel base: the ONLY file allowed to carry the skeleton classes.
-  'ui/common/widgets/_panel.tsx': '''
+  'ui/widgets/common/panels/_panel.tsx': '''
 export function Panel({ role, children }) {
   return (
     <section class="panel panel-frame panel-size-m">
@@ -44,14 +44,14 @@ export function Panel({ role, children }) {
 }
 ''',
   // ── role panels: thin instantiations, consumed by both shells.
-  'ui/common/widgets/header_panel.tsx': '''
+  'ui/widgets/common/panels/header_panel.tsx': '''
 import { Panel } from './_panel.tsx';
 export function Open({ children }) {
   return <Panel role="header">{children}</Panel>;
 }
 export { Open as default };
 ''',
-  'ui/common/widgets/main_panel.tsx': '''
+  'ui/widgets/common/panels/main_panel.tsx': '''
 import { Panel } from './_panel.tsx';
 export function Open({ children }) {
   return <Panel role="main">{children}</Panel>;
@@ -65,17 +65,17 @@ export function View({ f }) {
 export { Open as default };
 ''',
   // ── a genuinely cross-shell widget.
-  'ui/common/widgets/chip.tsx': '''
+  'ui/widgets/common/chips/chip.tsx': '''
 export function Chip({ text }) {
   return <span class="chip">{text}</span>;
 }
 ''',
   // ── main_shell: two surfaces share one widget.
-  'ui/views/main_shell/shared/widgets/toolbar.tsx':
+  'ui/widgets/main_shell_widgets/toolbar.tsx':
       'export default function Toolbar() { return <div class="toolbar">tools</div>; }\n',
   'ui/views/main_shell/main_shell_view.tsx': '''
-import HeaderPanel from '../../common/widgets/header_panel.tsx';
-import MainPanel from '../../common/widgets/main_panel.tsx';
+import HeaderPanel from '../../widgets/common/panels/header_panel.tsx';
+import MainPanel from '../../widgets/common/panels/main_panel.tsx';
 export default function MainShellView() {
   return (
     <main>
@@ -86,17 +86,17 @@ export default function MainShellView() {
 }
 ''',
   'ui/views/main_shell/intake/brief/brief_view.tsx': '''
-import Toolbar from '../../shared/widgets/toolbar.tsx';
-import { Chip } from '../../../../common/widgets/chip.tsx';
-import Row from './widgets/row.tsx';
+import Toolbar from '../../../../widgets/main_shell_widgets/toolbar.tsx';
+import { Chip } from '../../../../widgets/common/chips/chip.tsx';
+import Row from '../../../../widgets/main_brief_widgets/row.tsx';
 export default function BriefView() {
   return <main><Toolbar /><Chip text="a" /><Row /></main>;
 }
 ''',
-  'ui/views/main_shell/intake/brief/widgets/row.tsx':
+  'ui/widgets/main_brief_widgets/row.tsx':
       'export default function Row() { return <div class="row"></div>; }\n',
   'ui/views/main_shell/design/chat/chat_view.tsx': '''
-import Toolbar from '../../shared/widgets/toolbar.tsx';
+import Toolbar from '../../../../widgets/main_shell_widgets/toolbar.tsx';
 export default function ChatView() {
   return <main><Toolbar /></main>;
 }
@@ -109,8 +109,8 @@ export const page = (c, h) => {
 ''',
   // ── app_shell: the second consumer of the common widgets.
   'ui/views/app_shell/app_shell_view.tsx': '''
-import HeaderPanel from '../../common/widgets/header_panel.tsx';
-import MainPanel from '../../common/widgets/main_panel.tsx';
+import HeaderPanel from '../../widgets/common/panels/header_panel.tsx';
+import MainPanel from '../../widgets/common/panels/main_panel.tsx';
 export default function AppShellView() {
   return (
     <main>
@@ -121,7 +121,7 @@ export default function AppShellView() {
 }
 ''',
   'ui/views/app_shell/auth/auth_view.tsx': '''
-import { Chip } from '../../../common/widgets/chip.tsx';
+import { Chip } from '../../../widgets/common/chips/chip.tsx';
 export default function AuthView() {
   return <main><Chip text="b" /></main>;
 }
@@ -200,205 +200,155 @@ void main() {
   });
 
   group('W1 placement', () {
-    test('common widget with a single-surface consumer set must demote', () {
-      // Drop app_shell's use of chip: brief_view is now its only consumer, so
-      // the law demands the surface home, not merely the shell home.
+    test('a common widget consumed by one shell only must demote', () {
+      // auth_view stops importing chip: every remaining consumer sits in
+      // main_shell, so the common/ placement is no longer earned.
       expectsOnly('W1', {
-        'ui/views/app_shell/auth/auth_view.tsx':
-            'export default function AuthView() { return <main></main>; }\n',
-      },
-          messageContains:
-              'ui/views/main_shell/intake/brief/widgets/chip.tsx');
-    });
-
-    test('common widget consumed by two surfaces of one shell demotes to shell',
-        () {
-      expectsOnly('W1', {
-        'ui/views/app_shell/auth/auth_view.tsx':
-            'export default function AuthView() { return <main></main>; }\n',
-        'ui/views/main_shell/design/chat/chat_view.tsx': '''
-import Toolbar from '../../shared/widgets/toolbar.tsx';
-import { Chip } from '../../../../common/widgets/chip.tsx';
-export default function ChatView() {
-  return <main><Toolbar /><Chip text="c" /></main>;
+        'ui/views/app_shell/auth/auth_view.tsx': '''
+export default function AuthView() {
+  return <main></main>;
 }
 ''',
-      },
-          messageContains: 'ui/views/main_shell/shared/widgets/chip.tsx');
+      }, messageContains: 'unearned');
     });
 
-    test('shell widget consumed by one surface only must demote to that surface',
-        () {
-      // chat_view stops using the toolbar → one consumer directory left.
+    test('a feature widget imported from a second shell earns promotion', () {
       expectsOnly('W1', {
-        'ui/views/main_shell/design/chat/chat_view.tsx':
-            'export default function ChatView() { return <main></main>; }\n',
-      }, messageContains: 'ui/views/main_shell/intake/brief/widgets/toolbar.tsx');
-    });
-
-    test('surface widget consumed from outside its surface must promote', () {
-      // chat_view (a design surface) reaches into intake/brief's own widget.
-      expectsOnly('W1', {
-        'ui/views/main_shell/design/chat/chat_view.tsx': '''
-import Toolbar from '../../shared/widgets/toolbar.tsx';
-import Row from '../../intake/brief/widgets/row.tsx';
-export default function ChatView() {
-  return <main><Toolbar /><Row /></main>;
+        'ui/views/app_shell/auth/auth_view.tsx': '''
+import { Chip } from '../../../widgets/common/chips/chip.tsx';
+import Toolbar from '../../../widgets/main_shell_widgets/toolbar.tsx';
+export default function AuthView() {
+  return <main><Toolbar /><Chip text="b" /></main>;
 }
 ''',
-      },
-          messageContains:
-              'ui/views/main_shell/shared/widgets/row.tsx');
+      }, messageContains: 'ui/widgets/common/<group>/toolbar.tsx');
     });
 
-    test('a widget consumed only by a same-scope widget is correctly placed',
+    test('a consumer in the ui/common base layer is cross-shell by construction',
         () {
-      // The doubled-path trap: the sole consumer is another shell-scoped widget
-      // in the same folder, so the widget is already at the narrowest scope —
-      // its consumer is itself shell-wide. Demanding `widgets/widgets/` here
-      // would be reading the consumer's folder instead of its scope.
+      expectsOnly('W1', {
+        'ui/common/base.tsx': '''
+import Toolbar from '../widgets/main_shell_widgets/toolbar.tsx';
+export default function Base() { return <Toolbar />; }
+''',
+      }, messageContains: 'cross-shell base layer');
+    });
+
+    test('a feature widget consumed only by a common widget promotes too', () {
+      // chip is cross-shell by placement; toolbar inherits that reach.
+      expectsOnly('W1', {
+        'ui/widgets/common/chips/chip.tsx': '''
+import Toolbar from '../../main_shell_widgets/toolbar.tsx';
+export function Chip({ text }) {
+  return <span class="chip">{text}<Toolbar /></span>;
+}
+''',
+      }, messageContains: 'promotion');
+    });
+
+    test('a widget consumed only by a same-feature widget is correctly placed',
+        () {
       final findings = gateDesignWidgets(_tree(tmp, {
-        'ui/views/main_shell/shared/widgets/leaf.tsx':
-            'export default function Leaf() { return <b></b>; }\n',
-        'ui/views/main_shell/shared/widgets/toolbar.tsx': '''
+        'ui/widgets/main_shell_widgets/leaf.tsx':
+            'export default function Leaf() { return <i>leaf</i>; }\n',
+        'ui/widgets/main_shell_widgets/toolbar.tsx': '''
 import Leaf from './leaf.tsx';
-export default function Toolbar() {
-  return <div class="toolbar"><Leaf /></div>;
-}
+export default function Toolbar() { return <div class="toolbar"><Leaf /></div>; }
 ''',
       }));
       expect(findings, isEmpty, reason: findings.join('\n'));
     });
 
-    test('two surfaces of one SECTION round up to the shell, not a section tier',
+    test('the retired three-tier homes are named, not scope-measured', () {
+      // One retired home per spelling; each needs a live importer so W2 stays
+      // out of the way. The message must name the tier, not measure scope.
+      expectsOnly('W1', {
+        'ui/views/main_shell/design/chat/widgets/nav.tsx':
+            'export default function Nav() { return <nav></nav>; }\n',
+        'ui/views/main_shell/design/chat/chat_view.tsx': '''
+import Toolbar from '../../../../widgets/main_shell_widgets/toolbar.tsx';
+import Nav from './widgets/nav.tsx';
+export default function ChatView() {
+  return <main><Toolbar /><Nav /></main>;
+}
+''',
+      }, messageContains: 'retired widget tier');
+    });
+
+    test('ui/common/widgets/, ui/dialogs/ and ui/bottomsheets/ are named too',
         () {
-      // The four-tier trap: brief/ and direction/ are both under intake/, whose
-      // common ancestor is `ui/views/main_shell/intake` — a section, not a
-      // surface. The law names three homes, so the fix must be the shell home;
-      // `intake/widgets/` is not a place the scaffolder would emit.
-      final findings = gateDesignWidgets(_tree(tmp, {
-        'ui/views/main_shell/design/chat/chat_view.tsx':
-            'export default function ChatView() { return <main></main>; }\n',
-        'ui/views/main_shell/intake/direction/direction_view.tsx': '''
-import Toolbar from '../../shared/widgets/toolbar.tsx';
-export default function DirectionView() {
-  return <main><Toolbar /></main>;
+      for (final retired in [
+        'ui/common/widgets/nav.tsx',
+        'ui/dialogs/nav.tsx',
+        'ui/bottomsheets/nav.tsx',
+      ]) {
+        final art = _tree(
+            Directory(tmp.path)..createSync(recursive: true), {
+          retired: 'export default function Nav() { return <nav></nav>; }\n',
+          'ui/views/main_shell/design/chat/chat_view.tsx': '''
+import Toolbar from '../../../../widgets/main_shell_widgets/toolbar.tsx';
+import Nav from '../../../../${retired.substring(3)}';
+export default function ChatView() {
+  return <main><Toolbar /><Nav /></main>;
 }
 ''',
-      }));
-      expect(findings.map((f) => f.message).join('\n'), isNot(contains('intake/widgets')));
-      expect(findings, isEmpty, reason: findings.join('\n'));
+        });
+        final findings = gateDesignWidgets(art);
+        expect(_rules(findings), {'W1'},
+            reason: '$retired:\n${findings.join('\n')}');
+        expect(findings.map((f) => f.message).join('\n'),
+            contains('retired widget tier'));
+        Directory(art).deleteSync(recursive: true);
+      }
     });
 
-    test('a section-level widgets/ dir is reported against the shell home', () {
+    test('a flat file directly in ui/widgets/ is illegal', () {
       expectsOnly('W1', {
-        'ui/views/main_shell/intake/widgets/section.tsx':
-            'export default function Section() { return <b></b>; }\n',
-        'ui/views/main_shell/intake/direction/direction_view.tsx': '''
-import Section from '../widgets/section.tsx';
-export default function DirectionView() {
-  return <main><Section /></main>;
+        'ui/widgets/nav.tsx':
+            'export default function Nav() { return <nav></nav>; }\n',
+        'ui/views/main_shell/design/chat/chat_view.tsx': '''
+import Toolbar from '../../../../widgets/main_shell_widgets/toolbar.tsx';
+import Nav from '../../../../widgets/nav.tsx';
+export default function ChatView() {
+  return <main><Toolbar /><Nav /></main>;
 }
 ''',
-        'ui/views/main_shell/intake/brief/brief_view.tsx': '''
-import Toolbar from '../../shared/widgets/toolbar.tsx';
-import { Chip } from '../../../../common/widgets/chip.tsx';
-import Row from './widgets/row.tsx';
-import Section from '../widgets/section.tsx';
-export default function BriefView() {
-  return <main><Toolbar /><Chip text="a" /><Row /><Section /></main>;
-}
-''',
-      },
-          messageContains:
-              'ui/views/main_shell/shared/widgets/section.tsx');
+      }, messageContains: 'flat file directly in');
     });
 
-    test('the retired flat ui/widgets/ tier is named, not scope-measured', () {
-      // Two shell consumers, so a scope reading would compute a legal-looking
-      // "cross-shell" answer and say nothing about the tier. The failure must
-      // name the retired tier instead — the fix is a migration, not a move
-      // derived from consumer counts.
-      final notes = <LintFinding>[];
-      final findings = gateDesignWidgets(
-          _tree(tmp, {
-            'ui/widgets/components/_nav.tsx':
-                'export default function Nav() { return <nav></nav>; }\n',
-            'ui/views/main_shell/main_shell_view.tsx': '''
-import HeaderPanel from '../../common/widgets/header_panel.tsx';
-import MainPanel from '../../common/widgets/main_panel.tsx';
-import Nav from '../../widgets/components/_nav.tsx';
-export default function MainShellView() {
-  return <main><HeaderPanel /><MainPanel /><Nav /></main>;
-}
-''',
-            'ui/views/app_shell/app_shell_view.tsx': '''
-import HeaderPanel from '../../common/widgets/header_panel.tsx';
-import MainPanel from '../../common/widgets/main_panel.tsx';
-import Nav from '../../widgets/components/_nav.tsx';
-export default function AppShellView() {
-  return <main><HeaderPanel /><MainPanel /><Nav /></main>;
-}
-''',
-          }),
-          notes: notes);
-      expect(_rules(findings), {'W1'}, reason: findings.join('\n'));
-      final msg = findings.single.message;
-      expect(msg, contains('retired flat widget tier'));
-      expect(msg, contains('ui/widgets/'));
-      // The old behaviour: a surface home keyed `ui`, reported as a scope
-      // problem. Neither phrase may come back.
-      expect(msg, isNot(contains('narrowest scope')));
-      expect(msg, isNot(contains('confined to')));
-    });
-
-    test('ui/dialogs/ and ui/bottomsheets/ are named too', () {
-      // Neither holds a `widgets/` segment, so both are invisible to isWidget;
-      // the placement pass admits them explicitly or the retired family is
-      // enforced only where it happens to be spelled `widgets`.
-      final findings = gateDesignWidgets(_tree(tmp, {
-        'ui/dialogs/_confirm.tsx':
-            'export default function Confirm() { return <dialog></dialog>; }\n',
-        'ui/bottomsheets/_share.tsx':
-            'export default function Share() { return <div></div>; }\n',
-        'ui/views/main_shell/intake/brief/brief_view.tsx': '''
-import Toolbar from '../../shared/widgets/toolbar.tsx';
-import { Chip } from '../../../../common/widgets/chip.tsx';
-import Row from './widgets/row.tsx';
-import Confirm from '../../../../dialogs/_confirm.tsx';
-import Share from '../../../../bottomsheets/_share.tsx';
-export default function BriefView() {
-  return <main><Toolbar /><Chip text="a" /><Row /><Confirm /><Share /></main>;
-}
-''',
-      }));
-      expect(_rules(findings), {'W1'}, reason: findings.join('\n'));
-      final msgs = findings.map((f) => '${f.file}: ${f.message}').join('\n');
-      expect(msgs, contains('ui/dialogs/'));
-      expect(msgs, contains('ui/bottomsheets/'));
-    });
-
-    test('a bare <shell>/widgets/ directory is illegal', () {
+    test('ui/widgets/common/ is grouped, never flat', () {
       expectsOnly('W1', {
-        'ui/views/main_shell/widgets/stray.tsx':
-            'export default function Stray() { return <b></b>; }\n',
-        'ui/views/main_shell/intake/brief/brief_view.tsx': '''
-import Toolbar from '../../shared/widgets/toolbar.tsx';
-import { Chip } from '../../../../common/widgets/chip.tsx';
-import Row from './widgets/row.tsx';
-import Stray from '../../widgets/stray.tsx';
-export default function BriefView() {
-  return <main><Toolbar /><Chip text="a" /><Row /><Stray /></main>;
+        'ui/widgets/common/nav.tsx':
+            'export default function Nav() { return <nav></nav>; }\n',
+        'ui/views/main_shell/design/chat/chat_view.tsx': '''
+import Toolbar from '../../../../widgets/main_shell_widgets/toolbar.tsx';
+import Nav from '../../../../widgets/common/nav.tsx';
+export default function ChatView() {
+  return <main><Toolbar /><Nav /></main>;
 }
 ''',
-      }, messageContains: 'not a legal widget home');
+      }, messageContains: 'grouped, never flat');
+    });
+
+    test('an unnamed group is reported with the documented exception', () {
+      expectsOnly('W1', {
+        'ui/widgets/toolbox/nav.tsx':
+            'export default function Nav() { return <nav></nav>; }\n',
+        'ui/views/main_shell/design/chat/chat_view.tsx': '''
+import Toolbar from '../../../../widgets/main_shell_widgets/toolbar.tsx';
+import Nav from '../../../../widgets/toolbox/nav.tsx';
+export default function ChatView() {
+  return <main><Toolbar /><Nav /></main>;
+}
+''',
+      }, messageContains: 'mouse_transforms');
     });
   });
 
   group('W2 dead widgets', () {
     test('a widget with zero importers fails', () {
       expectsOnly('W2', {
-        'ui/common/widgets/ghost.tsx':
+        'ui/widgets/common/panels/ghost.tsx':
             'export default function Ghost() { return <i></i>; }\n',
       }, messageContains: 'zero importers');
     });
@@ -407,7 +357,7 @@ export default function BriefView() {
   group('W3 panels instantiated, never re-implemented', () {
     test('skeleton classes outside _panel.tsx fail', () {
       expectsOnly('W3', {
-        'ui/views/main_shell/shared/widgets/toolbar.tsx':
+        'ui/widgets/main_shell_widgets/toolbar.tsx':
             'export default function Toolbar() { return <div class="panel-top panel-body">rolled my own</div>; }\n',
       }, messageContains: 'instantiate the base');
     });
@@ -416,14 +366,14 @@ export default function BriefView() {
       // hono/jsx class props are often backtick templates; quoting the attr is
       // not an escape from W3.
       expectsOnly('W3', {
-        'ui/views/main_shell/shared/widgets/toolbar.tsx':
+        'ui/widgets/main_shell_widgets/toolbar.tsx':
             'export default function Toolbar({ x }) { return <div class={`panel-top \${x}`}>rolled my own</div>; }\n',
       }, messageContains: 'instantiate the base');
     });
 
     test('role markers and innocuous descendants stay legal', () {
       final findings = gateDesignWidgets(_tree(tmp, {
-        'ui/views/main_shell/shared/widgets/toolbar.tsx':
+        'ui/widgets/main_shell_widgets/toolbar.tsx':
             'export default function Toolbar() { return <div class="panel-header panel-label panel-bar-item">ok</div>; }\n',
       }));
       expect(findings, isEmpty, reason: findings.join('\n'));
@@ -437,8 +387,8 @@ export default function BriefView() {
       final notes = <LintFinding>[];
       final findings = gateDesignWidgets(
           _tree(tmp, {
-            'ui/common/widgets/_panel.tsx': _deleted,
-            'ui/views/main_shell/shared/widgets/_panel.tsx': '''
+            'ui/widgets/common/panels/_panel.tsx': _deleted,
+            'ui/widgets/main_shell_widgets/_panel.tsx': '''
 export default function Panel({ role, children }) {
   return (
     <section class="panel panel-frame">
@@ -448,12 +398,12 @@ export default function Panel({ role, children }) {
 }
 ''',
             // The roles no longer import a base from ui/common.
-            'ui/common/widgets/header_panel.tsx':
+            'ui/widgets/common/panels/header_panel.tsx':
                 'export default function HeaderPanel() { return <div class="panel-header">h</div>; }\n',
-            'ui/common/widgets/main_panel.tsx':
+            'ui/widgets/common/panels/main_panel.tsx':
                 'export default function MainPanel() { return <div class="panel-main">m</div>; }\n',
             // The toolbar composes the relocated base, so it has a consumer.
-            'ui/views/main_shell/shared/widgets/toolbar.tsx': '''
+            'ui/widgets/main_shell_widgets/toolbar.tsx': '''
 import BasePanel from './_panel.tsx';
 export default function Toolbar() {
   return <BasePanel role="main"><span>tools</span></BasePanel>;
@@ -473,10 +423,10 @@ export default function Toolbar() {
       // role panels drop the base import along with it.
       final findings = gateDesignWidgets(
           _tree(tmp, {
-            'ui/common/widgets/_panel.tsx': _deleted,
-            'ui/common/widgets/header_panel.tsx':
+            'ui/widgets/common/panels/_panel.tsx': _deleted,
+            'ui/widgets/common/panels/header_panel.tsx':
                 'export default function HeaderPanel() { return <div class="panel-header">h</div>; }\n',
-            'ui/common/widgets/main_panel.tsx':
+            'ui/widgets/common/panels/main_panel.tsx':
                 'export default function MainPanel() { return <div class="panel-main">m</div>; }\n',
           }),
           notes: notes);
@@ -489,8 +439,8 @@ export default function Toolbar() {
     test('mounting a role panel twice fails', () {
       expectsOnly('W4', {
         'ui/views/main_shell/main_shell_view.tsx': '''
-import HeaderPanel from '../../common/widgets/header_panel.tsx';
-import MainPanel from '../../common/widgets/main_panel.tsx';
+import HeaderPanel from '../../widgets/common/panels/header_panel.tsx';
+import MainPanel from '../../widgets/common/panels/main_panel.tsx';
 export default function MainShellView() {
   return (
     <main>
@@ -508,8 +458,8 @@ export default function MainShellView() {
         () {
       expectsOnly('W4', {
         'ui/views/main_shell/main_shell_view.tsx': '''
-import HeaderPanel from '../../common/widgets/header_panel.tsx';
-import MainPanel from '../../common/widgets/main_panel.tsx';
+import HeaderPanel from '../../widgets/common/panels/header_panel.tsx';
+import MainPanel from '../../widgets/common/panels/main_panel.tsx';
 export default function MainShellView() {
   return (
     <main>
@@ -529,8 +479,8 @@ export default function MainShellView() {
       // `<MainOpen>…</MainOpen>`.
       expectsOnly('W4', {
         'ui/views/main_shell/main_shell_view.tsx': '''
-import HeaderPanel from '../../common/widgets/header_panel.tsx';
-import { Open as MainOpen } from '../../common/widgets/main_panel.tsx';
+import HeaderPanel from '../../widgets/common/panels/header_panel.tsx';
+import { Open as MainOpen } from '../../widgets/common/panels/main_panel.tsx';
 export default function MainShellView() {
   return (
     <main>
@@ -551,8 +501,8 @@ export default function MainShellView() {
       // panel as three.
       final findings = gateDesignWidgets(_tree(tmp, {
         'ui/views/main_shell/main_shell_view.tsx': '''
-import HeaderPanel from '../../common/widgets/header_panel.tsx';
-import MainPanel, { PanelBar, View as MainView } from '../../common/widgets/main_panel.tsx';
+import HeaderPanel from '../../widgets/common/panels/header_panel.tsx';
+import MainPanel, { PanelBar, View as MainView } from '../../widgets/common/panels/main_panel.tsx';
 export default function MainShellView({ panel, f }) {
   return (
     <main>
@@ -575,13 +525,13 @@ export default function MainShellView({ panel, f }) {
       // main_shell_view.tsx, find nothing wrong, and pass while the real
       // composition went unmeasured.
       expectsOnly('W4', {
-        'ui/views/main_shell/shared/widgets/activity_panel.tsx': '''
+        'ui/widgets/main_shell_widgets/activity_panel.tsx': '''
 export function Open({ spec, children }) {
   return <aside class="panel-activity">{children}</aside>;
 }
 ''',
         'ui/views/main_shell/design/_shared.tsx': '''
-import { Open as ActivityOpen } from '../shared/widgets/activity_panel.tsx';
+import { Open as ActivityOpen } from '../../../widgets/main_shell_widgets/activity_panel.tsx';
 export function DesignShared({ spec }) {
   return (
     <section>
@@ -601,19 +551,19 @@ export function DesignShared({ spec }) {
       // counting reads that as two layouts of one hosted shell, which is what
       // it is — a tree-wide count would call it a duplicate.
       final findings = gateDesignWidgets(_tree(tmp, {
-        'ui/views/main_shell/shared/widgets/activity_panel.tsx': '''
+        'ui/widgets/main_shell_widgets/activity_panel.tsx': '''
 export function Open({ spec, children }) {
   return <aside class="panel-activity">{children}</aside>;
 }
 ''',
         'ui/views/main_shell/design/_shared.tsx': '''
-import { Open as ActivityOpen } from '../shared/widgets/activity_panel.tsx';
+import { Open as ActivityOpen } from '../../../widgets/main_shell_widgets/activity_panel.tsx';
 export function DesignShared({ spec }) {
   return <ActivityOpen spec={spec} />;
 }
 ''',
         'ui/views/main_shell/design/prototype/prototype_view.tsx': '''
-import { Open as ActivityOpen } from '../../shared/widgets/activity_panel.tsx';
+import { Open as ActivityOpen } from '../../../../widgets/main_shell_widgets/activity_panel.tsx';
 export default function PrototypeView({ spec }) {
   return <ActivityOpen spec={spec} />;
 }
@@ -628,7 +578,7 @@ export default function PrototypeView({ spec }) {
       // another file mounted. It sits in the hosted group, so it IS checked;
       // with no `Open` binding there is simply no mount to count.
       final findings = gateDesignWidgets(_tree(tmp, {
-        'ui/views/main_shell/shared/widgets/activity_panel.tsx': '''
+        'ui/widgets/main_shell_widgets/activity_panel.tsx': '''
 export function Open({ spec, children }) {
   return <aside class="panel-activity">{children}</aside>;
 }
@@ -640,13 +590,13 @@ export function Bottom({ spec, oob }) {
 }
 ''',
         'ui/views/main_shell/design/_shared.tsx': '''
-import { Open as ActivityOpen } from '../shared/widgets/activity_panel.tsx';
+import { Open as ActivityOpen } from '../../../widgets/main_shell_widgets/activity_panel.tsx';
 export function DesignShared({ spec }) {
   return <ActivityOpen spec={spec}>body</ActivityOpen>;
 }
 ''',
         'ui/views/main_shell/design/prototype/prototype_view.tsx': '''
-import { Top as ActivityTop, Bottom as ActivityBottom } from '../../shared/widgets/activity_panel.tsx';
+import { Top as ActivityTop, Bottom as ActivityBottom } from '../../../../widgets/main_shell_widgets/activity_panel.tsx';
 export default function PrototypeView({ spec }) {
   return (
     <section>
@@ -666,9 +616,9 @@ export default function PrototypeView({ spec }) {
       // composition, not a shell declaring its panel set, so the five-roles
       // rule must not reach it — `shared/` is an overlay, never a hosted shell.
       final findings = gateDesignWidgets(_tree(tmp, {
-        'ui/views/main_shell/shared/widgets/mini_panel.tsx':
+        'ui/widgets/main_shell_widgets/mini_panel.tsx':
             'export default function MiniPanel() { return <div class="mini"></div>; }\n',
-        'ui/views/main_shell/shared/widgets/toolbar.tsx': '''
+        'ui/widgets/main_shell_widgets/toolbar.tsx': '''
 import MiniPanel from './mini_panel.tsx';
 export default function Toolbar() {
   return <div class="toolbar"><MiniPanel /></div>;
@@ -680,20 +630,20 @@ export default function Toolbar() {
 
     test('mounting a non-role panel fails', () {
       expectsOnly('W4', {
-        'ui/common/widgets/sidebar_panel.tsx':
+        'ui/widgets/common/panels/sidebar_panel.tsx':
             'export default function SidebarPanel() { return <aside></aside>; }\n',
         'ui/views/main_shell/main_shell_view.tsx': '''
-import HeaderPanel from '../../common/widgets/header_panel.tsx';
-import MainPanel from '../../common/widgets/main_panel.tsx';
-import SidebarPanel from '../../common/widgets/sidebar_panel.tsx';
+import HeaderPanel from '../../widgets/common/panels/header_panel.tsx';
+import MainPanel from '../../widgets/common/panels/main_panel.tsx';
+import SidebarPanel from '../../widgets/common/panels/sidebar_panel.tsx';
 export default function MainShellView() {
   return <main><HeaderPanel /><MainPanel /><SidebarPanel /></main>;
 }
 ''',
         'ui/views/app_shell/app_shell_view.tsx': '''
-import HeaderPanel from '../../common/widgets/header_panel.tsx';
-import MainPanel from '../../common/widgets/main_panel.tsx';
-import SidebarPanel from '../../common/widgets/sidebar_panel.tsx';
+import HeaderPanel from '../../widgets/common/panels/header_panel.tsx';
+import MainPanel from '../../widgets/common/panels/main_panel.tsx';
+import SidebarPanel from '../../widgets/common/panels/sidebar_panel.tsx';
 export default function AppShellView() {
   return <main><HeaderPanel /><MainPanel /><SidebarPanel /></main>;
 }
@@ -711,7 +661,7 @@ export default function AppShellView() {
 
     test('pill radius in an inline style fails', () {
       expectsOnly('W5', {
-        'ui/views/main_shell/intake/brief/widgets/row.tsx':
+        'ui/widgets/main_brief_widgets/row.tsx':
             'export default function Row() { return <div style="border-radius: 999px">r</div>; }\n',
       }, messageContains: 'inline');
     });
@@ -895,9 +845,9 @@ export const page = (c, h) => {
     test('a bare <span> with literal text in a surface view fails', () {
       expectsOnly('W7', {
         'ui/views/main_shell/intake/brief/brief_view.tsx': '''
-import Toolbar from '../../shared/widgets/toolbar.tsx';
-import { Chip } from '../../../../common/widgets/chip.tsx';
-import Row from './widgets/row.tsx';
+import Toolbar from '../../../../widgets/main_shell_widgets/toolbar.tsx';
+import { Chip } from '../../../../widgets/common/chips/chip.tsx';
+import Row from '../../../../widgets/main_brief_widgets/row.tsx';
 export default function BriefView() {
   return <main><Toolbar /><Chip text="a" /><Row /><span>Raw text</span></main>;
 }
@@ -908,9 +858,9 @@ export default function BriefView() {
     test('an interactive <button> without identity fails even with no text', () {
       expectsOnly('W7', {
         'ui/views/main_shell/intake/brief/brief_view.tsx': '''
-import Toolbar from '../../shared/widgets/toolbar.tsx';
-import { Chip } from '../../../../common/widgets/chip.tsx';
-import Row from './widgets/row.tsx';
+import Toolbar from '../../../../widgets/main_shell_widgets/toolbar.tsx';
+import { Chip } from '../../../../widgets/common/chips/chip.tsx';
+import Row from '../../../../widgets/main_brief_widgets/row.tsx';
 export default function BriefView() {
   return <main><Toolbar /><Chip text="a" /><Row /><button /></main>;
 }
@@ -921,9 +871,9 @@ export default function BriefView() {
     test('a library widget invocation (Capitalized tag) bearing text passes', () {
       final findings = gateDesignWidgets(_tree(tmp, {
         'ui/views/main_shell/intake/brief/brief_view.tsx': '''
-import Toolbar from '../../shared/widgets/toolbar.tsx';
-import { Chip } from '../../../../common/widgets/chip.tsx';
-import Row from './widgets/row.tsx';
+import Toolbar from '../../../../widgets/main_shell_widgets/toolbar.tsx';
+import { Chip } from '../../../../widgets/common/chips/chip.tsx';
+import Row from '../../../../widgets/main_brief_widgets/row.tsx';
 export default function BriefView() {
   return <main><Toolbar /><Chip text="a" /><Row /><Label>Raw text</Label></main>;
 }
@@ -935,9 +885,9 @@ export default function BriefView() {
     test('a bare tag with data-el passes', () {
       final findings = gateDesignWidgets(_tree(tmp, {
         'ui/views/main_shell/intake/brief/brief_view.tsx': '''
-import Toolbar from '../../shared/widgets/toolbar.tsx';
-import { Chip } from '../../../../common/widgets/chip.tsx';
-import Row from './widgets/row.tsx';
+import Toolbar from '../../../../widgets/main_shell_widgets/toolbar.tsx';
+import { Chip } from '../../../../widgets/common/chips/chip.tsx';
+import Row from '../../../../widgets/main_brief_widgets/row.tsx';
 export default function BriefView() {
   return <main><Toolbar /><Chip text="a" /><Row /><span data-el="label">text</span></main>;
 }
@@ -949,9 +899,9 @@ export default function BriefView() {
     test('a bare tag with inspectAttrs spread passes', () {
       final findings = gateDesignWidgets(_tree(tmp, {
         'ui/views/main_shell/intake/brief/brief_view.tsx': '''
-import Toolbar from '../../shared/widgets/toolbar.tsx';
-import { Chip } from '../../../../common/widgets/chip.tsx';
-import Row from './widgets/row.tsx';
+import Toolbar from '../../../../widgets/main_shell_widgets/toolbar.tsx';
+import { Chip } from '../../../../widgets/common/chips/chip.tsx';
+import Row from '../../../../widgets/main_brief_widgets/row.tsx';
 export default function BriefView() {
   return <main><Toolbar /><Chip text="a" /><Row /><span {...inspectAttrs('label', { role: 'label' })}>text</span></main>;
 }
@@ -964,13 +914,13 @@ export default function BriefView() {
       // The same <span>Raw text</span> that fails in a surface view is legal
       // inside a widget-library dir: that is where the widgets are DEFINED.
       final findings = gateDesignWidgets(_tree(tmp, {
-        'ui/views/main_shell/intake/brief/widgets/raw_label.tsx':
+        'ui/widgets/main_brief_widgets/raw_label.tsx':
             'export default function RawLabel() { return <span>Raw text</span>; }\n',
         'ui/views/main_shell/intake/brief/brief_view.tsx': '''
-import Toolbar from '../../shared/widgets/toolbar.tsx';
-import { Chip } from '../../../../common/widgets/chip.tsx';
-import Row from './widgets/row.tsx';
-import RawLabel from './widgets/raw_label.tsx';
+import Toolbar from '../../../../widgets/main_shell_widgets/toolbar.tsx';
+import { Chip } from '../../../../widgets/common/chips/chip.tsx';
+import Row from '../../../../widgets/main_brief_widgets/row.tsx';
+import RawLabel from '../../../../widgets/main_brief_widgets/raw_label.tsx';
 export default function BriefView() {
   return <main><Toolbar /><Chip text="a" /><Row /><RawLabel /></main>;
 }
@@ -991,9 +941,9 @@ export default function BriefView() {
       // text-bearing role. Text directly inside it is unreachable on inspect.
       expectsOnly('W7', {
         'ui/views/main_shell/intake/brief/brief_view.tsx': '''
-import Toolbar from '../../shared/widgets/toolbar.tsx';
-import { Chip } from '../../../../common/widgets/chip.tsx';
-import Row from './widgets/row.tsx';
+import Toolbar from '../../../../widgets/main_shell_widgets/toolbar.tsx';
+import { Chip } from '../../../../widgets/common/chips/chip.tsx';
+import Row from '../../../../widgets/main_brief_widgets/row.tsx';
 export default function BriefView() {
   return <main><Toolbar /><Chip text="a" /><Row /><div data-el="card:X" data-inspect-role="card">hello</div></main>;
 }
@@ -1004,9 +954,9 @@ export default function BriefView() {
     test('text in a container-role card via child span fails (span has no identity)', () {
       expectsOnly('W7', {
         'ui/views/main_shell/intake/brief/brief_view.tsx': '''
-import Toolbar from '../../shared/widgets/toolbar.tsx';
-import { Chip } from '../../../../common/widgets/chip.tsx';
-import Row from './widgets/row.tsx';
+import Toolbar from '../../../../widgets/main_shell_widgets/toolbar.tsx';
+import { Chip } from '../../../../widgets/common/chips/chip.tsx';
+import Row from '../../../../widgets/main_brief_widgets/row.tsx';
 export default function BriefView() {
   return <main><Toolbar /><Chip text="a" /><Row /><div data-el="card:X" data-inspect-role="card"><span>hello</span></div></main>;
 }
@@ -1019,9 +969,9 @@ export default function BriefView() {
       // role, so it is lenient — the author put identity on it.
       final findings = gateDesignWidgets(_tree(tmp, {
         'ui/views/main_shell/intake/brief/brief_view.tsx': '''
-import Toolbar from '../../shared/widgets/toolbar.tsx';
-import { Chip } from '../../../../common/widgets/chip.tsx';
-import Row from './widgets/row.tsx';
+import Toolbar from '../../../../widgets/main_shell_widgets/toolbar.tsx';
+import { Chip } from '../../../../widgets/common/chips/chip.tsx';
+import Row from '../../../../widgets/main_brief_widgets/row.tsx';
 export default function BriefView() {
   return <main><Toolbar /><Chip text="a" /><Row /><div data-el="label:X">text</div></main>;
 }
@@ -1033,9 +983,9 @@ export default function BriefView() {
     test('text in a text-bearing role (button with data-el) passes', () {
       final findings = gateDesignWidgets(_tree(tmp, {
         'ui/views/main_shell/intake/brief/brief_view.tsx': '''
-import Toolbar from '../../shared/widgets/toolbar.tsx';
-import { Chip } from '../../../../common/widgets/chip.tsx';
-import Row from './widgets/row.tsx';
+import Toolbar from '../../../../widgets/main_shell_widgets/toolbar.tsx';
+import { Chip } from '../../../../widgets/common/chips/chip.tsx';
+import Row from '../../../../widgets/main_brief_widgets/row.tsx';
 export default function BriefView() {
   return <main><Toolbar /><Chip text="a" /><Row /><button data-el="btn:go" data-inspect-role="button">Go</button></main>;
 }
@@ -1048,15 +998,15 @@ export default function BriefView() {
   group('import graph', () {
     test('records relative TSX imports as root-relative edges', () {
       final graph = buildIncludeGraph(_tree(tmp, const {}));
-      expect(graph['ui/common/widgets/chip.tsx'],
+      expect(graph['ui/widgets/common/chips/chip.tsx'],
           containsAll([
             'ui/views/main_shell/intake/brief/brief_view.tsx',
             'ui/views/app_shell/auth/auth_view.tsx',
           ]));
-      expect(graph['ui/common/widgets/_panel.tsx'],
+      expect(graph['ui/widgets/common/panels/_panel.tsx'],
           containsAll([
-            'ui/common/widgets/header_panel.tsx',
-            'ui/common/widgets/main_panel.tsx',
+            'ui/widgets/common/panels/header_panel.tsx',
+            'ui/widgets/common/panels/main_panel.tsx',
           ]));
     });
 
@@ -1064,7 +1014,7 @@ export default function BriefView() {
       // A package import ('hono/jsx') names no file in the tree; recording it
       // would read every hono component as a consumed widget.
       final graph = buildIncludeGraph(_tree(tmp, {
-        'ui/common/widgets/chip.tsx': '''
+        'ui/widgets/common/chips/chip.tsx': '''
 import type { FC } from 'hono/jsx';
 export function Chip({ text }) {
   return <span class="chip">{text}</span>;

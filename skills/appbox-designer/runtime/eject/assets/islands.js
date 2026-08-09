@@ -160,8 +160,8 @@ async function loadIsland(name, el) {
       throw new Error(`island "${name}" has no default export`);
     const { withIsland } = await import(kitUrl);
     withIsland(/** @type {HTMLElement} */ (el), init, readState(el));
-  } catch (e) {
-    console.error(`island "${name}" failed:`, e);
+  } catch (error) {
+    console.error(`island "${name}" failed:`, error);
   }
 }
 
@@ -193,11 +193,11 @@ function isChunkRef(val) {
 function armDelegated(eventType) {
   if (delegatedTypes.has(eventType)) return;
   delegatedTypes.add(eventType);
-  document.addEventListener(eventType, (e) => {
-    for (let node = /** @type {HTMLElement|null} */ (e.target); node; node = node.parentElement) {
+  document.addEventListener(eventType, (event) => {
+    for (let node = /** @type {HTMLElement|null} */ (event.target); node; node = node.parentElement) {
       const spec = node.getAttribute?.(`data-on:${eventType}`);
       if (!spec || !isChunkRef(spec)) continue;
-      invokeDelegated(node, spec, e, eventType);
+      invokeDelegated(node, spec, event, eventType);
     }
   }, true);
 }
@@ -218,8 +218,8 @@ async function invokeDelegated(el, spec, event, eventType) {
     if (!mod) { mod = await import(url); handlerCache.set(url, mod); }
     const fn = mod[symbol] || mod.default;
     if (typeof fn === 'function') fn(el, event);
-  } catch (e) {
-    console.error(`delegated ${eventType} handler ${spec} failed:`, e);
+  } catch (error) {
+    console.error(`delegated ${eventType} handler ${spec} failed:`, error);
   }
 }
 
@@ -281,11 +281,11 @@ function boot() {
   }
   // Teardown backstop for non-htmx removals (direct DOM manipulation),
   // scoped to subtrees that actually contain island roots.
-  const mo = new MutationObserver((muts) => {
-    for (const m of muts) for (const node of m.removedNodes)
+  const removalObserver = new MutationObserver((mutationList) => {
+    for (const mutation of mutationList) for (const node of mutation.removedNodes)
       if (hasIslands(node)) dispose(node);
   });
-  mo.observe(document.body, { childList: true, subtree: true });
+  removalObserver.observe(document.body, { childList: true, subtree: true });
   // First discovery at DOMContentLoaded: module scripts execute before it,
   // so inline <script type="module"> defineIsland() registrations are in
   // place by the first scan. (htmx's own initial processing may discover

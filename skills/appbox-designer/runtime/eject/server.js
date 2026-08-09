@@ -16,7 +16,7 @@ const app = await createArtifactApp(artifactDir, {
   staticSetup(app) {
     app.use('/assets/vendor/*', serveStatic({
       root: './runtime/vendor',
-      rewriteRequestPath: (p) => p.replace(/^\/assets\/vendor/, ''),
+      rewriteRequestPath: (requestPath) => requestPath.replace(/^\/assets\/vendor/, ''),
     }));
     app.use('/assets/*', serveStatic({ root: '.' }));
   },

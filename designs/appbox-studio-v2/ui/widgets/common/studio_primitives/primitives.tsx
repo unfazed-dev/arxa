@@ -11,11 +11,11 @@ export function inspectAttributes(
   name: string,
   meta: { role: string; style?: string; motion?: string; fn?: string },
 ): Record<string, string> {
-  const a: Record<string, string> = { 'data-el': name, 'data-inspect-role': meta.role };
-  if (meta.style) a['data-inspect-style'] = meta.style;
-  if (meta.motion) a['data-inspect-motion'] = meta.motion;
-  if (meta.fn) a['data-inspect-fn'] = meta.fn;
-  return a;
+  const attributes: Record<string, string> = { 'data-el': name, 'data-inspect-role': meta.role };
+  if (meta.style) attributes['data-inspect-style'] = meta.style;
+  if (meta.motion) attributes['data-inspect-motion'] = meta.motion;
+  if (meta.fn) attributes['data-inspect-fn'] = meta.fn;
+  return attributes;
 }
 
 // leaf text widgets — text itself becomes an inspectable widget.

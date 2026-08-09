@@ -65,21 +65,21 @@ export function createStripe(env) {
 
   /**
    * Webhook handler: verify → 200 now → broadcast in the background.
-   * @param {import('hono').Context} c
+   * @param {import('hono').Context} context
    */
-  async function handleWebhook(c) {
-    const signature = c.req.header('stripe-signature');
-    if (!signature) return c.text('missing stripe-signature header', 400);
-    const rawBody = await c.req.text();
+  async function handleWebhook(context) {
+    const signature = context.req.header('stripe-signature');
+    if (!signature) return context.text('missing stripe-signature header', 400);
+    const rawBody = await context.req.text();
     /** @type {Stripe.Event} */
     let event;
     try {
       event = await stripe.webhooks.constructEventAsync(
         rawBody, signature, /** @type {string} */ (webhookSecret));
-    } catch (e) {
-      return c.text(`invalid signature: ${e instanceof Error ? e.message : e}`, 400);
+    } catch (error) {
+      return context.text(`invalid signature: ${error instanceof Error ? error.message : error}`, 400);
     }
-    if (isDuplicate(event.id)) return c.text('ok'); // Stripe retry — already broadcast
+    if (isDuplicate(event.id)) return context.text('ok'); // Stripe retry — already broadcast
 
     // Respond 200 immediately; the broadcast rides waitUntil so a slow or
     // frozen isolate (Workers) still completes it after the response ships.
@@ -87,15 +87,15 @@ export function createStripe(env) {
       publishEvent('stripe', event.type, JSON.stringify(event.data.object)));
     // Hono's executionCtx getter THROWS on runtimes without one (node-server)
     // instead of returning undefined — probe it in a try.
-    /** @type {((p: Promise<unknown>) => void) | undefined} */
+    /** @type {((pending: Promise<unknown>) => void) | undefined} */
     let waitUntil;
     try {
-      const ec = c.executionCtx;
-      if (ec?.waitUntil) waitUntil = (p) => ec.waitUntil(p);
+      const executionContext = context.executionCtx;
+      if (executionContext?.waitUntil) waitUntil = (pending) => executionContext.waitUntil(pending);
     } catch { /* no ExecutionContext on this runtime */ }
     if (waitUntil) waitUntil(broadcast);
     else await broadcast; // node: no executionCtx — publish before responding
-    return c.text('ok');
+    return context.text('ok');
   }
 
   return { stripe, handleWebhook };

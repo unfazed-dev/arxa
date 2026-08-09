@@ -27,7 +27,7 @@ import 'package:appboxd/design_tools.dart';
 // it keeps ONE parser for `{% include %}`/`{% import %}` rather than a second
 // that can drift from the gate the same artifacts are linted against.
 import 'package:appboxd/gate_design_widgets.dart'
-    show buildIncludeGraph, isRetiredFlatWidget, isWidget, widgetHomeOf;
+    show buildIncludeGraph, isRetiredWidgetPath, isWidget, widgetHomeOf;
 import 'package:appboxd/project.dart';
 import 'package:path/path.dart' as p;
 
@@ -105,7 +105,7 @@ const _lFragments = 'every rendered fragment exists as a macro';
 const _lMutationsPosted = 'every mutation route is reachable from markup';
 const _lUrlsResolve = 'every static URL in markup resolves to a route';
 const _lTargetsExist = 'every hx-target names an element that exists';
-const _lWidgets = 'widgets live in the three-tier homes and surfaces compose them';
+const _lWidgets = 'widgets live in the two-tier homes and surfaces compose them';
 const _lIcons = 'icons come from the icon() global, never emoji stand-ins';
 const _lGit = 'every artifact file is tracked by git';
 const _lLint = 'zero-custom-client-JS lint';
@@ -146,22 +146,32 @@ List<File> _walkFiles(Directory d) =>
 String _relOf(String art, File f) =>
     p.split(p.relative(f.path, from: art)).join('/');
 
-/// Widgets sitting in one of the three legal homes: `ui/common/widgets/`,
-/// `ui/views/<shell>/shared/widgets/`, `<surface>/widgets/`.
+/// Widgets sitting in one of the two legal homes (showcase-anatomy.md §2):
+/// `ui/widgets/common/<group>/` or `ui/widgets/<feature>_widgets/`.
 ///
-/// [widgetHomeOf] returns null for every non-home, the retired flat tier
-/// included, so this is exactly "is a widget AND has a home". The retired-tier
-/// predicate is imported rather than restated: two spellings of the same list
-/// drift, and W1 and this check must agree on what counts as migrated.
-bool _isThreeTierWidget(String rel) =>
-    isWidget(rel) && widgetHomeOf(rel) != null;
+/// [widgetHomeOf] returns null for every non-home, so this is exactly "is a
+/// widget AND has a home". The retired-tier predicate is imported rather than
+/// restated: two spellings of the same list drift, and W1 and this check must
+/// agree on what counts as migrated.
+bool _isHomedWidget(String rel) =>
+    isWidget(rel) && !isRetiredWidgetPath(rel) && widgetHomeOf(rel) != null;
 
-List<String> _threeTierWidgets(String art) =>
-    (_htmlFiles(art).map((f) => _relOf(art, f)).where(_isThreeTierWidget).toList()
+/// Widgets under the legal `ui/widgets/` root that fit neither home — a flat
+/// file, a flat `common/x`, or an unnamed group like `components/`. W1 names
+/// these too; the selftest must not let them vanish between the buckets.
+bool _isHomelessWidget(String rel) =>
+    isWidget(rel) && !isRetiredWidgetPath(rel) && widgetHomeOf(rel) == null;
+
+List<String> _homedWidgets(String art) =>
+    (_htmlFiles(art).map((f) => _relOf(art, f)).where(_isHomedWidget).toList()
+      ..sort());
+
+List<String> _homelessWidgets(String art) =>
+    (_htmlFiles(art).map((f) => _relOf(art, f)).where(_isHomelessWidget).toList()
       ..sort());
 
 List<String> _legacyFlatWidgets(String art) =>
-    (_htmlFiles(art).map((f) => _relOf(art, f)).where(isRetiredFlatWidget).toList()
+    (_htmlFiles(art).map((f) => _relOf(art, f)).where(isRetiredWidgetPath).toList()
       ..sort());
 
 List<File> _htmlFiles(String dir) => _walkFiles(Directory(dir))
@@ -521,46 +531,57 @@ List<_Check> _buildChecks({required bool skipRender}) {
 
     // --- 16-17. component library + icons ----------------------------------
     _Check(_lWidgets, _Section.structure, (art, skill, src) async {
-      final tiered = _threeTierWidgets(art);
+      final homed = _homedWidgets(art);
+      final homeless = _homelessWidgets(art);
       final legacy = _legacyFlatWidgets(art);
+      final inRoot = homed.length + homeless.length;
 
-      if (tiered.isNotEmpty) {
-        // Mixed is the dangerous state: half the tree has moved and half has
-        // not, so neither the law nor the old shape describes it. Name the
-        // stragglers — whoever is mid-migration should see they are theirs.
+      if (inRoot > 0) {
+        // Mixed is the dangerous state: the new root is occupied while widgets
+        // remain in the retired tiers, so neither the law nor the old shape
+        // describes the tree. Name the stragglers — whoever is mid-migration
+        // should see they are theirs.
         if (legacy.isNotEmpty) {
           return CheckOutcome.fail(
-              'widgets in the three-tier homes AND in the retired flat tier: '
-              '${legacy.join(', ')} — move each to ui/common/widgets/, '
-              'ui/views/<shell>/shared/widgets/ or <surface>/widgets/');
+              'widgets under ui/widgets/ AND in the retired tiers: '
+              '${legacy.join(', ')} — move each to ui/widgets/common/<group>/ '
+              'or ui/widgets/<feature>_widgets/');
+        }
+        // Under the root but in no legal home: W1 also names these; failing
+        // here keeps the selftest honest when lint is skipped.
+        if (homeless.isNotEmpty) {
+          return CheckOutcome.fail(
+              'widgets under ui/widgets/ but in no legal home: '
+              '${homeless.join(', ')} — ui/widgets/common/<group>/ or '
+              'ui/widgets/<feature>_widgets/');
         }
         final graph = buildIncludeGraph(art);
         final composed =
-            tiered.where((w) => (graph[w] ?? const <String>{}).isNotEmpty).length;
+            homed.where((w) => (graph[w] ?? const <String>{}).isNotEmpty).length;
         if (composed == 0) {
           return CheckOutcome.fail(
-              'widgets exist in the three-tier homes but nothing includes or '
-              'imports any of them: ${tiered.join(', ')}');
+              'widgets exist in the two-tier homes but nothing includes or '
+              'imports any of them: ${homed.join(', ')}');
         }
         return CheckOutcome.ok(
-            '${tiered.length} widget(s) in three-tier homes, $composed composed');
+            '${homed.length} widget(s) in two-tier homes, $composed composed');
       }
 
       if (legacy.isNotEmpty) {
         // Transition tolerance, deliberately not a failure: `design lint` W1
-        // already fails each of these and names its three-tier destination, so
+        // already fails each of these and names its two-tier destination, so
         // hard-failing here would only duplicate that with a worse message.
         return CheckOutcome.ok(
-            '${legacy.length} widget(s) still in the retired flat tier — '
-            '`design lint` W1 names the three-tier destination for each');
+            '${legacy.length} widget(s) still in the retired tiers — '
+            '`design lint` W1 names the two-tier destination for each');
       }
 
       // No widgets anywhere: fail. The pre-migration escape hatch (a shared
       // nunjucks macro library under ui/common) died with nunjucks — every
       // supported artifact composes at least one widget.
       return const CheckOutcome.fail(
-          'no widgets in the three-tier homes (ui/common/widgets/, '
-          'ui/views/<shell>/shared/widgets/, <surface>/widgets/)');
+          'no widgets in the two-tier homes (ui/widgets/common/<group>/, '
+          'ui/widgets/<feature>_widgets/)');
     }),
 
     _Check(_lIcons, _Section.structure, (art, skill, src) async {
@@ -938,15 +959,15 @@ void _mutateEmojiIcon(String art, String skill) {
 }
 
 void _mutateWidgetPartials(String art, String skill) {
-  // Remove the widget layer wherever it lives — the three-tier homes and the
-  // retired flat tier both — so the mutation keeps biting through the
-  // migration, not just while the artifact is still flat.
+  // Remove the widget layer wherever it lives — the two-tier homes and the
+  // retired tiers both — so the mutation keeps biting through the
+  // migration, not just while the artifact is still on the old shape.
   //
   // FILES, not directories: deleting `ui/common/` would take `base.html` with
   // it and redden neighbouring checks, which masks whether THIS check flipped.
   for (final f in _htmlFiles(art)) {
     final rel = _relOf(art, f);
-    if (_isThreeTierWidget(rel) || isRetiredFlatWidget(rel)) {
+    if (isWidget(rel) || isRetiredWidgetPath(rel)) {
       f.deleteSync();
     }
   }

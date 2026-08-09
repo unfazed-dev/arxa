@@ -36,12 +36,12 @@ const cache = new Map<string, string | null>();
 const { preload } = await import('./preload.js');
 const preloadIcons: Record<string, string> | null = preload?.iconSvg ?? null;
 
-const esc = (s: string) =>
-  String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+const escapeAttribute = (value: string) =>
+  String(value).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
 function placeholder(size: number, className?: string): string {
   console.warn(`[icon] placeholder rendered`);
-  return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"${className ? ` class="${esc(className)}"` : ''}><rect x="3" y="3" width="18" height="18" rx="3" stroke-dasharray="4 3"/></svg>`;
+  return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"${className ? ` class="${escapeAttribute(className)}"` : ''}><rect x="3" y="3" width="18" height="18" rx="3" stroke-dasharray="4 3"/></svg>`;
 }
 
 function loadIcon(name: string): string | null {
@@ -81,12 +81,12 @@ const Icon: FC<IconProps> = ({ name, size = 24, className, label, strokeWidth })
   open = open.replace(
     /<svg/,
     `<svg width="${size}" height="${size}"` +
-      (className ? ` class="${esc(className)}"` : '') +
-      (label ? ` role="img" aria-label="${esc(label)}"` : ' aria-hidden="true" focusable="false"'),
+      (className ? ` class="${escapeAttribute(className)}"` : '') +
+      (label ? ` role="img" aria-label="${escapeAttribute(label)}"` : ' aria-hidden="true" focusable="false"'),
   );
   const head = rawSvg.slice(0, rawSvg.indexOf(openTag)); // @license comment — keep it attached
   let out = head + open + rawSvg.slice(rawSvg.indexOf(openTag) + openTag.length);
-  if (label) out = out.replace(/(<svg[^>]*>)/, `$1<title>${esc(label)}</title>`);
+  if (label) out = out.replace(/(<svg[^>]*>)/, `$1<title>${escapeAttribute(label)}</title>`);
 
   return raw(out);
 };

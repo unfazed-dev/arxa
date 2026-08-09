@@ -196,8 +196,8 @@ export function Panel(props: PanelProps) {
 // A JSX runtime hands sections an empty children array even when the caller
 // wrote a self-closing tag — [] is truthy, so a bare truthiness check would
 // render empty sections on every panel. Recurse: real content only.
-const hasChild = (k: unknown): boolean =>
-  Array.isArray(k) ? k.some(hasChild) : k != null && k !== false && k !== '';
+const hasChild = (candidate: unknown): boolean =>
+  Array.isArray(candidate) ? candidate.some(hasChild) : candidate != null && candidate !== false && candidate !== '';
 
 export function Top(props: SectionProps) {
   const { panelId, content, options } = props;

@@ -144,7 +144,7 @@ void main() {
       // layer, which reddens neighbouring checks too, and an exit-code-only
       // assertion would still pass if THIS check had quietly stopped biting.
       'widget-partials':
-          'widgets live in the three-tier homes and surfaces compose them',
+          'widgets live in the two-tier homes and surfaces compose them',
     };
     for (final entry in cases.entries) {
       test('${entry.key} flips "${entry.value}"', () async {
@@ -168,12 +168,13 @@ void main() {
   });
 
   // ── 2b. the half-migrated tree ─────────────────────────────────────────
-  // The fixture is fully three-tier, so the mixed state — some widgets moved,
-  // some still in the retired flat tier — has no fixture of its own. It is the
-  // state that actually occurs during a migration and the one neither shape
-  // describes, so it gets planted explicitly rather than left to a rerun.
-  group('three-tier widget law', () {
-    test('a leftover flat widget alongside three-tier homes fails, named',
+  // The fixture is fully on the retired tiers, so the mixed state — the new
+  // `ui/widgets/` root occupied while stragglers remain behind — has no
+  // fixture of its own. It is the state that actually occurs during a
+  // migration and the one neither shape describes, so it gets planted
+  // explicitly rather than left to a rerun.
+  group('two-tier widget law', () {
+    test('a new-root widget alongside retired-tier stragglers fails, named',
         () async {
       final tmp = await _copyFixture('selftest-mixed-tier-');
       try {
@@ -185,26 +186,27 @@ void main() {
         expect(
             r.failLabels,
             contains(
-                'widgets live in the three-tier homes and surfaces compose them'),
+                'widgets live in the two-tier homes and surfaces compose them'),
             reason: 'mixed tier should fail, got: ${r.failLabels}');
       } finally {
         await Directory(tmp).delete(recursive: true);
       }
     });
 
-    test('the fixture itself passes via the three-tier branch', () async {
-      // Guards the branch from going vacuous: if the fixture ever regressed to
-      // the flat tier this would still pass through the transition-tolerance
-      // branch, so assert the tree really has no flat widgets left.
+    test('the fixture itself passes via the transition-tolerance branch',
+        () async {
+      // Guards the planted mixed state above from going vacuous: the fixture
+      // must not itself occupy the new `ui/widgets/` root, otherwise the
+      // mixed-state test would be probing a state the fixture already has.
       expect(
           Directory(p.join(_fixture, 'ui', 'widgets')).existsSync(), isFalse,
-          reason: 'fixture should be fully migrated off the flat tier');
+          reason: 'fixture is expected to sit wholly on the retired tiers');
       final r = await runSelftest(
           artifactDir: _fixture, skillDir: _cleanSkill, skipRender: true);
       expect(
           r.failLabels,
           isNot(contains(
-              'widgets live in the three-tier homes and surfaces compose them')));
+              'widgets live in the two-tier homes and surfaces compose them')));
     });
   });
 

@@ -68,8 +68,8 @@ export function attachSse(app) {
         // Replay: send everything after Last-Event-ID (hx-sse sends it on reconnect).
         const log = bus(channel);
         const lastId = Number(context.req.header('Last-Event-ID') ?? 0);
-        for (const e of log) {
-          if (Number(e.id) > lastId) send(e);
+        for (const entry of log) {
+          if (Number(entry.id) > lastId) send(entry);
         }
 
         // Keep-alive every 15s so proxies don't kill idle connections.

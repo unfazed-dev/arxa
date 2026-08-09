@@ -65,17 +65,17 @@
 /**
  * Parse and validate a POST body against a zod schema.
  *
- * @param {import('hono').Context} c - Hono context
+ * @param {import('hono').Context} context - Hono context
  * @param {import('zod').ZodSchema} schema - zod schema for the form fields
  * @returns {Promise<FormResult>} — ok: validated data, or errors+values for 422 re-render
  */
-export async function parseForm(c, schema) {
-  const raw = await c.req.parseBody();
+export async function parseForm(context, schema) {
+  const raw = await context.req.parseBody();
   // parseBody returns { field: value | File | string[] } — coerce to string map.
   /** @type {Record<string, string>} */
   const values = {};
-  for (const [k, v] of Object.entries(raw)) {
-    values[k] = typeof v === 'string' ? v : Array.isArray(v) ? v.join(', ') : '';
+  for (const [field, fieldValue] of Object.entries(raw)) {
+    values[field] = typeof fieldValue === 'string' ? fieldValue : Array.isArray(fieldValue) ? fieldValue.join(', ') : '';
   }
   const result = schema.safeParse(values);
   if (result.success) {

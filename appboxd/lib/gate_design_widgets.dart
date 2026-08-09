@@ -168,57 +168,65 @@ Map<String, Set<String>> buildIncludeGraph(String artifactDir) {
 /// A widget file: any `.tsx` under a directory literally named `widgets`.
 bool isWidget(String rel) => rel.split('/').contains('widgets');
 
-/// The retired flat tier — `ui/widgets/`, `ui/dialogs/`, `ui/bottomsheets/` at
-/// the artifact root, historically with a `components/` subfolder inside.
+/// The retired widget tiers — the old three-tier law's homes plus the flat
+/// dialogs/bottomsheets family. None exist in the exemplar
+/// (`kit/showcase_app/lib`), whose only widget root is `ui/widgets/`
+/// (showcase-anatomy.md §2). Prefix-matched members live here;
+/// `ui/views/**/widgets/` (bare shell, `shared/widgets/`, surface `widgets/`)
+/// is detected structurally in [isRetiredWidgetPath] because the shell name
+/// varies.
 ///
 /// `ui/dialogs/` and `ui/bottomsheets/` hold no `widgets/` segment, so they are
 /// invisible to [isWidget]; they are named here so the placement pass can see
-/// the whole retired family rather than only the third of it that happens to be
+/// the whole retired family rather than only the part that happens to be
 /// spelled `widgets`.
-const retiredFlatWidgetDirs = <String>[
-  'ui/widgets/',
+const retiredWidgetTierPrefixes = <String>[
+  'ui/common/widgets/',
   'ui/dialogs/',
   'ui/bottomsheets/',
 ];
 
-bool isRetiredFlatWidget(String rel) =>
-    retiredFlatWidgetDirs.any(rel.startsWith);
+bool isRetiredWidgetPath(String rel) {
+  if (retiredWidgetTierPrefixes.any(rel.startsWith)) return true;
+  // Any widgets/ dir inside the shell tree: bare `ui/views/<shell>/widgets/`,
+  // `ui/views/<shell>/shared/widgets/`, `<surface>/widgets/`.
+  final segs = rel.split('/');
+  return segs.length >= 3 &&
+      segs[0] == 'ui' &&
+      segs[1] == 'views' &&
+      segs.contains('widgets');
+}
 
-/// The three legal widget homes, widest first. [dir] is the widget's parent
-/// directory (the `widgets/` dir itself), root-relative POSIX.
-enum WidgetHome { common, shell, surface }
+/// The two legal widget homes (showcase-anatomy.md §2), read off the exemplar:
+/// cross-shell widgets in `ui/widgets/common/<group>/`, everything else in
+/// `ui/widgets/<app>_<feature>_widgets/`.
+enum WidgetHome { common, feature }
 
 /// Where a widget at [rel] currently lives, plus the scope key that home claims.
 ///
-/// - `ui/common/widgets/**`            → common, key `''`
-/// - `ui/views/<shell>/shared/widgets/**` → shell, key `ui/views/<shell>`
-/// - `<dir>/widgets/**`                → surface, key `<dir>`
+/// - `ui/widgets/common/<group>/**`      → common,  key `ui/widgets/common/<group>`
+/// - `ui/widgets/<feature>_widgets/**`   → feature, key `ui/widgets/<feature>_widgets`
 ///
-/// Returns null when the path is under a `widgets/` dir that fits no home. Two
-/// such cases exist and W1 reports each BY NAME rather than as a scope problem:
-/// the bare `ui/views/<shell>/widgets/`, and the retired flat `ui/widgets/`.
-///
-/// A surface home must live under `ui/views/`. Returning one for any unmatched
-/// directory is what used to map the flat `ui/widgets/x.tsx` onto a surface
-/// home keyed `ui`, so a legacy tree drew "every consumer is confined to
-/// ui/views/main_shell — move to …" (a scope complaint about a file whose real
-/// problem is that it sits in a retired tier) instead of being told to migrate.
+/// Returns null when the path is under `ui/widgets/` but fits no home, and W1
+/// reports each such case BY NAME rather than as a scope problem: a flat
+/// `ui/widgets/x.tsx`, a flat `ui/widgets/common/x.tsx` (common is grouped,
+/// never flat), and an unnamed group `ui/widgets/<name>/` whose name neither is
+/// `common` nor ends `_widgets`. The last is legal in the exemplar only for
+/// genuinely app-agnostic behavior wrappers (`ui/widgets/mouse_transforms/`,
+/// showcase-anatomy.md §2) — a deliberate documented exception, not a home this
+/// gate can verify, so the design tree takes the `_widgets` suffix.
 ({WidgetHome home, String key})? widgetHomeOf(String rel) {
   final segs = rel.split('/');
-  final wi = segs.indexOf('widgets');
-  if (wi < 0) return null;
-  final dir = segs.sublist(0, wi).join('/');
-  if (dir == 'ui/common') return (home: WidgetHome.common, key: '');
-  final d = dir.split('/');
-  // ui/views/<shell>/shared → shell home. ui/views/<shell> alone → illegal.
-  if (d.length >= 3 && d[0] == 'ui' && d[1] == 'views') {
-    if (d.length == 3) return null; // bare <shell>/widgets/
-    if (d.length == 4 && d[3] == 'shared') {
-      return (home: WidgetHome.shell, key: 'ui/views/${d[2]}');
-    }
-    return (home: WidgetHome.surface, key: dir);
+  if (segs.length < 4 || segs[0] != 'ui' || segs[1] != 'widgets') return null;
+  final child = segs[2];
+  if (child == 'common') {
+    if (segs.length < 5) return null; // flat common/x.tsx
+    return (home: WidgetHome.common, key: 'ui/widgets/common/${segs[3]}');
   }
-  return null;
+  if (child.endsWith('_widgets')) {
+    return (home: WidgetHome.feature, key: 'ui/widgets/$child');
+  }
+  return null; // unnamed group
 }
 
 /// The shell a path belongs to, or null for `ui/common/**` and anything outside
@@ -250,9 +258,9 @@ List<LintFinding> _placementFindings(
     String artifactDir, Map<String, Set<String>> graph) {
   final findings = <LintFinding>[];
   final all = _templateFiles(artifactDir);
-  final surfaceDirs = _surfaceDirs(all);
+  final shells = _shellDirs(artifactDir);
   for (final rel in all) {
-    if (!isWidget(rel) && !isRetiredFlatWidget(rel)) continue;
+    if (!isWidget(rel) && !isRetiredWidgetPath(rel)) continue;
     final consumers = graph[rel] ?? const <String>{};
 
     // ── W2: a widget nobody imports is a deletion, not a widget.
@@ -263,98 +271,127 @@ List<LintFinding> _placementFindings(
       continue;
     }
 
-    // ── W1: the retired flat tier, named as such. Its problem is the tier, not
-    // the scope, so say so — a scope message here sends the reader to measure
+    // ── W1: a retired tier, named as such. Its problem is the tier, not the
+    // scope, so say so — a scope message here sends the reader to measure
     // consumers when the fix is a migration.
-    if (isRetiredFlatWidget(rel)) {
-      final tier = retiredFlatWidgetDirs.firstWhere(rel.startsWith);
+    if (isRetiredWidgetPath(rel)) {
+      final tier = retiredWidgetTierPrefixes
+              .where(rel.startsWith)
+              .firstOrNull ??
+          rel.substring(0, rel.indexOf('/widgets/') + '/widgets/'.length);
       findings.add(LintFinding(rel,
-          'W1: `$tier` is the retired flat widget tier, not a legal home — move '
-          'to `ui/common/widgets/` (consumers in 2+ shells), '
-          '`ui/views/<shell>/shared/widgets/` (2+ surfaces of one shell), or '
-          '`<surface>/widgets/` (one surface)'));
+          'W1: `$tier` is a retired widget tier (three-tier law, superseded) — '
+          'the only widget root is `ui/widgets/`: move to '
+          '`ui/widgets/common/<group>/` (consumers in 2+ shells) or '
+          '`ui/widgets/<app>_<feature>_widgets/` (one feature, any of its '
+          'surfaces)'));
       continue;
     }
 
     final home = widgetHomeOf(rel);
     if (home == null) {
-      final shell = shellOf(rel) ?? '<shell>';
-      findings.add(LintFinding(rel,
-          'W1: `ui/views/$shell/widgets/` is not a legal widget home — move to '
-          '`ui/views/$shell/shared/widgets/` (2+ surfaces of $shell) or to '
-          '`<surface>/widgets/` (one surface)'));
+      findings.add(LintFinding(rel, _illegalHomeMessage(rel)));
       continue;
     }
 
-    // ── the narrowest scope covering every consumer.
+    // ── the shell reach of the consumers.
     //
-    // Each consumer contributes the directory its OWN scope covers, which is not
-    // always the directory it sits in: a consumer that is itself a widget covers
-    // its home's scope. A shell-scoped widget imported only by another
-    // shell-scoped widget in the same folder is correctly placed — reading the
-    // literal parent directory instead would demand it move into a `widgets/`
-    // inside `widgets/`.
-    final scopeDirs = consumers.map(_consumerScopeDir).toSet();
-    final required = _requiredHome(_commonAncestor(scopeDirs), surfaceDirs);
+    // Each consumer contributes the shells its OWN scope covers, which is not
+    // always the shell it sits in: a consumer that is itself a widget covers
+    // its home's reach, and a consumer under `ui/common/` (the base/document
+    // layer every shell renders through) is cross-shell by construction.
+    // Promotion to `common/<group>/` is earned by a second shell consumer,
+    // proven by this graph, never by intent (showcase-anatomy.md §2).
+    final reach = _consumerShellReach(consumers, shells);
+    final required = _requiredHome(reach);
 
-    if (required.home == home.home && required.key == home.key) continue;
+    // Which group/feature folder is a naming decision; the gate only forces
+    // tier transitions the graph proves (promotion earned / demotion due).
+    if (required.home == home.home) continue;
 
     final dest = _destination(required, p.basename(rel));
-    findings.add(LintFinding(rel, 'W1: ${_why(required, scopeDirs)} — move to `$dest`'));
+    findings.add(LintFinding(rel, 'W1: ${_why(required, reach)} — move to `$dest`'));
   }
   return findings;
 }
 
-/// The directory a consumer's scope covers (see [_placementFindings]).
-String _consumerScopeDir(String consumer) {
-  final home = widgetHomeOf(consumer);
-  if (home == null) return _dirOf(consumer);
-  return switch (home.home) {
-    WidgetHome.common => '',
-    WidgetHome.shell => home.key,
-    WidgetHome.surface => home.key,
-  };
-}
-
-/// Deepest directory containing all of [dirs] (path-segment prefix, POSIX).
-String _commonAncestor(Iterable<String> dirs) {
-  final lists = dirs.map((d) => d.isEmpty ? <String>[] : d.split('/')).toList();
-  if (lists.isEmpty) return '';
-  var prefix = lists.first;
-  for (final l in lists.skip(1)) {
-    var i = 0;
-    while (i < prefix.length && i < l.length && prefix[i] == l[i]) {
-      i++;
-    }
-    prefix = prefix.sublist(0, i);
+/// W1 message for a path under `ui/widgets/` that fits neither home.
+String _illegalHomeMessage(String rel) {
+  final segs = rel.split('/');
+  if (segs.length == 3) {
+    return 'W1: flat file directly in `ui/widgets/` — widgets live in a group: '
+        '`ui/widgets/common/<group>/` (2+ shells) or '
+        '`ui/widgets/<app>_<feature>_widgets/` (one feature)';
   }
-  return prefix.join('/');
+  if (segs[2] == 'common') {
+    return 'W1: `ui/widgets/common/` is grouped, never flat — move into a '
+        '`ui/widgets/common/<group>/` that names what the group shares';
+  }
+  return 'W1: `ui/widgets/${segs[2]}/` names no legal home — feature folders '
+      'take the `<app>_<feature>_widgets` suffix; a bare group name is '
+      'reserved for genuinely app-agnostic behavior wrappers '
+      '(showcase-anatomy.md §2 names `mouse_transforms` as the deliberate '
+      'exception)';
 }
 
-/// The home that covers [ancestor]: the placement law, read off the graph.
+/// The shell reach of a consumer set (see [_placementFindings]).
 ///
-/// The law names exactly THREE homes, so an ancestor that is not a surface must
-/// round UP to the shell rather than inventing a fourth tier. `ui/views/
-/// main_shell/intake/` — a section holding eight surfaces — is the case that
-/// matters: two consumers in different intake surfaces ancestor up to `intake/`,
-/// and `intake/widgets/` is not a home the placement law or the scaffolder
-/// recognises. Walking up to the nearest real surface keeps "narrowest scope"
-/// meaning "narrowest LEGAL scope".
-({WidgetHome home, String key}) _requiredHome(
-    String ancestor, Set<String> surfaceDirs) {
-  final segs = ancestor.isEmpty ? <String>[] : ancestor.split('/');
-  if (segs.length >= 3 && segs[0] == 'ui' && segs[1] == 'views') {
-    final shellKey = 'ui/views/${segs[2]}';
-    var d = ancestor;
-    while (d.split('/').length > 3) {
-      if (surfaceDirs.contains(d)) return (home: WidgetHome.surface, key: d);
-      d = _dirOf(d);
+/// A consumer under `ui/views/<shell>/` reaches that shell. A consumer that is
+/// itself a widget covers its home's reach: `ui/widgets/common/**` is
+/// cross-shell by placement, a feature widget adds no shell of its own (its
+/// reach is whatever ITS consumers prove, which resolves by fixpoint — see the
+/// ponytail note above). Anything under `ui/common/` or `runtime/` is the
+/// base/document layer every shell renders through: cross-shell by
+/// construction.
+({bool crossShell, Set<String> shells, Set<String> dirs}) _consumerShellReach(
+    Set<String> consumers, Set<String> shells) {
+  var cross = false;
+  final touched = <String>{};
+  final dirs = <String>{};
+  for (final c in consumers) {
+    dirs.add(_dirOf(c));
+    final home = widgetHomeOf(c);
+    if (home != null) {
+      if (home.home == WidgetHome.common) cross = true;
+      continue; // feature widget: no shell of its own
     }
-    return (home: WidgetHome.shell, key: shellKey);
+    final segs = c.split('/');
+    if (segs.length >= 3 && segs[0] == 'ui' && segs[1] == 'views') {
+      final shell = 'ui/views/${segs[2]}';
+      if (shells.contains(shell)) touched.add(shell);
+      continue;
+    }
+    // ui/common/**, runtime/**, and anything outside the view tree.
+    cross = true;
   }
-  // '', 'ui', 'ui/views', 'ui/common/**' and anything outside the shell tree
-  // are all covered only by the cross-shell home.
-  return (home: WidgetHome.common, key: '');
+  return (crossShell: cross, shells: touched, dirs: dirs);
+}
+
+/// The home that covers [reach]: the two-tier placement law, read off the
+/// graph (showcase-anatomy.md §2).
+///
+/// Promotion to `ui/widgets/common/<group>/` is EARNED — a second shell in the
+/// import graph, or a cross-shell consumer — never declared by intent. One
+/// shell (or none yet proven) keeps the widget in its feature folder; which
+/// feature folder is a naming decision the gate does not second-guess, so a
+/// feature-tier widget only moves when the graph proves promotion.
+({WidgetHome home, String key}) _requiredHome(
+    ({bool crossShell, Set<String> shells, Set<String> dirs}) reach) {
+  if (reach.crossShell || reach.shells.length >= 2) {
+    return (home: WidgetHome.common, key: 'ui/widgets/common/<group>');
+  }
+  return (home: WidgetHome.feature, key: 'ui/widgets/<app>_<feature>_widgets');
+}
+
+/// Shell roots, structurally: the directories directly under `ui/views/`.
+Set<String> _shellDirs(String artifactDir) {
+  final viewsDir = Directory(p.join(artifactDir, 'ui', 'views'));
+  if (!viewsDir.existsSync()) return const {};
+  return viewsDir
+      .listSync()
+      .whereType<Directory>()
+      .map((d) => 'ui/views/${p.basename(d.path)}')
+      .toSet();
 }
 
 /// Surfaces, identified structurally: a directory holding a `*_view.tsx`.
@@ -379,25 +416,20 @@ Set<String> _surfaceDirs(List<String> templateFiles) {
 }
 
 String _destination(({WidgetHome home, String key}) required, String name) =>
-    switch (required.home) {
-      WidgetHome.common => 'ui/common/widgets/$name',
-      WidgetHome.shell => '${required.key}/shared/widgets/$name',
-      WidgetHome.surface => '${required.key}/widgets/$name',
-    };
+    '${required.key}/$name';
 
-String _why(({WidgetHome home, String key}) required, Set<String> scopeDirs) {
+String _why(({WidgetHome home, String key}) required,
+    ({bool crossShell, Set<String> shells, Set<String> dirs}) reach) {
   // Name the consumers, capped — a placement failure is fixed by looking at who
   // imports the widget, so the message should save the reader that grep.
-  final dirs = scopeDirs.map((d) => d.isEmpty ? 'ui/common' : d).toList()..sort();
+  final dirs = reach.dirs.toList()..sort();
   final shown =
       dirs.length <= 3 ? dirs.join(', ') : '${dirs.take(3).join(', ')}, +${dirs.length - 3} more';
   return switch (required.home) {
     WidgetHome.common =>
-      'consumers ($shown) reach beyond any one shell, so only the cross-shell home covers them',
-    WidgetHome.shell =>
-      'the narrowest scope covering every consumer ($shown) is the '
-          '${required.key.split('/').last} shell',
-    WidgetHome.surface => 'every consumer ($shown) is confined to ${required.key}',
+      'consumers ($shown) span ${reach.crossShell ? 'the cross-shell base layer' : '${reach.shells.length} shells'}, which earns promotion to the common tier',
+    WidgetHome.feature =>
+      'every consumer ($shown) sits in one feature — a common/ placement is unearned; demote to that feature\'s widget folder',
   };
 }
 
