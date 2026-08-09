@@ -18,14 +18,14 @@ const ctx = (context, helpers, screen) => ({
 
 /** Session-held selection. Seeded from the fixture on first touch. */
 const picked = (context, helpers) => {
-  const s = helpers.session(context).data;
-  if (!Array.isArray(s.scaffoldPicked)) {
-    s.scaffoldPicked = facade
-      .context(s, helpers.translate(context), helpers.locale(context))
-      .chosen.filter((k) => !k.auto)
-      .map((k) => k.id);
+  const sessionData = helpers.session(context).data;
+  if (!Array.isArray(sessionData.scaffoldPicked)) {
+    sessionData.scaffoldPicked = facade
+      .context(sessionData, helpers.translate(context), helpers.locale(context))
+      .chosen.filter((kit) => !kit.auto)
+      .map((kit) => kit.id);
   }
-  return s;
+  return sessionData;
 };
 
 export const page = (context, helpers) => helpers.render(context, VIEW, ctx(context, helpers));
@@ -76,10 +76,10 @@ export const add = async (context, helpers) => {
   const form = await helpers.form(context);
   const kit = String(form.kit || '').trim();
   if (!kit) return helpers.noContent(context);
-  const s = picked(context, helpers);
-  if (!s.scaffoldPicked.includes(kit)) s.scaffoldPicked.push(kit);
-  s.pendingRemove = null;
-  await facade.persistKitManifest(s, helpers.translate(context), helpers.locale(context));
+  const pickedView = picked(context, helpers);
+  if (!pickedView.scaffoldPicked.includes(kit)) pickedView.scaffoldPicked.push(kit);
+  pickedView.pendingRemove = null;
+  await facade.persistKitManifest(pickedView, helpers.translate(context), helpers.locale(context));
   return helpers.render(context, `${VIEW}#gridSwap`, ctx(context, helpers));
 };
 
@@ -91,8 +91,8 @@ export const remove = async (context, helpers) => {
   const form = await helpers.form(context);
   const kit = String(form.kit || '').trim();
   if (!kit) return helpers.noContent(context);
-  const s = picked(context, helpers);
-  s.pendingRemove = kit;
+  const pickedView = picked(context, helpers);
+  pickedView.pendingRemove = kit;
   return helpers.render(context, `${VIEW}#gridSwap`, ctx(context, helpers));
 };
 
@@ -101,21 +101,21 @@ export const remove = async (context, helpers) => {
 // D8: a committed removal persists the kit-manifest sidecar; a refused one
 // changed nothing, so it writes nothing.
 export const removeConfirm = async (context, helpers) => {
-  const s = picked(context, helpers);
-  const kit = context.req.query('kit') || s.pendingRemove;
-  const view = facade.context(s, helpers.translate(context), helpers.locale(context));
-  const target = view.kits.find((k) => k.id === kit);
+  const pickedView = picked(context, helpers);
+  const kit = context.req.query('kit') || pickedView.pendingRemove;
+  const view = facade.context(pickedView, helpers.translate(context), helpers.locale(context));
+  const target = view.kits.find((candidateKit) => candidateKit.id === kit);
   const blocked = !target || target.essential || (view.confirm && view.confirm.blockedBy.length > 0);
   if (!blocked) {
-    s.scaffoldPicked = s.scaffoldPicked.filter((id) => id !== kit);
-    await facade.persistKitManifest(s, helpers.translate(context), helpers.locale(context));
+    pickedView.scaffoldPicked = pickedView.scaffoldPicked.filter((id) => id !== kit);
+    await facade.persistKitManifest(pickedView, helpers.translate(context), helpers.locale(context));
   }
-  s.pendingRemove = null;
+  pickedView.pendingRemove = null;
   return helpers.render(context, `${VIEW}#panelsSwap`, ctx(context, helpers));
 };
 
 export const cancelRemove = (context, helpers) => {
-  const s = picked(context, helpers);
-  s.pendingRemove = null;
+  const pickedView = picked(context, helpers);
+  pickedView.pendingRemove = null;
   return helpers.render(context, `${VIEW}#gridSwap`, ctx(context, helpers));
 };

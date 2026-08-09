@@ -106,17 +106,17 @@ export const inspector = (context, helpers) =>
 // Body only (#inspectorPane, not #inspectorSwap): re-feeding head and bar per
 // pointer move swaps two more nodes for no state change.
 export const inspectorSelect = async (context, helpers) => {
-  const d = helpers.session(context).data;
+  const sessionData = helpers.session(context).data;
   const form = await helpers.form(context);
   // Crumb clicks arrive as query params on the hx-post URL; island hovers
   // arrive as a form body. Prefer the body, fall back to query so both paths
   // resolve through the same facade call.
-  const f = (k) => form[k] ?? context.req.query(k);
-  const next = facade.selectElement(d, {
-    screen: f('screen'), name: f('name'), kind: f('kind'),
-    role: f('role'), style: f('style'), motion: f('motion'), fn: f('fn'),
-    lock: f('lock'), inferred: f('inferred'), chain: f('chain'),
-    instance: f('instance'), instanceCount: f('instanceCount'),
+  const fieldValue = (key) => form[key] ?? context.req.query(key);
+  const next = facade.selectElement(sessionData, {
+    screen: fieldValue('screen'), name: fieldValue('name'), kind: fieldValue('kind'),
+    role: fieldValue('role'), style: fieldValue('style'), motion: fieldValue('motion'), fn: fieldValue('fn'),
+    lock: fieldValue('lock'), inferred: fieldValue('inferred'), chain: fieldValue('chain'),
+    instance: fieldValue('instance'), instanceCount: fieldValue('instanceCount'),
   }, helpers.prefs(context), helpers.translate(context), helpers.locale(context));
   if (next.activityView !== 'inspector') return helpers.noContent(context);
   return helpers.render(context, `${VIEW}#inspectorPane`, next);
@@ -167,9 +167,9 @@ export const widgetAttr = async (context, helpers) => {
   try {
     const next = await facade.setWidgetAttr(helpers.session(context).data, { attr: form.attr, value: form.value }, helpers.translate(context));
     return helpers.render(context, `${VIEW}#widgetEditor`, next);
-  } catch (e) {
-    if (e.status === 400) return context.text(e.message, 400);
-    throw e;
+  } catch (error) {
+    if (error.status === 400) return context.text(error.message, 400);
+    throw error;
   }
 };
 
@@ -183,9 +183,9 @@ export const widgetText = async (context, helpers) => {
   try {
     const next = await facade.setWidgetCopy(helpers.session(context).data, { value: form.value }, helpers.prefs(context), helpers.translate(context), helpers.locale(context));
     return helpers.render(context, `${VIEW}#drawerSwap`, { ...next, drawerScreen: form.drawer });
-  } catch (e) {
-    if (e.status === 400) return context.text(e.message, 400);
-    throw e;
+  } catch (error) {
+    if (error.status === 400) return context.text(error.message, 400);
+    throw error;
   }
 };
 

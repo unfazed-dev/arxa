@@ -59,7 +59,7 @@ export const send = async (context, helpers) => {
   // response back to that drawer's own container instead of #panels.
   const pin = context.req.param('id') ?? context.req.query('screen') ?? null;
   const data = facade.sendChat(helpers.session(context).data, text, helpers.prefs(context), pin, helpers.translate(context), helpers.locale(context));
-  const v = shellView(context); // one resolution for both render paths below
+  const resolvedShellView = shellView(context); // one resolution for both render paths below
   const drawer = context.req.query('drawer');
   if (drawer) {
     // draftSent is read per composer INSTANCE (composer.html drops
@@ -67,9 +67,9 @@ export const send = async (context, helpers) => {
     // spec gets it — the panel composer keeps any half-typed draft.
     const spec = data.viewer?.drawers?.[drawer]?.composer;
     if (spec) spec.draftSent = true;
-    return helpers.render(context, `${v}#drawerSwap`, { ...data, drawerScreen: drawer });
+    return helpers.render(context, `${resolvedShellView}#drawerSwap`, { ...data, drawerScreen: drawer });
   }
-  return helpers.render(context, `${v}#panelsSwap`, data);
+  return helpers.render(context, `${resolvedShellView}#panelsSwap`, data);
 };
 
 // Composer agent chrome: the model pick swaps the stage.

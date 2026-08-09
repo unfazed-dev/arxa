@@ -8,7 +8,7 @@ export const surfaceId = 'workspace.settings';
 // Labels/examples live in l10n/app_*.arb — translated here via helpers.translate(context).
 // Swatch list + display dots come from the SSOT (models/theme.json).
 import { swatches } from '../../../../services/theme_tokens.js';
-const ACCENTS = () => swatches().map((s) => ({ id: s.name, dot: s.dot }));
+const ACCENTS = () => swatches().map((swatch) => ({ id: swatch.name, dot: swatch.dot }));
 
 // Font rows come from the other SSOT (models/fonts.json) the same way. Their
 // labels are NOT sent through helpers.translate(context) like the accent labels are: "Lexend" and
@@ -35,11 +35,11 @@ export const page = (context, helpers) => {
     font: prefs.font || defaultFont(),
     fonts: fontMenu(),
     jargon: prefs.jargon || 'balanced',
-    accents: ACCENTS().map((a) => ({ ...a, label: translate('settings.accent.' + a.id) })),
-    levels: LEVELS.map((l) => ({
-      ...l,
-      label: translate('settings.level.' + l.id + '.label'),
-      example: translate('settings.level.' + l.id + '.example'),
+    accents: ACCENTS().map((accent) => ({ ...accent, label: translate('settings.accent.' + accent.id) })),
+    levels: LEVELS.map((level) => ({
+      ...level,
+      label: translate('settings.level.' + level.id + '.label'),
+      example: translate('settings.level.' + level.id + '.example'),
     })),
   });
 };

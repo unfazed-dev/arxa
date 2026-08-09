@@ -10,7 +10,7 @@ import * as repo from '../repositories/app_repository.js';
 import * as proj from '../repositories/project_repository.js';
 
 // ---------- session ----------
-const S = (sd) => (sd.app ??= { user: null, paired: null, pairError: null, decided: {}, extraProjects: [], projSeq: 0 });
+const appSlice = (sd) => (sd.app ??= { user: null, paired: null, pairError: null, decided: {}, extraProjects: [], projSeq: 0 });
 
 // ---------- chromeless pages ----------
 export const splashContext = (locale = 'en') => ({ tagline: repo.tagline(locale) });
@@ -18,14 +18,14 @@ export const splashContext = (locale = 'en') => ({ tagline: repo.tagline(locale)
 // Startup: the loading view between splash and auth/dashboard. The step list
 // is deterministic copy (daemon, kits, current project); the advance target
 // is the one session-dependent bit — signed in → dashboard, else auth.
-export const startupContext = (sd, t = (k) => k, locale = 'en') => ({
+export const startupContext = (sd, translate = (key) => key, locale = 'en') => ({
   steps: [
-    t('startup.step.daemon'),
-    t('startup.step.kits'),
-    t('startup.step.project', { name: proj.currentName() ?? '—' }),
+    translate('startup.step.daemon'),
+    translate('startup.step.kits'),
+    translate('startup.step.project', { name: proj.currentName() ?? '—' }),
   ],
   doneThrough: 1,
-  advanceHref: S(sd).user ? '/dashboard' : '/auth',
+  advanceHref: appSlice(sd).user ? '/dashboard' : '/auth',
 });
 
 // Auth gains two seeded lens states via ?state=, same pattern as the picker:
@@ -51,7 +51,7 @@ export const authContext = (locale = 'en', state) => {
 };
 
 export const signIn = (sd, email, provider, locale = 'en') => {
-  S(sd).user = { email: email || repo.account(locale).email, via: provider || 'email' };
+  appSlice(sd).user = { email: email || repo.account(locale).email, via: provider || 'email' };
 };
 
 // ---------- dashboard ----------
@@ -61,25 +61,25 @@ export const signIn = (sd, email, provider, locale = 'en') => {
 // outputs contain — nothing yet (no per-project gate state files), so it
 // renders its honest empty state. Stats/pairing/wizard stay seeded chrome.
 export const dashboardContext = async (sd, locale = 'en') => {
-  const s = S(sd);
+  const appState = appSlice(sd);
   const { current, projects: cards } = await proj.listProjects();
-  const projects = cards.map((p) => ({
-    id: p.name,
-    name: p.name,
-    targets: p.targets,
-    stage: p.stage,
-    stageLabel: p.stage, // CSS class + the raw key; the label rides t() in the view
-    detail: p.flows
-        ? `${p.surfaces} surfaces · ${p.flows} flows`
-        : p.surfaces
-            ? `${p.surfaces} surfaces`
+  const projects = cards.map((projectCard) => ({
+    id: projectCard.name,
+    name: projectCard.name,
+    targets: projectCard.targets,
+    stage: projectCard.stage,
+    stageLabel: projectCard.stage, // CSS class + the raw key; the label rides t() in the view
+    detail: projectCard.flows
+        ? `${projectCard.surfaces} surfaces · ${projectCard.flows} flows`
+        : projectCard.surfaces
+            ? `${projectCard.surfaces} surfaces`
             : '',
-    current: p.name === current,
+    current: projectCard.name === current,
   }));
-  const currentCard = projects.find((p) => p.current) ?? projects[0] ?? null;
+  const currentCard = projects.find((projectCard) => projectCard.current) ?? projects[0] ?? null;
   return {
     account: repo.account(locale),
-    user: s.user,
+    user: appState.user,
     gates: [],
     gateCount: 0,
     projects,
@@ -95,13 +95,13 @@ export const dashboardContext = async (sd, locale = 'en') => {
 // Needs-you quick actions — the strip is empty until project gate state
 // exists; the endpoint stays for the shape.
 export const decideGate = (sd, id, decision, locale = 'en') => {
-  if (repo.gates(locale).some((g) => g.id === id)) S(sd).decided[id] = decision;
+  if (repo.gates(locale).some((gate) => gate.id === id)) appSlice(sd).decided[id] = decision;
 };
 
 // The new-project wizard: name + targets → a REAL project on disk
 // (~/.appbox/projects/<name>/), 303 to intake. Names slugify to the project
 // id convention; an invalid slug is a no-op (the form stays).
-export const createProject = async (sd, name, targets, t = (k) => k) => {
+export const createProject = async (sd, name, targets, translate = (key) => key) => {
   const slug = String(name || '')
       .trim()
       .toLowerCase()
@@ -177,35 +177,35 @@ const CREDENTIAL_GROUPS = [
     ],
   },
 ];
-const CREDENTIAL_KEYS = new Set(CREDENTIAL_GROUPS.flatMap((g) => g.rows.map((r) => r.key)));
+const CREDENTIAL_KEYS = new Set(CREDENTIAL_GROUPS.flatMap((group) => group.rows.map((credentialRow) => credentialRow.key)));
 
-export const credentialsContext = (sd, t = (k) => k) => {
-  const s = S(sd);
-  const held = (s.credentials ??= {});
-  const groups = CREDENTIAL_GROUPS.map((g) => ({
-    id: g.id,
-    label: t(`creds.group.${g.id}`),
-    rows: g.rows.map((r) => ({
-      ...r,
-      set: !!held[r.key],
-      kindLabel: t(`creds.kind.${r.kind}`),
-      statusLabel: t(held[r.key] ? 'creds.status.set' : 'creds.status.unset'),
-      requiredLabel: t(r.required ? 'creds.required' : 'creds.optional'),
+export const credentialsContext = (sd, translate = (key) => key) => {
+  const appState = appSlice(sd);
+  const held = (appState.credentials ??= {});
+  const groups = CREDENTIAL_GROUPS.map((group) => ({
+    id: group.id,
+    label: translate(`creds.group.${group.id}`),
+    rows: group.rows.map((credentialRow) => ({
+      ...credentialRow,
+      set: !!held[credentialRow.key],
+      kindLabel: translate(`creds.kind.${credentialRow.kind}`),
+      statusLabel: translate(held[credentialRow.key] ? 'creds.status.set' : 'creds.status.unset'),
+      requiredLabel: translate(credentialRow.required ? 'creds.required' : 'creds.optional'),
     })),
   }));
-  const missing = CREDENTIAL_GROUPS.flatMap((g) => g.rows)
-    .filter((r) => r.required && !held[r.key]).length;
+  const missing = CREDENTIAL_GROUPS.flatMap((group) => group.rows)
+    .filter((credentialRow) => credentialRow.required && !held[credentialRow.key]).length;
   return { groups, missing };
 };
 
 export const setCredential = (sd, key, value) => {
   if (CREDENTIAL_KEYS.has(key) && String(value || '').trim()) {
-    (S(sd).credentials ??= {})[key] = true; // held flag only — never the value
+    (appSlice(sd).credentials ??= {})[key] = true; // held flag only — never the value
   }
 };
 
 export const unsetCredential = (sd, key) => {
-  const held = (S(sd).credentials ??= {});
+  const held = (appSlice(sd).credentials ??= {});
   if (CREDENTIAL_KEYS.has(key)) delete held[key];
 };
 
@@ -220,34 +220,34 @@ const CONFIG_LOCALES = ['en', 'pl'];
 import { swatchNames } from '../theme_tokens.js'; // accent set = swatch SSOT
 const CONFIG_JARGONS = ['plain', 'balanced', 'technical'];
 
-export const configContext = (sd, t = (k) => k, prefs = {}) => {
-  const s = S(sd);
-  const cfg = (s.config ??= { targets: ['macos'], defaultLocale: 'en' });
-  const creds = credentialsContext(sd, t);
+export const configContext = (sd, translate = (key) => key, prefs = {}) => {
+  const appState = appSlice(sd);
+  const cfg = (appState.config ??= { targets: ['macos'], defaultLocale: 'en' });
+  const creds = credentialsContext(sd, translate);
   const theme = prefs.theme || 'light';
   const accent = prefs.accent || 'cyan';
   const jargon = prefs.jargon || 'balanced';
   return {
-    targets: CONFIG_TARGETS.map((id) => ({ id, label: t(`cfg.target.${id}`), on: cfg.targets.includes(id) })),
-    locales: CONFIG_LOCALES.map((id) => ({ id, label: t(`cfg.locale.${id}`), on: cfg.defaultLocale === id })),
-    credGroups: creds.groups.map((g) => ({
-      id: g.id,
-      label: g.label,
-      set: g.rows.filter((r) => r.set).length,
-      total: g.rows.length,
-      missing: g.rows.filter((r) => r.required && !r.set).length,
+    targets: CONFIG_TARGETS.map((id) => ({ id, label: translate(`cfg.target.${id}`), on: cfg.targets.includes(id) })),
+    locales: CONFIG_LOCALES.map((id) => ({ id, label: translate(`cfg.locale.${id}`), on: cfg.defaultLocale === id })),
+    credGroups: creds.groups.map((group) => ({
+      id: group.id,
+      label: group.label,
+      set: group.rows.filter((credentialRow) => credentialRow.set).length,
+      total: group.rows.length,
+      missing: group.rows.filter((credentialRow) => credentialRow.required && !credentialRow.set).length,
     })),
     credMissing: creds.missing,
     prefs: { theme, accent, jargon },
-    accents: swatchNames().map((id) => ({ id, label: t(`cfg.accent.${id}`), on: accent === id })),
-    jargons: CONFIG_JARGONS.map((id) => ({ id, label: t(`cfg.jargon.${id}`), on: jargon === id })),
+    accents: swatchNames().map((id) => ({ id, label: translate(`cfg.accent.${id}`), on: accent === id })),
+    jargons: CONFIG_JARGONS.map((id) => ({ id, label: translate(`cfg.jargon.${id}`), on: jargon === id })),
   };
 };
 
 export const setConfig = (sd, form) => {
-  const s = S(sd);
+  const appState = appSlice(sd);
   const targets = CONFIG_TARGETS.filter((id) => form[`target_${id}`]);
-  const cfg = (s.config ??= {});
+  const cfg = (appState.config ??= {});
   cfg.targets = targets.length ? targets : ['macos']; // at least one target
   const locale = String(form.defaultLocale || '');
   if (CONFIG_LOCALES.includes(locale)) cfg.defaultLocale = locale;
@@ -265,40 +265,40 @@ import * as plansRepo from '../repositories/plans_repository.js';
 // scaffold picker's gate and both header chips derive from this — the app
 // shell owns the session keys, so the shape lives here exactly once).
 export const accountState = (sd) => {
-  const s = S(sd);
-  return { signedIn: !!s.user, entitled: s.plan === 'studio', plan: s.plan || null };
+  const appState = appSlice(sd);
+  return { signedIn: !!appState.user, entitled: appState.plan === 'studio', plan: appState.plan || null };
 };
 
 const PLAN_LENSES = ['signedout', 'free', 'entitled'];
 
 // The effective lens: explicit ?state= > session (signed-out / upgraded) >
 // seeded default (free — the surface's main job is the upgrade pitch).
-const planLens = (s, state) => {
+const planLens = (plan, state) => {
   const lens = String(state || '').toLowerCase();
   if (PLAN_LENSES.includes(lens)) return lens;
-  if (!s.user) return 'signedout';
-  return s.plan === 'studio' ? 'entitled' : 'free';
+  if (!plan.user) return 'signedout';
+  return plan.plan === 'studio' ? 'entitled' : 'free';
 };
 
-export const plansContext = (sd, t = (k) => k, locale = 'en', { state, pay } = {}) => {
-  const s = S(sd);
-  const lens = planLens(s, state);
+export const plansContext = (sd, translate = (key) => key, locale = 'en', { state, pay } = {}) => {
+  const appState = appSlice(sd);
+  const lens = planLens(appState, state);
   const signedOut = lens === 'signedout';
   const entitled = lens === 'entitled';
   const seedAccount = plansRepo.account(locale);
 
-  const plans = plansRepo.plans(locale).map((p) => ({
-    ...p,
-    name: t(`plans.plan.${p.id}.name`),
-    blurb: t(`plans.plan.${p.id}.blurb`),
-    features: [1, 2, 3].map((i) => t(`plans.plan.${p.id}.feature.${i}`)),
-    priceLabel: t('plans.price', { amount: p.monthly }),
-    seatsLabel: t('plans.seats', { count: p.machineSeats }),
-    current: entitled && p.id === seedAccount.plan,
+  const plans = plansRepo.plans(locale).map((plan) => ({
+    ...plan,
+    name: translate(`plans.plan.${plan.id}.name`),
+    blurb: translate(`plans.plan.${plan.id}.blurb`),
+    features: [1, 2, 3].map((featureIndex) => translate(`plans.plan.${plan.id}.feature.${featureIndex}`)),
+    priceLabel: translate('plans.price', { amount: plan.monthly }),
+    seatsLabel: translate('plans.seats', { count: plan.machineSeats }),
+    current: entitled && plan.id === seedAccount.plan,
     // The upgrade CTA lives on the payable plan only, and only while there is
     // something to upgrade FROM. Signed-out gets the sign-in CTA instead —
     // same split as the picker's gatedNotice.
-    upgradeable: !signedOut && !entitled && p.id === plansRepo.checkout(locale).plan,
+    upgradeable: !signedOut && !entitled && plan.id === plansRepo.checkout(locale).plan,
   }));
 
   // The mock checkout: five seeded outcomes mirroring kit/payments one-for-one
@@ -308,34 +308,34 @@ export const plansContext = (sd, t = (k) => k, locale = 'en', { state, pay } = {
   // Stripe test-card idiom: you pick the seeded method, the result follows);
   // ?pay= stays as the debug override. Navigation keeps the last outcome.
   const checkout = plansRepo.checkout(locale);
-  const activePay = checkout.outcomes.some((o) => o.id === pay)
+  const activePay = checkout.outcomes.some((outcome) => outcome.id === pay)
     ? pay
-    : checkout.outcomes.some((o) => o.id === s.checkoutOutcome)
-      ? s.checkoutOutcome
+    : checkout.outcomes.some((outcome) => outcome.id === appState.checkoutOutcome)
+      ? appState.checkoutOutcome
       : null;
   const checkoutCtx = {
     ...checkout,
-    amountLabel: t('plans.price', { amount: checkout.amount }),
-    outcomes: checkout.outcomes.map((o) => ({
-      ...o,
-      label: t(`plans.checkout.outcome.${o.id}.label`),
-      active: o.id === activePay,
+    amountLabel: translate('plans.price', { amount: checkout.amount }),
+    outcomes: checkout.outcomes.map((outcome) => ({
+      ...outcome,
+      label: translate(`plans.checkout.outcome.${outcome.id}.label`),
+      active: outcome.id === activePay,
     })),
     active: activePay
       ? {
           id: activePay,
-          ...checkout.outcomes.find((o) => o.id === activePay),
-          title: t(`plans.checkout.outcome.${activePay}.title`),
-          body: t(`plans.checkout.outcome.${activePay}.body`),
+          ...checkout.outcomes.find((outcome) => outcome.id === activePay),
+          title: translate(`plans.checkout.outcome.${activePay}.title`),
+          body: translate(`plans.checkout.outcome.${activePay}.body`),
           // The retry path a PaymentDeclined branch offers: another seeded
           // attempt (the kit's own profile-flip idiom), wired as a real form
           // in the view — no href here.
-          retryLabel: t('plans.checkout.retry'),
+          retryLabel: translate('plans.checkout.retry'),
           // Only the success branch mutates anything: applying the seeded
           // token flips the session to the paid plan. The form's action is a
           // literal in the view (the wiring selftest reads markup), so there
           // is no applyHref here.
-          applyLabel: t('plans.checkout.apply'),
+          applyLabel: translate('plans.checkout.apply'),
         }
       : null,
   };
@@ -344,7 +344,7 @@ export const plansContext = (sd, t = (k) => k, locale = 'en', { state, pay } = {
     state: lens,
     signedOut,
     entitled,
-    user: s.user,
+    user: appState.user,
     plans,
     currentPlan: entitled ? seedAccount.plan : null,
     machineSeats: entitled ? seedAccount.machineSeats : null,
@@ -358,9 +358,9 @@ export const plansContext = (sd, t = (k) => k, locale = 'en', { state, pay } = {
 // and the session remembers it, so the result panel survives navigation.
 // An unknown outcome is a no-op — the server never trusts the markup.
 export const attemptCheckout = (sd, outcome, locale = 'en') => {
-  const o = String(outcome || '').toLowerCase();
-  if (plansRepo.checkout(locale).outcomes.some((x) => x.id === o)) {
-    S(sd).checkoutOutcome = o;
+  const outcomeId = String(outcome || '').toLowerCase();
+  if (plansRepo.checkout(locale).outcomes.some((candidateOutcome) => candidateOutcome.id === outcomeId)) {
+    appSlice(sd).checkoutOutcome = outcomeId;
   }
 };
 
@@ -368,18 +368,18 @@ export const attemptCheckout = (sd, outcome, locale = 'en') => {
 // upgrade and any scripted checkout outcome) and the route handler 303s to
 // /auth — the mirror of auth's "any input signs in".
 export const signOut = (sd) => {
-  const s = S(sd);
-  s.user = null;
-  delete s.plan;
-  delete s.checkoutOutcome;
+  const appState = appSlice(sd);
+  appState.user = null;
+  delete appState.plan;
+  delete appState.checkoutOutcome;
 };
 
 // The seeded PaymentSuccess applied: the wallet token "captured", the account
 // now on the paid plan. Session state, never seed state. The outcome is
 // consumed — an entitled account re-opening the checkout sees no stale panel.
 export const applyUpgrade = (sd, locale = 'en') => {
-  const s = S(sd);
-  if (!s.user) s.user = { email: repo.account(locale).email, via: 'seed' };
-  s.plan = plansRepo.account(locale).plan;
-  delete s.checkoutOutcome;
+  const appState = appSlice(sd);
+  if (!appState.user) appState.user = { email: repo.account(locale).email, via: 'seed' };
+  appState.plan = plansRepo.account(locale).plan;
+  delete appState.checkoutOutcome;
 };

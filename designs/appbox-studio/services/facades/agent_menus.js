@@ -21,20 +21,20 @@ const BLURB_KEY = {
 };
 
 const agent = (sessionData) => (sessionData.agent ??= {});
-const current = (a) => MODELS.find((m) => m.id === a.model) ?? MODELS[2]; // K2.6 Agent
+const current = (agentState) => MODELS.find((model) => model.id === agentState.model) ?? MODELS[2]; // K2.6 Agent
 
-export const modelMenuFor = (sessionData, base, t = (k) => k) => {
+export const modelMenuFor = (sessionData, base, translate = (key) => key) => {
   const on = current(agent(sessionData));
-  const blurbOf = (m) => {
-    const v = t(BLURB_KEY[m.id]);
-    return v == BLURB_KEY[m.id] ? m.blurb : v;
+  const blurbOf = (model) => {
+    const translated = translate(BLURB_KEY[model.id]);
+    return translated == BLURB_KEY[model.id] ? model.blurb : translated;
   };
   return {
     label: on.label,
-    options: MODELS.map((m) => ({ ...m, blurb: blurbOf(m), active: m.id === on.id, href: `${base}/model/${m.id}` })),
+    options: MODELS.map((model) => ({ ...model, blurb: blurbOf(model), active: model.id === on.id, href: `${base}/model/${model.id}` })),
   };
 };
 
 export const setModel = (sessionData, id) => {
-  if (MODELS.some((m) => m.id === id)) agent(sessionData).model = id;
+  if (MODELS.some((model) => model.id === id)) agent(sessionData).model = id;
 };

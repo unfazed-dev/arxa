@@ -21,7 +21,7 @@ const DEPS = {
   'ui-tier': ['core'],
   'app-integration': ['core', 'ui_library'],
 };
-const dependsOf = (k) => (k.depends && k.depends.length ? k.depends : DEPS[k.topology] || []).filter((d) => d !== k.id);
+const dependsOf = (kit) => (kit.depends && kit.depends.length ? kit.depends : DEPS[kit.topology] || []).filter((dependencyId) => dependencyId !== kit.id);
 
 /** Resolve the closure: hand-picked ids in → {selected, auto} out. */
 const closure = (picked, byId) => {
@@ -31,8 +31,8 @@ const closure = (picked, byId) => {
   while (grew) {
     grew = false;
     for (const id of [...selected]) {
-      for (const d of dependsOf(byId[id] || {})) {
-        if (!selected.has(d)) { selected.add(d); auto.add(d); grew = true; }
+      for (const dependencyId of dependsOf(byId[id] || {})) {
+        if (!selected.has(dependencyId)) { selected.add(dependencyId); auto.add(dependencyId); grew = true; }
       }
     }
   }
@@ -51,7 +51,7 @@ const pickedFrom = (session, locale) => {
   // they carry the `auto` flag and the D5 "added for you" notice is visible on
   // first paint. Seeding from `selected` would silently include them with no
   // explanation — exactly the opacity D5 exists to prevent.
-  return new Set(fixture.filter((k) => k.pickedByDesign).map((k) => k.id));
+  return new Set(fixture.filter((kit) => kit.pickedByDesign).map((kit) => kit.id));
 };
 
 /**
@@ -74,9 +74,9 @@ const pickedFrom = (session, locale) => {
  * follows the real seeded session — signed-out → signedOut gate, signed-in
  * without a plan → notEntitled gate, entitled → ungated.
  */
-export const context = (session = {}, t = (k) => k, locale = 'en', screen) => {
+export const context = (session = {}, translate = (key) => key, locale = 'en', screen) => {
   const all = repo.kits(locale);
-  const byId = Object.fromEntries(all.map((k) => [k.id, k]));
+  const byId = Object.fromEntries(all.map((kit) => [kit.id, kit]));
   const ent = repo.entitlement(locale);
   const essentials = repo.essentials(locale);
   const states = repo.states(locale);
@@ -101,37 +101,37 @@ export const context = (session = {}, t = (k) => k, locale = 'en', screen) => {
   const picked = lens === 'empty' ? new Set(essentials) : pickedFrom(session, locale);
   const { selected, auto } = closure(picked, byId);
 
-  const kits = all.map((k) => ({
-    ...k,
-    selected: selected.has(k.id),
-    auto: auto.has(k.id),
-    essential: essentials.includes(k.id),
+  const kits = all.map((kit) => ({
+    ...kit,
+    selected: selected.has(kit.id),
+    auto: auto.has(kit.id),
+    essential: essentials.includes(kit.id),
     // Locked = essential (cannot be removed) or auto-included while its
     // dependent is still selected. Both are D5 consequences, not D2 removals.
-    locked: essentials.includes(k.id) || auto.has(k.id),
-    requiredBy: all.filter((o) => selected.has(o.id) && dependsOf(o).includes(k.id)).map((o) => o.id),
+    locked: essentials.includes(kit.id) || auto.has(kit.id),
+    requiredBy: all.filter((otherKit) => selected.has(otherKit.id) && dependsOf(otherKit).includes(kit.id)).map((otherKit) => otherKit.id),
     // Toggle target. add/remove are distinct routes so the remove path can
     // interpose the D2 confirm without a client-side branch.
-    href: selected.has(k.id) ? `/scaffold/remove?kit=${k.id}` : `/scaffold/add?kit=${k.id}`,
-    credentialsHref: k.readinessAxis && k.readinessAxis.module
-      ? `${ent.credentialsHref}?module=${encodeURIComponent(k.readinessAxis.module)}`
+    href: selected.has(kit.id) ? `/scaffold/remove?kit=${kit.id}` : `/scaffold/add?kit=${kit.id}`,
+    credentialsHref: kit.readinessAxis && kit.readinessAxis.module
+      ? `${ent.credentialsHref}?module=${encodeURIComponent(kit.readinessAxis.module)}`
       : ent.credentialsHref,
   }));
 
-  const chosen = kits.filter((k) => k.selected);
+  const chosen = kits.filter((kit) => kit.selected);
   const groupOrder = ['core', 'integrations', 'platform', 'advanced'];
   const groups = groupOrder
     .map((id) => {
-      const items = kits.filter((k) => k.group === id);
+      const items = kits.filter((kit) => kit.group === id);
       return {
         id,
-        label: t(`scaffold.picker.group.${id}`),
+        label: translate(`scaffold.picker.group.${id}`),
         kits: items,
         count: items.length,
-        selectedCount: items.filter((k) => k.selected).length,
+        selectedCount: items.filter((kit) => kit.selected).length,
       };
     })
-    .filter((g) => g.count > 0);
+    .filter((group) => group.count > 0);
 
   // --- D2: pending removal confirm ----------------------------------------
   // Removing a kit a screen declared does not silently break that screen: the
@@ -145,7 +145,7 @@ export const context = (session = {}, t = (k) => k, locale = 'en', screen) => {
         fallback: pending.removal.fallback,
         // A kit other selected kits depend on cannot be removed at all — the
         // confirm degrades into an explanation.
-        blockedBy: kits.filter((k) => k.selected && dependsOf(k).includes(pending.id)).map((k) => k.id),
+        blockedBy: kits.filter((kit) => kit.selected && dependsOf(kit).includes(pending.id)).map((kit) => kit.id),
         confirmHref: `/scaffold/remove/confirm?kit=${pending.id}`,
         // Not '/scaffold': cancelling has to clear the staged removal on the
         // server (picker.cancelRemove). Pointing this at the page would
@@ -155,26 +155,26 @@ export const context = (session = {}, t = (k) => k, locale = 'en', screen) => {
     : null;
 
   // --- D5 notice: what got pulled in on the user's behalf ------------------
-  const autoNotice = chosen.filter((k) => k.auto);
+  const autoNotice = chosen.filter((kit) => kit.auto);
 
   // --- D6: inform-only readiness roll-up -----------------------------------
   // Counted and surfaced, never a gate. The deploy screen owns the hard block.
-  const unready = chosen.filter((k) => !k.readinessAxis.ready);
+  const unready = chosen.filter((kit) => !kit.readinessAxis.ready);
 
   const counts = {
     total: kits.length,
     selected: chosen.length,
-    declared: chosen.filter((k) => k.provenance === 'declared').length,
-    inferred: chosen.filter((k) => k.provenance === 'inferred').length,
-    requested: chosen.filter((k) => k.provenance === 'requested').length,
+    declared: chosen.filter((kit) => kit.provenance === 'declared').length,
+    inferred: chosen.filter((kit) => kit.provenance === 'inferred').length,
+    requested: chosen.filter((kit) => kit.provenance === 'requested').length,
     auto: autoNotice.length,
     unready: unready.length,
   };
 
   const manifest = {
     ...repo.manifest(locale),
-    resolved: chosen.map((k) => ({ id: k.id, package: k.package, provenance: k.provenance, auto: k.auto })),
-    todos: unready.map((k) => ({ id: k.id, missing: k.readinessAxis.missing })),
+    resolved: chosen.map((kit) => ({ id: kit.id, package: kit.package, provenance: kit.provenance, auto: kit.auto })),
+    todos: unready.map((kit) => ({ id: kit.id, missing: kit.readinessAxis.missing })),
   };
 
   return {
@@ -195,25 +195,25 @@ export const context = (session = {}, t = (k) => k, locale = 'en', screen) => {
       ? session.scaffoldPanelSize.activity
       : 's',
     panelSizeHref: '/scaffold/panel/size/activity/',
-    stageEyebrow: t('scaffold.picker.eyebrow'),
+    stageEyebrow: translate('scaffold.picker.eyebrow'),
     // The chips are the pinned context the composer carries: what is picked,
     // and how much of it still wants keys. Counts, not prose — the grid is
     // the place that explains itself.
     chips: [
-      { label: t('scaffold.picker.chip.selected', { count: chosen.length }) },
-      ...(unready.length ? [{ label: t('scaffold.picker.chip.unready', { count: unready.length }) }] : []),
+      { label: translate('scaffold.picker.chip.selected', { count: chosen.length }) },
+      ...(unready.length ? [{ label: translate('scaffold.picker.chip.unready', { count: unready.length }) }] : []),
     ],
     // The two opening rows are orientation and are always present; anything
     // the user has actually said follows them, in order. The session slot is
     // the same persistence shape as `scaffoldPanelSize` above — a plain field
     // on session data, so a re-render at any lens replays the same thread.
     thread: [
-      { kind: 'event', text: t('scaffold.picker.thread.detected', { count: counts.declared + counts.inferred }) },
-      { from: 'agent', text: t('scaffold.picker.thread.help') },
+      { kind: 'event', text: translate('scaffold.picker.thread.detected', { count: counts.declared + counts.inferred }) },
+      { from: 'agent', text: translate('scaffold.picker.thread.help') },
       ...(session.scaffoldThread || []),
     ],
     activity: {
-      label: t('scaffold.picker.activity.label'),
+      label: translate('scaffold.picker.activity.label'),
       views: [],
       // The selection, in the order the grid shows it, each row naming WHY it
       // is in the list — the same provenance vocabulary as the badge (D4), so
@@ -222,10 +222,10 @@ export const context = (session = {}, t = (k) => k, locale = 'en', screen) => {
       // it here would make the panel and the card name the same kit two
       // different ways; the display-name gap is real but it is one gap, and
       // it gets closed in both places at once or not at all.
-      items: chosen.map((k) => ({
-        label: k.id,
-        meta: t(`scaffold.picker.prov.${k.provenance}`),
-        active: !k.readinessAxis.ready,
+      items: chosen.map((kit) => ({
+        label: kit.id,
+        meta: translate(`scaffold.picker.prov.${kit.provenance}`),
+        active: !kit.readinessAxis.ready,
       })),
     },
     // The composer form lives in the shell's composition, not in this screen.
@@ -277,11 +277,11 @@ export const context = (session = {}, t = (k) => k, locale = 'en', screen) => {
 const PERSISTABLE_PANELS = ['composer', 'activity'];
 const PANEL_SIZES = ['s', 'm', 'l'];
 
-export const setPanelSize = (session = {}, panel, size, t = (k) => k, locale = 'en', screen = 'success') => {
+export const setPanelSize = (session = {}, panel, size, translate = (key) => key, locale = 'en', screen = 'success') => {
   if (PERSISTABLE_PANELS.includes(panel) && PANEL_SIZES.includes(size)) {
     (session.scaffoldPanelSize ??= {})[panel] = size;
   }
-  return context(session, t, locale, screen);
+  return context(session, translate, locale, screen);
 };
 
 /**
@@ -297,7 +297,7 @@ export const setPanelSize = (session = {}, panel, size, t = (k) => k, locale = '
  * intake, whose `replies`/`replyFallback` come from its repository), and
  * inventing one here would put words in the agent's mouth that no seed backs.
  */
-export const sendMessage = (session = {}, text, t = (k) => k, locale = 'en', screen = 'success') => {
+export const sendMessage = (session = {}, text, translate = (key) => key, locale = 'en', screen = 'success') => {
   const body = String(text ?? '').trim();
   if (body) {
     const seq = (session.scaffoldThreadSeq = (session.scaffoldThreadSeq || 0) + 1);
@@ -310,10 +310,10 @@ export const sendMessage = (session = {}, text, t = (k) => k, locale = 'en', scr
       // render — every reply except the last one. Resolve the scalar before
       // storing it. Same store-map/emit-resolved-scalar split that
       // `panelSizeFor` was built for one screen over.
-      { id: `a-${seq}`, from: 'agent', text: String(t('scaffold.picker.thread.reply')) },
+      { id: `a-${seq}`, from: 'agent', text: String(translate('scaffold.picker.thread.reply')) },
     );
   }
-  return context(session, t, locale, screen);
+  return context(session, translate, locale, screen);
 };
 
 export default { context, setPanelSize };
@@ -336,7 +336,7 @@ export default { context, setPanelSize };
  * a failure throws (the widget writes' contract), because a picker that
  * confirms a set it cannot persist would silently ship the wrong kits.
  */
-export const persistKitManifest = async (session = {}, t = (k) => k, locale = 'en') => {
-  const m = context(session, t, locale).manifest;
-  await repo.writeKitManifest({ wishlist: m.wishlist, resolved: m.resolved, todos: m.todos });
+export const persistKitManifest = async (session = {}, translate = (key) => key, locale = 'en') => {
+  const manifest = context(session, translate, locale).manifest;
+  await repo.writeKitManifest({ wishlist: manifest.wishlist, resolved: manifest.resolved, todos: manifest.todos });
 };

@@ -25,7 +25,7 @@ export const PANEL_SIZES = ['s', 'm', 'l'];
 // whitelist for a value that was always the literal 'left', which would have
 // silently rejected the role key and made every drag-release a no-op.
 const PERSISTABLE_PANELS = ['activity'];
-const panelSizeFor = (d, panel) => (PANEL_SIZES.includes(d.panelSize?.[panel]) ? d.panelSize[panel] : 's');
+const panelSizeFor = (designState, panel) => (PANEL_SIZES.includes(designState.panelSize?.[panel]) ? designState.panelSize[panel] : 's');
 
 // All design-tab ephemeral UI state lives behind one namespace so it never
 // collides with the build/intake surfaces sharing the session.
@@ -38,15 +38,15 @@ export const design = (sessionData) => (sessionData.design ??= { drafted: true }
 // names are chat.css's palette (chips get --ctx AND --ctx-soft there); blue
 // and ember extend it in viewer.css for 11 screens with fewer collisions.
 const TONES = ['cyan', 'violet', 'olive', 'amber', 'blue', 'ember'];
-const toneFor = (id, L) => {
-  const i = repo.screens(L).findIndex((s) => s.id === id);
-  return TONES[(i < 0 ? 0 : i) % TONES.length];
+const toneFor = (id, activeLocale) => {
+  const index = repo.screens(activeLocale).findIndex((screen) => screen.id === id);
+  return TONES[(index < 0 ? 0 : index) % TONES.length];
 };
 
 // {label} / {kit} / {summary} / {id} placeholders in fixture reply strings.
-const interpolate = (s, screen) =>
-  !s ? s
-    : s.replaceAll('{label}', screen?.label ?? '')
+const interpolate = (template, screen) =>
+  !template ? template
+    : template.replaceAll('{label}', screen?.label ?? '')
        .replaceAll('{kit}', String(screen?.kit ?? ''))
        .replaceAll('{summary}', screen?.summary ?? '')
        .replaceAll('{id}', screen?.id ?? '');
@@ -67,31 +67,31 @@ const fillReply = (reply, screen) => ({
 // drafted), inspect · fine-tune (refinement state from pins, thread and
 // checkpoints), the approval gate, freeze. Refinement acts move the states;
 // the shared timeline macro highlights the first active item.
-function timeline(d, L, t) {
-  const seededCps = Object.values(repo.checkpoints(L)).flat().length;
-  const chatCps = Object.values(d.chatCheckpoints ?? {}).flat().length;
+function timeline(designState, activeLocale, translate) {
+  const seededCps = Object.values(repo.checkpoints(activeLocale)).flat().length;
+  const chatCps = Object.values(designState.chatCheckpoints ?? {}).flat().length;
   const refined = seededCps + chatCps > 0;
-  const refining = !refined && (contextIds(d, L).length > 0 || (d.designThread ?? []).length > 0);
-  const approved = d.approved ?? repo.approval(L).state === 'approved';
+  const refining = !refined && (contextIds(designState, activeLocale).length > 0 || (designState.designThread ?? []).length > 0);
+  const approved = designState.approved ?? repo.approval(activeLocale).state === 'approved';
   const items = [
-    { id: 'artboards', kind: 'stage', label: t('design.timeline.artboards'), state: 'green', href: '/design' },
-    { id: 'refine', kind: 'stage', label: t('design.timeline.refine'), state: refined ? 'green' : refining ? 'active' : 'pending', href: '/design/chat' },
-    { id: 'design.approval', kind: 'gate', label: t('design.timeline.approval'), state: approved ? 'approved' : refined ? 'active' : 'pending', href: '/design/freeze' },
-    { id: 'freeze', kind: 'stage', label: t('design.timeline.freeze'), state: approved ? 'green' : 'pending', href: '/design/freeze' },
+    { id: 'artboards', kind: 'stage', label: translate('design.timeline.artboards'), state: 'green', href: '/design' },
+    { id: 'refine', kind: 'stage', label: translate('design.timeline.refine'), state: refined ? 'green' : refining ? 'active' : 'pending', href: '/design/chat' },
+    { id: 'design.approval', kind: 'gate', label: translate('design.timeline.approval'), state: approved ? 'approved' : refined ? 'active' : 'pending', href: '/design/freeze' },
+    { id: 'freeze', kind: 'stage', label: translate('design.timeline.freeze'), state: approved ? 'green' : 'pending', href: '/design/freeze' },
   ];
-  const withRefs = items.map((i) => ({ ...i, ref: i.id }));
-  return { items: withRefs, currentId: (items.find((i) => i.state === 'active') || {}).id ?? null };
+  const withRefs = items.map((item) => ({ ...item, ref: item.id }));
+  return { items: withRefs, currentId: (items.find((item) => item.state === 'active') || {}).id ?? null };
 }
 
 // ---------- pinned context ----------
 
-const contextIds = (d, L) => (d.context ?? []).filter((id) => repo.screen(id, L));
-const pin = (d, id, L) => {
-  if (repo.screen(id, L) && !contextIds(d, L).includes(id)) (d.context ??= []).push(id);
-  d.trayOpen = true; // pinning auto-expands the composer's context tray
+const contextIds = (designState, activeLocale) => (designState.context ?? []).filter((id) => repo.screen(id, activeLocale));
+const pin = (designState, id, activeLocale) => {
+  if (repo.screen(id, activeLocale) && !contextIds(designState, activeLocale).includes(id)) (designState.context ??= []).push(id);
+  designState.trayOpen = true; // pinning auto-expands the composer's context tray
 };
-const unpin = (d, id, L) => {
-  d.context = contextIds(d, L).filter((x) => x !== id);
+const unpin = (designState, id, activeLocale) => {
+  designState.context = contextIds(designState, activeLocale).filter((contextScreenId) => contextScreenId !== id);
 };
 
 // The composer tray's filmstrip: EVERY screen as a live thumb, horizontally
@@ -101,23 +101,23 @@ const unpin = (d, id, L) => {
 // design canvas only): a thumb picks the wired-app preview's active screen,
 // swapping just #design-viewer; the viewer hands those hrefs over as
 // protoPicks (the tray lives outside #design-viewer, in #panels).
-const filmstripFor = (d, base, L, viewer, noProto) => {
-  const ids = contextIds(d, L);
+const filmstripFor = (designState, base, activeLocale, viewer, noProto) => {
+  const ids = contextIds(designState, activeLocale);
   const picks = !noProto && viewer.protoPicks;
-  return repo.screens(L).map((s) => ({
-    id: s.id,
-    label: repo.screen(s.id, L).label,
-    tone: toneFor(s.id, L),
-    inContext: ids.includes(s.id),
-    dim: ids.length > 0 && !ids.includes(s.id),
-    src: `${STUB_BASE}${s.id}?vp=mobile&embed=1&still=1${viewer.theme ? `&theme=${viewer.theme}` : ''}`,
+  return repo.screens(activeLocale).map((screen) => ({
+    id: screen.id,
+    label: repo.screen(screen.id, activeLocale).label,
+    tone: toneFor(screen.id, activeLocale),
+    inContext: ids.includes(screen.id),
+    dim: ids.length > 0 && !ids.includes(screen.id),
+    src: `${STUB_BASE}${screen.id}?vp=mobile&embed=1&still=1${viewer.theme ? `&theme=${viewer.theme}` : ''}`,
     ...(picks
-      ? { protoHref: picks[s.id], active: s.id === viewer.proto.active }
-      : { contextHref: `${base}/context/${s.id}?state=toggle` }),
+      ? { protoHref: picks[screen.id], active: screen.id === viewer.proto.active }
+      : { contextHref: `${base}/context/${screen.id}?state=toggle` }),
   }));
 };
 
-const ctxLabel = (d, L, t) => contextIds(d, L).map((id) => repo.screen(id, L).label).join(' + ') || t('design.ctxFallback');
+const ctxLabel = (designState, activeLocale, translate) => contextIds(designState, activeLocale).map((id) => repo.screen(id, activeLocale).label).join(' + ') || translate('design.ctxFallback');
 
 // ---------- undo / redo (two session stacks: canvas, chat) ----------
 // Each entry carries enough to reverse itself in both directions, so the same
@@ -125,12 +125,12 @@ const ctxLabel = (d, L, t) => contextIds(d, L).map((id) => repo.screen(id, L).la
 // and forth. Canvas stack: flow edits (move/add/remove — replayed as project
 // flows.json writes) + screen pin/unpin. Chat stack is wired for design-change
 // checkpoints (contract §6).
-const pushUndo = (d, stack, entry) => {
-  (d.undoStacks ??= {}); (d.redoStacks ??= {});
-  (d.undoStacks[stack] ??= []).push(entry);
-  d.redoStacks[stack] = [];
+const pushUndo = (designState, stack, entry) => {
+  (designState.undoStacks ??= {}); (designState.redoStacks ??= {});
+  (designState.undoStacks[stack] ??= []).push(entry);
+  designState.redoStacks[stack] = [];
 };
-const pushCanvasUndo = (d, entry) => pushUndo(d, 'canvas', entry);
+const pushCanvasUndo = (designState, entry) => pushUndo(designState, 'canvas', entry);
 
 // ---------- flow edit operations (WRITE the project's flows.json) ----------
 // A flow is a linear edge list; chainOf derives the screen order by the same
@@ -138,16 +138,16 @@ const pushCanvasUndo = (d, entry) => pushUndo(d, 'canvas', entry);
 // edge, a seen-set guards a malformed cycle).
 const chainOf = (flow) => {
   const edges = flow?.edges ?? [];
-  const incoming = new Set(edges.map((e) => e.to));
-  let cur = edges.find((e) => !incoming.has(e.from)) ?? edges[0];
+  const incoming = new Set(edges.map((edge) => edge.to));
+  let cur = edges.find((edge) => !incoming.has(edge.from)) ?? edges[0];
   const chain = [];
   const seen = new Set();
   while (cur && !seen.has(cur.from)) {
     seen.add(cur.from);
     chain.push(cur);
-    cur = edges.find((e) => e.from === cur.to);
+    cur = edges.find((edge) => edge.from === cur.to);
   }
-  return chain.length ? [chain[0].from, ...chain.map((e) => e.to)] : [];
+  return chain.length ? [chain[0].from, ...chain.map((edge) => edge.to)] : [];
 };
 
 // Rewire rule (the documented deterministic choice): rebuild edges pairwise
@@ -164,10 +164,10 @@ const chainOf = (flow) => {
 // invariant without a server and without touching the live studio on :4319.
 export const rewire = (flow, order, memory) => {
   const edges = flow.edges ?? [];
-  const byPair = new Map(edges.map((e) => [`${e.from}→${e.to}`, e]));
-  const outByFrom = new Map(edges.map((e) => [e.from, e]));
-  flow.edges = order.slice(0, -1).map((from, i) => {
-    const kept = byPair.get(`${from}→${order[i + 1]}`);
+  const byPair = new Map(edges.map((edge) => [`${edge.from}→${edge.to}`, edge]));
+  const outByFrom = new Map(edges.map((edge) => [edge.from, edge]));
+  flow.edges = order.slice(0, -1).map((from, index) => {
+    const kept = byPair.get(`${from}→${order[index + 1]}`);
     if (kept) return kept;
     const prev = outByFrom.get(from) ?? memory?.[from];
     // `element` rides with `trigger`: both describe what the user touches to
@@ -189,7 +189,7 @@ export const rewire = (flow, order, memory) => {
     // that needs it most: a screen moved to the chain tail has no outgoing edge
     // left in the file, so undo re-derives it from memory alone. See moveMemory.
     return {
-      from, to: order[i + 1],
+      from, to: order[index + 1],
       trigger: prev?.trigger ?? 'continue',
       action: prev?.action ?? 'push',
       ...(prev?.element ? { element: prev.element } : {}),
@@ -221,7 +221,7 @@ export const rewire = (flow, order, memory) => {
 // the answers dual-write shipped the loss to answers.json. Listing fields here
 // again would just re-arm the same trap for the next field added to an edge.
 export const moveMemory = (flow) =>
-  Object.fromEntries((flow?.edges ?? []).map((e) => [e.from, { ...e, action: e.action ?? 'push' }]));
+  Object.fromEntries((flow?.edges ?? []).map((edge) => [edge.from, { ...edge, action: edge.action ?? 'push' }]));
 
 // Would excising screenId leave the flow with any edges? A 0-edge flow is
 // INVALID — appboxd/lib/intake.dart:283 hard-errors '$where: edges must be a
@@ -239,10 +239,10 @@ export const moveMemory = (flow) =>
 // the refusal can never drift apart.
 export const canRemoveFrom = (flow, screenId) => {
   const edges = flow?.edges ?? [];
-  const incoming = edges.find((e) => e.to === screenId) ?? null;
-  const outgoing = edges.find((e) => e.from === screenId) ?? null;
+  const incoming = edges.find((edge) => edge.to === screenId) ?? null;
+  const outgoing = edges.find((edge) => edge.from === screenId) ?? null;
   if (!incoming && !outgoing) return edges.length > 0;
-  const rest = edges.filter((e) => e !== incoming && e !== outgoing).length;
+  const rest = edges.filter((edge) => edge !== incoming && edge !== outgoing).length;
   return rest + (incoming && outgoing ? 1 : 0) > 0;
 };
 
@@ -252,11 +252,11 @@ export const canRemoveFrom = (flow, screenId) => {
 // screen is not a member).
 const excise = (flow, screenId) => {
   const edges = flow.edges ?? [];
-  const incoming = edges.find((e) => e.to === screenId) ?? null;
-  const outgoing = edges.find((e) => e.from === screenId) ?? null;
+  const incoming = edges.find((edge) => edge.to === screenId) ?? null;
+  const outgoing = edges.find((edge) => edge.from === screenId) ?? null;
   if (!incoming && !outgoing) return null;
   const at = edges.indexOf(incoming ?? outgoing);
-  const rest = edges.filter((e) => e !== incoming && e !== outgoing);
+  const rest = edges.filter((edge) => edge !== incoming && edge !== outgoing);
   const stitch = incoming && outgoing
     ? [{
       from: incoming.from, to: outgoing.to,
@@ -291,7 +291,7 @@ const appendTo = (flow, screenId) => {
 const restore = (flow, entry) => {
   const edges = flow.edges ?? [];
   const without = entry.incoming && entry.outgoing
-    ? edges.filter((e) => !(e.from === entry.incoming.from && e.to === entry.outgoing.to))
+    ? edges.filter((edge) => !(edge.from === entry.incoming.from && edge.to === entry.outgoing.to))
     : [...edges];
   const at = entry.incoming ? Math.max(0, entry.index - 1) : entry.index;
   const back = [entry.incoming, entry.outgoing].filter(Boolean);
@@ -301,10 +301,10 @@ const restore = (flow, entry) => {
 // Flow entries replay their file write in both directions (re-deriving edges
 // from the CURRENT file, so triggers follow their from screen); pin/chat
 // entries stay pure session state.
-const applyEntry = async (d, entry, dir) => {
+const applyEntry = async (designState, entry, dir) => {
   if (entry.type === 'flow-move' || entry.type === 'flow-add' || entry.type === 'flow-remove') {
     const flows = proj.flows();
-    const flow = flows.find((f) => f.id === entry.flowId);
+    const flow = flows.find((candidateFlow) => candidateFlow.id === entry.flowId);
     if (!flow) return;
     if (entry.type === 'flow-move') rewire(flow, dir === 'undo' ? entry.before : entry.after, entry.triggers);
     else if (entry.type === 'flow-add') {
@@ -327,24 +327,24 @@ const applyEntry = async (d, entry, dir) => {
     // the mirror. Membership is toggled directly on d.context (the same array
     // pin()/unpin() maintain) so canUndo/canRedo stay honest about state.
     const wantPinned = entry.type === 'pin' ? dir !== 'undo' : dir === 'undo';
-    const has = (d.context ?? []).includes(entry.screenId);
-    if (wantPinned && !has) (d.context ??= []).push(entry.screenId);
-    if (!wantPinned && has) d.context = d.context.filter((x) => x !== entry.screenId);
+    const has = (designState.context ?? []).includes(entry.screenId);
+    if (wantPinned && !has) (designState.context ??= []).push(entry.screenId);
+    if (!wantPinned && has) designState.context = designState.context.filter((contextScreenId) => contextScreenId !== entry.screenId);
   } else if (entry.type === 'chat') {
     // Undo truncates the thread to the pre-message length and stashes the
     // removed messages + checkpoints in the entry for redo to re-append.
-    const thread = (d.designThread ??= []);
+    const thread = (designState.designThread ??= []);
     if (dir === 'undo') {
       entry.removedMsgs = thread.splice(entry.threadLenBefore);
       entry.removedCps = [];
       for (const { screen, cp } of entry.checkpointIds) {
-        const list = d.chatCheckpoints?.[screen] ?? [];
-        const found = list.find((x) => x.id === cp);
-        if (found) { entry.removedCps.push({ screen, cp: found }); d.chatCheckpoints[screen] = list.filter((x) => x.id !== cp); }
+        const list = designState.chatCheckpoints?.[screen] ?? [];
+        const found = list.find((checkpoint) => checkpoint.id === cp);
+        if (found) { entry.removedCps.push({ screen, cp: found }); designState.chatCheckpoints[screen] = list.filter((checkpoint) => checkpoint.id !== cp); }
       }
     } else {
       thread.push(...(entry.removedMsgs ?? []));
-      for (const { screen, cp } of entry.removedCps ?? []) ((d.chatCheckpoints ??= {})[screen] ??= []).push(cp);
+      for (const { screen, cp } of entry.removedCps ?? []) ((designState.chatCheckpoints ??= {})[screen] ??= []).push(cp);
     }
   }
 };
@@ -371,34 +371,34 @@ const VP_HEIGHTS = { mobile: 844, tablet: 1133, desktop: 800 };
 // never a live studio route.
 const STUB_BASE = '/build/screens/';
 
-function viewerFor(d, L, t) {
-  const v = d.viewer ?? {};
-  const ids = contextIds(d, L);
+function viewerFor(designState, activeLocale, translate) {
+  const viewerState = designState.viewer ?? {};
+  const ids = contextIds(designState, activeLocale);
   const base = '/design/viewer';
   const contextBase = '/design/chat/context/';
 
-  const vp = ['mobile', 'tablet', 'desktop'].includes(v.vp) ? v.vp : 'mobile';
+  const vp = ['mobile', 'tablet', 'desktop'].includes(viewerState.vp) ? viewerState.vp : 'mobile';
 
   // Tile order is the project REGISTRY order (the views lens is a flat grid
   // over it); the tile data itself comes from the design-stage fixture
   // (rungs/kit/state). Fallback: fixture order when no project is overlaid.
-  const fixture = repo.screens(L);
+  const fixture = repo.screens(activeLocale);
   let registryIds = [];
-  try { registryIds = proj.registry().map((e) => e.id); } catch { /* artifact-only serving */ }
+  try { registryIds = proj.registry().map((entry) => entry.id); } catch { /* artifact-only serving */ }
   const ordered = registryIds.length
-    ? registryIds.map((id) => fixture.find((s) => s.id === id)).filter(Boolean)
+    ? registryIds.map((id) => fixture.find((screen) => screen.id === id)).filter(Boolean)
     : fixture;
 
-  const bg = ['canvas', 'warm', 'ink'].includes(v.bg) ? v.bg : 'canvas';
+  const bg = ['canvas', 'warm', 'ink'].includes(viewerState.bg) ? viewerState.bg : 'canvas';
   // Canvas app theme OVERRIDE: light/dark restyle the designed app's stubs
   // ONLY (never the studio chrome); null = auto — the stubs keep following
   // the studio theme, which is screenStub's default (build_facade), so auto
   // stays out of every URL like the other elided defaults below.
-  const theme = ['light', 'dark'].includes(v.theme) ? v.theme : null;
-  const mode = ['views', 'flows', 'proto'].includes(v.mode) ? v.mode : 'views';
-  const active = ordered.some((s) => s.id === v.screen) ? v.screen : ordered[0]?.id;
+  const theme = ['light', 'dark'].includes(viewerState.theme) ? viewerState.theme : null;
+  const mode = ['views', 'flows', 'proto'].includes(viewerState.mode) ? viewerState.mode : 'views';
+  const active = ordered.some((screen) => screen.id === viewerState.screen) ? viewerState.screen : ordered[0]?.id;
   // Per-tile params: the screen id they name, else null (unknown ids drop).
-  const inspect = ordered.some((s) => s.id === v.inspect) ? v.inspect : null;
+  const inspect = ordered.some((screen) => screen.id === viewerState.inspect) ? viewerState.inspect : null;
   // Flow mode is FLOWS-ONLY. A stale `?live=<id>` carried into views (a shared
   // URL, a lens switch that kept the param) must not paint .is-live on a views
   // tile: pointer-events:auto, interactive, and no close control reachable
@@ -411,7 +411,7 @@ function viewerFor(d, L, t) {
   // when BOTH are removed (verified by removing each, then both). They are kept
   // because they do different jobs — this one also stops `live=` persisting
   // into every views href via withParams, which the structural one does not.
-  const live = mode === 'flows' && ordered.some((s) => s.id === v.live) ? v.live : null;
+  const live = mode === 'flows' && ordered.some((screen) => screen.id === viewerState.live) ? viewerState.live : null;
 
   // The flow WALK: which flow row is being walked, and which screen in its
   // chain is the current step. `live` above is only "this tile is interactive";
@@ -419,8 +419,8 @@ function viewerFor(d, L, t) {
   // the destination is well-defined here because the row names the flow, and
   // ambiguous anywhere else (portalo.home advances to checkout in
   // flow-browse-buy and to account in flow-account).
-  const walkFlow = mode === 'flows' && typeof v.flow === 'string' && v.flow ? v.flow : null;
-  const walkStep = walkFlow && ordered.some((s) => s.id === v.step) ? v.step : null;
+  const walkFlow = mode === 'flows' && typeof viewerState.flow === 'string' && viewerState.flow ? viewerState.flow : null;
+  const walkStep = walkFlow && ordered.some((screen) => screen.id === viewerState.step) ? viewerState.step : null;
 
   // Device rungs as mini-bar icon buttons (lucide names, picked up by the
   // server's template icon scan). One mobile chrome — no os dimension.
@@ -442,22 +442,22 @@ function viewerFor(d, L, t) {
       flow: walkFlow, step: walkStep,
       ...over,
     };
-    const qs = Object.entries(merged).filter(([, val]) => val != null).map(([k, val]) => `${k}=${val}`).join('&');
+    const qs = Object.entries(merged).filter(([, val]) => val != null).map(([key, val]) => `${key}=${val}`).join('&');
     return qs ? `${base}?${qs}` : base;
   };
 
-  const screens = ordered.map((s) => {
-    const viewports = s.rungs.map((r) => ({ vp: RUNG_VP[r.width] ?? 'mobile', width: r.width, rung: r.rung, note: r.note, shot: r.shot }));
+  const screens = ordered.map((screen) => {
+    const viewports = screen.rungs.map((rung) => ({ vp: RUNG_VP[rung.width] ?? 'mobile', width: rung.width, rung: rung.rung, note: rung.note, shot: rung.shot }));
     // Tile dims at the CURRENT rung (fallback: the screen's first authored
     // rung; heights fall back to the rung default).
-    const te = viewports.find((e) => e.vp === vp) ?? viewports[0];
+    const te = viewports.find((viewport) => viewport.vp === vp) ?? viewports[0];
     const tile = te ? { vp: te.vp, width: te.width, height: te.height ?? VP_HEIGHTS[te.vp] } : null;
     return {
-      id: s.id, label: s.label, state: s.state,
-      inContext: ids.includes(s.id),
-      dim: ids.length > 0 && !ids.includes(s.id),
-      tone: toneFor(s.id, L),
-      chips: [{ text: `${s.kit}%`, title: t('design.kitChipTitle', { kit: s.kit, id: s.id }) }],
+      id: screen.id, label: screen.label, state: screen.state,
+      inContext: ids.includes(screen.id),
+      dim: ids.length > 0 && !ids.includes(screen.id),
+      tone: toneFor(screen.id, activeLocale),
+      chips: [{ text: `${screen.kit}%`, title: translate('design.kitChipTitle', { kit: screen.kit, id: screen.id }) }],
       viewports,
       primaryWidth: viewports[0]?.width ?? 390,
       tile,
@@ -471,8 +471,8 @@ function viewerFor(d, L, t) {
       // row names the flow and the answer is well-defined. Leaving them off
       // here makes the old unsound behaviour structurally unreachable rather
       // than merely unrendered.
-      inspecting: s.id === inspect,
-      inspectHref: withParams({ inspect: s.id === inspect ? null : s.id }),
+      inspecting: screen.id === inspect,
+      inspectHref: withParams({ inspect: screen.id === inspect ? null : screen.id }),
     };
   });
 
@@ -482,52 +482,52 @@ function viewerFor(d, L, t) {
   // several flows appears once per row — tiles are shallow copies of the
   // views-lens entries plus `conn`, the trigger label on the connector to the
   // NEXT tile (null on the last).
-  const tileById = Object.fromEntries(screens.map((s) => [s.id, s]));
+  const tileById = Object.fromEntries(screens.map((screen) => [screen.id, screen]));
   let flows = [];
   try {
-    flows = proj.flows().map((f) => {
-      const edges = f.edges ?? [];
-      const incoming = new Set(edges.map((e) => e.to));
-      let cur = edges.find((e) => !incoming.has(e.from)) ?? edges[0];
+    flows = proj.flows().map((flow) => {
+      const edges = flow.edges ?? [];
+      const incoming = new Set(edges.map((edge) => edge.to));
+      let cur = edges.find((edge) => !incoming.has(edge.from)) ?? edges[0];
       const chain = [];
       const seen = new Set();
       while (cur && !seen.has(cur.from)) {
         seen.add(cur.from);
         chain.push(cur);
-        cur = edges.find((e) => e.from === cur.to);
+        cur = edges.find((edge) => edge.from === cur.to);
       }
-      const chainIds = chain.length ? [chain[0].from, ...chain.map((e) => e.to)] : [];
+      const chainIds = chain.length ? [chain[0].from, ...chain.map((edge) => edge.to)] : [];
       // Walk state is PER ROW. Arming a walk without naming a screen starts at
       // the chain head rather than nowhere, so `?flow=<id>` alone is valid.
-      const walking = f.id === walkFlow;
+      const walking = flow.id === walkFlow;
       const stepId = walking ? (chainIds.includes(walkStep) ? walkStep : chainIds[0]) : null;
       return {
-        id: f.id, name: f.name, walking,
+        id: flow.id, name: flow.name, walking,
         tiles: chainIds
-          .map((id, i) => {
-            const t = tileById[id];
-            if (!t) return null;
+          .map((id, index) => {
+            const tile = tileById[id];
+            if (!tile) return null;
             const isStep = walking && id === stepId;
-            const edge = i < chain.length ? chain[i] : null;
+            const edge = index < chain.length ? chain[index] : null;
             return {
-              ...t,
+              ...tile,
               conn: edge ? edge.trigger : null,
               // Can this tile's remove control do anything? False on both tiles
               // of a 2-screen flow, where removing either would leave 0 edges —
               // an invalid flow that nothing can refill. The SAME helper backs
               // removeFromFlow's refusal, so the greyed-out button and the
               // server's answer are one decision, not two that can disagree.
-              canRemove: canRemoveFrom(f, id),
+              canRemove: canRemoveFrom(flow, id),
               // `live` = this tile is the current step, so it renders
               // interactive (still=1 dropped). Only ever true inside the
               // walked row — a screen in two flows cannot be "live" in both.
               live: isStep,
-              liveHref: withParams({ flow: f.id, step: id, live: id }),
+              liveHref: withParams({ flow: flow.id, step: id, live: id }),
               liveCloseHref: withParams({ flow: null, step: null, live: null }),
               // The next step in THIS row. Null on the last tile — the walk
               // ends rather than wrapping. This is what the tile-chrome
               // advance control and the flow-walk island both target.
-              advanceHref: edge ? withParams({ flow: f.id, step: edge.to, live: edge.to }) : null,
+              advanceHref: edge ? withParams({ flow: flow.id, step: edge.to, live: edge.to }) : null,
               // Row end only: the OTHER flows that continue from this screen.
               // This is the whole of the inter-flow story — flows are joined by
               // shared ids, so the terminal screen of one row is the head of
@@ -541,11 +541,11 @@ function viewerFor(d, L, t) {
               // screen can look instead of its content, which is a different
               // question. Null when the edge raises nothing; most do not.
               feedback: edge?.feedback ?? null,
-              handoffs: edge ? [] : proj.handoffs(id, f.id).map((h) => ({
-                ...h,
+              handoffs: edge ? [] : proj.handoffs(id, flow.id).map((handoff) => ({
+                ...handoff,
                 // Continue in that flow AT THIS SCREEN — it is the head of the
                 // target row, so the walk lands where the eye already is.
-                href: withParams({ flow: h.flow, step: id, live: id }),
+                href: withParams({ flow: handoff.flow, step: id, live: id }),
               })),
               // What fires this edge, for the island's click matcher:
               // `element` is the authored join to a data-el value, `trigger`
@@ -564,8 +564,8 @@ function viewerFor(d, L, t) {
               // falls back to first-match-across-all-flows and the two can
               // disagree inside the same tile.
               walkQs: edge
-                ? `&walkflow=${encodeURIComponent(f.id)}`
-                  + `&walk=${encodeURIComponent(withParams({ flow: f.id, step: edge.to, live: edge.to }))}`
+                ? `&walkflow=${encodeURIComponent(flow.id)}`
+                  + `&walk=${encodeURIComponent(withParams({ flow: flow.id, step: edge.to, live: edge.to }))}`
                   + `&walkel=${encodeURIComponent(edge.element ?? '')}`
                   + `&walktrig=${encodeURIComponent(edge.trigger ?? '')}`
                 : '',
@@ -586,7 +586,7 @@ function viewerFor(d, L, t) {
   // Kept even though the viewer's own filmstrip no longer reads it (that strip
   // is VIEWS-ONLY now, so it never renders in proto): freeze's composer tray
   // builds a strip outside #design-viewer and still consumes these hrefs.
-  const protoPicks = mode === 'proto' ? Object.fromEntries(screens.map((s) => [s.id, withParams({ screen: s.id })])) : null;
+  const protoPicks = mode === 'proto' ? Object.fromEntries(screens.map((screen) => [screen.id, withParams({ screen: screen.id })])) : null;
 
   // Canvas appearance cluster — rendered in the viewer's TOP bar
   // (design_viewer.html topbar), not the mini panel: the app-theme segmented
@@ -602,12 +602,12 @@ function viewerFor(d, L, t) {
     // lenses (in views/flows they re-render the tiles at that rung). The bg
     // swatches moved to the viewer topbar (`bgs` above).
     bar: {
-      devices: DEVICES.map((d) => ({ ...d, active: d.key === vp, href: withParams({ vp: d.key === 'mobile' ? null : d.key }) })),
+      devices: DEVICES.map((designState) => ({ ...designState, active: designState.key === vp, href: withParams({ vp: designState.key === 'mobile' ? null : designState.key }) })),
     },
     controller: {
       modes: ['views', 'flows', 'proto'].map((key) => ({ key, active: key === mode, href: withParams({ mode: key === 'views' ? null : key }) })),
-      undo: { can: (d.undoStacks?.canvas?.length ?? 0) > 0, href: '/design/undo/canvas' },
-      redo: { can: (d.redoStacks?.canvas?.length ?? 0) > 0, href: '/design/redo/canvas' },
+      undo: { can: (designState.undoStacks?.canvas?.length ?? 0) > 0, href: '/design/undo/canvas' },
+      redo: { can: (designState.redoStacks?.canvas?.length ?? 0) > 0, href: '/design/redo/canvas' },
     },
   };
 
@@ -626,7 +626,7 @@ function viewerFor(d, L, t) {
     // active-screen picker, so proto now shows whatever screen the facade
     // defaults to. Give proto its own picker if that becomes a problem —
     // protoPicks below still carries the hrefs.
-    filmstrip: mode === 'views' ? filmstripFor(d, contextBase.replace(/\/context\/$/, ''), L, { protoPicks, proto, theme }, false) : null,
+    filmstrip: mode === 'views' ? filmstripFor(designState, contextBase.replace(/\/context\/$/, ''), activeLocale, { protoPicks, proto, theme }, false) : null,
     // Proto-mode screen picks. No longer read by the viewer's own strip (see
     // above), but freeze's composer tray still builds one outside
     // #design-viewer, so the viewer keeps handing the hrefs over.
@@ -634,22 +634,22 @@ function viewerFor(d, L, t) {
     base, stubBase: STUB_BASE, contextBase,
     miniPanel,
     undoRedo: {
-      canvas: { canUndo: (d.undoStacks?.canvas?.length ?? 0) > 0, canRedo: (d.redoStacks?.canvas?.length ?? 0) > 0 },
-      chat:   { canUndo: (d.undoStacks?.chat?.length ?? 0) > 0, canRedo: (d.redoStacks?.chat?.length ?? 0) > 0 },
+      canvas: { canUndo: (designState.undoStacks?.canvas?.length ?? 0) > 0, canRedo: (designState.redoStacks?.canvas?.length ?? 0) > 0 },
+      chat:   { canUndo: (designState.undoStacks?.chat?.length ?? 0) > 0, canRedo: (designState.redoStacks?.chat?.length ?? 0) > 0 },
     },
-    elements: (d.elementContext ?? []).map((e) => ({ ...e, removeHref: `${contextBase}element/remove?screen=${encodeURIComponent(e.screenId)}&name=${encodeURIComponent(e.name)}` })),
+    elements: (designState.elementContext ?? []).map((elementRef) => ({ ...elementRef, removeHref: `${contextBase}element/remove?screen=${encodeURIComponent(elementRef.screenId)}&name=${encodeURIComponent(elementRef.name)}` })),
     // Widget-manager selection (components column, views lens): rendered
     // inline in the selected screen's editor slot so a full viewer morph
     // keeps the open editor — same session-survival reasoning as the
     // inspector lock (D16).
-    wedit: widgetEditorContext(d, t),
+    wedit: widgetEditorContext(designState, translate),
     // Edit arming (D2). Disarmed is the default and the safe state: tiles
     // keep interact-in-place (tap/scroll/hover reach the app under design).
     // Armed, a tile click SELECTS the widget instead of reaching the app —
     // the two readings of a click are mutually exclusive, so the mode is
     // explicit rather than inferred from a modifier key. Session state, so a
     // viewer morph never silently disarms mid-edit (D16's reasoning).
-    weditArmed: !!d.weditArmed,
+    weditArmed: !!designState.weditArmed,
     weditArmHref: '/design/widget/arm',
     // Per-screen reveal-drawer (Screen Reveal-Drawer plan, increment 2). Keyed
     // by screen id because the template renders one card per screen and needs
@@ -657,7 +657,7 @@ function viewerFor(d, L, t) {
     // template language. Views lens only: the drawer
     // is the screen card's own back panel, and only the views lens renders one
     // card per designed screen.
-    drawers: mode === 'views' ? drawerContexts(d, screens, t, L) : null,
+    drawers: mode === 'views' ? drawerContexts(designState, screens, translate, activeLocale) : null,
   };
 }
 
@@ -667,12 +667,12 @@ function viewerFor(d, L, t) {
 // "back to default", never "keep". Merging would strand every non-default
 // value (a canvas chip sends no mode=, so a merged mode:'proto' could never
 // flip back).
-export const setViewer = (sessionData, query, prefs = {}, t = (k) => k, locale = 'en') => {
-  const d = design(sessionData);
+export const setViewer = (sessionData, query, prefs = {}, translate = (key) => key, locale = 'en') => {
+  const designState = design(sessionData);
   const next = {};
-  for (const [k, v] of Object.entries(query)) if (v != null) next[k] = v;
-  d.viewer = next;
-  return stageContext(sessionData, {}, prefs, t, locale);
+  for (const [key, value] of Object.entries(query)) if (value != null) next[key] = value;
+  designState.viewer = next;
+  return stageContext(sessionData, {}, prefs, translate, locale);
 };
 
 // ---------- the per-screen reveal-drawer (Screen Reveal-Drawer plan) --------
@@ -682,17 +682,17 @@ export const setViewer = (sessionData, query, prefs = {}, t = (k) => k, locale =
 // d.viewer wholesale on every toolbar act, and an open drawer must survive a
 // rung/bg/theme toggle.
 const DRAWER_TABS = ['composer', 'tools', 'logic'];
-const drawerEntry = (d, id) => ({ open: false, tab: 'composer', ...(d.drawer?.[id] ?? {}) });
+const drawerEntry = (designState, id) => ({ open: false, tab: 'composer', ...(designState.drawer?.[id] ?? {}) });
 
-export const setDrawer = (sessionData, screenId, { state, tab } = {}, prefs = {}, t = (k) => k, locale = 'en') => {
-  const d = design(sessionData);
-  const cur = drawerEntry(d, screenId);
+export const setDrawer = (sessionData, screenId, { state, tab } = {}, prefs = {}, translate = (key) => key, locale = 'en') => {
+  const designState = design(sessionData);
+  const cur = drawerEntry(designState, screenId);
   const next = { ...cur };
   if (state != null) next.open = state === 'toggle' ? !cur.open : state === 'on';
   // A tab pick implies the drawer is out — the tabs are unreachable tucked.
   if (tab != null && DRAWER_TABS.includes(tab)) { next.tab = tab; next.open = true; }
-  (d.drawer ??= {})[screenId] = next;
-  return stageContext(sessionData, {}, prefs, t, locale);
+  (designState.drawer ??= {})[screenId] = next;
+  return stageContext(sessionData, {}, prefs, translate, locale);
 };
 
 // One drawer context per views-lens screen. The composer spec mounts the SAME
@@ -701,16 +701,16 @@ export const setDrawer = (sessionData, screenId, { state, tab } = {}, prefs = {}
 // this instance issues lands in its own container, routed by ?drawer=<id>
 // (the viewmodels render `#drawerSwap` when they see it). Undo/redo ride the
 // same global chat stack; only the RESPONSE routing is screen-scoped.
-const drawerContexts = (d, screens, t, L = 'en') =>
-  Object.fromEntries(screens.map((s) => {
-    const st = drawerEntry(d, s.id);
-    const slug = s.id.replace(/\./g, '-');
-    const base = `/design/drawer/${s.id}`;
+const drawerContexts = (designState, screens, translate, activeLocale = 'en') =>
+  Object.fromEntries(screens.map((screen) => {
+    const st = drawerEntry(designState, screen.id);
+    const slug = screen.id.replace(/\./g, '-');
+    const base = `/design/drawer/${screen.id}`;
     const chat = {
-      canUndo: (d.undoStacks?.chat?.length ?? 0) > 0,
-      canRedo: (d.redoStacks?.chat?.length ?? 0) > 0,
+      canUndo: (designState.undoStacks?.chat?.length ?? 0) > 0,
+      canRedo: (designState.redoStacks?.chat?.length ?? 0) > 0,
     };
-    return [s.id, {
+    return [screen.id, {
       ...st,
       slug,
       toggleHref: `${base}?state=toggle`,
@@ -718,14 +718,14 @@ const drawerContexts = (d, screens, t, L = 'en') =>
       // Built only while THIS screen's drawer shows Tools: each entry costs
       // source reads (one resolveWidget per addressable widget), and a tab
       // the session has never picked must not pay them.
-      tools: st.tab === 'tools' ? toolsContext(d, s, t, L) : null,
-      logic: st.tab === 'logic' ? logicContext(d, s, t, L) : null,
+      tools: st.tab === 'tools' ? toolsContext(designState, screen, translate, activeLocale) : null,
+      logic: st.tab === 'logic' ? logicContext(designState, screen, translate, activeLocale) : null,
       composer: {
         // ?screen= pins this screen before the send (screen-scoped send);
         // ?drawer= routes the response back to this drawer's container.
-        composerAction: `/design/chat/messages?screen=${encodeURIComponent(s.id)}&drawer=${encodeURIComponent(s.id)}`,
-        placeholder: t('composer.placeholder.refine', { label: s.label ?? s.id }),
-        suggestions: refineSuggestions(t),
+        composerAction: `/design/chat/messages?screen=${encodeURIComponent(screen.id)}&drawer=${encodeURIComponent(screen.id)}`,
+        placeholder: translate('composer.placeholder.refine', { label: screen.label ?? screen.id }),
+        suggestions: refineSuggestions(translate),
         // No model menu / filmstrip / chips / tray body: their hrefs all swap
         // the composer's target, and rendering them here would demand a
         // drawer-scoped route per control for chrome the drawer does not need.
@@ -736,8 +736,8 @@ const drawerContexts = (d, screens, t, L = 'en') =>
         elements: null,
         tray: { open: false, toggleHref: '' },
         undoRedo: { chat },
-        undoHref: `/design/undo/chat?drawer=${encodeURIComponent(s.id)}`,
-        redoHref: `/design/redo/chat?drawer=${encodeURIComponent(s.id)}`,
+        undoHref: `/design/undo/chat?drawer=${encodeURIComponent(screen.id)}`,
+        redoHref: `/design/redo/chat?drawer=${encodeURIComponent(screen.id)}`,
         swapTarget: `#dv-drawer-${slug}`,
       },
     }];
@@ -745,18 +745,18 @@ const drawerContexts = (d, screens, t, L = 'en') =>
 
 // ---------- the design thread (seeded history + session messages) ----------
 
-const allCheckpoints = (d, screenId, L) =>
-  [...(repo.checkpoints(L)[screenId] ?? []), ...(d.chatCheckpoints?.[screenId] ?? [])]
-    .map((cp) => ({ ...cp, reverted: (d.reverted ?? []).includes(cp.id) }));
+const allCheckpoints = (designState, screenId, activeLocale) =>
+  [...(repo.checkpoints(activeLocale)[screenId] ?? []), ...(designState.chatCheckpoints?.[screenId] ?? [])]
+    .map((cp) => ({ ...cp, reverted: (designState.reverted ?? []).includes(cp.id) }));
 
-function threadFor(d, lv, L) {
-  return [...repo.designThread(L), ...(d.designThread ?? [])].map((m) => ({
-    ...m,
-    text: m.from === 'user' ? m.text : jargon.pick(m, 'text', lv),
-    link: m.link ?? null,
-    cps: (m.cps ?? [])
+function threadFor(designState, lv, activeLocale) {
+  return [...repo.designThread(activeLocale), ...(designState.designThread ?? [])].map((message) => ({
+    ...message,
+    text: message.from === 'user' ? message.text : jargon.pick(message, 'text', lv),
+    link: message.link ?? null,
+    cps: (message.cps ?? [])
       .map(({ screen, cp }) => {
-        const found = allCheckpoints(d, screen, L).find((x) => x.id === cp);
+        const found = allCheckpoints(designState, screen, activeLocale).find((checkpoint) => checkpoint.id === cp);
         return found ? { screen, ...found, summary: jargon.pick(found, 'summary', lv) } : null;
       })
       .filter(Boolean),
@@ -767,18 +767,18 @@ function threadFor(d, lv, L) {
 
 // Suggestion chips: values are posted back as user text (they render in the
 // thread), so both value and label come from the catalog.
-const refineSuggestions = (t) => [
-  { value: t('design.sug.editLayout.value'), label: t('design.sug.editLayout.label') },
-  { value: t('design.sug.restyle.value'), label: t('design.sug.restyle.label') },
-  { value: t('design.sug.adjustStates.value'), label: t('design.sug.adjustStates.label') },
-  { value: t('design.sug.regenerate.value'), label: t('design.sug.regenerate.label') },
+const refineSuggestions = (translate) => [
+  { value: translate('design.sug.editLayout.value'), label: translate('design.sug.editLayout.label') },
+  { value: translate('design.sug.restyle.value'), label: translate('design.sug.restyle.label') },
+  { value: translate('design.sug.adjustStates.value'), label: translate('design.sug.adjustStates.label') },
+  { value: translate('design.sug.regenerate.value'), label: translate('design.sug.regenerate.label') },
 ];
 
-function screenCard(s, d, L, t) {
-  const checkpoints = (repo.checkpoints(L)[s.id] ?? []).length + (d.chatCheckpoints?.[s.id] ?? []).length;
+function screenCard(screen, designState, activeLocale, translate) {
+  const checkpoints = (repo.checkpoints(activeLocale)[screen.id] ?? []).length + (designState.chatCheckpoints?.[screen.id] ?? []).length;
   return {
-    type: 'screen', state: s.state, threadCount: checkpoints,
-    detail: t('design.screenCardDetail', { rungs: s.rungs.length, kit: s.kit, wire: s.wire }),
+    type: 'screen', state: screen.state, threadCount: checkpoints,
+    detail: translate('design.screenCardDetail', { rungs: screen.rungs.length, kit: screen.kit, wire: screen.wire }),
   };
 }
 
@@ -798,75 +798,75 @@ function screenCard(s, d, L, t) {
 // `inferred` provenance flags, `pinned`, and the hrefs.
 const CONTEXT_BASE = '/design/chat/context/';
 
-const elementCard = (d, p, L) => {
+const elementCard = (designState, elementSelection, activeLocale) => {
   // role falls back to the data-el prefix — the same fallback inspect.js used
   // to do in the overlay. The fallback IS the inference, which is why the flag
   // is computed here: the island posts the attribute or nothing, and never
   // claims a provenance it cannot know.
-  const roleValue = p.role || String(p.name ?? '').split(':')[0] || '';
+  const roleValue = elementSelection.role || String(elementSelection.name ?? '').split(':')[0] || '';
   // The ancestor chain (outermost→innermost) the island walked to reach this
   // element. Each crumb except the last gets a selectHref that POSTs back to
   // /design/inspector/select — clicking an ancestor selects+locks it. The
   // href is built here because the facade owns all hrefs (see header comment).
-  const rawChain = Array.isArray(p.chain) ? p.chain : [];
+  const rawChain = Array.isArray(elementSelection.chain) ? elementSelection.chain : [];
   const lastIdx = rawChain.length - 1;
-  const chain = rawChain.map((c, i) => {
-    const crumb = { el: c?.el ?? '', inferred: !!c?.inferred, selectHref: null };
-    if (i === lastIdx) return crumb;
+  const chain = rawChain.map((rawCrumb, index) => {
+    const crumb = { el: rawCrumb?.el ?? '', inferred: !!rawCrumb?.inferred, selectHref: null };
+    if (index === lastIdx) return crumb;
     const qs = new URLSearchParams();
     if (crumb.el) qs.set('name', crumb.el);
-    if (c?.role) qs.set('role', c.role);
-    if (p.screen) qs.set('screen', p.screen);
+    if (rawCrumb?.role) qs.set('role', rawCrumb.role);
+    if (elementSelection.screen) qs.set('screen', elementSelection.screen);
     if (crumb.inferred) qs.set('inferred', '1');
     qs.set('lock', '1');
     crumb.selectHref = `/design/inspector/select?${qs.toString()}`;
     return crumb;
   });
   return {
-    name: p.name,
-    kind: p.kind ?? '',
-    instance: p.instance ?? '',
-    instanceCount: p.instanceCount ?? '',
-    screenId: p.screen,
-    tone: toneFor(p.screen, L),
+    name: elementSelection.name,
+    kind: elementSelection.kind ?? '',
+    instance: elementSelection.instance ?? '',
+    instanceCount: elementSelection.instanceCount ?? '',
+    screenId: elementSelection.screen,
+    tone: toneFor(elementSelection.screen, activeLocale),
     // True when the island had no data-el to read — identity was inferred from
     // tag/text, not declared. A card-level marker distinct from per-field
     // inference (role.inferred etc.).
-    inferred: !!p.inferred,
+    inferred: !!elementSelection.inferred,
     chain,
-    role: { value: roleValue, inferred: !p.role && !!roleValue },
-    style: p.style || null,
-    motion: p.motion || null,
+    role: { value: roleValue, inferred: !elementSelection.role && !!roleValue },
+    style: elementSelection.style || null,
+    motion: elementSelection.motion || null,
     // D9's fn derivation lives in the Dart lint, which reads SOURCE. Nothing
     // here can infer a function from a rendered node, so an absent fn is
     // reported absent rather than guessed — a wrong provenance flag is worse
     // than a missing card line.
-    fn: p.fn ? { value: p.fn, inferred: false } : null,
-    pinned: (d.elementContext ?? []).some((e) => e.screenId === p.screen && e.name === p.name),
+    fn: elementSelection.fn ? { value: elementSelection.fn, inferred: false } : null,
+    pinned: (designState.elementContext ?? []).some((elementRef) => elementRef.screenId === elementSelection.screen && elementRef.name === elementSelection.name),
     pinHref: `${CONTEXT_BASE}element`,
-    unpinHref: `${CONTEXT_BASE}element/remove?screen=${encodeURIComponent(p.screen)}&name=${encodeURIComponent(p.name)}`,
+    unpinHref: `${CONTEXT_BASE}element/remove?screen=${encodeURIComponent(elementSelection.screen)}&name=${encodeURIComponent(elementSelection.name)}`,
   };
 };
 
-const screenCardFor = (d, L, fallbackScreenId = null) => {
+const screenCardFor = (designState, activeLocale, fallbackScreenId = null) => {
   // fallbackScreenId is the viewer's currently-active screen (viewerFor's
   // `active`) — inspectorScreenId only gets set by a real element hover
   // (selectElement), so without this fallback the pane stays 'empty' until
   // the user hovers an element at least once. D17 specifies the screen card
   // for "nothing hovered/locked", i.e. the moment the pane opens, not after.
-  const id = d.inspectorScreenId ?? fallbackScreenId ?? null;
+  const id = designState.inspectorScreenId ?? fallbackScreenId ?? null;
   const entry = id ? proj.registryEntry(id) : null;
   if (!entry) return null;
   const edges = [];
-  for (const f of proj.flows()) {
-    for (const e of f.edges ?? []) {
-      if (e.from !== id) continue;
+  for (const flow of proj.flows()) {
+    for (const edge of flow.edges ?? []) {
+      if (edge.from !== id) continue;
       edges.push({
-        flow: f.id,
-        flowLabel: f.label ?? f.id,
-        trigger: e.trigger ?? '',
-        to: e.to,
-        element: e.element ?? null,
+        flow: flow.id,
+        flowLabel: flow.label ?? flow.id,
+        trigger: edge.trigger ?? '',
+        to: edge.to,
+        element: edge.element ?? null,
       });
     }
   }
@@ -874,21 +874,21 @@ const screenCardFor = (d, L, fallbackScreenId = null) => {
   // {id,label,shell,comp,route,surface,states,kits}. They live on the screens
   // repo, so they are joined from there; reading entry.epic would render a
   // permanently blank row that looks like "this screen has no epic".
-  const screen = repo.screens(L).find((s) => s.id === id) ?? {};
+  const screen = repo.screens(activeLocale).find((candidateScreen) => candidateScreen.id === id) ?? {};
   return {
     id,
     label: entry.label ?? id,
     epic: screen.epic ?? '',
     state: screen.state ?? '',
-    tone: toneFor(id, L),
+    tone: toneFor(id, activeLocale),
     // All 'declared': deriving states from kits needs the kit→state map, which
     // is authored in the designer's kit-catalog and mirrored in Dart. Marking
     // a declared state 'derived' here would be a guess, so nothing is.
-    states: (entry.states ?? []).map((n) => ({ name: n, source: 'declared' })),
+    states: (entry.states ?? []).map((stateName) => ({ name: stateName, source: 'declared' })),
     // Empty until the kit→state map is readable from JS. An empty list renders
     // no section, which is the honest result — NOT "nothing is missing".
     missingStates: [],
-    kits: (entry.kits ?? []).map((k) => ({ id: k, label: k })),
+    kits: (entry.kits ?? []).map((kitId) => ({ id: kitId, label: kitId })),
     edges,
     // null, deliberately: annotation coverage counts [data-el] occurrences in
     // SOURCE, and those values are templated (see the wall above). The Dart
@@ -897,7 +897,7 @@ const screenCardFor = (d, L, fallbackScreenId = null) => {
   };
 };
 
-const inspectorFor = (d, L, fallbackScreenId = null, active = true) => {
+const inspectorFor = (designState, activeLocale, fallbackScreenId = null, active = true) => {
   // `active` (activityView === 'inspector') gates the expensive path: since
   // the #47 fix, screenCardFor almost always resolves an id (fallbackScreenId
   // is nearly always set) and walks proj.flows() — a fresh disk read+parse —
@@ -908,14 +908,14 @@ const inspectorFor = (d, L, fallbackScreenId = null, active = true) => {
   // — it does not need to be exact, only present (see the comment at its
   // call site on why the key itself can never be conditional).
   if (!active) {
-    return { mode: 'empty', locked: !!d.inspectorLock, element: null, screen: null, unlockHref: '/design/inspector/unlock', hint: null };
+    return { mode: 'empty', locked: !!designState.inspectorLock, element: null, screen: null, unlockHref: '/design/inspector/unlock', hint: null };
   }
-  const shown = d.inspectorLock ?? d.inspectorHover ?? null;
-  const element = shown && shown.name ? elementCard(d, shown, L) : null;
-  const screen = element ? null : screenCardFor(d, L, fallbackScreenId);
+  const shown = designState.inspectorLock ?? designState.inspectorHover ?? null;
+  const element = shown && shown.name ? elementCard(designState, shown, activeLocale) : null;
+  const screen = element ? null : screenCardFor(designState, activeLocale, fallbackScreenId);
   return {
     mode: element ? 'element' : screen ? 'screen' : 'empty',
-    locked: !!d.inspectorLock,
+    locked: !!designState.inspectorLock,
     element,
     screen,
     unlockHref: '/design/inspector/unlock',
@@ -926,18 +926,18 @@ const inspectorFor = (d, L, fallbackScreenId = null, active = true) => {
 // The island fires one request per element change. While locked, a hover must
 // cost nothing: return the stage unchanged so the pane re-renders identically
 // and the morph is a no-op.
-export const selectElement = (sessionData, payload = {}, prefs = {}, t = (k) => k, locale = 'en') => {
-  const d = design(sessionData);
+export const selectElement = (sessionData, payload = {}, prefs = {}, translate = (key) => key, locale = 'en') => {
+  const designState = design(sessionData);
   // "Locked wins" (D16): while a lock is held a hover changes NOTHING. The lock
   // is a deliberate pick; an element merely brushed past while it is held must
   // not displace it — and must not become what unlock falls back to either.
-  if (d.inspectorLock && payload.lock !== '1') return stageContext(sessionData, {}, prefs, t, locale);
+  if (designState.inspectorLock && payload.lock !== '1') return stageContext(sessionData, {}, prefs, translate, locale);
   // chain is a JSON string from the island (a trust boundary) — guard the
   // parse so a malformed body can never crash the selection path.
   let chain = [];
   try { chain = JSON.parse(payload.chain || '[]'); } catch (_) { chain = []; }
   if (!Array.isArray(chain)) chain = [];
-  const p = {
+  const elementSelection = {
     screen: payload.screen ?? '',
     name: payload.name ?? '',
     kind: payload.kind ?? '',
@@ -950,27 +950,27 @@ export const selectElement = (sessionData, payload = {}, prefs = {}, t = (k) => 
     instance: payload.instance ?? '',
     instanceCount: payload.instanceCount ?? '',
   };
-  if (payload.lock === '1') d.inspectorLock = p; else d.inspectorHover = p;
+  if (payload.lock === '1') designState.inspectorLock = elementSelection; else designState.inspectorHover = elementSelection;
   // Remembered so the screen card still has a subject once the pointer leaves
   // every element — mode 'screen' is the state between hovers, not a dead end.
-  if (p.screen) d.inspectorScreenId = p.screen;
-  return stageContext(sessionData, {}, prefs, t, locale);
+  if (elementSelection.screen) designState.inspectorScreenId = elementSelection.screen;
+  return stageContext(sessionData, {}, prefs, translate, locale);
 };
 
 // Clears the lock, KEEPS the hover — D16: the lock is session state precisely
 // so it survives htmx morphs, and clearing it should fall back to live hover
 // rather than to empty.
-export const unlockInspector = (sessionData, prefs = {}, t = (k) => k, locale = 'en') => {
-  const d = design(sessionData);
+export const unlockInspector = (sessionData, prefs = {}, translate = (key) => key, locale = 'en') => {
+  const designState = design(sessionData);
   // Promote the lock into the hover slot before dropping it. Unlocking should
   // LEAVE the element you were studying on screen and resume live tracking from
   // the NEXT hover — not blank the pane back to the screen card. Without this,
   // locking an element that was never hovered first (the island posts lock=1 on
   // a click, and a click need not be preceded by a hover post) left nothing to
   // fall back to, so unlock emptied the pane.
-  if (d.inspectorLock) d.inspectorHover = d.inspectorLock;
-  delete d.inspectorLock;
-  return stageContext(sessionData, {}, prefs, t, locale);
+  if (designState.inspectorLock) designState.inspectorHover = designState.inspectorLock;
+  delete designState.inspectorLock;
+  return stageContext(sessionData, {}, prefs, translate, locale);
 };
 
 // ---------- widget manager (components column, views lens only) ----------
@@ -998,32 +998,32 @@ const W_ATTR_VALUES = {
 };
 const W_ATTRS = Object.keys(W_ATTR_VALUES);
 
-export const widgetEditorContext = (d, t = (k) => k) => {
-  const sel = d.widgetSel;
+export const widgetEditorContext = (designState, translate = (key) => key) => {
+  const sel = designState.widgetSel;
   if (!sel) return { sel: null };
-  const w = widgets.resolveWidget(sel.screen, sel.kind, sel.index ?? 0);
-  if (!w) return { sel: null };
+  const widget = widgets.resolveWidget(sel.screen, sel.kind, sel.index ?? 0);
+  if (!widget) return { sel: null };
   // posting a chip's own current value toggles the attribute OFF (val ''):
   // one control, no separate "clear" affordance per attribute.
-  const step = (attr) => K_STEPS.map((v) => ({
-    v,
-    on: (w.attrs[attr] ?? '') === String(v),
-    val: (w.attrs[attr] ?? '') === String(v) ? '' : String(v),
+  const step = (attr) => K_STEPS.map((stepOption) => ({
+    v: stepOption,
+    on: (widget.attrs[attr] ?? '') === String(stepOption),
+    val: (widget.attrs[attr] ?? '') === String(stepOption) ? '' : String(stepOption),
   }));
   // Same toggle-off rule as the k chips: re-posting the active mode clears
   // the attribute, so "no explicit mode" stays reachable without a second
   // control. Keeps the editor's whole vocabulary one interaction shape.
-  const mode = (attr) => RESIZE_MODES.map((m) => ({
-    m,
-    on: (w.attrs[attr] ?? '') === m,
-    val: (w.attrs[attr] ?? '') === m ? '' : m,
+  const mode = (attr) => RESIZE_MODES.map((modeOption) => ({
+    m: modeOption,
+    on: (widget.attrs[attr] ?? '') === modeOption,
+    val: (widget.attrs[attr] ?? '') === modeOption ? '' : modeOption,
   }));
   return {
     sel: { ...sel, name: sel.name ?? '' },
-    file: w.file,
-    tag: w.tag,
-    attrs: w.attrs,
-    screens: widgets.screensUsing(w.file),
+    file: widget.file,
+    tag: widget.tag,
+    attrs: widget.attrs,
+    screens: widgets.screensUsing(widget.file),
     pads: step('data-pad'),
     gaps: step('data-gap'),
     resizeX: mode('data-resize-x'),
@@ -1038,10 +1038,10 @@ export const widgetEditorContext = (d, t = (k) => k) => {
 // a partial swap would leave stale tiles armed. Disarming also drops the
 // selection — a lingering editor for a widget you can no longer click is a
 // dead panel, and "disarm" reads as "leave edit mode" to a user.
-export const armWidgetEdit = (sessionData, prefs = {}, t = (k) => k, locale = 'en') => {
-  const d = design(sessionData);
-  if (d.weditArmed) { delete d.weditArmed; delete d.widgetSel; } else d.weditArmed = 1;
-  return stageContext(sessionData, {}, prefs, t, locale);
+export const armWidgetEdit = (sessionData, prefs = {}, translate = (key) => key, locale = 'en') => {
+  const designState = design(sessionData);
+  if (designState.weditArmed) { delete designState.weditArmed; delete designState.widgetSel; } else designState.weditArmed = 1;
+  return stageContext(sessionData, {}, prefs, translate, locale);
 };
 
 // Posted by canvas.js on an armed tile click and by the drawer Tools strip.
@@ -1052,32 +1052,32 @@ export const armWidgetEdit = (sessionData, prefs = {}, t = (k) => k, locale = 'e
 // data-wedit-sel that drag.js hangs the resize handles off. The slim
 // widgetEditorContext only fed the former, so the editor opened while the
 // handles stayed invisible.
-export const selectWidget = (sessionData, payload = {}, prefs = {}, t = (k) => k, locale = 'en') => {
-  const d = design(sessionData);
-  d.widgetSel = {
+export const selectWidget = (sessionData, payload = {}, prefs = {}, translate = (key) => key, locale = 'en') => {
+  const designState = design(sessionData);
+  designState.widgetSel = {
     screen: payload.screen ?? '',
     kind: payload.kind ?? '',
     name: payload.name ?? '',
     index: Number(payload.index ?? 0) || 0,
   };
-  return stageContext(sessionData, {}, prefs, t, locale);
+  return stageContext(sessionData, {}, prefs, translate, locale);
 };
 
 // Full context for the same reason: dropping the selection has to drop
 // data-wedit-sel from the canvas, or the handles outlive the selection.
-export const clearWidget = (sessionData, prefs = {}, t = (k) => k, locale = 'en') => {
-  const d = design(sessionData);
-  delete d.widgetSel;
-  return stageContext(sessionData, {}, prefs, t, locale);
+export const clearWidget = (sessionData, prefs = {}, translate = (key) => key, locale = 'en') => {
+  const designState = design(sessionData);
+  delete designState.widgetSel;
+  return stageContext(sessionData, {}, prefs, translate, locale);
 };
 
 // Write-through: mutates the widget's SOURCE element (its definition), so
 // every screen composing it re-renders on the watcher reload — cross-screen
 // sync is emergent, not plumbed. Off-scale values are a 400, not a clamp:
 // clamping would silently teach users a scale that isn't the contract.
-export const setWidgetAttr = async (sessionData, payload = {}, t = (k) => k) => {
-  const d = design(sessionData);
-  const sel = d.widgetSel;
+export const setWidgetAttr = async (sessionData, payload = {}, translate = (key) => key) => {
+  const designState = design(sessionData);
+  const sel = designState.widgetSel;
   const attr = String(payload.attr ?? '');
   const value = String(payload.value ?? '');
   if (!sel || !W_ATTRS.includes(attr) || (value !== '' && !W_ATTR_VALUES[attr].includes(value))) {
@@ -1086,7 +1086,7 @@ export const setWidgetAttr = async (sessionData, payload = {}, t = (k) => k) => 
     throw err;
   }
   await widgets.setWidgetAttr(sel.screen, sel.kind, sel.index ?? 0, attr, value);
-  return widgetEditorContext(d, t);
+  return widgetEditorContext(designState, translate);
 };
 
 // ---------- the Tools tab (Screen Reveal-Drawer plan, increment 3) ----------
@@ -1095,15 +1095,15 @@ export const setWidgetAttr = async (sessionData, payload = {}, t = (k) => k) => 
 // drawer consumes, and the strip below posts the same /design/widget/select
 // route. No parallel vocabulary: a Tools pick arms the same canvas handles
 // and vice versa.
-const toolsContext = (d, s, t, L = 'en') => {
-  const selRaw = d.widgetSel ?? null;
-  const sel = selRaw && selRaw.screen === s.id ? selRaw : null;
+const toolsContext = (designState, screen, translate, activeLocale = 'en') => {
+  const selRaw = designState.widgetSel ?? null;
+  const sel = selRaw && selRaw.screen === screen.id ? selRaw : null;
   // The hierarchy strip (D5): this screen's addressable widgets, enumerated
   // with resolveWidget's own rule so the strip can never offer a selection
   // the editor cannot resolve.
-  const strip = widgets.widgetsOn(s.id).map((w) => ({
-    ...w,
-    on: !!sel && sel.kind === w.kind && (sel.index ?? 0) === w.index,
+  const strip = widgets.widgetsOn(screen.id).map((widget) => ({
+    ...widget,
+    on: !!sel && sel.kind === widget.kind && (sel.index ?? 0) === widget.index,
   }));
   const base = {
     strip,
@@ -1113,15 +1113,15 @@ const toolsContext = (d, s, t, L = 'en') => {
     elsewhere: selRaw && !sel ? selRaw.screen : null,
   };
   if (!sel) return { ...base, sel: null };
-  const wed = widgetEditorContext(d, t);
+  const wed = widgetEditorContext(designState, translate);
   if (!wed.sel) return { ...base, sel: null };
   // Attributes the source element declares beyond the writable contract
   // (data-layout, data-flow, …): shown read-only WITH the reason (D7 —
   // unresolvable renders read-only, never a dead control).
   const roAttrs = Object.entries(wed.attrs ?? {})
-    .filter(([a]) => !W_ATTRS.includes(a))
+    .filter(([attributeName]) => !W_ATTRS.includes(attributeName))
     .map(([attr, value]) => ({ attr, value }));
-  return { ...base, sel: wed.sel, wedit: wed, roAttrs, copy: copyContext(sel, t, L) };
+  return { ...base, sel: wed.sel, wedit: wed, roAttrs, copy: copyContext(sel, translate, activeLocale) };
 };
 
 // Copy provenance for the Tools tab, one honest class per D7: editable where
@@ -1129,22 +1129,22 @@ const toolsContext = (d, s, t, L = 'en') => {
 // CURRENT locale, or a literal in the surface partial), read-only WITH THE
 // REASON otherwise. The classes come from text_repository.classify — this
 // only phrases them.
-const copyContext = (sel, t, L = 'en') => {
-  let p = null;
-  try { p = texts.textProvenance(sel.screen, sel.kind, sel.index ?? 0); } catch { p = null; }
-  if (!p) return { editable: false, text: null, reason: t('viewer.tools.noCopy') };
+const copyContext = (sel, translate, activeLocale = 'en') => {
+  let provenance = null;
+  try { provenance = texts.textProvenance(sel.screen, sel.kind, sel.index ?? 0); } catch { provenance = null; }
+  if (!provenance) return { editable: false, text: null, reason: translate('viewer.tools.noCopy') };
   const textHref = '/design/widget/text';
-  if (p.source === 'arb') {
-    const value = texts.arbValue(p.key, L);
+  if (provenance.source === 'arb') {
+    const value = texts.arbValue(provenance.key, activeLocale);
     // Key resolves from the artifact's base catalogue (or another locale):
     // writing would mint an override the user has not asked for, which
     // text_repository gates behind allowOverride — so reported, not written.
-    if (value == null) return { editable: false, text: null, reason: t('viewer.tools.roOverride', { key: p.key }) };
-    return { editable: true, text: value, note: t('viewer.tools.copyArb', { key: p.key }), textHref };
+    if (value == null) return { editable: false, text: null, reason: translate('viewer.tools.roOverride', { key: provenance.key }) };
+    return { editable: true, text: value, note: translate('viewer.tools.copyArb', { key: provenance.key }), textHref };
   }
-  if (p.source === 'literal') return { editable: true, text: p.text, note: t('viewer.tools.copyLiteral', { file: p.file }), textHref };
-  if (p.source === 'bound') return { editable: false, text: p.text, reason: t('viewer.tools.roBound', { expr: p.expr }) };
-  return { editable: false, text: p.text, reason: t('viewer.tools.roMixed') };
+  if (provenance.source === 'literal') return { editable: true, text: provenance.text, note: translate('viewer.tools.copyLiteral', { file: provenance.file }), textHref };
+  if (provenance.source === 'bound') return { editable: false, text: provenance.text, reason: translate('viewer.tools.roBound', { expr: provenance.expr }) };
+  return { editable: false, text: provenance.text, reason: translate('viewer.tools.roMixed') };
 };
 
 // ---------- the Logic tab (Screen Reveal-Drawer plan, increment 4) ----------
@@ -1160,11 +1160,11 @@ const copyContext = (sel, t, L = 'en') => {
 // edges; the widget-logic probe asserts the fabrication-free shape.
 // Selection is the same shared d.widgetSel the Tools tab consumes (D5): it
 // only MARKS the matching row here, no parallel mechanism.
-const logicContext = (d, s, t, L = 'en') => {
-  const reg = proj.registryEntry(s.id) ?? {};
-  const edges = proj.edgesFrom(s.id);
-  const selRaw = d.widgetSel ?? null;
-  const sel = selRaw && selRaw.screen === s.id ? selRaw : null;
+const logicContext = (designState, screen, translate, activeLocale = 'en') => {
+  const reg = proj.registryEntry(screen.id) ?? {};
+  const edges = proj.edgesFrom(screen.id);
+  const selRaw = designState.widgetSel ?? null;
+  const sel = selRaw && selRaw.screen === screen.id ? selRaw : null;
   const labelOf = (id) => proj.registryEntry(id)?.label ?? id;
   return {
     screen: {
@@ -1175,23 +1175,23 @@ const logicContext = (d, s, t, L = 'en') => {
       // Screen-level wiring: edges that name no element belong to the screen
       // (chrome taps, auto-advance). Element-named edges are attributed to
       // their widget below, so nothing renders twice.
-      edges: edges.filter((e) => !e.element).map((e) => ({ ...e, toLabel: labelOf(e.to) })),
+      edges: edges.filter((edge) => !edge.element).map((edge) => ({ ...edge, toLabel: labelOf(edge.to) })),
     },
-    widgets: widgets.widgetsOn(s.id).map((w) => {
+    widgets: widgets.widgetsOn(screen.id).map((widget) => {
       // Templated means static analysis cannot resolve the name: `{{ }}`
       // (mustache-style seeds) OR `${ }` (TSX template-literal data-el, the
       // form the scaffolder emits for localized labels). Missing either
       // marker classified interpolated buttons 'unwired' — a fabricated
       // certainty; 'unknown' is the honest state.
-      const templated = !w.el || w.el.includes('{{') || w.el.includes('${');
-      const edge = templated ? null : edges.find((e) => e.element === w.el) ?? null;
+      const templated = !widget.el || widget.el.includes('{{') || widget.el.includes('${');
+      const edge = templated ? null : edges.find((candidateEdge) => candidateEdge.element === widget.el) ?? null;
       return {
-        kind: w.kind, index: w.index, el: w.el ?? null,
-        role: w.inspect?.role ?? null,
-        fn: w.inspect?.fn ?? null,
+        kind: widget.kind, index: widget.index, el: widget.el ?? null,
+        role: widget.inspect?.role ?? null,
+        fn: widget.inspect?.fn ?? null,
         wiring: edge ? 'edge' : templated ? 'unknown' : 'unwired',
         edge: edge ? { ...edge, toLabel: labelOf(edge.to) } : null,
-        on: !!sel && sel.kind === w.kind && (sel.index ?? 0) === w.index,
+        on: !!sel && sel.kind === widget.kind && (sel.index ?? 0) === widget.index,
       };
     }),
   };
@@ -1202,9 +1202,9 @@ const logicContext = (d, s, t, L = 'en') => {
 // the string on screen must not silently rewrite another catalogue. Refused
 // classes are a 400 carrying the classifier's own reason, mirror of
 // setWidgetAttr: the write path never learns to guess.
-export const setWidgetCopy = async (sessionData, payload = {}, prefs = {}, t = (k) => k, locale = 'en') => {
-  const d = design(sessionData);
-  const sel = d.widgetSel;
+export const setWidgetCopy = async (sessionData, payload = {}, prefs = {}, translate = (key) => key, locale = 'en') => {
+  const designState = design(sessionData);
+  const sel = designState.widgetSel;
   if (!sel) {
     const err = new Error('no widget selected');
     err.status = 400;
@@ -1212,59 +1212,59 @@ export const setWidgetCopy = async (sessionData, payload = {}, prefs = {}, t = (
   }
   try {
     await texts.setWidgetText(sel.screen, sel.kind, sel.index ?? 0, String(payload.value ?? ''), locale);
-  } catch (e) {
+  } catch (error) {
     // Classified refusals and unroutable targets are user-visible facts, not
     // crashes; a failed project WRITE (the fetch inside) stays a 500.
-    if (e.provenance || /^no catalogue|^widget not found/.test(String(e.message))) e.status = 400;
-    throw e;
+    if (error.provenance || /^no catalogue|^widget not found/.test(String(error.message))) error.status = 400;
+    throw error;
   }
-  return stageContext(sessionData, {}, prefs, t, locale);
+  return stageContext(sessionData, {}, prefs, translate, locale);
 };
 
-export const stageContext = (sessionData = {}, opts = {}, prefs = {}, t = (k) => k, locale = 'en') => {
-  const L = locale;
+export const stageContext = (sessionData = {}, opts = {}, prefs = {}, translate = (key) => key, locale = 'en') => {
+  const activeLocale = locale;
   const lv = jargon.level(prefs);
-  const d = design(sessionData);
-  if (opts.pin === 'none') d.context = [];
-  else if (opts.pin) pin(d, opts.pin, L);
+  const designState = design(sessionData);
+  if (opts.pin === 'none') designState.context = [];
+  else if (opts.pin) pin(designState, opts.pin, activeLocale);
   const base = opts.base ?? '/design/chat';
   // The open file (main panel): ?file=<path> opens, ?file=none closes — the
   // main panel shows the file until then (pins refine, they don't look).
-  if (opts.file === 'none') d.currentFile = null;
-  else if (opts.file) d.currentFile = opts.file;
+  if (opts.file === 'none') designState.currentFile = null;
+  else if (opts.file) designState.currentFile = opts.file;
   const fileBase = opts.fileBase ?? '/design';
   // The panel bar (compact/medium): ?panel= picks the single visible content
   // panel and sticks; default main.
-  if (['activity', 'main', 'composer'].includes(opts.panel)) d.panel = opts.panel;
+  if (['activity', 'main', 'composer'].includes(opts.panel)) designState.panel = opts.panel;
 
-  const drafted = d.drafted === true;
-  const ids = contextIds(d, L);
-  const filter = d.activityFilter ?? 'all';
-  const activityView = ['screens', 'artifacts', 'files', 'inspector'].includes(d.activityView) ? d.activityView : 'screens';
-  const thread = threadFor(d, lv, L);
-  const viewer = viewerFor(d, L, t);
-  const screens = repo.screens(L)
-    .filter((s) => filter === 'all' || s.epic === filter)
-    .map((s) => ({
-      ...s,
-      summary: jargon.pick(s, 'summary', lv),
-      inContext: ids.includes(s.id),
-      tone: toneFor(s.id, L),
-      card: screenCard(s, d, L, t),
+  const drafted = designState.drafted === true;
+  const ids = contextIds(designState, activeLocale);
+  const filter = designState.activityFilter ?? 'all';
+  const activityView = ['screens', 'artifacts', 'files', 'inspector'].includes(designState.activityView) ? designState.activityView : 'screens';
+  const thread = threadFor(designState, lv, activeLocale);
+  const viewer = viewerFor(designState, activeLocale, translate);
+  const screens = repo.screens(activeLocale)
+    .filter((screen) => filter === 'all' || screen.epic === filter)
+    .map((screen) => ({
+      ...screen,
+      summary: jargon.pick(screen, 'summary', lv),
+      inContext: ids.includes(screen.id),
+      tone: toneFor(screen.id, activeLocale),
+      card: screenCard(screen, designState, activeLocale, translate),
     }));
   return {
     // rungsLabel precomputed: fragment imports re-execute page blocks with an
     // empty context, and a join filter on undefined throws — plain access is safe.
-    run: { ...repo.run(L), rungsLabel: repo.run(L).policy.rungs.join('/') },
-    project: { name: repo.run(L).project },
-    counts: repo.counts(L),
-    epics: repo.epics(L),
+    run: { ...repo.run(activeLocale), rungsLabel: repo.run(activeLocale).policy.rungs.join('/') },
+    project: { name: repo.run(activeLocale).project },
+    counts: repo.counts(activeLocale),
+    epics: repo.epics(activeLocale),
     filter,
     activityView,
-    activityLabel: t('activityView.' + activityView),
-    panelSize: panelSizeFor(d, 'activity'),
+    activityLabel: translate('activityView.' + activityView),
+    panelSize: panelSizeFor(designState, 'activity'),
     panelSizeHref: '/design/panel/size/activity/',
-    panelSizePx: d.panelSizePx?.activity ?? null,
+    panelSizePx: designState.panelSizePx?.activity ?? null,
     activityViews: [
       { id: 'screens', icon: 'layout-grid', href: '/design/panel/screens' },
       { id: 'artifacts', icon: 'package', href: '/design/panel/artifacts' },
@@ -1273,22 +1273,22 @@ export const stageContext = (sessionData = {}, opts = {}, prefs = {}, t = (k) =>
       // _shared.html#activityBody, so it carries its OWN href rather than
       // riding the /design/panel/:view map like the other three.
       { id: 'inspector', icon: 'scan-search', href: '/design/inspector' },
-    ].map((v) => ({ ...v, label: t('activityView.' + v.id), active: v.id === activityView })),
+    ].map((viewOption) => ({ ...viewOption, label: translate('activityView.' + viewOption.id), active: viewOption.id === activityView })),
     // D14–D17. Present on EVERY render: the pane re-renders from fragment
     // swaps that carry the whole stage context, so it must never be
     // conditional on activityView.
-    inspector: inspectorFor(d, L, viewer.active, activityView === 'inspector'),
+    inspector: inspectorFor(designState, activeLocale, viewer.active, activityView === 'inspector'),
     screens,
-    artifacts: repo.artifacts(L),
-    files: repo.files(L).map((f) => ({ ...f, ...fv.fileLink(f.path, fileBase) })),
-    fileView: d.currentFile ? fv.fileViewFor(d.currentFile, `${fileBase}?file=none`) : null,
-    panel: d.panel ?? 'main',
+    artifacts: repo.artifacts(activeLocale),
+    files: repo.files(activeLocale).map((flow) => ({ ...flow, ...fv.fileLink(flow.path, fileBase) })),
+    fileView: designState.currentFile ? fv.fileViewFor(designState.currentFile, `${fileBase}?file=none`) : null,
+    panel: designState.panel ?? 'main',
     drafted,
-    threading: thread.some((m) => m.from === 'user'),
-    stageEyebrow: t('design.chat.eyebrow'),
+    threading: thread.some((message) => message.from === 'user'),
+    stageEyebrow: translate('design.chat.eyebrow'),
     composerAction: '/design/chat/messages',
-    modelMenu: agent.modelMenuFor(sessionData, base, t),
-    tray: { open: d.trayOpen !== false, toggleHref: `${base}/tray?state=toggle` },
+    modelMenu: agent.modelMenuFor(sessionData, base, translate),
+    tray: { open: designState.trayOpen !== false, toggleHref: `${base}/tray?state=toggle` },
     // The tray's filmstrip: every screen as a thumb (see filmstripFor). Only
     // on surfaces with NO design viewer — the canvas surfaces float the strip
     // over the views canvas instead (viewerFor -> viewer.filmstrip), and two
@@ -1296,7 +1296,7 @@ export const stageContext = (sessionData = {}, opts = {}, prefs = {}, t = (k) =>
     // Freeze opts in (composerStrip); its stage has a composer and no viewer.
     // The tray head summarizes the PINNED subset ("first +N"); null when the
     // context is empty — the filmstrip still renders, nothing dimmed.
-    filmstrip: opts.composerStrip ? filmstripFor(d, base, L, viewer, opts.noProto) : null,
+    filmstrip: opts.composerStrip ? filmstripFor(designState, base, activeLocale, viewer, opts.noProto) : null,
     trayContext: ids.length ? { first: ids[0], extra: ids.length - 1 } : null,
     // The pinned screens themselves, one chip each — what the composer SAYS
     // about the context now that the thumbs live in the viewer. Same tone as
@@ -1306,8 +1306,8 @@ export const stageContext = (sessionData = {}, opts = {}, prefs = {}, t = (k) =>
     // swaps the surface being rendered rather than always /design/chat.
     contextChips: ids.map((id) => ({
       id,
-      label: repo.screen(id, L).label,
-      tone: toneFor(id, L),
+      label: repo.screen(id, activeLocale).label,
+      tone: toneFor(id, activeLocale),
       removeHref: `${base}/context/${id}?state=off`,
     })),
     viewer,
@@ -1317,73 +1317,73 @@ export const stageContext = (sessionData = {}, opts = {}, prefs = {}, t = (k) =>
     elements: viewer.elements,
     undoRedo: viewer.undoRedo,
     thread,
-    suggestions: refineSuggestions(t),
-    placeholder: t('composer.placeholder.refine', { label: ctxLabel(d, L, t) }),
-    timeline: timeline(d, L, t),
+    suggestions: refineSuggestions(translate),
+    placeholder: translate('composer.placeholder.refine', { label: ctxLabel(designState, activeLocale, translate) }),
+    timeline: timeline(designState, activeLocale, translate),
     jargonLevel: lv,
   };
 };
 
 // Context pin toggle from the filmstrip / artboard chrome / activity card.
 // state: 'toggle' | 'on' | 'off'.
-export const toggleContext = (sessionData, screenId, state = 'toggle', prefs = {}, t = (k) => k, locale = 'en') => {
-  const d = design(sessionData);
-  const wasIn = contextIds(d, locale).includes(screenId);
+export const toggleContext = (sessionData, screenId, state = 'toggle', prefs = {}, translate = (key) => key, locale = 'en') => {
+  const designState = design(sessionData);
+  const wasIn = contextIds(designState, locale).includes(screenId);
   const on = state === 'toggle' ? !wasIn : state === 'on';
-  if (on) pin(d, screenId, locale); else unpin(d, screenId, locale);
-  if (on !== wasIn) pushCanvasUndo(d, { type: on ? 'pin' : 'unpin', screenId });
-  return stageContext(sessionData, {}, prefs, t, locale);
+  if (on) pin(designState, screenId, locale); else unpin(designState, screenId, locale);
+  if (on !== wasIn) pushCanvasUndo(designState, { type: on ? 'pin' : 'unpin', screenId });
+  return stageContext(sessionData, {}, prefs, translate, locale);
 };
 
 // Bulk pin from the marquee selection (drag.js POSTs a comma-separated id list).
-export const bulkPin = (sessionData, idsCsv, prefs = {}, t = (k) => k, locale = 'en') => {
-  const d = design(sessionData);
-  for (const id of idsCsv.split(',').map((s) => s.trim()).filter(Boolean)) {
+export const bulkPin = (sessionData, idsCsv, prefs = {}, translate = (key) => key, locale = 'en') => {
+  const designState = design(sessionData);
+  for (const id of idsCsv.split(',').map((idText) => idText.trim()).filter(Boolean)) {
     if (repo.screen(id, locale)) {
-      pin(d, id, locale);
-      pushCanvasUndo(d, { type: 'pin', screenId: id });
+      pin(designState, id, locale);
+      pushCanvasUndo(designState, { type: 'pin', screenId: id });
     }
   }
-  return stageContext(sessionData, {}, prefs, t, locale);
+  return stageContext(sessionData, {}, prefs, translate, locale);
 };
 
 // Composer chrome: pick the agent model, or collapse/expand the context
 // tray. Both mutate session state; callers re-render their own surface
 // context (freeze ignores the returned stage context).
-export const setModel = (sessionData, id, opts = {}, prefs = {}, t = (k) => k, locale = 'en') => {
+export const setModel = (sessionData, id, opts = {}, prefs = {}, translate = (key) => key, locale = 'en') => {
   agent.setModel(sessionData, id);
-  return stageContext(sessionData, opts, prefs, t, locale);
+  return stageContext(sessionData, opts, prefs, translate, locale);
 };
 
-export const setTray = (sessionData, state, opts = {}, prefs = {}, t = (k) => k, locale = 'en') => {
-  const d = design(sessionData);
+export const setTray = (sessionData, state, opts = {}, prefs = {}, translate = (key) => key, locale = 'en') => {
+  const designState = design(sessionData);
   // the checkbox already flipped locally — mirror it (toggling, never an
   // absolute state: a stale absolute href would desync on double-click)
-  d.trayOpen = state === 'toggle' ? !(d.trayOpen !== false) : state !== 'off';
-  return stageContext(sessionData, opts, prefs, t, locale);
+  designState.trayOpen = state === 'toggle' ? !(designState.trayOpen !== false) : state !== 'off';
+  return stageContext(sessionData, opts, prefs, translate, locale);
 };
 
 // A file row in the activity panel: open it in the main panel (the mode is
 // the server's, from the extension).
-export const openFile = (sessionData, path, prefs = {}, t = (k) => k, locale = 'en') =>
-  stageContext(sessionData, { file: path ?? 'none' }, prefs, t, locale);
+export const openFile = (sessionData, path, prefs = {}, translate = (key) => key, locale = 'en') =>
+  stageContext(sessionData, { file: path ?? 'none' }, prefs, translate, locale);
 
-export const setActivityFilter = (sessionData, filter, prefs = {}, t = (k) => k, locale = 'en') => {
+export const setActivityFilter = (sessionData, filter, prefs = {}, translate = (key) => key, locale = 'en') => {
   design(sessionData).activityFilter = filter;
-  return stageContext(sessionData, {}, prefs, t, locale);
+  return stageContext(sessionData, {}, prefs, translate, locale);
 };
 
-export const setActivityView = (sessionData, view, prefs = {}, t = (k) => k, locale = 'en') => {
+export const setActivityView = (sessionData, view, prefs = {}, translate = (key) => key, locale = 'en') => {
   design(sessionData).activityView = view;
-  return stageContext(sessionData, {}, prefs, t, locale);
+  return stageContext(sessionData, {}, prefs, translate, locale);
 };
 
 // Panel width grip: cycle persisted per panel (the shell's own sizing state).
-export const setPanelSize = (sessionData, panel, size, prefs = {}, t = (k) => k, locale = 'en') => {
+export const setPanelSize = (sessionData, panel, size, prefs = {}, translate = (key) => key, locale = 'en') => {
   if (PERSISTABLE_PANELS.includes(panel) && PANEL_SIZES.includes(size)) {
     (design(sessionData).panelSize ??= {})[panel] = size;
   }
-  return stageContext(sessionData, {}, prefs, t, locale);
+  return stageContext(sessionData, {}, prefs, translate, locale);
 };
 
 // Panel drag handle: px width persisted per panel.
@@ -1394,15 +1394,15 @@ export const setPanelSize = (sessionData, panel, size, prefs = {}, t = (k) => k,
 // re-clamps on render, so every legitimate value already falls inside this
 // band. Do not treat these numbers as the layout's limits; that confusion is
 // what made the drag readout count down to a width no panel could render.
-export const setPanelSizePx = (sessionData, panel, width, prefs = {}, t = (k) => k, locale = 'en') => {
-  const d = design(sessionData);
-  const w = Number(width);
+export const setPanelSizePx = (sessionData, panel, width, prefs = {}, translate = (key) => key, locale = 'en') => {
+  const designState = design(sessionData);
+  const widthValue = Number(width);
   // A junk width is DROPPED, not defaulted. The old `|| 280` persisted a width
   // below every panel's floor, so the stored number and the rendered panel
   // disagreed permanently — and silently, because min-width quietly fixes the
   // render while the session keeps the bad value.
-  if (Number.isFinite(w)) (d.panelSizePx ??= {})[panel] = Math.max(200, Math.min(600, w));
-  return stageContext(sessionData, {}, prefs, t, locale);
+  if (Number.isFinite(widthValue)) (designState.panelSizePx ??= {})[panel] = Math.max(200, Math.min(600, widthValue));
+  return stageContext(sessionData, {}, prefs, translate, locale);
 };
 
 // Move a screen inside a flow — a one-step nudge (dir -1|1, no-op at the row
@@ -1410,21 +1410,21 @@ export const setPanelSizePx = (sessionData, panel, width, prefs = {}, t = (k) =>
 // drag (index counts slots among the OTHER tiles, so splice-out-then-insert
 // lands it exactly there). Writes the project's flows.json and records the
 // before/after order arrays for undo/redo replay.
-export const moveInFlow = async (sessionData, flowId, screenId, to = {}, prefs = {}, t = (k) => k, locale = 'en') => {
-  const d = design(sessionData);
+export const moveInFlow = async (sessionData, flowId, screenId, to = {}, prefs = {}, translate = (key) => key, locale = 'en') => {
+  const designState = design(sessionData);
   try {
     const flows = proj.flows();
-    const flow = flows.find((f) => f.id === flowId);
+    const flow = flows.find((candidateFlow) => candidateFlow.id === flowId);
     const chain = chainOf(flow);
-    const i = chain.indexOf(screenId);
-    let j = i;
-    if (Number.isInteger(to.index)) j = Math.max(0, Math.min(chain.length - 1, to.index));
-    else if (to.dir === -1 || to.dir === 1) j = i + to.dir;
-    if (flow && i >= 0 && j !== i && j >= 0 && j < chain.length) {
+    const index = chain.indexOf(screenId);
+    let scanIndex = index;
+    if (Number.isInteger(to.index)) scanIndex = Math.max(0, Math.min(chain.length - 1, to.index));
+    else if (to.dir === -1 || to.dir === 1) scanIndex = index + to.dir;
+    if (flow && index >= 0 && scanIndex !== index && scanIndex >= 0 && scanIndex < chain.length) {
       const before = [...chain];
       const after = [...chain];
-      after.splice(i, 1);
-      after.splice(j, 0, screenId);
+      after.splice(index, 1);
+      after.splice(scanIndex, 0, screenId);
       // Per-screen trigger snapshot taken BEFORE the rewire: a screen demoted
       // to chain tail drops its outgoing edge from the file, and undo replays
       // by re-deriving from the then-current file — this memory lets that
@@ -1432,34 +1432,34 @@ export const moveInFlow = async (sessionData, flowId, screenId, to = {}, prefs =
       const triggers = moveMemory(flow);
       rewire(flow, after, triggers);
       await proj.writeFlowsDual(flows, [flowId]);
-      pushCanvasUndo(d, { type: 'flow-move', flowId, before, after, triggers });
+      pushCanvasUndo(designState, { type: 'flow-move', flowId, before, after, triggers });
     }
   } catch { /* no project overlaid / unknown flow — no-op re-render */ }
-  return stageContext(sessionData, {}, prefs, t, locale);
+  return stageContext(sessionData, {}, prefs, translate, locale);
 };
 
 // Append a screen to a flow's chain (views-lens add-to-flow menu). No-op when
 // already a member.
-export const addToFlow = async (sessionData, flowId, screenId, prefs = {}, t = (k) => k, locale = 'en') => {
-  const d = design(sessionData);
+export const addToFlow = async (sessionData, flowId, screenId, prefs = {}, translate = (key) => key, locale = 'en') => {
+  const designState = design(sessionData);
   try {
     const flows = proj.flows();
-    const flow = flows.find((f) => f.id === flowId);
+    const flow = flows.find((candidateFlow) => candidateFlow.id === flowId);
     if (flow && proj.registryEntry(screenId) && appendTo(flow, screenId)) {
       await proj.writeFlowsDual(flows, [flowId]);
-      pushCanvasUndo(d, { type: 'flow-add', flowId, screenId });
+      pushCanvasUndo(designState, { type: 'flow-add', flowId, screenId });
     }
   } catch { /* no project overlaid / unknown flow — no-op re-render */ }
-  return stageContext(sessionData, {}, prefs, t, locale);
+  return stageContext(sessionData, {}, prefs, translate, locale);
 };
 
 // Remove a screen from a flow, stitching the chain (see excise). The undo
 // entry keeps the removed edges so undo restores them verbatim.
-export const removeFromFlow = async (sessionData, flowId, screenId, prefs = {}, t = (k) => k, locale = 'en') => {
-  const d = design(sessionData);
+export const removeFromFlow = async (sessionData, flowId, screenId, prefs = {}, translate = (key) => key, locale = 'en') => {
+  const designState = design(sessionData);
   try {
     const flows = proj.flows();
-    const flow = flows.find((f) => f.id === flowId);
+    const flow = flows.find((candidateFlow) => candidateFlow.id === flowId);
     const index = chainOf(flow).indexOf(screenId);
     // REFUSED when the removal would empty the chain — no write, unchanged
     // viewmodel. The tile's `canRemove` (same helper) greys the button out first,
@@ -1468,30 +1468,30 @@ export const removeFromFlow = async (sessionData, flowId, screenId, prefs = {}, 
     const removed = flow && canRemoveFrom(flow, screenId) ? excise(flow, screenId) : null;
     if (removed) {
       await proj.writeFlowsDual(flows, [flowId]);
-      pushCanvasUndo(d, { type: 'flow-remove', flowId, screenId, index, ...removed });
+      pushCanvasUndo(designState, { type: 'flow-remove', flowId, screenId, index, ...removed });
     }
   } catch { /* no project overlaid / unknown flow — no-op re-render */ }
-  return stageContext(sessionData, {}, prefs, t, locale);
+  return stageContext(sessionData, {}, prefs, translate, locale);
 };
 
 // Element context chips: independent of screen chips in the composer tray. A
 // pin dedupes on (screenId, name) and auto-opens the tray. These do NOT touch
 // the canvas undo stack — element-scoped checkpoints (contract §6) are a
 // separate slice; this just maintains the tray membership.
-export const pinElement = (sessionData, screenId, name, kind, prefs, t, locale, instance) => {
-  const d = design(sessionData);
-  const el = (d.elementContext ??= []);
-  if (!el.some((e) => e.screenId === screenId && e.name === name)) {
+export const pinElement = (sessionData, screenId, name, kind, prefs, translate, locale, instance) => {
+  const designState = design(sessionData);
+  const el = (designState.elementContext ??= []);
+  if (!el.some((elementRef) => elementRef.screenId === screenId && elementRef.name === name)) {
     el.push({ screenId, name, kind, instance: instance || '', tone: toneFor(screenId, locale) });
-    d.trayOpen = true;
+    designState.trayOpen = true;
   }
-  return stageContext(sessionData, {}, prefs, t, locale);
+  return stageContext(sessionData, {}, prefs, translate, locale);
 };
 
-export const unpinElement = (sessionData, screenId, name, prefs, t, locale) => {
-  const d = design(sessionData);
-  d.elementContext = (d.elementContext ?? []).filter((e) => !(e.screenId === screenId && e.name === name));
-  return stageContext(sessionData, {}, prefs, t, locale);
+export const unpinElement = (sessionData, screenId, name, prefs, translate, locale) => {
+  const designState = design(sessionData);
+  designState.elementContext = (designState.elementContext ?? []).filter((elementRef) => !(elementRef.screenId === screenId && elementRef.name === name));
+  return stageContext(sessionData, {}, prefs, translate, locale);
 };
 
 // Undo / redo walk the two session stacks. Popping an entry, applying its
@@ -1501,38 +1501,38 @@ export const unpinElement = (sessionData, screenId, name, prefs, t, locale) => {
 // is a URL segment: anything but canvas|chat is a no-op re-render (it must
 // not mint junk stack keys in the session).
 const STACKS = ['canvas', 'chat'];
-export const undo = async (sessionData, stack, prefs = {}, t = (k) => k, locale = 'en') => {
-  const d = design(sessionData);
-  if (!STACKS.includes(stack)) return stageContext(sessionData, {}, prefs, t, locale);
-  (d.undoStacks ??= {}); (d.redoStacks ??= {});
-  const entry = (d.undoStacks[stack] ??= []).pop();
+export const undo = async (sessionData, stack, prefs = {}, translate = (key) => key, locale = 'en') => {
+  const designState = design(sessionData);
+  if (!STACKS.includes(stack)) return stageContext(sessionData, {}, prefs, translate, locale);
+  (designState.undoStacks ??= {}); (designState.redoStacks ??= {});
+  const entry = (designState.undoStacks[stack] ??= []).pop();
   if (entry) {
-    await applyEntry(d, entry, 'undo');
-    (d.redoStacks[stack] ??= []).push(entry);
+    await applyEntry(designState, entry, 'undo');
+    (designState.redoStacks[stack] ??= []).push(entry);
   }
-  return stageContext(sessionData, {}, prefs, t, locale);
+  return stageContext(sessionData, {}, prefs, translate, locale);
 };
 
-export const redo = async (sessionData, stack, prefs = {}, t = (k) => k, locale = 'en') => {
-  const d = design(sessionData);
-  if (!STACKS.includes(stack)) return stageContext(sessionData, {}, prefs, t, locale);
-  (d.undoStacks ??= {}); (d.redoStacks ??= {});
-  const entry = (d.redoStacks[stack] ??= []).pop();
+export const redo = async (sessionData, stack, prefs = {}, translate = (key) => key, locale = 'en') => {
+  const designState = design(sessionData);
+  if (!STACKS.includes(stack)) return stageContext(sessionData, {}, prefs, translate, locale);
+  (designState.undoStacks ??= {}); (designState.redoStacks ??= {});
+  const entry = (designState.redoStacks[stack] ??= []).pop();
   if (entry) {
-    await applyEntry(d, entry, 'redo');
-    (d.undoStacks[stack] ??= []).push(entry);
+    await applyEntry(designState, entry, 'redo');
+    (designState.undoStacks[stack] ??= []).push(entry);
   }
-  return stageContext(sessionData, {}, prefs, t, locale);
+  return stageContext(sessionData, {}, prefs, translate, locale);
 };
 
 // The single composer path (chat-Centric Layout: no inputs outside the chat).
 // 'approve' signs the manifest; any other text refines the pinned screens and
 // may mint one checkpoint per pinned screen.
-export const sendChat = (sessionData, text, prefs = {}, pinId = null, t = (k) => k, locale = 'en') => {
-  const L = locale;
-  const d = design(sessionData);
-  if (pinId) pin(d, pinId, L);
-  const thread = (d.designThread ??= []);
+export const sendChat = (sessionData, text, prefs = {}, pinId = null, translate = (key) => key, locale = 'en') => {
+  const activeLocale = locale;
+  const designState = design(sessionData);
+  if (pinId) pin(designState, pinId, activeLocale);
+  const thread = (designState.designThread ??= []);
 
   // draftSent marks the ONE render that follows a send. The composer textarea
   // is hx-preserve'd so an unrelated swap cannot discard a half-typed message;
@@ -1541,33 +1541,33 @@ export const sendChat = (sessionData, text, prefs = {}, pinId = null, t = (k) =>
   // from this function consumes the text, so every exit clears the flag's
   // absence.
   if (text === 'approve') {
-    return { ...approveManifest(sessionData, prefs, t, L), draftSent: true };
+    return { ...approveManifest(sessionData, prefs, translate, activeLocale), draftSent: true };
   }
 
   const threadLenBefore = thread.length;
   thread.push({ at: 'now', from: 'user', text });
-  const ids = contextIds(d, L);
+  const ids = contextIds(designState, activeLocale);
   if (!ids.length) {
-    thread.push({ at: 'now', from: 'agent', text: repo.noContext(L).text, textPlain: repo.noContext(L).textPlain });
-    pushUndo(d, 'chat', { type: 'chat', threadLenBefore, checkpointIds: [] });
-    return { ...stageContext(sessionData, {}, prefs, t, L), draftSent: true };
+    thread.push({ at: 'now', from: 'agent', text: repo.noContext(activeLocale).text, textPlain: repo.noContext(activeLocale).textPlain });
+    pushUndo(designState, 'chat', { type: 'chat', threadLenBefore, checkpointIds: [] });
+    return { ...stageContext(sessionData, {}, prefs, translate, activeLocale), draftSent: true };
   }
 
-  const first = repo.screen(ids[0], L);
-  const scope = { label: ctxLabel(d, L, t), kit: first.kit, id: ids[0], summary: '' };
+  const first = repo.screen(ids[0], activeLocale);
+  const scope = { label: ctxLabel(designState, activeLocale, translate), kit: first.kit, id: ids[0], summary: '' };
   const lower = text.toLowerCase();
-  const found = repo.chatReplies(L).find((r) => r.match.some((k) => lower.includes(k)));
-  const reply = fillReply(found ?? repo.chatFallback(L), scope);
+  const found = repo.chatReplies(activeLocale).find((replyRule) => replyRule.match.some((key) => lower.includes(key)));
+  const reply = fillReply(found ?? repo.chatFallback(activeLocale), scope);
 
   // Each message checkpoints the in-context screens only (story map → Chat).
   let cps = [];
   if (reply.checkpoint) {
     cps = ids.map((screenId) => {
-      const list = (d.chatCheckpoints ??= {})[screenId] ??= [];
-      const n = (repo.checkpoints(L)[screenId] ?? []).length + list.length + 1;
-      const cpId = `cp-${n}`;
+      const list = (designState.chatCheckpoints ??= {})[screenId] ??= [];
+      const count = (repo.checkpoints(activeLocale)[screenId] ?? []).length + list.length + 1;
+      const cpId = `cp-${count}`;
       list.push({
-        id: cpId, n, at: 'now',
+        id: cpId, n: count, at: 'now',
         summary: reply.checkpoint,
         summaryPlain: reply.checkpointPlain ?? reply.checkpoint,
         before: reply.before, after: reply.after,
@@ -1576,36 +1576,36 @@ export const sendChat = (sessionData, text, prefs = {}, pinId = null, t = (k) =>
     });
   }
   thread.push({ at: 'now', from: 'agent', text: reply.text, textBalanced: reply.textBalanced, textPlain: reply.textPlain, link: reply.link, cps });
-  pushUndo(d, 'chat', { type: 'chat', threadLenBefore, checkpointIds: cps });
-  return { ...stageContext(sessionData, {}, prefs, t, L), draftSent: true };
+  pushUndo(designState, 'chat', { type: 'chat', threadLenBefore, checkpointIds: cps });
+  return { ...stageContext(sessionData, {}, prefs, translate, activeLocale), draftSent: true };
 };
 
 // One-tap revert: the checkpoint stays rendered as history, flagged reverted,
 // and the act is logged into the thread — the thread is the design's history.
-export const revertCheckpoint = (sessionData, screenId, cpId, prefs = {}, t = (k) => k, locale = 'en') => {
-  const d = design(sessionData);
-  const cp = allCheckpoints(d, screenId, locale).find((x) => x.id === cpId);
-  if (cp && !(d.reverted ??= []).includes(cpId)) {
-    d.reverted.push(cpId);
-    (d.designThread ??= []).push({ at: 'now', from: 'agent', kind: 'event', text: t('design.revertEvent', { screen: screenId, cp: cpId, summary: cp.summary }) });
+export const revertCheckpoint = (sessionData, screenId, cpId, prefs = {}, translate = (key) => key, locale = 'en') => {
+  const designState = design(sessionData);
+  const cp = allCheckpoints(designState, screenId, locale).find((checkpoint) => checkpoint.id === cpId);
+  if (cp && !(designState.reverted ??= []).includes(cpId)) {
+    designState.reverted.push(cpId);
+    (designState.designThread ??= []).push({ at: 'now', from: 'agent', kind: 'event', text: translate('design.revertEvent', { screen: screenId, cp: cpId, summary: cp.summary }) });
   }
-  return stageContext(sessionData, {}, prefs, t, locale);
+  return stageContext(sessionData, {}, prefs, translate, locale);
 };
 
 // ---------- freeze & trace surface ----------
 
-export const freezeContext = (sessionData = {}, prefs = {}, t = (k) => k, locale = 'en', fileArg) => {
-  const L = locale;
+export const freezeContext = (sessionData = {}, prefs = {}, translate = (key) => key, locale = 'en', fileArg) => {
+  const activeLocale = locale;
   // composerStrip: freeze renders a composer but NO design viewer, so the
   // filmstrip stays in its tray (every /design canvas surface docks it under
   // the viewer's mini panel instead).
-  const stage = stageContext(sessionData, { line: 'freeze', base: '/design/freeze', fileBase: '/design/freeze', file: fileArg, noProto: true, composerStrip: true }, prefs, t, L);
+  const stage = stageContext(sessionData, { line: 'freeze', base: '/design/freeze', fileBase: '/design/freeze', file: fileArg, noProto: true, composerStrip: true }, prefs, translate, activeLocale);
   const lv = stage.jargonLevel;
-  const d = design(sessionData);
-  const ap = repo.approval(L);
-  const approved = d.approved ?? ap.state === 'approved';
-  const manifest = { ...repo.manifest(L), structure: jargon.pick(repo.manifest(L), 'structure', lv) };
-  const rechecks = d.driftRechecks ?? 0;
+  const designState = design(sessionData);
+  const ap = repo.approval(activeLocale);
+  const approved = designState.approved ?? ap.state === 'approved';
+  const manifest = { ...repo.manifest(activeLocale), structure: jargon.pick(repo.manifest(activeLocale), 'structure', lv) };
+  const rechecks = designState.driftRechecks ?? 0;
   return {
     ...stage,
     // Element chips and the chat undo/redo pair stay off the freeze composer:
@@ -1614,41 +1614,41 @@ export const freezeContext = (sessionData = {}, prefs = {}, t = (k) => k, locale
     // here. Re-enable once those hrefs are base-scoped like the filmstrip's.
     elements: null,
     undoRedo: null,
-    stageEyebrow: t('design.freeze.eyebrow'),
+    stageEyebrow: translate('design.freeze.eyebrow'),
     composerAction: '/design/freeze/messages',
-    suggestions: [{ value: 'approve', label: ap.chip }, ...refineSuggestions(t)],
-    placeholder: approved ? t('composer.placeholder.freeze') : t('composer.placeholder.freezeApprove'),
+    suggestions: [{ value: 'approve', label: ap.chip }, ...refineSuggestions(translate)],
+    placeholder: approved ? translate('composer.placeholder.freeze') : translate('composer.placeholder.freezeApprove'),
     manifest,
     approval: {
       approved,
       lede: jargon.pick(ap, 'lede', lv),
       note: jargon.pick(ap, approved ? 'approvedNote' : 'pendingNote', lv),
     },
-    trace: repo.trace(L).map((e) => ({ ...e, text: jargon.pick(e, 'text', lv) })),
-    traceability: repo.traceability(L),
+    trace: repo.trace(activeLocale).map((entry) => ({ ...entry, text: jargon.pick(entry, 'text', lv) })),
+    traceability: repo.traceability(activeLocale),
     drift: {
-      ...repo.drift(L),
-      history: repo.drift(L).history.map((e) => ({ ...e, text: jargon.pick(e, 'text', lv) })),
+      ...repo.drift(activeLocale),
+      history: repo.drift(activeLocale).history.map((entry) => ({ ...entry, text: jargon.pick(entry, 'text', lv) })),
     },
     rechecks,
-    toast: rechecks ? t('drift.recheckToast', { n: rechecks + 1, matched: repo.drift(L).matched }) : null,
+    toast: rechecks ? translate('drift.recheckToast', { n: rechecks + 1, matched: repo.drift(activeLocale).matched }) : null,
   };
 };
 
 // The human gate: approving the frozen manifest unlocks the Build stage.
 // Idempotent — the act and the confirmation both land in the design thread.
-export const approveManifest = (sessionData, prefs = {}, t = (k) => k, locale = 'en') => {
-  const d = design(sessionData);
-  const thread = (d.designThread ??= []);
+export const approveManifest = (sessionData, prefs = {}, translate = (key) => key, locale = 'en') => {
+  const designState = design(sessionData);
+  const thread = (designState.designThread ??= []);
   thread.push({ at: 'now', from: 'user', text: repo.approval(locale).chip });
-  d.approved = true;
+  designState.approved = true;
   thread.push({ at: 'now', from: 'agent', text: repo.approval(locale).confirm, textPlain: repo.approval(locale).confirmPlain });
-  return freezeContext(sessionData, prefs, t, locale);
+  return freezeContext(sessionData, prefs, translate, locale);
 };
 
-export const recheckDrift = (sessionData, prefs = {}, t = (k) => k, locale = 'en') => {
-  const d = design(sessionData);
-  d.driftRechecks = (d.driftRechecks ?? 0) + 1;
-  return freezeContext(sessionData, prefs, t, locale);
+export const recheckDrift = (sessionData, prefs = {}, translate = (key) => key, locale = 'en') => {
+  const designState = design(sessionData);
+  designState.driftRechecks = (designState.driftRechecks ?? 0) + 1;
+  return freezeContext(sessionData, prefs, translate, locale);
 };
 

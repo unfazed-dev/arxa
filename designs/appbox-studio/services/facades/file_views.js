@@ -17,8 +17,8 @@ const MODES = new Map(Object.entries({
 
 const extOf = (path) => {
   const base = (path ?? '').split('/').pop() ?? '';
-  const i = base.lastIndexOf('.');
-  return i < 1 ? '' : base.slice(i + 1).toLowerCase();
+  const dotIndex = base.lastIndexOf('.');
+  return dotIndex < 1 ? '' : base.slice(dotIndex + 1).toLowerCase();
 };
 
 export const modeFor = (path) => MODES.get(extOf(path)) ?? null;
@@ -27,8 +27,8 @@ export const modeFor = (path) => MODES.get(extOf(path)) ?? null;
 export const fileLink = (path, base) => {
   const mode = modeFor(path);
   if (!mode || !filesRepo.read(path)) return { mode: null };
-  const q = encodeURIComponent(path);
-  return { mode, href: `${base}?file=${q}`, get: `${base}/file?path=${q}` };
+  const encodedPath = encodeURIComponent(path);
+  return { mode, href: `${base}?file=${encodedPath}`, get: `${base}/file?path=${encodedPath}` };
 };
 
 // The open file's view context; unknown paths resolve to null (the main
@@ -51,8 +51,8 @@ export const fileViewFor = (path, backHref) => {
 // Minimal markdown → HTML for the fixture docs (no new deps): h1–h3,
 // paragraphs, ul lists, fenced code, inline `code` and **bold**. Input is
 // always escaped before any tag is emitted.
-const esc = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-const inline = (s) => esc(s)
+const esc = (text) => text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+const inline = (text) => esc(text)
   .replace(/`([^`]+)`/g, '<code>$1</code>')
   .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
 
@@ -64,8 +64,8 @@ export function mdToHtml(md) {
   for (const line of md.split('\n')) {
     if (line.startsWith('```')) { flushPara(); flushList(); out.push(inCode ? '</code></pre>' : '<pre><code>'); inCode = !inCode; continue; }
     if (inCode) { out.push(esc(line) + '\n'); continue; }
-    const h = line.match(/^(#{1,3})\s+(.*)/);
-    if (h) { flushPara(); flushList(); out.push(`<h${h[1].length}>${inline(h[2])}</h${h[1].length}>`); continue; }
+    const headingMatch = line.match(/^(#{1,3})\s+(.*)/);
+    if (headingMatch) { flushPara(); flushList(); out.push(`<h${headingMatch[1].length}>${inline(headingMatch[2])}</h${headingMatch[1].length}>`); continue; }
     const li = line.match(/^[-*]\s+(.*)/);
     if (li) { flushPara(); if (!list) { out.push('<ul>'); list = true; } out.push(`<li>${inline(li[1])}</li>`); continue; }
     if (!line.trim()) { flushPara(); flushList(); continue; }
