@@ -174,3 +174,56 @@ directly from the SSOT the validator itself derives from —
   desktop-only exception."
 - **Barrels**: `widgets.js` / `models.js` / `enums.js` / `services.js`, never
   `index.js` (Q-v2-4, user-ruled).
+
+---
+
+## Gate record — ceremony shells (hub + startup + stage board), 2026-08-09
+
+Served: `appbox design serve designs/appbox-studio-v2 --port 4319`.
+Probe target: a disposable copy, `--project portalo-probe --port 4330` (the
+probe refuses a non-disposable project; it mutates whatever it is pointed at).
+
+| gate | result |
+|---|---|
+| `design lint` (no-ad-hoc-JS + W1–W7) | clean; W3/W4 skip — no `_panel.tsx` yet |
+| `lens shoot /` and `/startup` | 3 rungs, 0 problems each |
+| `lens net /` and `/startup` | PASS both (6 requests; only `/favicon.ico` 404) |
+| `design probe contract` | **2/3 suites** — `contract-panels` and `contract-chips` ALL PASSED (vacuous: 0 panels, 0 chips); `q11-shells` 1 FAILED |
+
+### The one probe failure is not v2's, and it indicts the naming law
+
+```
+[FAIL] 1. golden expansion (showcase = Q8 gate, bidirectional)
+       showcase: 6 shells, 13 surfaces; unexplained=1 missing=0
+       unexplained: showcase_application_hub/ (not <app>_<feature>_shell)
+```
+
+It walks `kit/showcase_app`, never `designs/`. It was introduced by `9a455c5`
+(*rename showcase_application_shell to showcase_application_hub*) — the rename
+landed but `probe_q11_shells.dart`'s expansion law still admits only the
+`<app>_<feature>_shell` suffix.
+
+**This is a live conflict for studio v2, not just a stale showcase.** v2's
+roster carries `studio_application_hub/` under the same ratified hub
+vocabulary. The naming law and the hub rename disagree; one of them must move.
+Not fixed here — the law is scaffolder-owned and the rename was ratified
+elsewhere. Escalated rather than resolved.
+
+### Two defects found and fixed by this run
+
+1. **Self-aborting poll** (`413c2f1`). The boot checklist polled a fragment
+   that its own swap destroyed, aborting the in-flight request at every rung:
+   48 requests on `/startup`, `lens net` FAIL. Removed; 6 requests, PASS.
+   *Consequence for validation:* `/startup` with no `?step` now renders the
+   **landed/ready** state rather than animating. That is a visible change to
+   the shell's default and is exactly what per-shell approval should judge.
+2. **Duplicate DOM ids** (`ed8866c`). `id="boot-progress"` was emitted **9×**
+   on `/startup`. Now 0 duplicates on both routes (`app`, `toasts` only).
+
+### Standing finding — the 3×3 variant cross-product (NOT fixed, by design)
+
+Every surface renders **nine times** per response: 3 shell factors × 3 view
+factors, CSS-gated to one visible. That is the locked shell→view composition
+contract (Q-v2-3, preview containment ladder), so restructuring it here would
+pre-empt the user-validated cutover. Removing the id made it a bloat cost
+rather than a validity defect. Flagged for the cutover decision.
