@@ -64,7 +64,7 @@ has none to tier — it is a plain module, not a provider seam.
 | `analytics` | `appbox_kit_analytics` | analytics event fan-out | — |
 | `payments` | `appbox_kit_payments` | Apple Pay; Google Pay | Stripe: port-tested; PayPal: port-tested; Apple Pay: stub |
 | `maps` | `appbox_kit_maps` | native maps; AppBoxKitMapView | OpenStreetMap: port-tested; Mapbox: port-tested |
-| `deploy` | `appbox_kit_deploy` | release automation (fastlane/shorebird/CF Pages+Workers/Vercel) | Vercel: port-tested; Cloudflare Pages: port-tested; Cloudflare Workers: port-tested; fastlane: port-tested; Shorebird: port-tested |
+| `deploy` | `appbox_kit_deploy` | release automation (fastlane/shorebird/CF Views+Workers/Vercel) | Vercel: port-tested; Cloudflare Views: port-tested; Cloudflare Workers: port-tested; fastlane: port-tested; Shorebird: port-tested |
 | `haptics` | `appbox_kit_haptics` | haptic feedback | — |
 | `bluetooth` | `appbox_kit_bluetooth` | bluetooth adapter state; BLE scan/GATT (stub) | — |
 | `wifi` | `appbox_kit_wifi` | Wi-Fi state; network info; settings escort | — |
@@ -94,9 +94,9 @@ not derived (see `startup` below), and derive+confirm marks only the
 derived ones `inferred`.
 
 Verified against portalo's real registry (`~/.appbox/projects/portalo/intake/registry.json`),
-screen → declared states / kits:
+view → declared states / kits:
 
-| screen | declared | kits | derived (this map) | under-declares? |
+| view | declared | kits | derived (this map) | under-declares? |
 |---|---|---|---|---|
 | `splash` | 0 | — | — | no (nothing to derive) |
 | `startup` | 1 | — | — | **no kit produces this state** — see below |
@@ -109,7 +109,7 @@ screen → declared states / kits:
 | `orders` | 1 | `data` | `loading,empty,error` | yes |
 | `account` | **0** | `auth,data` | `loading,empty,error` | yes — worst case, 2 kits imply the full triad and 0 are declared |
 
-That's 7 of 10 screens under-declaring relative to the derived floor
+That's 7 of 10 views under-declaring relative to the derived floor
 (`home`, `category`, `product`, `cart`, `checkout`, `orders`, `account`) —
 matches the measured figure exactly. `auth` matches its own floor with no
 gap. `splash` has no kits, derives nothing, trivially matches its 0.
@@ -134,7 +134,7 @@ predict this" complaint applies to.
 
 `payments`, `media`, `security`, `maps` are reasoned by analogy to the
 `data`/`auth` shapes above, not independently measured against portalo (which
-declares no screens with those kits) — treat those four rows as a starting
+declares no views with those kits) — treat those four rows as a starting
 rule, not ground truth, until a design with those kits is measured.
 
 A kit not listed here (`core`, `ui_library`, `state`, `forms`,
@@ -167,7 +167,7 @@ the scaffolder records them in each stub's header
 wires the real providers per the kit's playbook. **The designer declares; the
 pipeline wires.** You never write Dart, pick a provider, or touch a pubspec.
 
-Declare only on real need — a login screen gets `auth`, a checkout gets
+Declare only on real need — a login view gets `auth`, a checkout gets
 `payments`, a map surface gets `maps`. A decorative declaration makes the
 builder wire a module nobody uses and can demand credentials the client does
 not have.

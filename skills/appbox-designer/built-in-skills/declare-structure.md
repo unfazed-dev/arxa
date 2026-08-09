@@ -52,7 +52,7 @@ not built — otherwise nothing downstream can tell "not built yet" from
 Each registry entry may carry a `route` — the URL path the surface lives at.
 When absent, it is derived as `/<shell>/<short>`. The prototype's viewer uses
 this for prototype-mode navigation (the device chrome iframe opens the focused
-screen's route). State it explicitly when the path is not the convention.
+view's route). State it explicitly when the path is not the convention.
 
 ### `kits` field — declaring kit modules
 

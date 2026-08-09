@@ -134,7 +134,7 @@ There is no template language: composition is component imports and
 `children`, inheritance is gone, and every value is a JS expression.
 
 - A surface's view file is `<surface>_view.tsx`. Its **default export** is the
-  page component; **named PascalCase exports** are the surface's Named
+  view component; **named PascalCase exports** are the surface's Named
   Fragments.
 - **ViewRefs keep the `.html` name for registry parity.** Viewmodels render
   `h.render(c, 'ui/views/main_shell/home/home_view.html', ctx)` and
@@ -147,7 +147,7 @@ There is no template language: composition is component imports and
   what the viewmodel passed, plus the server-merged `{ prefs, locale,
   locales, t }`. Fragments get the same bag the viewmodel handed to
   `h.render` — nothing is captured from an outer render.
-- Pages wrap in their shell the way hello-hda does: the page component
+- Views wrap in their shell the way hello-hda does: the view component
   renders `<MainShell …>{children}</MainShell>`, the shell renders
   `<Base …>`, and `Base` emits `{raw('<!doctype html>')}` + `<html>`.
 - **Autoescape is on by default** (hono/jsx escapes all text and attribute
@@ -197,7 +197,7 @@ them with CSS `color`.
 
 Every artifact's `base.tsx` carries: the vendored htmx 4 script tag (blocking,
 with SRI), the deferred island tags — the named islands of ADR-0002's amendments, loaded from
-/assets/vendor/ as screens need them, and the enforcement meta config:
+/assets/vendor/ as views need them, and the enforcement meta config:
 
 ```tsx
 <meta name="htmx-config" content='{"transitions":true,"implicitInheritance":true,"noSwap":[204,304,"4xx","5xx"]}' />

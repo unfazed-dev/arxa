@@ -1,6 +1,6 @@
 # appbox-designer
 
-The design-prototyping context: generates polished design artifacts (mockups, interactive prototypes, decks, mobile screens) as server-rendered hypermedia applications — htmx + CSS, no ad-hoc client-side JavaScript (named islands only) — in a genuine MVVM structure. Ported from appbox-designer (the upstream MIT project / Claude Design lineage).
+The design-prototyping context: generates polished design artifacts (mockups, interactive prototypes, decks, mobile views) as server-rendered hypermedia applications — htmx + CSS, no ad-hoc client-side JavaScript (named islands only) — in a genuine MVVM structure. Ported from appbox-designer (the upstream MIT project / Claude Design lineage).
 
 ## Language
 
@@ -10,7 +10,7 @@ This file holds only designer-skill-local terms; on any disagreement,
 
 **Artifact**:
 A generated design deliverable: a hypermedia app (TSX views + viewmodels + fixtures + assets) run by the Runtime. Lives in its own directory.
-_Avoid_: project, website, page
+_Avoid_: project, website, view
 
 **Runtime**:
 The serving layer (routing, named-fragment TSX rendering via hono/jsx, sessions, cookies, timers, static) that boots an Artifact — the Dart design server at design time, an inlined Hono/Node runtime when ejected. One implementation, shared by all Artifacts.
@@ -24,8 +24,8 @@ The command that ejects an Artifact into a self-contained, hardened Hono app (ow
 _Avoid_: export, compile, build
 
 **Surface**:
-One screen of an Artifact: a view component plus its co-located ViewModel. The unit of design proof.
-_Avoid_: page, route, screen (except in URL/registry contexts)
+One view of an Artifact: a view component plus its co-located ViewModel. The unit of design proof.
+_Avoid_: view, route, view (except in URL/registry contexts)
 
 **Shell**:
 The layout tier between `base.tsx` and Surfaces — section chrome (nav, tab bar, device frame) shared by a group of Surfaces. Shell also absorbs the retired Tab grouping role: the registry's `shell` field and each registry id's `<shell>.<short>` prefix name the shell group a Surface belongs to.
@@ -61,7 +61,7 @@ _Avoid_: widget set, UI kit (that word means a design system)
 The navigation architecture: every Surface is a real URL serving a full page; `hx-boost` swaps body content; the server branches full-page vs Named Fragment on `HX-Request`.
 
 **Preserve Island**:
-An `hx-preserve` element with a stable id on every page (e.g. the mini-player) that survives Boosted navigation with its live state (playing video) intact.
+An `hx-preserve` element with a stable id on every view (e.g. the mini-player) that survives Boosted navigation with its live state (playing video) intact.
 
 **State Playbook**:
 The decided mechanism table: server = single truth, URL = shareable state, cookies = small prefs, session store = flows, OOB swaps = fan-out, load-polling = timers (server holds the deadline).

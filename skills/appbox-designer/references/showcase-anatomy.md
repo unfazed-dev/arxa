@@ -149,7 +149,7 @@ name `AppBoxKit*` widgets. An unmapped kind exits non-zero via that file's
 > gap. One defect was real — `tabs`' class sat in `tabbar.companions` — and
 > v1.1.0's substantive fix was reachability, not coverage: `composedFrom` and
 > `presentation` were missing from `resolution.order`, so entries that were
-> correct on the page would still have hit `FAIL` in the resolver.
+> correct on the view would still have hit `FAIL` in the resolver.
 >
 > **Never settle a coverage question in prose — this note was wrong twice.**
 > Run `python3 skills/appbox-scaffolder/scripts/validate-registry.py`. It derives
@@ -312,22 +312,14 @@ it from kit, adding one app-authored `appbox_kit_app_strings.dart`). The copy
 is refreshed from kit, never hand-edited — a hand-maintained divergent copy is
 the drift this rule exists to prevent.
 
-**Assets (ratified v2).** SSOT is the passive kit folder `kit/assets_default/`
-— taxonomy `assets/{brand-icons/, fonts/, images/}` + `assets.manifest.json` —
-read by BOTH designer and scaffolder so the rules cannot drift. The designer
-OWNS the emitted `assets/` artifact: it merges intake uploads over the kit
-defaults (user-provided entries REPLACE defaults) and emits the merged folder
-+ manifest with the design; the scaffolder pure copy-pastes it. Fonts are
-**Google Fonts by name, no binaries** — the designer resolves families via
-CDN/CSS at design time; `appbox_kit_fonts.dart` is a pure catalogue mapping
-`abxFont*` → Google family name, and the manifest declares font *roles*
-(`primary`, `monospace`, …), never raw family lists in designs.
-`assets/fonts/` holds files only when a user uploads a custom brand font at
-intake. `brand-icons/` is brand identity ONLY (launcher/app icon master:
-png + optional svg, always requested at intake) — UI icons remain kit code
-glyphs (`appbox_kit_glyphs.dart`), never asset files. Every bundled image
-path is an `abxImg*` const in `appbox_kit_assets.dart` (kit generic template
-+ app-authored copy, the `appbox_kit_app_strings.dart` pattern); designer and
+**Assets (ratified).** `assets/` sits beside `lib/`, type-first the way
+Flutter manages it — the only app-owned class is images/media
+(`assets/images/`, more type folders only when a real need lands), registered
+as directories in `pubspec.yaml`. Fonts ship inside the kit package
+(`appbox_kit_fonts.dart`); icons are kit code glyphs (`appbox_kit_glyphs.dart`)
+— an app declares NO font or icon assets. Every bundled path is named as an
+`abxImg*` const in `appbox_kit_assets.dart` (kit generic template +
+app-authored copy, the `appbox_kit_app_strings.dart` pattern); designer and
 scaffolder emit the NAME, never a loose path. Exception (studio-only,
 user-ratified): appbox studio's design tree keeps ownership-scoped
 `assets/studio/` + `assets/portalo/` (portalo feature-scoped) because the

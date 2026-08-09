@@ -9,7 +9,7 @@ the tool name is not.
 |---|---|
 | Ask the user a question | `AskUserQuestion` |
 | Run a command | `Bash` (or the harness's shell tool) |
-| Show / preview a page | serve via the Runtime, hand back `http://localhost:<port>/…` |
+| Show / preview a view | serve via the Runtime, hand back `http://localhost:<port>/…` |
 | Screenshot a page | shell → `appbox lens shoot <url>` |
 | Read a screenshot / image | `Read` / `ReadMediaFile` — any tool that accepts an image |
 | Console / DOM debug | shell (node or playwright one-off scripts) |
@@ -90,7 +90,7 @@ Then **read the images back**. A clean exit means nothing broke; it does not
 mean the layout is good.
 
 Inspect for layout, contrast and alignment; fix; re-shoot. Use region crops for
-fine detail on dense pages.
+fine detail on dense views.
 
 **If the session model has no image input:** spawn one probe subagent per
 session using the prompt in `agents/vision-probe-agent.md` against
@@ -105,8 +105,8 @@ that visual review was skipped**.
 - **No-JS lint:** `appbox design lint <artifact-dir>` — the
   zero-custom-client-JS check (ADR-0002). Must pass before surfacing.
 - **Console errors:** `appbox lens check
-  http://localhost:4319/<route>` loads pages headless and fails on any console
-  error or pageerror. Check for zero page errors before surfacing.
+  http://localhost:4319/<route>` loads views headless and fails on any console
+  error or pageerror. Check for zero view errors before surfacing.
 - **Structure:** `appbox design selftest`-style checks — the registry parses,
   every viewmodel declares a `surfaceId`, `shellRoots` is non-empty. See
   [`app-architecture.md`](app-architecture.md).
@@ -147,6 +147,6 @@ To ship or share an artifact, eject it into a self-contained Hono app:
   `_ds_prompt.md` **fully**. Don't skim to save tokens — the craft rules are the
   product.
 - **Vision-first:** prefer reading a real screenshot over reasoning about what
-  the page "should" look like. A static read of the HTML is not verification.
+  the view "should" look like. A static read of the HTML is not verification.
 - **Parallelism:** fire independent reads/searches in one message; fan
   independent design directions out to subagents instead of serializing them.

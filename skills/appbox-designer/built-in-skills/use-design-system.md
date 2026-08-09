@@ -4,7 +4,7 @@ description: "Consume an existing design system from a regular design project �
 ---
 # Using a design system in a project
 
-Use this guide when you're building a **regular design project** (a mockup, prototype, deck, app screens — anything that is *not itself* a design system) and want it to follow one or more existing design systems. It is the consumer-side companion to [`design-system-authoring-guide.md`](design-system-authoring-guide.md) (which covers the other direction — *authoring* the system you import here).
+Use this guide when you're building a **regular design project** (a mockup, prototype, deck, app views — anything that is *not itself* a design system) and want it to follow one or more existing design systems. It is the consumer-side companion to [`design-system-authoring-guide.md`](design-system-authoring-guide.md) (which covers the other direction — *authoring* the system you import here).
 
 The mechanism mirrors the authoring pipeline: instead of scattering copied assets, you sync a **self-contained, version-pinned copy** of each design system into `<project>/_ds/<slug>/` with a script, wire its CSS into your artifact, and record the binding in `<project>/_d_meta.json`. Re-running the script later is how you pull updates.
 
@@ -58,7 +58,7 @@ The script reuses the read-only parser, so the copy set is exact and determinist
 - `_ds_bundle.js`, `_ds_manifest.json`, `_adherence.oxlintrc.json`, `README.md`, and `SKILL.md` (when present);
 - the DS's `assets/` directory, if present.
 
-It also **generates `_ds/<slug>/_ds_prompt.md`** — the self-contained per-load design-system prompt (binding + scope + bundle-first wiring: the pinned React UMD tags, every stylesheet `<link>` in the `@import` closure, the bundle `<script>`, and how the page's own JSX runs through the pinned Babel tag + the full guide inlined + per-component usage excerpts from each component's `*.prompt.md` + the exact `var(--*)` token allowlist), modeled on the web app's design-mode prompt. It is generated, not copied; re-running the import regenerates it (that is the sync path). **Read it for tokens, intent, and component specs — its React wiring examples do not apply to artifacts** (see step 4).
+It also **generates `_ds/<slug>/_ds_prompt.md`** — the self-contained per-load design-system prompt (binding + scope + bundle-first wiring: the pinned React UMD tags, every stylesheet `<link>` in the `@import` closure, the bundle `<script>`, and how the view's own JSX runs through the pinned Babel tag + the full guide inlined + per-component usage excerpts from each component's `*.prompt.md` + the exact `var(--*)` token allowlist), modeled on the web app's design-mode prompt. It is generated, not copied; re-running the import regenerates it (that is the sync path). **Read it for tokens, intent, and component specs — its React wiring examples do not apply to artifacts** (see step 4).
 
 It writes **only** `_ds/<slug>/` and `_d_meta.json` — never the DS source, and it does not transpile (that stays with `compile-design-system.mjs`). It then prints the namespace, the exact `<link>`/`<script>` wiring lines (every stylesheet in the closure, then the bundle), a reminder to read `_ds/<slug>/_ds_prompt.md`, any starting points, and warnings (e.g. a missing bundle means the DS was never compiled — compile it first, then re-import).
 
@@ -90,7 +90,7 @@ Importing and wiring a system is **not** the same as *following* it. Before you 
 
 If the user chose a starting point, seed it from the DS copy (the script doesn't do this — you do, after import):
 
-- **Screen** — recreate `<dsDir>/<startingPoint.path>` as an artifact surface: copy the file into the artifact for reference, then express its markup as `<surface>_view.tsx` (JSX → hono/jsx TSX) under `ui/views/<shell>_shell/<surface>/`, relying on the `base.tsx` `/_ds/<slug>/` CSS wiring from step 4.
+- **View** — recreate `<dsDir>/<startingPoint.path>` as an artifact surface: copy the file into the artifact for reference, then express its markup as `<surface>_view.tsx` (JSX → hono/jsx TSX) under `ui/views/<shell>_shell/<surface>/`, relying on the `base.tsx` `/_ds/<slug>/` CSS wiring from step 4.
 - **Component** — don't copy a file; build it as a `_<name>.tsx` component (placement-law tier) from the source at `<dsDir>/<startingPoint.path>` (read it for reference), per step 5.
 
 Record the choice in the `startingPoint` field of `_d_meta.json` (with `dsSlug` so it's clear which system it came from).
@@ -129,7 +129,7 @@ The script writes/merges `<project>/_d_meta.json` for you. Shape:
 
 - `designSystems` is an **array** (0..N). No system → `[]` and `primaryDesignSystem: null`.
 - `primaryDesignSystem` points at one entry's `slug`, independent of array order. It decides CSS precedence (its `<link>` loads last), the default target for "update / add a component", and records the project's main visual language.
-- `assets` records the project's **UI entry points** (the pages you'd show the user) — a map keyed by display name, each with a `versions[]` list. It is **independent of `designSystems`** and present even when no design system is used. Each version is `{ path, createdAt, status, subtitle?, viewport?{width,height?}, chatId?, section? }`, with `path` project-relative and `status ∈ needs-review|approved|changes-requested`. Don't hand-write this — `appbox design record-asset` maintains it (see "Recording deliverables as assets" below).
+- `assets` records the project's **UI entry points** (the views you'd show the user) — a map keyed by display name, each with a `versions[]` list. It is **independent of `designSystems`** and present even when no design system is used. Each version is `{ path, createdAt, status, subtitle?, viewport?{width,height?}, chatId?, section? }`, with `path` project-relative and `status ∈ needs-review|approved|changes-requested`. Don't hand-write this — `appbox design record-asset` maintains it (see "Recording deliverables as assets" below).
 - The script merges — it preserves orchestrator-written fields (`title`, `prompt`, `startingPoint`, `assets`, …), sets `type:"design"` if absent, sets `createdAt` once, and bumps `updatedAt` each run. Add `title`/`prompt`/`startingPoint` yourself when creating the project.
 
 ### 8. (Optional) Sanity-check the copy
@@ -144,7 +144,7 @@ appbox design ds-check <projectDir>/_ds/<slug>
 
 ## Recording deliverables as assets
 
-`_d_meta.json` also indexes the project's **deliverables** — the served URLs and pages you'd actually show the user — under `assets` (shape in step 7 above). This is **independent of design systems**: every project has deliverables, so it applies even to a project that imported no system. Don't hand-edit `assets`; the `appbox design record-asset` helper maintains it — and it **bootstraps `_d_meta.json` itself** when the project has none yet (the no-design-system case):
+`_d_meta.json` also indexes the project's **deliverables** — the served URLs and views you'd actually show the user — under `assets` (shape in step 7 above). This is **independent of design systems**: every project has deliverables, so it applies even to a project that imported no system. Don't hand-edit `assets`; the `appbox design record-asset` helper maintains it — and it **bootstraps `_d_meta.json` itself** when the project has none yet (the no-design-system case):
 
 ```
 appbox design record-asset <projectDir> <htmlPath> [flags]

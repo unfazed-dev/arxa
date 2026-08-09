@@ -47,7 +47,7 @@ One entry per surface. This is the SSOT for what the app contains.
 | `shell` | yes | which shell group this belongs to (the id's first segment) |
 | `comp` | yes | component name for the scaffolder |
 | `roles` | no | audience gate; absent = everyone |
-| `route` | no | the surface's URL path (`/<shell>/<short>` by convention; detail screens parameterize — `shop.product` → `/product/:id`). Absent = derive from id. |
+| `route` | no | the surface's URL path (`/<shell>/<short>` by convention; detail views parameterize — `shop.product` → `/product/:id`). Absent = derive from id. |
 | `requiresAuth` | no | truthy = the compiled route table guards this route |
 | `tab` | no | `true` = bottom-tab membership in the built app; tab order = registry order |
 | `kits` | no | kit dir names from `config/kit-registry.json` (`kits[].dir`) — the kit modules the surface's built app will use |
@@ -58,7 +58,7 @@ this contract. `kits` is an array of kit dir names (e.g. `"kits": ["maps",
 the emitter validates the names against `config/kit-registry.json` and
 threads them into `structure.json` for the scaffolder and builder. Declare it
 **only when the surface genuinely needs the module in the built app** — a
-login screen → `auth`, a checkout → `payments`, a map → `maps`. Never
+login view → `auth`, a checkout → `payments`, a map → `maps`. Never
 decorative: a declared kit is a promise the builder must wire and the client
 must often supply credentials for. See
 [`kit-catalog.md`](kit-catalog.md). `requiresAuth` and `tab` are route-table
@@ -92,7 +92,7 @@ triad"). The flows lens is a **thin data layer**, not an authoring surface:
 journeys are arrays of `{from, to, trigger, action}` edges keyed by registry
 ids — `action` typed `push` (default) | `replace` | `back` | `modal` |
 `system`, a `system` edge becoming a route guard downstream. Flows are linear
-chains (≤1 outgoing edge per screen per flow); a screen may belong to several
+chains (≤1 outgoing edge per view per flow); a view may belong to several
 flows. Intake derives drafts (`provenance: inferred`) when answers carry
 none; confirming flips provenance. Edges travel through the data spine (seed
 → fixture → repository → facade) like any other content and render by a
@@ -105,7 +105,7 @@ artifacts.
 
 ### `?embed=1` bare render mode
 
-The stub screen renderer (`screen_stub_view.tsx`) supports `?embed=1`: a
+The stub view renderer (`screen_stub_view.tsx`) supports `?embed=1`: a
 chromeless render (no nav, no tag, no max-width) for viewer tiles. The
 inspect island is conditionally included when `inspect=1` is also present;
 `still=1` freezes the tile (no auto-advance), and `live=1` renders the same
@@ -116,7 +116,7 @@ tile's iframe from `still=1` to `live=1`.
 
 Two server-side session stacks back the undo/redo buttons: `canvas` (flow
 edits — move/add/remove — replayed as project `flows.json` file writes, plus
-screen pin/unpin) and `chat` (design-change messages +
+view pin/unpin) and `chat` (design-change messages +
 checkpoints). Each entry is self-reversing — it carries enough data to undo
 and redo in both directions. The `canvas` stack is driven by the floating
 controller's undo/redo pair; the `chat` stack by the composer's. Element-
@@ -252,7 +252,7 @@ export const shellRoots = {
 };
 ```
 
-- `GET` returns a rendered fragment or page; `POST` mutates then returns the
+- `GET` returns a rendered fragment or view; `POST` mutates then returns the
   updated fragment. No other verbs.
 - **`shellRoots` is required and must be non-empty.** It names the landing route
   of each shell. The scaffolder cannot derive it — a shell whose root is unknown

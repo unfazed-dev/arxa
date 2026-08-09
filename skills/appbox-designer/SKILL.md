@@ -5,15 +5,15 @@ description: >-
   consumes — server-rendered htmx + CSS with zero custom client-side
   JavaScript — named islands only: reusable, vendored, SRI-pinned runtimes
   and first-party glue islands in runtime/vendor/, in a genuine MVVM
-  structure: app screens, shells,
+  structure: app shells, views,
   dashboards, interactive prototypes and wireframes, authored at every
   viewport in the active ladder. Use when the user asks to design, mock up,
-  prototype, wireframe or visualize an application, product screen or user
+  prototype, wireframe or visualize an application, product view or user
   flow that will be scaffolded into a real app. Consumes the versioned
   `intake/registry.json` as its single authoring surface (all design
   instructions including seed data) and materializes a *derived*
   `registry.json`, an `inspectAttrs` triple on every surface and a route table
-  the freeze step can read — one screen registry viewed through three lenses
+  the freeze step can read — one view registry viewed through three lenses
   (views / flows / proto), flows authored as data edges over it. Output is
   structurally isomorphic to `kit/showcase_app/lib`, so the scaffolder can
   transliterate rather than interpret. Not for slide decks or printable documents.
@@ -37,14 +37,14 @@ designing, never back-filled. See
 [`references/app-architecture.md`](references/app-architecture.md).
 
 **The triad output.** Every artifact is *three switchable lenses over one
-screen registry* — **prototype** (wired navigation over each entry's `route`),
-**flows** (journeys as an edge graph), and **screens** (the tile inventory) —
+view registry* — **prototype** (wired navigation over each entry's `route`),
+**flows** (journeys as an edge graph), and **views** (the tile inventory) —
 never three separate artifacts. Flows are authored as **data**: `{from, to,
 trigger}` edges over registry ids carried through the data spine and rendered
 by a server template / named island — never bespoke per-flow markup, never a
 separate file format. The freeze threads an optional top-level `flows` array
 into `structure.json` (absent = no flows lens, valid for small artifacts); the
-scaffolder emits surfaces from the registry screens, the builder wires
+scaffolder emits surfaces from the registry views, the builder wires
 navigation from the edges. Binding contract:
 [`DESIGN-ARCHITECTURE.md`](DESIGN-ARCHITECTURE.md) "The output triad".
 
@@ -175,6 +175,23 @@ the generator — do not define the value locally.
 web, and which native a `kind` resolves to is the scaffolder's call, not yours
 to pre-empt. See `references/showcase-anatomy.md` §4.
 
+**Vocabulary law (locked).** The design vocabulary is **hub > shell > view >
+widgets**. "screen" and "page" are out of vocabulary as *structural nouns* —
+prose, file/folder names, DOM attributes, emitted copy. Do not mint new
+identifiers containing them. Carve-outs (not violations): browser mechanics
+("full-page reload", "page load"), external vocabularies quoted as-is (Figma
+pages, `aria-current="page"`, `window.screen`, "screen reader"), and factual
+references to the v1 Dart medium (`screens.dart`). Legacy ratified identifiers
+(`screenId` in the `inspectAttrs` triple, `screenIdSource`,
+`models/screens_model/`) survive only until their coordinated rename lands
+with a gate re-run — see `docs/plans/screen-vocabulary-identifier-rename.md`.
+
+**tsconfig is designer output.** Every emitted artifact includes an
+artifact-root `tsconfig.json` produced at emit time (jsx via
+`jsxImportSource: "hono/jsx"`, no react types), and the artifact must
+type-check clean (`npx tsc -p <artifact>`) before gates report. A missing or
+hand-authored tsconfig is an emit defect.
+
 Every emitted surface carries the `inspectAttrs` triple
 `(screenId, surfaceId, anatomy-node id)` derived from registry ids — stamped at
 emit time, mechanically enforced, never inferred at runtime. Every emitted view
@@ -219,7 +236,7 @@ appbox desktop app serves prototypes without Node.
 
 These are JS-bound by nature — do not recreate them:
 - **design-canvas pan/zoom** → use `starter-partials/artboards.tsx` (static
-  side-by-side comparison page)
+  side-by-side comparison surface)
 - **animation timeline engine**, **animated video**, **video export** → use
   scroll-driven CSS motion studies (`starter-partials/motion.css`)
 - **image-slot drag/drop** → use a static placeholder plus the artifact's

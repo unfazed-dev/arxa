@@ -26,14 +26,14 @@ A **local `.fig` file** was imported with `agents/import-figma.mjs` (now archive
 
 ## Always start with `outline`
 
-Run it first, every time — it's read-only and tells you what's inside (pages → frames with guids, component counts and top variant sets, variable/style counts):
+Run it first, every time — it's read-only and tells you what's inside (views → frames with guids, component counts and top variant sets, variable/style counts):
 
 ```bash
 node <skill>/agents/import-figma.mjs outline <file.fig>          # archived — human summary
 node <skill>/agents/import-figma.mjs outline <file.fig> --json   # archived — full structured list
 ```
 
-Then use `AskUserQuestion` to confirm with the user: which pages/frames matter? Reference or full design system? Where should it land? (Community files often carry hundreds of icon symbols — importing everything is rarely what the user wants for a reference; it's fine for a design system.) Carry the confirmed scope into every later command — `--pages` on `mount`/`design-system`, explicit `--frames`/`--components` on `materialize` — so out-of-scope pages never get decoded into the project.
+Then use `AskUserQuestion` to confirm with the user: which views/frames matter? Reference or full design system? Where should it land? (Community files often carry hundreds of icon symbols — importing everything is rarely what the user wants for a reference; it's fine for a design system.) Carry the confirmed scope into every later command — `--pages` on `mount`/`design-system`, explicit `--frames`/`--components` on `materialize` — so out-of-scope views never get decoded into the project.
 
 ## Flow A — design reference for a project
 
@@ -44,16 +44,16 @@ Then use `AskUserQuestion` to confirm with the user: which pages/frames matter? 
    This writes `<projectDir>/_fig/<slug>/` — `README.md`, `METADATA.md`, `/<Page>/<frame>/index.jsx` per frame, `/<Page>/components/`, `/external-shared/`, plus `node-index.json` (guid → path). Each `.jsx` opens with a `// figma node: <guid>` comment. It is a **read-only reference tree**, not a deliverable:
    - The mounted JSX is a **quick reconstruction for orientation** — never copy it into project files; when you need real code, **materialize** it (step 3) and get dependency-closed modules.
    - The SVG/PNG files beside each `.jsx` are **real extracted assets** — `cp` them out (or use materialize's `assets/` + `fig-assets.css`); never redraw an asset by hand.
-   - The mounted `README.md` records the source `.fig` path and page scope — when you find an existing mount, read it first.
+   - The mounted `README.md` records the source `.fig` path and view scope — when you find an existing mount, read it first.
    - Authoring a design system and want a reference mount too? Mount **outside** the DS folder (e.g. `designs/_sources/<slug>-fig/`) — the compiler scans the whole tree and would otherwise bundle the mounted JSX.
    - The mount is **disposable scaffolding**: once curation (Flow B) is done or the reference has served its purpose, delete the whole mount directory — nothing in the finished system may point into it. Re-create it any time with the same `mount` command, or re-emit one component/frame with `materialize <file.fig> --out <dir> --components <Name>`.
-2. **Read before you draw**: start with the mounted `README.md`/`METADATA.md`, then the frame JSX for the screens that matter. The JSX is the truth for geometry, colors, and text.
+2. **Read before you draw**: start with the mounted `README.md`/`METADATA.md`, then the frame JSX for the views that matter. The JSX is the truth for geometry, colors, and text.
 3. **Materialize** real code when you need it in the project (guids come from `node-index.json` or the `// figma node:` comments):
    ```bash
    node <skill>/agents/import-figma.mjs materialize <file.fig> --out <dir> --components Button,Input   # archived
    node <skill>/agents/import-figma.mjs materialize <file.fig> --out <dir> --frames 13:2144          # archived
    ```
-   Emits flat `<Name>.jsx` + `<Name>.d.ts` with the dependency closure (sibling relative imports — keep an emitted set together in one folder), `assets/` + `fig-assets.css`, and with `--tokens`/`--typography` the variable/text-style CSS. Component names derive from Figma layer names (PascalCased, deduped) — read the printed component list and each `<Name>.d.ts` before writing code; the variant axes are the props. In an HDA artifact the emitted JSX is reference material — recreate it as TSX (hono/jsx) components (artifacts ship zero custom client-side JS), don't wire the `.jsx` in. Then wire the emitted `fig-*.css` files into the page or the project's root stylesheet via `<link>`/`@import` — they do nothing until referenced. (Flow B skips this: `design-system` writes `styles.css` itself.)
+   Emits flat `<Name>.jsx` + `<Name>.d.ts` with the dependency closure (sibling relative imports — keep an emitted set together in one folder), `assets/` + `fig-assets.css`, and with `--tokens`/`--typography` the variable/text-style CSS. Component names derive from Figma layer names (PascalCased, deduped) — read the printed component list and each `<Name>.d.ts` before writing code; the variant axes are the props. In an HDA artifact the emitted JSX is reference material — recreate it as TSX (hono/jsx) components (artifacts ship zero custom client-side JS), don't wire the `.jsx` in. Then wire the emitted `fig-*.css` files into the view or the project's root stylesheet via `<link>`/`@import` — they do nothing until referenced. (Flow B skips this: `design-system` writes `styles.css` itself.)
 4. **Render** a frame for visual ground truth — serve it over HTTP and screenshot it (playwright + `ReadMediaFile` — see `references/harness-tools.md`):
    ```bash
    node <skill>/agents/import-figma.mjs render <file.fig> --frame <guid> --out <dir>/frame.html   # archived
@@ -72,7 +72,7 @@ Then use `AskUserQuestion` to confirm with the user: which pages/frames matter? 
    - **rewrite** the decoded inline-style JSX into clean class-based, token-backed components — the decoded values (colors, spacing, radii, states) are the ground truth, but the implementation is re-authored to the system's conventions, not transplanted;
    - curate tokens into per-concern `tokens/*.css` (colors, typography, spacing, radii, shadows, semantic) plus `fonts.css` — when the file carries zero variables, extract them by hand from the components' raw values; when the kit mirrors a published library, cross-check its public theme;
    - add `guidelines/` foundation specimen cards (colors / type / spacing / radii / shadows / brand);
-   - if the file has no product-level screens, compose a `ui_kits/` showcase from the finished components; if it has, `materialize --frames <guid>` key screens — each emit is a flat dependency closure, so reconcile duplicates against `components/` (or rewrite imports to `../components/`) before compiling;
+   - if the file has no product-level views, compose a `ui_kits/` showcase from the finished components; if it has, `materialize --frames <guid>` key views — each emit is a flat dependency closure, so reconcile duplicates against `components/` (or rewrite imports to `../components/`) before compiling;
    - rewrite `README.md` into a real brand/usage guide and add `SKILL.md` per the guide's template; resolve fonts (the README's Fonts section lists what the file uses — a `.fig` carries **no font binaries**, so add `@font-face`/CDN links or substitute); then `compile-design-system.mjs` → `check-design-system.mjs` (fix → recompile → repeat until clean) → `build-preview.mjs`.
 
 ## Command reference
@@ -95,6 +95,6 @@ Exit codes: 0 ok, 1 error, 64 usage. Names are matched exactly; ambiguous names 
 - **External-library instances** (components living in another Figma library) decode as stubs — a `data-external` placeholder div, possibly a bare identifier the emitter couldn't resolve. Check the import warnings and fill those in by hand or from the library's own file.
 - **Cross-library variables** can't be resolved; values are baked as literals and noted at the top of `fig-tokens.css`. Many community files use **zero variables** (colors baked inline) — then no token CSS is emitted at all and tokens must be extracted by hand during curation.
 - **Warnings are data, not failures**: `baked-instance` (overrides flattened), `variant-key-mismatch` (unreachable duplicate variant), `vector-dropped` (geometry emitted as a plain box), oversized assets dropped (default 4 MiB per asset / 16 MiB total — raise with `--asset-max-mb`). They're listed per run and grouped in the design-system README.
-- **Imported components keep raw values** (hex/px instead of `var(--*)`) — that's the design's raw data. `check-design-system.mjs` does not flag this (it runs no adherence lint); the compiler's generated `_adherence.oxlintrc.json` only matters later, when pages are linted against the system. Treat raw values as advisory until tokens are curated.
+- **Imported components keep raw values** (hex/px instead of `var(--*)`) — that's the design's raw data. `check-design-system.mjs` does not flag this (it runs no adherence lint); the compiler's generated `_adherence.oxlintrc.json` only matters later, when views are linted against the system. Treat raw values as advisory until tokens are curated.
 - **Approximated fidelity**: per-character text styles, list markers, deeply nested instance swaps, and variable aliases are not fully resolved; diamond gradients, NOISE effects, and GRID auto-layouts are approximated. These limits hit `render` and the JSX equally — trust the JSX values, and when such a detail is critical, ask the user for a Figma screenshot/export of that node.
 - The decoder handles ZIP-container and raw-kiwi `.fig` files, zstd and deflate chunks. If a file fails to decode, it may predate/postdate the supported schema — ask the user to re-export a fresh local copy.

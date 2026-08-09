@@ -49,7 +49,7 @@ Options:
 | Flag | Meaning |
 |---|---|
 | `--out <file>` | output path (default `<dir>/preview.html`) |
-| `--title <t>` | page title (default dir basename) |
+| `--title <t>` | view title (default dir basename) |
 | `--cdn` | reference React/Babel from unpkg instead of inlining (smaller file, needs network) |
 | `--offline` | never hit the network; use vendor cache or emit CDN tags |
 
@@ -87,7 +87,7 @@ network.
   directory (cards are re-rooted into one file at the project root), and served
   from the inlined asset map when available — so icon/JSON fetches work both
   over HTTP and file://.
-- **Cards always render light.** The page chrome is light-only, so the preview
+- **Cards always render light.** The view chrome is light-only, so the preview
   forces `color-scheme: light` on every card host: `light-dark()` tokens
   resolve to their light value regardless of the viewer's OS theme (no more
   dark cards inside a light pane on dark-mode machines). Subtrees that opt into
@@ -105,7 +105,7 @@ network.
 
 ## Known limits (inherent to no-iframe)
 
-- Media queries / `vw`/`vh` units inside cards evaluate against the real page
+- Media queries / `vw`/`vh` units inside cards evaluate against the real view
   viewport, not the card's design viewport.
 - A system that keys dark mode off `@media (prefers-color-scheme: dark)` (media
   queries, not `light-dark()`) still follows the viewer's OS theme inside cards.

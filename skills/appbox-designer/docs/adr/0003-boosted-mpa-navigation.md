@@ -9,7 +9,7 @@ rediscovered.
 
 `globalViewTransitions:true` wraps EVERY htmx swap in
 `document.startViewTransition` — not just boosted navigations. A view
-transition snapshots the page as a tree of named elements plus one ROOT
+transition snapshots the view as a tree of named elements plus one ROOT
 snapshot holding everything unnamed. So an element swapped **without its own
 `view-transition-name` is captured in the root snapshot, and the browser
 cross-fades the whole document.** A 340px→410px panel resize therefore
@@ -29,7 +29,7 @@ The rule that follows, in both directions:
   nothing to render and nothing to animate.
 - A request that genuinely **re-renders a region** either gives that region its
   own `view-transition-name` (so only it animates — `.panel-composer` does
-  this) or accepts that the whole page cross-fades. There is no third option;
+  this) or accepts that the whole view cross-fades. There is no third option;
   an unnamed swapped region is a full-page fade by construction.
 
 Corollary for islands (ADR-0002): an island that has already mutated the DOM

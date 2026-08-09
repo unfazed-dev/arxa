@@ -15,7 +15,7 @@ Use this guide when the user wants to **set up a design system**, **import an ex
 
 ## This project is a design system
 
-You are authoring the design system itself, not consuming one. Design systems are folders on the file system containing typography guidelines, colors, assets, brand style and tone guides, CSS styles, and React recreations of UIs, decks, etc. They give design agents the ability to create designs against a company's existing products, and create assets using that company's brand. A design system should contain real visual assets (logos, brand illustrations, etc.), low-level visual foundations (typography specifics; color, shadow, border, spacing systems), reusable UI components, and high-level UI kits (full screens).
+You are authoring the design system itself, not consuming one. Design systems are folders on the file system containing typography guidelines, colors, assets, brand style and tone guides, CSS styles, and React recreations of UIs, decks, etc. They give design agents the ability to create designs against a company's existing products, and create assets using that company's brand. A design system should contain real visual assets (logos, brand illustrations, etc.), low-level visual foundations (typography specifics; color, shadow, border, spacing systems), reusable UI components, and high-level UI kits (full views).
 
 ### Compiler & checker (portable)
 
@@ -35,7 +35,7 @@ appbox design ds-check designs/<project>
 
 The standalone subagent prompt that used to drive this (`agents/design-system-checker.md`) was archived with the agents tree; run `appbox design ds-check` directly, fix what it reports, recompile, and run again until clean. Wherever older instructions said "call `check_design_system`", they mean: recompile, then run this checker.
 
-Once compiler + checker are clean, **build the single-file review page** — it compiles every `@dsCard` card, the Readme, and the starting points into one self-contained interactive `preview.html` in the design-system folder (open it directly in a browser to review everything at once). The builder was a node tool, now archived:
+Once compiler + checker are clean, **build the single-file review view** — it compiles every `@dsCard` card, the Readme, and the starting points into one self-contained interactive `preview.html` in the design-system folder (open it directly in a browser to review everything at once). The builder was a node tool, now archived:
 
 ```
 node <skill>/agents/build-preview.mjs designs/<project>   # archived — no Dart replacement
@@ -55,7 +55,7 @@ Organize everything else however suits the brand. A sensible default layout (use
 
 - `tokens/` — CSS custom properties, one file per concern (`colors.css`, `typography.css`, `spacing.css`, …), each `@import`ed from `styles.css`.
 - `components/<group>/` — reusable React UI primitives.
-- `ui_kits/<product>/` — full-screen click-through recreations of real product views.
+- `ui_kits/<product>/` — full-view click-through recreations of real product views.
 - `guidelines/` — foundation specimen cards and deeper-dive prose.
 - `assets/` — logos, icons, illustrations, imagery.
 - `readme.md` (root) — the design guide and manifest.
@@ -74,7 +74,7 @@ CRITICAL: do not recreate UIs from screenshots alone unless you have no other ch
 
 To begin, create a todo list with the tasks below, then follow it:
 
-- **Explore** the provided assets and materials to understand the company/product context, the different products represented, etc. Read each asset (codebase, Figma, file) and see what they do. Find product copy; examine core screens; find any existing design-system definitions.
+- **Explore** the provided assets and materials to understand the company/product context, the different products represented, etc. Read each asset (codebase, Figma, file) and see what they do. Find product copy; examine core views; find any existing design-system definitions.
 - **Create `readme.md`** (root) with the high-level understanding of the company/product context and the products represented. Mention the sources you were given — full Figma links, GitHub repo URLs, codebase paths. Do not assume the reader has access, but record them in case they do.
 - **Set the project title**: put a short brand-derived name (e.g. "Acme Design System") at the top of `readme.md` and use it for the generated `SKILL.md` `name`. This replaces the generic placeholder so the project is findable.
 - **If slide decks are attached**, look at them, extract key assets + text, write to disk.
@@ -120,19 +120,19 @@ Avoid reading SVGs — it's a waste of context. If you know their usage, just co
 
 ## Starting points
 
-- Consuming projects show a "Starting Points" picker that lets users seed a new design with a component or screen from this system. Entries are **opt-in** via a tag — separate from `@dsCard` (which populates the Design System tab).
+- Consuming projects show a "Starting Points" picker that lets users seed a new design with a component or view from this system. Entries are **opt-in** via a tag — separate from `@dsCard` (which populates the Design System tab).
 - To mark a **component**: add `@startingPoint section="<group>" subtitle="<one line>" viewport="<WxH>"` to the JSDoc on its `<Name>.d.ts` props interface. The picker thumbnail is that directory's `@dsCard`-tagged HTML, so make sure it renders sensibly at the declared viewport.
-- To mark a **screen**: add `<!-- @startingPoint section="<group>" subtitle="<one line>" viewport="<WxH>" -->` as the first line of the HTML file. The screen itself is the thumbnail.
+- To mark a **view**: add `<!-- @startingPoint section="<group>" subtitle="<one line>" viewport="<WxH>" -->` as the first line of the HTML file. The view itself is the thumbnail.
 - When the user says "create a starting point <X>" (or "add <X> as a starting point"), write an HTML file with the `<!-- @startingPoint section="…" -->` comment as its first line — any `.html` in the project with that tag is indexed. `ui_kits/<x>/index.html` is the conventional home but not required.
-- When the user asks to remove or retitle a starting point, edit the tag. When they ask to change a thumbnail, edit the `@dsCard`-tagged HTML in that component's directory (component) or the screen HTML itself.
+- When the user asks to remove or retitle a starting point, edit the tag. When they ask to change a thumbnail, edit the `@dsCard`-tagged HTML in that component's directory (component) or the view HTML itself.
 
 ## UI kits
 
-- UI kits are high-fidelity visual + interaction recreations of full interfaces — screens, not primitives. They cut corners on functionality (not "real production code") but are pixel-perfect, created by reading the original UI code if possible, or using Figma's `get-design-context`. UI kits **compose** the component primitives you authored above; don't re-implement Button inside a kit. A UI kit's `index.html` must look like a typical view of the product. These are recreations, not storybooks.
-- To start, update the todo list with these steps for each product: (1) explore codebase + components in Figma (design context) and code, (2) create 3–5 core screens for each product (e.g. homepage or app) with interactive click-through components, (3) iterate visually on the designs 1–2×, cross-referencing with design context.
+- UI kits are high-fidelity visual + interaction recreations of full interfaces — views, not primitives. They cut corners on functionality (not "real production code") but are pixel-perfect, created by reading the original UI code if possible, or using Figma's `get-design-context`. UI kits **compose** the component primitives you authored above; don't re-implement Button inside a kit. A UI kit's `index.html` must look like a typical view of the product. These are recreations, not storybooks.
+- To start, update the todo list with these steps for each product: (1) explore codebase + components in Figma (design context) and code, (2) create 3–5 core views for each product (e.g. homepage or app) with interactive click-through components, (3) iterate visually on the designs 1–2×, cross-referencing with design context.
 - Figure out the core products from this company/codebase. There may be one, or a few (e.g. mobile app, marketing website, docs website).
-- Each UI kit contains JSX (well-factored; small, neat) for that product's surfaces — sidebars, composers, file panels, hero units, headers, footers, blog posts, video players, settings screens, login, etc.
-- The `index.html` should demonstrate an interactive version of the UI (e.g. a chat app shows a login screen, lets you create a chat, send a message, etc., as fake).
+- Each UI kit contains JSX (well-factored; small, neat) for that product's surfaces — sidebars, composers, file panels, hero units, headers, footers, blog posts, video players, settings views, login, etc.
+- The `index.html` should demonstrate an interactive version of the UI (e.g. a chat app shows a login view, lets you create a chat, send a message, etc., as fake).
 - Get the visuals exactly right, using design context or codebase import. Don't copy component implementations exactly; make simple, mainly-cosmetic versions. It's important to copy.
 - Focus on good component coverage, not replicating every single section of a design.
 - Do not invent new designs for UI kits. The job is to **replicate** the existing design, not create a new one. If you don't see it in the project, omit it, or leave it purposely blank with a disclaimer.

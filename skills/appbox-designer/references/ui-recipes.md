@@ -103,7 +103,7 @@ mutation re-renders a region. In-flight state is free: htmx toggles
 > `transition:false` is not optional boilerplate. `transitions:true`
 > wraps every swap in a view transition, and `hx-swap="none"` alone does not
 > suppress it — the transition rides the swap cycle, not the swap style. A
-> fire-and-forget POST without it cross-fades the whole page, which reads as
+> fire-and-forget POST without it cross-fades the whole view, which reads as
 > the app reloading. See ADR-0003's 2026-08-03 amendment.
 >
 > **Which `none` needs it:** the ones that render NOTHING — a pure state write
@@ -536,7 +536,7 @@ For stateless popovers/menus use the native form — no endpoint at all:
 <div id="sort-pop" popover class="popover">… boosted sort links …</div>
 ```
 
-For static confirms/info overlays whose content the page already owns — no
+For static confirms/info overlays whose content the view already owns — no
 endpoint, no host, not even a request — use the declarative `_modal.tsx`
 exporting `Modal` (props: `modal = { trigger, label?, cardClass?,
 closeLabel? }`, body passed as `children`): a pure `<details>` toggle; the
@@ -622,7 +622,7 @@ motion is motion.css §5; `toast--linger` fades after `--toast-ttl`.
 **htmx:** the triggering form/button sets `hx-swap="none"` (or the handler
 sends `HX-Reswap: none`); the partial root carries
 `hx-swap-oob="beforeend:#toasts"`, so the toast appends to the host while the
-page stays put. CSS hides a lingered toast; the node leaves the DOM the next
+view stays put. CSS hides a lingered toast; the node leaves the DOM the next
 time the server re-renders `#toasts` — only the server removes.
 
 **Ladder:** same pill all rungs; `max-width` caps it on expanded.
@@ -815,10 +815,10 @@ export const ItemsTail: FC<{ oob?: boolean; nextPage?: number; endpoint: string 
 .load-more { display: flex; justify-content: center; padding: 16px 0; }
 ```
 
-**htmx:** the pager is plain boosted links (full page re-render per page —
-right for tables). Load-more: the button appends the next page's rows to
+**htmx:** the pager is plain boosted links (full view re-render per view —
+right for tables). Load-more: the button appends the next view's rows to
 `#items` (`hx-swap="beforeend"`); the endpoint's response is the rows PLUS
-`ItemsTail` rendered with `oob: true` + the next page number (or no
+`ItemsTail` rendered with `oob: true` + the next view number (or no
 button when exhausted) — the OOB swap replaces the control that triggered it.
 
 **Ladder:** load-more on compact (scroll flow); pager acceptable from medium
@@ -881,7 +881,7 @@ re-render.
   at all.
 - **stage acts** — anything that changes the panel's data (pins, approvals,
   decisions) re-feeds body + head + bar OOB in the same response.
-- **page render** — emits `Frame` only; OOB parts are response-only markup.
+- **view render** — emits `Frame` only; OOB parts are response-only markup.
 
 **CSS:** `.panel .panel-activity` + `.panel-size-s|m|l` width classes (`transition:
 width` on `--panel-w`); `.panel-views-icon.is-active` takes the accent ring. Below the

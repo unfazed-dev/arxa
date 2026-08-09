@@ -49,10 +49,10 @@ and the **feature-add** entry point in studio UI. All three emit
 failure); deterministic code applies valid patches.
 
 There is **no sync mechanism and none is needed**. A design-composer creating a
-new screen emits an *intake-level* registry patch — the design stage is another
-door into the same single authoring surface. Scope changes (new screen or
+new view emits an *intake-level* registry patch — the design stage is another
+door into the same single authoring surface. Scope changes (new view or
 feature) patch intake scope; design-only changes (layout, styling of existing
-screens) patch design-owned registry sections. Same validation, same gate.
+views) patch design-owned registry sections. Same validation, same gate.
 
 The approval gate fires **only** when the derived diff touches a locked
 decision. Routine additive changes are gated by probes alone — this is
@@ -146,7 +146,7 @@ streaming) is honored studio-natively, and the designer's output is what makes
 it possible:
 
 1. Registry patch accepted → viewer renders an **exact accent-tinted skeleton**
-   of the new screen or tile derived from the patch. The full anatomy is known
+   of the new view or tile derived from the patch. The full anatomy is known
    upfront — right slots, right placement, `inspectAttrs`-addressable — so this
    is a real skeleton, **not a generic shimmer**.
 2. The pipeline emits progress events per materialized unit —
@@ -166,7 +166,7 @@ so that slot identity and placement are known from the registry alone.
 ## 6. Parallel-run cutover (Q13)
 
 The new showcase-anatomy design shell is generated **alongside** the current
-studio design shell behind a flag. Probes render the same screens through both
+studio design shell behind a flag. Probes render the same views through both
 and diff the results. Cut over **view-by-view**: a view flips to the new shell
 only when its probe is green against it; flipping back is a toggle, not a
 revert. The old shell is deleted only when every view is flipped and green.

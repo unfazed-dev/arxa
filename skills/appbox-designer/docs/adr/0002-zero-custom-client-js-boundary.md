@@ -49,9 +49,9 @@ The boundary otherwise stands unchanged.
 
 **Amendment (2026-08-02) — the flow-walk island.** One first-party island, no
 vendored runtime: `flowwalk.js`, alongside `inspect.js` and for the same
-structural reason. The viewer's flows lens renders a flow as a row of screen
+structural reason. The viewer's flows lens renders a flow as a row of view
 tiles; walking it means tapping the element an edge names (Continue on the auth
-screen) and watching the row's ACTIVE tile advance to the screen that edge
+view) and watching the row's ACTIVE tile advance to the view that edge
 points at. The tap happens inside a tile's iframe — a separate document — and
 the row lives in the parent. No markup crosses that boundary, so without an
 island the flows lens can only be walked from the parent-side tile chrome,
@@ -64,7 +64,7 @@ cannot silently break it). On a click it matches the target against the edge's
 `element` when authored, else fuzzy-matches the edge's prose `trigger`;
 an unmatched click falls through to normal behaviour rather than guessing. A
 match calls `preventDefault()` — the in-frame navigation is suppressed on
-purpose, because the tile must keep showing the screen it is labelled with
+purpose, because the tile must keep showing the view it is labelled with
 while only the row moves — then hands the URL to the parent's htmx
 (`window.parent.htmx.ajax`, exactly as `inspect.js` does). No parent htmx (a
 stub opened standalone) is a silent no-op, not a throw.
@@ -84,8 +84,8 @@ touched only parent-owned nodes (`canvas.js`, `drag.js`). That inversion is why
 it needs its own amendment rather than riding on the inspect one.
 
 Why it cannot be server-rendered — the load-bearing fact, discovered by reading
-a partial rather than assuming. The views lens now renders one row per screen
-with two columns: the screen, and the same screen exploded into its widgets.
+a partial rather than assuming. The views lens now renders one row per view
+with two columns: the view, and the same view exploded into its widgets.
 The widget inventory comes from `data-el`, and **those values are
 templated**:
 
@@ -95,7 +95,7 @@ _tabbar.html   data-el="tab:{{ t('portalo.tab.' ~ suffix) }}"     pulled in by {
 ```
 
 Parsing the authored source yields one entry reading literally
-`card:{{ t('portalo.cat.' ~ pair[0]) }}` where the screen shows four resolved
+`card:{{ t('portalo.cat.' ~ pair[0]) }}` where the view shows four resolved
 names, and misses the tab bar entirely because it lives in a second file. A
 static extractor would have to evaluate loops, resolve i18n and follow
 includes — i.e. be nunjucks. The only resolved copy of the inventory is the
@@ -153,13 +153,13 @@ the boundary only moves when something genuinely cannot be said in hypermedia.
 
 **Amendment (2026-08-04) — strip-sync joins the canvas island's charter.** The
 views-lens filmstrip now syncs both ways with the canvas viewport: scrolling
-marks the screen whose center is nearest the viewport center with `.on`
+marks the view whose center is nearest the viewport center with `.on`
 (accent) on BOTH the tile and its thumb and keeps that thumb in the strip's
 view; clicking a thumb smooth-centers its tile. This is canvas view-state —
 scroll-position observation and programmatic scrolling, the same faculties the
 island already owns — so it lives in `canvas.js` (island 1), not a sixth
 island. It passes the unavoidability test the inspector pane failed: which
-screen currently occupies the viewport center exists only in the client's
+view currently occupies the viewport center exists only in the client's
 scroll geometry, changes per frame, and cannot be expressed as an HTTP request
 any more than cursor-anchored zoom could. View-state-only stands: nothing
 syncs to the server. The DOM contract is deliberately thin — a thumb's `href`
@@ -173,7 +173,7 @@ island's charter.** The views lens's components column becomes the widget
 manager: clicking a row now ALSO posts the selection to the server
 (`POST /design/widget/select`, parent-side `htmx.ajax` — the exact channel
 inspect.js already owns) and swaps a SERVER-RENDERED property editor fragment
-into the row's screen slot (`.dv-wedit`). The island contributes only the
+into the row's view slot (`.dv-wedit`). The island contributes only the
 gesture and the swap; identity crossing the wire is the static `data-el` kind
 prefix (the piece that survives templating and names the source element — the
 widget's definition), and every property value, every k-scale step, and every
@@ -247,8 +247,8 @@ what scaffolded projects link, and neither is a decision to make in passing.
 See `docs/plans/increment-3-edit-arming-resize-handles.md`.
 
 **Amendment (2026-08-05) — the explode island retires with the components
-container.** The screen reveal-drawer plan (D2) removed the views lens's
-components container — the element list, the per-screen edit composer and the
+container.** The view reveal-drawer plan (D2) removed the views lens's
+components container — the element list, the per-view edit composer and the
 plan sidecar — and `explode.js` existed only to fill that column, so the
 island and its script tag are deleted, not replaced. Its selection charter had
 already moved: armed canvas clicks post `/design/widget/select` from

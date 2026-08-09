@@ -8,13 +8,13 @@ Export the current design to Figma using a Figma MCP server. (This is the export
 
 **This requires a Figma MCP server configured in the harness** — its tools appear as `mcp__*`. If no Figma MCP tools are available in this session, tell the user that a Figma MCP server must be configured first, and stop.
 
-This only works with static designs; if you have a deck or prototype, you will need to duplicate the file and reformat it as a horizontal scroll of fixed-size frames for each slide or screen.
+This only works with static designs; if you have a deck or prototype, you will need to duplicate the file and reformat it as a horizontal scroll of fixed-size frames for each slide or view.
 
 ## Process
 
 1. **Identify the design file** the user wants to send (the currently open HTML file).
 2. **Read the file** so you have the full content.
-3. **If not static**, duplicate the file and reformat it as a horizontal scroll of fixed-size frames for each slide or screen.
+3. **If not static**, duplicate the file and reformat it as a horizontal scroll of fixed-size frames for each slide or view.
 4. **Call the Figma MCP export tool** (e.g. `mcp__*generate_figma_design`, exact name depends on the configured server) to export it into Figma.
    - Pass the design content / structure as the tool expects.
    - If Figma is not connected, tell the user to connect/authenticate it in their Figma MCP server configuration first.
