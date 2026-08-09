@@ -20,7 +20,7 @@
 // re-renders the form fragment with values + errors and status 422 — the
 // htmx-config meta swaps 422s like normal responses:
 //
-//   export const save = async (c, h) => {
+//   export const save = async (context, helpers) => {
 //     const body = await h.form(c);      // …validate…
 //     if (errors) return h.render(c, `${VIEW}#profile_form`, { fields: withErrors(body, errors) }, 422);
 //     …mutate… return h.location(c, '/done');   // or a toast (see _toast.tsx)

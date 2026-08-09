@@ -25,7 +25,7 @@ deploy, i18n, …), reaching the design medium through this catalog plus
 needs it.
 
 **Not mirrored, by decision:** `AppBoxKitNative*` and `appbox_kit_ui_library`
-widgets. The designer designs web (baoyu design core; ejects production web);
+widgets. The designer designs web (web-first design core; ejects production web);
 natives are the scaffolder's transliteration targets. Do not reach for a native
 primitive while designing, and do not pre-empt which native a widget `kind`
 resolves to — that boundary is what keeps eject-to-web and emit-to-native both

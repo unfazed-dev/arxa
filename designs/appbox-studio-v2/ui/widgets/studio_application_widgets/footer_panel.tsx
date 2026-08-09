@@ -16,9 +16,9 @@ interface FooterPanelSpec {
   // replaces the derived body id (the timeline's oob target)
   bodyId?: string;
   // raw attributes on the body (aria-label, hx-swap-oob, ...)
-  bodyAttrs?: string;
+  bodyAttributes?: string;
   class?: string;
-  attrs?: string;
+  attributes?: string;
   vt?: string;
   children?: Child;
 }
@@ -31,12 +31,12 @@ export function Open(spec: FooterPanelSpec) {
       id={PID}
       tag={spec.tag ?? 'footer'}
       class={spec.class}
-      attrs={spec.attrs}
+      attributes={spec.attributes}
       vt={spec.vt}
       bodyTag={spec.bodyTag}
       bodyClass={spec.bodyClass}
       bodyId={spec.bodyId}
-      bodyAttrs={spec.bodyAttrs}
+      bodyAttributes={spec.bodyAttributes}
       top={false}
       sideStart={false}
       sideEnd={false}

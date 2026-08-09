@@ -1,6 +1,6 @@
 import * as dashboard from './ui/views/studio_dashboard_shell/studio_dashboard/studio_dashboard_viewmodel.js';
 import * as startup from './ui/views/studio_startup_shell/studio_startup/studio_startup_viewmodel.js';
-import * as prefs from './ui/common/prefs_viewmodel.js';
+import * as preferences from './ui/common/preferences_viewmodel.js';
 
 // Landing route of each shell. Required and non-empty — the scaffolder cannot
 // derive it, and a shell whose root is unknown gets an invented one.
@@ -22,5 +22,5 @@ export default [
   ['GET', '/startup', startup.view],
   ['GET', '/startup/progress', startup.progress],
   ['POST', '/startup/proceed', startup.proceed],
-  ['POST', '/prefs/accent', prefs.setAccent],
+  ['POST', '/preferences/accent', preferences.setAccent],
 ];

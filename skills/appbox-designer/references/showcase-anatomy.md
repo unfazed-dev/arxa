@@ -348,7 +348,7 @@ through `references/kit-catalog.md` plus `runtime/kit-facades/*.js`. Declare
 them with the `kits` field on the surface that needs them.
 
 **Excluded:** `AppBoxKitNative*` and `appbox_kit_ui_library` widgets are **not**
-mirrored. The designer designs web (baoyu design core; ejects production web);
+mirrored. The designer designs web (web-first design core; ejects production web);
 natives are the scaffolder's transliteration targets. Do not reach for a native
 primitive while designing, and do not pre-empt which native a `kind` resolves
 to — that boundary is what keeps eject-to-web and emit-to-native both honest.

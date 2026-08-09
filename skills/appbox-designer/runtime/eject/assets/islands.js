@@ -120,7 +120,7 @@ function armIsland(el) {
       break;
     case 'visible': {
       const obs = new IntersectionObserver((entries) => {
-        if (entries.some((e) => e.isIntersecting)) { obs.disconnect(); fire(); }
+        if (entries.some((entry) => entry.isIntersecting)) { obs.disconnect(); fire(); }
       });
       obs.observe(el);
       armDisposers.set(el, () => obs.disconnect());
@@ -171,9 +171,9 @@ async function loadIsland(name, el) {
  * @returns {any} parsed state, or null
  */
 function readState(el) {
-  const s = el.querySelector?.('script[data-island-state]');
-  if (!s) return null;
-  try { return JSON.parse(s.textContent || ''); } catch { return null; }
+  const stateScript = el.querySelector?.('script[data-island-state]');
+  if (!stateScript) return null;
+  try { return JSON.parse(stateScript.textContent || ''); } catch { return null; }
 }
 
 // --- Delegated lazy handlers (Qwikloader pattern) ---------------------------

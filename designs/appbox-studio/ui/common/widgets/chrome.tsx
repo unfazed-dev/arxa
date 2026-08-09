@@ -65,7 +65,7 @@ export function HeaderBody(props: HeaderBodyProps) {
               href={d.href}
               aria-current={activeShell === d.id ? 'page' : undefined}
             >
-              <Icon name={d.icon} size={18} cls="drawer-icon" />
+              <Icon name={d.icon} size={18} className="drawer-icon" />
               <span>{d.label}</span>
             </a>
           ))}
@@ -159,7 +159,7 @@ export function OffCanvas(props: OffCanvasProps) {
             href={d.href}
             aria-current={activeShell === d.id ? 'page' : undefined}
           >
-            <Icon name={d.icon} size={22} cls="tabbar__icon" />
+            <Icon name={d.icon} size={22} className="tabbar__icon" />
             <span class="tabbar__label">{d.label}</span>
           </a>
         ))}
@@ -194,7 +194,7 @@ export function OffCanvas(props: OffCanvasProps) {
               href={d.href}
               aria-current={activeShell === d.id ? 'page' : undefined}
             >
-              <Icon name={d.icon} size={18} cls="drawer-icon" />
+              <Icon name={d.icon} size={18} className="drawer-icon" />
               <span>{d.label}</span>
             </a>
           ))}

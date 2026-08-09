@@ -55,8 +55,8 @@ export const Card: FC<CardProps> = ({ card }) => (
     {card.body && <p class="card__body">{card.body}</p>}
     {card.actions && (
       <div class="card__actions">
-        {card.actions.map((a, i) => (
-          <a class={`btn btn--${a.kind ?? 'ghost'}`} href={a.href} key={i}>{a.label}</a>
+        {card.actions.map((action, actionIndex) => (
+          <a class={`btn btn--${action.kind ?? 'ghost'}`} href={action.href} key={actionIndex}>{action.label}</a>
         ))}
       </div>
     )}

@@ -2,8 +2,8 @@
 
 The app-UI patterns a Surface is allowed to be composed from. Each recipe is
 copy-adapt ready: the component takes its props (the server passes the ctx
-bag — `{ prefs, locale, locales, t }` merged in — as the single props
-object; `t` is a prop, used as `{t('home.title') as string}`), the CSS is
+bag — `{ prefs, locale, locales, translate }` merged in — as the single props
+object; `t` is a prop, used as `{translate('home.title') as string}`), the CSS is
 flex/grid with `gap` (never inline-flow spacing), tokens are CSS custom
 properties, naming is BEM-ish (`.block__el--mod`, matching `frames.css`).
 
@@ -46,7 +46,7 @@ is the most expensive drift this medium allows.
   goes through `raw(...)` from 'hono/utils/html' (never `raw()` user data),
   and control flow is plain JS: ternaries, `{cond && (...)}` (never guard on
   a bare number — `{count && ...}` renders a literal `0`), and
-  `{xs.map((x) => (...))}` with `key` on dynamic lists.
+  `{items.map((item) => (...))}` with `key` on dynamic lists.
 
 ---
 
@@ -69,10 +69,10 @@ interface Action {
 
 export const ActionRow: FC<{ actions: Action[]; stack?: boolean }> = ({ actions, stack }) => (
   <div class={`action-row${stack ? ' action-row--stack' : ''}`}>
-    {actions.map((a) => (
-      <button key={a.url} class={`btn${a.kind ? ` btn--${a.kind}` : ''}`} type="button"
+    {actions.map((action) => (
+      <button key={a.url} class={`btn${action.kind ? ` btn--${action.kind}` : ''}`} type="button"
               hx-post={a.url} hx-target={a.target}
-              hx-swap={a.target ? undefined : 'none transition:false'}>{a.label}</button>
+              hx-swap={a.target ? undefined : 'none transition:false'}>{action.label}</button>
     ))}
   </div>
 );
@@ -185,7 +185,7 @@ export const NavRailFragment: FC<{ nav: NavData }> = ({ nav }) => <NavRail nav={
 (A fragment render — the viewmodel rendering `'.../x_view.html#navRailFragment'` —
 calls the named export with exactly the props the endpoint passes. Nothing
 leaks in from a render context beyond the server's merged
-`{ prefs, locale, locales, t }`, so whatever a fragment needs, the endpoint
+`{ prefs, locale, locales, translate }`, so whatever a fragment needs, the endpoint
 puts in the props.)
 
 **CSS:** `.nav-rail` in widgets.css — `display: none` on compact; floating
@@ -601,9 +601,9 @@ as a **Named Fragment of the current view**, never the widget file directly
 is not a renderable viewRef):
 
 ```js
-export const del = (c, h) => {
-  facade.delete(c.req.param('id'));
-  return h.render(c, `${VIEW}#toastSwap`,
+export const del = (context, helpers) => {
+  facade.delete(context.req.param('id'));
+  return helpers.render(context, `${VIEW}#toastSwap`,
     { toast: { text: 'Item deleted', kind: 'success', linger: true } });
 };
 ```
@@ -657,8 +657,8 @@ export const DataTable: FC<{
         ))}</tr>
       </thead>
       <tbody>
-        {rows.map((r, i) => (
-          <tr key={i}>
+        {rows.map((row, rowIndex) => (
+          <tr key={rowIndex}>
             {columns.map((col) => <td key={col.id}>{r[col.id] as string}</td>)}
           </tr>
         ))}
@@ -737,7 +737,7 @@ replaces it on load:
 export const ListSkeleton: FC<{ endpoint: string; rows?: number }> = ({ endpoint, rows = 4 }) => (
   <div id="list-body" hx-get={endpoint} hx-trigger="load" hx-swap="outerHTML">
     {Array.from({ length: rows }, (_, i) => (
-      <div key={i} class="skeleton" style="height: 52px; border-radius: 10px;"></div>
+      <div key={rowIndex} class="skeleton" style="height: 52px; border-radius: 10px;"></div>
     ))}
   </div>
 );
@@ -912,7 +912,7 @@ Canonical button — hugs both axes, icon + label with a gap:
 <button class="btn" data-layout data-gap="8" data-align-y="center"
         data-resize-x="hug" data-resize-y="hug" type="button"
         hx-post={a.url}>
-  <Icon name="check" size={16} /><span>{a.label}</span>
+  <Icon name="check" size={16} /><span>{action.label}</span>
 </button>
 ```
 

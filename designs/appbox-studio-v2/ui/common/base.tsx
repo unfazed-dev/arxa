@@ -4,7 +4,7 @@
 // block becomes the headExtra prop.
 import { raw } from 'hono/utils/html';
 import { Fragment, type FC, type Child } from 'hono/jsx';
-import { inspectAttrs } from '../widgets/common/studio_primitives/primitives.tsx';
+import { inspectAttributes } from '../widgets/common/studio_primitives/primitives.tsx';
 
 // htmx 4 config. v2's responseHandling has no meta-config equivalent in v4 —
 // the per-status rules live on <body> as hx-status:<pattern> attributes (see
@@ -21,7 +21,7 @@ const HTMX_CONFIG = '{"transitions":true,"implicitInheritance":true}';
 // Cache-busted vendor script URL (content hash from worker_shim boot).
 const vendorSrc = (name: string) => {
   const rev = (globalThis as any).__vendorRev?.[name];
-  return `/assets/vendor/${name}${rev ? `?v=${rev}` : ''}`;
+  return `/assets/vendor/${name}${rev ? `?rev=${rev}` : ''}`;
 };
 
 // The v2 responseHandling rules, restated for htmx 4: hx-status:<pattern> on
@@ -65,7 +65,7 @@ const Base: FC<BaseProps> = ({
         <meta charset="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <meta name="htmx-config" content={HTMX_CONFIG} />
-        <title {...inspectAttrs('base:title', { role: 'text' })}>{title}</title>
+        <title {...inspectAttributes('base:title', { role: 'text' })}>{title}</title>
         <script
           src="/assets/vendor/htmx4.min.js"
           integrity="sha384-6lyVbhrs13b9z7mLOpt/N6R76rtkEBWgCjAXRs/DSWyi2AMnQSs10ijWk+PI8n7W"
@@ -97,7 +97,7 @@ const Base: FC<BaseProps> = ({
         {headExtra}
       </head>
       <body hx-boost="true" hx-sync="this:replace" {...HTMX_RESPONSE_RULES}>
-        <div id="app" data-theme={theme} data-accent={accent} data-font={font} {...inspectAttrs('base:app-root', { role: 'group' })}>
+        <div id="app" data-theme={theme} data-accent={accent} data-font={font} {...inspectAttributes('base:app-root', { role: 'group' })}>
           {children}
         </div>
         {/* OOB/retarget tray. aria-live polite: a toast swapped in here is

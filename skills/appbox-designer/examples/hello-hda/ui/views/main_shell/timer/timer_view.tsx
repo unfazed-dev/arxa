@@ -4,7 +4,7 @@
 import type { FC } from 'hono/jsx';
 import MainShell from '../main_shell_view.tsx';
 
-type TFn = (key: string, vars?: Record<string, unknown>) => unknown;
+type TranslateFn = (key: string, vars?: Record<string, unknown>) => unknown;
 
 interface NavItem {
   id: string;
@@ -17,31 +17,31 @@ interface NavItem {
 interface TimerPageProps {
   locale?: string;
   locales?: string[];
-  t: TFn;
+  translate: TranslateFn;
   rail?: unknown;
   remaining?: number;
   prefs?: { accent?: string; [key: string]: unknown };
   [key: string]: unknown;
 }
 
-const TimerPage: FC<TimerPageProps> = ({ t, locale, locales = [], rail, remaining, prefs }) => (
+const TimerPage: FC<TimerPageProps> = ({ translate, locale, locales = [], rail, remaining, prefs }) => (
   <MainShell
-    title={t('timer.pageTitle') as string}
+    title={translate('timer.pageTitle') as string}
     locale={locale}
     accent={prefs?.accent}
     locales={locales}
-    t={t}
+    translate={translate}
     rail={rail as { brand?: string; drawer?: boolean; items: NavItem[] }}
   >
-    <h1>{t('timer.title') as string}</h1>
-    <p>{t('timer.tagline') as string}</p>
-    <Tick remaining={remaining} t={t} />
+    <h1>{translate('timer.title') as string}</h1>
+    <p>{translate('timer.tagline') as string}</p>
+    <Tick remaining={remaining} translate={translate} />
     <div class="action-row">
       <button class="btn" hx-post="/timer/extend" hx-target="#timer" hx-swap="outerHTML">
         +15s
       </button>
       <button class="btn btn--ghost" hx-post="/timer/skip" hx-target="#timer" hx-swap="outerHTML">
-        {t('timer.skip') as string}
+        {translate('timer.skip') as string}
       </button>
     </div>
   </MainShell>
@@ -49,10 +49,10 @@ const TimerPage: FC<TimerPageProps> = ({ t, locale, locales = [], rail, remainin
 
 interface TickProps {
   remaining?: number;
-  t: TFn;
+  translate: TranslateFn;
 }
 
-export const Tick: FC<TickProps> = ({ remaining, t }) => {
+export const Tick: FC<TickProps> = ({ remaining, translate }) => {
   if (remaining && remaining > 0) {
     return (
       <div
@@ -68,7 +68,7 @@ export const Tick: FC<TickProps> = ({ remaining, t }) => {
   }
   return (
     <div id="timer" class="timer done">
-      {t('timer.done') as string}
+      {translate('timer.done') as string}
     </div>
   );
 };

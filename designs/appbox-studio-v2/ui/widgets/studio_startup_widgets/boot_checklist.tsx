@@ -43,18 +43,18 @@ const BootChecklist: FC<BootChecklistProps> = ({ steps, ready, proceedLabel, blo
     data-inspect-widget="boot_checklist"
   >
     <ol class="startup-steps">
-      {steps.map((s) => (
+      {steps.map((step) => (
         <li
-          key={s.id}
-          class={stepClass(s.state)}
-          data-state={s.state}
+          key={step.id}
+          class={stepClass(step.state)}
+          data-state={step.state}
           data-el="list-row__item"
           data-inspect-role="list row"
           data-inspect-style="check or dot + label, dimmed until the step runs"
           data-inspect-fn="names one boot step and shows whether it is done, running or waiting"
           data-inspect-motion="reveal"
         >
-          {s.state === 'done' ? (
+          {step.state === 'done' ? (
             <Icon name="check" size={14} />
           ) : (
             <span
@@ -72,9 +72,9 @@ const BootChecklist: FC<BootChecklistProps> = ({ steps, ready, proceedLabel, blo
             data-inspect-style="step name, muted while waiting"
             data-inspect-fn="names the artifact this step needs"
             data-inspect-motion="none"
-            class={s.state === 'waiting' ? 'muted' : undefined}
+            class={step.state === 'waiting' ? 'muted' : undefined}
           >
-            {s.label}
+            {step.label}
           </span>
         </li>
       ))}

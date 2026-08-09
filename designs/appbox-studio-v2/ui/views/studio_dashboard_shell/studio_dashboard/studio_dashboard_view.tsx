@@ -34,7 +34,7 @@ import type { Gate, ProjectCard, Stats, PairingModal, Wizard } from './studio_da
 
 type TranslateFn = (key: string, vars?: Record<string, unknown>) => unknown;
 
-interface Prefs {
+interface Preferences {
   accent?: string;
   theme?: string;
   [key: string]: unknown;
@@ -44,7 +44,7 @@ interface DashboardViewProps {
   translate: TranslateFn;
   locale?: string;
   activeShell: string;
-  prefs?: Prefs;
+  preferences?: Preferences;
   account?: { name?: string; email?: string;[key: string]: unknown };
   gates?: Gate[];
   gateCount?: number;
@@ -61,7 +61,7 @@ const DashboardView: FC<DashboardViewProps> = (props) => {
     translate,
     locale,
     activeShell,
-    prefs,
+    preferences,
     account = {},
     gates = [],
     gateCount = 0,
@@ -90,7 +90,7 @@ const DashboardView: FC<DashboardViewProps> = (props) => {
       title={translate('dash.pageTitle') as string}
       locale={locale}
       activeShell={activeShell}
-      prefs={prefs}
+      preferences={preferences}
       project={project}
       mainClass="shell-main-col"
       surface={

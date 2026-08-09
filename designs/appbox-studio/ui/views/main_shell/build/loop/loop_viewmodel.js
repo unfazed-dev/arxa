@@ -14,107 +14,107 @@ const STUB_VIEW = 'ui/views/main_shell/build/loop/screen_stub_view.html';
 // build.acceptance gate unguarded, so an empty gate list would throw a
 // TypeError straight to a 500. The facade owns the test; a viewmodel that
 // asked the repository directly would break the layering the selftest gates.
-const empty = (c, h) => facade.emptyLoopContext(h.locale(c), h.session(c).data, h.prefs(c), h.t(c));
+const empty = (context, helpers) => facade.emptyLoopContext(helpers.locale(context), helpers.session(context).data, helpers.prefs(context), helpers.translate(context));
 
 // The empty stage: shell chrome + the "no evidence yet" panel, nothing else.
-const emptyPage = (c, h, e) => h.render(c, VIEW, { activeShell: 'build', ...e });
+const emptyPage = (context, helpers, e) => helpers.render(context, VIEW, { activeShell: 'build', ...e });
 
-export const page = (c, h) => {
-  const e = empty(c, h);
-  if (e) return emptyPage(c, h, e);
-  return h.render(c, VIEW, { activeShell: 'build', ...facade.loopContext(h.session(c).data, c.req.query('artifact') ?? null, h.prefs(c), h.t(c), h.locale(c), c.req.query('file'), c.req.query('panel')) });
+export const page = (context, helpers) => {
+  const e = empty(context, helpers);
+  if (e) return emptyPage(context, helpers, e);
+  return helpers.render(context, VIEW, { activeShell: 'build', ...facade.loopContext(helpers.session(context).data, context.req.query('artifact') ?? null, helpers.prefs(context), helpers.translate(context), helpers.locale(context), context.req.query('file'), context.req.query('panel')) });
 };
 
 // A file row: open the file in the main panel (?path=, unknown → empty state).
-export const file = (c, h) => {
-  const e = empty(c, h);
-  if (e) return emptyPage(c, h, e);
-  return h.render(c, `${VIEW}#fileSwap`, facade.openFile(h.session(c).data, c.req.query('path'), h.prefs(c), h.t(c), h.locale(c)));
+export const file = (context, helpers) => {
+  const e = empty(context, helpers);
+  if (e) return emptyPage(context, helpers, e);
+  return helpers.render(context, `${VIEW}#fileSwap`, facade.openFile(helpers.session(context).data, context.req.query('path'), helpers.prefs(context), helpers.translate(context), helpers.locale(context)));
 };
 
 // Clicking a thread card (or an activity artifact row) opens the artifact
 // center-stage and docks the chat right.
-export const artifact = (c, h) => {
-  const e = empty(c, h);
-  if (e) return emptyPage(c, h, e);
-  const ref = `${c.req.param('kind')}/${c.req.param('id')}`;
-  return h.render(c, `${VIEW}#panelsSwap`, facade.showArtifact(h.session(c).data, ref, h.prefs(c), h.t(c), h.locale(c)));
+export const artifact = (context, helpers) => {
+  const e = empty(context, helpers);
+  if (e) return emptyPage(context, helpers, e);
+  const ref = `${context.req.param('kind')}/${context.req.param('id')}`;
+  return helpers.render(context, `${VIEW}#panelsSwap`, facade.showArtifact(helpers.session(context).data, ref, helpers.prefs(context), helpers.translate(context), helpers.locale(context)));
 };
 
 // Composer agent chrome: the model pick swaps the stage.
-export const model = (c, h) => {
-  const e = empty(c, h);
-  if (e) return emptyPage(c, h, e);
-  return h.render(c, `${VIEW}#panelsSwap`, facade.setModel(h.session(c).data, c.req.param('id'), h.prefs(c), h.t(c), h.locale(c)));
+export const model = (context, helpers) => {
+  const e = empty(context, helpers);
+  if (e) return emptyPage(context, helpers, e);
+  return helpers.render(context, `${VIEW}#panelsSwap`, facade.setModel(helpers.session(context).data, context.req.param('id'), helpers.prefs(context), helpers.translate(context), helpers.locale(context)));
 };
 
 // Gate context chips: "reject with note" pins the gate above the composer;
 // the chip's × unpins it.
-export const pinChip = (c, h) => {
-  const e = empty(c, h);
-  if (e) return emptyPage(c, h, e);
-  return h.render(c, `${VIEW}#panelsSwap`, facade.pinChip(h.session(c).data, c.req.query('ref'), h.prefs(c), h.t(c), h.locale(c)));
+export const pinChip = (context, helpers) => {
+  const e = empty(context, helpers);
+  if (e) return emptyPage(context, helpers, e);
+  return helpers.render(context, `${VIEW}#panelsSwap`, facade.pinChip(helpers.session(context).data, context.req.query('ref'), helpers.prefs(context), helpers.translate(context), helpers.locale(context)));
 };
 
-export const unpinChip = (c, h) => {
-  const e = empty(c, h);
-  if (e) return emptyPage(c, h, e);
-  return h.render(c, `${VIEW}#panelsSwap`, facade.unpinChip(h.session(c).data, c.req.query('ref'), h.prefs(c), h.t(c), h.locale(c)));
+export const unpinChip = (context, helpers) => {
+  const e = empty(context, helpers);
+  if (e) return emptyPage(context, helpers, e);
+  return helpers.render(context, `${VIEW}#panelsSwap`, facade.unpinChip(helpers.session(context).data, context.req.query('ref'), helpers.prefs(context), helpers.translate(context), helpers.locale(context)));
 };
 
 // The composer: append the user's message and a simulated agent reply.
 // With a gate chip pinned, the facade treats the message as the reject
 // note + decision (single input path — no separate note field).
-export const sendMessage = async (c, h) => {
-  const e = empty(c, h);
-  if (e) return emptyPage(c, h, e);
-  const form = await h.form(c);
+export const sendMessage = async (context, helpers) => {
+  const e = empty(context, helpers);
+  if (e) return emptyPage(context, helpers, e);
+  const form = await helpers.form(context);
   const text = String(form.preset || form.text || '').trim();
-  if (!text) return h.noContent(c);
-  return h.render(c, `${VIEW}#messageSwap`, facade.sendMessage(h.session(c).data, text, h.prefs(c), h.t(c), h.locale(c)));
+  if (!text) return helpers.noContent(context);
+  return helpers.render(context, `${VIEW}#messageSwap`, facade.sendMessage(helpers.session(context).data, text, helpers.prefs(context), helpers.translate(context), helpers.locale(context)));
 };
 
-export const decide = async (c, h) => {
-  const e = empty(c, h);
-  if (e) return emptyPage(c, h, e);
-  const form = await h.form(c);
-  return h.render(c, `${VIEW}#decisionSwap`, facade.decide(h.session(c).data, form.gate, form.decision, form.note, h.prefs(c), h.t(c), h.locale(c)));
+export const decide = async (context, helpers) => {
+  const e = empty(context, helpers);
+  if (e) return emptyPage(context, helpers, e);
+  const form = await helpers.form(context);
+  return helpers.render(context, `${VIEW}#decisionSwap`, facade.decide(helpers.session(context).data, form.gate, form.decision, form.note, helpers.prefs(context), helpers.translate(context), helpers.locale(context)));
 };
 
 // Activity panel: ?view=run|thread|artifacts|commits|files switches the
 // panel's view; ?type=stage|gate|findings|evidence|note|all filters the thread.
-export const panel = (c, h) => {
-  const e = empty(c, h);
-  if (e) return emptyPage(c, h, e);
-  const view = c.req.query('view');
-  if (view) return h.render(c, `${VIEW}#activityViewSwap`, facade.setActivityView(h.session(c).data, view, h.prefs(c), h.t(c), h.locale(c)));
-  return h.render(c, `${VIEW}#filterSwap`, facade.setThreadFilter(h.session(c).data, c.req.query('type') ?? 'all', h.prefs(c), h.t(c), h.locale(c)));
+export const panel = (context, helpers) => {
+  const e = empty(context, helpers);
+  if (e) return emptyPage(context, helpers, e);
+  const view = context.req.query('view');
+  if (view) return helpers.render(context, `${VIEW}#activityViewSwap`, facade.setActivityView(helpers.session(context).data, view, helpers.prefs(context), helpers.translate(context), helpers.locale(context)));
+  return helpers.render(context, `${VIEW}#filterSwap`, facade.setThreadFilter(helpers.session(context).data, context.req.query('type') ?? 'all', helpers.prefs(context), helpers.translate(context), helpers.locale(context)));
 };
 
 // Panel width grip: s/m/l persisted per side, whole-panel re-render.
-export const panelSize = (c, h) => {
-  const e = empty(c, h);
-  if (e) return emptyPage(c, h, e);
-  return h.render(c, `${VIEW}#activityFrameSwap`, facade.setPanelSize(h.session(c).data, c.req.param('panel'), c.req.param('size'), h.prefs(c), h.t(c), h.locale(c)));
+export const panelSize = (context, helpers) => {
+  const e = empty(context, helpers);
+  if (e) return emptyPage(context, helpers, e);
+  return helpers.render(context, `${VIEW}#activityFrameSwap`, facade.setPanelSize(helpers.session(context).data, context.req.param('panel'), context.req.param('size'), helpers.prefs(context), helpers.translate(context), helpers.locale(context)));
 };
 
 // Run control (run view): pause | resume the whole line.
-export const runControl = async (c, h) => {
-  const e = empty(c, h);
-  if (e) return emptyPage(c, h, e);
-  const form = await h.form(c);
-  return h.render(c, `${VIEW}#runSwap`, facade.runControl(h.session(c).data, String(form.action), h.prefs(c), h.t(c), h.locale(c)));
+export const runControl = async (context, helpers) => {
+  const e = empty(context, helpers);
+  if (e) return emptyPage(context, helpers, e);
+  const form = await helpers.form(context);
+  return helpers.render(context, `${VIEW}#runSwap`, facade.runControl(helpers.session(context).data, String(form.action), helpers.prefs(context), helpers.translate(context), helpers.locale(context)));
 };
 
 // The design viewer on the evidence canvas: controller acts swap just the
 // viewer block; the choice lives in the session. panel rides along so the
 // mini panel tabs round-trip.
-export const evidenceViewer = (c, h) => {
-  const e = empty(c, h);
-  if (e) return emptyPage(c, h, e);
-  return h.render(c, `${VIEW}#viewerSwap`, facade.setViewer(h.session(c).data, {
-    bg: c.req.query('bg'), panel: c.req.query('panel'),
-  }, h.prefs(c), h.t(c), h.locale(c)));
+export const evidenceViewer = (context, helpers) => {
+  const e = empty(context, helpers);
+  if (e) return emptyPage(context, helpers, e);
+  return helpers.render(context, `${VIEW}#viewerSwap`, facade.setViewer(helpers.session(context).data, {
+    bg: context.req.query('bg'), panel: context.req.query('panel'),
+  }, helpers.prefs(context), helpers.translate(context), helpers.locale(context)));
 };
 
 // The iframe document: an honest labelled stand-in render of the client's
@@ -122,28 +122,28 @@ export const evidenceViewer = (c, h) => {
 // artifact the daemon serves. Evidence-independent — the design canvas
 // drives the viewport (build_facade guards the missing evidence entry), so
 // this route keeps working on a project that has never built.
-export const screenStub = (c, h) =>
-  h.render(c, STUB_VIEW, facade.screenStub(c.req.param('surface'), c.req.query('vp'), h.prefs(c), h.locale(c), {
-    embed: c.req.query('embed') === '1',
-    inspect: c.req.query('inspect') === '1',
-    still: c.req.query('still') === '1',
+export const screenStub = (context, helpers) =>
+  helpers.render(context, STUB_VIEW, facade.screenStub(context.req.param('surface'), context.req.query('vp'), helpers.prefs(context), helpers.locale(context), {
+    embed: context.req.query('embed') === '1',
+    inspect: context.req.query('inspect') === '1',
+    still: context.req.query('still') === '1',
     // Canvas app-theme override (viewer topbar control): light/dark restyle
     // this stub; absent = follow the studio theme (the facade default).
-    theme: c.req.query('theme') ?? null,
+    theme: context.req.query('theme') ?? null,
     // Flow walk: `walk` is the complete parent viewer URL to advance to, so
     // the island never needs to know the viewer's param list. Absent = this
     // is not the walked tile and the island is not loaded at all.
-    walk: c.req.query('walk') ?? null,
-    walkEl: c.req.query('walkel') ?? '',
-    walkTrig: c.req.query('walktrig') ?? '',
+    walk: context.req.query('walk') ?? null,
+    walkEl: context.req.query('walkel') ?? '',
+    walkTrig: context.req.query('walktrig') ?? '',
     // Scopes the stub's own `next` edge to the flow being walked.
-    walkFlow: c.req.query('walkflow') ?? null,
+    walkFlow: context.req.query('walkflow') ?? null,
   }));
 
 // Stage control (run view): pause | resume | cancel one stage.
-export const stageControl = async (c, h) => {
-  const e = empty(c, h);
-  if (e) return emptyPage(c, h, e);
-  const form = await h.form(c);
-  return h.render(c, `${VIEW}#controlSwap`, facade.stageControl(h.session(c).data, c.req.param('id'), String(form.action), h.prefs(c), h.t(c), h.locale(c)));
+export const stageControl = async (context, helpers) => {
+  const e = empty(context, helpers);
+  if (e) return emptyPage(context, helpers, e);
+  const form = await helpers.form(context);
+  return helpers.render(context, `${VIEW}#controlSwap`, facade.stageControl(helpers.session(context).data, context.req.param('id'), String(form.action), helpers.prefs(context), helpers.translate(context), helpers.locale(context)));
 };

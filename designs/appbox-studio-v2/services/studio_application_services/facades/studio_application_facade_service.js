@@ -11,11 +11,11 @@ import { registry } from '../repositories/studio_application_repository_service.
 
 /** @param {(key: string) => string} translate */
 export const stageRoster = (translate) =>
-  registry().stages.map((s) => ({
-    id: s.id,
-    name: translate(s.labelKey),
-    consumes: s.consumes,
-    produces: s.produces,
-    href: s.href,
-    enabled: s.enabled,
+  registry().stages.map((stage) => ({
+    id: stage.id,
+    name: translate(stage.labelKey),
+    consumes: stage.consumes,
+    produces: stage.produces,
+    href: stage.href,
+    enabled: stage.enabled,
   }));

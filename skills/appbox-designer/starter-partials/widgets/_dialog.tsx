@@ -80,8 +80,8 @@ export const Dialog: FC<DialogProps> = ({ dialog }) => (
               <button class="btn btn--ghost" type="submit">{dialog.dismiss}</button>
             </form>
           )}
-          {dialog.actions?.map((a, i) => (
-            <a class={`btn btn--${a.kind ?? 'ghost'}`} href={a.href} key={i}>{a.label}</a>
+          {dialog.actions?.map((action, actionIndex) => (
+            <a class={`btn btn--${action.kind ?? 'ghost'}`} href={action.href} key={actionIndex}>{action.label}</a>
           ))}
         </div>
       )}

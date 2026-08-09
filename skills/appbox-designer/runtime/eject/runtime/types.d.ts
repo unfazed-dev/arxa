@@ -22,7 +22,7 @@ export interface SessionData {
 export interface L10n {
   catalogs: Record<string, Record<string, string>>;
   locales: string[];
-  createT(opts?: { locale?: string; level?: string }): (key: string, vars?: Record<string, unknown>) => string;
+  createTranslator(opts?: { locale?: string; level?: string }): (key: string, vars?: Record<string, unknown>) => string;
 }
 
 export interface Timers {
@@ -38,17 +38,17 @@ export interface Sse {
 }
 
 export interface Helpers {
-  render(c: Context, viewRef: string, ctx?: Record<string, unknown>, status?: number): Response | Promise<Response>;
-  form(c: Context): Promise<Record<string, unknown>>;
-  session(c: Context): SessionData | null;
-  prefs(c: Context): Prefs;
-  locale(c: Context): string;
-  t(c: Context): (key: string, vars?: Record<string, unknown>) => string;
-  setPrefs(c: Context, patch: Partial<Prefs>): void;
+  render(context: Context, viewRef: string, ctx?: Record<string, unknown>, status?: number): Response | Promise<Response>;
+  form(context: Context): Promise<Record<string, unknown>>;
+  session(context: Context): SessionData | null;
+  prefs(context: Context): Prefs;
+  locale(context: Context): string;
+  translate(context: Context): (key: string, vars?: Record<string, unknown>) => string;
+  setPrefs(context: Context, patch: Partial<Prefs>): void;
   timers: Timers;
   sse: Sse;
-  noContent(c: Context): Response;
-  stopPolling(c: Context): Response;
-  refresh(c: Context): Response;
-  location(c: Context, url: string): Response;
+  noContent(context: Context): Response;
+  stopPolling(context: Context): Response;
+  refresh(context: Context): Response;
+  location(context: Context, url: string): Response;
 }

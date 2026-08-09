@@ -8,50 +8,50 @@ import * as facade from '../../../../../services/facades/intake_facade.js';
 const VIEW = 'ui/views/main_shell/intake/surfaces/surfaces_view.html';
 const S = 'surfaces';
 
-export const page = (c, h) =>
-  h.render(c, VIEW, { activeShell: 'intake', ...facade.context(h.session(c).data, S, null, h.prefs(c), h.t(c), h.locale(c), c.req.query('file'), c.req.query('panel')) });
+export const page = (context, helpers) =>
+  helpers.render(context, VIEW, { activeShell: 'intake', ...facade.context(helpers.session(context).data, S, null, helpers.prefs(context), helpers.translate(context), helpers.locale(context), context.req.query('file'), context.req.query('panel')) });
 
-export const file = (c, h) =>
-  h.render(c, `${VIEW}#fileSwap`, facade.openFile(h.session(c).data, S, c.req.query('path'), h.prefs(c), h.t(c), h.locale(c)));
+export const file = (context, helpers) =>
+  helpers.render(context, `${VIEW}#fileSwap`, facade.openFile(helpers.session(context).data, S, context.req.query('path'), helpers.prefs(context), helpers.translate(context), helpers.locale(context)));
 
-export const model = (c, h) =>
-  h.render(c, `${VIEW}#panelsSwap`, facade.setModel(h.session(c).data, S, c.req.param('id'), h.prefs(c), h.t(c), h.locale(c)));
+export const model = (context, helpers) =>
+  helpers.render(context, `${VIEW}#panelsSwap`, facade.setModel(helpers.session(context).data, S, context.req.param('id'), helpers.prefs(context), helpers.translate(context), helpers.locale(context)));
 
-export const panel = (c, h) =>
-  h.render(c, `${VIEW}#activitySwap`, facade.setActivityView(h.session(c).data, S, c.req.query('view'), h.prefs(c), h.t(c), h.locale(c)));
+export const panel = (context, helpers) =>
+  helpers.render(context, `${VIEW}#activitySwap`, facade.setActivityView(helpers.session(context).data, S, context.req.query('view'), helpers.prefs(context), helpers.translate(context), helpers.locale(context)));
 
-export const panelSize = (c, h) =>
-  h.render(c, `${VIEW}#activityFrameSwap`, facade.setPanelSize(h.session(c).data, S, c.req.param('panel'), c.req.param('size'), h.prefs(c), h.t(c), h.locale(c)));
+export const panelSize = (context, helpers) =>
+  helpers.render(context, `${VIEW}#activityFrameSwap`, facade.setPanelSize(helpers.session(context).data, S, context.req.param('panel'), context.req.param('size'), helpers.prefs(context), helpers.translate(context), helpers.locale(context)));
 
-export const sendMessage = async (c, h) => {
-  const form = await h.form(c);
+export const sendMessage = async (context, helpers) => {
+  const form = await helpers.form(context);
   const text = String(form.preset || form.text || '').trim();
-  if (!text) return h.noContent(c);
-  return h.render(c, `${VIEW}#panelsSwap`, facade.sendMessage(h.session(c).data, S, text, h.prefs(c), h.t(c), h.locale(c)));
+  if (!text) return helpers.noContent(context);
+  return helpers.render(context, `${VIEW}#panelsSwap`, facade.sendMessage(helpers.session(context).data, S, text, helpers.prefs(context), helpers.translate(context), helpers.locale(context)));
 };
 
 // The item engine: confirm the prefill / save a correction / skip / revisit /
 // accept-all. Corrections post text inputs; one-per-line fields split here.
 const lines = (v) => String(v ?? '').split('\n').map((s) => s.trim()).filter(Boolean);
 
-export const confirm = async (c, h) => {
-  const form = await h.form(c);
-  return h.render(c, `${VIEW}#panelsSwap`, facade.confirmItem(h.session(c).data, S, String(form.item || ''), h.prefs(c), h.t(c), h.locale(c)));
+export const confirm = async (context, helpers) => {
+  const form = await helpers.form(context);
+  return helpers.render(context, `${VIEW}#panelsSwap`, facade.confirmItem(helpers.session(context).data, S, String(form.item || ''), helpers.prefs(context), helpers.translate(context), helpers.locale(context)));
 };
 
 // Surface groups carry no free-text fields — saving is confirming.
-export const save = async (c, h) => {
-  const form = await h.form(c);
-  return h.render(c, `${VIEW}#panelsSwap`, facade.confirmItem(h.session(c).data, S, String(form.item || ''), h.prefs(c), h.t(c), h.locale(c)));
+export const save = async (context, helpers) => {
+  const form = await helpers.form(context);
+  return helpers.render(context, `${VIEW}#panelsSwap`, facade.confirmItem(helpers.session(context).data, S, String(form.item || ''), helpers.prefs(context), helpers.translate(context), helpers.locale(context)));
 };
 
-export const skip = async (c, h) => {
-  const form = await h.form(c);
-  return h.render(c, `${VIEW}#panelsSwap`, facade.skipItem(h.session(c).data, S, String(form.item || ''), h.prefs(c), h.t(c), h.locale(c)));
+export const skip = async (context, helpers) => {
+  const form = await helpers.form(context);
+  return helpers.render(context, `${VIEW}#panelsSwap`, facade.skipItem(helpers.session(context).data, S, String(form.item || ''), helpers.prefs(context), helpers.translate(context), helpers.locale(context)));
 };
 
-export const edit = (c, h) =>
-  h.render(c, `${VIEW}#panelsSwap`, facade.editItem(h.session(c).data, S, c.req.query('item'), h.prefs(c), h.t(c), h.locale(c)));
+export const edit = (context, helpers) =>
+  helpers.render(context, `${VIEW}#panelsSwap`, facade.editItem(helpers.session(context).data, S, context.req.query('item'), helpers.prefs(context), helpers.translate(context), helpers.locale(context)));
 
-export const acceptAll = (c, h) =>
-  h.render(c, `${VIEW}#panelsSwap`, facade.acceptAll(h.session(c).data, S, h.prefs(c), h.t(c), h.locale(c)));
+export const acceptAll = (context, helpers) =>
+  helpers.render(context, `${VIEW}#panelsSwap`, facade.acceptAll(helpers.session(context).data, S, helpers.prefs(context), helpers.translate(context), helpers.locale(context)));

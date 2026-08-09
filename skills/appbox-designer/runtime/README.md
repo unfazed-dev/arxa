@@ -110,21 +110,21 @@ export default [
 
 ## ViewModel handlers
 
-Every handler is `(c, h) => Response`. `c` is the Hono context; `h` is the
+Every handler is `(context, helpers) => Response`. `context` is the Hono context; `helpers` is the
 Runtime helper object:
 
 | helper | use |
 |---|---|
-| `h.render(c, view, ctx?, status?)` | render `ui/…/x_view.html` or `x_view.html#fragment`; cookie prefs are merged into the context automatically |
-| `h.form(c)` | parsed POST body |
-| `h.session(c)` | `{ id, data }` — in-memory session store |
-| `h.prefs(c)` / `h.setPrefs(c, patch)` | small scalar prefs cookie (theme, accent, role) |
-| `h.locale(c)` / `h.t(c)` | resolved request locale / a `t` bound to it (L10n below) |
-| `h.timers.start/extend/remaining/stop` | server-held deadlines for load-polling timers |
-| `h.noContent(c)` | 204 — mutation done, no swap |
-| `h.stopPolling(c)` | 286 — cancel a poll |
-| `h.refresh(c)` | `HX-Refresh` — full reload (theme changes) |
-| `h.location(c, url)` | `HX-Location` — client-side nav (use instead of 3xx) |
+| `helpers.render(context, view, ctx?, status?)` | render `ui/…/x_view.html` or `x_view.html#fragment`; cookie prefs are merged into the context automatically |
+| `helpers.form(context)` | parsed POST body |
+| `helpers.session(context)` | `{ id, data }` — in-memory session store |
+| `helpers.prefs(context)` / `helpers.setPrefs(context, patch)` | small scalar prefs cookie (theme, accent, role) |
+| `helpers.locale(context)` / `helpers.translate(context)` | resolved request locale / a `translate` fn bound to it (L10n below) |
+| `helpers.timers.start/extend/remaining/stop` | server-held deadlines for load-polling timers |
+| `helpers.noContent(context)` | 204 — mutation done, no swap |
+| `helpers.stopPolling(context)` | 286 — cancel a poll |
+| `helpers.refresh(context)` | `HX-Refresh` — full reload (theme changes) |
+| `helpers.location(context, url)` | `HX-Location` — client-side nav (use instead of 3xx) |
 
 ## Views (TSX / hono/jsx)
 
@@ -137,8 +137,8 @@ There is no template language: composition is component imports and
   view component; **named PascalCase exports** are the surface's Named
   Fragments.
 - **ViewRefs keep the `.html` name for registry parity.** Viewmodels render
-  `h.render(c, 'ui/views/main_shell/home/home_view.html', ctx)` and
-  `h.render(c, 'ui/views/main_shell/home/home_view.html#listSwap', ctx)` —
+  `helpers.render(context, 'ui/views/main_shell/home/home_view.html', ctx)` and
+  `helpers.render(context, 'ui/views/main_shell/home/home_view.html#listSwap', ctx)` —
   the generated render registry (`generateRenderTsx`, appboxd/lib/
   design_tools.dart) maps `x_view.html` → the `.tsx` file's default export,
   and `x_view.html#listSwap` → the named export `ListSwap` (the fragment name
@@ -146,7 +146,7 @@ There is no template language: composition is component imports and
 - Every component receives the **context bag as its single props object**:
   what the viewmodel passed, plus the server-merged `{ prefs, locale,
   locales, t }`. Fragments get the same bag the viewmodel handed to
-  `h.render` — nothing is captured from an outer render.
+  `helpers.render` — nothing is captured from an outer render.
 - Views wrap in their shell the way hello-hda does: the view component
   renders `<MainShell …>{children}</MainShell>`, the shell renders
   `<Base …>`, and `Base` emits `{raw('<!doctype html>')}` + `<html>`.
@@ -219,7 +219,7 @@ with `{...{ 'hx-status:422': '{}' }}` on the form.
 
 ## State playbook quick recipes (ADR-0004)
 
-- **Theme/accent/role**: POST → `h.setPrefs(c, {accent:'lagoon'})` → `h.refresh(c)`;
+- **Theme/accent/role**: POST → `helpers.setPrefs(context, {accent:'lagoon'})` → `helpers.refresh(context)`;
   render CSS vars on an in-body wrapper (`#app`), never on `<body>`/`<html>`
   attributes (they don't update under boosted swaps).
 - **Language**: built-in `GET/POST /prefs/lang?lang=<locale>` does the same
@@ -246,15 +246,15 @@ unaffected: `t()` passes the key through and the locale is always `en`.
 {t('itemCount', { count: demoCount }) as string}  {/* {var} + ICU plural subset */}
 ```
 
-- **`t` arrives in the context bag** — the server merges `{ prefs, locale,
-  locales, t }` into every render context (rebound per render to the request
+- **`translate` arrives in the context bag** — the server merges `{ prefs, locale,
+  locales, translate }` into every render context (rebound per render to the request
   locale), so Named Fragment components see it as a prop too. Views type it
-  as `type TFn = (key: string, vars?: Record<string, unknown>) => unknown;`
-  and cast results (`as string` — `t` returns `unknown`). ViewModels use
-  `h.t(c)` for strings the context carries (nav labels) and `h.locale(c)` for
+  as `type TranslateFn = (key: string, vars?: Record<string, unknown>) => unknown;`
+  and cast results (`as string` — `translate` returns `unknown`). ViewModels use
+  `helpers.translate(context)` for strings the context carries (nav labels) and `helpers.locale(context)` for
   the locale itself.
 - **Fallback chain**: active locale → `en` → the key literal. Jargon dimension:
-  with level `plain`/`technical` (prefs key `jargon`), `t` tries
+  with level `plain`/`technical` (prefs key `jargon`), `translate` tries
   `key+'Plain'`/`key+'Technical'` first, then the base key (base = balanced).
 - **Values**: `{var}` interpolation (vars HTML-escaped; catalog text is
   authored and trusted) and the ICU plural subset
@@ -272,7 +272,7 @@ HTML responses carry `Vary: Accept-Language`.
 
 **Switching** is built into the runtime (ADR-0004 prefs recipe — every
 artifact, no route-table entry): `/prefs/lang?lang=<locale>` (GET or POST) does
-`h.setPrefs(c, {lang})`, then `h.refresh(c)` for htmx-boosted requests or a
+`helpers.setPrefs(context, {lang})`, then `helpers.refresh(context)` for htmx-boosted requests or a
 302 back to the Referer for plain navigation. The switcher is a plain-anchors
 component — copy
 `examples/hello-hda/ui/views/main_shell/shared/widgets/lang_switcher.tsx`

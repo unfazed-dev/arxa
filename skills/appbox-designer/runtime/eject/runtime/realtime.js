@@ -52,8 +52,8 @@ function publish(channel, data, eventName) {
  */
 /** @param {import('hono').Hono} app */
 export function attachSse(app) {
-  app.get('/__events', /** @param {import('./types').Context} c */ (c) => {
-    const channel = c.req.query('channel') ?? 'default';
+  app.get('/__events', /** @param {import('./types').Context} context */ (context) => {
+    const channel = context.req.query('channel') ?? 'default';
     const enc = new TextEncoder();
     /** @type {ReturnType<typeof setInterval> | undefined} */
     let ping;
@@ -67,7 +67,7 @@ export function attachSse(app) {
 
         // Replay: send everything after Last-Event-ID (hx-sse sends it on reconnect).
         const log = bus(channel);
-        const lastId = Number(c.req.header('Last-Event-ID') ?? 0);
+        const lastId = Number(context.req.header('Last-Event-ID') ?? 0);
         for (const e of log) {
           if (Number(e.id) > lastId) send(e);
         }
@@ -108,7 +108,7 @@ function formatSse(entry) {
   if (entry.event) out += `event: ${entry.event}\n`;
   // SSE spec: multi-line payloads need one `data:` line per line, or lines
   // after the first are parsed as bogus field names and silently dropped.
-  out += entry.data.split('\n').map((l) => `data: ${l}`).join('\n') + '\n\n';
+  out += entry.data.split('\n').map((line) => `data: ${line}`).join('\n') + '\n\n';
   return out;
 }
 

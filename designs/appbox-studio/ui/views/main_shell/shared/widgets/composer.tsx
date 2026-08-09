@@ -137,7 +137,7 @@ export function Field(props: ComposerProps) {
                   {t('composer.context') as string}
                   {ctxSuffix}
                 </span>
-                <Icon name="chevron-down" size={14} cls="composer-chev" />
+                <Icon name="chevron-down" size={14} className="composer-chev" />
               </label>
             </Fragment>
           ) : (
@@ -288,7 +288,7 @@ export function Field(props: ComposerProps) {
         {props.modelMenu && (
           <details class="composer-model">
             <summary aria-label={t('composer.agentModel') as string} title={t('composer.agentModel') as string}>
-              {props.modelMenu.label} <Icon name="chevron-down" size={14} cls="composer-chev" />
+              {props.modelMenu.label} <Icon name="chevron-down" size={14} className="composer-chev" />
             </summary>
             <span class="composer-menu composer-menu-right">
               {props.modelMenu.options.map((o) => (
@@ -303,7 +303,7 @@ export function Field(props: ComposerProps) {
                 >
                   <span class="composer-opt-label">{o.label}</span>
                   <span class="composer-opt-blurb">{o.blurb}</span>
-                  {o.active && <Icon name="check" size={14} cls="composer-opt-check" />}
+                  {o.active && <Icon name="check" size={14} className="composer-opt-check" />}
                 </a>
               ))}
             </span>

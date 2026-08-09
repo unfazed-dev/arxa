@@ -4,7 +4,7 @@
 
 export type TFn = (key: string, vars?: Record<string, unknown>) => unknown;
 
-export interface Prefs {
+export interface Preferences {
   theme?: string;
   [key: string]: unknown;
 }

@@ -19,7 +19,7 @@ interface MainShellProps {
   locale?: string;
   accent?: string;
   locales: string[];
-  t: (key: string, vars?: Record<string, unknown>) => unknown;
+  translate: (key: string, vars?: Record<string, unknown>) => unknown;
   rail?: { brand?: string; drawer?: boolean; items: NavItem[] };
   rail_drawer?: { brand?: string; drawer?: boolean; items: NavItem[] };
   children?: Child;
@@ -30,7 +30,7 @@ const MainShell: FC<MainShellProps> = ({
   locale,
   accent,
   locales,
-  t,
+  translate,
   rail,
   children,
 }) => (
@@ -38,7 +38,7 @@ const MainShell: FC<MainShellProps> = ({
     <div class="shell">
       <NavRail rail={rail} />
       <div class="shell__col">
-        <LangSwitcher locales={locales} locale={locale ?? 'en'} t={t as (key: string) => string} />
+        <LangSwitcher locales={locales} locale={locale ?? 'en'} translate={translate as (key: string) => string} />
         <main class="shell-main">{children}</main>
         <BottomNav rail={rail} />
       </div>

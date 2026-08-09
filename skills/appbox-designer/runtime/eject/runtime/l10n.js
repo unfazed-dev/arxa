@@ -13,8 +13,8 @@ import { prefsOf } from './state.js';
  * @param {string} s
  * @returns {string}
  */
-const esc = (s) =>
-  String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+const esc = (unsafeText) =>
+  String(unsafeText).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
 // ARB files may carry `//` comment lines — strip them before JSON.parse.
 /**
@@ -24,7 +24,7 @@ const parseArb = (file) =>
   JSON.parse(
     readFileSync(file, 'utf8')
       .split('\n')
-      .filter((/** @type {string} */ l) => !l.trimStart().startsWith('//'))
+      .filter((/** @type {string} */ line) => !line.trimStart().startsWith('//'))
       .join('\n'),
   );
 
@@ -39,12 +39,12 @@ export function createL10n(artifactDirOrPreload) {
     // node: read ARB catalogs from the filesystem.
     const dir = path.join(artifactDirOrPreload, 'l10n');
     if (existsSync(dir)) {
-      for (const f of readdirSync(dir)) {
-        const m = f.match(/^app_(.+)\.arb$/);
-        if (!m) continue;
-        const entries = parseArb(path.join(dir, f));
-        catalogs[m[1]] = Object.fromEntries(
-          Object.entries(entries).filter(([k]) => !k.startsWith('@')),
+      for (const fileName of readdirSync(dir)) {
+        const arbNameMatch = fileName.match(/^app_(.+)\.arb$/);
+        if (!arbNameMatch) continue;
+        const entries = parseArb(path.join(dir, fileName));
+        catalogs[arbNameMatch[1]] = Object.fromEntries(
+          Object.entries(entries).filter(([entryKey]) => !entryKey.startsWith('@')),
         );
       }
     }
@@ -52,11 +52,11 @@ export function createL10n(artifactDirOrPreload) {
     // Workers: use preloaded ARB catalogs (runtime/preload.js).
     for (const [locale, entries] of Object.entries(artifactDirOrPreload?.arb ?? {})) {
       catalogs[locale] = Object.fromEntries(
-        Object.entries(entries).filter(([k]) => !k.startsWith('@')),
+        Object.entries(entries).filter(([entryKey]) => !entryKey.startsWith('@')),
       );
     }
   }
-  const locales = Object.keys(catalogs).sort((a, b) => (a === 'en' ? -1 : b === 'en' ? 1 : a.localeCompare(b)));
+  const locales = Object.keys(catalogs).sort((localeA, localeB) => (localeA === 'en' ? -1 : localeB === 'en' ? 1 : localeA.localeCompare(localeB)));
   const pluralRules = new Map(); // locale → Intl.PluralRules, built once
 
   /**
@@ -77,7 +77,7 @@ export function createL10n(artifactDirOrPreload) {
    * @returns {string}
    */
   const interpolate = (text, vars) =>
-    text.replace(/\{(\w+)\}/g, (/** @type {string} */ m, /** @type {string} */ name) => (vars && name in vars ? esc(/** @type {string} */ (vars[name])) : m));
+    text.replace(/\{(\w+)\}/g, (/** @type {string} */ fullMatch, /** @type {string} */ name) => (vars && name in vars ? esc(/** @type {string} */ (vars[name])) : fullMatch));
 
   /**
    * @param {Record<string, string>} catalog
@@ -91,18 +91,18 @@ export function createL10n(artifactDirOrPreload) {
     if (typeof value !== 'string') return undefined;
     const plural = parsePlural(value);
     if (plural) {
-      const n = Number(vars?.[plural.varName]);
-      if (Number.isNaN(n)) return value;
+      const count = Number(vars?.[plural.varName]);
+      if (Number.isNaN(count)) return value;
       const picked =
-        plural.options[`=${n}`] ??
-        plural.options[selectPlural(locale, n)] ??
+        plural.options[`=${count}`] ??
+        plural.options[selectPlural(locale, count)] ??
         plural.options.other;
       return picked === undefined ? value : interpolate(picked, vars);
     }
     return interpolate(value, vars);
   };
 
-  // createT({ locale, level }) → t(key, vars?). Fallback: active locale → en →
+  // createTranslator({ locale, level }) → t(key, vars?). Fallback: active locale → en →
   // the key literal. level 'plain'|'technical' tries key+Plain / key+Technical
   // first, then the base key (base = balanced). Returns a plain string:
   // catalog text is authored (trusted), interpolated vars are HTML-escaped in
@@ -139,22 +139,22 @@ export function parsePlural(str) {
   if (!head || !str.endsWith('}')) return null;
   /** @type {Record<string, string | undefined>} */
   const options = {};
-  let i = head[0].length;
-  while (i < str.length - 1) {
-    while (str[i] === ' ') i++;
-    const kw = str.slice(i).match(/^(=\d+|zero|one|two|few|many|other)\s*\{/);
-    if (!kw) return null;
+  let cursor = head[0].length;
+  while (cursor < str.length - 1) {
+    while (str[cursor] === ' ') cursor++;
+    const keyword = str.slice(cursor).match(/^(=\d+|zero|one|two|few|many|other)\s*\{/);
+    if (!keyword) return null;
     let depth = 1;
-    let j = i + kw[0].length;
-    const start = j;
-    while (j < str.length && depth > 0) {
-      if (str[j] === '{') depth++;
-      else if (str[j] === '}') depth--;
-      if (depth > 0) j++;
+    let scanIndex = cursor + keyword[0].length;
+    const start = scanIndex;
+    while (scanIndex < str.length && depth > 0) {
+      if (str[scanIndex] === '{') depth++;
+      else if (str[scanIndex] === '}') depth--;
+      if (depth > 0) scanIndex++;
     }
     if (depth !== 0) return null;
-    options[kw[1]] = str.slice(start, j);
-    i = j + 1;
+    options[keyword[1]] = str.slice(start, scanIndex);
+    cursor = scanIndex + 1;
   }
   return { varName: head[1], options };
 }
@@ -170,35 +170,35 @@ export function parseAcceptLanguage(header) {
     .split(',')
     .map((part) => {
       const [tag, ...params] = part.trim().split(';');
-      const q = params.map((p) => p.trim()).find((p) => p.startsWith('q='));
-      return { tag: tag.trim().toLowerCase(), q: q ? Number(q.slice(2)) : 1 };
+      const qualityParam = params.map((param) => param.trim()).find((param) => param.startsWith('q='));
+      return { tag: tag.trim().toLowerCase(), quality: qualityParam ? Number(qualityParam.slice(2)) : 1 };
     })
-    .filter((e) => e.tag && e.q > 0)
-    .sort((a, b) => b.q - a.q)
-    .map((e) => e.tag);
+    .filter((entry) => entry.tag && entry.quality > 0)
+    .sort((entryA, entryB) => entryB.quality - entryA.quality)
+    .map((entry) => entry.tag);
 }
 
 // Resolution precedence: ?lang= query → prefs cookie `lang` → Accept-Language
 // (q-factor order, exact then base-tag match — pl-PL matches a pl catalog) → 'en'.
 /**
- * @param {import('./types').Context} c
+ * @param {import('./types').Context} context
  * @param {import('./types').L10n} l10n
  * @returns {string}
  */
-export function resolveLocale(c, l10n) {
+export function resolveLocale(context, l10n) {
   const { locales } = l10n;
   if (!locales.length) return 'en';
-  const q = c.req.query('lang');
-  if (q && locales.includes(q)) return q;
-  const p = prefsOf(c).lang;
-  if (p && locales.includes(p)) return p;
-  const header = c.req.header('Accept-Language');
+  const queryLang = context.req.query('lang');
+  if (queryLang && locales.includes(queryLang)) return queryLang;
+  const prefsLang = prefsOf(context).lang;
+  if (prefsLang && locales.includes(prefsLang)) return prefsLang;
+  const header = context.req.header('Accept-Language');
   if (header) {
     for (const tag of parseAcceptLanguage(header)) {
       const hit =
-        locales.find((/** @type {string} */ l) => l === tag) ??
-        locales.find((/** @type {string} */ l) => l === tag.split('-')[0]) ??
-        locales.find((/** @type {string} */ l) => l.split('-')[0] === tag.split('-')[0]);
+        locales.find((/** @type {string} */ candidate) => candidate === tag) ??
+        locales.find((/** @type {string} */ candidate) => candidate === tag.split('-')[0]) ??
+        locales.find((/** @type {string} */ candidate) => candidate.split('-')[0] === tag.split('-')[0]);
       if (hit) return hit;
     }
   }
@@ -206,7 +206,7 @@ export function resolveLocale(c, l10n) {
 }
 
 /**
- * @param {import('./types').Context} c
+ * @param {import('./types').Context} context
  * @returns {string}
  */
-export const localeOf = (c) => c.get('locale') ?? 'en';
+export const localeOf = (context) => context.get('locale') ?? 'en';

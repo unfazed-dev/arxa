@@ -65,7 +65,7 @@
 /* Above the bottom nav. Scoped to compact (where the nav exists) and to an
    error being shown, so the tray's resting position is untouched elsewhere. */
 @media (max-width: 599px) {
-  #toasts:has(.toast-error) { bottom: calc(var(--nav-h, 3.4rem) + 1rem); }
+  #toasts:has(.toast-error) { bottom: calc(var(--nav-height, 3.4rem) + 1rem); }
 }
 
 /* ---------- the full-page failure ---------- */

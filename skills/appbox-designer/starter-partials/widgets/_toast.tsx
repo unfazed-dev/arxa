@@ -6,7 +6,7 @@
 //
 //   <form hx-post="/items/42/delete" hx-swap="none">…</form>
 //
-//   export const del = (c, h) => {
+//   export const del = (context, helpers) => {
 //     facade.delete(c.req.param('id'));
 //     return h.render(c, 'ui/common/widgets/_toast.tsx',
 //       { toast: { text: 'Item deleted', kind: 'success', linger: true } });

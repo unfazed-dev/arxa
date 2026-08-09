@@ -30,7 +30,7 @@
 // Usage (composition replaces {% call %}…{{ caller() }}):
 //
 //   import { ActivityFrame } from '../../common/widgets/_panel-activity.tsx';
-//   <ActivityFrame spec={{ label: 'Inspector', views: [...] }} t={t}>
+//   <ActivityFrame spec={{ label: 'Inspector', views: [...] }} translate={translate}>
 //     …markup for the active view…
 //   </ActivityFrame>
 //
@@ -51,7 +51,7 @@
 // Sibling exports: ActivityLabel · ActivityViews · ActivityTop ·
 // ActivityBottom (oob variants for fragment responses) · ActivityFrame.
 // Required l10n keys: panel.activity.views, panel.resize (only with
-// sizeHref). `t` comes from the render ctx bag ({ prefs, locale, locales, t }).
+// sizeHref). `translate` comes from the render ctx bag ({ prefs, locale, locales, translate }).
 // Fragment note: starter widgets are not views — a viewmodel can only
 // fragment-render named exports of *_view.tsx files.
 // CSS: the .panel grid + .panel-activity family in widgets.css. Recipe 19
@@ -62,7 +62,7 @@ import type { FC, Child } from 'hono/jsx';
 // file at a different tier.
 import Icon from '../../../runtime/icon.tsx';
 
-type TFn = (key: string, vars?: Record<string, unknown>) => unknown;
+type TranslateFn = (key: string, vars?: Record<string, unknown>) => unknown;
 
 interface ActivityView {
   id: string;
@@ -84,21 +84,21 @@ export const ActivityLabel: FC<{ spec: ActivitySpec }> = ({ spec }) => (
   <strong class="panel-label">{spec.label}</strong>
 );
 
-export const ActivityViews: FC<{ spec: ActivitySpec; t: TFn }> = ({ spec, t }) => (
-  <nav class="panel-views" aria-label={t('panel.activity.views') as string}>
-    {spec.views.map((v) => (
+export const ActivityViews: FC<{ spec: ActivitySpec; translate: TranslateFn }> = ({ spec, translate }) => (
+  <nav class="panel-views" aria-label={translate('panel.activity.views') as string}>
+    {spec.views.map((view) => (
       <a
-        class={`panel-views-icon${v.active ? ' is-active' : ''}`}
-        href={v.href}
-        hx-get={v.href}
+        class={`panel-views-icon${view.active ? ' is-active' : ''}`}
+        href={view.href}
+        hx-get={view.href}
         hx-target="#panel-activity-body"
         hx-swap="innerHTML"
         hx-push-url="false"
-        title={v.label}
-        aria-label={v.label}
-        key={v.id}
+        title={view.label}
+        aria-label={view.label}
+        key={view.id}
       >
-        <Icon name={v.icon} size={18} />
+        <Icon name={view.icon} size={18} />
       </a>
     ))}
   </nav>
@@ -110,19 +110,19 @@ export const ActivityTop: FC<{ spec: ActivitySpec; oob?: boolean }> = ({ spec, o
   </header>
 );
 
-export const ActivityBottom: FC<{ spec: ActivitySpec; oob?: boolean; t: TFn }> = ({ spec, oob, t }) => (
+export const ActivityBottom: FC<{ spec: ActivitySpec; oob?: boolean; translate: TranslateFn }> = ({ spec, oob, translate }) => (
   <footer class="panel-bottom" id="panel-activity-bottom" hx-swap-oob={oob ? 'outerHTML' : undefined}>
-    <ActivityViews spec={spec} t={t} />
+    <ActivityViews spec={spec} translate={translate} />
   </footer>
 );
 
 interface ActivityFrameProps {
   spec: ActivitySpec;
-  t: TFn;
+  translate: TranslateFn;
   children?: Child;
 }
 
-export const ActivityFrame: FC<ActivityFrameProps> = ({ spec, t, children }) => (
+export const ActivityFrame: FC<ActivityFrameProps> = ({ spec, translate, children }) => (
   <section
     class={`panel panel-activity${spec.panelSizePx ? '' : ` panel-size-${spec.size ?? 's'}`}`}
     id="panel-activity"
@@ -134,14 +134,14 @@ export const ActivityFrame: FC<ActivityFrameProps> = ({ spec, t, children }) => 
         data-target="panel-activity"
         data-edge="start"
         data-persist="activity"
-        title={t('panel.resize') as string}
-        aria-label={t('panel.resize') as string}
+        title={translate('panel.resize') as string}
+        aria-label={translate('panel.resize') as string}
       ></div>
     )}
     <ActivityTop spec={spec} />
     <div class="panel-body" id="panel-activity-body">
       {children}
     </div>
-    <ActivityBottom spec={spec} t={t} />
+    <ActivityBottom spec={spec} translate={translate} />
   </section>
 );

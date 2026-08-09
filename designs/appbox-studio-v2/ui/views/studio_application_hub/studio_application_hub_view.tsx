@@ -26,7 +26,7 @@
 //   height" contract in studio_dashboard_widgets.css) actually applies.
 import type { FC, Child } from 'hono/jsx';
 import Base from '../../common/base.tsx';
-import { inspectAttrs } from '../../widgets/common/studio_primitives/primitives.tsx';
+import { inspectAttributes } from '../../widgets/common/studio_primitives/primitives.tsx';
 import FooterPanel from '../../widgets/studio_application_widgets/footer_panel.tsx';
 import Desktop from './studio_application_hub_view.desktop.tsx';
 import Tablet from './studio_application_hub_view.tablet.tsx';
@@ -39,7 +39,7 @@ interface Project {
   savedLabel?: string;
 }
 
-interface Prefs {
+interface Preferences {
   theme?: string;
   accent?: string;
   font?: string;
@@ -60,7 +60,7 @@ interface FooterSpec {
 export interface HubFrameProps {
   translate: TFn;
   activeShell: string;
-  prefs?: Prefs;
+  preferences?: Preferences;
   project?: Project;
   headerExtra?: Child;
   [key: string]: unknown;
@@ -82,15 +82,15 @@ const StudioApplicationHubView: FC<StudioApplicationHubViewProps> = (props) => (
   <Base
     title={props.title ?? (props.translate('index.pageTitle') as string)}
     locale={props.locale}
-    accent={props.prefs?.accent}
-    theme={props.prefs?.theme}
-    font={props.prefs?.font}
+    accent={props.preferences?.accent}
+    theme={props.preferences?.theme}
+    font={props.preferences?.font}
     headExtra={<>{props.headExtra}</>}
   >
     <div class="rung rung--desktop"><Desktop {...props} /></div>
     <div class="rung rung--tablet"><Tablet {...props} /></div>
     <div class="rung rung--mobile"><Mobile {...props} /></div>
-    <main class={`shell-main${props.mainClass ? ` ${props.mainClass}` : ''}`} {...inspectAttrs('studio_application_hub:main', { role: 'group' })}>
+    <main class={`shell-main${props.mainClass ? ` ${props.mainClass}` : ''}`} {...inspectAttributes('studio_application_hub:main', { role: 'group' })}>
       {props.surface}
     </main>
     {props.footer ? (

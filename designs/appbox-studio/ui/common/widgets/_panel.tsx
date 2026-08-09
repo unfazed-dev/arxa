@@ -32,21 +32,21 @@ import { inspectAttrs } from './primitives.tsx';
 type TFn = (key: string, vars?: Record<string, unknown>) => unknown;
 
 // --- Section option bag (the `o` parameter shared by all sections) ---
-//   cls    extra classes alongside the canonical section class
+//   className    extra classes alongside the canonical section class
 //   attrs  raw attributes (never an id — see o.id)
 //   id     REPLACES the derived id; passing an id through attrs would emit a
 //          second id attribute and the browser keeps the first, silently
 //          ignoring yours.
 //   oob    hx-swap-oob="outerHTML" for a standalone re-render
 interface SectionOpts {
-  cls?: string;
+  className?: string;
   attrs?: Record<string, string | boolean>;
   id?: string;
   oob?: boolean;
 }
 
 interface BodyOpts {
-  cls?: string;
+  className?: string;
   attrs?: Record<string, string | boolean>;
   id?: string;
   tag?: string;
@@ -144,13 +144,13 @@ export function Panel(props: PanelProps) {
       <Top
         pid={pid}
         content={props.top}
-        o={{ cls: props.topClass, attrs: props.topAttrs, id: props.topId }}
+        o={{ className: props.topClass, attrs: props.topAttrs, id: props.topId }}
       />
       <SideStart
         pid={pid}
         content={props.sideStart}
         o={{
-          cls: props.sideStartClass,
+          className: props.sideStartClass,
           attrs: props.sideStartAttrs,
           id: props.sideStartId,
         }}
@@ -166,7 +166,7 @@ export function Panel(props: PanelProps) {
         pid={pid}
         content={props.sideEnd}
         o={{
-          cls: props.sideEndClass,
+          className: props.sideEndClass,
           attrs: props.sideEndAttrs,
           id: props.sideEndId,
         }}
@@ -175,7 +175,7 @@ export function Panel(props: PanelProps) {
         pid={pid}
         content={props.bottom}
         o={{
-          cls: props.bottomClass,
+          className: props.bottomClass,
           attrs: props.bottomAttrs,
           id: props.bottomId,
         }}
@@ -205,7 +205,7 @@ export function Top(props: SectionProps) {
   if (body == null) return null;
   return (
     <header
-      class={`panel-top${o?.cls ? ` ${o.cls}` : ''}`}
+      class={`panel-top${o?.className ? ` ${o.className}` : ''}`}
       id={o?.id ?? `${pid}-top`}
       hx-swap-oob={props.oob || o?.oob ? 'outerHTML' : undefined}
       {...(o?.attrs ?? {})}
@@ -221,7 +221,7 @@ export function Bottom(props: SectionProps) {
   if (body == null) return null;
   return (
     <footer
-      class={`panel-bottom${o?.cls ? ` ${o.cls}` : ''}`}
+      class={`panel-bottom${o?.className ? ` ${o.className}` : ''}`}
       id={o?.id ?? `${pid}-bottom`}
       hx-swap-oob={props.oob || o?.oob ? 'outerHTML' : undefined}
       {...(o?.attrs ?? {})}
@@ -239,7 +239,7 @@ export function SideStart(props: SectionProps) {
   if (body == null) return null;
   return (
     <aside
-      class={`panel-side-start${o?.cls ? ` ${o.cls}` : ''}`}
+      class={`panel-side-start${o?.className ? ` ${o.className}` : ''}`}
       id={o?.id ?? `${pid}-side-start`}
       hx-swap-oob={props.oob || o?.oob ? 'outerHTML' : undefined}
       {...(o?.attrs ?? {})}
@@ -255,7 +255,7 @@ export function SideEnd(props: SectionProps) {
   if (body == null) return null;
   return (
     <aside
-      class={`panel-side-end${o?.cls ? ` ${o.cls}` : ''}`}
+      class={`panel-side-end${o?.className ? ` ${o.className}` : ''}`}
       id={o?.id ?? `${pid}-side-end`}
       hx-swap-oob={props.oob || o?.oob ? 'outerHTML' : undefined}
       {...(o?.attrs ?? {})}
@@ -279,7 +279,7 @@ interface BodyOobProps {
   children?: Child;
   // Top-level shortcuts (used when o is not provided — e.g. timeline.tsx)
   tag?: string;
-  cls?: string;
+  className?: string;
   id?: string;
   attrs?: string | Record<string, string | boolean>;
 }
@@ -287,13 +287,13 @@ interface BodyOobProps {
 export function BodyOob(props: BodyOobProps) {
   const { pid, content, o } = props;
   const tag = o?.tag ?? props.tag;
-  const cls = o?.cls ?? props.cls;
+  const className = o?.className ?? props.className;
   const id = o?.id ?? props.id;
   const attrs = o?.attrs ?? props.attrs;
   const Tag = (tag ?? 'div') as any;
   return (
     <Tag
-      class={`panel-body${cls ? ` ${cls}` : ''}`}
+      class={`panel-body${className ? ` ${className}` : ''}`}
       id={id ?? `${pid}-body`}
       hx-swap-oob="outerHTML"
       {...((attrs ?? {}) as any)}

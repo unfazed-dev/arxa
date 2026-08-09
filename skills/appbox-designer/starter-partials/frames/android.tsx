@@ -143,15 +143,15 @@ export const AndroidKeyboard: FC<{ frame?: AndroidFrameOpts }> = () => (
     <div class="android-kb__navbar-spacer"></div>
     <div class="android-kb__rows">
       <div class="android-kb__row">
-        {KB_ROW1.map((k) => <span class="android-kb__key" key={k}>{k}</span>)}
+        {KB_ROW1.map((keyLabel) => <span class="android-kb__key" key={keyLabel}>{keyLabel}</span>)}
       </div>
       <div class="android-kb__row android-kb__row--inset">
-        {KB_ROW2.map((k) => <span class="android-kb__key" key={k}>{k}</span>)}
+        {KB_ROW2.map((keyLabel) => <span class="android-kb__key" key={keyLabel}>{keyLabel}</span>)}
       </div>
       <div class="android-kb__row">
         <span class="android-kb__key android-kb__key--variant"></span>
         <span class="android-kb__row3">
-          {KB_ROW3.map((k) => <span class="android-kb__key" key={k}>{k}</span>)}
+          {KB_ROW3.map((keyLabel) => <span class="android-kb__key" key={keyLabel}>{keyLabel}</span>)}
         </span>
         <span class="android-kb__key android-kb__key--variant"></span>
       </div>

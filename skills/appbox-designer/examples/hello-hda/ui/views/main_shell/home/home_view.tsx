@@ -6,7 +6,7 @@ import ListRow from './widgets/list_row.tsx';
 import FormField from './widgets/form_field.tsx';
 import Icon from '../../../../runtime/icon.tsx';
 
-type TFn = (key: string, vars?: Record<string, unknown>) => unknown;
+type TranslateFn = (key: string, vars?: Record<string, unknown>) => unknown;
 
 interface NavItem {
   id: string;
@@ -30,7 +30,7 @@ interface ListRowData {
 interface HomePageProps {
   locale?: string;
   locales?: string[];
-  t: TFn;
+  translate: TranslateFn;
   rail?: unknown;
   rows?: ListRowData[];
   demoCount?: number;
@@ -38,33 +38,33 @@ interface HomePageProps {
   [key: string]: unknown;
 }
 
-const HomePage: FC<HomePageProps> = ({ t, locale, locales = [], rail, rows = [], demoCount, prefs }) => {
+const HomePage: FC<HomePageProps> = ({ translate, locale, locales = [], rail, rows = [], demoCount, prefs }) => {
   const accent = prefs?.accent ?? 'blueviolet';
   return (
     <MainShell
-      title={t('home.pageTitle') as string}
+      title={translate('home.pageTitle') as string}
       locale={locale}
       accent={accent}
       locales={locales}
-      t={t}
+      translate={translate}
       rail={rail as { brand?: string; drawer?: boolean; items: NavItem[] }}
     >
-      <h1>{t('home.title') as string}</h1>
-      <p>{t('home.tagline') as string}</p>
+      <h1>{translate('home.title') as string}</h1>
+      <p>{translate('home.tagline') as string}</p>
 
       <section class="list-section">
-        <h2 class="list-section__header">{t('home.greetingsHeader') as string}</h2>
+        <h2 class="list-section__header">{translate('home.greetingsHeader') as string}</h2>
         <div class="list-section__card">
           {rows.map((row) => (
             <ListRow row={row} />
           ))}
         </div>
       </section>
-      <p class="muted">{t('itemCount', { count: demoCount }) as string}</p>
+      <p class="muted">{translate('itemCount', { count: demoCount }) as string}</p>
 
       <p>
         <a class="btn" href="/timer">
-          {t('home.toTimer') as string} <Icon name="arrow-right" size={16} />
+          {translate('home.toTimer') as string} <Icon name="arrow-right" size={16} />
         </a>
       </p>
 
@@ -72,21 +72,21 @@ const HomePage: FC<HomePageProps> = ({ t, locale, locales = [], rail, rows = [],
         <FormField
           field={{
             name: 'accent',
-            label: t('accent.label') as string,
+            label: translate('accent.label') as string,
             value: accent,
             options: [
-              { value: 'blueviolet', label: t('accent.option.iris') as string },
-              { value: 'teal', label: t('accent.option.lagoon') as string },
-              { value: 'tomato', label: t('accent.option.signal') as string },
+              { value: 'blueviolet', label: translate('accent.option.iris') as string },
+              { value: 'teal', label: translate('accent.option.lagoon') as string },
+              { value: 'tomato', label: translate('accent.option.signal') as string },
             ],
           }}
         />
         <button class="btn" type="submit">
-          {t('accent.apply') as string}
+          {translate('accent.apply') as string}
         </button>
       </form>
       <p>
-        {t('accent.current') as string}: <span class="swatch"></span> <code>{accent}</code>
+        {translate('accent.current') as string}: <span class="swatch"></span> <code>{accent}</code>
       </p>
 
       <div hx-island="toggle" hx-island-when="interaction">

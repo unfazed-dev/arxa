@@ -5,7 +5,7 @@
    are the class boundaries, never freeze widths). All open/close is <details>.
    Tokens, motion vocabulary and keyframes (ab-disclose) come from app.css. */
 
-#app { --tabbar-h: 3.6rem; }
+#app { --tabbar-height: 3.6rem; }
 
 /* ---------- header panel ---------- */
 .panel-header {
@@ -15,7 +15,7 @@
      makes flex SHRINK the furnishings strip and the brand renders sliced. Furnishings
      never shrinks; the main region scrolls instead (.shell-main below). */
   flex: none;
-  height: var(--nav-h);
+  height: var(--nav-height);
   /* --panel-bg, not `background`: .panel (panels.css) reads the variable, so
      this fill survives regardless of stylesheet order. */
   --panel-bg: color-mix(in srgb, var(--bg) 82%, transparent);
@@ -114,7 +114,7 @@
 /* ---------- compact: bottom nav ---------- */
 .tabbar {
   position: fixed; left: 0; right: 0; bottom: 0; z-index: 11;
-  height: var(--tabbar-h);
+  height: var(--tabbar-height);
   display: none; align-items: stretch; justify-content: space-around;
   border-top: 1px solid var(--border);
   background: color-mix(in srgb, var(--bg) 88%, transparent);
@@ -182,7 +182,7 @@
 }
 #panel-footer:empty { display: none; }
 .timeline {
-  height: var(--tl-h); margin: 0; padding: 0 1.1rem; list-style: none;
+  height: var(--timeline-height); margin: 0; padding: 0 1.1rem; list-style: none;
   display: flex; align-items: center;
   overflow-x: auto;
 }
@@ -221,9 +221,9 @@
   .shell-links, .panel-header .channel, .panel-header form { display: none; }
   .shell-project-saved { display: none; }
   .tabbar { display: flex; }
-  .fab-menu { display: flex; bottom: calc(var(--tabbar-h) + 1rem); }
+  .fab-menu { display: flex; bottom: calc(var(--tabbar-height) + 1rem); }
   #panel-footer { display: none; }
-  .shell-main { padding-bottom: calc(var(--tabbar-h) + 3rem); }
+  .shell-main { padding-bottom: calc(var(--tabbar-height) + 3rem); }
 }
 /* medium: same header panel, railbar + FAB, no tabbar/footer panel */
 @media (min-width: 600px) and (max-width: 839px) {

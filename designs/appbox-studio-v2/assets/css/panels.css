@@ -9,7 +9,7 @@
    is required.
 
    Width is SERVER state, not a CSS drag: three steps (s = default min,
-   m ≈ 1.25×, l ≈ 1.5×) rendered as panel-size-* classes from the shell's
+   medium ≈ 1.25×, large ≈ 1.5×) rendered as panel-size-* classes from the shell's
    session — so the width persists across swaps, navigations and reloads. A
    CSS resize handle can't persist without client JS, which the artifact
    contract forbids. */
@@ -31,7 +31,7 @@
      sat in drag.js. Neither number was chosen. This one is.
      Killed below 840px, where a single panel is full-width — see the media
      query further down. */
-  --panel-max-w: 500px;
+  --panel-max-width: 500px;
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
   grid-template-rows: auto minmax(0, 1fr) auto;
@@ -91,7 +91,7 @@
 /* CLIPPING MUST BE OFF for these two. .panel sets overflow:hidden so a tall
    panel's sections scroll inside the card instead of spilling past its
    rounded corners — correct there, fatal here: the header is exactly
-   var(--nav-h) tall and hosts two <details> menus (the drawer and the
+   var(--nav-height) tall and hosts two <details> menus (the drawer and the
    overflow), which open DOWNWARD out of that 3.4rem box. Inherit the clip and
    both menus are invisible — and only at ≤839px, where they're the entire
    navigation, so a desktop render looks perfectly fine while small screens
@@ -114,9 +114,9 @@
 .panels {
   display: flex; gap: 1rem; padding: 1rem;
   /* The row takes what the header and the footer leave, and NOT
-     `calc(100dvh - var(--nav-h) - var(--tl-h))`: that made this element's
+     `calc(100dvh - var(--nav-height) - var(--timeline-height))`: that made this element's
      height depend on two tokens describing siblings it does not own, and they
-     were already out by 1px — `--tl-h` measures .timeline, the strip, while
+     were already out by 1px — `--timeline-height` measures .timeline, the strip, while
      the footer PANEL wrapping it adds a border. The column summed to
      100.97dvh and the app scrolled by a pixel. Flex asks the layout instead of
      re-deriving it, so a furnishings change can never desync this again.
@@ -220,24 +220,24 @@ video.mp-media { width: 100%; background: #000; }
 }
 
 .panel-activity {
-  --panel-w: 340px;                       /* s: default = minimum width */
-  width: var(--panel-w);
-  min-width: var(--panel-w);
+  --panel-width: 340px;                       /* s: default = minimum width */
+  width: var(--panel-width);
+  min-width: var(--panel-width);
   /* The drag ceiling, stated HERE because CSS owns a panel's width limits and
      drag.js reads them off the computed style. It used to live as a constant
      in the island instead, where it could not be reconciled with the floor
      three lines up — and wasn't: the rail counted down to 200px against a
      340px min-width. A limit the layout enforces belongs with the layout. */
-  max-width: var(--panel-max-w);
+  max-width: var(--panel-max-width);
   transition: width .18s ease;
 }
-.panel-size-m { --panel-w: 425px; }       /* ≈1.25× */
-/* The largest step IS the ceiling, and must never exceed it: --panel-w also
+.panel-size-medium { --panel-width: 425px; }       /* ≈1.25× */
+/* The largest step IS the ceiling, and must never exceed it: --panel-width also
    feeds min-width above, and a min-width beats a max-width in the cascade —
-   so a step wider than --panel-max-w would not be clamped, it would silently
+   so a step wider than --panel-max-width would not be clamped, it would silently
    win and the cap would be a lie at exactly one size. Was 510px, which is
    why this is spelled out rather than left as a number to keep in step. */
-.panel-size-l { --panel-w: var(--panel-max-w); }
+.panel-size-large { --panel-width: var(--panel-max-width); }
 
 /* The active view's label. Lives in the panel's top section; the resize
    affordance is the panel's own edge, not something the top section hosts. */
@@ -370,7 +370,7 @@ video.mp-media { width: 100%; background: #000; }
 .panels-scaffold > .panel-bar { grid-area: header; }
 
 /* Role → area. The two side panels drop the width/max-width the flex row
-   gives them: in a grid the COLUMN owns the width, and leaving `--panel-max-w`
+   gives them: in a grid the COLUMN owns the width, and leaving `--panel-max-width`
    in play would cap a track that is already bounded by minmax(). */
 .panels-scaffold > .panel-composer {
   grid-area: compose; width: auto; min-width: 0; max-width: none;

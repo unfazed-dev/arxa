@@ -16,7 +16,7 @@
 // the active marker moves — the bar re-renders out-of-band because the
 // endpoint sets tabs.oob = true in the fragment props:
 //
-//   export const tab = (c, h) =>
+//   export const tab = (context, helpers) =>
 //     h.render(c, `${VIEW}#tab_panel`, {
 //       tabs: { ...tabsFor(c.req.query('tab')), oob: true },
 //       panel: facade.tabPanel(c.req.query('tab')),

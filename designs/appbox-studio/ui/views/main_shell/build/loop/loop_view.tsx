@@ -183,9 +183,9 @@ export function MsgCard({ m, t }: MsgCardProps) {
       </div>
     );
   }
-  const cls = `msg msg-agent${m.active ? ' is-active' : ''}${m.tone ? ` msg-tone-${m.tone}` : ''}`;
+  const className = `msg msg-agent${m.active ? ' is-active' : ''}${m.tone ? ` msg-tone-${m.tone}` : ''}`;
   return (
-    <div class={cls}>
+    <div class={className}>
       <header class="msg-meta" {...inspectAttrs('loop:msg-meta', { role: 'nav' })}>
         <TypeBadge type={m.card!.type} label={m.card!.label} />
         {m.card!.state && <StatusPill state={m.card!.state} size="sm" t={t} />}

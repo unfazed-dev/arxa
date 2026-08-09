@@ -14,7 +14,7 @@ interface Project {
   savedLabel?: string;
 }
 
-interface Prefs {
+interface Preferences {
   theme?: string;
   accent?: string;
   font?: string;
@@ -26,7 +26,7 @@ interface StudioDashboardShellViewProps {
   title?: string;
   locale?: string;
   activeShell: string;
-  prefs?: Prefs;
+  preferences?: Preferences;
   project?: Project;
   // block slots filled by the hosted surface
   surface?: Child;

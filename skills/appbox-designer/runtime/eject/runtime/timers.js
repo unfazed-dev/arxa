@@ -4,13 +4,13 @@
 //
 // Keyed by `${sid}:${timerId}` so concurrent sessions don't collide. The sid
 // is carried via AsyncLocalStorage (set by the route-dispatch wrapper in
-// router.mjs), so the frozen `h.timers.start(id, seconds)` API needs no `c`.
+// router.mjs), so the frozen `helpers.timers.start(id, seconds)` API needs no `context`.
 import { AsyncLocalStorage } from 'node:async_hooks';
 
 const store = new Map(); // `${sid}:${timerId}` → { deadline }
 const sidALS = new AsyncLocalStorage();
 
-// router.mjs wraps each handler call: runForSession(sid, () => handler(c, h)).
+// router.mjs wraps each handler call: runForSession(sid, () => handler(context, helpers)).
 /**
  * @param {string} sid
  * @param {() => unknown} fn
@@ -30,17 +30,17 @@ export const timers = {
   },
   /** @param {string} id @param {number} seconds */
   extend(id, seconds) {
-    const t = store.get(scopedKey(id));
-    if (t) t.deadline += seconds * 1000;
+    const timer = store.get(scopedKey(id));
+    if (timer) timer.deadline += seconds * 1000;
   },
   /**
    * @param {string} id
    * @returns {number | null}
    */
   remaining(id) {
-    const t = store.get(scopedKey(id));
-    if (!t) return null;
-    return Math.max(0, Math.ceil((t.deadline - Date.now()) / 1000));
+    const timer = store.get(scopedKey(id));
+    if (!timer) return null;
+    return Math.max(0, Math.ceil((timer.deadline - Date.now()) / 1000));
   },
   /** @param {string} id */
   stop(id) {

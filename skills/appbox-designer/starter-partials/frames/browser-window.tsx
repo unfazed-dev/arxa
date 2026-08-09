@@ -84,7 +84,7 @@ export const BrowserTabBar: FC<{ frame?: BrowserFrameOpts }> = ({ frame: f = {} 
     <div class="browser-tabbar">
       <BrowserTrafficLights />
       <div class="browser-tabbar__tabs">
-        {tabs.map((t, i) => <BrowserTab tab={t} key={i} />)}
+        {tabs.map((tab, tabIndex) => <BrowserTab tab={tab} key={tabIndex} />)}
       </div>
     </div>
   );

@@ -36,27 +36,27 @@ export async function createArtifactApp(artifactDir, { staticSetup = null, prelo
   const helpers = createHelpers(/** @type {string} */ (source), l10n);
 
   app.use('*', sessionMiddleware);
-  app.use('*', async (c, next) => {
-    c.set('locale', resolveLocale(c, l10n));
+  app.use('*', async (context, next) => {
+    context.set('locale', resolveLocale(context, l10n));
     await next();
-    c.header('Vary', 'HX-Request', { append: true });
-    if ((c.res.headers.get('content-type') ?? '').includes('text/html')) {
-      c.header('Vary', 'Accept-Language', { append: true });
+    context.header('Vary', 'HX-Request', { append: true });
+    if ((context.res.headers.get('content-type') ?? '').includes('text/html')) {
+      context.header('Vary', 'Accept-Language', { append: true });
     }
   });
 
   // Built-in locale switch (ADR-0004 prefs recipe).
-  app.on(['GET', 'POST'], '/prefs/lang', async (c) => {
+  app.on(['GET', 'POST'], '/prefs/lang', async (context) => {
     const lang =
-      c.req.method === 'POST' ? String((await helpers.form(c)).lang ?? '') : c.req.query('lang');
-    if (l10n.locales.includes(lang ?? '')) helpers.setPrefs(c, { lang });
-    if (c.req.header('HX-Request')) return helpers.refresh(c);
+      context.req.method === 'POST' ? String((await helpers.form(context)).lang ?? '') : context.req.query('lang');
+    if (l10n.locales.includes(lang ?? '')) helpers.setPrefs(context, { lang });
+    if (context.req.header('HX-Request')) return helpers.refresh(context);
     let back = '/';
     try {
-      const ref = c.req.header('Referer');
-      if (ref) { const u = new URL(ref); back = u.pathname + u.search; }
+      const ref = context.req.header('Referer');
+      if (ref) { const refUrl = new URL(ref); back = refUrl.pathname + refUrl.search; }
     } catch { /* unparseable Referer */ }
-    return c.redirect(back, 302);
+    return context.redirect(back, 302);
   });
 
   // Target-specific static serving (vendor + assets). null on Workers where
@@ -69,15 +69,15 @@ export async function createArtifactApp(artifactDir, { staticSetup = null, prelo
   const routes = preloadedRoutes
     ?? (await import(/** @type {string} */ (pathToFileURL(path.join(artifactDir, 'app.routes.js')).href))).default;
   for (const [method, routePath, handler] of routes) {
-    app.on(method, routePath, /** @param {import('./types').Context} c */ (c) =>
-      /** @type {Response} */ (runForSession(c.get('kdh_session')?.id, () => handler(c, helpers))),
+    app.on(method, routePath, /** @param {import('./types').Context} context */ (context) =>
+      /** @type {Response} */ (runForSession(context.get('kdh_session')?.id, () => handler(context, helpers))),
     );
   }
 
-  app.notFound(/** @param {import('./types').Context} c */ (c) => c.text(`404 — no route for ${c.req.method} ${c.req.path}`, 404));
-  app.onError((err, c) => {
+  app.notFound(/** @param {import('./types').Context} context */ (context) => context.text(`404 — no route for ${context.req.method} ${context.req.path}`, 404));
+  app.onError((err, context) => {
     console.error(err);
-    return c.text(`500 — handler threw: ${err?.message ?? err}`, 500);
+    return context.text(`500 — handler threw: ${err?.message ?? err}`, 500);
   });
 
   return app;

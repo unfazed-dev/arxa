@@ -17,8 +17,8 @@
 // no auto-accept.
 //
 // Leveled fixture strings pass through jargon.pick; static leveled copy
-// lives in l10n/app_*.arb and comes in as the runtime translator `t`
-// (h.t(c) — level and locale already bound). The locale picks the
+// lives in l10n/app_*.arb and comes in as the runtime translator `translate`
+// (helpers.translate(context) — level and locale already bound). The locale picks the
 // per-locale fixture, en fallback.
 import * as repo from '../repositories/intake_repository.js';
 import * as screens from '../repositories/screens_repository.js';
@@ -60,12 +60,12 @@ const approvalFor = (sd, L) => {
 };
 
 // ---------- the interview → question carousel (main-panel typeform) ----------
-function carouselFor(st, t, L) {
+function carouselFor(st, translate, L) {
   const bank = repo.questionBanks(L)[st.depth] ?? [];
   const firstOpen = bank.find((q) => !st.answers[q.id]);
   return {
     bank: st.depth,
-    bankLabel: t('intake.bank.' + st.depth),
+    bankLabel: translate('intake.bank.' + st.depth),
     editing: st.editing ?? null,
     questions: bank.map((q) => {
       const a = st.answers[q.id];
@@ -208,57 +208,57 @@ function stepContext(sd, step, L) {
     done,
     complete: items.length > 0 && done === items.length,
     nextHref: next ? BASE[next] : null,
-    nextLabel: next ? 'screen.label.intake.' + next : null, // view feeds it through t()
+    nextLabel: next ? 'screen.label.intake.' + next : null, // view feeds it through translate()
     position: idx + 1,
   };
 }
 
 // ---------- chat (the rail, always in step context) ----------
-function interviewChat(sd, t, L) {
+function interviewChat(sd, translate, L) {
   const st = interview(sd, L);
   const msgs = [];
   msgs.push({
-    id: 'w', from: 'agent', text: t('welcome'),
-    quickReplies: st.depth ? null : ['simple', 'normal', 'advanced'].map((d) => ({ label: t('intake.bank.' + d), action: '/intake/depth', name: 'depth', value: d })),
+    id: 'w', from: 'agent', text: translate('welcome'),
+    quickReplies: st.depth ? null : ['simple', 'normal', 'advanced'].map((d) => ({ label: translate('intake.bank.' + d), action: '/intake/depth', name: 'depth', value: d })),
   });
   if (!st.depth) return msgs;
-  msgs.push({ id: 'u-depth', from: 'user', text: t('intake.depthEcho.' + st.depth) });
-  msgs.push({ id: 'guide', from: 'agent', text: t('intake.chat.guideInterview') });
+  msgs.push({ id: 'u-depth', from: 'user', text: translate('intake.depthEcho.' + st.depth) });
+  msgs.push({ id: 'guide', from: 'agent', text: translate('intake.chat.guideInterview') });
   if (st.generated) {
-    msgs.push({ id: 'gen', from: 'agent', text: t('intake.chat.interviewDone'), nextHref: BASE.personas, nextLabel: t('intake.cta.nextPersonas') });
+    msgs.push({ id: 'gen', from: 'agent', text: translate('intake.chat.interviewDone'), nextHref: BASE.personas, nextLabel: translate('intake.cta.nextPersonas') });
   }
   return msgs;
 }
 
-function stepChat(sd, surface, t, L) {
+function stepChat(sd, surface, translate, L) {
   const sc = stepContext(sd, surface, L);
-  const msgs = [{ id: 'intro', from: 'agent', text: t('intake.chat.intro.' + surface) }];
+  const msgs = [{ id: 'intro', from: 'agent', text: translate('intake.chat.intro.' + surface) }];
   if (sc.complete) {
     msgs.push({
-      id: 'done', from: 'agent', text: t('intake.chat.stepDone', { done: sc.done, total: sc.total }),
-      nextHref: sc.nextHref, nextLabel: sc.nextLabel ? t(sc.nextLabel) : null,
+      id: 'done', from: 'agent', text: translate('intake.chat.stepDone', { done: sc.done, total: sc.total }),
+      nextHref: sc.nextHref, nextLabel: sc.nextLabel ? translate(sc.nextLabel) : null,
     });
   } else {
-    msgs.push({ id: 'progress', from: 'agent', text: t('intake.chat.stepProgress', { done: sc.done, total: sc.total }) });
+    msgs.push({ id: 'progress', from: 'agent', text: translate('intake.chat.stepProgress', { done: sc.done, total: sc.total }) });
   }
   return msgs;
 }
 
-function mappingChat(sd, t, L) {
+function mappingChat(sd, translate, L) {
   const st = interview(sd, L);
-  const msgs = [{ id: 'intro', from: 'agent', text: t('intake.chat.intro.mapping') }];
+  const msgs = [{ id: 'intro', from: 'agent', text: translate('intake.chat.intro.mapping') }];
   if (st.generated) {
     const stale = isStale(st);
     msgs.push({
-      id: 'gen', from: 'agent', text: t('generated'),
-      artifactRef: 'map/full', artifactLabel: t('intake.cta.openStoryMap'),
-      nextHref: BASE.direction, nextLabel: t('intake.cta.nextDirection'),
+      id: 'gen', from: 'agent', text: translate('generated'),
+      artifactRef: 'map/full', artifactLabel: translate('intake.cta.openStoryMap'),
+      nextHref: BASE.direction, nextLabel: translate('intake.cta.nextDirection'),
       quickReplies: !st.approved || stale
-        ? [{ label: stale ? t('intake.cta.reapproveMap', { version: st.currentVersion }) : t('intake.cta.approveMap'), action: '/intake/map/approve', name: 'go', value: 'approve' }]
+        ? [{ label: stale ? translate('intake.cta.reapproveMap', { version: st.currentVersion }) : translate('intake.cta.approveMap'), action: '/intake/map/approve', name: 'go', value: 'approve' }]
         : null,
     });
-    if (st.approved && !stale) msgs.push({ id: 'ok', from: 'agent', text: t('approved'), nextHref: BASE.direction, nextLabel: t('intake.cta.nextDirection') });
-    if (stale) msgs.push({ id: 'stale', from: 'agent', text: t('stale') });
+    if (st.approved && !stale) msgs.push({ id: 'ok', from: 'agent', text: translate('approved'), nextHref: BASE.direction, nextLabel: translate('intake.cta.nextDirection') });
+    if (stale) msgs.push({ id: 'stale', from: 'agent', text: translate('stale') });
   }
   return msgs;
 }
@@ -270,29 +270,29 @@ function extrasFor(sd, surface, lv) {
   }));
 }
 
-function chatFor(sd, surface, lv, t, L) {
+function chatFor(sd, surface, lv, translate, L) {
   const base = {
-    interview: () => interviewChat(sd, t, L),
-    mapping: () => mappingChat(sd, t, L),
+    interview: () => interviewChat(sd, translate, L),
+    mapping: () => mappingChat(sd, translate, L),
     brief: () => [{
-      id: 'intro', from: 'agent', text: t('chatIntroBrief'),
-      artifactRef: 'doc/full', artifactLabel: t('intake.cta.openBriefStage'),
-      ...approvalChatBits(sd, t, L),
+      id: 'intro', from: 'agent', text: translate('chatIntroBrief'),
+      artifactRef: 'doc/full', artifactLabel: translate('intake.cta.openBriefStage'),
+      ...approvalChatBits(sd, translate, L),
     }],
-    moodboard: () => [{ id: 'intro', from: 'agent', text: t('chatIntroMoodboard'), artifactRef: 'gallery/all', artifactLabel: t('intake.cta.openGalleryStage') }],
+    moodboard: () => [{ id: 'intro', from: 'agent', text: translate('chatIntroMoodboard'), artifactRef: 'gallery/all', artifactLabel: translate('intake.cta.openGalleryStage') }],
   }[surface];
-  const msgs = base ? base() : stepChat(sd, surface, t, L);
+  const msgs = base ? base() : stepChat(sd, surface, translate, L);
   return [...msgs, ...extrasFor(sd, surface, lv)];
 }
 
 // The brief carries the approval gate: the approve quick-reply rides its intro.
-function approvalChatBits(sd, t, L) {
+function approvalChatBits(sd, translate, L) {
   const st = interview(sd, L);
   if (!st.generated) return {};
   const stale = isStale(st);
-  if (st.approved && !stale) return { nextHref: '/design', nextLabel: t('intake.cta.openDesignShell') };
+  if (st.approved && !stale) return { nextHref: '/design', nextLabel: translate('intake.cta.openDesignShell') };
   return {
-    quickReplies: [{ label: stale ? t('intake.cta.reapproveMap', { version: st.currentVersion }) : t('intake.cta.approveMap'), action: '/intake/brief/approve', name: 'go', value: 'approve' }],
+    quickReplies: [{ label: stale ? translate('intake.cta.reapproveMap', { version: st.currentVersion }) : translate('intake.cta.approveMap'), action: '/intake/brief/approve', name: 'go', value: 'approve' }],
   };
 }
 
@@ -323,22 +323,22 @@ const ARTIFACT_FILE = {
 // steps that produce it. Never a placeholder, never the studio's copy of the
 // same document — a reader must be able to tell "this project has no moodboard"
 // from "here is a moodboard", and a fallback makes those two look identical.
-function artifactMissing(what, t, ref) {
+function artifactMissing(what, translate, ref) {
   const project = proj.currentName();
   const file = ARTIFACT_FILE[what];
-  const base = { kind: 'missing', what, ref, file, tone: 'empty', badge: t('intake.missing.badge'), howLabel: t('intake.missing.howLabel') };
+  const base = { kind: 'missing', what, ref, file, tone: 'empty', badge: translate('intake.missing.badge'), howLabel: translate('intake.missing.howLabel') };
   // No project overlaid at all (artifact-only serving) is a different fact
   // from "this project has not run the story-mapper", and saying the second
   // when the first is true would send the reader after the wrong command.
   if (!project) {
-    return { ...base, headline: t('intake.missing.noProject.headline'), lede: t('intake.missing.noProject.lede'), steps: [t('intake.missing.step.open')] };
+    return { ...base, headline: translate('intake.missing.noProject.headline'), lede: translate('intake.missing.noProject.lede'), steps: [translate('intake.missing.step.open')] };
   }
-  const artifact = t('intake.missing.name.' + what);
+  const artifact = translate('intake.missing.name.' + what);
   return {
     ...base,
-    headline: t('intake.missing.headline', { artifact, project }),
-    lede: t('intake.missing.lede', { artifact, file }),
-    steps: [t('intake.missing.step.' + what), t('intake.missing.stepEmit', { project })],
+    headline: translate('intake.missing.headline', { artifact, project }),
+    lede: translate('intake.missing.lede', { artifact, file }),
+    steps: [translate('intake.missing.step.' + what), translate('intake.missing.stepEmit', { project })],
   };
 }
 
@@ -349,7 +349,7 @@ function artifactMissing(what, t, ref) {
 // reviewer marking a story done) and `mergeStoryMap` carries them across each
 // re-emit, so the map and its progress are one document, never two that can
 // drift apart.
-function mapLanes(map, t) {
+function mapLanes(map, translate) {
   const statuses = map.statuses ?? {};
   const withStatus = (s) => ({ ...s, status: statuses[s.id] ?? 'pending' });
   const rollup = (stories) => ({
@@ -382,7 +382,7 @@ function mapLanes(map, t) {
   // project with epics but no declared releases would render as a blank map
   // that reads like a rendering failure. So it gets a lane of its own.
   const declared = new Set(releases.map((r) => r.name));
-  const rest = laneFor({ name: t('map.unassignedLane'), description: t('map.unassignedLaneDesc') }, (s) => !declared.has(s.release));
+  const rest = laneFor({ name: translate('map.unassignedLane'), description: translate('map.unassignedLaneDesc') }, (s) => !declared.has(s.release));
   if (rest.epics.length) lanes.push(rest);
   return lanes;
 }
@@ -411,13 +411,13 @@ function shotAt(mb, id) {
   return null;
 }
 
-function resolveArtifact(surface, ref, t, L) {
+function resolveArtifact(surface, ref, translate, L) {
   const [kind, id] = ref.split('/');
   if (surface === 'mapping') {
     const map = proj.storyMap();
     // No file, or a file with no epics, is the same fact to a reader: this
     // project has no story map. One branch, one message.
-    if (!map?.epics?.length) return artifactMissing('map', t, ref);
+    if (!map?.epics?.length) return artifactMissing('map', translate, ref);
     if (kind === 'story') {
       const hit = storyAt(map, id);
       if (hit) {
@@ -436,15 +436,15 @@ function resolveArtifact(surface, ref, t, L) {
     // this surface has, so the catalog strings now take the project's own
     // counts. The numbers are READ from `map.counts`, which the emitter
     // totalled; nothing is re-counted here.
-    const c = map.counts ?? {};
+    const context = map.counts ?? {};
     const releases = map.releases ?? [];
     const relVars = { count: String(releases.length), names: releases.map((r) => r.name).join(' · ') };
-    const mapVars = { stories: String(c.stories ?? 0), epics: String(c.epics ?? 0), features: String(c.features ?? 0) };
-    const priVars = { must: String(c.must ?? 0), should: String(c.should ?? 0), could: String(c.could ?? 0) };
-    const head = id === 'priorities' ? [t('priHeadline', priVars), t('priLede', priVars)]
-      : id === 'releases' ? [t('relHeadline', relVars), t('relLede', relVars)]
-      : [t('mapHeadline'), t('mapLede', mapVars)];
-    return { kind: 'map', variant: id || 'full', headline: head[0], lede: head[1], lanes: mapLanes(map, t), counts: c, ref: `map/${id || 'full'}` };
+    const mapVars = { stories: String(context.stories ?? 0), epics: String(context.epics ?? 0), features: String(context.features ?? 0) };
+    const priVars = { must: String(context.must ?? 0), should: String(context.should ?? 0), could: String(context.could ?? 0) };
+    const head = id === 'priorities' ? [translate('priHeadline', priVars), translate('priLede', priVars)]
+      : id === 'releases' ? [translate('relHeadline', relVars), translate('relLede', relVars)]
+      : [translate('mapHeadline'), translate('mapLede', mapVars)];
+    return { kind: 'map', variant: id || 'full', headline: head[0], lede: head[1], lanes: mapLanes(map, translate), counts: context, ref: `map/${id || 'full'}` };
   }
   if (surface === 'brief') {
     // The project's surface inventory IS its screen registry — the same list
@@ -453,11 +453,11 @@ function resolveArtifact(surface, ref, t, L) {
     // which is true, rather than a MoSCoW chip nobody assigned.
     const surfaces = projectSurfaces();
     if (kind === 'doc' && id === 'surfaces') {
-      if (!surfaces.length) return artifactMissing('brief', t, ref);
-      return { kind: 'surfaces', headline: t('surfaces.headlineN', { count: surfaces.length }), lede: t('surfacesLede'), surfaces, ref };
+      if (!surfaces.length) return artifactMissing('brief', translate, ref);
+      return { kind: 'surfaces', headline: translate('surfaces.headlineN', { count: surfaces.length }), lede: translate('surfacesLede'), surfaces, ref };
     }
     const map = proj.storyMap();
-    if (!surfaces.length && !map?.epics?.length) return artifactMissing('brief', t, ref);
+    if (!surfaces.length && !map?.epics?.length) return artifactMissing('brief', translate, ref);
     // There is no project-side brief OBJECT — intake writes intake/brief.md,
     // prose this reader cannot parse into sections. So the document is
     // assembled from what the project does state: its name, its registry, its
@@ -468,11 +468,11 @@ function resolveArtifact(surface, ref, t, L) {
     const name = proj.currentName();
     return {
       kind: 'doc',
-      headline: t('briefHeadline'),
-      lede: t('briefLede'),
+      headline: translate('briefHeadline'),
+      lede: translate('briefLede'),
       brief: {
-        title: name ? t('brief.projectTitle', { name }) : t('brief.untitledTitle'),
-        surfaceNote: t('brief.surfaceNoteProject'),
+        title: name ? translate('brief.projectTitle', { name }) : translate('brief.untitledTitle'),
+        surfaceNote: translate('brief.surfaceNoteProject'),
         surfaces,
       },
       releases: map?.releases ?? [],
@@ -483,13 +483,13 @@ function resolveArtifact(surface, ref, t, L) {
       // map, the releases and must-do sections would render as bare headings
       // over nothing — which reads as a broken page, not as a missing input.
       // This carries the same explanation the standalone empty state gives.
-      mapMissing: map?.epics?.length ? null : artifactMissing('map', t, ref),
+      mapMissing: map?.epics?.length ? null : artifactMissing('map', translate, ref),
       ref: 'doc/full',
     };
   }
   // moodboard
   const mb = proj.moodboard();
-  if (!mb?.boards?.length) return artifactMissing('moodboard', t, ref);
+  if (!mb?.boards?.length) return artifactMissing('moodboard', translate, ref);
   if (kind === 'shot') {
     const hit = shotAt(mb, id);
     if (hit) return { kind, ...hit, ref, backRef: `gallery/${hit.board.id}` };
@@ -506,7 +506,7 @@ function resolveArtifact(surface, ref, t, L) {
   // the project actually had.
   const mc = mb.counts ?? {};
   const galleryVars = { boards: String(mc.boards ?? 0), references: String(mc.references ?? 0), shots: String(mc.shots ?? 0) };
-  return { kind: 'gallery', headline: t('galleryHeadline'), lede: t('galleryLede', galleryVars), boards, method: mb.method ?? null, ref: `gallery/${id || 'all'}` };
+  return { kind: 'gallery', headline: translate('galleryHeadline'), lede: translate('galleryLede', galleryVars), boards, method: mb.method ?? null, ref: `gallery/${id || 'all'}` };
 }
 
 // The CURRENT PROJECT's screen registry, or [] when nothing is overlaid.
@@ -524,27 +524,27 @@ const projectSurfaces = () => {
 // busy state to show — but a project file that EXISTS and does not parse is a
 // real, reachable failure, and readOptionalProjectFixture deliberately lets it
 // through rather than disguising it as "not produced yet".
-function artifactFor(surface, ref, t, L) {
+function artifactFor(surface, ref, translate, L) {
   try {
-    return resolveArtifact(surface, ref, t, L);
+    return resolveArtifact(surface, ref, translate, L);
   } catch (e) {
     return {
       kind: 'missing', tone: 'error', ref, what: null, file: null,
-      badge: t('intake.missing.broken.badge'),
-      headline: t('intake.missing.broken.headline'),
-      lede: t('intake.missing.broken.lede', { error: String(e?.message ?? e) }),
+      badge: translate('intake.missing.broken.badge'),
+      headline: translate('intake.missing.broken.headline'),
+      lede: translate('intake.missing.broken.lede', { error: String(e?.message ?? e) }),
       howLabel: null, steps: [],
     };
   }
 }
 
 // Short chip label per artifact ref — the chat-head context chip.
-function chipLabel(ref, t) {
+function chipLabel(ref, translate) {
   const [kind, id] = (ref ?? '').split('/');
   return {
-    map: id === 'priorities' ? t('intake.chip.priorities') : id === 'releases' ? t('intake.chip.releases') : t('intake.chip.storyMap'),
-    story: t('intake.chip.story', { id }), doc: id === 'surfaces' ? t('intake.chip.surfaceInventory') : t('intake.chip.designBrief'),
-    gallery: t('intake.chip.moodboard'), shot: t('intake.chip.capture'),
+    map: id === 'priorities' ? translate('intake.chip.priorities') : id === 'releases' ? translate('intake.chip.releases') : translate('intake.chip.storyMap'),
+    story: translate('intake.chip.story', { id }), doc: id === 'surfaces' ? translate('intake.chip.surfaceInventory') : translate('intake.chip.designBrief'),
+    gallery: translate('intake.chip.moodboard'), shot: translate('intake.chip.capture'),
   }[kind] ?? ref;
 }
 
@@ -556,17 +556,17 @@ function stepDone(sd, step, st, L) {
   return stepContext(sd, step, L).complete;
 }
 
-function timelineFor(sd, surface, t, L) {
+function timelineFor(sd, surface, translate, L) {
   const st = interview(sd, L);
   const stale = isStale(st);
   const unlocked = st.approved && !stale;
   const journey = st.depth === 'simple' ? SIMPLE_JOURNEY : JOURNEY;
   const items = journey.map((step) => ({
-    id: step, kind: 'stage', label: t('screen.label.intake.' + step),
+    id: step, kind: 'stage', label: translate('screen.label.intake.' + step),
     state: stepDone(sd, step, st, L) ? 'green' : 'pending', ref: step,
   }));
-  items.push({ id: 'intake.approval', kind: 'gate', label: t('intake.timeline.approval'), state: st.approved ? (stale ? 'held' : 'approved') : st.generated ? 'active' : 'pending', ref: 'intake.approval' });
-  items.push({ id: 'design', kind: 'stage', label: unlocked ? t('tab.design') : t('intake.timeline.lockedSuffix', { label: t('tab.design') }), state: unlocked ? 'pending' : 'cancelled', ref: 'design' });
+  items.push({ id: 'intake.approval', kind: 'gate', label: translate('intake.timeline.approval'), state: st.approved ? (stale ? 'held' : 'approved') : st.generated ? 'active' : 'pending', ref: 'intake.approval' });
+  items.push({ id: 'design', kind: 'stage', label: unlocked ? translate('tab.design') : translate('intake.timeline.lockedSuffix', { label: translate('tab.design') }), state: unlocked ? 'pending' : 'cancelled', ref: 'design' });
   // current = the first unfinished stage — the line reads as pipeline truth,
   // never as the surface being browsed.
   const firstOpen = items.find((i) => i.state === 'pending' || i.state === 'active');
@@ -589,11 +589,11 @@ const PANEL_SIZES = ['s', 'm', 'l'];
 const PERSISTABLE_PANELS = ['activity'];
 const panelSizeFor = (sd, panel) => (PANEL_SIZES.includes(S(sd).panelSize?.[panel]) ? S(sd).panelSize[panel] : 's');
 
-function activityViewFor(sd, surface, base, lv, t, L) {
+function activityViewFor(sd, surface, base, lv, translate, L) {
   const views = ARTIFACT_SURFACES.includes(surface) ? ACTIVITY_VIEWS : ACTIVITY_VIEWS.filter((v) => v.id !== 'artifacts');
   let active = S(sd).activityView[surface] ?? 'thread';
   if (!views.some((v) => v.id === active)) active = 'thread';
-  const viewLinks = views.map((v) => ({ ...v, label: t('activityView.' + v.id), href: `${base}/panel?view=${v.id}`, active: v.id === active }));
+  const viewLinks = views.map((v) => ({ ...v, label: translate('activityView.' + v.id), href: `${base}/panel?view=${v.id}`, active: v.id === active }));
   let body;
   if (active === 'artifacts') {
     // Every count on this list comes off the PROJECT's artifacts, and each
@@ -603,38 +603,38 @@ function activityViewFor(sd, surface, base, lv, t, L) {
     // explain itself.
     const ap = approvalFor(sd, L);
     const mapBadges = [
-      ap.approved && !ap.stale ? { tone: 'ok', label: t('map.approvedBadge', { version: ap.approvedVersion }) } : null,
-      ap.stale ? { tone: 'warn', label: t('badge.stale') } : null,
+      ap.approved && !ap.stale ? { tone: 'ok', label: translate('map.approvedBadge', { version: ap.approvedVersion }) } : null,
+      ap.stale ? { tone: 'warn', label: translate('badge.stale') } : null,
     ].filter(Boolean);
-    const notYet = [{ tone: 'warn', label: t('intake.missing.badge') }];
+    const notYet = [{ tone: 'warn', label: translate('intake.missing.badge') }];
     const map = proj.storyMap();
     const mb = proj.moodboard();
     const surfaces = projectSurfaces();
-    const c = map?.counts ?? {};
+    const context = map?.counts ?? {};
     body = {
       artifacts: {
         mapping: map?.epics?.length
           ? [
-            { ref: 'map/full', title: t('intake.activity.liveStoryMap.title'), detail: t('intake.activity.liveStoryMap.detail', { stories: c.stories ?? 0, epics: c.epics ?? 0 }), badges: mapBadges },
-            { ref: 'map/priorities', title: t('intake.activity.moscow.title'), detail: t('intake.activity.moscow.detail', { must: c.must ?? 0, should: c.should ?? 0, could: c.could ?? 0 }), badges: [] },
-            { ref: 'map/releases', title: t('intake.activity.releases.title'), detail: (map.releases ?? []).map((r) => r.name).join(' · '), badges: [] },
+            { ref: 'map/full', title: translate('intake.activity.liveStoryMap.title'), detail: translate('intake.activity.liveStoryMap.detail', { stories: context.stories ?? 0, epics: context.epics ?? 0 }), badges: mapBadges },
+            { ref: 'map/priorities', title: translate('intake.activity.moscow.title'), detail: translate('intake.activity.moscow.detail', { must: context.must ?? 0, should: context.should ?? 0, could: context.could ?? 0 }), badges: [] },
+            { ref: 'map/releases', title: translate('intake.activity.releases.title'), detail: (map.releases ?? []).map((r) => r.name).join(' · '), badges: [] },
           ]
           // One row, not zero: an empty artifacts list looks like a panel that
           // failed to load. The row opens the same explanation the main panel
           // shows, so the missing artifact stays reachable from here.
-          : [{ ref: 'map/full', title: t('intake.activity.liveStoryMap.title'), detail: t('intake.missing.activityDetail', { file: ARTIFACT_FILE.map }), badges: notYet }],
+          : [{ ref: 'map/full', title: translate('intake.activity.liveStoryMap.title'), detail: translate('intake.missing.activityDetail', { file: ARTIFACT_FILE.map }), badges: notYet }],
         brief: surfaces.length
           ? [
-            { ref: 'doc/full', title: t('intake.activity.designBrief.title'), detail: t('intake.activity.designBrief.detail', { count: surfaces.length }), badges: [] },
-            { ref: 'doc/surfaces', title: t('intake.activity.surfaceInventory.title'), detail: t('intake.activity.surfaceInventory.detail'), badges: [] },
+            { ref: 'doc/full', title: translate('intake.activity.designBrief.title'), detail: translate('intake.activity.designBrief.detail', { count: surfaces.length }), badges: [] },
+            { ref: 'doc/surfaces', title: translate('intake.activity.surfaceInventory.title'), detail: translate('intake.activity.surfaceInventory.detail'), badges: [] },
           ]
-          : [{ ref: 'doc/full', title: t('intake.activity.designBrief.title'), detail: t('intake.missing.activityDetail', { file: ARTIFACT_FILE.brief }), badges: notYet }],
+          : [{ ref: 'doc/full', title: translate('intake.activity.designBrief.title'), detail: translate('intake.missing.activityDetail', { file: ARTIFACT_FILE.brief }), badges: notYet }],
         moodboard: mb?.boards?.length
           ? [
-            { ref: 'gallery/all', title: t('intake.activity.moodboard.title'), detail: t('intake.activity.moodboard.detail', { boards: mb.counts?.boards ?? mb.boards.length, shots: mb.counts?.shots ?? 0 }), badges: [] },
-            ...mb.boards.map((b) => ({ ref: `gallery/${b.id}`, title: b.title, detail: t('intake.activity.board.detail', { count: (b.references ?? []).length, informs: b.informs }), badges: [] })),
+            { ref: 'gallery/all', title: translate('intake.activity.moodboard.title'), detail: translate('intake.activity.moodboard.detail', { boards: mb.counts?.boards ?? mb.boards.length, shots: mb.counts?.shots ?? 0 }), badges: [] },
+            ...mb.boards.map((b) => ({ ref: `gallery/${b.id}`, title: b.title, detail: translate('intake.activity.board.detail', { count: (b.references ?? []).length, informs: b.informs }), badges: [] })),
           ]
-          : [{ ref: 'gallery/all', title: t('intake.activity.moodboard.title'), detail: t('intake.missing.activityDetail', { file: ARTIFACT_FILE.moodboard }), badges: notYet }],
+          : [{ ref: 'gallery/all', title: translate('intake.activity.moodboard.title'), detail: translate('intake.missing.activityDetail', { file: ARTIFACT_FILE.moodboard }), badges: notYet }],
       }[surface] ?? [],
     };
   } else if (active === 'files') {
@@ -663,13 +663,13 @@ function activityViewFor(sd, surface, base, lv, t, L) {
           at: m.at,
           text: jargon.pick(m, 'text', lv),
           artifact: m.artifact ?? null,
-          artifactLabel: m.artifact ? chipLabel(m.artifact, t) : null,
+          artifactLabel: m.artifact ? chipLabel(m.artifact, translate) : null,
         })),
         ...extrasFor(sd, surface, lv).map((m) => ({
-          at: t('time.now'),
+          at: translate('time.now'),
           text: m.text,
           artifact: m.artifactRef ?? null,
-          artifactLabel: m.artifactRef ? m.artifactLabel ?? chipLabel(m.artifactRef, t) : null,
+          artifactLabel: m.artifactRef ? m.artifactLabel ?? chipLabel(m.artifactRef, translate) : null,
         })),
       ],
     };
@@ -678,7 +678,7 @@ function activityViewFor(sd, surface, base, lv, t, L) {
 }
 
 // ---------- context ----------
-export const context = (sd, surface, ref, prefs = {}, t = (k) => k, locale = 'en', fileArg, panelArg) => {
+export const context = (sd, surface, ref, prefs = {}, translate = (k) => k, locale = 'en', fileArg, panelArg) => {
   const L = locale;
   const lv = jargon.level(prefs);
   const s = S(sd);
@@ -696,8 +696,8 @@ export const context = (sd, surface, ref, prefs = {}, t = (k) => k, locale = 'en
   // The story map opens by default once generated — the mapping step's main
   // panel is the map, not an empty stage.
   if (surface === 'mapping' && !activeArtifact && !currentFile && interview(sd, L).generated) activeArtifact = 'map/full';
-  const activity = activityViewFor(sd, surface, base, lv, t, L);
-  const chat = chatFor(sd, surface, lv, t, L);
+  const activity = activityViewFor(sd, surface, base, lv, translate, L);
+  const chat = chatFor(sd, surface, lv, translate, L);
   const st = interview(sd, L);
   return {
     surface,
@@ -705,23 +705,23 @@ export const context = (sd, surface, ref, prefs = {}, t = (k) => k, locale = 'en
     // The CURRENT PROJECT's name, null when serving the artifact alone —
     // the studio's own fixture name is not this project's.
     project: { name: proj.currentName() },
-    eyebrow: t('intake.eyebrow.' + surface),
+    eyebrow: translate('intake.eyebrow.' + surface),
     composerAction: `${base}/messages`,
-    placeholder: t('composer.placeholder.intake'),
-    modelMenu: agent.modelMenuFor(sd, base, t),
+    placeholder: translate('composer.placeholder.intake'),
+    modelMenu: agent.modelMenuFor(sd, base, translate),
     threading: chat.some((m) => m.from === 'user'),
     suggestions: {
-      interview: [t('intake.sug.whyTheseQuestions'), t('intake.sug.whichMode')],
-      personas: [t('intake.sug.whoIsMissing'), t('intake.sug.whyThesePersonas')],
-      surfaces: [t('intake.sug.whichSurfaces'), t('intake.sug.whyTheseStates')],
-      flows: [t('intake.sug.whichFlows'), t('intake.sug.whichSurfaces')],
-      mapping: [t('intake.sug.whatsInR1'), t('intake.sug.explainMoscow'), t('intake.sug.whichSurfaces')],
-      direction: [t('intake.sug.whatToSteal'), t('intake.sug.whyThisDirection')],
-      brief: [t('intake.sug.briefFeedsDesign'), t('intake.sug.whichSurfaces')],
-      moodboard: [t('intake.sug.whatToSteal'), t('intake.sug.whichReferences')],
+      interview: [translate('intake.sug.whyTheseQuestions'), translate('intake.sug.whichMode')],
+      personas: [translate('intake.sug.whoIsMissing'), translate('intake.sug.whyThesePersonas')],
+      surfaces: [translate('intake.sug.whichSurfaces'), translate('intake.sug.whyTheseStates')],
+      flows: [translate('intake.sug.whichFlows'), translate('intake.sug.whichSurfaces')],
+      mapping: [translate('intake.sug.whatsInR1'), translate('intake.sug.explainMoscow'), translate('intake.sug.whichSurfaces')],
+      direction: [translate('intake.sug.whatToSteal'), translate('intake.sug.whyThisDirection')],
+      brief: [translate('intake.sug.briefFeedsDesign'), translate('intake.sug.whichSurfaces')],
+      moodboard: [translate('intake.sug.whatToSteal'), translate('intake.sug.whichReferences')],
     }[surface],
     chat,
-    artifact: activeArtifact ? artifactFor(surface, activeArtifact, t, L) : null,
+    artifact: activeArtifact ? artifactFor(surface, activeArtifact, translate, L) : null,
     activeArtifact,
     fileView: currentFile ? fv.fileViewFor(currentFile, `${base}?file=none`) : null,
     panel,
@@ -731,12 +731,12 @@ export const context = (sd, surface, ref, prefs = {}, t = (k) => k, locale = 'en
     panelSize: panelSizeFor(sd, 'activity'),
     panelSizeHref: `${base}/panel/size/activity/`,
     activityBody: activity.body,
-    timeline: timelineFor(sd, surface, t, L),
+    timeline: timelineFor(sd, surface, translate, L),
     approval: approvalFor(sd, L),
     jargonLevel: lv,
     // The step payload: interview carries the question carousel; the four
     // item steps carry the item engine's state.
-    carousel: surface === 'interview' && st.depth ? carouselFor(st, t, L) : null,
+    carousel: surface === 'interview' && st.depth ? carouselFor(st, translate, L) : null,
     step: STEPS.includes(surface) ? stepContext(sd, surface, L)
       : surface === 'interview'
         ? { id: 'interview', mode: st.depth, complete: st.generated, done: Object.keys(st.answers).length, total: (repo.questionBanks(L)[st.depth] ?? []).length, nextHref: BASE.personas, nextLabel: 'screen.label.intake.personas' }
@@ -744,39 +744,39 @@ export const context = (sd, surface, ref, prefs = {}, t = (k) => k, locale = 'en
   };
 };
 
-export const showArtifact = (sd, surface, ref, prefs = {}, t = (k) => k, locale = 'en') => {
+export const showArtifact = (sd, surface, ref, prefs = {}, translate = (k) => k, locale = 'en') => {
   S(sd).current[surface] = ref;
   (S(sd).currentFile ??= {})[surface] = null;
-  return context(sd, surface, ref, prefs, t, locale);
+  return context(sd, surface, ref, prefs, translate, locale);
 };
 
 // A file row in the activity panel: open it in the main panel (the mode is
 // the server's, from the extension).
-export const openFile = (sd, surface, path, prefs = {}, t = (k) => k, locale = 'en') =>
-  context(sd, surface, null, prefs, t, locale, path ?? 'none');
+export const openFile = (sd, surface, path, prefs = {}, translate = (k) => k, locale = 'en') =>
+  context(sd, surface, null, prefs, translate, locale, path ?? 'none');
 
 // Composer chrome: pick the agent model (shared session state), then
 // re-render this surface.
-export const setModel = (sd, surface, id, prefs = {}, t = (k) => k, locale = 'en') => {
+export const setModel = (sd, surface, id, prefs = {}, translate = (k) => k, locale = 'en') => {
   agent.setModel(sd, id);
-  return context(sd, surface, null, prefs, t, locale);
+  return context(sd, surface, null, prefs, translate, locale);
 };
 
-export const setActivityView = (sd, surface, view, prefs = {}, t = (k) => k, locale = 'en') => {
+export const setActivityView = (sd, surface, view, prefs = {}, translate = (k) => k, locale = 'en') => {
   if (ACTIVITY_VIEWS.some((v) => v.id === view)) S(sd).activityView[surface] = view;
-  return context(sd, surface, null, prefs, t, locale);
+  return context(sd, surface, null, prefs, translate, locale);
 };
 
 // Panel width grip: one persisted size per panel for the whole intake shell.
-export const setPanelSize = (sd, surface, panel, size, prefs = {}, t = (k) => k, locale = 'en') => {
+export const setPanelSize = (sd, surface, panel, size, prefs = {}, translate = (k) => k, locale = 'en') => {
   if (PERSISTABLE_PANELS.includes(panel) && PANEL_SIZES.includes(size)) {
     (S(sd).panelSize ??= {})[panel] = size;
   }
-  return context(sd, surface, null, prefs, t, locale);
+  return context(sd, surface, null, prefs, translate, locale);
 };
 
 // ---------- interview actions ----------
-export const chooseDepth = (sd, depth, prefs = {}, t = (k) => k, locale = 'en') => {
+export const chooseDepth = (sd, depth, prefs = {}, translate = (k) => k, locale = 'en') => {
   const st = interview(sd, locale);
   if (!st.depth && repo.questionBanks(locale)[depth]) st.depth = depth;
   // simple mode: the fast path answers every question with its first
@@ -785,7 +785,7 @@ export const chooseDepth = (sd, depth, prefs = {}, t = (k) => k, locale = 'en') 
     for (const q of repo.questionBanks(locale).simple) st.answers[q.id] ??= { text: q.suggestions?.[0] ?? null, skipped: !q.suggestions?.length };
     st.generated = true;
   }
-  return context(sd, 'interview', null, prefs, t, locale);
+  return context(sd, 'interview', null, prefs, translate, locale);
 };
 
 const bankOf = (st, L) => repo.questionBanks(L)[st.depth] ?? [];
@@ -801,31 +801,31 @@ function record(sd, qid, entry, L) {
   return st;
 }
 
-export const answerQuestion = (sd, qid, text, prefs = {}, t = (k) => k, locale = 'en') => {
+export const answerQuestion = (sd, qid, text, prefs = {}, translate = (k) => k, locale = 'en') => {
   record(sd, qid, { text, skipped: false }, locale);
-  return context(sd, 'interview', null, prefs, t, locale);
+  return context(sd, 'interview', null, prefs, translate, locale);
 };
 
-export const skipQuestion = (sd, qid, prefs = {}, t = (k) => k, locale = 'en') => {
+export const skipQuestion = (sd, qid, prefs = {}, translate = (k) => k, locale = 'en') => {
   record(sd, qid, { text: null, skipped: true }, locale);
-  return context(sd, 'interview', null, prefs, t, locale);
+  return context(sd, 'interview', null, prefs, translate, locale);
 };
 
-export const editQuestion = (sd, qid, prefs = {}, t = (k) => k, locale = 'en') => {
+export const editQuestion = (sd, qid, prefs = {}, translate = (k) => k, locale = 'en') => {
   const st = interview(sd, locale);
   if (st.answers[qid]) st.editing = qid;
-  return context(sd, 'interview', null, prefs, t, locale);
+  return context(sd, 'interview', null, prefs, translate, locale);
 };
 
 // The approval gate: approving locks the intake output at its version and
 // unlocks the design shell. Reachable from mapping and from the brief.
-export const approveMap = (sd, surface = 'mapping', prefs = {}, t = (k) => k, locale = 'en') => {
+export const approveMap = (sd, surface = 'mapping', prefs = {}, translate = (k) => k, locale = 'en') => {
   const st = interview(sd, locale);
   if (st.generated) {
     st.approved = true;
     st.approvedVersion = st.currentVersion;
   }
-  return context(sd, surface, null, prefs, t, locale);
+  return context(sd, surface, null, prefs, translate, locale);
 };
 
 // ---------- item-engine actions (personas / surfaces / flows / direction) ----------
@@ -836,9 +836,9 @@ const recordItem = (sd, step, id, entry, L) => {
   st.editing = null;
 };
 
-export const confirmItem = (sd, surface, id, prefs = {}, t = (k) => k, locale = 'en') => {
+export const confirmItem = (sd, surface, id, prefs = {}, translate = (k) => k, locale = 'en') => {
   recordItem(sd, surface, id, { confirmed: true }, locale);
-  return context(sd, surface, null, prefs, t, locale);
+  return context(sd, surface, null, prefs, translate, locale);
 };
 
 // Confirming a flow flips its provenance to founder in the PROJECT's
@@ -878,27 +878,27 @@ export const confirmAllFlows = async () => {
 };
 
 // A correction: the form's fields ride the entry and override the prefill.
-export const saveItem = (sd, surface, id, fields, prefs = {}, t = (k) => k, locale = 'en') => {
+export const saveItem = (sd, surface, id, fields, prefs = {}, translate = (k) => k, locale = 'en') => {
   recordItem(sd, surface, id, { confirmed: true, edited: fields }, locale);
-  return context(sd, surface, null, prefs, t, locale);
+  return context(sd, surface, null, prefs, translate, locale);
 };
 
-export const skipItem = (sd, surface, id, prefs = {}, t = (k) => k, locale = 'en') => {
+export const skipItem = (sd, surface, id, prefs = {}, translate = (k) => k, locale = 'en') => {
   recordItem(sd, surface, id, { skipped: true }, locale);
-  return context(sd, surface, null, prefs, t, locale);
+  return context(sd, surface, null, prefs, translate, locale);
 };
 
-export const editItem = (sd, surface, id, prefs = {}, t = (k) => k, locale = 'en') => {
+export const editItem = (sd, surface, id, prefs = {}, translate = (k) => k, locale = 'en') => {
   const st = stepState(sd, surface);
   if (st.answers[id]) st.editing = id;
-  return context(sd, surface, null, prefs, t, locale);
+  return context(sd, surface, null, prefs, translate, locale);
 };
 
 // Normal mode's convenience: accept every remaining prefill in one move.
-export const acceptAll = (sd, surface, prefs = {}, t = (k) => k, locale = 'en') => {
+export const acceptAll = (sd, surface, prefs = {}, translate = (k) => k, locale = 'en') => {
   const st = stepState(sd, surface);
   for (const i of stepItems(surface, locale)) st.answers[i.id] ??= { confirmed: true };
-  return context(sd, surface, null, prefs, t, locale);
+  return context(sd, surface, null, prefs, translate, locale);
 };
 
 // ---------- the composer round-trip ----------
@@ -909,7 +909,7 @@ const replyFor = (text, L) => {
 
 // Free-text chat: append the user's message and a simulated agent reply; the
 // reply may pull an artifact onto the stage (chat docks right).
-export const sendMessage = (sd, surface, text, prefs = {}, t = (k) => k, locale = 'en') => {
+export const sendMessage = (sd, surface, text, prefs = {}, translate = (k) => k, locale = 'en') => {
   const s = S(sd);
   const seq = (s.msgSeq += 1);
   (s.extra[surface] ??= []).push({ id: `u-${seq}`, from: 'user', text });
@@ -918,8 +918,8 @@ export const sendMessage = (sd, surface, text, prefs = {}, t = (k) => k, locale 
     id: `a-${seq}`, from: 'agent',
     text: reply.text, textBalanced: reply.textBalanced, textPlain: reply.textPlain,
     artifactRef: reply.artifact ?? null,
-    artifactLabel: reply.artifact ? t('intake.cta.openArtifact', { label: chipLabel(reply.artifact, t) }) : null,
+    artifactLabel: reply.artifact ? translate('intake.cta.openArtifact', { label: chipLabel(reply.artifact, translate) }) : null,
   });
   if (reply.artifact && ARTIFACT_SURFACES.includes(surface)) { s.current[surface] = reply.artifact; (s.currentFile ??= {})[surface] = null; }
-  return context(sd, surface, null, prefs, t, locale);
+  return context(sd, surface, null, prefs, translate, locale);
 };

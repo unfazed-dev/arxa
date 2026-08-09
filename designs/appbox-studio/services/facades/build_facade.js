@@ -6,8 +6,8 @@
 // context chips, the activity panel's active view) into exactly what
 // loop_viewmodel needs. Every leveled fixture string passes through the
 // jargon facade at the reader's level; static view copy comes in as the
-// runtime translator `t` (h.t(c) — level and locale already bound, l10n/
-// app_*.arb). The locale comes from the request (h.locale(c)) and picks the
+// runtime translator `translate` (helpers.translate(context) — level and locale already bound, l10n/
+// app_*.arb). The locale comes from the request (helpers.locale(context)) and picks the
 // per-locale fixture, en fallback.
 //
 // Session-narrated agent messages store a translation KEY + vars (textKey /
@@ -37,7 +37,7 @@ export const THREAD_FILTERS = ['all', 'stage', 'gate', 'findings', 'evidence', '
 
 // Activity panel view registry: run controls, thread filter, artifact
 // index, and the seeded commits/files views (real git wiring is a later
-// stage — the views say so). Labels render via t('activityView.<id>').
+// stage — the views say so). Labels render via translate('activityView.<id>').
 export const ACTIVITY_VIEWS = [
   { id: 'run', icon: 'play', label: 'run' },
   { id: 'thread', icon: 'messages-square', label: 'thread' },
@@ -72,7 +72,7 @@ const narrate = (sessionData, m) => {
 
 // Human-gate decisions are the human's act; a POST lands them in the session
 // and the facade overlays them onto the fixture's lifecycle.
-function gatesWithDecisions(sessionData, L, t) {
+function gatesWithDecisions(sessionData, L, translate) {
   const decisions = B(sessionData).gateDecisions ?? {};
   return repo.humanGates(L).map((g) => {
     const d = decisions[g.id];
@@ -82,10 +82,10 @@ function gatesWithDecisions(sessionData, L, t) {
       state: d.decision,
       provenance: {
         by: 'Evan',
-        shell: t('prov.shell'),
-        device: t('prov.machine'),
-        method: t('prov.method'),
-        at: t('prov.justNow'),
+        shell: translate('prov.shell'),
+        device: translate('prov.machine'),
+        method: translate('prov.method'),
+        at: translate('prov.justNow'),
         hash: d.hash,
       },
       note: d.decision === 'rejected' ? d.note : null,
@@ -93,7 +93,7 @@ function gatesWithDecisions(sessionData, L, t) {
   });
 }
 
-function stagesWithDecisions(gates, lv, sessionData, L, t) {
+function stagesWithDecisions(gates, lv, sessionData, L, translate) {
   const acceptance = gates.find((g) => g.id === 'build.acceptance');
   return repo.stages(L).map((s) => {
     let out = {
@@ -106,90 +106,90 @@ function stagesWithDecisions(gates, lv, sessionData, L, t) {
       out = {
         ...out,
         state: 'active',
-        summary: t('build.deployUnlocked'),
+        summary: translate('build.deployUnlocked'),
       };
     }
     if (s.id === 'deploy' && acceptance.state === 'rejected') {
       out = {
         ...out,
         state: 'held',
-        summary: t('build.deployHeld'),
+        summary: translate('build.deployHeld'),
       };
     }
     // Human stage controls (pause/cancel from the run view) win last.
     const control = B(sessionData).stageStates?.[s.id];
-    if (control) out = { ...out, state: control.state, summary: t(control.summaryKey) };
+    if (control) out = { ...out, state: control.state, summary: translate(control.summaryKey) };
     return out;
   });
 }
 
-function runWithState(sessionData, gates, L, t) {
+function runWithState(sessionData, gates, L, translate) {
   const run = { ...repo.run(L) };
   const acceptance = gates.find((g) => g.id === 'build.acceptance');
   run.pausedByYou = Boolean(B(sessionData).runControl?.paused);
   if (run.pausedByYou) {
     run.state = 'paused';
-    run.stateLabel = t('build.state.pausedByYou');
+    run.stateLabel = translate('build.state.pausedByYou');
   } else if (acceptance.state === 'approved') {
     run.state = 'running';
-    run.stateLabel = t('build.state.running');
+    run.stateLabel = translate('build.state.running');
   } else if (acceptance.state === 'rejected') {
     run.state = 'held';
-    run.stateLabel = t('build.state.held');
+    run.stateLabel = translate('build.state.held');
   }
   return run;
 }
 
 // The thread card: type (color-coded in the view), lifecycle state, and one
 // detail line — resolved from the artifact the message points at.
-function cardFor(ref, parts, t) {
+function cardFor(ref, parts, translate) {
   if (!ref) return { type: 'note' };
   const [kind, id] = ref.split('/');
   switch (kind) {
     case 'stage': {
       const s = parts.stages.find((x) => x.id === id);
       if (!s) return { type: 'stage', ref };
-      const when = s.duration && s.duration !== '—' ? s.duration : t('status.name.queued');
-      return { type: 'stage', state: s.state, detail: t('build.stageEyebrow', { n: s.n, total: parts.stages.length, when }), ref };
+      const when = s.duration && s.duration !== '—' ? s.duration : translate('status.name.queued');
+      return { type: 'stage', state: s.state, detail: translate('build.stageEyebrow', { n: s.n, total: parts.stages.length, when }), ref };
     }
     case 'gate': {
       const g = parts.gates.find((x) => x.id === id);
       if (!g) return { type: 'gate', ref };
-      const detail = g.state === 'approved' ? t('build.gateDetail.signed', { at: g.provenance?.at ?? '' })
-        : g.state === 'rejected' ? t('build.gateDetail.rejected')
-        : g.state === 'pending' ? t('build.gateDetail.pending')
-        : t('build.gateDetail.unreachable');
-      return { type: 'gate', state: g.state, gateId: g.id, detail: `${t('build.humanGate')} · ${detail}`, ref };
+      const detail = g.state === 'approved' ? translate('build.gateDetail.signed', { at: g.provenance?.at ?? '' })
+        : g.state === 'rejected' ? translate('build.gateDetail.rejected')
+        : g.state === 'pending' ? translate('build.gateDetail.pending')
+        : translate('build.gateDetail.unreachable');
+      return { type: 'gate', state: g.state, gateId: g.id, detail: `${translate('build.humanGate')} · ${detail}`, ref };
     }
     case 'findings': {
       const list = parts.findings[id] ?? [];
-      return { type: 'findings', state: 'red', detail: t('build.findingsDetail', { count: list.length }), ref };
+      return { type: 'findings', state: 'red', detail: translate('build.findingsDetail', { count: list.length }), ref };
     }
     case 'evidence': {
       const pass = parts.evidence.filter((e) => e.state === 'pass').length;
       const watch = parts.evidence.length - pass;
-      return { type: 'evidence', state: 'pass', detail: t('build.evidenceDetail', { count: parts.evidence.length, pass, watch }), ref };
+      return { type: 'evidence', state: 'pass', detail: translate('build.evidenceDetail', { count: parts.evidence.length, pass, watch }), ref };
     }
     case 'chart':
-      return { type: 'chart', detail: t('build.chartDetail'), ref };
+      return { type: 'chart', detail: translate('build.chartDetail'), ref };
     case 'log':
-      return { type: 'log', detail: t('build.logDetail'), ref };
+      return { type: 'log', detail: translate('build.logDetail'), ref };
     default:
       return { type: 'note', ref };
   }
 }
 
-function messagesWithSession(sessionData, activeArtifact, lv, parts, filter, L, t) {
+function messagesWithSession(sessionData, activeArtifact, lv, parts, filter, L, translate) {
   const extra = B(sessionData).extraMessages ?? [];
   const all = [...repo.narrative(L), ...extra].map((m) => ({
     from: 'agent',
     tone: null,
     artifact: null,
     ...m,
-    at: m.at === 'now' ? t('time.now') : m.at,
-    text: m.textKey ? t(m.textKey, m.textVars) : m.from === 'user' ? m.text : jargon.pick(m, 'text', lv),
+    at: m.at === 'now' ? translate('time.now') : m.at,
+    text: m.textKey ? translate(m.textKey, m.textVars) : m.from === 'user' ? m.text : jargon.pick(m, 'text', lv),
     active: m.artifact === activeArtifact,
-    card: m.from === 'user' ? { type: 'you' } : cardFor(m.artifact, parts, t),
+    card: m.from === 'user' ? { type: 'you' } : cardFor(m.artifact, parts, translate),
   }));
   if (filter === 'all') return all;
   return all.filter((m) => m.card.type === filter);
@@ -210,11 +210,11 @@ function findingsWithLevel(lv, L) {
   );
 }
 
-function evidenceWithLevel(lv, L, t = (k) => k) {
+function evidenceWithLevel(lv, L, translate = (k) => k) {
   return repo.evidence(L).map((e) => ({
     ...e,
-    chips: jargon.probeChips(e.probe, lv, t),
-    band: jargon.band(jargon.scoreDeltaE(e.probe.deltaE), t),
+    chips: jargon.probeChips(e.probe, lv, translate),
+    band: jargon.band(jargon.scoreDeltaE(e.probe.deltaE), translate),
   }));
 }
 
@@ -333,11 +333,11 @@ export const screenStub = (surface, vp, prefs = {}, locale = 'en', opts = {}) =>
 // Viewer toolbar act: bg is AUTHORITATIVE (every control href echoes it, the
 // default elided — absent means "back to default", never "keep"). Same
 // contract as the design facade's.
-export const setViewer = (sessionData, query, prefs = {}, t = (k) => k, locale = 'en') => {
+export const setViewer = (sessionData, query, prefs = {}, translate = (k) => k, locale = 'en') => {
   const next = {};
   for (const [k, v] of Object.entries(query)) if (v != null) next[k] = v;
   B(sessionData).viewer = next;
-  return loopContext(sessionData, 'evidence/surfaces', prefs, t, locale);
+  return loopContext(sessionData, 'evidence/surfaces', prefs, translate, locale);
 };
 
 // The shell timeline: the whole line at a glance, current item highlighted.
@@ -359,9 +359,9 @@ function timeline({ stages, gates }) {
 // Local: the artifact's own rendered data + its direct links. Global: a thin
 // fixed brief. The fixture replies below AND any real model consume this
 // same typed envelope — swap the reply generator, keep the structure.
-export const contextFor = (sessionData, ref, lv = 'balanced', t = (k) => k, locale = 'en') => {
-  const gates = gatesWithDecisions(sessionData, locale, t);
-  const stages = stagesWithDecisions(gates, lv, sessionData, locale, t);
+export const contextFor = (sessionData, ref, lv = 'balanced', translate = (k) => k, locale = 'en') => {
+  const gates = gatesWithDecisions(sessionData, locale, translate);
+  const stages = stagesWithDecisions(gates, lv, sessionData, locale, translate);
   const run = repo.run(locale);
   const brief = {
     run: run.number, project: run.project, state: run.state,
@@ -379,7 +379,7 @@ export const contextFor = (sessionData, ref, lv = 'balanced', t = (k) => k, loca
     if (id === 'design') linked.push({ gate: gates.find((g) => g.id === 'design.approval') });
   } else if (kind === 'gate') {
     artifact = gates.find((g) => g.id === id) ?? null;
-    if (id === 'build.acceptance') linked.push({ evidence: evidenceWithLevel(lv, locale, t) }, { stage: stages.find((s) => s.id === 'deploy') });
+    if (id === 'build.acceptance') linked.push({ evidence: evidenceWithLevel(lv, locale, translate) }, { stage: stages.find((s) => s.id === 'deploy') });
     if (id === 'design.approval') linked.push({ stages: stages.filter((s) => ['design', 'freeze'].includes(s.id)) });
     if (id === 'ship.confirm') linked.push({ stage: stages.find((s) => s.id === 'deploy') });
   } else if (kind === 'findings') {
@@ -389,7 +389,7 @@ export const contextFor = (sessionData, ref, lv = 'balanced', t = (k) => k, loca
     artifact = repo.chart(locale);
     linked.push({ stages: stages.map((s) => ({ id: s.id, duration: s.duration, state: s.state })) });
   } else if (kind === 'evidence') {
-    artifact = evidenceWithLevel(lv, locale, t);
+    artifact = evidenceWithLevel(lv, locale, translate);
     linked.push({ stage: stages.find((s) => s.id === 'freeze') });
   } else if (kind === 'log') {
     artifact = { note: 'the whole line, in order' };
@@ -439,23 +439,23 @@ const noteGateFor = (sessionData, gates) => {
 // Composer context chips for cp.frame: the pinned gate (a reject note is
 // the next chat message). The open artifact needs no chip — the main panel
 // is always visible, there is nothing to close.
-const chipsFor = (noteGate, L, t) => {
+const chipsFor = (noteGate, L, translate) => {
   if (!noteGate) return [];
   return [{
-    id: `gate/${noteGate.id}`, label: t('build.noteChip', { label: noteGate.label.toLowerCase() }),
+    id: `gate/${noteGate.id}`, label: translate('build.noteChip', { label: noteGate.label.toLowerCase() }),
     tone: 'gate', removeHref: `/build/chips/unpin?ref=gate/${noteGate.id}`,
   }];
 };
 
 // The artifacts activity view: everything openable, in pipeline order.
-function artifactIndex({ gates, stages }, t) {
+function artifactIndex({ gates, stages }, translate) {
   return [
     ...gates.map((g) => ({ ref: `gate/${g.id}`, label: g.label, kind: 'gate', state: g.state })),
     ...stages.map((s) => ({ ref: `stage/${s.id}`, label: s.label, kind: 'stage', state: s.state })),
-    { ref: 'findings/coverage', label: t('build.artifact.findings'), kind: 'findings', state: 'red' },
-    { ref: 'evidence/surfaces', label: t('build.artifact.evidence'), kind: 'evidence', state: 'pass' },
-    { ref: 'chart/durations', label: t('build.artifact.chart'), kind: 'chart', state: null },
-    { ref: 'log/full', label: t('build.artifact.log'), kind: 'log', state: null },
+    { ref: 'findings/coverage', label: translate('build.artifact.findings'), kind: 'findings', state: 'red' },
+    { ref: 'evidence/surfaces', label: translate('build.artifact.evidence'), kind: 'evidence', state: 'pass' },
+    { ref: 'chart/durations', label: translate('build.artifact.chart'), kind: 'chart', state: null },
+    { ref: 'log/full', label: translate('build.artifact.log'), kind: 'log', state: null },
   ];
 }
 
@@ -464,14 +464,14 @@ function artifactIndex({ gates, stages }, t) {
 // fragment macro renders blank instead of iterating undefined. noEvidence
 // is the flag loop_view branches on; the project name comes from the
 // project itself, since the run fixture that normally carries it is absent.
-const emptyContext = (sessionData = {}, prefs = {}, t = (k) => k) => {
+const emptyContext = (sessionData = {}, prefs = {}, translate = (k) => k) => {
   const name = proj.currentName();
   return {
     noEvidence: true,
     run: null,
     project: name ? { name } : null,
     composerAction: '/build/messages',
-    modelMenu: agent.modelMenuFor(sessionData, '/build', t),
+    modelMenu: agent.modelMenuFor(sessionData, '/build', translate),
     threading: false,
     stages: [],
     gates: [],
@@ -487,7 +487,7 @@ const emptyContext = (sessionData = {}, prefs = {}, t = (k) => k) => {
     chips: [],
     noteGate: null,
     suggestions: [],
-    placeholder: t('composer.placeholder.build'),
+    placeholder: translate('composer.placeholder.build'),
     activityView: 'run',
     panelSize: panelSizeFor(sessionData, 'activity'),
     panelSizeHref: '/build/panel/size/activity/',
@@ -505,10 +505,10 @@ const emptyContext = (sessionData = {}, prefs = {}, t = (k) => k) => {
 // stage needs. Callers must check this before entering loopContext: that
 // path dereferences the build.acceptance gate unguarded, so an empty gate
 // list throws a TypeError straight to a 500.
-export const emptyLoopContext = (locale = 'en', sessionData = {}, prefs = {}, t = (k) => k) =>
-  (repo.hasEvidence(locale) ? null : emptyContext(sessionData, prefs, t));
+export const emptyLoopContext = (locale = 'en', sessionData = {}, prefs = {}, translate = (k) => k) =>
+  (repo.hasEvidence(locale) ? null : emptyContext(sessionData, prefs, translate));
 
-export const loopContext = (sessionData = {}, ref = null, prefs = {}, t = (k) => k, locale = 'en', fileArg, panelArg) => {
+export const loopContext = (sessionData = {}, ref = null, prefs = {}, translate = (k) => k, locale = 'en', fileArg, panelArg) => {
   const L = locale;
   const lv = jargon.level(prefs);
   // Nothing in appboxd writes build evidence yet, so every project reads
@@ -516,7 +516,7 @@ export const loopContext = (sessionData = {}, ref = null, prefs = {}, t = (k) =>
   // real run: runWithState dereferences the build.acceptance gate, and an
   // empty gate list would throw a TypeError straight to a 500. Every other
   // export funnels through here, so this one guard covers the whole surface.
-  if (!repo.hasEvidence(L)) return emptyContext(sessionData, prefs, t);
+  if (!repo.hasEvidence(L)) return emptyContext(sessionData, prefs, translate);
   // The open file (main panel): ?file=<path> opens, ?file=none closes; an
   // artifact open always clears it — the main panel shows one thing.
   if (fileArg === 'none') delete B(sessionData).currentFile;
@@ -525,23 +525,23 @@ export const loopContext = (sessionData = {}, ref = null, prefs = {}, t = (k) =>
   // The panel bar (compact/medium): ?panel= picks the single visible content
   // panel and sticks; default main.
   if (['activity', 'main', 'composer'].includes(panelArg)) B(sessionData).panel = panelArg;
-  const gates = gatesWithDecisions(sessionData, L, t);
-  const stages = stagesWithDecisions(gates, lv, sessionData, L, t);
+  const gates = gatesWithDecisions(sessionData, L, translate);
+  const stages = stagesWithDecisions(gates, lv, sessionData, L, translate);
   const findings = findingsWithLevel(lv, L);
-  const evidence = evidenceWithLevel(lv, L, t);
+  const evidence = evidenceWithLevel(lv, L, translate);
   const parts = { gates, stages, findings, evidence };
   const activeArtifact = currentFile ? null : (ref ?? B(sessionData).currentArtifact ?? null);
   const filter = THREAD_FILTERS.includes(B(sessionData).threadFilter) ? B(sessionData).threadFilter : 'all';
-  const messages = messagesWithSession(sessionData, activeArtifact, lv, parts, filter, L, t);
+  const messages = messagesWithSession(sessionData, activeArtifact, lv, parts, filter, L, translate);
   const artifact = resolveArtifact(activeArtifact, { ...parts, messages }, L);
   const openRef = artifact ? activeArtifact : null;
   const activityView = ACTIVITY_VIEW_IDS.includes(B(sessionData).activityView) ? B(sessionData).activityView : 'run';
   const noteGate = noteGateFor(sessionData, gates);
   return {
-    run: runWithState(sessionData, gates, L, t),
+    run: runWithState(sessionData, gates, L, translate),
     project: { name: repo.run(L).project },
     composerAction: '/build/messages',
-    modelMenu: agent.modelMenuFor(sessionData, '/build', t),
+    modelMenu: agent.modelMenuFor(sessionData, '/build', translate),
     threading: messages.some((m) => m.from === 'user'),
     stages,
     gates,
@@ -554,93 +554,93 @@ export const loopContext = (sessionData = {}, ref = null, prefs = {}, t = (k) =>
     fileView: currentFile ? fv.fileViewFor(currentFile, '/build?file=none') : null,
     panel: B(sessionData).panel ?? 'main',
     viewer: openRef === 'evidence/surfaces' ? viewerFor(sessionData, evidence) : null,
-    chips: chipsFor(noteGate, L, t),
+    chips: chipsFor(noteGate, L, translate),
     noteGate,
     suggestions: noteGate
-      ? [{ value: t('build.composer.rejectValue'), label: t('build.composer.rejectLabel') }]
-      : [t('build.composer.sugCoverage'), t('build.composer.sugDurations'), t('build.composer.sugLog')],
-    placeholder: noteGate ? t('composer.placeholder.buildNote') : t('composer.placeholder.build'),
+      ? [{ value: translate('build.composer.rejectValue'), label: translate('build.composer.rejectLabel') }]
+      : [translate('build.composer.sugCoverage'), translate('build.composer.sugDurations'), translate('build.composer.sugLog')],
+    placeholder: noteGate ? translate('composer.placeholder.buildNote') : translate('composer.placeholder.build'),
     activityView,
     panelSize: panelSizeFor(sessionData, 'activity'),
     panelSizeHref: '/build/panel/size/activity/',
-    activityViews: ACTIVITY_VIEWS.map((v) => ({ ...v, label: t('activityView.' + v.id), href: `/build/panel?view=${v.id}`, active: v.id === activityView })),
-    artifacts: artifactIndex(parts, t),
+    activityViews: ACTIVITY_VIEWS.map((v) => ({ ...v, label: translate('activityView.' + v.id), href: `/build/panel?view=${v.id}`, active: v.id === activityView })),
+    artifacts: artifactIndex(parts, translate),
     commits: repo.commits(L),
     files: repo.files(L).map((f) => ({ ...f, ...fv.fileLink(f.path, '/build') })),
     jargonLevel: lv,
   };
 };
 
-export const showArtifact = (sessionData, ref, prefs = {}, t = (k) => k, locale = 'en') => {
+export const showArtifact = (sessionData, ref, prefs = {}, translate = (k) => k, locale = 'en') => {
   B(sessionData).currentArtifact = ref;
   delete B(sessionData).currentFile;
-  return loopContext(sessionData, ref, prefs, t, locale);
+  return loopContext(sessionData, ref, prefs, translate, locale);
 };
 
 // A file row in the activity panel: open it in the main panel (the mode is
 // the server's, from the extension).
-export const openFile = (sessionData, path, prefs = {}, t = (k) => k, locale = 'en') =>
-  loopContext(sessionData, null, prefs, t, locale, path ?? 'none');
+export const openFile = (sessionData, path, prefs = {}, translate = (k) => k, locale = 'en') =>
+  loopContext(sessionData, null, prefs, translate, locale, path ?? 'none');
 
 // Composer chrome: pick the agent model (shared session state), then
 // re-render the loop stage.
-export const setModel = (sessionData, id, prefs = {}, t = (k) => k, locale = 'en') => {
+export const setModel = (sessionData, id, prefs = {}, translate = (k) => k, locale = 'en') => {
   agent.setModel(sessionData, id);
-  return loopContext(sessionData, null, prefs, t, locale);
+  return loopContext(sessionData, null, prefs, translate, locale);
 };
 
 // ---------- context chips (gate note pin / unpin) ----------
 
 // "Reject with note" pins the gate as a context chip; the composer becomes
 // the note input (single input path) and the next message is the rejection.
-export const pinChip = (sessionData, ref, prefs = {}, t = (k) => k, locale = 'en') => {
+export const pinChip = (sessionData, ref, prefs = {}, translate = (k) => k, locale = 'en') => {
   const [kind, id] = (ref || '').split('/');
   if (kind === 'gate') {
-    const g = gatesWithDecisions(sessionData, locale, t).find((x) => x.id === id);
+    const g = gatesWithDecisions(sessionData, locale, translate).find((x) => x.id === id);
     if (g?.state === 'pending') B(sessionData).gateChip = id;
   }
-  return loopContext(sessionData, null, prefs, t, locale);
+  return loopContext(sessionData, null, prefs, translate, locale);
 };
 
-export const unpinChip = (sessionData, ref, prefs = {}, t = (k) => k, locale = 'en') => {
+export const unpinChip = (sessionData, ref, prefs = {}, translate = (k) => k, locale = 'en') => {
   const [kind, id] = (ref || '').split('/');
   if (kind === 'gate' && B(sessionData).gateChip === id) delete B(sessionData).gateChip;
-  return loopContext(sessionData, null, prefs, t, locale);
+  return loopContext(sessionData, null, prefs, translate, locale);
 };
 
 // Activity panel view switching: run / thread / artifacts / commits / files.
-export const setActivityView = (sessionData, view, prefs = {}, t = (k) => k, locale = 'en') => {
+export const setActivityView = (sessionData, view, prefs = {}, translate = (k) => k, locale = 'en') => {
   B(sessionData).activityView = ACTIVITY_VIEW_IDS.includes(view) ? view : 'run';
-  return loopContext(sessionData, null, prefs, t, locale);
+  return loopContext(sessionData, null, prefs, translate, locale);
 };
 
 // Thread filter (thread view): all | stage | gate | findings | evidence | note.
-export const setThreadFilter = (sessionData, filter, prefs = {}, t = (k) => k, locale = 'en') => {
+export const setThreadFilter = (sessionData, filter, prefs = {}, translate = (k) => k, locale = 'en') => {
   B(sessionData).threadFilter = THREAD_FILTERS.includes(filter) ? filter : 'all';
-  return loopContext(sessionData, null, prefs, t, locale);
+  return loopContext(sessionData, null, prefs, translate, locale);
 };
 
 // Panel width grip: cycle persisted per panel (the shell's own sizing state).
-export const setPanelSize = (sessionData, panel, size, prefs = {}, t = (k) => k, locale = 'en') => {
+export const setPanelSize = (sessionData, panel, size, prefs = {}, translate = (k) => k, locale = 'en') => {
   if (PERSISTABLE_PANELS.includes(panel) && PANEL_SIZES.includes(size)) {
     (B(sessionData).panelSize ??= {})[panel] = size;
   }
-  return loopContext(sessionData, null, prefs, t, locale);
+  return loopContext(sessionData, null, prefs, translate, locale);
 };
 
 // The composer round-trip: append the user's message, then a simulated
 // agent reply; the reply may pull a new artifact onto the canvas.
 // With a gate chip pinned, the message IS the reject note + decision.
-export const sendMessage = (sessionData, text, prefs = {}, t = (k) => k, locale = 'en') => {
+export const sendMessage = (sessionData, text, prefs = {}, translate = (k) => k, locale = 'en') => {
   const lv = jargon.level(prefs);
 
   if (B(sessionData).gateChip) {
     const gateId = B(sessionData).gateChip;
     delete B(sessionData).gateChip;
-    const gate = gatesWithDecisions(sessionData, locale, t).find((g) => g.id === gateId);
+    const gate = gatesWithDecisions(sessionData, locale, translate).find((g) => g.id === gateId);
     if (gate?.state === 'pending') {
       pushUser(sessionData, text);
-      return decide(sessionData, gateId, 'rejected', text, prefs, t, locale);
+      return decide(sessionData, gateId, 'rejected', text, prefs, translate, locale);
     }
     // The gate was decided elsewhere — the stale chip drops, the message
     // falls through as an ordinary one.
@@ -653,17 +653,17 @@ export const sendMessage = (sessionData, text, prefs = {}, t = (k) => k, locale 
   // Typed run-ops (pause / cancel / resume) scope to the open stage canvas —
   // the follow-up-with-context-chip replacement for the retired stage bar.
   if (ref) {
-    const op = typedOp(sessionData, ref, lower, lv, t, locale);
+    const op = typedOp(sessionData, ref, lower, lv, translate, locale);
     if (op) {
       narrate(sessionData, { textKey: op.replyKey, textVars: op.replyVars, artifact: ref, tone: null });
-      const ctx = loopContext(sessionData, ref, prefs, t, locale);
+      const ctx = loopContext(sessionData, ref, prefs, translate, locale);
       ctx.opFired = op.fired;
       return ctx;
     }
   }
 
   const reply = repo.replies(locale).find((r) => r.match.some((k) => lower.includes(k)))
-    ?? (ref ? scopedReply(contextFor(sessionData, ref, lv, t, locale), locale, t) : repo.replyFallback(locale));
+    ?? (ref ? scopedReply(contextFor(sessionData, ref, lv, translate, locale), locale, translate) : repo.replyFallback(locale));
   narrate(sessionData, {
     text: reply.text, textBalanced: reply.textBalanced, textPlain: reply.textPlain,
     textKey: reply.textKey, textVars: reply.textVars,
@@ -671,13 +671,13 @@ export const sendMessage = (sessionData, text, prefs = {}, t = (k) => k, locale 
   });
 
   const nextRef = reply.artifact ?? ref;
-  return nextRef ? showArtifact(sessionData, nextRef, prefs, t, locale) : loopContext(sessionData, null, prefs, t, locale);
+  return nextRef ? showArtifact(sessionData, nextRef, prefs, translate, locale) : loopContext(sessionData, null, prefs, translate, locale);
 };
 
 // The scoped fallback: answer from the canvas's own envelope. Computed
 // replies come back as translation keys + vars (rendered at read time);
 // fixture fallbacks carry their per-locale strings directly.
-function scopedReply(env, L, t) {
+function scopedReply(env, L, translate) {
   const a = env.artifact;
   if (!a) return { ...repo.replyFallback(L) };
   if (a.summary !== undefined) return { textKey: 'build.reply.summary', textVars: { label: a.label, summary: a.summary, detail: a.detail ?? '' } };
@@ -711,7 +711,7 @@ const opEvent = {
 
 // Typed ops from the chat: pause/hold, cancel/stop/kill, resume/continue —
 // only when the open stage's current state actually offers the action.
-function typedOp(sessionData, ref, lower, lv, t, L) {
+function typedOp(sessionData, ref, lower, lv, translate, L) {
   const [kind, id] = ref.split('/');
   if (kind !== 'stage') return null;
   const wants = /\b(pause|hold)\b/.test(lower) ? 'pause'
@@ -719,14 +719,14 @@ function typedOp(sessionData, ref, lower, lv, t, L) {
     : /\b(resume|continue|unpause)\b/.test(lower) ? 'resume'
     : null;
   if (!wants) return null;
-  const stages = stagesWithDecisions(gatesWithDecisions(sessionData, L, t), lv, sessionData, L, t);
+  const stages = stagesWithDecisions(gatesWithDecisions(sessionData, L, translate), lv, sessionData, L, translate);
   const s = stages.find((x) => x.id === id);
   if (!s) return null;
   const offered = wants === 'pause' ? ['active', 'queued'].includes(s.state)
     : wants === 'cancel' ? ['active', 'queued', 'held'].includes(s.state)
     : s.state === 'held';
   if (!offered) {
-    return { fired: false, replyKey: 'build.op.notOffered', replyVars: { op: wants, label: s.label, state: t('status.name.' + s.state) } };
+    return { fired: false, replyKey: 'build.op.notOffered', replyVars: { op: wants, label: s.label, state: translate('status.name.' + s.state) } };
   }
   applyStageControl(sessionData, id, wants);
   const replyKey = wants === 'cancel' ? 'build.op.doneCancelled' : wants === 'pause' ? 'build.op.donePaused' : 'build.op.doneResumed';
@@ -736,7 +736,7 @@ function typedOp(sessionData, ref, lower, lv, t, L) {
 // Stage control from the run view: pause holds a stage, resume releases it,
 // cancel takes it off the line. Narrated to the chat — the thread is the
 // run's history.
-export const stageControl = (sessionData, stageId, action, prefs = {}, t = (k) => k, locale = 'en') => {
+export const stageControl = (sessionData, stageId, action, prefs = {}, translate = (k) => k, locale = 'en') => {
   const stage = repo.stages(locale).find((s) => s.id === stageId);
   const label = stage ? stage.label : stageId;
   if (stage) applyStageControl(sessionData, stageId, action);
@@ -747,11 +747,11 @@ export const stageControl = (sessionData, stageId, action, prefs = {}, t = (k) =
     artifact: stage ? `stage/${stageId}` : null,
     tone: action === 'cancel' ? 'fail' : action === 'pause' ? 'warn' : 'action',
   });
-  return showArtifact(sessionData, stage ? `stage/${stageId}` : (B(sessionData).currentArtifact ?? null), prefs, t, locale);
+  return showArtifact(sessionData, stage ? `stage/${stageId}` : (B(sessionData).currentArtifact ?? null), prefs, translate, locale);
 };
 
 // Run control from the run view: pause holds the whole line.
-export const runControl = (sessionData, action, prefs = {}, t = (k) => k, locale = 'en') => {
+export const runControl = (sessionData, action, prefs = {}, translate = (k) => k, locale = 'en') => {
   if (action === 'pause') B(sessionData).runControl = { paused: true };
   else delete B(sessionData).runControl;
   narrate(sessionData, {
@@ -759,13 +759,13 @@ export const runControl = (sessionData, action, prefs = {}, t = (k) => k, locale
     artifact: null,
     tone: action === 'pause' ? 'warn' : 'action',
   });
-  return loopContext(sessionData, null, prefs, t, locale);
+  return loopContext(sessionData, null, prefs, translate, locale);
 };
 
 // Gate decision: record it, mint provenance, narrate the consequence to the
 // chat. The note arrives either as the form field (legacy) or — via the
 // pinned gate chip — as the user's chat message itself.
-export const decide = (sessionData, gateId, decision, note, prefs = {}, t = (k) => k, locale = 'en') => {
+export const decide = (sessionData, gateId, decision, note, prefs = {}, translate = (k) => k, locale = 'en') => {
   const decisions = (B(sessionData).gateDecisions ??= {});
   decisions[gateId] = {
     decision,
@@ -781,5 +781,5 @@ export const decide = (sessionData, gateId, decision, note, prefs = {}, t = (k) 
     artifact: `gate/${gateId}`,
     tone: decision === 'approved' ? 'action' : 'fail',
   });
-  return showArtifact(sessionData, `gate/${gateId}`, prefs, t, locale);
+  return showArtifact(sessionData, `gate/${gateId}`, prefs, translate, locale);
 };

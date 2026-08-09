@@ -64,9 +64,9 @@ export const AppBar: FC<AppBarProps> = ({ bar }) => {
       <h1 class="appbar__title">{bar.title}</h1>
       {bar.actions && (
         <div class="appbar__actions">
-          {bar.actions.map((a, i) => (
-            <a class="icon-btn" href={a.href} aria-label={a.label} key={i}>
-              <Icon name={a.icon} size={20} />
+          {bar.actions.map((action, actionIndex) => (
+            <a class="icon-btn" href={action.href} aria-label={action.label} key={actionIndex}>
+              <Icon name={action.icon} size={20} />
             </a>
           ))}
         </div>
@@ -77,11 +77,11 @@ export const AppBar: FC<AppBarProps> = ({ bar }) => {
             <Icon name="ellipsis-vertical" size={20} />
           </summary>
           <ul class="appbar__menu-list">
-            {bar.actions.map((a, i) => (
-              <li key={i}>
-                <a class="appbar__menu-link" href={a.href}>
-                  <Icon name={a.icon} size={18} />
-                  <span>{a.label}</span>
+            {bar.actions.map((action, actionIndex) => (
+              <li key={actionIndex}>
+                <a class="appbar__menu-link" href={action.href}>
+                  <Icon name={action.icon} size={18} />
+                  <span>{action.label}</span>
                 </a>
               </li>
             ))}

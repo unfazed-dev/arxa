@@ -12,10 +12,10 @@ export const bootProgress = (translate, elapsed) => {
   const steps = /** @type {any} */ (readFixture('../../../models/startup_model/boot_seed.json')).steps;
   const done = Math.min(elapsed, steps.length);
   return {
-    steps: steps.map((s, i) => ({
-      id: s.id,
-      label: translate(s.labelKey),
-      state: i < done ? 'done' : i === done ? 'running' : 'waiting',
+    steps: steps.map((step, index) => ({
+      id: step.id,
+      label: translate(step.labelKey),
+      state: index < done ? 'done' : index === done ? 'running' : 'waiting',
     })),
     ready: done >= steps.length,
   };

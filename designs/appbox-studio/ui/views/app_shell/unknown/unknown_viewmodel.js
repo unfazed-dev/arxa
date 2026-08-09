@@ -7,4 +7,4 @@ export const surfaceId = 'app.unknown';
 // nothing to seed — the whole surface is three strings and a home link.
 const VIEW = 'ui/views/app_shell/unknown/unknown_view.html';
 
-export const page = (c, h) => h.render(c, VIEW, {});
+export const page = (context, helpers) => helpers.render(context, VIEW, {});

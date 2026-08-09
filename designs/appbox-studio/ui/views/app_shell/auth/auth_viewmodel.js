@@ -7,12 +7,12 @@ import * as facade from '../../../../services/facades/app_facade.js';
 
 const VIEW = 'ui/views/app_shell/auth/auth_view.html';
 
-export const page = (c, h) =>
-  h.render(c, VIEW, facade.authContext(h.locale(c), c.req.query('state')));
+export const page = (context, helpers) =>
+  helpers.render(context, VIEW, facade.authContext(helpers.locale(context), context.req.query('state')));
 
 // Seeded auth: any input signs in. 303 to the dashboard (hx-boost follows it).
-export const signIn = async (c, h) => {
-  const form = await h.form(c);
-  facade.signIn(h.session(c).data, String(form.email || '').trim(), String(form.provider || '').trim(), h.locale(c));
-  return c.redirect('/dashboard', 303);
+export const signIn = async (context, helpers) => {
+  const form = await helpers.form(context);
+  facade.signIn(helpers.session(context).data, String(form.email || '').trim(), String(form.provider || '').trim(), helpers.locale(context));
+  return context.redirect('/dashboard', 303);
 };

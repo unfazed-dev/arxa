@@ -8,35 +8,35 @@ import * as facade from '../../../../../services/facades/intake_facade.js';
 const VIEW = 'ui/views/main_shell/intake/moodboard/moodboard_view.html';
 const S = 'moodboard';
 
-export const page = (c, h) =>
-  h.render(c, VIEW, { activeShell: 'intake', ...facade.context(h.session(c).data, S, c.req.query('artifact') ?? null, h.prefs(c), h.t(c), h.locale(c), c.req.query('file'), c.req.query('panel')) });
+export const page = (context, helpers) =>
+  helpers.render(context, VIEW, { activeShell: 'intake', ...facade.context(helpers.session(context).data, S, context.req.query('artifact') ?? null, helpers.prefs(context), helpers.translate(context), helpers.locale(context), context.req.query('file'), context.req.query('panel')) });
 
 // A file row: open the file in the main panel (?path=, unknown → empty state).
-export const file = (c, h) =>
-  h.render(c, `${VIEW}#fileSwap`, facade.openFile(h.session(c).data, S, c.req.query('path'), h.prefs(c), h.t(c), h.locale(c)));
+export const file = (context, helpers) =>
+  helpers.render(context, `${VIEW}#fileSwap`, facade.openFile(helpers.session(context).data, S, context.req.query('path'), helpers.prefs(context), helpers.translate(context), helpers.locale(context)));
 
 // Open an artifact in the main panel (gallery ↔ shot detail).
-export const artifact = (c, h) => {
-  const ref = `${c.req.param('kind')}/${c.req.param('id')}`;
-  return h.render(c, `${VIEW}#panelsSwap`, facade.showArtifact(h.session(c).data, S, ref, h.prefs(c), h.t(c), h.locale(c)));
+export const artifact = (context, helpers) => {
+  const ref = `${context.req.param('kind')}/${context.req.param('id')}`;
+  return helpers.render(context, `${VIEW}#panelsSwap`, facade.showArtifact(helpers.session(context).data, S, ref, helpers.prefs(context), helpers.translate(context), helpers.locale(context)));
 };
 
 // Composer agent chrome: the model pick swaps the stage.
-export const model = (c, h) =>
-  h.render(c, `${VIEW}#panelsSwap`, facade.setModel(h.session(c).data, S, c.req.param('id'), h.prefs(c), h.t(c), h.locale(c)));
+export const model = (context, helpers) =>
+  helpers.render(context, `${VIEW}#panelsSwap`, facade.setModel(helpers.session(context).data, S, context.req.param('id'), helpers.prefs(context), helpers.translate(context), helpers.locale(context)));
 
 // Activity panel view switch: ?view=thread|artifacts|files.
-export const panel = (c, h) =>
-  h.render(c, `${VIEW}#activitySwap`, facade.setActivityView(h.session(c).data, S, c.req.query('view'), h.prefs(c), h.t(c), h.locale(c)));
+export const panel = (context, helpers) =>
+  helpers.render(context, `${VIEW}#activitySwap`, facade.setActivityView(helpers.session(context).data, S, context.req.query('view'), helpers.prefs(context), helpers.translate(context), helpers.locale(context)));
 
 // Panel width grip: s/m/l persisted per side for the whole intake shell.
-export const panelSize = (c, h) =>
-  h.render(c, `${VIEW}#activityFrameSwap`, facade.setPanelSize(h.session(c).data, S, c.req.param('panel'), c.req.param('size'), h.prefs(c), h.t(c), h.locale(c)));
+export const panelSize = (context, helpers) =>
+  helpers.render(context, `${VIEW}#activityFrameSwap`, facade.setPanelSize(helpers.session(context).data, S, context.req.param('panel'), context.req.param('size'), helpers.prefs(context), helpers.translate(context), helpers.locale(context)));
 
 // The composer: append the user's message and a simulated agent reply.
-export const sendMessage = async (c, h) => {
-  const form = await h.form(c);
+export const sendMessage = async (context, helpers) => {
+  const form = await helpers.form(context);
   const text = String(form.preset || form.text || '').trim();
-  if (!text) return h.noContent(c);
-  return h.render(c, `${VIEW}#panelsSwap`, facade.sendMessage(h.session(c).data, S, text, h.prefs(c), h.t(c), h.locale(c)));
+  if (!text) return helpers.noContent(context);
+  return helpers.render(context, `${VIEW}#panelsSwap`, facade.sendMessage(helpers.session(context).data, S, text, helpers.prefs(context), helpers.translate(context), helpers.locale(context)));
 };

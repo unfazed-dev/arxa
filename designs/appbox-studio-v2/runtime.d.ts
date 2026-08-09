@@ -6,7 +6,7 @@ declare module '*runtime/icon.tsx' {
     name: string;
     size?: number;
     class?: string;
-    cls?: string;
+    className?: string;
     label?: string;
   }
   export default function Icon(props: IconProps): JSX.Element;

@@ -8,7 +8,7 @@ const PID = 'panel-header';
 
 interface HeaderPanelSpec {
   class?: string;
-  attrs?: string;
+  attributes?: string;
   vt?: string;
   children?: Child;
 }
@@ -21,7 +21,7 @@ export function Open(spec: HeaderPanelSpec) {
       id={PID}
       tag="nav"
       class={spec.class}
-      attrs={spec.attrs}
+      attributes={spec.attributes}
       vt={spec.vt}
       top={false}
       sideStart={false}

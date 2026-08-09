@@ -12,13 +12,13 @@
   width: var(--composer-w);
   /* Floor = the starting width: this panel widens from its default, it does
      not narrow below it (the activity panel is built the same way — see
-     `--panel-w`, "default = minimum width"). */
+     `--panel-width`, "default = minimum width"). */
   min-width: var(--composer-w);
   /* The SAME ceiling as the activity panel, from panels.css. It used to be
      `calc(var(--composer-w) * 1.6)` — a multiplier, so the cap silently moved
      whenever the default did, and landed on 576px against the activity
      panel's 600px for no reason either number could explain. */
-  max-width: var(--panel-max-w);
+  max-width: var(--panel-max-width);
   /* The card furnishings, the section grid, overflow and position:relative all
      come from .panel (panels.css). What survives here is only what is true of
      THIS panel: its width, and its own view-transition name.

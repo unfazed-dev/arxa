@@ -67,7 +67,7 @@ export function FactsBar(props: FactsBarProps) {
           <details class="facts-filter">
             <summary aria-label={filter.summaryAria} title={filter.summaryTitle} {...inspectAttrs('facts-bar:filter-summary', { role: 'label' })}>
               {filter.summary}
-              <Icon name="chevron-down" size={14} cls="caret" />
+              <Icon name="chevron-down" size={14} className="caret" />
             </summary>
             <span class="filter-menu" {...inspectAttrs('facts-bar:filter-menu', { role: 'group' })}>
               {filter.options.map((o) => {

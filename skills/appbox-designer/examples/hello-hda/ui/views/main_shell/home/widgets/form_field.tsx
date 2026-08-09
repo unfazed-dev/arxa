@@ -44,9 +44,9 @@ const FormField: FC<FormFieldProps> = ({ field }) => {
           aria-invalid={field.error ? 'true' : undefined}
           aria-describedby={describedBy}
         >
-          {field.options.map((o) => (
-            <option value={o.value} selected={o.value === field.value}>
-              {o.label}
+          {field.options.map((option) => (
+            <option value={option.value} selected={option.value === field.value}>
+              {option.label}
             </option>
           ))}
         </select>

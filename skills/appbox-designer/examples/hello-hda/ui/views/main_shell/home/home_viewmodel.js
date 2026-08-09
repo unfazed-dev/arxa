@@ -4,12 +4,12 @@ import { homeContext } from '../../../../services/facades/greeting_facade.js';
 import { chrome } from '../main_shell_viewmodel.js';
 
 /** @param {import('hono').Context} c @param {import('../../../../runtime/types').Helpers} h */
-export const page = (c, h) => {
-  const ctx = homeContext(h.locale(c));
+export const page = (context, helpers) => {
+  const ctx = homeContext(helpers.locale(context));
   // ?n= overrides the count for the itemCount plural demo (one/few/many).
-  const n = Number(c.req.query('n'));
-  return h.render(c, 'ui/views/main_shell/home/home_view.html', {
-    ...chrome('home', h.t(c)),
+  const demoCount = Number(context.req.query('n'));
+  return helpers.render(context, 'ui/views/main_shell/home/home_view.html', {
+    ...chrome('home', helpers.translate(context)),
     ...ctx,
     demoCount: Number.isInteger(n) && n >= 0 ? n : ctx.count,
   });

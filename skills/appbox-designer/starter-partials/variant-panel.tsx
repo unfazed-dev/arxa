@@ -16,11 +16,11 @@
 //   ['GET', '/prefs/variant', prefs.setVariant],
 //   ['GET', '/prefs/accent',  prefs.setAccent],
 //
-//   export const setVariant = (c, h) => {
+//   export const setVariant = (context, helpers) => {
 //     h.setPrefs(c, { variant: c.req.query('id') ?? 'default' });
 //     return h.refresh(c);                       // HX-Refresh
 //   };
-//   export const setAccent = (c, h) => {
+//   export const setAccent = (context, helpers) => {
 //     h.setPrefs(c, { accent: c.req.query('value') ?? 'blueviolet' });
 //     return h.refresh(c);
 //   };
@@ -147,14 +147,14 @@ export const VariantPanel: FC<VariantPanelProps> = ({ variants = [], prefs = {} 
         <p class="variant-panel__title">Design variants</p>
         <nav class="variant-panel__variants" aria-label="Design variants">
           {variants.length > 0 ? (
-            variants.map((v) => (
+            variants.map((variant) => (
               <a
-                class={`variant-panel__variant${v.current ? ' is-active' : ''}`}
-                href={`/prefs/variant?id=${encodeURIComponent(v.id)}`}
-                aria-current={v.current ? 'true' : undefined}
-                key={v.id}
+                class={`variant-panel__variant${variant.current ? ' is-active' : ''}`}
+                href={`/prefs/variant?id=${encodeURIComponent(variant.id)}`}
+                aria-current={variant.current ? 'true' : undefined}
+                key={variant.id}
               >
-                {v.label}
+                {variant.label}
               </a>
             ))
           ) : (

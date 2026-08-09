@@ -7,32 +7,32 @@ import * as facade from '../../../../services/facades/app_facade.js';
 
 const VIEW = 'ui/views/app_shell/dashboard/dashboard_view.html';
 
-export const page = async (c, h) =>
-  h.render(c, VIEW, { activeShell: 'app', ...(await facade.dashboardContext(h.session(c).data, h.locale(c))) });
+export const page = async (context, helpers) =>
+  helpers.render(context, VIEW, { activeShell: 'app', ...(await facade.dashboardContext(helpers.session(context).data, helpers.locale(context))) });
 
 // The app shell's dashboard IS the studio home, but the ENTRY is the real
 // chain: root lands on /splash, which auto-advances splash → startup, and
 // startup branches to /auth (signed out) or /dashboard (signed in).
-export const root = (c, h) => c.redirect('/splash', 303);
+export const root = (context, helpers) => context.redirect('/splash', 303);
 
 // A project card picks the current project (writes ~/.appbox/current), 303
 // back to the dashboard.
-export const useProject = async (c, h) => {
-  const form = await h.form(c);
+export const useProject = async (context, helpers) => {
+  const form = await helpers.form(context);
   await facade.useProject(String(form.project || ''));
-  return c.redirect('/dashboard', 303);
+  return context.redirect('/dashboard', 303);
 };
 
 // Needs-you quick actions — seeded decision, 303 back to the dashboard.
-export const decide = async (c, h) => {
-  const form = await h.form(c);
-  facade.decideGate(h.session(c).data, String(form.gate || ''), String(form.decision || ''), h.locale(c));
-  return c.redirect('/dashboard', 303);
+export const decide = async (context, helpers) => {
+  const form = await helpers.form(context);
+  facade.decideGate(helpers.session(context).data, String(form.gate || ''), String(form.decision || ''), helpers.locale(context));
+  return context.redirect('/dashboard', 303);
 };
 
 // GenUI new-project wizard — creates a REAL project in ~/.appbox, lands on intake.
-export const createProject = async (c, h) => {
-  const form = await h.form(c);
-  await facade.createProject(h.session(c).data, String(form.name || ''), form.targets, h.t(c));
-  return c.redirect('/intake', 303);
+export const createProject = async (context, helpers) => {
+  const form = await helpers.form(context);
+  await facade.createProject(helpers.session(context).data, String(form.name || ''), form.targets, helpers.translate(context));
+  return context.redirect('/intake', 303);
 };

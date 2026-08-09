@@ -428,7 +428,7 @@ interface TileProps {
 }
 export function Tile({ v, s, row, first, last, t }: TileProps) {
   const scope = row?.id ?? 'views';
-  const cls = [
+  const className = [
     'dv-tile',
     s.inContext ? `in-ctx ctx-${s.tone}` : '',
     s.dim ? 'is-dim' : '',
@@ -448,7 +448,7 @@ export function Tile({ v, s, row, first, last, t }: TileProps) {
   if (s.live && s.walkQs) src += s.walkQs;
 
   return (
-    <div class={cls} id={`dvt-${scope}--${s.id}`} data-id={s.id} style={`width: ${s.tile.width}px`} {...inspectAttrs('viewer:tile', { role: 'card' })}>
+    <div class={className} id={`dvt-${scope}--${s.id}`} data-id={s.id} style={`width: ${s.tile.width}px`} {...inspectAttrs('viewer:tile', { role: 'card' })}>
       <header class="dv-tile-chrome">
         {!v.static && <TileTools v={v} s={s} row={row} first={first} last={last} t={t} />}
         <span class="dv-tile-label"><strong>{s.label ?? s.id}</strong> <code>{s.id}</code></span>
@@ -868,7 +868,7 @@ export function Filmstrip({ v }: FilmstripProps) {
   return (
     <Fragment>
       {(v.filmstrip ?? []).map((s) => {
-        const cls = [
+        const className = [
           'dv-thumb',
           'cs-thumb',
           s.inContext ? `in-ctx ctx-${s.tone}` : '',
@@ -876,7 +876,7 @@ export function Filmstrip({ v }: FilmstripProps) {
           s.active ? 'on' : '',
         ].filter(Boolean).join(' ');
         return (
-          <a key={s.id} class={cls} href={`#dvt-views--${s.id}`} title={s.label ?? s.id}>
+          <a key={s.id} class={className} href={`#dvt-views--${s.id}`} title={s.label ?? s.id}>
             <span class="dv-thumb-clip">
               <iframe
                 id={`dvf-vstrip--${s.id}`}

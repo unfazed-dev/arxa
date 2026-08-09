@@ -15,7 +15,7 @@ import type { FC } from 'hono/jsx';
 interface IconProps {
   name: string;
   size?: number;
-  cls?: string;
+  className?: string;
   label?: string;
   strokeWidth?: number;
 }
@@ -39,9 +39,9 @@ const preloadIcons: Record<string, string> | null = preload?.iconSvg ?? null;
 const esc = (s: string) =>
   String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
-function placeholder(size: number, cls?: string): string {
+function placeholder(size: number, className?: string): string {
   console.warn(`[icon] placeholder rendered`);
-  return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"${cls ? ` class="${esc(cls)}"` : ''}><rect x="3" y="3" width="18" height="18" rx="3" stroke-dasharray="4 3"/></svg>`;
+  return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"${className ? ` class="${esc(className)}"` : ''}><rect x="3" y="3" width="18" height="18" rx="3" stroke-dasharray="4 3"/></svg>`;
 }
 
 function loadIcon(name: string): string | null {
@@ -61,14 +61,14 @@ function loadIcon(name: string): string | null {
   return raw_;
 }
 
-const Icon: FC<IconProps> = ({ name, size = 24, cls, label, strokeWidth }) => {
+const Icon: FC<IconProps> = ({ name, size = 24, className, label, strokeWidth }) => {
   if (typeof name !== 'string' || !NAME_RE.test(name)) {
     console.warn(`[icon] rejected name ${JSON.stringify(String(name))} (want ${NAME_RE})`);
-    return raw(placeholder(size, cls));
+    return raw(placeholder(size, className));
   }
 
   const rawSvg = loadIcon(name);
-  if (rawSvg === null) return raw(placeholder(size, cls));
+  if (rawSvg === null) return raw(placeholder(size, className));
 
   const openTag = rawSvg.match(/<svg[^>]*>/)![0];
   let open = openTag
@@ -81,7 +81,7 @@ const Icon: FC<IconProps> = ({ name, size = 24, cls, label, strokeWidth }) => {
   open = open.replace(
     /<svg/,
     `<svg width="${size}" height="${size}"` +
-      (cls ? ` class="${esc(cls)}"` : '') +
+      (className ? ` class="${esc(className)}"` : '') +
       (label ? ` role="img" aria-label="${esc(label)}"` : ' aria-hidden="true" focusable="false"'),
   );
   const head = rawSvg.slice(0, rawSvg.indexOf(openTag)); // @license comment — keep it attached

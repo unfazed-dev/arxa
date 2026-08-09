@@ -5,20 +5,20 @@ import type { FC } from 'hono/jsx';
 interface LangSwitcherProps {
   locales: string[];
   locale: string;
-  t: (key: string) => unknown;
+  translate: (key: string) => unknown;
 }
 
-const LangSwitcher: FC<LangSwitcherProps> = ({ locales, locale, t }) => {
+const LangSwitcher: FC<LangSwitcherProps> = ({ locales, locale, translate }) => {
   if (!locales || locales.length <= 1) return null;
   return (
-    <nav class="lang-switcher" aria-label={t('lang.label') as string}>
-      {locales.map((l) => (
+    <nav class="lang-switcher" aria-label={translate('lang.label') as string}>
+      {locales.map((localeTag) => (
         <a
           class="lang-switcher__link"
-          href={`/prefs/lang?lang=${l}`}
-          aria-current={l === locale ? 'true' : undefined}
+          href={`/prefs/lang?lang=${localeTag}`}
+          aria-current={localeTag === locale ? 'true' : undefined}
         >
-          {t(`lang.name.${l}`) as string}
+          {translate(`lang.name.${localeTag}`) as string}
         </a>
       ))}
     </nav>

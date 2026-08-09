@@ -2,7 +2,7 @@
 // staggered-action FAB. Pure CSS visibility; open/close is <details>.
 import { Fragment } from 'hono/jsx';
 import Icon from '../../../runtime/icon.tsx';
-import { inspectAttrs } from '../common/studio_primitives/primitives.tsx';
+import { inspectAttributes } from '../common/studio_primitives/primitives.tsx';
 import { destinations, type TFn } from './destinations.tsx';
 
 interface TabbarProps {
@@ -12,27 +12,27 @@ interface TabbarProps {
 
 export function Tabbar(props: TabbarProps) {
   const { activeShell, translate } = props;
-  const dests = destinations(translate);
+  const shellDestinations = destinations(translate);
 
   return (
     <Fragment>
       {/* compact: primary nav leaves the header panel and becomes the tabbar */}
-      <nav class="tabbar" aria-label={translate('nav.primary') as string} {...inspectAttrs('studio_hub:tabbar', { role: 'nav' })}>
-        {dests.map((d) => (
+      <nav class="tabbar" aria-label={translate('nav.primary') as string} {...inspectAttributes('studio_hub:tabbar', { role: 'nav' })}>
+        {shellDestinations.map((destination) => (
           <a
-            key={d.id}
-            class={`tabbar__link${activeShell === d.id ? ' is-active' : ''}`}
-            href={d.href}
-            aria-current={activeShell === d.id ? 'page' : undefined}
+            key={destination.id}
+            class={`tabbar__link${activeShell === destination.id ? ' is-active' : ''}`}
+            href={destination.href}
+            aria-current={activeShell === destination.id ? 'page' : undefined}
           >
-            <Icon name={d.icon} size={22} cls="tabbar__icon" />
-            <span class="tabbar__label">{d.label}</span>
+            <Icon name={destination.icon} size={22} className="tabbar__icon" />
+            <span class="tabbar__label">{destination.label}</span>
           </a>
         ))}
       </nav>
 
       {/* compact + medium: staggered-action FAB, pure <details> */}
-      <details class="fab-menu" {...inspectAttrs('studio_hub:fab', { role: 'nav' })}>
+      <details class="fab-menu" {...inspectAttributes('studio_hub:fab', { role: 'nav' })}>
         <summary class="fab" aria-label={translate('nav.quickActions') as string}>
           <Icon name="plus" size={24} />
         </summary>

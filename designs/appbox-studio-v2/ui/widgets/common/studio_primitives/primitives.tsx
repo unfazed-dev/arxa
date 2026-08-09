@@ -4,10 +4,10 @@ import Icon from '../../../../runtime/icon.tsx';
 
 type TFn = (key: string, vars?: Record<string, unknown>) => unknown;
 
-// inspectAttrs — the ONE source of widget inspect identity. Every library
+// inspectAttributes — the ONE source of widget inspect identity. Every library
 // widget spreads this on its root element; screens never hand-write
 // data-inspect-* again. name is what the inspect overlay badge shows.
-export function inspectAttrs(
+export function inspectAttributes(
   name: string,
   meta: { role: string; style?: string; motion?: string; fn?: string },
 ): Record<string, string> {
@@ -23,7 +23,7 @@ interface TextProps { name?: string; fn?: string; class?: string; id?: string; c
 
 export function Label(props: TextProps) {
   return (
-    <span class={props.class} id={props.id} {...inspectAttrs(props.name ?? 'label', { role: 'label', style: 'text · label', fn: props.fn })}>
+    <span class={props.class} id={props.id} {...inspectAttributes(props.name ?? 'label', { role: 'label', style: 'text · label', fn: props.fn })}>
       {props.children}
     </span>
   );
@@ -32,7 +32,7 @@ export function Label(props: TextProps) {
 export function Heading(props: TextProps & { level?: 1 | 2 | 3 }) {
   const Tag = `h${props.level ?? 2}` as 'h2';
   return (
-    <Tag class={props.class} id={props.id} {...inspectAttrs(props.name ?? 'heading', { role: 'heading', style: 'text · heading', fn: props.fn })}>
+    <Tag class={props.class} id={props.id} {...inspectAttributes(props.name ?? 'heading', { role: 'heading', style: 'text · heading', fn: props.fn })}>
       {props.children}
     </Tag>
   );
@@ -40,7 +40,7 @@ export function Heading(props: TextProps & { level?: 1 | 2 | 3 }) {
 
 export function Txt(props: TextProps) {
   return (
-    <p class={props.class} id={props.id} {...inspectAttrs(props.name ?? 'text', { role: 'text', style: 'text · body', fn: props.fn })}>
+    <p class={props.class} id={props.id} {...inspectAttributes(props.name ?? 'text', { role: 'text', style: 'text · body', fn: props.fn })}>
       {props.children}
     </p>
   );
@@ -49,11 +49,11 @@ export function Txt(props: TextProps) {
 // chip — the base primitive every tone-hook badge below is built from.
 // See assets/css/widgets.css for the .chip base + modifier contract (D2).
 interface ChipProps {
-  cls: string;
+  className: string;
   label: string;
 }
 export function Chip(props: ChipProps) {
-  return <span class={`chip ${props.cls ?? ''}`} {...inspectAttrs('chip:' + props.label, { role: 'label' })}>{props.label}</span>;
+  return <span class={`chip ${props.className ?? ''}`} {...inspectAttributes('chip:' + props.label, { role: 'label' })}>{props.label}</span>;
 }
 
 // statusPill — the status pill used by the facts bar, artifacts, freeze/trace.
@@ -65,7 +65,7 @@ interface StatusPillProps {
 export function StatusPill(props: StatusPillProps) {
   const { state, size = '', translate } = props;
   return (
-    <span class={`chip${size ? ` chip--${size}` : ''} status-pill status-${state}`} {...inspectAttrs('status:' + state, { role: 'label' })}>
+    <span class={`chip${size ? ` chip--${size}` : ''} status-pill status-${state}`} {...inspectAttributes('status:' + state, { role: 'label' })}>
       <span class="status-dot"></span>
       {translate(`status.name.${state}`) as string}
     </span>
@@ -80,7 +80,7 @@ interface TypeBadgeProps {
 }
 export function TypeBadge(props: TypeBadgeProps) {
   const { type, label } = props;
-  return <Chip cls={`type-badge tb-${type}`} label={label ?? type} />;
+  return <Chip className={`type-badge tb-${type}`} label={label ?? type} />;
 }
 
 // ctaLink — navigational CTA: label + trailing affordance glyph (default
@@ -115,7 +115,7 @@ export function CtaLink(props: CtaLinkProps) {
     title = '',
     external = false,
   } = props;
-  const hxAttrs = hx
+  const hxAttributes = hx
     ? {
         'hx-get': hx.get ?? href,
         'hx-target': hx.target,
@@ -127,8 +127,8 @@ export function CtaLink(props: CtaLinkProps) {
     <a
       class={`cta-link${variant ? ` cta-link--${variant}` : ''}`}
       href={href}
-      {...hxAttrs}
-      {...inspectAttrs('cta:' + label, { role: 'action' })}
+      {...hxAttributes}
+      {...inspectAttributes('cta:' + label, { role: 'action' })}
       {...(title ? { title } : {})}
       {...(external ? { target: '_blank', rel: 'noopener' } : {})}
     >

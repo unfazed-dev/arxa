@@ -19,13 +19,13 @@ import type { HubFrameProps } from './studio_application_hub_view.tsx';
 const StudioApplicationHubViewMobile: FC<HubFrameProps> = ({
   translate,
   activeShell,
-  prefs,
+  preferences,
   project,
   headerExtra,
 }) => (
   <>
     <HeaderPanel>
-      <Header translate={translate} activeShell={activeShell} prefs={prefs} project={project} />
+      <Header translate={translate} activeShell={activeShell} preferences={preferences} project={project} />
       {headerExtra}
     </HeaderPanel>
     <Tabbar translate={translate} activeShell={activeShell} />

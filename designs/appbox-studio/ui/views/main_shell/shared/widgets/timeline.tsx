@@ -85,7 +85,7 @@ export function Timeline({ timeline, oob, label, base, t }: TimelineProps) {
       <BodyOob
         pid="panel-footer"
         tag="ol"
-        cls="timeline"
+        className="timeline"
         id="timeline"
         attrs={{ ...inspectAttrs('timeline', { role: 'list' }), 'aria-label': label ?? '' }}
       >

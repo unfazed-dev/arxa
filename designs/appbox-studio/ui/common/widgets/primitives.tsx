@@ -49,11 +49,11 @@ export function Txt(props: TextProps) {
 // chip — the base primitive every tone-hook badge below is built from.
 // See assets/css/widgets.css for the .chip base + modifier contract (D2).
 interface ChipProps {
-  cls: string;
+  className: string;
   label: string;
 }
 export function Chip(props: ChipProps) {
-  return <span class={`chip ${props.cls ?? ''}`} {...inspectAttrs('chip:' + props.label, { role: 'label' })}>{props.label}</span>;
+  return <span class={`chip ${props.className ?? ''}`} {...inspectAttrs('chip:' + props.label, { role: 'label' })}>{props.label}</span>;
 }
 
 // statusPill — the status pill used by the facts bar, artifacts, freeze/trace.
@@ -80,7 +80,7 @@ interface TypeBadgeProps {
 }
 export function TypeBadge(props: TypeBadgeProps) {
   const { type, label } = props;
-  return <Chip cls={`type-badge tb-${type}`} label={label ?? type} />;
+  return <Chip className={`type-badge tb-${type}`} label={label ?? type} />;
 }
 
 // ctaLink — navigational CTA: label + trailing affordance glyph (default

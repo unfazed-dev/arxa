@@ -37,16 +37,16 @@
 //
 //   const schema = z.object({ email: z.string().email(), name: z.string().min(1) });
 //
-//   export async function submit(c, h) {
+//   export async function submit(context, helpers) {
 //     const result = await parseForm(c, schema);
 //     if (!result.ok) {
-//       return h.render(c, 'ui/views/.../form_view.html#form', {
+//       return helpers.render(context, 'ui/views/.../form_view.html#form', {
 //         errors: result.errors,
 //         values: result.values,
 //       }, 422);
 //     }
 //     // success — result.data is typed
-//     return h.refresh(c);
+//     return helpers.refresh(context);
 //   }
 
 /**

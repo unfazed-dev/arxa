@@ -11,7 +11,7 @@
 //   </Wrap>
 import type { Child } from 'hono/jsx';
 import Icon from '../../runtime/icon.tsx';
-import { inspectAttrs } from '../widgets/common/studio_primitives/primitives.tsx';
+import { inspectAttributes } from '../widgets/common/studio_primitives/primitives.tsx';
 
 type TFn = (key: string, vars?: Record<string, unknown>) => unknown;
 
@@ -32,8 +32,8 @@ export function Wrap(props: WrapProps) {
   const { trigger, label, cardClass, closeLabel, translate } = props;
   return (
     <details class="modal">
-      <summary class="modal-trigger" {...inspectAttrs('modal:trigger', { role: 'label' })}>
-        <span class="modal-open-label" {...inspectAttrs('modal:open-label', { role: 'text' })}>{trigger}</span>
+      <summary class="modal-trigger" {...inspectAttributes('modal:trigger', { role: 'label' })}>
+        <span class="modal-open-label" {...inspectAttributes('modal:open-label', { role: 'text' })}>{trigger}</span>
         <span class="modal-close-label">
           <Icon name="x" size={18} label={closeLabel ?? (translate('modal.close') as string)} />
         </span>
@@ -43,7 +43,7 @@ export function Wrap(props: WrapProps) {
         role="dialog"
         aria-modal="true"
         aria-label={label ?? trigger}
-        {...inspectAttrs('modal:card', { role: 'group' })}
+        {...inspectAttributes('modal:card', { role: 'group' })}
       >
         {props.children}
       </div>

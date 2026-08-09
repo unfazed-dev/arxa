@@ -168,17 +168,17 @@ export const IosKeyboard: FC<{ frame?: IosFrameOpts }> = () => (
     </div>
     <div class="ios-kb__rows">
       <div class="ios-kb__row">
-        {KB_ROW1.map((k) => <span class="ios-kb__key" key={k}>{k}</span>)}
+        {KB_ROW1.map((keyLabel) => <span class="ios-kb__key" key={keyLabel}>{keyLabel}</span>)}
       </div>
       <div class="ios-kb__row ios-kb__row--inset">
-        {KB_ROW2.map((k) => <span class="ios-kb__key" key={k}>{k}</span>)}
+        {KB_ROW2.map((keyLabel) => <span class="ios-kb__key" key={keyLabel}>{keyLabel}</span>)}
       </div>
       <div class="ios-kb__row ios-kb__row--wide">
         <span class="ios-kb__key ios-kb__key--special">
           <svg width="19" height="17" viewBox="0 0 19 17" fill="currentColor"><path d="M9.5 1L1 9.5h4.5V16h8V9.5H18L9.5 1z" /></svg>
         </span>
         <span class="ios-kb__row3">
-          {KB_ROW3.map((k) => <span class="ios-kb__key" key={k}>{k}</span>)}
+          {KB_ROW3.map((keyLabel) => <span class="ios-kb__key" key={keyLabel}>{keyLabel}</span>)}
         </span>
         <span class="ios-kb__key ios-kb__key--special">
           <svg width="23" height="17" viewBox="0 0 23 17" fill="none">
