@@ -176,8 +176,15 @@ export const inspectAttrs = {
 **Identity is stamped at emit time, never inferred at runtime** — the same
 principle as Flutter's `--track-widget-creation`. The triple
 **(screenId, surfaceId, anatomy-node id)** is derived from registry ids and is
-mandatory on **every** emitted surface, shells included; its presence is
-mechanically enforced by the probe.
+mandatory on **every** emitted surface, shells included. In the DOM the
+triple is spelled `data-inspect-screen` / `data-inspect-surface` /
+`data-inspect-node`, and its presence is mechanically enforced:
+`appboxd/lib/probes/studio/probe_inspect.dart` (section 18) reads those three
+attributes off every stamped element and fails on any node id outside the
+registry vocabulary, or on any stamped element missing part of the triple.
+Legacy (pre-anatomy) shells are deliberately unstamped and read as
+N/A-unstamped, not as failures — stamping arrives with each view's anatomy
+cutover (Q13 parallel-run).
 
 The anatomy-node vocabulary is CLOSED, not open: the valid ids are exactly
 those in `skills/appbox-scaffolder/kind-resolution.registry.json#/anatomyNodes/vocabulary`

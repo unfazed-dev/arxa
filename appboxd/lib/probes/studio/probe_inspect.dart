@@ -16,6 +16,7 @@
 // landed.
 
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:appboxd/cdp.dart';
 import 'package:appboxd/probes/probe_base.dart';
@@ -493,6 +494,51 @@ Future<void> _run(ProbeContext ctx) async {
       'wrapped label shows > 1 highlight rect',
       rectCount is num && rectCount.toInt() > 1, 'rects: $rectCount');
 
+  ctx.report.section(
+      '18. inspect identity: stamped data-inspect-* triple is in-vocabulary');
+  // Q13: this is the check app-architecture.md points at when it says the
+  // stamped identity is "mechanically enforced by the probe". The legacy
+  // shell is deliberately unstamped — zero stamped nodes reads as
+  // N/A-unstamped, not a failure. Any node that IS stamped must carry the
+  // full triple, and its node id must be a member of the CLOSED vocabulary in
+  // kind-resolution.registry.json#/anatomyNodes (v1.3.0: anatomy:view.body,
+  // anatomy:shell.surface). The registry, not this probe, owns the list.
+  final vocab = _anatomyVocabulary();
+  ctx.report.check('anatomy-node vocabulary loaded from registry',
+      vocab.isNotEmpty, 'members: ${vocab.join(', ')}');
+  final idRaw = await page.evaluate(
+      '(() => { const els = Array.from(document.querySelectorAll("[data-inspect-node]"));'
+      ' return JSON.stringify(els.map((e) => ({'
+      ' screen: e.getAttribute("data-inspect-screen"),'
+      ' surface: e.getAttribute("data-inspect-surface"),'
+      ' node: e.getAttribute("data-inspect-node") }))); })()');
+  final stamped = idRaw is String
+      ? (jsonDecode(idRaw) as List).cast<Map<String, dynamic>>()
+      : const <Map<String, dynamic>>[];
+  final offVocab = stamped
+      .where((s) => !vocab.contains(s['node']))
+      .map((s) => '${s['node']}')
+      .toList();
+  final incomplete = stamped
+      .where((s) =>
+          s['screen'] is! String ||
+          (s['screen'] as String).isEmpty ||
+          s['surface'] is! String ||
+          (s['surface'] as String).isEmpty)
+      .length;
+  ctx.report.check(
+      'every stamped node id is in the closed registry vocabulary',
+      offVocab.isEmpty,
+      stamped.isEmpty
+          ? 'stamped: 0 (legacy shell — N/A-unstamped)'
+          : offVocab.isEmpty
+              ? 'stamped: ${stamped.length}, all in-vocabulary'
+              : 'off-vocabulary: ${offVocab.join(', ')}');
+  ctx.report.check(
+      'every stamped element carries the full triple (screen+surface+node)',
+      incomplete == 0,
+      'stamped: ${stamped.length}, incomplete: $incomplete');
+
   ctx.report.section('requests seen');
   ctx.report.out.writeln(reqs.isNotEmpty ? '  ${reqs.join('\n  ')}' : '  (none)');
   ctx.report.section('errors');
@@ -506,6 +552,37 @@ Future<void> _run(ProbeContext ctx) async {
       .writeln(errs.isNotEmpty ? errs.map((e) => '  ! $e').join('\n') : '  none');
 
   await ctx.closePage(page);
+}
+
+/// Walk up from CWD to the repo root (the directory holding the registry).
+Directory? _repoRoot() {
+  var dir = Directory.current;
+  while (true) {
+    if (File('${dir.path}/skills/appbox-scaffolder/kind-resolution.registry.json')
+        .existsSync()) {
+      return dir;
+    }
+    final parent = dir.parent;
+    if (parent.path == dir.path) return null;
+    dir = parent;
+  }
+}
+
+/// The ratified closed anatomy-node vocabulary. Empty set = registry not
+/// found (the first check in section 18 turns that into a visible failure
+/// rather than a silently-green vacuous pass).
+Set<String> _anatomyVocabulary() {
+  final root = _repoRoot();
+  if (root == null) return <String>{};
+  final f = File(
+      '${root.path}/skills/appbox-scaffolder/kind-resolution.registry.json');
+  if (!f.existsSync()) return <String>{};
+  final nodes = (jsonDecode(f.readAsStringSync()) as Map)['anatomyNodes'];
+  if (nodes is! Map) return <String>{};
+  final vocab = nodes['vocabulary'];
+  if (vocab is Map) return vocab.keys.cast<String>().toSet();
+  if (vocab is List) return vocab.cast<String>().toSet();
+  return <String>{};
 }
 
 Future<bool> _present(CdpSession page, String selector) async =>
