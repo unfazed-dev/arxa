@@ -16,7 +16,7 @@ export const shellId = 'studio_dashboard_shell';
 /** The id the hub destinations use for this shell's tab/rail highlight. */
 export const destinationId = 'dashboard';
 
-/** @param {(key: string) => string} t */
-export const shellProps = (t) => ({
+/** @param {(key: string) => string} translate */
+export const shellProps = (translate) => ({
   activeShell: destinationId,
 });

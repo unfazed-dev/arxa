@@ -58,7 +58,7 @@ interface FooterSpec {
 // Chrome only: the body outlet (surface/mainClass) and the footer panel are
 // the root's business — they render once, outside the rung wrappers.
 export interface HubFrameProps {
-  t: TFn;
+  translate: TFn;
   activeShell: string;
   prefs?: Prefs;
   project?: Project;
@@ -80,7 +80,7 @@ export interface StudioApplicationHubViewProps extends HubFrameProps {
 
 const StudioApplicationHubView: FC<StudioApplicationHubViewProps> = (props) => (
   <Base
-    title={props.title ?? (props.t('index.pageTitle') as string)}
+    title={props.title ?? (props.translate('index.pageTitle') as string)}
     locale={props.locale}
     accent={props.prefs?.accent}
     theme={props.prefs?.theme}

@@ -9,11 +9,11 @@
 //   currently consumer-less, pending hub-shell disposition.
 import { registry } from '../repositories/studio_application_repository_service.js';
 
-/** @param {(key: string) => string} t */
-export const stageRoster = (t) =>
+/** @param {(key: string) => string} translate */
+export const stageRoster = (translate) =>
   registry().stages.map((s) => ({
     id: s.id,
-    name: t(s.labelKey),
+    name: translate(s.labelKey),
     consumes: s.consumes,
     produces: s.produces,
     href: s.href,

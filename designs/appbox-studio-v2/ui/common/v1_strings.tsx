@@ -1,4 +1,4 @@
-// Role: v1 English string table + minimal t() for surfaces restyled to the v1
+// Role: v1 English string table + minimal translate() for surfaces restyled to the v1
 //   design (task #22). The v1 views were authored against l10n keys; the v2
 //   design prototype has no l10n runtime, so the English table rides along.
 // Source: designs/appbox-studio/l10n/app_en.arb (subset by prefix).
@@ -100,13 +100,13 @@ const PLURAL = /^\{(\w+), plural,\s*one\{(.*?)\}\s*other\{(.*?)\}\}$/s;
 export type TFn = (key: string, vars?: Record<string, unknown>) => string;
 
 export const makeT = (): TFn => (key, vars) => {
-  let s = STRINGS[key];
-  if (s === undefined) return key;
-  const m = s.match(PLURAL);
-  if (m && vars) {
-    const n = Number(vars[m[1]] ?? 0);
-    s = n === 1 ? m[2] : m[3];
+  let template = STRINGS[key];
+  if (template === undefined) return key;
+  const pluralMatch = template.match(PLURAL);
+  if (pluralMatch && vars) {
+    const count = Number(vars[pluralMatch[1]] ?? 0);
+    template = count === 1 ? pluralMatch[2] : pluralMatch[3];
   }
-  if (vars) for (const [k, v] of Object.entries(vars)) s = s.split(`{${k}}`).join(String(v));
-  return s;
+  if (vars) for (const [varName, varValue] of Object.entries(vars)) template = template.split(`{}`).join(String(varValue));
+  return template;
 };

@@ -7,14 +7,14 @@
 // History: created for studio v2.
 import { readFixture } from '../../repositories/fixture_reader.js';
 
-/** @param {(key: string) => string} t @param {number} elapsed ticks observed so far */
-export const bootProgress = (t, elapsed) => {
+/** @param {(key: string) => string} translate @param {number} elapsed ticks observed so far */
+export const bootProgress = (translate, elapsed) => {
   const steps = /** @type {any} */ (readFixture('../../../models/startup_model/boot_seed.json')).steps;
   const done = Math.min(elapsed, steps.length);
   return {
     steps: steps.map((s, i) => ({
       id: s.id,
-      label: t(s.labelKey),
+      label: translate(s.labelKey),
       state: i < done ? 'done' : i === done ? 'running' : 'waiting',
     })),
     ready: done >= steps.length,

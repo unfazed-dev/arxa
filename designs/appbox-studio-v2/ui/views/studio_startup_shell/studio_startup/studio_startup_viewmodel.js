@@ -22,37 +22,37 @@ const VIEW = 'ui/views/studio_startup_shell/studio_startup/studio_startup_view.h
  *  straight to the hand-off instead of dead-ending on a disabled trigger.
  *  bootProgress caps this against the step count. */
 const ALL_STEPS = Number.MAX_SAFE_INTEGER;
-const elapsedOf = (c) => {
-  const n = Number(c.req.query('step'));
-  return Number.isInteger(n) && n >= 0 ? n : ALL_STEPS;
+const elapsedOf = (context) => {
+  const stepNumber = Number(context.req.query('step'));
+  return Number.isInteger(stepNumber) && stepNumber >= 0 ? stepNumber : ALL_STEPS;
 };
 
-/** @param {import('hono').Context} c @param {import('../../../../runtime/types').Helpers} h */
-export const view = (c, h) => {
-  const t = h.t(c);
-  return h.render(c, VIEW, {
-    ...shellProps(t),
-    build: t('buildIdentity'),
-    title: t('startupTitle'),
-    subtitle: t('startupSubtitle'),
-    proceedLabel: t('startupProceed'),
-    ...bootProgress(t, elapsedOf(c)),
-    locale: h.locale(c),
+/** @param {import('hono').Context} context @param {import('../../../../runtime/types').Helpers} helpers */
+export const view = (context, helpers) => {
+  const translate = helpers.translate(context);
+  return helpers.render(context, VIEW, {
+    ...shellProps(translate),
+    build: translate('buildIdentity'),
+    title: translate('startupTitle'),
+    subtitle: translate('startupSubtitle'),
+    proceedLabel: translate('startupProceed'),
+    ...bootProgress(translate, elapsedOf(context)),
+    locale: helpers.locale(context),
   });
 };
 
-/** @param {import('hono').Context} c @param {import('../../../../runtime/types').Helpers} h */
-export const progress = (c, h) => {
-  const t = h.t(c);
-  return h.render(c, `${VIEW}#progress`, {
-    ...bootProgress(t, elapsedOf(c)),
-    proceedLabel: t('startupProceed'),
+/** @param {import('hono').Context} context @param {import('../../../../runtime/types').Helpers} helpers */
+export const progress = (context, helpers) => {
+  const translate = helpers.translate(context);
+  return helpers.render(context, `${VIEW}#progress`, {
+    ...bootProgress(translate, elapsedOf(context)),
+    proceedLabel: translate('startupProceed'),
   });
 };
 
 /** The one thing that ends the ceremony. Q-v2-1: never implicit. */
-/** @param {import('hono').Context} c @param {import('../../../../runtime/types').Helpers} h */
-export const proceed = (c, h) => {
-  c.header('HX-Redirect', '/');
-  return c.body(null, 204);
+/** @param {import('hono').Context} context @param {import('../../../../runtime/types').Helpers} helpers */
+export const proceed = (context, helpers) => {
+  context.header('HX-Redirect', '/');
+  return context.body(null, 204);
 };

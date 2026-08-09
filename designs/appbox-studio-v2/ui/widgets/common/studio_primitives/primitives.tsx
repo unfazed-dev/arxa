@@ -60,14 +60,14 @@ export function Chip(props: ChipProps) {
 interface StatusPillProps {
   state: string;
   size?: string;
-  t: TFn;
+  translate: TFn;
 }
 export function StatusPill(props: StatusPillProps) {
-  const { state, size = '', t } = props;
+  const { state, size = '', translate } = props;
   return (
     <span class={`chip${size ? ` chip--${size}` : ''} status-pill status-${state}`} {...inspectAttrs('status:' + state, { role: 'label' })}>
       <span class="status-dot"></span>
-      {t(`status.name.${state}`) as string}
+      {translate(`status.name.${state}`) as string}
     </span>
   );
 }

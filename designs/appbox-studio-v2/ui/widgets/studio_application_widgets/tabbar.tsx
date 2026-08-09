@@ -7,17 +7,17 @@ import { destinations, type TFn } from './destinations.tsx';
 
 interface TabbarProps {
   activeShell: string;
-  t: TFn;
+  translate: TFn;
 }
 
 export function Tabbar(props: TabbarProps) {
-  const { activeShell, t } = props;
-  const dests = destinations(t);
+  const { activeShell, translate } = props;
+  const dests = destinations(translate);
 
   return (
     <Fragment>
       {/* compact: primary nav leaves the header panel and becomes the tabbar */}
-      <nav class="tabbar" aria-label={t('nav.primary') as string} {...inspectAttrs('studio_hub:tabbar', { role: 'nav' })}>
+      <nav class="tabbar" aria-label={translate('nav.primary') as string} {...inspectAttrs('studio_hub:tabbar', { role: 'nav' })}>
         {dests.map((d) => (
           <a
             key={d.id}
@@ -33,13 +33,13 @@ export function Tabbar(props: TabbarProps) {
 
       {/* compact + medium: staggered-action FAB, pure <details> */}
       <details class="fab-menu" {...inspectAttrs('studio_hub:fab', { role: 'nav' })}>
-        <summary class="fab" aria-label={t('nav.quickActions') as string}>
+        <summary class="fab" aria-label={translate('nav.quickActions') as string}>
           <Icon name="plus" size={24} />
         </summary>
         <div class="fab-actions" role="menu">
-          <a class="fab-action" href="/intake">{t('action.newProject') as string}</a>
-          <a class="fab-action" href="/">{t('action.pairDevice') as string}</a>
-          <a class="fab-action" href="/workspace">{t('tab.settings') as string}</a>
+          <a class="fab-action" href="/intake">{translate('action.newProject') as string}</a>
+          <a class="fab-action" href="/">{translate('action.pairDevice') as string}</a>
+          <a class="fab-action" href="/workspace">{translate('tab.settings') as string}</a>
         </div>
       </details>
     </Fragment>

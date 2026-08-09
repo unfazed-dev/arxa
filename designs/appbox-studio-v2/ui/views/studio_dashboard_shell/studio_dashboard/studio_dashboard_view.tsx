@@ -32,7 +32,7 @@ import Tablet from './studio_dashboard_view.tablet.tsx';
 import Mobile from './studio_dashboard_view.mobile.tsx';
 import type { Gate, ProjectCard, Stats, PairingModal, Wizard } from './studio_dashboard_view.sections.tsx';
 
-type TFn = (key: string, vars?: Record<string, unknown>) => unknown;
+type TranslateFn = (key: string, vars?: Record<string, unknown>) => unknown;
 
 interface Prefs {
   accent?: string;
@@ -41,7 +41,7 @@ interface Prefs {
 }
 
 interface DashboardViewProps {
-  t: TFn;
+  translate: TranslateFn;
   locale?: string;
   activeShell: string;
   prefs?: Prefs;
@@ -58,7 +58,7 @@ interface DashboardViewProps {
 
 const DashboardView: FC<DashboardViewProps> = (props) => {
   const {
-    t,
+    translate,
     locale,
     activeShell,
     prefs,
@@ -73,7 +73,7 @@ const DashboardView: FC<DashboardViewProps> = (props) => {
   } = props;
 
   const surfaceProps = {
-    t,
+    translate,
     accountName: account.name,
     gateCount,
     projectCount: projects.length,
@@ -86,8 +86,8 @@ const DashboardView: FC<DashboardViewProps> = (props) => {
 
   return (
     <StudioDashboardShellView
-      t={t}
-      title={t('dash.pageTitle') as string}
+      translate={translate}
+      title={translate('dash.pageTitle') as string}
       locale={locale}
       activeShell={activeShell}
       prefs={prefs}

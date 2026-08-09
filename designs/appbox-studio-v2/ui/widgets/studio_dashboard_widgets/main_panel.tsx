@@ -52,12 +52,12 @@ const PANEL_BAR_ITEMS: PanelBarItem[] = [
 ];
 interface PanelBarProps {
   panel?: string;
-  t: TFn;
+  translate: TFn;
 }
 export function PanelBar(props: PanelBarProps) {
-  const { panel, t } = props;
+  const { panel, translate } = props;
   return (
-    <nav class="panel-bar" aria-label={t('panelBar.aria') as string} {...inspectAttrs('panel-bar', { role: 'toolbar' })}>
+    <nav class="panel-bar" aria-label={translate('panelBar.aria') as string} {...inspectAttrs('panel-bar', { role: 'toolbar' })}>
       {PANEL_BAR_ITEMS.map(p => (
         <a
           key={p.id}
@@ -66,7 +66,7 @@ export function PanelBar(props: PanelBarProps) {
           {...(panel === p.id ? { 'aria-current': 'true' } : {})}
         >
           <Icon name={p.icon} size={16} />
-          <span class="panel-bar-label">{t(p.labelKey) as string}</span>
+          <span class="panel-bar-label">{translate(p.labelKey) as string}</span>
         </a>
       ))}
     </nav>
@@ -75,12 +75,12 @@ export function PanelBar(props: PanelBarProps) {
 
 // empty — the empty read state, rendered inside #panel-main.
 interface EmptyProps {
-  t: TFn;
+  translate: TFn;
 }
 export function Empty(props: EmptyProps) {
   return (
     <section class="mp-content mp-empty" id="mp-content" {...inspectAttrs('panel:main:empty', { role: 'panel' })}>
-      <p class="muted">{props.t('mainPanel.empty') as string}</p>
+      <p class="muted">{props.translate('mainPanel.empty') as string}</p>
     </section>
   );
 }
@@ -136,17 +136,17 @@ function fileBody(f: FileView) {
 // to the stage default) + the mode's body.
 interface ViewProps {
   f: FileView;
-  t: TFn;
+  translate: TFn;
 }
 export function View(props: ViewProps) {
-  const { f, t } = props;
+  const { f, translate } = props;
   return (
     <section class="mp-content mp-file" id="mp-content" aria-live="polite" {...inspectAttrs('file-view', { role: 'panel' })}>
       <header class="mp-file-head">
         <code class="mp-file-path">{f.path}</code>
-        <span class="chip chip--muted">{t(`mainPanel.mode.${f.modeName}`) as string}</span>
+        <span class="chip chip--muted">{translate(`mainPanel.mode.${f.modeName}`) as string}</span>
         <a class="mp-file-back" href={f.backHref}>
-          <Icon name="chevron-left" size={14} /> {t('mainPanel.back') as string}
+          <Icon name="chevron-left" size={14} /> {translate('mainPanel.back') as string}
         </a>
       </header>
       {fileBody(f)}

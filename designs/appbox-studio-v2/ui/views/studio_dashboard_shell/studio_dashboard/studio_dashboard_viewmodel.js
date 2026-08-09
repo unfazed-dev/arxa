@@ -17,24 +17,24 @@ import { dashboardContext } from '../../../../services/studio_dashboard_services
 
 const VIEW = 'ui/views/studio_dashboard_shell/studio_dashboard/studio_dashboard_view.html';
 
-/** @param {import('hono').Context} c @param {import('../../../../runtime/types').Helpers} h */
-export const view = (c, h) => {
-  const t = h.t(c);
-  return h.render(c, VIEW, {
-    ...shellProps(t),
-    ...dashboardContext(t),
-    locale: h.locale(c),
+/** @param {import('hono').Context} context @param {import('../../../../runtime/types').Helpers} helpers */
+export const view = (context, helpers) => {
+  const translate = helpers.translate(context);
+  return helpers.render(context, VIEW, {
+    ...shellProps(translate),
+    ...dashboardContext(translate),
+    locale: helpers.locale(context),
   });
 };
 
 /** Gate decision trigger. Design medium: acknowledge and return home. */
-/** @param {import('hono').Context} c @param {import('../../../../runtime/types').Helpers} h */
-export const decideGate = (c, h) => c.redirect('/', 303);
+/** @param {import('hono').Context} context @param {import('../../../../runtime/types').Helpers} helpers */
+export const decideGate = (context, helpers) => context.redirect('/', 303);
 
 /** "Use project" trigger. Design medium: acknowledge and return home. */
-/** @param {import('hono').Context} c @param {import('../../../../runtime/types').Helpers} h */
-export const useProject = (c, h) => c.redirect('/', 303);
+/** @param {import('hono').Context} context @param {import('../../../../runtime/types').Helpers} helpers */
+export const useProject = (context, helpers) => context.redirect('/', 303);
 
 /** New-project wizard submit. Design medium: acknowledge and return home. */
-/** @param {import('hono').Context} c @param {import('../../../../runtime/types').Helpers} h */
-export const createProject = (c, h) => c.redirect('/', 303);
+/** @param {import('hono').Context} context @param {import('../../../../runtime/types').Helpers} helpers */
+export const createProject = (context, helpers) => context.redirect('/', 303);

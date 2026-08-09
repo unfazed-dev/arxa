@@ -9,8 +9,8 @@
 // History: created when the hub was dissolved into studio_dashboard_shell.
 import { dashboardSeed } from '../repositories/studio_dashboard_repository_service.js';
 
-/** @param {(key: string) => string} t */
-export const dashboardContext = (t) => {
+/** @param {(key: string) => string} translate */
+export const dashboardContext = (translate) => {
   const seed = dashboardSeed();
   const gates = seed.gates ?? [];
   return {

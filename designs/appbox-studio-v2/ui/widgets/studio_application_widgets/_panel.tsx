@@ -13,7 +13,7 @@
 //
 //   import { Panel, Top, Bottom, SideStart, SideEnd, BodyOob, TopOob,
 //            BottomOob, SideEndOob, Resize } from './_panel.tsx';
-//   <Panel role="composer" t={t} top={headMarkup} bottom={footMarkup}>
+//   <Panel role="composer" translate={translate} top={headMarkup} bottom={footMarkup}>
 //     …body content…
 //   </Panel>
 //
@@ -109,7 +109,7 @@ interface PanelProps {
   bottomAttrs?: Record<string, string | boolean>;
   bottomId?: string;
   // runtime
-  t?: TFn;
+  translate?: TFn;
   children?: Child;
 }
 
@@ -137,7 +137,7 @@ export function Panel(props: PanelProps) {
       {...inspectAttrs(`panel:${props.role}`, { role: 'panel' })}
       {...((props.attrs ?? {}) as any)}
     >
-      {props.resize && <Resize pid={pid} cfg={props.resize} t={props.t!} />}
+      {props.resize && <Resize pid={pid} cfg={props.resize} translate={props.translate!} />}
       {props.overlay && (
         <div class="panel-overlay">{raw(String(props.overlay))}</div>
       )}
@@ -335,12 +335,12 @@ export function SideEndOob(props: SectionProps) {
 interface ResizeProps {
   pid: string;
   cfg: { edge: 'start' | 'end'; persist?: string };
-  t: TFn;
+  translate: TFn;
 }
 
 export function Resize(props: ResizeProps) {
-  const { pid, cfg, t } = props;
-  const label = t('panel.resize') as string;
+  const { pid, cfg, translate } = props;
+  const label = translate('panel.resize') as string;
   return (
     <div
       class="panel-resize"

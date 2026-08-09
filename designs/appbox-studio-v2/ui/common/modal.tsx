@@ -6,7 +6,7 @@
 // rise). Styles: appshell.css (.modal block).
 //
 //   import { Wrap } from './modal.tsx';
-//   <Wrap trigger="Pair a device" cardClass="pair-modal" t={t}>
+//   <Wrap trigger="Pair a device" cardClass="pair-modal" translate={translate}>
 //     …body markup…
 //   </Wrap>
 import type { Child } from 'hono/jsx';
@@ -22,20 +22,20 @@ interface WrapProps {
   label?: string;
   /** Extra class appended to .modal-card. */
   cardClass?: string;
-  /** Close button aria-label; defaults to t('modal.close'). */
+  /** Close button aria-label; defaults to translate('modal.close'). */
   closeLabel?: string;
-  t: TFn;
+  translate: TFn;
   children?: Child;
 }
 
 export function Wrap(props: WrapProps) {
-  const { trigger, label, cardClass, closeLabel, t } = props;
+  const { trigger, label, cardClass, closeLabel, translate } = props;
   return (
     <details class="modal">
       <summary class="modal-trigger" {...inspectAttrs('modal:trigger', { role: 'label' })}>
         <span class="modal-open-label" {...inspectAttrs('modal:open-label', { role: 'text' })}>{trigger}</span>
         <span class="modal-close-label">
-          <Icon name="x" size={18} label={closeLabel ?? (t('modal.close') as string)} />
+          <Icon name="x" size={18} label={closeLabel ?? (translate('modal.close') as string)} />
         </span>
       </summary>
       <div

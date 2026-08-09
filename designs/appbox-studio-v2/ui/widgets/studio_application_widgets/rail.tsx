@@ -6,16 +6,16 @@ import { destinations, type TFn } from './destinations.tsx';
 
 interface RailProps {
   activeShell: string;
-  t: TFn;
+  translate: TFn;
 }
 
 export function Rail(props: RailProps) {
-  const { activeShell, t } = props;
-  const dests = destinations(t);
+  const { activeShell, translate } = props;
+  const dests = destinations(translate);
 
   return (
     <details class="railbar" {...inspectAttrs('studio_hub:rail', { role: 'nav' })}>
-      <summary class="railbar-strip" aria-label={t('nav.openRailbar') as string}>
+      <summary class="railbar-strip" aria-label={translate('nav.openRailbar') as string}>
         {dests.map((d) => (
           <span key={d.id} class={`railbar-ico${activeShell === d.id ? ' is-active' : ''}`}>
             <Icon name={d.icon} size={20} />

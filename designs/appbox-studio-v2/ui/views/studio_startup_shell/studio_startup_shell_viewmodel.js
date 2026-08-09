@@ -8,8 +8,8 @@
 
 export const shellId = 'studio_startup_shell';
 
-/** @param {(key: string) => string} t */
-export const shellProps = (t) => ({
-  brand: t('appTitle'),
-  tagline: t('startupTagline'),
+/** @param {(key: string) => string} translate */
+export const shellProps = (translate) => ({
+  brand: translate('appTitle'),
+  tagline: translate('startupTagline'),
 });

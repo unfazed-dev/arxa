@@ -10,19 +10,19 @@ interface HeaderProps {
   activeShell: string;
   prefs?: Prefs;
   project?: Project;
-  t: TFn;
+  translate: TFn;
 }
 
 export function Header(props: HeaderProps) {
-  const { activeShell, prefs, project, t } = props;
-  const dests = destinations(t);
+  const { activeShell, prefs, project, translate } = props;
+  const dests = destinations(translate);
   const activeLabel = dests.find((d) => d.id === activeShell)?.label ?? activeShell;
   const themeIsDark = (prefs?.theme ?? 'light') === 'dark';
 
   return (
     <Fragment>
       <details class="shell-drawer shell-hub-touch" {...inspectAttrs('studio_hub:drawer', { role: 'nav' })}>
-        <summary class="ico-btn" aria-label={t('nav.open') as string}>
+        <summary class="ico-btn" aria-label={translate('nav.open') as string}>
           <Icon name="menu" size={20} />
         </summary>
         <div class="drawer-panel" role="menu">
@@ -38,15 +38,15 @@ export function Header(props: HeaderProps) {
             </a>
           ))}
           <div class="drawer-row">
-            <span class="channel" title={t('hub.daemonChannel') as string}>
+            <span class="channel" title={translate('hub.daemonChannel') as string}>
               <span class="channel-dot"></span>
-              <span class="channel-label">{t('hub.daemonLive') as string}</span>
+              <span class="channel-label">{translate('hub.daemonLive') as string}</span>
             </span>
           </div>
           <div class="drawer-row">
             <form method="post" action="/prefs/theme" hx-post="/prefs/theme" hx-swap="none">
               <button type="submit" class="ghost">
-                {themeIsDark ? (t('hub.theme.light') as string) : (t('hub.theme.dark') as string)}
+                {themeIsDark ? (translate('hub.theme.light') as string) : (translate('hub.theme.dark') as string)}
               </button>
             </form>
           </div>
@@ -56,7 +56,7 @@ export function Header(props: HeaderProps) {
       <a class="shell-brand" href="/" {...inspectAttrs('studio_hub:brand', { role: 'link' })}>appbox studio</a>
 
       {project && (
-        <a class="shell-project" href="/" title={t('hub.projectBack') as string} {...inspectAttrs('studio_hub:project', { role: 'link' })}>
+        <a class="shell-project" href="/" title={translate('hub.projectBack') as string} {...inspectAttrs('studio_hub:project', { role: 'link' })}>
           <span class="shell-project-name">{project.name}</span>
           <span class="shell-project-shell">{activeLabel}</span>
           {project.savedLabel && <span class="shell-project-saved">{project.savedLabel}</span>}
@@ -78,25 +78,25 @@ export function Header(props: HeaderProps) {
 
       <span class="panel-header-spacer"></span>
 
-      <span class="channel" title={t('hub.daemonChannel') as string} {...inspectAttrs('studio_hub:channel', { role: 'status' })}>
+      <span class="channel" title={translate('hub.daemonChannel') as string} {...inspectAttrs('studio_hub:channel', { role: 'status' })}>
         <span class="channel-dot"></span>
-        <span class="channel-label">{t('hub.daemonLive') as string}</span>
+        <span class="channel-label">{translate('hub.daemonLive') as string}</span>
       </span>
 
       <form method="post" action="/prefs/theme" hx-post="/prefs/theme" hx-swap="none">
         <button type="submit" class="ghost">
-          {themeIsDark ? (t('hub.themeShort.light') as string) : (t('hub.themeShort.dark') as string)}
+          {themeIsDark ? (translate('hub.themeShort.light') as string) : (translate('hub.themeShort.dark') as string)}
         </button>
       </form>
 
       <details class="shell-overflow shell-hub-touch" {...inspectAttrs('studio_hub:overflow', { role: 'nav' })}>
-        <summary class="ico-btn" aria-label={t('nav.more') as string}>
+        <summary class="ico-btn" aria-label={translate('nav.more') as string}>
           <Icon name="ellipsis-vertical" size={20} />
         </summary>
         <div class="overflow-menu" role="menu">
-          <a class="overflow-item" href="/intake">{t('action.newProject') as string}</a>
-          <a class="overflow-item" href="/">{t('action.pairDevice') as string}</a>
-          <a class="overflow-item" href="/workspace">{t('tab.settings') as string}</a>
+          <a class="overflow-item" href="/intake">{translate('action.newProject') as string}</a>
+          <a class="overflow-item" href="/">{translate('action.pairDevice') as string}</a>
+          <a class="overflow-item" href="/workspace">{translate('tab.settings') as string}</a>
         </div>
       </details>
     </Fragment>

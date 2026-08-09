@@ -22,7 +22,7 @@ interface Prefs {
 }
 
 interface StudioDashboardShellViewProps {
-  t: TFn;
+  translate: TFn;
   title?: string;
   locale?: string;
   activeShell: string;

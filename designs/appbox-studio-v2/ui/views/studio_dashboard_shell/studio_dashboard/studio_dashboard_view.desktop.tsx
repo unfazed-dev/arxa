@@ -14,7 +14,7 @@ import { GreetingHead, GatesSection, ProjectsSection, StatsSection, WizardSectio
 import type { DashboardSurfaceProps } from './studio_dashboard_view.sections.tsx';
 
 const StudioDashboardViewDesktop: FC<DashboardSurfaceProps> = ({
-  t,
+  translate,
   accountName,
   gateCount,
   projectCount,
@@ -25,11 +25,11 @@ const StudioDashboardViewDesktop: FC<DashboardSurfaceProps> = ({
   wizard,
 }) => (
   <>
-    <GreetingHead t={t} accountName={accountName} gateCount={gateCount} projectCount={projectCount} pairingModal={pairingModal} />
-    <GatesSection t={t} gates={gates} rung="desktop" />
-    <ProjectsSection t={t} projects={projects} rung="desktop" />
-    <StatsSection t={t} stats={stats} rung="desktop" />
-    <WizardSection t={t} wizard={wizard} rung="desktop" />
+    <GreetingHead translate={translate} accountName={accountName} gateCount={gateCount} projectCount={projectCount} pairingModal={pairingModal} />
+    <GatesSection translate={translate} gates={gates} rung="desktop" />
+    <ProjectsSection translate={translate} projects={projects} rung="desktop" />
+    <StatsSection translate={translate} stats={stats} rung="desktop" />
+    <WizardSection translate={translate} wizard={wizard} rung="desktop" />
   </>
 );
 

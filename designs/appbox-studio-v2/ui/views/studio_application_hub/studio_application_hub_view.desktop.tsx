@@ -14,7 +14,7 @@ import HeaderPanel from '../../widgets/studio_application_widgets/header_panel.t
 import type { HubFrameProps } from './studio_application_hub_view.tsx';
 
 const StudioApplicationHubViewDesktop: FC<HubFrameProps> = ({
-  t,
+  translate,
   activeShell,
   prefs,
   project,
@@ -22,7 +22,7 @@ const StudioApplicationHubViewDesktop: FC<HubFrameProps> = ({
 }) => (
   <>
     <HeaderPanel>
-      <Header t={t} activeShell={activeShell} prefs={prefs} project={project} />
+      <Header translate={translate} activeShell={activeShell} prefs={prefs} project={project} />
       {headerExtra}
     </HeaderPanel>
   </>

@@ -7,5 +7,5 @@
 
 export const shellId = 'studio_application_hub';
 
-/** @param {(key: string) => string} t */
-export const hubBrand = (t) => ({ brand: t('appTitle') });
+/** @param {(key: string) => string} translate */
+export const hubBrand = (translate) => ({ brand: translate('appTitle') });
