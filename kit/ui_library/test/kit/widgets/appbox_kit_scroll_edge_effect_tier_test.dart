@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:appbox_kit_core/platform/appbox_kit_platform.dart';
 import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
 
 /// The blur half of [AppBoxKitScrollEdgeEffect] is frosted-tier only.

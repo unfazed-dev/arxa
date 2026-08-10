@@ -139,12 +139,19 @@ class ShowcaseNotesFolderViewMobile
                       ),
                     )
                   else
-                    SliverPadding(
+                    // iOS 26 scroll edge effects (ADR 0010) are owned by the
+                    // list, not the item: the pinned search header above is
+                    // detected zero-config via getOffsetToReveal (hence
+                    // topEdge), and the floating tab bar sits outside the
+                    // scrollable, so its occlusion is explicit. An item added
+                    // here inherits both instead of having to remember them.
+                    AppBoxKitEdgeAwareSliverList(
+                      topEdge: true,
+                      bottomOcclusion: kShowcaseTabBarBlockHeight,
                       padding: EdgeInsets.fromLTRB(abxSize16, abxSize8, abxSize16,
                           abxSize80 + MediaQuery.paddingOf(context).bottom),
-                      sliver: SliverList.builder(
-                        itemCount: groups.length,
-                        itemBuilder: (context, i) {
+                      itemCount: groups.length,
+                      itemBuilder: (context, i) {
                           final group = groups[i];
                           return Padding(
                             padding: const EdgeInsets.only(bottom: abxSize16),
@@ -174,21 +181,13 @@ class ShowcaseNotesFolderViewMobile
                               ],
                             ),
                           )
-                              // iOS 26 scroll edge effects (ADR 0010): the content
-                              // softens where it slides under pinned chrome — the
-                              // pinned search header is detected zero-config via
-                              // getOffsetToReveal; the floating tab bar sits outside
-                              // the scrollable, so it needs an explicit occlusion.
-                              .scrollEdgeEffect()
-                              .scrollEdgeEffect(
-                                edge: AppBoxKitScrollEdge.bottom,
-                                occlusionPadding: kShowcaseTabBarBlockHeight,
-                              )
                               // Lazy list: rows wake in build (≈viewport) order —
                               // acceptable here, groups are few and above the fold.
+                              // The wake now sits INSIDE the list's edge wrappers;
+                              // harmless, because the effect measures layout
+                              // geometry, which a paint-time animation never moves.
                               .wake(order: i);
-                        },
-                      ),
+                      },
                     ),
                 ],
               ),

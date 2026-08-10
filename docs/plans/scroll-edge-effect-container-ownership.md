@@ -82,40 +82,67 @@ the wrapper chain must keep a constant node count — that invariant is what sto
 platform view being unmounted at threshold crossings, and `_EdgeEffectBlur` at sigma 0
 already paints its child directly with no layer. One-line change plus docs.
 
-**What is proven vs inferred.** Proven headlessly: no `ImageFilterLayer` is pushed on the
-glass tier while the fade is engaged, with a frosted-tier control proving the assertion
-is not vacuous. Inferred, not measured: that the removed filter layer was costing
-embedder overlay recomposition per frame. The correctness argument stands alone.
+**What is proven vs inferred.** Proven headlessly, twice:
+
+1. Unit level — no `ImageFilterLayer` is pushed on the glass tier while the fade is
+   engaged, with a frosted-tier control proving the assertion is not vacuous
+   (`appbox_kit_scroll_edge_effect_tier_test.dart`).
+2. In situ — M5 now counts `ImageFilterLayer`s in the live layer tree across a 200-frame
+   notes scroll: **0 frames**, while its control asserts 4 glass-backed widgets really are
+   passing under an engaged effect. Without that control the zero would be vacuous.
+
+Still inferred, and only a device can settle it: that the removed filter layer was
+costing embedder overlay recomposition *per frame*. The correctness argument — a filter
+that cannot reach its target is unreachable paint work — stands without it.
 
 ## Results
 
 | | before | after |
 |---|---|---|
 | Effects on the home list | 2 | **11** (one per child) |
-| Effects owned by notes folder | 13 | 13 (untouched) |
+| Effects owned by notes folder | 13 | 13 (same count, now container-owned) |
 | Elements at boot, iOS 26 tiers | 756 | **802** (+46, the wrapper cost) |
 | Top-level platform views at boot | 15 | 15 |
-| `kit/ui_library` | 273 / 273 | **281 / 281** |
+| Frames (of 200) pushing an `ImageFilterLayer`, notes scroll | 200 | **0** |
+| `kit/ui_library` | 273 / 273 | **285 / 285** |
 | `kit/showcase_app` | 119 / 119 | **119 / 119** |
+| `vendor/cupertino_native_better` | 118 / 118 | **118 / 118** |
 
-`analyze` clean in both. The +46 elements is the honest price of complete coverage.
+`analyze` clean everywhere. The +46 elements is the honest price of complete coverage.
 
-**M5's "4 platform views under a LIVE blur" is unchanged by design** — that probe keys on
-`Opacity < 1`, not on the filter layer, so it cannot see defect 2 either way. The tier
-change is pinned by `appbox_kit_scroll_edge_effect_tier_test.dart`, which keys on
-`ImageFilterLayer` directly.
+**M5's "4 platform views under a LIVE blur" is unchanged, and that is correct** — that
+counter keys on `Opacity < 1`, i.e. "the effect is engaged", which is exactly what should
+still be true. It now doubles as the control for the filter-layer assertion beside it.
 
-## Scope left alone, explicitly
+## The sliver case (round 2)
 
-- **Notes folder is NOT converted.** It is a `CustomScrollView`; the container is for the
-  box-child case. The leaf sugar stays public because slivers still need it. Notes does
-  benefit from defect 2's fix, which is tier-wide.
-- **The tablet/desktop variants** of all three views are stubs and were not touched.
+`AppBoxKitEdgeAwareSliverList` is the `CustomScrollView` counterpart — a `SliverList`
+whose every item is edge-treated, with the same `topEdge` / `bottomOcclusion` contract.
+Both containers share one `_treat` helper so their treatment cannot drift; two copies of
+that logic would be the same class of bug the containers exist to prevent.
+
+`showcase_notes_folder_view.mobile.dart` is converted: it was a literal
+`SliverList.builder`, so the fit is exact. Its `.wake(order: i)` stagger now sits *inside*
+the edge wrappers rather than outside. Safe, and checked: the effect measures layout
+geometry through `getOffsetToReveal`, which a paint-time opacity/transform never moves.
+
+**Deliberately not converted:** `showcase_notes_view.mobile.dart` builds four
+individually-padded `SliverToBoxAdapter`s through one local `staggeredSliver()` helper.
+That helper is already a single centralised place — the forgotten-leaf failure cannot
+occur there — so flattening it into a builder would restructure working stagger code for
+symmetry alone. It gets defect 2's fix, which is tier-wide.
+
+## Verified non-issues (checked, not assumed)
+
+- **Tablet/desktop variants** of profile, home and search are `const Scaffold(body:
+  Center(...))` stubs. Nothing to convert.
+- **`.wake()` composition** — grepped repo-wide. It appears only in the notes shell and
+  two Motion-*route* cards; none of the 7 stripped leaves or the 3 converted box views
+  used it, so no composition order changed there.
+- Only two files in the showcase use `CustomScrollView`, both in notes.
 
 ## Needs a device
 
-Both changes alter iOS 26 rendering and neither can be confirmed headlessly:
-
-1. Cards now fade as one surface instead of blurring their text over a crisp slab.
-2. Whether removing the filter layer over glass-backed subtrees measurably improves
-   scroll smoothness — the inferred half above.
+One thing, and only one: both changes alter iOS 26 rendering, so the visual result —
+cards fading as one surface instead of blurring their text over a crisp slab — has to be
+looked at. The frame-cost question rides along with it.

@@ -8,6 +8,7 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:appbox_kit_data/appbox_kit_data.dart';
@@ -529,9 +530,19 @@ void main() {
     var maxSimultaneousLiveBlurs = 0;
     var maxPvUnderLiveBlur = 0;
     var framesWithPvUnderLiveBlur = 0;
+    // The counters above key on `Opacity < 1`, so they see "the effect is
+    // engaged" and CANNOT distinguish a fade from a fade-plus-filter. This one
+    // asks the layer tree directly: how many frames actually push an
+    // ImageFilterLayer? On the Liquid Glass tier the answer must be zero — the
+    // filter cannot reach a UiKitView's pixels, so it is pure cost there.
+    var framesWithFilterLayer = 0;
+    var maxFilterLayers = 0;
     for (var i = 0; i < 200; i++) {
       await gesture.moveBy(const Offset(0, -2));
       await tester.pump(const Duration(milliseconds: 16));
+      final filters = tester.layers.whereType<ImageFilterLayer>().length;
+      if (filters > 0) framesWithFilterLayer++;
+      if (filters > maxFilterLayers) maxFilterLayers = filters;
       var live = 0;
       var pvThisFrame = 0;
       for (final effect in find.byType(AppBoxKitScrollEdgeEffect).evaluate()) {
@@ -574,6 +585,18 @@ void main() {
     // ignore: avoid_print
     print('[M5] PLATFORM VIEWS under a LIVE blur: max in one frame = '
         '$maxPvUnderLiveBlur; frames with >=1 = $framesWithPvUnderLiveBlur');
+    // ignore: avoid_print
+    print('[M5] ImageFilterLayers pushed: frames with >=1 = '
+        '$framesWithFilterLayer; max in one frame = $maxFilterLayers');
+    // The consequence assertion, not just a printed number: on the Liquid
+    // Glass tier no filter layer may wrap content whose surface becomes a
+    // UiKitView on device. Before the tier gate this ran on all 200 frames.
+    expect(framesWithFilterLayer, 0,
+        reason: 'a filter layer over glass-backed content is unreachable paint '
+            'work — if this regresses, the blur tier gate has been lost');
+    expect(maxPvUnderLiveBlur, greaterThan(0),
+        reason: 'control: glass-backed widgets MUST still be passing under an '
+            'engaged effect, or the zero above is vacuous');
     debugDefaultTargetPlatformOverride = null;
   }, timeout: const Timeout(Duration(minutes: 3)));
 

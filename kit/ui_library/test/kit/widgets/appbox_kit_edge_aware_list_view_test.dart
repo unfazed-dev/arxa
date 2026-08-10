@@ -115,4 +115,84 @@ void main() {
     expect(effect.edge, AppBoxKitScrollEdge.bottom);
     expect(effect.occlusionPadding, 64);
   });
+
+  // -------------------------------------------------------------------------
+  // Sliver counterpart — same guarantee inside a CustomScrollView.
+  // -------------------------------------------------------------------------
+
+  Widget sliverHarness({
+    bool topEdge = false,
+    double? bottomOcclusion,
+    EdgeInsetsGeometry? padding,
+  }) =>
+      MaterialApp(
+        home: Scaffold(
+          body: CustomScrollView(
+            slivers: [
+              const SliverAppBar(pinned: true, title: Text('Bar')),
+              AppBoxKitEdgeAwareSliverList(
+                topEdge: topEdge,
+                bottomOcclusion: bottomOcclusion,
+                padding: padding,
+                itemCount: 3,
+                itemBuilder: (context, i) =>
+                    SizedBox(key: Key('item$i'), height: 80),
+              ),
+            ],
+          ),
+        ),
+      );
+
+  testWidgets(
+      'kit.ui-library.edge-aware-sliver-list — treats every item exactly once',
+      (tester) async {
+    await tester.pumpWidget(sliverHarness(bottomOcclusion: 64));
+    expect(effectCount(tester), 3);
+    for (var i = 0; i < 3; i++) {
+      expect(
+        find.ancestor(
+          of: find.byKey(Key('item$i'), skipOffstage: false),
+          matching: find.byType(AppBoxKitScrollEdgeEffect, skipOffstage: false),
+        ),
+        findsOneWidget,
+      );
+    }
+  });
+
+  testWidgets(
+      'kit.ui-library.edge-aware-sliver-list — no edge configured means no effect',
+      (tester) async {
+    await tester.pumpWidget(sliverHarness());
+    expect(effectCount(tester), 0);
+  });
+
+  testWidgets(
+      'kit.ui-library.edge-aware-sliver-list — both edges nest one wrapper per edge, top inside',
+      (tester) async {
+    await tester.pumpWidget(sliverHarness(topEdge: true, bottomOcclusion: 64));
+    expect(effectCount(tester), 6);
+
+    final wrappers = find
+        .ancestor(
+          of: find.byKey(const Key('item0'), skipOffstage: false),
+          matching: find.byType(AppBoxKitScrollEdgeEffect, skipOffstage: false),
+        )
+        .evaluate()
+        .map((e) => (e.widget as AppBoxKitScrollEdgeEffect).edge)
+        .toList();
+    expect(wrappers, [AppBoxKitScrollEdge.top, AppBoxKitScrollEdge.bottom]);
+  });
+
+  testWidgets(
+      'kit.ui-library.edge-aware-sliver-list — padding becomes a SliverPadding, omitted when null',
+      (tester) async {
+    await tester.pumpWidget(sliverHarness(bottomOcclusion: 64));
+    expect(find.byType(SliverPadding, skipOffstage: false), findsNothing);
+
+    await tester.pumpWidget(sliverHarness(
+      bottomOcclusion: 64,
+      padding: const EdgeInsets.all(16),
+    ));
+    expect(find.byType(SliverPadding, skipOffstage: false), findsOneWidget);
+  });
 }
