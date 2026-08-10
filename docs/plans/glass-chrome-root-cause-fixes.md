@@ -74,18 +74,43 @@ device profile check after C1–C3 land (they compound; measure cluster effect t
 
 ## Status (2026-08-10)
 
-**Landed on master `2301f39`:** Stage 2 icon pipeline (`4f85531`), C4 scroll-edge shape
-stability + hysteresis (`920d108`), C3 customIcon guard (`8a73281`). All merged clean.
+**Landed on master:** Stage 2 icon pipeline (`4f85531`), C4 scroll-edge shape stability +
+hysteresis (`920d108`), C3 customIcon guard (`8a73281`), C2 chrome-gate scoping (`da41ad9`).
+All merged clean.
 
-**Green baseline measured on `2301f39` — the bar any later merge must still clear:**
+**Green baseline, re-measured on the merged tree after each merge:**
 
-| Suite | Result |
-|---|---|
-| `kit/ui_library` | 263 / 263 pass |
-| `kit/ui_library/vendor/cupertino_native_better` | 113 / 113 pass |
+| Suite | Baseline `2301f39` | After C2 merge |
+|---|---|---|
+| `kit/ui_library` | 263 / 263 | 265 / 265 (＋C2's 2 new tests) |
+| `kit/ui_library/vendor/cupertino_native_better` | 113 / 113 | 113 / 113 |
 
-**In flight:** C1 (stable icon futures) and C2 (chrome-gate scoping), both re-dispatched on
-the coding tier after earlier attempts died on a model usage limit.
+**In flight:** C1 (stable icon futures), re-dispatched on the coding tier after two earlier
+attempts died (model usage limit, then a deleted worktree).
+
+### C2 postscript — the recovered patch was broken in four ways
+
+The partial work salvaged from the killed agent looked plausible and was not. Kept: the
+observer-registry + ancestor-walk design, the conservative detached-observer fallback, the
+test's two-case shape. Rewritten:
+
+1. **Infinite loop** — `Navigator.maybeOf(nav.context)` returns `nav` *itself* (Flutter SDK:
+   `if (context case StatefulElement(:final NavigatorState state)) navigator = state;`).
+   Replaced with `nav.context.findAncestorStateOfType<NavigatorState>()`.
+2. **Prune race** — the lazy prune also matched a freshly-constructed, not-yet-attached
+   observer, permanently dropping it. Hosts build observers from a closure
+   (`navigatorObservers: () => [CNTransitionObserver()]`), so that window is hit on every
+   router rebuild. Fixed with a `_wasAttached` latch.
+3. Missing `@visibleForTesting` import.
+4. **Vacuous assertion** — after a push settles, the Overlay stops building entries below the
+   opaque top route, so the gate is *disposed*; a pop-then-check-restore passes even if restore
+   is entirely broken. Rewritten to pop mid-flight and assert element identity against a
+   pinned `Element`.
+
+Known test-only hazard: `resetForTesting()` clears `_instances`, discarding `_wasAttached`
+bookkeeping. Harmless as used (`setUp` precedes `pumpWidget`), but an observer constructed
+before a reset and used after one would be silently deregistered — it registers only in its
+constructor.
 
 ### Incident notes (cost real time — see the `agent-worktree-hazards` memory)
 
