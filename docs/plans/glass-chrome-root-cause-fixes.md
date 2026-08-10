@@ -354,10 +354,67 @@ place to look, not the fixed items.
 - [ ] Notes shell: tab bar stays put during push/pop inside a tab (C2).
 - [ ] No fade-then-pop on the tab bar during route transitions over the tab host (C5).
 - [ ] Scroll stutter / transition lag / cold start improved (C1).
-- [ ] **Tab-switch flicker — still open.** Lead 1: `appbox_kit_native_chrome_gate.dart:252-254`
-      is the one *live, unconditional* `FadeTransition`+`ScaleTransition` over platform views,
-      and its own doc at `:72` concedes the scale is not reliably applied. Lead 2: capture a
-      device trace; widget tests cannot see raster.
+- [ ] **Tab-switch flicker — now has a fix (C7 below), not just a lead.** Switches are an
+      instant native cross-cut on iOS as of `0c2b2d8`. Confirm the flicker is gone; if any
+      remains it is the return-visit `Offstage` re-add, which C7 documents as inherent.
+      *(The old "Lead 1" pointing at the chrome gate was wrong twice — see the C7 correction.)*
 - [ ] **Regression watch:** bar height. C5 dropped the `IndexedStack`, changing the layout
       parent from `max(SizedBox(h), platformView)` to the platform view alone. If `h` exceeded
       the native height the bar shifts a few points. Not observable headless.
+
+## C7 — tab-switch flicker: the animation itself was the mechanism (2026-08-10, `0c2b2d8`)
+
+**Found by asking the Phase 4.5 question rather than patching again.** `20616f2`
+(cover-parallax geometry) and `6412916` (opaque live-run backing) were attempts 1 and 2 at
+stopping the tab-switch animation from producing artifacts, and
+`docs/plans/tab-switch-pop-cover-parallax.md` lists a third, deferred: *"first visit inflates a
+full tab shell mid-animation → dropped frames"*. Three attempts on one symptom is the
+systematic-debugging signal to stop fixing symptoms and question the architecture.
+
+**The architecture answer is that iOS has no tab-switch animation.** `UITabBarController`
+cross-cuts — it has never slid, faded or parallaxed (HIG "Tab bars"). The paired slide was a
+non-native affordance, and it was not free: a run necessarily paints BOTH tabs at once, so the
+frame's platform-view set and z-order change mid-switch, and the iOS embedder answers that by
+recomposing its overlays and merging the raster and platform threads. Going instant drops the
+exit slot as well, so the outgoing tab's `GlobalKey` reparent stops happening as a side effect.
+
+**Fix:** `AppBoxKitAnimatedTabStack` gains `animated`, defaulting to `!AppBoxKitPlatform.isIOS`.
+Instant is a real cross-cut, not a zero-duration animation — no controller run, no exit slot,
+no reparent, one frame. Material keeps the paired slide, where tab bodies are Flutter-rendered
+and cost nothing to have on stage together; `animated: true` forces the slide back.
+
+**Verified:** `kit/ui_library` **272/272** (268 baseline + 4 new), `flutter analyze` clean. The
+instant case asserts exactly one non-offstage `Offstage` per frame and zero slide translation.
+The `animated: true` case under the same iOS override is its **control** — identical setup,
+both tabs on stage — so the instant assertions are demonstrably not vacuous.
+
+**Scope of the claim, stated honestly.** Two mechanisms were on the table; this removes one.
+
+| Mechanism | Status |
+|---|---|
+| Both tabs on stage during a run → frame's platform-view set and z-order change mid-switch | **removed** (test-pinned, Flutter-side) |
+| A returning tab leaves `Offstage` → its platform views were absent from the layer tree, so they are re-added to the native hierarchy | **remains** — inherent to any kept-alive tab stack, `IndexedStack` included |
+
+The second is not fixable without painting every tab all the time, which trades a per-switch
+cost for a permanent one and a worse cold start. What changed is that it now lands in a single
+frame with **no animation for the thread merge to stall** — which is how the native control
+behaves. The Flutter-side facts are test-pinned; the *native* consequence (overlay
+recomposition / thread merge) is inferred from documented embedder behaviour and the chrome
+gate's own rule at `:14-17` — **not** measured headlessly. The device pass decides it.
+
+### Correction — the old "Lead 1" was wrong twice
+
+The closure named `appbox_kit_native_chrome_gate.dart:252-254` the prime suspect, saying "its
+own doc at `:72` concedes the scale is not reliably applied". Both halves fail:
+
+1. **The doc says the opposite,** and lives at `:76-80`, not `:72` (`:72` is the blur-scrim
+   paragraph): *"Opacity is the one mutator iOS hybrid composition applies to platform views
+   fully reliably; the scale is kept slight (0.95) — larger transforms on platform views are
+   dicier, and any translate would move pixels."* The slight scale is a deliberate, reasoned
+   choice that masks the reattach. **No change made** — steelman, not defect.
+2. **The gate never fires on a tab switch.** Already pinned by the third case in
+   `appbox_kit_tab_bar_single_hide_authority_test.dart`, and by C5's discriminating fact: a
+   `StackedTabsRouter` tab switch pushes no route, so `secondaryAnimation` never runs.
+
+That is **four** audit/closure claims now corrected by evidence in this engagement. The pattern
+holds: locations accurate, consequences over-attributed. Weigh any remaining claim accordingly.
