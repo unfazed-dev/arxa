@@ -142,17 +142,23 @@ widget tree. Only **one** `NestedRouter` and **one** `KeepAliveTab` element exis
 
 ## 3. Per-frame rebuild sources during scroll
 
-Enumeration of everything that listens to a scroll position or per-frame notifier in
-`kit/showcase_app/lib` + `kit/ui_library/lib`:
+Exhaustive enumeration. The broad grep
+`grep -rn 'NotificationListener\|addListener(' --include='*.dart' kit/showcase_app/lib
+kit/ui_library/lib` (excluding doc comments) returns **6 hits total, and zero
+`NotificationListener` of any kind** — no `NotificationListener<ScrollNotification>`, no bare
+`NotificationListener(`, no `ScrollMetricsNotification`. All 6 are:
 
 | Site | Status |
 |---|---|
-| `appbox_kit_scroll_edge_effect.dart:128` → `_recompute` | measured below |
+| `appbox_kit_scroll_edge_effect.dart:128` → `_recompute` | measured below (M3a/M3b/M5) |
 | `appbox_kit_scroll_occlusion_gate.dart:134` → `_recompute` | C6, already measured fine — not re-chased |
-| `appbox_kit_native_chrome_gate.dart:149-150` | transition/modal notifiers, not scroll-driven |
+| `appbox_kit_scroll_occlusion_gate.dart:118` → `_onModalDepthChanged` | modal notifier, not scroll-driven |
+| `appbox_kit_native_chrome_gate.dart:149` → `_onDepthChanged` | modal notifier, not scroll-driven |
+| `appbox_kit_native_chrome_gate.dart:150` → `_onDepthChanged` | transition notifier, not scroll-driven |
 | `appbox_kit_chip_carousel.dart:72` → `_updateFades` | source-verified negative (below) |
 
-There is **no** `NotificationListener<ScrollNotification>` anywhere in either package.
+So exactly **two** scroll-position listeners exist in the whole codebase, and one of them
+(C6) is already closed.
 
 ### M3a — does the scroll-frame `setState` reach the child? **No.**
 
@@ -185,29 +191,64 @@ consequence *for UI-thread build work* — same shape as the previously correcte
 ```
 
 Over 200 scroll steps on the actual home tab the effect never engages, no elements are
-created or destroyed, and the platform-view count is invariant. **The home tab has no
-measurable Dart-side scroll cost.**
+created or destroyed, and the platform-view count is invariant. (The 22 here is the
+fallback-tier census; the device figure is 14 per §1 — invariance is the point, not the
+magnitude.) **The home tab has no measurable Dart-side scroll cost.**
 
-### M5 — the Notes folder list: the blur is live on **100%** of scroll frames
+### M5 — the Notes folder list: blur live every frame, but **nothing native under it**
 
 `showcase_notes_folder_view.mobile.dart:182-183` chains `.scrollEdgeEffect()` twice per group
-(top edge, then bottom edge with `occlusionPadding: kShowcaseTabBarBlockHeight`).
+(top edge, then bottom edge with `occlusionPadding: kShowcaseTabBarBlockHeight`). Run with
+the iOS 26 tier override, since §1 showed the tiers change the tree structurally:
 
 ```
 [M5] AppBoxKitScrollEdgeEffect instances mounted on notes folder = 15
-[M5] total elements on notes folder = 3074
+[M5] total elements on notes folder = 2050
+[M5] scroll distance = 200 steps x 2px = 400px, monotonically down
+     (hysteresis: enter 0.04, exit 0.01 — once engaged it stays engaged)
 [M5] frames (of 200) with >=1 LIVE blur/saveLayer = 200
-[M5] max SIMULTANEOUS live blur layers in one frame = 2
+[M5] max SIMULTANEOUS live blur layers in one frame = 4  (of 15 mounted -> 11 never go live)
+[M5] PLATFORM VIEWS under a LIVE blur: max in one frame = 0; frames with >=1 = 0
 ```
 
 `Opacity < 1` is exactly equivalent to `sigma > 0` here — both are driven by the same `t`
 (`alpha = 1 - 0.85t`, `sigma = 8t`, `:188-189`) — so a frame with `Opacity < 1` is a frame in
 which `_EdgeEffectBlur` pushes an `ImageFilterLayer(ui.ImageFilter.blur(...))` (`:263-267`)
-**and** `Opacity` forces a `saveLayer`, over list content, 1–2 layers deep.
+**and** `Opacity` forces a `saveLayer`.
 
-This is a **raster/GPU cost, not a rebuild cost** — M3a already proved zero rebuilds. Its
-actual GPU time is **NOT MEASURED** (see §5). What is measured is that the mechanism is live
-on every single scroll frame of that list, versus 0 frames on home.
+**Read 200/200 with two caveats, or it overstates.** The gesture is 400px monotonically
+downward and never returns to the top; the hysteresis (enter 0.04 / exit 0.01) means that once
+engaged it *should* stay engaged. So 200/200 is what a correctly-working scroll-edge effect
+produces for this gesture — it is not by itself evidence of a defect. And M3b used 1px steps
+(200px total), so home-vs-notes is not a clean distance-matched A/B.
+
+**The lead this was chasing is dead.** The reason a live blur over this list would matter is
+the documented hybrid-composition pathology the kit's own docs cite
+(`appbox_kit_animated_tab_stack.dart:60`, `appbox_kit_directional_tab_transition.dart:6`;
+flutter#24164 / #148639): an `ImageFilterLayer` + `saveLayer` over a `UiKitView`. Measured
+under device tiers, **zero platform views are ever under a live blur** — 0 in every one of the
+200 frames. It is a plain Flutter blur over plain Flutter content. That is an ordinary raster
+cost, not the defect.
+
+Also measured, and a negative in its own right: **11 of the 15 mounted effects never go
+live**. The plan doc's "chains it twice per row → 15 instances" concern is mostly inert —
+`RenderOpacity` short-circuits at alpha 255 and `_EdgeEffectBlur` returns `super.paint` at
+sigma 0 (`:259-262`), so dormant effects cost essentially nothing.
+
+Its raster time is still **NOT MEASURED** (see §5b), but the reason to prioritise it is gone.
+
+### M6 — `AppData.initialize` on the boot path: **~3 ms**
+
+The seed-backend asset read + JSON parse + fake auth runs on the real boot path but is hoisted
+into `setUpAll`, so it is excluded from every element count above. Timed directly:
+
+```
+[M6] AppData.initialize microseconds, 3 runs = [11187, 3144, 2703]
+```
+
+11.2 ms cold, then ~2.7–3.1 ms warm — on host disk, not device flash, and Dart work only.
+**Negligible.** This bounds, and does not measure, on-device cold start, but it removes the
+data layer from the list of cold-start suspects.
 
 ---
 
@@ -229,6 +270,12 @@ on every single scroll frame of that list, versus 0 frames on home.
    Source-verified negative, **not runtime-measured**: the listener is edge-triggered — it
    only `setState`s when one of `hasOverflow`/`canBack`/`canForward` actually flips, so it is
    not a per-frame rebuild. It is also only mounted on the profile tab, not on the boot path.
+7. **Platform views under a live blur on the Notes folder list — zero.** The documented
+   hybrid-composition pathology (flutter#24164 / #148639) does **not** occur here; 0 platform
+   views under a live `ImageFilterLayer` in all 200 measured frames, under device tiers. (M5)
+8. **Scroll-edge instance density on the Notes list.** 11 of 15 mounted effects never engage;
+   dormant ones short-circuit in `RenderOpacity`/`_EdgeEffectBlur`. (M5)
+9. **`AppData.initialize` as a cold-start suspect.** ~2.7–11 ms of Dart work. (M6)
 7. Everything on the plan doc's existing "Verified negatives" list (C6 occlusion gate, the
    `PlatformViewGuard` 500 ms debug swap, per-frame method-channel traffic, the tab bar's
    deliberate nil appearance, the §3d tab-stack fade claim) was not re-investigated.
@@ -269,14 +316,24 @@ model got wrong.
 
 ## Bottom line
 
-- Boot platform views: **14** (measured, device tier selection simulated).
+**No Flutter-side mechanism was found that explains the reported slowness.** That is the
+result, not a placeholder for one.
+
+- Boot platform views: **14** (measured, device tier selection simulated). This is the only
+  finding with a plausible route to the symptom, and its cost is unmeasured — it is a
+  *quantity*, not yet a *cost*.
 - Tab-shell eagerness: **not a problem** — 4 cheap allocations, 1 inflation.
-- Scroll rebuilds: **zero** propagate. Every `setState`-per-scroll-frame site in the codebase
-  is either edge-triggered or short-circuited by `widget.child` identity.
-- The one mechanism that is measurably live on every scroll frame is the **doubled
-  `.scrollEdgeEffect()` chain on the Notes folder list** (200/200 frames, 1–2 blur +
-  saveLayer layers). It costs nothing on the UI thread; whether it costs on the raster thread
-  is **NOT MEASURED** and needs (b) above.
-- No Flutter-side mechanism was found that explains home-tab scroll stutter or navigation
-  transition lag. If those persist on device, the remaining candidates are raster-thread
-  platform-view compositing (14 views) and native-side work — neither reachable headless.
+- Scroll rebuilds: **zero** propagate. Both scroll-position listeners in the entire codebase
+  are either edge-triggered or short-circuited by `widget.child` identity (0 vs 300 control).
+- The Notes folder's always-live blur was the leading candidate and **was measured out**: no
+  platform view is ever underneath it, so the documented hybrid-composition pathology does not
+  apply. It remains a plain Flutter blur whose raster time is unmeasured, but there is no
+  longer a reason to rank it first.
+- `AppData.initialize`: ~3 ms. Not a cold-start suspect.
+
+If the symptoms persist on device, the surviving candidates are all outside the headless
+boundary: raster-thread compositing of the 14 boot platform views, native-side view creation
+cost, and engine-level cold start. §5 says exactly how to measure each. Nothing further should
+be "fixed" on the Flutter side without one of those numbers first — three prior audit claims
+in this project were located correctly and wrong about consequences, and every candidate this
+pass produced went the same way.

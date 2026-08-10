@@ -10,7 +10,9 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:appbox_kit_data/appbox_kit_data.dart';
 import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
+import 'package:appbox_kit_showcase_app/app/app_data.dart';
 
 import 'package:appbox_kit_showcase_app/ui/views/showcase_home_shell/showcase_home_shell_view.dart';
 import 'package:appbox_kit_showcase_app/ui/views/showcase_search_shell/showcase_search_shell_view.dart';
@@ -450,12 +452,25 @@ void main() {
   // ---------------------------------------------------------------------
   testWidgets('M5 notes folder: scroll-edge density and live-blur frames',
       (tester) async {
+    // Device tier selection — M1b showed the tiers change the tree
+    // structurally (1596 -> 756 elements), so the headless-default tree is the
+    // wrong one to ask "what is under the blur" about.
+    AppBoxKitPlatform.override = const AppBoxKitPlatformOverride(
+      isIOS: true,
+      isAndroid: false,
+      iosMajor: 26,
+      targetPlatform: TargetPlatform.iOS,
+    );
+    addTearDown(AppBoxKitPlatform.reset);
+    debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
+
     final router = await bootShell(tester);
     unawaited(router.navigateNamed('/notes'));
     await settle(tester);
     if (find.text('All Notes').evaluate().isEmpty) {
       // ignore: avoid_print
       print('[M5] "All Notes" not reachable — skipped');
+      debugDefaultTargetPlatformOverride = null;
       return;
     }
     await tester.tap(find.text('All Notes'));
@@ -473,26 +488,56 @@ void main() {
     if (scrollables.evaluate().isEmpty) {
       // ignore: avoid_print
       print('[M5] no Scrollable — skipped scroll phase');
+      debugDefaultTargetPlatformOverride = null;
       return;
     }
+
+    /// Counts platform-view-backed elements inside [root]'s subtree.
+    int pvUnder(Element root) {
+      var n = 0;
+      void visit(Element e) {
+        if (platformViewBackedTypes.contains(e.widget.runtimeType.toString())) {
+          n++;
+        }
+        e.visitChildren(visit);
+      }
+
+      root.visitChildren(visit);
+      return n;
+    }
+
     final gesture =
         await tester.startGesture(tester.getCenter(scrollables.last));
     var liveBlurFrames = 0;
     var maxSimultaneousLiveBlurs = 0;
+    var maxPvUnderLiveBlur = 0;
+    var framesWithPvUnderLiveBlur = 0;
     for (var i = 0; i < 200; i++) {
       await gesture.moveBy(const Offset(0, -2));
       await tester.pump(const Duration(milliseconds: 16));
       var live = 0;
-      for (final e in find
-          .descendant(
-            of: find.byType(AppBoxKitScrollEdgeEffect),
-            matching: find.byType(Opacity),
-          )
-          .evaluate()) {
-        if ((e.widget as Opacity).opacity < 1.0) live++;
+      var pvThisFrame = 0;
+      for (final effect in find.byType(AppBoxKitScrollEdgeEffect).evaluate()) {
+        var isLive = false;
+        void findOpacity(Element e) {
+          final w = e.widget;
+          if (w is Opacity && w.opacity < 1.0) isLive = true;
+          e.visitChildren(findOpacity);
+        }
+
+        effect.visitChildren(findOpacity);
+        if (isLive) {
+          live++;
+          // THE question: is a hybrid-composition platform view sitting under
+          // an ImageFilterLayer + saveLayer? That is the documented pathology
+          // (flutter#24164 / #148639), not "a blur is running".
+          pvThisFrame += pvUnder(effect);
+        }
       }
       if (live > 0) liveBlurFrames++;
       if (live > maxSimultaneousLiveBlurs) maxSimultaneousLiveBlurs = live;
+      if (pvThisFrame > 0) framesWithPvUnderLiveBlur++;
+      if (pvThisFrame > maxPvUnderLiveBlur) maxPvUnderLiveBlur = pvThisFrame;
     }
     await gesture.up();
     for (var i = 0; i < 20; i++) {
@@ -500,12 +545,52 @@ void main() {
     }
 
     // ignore: avoid_print
+    print('[M5] scroll distance = 200 steps x 2px = 400px, monotonically down '
+        '(hysteresis: enter 0.04, exit 0.01 — once engaged it stays engaged)');
+    // ignore: avoid_print
     print('[M5] frames (of 200) with >=1 LIVE blur/saveLayer = '
         '$liveBlurFrames');
     // ignore: avoid_print
     print('[M5] max SIMULTANEOUS live blur layers in one frame = '
-        '$maxSimultaneousLiveBlurs');
+        '$maxSimultaneousLiveBlurs  (of $effects mounted -> '
+        '${effects - maxSimultaneousLiveBlurs} never go live)');
+    // ignore: avoid_print
+    print('[M5] PLATFORM VIEWS under a LIVE blur: max in one frame = '
+        '$maxPvUnderLiveBlur; frames with >=1 = $framesWithPvUnderLiveBlur');
+    debugDefaultTargetPlatformOverride = null;
   }, timeout: const Timeout(Duration(minutes: 3)));
+
+  // ---------------------------------------------------------------------
+  // M6 — Dart-side boot work that IS measurable headless. AppData.initialize
+  // (seed-backend asset read + JSON parse + fake auth) runs on the real boot
+  // path but is hoisted into setUpAll, so it is excluded from every number
+  // above. Runs LAST: it resets the data layer.
+  // ---------------------------------------------------------------------
+  test('M6 boot: AppData.initialize wall clock (Dart side, headless)',
+      () async {
+    final samples = <int>[];
+    for (var i = 0; i < 3; i++) {
+      // Full teardown: resetForTesting alone leaves the GetIt singletons
+      // AppBoxKitData.initialize registers, so a second initialize throws.
+      await teardownShowcase();
+      await registerKitTestServices();
+      final sw = Stopwatch()..start();
+      await AppData.initialize(
+        config: const AppBoxKitDataConfig(
+          backend: AppBoxKitDataBackend.seed,
+          auth: AppBoxKitAuthConfig(fakeUsersAsset: AppData.fakeUsersAsset),
+        ),
+        assetReader: DiskAssetReader(),
+      );
+      sw.stop();
+      samples.add(sw.elapsedMicroseconds);
+    }
+    // ignore: avoid_print
+    print('[M6] AppData.initialize microseconds, 3 runs = $samples');
+    // ignore: avoid_print
+    print('[M6] NOTE: headless host disk, NOT device flash; and this is Dart '
+        'work only — it bounds, and does not measure, on-device cold start.');
+  }, timeout: const Timeout(Duration(minutes: 2)));
 }
 
 class _BuildCounter extends StatelessWidget {
