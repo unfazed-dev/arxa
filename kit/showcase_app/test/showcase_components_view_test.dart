@@ -102,7 +102,7 @@ void main() {
             'the result');
   });
 
-  testWidgets('Show frosted sheet presents appBoxKitShowNativeSheet', (tester) async {
+  testWidgets('Show frosted sheet presents appBoxKitShowSheet', (tester) async {
     await pumpView(tester);
 
     await tester.tap(find.text('Show frosted sheet'));

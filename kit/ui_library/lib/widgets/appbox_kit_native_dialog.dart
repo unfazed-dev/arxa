@@ -87,7 +87,7 @@ Future<T?> appBoxKitShowNativeDialog<T>({
   bool barrierDismissible = true,
 }) async {
   // Bump the shared modal depth for the dialog's lifetime (same bracket as
-  // appBoxKitShowNativeSheet): no navigator registers CNTabBarRouteObserver, so the
+  // appBoxKitShowSheet): no navigator registers CNTabBarRouteObserver, so the
   // route push alone never moves anyModalDepth — without this, native glass
   // on the obscured page would composite above the dialog. Marking BEFORE the
   // push also lets AppBoxKitNativeChromeGates INSIDE the dialog snapshot the bumped

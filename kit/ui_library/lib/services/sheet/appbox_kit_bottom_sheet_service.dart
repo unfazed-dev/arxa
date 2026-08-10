@@ -3,7 +3,7 @@ import 'package:stacked_services/stacked_services.dart';
 
 import '../../widgets/appbox_kit_native_sheet.dart';
 
-/// Drop-in [BottomSheetService] that presents through [appBoxKitShowNativeSheet]
+/// Drop-in [BottomSheetService] that presents through [appBoxKitShowSheet]
 /// instead of `Get.bottomSheet`, so every stacked sheet call site
 /// (`showBottomSheet`, `showCustomSheet`, AppBoxKitAction's AppBoxKitNotificationManager)
 /// gets the kit's platform-adaptive sheet: CNBottomSheet on iOS/macOS,
@@ -17,7 +17,7 @@ import '../../widgets/appbox_kit_native_sheet.dart';
 /// `SheetResponse` passed to the completer (or null on barrier dismiss).
 ///
 /// ponytail: Get-specific knobs (enter/exit durations, enableDrag,
-/// useRootNavigator, elevation) are accepted but ignored — appBoxKitShowNativeSheet
+/// useRootNavigator, elevation) are accepted but ignored — appBoxKitShowSheet
 /// exposes primitives only. `isBottomSheetOpen` still reads Get state and
 /// will report false for kit-presented sheets; wire a flag if anyone needs it.
 class AppBoxKitBottomSheetService extends BottomSheetService {
@@ -51,7 +51,7 @@ class AppBoxKitBottomSheetService extends BottomSheetService {
       debugPrint('AppBoxKitBottomSheetService: no navigator context; sheet skipped');
       return Future.value(null);
     }
-    return appBoxKitShowNativeSheet<SheetResponse>(
+    return appBoxKitShowSheet<SheetResponse>(
       context: context,
       isDismissible: barrierDismissible,
       builder: (ctx) => SafeArea(
@@ -129,7 +129,7 @@ class AppBoxKitBottomSheetService extends BottomSheetService {
       debugPrint('AppBoxKitBottomSheetService: no builder/context; sheet skipped');
       return Future.value(null);
     }
-    return appBoxKitShowNativeSheet<SheetResponse<T>>(
+    return appBoxKitShowSheet<SheetResponse<T>>(
       context: context,
       isDismissible: barrierDismissible,
       // No backgroundColor override: the sheet route's own chrome (M3

@@ -99,7 +99,7 @@ class _KitScrollOcclusionGateState extends State<AppBoxKitScrollOcclusionGate> {
 
   /// Depth at mount — the baseline (mirrors [AppBoxKitNativeChromeGate]). A gate
   /// mounted inside an already-open modal stays visible; anything opened
-  /// *after* us (kit sheets bump the depth via `appBoxKitShowNativeSheet`) counts
+  /// *after* us (kit sheets bump the depth via `appBoxKitShowSheet`) counts
   /// as covering us.
   late final int _mountDepth;
 

@@ -15,7 +15,7 @@ import 'package:appbox_kit_core/platform/appbox_kit_platform.dart' show AppBoxKi
 
 import '../../widgets/appbox_kit_native_dialog.dart';
 import '../../widgets/appbox_kit_native_sheet.dart'
-    show appBoxKitShowNativeSheet;
+    show appBoxKitShowSheet;
 import 'appbox_kit_ask_surfaces.dart';
 
 /// Severity for [AppBoxKitNotificationService.show]. Drives the M3E-tier snackbar
@@ -204,7 +204,7 @@ class AppBoxKitNotificationService {
   }
 
   /// Tells the user something in a modal sheet — kit-rendered
-  /// [AppBoxKitNoticeSheetBody] presented through [appBoxKitShowNativeSheet]
+  /// [AppBoxKitNoticeSheetBody] presented through [appBoxKitShowSheet]
   /// (CNBottomSheet glass on iOS, M3 modal sheet on Android), so apps never
   /// register a stacked notice-sheet variant. Fire-and-forget: dismissible by
   /// drag/barrier. Pre-boot no-ops.
@@ -215,7 +215,7 @@ class AppBoxKitNotificationService {
   }) async {
     final ctx = _overlayContext(context, 'notice dropped: "$title"');
     if (ctx == null) return;
-    await appBoxKitShowNativeSheet<void>(
+    await appBoxKitShowSheet<void>(
       context: ctx,
       builder: (_) => AppBoxKitNoticeSheetBody(title: title, message: message),
     );

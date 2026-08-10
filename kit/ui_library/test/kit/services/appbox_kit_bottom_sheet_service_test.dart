@@ -8,7 +8,7 @@ import 'package:stacked_services/stacked_services.dart';
 
 import '../widgets/appbox_kit_native_test_helpers.dart';
 
-/// AppBoxKitBottomSheetService presents stacked sheets through appBoxKitShowNativeSheet.
+/// AppBoxKitBottomSheetService presents stacked sheets through appBoxKitShowSheet.
 /// Assertions are branch-taken (right tier's widget appears) + contract-held
 /// (completer response comes back through the returned future).
 void main() {

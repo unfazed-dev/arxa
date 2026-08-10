@@ -91,16 +91,27 @@ class CNBottomSheet {
 
   /// Position-aware wrapper for [showCupertinoSheet] — the iOS 26
   /// native-style stacked-card sheet. Same probe injection.
+  ///
+  /// [showDragHandle] draws the framework's own grabber (36x5 at
+  /// `CupertinoColors.tertiaryLabel`, values derived from Apple's Figma files
+  /// — `sheet.dart:704-708`) and insets the content's top padding to clear it.
+  /// Prefer it over painting a grabber inside [pageBuilder]: doing both yields
+  /// two pills. Available from Flutter 3.44; on older SDKs the argument is
+  /// dropped by the passthrough below rather than failing to compile.
   static Future<T?> showCupertino<T>({
     required BuildContext context,
     required WidgetBuilder pageBuilder,
     bool useNestedNavigation = false,
     bool enableDrag = true,
+    bool showDragHandle = false,
+    double? topGap,
   }) {
     return showCupertinoSheet<T>(
       context: context,
       useNestedNavigation: useNestedNavigation,
       enableDrag: enableDrag,
+      showDragHandle: showDragHandle,
+      topGap: topGap,
       // Intentionally using `builder:` even though Flutter 3.44 deprecated
       // it in favor of `scrollableBuilder`. `scrollableBuilder` doesn't
       // exist on Flutter 3.35 – 3.41.x — using it there hard-breaks the

@@ -11,7 +11,7 @@ import 'package:appbox_kit_ui_library/services/notifications/appbox_kit_notifica
 ///
 /// Tested on the Android (M3) tier — stock AlertDialog / modal sheet are
 /// deterministic in headless flutter_test; the iOS frosted tier shares
-/// [appBoxKitShowNativeDialog]/[appBoxKitShowNativeSheet], whose own routing is
+/// [appBoxKitShowNativeDialog]/[appBoxKitShowSheet], whose own routing is
 /// asserted in the native widget tests. Pre-boot (no context anywhere) is
 /// asserted to no-op, never throw.
 void main() {

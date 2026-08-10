@@ -84,7 +84,7 @@ class ShowcaseComponentsOverlaysCardWidget extends StatelessWidget {
             child: AppBoxKitNativeButton(
               label: 'Show frosted sheet',
               glyph: AppBoxKitGlyphs.sheet,
-              onPressed: () => appBoxKitShowNativeSheet(
+              onPressed: () => appBoxKitShowSheet(
                 context: _modalContext(context),
                 builder: (sheetContext) => Padding(
                   padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),

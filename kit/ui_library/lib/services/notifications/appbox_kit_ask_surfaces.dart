@@ -145,7 +145,7 @@ class _AppBoxKitPromptDialogState extends State<AppBoxKitPromptDialog> {
 
 /// Kit notice-sheet body for `AppBoxKitNotificationService.notice` — a
 /// title + message column, dismissible by drag/barrier. The tier chrome
-/// (M3 stock sheet / iOS glass body) comes from `appBoxKitShowNativeSheet`.
+/// (M3 stock sheet / iOS glass body) comes from `appBoxKitShowSheet`.
 class AppBoxKitNoticeSheetBody extends StatelessWidget {
   const AppBoxKitNoticeSheetBody({
     super.key,

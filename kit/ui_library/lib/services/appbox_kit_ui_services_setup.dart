@@ -12,7 +12,7 @@ import 'sheet/appbox_kit_bottom_sheet_service.dart';
 /// or `talker_flutter`: [DialogService] and [SnackbarService] are the stacked
 /// base services, [BottomSheetService] resolves to [AppBoxKitBottomSheetService]
 /// (registered as the base type, so stacked sheet call sites present through
-/// `appBoxKitShowNativeSheet` untouched), and [Talker] backs AppBoxKitAction /
+/// `appBoxKitShowSheet` untouched), and [Talker] backs AppBoxKitAction /
 /// AppBoxKitErrorService logging.
 void setupAppBoxKitUiServices() {
   appBoxKitLocator

@@ -6,51 +6,60 @@ import 'package:appbox_kit_core/platform/appbox_kit_platform.dart';
 
 import 'appbox_kit_frosted_surface.dart';
 
-/// Shows a platform-adaptive modal bottom sheet hosting [builder].
+/// Shows a platform-adaptive modal sheet hosting [builder].
+///
+/// **Not native, and deliberately not claiming to be.** Both tiers are drawn
+/// by Flutter. Neither crosses a platform channel: iOS has no bridge here to
+/// `UISheetPresentationController`, and Android has nothing to bridge *to* —
+/// the platform's own bottom sheet is a Material component, which is exactly
+/// what the Material tier renders. The former name (`…ShowNativeSheet`)
+/// overclaimed; see `docs/plans/sheet-and-theme-propagation-fixes.md`.
 ///
 /// Routing:
 ///
-/// - **Android** → Flutter's built-in [showModalBottomSheet]. There is no
-///   `m3e_collection` sheet class, and the kit owns no native sheet code — the
-///   M3 theme already styles the built-in Material sheet. Never glassed: the
-///   M3 sheet is the correct idiom there.
-/// - **iOS / macOS / else** → [CNBottomSheet.show] with a **Flutter-drawn
-///   glass body** (ADR 0011 item 1, on ADR 0010's frosted content tier): the
-///   route chrome is transparent and [builder]'s child is wrapped in a
-///   floating [AppBoxKitFrostedSurface] panel (28 dp corners, blur 30) with a
-///   grabber pill above the content — the iOS 26 partial-height-sheet idiom
-///   (floating rounded panel, dimmed host page visible in the insets).
-///   Accepted ceiling: no morph-from-button transition (system-presentation
-///   feature). [CNBottomSheet.show] stays load-bearing: its
-///   `CNSheetGeometryProbe` publishes the sheet body's live rect so
-///   `ModalHideMixin` widgets on the host page hide only when geometrically
-///   covered.
+/// - **Android** → Flutter's built-in [showModalBottomSheet], styled by the
+///   M3E theme. `m3e_collection` (0.3.7, the current release) ships no sheet
+///   component, so the built-in M3 sheet *is* the M3E-correct surface here.
+/// - **iOS / macOS / else** → [CNBottomSheet.showCupertino], i.e. Flutter's
+///   `showCupertinoSheet`. The framework supplies the whole presentation: the
+///   page behind slides up, scales down and rounds its corners
+///   (`CupertinoSheetTransition`, a `delegatedTransition`), and the sheet
+///   clips its own top corners at r=12. `showDragHandle: true` draws the
+///   framework's grabber — the kit must not paint one too, or there are two.
 ///
-/// The floating geometry is composed **inside** the sheet route (transparent
-/// background + inset padding around the glass panel) rather than by
-/// fighting the route's own positioning: drag-to-dismiss and barrier-tap
-/// dismiss work unchanged, the transparent inset simply being part of the
-/// sheet's drag area. Trade-off: the geometry probe measures the padded
-/// body, so the published rect is a ~12 dp superset of the visible glass —
-/// a conservative hide, fine for `ModalHideMixin` consumers.
+/// **Why this replaced a Material sheet on iOS.** The previous iOS tier was
+/// `showModalBottomSheet` with transparent chrome wrapping a 12 dp-inset
+/// floating frosted panel. That is a floating card, not a sheet, which is
+/// exactly how it read on device. The Cupertino route is the framework's iOS
+/// idiom and restores the shape.
 ///
-/// A caller-supplied [backgroundColor] opts out of the glass body entirely:
-/// the iOS tier then keeps the pre-glass stock sheet chrome painted with
-/// that color, so every pre-wave-2 call site behaves exactly as before.
+/// Two behaviour changes fall out of the route swap, both intended:
 ///
-/// Both tiers present with a plain-dim barrier (`Colors.black54` default) —
-/// per ADR 0010 chrome stays mounted behind plain-dim scrims; no blur scrim
-/// is used anywhere in this path.
+/// - **No dim barrier.** `CupertinoSheetRoute.barrierColor` is transparent and
+///   `barrierDismissible` is false (`cupertino/sheet.dart:777,780`). The
+///   scaled-back parent card *is* the separation, as on iOS. So
+///   [isDismissible] now maps to `enableDrag` (drag-to-dismiss) rather than
+///   barrier-tap — the closest honest mapping the route offers.
+/// - **It pushes on the root navigator** as a page route, not a
+///   `ModalBottomSheetRoute`. The `markAnyModalActive` bracket below is what
+///   keeps modal-aware native widgets reacting, and it is route-type agnostic.
+///
+/// Glass is preserved: `CupertinoSheetRoute.opaque` is false
+/// (`cupertino/sheet.dart:789`), so the scaled parent stays painted behind and
+/// [AppBoxKitFrostedSurface]'s backdrop filter has real content to blur (ADR
+/// 0011 item 1). A caller-supplied [backgroundColor] opts out into a flat
+/// surface of that colour.
+///
+/// [CNBottomSheet] stays load-bearing on both tiers: its `CNSheetGeometryProbe`
+/// publishes the sheet body's live rect so `ModalHideMixin` widgets on the host
+/// page hide only when geometrically covered.
 ///
 /// The public surface is **primitives only** ([builder], [context],
 /// [isDismissible], [backgroundColor]) so hosts never import either underlying
 /// dep. The generic return type is honored end-to-end: both tiers return
 /// `Future<T?>`, so a host that closes the sheet with
 /// `Navigator.pop(context, value)` receives `value` here.
-///
-/// Mirrors [AppBoxKitNotificationService]'s tier-routing pattern
-/// (reuses existing infra rather than reinventing a sheet controller).
-Future<T?> appBoxKitShowNativeSheet<T>({
+Future<T?> appBoxKitShowSheet<T>({
   required WidgetBuilder builder,
   required BuildContext context,
   bool isDismissible = true,
@@ -76,27 +85,18 @@ Future<T?> appBoxKitShowNativeSheet<T>({
         backgroundColor: backgroundColor,
       );
     }
-    // iOS / macOS / else → CNBottomSheet.show (geometry probe stays, see
-    // doc). A caller-supplied backgroundColor wins: it opts out of the glass
-    // body into the pre-glass stock chrome.
-    if (backgroundColor != null) {
-      return await CNBottomSheet.show<T>(
-        context: context,
-        builder: builder,
-        isDismissible: isDismissible,
-        backgroundColor: backgroundColor,
-      );
-    }
-    return await CNBottomSheet.show<T>(
+    // iOS / macOS / else → the framework's Cupertino sheet. It owns the
+    // presentation: parent scale-back, top-corner clip, and the grabber.
+    return await CNBottomSheet.showCupertino<T>(
       context: context,
-      isDismissible: isDismissible,
-      // Transparent route chrome, no elevation, no shape: the stock sheet
-      // would paint/clip around the glass panel otherwise; the panel
-      // supplies its own chrome.
-      backgroundColor: Colors.transparent,
-      elevation: 0,
-      shape: const RoundedRectangleBorder(),
-      builder: (_) => _GlassSheetBody(builder: builder),
+      // The route has no dismissible barrier at all, so this is the only
+      // dismiss affordance it can be mapped onto.
+      enableDrag: isDismissible,
+      showDragHandle: true,
+      pageBuilder: (_) => _CupertinoSheetBody(
+        builder: builder,
+        backgroundColor: backgroundColor,
+      ),
     );
   } finally {
     // Future completes on pop → restore. `finally` keeps the depth balanced
@@ -105,64 +105,40 @@ Future<T?> appBoxKitShowNativeSheet<T>({
   }
 }
 
-/// The iOS-tier sheet body: [builder]'s child in a floating
-/// [AppBoxKitFrostedSurface] panel — horizontal inset + safe-area-aware bottom
-/// gap, grabber pill above the content (ADR 0011 item 1).
-class _GlassSheetBody extends StatelessWidget {
-  const _GlassSheetBody({required this.builder});
+/// The iOS-tier sheet body — the *contents* of the Cupertino sheet, not its
+/// chrome.
+///
+/// The route already supplies the shape (top-corner clip at r=12), the parent
+/// scale-back and the grabber, so this deliberately adds none of those. It
+/// contributes only the surface behind [builder]'s child.
+///
+/// `borderRadius: 0` on the frosted surface is load-bearing: the route clips
+/// the corners itself, and a second radius here would show as a lighter seam
+/// inside the clip.
+class _CupertinoSheetBody extends StatelessWidget {
+  const _CupertinoSheetBody({required this.builder, this.backgroundColor});
 
   final WidgetBuilder builder;
 
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      // Floating-sheet geometry: the stock route renders flush to the screen
-      // edges, so the inset is composed here. The transparent margin belongs
-      // to the sheet (not the barrier), keeping drag-to-dismiss live on it.
-      padding: EdgeInsets.fromLTRB(
-        12,
-        0,
-        12,
-        8 + MediaQuery.viewPaddingOf(context).bottom,
-      ),
-      child: AppBoxKitFrostedSurface(
-        borderRadius: 28,
-        blur: 30,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            const _SheetGrabber(),
-            Flexible(child: builder(context)),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-/// The grabber pill at the top edge of the glass sheet — the iOS 26
-/// floating-sheet affordance (36×5 dp, fully rounded).
-class _SheetGrabber extends StatelessWidget {
-  const _SheetGrabber();
+  /// Opt-out of glass into a flat surface of this colour.
+  final Color? backgroundColor;
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Center(
-        child: Container(
-          key: const ValueKey<String>('appBoxKitNativeSheetGrabber'),
-          width: 36,
-          height: 5,
-          decoration: BoxDecoration(
-            color: Theme.of(
-              context,
-            ).colorScheme.onSurfaceVariant.withValues(alpha: 0.4),
-            borderRadius: const BorderRadius.all(Radius.circular(2.5)),
-          ),
-        ),
-      ),
+    // Top: the route hands down `padding.top = 15` so content clears the
+    // grabber it draws (`cupertino/sheet.dart:707,713`), so honouring the
+    // padding here is what keeps the two from overlapping.
+    // Bottom: the sheet reaches the screen edge, so the home indicator inset
+    // is still ours to respect.
+    final Widget content = SafeArea(child: Builder(builder: builder));
+
+    final Color? flat = backgroundColor;
+    if (flat != null) return ColoredBox(color: flat, child: content);
+
+    return AppBoxKitFrostedSurface(
+      borderRadius: 0,
+      blur: 30,
+      child: content,
     );
   }
 }
