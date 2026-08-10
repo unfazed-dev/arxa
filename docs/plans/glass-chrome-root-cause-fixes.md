@@ -71,3 +71,33 @@ icon-pipeline commit (which gates C1's five vendor files).
 
 Single worktree, one fix per commit, vendor `flutter analyze` + targeted tests green per step,
 device profile check after C1–C3 land (they compound; measure cluster effect there).
+
+## Status (2026-08-10)
+
+**Landed on master `2301f39`:** Stage 2 icon pipeline (`4f85531`), C4 scroll-edge shape
+stability + hysteresis (`920d108`), C3 customIcon guard (`8a73281`). All merged clean.
+
+**Green baseline measured on `2301f39` — the bar any later merge must still clear:**
+
+| Suite | Result |
+|---|---|
+| `kit/ui_library` | 263 / 263 pass |
+| `kit/ui_library/vendor/cupertino_native_better` | 113 / 113 pass |
+
+**In flight:** C1 (stable icon futures) and C2 (chrome-gate scoping), both re-dispatched on
+the coding tier after earlier attempts died on a model usage limit.
+
+### Incident notes (cost real time — see the `agent-worktree-hazards` memory)
+
+1. Subagent worktrees branch from `origin/master`, which was **12 commits behind** local
+   master. One agent spent an entire run re-deriving `6b6dc8c`'s watchdog fix; its
+   `transition_observer.dart` came out byte-identical to master's — a pure no-op — while the
+   briefed `appbox_kit_native_chrome_gate.dart` scoping fix went untouched. Every dispatch now
+   carries a mandatory `git merge master` step 0.
+2. An agent whose worktree had been deleted (torn down when its parent coordinator stopped)
+   fell back to editing the **main checkout**, then died mid-edit on `glass_button_group.dart`,
+   leaving 300 lines of non-compiling changes. `flutter analyze` reported 76 errors that looked
+   like they came from the Stage 2 merge but were entirely uncommitted working-tree state.
+   Recovered to `stash@{0}`; drop it once C1 lands.
+3. Agent-reported green checks were authored on stale bases and did **not** transfer — the
+   baseline above was re-run on the merged tree, not inherited from their reports.
