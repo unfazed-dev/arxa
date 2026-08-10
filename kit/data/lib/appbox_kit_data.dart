@@ -8,6 +8,7 @@
 library;
 
 import 'package:appwrite/appwrite.dart' as aw;
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' as sb;
 
@@ -165,7 +166,13 @@ class AppBoxKitData {
     required List<String> fixtureAssets,
     required AppBoxKitAssetReader assetReader,
   }) async {
-    final persistence = switch (config.seedPersistence) {
+    // Web has no dart:io / path_provider — snapshot persistence would throw
+    // MissingPluginException (getApplicationDocumentsDirectory) and kill boot.
+    // Degrade to in-memory there; every other platform honors the config.
+    final seedPersistenceMode = kIsWeb
+        ? AppBoxKitSeedPersistenceMode.none
+        : config.seedPersistence;
+    final persistence = switch (seedPersistenceMode) {
       AppBoxKitSeedPersistenceMode.none => AppBoxKitNoPersistence(),
       AppBoxKitSeedPersistenceMode.snapshot => AppBoxKitSnapshotPersistence(),
     };
@@ -194,7 +201,7 @@ class AppBoxKitData {
     appBoxKitLocator.registerSingleton<AppBoxKitSeedStore>(store);
 
     // Blob-storage seam: same seedPersistence switch as tables.
-    final storagePersistence = switch (config.seedPersistence) {
+    final storagePersistence = switch (seedPersistenceMode) {
       AppBoxKitSeedPersistenceMode.none => const AppBoxKitNoStoragePersistence(),
       AppBoxKitSeedPersistenceMode.snapshot => const AppBoxKitSnapshotStoragePersistence(),
     };
