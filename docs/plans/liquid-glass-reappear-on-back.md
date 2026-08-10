@@ -304,3 +304,84 @@ Already eliminated as a lever: moving the platform view out of the routed
 subtree. `native_liquid_glass#9` tried exactly that via an app-level overlay and
 the flash persisted — *"the problem may be related to the UiKitView/platform view
 composition path itself rather than only widget tree placement."*
+
+---
+
+# Round 3 — device says Fix B failed, and that falsifies the whole approach
+
+**Device feedback:** *"still doing it on the way back."*
+
+## First: it was not a stale build
+
+The cheap check before any theory, because a Swift change in a vendored plugin
+needs a real rebuild and a hot restart would silently keep the old binary:
+
+| artifact | mtime |
+|---|---|
+| `LiquidGlassContainerView.swift` (Fix B) | 2026-08-11 01:38:36 |
+| `build/ios/Debug-iphoneos/Runner.app` | 2026-08-11 **01:41:09** |
+| `Debug-iphoneos/cupertino_native_better.o` | 2026-08-11 01:40:48 |
+
+The device binary is **newer** than the source. Fix B shipped and the artifact
+survived it. That is a real falsification, not an inconclusive run.
+
+## Why Fix B could never have worked
+
+`Glass.identity` + `glassEffectTransition(.identity)` govern **SwiftUI's** own
+transition system. The trigger is not SwiftUI. It is
+`FlutterPlatformViewsController.mm performSubmit:` calling `removeFromSuperview`
+when a platform view leaves the composition order and `addSubview` on the same
+instance when it returns. **The plugin never sees that call**, so no modifier
+inside `LiquidGlassContainerView` can wrap it in a no-animation transaction.
+
+Round 2 asserted `.identity` "covers the engine's removeFromSuperview/addSubview
+trigger too." That claim was wrong, and the device is what said so.
+
+## The architectural error (Phase 4.5 — 4 fixes, stop patching)
+
+**The gate generalized a tab-bar rule to in-route content.**
+
+- `CNTabBar` sits **outside** the transitioning routes. A platform view
+  composites above the Flutter scene, so a page sliding over the tab bar would
+  show through it. It genuinely must leave the frame. This is what
+  `autoHideOnPageTransition` is for, and it is the case with device hours behind
+  it.
+- An `AppBoxKitListSection` **inside** the folders route is the opposite case.
+  It is part of that route's content and travels with the route's own transform.
+  There is no z-order violation to prevent. Hiding it buys nothing and costs the
+  `addSubview` materialize.
+
+`CNTransitionObserver.hasActiveTransitionAbove(context)` cannot distinguish
+these. **That is the defect** — every fix so far was aimed downstream of it.
+
+Why push looked fine: on push the incoming route's platform views are appearing
+for the **first** time, where materialize is Apple's intended behavior. On pop
+the folders view's glass was already established in the user's mind, so
+re-materializing reads as a glitch. Perceptual and mechanical readings converge.
+
+## The probe (not a fix)
+
+`_applyVisibility` reduced to `anyModalDepth.value > _mountDepth` — the
+transition term dropped — to measure the premise that has never been tested for
+content *inside* a transitioning route:
+
+> a platform view "neither clips nor translates with the routes mid-transition"
+
+Two readouts, evaluated **separately**:
+
+1. **In-route list sections during the slide** — do they track the page or sit
+   pinned? This is the premise under test.
+2. **The tab bar during the slide** — expected to ghost. That is the
+   known-necessary case, *not* a refutation of (1).
+
+## The fix shape it implies
+
+If sections track, the discriminator is: **is my own route animating?**
+
+- own route animating → I travel with the transform → **stay painted**
+- own route static, transition above → I would float over it → **hide**
+
+The folders route's `secondaryAnimation` runs during the pop (stays, no
+materialize); the root route holding the tab bar is static during a nested push
+(hides, correct). `ModalRoute.of(context)` is already in the plumbing via
+`AppBoxKitMotionScope`.
