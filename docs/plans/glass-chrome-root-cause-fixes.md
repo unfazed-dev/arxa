@@ -21,9 +21,12 @@ Date: 2026-08-10. Advisor consult attempted, recorded **skipped** (no API key in
 **H: Every symptom reduces to platform views being torn down / hidden by Flutter-side rebuild
 machinery, not by native glass behavior.**
 
+> **⚠️ C1's stated mechanism was DISPROVEN on 2026-08-10 — see "C1 correction" below.
+> It is a jank fix, not a flicker fix. The table row is kept as authored for the record.**
+
 | # | Cause | Evidence | Explains |
 |---|-------|----------|----------|
-| C1 | `future:` constructed inside `build()` in 5 vendor components → FutureBuilder identity-reset → `SizedBox` → UiKitView teardown/recreate + re-rasterize per rebuild | `icon.dart:139,168` · `button.dart:385,413` · `glass_button_group.dart:266` · `popup_menu_button.dart:364,370` | flicker (all contexts), slowness |
+| C1 | ~~`future:` constructed inside `build()` in 5 vendor components → FutureBuilder identity-reset → `SizedBox` → UiKitView teardown/recreate + re-rasterize per rebuild~~ **(mechanism false; real cost is redundant re-resolution)** | `icon.dart:139,168` · `button.dart:385,413` · `glass_button_group.dart:266` · `popup_menu_button.dart:364,370` | ~~flicker (all contexts)~~, slowness |
 | C2 | Chrome gate hides on **global static** transition counter, no mount-scope guard (contrast modal check's `_mountDepth` on same lines); nested routers each add an observer; watchdog holds ~1.35 s | `chrome_gate.dart:186-187`, `transition_observer.dart:51,40`, `nested_router.dart:93` | tab bar hidden during notes-shell transitions; obscure glitch |
 | C3 | `appbox_kit_native_icon_button.dart:89` passes `customIcon:` unconditionally → shadows SF Symbol, forces raster branch on most numerous surface (FAB/split/toolbar guard it; rationale at `fab.dart:80-81`) | audit §3 | flicker + cold-start/build cost |
 | C4 | **Scroll-edge tree-shape flip** (2026-08-10 trace, promoted): `scroll_edge_effect.dart:171` returns `widget.child` raw at `t == 0`, wrapped in 4 levels (`IgnorePointer > Opacity > ClipRect > ImageFiltered`) at `t > 0` → Element not reused → subtree unmounts, platform views destroyed/re-created at every crossing. **The remount is the visible artifact** (at flip: sigma 0.16, alpha ≈ 0.983 — imperceptible). No hysteresis: single boundary both directions at `:163` (`t <= 0.02`). Post-frame `_recompute` at `:124` → create→destroy→create on first mount for cards starting under chrome. 10 showcase sites; `showcase_notes_folder_view.mobile.dart:182-183` chains it twice per row; `showcase_split_button_card_widget.dart:53` puts glass card + `CNButton` under the flip. Pure Dart — zero channel traffic. **Independent of the cluster; survives fixing C1/C2/C3.** | audit §4 (rewritten) | scroll-edge breakage ("lists break all the time"), scroll flicker, first-load flicker |
@@ -80,13 +83,56 @@ All merged clean.
 
 **Green baseline, re-measured on the merged tree after each merge:**
 
-| Suite | Baseline `2301f39` | After C2 merge |
-|---|---|---|
-| `kit/ui_library` | 263 / 263 | 265 / 265 (＋C2's 2 new tests) |
-| `kit/ui_library/vendor/cupertino_native_better` | 113 / 113 | 113 / 113 |
+| Suite | Baseline `2301f39` | After C2 | After C1 |
+|---|---|---|---|
+| `kit/ui_library` | 263 / 263 | 265 / 265 (＋C2's 2) | 265 / 265 |
+| `kit/ui_library/vendor/cupertino_native_better` | 113 / 113 | 113 / 113 | 118 / 118 (＋C1's 5) |
 
-**In flight:** C1 (stable icon futures), re-dispatched on the coding tier after two earlier
-attempts died (model usage limit, then a deleted worktree).
+C1 also passed `flutter build ios --simulator` (exit 0). C1 coverage gaps it declared
+honestly: the `customIcon` path is untested headless (`iconDataToImageBytes` never completes
+in `flutter_test`), CNIcon's native branch is hard-gated by
+`PlatformViewGuard.isTestEnvironment`, and the tests assume a macOS 26+ host.
+
+**Next:** C5 (single tab-bar hide authority) and the §3d tab-switch fade question above, which
+is now the only open lead on the remaining flicker.
+
+### C1 correction — the top-ranked flicker cause was mechanically false
+
+C1 landed (`d57d5e3`, `b710440`, `e5756e2`) but **disproved its own premise**, and the audit's
+#1 ranking with it.
+
+**Claimed:** a new `future:` identity per rebuild resets the FutureBuilder snapshot → the
+`!hasData` placeholder (`SizedBox`) renders → the `UiKitView` subtree is torn down and
+re-created → flicker.
+
+**Disproven, primary source** (`flutter/lib/src/widgets/async.dart`, verified in this repo's
+pinned SDK at `/Volumes/developer_ssd/dev/fvm/versions/stable`):
+
+```dart
+// :612 didUpdateWidget → :619, when the future identity changes
+_snapshot = _snapshot.inState(ConnectionState.none);
+// :280 — inState PRESERVES data
+AsyncSnapshot<T> inState(ConnectionState state) =>
+    AsyncSnapshot<T>._(state, data, error, stackTrace);
+```
+
+`data` survives, so `hasData` stays true and the placeholder branch is **never taken on a
+rebuild** — only on genuine first load. Agent probe agreed: `UiKitView` count stayed at **1
+across 5 parent rebuilds**, no placeholder frame.
+
+**What was really wrong, and is now fixed:** unbounded redundant re-resolution — 2 asset-bundle
+loads per parent rebuild (2 after first mount → 12 after 5 rebuilds), plus a redundant
+`setState` per resolution. On the `customIcon` path each rebuild redid a full
+`PictureRecorder → toImage → toByteData` **on the main isolate**. That is real per-frame jank
+during scroll and route animation — it maps to the user's "scroll stutter / transition lag /
+cold start", not to the flicker.
+
+**Consequence for the remaining hunt:** flicker during **tab switching** now has no confirmed
+mechanism. Scroll and first-load flicker are explained by C4 (a genuine remount), and the tab
+bar vanishing during navigation by C2. The open suspect is audit §3d:
+`animated_tab_stack.dart:277,281` fades tab layers, while `tab_host_widget.dart:53-54` states
+"slide-only: fade ghosts platform views" — and commit `20616f2` deliberately *added* a
+crossfade. Fading a `UiKitView` is exactly the operation that comment warns against.
 
 ### C2 postscript — the recovered patch was broken in four ways
 
