@@ -1,3 +1,5 @@
+import 'package:cupertino_native_better/cupertino_native_better.dart'
+    show CNButton;
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:m3e_collection/m3e_collection.dart' show IconButtonM3E;
@@ -58,5 +60,50 @@ void main() {
       isTrue,
       reason: 'tapping the icon button must invoke onPressed',
     );
+  });
+
+  // CNButton icon priority is imageAsset > customIcon > icon (button.dart:207),
+  // so an always-set customIcon shadows the native SF Symbol path and forces
+  // the raster branch. The guard is asserted at the CNButton boundary: those
+  // constructor args deterministically select the platform-view creationParams
+  // branch, and a real UiKitView can't be constructed in a headless
+  // flutter_test (see [withAndroidFallback]).
+  testWidgets('kit.ui-library.native-icon-button — SF Symbol input must NOT pass customIcon', (tester) async {
+    await withAndroidFallback(() async {
+      await tester.pumpWidget(host(const AppBoxKitNativeIconButton(
+        icon: Icons.add,
+        sfSymbol: 'plus',
+      )));
+
+      final cn = tester.widget<CNButton>(find.byType(CNButton));
+      expect(
+        cn.icon?.name,
+        'plus',
+        reason: 'SF-symbol-capable input must ride CNButton\'s native symbol path',
+      );
+      expect(
+        cn.customIcon,
+        isNull,
+        reason: 'customIcon shadows the SF Symbol (priority imageAsset > '
+            'customIcon > icon) — it must be withheld when a symbol exists',
+      );
+    });
+  });
+
+  testWidgets('kit.ui-library.native-icon-button — icon without SF Symbol still passes customIcon', (tester) async {
+    await withAndroidFallback(() async {
+      await tester.pumpWidget(host(const AppBoxKitNativeIconButton(
+        icon: Icons.add,
+      )));
+
+      final cn = tester.widget<CNButton>(find.byType(CNButton));
+      expect(cn.icon, isNull);
+      expect(
+        cn.customIcon,
+        Icons.add,
+        reason: 'with no SF Symbol equivalent the rasterized Material glyph is '
+            'the only Apple-tier rendering — customIcon must still be passed',
+      );
+    });
   });
 }
