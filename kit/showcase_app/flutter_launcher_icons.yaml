@@ -7,8 +7,8 @@ flutter_launcher_icons:
   android: true
   ios: true
   remove_alpha_ios: true
-  background_color_ios: "#0B0B0F"
-  adaptive_icon_background: "#0B0B0F"
+  background_color_ios: "#ffffff"
+  adaptive_icon_background: "#ffffff"
   adaptive_icon_foreground: "assets/brand-icons/appbox-icon.png"
   # Theme-adaptive: Android 13+ tints the monochrome layer (alpha-only glyph)
   # to the system light/dark wallpaper theme; a static hex background cannot
@@ -21,5 +21,5 @@ flutter_launcher_icons:
   web:
     generate: true
     image_path: "assets/brand-icons/appbox-icon.png"
-    background_color: "#0B0B0F"
-    theme_color: "#0B0B0F"
+    background_color: "#ffffff"
+    theme_color: "#ffffff"
