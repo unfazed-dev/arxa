@@ -381,8 +381,12 @@ class _CNButtonState extends State<CNButton> with ModalHideMixin<CNButton> {
 
     // Handle image asset (highest priority)
     if (widget.imageAsset != null) {
-      return FutureBuilder<String>(
-        future: resolveAssetPathForPixelRatio(widget.imageAsset!.assetPath),
+      return FutureBuilder<IconSource?>(
+        future: resolveIconSource(
+          assetPath: widget.imageAsset!.assetPath,
+          assetImageData: widget.imageAsset!.imageData,
+          assetFormat: widget.imageAsset!.imageFormat,
+        ),
         builder: (context, snapshot) {
           if (!snapshot.hasData) {
             final defaultHeight = widget.config.minHeight ?? 44.0;
@@ -391,26 +395,24 @@ class _CNButtonState extends State<CNButton> with ModalHideMixin<CNButton> {
               width: widget.config.width ?? defaultHeight,
             );
           }
-          // Create a new CNImageAsset with resolved path
-          final resolvedImageAsset = CNImageAsset(
-            snapshot.data!,
-            size: widget.imageAsset!.size,
-            color: widget.imageAsset!.color,
-            imageFormat: widget.imageAsset!.imageFormat,
-            imageData: widget.imageAsset!.imageData,
-            mode: widget.imageAsset!.mode,
-            gradient: widget.imageAsset!.gradient,
-          );
-          return _buildNativeButton(context, imageAsset: resolvedImageAsset);
+          // assetPath is always non-null here, so resolveIconSource always
+          // resolves to an IconSourceAsset for this branch.
+          final assetSource = snapshot.data! as IconSourceAsset;
+          return _buildNativeButton(context, assetSource: assetSource);
         },
       );
     }
 
     // Handle custom icon (medium priority)
     if (widget.customIcon != null) {
+      // Divergence (Stage 2): this component's customIconSize default is
+      // widget.config.customIconSize ?? 20.0 (button-specific config).
       final customIconSize = widget.config.customIconSize ?? 20.0;
-      return FutureBuilder<Uint8List?>(
-        future: iconDataToImageBytes(widget.customIcon!, size: customIconSize),
+      return FutureBuilder<IconSource?>(
+        future: resolveIconSource(
+          customIcon: widget.customIcon,
+          customIconSize: customIconSize,
+        ),
         builder: (context, snapshot) {
           if (!snapshot.hasData) {
             final defaultHeight = widget.config.minHeight ?? 44.0;
@@ -419,7 +421,11 @@ class _CNButtonState extends State<CNButton> with ModalHideMixin<CNButton> {
               width: widget.config.width ?? defaultHeight,
             );
           }
-          return _buildNativeButton(context, customIconBytes: snapshot.data);
+          final customIconBytes = (snapshot.data! as IconSourceBytes).bytes;
+          return _buildNativeButton(
+            context,
+            customIconBytes: customIconBytes,
+          );
         },
       );
     }
@@ -431,7 +437,7 @@ class _CNButtonState extends State<CNButton> with ModalHideMixin<CNButton> {
   Widget _buildNativeButton(
     BuildContext context, {
     Uint8List? customIconBytes,
-    CNImageAsset? imageAsset,
+    IconSourceAsset? assetSource,
   }) {
     const viewType = 'CupertinoNativeButton';
 
@@ -446,19 +452,17 @@ class _CNButtonState extends State<CNButton> with ModalHideMixin<CNButton> {
     bool? iconGradient;
     List<Color>? paletteColors;
 
-    if (imageAsset != null) {
-      // Image asset takes precedence
-      // Asset path is already resolved by FutureBuilder
-      assetPath = imageAsset.assetPath;
-      imageData = imageAsset.imageData;
-      // Auto-detect format if not provided
-      imageFormat =
-          imageAsset.imageFormat ??
-          detectImageFormat(imageAsset.assetPath, imageAsset.imageData);
-      iconSize = imageAsset.size;
-      iconColor = imageAsset.color;
-      iconMode = imageAsset.mode;
-      iconGradient = imageAsset.gradient;
+    if (assetSource != null) {
+      // Image asset takes precedence.
+      // Path/data/format are already resolved by resolveIconSource via the
+      // build-path FutureBuilder — no re-detection here.
+      assetPath = assetSource.resolvedPath;
+      imageData = assetSource.imageData;
+      imageFormat = assetSource.format;
+      iconSize = widget.imageAsset!.size;
+      iconColor = widget.imageAsset!.color;
+      iconMode = widget.imageAsset!.mode;
+      iconGradient = widget.imageAsset!.gradient;
     } else if (customIconBytes != null) {
       // Custom icon bytes
       imageData = customIconBytes;
@@ -502,7 +506,7 @@ class _CNButtonState extends State<CNButton> with ModalHideMixin<CNButton> {
     final creationParams = <String, dynamic>{
       if (widget.label != null) 'buttonTitle': widget.label,
       'buttonCustomIconBytes': ?customIconBytes,
-      if (imageAsset != null) ...{
+      if (assetSource != null) ...{
         'buttonAssetPath': ?assetPath,
         'buttonImageData': ?imageData,
         'buttonImageFormat': ?imageFormat,
@@ -593,8 +597,8 @@ class _CNButtonState extends State<CNButton> with ModalHideMixin<CNButton> {
               widget.config.minHeight == null) {
             // Get icon size
             double iconSize = 20.0;
-            if (imageAsset != null) {
-              iconSize = imageAsset.size;
+            if (assetSource != null) {
+              iconSize = widget.imageAsset!.size;
             } else if (widget.icon != null) {
               iconSize = widget.icon!.size;
             } else if (widget.customIcon != null) {
@@ -899,21 +903,19 @@ class _CNButtonState extends State<CNButton> with ModalHideMixin<CNButton> {
       if (widget.imageAsset != null) {
         // Update if path/data changed OR if we switched from another icon type
         if (imageAssetPathChanged || imageAssetDataChanged || iconTypeChanged) {
-          // Resolve asset path based on device pixel ratio
-          final resolvedAssetPath = await resolveAssetPathForPixelRatio(
-            widget.imageAsset!.assetPath,
-          );
+          // Resolve asset path/format based on device pixel ratio
+          final assetSource =
+              await resolveIconSource(
+                    assetPath: widget.imageAsset!.assetPath,
+                    assetImageData: widget.imageAsset!.imageData,
+                    assetFormat: widget.imageAsset!.imageFormat,
+                  )
+                  as IconSourceAsset;
           if (!mounted) return;
 
-          updates['buttonAssetPath'] = resolvedAssetPath;
-          updates['buttonImageData'] = widget.imageAsset!.imageData;
-          // Auto-detect format if not provided (use resolved path)
-          updates['buttonImageFormat'] =
-              widget.imageAsset!.imageFormat ??
-              detectImageFormat(
-                resolvedAssetPath,
-                widget.imageAsset!.imageData,
-              );
+          updates['buttonAssetPath'] = assetSource.resolvedPath;
+          updates['buttonImageData'] = assetSource.imageData;
+          updates['buttonImageFormat'] = assetSource.format;
           updates['buttonIconSize'] = widget.imageAsset!.size;
           if (widget.imageAsset!.color != null) {
             if (mounted) {
@@ -953,30 +955,34 @@ class _CNButtonState extends State<CNButton> with ModalHideMixin<CNButton> {
                   widget.imageAsset!.gradient;
             }
             // Always include asset path when updating other properties
-            final resolvedAssetPath = await resolveAssetPathForPixelRatio(
-              widget.imageAsset!.assetPath,
-            );
+            final assetSource =
+                await resolveIconSource(
+                      assetPath: widget.imageAsset!.assetPath,
+                      assetImageData: widget.imageAsset!.imageData,
+                      assetFormat: widget.imageAsset!.imageFormat,
+                    )
+                    as IconSourceAsset;
             if (!mounted) return;
 
-            updates['buttonAssetPath'] = resolvedAssetPath;
-            updates['buttonImageData'] = widget.imageAsset!.imageData;
-            updates['buttonImageFormat'] =
-                widget.imageAsset!.imageFormat ??
-                detectImageFormat(
-                  resolvedAssetPath,
-                  widget.imageAsset!.imageData,
-                );
+            updates['buttonAssetPath'] = assetSource.resolvedPath;
+            updates['buttonImageData'] = assetSource.imageData;
+            updates['buttonImageFormat'] = assetSource.format;
           }
         }
       } else if (widget.customIcon != null) {
         // Handle custom icon - update if changed OR if we switched from another icon type
         if (customIconChanged || iconTypeChanged) {
-          // Handle custom icon change - need to render it first
+          // Handle custom icon change - need to render it first.
+          // Divergence (Stage 2): this component's customIconSize default is
+          // widget.config.customIconSize ?? 20.0 (button-specific config).
           final customIconSize = widget.config.customIconSize ?? 20.0;
-          final customIconBytes = await iconDataToImageBytes(
-            widget.customIcon!,
-            size: customIconSize,
+          final iconBytesSource = await resolveIconSource(
+            customIcon: widget.customIcon,
+            customIconSize: customIconSize,
           );
+          final customIconBytes = iconBytesSource is IconSourceBytes
+              ? iconBytesSource.bytes
+              : null;
           if (customIconBytes != null) {
             updates['buttonCustomIconBytes'] = customIconBytes;
             updates['buttonIconSize'] = customIconSize;

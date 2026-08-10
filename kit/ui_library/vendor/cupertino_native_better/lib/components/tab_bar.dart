@@ -590,11 +590,11 @@ class _CNTabBarState extends State<CNTabBar> {
         // (and per-item `icon.size` fallback) actually scales custom icons.
         // Native side embeds these bytes as-is, so the rasterized PNG must
         // be produced at the target logical size.
-        final bytes = await iconDataToImageBytes(
-          item.customIcon!,
-          size: widget.iconSize ?? item.icon?.size ?? 25.0,
+        final source = await resolveIconSource(
+          customIcon: item.customIcon,
+          customIconSize: widget.iconSize ?? item.icon?.size ?? 25.0,
         );
-        customIconBytes.add(bytes);
+        customIconBytes.add(source is IconSourceBytes ? source.bytes : null);
       } else {
         customIconBytes.add(null);
       }
@@ -604,15 +604,17 @@ class _CNTabBarState extends State<CNTabBar> {
         // For activeImageAsset, we don't need to render to bytes - native code will handle it
         activeCustomIconBytes.add(null);
       } else if (item.activeCustomIcon != null) {
-        final bytes = await iconDataToImageBytes(
-          item.activeCustomIcon!,
-          size:
+        final source = await resolveIconSource(
+          customIcon: item.activeCustomIcon,
+          customIconSize:
               widget.iconSize ??
               item.activeIcon?.size ??
               item.icon?.size ??
               25.0,
         );
-        activeCustomIconBytes.add(bytes);
+        activeCustomIconBytes.add(
+          source is IconSourceBytes ? source.bytes : null,
+        );
       } else if (item.customIcon != null) {
         activeCustomIconBytes.add(customIconBytes.last); // Use same as normal
       } else {
@@ -656,22 +658,47 @@ class _CNTabBarState extends State<CNTabBar> {
         .toList();
     final badges = widget.items.map((e) => e.badge ?? '').toList();
 
-    final imageAssetPaths = await Future.wait(
+    // Divergence (Stage 2): resolveIconSource bundles pixel-ratio path
+    // resolution AND format detection into one atomic asset-branch result
+    // (format detection needs the resolved path). The original code ran
+    // these as two separate Future.wait rounds (paths, then formats reading
+    // back the already-resolved paths); routing through the shared resolver
+    // collapses that into one round per item — output values are unchanged
+    // (same imageAsset != null gate, same `?? ''` fallback), only the
+    // intermediate await-count shrinks. The second `if (!mounted)` guard
+    // below is kept for defense in depth even though nothing async runs
+    // between the two checks anymore.
+    final imageAssetSources = await Future.wait(
       widget.items.map(
         (e) async => e.imageAsset != null
-            ? await resolveAssetPathForPixelRatio(e.imageAsset!.assetPath)
-            : '',
+            ? await resolveIconSource(
+                assetPath: e.imageAsset!.assetPath,
+                assetImageData: e.imageAsset!.imageData,
+                assetFormat: e.imageAsset!.imageFormat,
+              )
+            : null,
       ),
     );
-    final activeImageAssetPaths = await Future.wait(
+    final activeImageAssetSources = await Future.wait(
       widget.items.map(
         (e) async => e.activeImageAsset != null
-            ? await resolveAssetPathForPixelRatio(e.activeImageAsset!.assetPath)
-            : '',
+            ? await resolveIconSource(
+                assetPath: e.activeImageAsset!.assetPath,
+                assetImageData: e.activeImageAsset!.imageData,
+                assetFormat: e.activeImageAsset!.imageFormat,
+              )
+            : null,
       ),
     );
 
     if (!mounted) return const {};
+
+    final imageAssetPaths = imageAssetSources
+        .map((s) => s is IconSourceAsset ? s.resolvedPath : '')
+        .toList();
+    final activeImageAssetPaths = activeImageAssetSources
+        .map((s) => s is IconSourceAsset ? s.resolvedPath : '')
+        .toList();
 
     final sizes = widget.items
         .map((e) => (widget.iconSize ?? e.icon?.size ?? e.imageAsset?.size))
@@ -689,26 +716,12 @@ class _CNTabBarState extends State<CNTabBar> {
     final activeImageAssetData = widget.items
         .map((e) => e.activeImageAsset?.imageData)
         .toList();
-    final imageAssetFormats = await Future.wait(
-      widget.items.asMap().entries.map((entry) async {
-        final e = entry.value;
-        if (e.imageAsset == null) return '';
-        final resolvedPath = imageAssetPaths[entry.key];
-        return e.imageAsset!.imageFormat ??
-            detectImageFormat(resolvedPath, e.imageAsset!.imageData) ??
-            '';
-      }),
-    );
-    final activeImageAssetFormats = await Future.wait(
-      widget.items.asMap().entries.map((entry) async {
-        final e = entry.value;
-        if (e.activeImageAsset == null) return '';
-        final resolvedPath = activeImageAssetPaths[entry.key];
-        return e.activeImageAsset!.imageFormat ??
-            detectImageFormat(resolvedPath, e.activeImageAsset!.imageData) ??
-            '';
-      }),
-    );
+    final imageAssetFormats = imageAssetSources
+        .map((s) => s is IconSourceAsset ? (s.format ?? '') : '')
+        .toList();
+    final activeImageAssetFormats = activeImageAssetSources
+        .map((s) => s is IconSourceAsset ? (s.format ?? '') : '')
+        .toList();
 
     if (!mounted) return const {};
 
@@ -1006,25 +1019,44 @@ class _CNTabBarState extends State<CNTabBar> {
             .map((e) => e.activeImageAsset?.imageData)
             .toList();
         // Auto-detect format if not provided
+        //
+        // Divergence (Stage 2): intentionally NOT routed through
+        // resolveIconSource. Unlike _prepareCreationParams, this update
+        // path uses the RAW (unresolved-for-pixel-ratio) assetPath for
+        // imageAssetPaths above -- resolveIconSource always resolves the
+        // path when one is given, so calling it here would either change
+        // imageAssetPaths' value or force a discarded, wasted
+        // resolveAssetPathForPixelRatio async I/O call on every sync pass
+        // just to reach the format. Both are behavior changes beyond the
+        // sanctioned lowercasing, so this direct detectImageFormat call
+        // stays as-is. detectImageFormat is defined in icon_renderer.dart,
+        // so the single-backend invariant still holds; the sanctioned
+        // lowercasing is applied to the combined expression below because
+        // a caller-supplied imageFormat would otherwise bypass the
+        // resolver's toLowerCase() guarantee.
         final imageAssetFormats = widget.items
             .map(
               (e) =>
-                  e.imageAsset?.imageFormat ??
-                  detectImageFormat(
-                    e.imageAsset?.assetPath,
-                    e.imageAsset?.imageData,
-                  ) ??
+                  (e.imageAsset?.imageFormat ??
+                          detectImageFormat(
+                            e.imageAsset?.assetPath,
+                            e.imageAsset?.imageData,
+                          ))
+                      ?.toLowerCase() ??
                   '',
             )
             .toList();
+        // Divergence (Stage 2): same reasoning as imageAssetFormats above --
+        // not routed through resolveIconSource, see comment there.
         final activeImageAssetFormats = widget.items
             .map(
               (e) =>
-                  e.activeImageAsset?.imageFormat ??
-                  detectImageFormat(
-                    e.activeImageAsset?.assetPath,
-                    e.activeImageAsset?.imageData,
-                  ) ??
+                  (e.activeImageAsset?.imageFormat ??
+                          detectImageFormat(
+                            e.activeImageAsset?.assetPath,
+                            e.activeImageAsset?.imageData,
+                          ))
+                      ?.toLowerCase() ??
                   '',
             )
             .toList();

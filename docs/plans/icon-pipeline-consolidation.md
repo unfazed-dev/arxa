@@ -15,7 +15,8 @@ scaffold copy-pasted across:
 - `components/popup_menu_button.dart`
 - `components/tab_bar.dart`
 - `components/icon.dart`
-- `components/split_button.dart`
+- `components/split_button.dart` *(premise corrected in Stage 2: forwards to
+  glass_button_group only, no pipeline of its own)*
 - `components/glass_button_group.dart`
 
 all calling `utils/icon_renderer.dart` with slightly different args.
@@ -53,6 +54,14 @@ blocks Swift from sharing one decoder.
   surface; verify FAB, tab bar, home icon buttons, appbar search/menu at 1x/2x/3x.
 - **Stage 2 — Dart `IconSource` resolver.** Same dedup on the Dart side;
   `icon_renderer.dart` becomes its only rasterization backend.
+  **Done (2026-08-10).** `resolveIconSource` + sealed
+  `IconSource` (`IconSourceAsset | IconSourceBytes | IconSourceSymbol`) live in
+  `lib/utils/icon_renderer.dart`; the five components (button, icon, tab_bar,
+  popup_menu_button, glass_button_group) route every asset-resolve /
+  format-detect / glyph-rasterize through it. Wire keys untouched. The one
+  normalization: format strings are lowercased at the resolver (Dart now
+  guarantees the lowercase wire contract Stage 1 assumed on the Swift side).
+  Dart-side divergences recorded below.
 - **Stage 3 — wire-format rename.** Breaks both sides at once; do last, in a
   single commit, with a grep proving zero old-key references remain.
 
@@ -130,6 +139,69 @@ GlassButtonGroup additionally has *two* data sources, tried in order:
   (colors whose components can't be read). Preserved inside
   `ImageUtils.normalizedTint`; it can be dropped once someone confirms no caller
   depends on the nil case.
+
+### Stage 2 (Dart side, 2026-08-10)
+
+Recorded during Stage 2. Same rule as above: preserved verbatim, made explicit
+with a `// Divergence (Stage 2)` comment at each call site.
+
+- **Premise correction: `split_button.dart` has no icon pipeline.** The
+  inventory listed it among the six copy-paste sites; it only forwards
+  `CNButtonData` (including `customIcon`) to `CNGlassButtonGroup` and never
+  rasterizes or resolves anything itself. Five files were rewired, not six.
+- **GlassButtonGroup runs parallel payloads, not a priority chain.** It
+  computes BOTH `iconBytes` (rasterized `customIcon`) and
+  `imageBytes`/`imageFormat`/`assetPath` (imageAsset) and sends both;
+  the Swift side picks (`imageBytes` first, then `iconBytes` forced `"png"`,
+  see Stage 1 notes). `resolveIconSource` is therefore invoked once per
+  payload there instead of once per button.
+- **Custom-icon raster sizes differ per component.** Button:
+  `config.customIconSize ?? 20.0`; Icon: `widget.size ?? symbol?.size ?? 24.0`;
+  GlassButtonGroup face: `icon?.size ?? 20.0`, its menu items: fixed `18.0`;
+  PopupMenu and TabBar have their own per-item sizes. All preserved.
+- **Async placeholder sizing differs per branch.** `icon.dart`'s asset branch
+  sizes its placeholder from `imageAsset.size`, its custom-icon branch from
+  `symbol?.size`; `button.dart` uses `minHeight ?? 44.0` in both. The outer
+  branch structure was kept at those call sites so placeholders stay identical.
+- **Format null-fallback.** Some sites send `format ?? 'png'`
+  (tab bar), others omit/send null (button, icon).
+  Preserved as `source.format ?? 'png'` at the sites that had it.
+  *Premise correction:* the Stage 2 brief said popup_menu_button's old L563
+  used `?? 'png'`; ground truth is `?? ''`, and `?? ''` was preserved.
+- **PopupMenu divergences (rewire-popup).** Button custom-icon default tint is
+  white while per-item icons default `CupertinoColors.label` — preserved. The
+  old button-asset `isNotEmpty` pre-guard was dropped (wire values unchanged;
+  resolver returns null for empty paths). `_syncPropsToNativeIfNeeded`'s
+  per-item path still sends the raw unresolved path with only format
+  auto-detected — pre-existing behavior, preserved (same class of divergence
+  as the TabBar update path above). Per-item format resolution is hoisted into
+  a separate `Future.wait` pass after the context captures, keeping the
+  await-free loop invariant, with an `if (!mounted) return;` guard.
+- **Custom-icon raster failure never falls through to the symbol branch.**
+  Encoded in `resolveIconSource` (returns null), matching every prior call
+  site; FutureBuilder placeholders stay up on failure exactly as before.
+- **Lowercase format guarantee (the sanctioned change).**
+  `IconSourceAsset.format` is `(assetFormat ?? detectImageFormat(...))?.toLowerCase()`.
+  Previously a caller-supplied `CNImageAsset.imageFormat` like `"SVG"` went
+  over the wire raw; Stage 1's Swift resolver already lowercases on receipt,
+  so the wire contract is now enforced at both ends. Audit confirmed all
+  format strings on the wire originate in the five rewired files.
+- **TabBar update path keeps direct `detectImageFormat` calls (decided).**
+  `_syncPropsToNativeIfNeeded` sends the RAW unresolved `assetPath` in
+  `imageAssetPaths` (unlike the create path, which sends the pixel-ratio-resolved
+  one). Routing it through `resolveIconSource` would either change
+  `imageAssetPaths`' wire value or add a discarded async I/O call per sync —
+  both unsanctioned. Decision: the two flagged call sites in `tab_bar.dart`
+  call `detectImageFormat` directly. No new resolver variant was added because
+  `detectImageFormat` is *defined in* `icon_renderer.dart` — it already is the
+  backend's format-only entry point, so the single-backend invariant holds.
+  The one gap this left — caller-supplied `imageFormat` bypassing the
+  resolver's lowercase guarantee on this path — was closed by applying the
+  sanctioned `?.toLowerCase()` to the combined
+  `imageFormat ?? detectImageFormat(...)` expression at both sites.
+  The grep gate for Stage 2 therefore allows exactly these two commented
+  `detectImageFormat` occurrences in `tab_bar.dart`; everything else in
+  `lib/components/` must be zero.
 
 ### macOS
 
