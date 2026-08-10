@@ -195,3 +195,67 @@ rather than missed.
   single-token search is not a capability check.
 - `.claude/worktrees/**` holds stale full-repo copies from prior agent runs and
   pollutes every unscoped search.
+
+---
+
+## Shipped (2026-08-11)
+
+Both fixes are in. Verification: `kit/ui_library` **293/293**,
+`vendor/cupertino_native_better` **121/121**, `kit/showcase_app` **119/119**,
+`flutter analyze` clean in all three.
+
+| Commit | What |
+|---|---|
+| `36242c3` | Bug B — `setBrightness` on theme change for `CNTextField` / `CNSearchBar` |
+| `0121eaa` | Bug A — iOS sheet routed through `showCupertinoSheet`; API renamed |
+| `3fdcc49` | this diagnosis + the supporting web research |
+| `42a6d1d` | the three open flags from the previous fix |
+
+### Bug A, as built
+
+The user chose the Cupertino route over a bespoke
+`UISheetPresentationController` bridge. `appBoxKitShowNativeSheet` →
+`appBoxKitShowSheet` (the old name overclaimed; nothing on either tier is
+native). `CNBottomSheet.showCupertino` gained `showDragHandle`/`topGap`
+passthrough so the framework draws its own grabber rather than the kit painting
+a second one.
+
+Two deliberate behaviour changes, both pinned by rewritten tests:
+
+- **No dim barrier, and an outside tap no longer dismisses.**
+  `CupertinoSheetRoute.barrierDismissible` is false and its barrier is
+  transparent, so `isDismissible` now maps to `enableDrag`. The scaled-back
+  parent card is the separation, as on iOS.
+- **The body no longer floats.** The 12 dp inset and 28 dp corners are gone;
+  glass fills the sheet at `borderRadius: 0` because the route clips its own
+  corners at r=12.
+
+The old barrier-tap test did not merely fail under this — it **hung**, because
+it awaited a sheet future that can never complete without a dismissible
+barrier. Worth knowing: a behaviour change can turn a passing test into a hang
+rather than a red.
+
+**Android is unchanged and was already correct.** `m3e_collection` 0.3.7 *is*
+the current release and ships no sheet component, and Android has no bridgeable
+native sheet — its platform pattern is a Material component, which is what the
+tier already renders.
+
+### Bug B, as built
+
+`_lastIsDark` + `didChangeDependencies` → `setBrightness`, matching the idiom
+already in `switch.dart`. Both components reuse their own existing brightness
+expression so the creation param and the sync cannot disagree.
+
+**Mutation-checked:** removing the two sync calls fails the new tests while all
+**119** pre-existing vendor tests stay green — they were blind to this.
+
+Two corrections to the analysis above, both caught by re-checking rather than
+by a test:
+
+- `liquid_glass_container.dart` was first recorded as stuck. It is not; it syncs
+  through `updateConfig`, so `grep -c setBrightness` returning 0 was a false
+  negative. **A single-token search is not a capability check.**
+- The platform-view id counter is **global and monotonic across a test file**,
+  so a spy hard-coded to `<viewType>_0` observes a dead channel from the second
+  test onward — which looks exactly like "the fix doesn't work". The harness
+  reads the id back from the `create` call instead.
