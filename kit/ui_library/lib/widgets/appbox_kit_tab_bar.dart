@@ -99,6 +99,30 @@ class AppBoxKitNativeTabBar extends StatelessWidget {
       // thread-merge hitch, no single-frame pop.
       return AppBoxKitNativeChromeGate(
         child: CNTabBar(
+          // C5 — SINGLE HIDE AUTHORITY. `CNTabBar` ships its own transition
+          // hide (`autoHideOnPageTransition`, default true): an `IndexedStack`
+          // swapped to a blank `SizedBox` the instant
+          // `ModalRoute.secondaryAnimation` starts. The gate above hides the
+          // very same bar for the very same event, but ANIMATED (alpha 1 -> 0
+          // over `hideDuration`, 160 ms). Two authorities, one event: the
+          // instant swap blanks the bar in frame one while the gate is still
+          // fading something already invisible — the "fade-then-pop" artifact.
+          // The gate owns hide/show; the ad-hoc swap is off.
+          //
+          // Safe w.r.t. the vendor's warning at `tab_bar.dart:558-565` ("ALWAYS
+          // wrap in IndexedStack ... so the tree shape is identical"): that
+          // guards against the wrapper appearing/disappearing WHILE the feature
+          // is on. A constant `false` returns the bare platform view on every
+          // build, so the tree shape is invariant and the UiKitView is never
+          // destroyed/re-created.
+          autoHideOnPageTransition: false,
+          // `autoHideOnModal` deliberately STAYS ON. The modal hide must
+          // DESTROY the platform view (`tab_bar.dart:521-526`, Issue #31) or
+          // the native UITabBar layer keeps rendering above modal content; the
+          // gate's keep-alive alpha-0 does not destroy it. Folding this path
+          // into the gate would need `hideMode: unmount` and on-device z-order
+          // verification, so it is left as a documented exception rather than
+          // an unverified regression.
           items: [
             for (final t in tabs)
               CNTabBarItem(label: t.label, icon: CNSymbol(t.sfSymbol)),
