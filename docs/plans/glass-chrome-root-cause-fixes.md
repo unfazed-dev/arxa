@@ -31,7 +31,7 @@ machinery, not by native glass behavior.**
 | C3 | `appbox_kit_native_icon_button.dart:89` passes `customIcon:` unconditionally → shadows SF Symbol, forces raster branch on most numerous surface (FAB/split/toolbar guard it; rationale at `fab.dart:80-81`) | audit §3 | flicker + cold-start/build cost |
 | C4 | **Scroll-edge tree-shape flip** (2026-08-10 trace, promoted): `scroll_edge_effect.dart:171` returns `widget.child` raw at `t == 0`, wrapped in 4 levels (`IgnorePointer > Opacity > ClipRect > ImageFiltered`) at `t > 0` → Element not reused → subtree unmounts, platform views destroyed/re-created at every crossing. **The remount is the visible artifact** (at flip: sigma 0.16, alpha ≈ 0.983 — imperceptible). No hysteresis: single boundary both directions at `:163` (`t <= 0.02`). Post-frame `_recompute` at `:124` → create→destroy→create on first mount for cards starting under chrome. 10 showcase sites; `showcase_notes_folder_view.mobile.dart:182-183` chains it twice per row; `showcase_split_button_card_widget.dart:53` puts glass card + `CNButton` under the flip. Pure Dart — zero channel traffic. **Independent of the cluster; survives fixing C1/C2/C3.** | audit §4 (rewritten) | scroll-edge breakage ("lists break all the time"), scroll flicker, first-load flicker |
 | C5 (secondary) | Three uncoordinated tab-bar hide paths: 160 ms fade vs instant `SizedBox` swap vs `IndexedStack` swap | `chrome_gate` + `tab_bar.dart:540,566` | fade-then-pop artifacts |
-| C6 (cost only) | Scroll occlusion gate: per-scroll `getOffsetToReveal` + ≤50 `setState`s over platform-view subtrees | `scroll_occlusion_gate.dart:147-179` | scroll stutter (demoted: not the flip mechanism) |
+| C6 (cost only) | ~~Scroll occlusion gate: per-scroll `getOffsetToReveal` + ≤50 `setState`s over platform-view subtrees~~ **MEASURED 2026-08-10: not a real cost, no fix made — see C6 postscript** | `scroll_occlusion_gate.dart:147-179` | ~~scroll stutter~~ |
 
 Cluster: C1/C2/C3 compound multiplicatively. C4 is independent. Audit's severity ranking:
 C1 > C4 > C2 > C3 > C5 > C6.
@@ -63,7 +63,8 @@ C1 > C4 > C2 > C3 > C5 > C6.
 4. **C4 — scroll-edge tree-shape stability + hysteresis.** Primary property: **constant tree shape across the threshold** — keep the 4-level wrapper mounted always, drive sigma/opacity to identity at `t == 0` (never return raw child). Hysteresis is secondary (reduces frequency; each flip stays visible without shape stability): dead band replacing the single `:163` boundary. Kill the `:124` post-frame first-mount create→destroy→create. Per glass-docs rule 6 / system-native preference, evaluate whether native-side appearance can drive the effect instead of Dart entirely.
    *Failing tests:* (a) pump child containing a stateful marker, cross threshold both ways, assert same Element/State survives; (b) oscillation around `t ≈ 0.02` produces ≤1 rebuild; (c) first mount under chrome produces exactly 1 mount.
 5. **C5 — single hide authority for tab bar** (chrome gate owns it; remove the two ad-hoc swaps) — expected to shrink after C2.
-6. **C6 — occlusion-gate cost** (notify only on state change, no `setState` over platform-view subtrees) — re-measure after C4; may be absorbed by it.
+6. ~~**C6 — occlusion-gate cost**~~ **CLOSED, no code change.** Measured after C4; the
+   prescribed fix was already present. See postscript.
 7. Re-verify on device (profile): the four symptom repros from the user, one by one.
 
 **Execution order (user-confirmed 2026-08-10): C1 → C4 → C2 → C3 → C5 → C6.**
@@ -95,6 +96,48 @@ in `flutter_test`), CNIcon's native branch is hard-gated by
 
 **Next:** C5 (single tab-bar hide authority) and the §3d tab-switch fade question above, which
 is now the only open lead on the remaining flicker.
+
+### C6 postscript — measured, already fine, deliberately not "fixed"
+
+Second audit claim corrected by measurement (same class of error as C1: the *count* was right,
+the *consequence* was not). Verified independently before acceptance.
+
+Method: temporary widget-test harness (run, recorded, deleted), child hoisted to one `final`
+instance so only the gate's own `setState` was counted. 300 × 1px steps — denser than any
+60 fps fling.
+
+| Shape | scroll notifications | alpha changes (setStates) | child rebuilds |
+|---|---|---|---|
+| gate in scrolling sliver under pinned bar | 300 | 48 | **0** |
+| one setState, 7-element subtree | — | 1 | **0** |
+| **production shape** (pinned `SliverPersistentHeader`) | 300 | **0** (alpha pinned 1.0) | **0** |
+
+Why the audit was wrong: `build()` returns `IgnorePointer > Opacity > widget.child` with
+`widget.child` an *identical instance* across the gate's own setState, so
+`Element.updateChild` short-circuits — the rebuild scope is two wrapper widgets, never the
+child subtree. And `appbox_kit_scroll_occlusion_gate.dart:177` (`if (alpha == _alpha) return;`,
+above it alpha quantized to 1/50 with 0.98/0.02 deadbands) **already is** the "notify only on
+change" fix this plan prescribed.
+
+Production exposure: exactly **one** call site repo-wide —
+`showcase_notes_folder_view.mobile.dart:128`, via the `.scrollOcclusion()` extension (a
+`AppBoxKitScrollOcclusionGate` grep misses it). It does sit over a platform view
+(`AppBoxKitNativeSearchBar` → `CNSearchBar` → `UiKitView`), and is still never rebuilt: the
+header is pinned, so alpha stays 1.0 and `RenderOpacity` skips the saveLayer too. The
+call-site comment at :117-119 already documented this.
+
+Residual cost, named honestly: one `getOffsetToReveal` walk per scroll frame, O(depth ≈ 7),
+× 1 live gate app-wide. Under frame noise — not zero.
+
+Steelman (why it exists): on iOS every `CN*` `UiKitView` composites in a native layer *above*
+the Flutter scene, so the compositor clip chain — unreliable during scroll (flutter/flutter
+#25965, #76097, #154664) — is all that occludes it under pinned chrome, leaving a sharp ghost.
+Driving alpha to exactly 0 drops it from the layer tree and detaches the native view. Per
+ADR 0010 part 3 its residual duty is the modal-depth path
+(`CNTabBarRouteObserver.anyModalDepth`) — event-driven, not per-frame. `scroll_edge_effect.dart:40`
+records that C4's widget supersedes it for scroll duty.
+
+Left `unknown`: on-device profile confirmation — widget tests cannot measure raster time.
 
 ### C1 correction — the top-ranked flicker cause was mechanically false
 
