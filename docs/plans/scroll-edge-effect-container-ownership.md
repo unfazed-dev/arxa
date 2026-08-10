@@ -123,8 +123,20 @@ that logic would be the same class of bug the containers exist to prevent.
 
 `showcase_notes_folder_view.mobile.dart` is converted: it was a literal
 `SliverList.builder`, so the fit is exact. Its `.wake(order: i)` stagger now sits *inside*
-the edge wrappers rather than outside. Safe, and checked: the effect measures layout
-geometry through `getOffsetToReveal`, which a paint-time opacity/transform never moves.
+the edge wrappers rather than outside.
+
+That nesting flip is safe, and it was **checked rather than assumed**: `AppBoxKitWake`
+composes only `ScaleTransition` / `SlideTransition` / `FadeTransition`
+(`kit/motion/lib/src/appbox_kit_wake.dart:83-98`) — all paint-time. Had any of them been
+layout-affecting, the effect's own box would hit zero height at animation start and
+`_recompute` would early-return (`appbox_kit_scroll_edge_effect.dart:149`), freezing `_t`
+stale through every rise-in.
+
+In-situ coverage is asserted on the real list, not just the synthetic harness: M5 counts
+items and wrappers under the container and requires exactly two per item —
+**5 items → 10 effects**. (An earlier read of "13 effects on notes" was wrong: it came
+from subtracting within a *whole-tree* census that includes the kept-alive home tab. The
+app-wide 24 does not decompose that way, and the print now says so.)
 
 **Deliberately not converted:** `showcase_notes_view.mobile.dart` builds four
 individually-padded `SliverToBoxAdapter`s through one local `staggeredSliver()` helper.

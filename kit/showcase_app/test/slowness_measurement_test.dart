@@ -496,11 +496,44 @@ void main() {
 
     final census = elementCensus(tester);
     final effects = census['AppBoxKitScrollEdgeEffect'] ?? 0;
+    // NOTE: this is a WHOLE-TREE census — it includes the kept-alive home tab
+    // sitting offstage, so it must NOT be read as "notes' own effect count".
+    // The decomposition below is the one that means something.
     // ignore: avoid_print
-    print('[M5] AppBoxKitScrollEdgeEffect instances mounted on notes folder = '
-        '$effects');
+    print('[M5] AppBoxKitScrollEdgeEffect instances mounted app-wide = $effects');
     // ignore: avoid_print
     print('[M5] total elements on notes folder = ${totalElements(tester)}');
+
+    // In-situ coverage: every item the sliver container builds must carry
+    // exactly one wrapper per configured edge (this list configures both), on
+    // the REAL list rather than a synthetic harness. `AppBoxKitListSection`
+    // appears once per group inside the item builder, so it counts the items.
+    int underList(String type) {
+      final root = find
+          .byType(AppBoxKitEdgeAwareSliverList, skipOffstage: false)
+          .evaluate();
+      if (root.isEmpty) return -1;
+      var n = 0;
+      void visit(Element e) {
+        if (e.widget.runtimeType.toString() == type) n++;
+        e.visitChildren(visit);
+      }
+
+      root.single.visitChildren(visit);
+      return n;
+    }
+
+    final groupsBuilt = underList('AppBoxKitListSection');
+    final effectsUnderList = underList('AppBoxKitScrollEdgeEffect');
+    // ignore: avoid_print
+    print('[M5] notes folder list: items(ListSection)=$groupsBuilt '
+        'effects=$effectsUnderList (expect 2 per item: top + bottom)');
+    expect(groupsBuilt, greaterThan(0),
+        reason: 'control: the list must actually have built items, or the '
+            'coverage assertion below is vacuous');
+    expect(effectsUnderList, groupsBuilt * 2,
+        reason: 'the container must treat every item exactly once per edge — '
+            'a skipped item or a double-wrap both break this');
 
     final scrollables = find.byType(Scrollable);
     if (scrollables.evaluate().isEmpty) {
