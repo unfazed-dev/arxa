@@ -3,7 +3,11 @@
 # Derived platform splash files are committed — regenerate with:
 # dart run flutter_native_splash:create).
 flutter_native_splash:
-  color: "#ffffff"
+  # Theme-reactive: mirrors the app theme scaffold backgrounds —
+  # AppBoxKitColors.surface (light) / AppBoxKitDarkColors.bone (dark).
+  # The OS resolves color vs color_dark natively on system theme change.
+  color: "#f5f0e8"
+  color_dark: "#1c1814"
   # appbox-icon-splash.png is a 320x320 derivative of the brand-icon master
   # (regenerate: sips -z 320 320 assets/brand-icons/appbox-icon.png --out
   # assets/brand-icons/appbox-icon-splash.png). The package treats the source
@@ -15,5 +19,7 @@ flutter_native_splash:
   # the themed monochrome layer (flutter_launcher_icons.yaml) covers
   # theme adaptation there. This section brands the pre-12 window.
   android_12:
-    color: "#ffffff"
+    color: "#f5f0e8"
+    color_dark: "#1c1814"
     image: "assets/brand-icons/appbox-icon.png"
+    image_dark: "assets/brand-icons/appbox-icon.png"
