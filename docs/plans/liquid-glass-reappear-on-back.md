@@ -271,5 +271,36 @@ assertion passes identically before and after. It is pinned by a source-level
 guard instead (with a control that fails if the scanned region moves).
 
 Fix B is Swift. **No Dart test exercises it at all** — it is verified only by
-compiling against the iOS 26.5 SDK. Whether it removes the artifact is a device
-question.
+compiling against the iOS 26.5 SDK (`flutter build ios --simulator` succeeds,
+which is what proves `Glass.identity` and `glassEffectTransition` exist as
+used). Whether it removes the artifact is a device question.
+
+Also note Fix B's `isTransitioning` ternary is **not** exercised by ordinary
+navigation once Fix A lands — the flag is only reachable via
+`CNTransitionHelper`. It is defense-in-depth, not a live path.
+
+## The other two instances of this pattern
+
+`CupertinoPopupMenuButtonPlatformView.swift:666,669` does the same thing in UIKit
+form (`config = .glass()` vs `.tinted()`), and `AppBoxKitNativePopupMenu` sits in
+the folders view app bar — the same broken screen. It needed no separate fix:
+its `isTransitioning` is set *only* by the NotificationCenter observer of the
+global flag, which Fix A stops posting, so it now always takes `.glass()`. (Its
+per-view `setTransitioning` channel call is unrelated — that drives
+`applyTransitionContainment`, the Issue #29 halo clipping.)
+`FloatingIslandPlatformView.swift:247` has the pattern too but `CNFloatingIsland`
+is not used by the kit, so it is left alone.
+
+## If it STILL happens on device
+
+That is informative, not a failure. It would mean `glassEffectTransition(.identity)`
+does not govern hierarchy re-insertion, so the remaining trigger is the engine's
+`removeFromSuperview`/`addSubview` cycle itself. The next lever is then **not
+another native tweak** — it is to stop detaching the view at all: keep the
+revealed route painted through the pop (non-opaque route, or not hiding the
+route being revealed), and accept whatever misregistration that costs.
+
+Already eliminated as a lever: moving the platform view out of the routed
+subtree. `native_liquid_glass#9` tried exactly that via an app-level overlay and
+the flash persisted — *"the problem may be related to the UiKitView/platform view
+composition path itself rather than only widget tree placement."*

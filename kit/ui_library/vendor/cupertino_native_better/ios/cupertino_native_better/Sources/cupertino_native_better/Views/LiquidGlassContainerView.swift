@@ -301,6 +301,12 @@ extension View {
   ///    stops being painted and `addSubview`s it back when painting resumes
   ///    (`FlutterPlatformViewsController.mm`, `performSubmit:`), so the view is
   ///    effectively new to the hierarchy on every route transition.
+  /// NOTE on `isTransitioning`: `CNTransitionObserver` (the NavigatorObserver)
+  /// no longer posts the global flag, so on the normal navigation path this is
+  /// permanently `false` and the ternary always yields `glass`. It is kept live
+  /// for `CNTransitionHelper`, the manual begin/endTransition escape hatch,
+  /// which still drives it. Do not read the ternary as exercised by ordinary
+  /// navigation — it is not, and nothing in the test suite covers it.
   func applyConditionalGlassEffectForContainer<S: Shape>(isTransitioning: Bool, glass: Glass, shape: S) -> some View {
     self
       .glassEffect(isTransitioning ? .identity : glass, in: shape)
