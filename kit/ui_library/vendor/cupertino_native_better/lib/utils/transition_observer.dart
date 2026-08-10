@@ -167,6 +167,9 @@ class CNTransitionObserver extends NavigatorObserver {
   @override
   void didRemove(Route<dynamic> route, Route<dynamic>? previousRoute) {
     _beginTransition();
+    // Intentionally still `previousRoute`, unlike didPop above: a remove is not
+    // animated, so there is no in-flight animation to track and this lands on
+    // the short fallback either way. Left alone on purpose — not an oversight.
     _scheduleEndTransition(previousRoute);
   }
 

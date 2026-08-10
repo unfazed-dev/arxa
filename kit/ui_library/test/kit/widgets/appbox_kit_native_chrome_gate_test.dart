@@ -66,9 +66,12 @@ void main() {
           of: find.byKey(gateKey), matching: find.byType(IndexedStack)))
       .index;
 
-  /// Every element below the gate. Must be identical hidden vs shown: a tree
-  /// whose shape changes at the toggle reparents the platform view, which is
-  /// the native re-init this gate exists to prevent.
+  /// Every element below the gate. A coarse shape check only — note its limit:
+  /// an `IndexedStack` always builds BOTH children, so this stays constant for
+  /// structural reasons that have nothing to do with the invariant, and it
+  /// would keep passing under a conditional wrapper that really did reparent
+  /// the child. `initCount` is the actual reparenting guard; this is here to
+  /// catch gross shape changes, not to prove mount stability.
   int nodeCount(WidgetTester tester) {
     var n = 0;
     void visit(Element e) {
@@ -79,6 +82,42 @@ void main() {
     tester.element(find.byKey(gateKey)).visitChildren(visit);
     return n;
   }
+
+  testWidgets(
+      'kit.ui-library.native-chrome-gate — CONTRACT: hidden means unpainted, mounted, '
+      'same size, same instance — stated without naming the mechanism',
+      (tester) async {
+    // Every other test in this file reads the IndexedStack index, which is a
+    // mechanism-shaped assertion: swap the implementation for Opacity(0) or
+    // Offstage and those either stop compiling or get rewritten, taking the
+    // real guarantee with them. This one is written in observables the gate's
+    // CALLERS depend on, so it keeps holding the line across any such swap.
+    await tester.pumpWidget(host());
+    final shownSize = tester.getSize(find.byKey(gateKey));
+    expect(find.byKey(childKey), findsOneWidget);
+
+    CNTabBarRouteObserver.markAnyModalActive();
+    await tester.pump();
+
+    expect(find.byKey(childKey), findsNothing,
+        reason: 'NOT PAINTED — a platform view still in the frame floats over '
+            'the route slide, which is the whole bug the gate exists for');
+    expect(find.byKey(childKey, skipOffstage: false), findsOneWidget,
+        reason: 'STILL MOUNTED — unmounting destroys the native view and buys '
+            'a re-init + thread-merge stall on the way back');
+    expect(tester.getSize(find.byKey(gateKey)), shownSize,
+        reason: 'SAME FOOTPRINT — a collapsing box reflows the layout around '
+            'it mid-transition');
+    expect(initCount, 1, reason: 'SAME INSTANCE — this is the reparenting '
+        'guard: any wrapper swap that re-parents the child shows up here as a '
+        'second initState, whatever the hide mechanism is called');
+
+    CNTabBarRouteObserver.markAnyModalInactive();
+    await tester.pump();
+    expect(find.byKey(childKey), findsOneWidget);
+    expect(tester.getSize(find.byKey(gateKey)), shownSize);
+    expect(initCount, 1);
+  });
 
   testWidgets(
       'kit.ui-library.native-chrome-gate — nothing in the tree animates the platform view',

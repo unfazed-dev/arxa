@@ -40,6 +40,12 @@ the outgoing `route`, whose controller really is running 1→0 — which also ma
 the window duration-agnostic instead of pinned to a constant that happened to be
 wrong.
 
+**`didRemove` deliberately still passes `previousRoute`.** A remove is not
+animated, so it lands on the 350 ms fallback either way and the fallback is
+harmless there — retargeting it would change nothing except the risk. The
+push/pop symmetry argument above is about the two *animated* cases only; this
+asymmetry is intentional, not an oversight left behind.
+
 Second-order fix in the same function: `dismissed` now counts as settled
 alongside `completed`. Scheduling on the outgoing route means a zero-duration
 pop arrives already dismissed, and treating that as in-flight would attach a
@@ -155,8 +161,15 @@ stays > 0 for the whole real pop; no `FadeTransition` / `ScaleTransition` /
 `Opacity` exists anywhere under the gate; hide and restore each complete in one
 frame and are stable across a further 400 ms; the child is simultaneously
 **not painted** (default finder finds nothing) and **still mounted**
-(`skipOffstage: false` finds it); five hide/show cycles cost exactly one
-`initState`; and the tree node count is identical hidden vs shown.
+(`skipOffstage: false` finds it); and five hide/show cycles cost exactly one
+`initState` — that `initState` count is the reparenting guard, *not* the node
+count beside it, which an `IndexedStack` holds constant for structural reasons
+whether or not the invariant survives.
+
+One test states the contract without naming `IndexedStack` at all (unpainted +
+mounted + same footprint + same instance), so a future swap of the hide
+mechanism cannot quietly take the guarantee with it — the rest of the file reads
+the index, which a refactor would rewrite.
 
 **Needs a device:** that the zoom is gone and glass now simply *is there* when
 the route settles. That is the reported symptom and only eyes can close it.
