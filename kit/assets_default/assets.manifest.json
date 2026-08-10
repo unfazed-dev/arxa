@@ -7,8 +7,10 @@
   "brandIcon": {
     "master": "brand-icons/appbox-icon.png",
     "vector": "brand-icons/appbox-icon.svg",
+    "monochrome": "brand-icons/appbox-icon-monochrome.png",
     "background": "#0B0B0F",
-    "adaptive": true
+    "adaptive": true,
+    "themeAdaptive": true
   },
   "images": {}
 }
