@@ -368,6 +368,33 @@ void main() {
   });
 
   testWidgets(
+      'kit.ui-library.animated-tab-stack — switching to instant WHILE a run is in flight lands '
+      'cleanly (the one path that parks the controller)', (tester) async {
+    // `_controller.value = 1.0` executes ONLY here: a run is live — so the
+    // SlideTransitions are active listeners, notified from inside
+    // didUpdateWidget — and a new index arrives with animation now off. The
+    // steady path is guarded out by `isCompleted`, so this is the case where
+    // the notify-during-build reasoning actually has to hold.
+    await tester.pumpWidget(_frame(0, animated: true));
+    await tester.pumpWidget(_frame(1, animated: true));
+    await tester.pump(const Duration(milliseconds: 50));
+    expect(_onStage('tab0'), findsOneWidget, reason: 'a run really is in flight');
+
+    await tester.pumpWidget(_frame(2, animated: false));
+    expect(tester.takeException(), isNull,
+        reason: 'notifying live listeners from didUpdateWidget must not throw');
+    expect(_onStage('tab2'), findsOneWidget);
+    expect(_onStage('tab0'), findsNothing, reason: 'interrupted exit lands');
+    expect(_onStage('tab1'), findsNothing);
+    expect(_alive('tab0'), findsOneWidget, reason: 'both stay kept alive');
+    expect(_alive('tab1'), findsOneWidget);
+    for (final dx in _slideDxs(tester)) {
+      expect(dx, 0.0,
+          reason: 'parked at the identity end-state, exit slot included');
+    }
+  });
+
+  testWidgets(
       'kit.ui-library.animated-tab-stack — animated: false forces the cross-cut off-iOS too',
       (tester) async {
     await tester.pumpWidget(_frame(0, animated: false));

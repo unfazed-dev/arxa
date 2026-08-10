@@ -203,6 +203,9 @@ class _KitAnimatedTabStackState extends State<AppBoxKitAnimatedTabStack>
         // flipped to false while a run was still in flight.
         setState(() {
           _exitingIndex = null;
+          // A cross-cut has no direction. Clearing it keeps "instant ⇒ nothing
+          // is translated anywhere" true, including the now-empty exit slot.
+          _direction = 0;
           _currentIndex = widget.activeIndex;
           _initialized.add(_currentIndex);
         });
