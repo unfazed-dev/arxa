@@ -1,7 +1,5 @@
-import 'dart:io' show Platform;
-
 import 'package:flutter/foundation.dart'
-    show ValueListenable, kIsWeb, visibleForTesting;
+    show ValueListenable, visibleForTesting;
 import 'package:flutter/widgets.dart';
 import '../cupertino_native_platform_interface.dart';
 
@@ -193,14 +191,10 @@ class CNTransitionObserver extends NavigatorObserver {
   void _beginTransition() {
     _transitionCount++;
     _activeTransitions.value = _activeTransitions.value + 1;
-    // The native begin/endTransition calls only have an iOS implementation
-    // (Liquid Glass tint); on Android/macOS the method channel has no handler
-    // and the call throws MissingPluginException into the zone error handler.
-    // Guard so the noise stops at the source. The Dart-side
-    // [_activeTransitions] signal still drives AppBoxKitNativeChromeGate everywhere.
-    if (_transitionCount == 1 && (!kIsWeb && Platform.isIOS)) {
-      CupertinoNativePlatform.instance.beginTransition();
-    }
+    // The native `beginTransition`/`endTransition` pair is DELIBERATELY not
+    // called any more. See [_endTransition] for the full reasoning; in short it
+    // is a second, weaker hide authority whose only remaining effect was to make
+    // glass re-materialize in the user's face on the way back from a route.
   }
 
   void _scheduleEndTransition(Route<dynamic>? route) {
@@ -273,16 +267,41 @@ class CNTransitionObserver extends NavigatorObserver {
     }
   }
 
+  /// SINGLE HIDE AUTHORITY — the native transition flag is not driven from here.
+  ///
+  /// `CupertinoNativePlatform.beginTransition()` / `endTransition()` set
+  /// `CNTransitionObserver.shared.isTransitioning` on the iOS side, and its only
+  /// consumers are three views that swap their glass for a flat fill while it is
+  /// true — e.g. `LiquidGlassContainerView.swift:280`:
+  ///
+  /// ```swift
+  /// if isTransitioning { self.background(shape.fill(...)) }
+  /// else               { self.glassEffect(glass, in: shape) }
+  /// ```
+  ///
+  /// That is a `@ViewBuilder` if/else, so the two arms are structurally distinct
+  /// views. Flipping the flag back tears one down and inserts the other, which
+  /// applies `.glassEffect` *afresh* — and establishing glass materializes with
+  /// an animation by Apple's design (WWDC25 #284). On a push nobody sees it: the
+  /// flag clears while the route is still covered. On a POP it clears exactly as
+  /// the revealed route becomes visible, so the user watches every glass surface
+  /// animate itself back in. That is the reported bug.
+  ///
+  /// De-tinting was never sufficient anyway, which this file already said above:
+  /// a hybrid-composition platform view *cannot be tinted out of a leak* — it has
+  /// to leave the frame's layer tree, and `AppBoxKitNativeChromeGate` is what
+  /// actually does that. So the native flag is a second authority that duplicates
+  /// a job it cannot do, at the cost of an animation. Same call as C5 in
+  /// `appbox_kit_tab_bar.dart`: one authority per event, and it is the gate.
+  ///
+  /// Per-view `setTransitioning` (Issue #29 halo containment) is a SEPARATE
+  /// channel call on each view's own channel and is untouched by this.
   void _endTransition() {
     _transitionCount--;
     final int next = _activeTransitions.value - 1;
     _activeTransitions.value = next < 0 ? 0 : next;
     if (_transitionCount <= 0) {
       _transitionCount = 0;
-      // Mirror the begin guard — only iOS has a native handler.
-      if (!kIsWeb && Platform.isIOS) {
-        CupertinoNativePlatform.instance.endTransition();
-      }
     }
   }
 }

@@ -173,3 +173,103 @@ the index, which a refactor would rewrite.
 
 **Needs a device:** that the zoom is gone and glass now simply *is there* when
 the route settles. That is the reported symptom and only eyes can close it.
+
+---
+
+# Round 2 — device feedback: push fine, pop still wrong
+
+Round 1's two fixes were correct and are kept, but they were not the whole
+story. Device report: pushing folders → folder list looks right; **popping back
+still shows glass animating in.** That asymmetry is the entire clue, and it
+falsified two more theories before landing.
+
+**Falsified by measurement, not argument:**
+
+1. *"The covered route is torn down, so its platform views re-init on the way
+   back."* A probe pushing an opaque route over a gate and settling it showed
+   `init=1 dispose=0` throughout, gate count constant, and the gate already at
+   index 0 (hidden) on pop frame 1. The in-repo claim at
+   `appbox_kit_chrome_gate_transition_scope_test.dart:147` ("the Overlay …
+   disposes the gate") did not reproduce.
+2. *"The `.wake()` stagger replays on reveal."* `AppBoxKitMotionScope` drives
+   wake from `ModalRoute.of(context)?.animation` — the revealed route's OWN
+   animation, which sits at 1.0 and never moves while the route above it pops.
+
+## The actual cause: glass was being re-established, natively
+
+`LiquidGlassContainerView.swift:280` (before):
+
+```swift
+@ViewBuilder
+func applyConditionalGlassEffectForContainer<S: Shape>(isTransitioning: Bool, glass: Glass, shape: S) -> some View {
+  if isTransitioning { self.background(shape.fill(...)) }
+  else               { self.glassEffect(glass, in: shape) }
+}
+```
+
+A `@ViewBuilder` if/else makes the arms structurally distinct
+(`_ConditionalContent`). Flipping `isTransitioning` back tears one down and
+inserts the other, applying `.glassEffect` **afresh** — and establishing glass
+materializes with an animation by Apple's design. The flag is driven by the Dart
+observer's `endTransition()`. On a push that fires while the route is still
+covered, so nobody sees it; on a **pop** it fires exactly as the revealed route
+becomes visible. Four `AppBoxKitListSection`s on the folders view, all at once.
+
+**Own goal, stated plainly:** round 1's D1 moved `endTransition()` from 350 ms
+(mid-slide, partly masked by motion) to ~500 ms (precisely at settle, fully in
+view). D1 is correct on its own terms, but it made *this* artifact more
+conspicuous.
+
+### Fix A (Dart) — single hide authority
+
+`CNTransitionObserver` no longer calls the native
+`beginTransition`/`endTransition`. Their only consumers are three views that swap
+glass for a flat fill. This file already documented why that authority is the
+weaker one: a hybrid-composition platform view *"can't be tinted out of a leak:
+it must leave the frame's layer tree"* — which `AppBoxKitNativeChromeGate` does
+and de-tinting cannot. Same call as C5 in `appbox_kit_tab_bar.dart`. Per-view
+`setTransitioning` (Issue #29 halo containment) is a separate channel and is
+untouched.
+
+### Fix B (Swift) — constant structure, and opt out of materialize
+
+```swift
+self.glassEffect(isTransitioning ? .identity : glass, in: shape)
+    .glassEffectTransition(.identity)
+```
+
+Both forms verified against Apple's DocC JSON, because search engines are
+actively wrong here: WebSearch's AI overview invented a
+`glassEffect(_:in:isEnabled:)` overload across three separate queries. **No such
+overload exists** — the only signature is `glassEffect(Glass, in: some Shape)`,
+and the `isenabled:` doc URL 404s. `Glass` has exactly `.regular`, `.clear`,
+`.identity`, so passing `.identity` as a *value* keeps the modifier at a
+constant structural position and no branch swap can occur.
+`glassEffectTransition(GlassEffectTransition)` is real and takes one argument;
+`GlassEffectTransition` has exactly `.identity`, `.matchedGeometry`,
+`.materialize` — Apple's own name for the symptom.
+
+Fix B matters beyond the branch swap: it also covers the trigger Dart cannot
+see. The engine detaches a platform view with `removeFromSuperview` the frame it
+stops being painted and `addSubview`s the **same instance** back when painting
+resumes (`FlutterPlatformViewsController.mm`, `performSubmit:` — EXPLICIT). So
+the view is effectively new to the hierarchy on every transition. Whether *that*
+alone replays the materialize is **not documented** anywhere Apple publishes;
+`glassEffectTransition(.identity)` makes the question moot.
+
+Corroboration that the residual is real: `native_liquid_glass#9` hoisted a glass
+view out of the routed subtree into an app-level overlay and the flash
+persisted — *"the problem may be related to the UiKitView/platform view
+composition path itself rather than only widget tree placement."* So relocating
+the widget is not a fix; suppressing the transition is.
+
+## Verification limits — read before trusting the green
+
+Fix A's runtime effect is **not** headlessly testable: the old calls were guarded
+by `Platform.isIOS`, false under the test host, so a "no method call was made"
+assertion passes identically before and after. It is pinned by a source-level
+guard instead (with a control that fails if the scanned region moves).
+
+Fix B is Swift. **No Dart test exercises it at all** — it is verified only by
+compiling against the iOS 26.5 SDK. Whether it removes the artifact is a device
+question.

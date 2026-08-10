@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:cupertino_native_better/cupertino_native.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -8,6 +10,57 @@ void main() {
   // discards pending end/watchdog timers — so a test that ends mid-transition
   // strands a count for the next one.
   setUp(CNTransitionObserver.resetForTesting);
+
+  test(
+      'cn.transition-observer — the navigator observer never drives the NATIVE '
+      'transition flag (single hide authority)', () {
+    // Source-level on purpose, and the reason is worth stating: the old call
+    // sites were guarded by `Platform.isIOS`, which is FALSE under the test
+    // host. A runtime "no method call was made" assertion would therefore pass
+    // identically before and after the fix — vacuous. Scanning the source is
+    // the only guard here that can actually fail.
+    //
+    // What it protects: `beginTransition`/`endTransition` set
+    // `CNTransitionObserver.shared.isTransitioning` natively, and its only
+    // consumers swap glass for a flat fill in a SwiftUI `@ViewBuilder` if/else
+    // (`LiquidGlassContainerView.swift:280`). Flipping it back re-applies
+    // `.glassEffect` on a structurally new view, which materializes with an
+    // animation — invisible on push (the route is still covered), fully visible
+    // on POP. AppBoxKitNativeChromeGate already removes the view from the frame,
+    // which de-tinting cannot do, so the native flag is a second authority that
+    // buys nothing and costs an animation.
+    final src = File('vendor/cupertino_native_better/lib/utils/transition_observer.dart')
+        .readAsStringSync();
+
+    // Strip doc comments: the reasoning above is quoted in the source, and it
+    // names the very methods we are forbidding.
+    final code = src
+        .split('\n')
+        .where((l) => !l.trimLeft().startsWith('//') && !l.trimLeft().startsWith('///'))
+        .join('\n');
+
+    // CNTransitionHelper is a deliberate manual-control escape hatch and keeps
+    // its calls; the NavigatorObserver's own lifecycle hooks must not.
+    final observerBody =
+        code.substring(0, code.indexOf('class CNTransitionHelper'));
+
+    // Match the PLATFORM-qualified call, not the bare name: the observer's own
+    // private `_beginTransition()` / `_endTransition()` contain the bare names
+    // as substrings and must keep existing.
+    expect(observerBody.contains('instance.beginTransition('), isFalse,
+        reason: 'CNTransitionObserver must not drive the native glass tint — '
+            'it re-materializes glass on every pop. The gate owns the hide.');
+    expect(observerBody.contains('instance.endTransition('), isFalse,
+        reason: 'same: endTransition is what fires the materialize, exactly as '
+            'the revealed route becomes visible');
+    expect(observerBody.contains('void _beginTransition('), isTrue,
+        reason: 'control: the Dart-side counter bookkeeping must still be here, '
+            'or the two assertions above are passing because the whole method '
+            'vanished rather than because the native call did');
+    expect(code.contains('class CNTransitionHelper'), isTrue,
+        reason: 'control: if the helper is renamed or removed this test would '
+            'silently scan the wrong region and pass for the wrong reason');
+  });
 
   testWidgets(
       'pop holds the hide window for the WHOLE slide, not a blind 350ms timer',

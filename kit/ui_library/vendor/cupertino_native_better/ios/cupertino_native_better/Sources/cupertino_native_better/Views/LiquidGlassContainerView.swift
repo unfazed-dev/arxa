@@ -276,18 +276,35 @@ struct LiquidGlassContainerSwiftUI: View {
 // Helper to apply glass effect conditionally based on transition state for containers
 @available(iOS 26.0, *)
 extension View {
-  @ViewBuilder
+  /// Applies the glass effect at a CONSTANT structural position, and opts out of
+  /// the materialize transition.
+  ///
+  /// This used to be a `@ViewBuilder` if/else — flat fill while transitioning,
+  /// `.glassEffect` otherwise. SwiftUI treats the two arms of an if/else as
+  /// structurally distinct views (`_ConditionalContent`), so flipping the flag
+  /// back tore one arm down and inserted the other, applying `.glassEffect`
+  /// afresh. Establishing glass materializes with an animation by Apple's
+  /// design, so every route pop ended with the card animating itself back in.
+  ///
+  /// Two changes, both the documented form:
+  ///
+  /// 1. `Glass.identity` is a *value*, so the modifier stays applied in the same
+  ///    structural position on every render and no branch swap can occur. (There
+  ///    is no `isEnabled:` parameter on `glassEffect` — the only signature is
+  ///    `glassEffect(Glass, in: some Shape)`, verified against Apple's DocC JSON.
+  ///    Search engines will confidently tell you otherwise; they are wrong.)
+  /// 2. `glassEffectTransition(.identity)` opts out of the materialize animation
+  ///    itself. `GlassEffectTransition` has exactly `.identity`,
+  ///    `.matchedGeometry` and `.materialize` — Apple's own name for this
+  ///    symptom. This is the part that also covers the trigger Dart cannot see:
+  ///    the engine detaches a platform view with `removeFromSuperview` when it
+  ///    stops being painted and `addSubview`s it back when painting resumes
+  ///    (`FlutterPlatformViewsController.mm`, `performSubmit:`), so the view is
+  ///    effectively new to the hierarchy on every route transition.
   func applyConditionalGlassEffectForContainer<S: Shape>(isTransitioning: Bool, glass: Glass, shape: S) -> some View {
-    if isTransitioning {
-      // During transitions, use a simple background instead of glass to prevent sampling artifacts
-      self.background(
-        shape
-          .fill(Color(UIColor.systemBackground).opacity(0.8))
-      )
-    } else {
-      // Normal state - apply full glass effect
-      self.glassEffect(glass, in: shape)
-    }
+    self
+      .glassEffect(isTransitioning ? .identity : glass, in: shape)
+      .glassEffectTransition(.identity)
   }
 }
 
