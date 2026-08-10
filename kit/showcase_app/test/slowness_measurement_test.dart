@@ -66,7 +66,13 @@ const platformViewBackedTypes = <String>{
   'CNRangeSlider',
   'CNSlider',
   'CNGlassButtonGroup',
-  'CNLiquidGlassContainer',
+  // NOT `CNLiquidGlassContainer` — no such class exists. The vendor names it
+  // `LiquidGlassContainer` (liquid_glass_container.dart:17), and it is what
+  // `AppBoxKitGlassCard` builds on the iOS 26 tier. The old typo'd name
+  // matched nothing, so EVERY glass card was invisible to this set and the
+  // first run of M2/M5 under-counted platform views to zero. Verified: these
+  // 15 names are exactly the vendor files containing a `UiKitView(` call.
+  'LiquidGlassContainer',
   'CNSwitch',
 };
 
