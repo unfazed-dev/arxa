@@ -118,3 +118,40 @@ These are things a Flutter-drawn widget (running entirely inside the single `Flu
 - Flutter API docs: https://api.flutter.dev/flutter/cupertino/CupertinoActionSheet-class.html , https://api.flutter.dev/flutter/cupertino/CupertinoSheetRoute-class.html
 - pub.dev: https://pub.dev/packages/cupertino_native , https://pub.dev/packages/cupertino_native_better
 - Community technical write-ups: nilcoalescing.com (Liquid Glass sheets), sarunw.com, avanderlee.com, mackuba.eu, dilloncodes.hashnode.dev, nathangitter (home indicator reverse-engineering)
+
+---
+
+## Correction (2026-08-11) — §3 tell #1 is wrong about Flutter's limits
+
+This doc states that the presenting-screen scale-down-and-round is "native only"
+because it is driven by a private `UITransitionView` "outside any single app's
+render surface", and that "Flutter can't touch the presenting screen from inside
+its own render surface".
+
+**The mechanism claim is right; the capability conclusion is wrong.** Verified
+against the Flutter SDK on disk (`packages/flutter/lib/src/cupertino/sheet.dart`,
+3.44.9):
+
+- `:84` — "Amount the sheet in the background scales down. Found by measuring
+  the width ... iPhone 16 pro running iOS 18.0"
+- `:260` — "it will slide slightly up and scale down to appear"
+- `:341`, `:373` — a `scaleAnimation` applied through `Transform.scale`
+- `:331-338` — border radius tweened from the device corner radius to 12
+- `:819-823` — `delegatedTransition => CupertinoSheetTransition.delegateTransition`
+
+`CupertinoSheetRoute` **does** scale and round the route behind it. The error is
+a conflation: Flutter cannot transform a *native `UIViewController`* presenting
+it, but the "presenting screen" under a Cupertino sheet is another **Flutter
+route inside Flutter's own tree**, which it transforms freely via
+`delegatedTransition`.
+
+This matters because the tell is listed first and "hardest to fake" — it would
+lead a reader to conclude a stacked-card presentation proves a native sheet. It
+does not.
+
+The doc's headline conclusion stands and was acted on: `showCupertinoSheet` is
+Dart-drawn and never calls `UISheetPresentationController`. The remaining tells
+(system dimming view, continuous spring physics, `prefersScrollingExpands…`,
+real detents) are unchallenged. The kit routes iOS here **knowingly** — see
+`docs/plans/sheet-and-theme-propagation-fixes.md`; the user chose it over a
+bespoke bridge with the Dart-drawn caveat stated explicitly.

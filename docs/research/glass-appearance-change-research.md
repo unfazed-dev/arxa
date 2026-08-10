@@ -309,3 +309,33 @@ patterns, not a blanket SwiftUI/UIHostingController defect.
 - [Apple Docs – UIBlurEffect.Style.systemUltraThinMaterialDark](https://developer.apple.com/documentation/uikit/uiblureffect/style/systemultrathinmaterialdark)
 - [Sarunw – Adopting iOS Dark Mode](https://sarunw.com/posts/adopting-ios-dark-mode/)
 - [mixable Blog – Flutter on iOS: themeMode does not change to dark mode](https://mixable.blog/flutter-on-ios-thememode-does-not-change-to-dark-mode-if-thememode-system-is-used/)
+
+---
+
+## Applicability check against this repo (2026-08-11)
+
+Both proposed root causes were checked against
+`kit/ui_library/vendor/cupertino_native_better/ios`:
+
+- **Cause 1 — `overrideUserInterfaceStyle` isolation: CONFIRMED and fixed.**
+  Every platform view sets it from an `isDark` creation param, which is exactly
+  why an app-level theme change cannot reach them by inheritance. The fix was
+  the per-view `setBrightness` call, added to `CNTextField` and `CNSearchBar`.
+- **Cause 2 — fixed vs adaptive blur constants: DOES NOT APPLY.** There is no
+  `UIBlurEffect` in this plugin at all, and no `…Dark`/`…Light`/`.extraLight`
+  constant anywhere. The glass is SwiftUI `.glassEffect`, and the SwiftUI paths
+  set `.environment(\.colorScheme, …)` explicitly. Good lead, wrong codebase.
+
+**One residual the doc's `.cgColor` point did find** (not part of the reported
+symptom, not fixed): `CupertinoPopupMenuButtonPlatformView.swift:694` caches
+`UIColor.separator.withAlphaComponent(0.45).cgColor` as a layer border, and its
+`setBrightness` handler (`:270-274`) sets `overrideUserInterfaceStyle` without
+re-running that styling. A resolved `CGColor` does not re-resolve on a trait
+change, so that border keeps its original appearance. Cosmetic and narrow — a
+45%-alpha border on one control, not a surface reading "still dark" — and
+fixing it means restructuring when the styling is applied, which cannot be
+validated headless. Recorded rather than changed.
+
+The unconfirmed iOS 26.1 forum report (trait callback fires, `userInterfaceStyle`
+reads stale inside it) is **not** implicated in the bug that was fixed: this
+plugin never reads `traitCollection` — it is told the value over a channel.
