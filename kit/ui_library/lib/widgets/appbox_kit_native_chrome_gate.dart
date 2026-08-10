@@ -43,13 +43,19 @@ enum AppBoxKitChromeHideMode {
 /// - `CNTabBarRouteObserver.anyModalDepth` — the broad counter bumped by
 ///   sheet/dialog routes AND by `appBoxKitWithNativeChromeHidden` (a snackbar's full
 ///   on-screen lifetime).
-/// - `CNTransitionObserver.activeTransitions` — `> 0` during any route slide
-///   (push/pop/replace/remove or the interactive back-swipe). A platform view
-///   neither clips nor translates with the routes mid-transition, so it must
-///   leave the frame — otherwise it floats over the slide (glass, or a flat
-///   panel if merely de-tinted; hiding is the only thing that actually works).
-///   This makes the gate the kit-wide "autoHideOnPageTransition (alpha-0)" for
-///   every Liquid Glass surface it wraps, the same protection `CNTabBar` has.
+/// - `CNTransitionObserver.hasActiveTransitionAbove(context)` — true during a
+///   route slide (push/pop/replace/remove or the interactive back-swipe) in a
+///   navigator that ENCLOSES this gate. A platform view neither clips nor
+///   translates with the routes mid-transition, so it must leave the frame —
+///   otherwise it floats over the slide (glass, or a flat panel if merely
+///   de-tinted; hiding is the only thing that actually works). This makes the
+///   gate the kit-wide "autoHideOnPageTransition (alpha-0)" for every Liquid
+///   Glass surface it wraps, the same protection `CNTabBar` has.
+///   *Scoped on purpose*: the raw `activeTransitions` counter is global across
+///   every observer, so a push inside one tab's nested router used to hide the
+///   ROOT tab bar in all tabs (C2, `docs/plans/glass-chrome-root-cause-fixes.md`).
+///   The global notifier is still the listen target — it ticks on every begin
+///   and end anywhere, which is exactly the "re-evaluate now" signal.
 ///
 /// **Behavior.**
 /// - *Mount-depth snapshot* (mirrors the package's `ModalHideMixin`): the
@@ -183,8 +189,15 @@ class _KitNativeChromeGateState extends State<AppBoxKitNativeChromeGate>
     // clips nor slides with the routes, so it must leave the frame for the
     // transition, not merely drop its glass tint (which leaves a flat panel
     // floating over the slide — the leak this gate now also closes).
+    // SCOPED, not global: only a transition in a navigator that ENCLOSES this
+    // gate actually carries the gate along. A push inside one tab's nested
+    // router must not dematerialize the ROOT tab bar across every tab — that
+    // was C2 of docs/plans/glass-chrome-root-cause-fixes.md, and it is the
+    // same baseline-scoping idea as the `_mountDepth` modal check it sits
+    // beside. `activeTransitions` remains the change signal (it ticks on every
+    // begin/end anywhere); `hasActiveTransitionAbove` makes the decision.
     final hidden = CNTabBarRouteObserver.anyModalDepth.value > _mountDepth ||
-        CNTransitionObserver.activeTransitions.value > 0;
+        CNTransitionObserver.hasActiveTransitionAbove(context);
     if (hidden == _hidden) return;
     setState(() => _hidden = hidden);
     if (hidden) {
