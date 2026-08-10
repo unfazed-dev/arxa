@@ -357,6 +357,17 @@ void main() {
     // ignore: avoid_print
     print('[M3a] frames with a LIVE blur/saveLayer (Opacity < 1) = '
         '$framesWithLiveBlur');
+
+    // The two facts the numbers depend on. Without the control actually
+    // rebuilding, "0" would just mean the harness never scrolled; and the 0
+    // itself is the only permanent guard on the identity short-circuit that
+    // C6 was closed against (`Element.updateChild` skips an identical
+    // `widget.child`), which was measured but never pinned.
+    expect(controlDelta, greaterThan(0),
+        reason: 'the control must really rebuild, or the measurement is vacuous');
+    expect(childDelta, 0,
+        reason: 'a scroll must not rebuild the subtree under the effect — if '
+            'this regresses, scroll cost returns and C6 reopens');
   }, timeout: const Timeout(Duration(minutes: 3)));
 
   // ---------------------------------------------------------------------

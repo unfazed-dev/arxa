@@ -418,3 +418,41 @@ own doc at `:72` concedes the scale is not reliably applied". Both halves fail:
 
 That is **four** audit/closure claims now corrected by evidence in this engagement. The pattern
 holds: locations accurate, consequences over-attributed. Weigh any remaining claim accordingly.
+
+## Symptom 4 (slowness) — measured, and no Flutter-side mechanism explains it
+
+Numbers re-run on the merged tree, not taken from the agent report
+(`kit/showcase_app/test/slowness_measurement_test.dart`, findings in
+`docs/research/slowness-measurement.md`):
+
+| Measurement | Result |
+|---|---|
+| Top-level platform views at boot, iOS-26 tiers | **14** (CNButton 9, CNPopupMenuButton 2, CNSegmentedControl 1, CNGlassButtonGroup 1, CNTabBar 1); **0 nested** |
+| Tab shells inflated at boot | **1 of 4** — router allocates 4 `KeepAliveTab` objects, three never reach `build()` |
+| Child rebuilds under `scrollEdgeEffect`, 300 scroll steps | **0** (live control: 300) |
+| Platform views under a live blur, notes folder, 200 frames | **0** |
+| `AppData.initialize` | ~2.7–3.6 ms (Dart only, headless disk — bounds, does not measure, cold start) |
+
+**Counts without consequence (do NOT re-chase).** The headless census says 22 platform views;
+11 of those are `CNIcon`s nested inside `CNButton`, and on the device tier `CNButton` renders a
+**leaf** `UiKitView` (`button.dart:675` — `UiKitView` has no child slot at all) carrying the
+symbol as a creationParam, so nested count is 0 and the real number is 14. Likewise 28
+`AppBoxKitNative*`-named widgets → 14 platform views; the name is a convention, and
+Progress/LoadingIndicator/AppBar/ChromeGate contribute none. The notes-folder blur is live on
+200/200 frames, which is what a *correct* effect yields for a monotonic 400px gesture given the
+hysteresis — and **zero** platform views sit under it, so flutter#24164/#148639 does not apply.
+
+**The one survivor is a quantity, not a demonstrated cost:** 14 platform views on the boot
+screen. Worth noting *what that screen is* — 13 of the 14 are content (nine button variants, a
+segmented control, a glass group, two popup menus); only the tab bar is chrome. That is the
+showcase home deliberately displaying the kit's native widgets at once, which a real app screen
+would not do. So "the showcase feels slow" may be inherent to the demo's purpose rather than a
+kit defect — untested either way.
+
+**Decisive device A/B (not run — needs hardware):** `flutter run --profile --trace-startup`,
+read `timeToFirstFrameRasterizedMicros`, then repeat with
+`AppBoxKitPlatform.override = const AppBoxKitPlatformOverride(iosMajor: 25)`, which drops every
+tier below the Liquid Glass gate and stubs all 14 platform views to Flutter widgets. If cold
+start does not move, platform-view count is not the cause and the slowness is elsewhere.
+Raster-vs-UI thread split in DevTools decides the scroll-stutter half the same way.
+`docs/research/slowness-measurement.md` §5 has the per-measurement instrumentation.
