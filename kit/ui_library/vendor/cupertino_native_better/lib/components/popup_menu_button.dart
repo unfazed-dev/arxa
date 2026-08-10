@@ -371,25 +371,20 @@ class _CNPopupMenuButtonState extends State<CNPopupMenuButton>
         (e) => e is CNPopupMenuItem && (e.customIcon != null || e.imageAsset != null),
       );
 
-  /// Value-equal digest of every input [_prepareCreationParams] reads.
+  /// Digest of everything that affects **platform view creation**.
   ///
-  /// This is the same string the platform view already used as its
-  /// [ValueKey], so a change that used to force a new platform view now also
-  /// forces a re-resolve — behaviour preserved, including `_isDark`.
-  String get _paramsKey {
+  /// Reproduced verbatim from the pre-refactor `viewKey`, deliberately: this
+  /// controls when the native view is destroyed and re-created, and widening
+  /// it (e.g. adding `checked`) would re-create the view on a checkmark
+  /// toggle that `setItems` already pushes live — trading this fix for a new
+  /// flicker.
+  String get _viewKeyString {
     final buttonIconKey =
-        '${widget.buttonLabel}_${widget.buttonIcon?.name}'
-        '_${widget.buttonImageAsset?.assetPath}'
-        '_${widget.buttonImageAsset?.imageData?.length ?? 0}'
-        '_${widget.buttonCustomIcon?.hashCode ?? 0}';
+        '${widget.buttonLabel}_${widget.buttonIcon?.name}_${widget.buttonImageAsset?.assetPath}_${widget.buttonImageAsset?.imageData?.length ?? 0}_${widget.buttonCustomIcon?.hashCode ?? 0}';
     final itemsKey = widget.items
         .map((e) {
           if (e is CNPopupMenuItem) {
-            return '${e.label}_${e.icon?.name}_${e.imageAsset?.assetPath}'
-                '_${e.imageAsset?.imageData?.length ?? 0}'
-                '_${e.customIcon?.hashCode ?? 0}'
-                '_${e.iconColor?.toARGB32() ?? 0}'
-                '_${e.enabled}_${e.checked}_${e.isDestructive}';
+            return '${e.label}_${e.icon?.name}_${e.imageAsset?.assetPath}_${e.imageAsset?.imageData?.length ?? 0}_${e.customIcon?.hashCode ?? 0}';
           }
           return 'divider';
         })
@@ -405,8 +400,24 @@ class _CNPopupMenuButtonState extends State<CNPopupMenuButton>
         '$_isDark';
   }
 
+  /// Value-equal digest of every input [_prepareCreationParams] reads.
+  ///
+  /// Superset of [_viewKeyString] and of the old outer icon-FutureBuilder key
+  /// (which additionally tracked `iconColor`), plus the per-item flags that
+  /// feed the params arrays. Broader than the view key on purpose: a change
+  /// here re-resolves the params without necessarily re-creating the view.
   @override
-  Object? resolutionKey() => _paramsKey;
+  Object? resolutionKey() {
+    final itemFlags = widget.items
+        .map(
+          (e) => e is CNPopupMenuItem
+              ? '${e.iconColor?.toARGB32() ?? 0}_${e.enabled}_${e.checked}'
+                    '_${e.isDestructive}'
+              : 'divider',
+        )
+        .join('|');
+    return '$_viewKeyString||$itemFlags';
+  }
 
   @override
   Future<Map<String, dynamic>?> resolveValue() => _prepareCreationParams();
@@ -682,9 +693,8 @@ class _CNPopupMenuButtonState extends State<CNPopupMenuButton>
     const viewType = 'CupertinoNativePopupMenuButton';
 
     // Create a comprehensive key that includes all parameters affecting
-    // platform view creation. Same digest the resolution is keyed on, so the
-    // view is re-created exactly when the params it was built from change.
-    final viewKey = ValueKey(_paramsKey);
+    // platform view creation. Unchanged from before the refactor.
+    final viewKey = ValueKey(_viewKeyString);
 
     final platformView = defaultTargetPlatform == TargetPlatform.iOS
         ? UiKitView(
