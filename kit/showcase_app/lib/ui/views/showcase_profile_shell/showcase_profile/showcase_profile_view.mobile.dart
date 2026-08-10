@@ -50,7 +50,17 @@ class ShowcaseProfileViewMobile
 
   @override
   Widget build(BuildContext context, ShowcaseProfileViewModel viewModel) {
-    return ListView(
+    // The list owns the scroll edge treatment, not the cards: every child is
+    // softened where it underlaps the floating tab bar, including the bare
+    // toolbar demo and the section labels, which the old per-widget
+    // `.scrollEdgeEffect()` calls skipped ("cards only") and which therefore
+    // stayed crisp at full alpha while their neighbours faded.
+    //
+    // No topEdge: the gallery chrome's AppBoxKitNativeAppBar is an opaque
+    // Scaffold.appBar with no extendBodyBehindAppBar, so content never
+    // underlaps it — a top effect would fade content just before it clips.
+    return AppBoxKitEdgeAwareListView(
+      bottomOcclusion: kShowcaseTabBarBlockHeight,
       // Bottom = safe-area + tab-bar block so the last card can scroll
       // clear of the floating AppBoxKitNativeTabBar — the shell extends the body
       // under it (extendBody) and previously the button laid out

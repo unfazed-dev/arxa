@@ -38,6 +38,7 @@ export 'widgets/appbox_kit_native_segmented_control.dart';
 export 'widgets/appbox_kit_native_chrome_gate.dart';
 export 'widgets/appbox_kit_scroll_occlusion_gate.dart';
 export 'widgets/appbox_kit_scroll_edge_effect.dart';
+export 'widgets/appbox_kit_edge_aware_list_view.dart';
 export 'widgets/appbox_kit_native_switch.dart';
 export 'widgets/appbox_kit_native_slider.dart';
 export 'widgets/appbox_kit_native_range_slider.dart';

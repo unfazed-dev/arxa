@@ -3,6 +3,8 @@ import 'dart:ui' as ui show ImageFilter;
 import 'package:flutter/rendering.dart';
 import 'package:flutter/widgets.dart';
 
+import 'package:appbox_kit_core/platform/appbox_kit_platform.dart';
+
 /// The edge of a scrollable a [AppBoxKitScrollEdgeEffect] treats.
 enum AppBoxKitScrollEdge {
   /// Leading edge — content sliding under a pinned top bar.
@@ -41,10 +43,15 @@ enum AppBoxKitScrollEdgeEffectStyle {
 /// hiding on scroll, and the content (the Flutter-drawn frosted tier of the
 /// ADR's glass split) softens under the bar instead of vanishing.
 ///
-/// **How.** The covered fraction of the child drives both a blur
-/// (`ImageFiltered` — it blurs the child's own pixels, so the effect behaves
-/// identically over any tier beneath it, unlike a `BackdropFilter`, which
-/// can never sample native pixels) and an alpha fade. Geometry comes from
+/// **How.** The covered fraction of the child drives an alpha fade on every
+/// tier, plus — on the frosted tier only — a blur (`ImageFiltered`, which
+/// filters the child's own painted pixels rather than the backdrop). The blur
+/// is tier-gated because it filters *Flutter's* output: on the Liquid Glass
+/// tier the child's surface is a platform view composited natively, so the
+/// filter would reach the card's text but not the glass under it. Opacity is
+/// the mutator iOS hybrid composition applies to platform views reliably (see
+/// [AppBoxKitNativeChromeGate]), so there the surface fades as one piece.
+/// Geometry comes from
 /// the viewport's `getOffsetToReveal`, which already folds pinned slivers'
 /// `maxScrollObstructionExtent` into the reveal offset — so under a pinned
 /// `AppBoxKitNativeSliverAppBar` / `SliverAppBar` the effect needs **zero
@@ -185,7 +192,22 @@ class _KitScrollEdgeEffectState extends State<AppBoxKitScrollEdgeEffect> {
   Widget build(BuildContext context) {
     final t = _t;
     final hard = widget.style == AppBoxKitScrollEdgeEffectStyle.hard;
-    final sigma = (hard ? 16.0 : 8.0) * t;
+    // Blur is a FROSTED-TIER effect only. On the Liquid Glass tier the kit's
+    // content surfaces (AppBoxKitGlassCard -> LiquidGlassContainer) are
+    // platform views: `ImageFilterLayer` filters Flutter's painted output, and
+    // a UiKitView's pixels are composited natively, so the filter reaches the
+    // card's TEXT but never the glass slab beneath it — softening labels on a
+    // crisp slab. Opacity and clip are the mutators iOS hybrid composition
+    // applies to platform views reliably (see AppBoxKitNativeChromeGate), so on
+    // this tier the card fades as one surface instead.
+    //
+    // Driven to 0 rather than branched: the wrapper chain must keep a constant
+    // node count (see the build note below), and _EdgeEffectBlur at sigma 0
+    // already paints its child directly with no layer. Measured before the
+    // change: 4 glass-backed widgets under a live filter on 200/200 frames of
+    // a notes-folder scroll (kit/showcase_app/test/slowness_measurement_test.dart, M5).
+    final blurs = !AppBoxKitPlatform.supportsLiquidGlass;
+    final sigma = blurs ? (hard ? 16.0 : 8.0) * t : 0.0;
     final alpha = hard ? 1.0 - t : 1.0 - 0.85 * t;
 
     // The wrapper chain is ALWAYS mounted — constant tree shape. Returning

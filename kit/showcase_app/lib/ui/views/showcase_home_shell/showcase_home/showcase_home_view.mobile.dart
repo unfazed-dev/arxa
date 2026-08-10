@@ -38,9 +38,22 @@ class ShowcaseHomeViewMobile extends ViewModelWidget<ShowcaseHomeViewModel> {
 
   @override
   Widget build(BuildContext context, ShowcaseHomeViewModel viewModel) {
-    return ListView(
-      padding:
-          const EdgeInsets.symmetric(horizontal: abxSize16, vertical: abxSize16),
+    // Edge treatment owned by the list (see AppBoxKitEdgeAwareListView): before
+    // this, only 2 of the 5 cards here carried `.scrollEdgeEffect()`, so most of
+    // the home list slid under the tab bar untreated. No topEdge — the gallery
+    // chrome's app bar is opaque and does not extend behind.
+    return AppBoxKitEdgeAwareListView(
+      bottomOcclusion: kShowcaseTabBarBlockHeight,
+      // Trailing clearance matches the profile list: without it the last card
+      // can never scroll clear of the floating tab bar, so its edge effect
+      // would stay permanently engaged.
+      padding: EdgeInsets.fromLTRB(
+          abxSize16,
+          abxSize16,
+          abxSize16,
+          abxSize16 +
+              MediaQuery.paddingOf(context).bottom +
+              kShowcaseTabBarBlockHeight),
       children: [
         const Center(
           child: Text(

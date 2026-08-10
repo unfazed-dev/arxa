@@ -42,15 +42,9 @@ class ShowcaseProgressLoadingCardWidget extends StatelessWidget {
           ),
         ],
       ),
-    )
-        // iOS 26 scroll edge effect (ADR 0010): glass content softens
-        // where it slides under the floating tab bar — external to this
-        // scrollable, so the occlusion is explicit (notes folder view is
-        // the exemplar). Content-only: the native chrome demos above
-        // (buttons/segmented) are never edge-effected.
-        .scrollEdgeEffect(
-      edge: AppBoxKitScrollEdge.bottom,
-      occlusionPadding: kShowcaseTabBarBlockHeight,
     );
+    // Edge treatment belongs to the enclosing AppBoxKitEdgeAwareListView. The
+    // old "content-only" carve-out here is exactly why the buttons/segmented
+    // demos above went untreated.
   }
 }

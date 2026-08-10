@@ -56,13 +56,7 @@ class ShowcaseSearchFilterCardWidget extends StatelessWidget {
           ),
         ],
       ),
-    )
-        // iOS 26 scroll edge effect (ADR 0010): content softens where it
-        // slides under the floating tab bar — external to this scrollable,
-        // so the occlusion is explicit (same as the notes folder view).
-        .scrollEdgeEffect(
-      edge: AppBoxKitScrollEdge.bottom,
-      occlusionPadding: kShowcaseTabBarBlockHeight,
     );
+    // Edge treatment belongs to the enclosing AppBoxKitEdgeAwareListView.
   }
 }

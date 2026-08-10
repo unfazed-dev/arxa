@@ -89,15 +89,10 @@ class ShowcaseProfileRailCardWidget extends StatelessWidget {
           ),
         ],
       ),
-    )
-        // iOS 26 scroll edge effect (ADR 0010): glass content softens
-        // where it slides under the floating tab bar — external to this
-        // scrollable, so the occlusion is explicit (notes folder view is
-        // the exemplar). Cards only: the bare toolbar/labels are chrome,
-        // not content.
-        .scrollEdgeEffect(
-      edge: AppBoxKitScrollEdge.bottom,
-      occlusionPadding: kShowcaseTabBarBlockHeight,
     );
+    // No .scrollEdgeEffect() here: the enclosing AppBoxKitEdgeAwareListView
+    // applies it to every child. The old per-widget call was "cards only" —
+    // which left the bare toolbar demo and the section labels untreated,
+    // because a leaf can't tell that a sibling was forgotten.
   }
 }

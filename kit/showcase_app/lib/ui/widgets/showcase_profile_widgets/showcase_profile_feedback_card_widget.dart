@@ -64,9 +64,7 @@ class ShowcaseProfileFeedbackCardWidget extends StatelessWidget {
           ),
         ],
       ),
-    ).scrollEdgeEffect(
-      edge: AppBoxKitScrollEdge.bottom,
-      occlusionPadding: kShowcaseTabBarBlockHeight,
     );
+    // Edge treatment belongs to the enclosing AppBoxKitEdgeAwareListView.
   }
 }
