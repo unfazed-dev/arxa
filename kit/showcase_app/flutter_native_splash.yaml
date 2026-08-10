@@ -4,7 +4,13 @@
 # dart run flutter_native_splash:create).
 flutter_native_splash:
   color: "#ffffff"
-  image: "assets/brand-icons/appbox-icon.png"
+  # appbox-icon-splash.png is a 320x320 derivative of the brand-icon master
+  # (regenerate: sips -z 320 320 assets/brand-icons/appbox-icon.png --out
+  # assets/brand-icons/appbox-icon-splash.png). The package treats the source
+  # as the 4x asset, so 320px renders the icon at a standard 80x80 logical
+  # size on every device (Android pre-12, iOS, web — web also serves the
+  # desktop form factor; there are no macOS/Windows/Linux runners).
+  image: "assets/brand-icons/appbox-icon-splash.png"
   # Android 12+ routes splash through the system launcher-icon pipeline;
   # the themed monochrome layer (flutter_launcher_icons.yaml) covers
   # theme adaptation there. This section brands the pre-12 window.

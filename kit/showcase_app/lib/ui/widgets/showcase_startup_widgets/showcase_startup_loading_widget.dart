@@ -11,6 +11,8 @@
 /// The brand icon (abxImgBrandIcon, the same master that drives the
 /// launcher icons and native splash) is the first element on the screen,
 /// giving a seamless hand-off from the native splash to the Flutter frame.
+/// It renders at the standard 80x80 logical size — the same size the native
+/// splash shows the icon (flutter_native_splash.yaml, 320px 4x source).
 ///
 /// History: git log --follow -- kit/showcase_app/lib/ui/widgets/showcase_startup_widgets/showcase_startup_loading_widget.dart
 library;
@@ -33,8 +35,8 @@ class ShowcaseStartupLoadingWidget extends StatelessWidget {
           children: [
             Image(
               image: AssetImage(abxImgBrandIcon),
-              width: 96,
-              height: 96,
+              width: 80,
+              height: 80,
             ),
             appBoxKitVerticalSpaceMedium,
             Text(

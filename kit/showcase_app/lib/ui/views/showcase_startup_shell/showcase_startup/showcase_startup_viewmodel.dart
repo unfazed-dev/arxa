@@ -14,6 +14,10 @@
 /// The data layer and fake auth are seeded, then the route replaces to the application shell.
 /// 2. [Boot failure] — shell-demos.startup-and-unknown-shells.boot-through-the-startup-shell
 /// A boot failure surfaces a message instead of stranding the app on a spinner.
+/// 3. [Minimum display] — shell-demos.startup-and-unknown-shells.boot-through-the-startup-shell
+/// The branded startup view stays visible for at least 2000ms (concurrent
+/// with boot) before the route replaces to the application hub, on every
+/// form factor — mobile, tablet and desktop share this viewmodel.
 ///
 /// Relationships:
 ///
@@ -47,13 +51,23 @@ class ShowcaseStartupViewModel extends AppBoxKitViewModel {
 
   // ── Actions ──────────────────────────────────────────────────
 
+  /// The branded startup view stays visible for at least this long before
+  /// the route replaces to the application hub, so the splash hand-off never
+  /// flashes past the user — the boot work runs concurrently with the wait.
+  static const showcaseStartupMinimumDisplayDuration =
+      Duration(milliseconds: 2000);
+
   /// [1. Boot][2. Boot failure]
   /// Boots the kit's data (seed backend, persistence, fake auth), then swaps
   /// to the tab shell; a boot failure shows a snackbar, not a stuck spinner.
+  /// The swap waits for both the boot work and the minimum display duration.
   Future runStartupLogic() => abxActionHub.send<void>(
         ShowcaseStartupOp.boot.name,
         () async {
-          await AppData.initialize();
+          await Future.wait([
+            AppData.initialize(),
+            Future<void>.delayed(showcaseStartupMinimumDisplayDuration),
+          ]);
           await _routerService.replaceWith(ShowcaseApplicationHubViewRoute());
         },
         errorNotification: 'Startup failed — please restart the app',
