@@ -111,21 +111,60 @@ class CNTransitionObserver extends NavigatorObserver {
   void _scheduleEndTransition(Route<dynamic>? route) {
     // Get the animation from the route (only ModalRoute has animation)
     Animation<double>? animation;
+    ModalRoute<dynamic>? modalRoute;
     if (route is ModalRoute) {
+      modalRoute = route;
       animation = route.animation;
     }
 
     if (animation != null && animation.status != AnimationStatus.completed) {
+      // End exactly once per scheduled transition, no matter which of the
+      // listener / watchdog paths fires first.
+      bool ended = false;
+      void end() {
+        if (ended) return;
+        ended = true;
+        _endTransition();
+      }
+
       // Wait for animation to complete
       void listener(AnimationStatus status) {
         if (status == AnimationStatus.completed ||
             status == AnimationStatus.dismissed) {
+          // ModalRoute.animation is a ProxyAnimation. During the push frame
+          // HeroController sets route.offstage = true to measure hero
+          // destinations, which swaps the proxy's parent to
+          // kAlwaysCompleteAnimation and emits a spurious synchronous
+          // `completed` notification (routes.dart, ModalRoute.offstage
+          // setter). Treating that as the transition end collapses the
+          // chrome-hide window to ~0ms on every push, so native Liquid Glass
+          // views ghost through route transitions. Ignore terminal statuses
+          // reported while the route is offstage — the proxy notifies again
+          // with the real status when offstage flips back.
+          if (modalRoute != null && modalRoute.offstage) {
+            return;
+          }
           animation!.removeStatusListener(listener);
-          _endTransition();
+          end();
         }
       }
 
       animation.addStatusListener(listener);
+
+      // Watchdog: if the route is disposed mid-flight (navigator swap,
+      // popUntil, tab-host rebuild) the terminal status never arrives and
+      // the counter would stay pinned > 0, hiding chrome forever. `end` is
+      // idempotent, so a late real notification stays balanced.
+      final Duration budget =
+          (route is TransitionRoute<dynamic>
+              ? route.transitionDuration
+              : Duration.zero) +
+          const Duration(milliseconds: 1000);
+      Future<void>.delayed(budget, () {
+        if (ended) return;
+        animation!.removeStatusListener(listener);
+        end();
+      });
     } else {
       // No animation or already complete, end after a short delay
       Future.delayed(const Duration(milliseconds: 350), _endTransition);
