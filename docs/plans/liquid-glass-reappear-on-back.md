@@ -464,3 +464,38 @@ a tab bar that is a sibling of the router, and stay painted. Every showcase push
 is nested (`context.router.pushNamed`), so that configuration does not occur and
 could not be tested. Recorded in the gate's class doc as the place to look if it
 ever appears.
+
+## CONFIRMED ON DEVICE (2026-08-11)
+
+User verdict on the shipped predicate: **"it works."** The Liquid Glass
+re-materialize on back-navigation (folders ← notes, nested router) is gone.
+
+This closes a four-attempt sequence. What the sequence cost, recorded so the
+shape is recognisable next time:
+
+| # | fix | outcome |
+|---|---|---|
+| 1 | `didPop` timed against the animating route | correct, but moved the artifact from mid-slide (masked) to settle (fully visible) |
+| 2 | gate: fade → instant `IndexedStack` | correct, unrelated to this symptom |
+| 3 | Fix A — observer stops driving the native flag | correct, single authority |
+| 4 | Fix B — `Glass.identity` + `glassEffectTransition(.identity)` | **falsified on device**; could never work — the call site is engine-owned |
+| 5 | **the predicate** — don't hide content travelling with its own route | **works** |
+
+The first four were all aimed downstream of the defect. The defect was that
+`hasActiveTransitionAbove(context)` could not distinguish *chrome the route
+slides over* from *content inside the route*, so a tab-bar rule was being
+applied to in-route content.
+
+**Still open, deliberately:**
+
+- The **root-push-over-tab-scaffold** ceiling remains untested — no such
+  configuration exists in the showcase. Named in the gate's class doc.
+- **No showcase test drives a nested pop through a gated widget.** The
+  regression is covered only by `appbox_kit_chrome_gate_transition_scope_test.dart`'s
+  synthetic Cupertino route. 119 green in `showcase_app` does not imply
+  integration coverage of this path.
+- **Fix B is retained but inert** on the normal navigation path (nothing drives
+  `isTransitioning` since Fix A). Keeping it is deliberate, not an oversight:
+  `CNTransitionHelper` can still drive the flag manually, and the
+  `Glass.identity` form is strictly better than the `@ViewBuilder` if/else it
+  replaced, which changed structural identity and re-applied `.glassEffect`.
