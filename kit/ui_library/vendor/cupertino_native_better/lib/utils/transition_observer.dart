@@ -142,7 +142,20 @@ class CNTransitionObserver extends NavigatorObserver {
   @override
   void didPop(Route<dynamic> route, Route<dynamic>? previousRoute) {
     _beginTransition();
-    _scheduleEndTransition(previousRoute);
+    // Time the end against the route that is actually ANIMATING, which on a pop
+    // is the OUTGOING `route` (its controller runs 1→0 to `dismissed`) — not
+    // `previousRoute`.
+    //
+    // `previousRoute` is the one being revealed, and its own animation settled
+    // at 1.0 back when it was pushed, so `status == completed` sent every pop
+    // down the "no animation" fallback below: a blind 350ms timer. Cupertino's
+    // slide is 500ms (`CupertinoRouteTransitionMixin.kTransitionDuration`), so
+    // the hide window closed ~150ms before the page stopped moving and native
+    // glass was restored on top of content still in flight.
+    //
+    // `didPush` already schedules on its animating route; this is the same rule,
+    // and it makes the window track the real duration instead of a constant.
+    _scheduleEndTransition(route);
   }
 
   @override
@@ -196,7 +209,14 @@ class CNTransitionObserver extends NavigatorObserver {
       animation = route.animation;
     }
 
-    if (animation != null && animation.status != AnimationStatus.completed) {
+    // `dismissed` counts as settled alongside `completed`: a zero-duration route
+    // handed to didPop is ALREADY dismissed, and treating that as in-flight
+    // would attach a listener nothing will ever fire, leaving the watchdog
+    // (transitionDuration + 1000ms) to hide chrome for a full second after an
+    // instant pop. Both terminal statuses take the short fallback instead.
+    if (animation != null &&
+        animation.status != AnimationStatus.completed &&
+        animation.status != AnimationStatus.dismissed) {
       // End exactly once per scheduled transition, no matter which of the
       // listener / watchdog paths fires first.
       bool ended = false;
