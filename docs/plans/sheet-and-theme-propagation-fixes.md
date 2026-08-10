@@ -118,12 +118,23 @@ components implement it; some do not. The split is the bug:
 
 | Component | `isDark` at creation | Re-sends on theme change | Swift handler | Used by app |
 |---|---|---|---|---|
-| `button`, `icon`, `slider`, `switch`, `range_slider`, `segmented_control`, `popup_menu_button`, `tab_bar`, `native_tab_bar`, `search_scaffold`, `glass_button_group` | yes | **yes** (`setBrightness`) | yes | yes |
+| `button`, `icon`, `slider`, `switch`, `range_slider`, `segmented_control`, `popup_menu_button`, `tab_bar`, `search_scaffold`, `glass_button_group` | yes | **yes** — sync reached from `didChangeDependencies` | yes | yes |
 | `liquid_glass_container` | yes | **yes** (via `updateConfig`) | yes | yes |
 | **`search_bar`** | yes (`:446`) | **NO** | **yes** (`CupertinoSearchBarPlatformView.swift:133`) | **yes** |
 | **`text_field`** | yes (`:237`) | **NO** | **yes** (`CupertinoTextFieldPlatformView.swift:135`) | **yes** |
+| `native_tab_bar` (`CNTabBarNative`) | n/a | no `didChangeDependencies` at all — `setBrightness` is a **static** host-driven API | yes | no (0 refs) |
 | `glass_card` (experimental) | yes | no | — | no (0 refs) |
 | `floating_island` | yes | no | yes | no (0 refs) |
+
+The "yes" column was itself verified, not inferred from the presence of the
+string `setBrightness`: each component's `didChangeDependencies` body was
+checked for whether it actually reaches a brightness sync. That check is what
+moved `native_tab_bar` out of the working group — it contains `setBrightness`
+but never calls it from a dependency change, so a grep-based table had it
+wrong in the *other* direction from `liquid_glass_container`. Nothing
+references `CNTabBarNative`, so it has no consequence; the kit's own
+`AppBoxKitNativeTabBar` uses `CNTabBar` (`tab_bar.dart`), which syncs
+correctly.
 
 The Swift side of both stuck components **already implements the
 `setBrightness` handler**. Dart simply never calls it.
