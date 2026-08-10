@@ -255,10 +255,18 @@ change how one looks, reach for these **in order**; stop at the first that holds
 > dims — plain translucent fills cover platform views correctly on post-2019
 > Flutter, so kit chrome stays mounted behind kit-owned sheets. (2) Where a
 > hide *is* still required (a blur that must cover a platform view), the gate
-> now performs a **dematerialize** (fade + slight scale) for content-layer
-> glass rather than an instant alpha-0, matching Apple's `effect = nil`
-> semantic. The rule below remains in force for host overlays that present a
-> `BackdropFilter`/blur over the native tier.
+> takes the view off the frame. ~~It performs a **dematerialize** (fade +
+> slight scale) rather than an instant alpha-0, matching Apple's `effect = nil`
+> semantic.~~ **Superseded — the hide and the restore are both INSTANT.** The
+> fade was wrong on Apple's own terms: WWDC25 #284 says *"Always prefer setting
+> the effect property over the **alpha**"*, and `effect = nil` is documented for
+> *overlap avoidance*, not transition sequencing — a Flutter alpha ramp is the
+> substitute Apple names as incorrect. It is also unsupported (flutter#93757,
+> flutter#24164 — both OPEN) and measurably wrong here
+> (`docs/research/flutter-platform-view-best-practices.md` §3.2 **[R]**,
+> simulator-verified: per-frame native layer mutation and ghosting UIViews).
+> The gate now toggles an `IndexedStack` index. The rule below remains in force
+> for host overlays that present a `BackdropFilter`/blur over the native tier.
 >
 > **ADR 0010 amendment (snackbar blur scrim).** The kit snackbar's GetX
 > `overlayBlur` — initially removed under (1) — is restored at sigma 20
@@ -498,9 +506,19 @@ not enough.* Dropping the native `.glass()` effect to a flat `.tinted()` render
 still leaves the platform view **visible and floating** over the slide (a blank
 flat panel — device-confirmed). The view must leave the frame. So every
 `KitNative*` glass tier appends **`.chromeGated()`** (→ `KitNativeChromeGate`,
-the same keepAlive alpha-0 hide the tab bar uses: opacity→0 removes the
-`UiKitView` from the layer tree, restored with a fade, no native re-init). This
-is baked into the kit widgets — no per-call-site code.
+the same keepAlive paint-level hide the tab bar uses: an unselected
+`IndexedStack` index removes the `UiKitView` from the layer tree while its
+element stays mounted, so there is no native re-init). This is baked into the
+kit widgets — no per-call-site code.
+
+**Both edges are instant — do not reintroduce an animation here.** The hide and
+the restore are single-frame index flips. Animating alpha across a platform-view
+subtree is unsupported (flutter#93757, flutter#24164, both OPEN), contrary to
+Apple's explicit *"prefer the effect property over the alpha"* (WWDC25 #284),
+and simulator-verified in this repo to cause per-frame native layer mutation and
+ghosting UIViews (`docs/research/flutter-platform-view-best-practices.md` §3.2).
+An earlier 180 ms fade-in is exactly what made glass appear to *zoom back in*
+after a back-navigation instead of simply being there when the route settled.
 
 *2. The app registers `CNTransitionObserver` in the router's
 `navigatorObservers` — the signal that drives the hide.* It exposes a Dart

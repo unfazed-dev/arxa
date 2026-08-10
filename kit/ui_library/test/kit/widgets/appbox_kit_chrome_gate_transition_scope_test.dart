@@ -16,19 +16,22 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:appbox_kit_ui_library/widgets/appbox_kit_native_chrome_gate.dart';
 
-/// The gate's `_hidden` flag drives `IgnorePointer.ignoring` synchronously —
-/// the cleanest observable proxy for "the gate acted on a hide" (the fade is
-/// animated, so opacity lags a frame; `ignoring` does not).
+/// The gate's `_hidden` flag drives the `IndexedStack` index directly: 0 is the
+/// empty placeholder, 1 is the child. This used to read `IgnorePointer.ignoring`
+/// because the hide was an animation and opacity lagged a frame behind the
+/// decision — there is no animation now, so the index IS the decision, observed
+/// in the same frame it is made.
 bool _gateHidden(WidgetTester tester) {
-  final IgnorePointer ignore = tester.widget<IgnorePointer>(
+  final IndexedStack stack = tester.widget<IndexedStack>(
     find
         .descendant(
           of: find.byType(AppBoxKitNativeChromeGate),
-          matching: find.byType(IgnorePointer),
+          matching: find.byType(IndexedStack),
+          skipOffstage: false,
         )
         .first,
   );
-  return ignore.ignoring;
+  return stack.index == 0;
 }
 
 /// Settle the boot `didPush`: the initial route's animation is already

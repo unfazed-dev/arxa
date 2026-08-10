@@ -92,22 +92,31 @@ class AppBoxKitNativeTabBar extends StatelessWidget {
       // plain dims / none per ADR 0010, but the depth signal still fires).
       //
       // Fix: AppBoxKitNativeChromeGate hides the bar on `anyModalDepth` at the
-      // PAINT level (alpha 0 → the UIView leaves the native hierarchy, but
-      // the platform view stays alive; the bottomNavigationBar slot never
-      // collapses because the bar never stops laying out), then fades the
-      // same live view back in on dismiss — no native re-init, no
-      // thread-merge hitch, no single-frame pop.
+      // PAINT level (unselected `IndexedStack` index → the UIView leaves the
+      // native hierarchy, but the platform view stays alive; the
+      // bottomNavigationBar slot never collapses because the bar never stops
+      // laying out), then shows the same live view again on dismiss — no
+      // native re-init, no thread-merge hitch, no single-frame pop.
       return AppBoxKitNativeChromeGate(
         child: CNTabBar(
           // C5 — SINGLE HIDE AUTHORITY. `CNTabBar` ships its own transition
           // hide (`autoHideOnPageTransition`, default true): an `IndexedStack`
           // swapped to a blank `SizedBox` the instant
           // `ModalRoute.secondaryAnimation` starts. The gate above hides the
-          // very same bar for the very same event, but ANIMATED (alpha 1 -> 0
-          // over `hideDuration`, 160 ms). Two authorities, one event: the
-          // instant swap blanks the bar in frame one while the gate is still
-          // fading something already invisible — the "fade-then-pop" artifact.
-          // The gate owns hide/show; the ad-hoc swap is off.
+          // very same bar for the very same event.
+          //
+          // Historical note, because it points at the bug this file helped
+          // hide: the two used to DISAGREE. The gate animated (alpha 1 -> 0
+          // over 160 ms) while the vendor's swap was instant, so the bar
+          // blanked in frame one while the gate went on fading something
+          // already invisible — recorded here as the "fade-then-pop artifact",
+          // and resolved by switching the vendor's instant swap OFF to protect
+          // the fade. That was backwards: the fade was the defect (animating
+          // alpha over a platform view is unsupported — flutter#93757/#24164 —
+          // and Apple says to prefer `effect` over alpha). The gate is now
+          // instant too, so both authorities would do the identical thing.
+          // It stays off anyway: one authority for one event is the point, and
+          // the gate is the one that also covers modal depth.
           //
           // Safe w.r.t. the vendor's warning at `tab_bar.dart:558-565` ("ALWAYS
           // wrap in IndexedStack ... so the tree shape is identical"): that
@@ -119,7 +128,8 @@ class AppBoxKitNativeTabBar extends StatelessWidget {
           // `autoHideOnModal` deliberately STAYS ON. The modal hide must
           // DESTROY the platform view (`tab_bar.dart:521-526`, Issue #31) or
           // the native UITabBar layer keeps rendering above modal content; the
-          // gate's keep-alive alpha-0 does not destroy it. Folding this path
+          // gate's keepAlive mode leaves it mounted-but-unpainted, which is
+          // precisely NOT destroying it. Folding this path
           // into the gate would need `hideMode: unmount` and on-device z-order
           // verification, so it is left as a documented exception rather than
           // an unverified regression.

@@ -4,17 +4,21 @@
 // The native tier stacks TWO independent hide authorities on the SAME widget,
 // both reacting to a route transition over the tab host:
 //
-//   1. `AppBoxKitNativeChromeGate` (appbox_kit_tab_bar.dart:100) — an ANIMATED
-//      paint-level hide: alpha 1 -> 0 over `hideDuration` (160 ms), platform
-//      view never unmounted.
+//   1. `AppBoxKitNativeChromeGate` (appbox_kit_tab_bar.dart:100) — a paint-level
+//      hide via an unselected `IndexedStack` index; platform view never
+//      unmounted.
 //   2. `CNTabBar.autoHideOnPageTransition` (vendor tab_bar.dart:566-574) — an
 //      INSTANT `IndexedStack` swap to a blank `SizedBox`, flipped by
 //      `ModalRoute.secondaryAnimation` (vendor tab_bar.dart:381-382).
 //
-// Both fire on the same event, so the instant swap blanks the bar in frame one
-// while the gate is still 159 ms into a fade nobody can see: the "fade-then-pop"
-// artifact. The gate must be the single authority — the ad-hoc swap is turned
-// off at the kit call site.
+// Historical: (1) used to be ANIMATED — alpha 1 -> 0 over a 160 ms
+// `hideDuration` — so the instant swap blanked the bar in frame one while the
+// gate was still 159 ms into a fade nobody could see: the "fade-then-pop"
+// artifact. The fade has since been removed outright (animating alpha over a
+// platform view is unsupported: flutter#93757, flutter#24164), so the two would
+// now agree. One authority for one event remains the rule regardless, and the
+// gate is the one that also covers modal depth — the ad-hoc swap stays off at
+// the kit call site.
 //
 // NOTE on the vendor's own warning (tab_bar.dart:558-565): "ALWAYS wrap in
 // IndexedStack when the feature is on, so the tree shape is identical

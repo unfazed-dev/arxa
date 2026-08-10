@@ -2,9 +2,19 @@ import 'package:flutter/material.dart';
 
 /// A lazy, keep-alive index switch: builds each child only on first visit, then
 /// keeps it mounted (offstage) so its state survives tab switches.
-// ponytail: IndexedStack unmounts its offstage children (verified in 3.44), so it
-// can't keep tab state. Offstage-in-a-Stack keeps visited children mounted +
-// findable while hiding the inactive ones — the standard lazy bottom-nav pattern.
+// ponytail: Offstage-in-a-Stack keeps visited children mounted + findable while
+// hiding the inactive ones — the standard lazy bottom-nav pattern.
+//
+// The reason is NOT that `IndexedStack` unmounts offstage children; it doesn't.
+// `RenderIndexedStack` overrides only paint/hit-test/semantics, so unselected
+// children stay laid out AND mounted — proved next door by
+// `appbox_kit_native_chrome_gate_test.dart`, which toggles a gate five times and
+// still sees exactly one `initState`. The real footgun is this widget's LAZY
+// shape: it grows its children list as tabs are first visited, and changing an
+// `IndexedStack`'s child-list length/order disposes and re-creates the
+// subsequent children even with stable keys (flutter#182303, OPEN). A
+// fixed-length list toggling only `index` is safe — that is what the chrome gate
+// relies on — but a lazily grown one is not, which is why this widget exists.
 class AppBoxKitLazyIndexedStack extends StatefulWidget {
   const AppBoxKitLazyIndexedStack({
     super.key,

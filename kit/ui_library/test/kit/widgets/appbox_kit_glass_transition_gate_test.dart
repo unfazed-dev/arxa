@@ -4,9 +4,11 @@
 // hybrid-composition view floats over the transition (glass, or a flat panel if
 // merely de-tinted — device-confirmed). The kit does this by wrapping the
 // glass tier in AppBoxKitNativeChromeGate — via the `.chromeGated()` sugar or the
-// widget directly. Per ADR 0010 the hide RENDERS as a dematerialize (fade +
-// slight scale, Apple's `effect = nil` semantic) rather than an instant
-// alpha-0, but the gate wrap is still what every glass widget must ship. This
+// widget directly. The hide RENDERS as a single-frame `IndexedStack` index flip
+// — never a fade or scale: animating alpha over a platform view is unsupported
+// (flutter#93757, flutter#24164) and is what made glass zoom back in after a
+// back-navigation. Either way the gate wrap is what every glass widget must
+// ship, which is what this file enforces. This
 // test is the "doesn't miss any" backstop: if a new glass widget lands (or a
 // refactor strips the wrap), it fails here instead of leaking on device. A
 // widget with a genuine reason to stay unwrapped opts out with a

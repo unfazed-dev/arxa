@@ -8,22 +8,42 @@ import 'package:flutter/scheduler.dart' show SchedulerBinding, SchedulerPhase;
 
 /// How [AppBoxKitNativeChromeGate] takes the child's pixels off screen.
 enum AppBoxKitChromeHideMode {
-  /// Paint-level hide (default): the child stays mounted and is
-  /// **dematerialized** — Apple's `effect = nil` semantic (WWDC25 #284),
-  /// rendered as a fade + slight scale-out over `hideDuration`. At alpha 0
-  /// `RenderAnimatedOpacity` skips painting entirely, and a platform view
-  /// absent from the frame's layer tree is removed from the native view
-  /// hierarchy — so it cannot bleed through an overlay — while the native
-  /// view instance stays ALIVE. Restore fades + scales the same live view
-  /// back in: no native re-init, no raster/platform thread-merge stall (the
-  /// jank the unmount strategy caused on every reappear).
+  /// Paint-level hide (default): the child stays mounted and simply stops
+  /// being *painted*, via an [IndexedStack] whose index selects an empty
+  /// placeholder instead of the child.
+  ///
+  /// `RenderIndexedStack` overrides `paintStack`, `hitTestChildren` and
+  /// `visitChildrenForSemantics`, but **not** `performLayout` or
+  /// `computeDryLayout` — so it inherits `RenderStack`'s layout, which sizes
+  /// itself from *every* child (`rendering/stack.dart:768`). That single fact
+  /// buys all four properties this gate needs:
+  ///
+  /// 1. The platform view is absent from the frame's layer tree, so the
+  ///    embedder takes it out of the native hierarchy and it cannot bleed
+  ///    through an overlay.
+  /// 2. Its Element stays MOUNTED — no native re-init, no raster/platform
+  ///    thread-merge stall on restore.
+  /// 3. Its footprint is unchanged, because it is still laid out; the empty
+  ///    placeholder cannot collapse the box.
+  /// 4. Nothing is animated, which is the point — see the class doc.
+  ///
+  /// Hit-testing and semantics are handled by `IndexedStack` itself (it only
+  /// visits the displayed child), so no `IgnorePointer` is needed.
   keepAlive,
 
   /// Unmount the subtree while hidden (destroys the platform view; a
-  /// measured same-size placeholder holds the layout). Escape hatch in case
-  /// a specific native view misbehaves at alpha 0 — costs a full native
-  /// re-init + thread merge on every restore, which visibly hitches. The
-  /// swap is still instant (a destroyed view has nothing to animate).
+  /// measured same-size placeholder holds the layout). Costs a full native
+  /// re-init + thread merge on every restore, which visibly hitches.
+  ///
+  /// Not merely a theoretical escape hatch: the vendored package found that
+  /// for a *modal* specifically, mounted-but-unpainted is not enough — the
+  /// iOS `UITabBar` layer kept rendering above Flutter-drawn modal content
+  /// (a `TextField` vanished, the bar bled during sheet drags), and only
+  /// destroying the view fixed it (`vendor/cupertino_native_better/lib/
+  /// components/tab_bar.dart:521-526`, its Issue #31). That finding is
+  /// specific to the native tab bar; the kit's other glass surfaces have not
+  /// reproduced it, so [keepAlive] stays the default and this is the lever to
+  /// pull if one of them does.
   unmount,
 }
 
@@ -62,31 +82,73 @@ enum AppBoxKitChromeHideMode {
 ///   depth at mount is the baseline; the gate hides only when live depth
 ///   grows PAST it — a gate used *inside* a sheet never self-destroys.
 /// - *No layout shift, ever*: in [AppBoxKitChromeHideMode.keepAlive] the child
-///   never stops laying out, so its footprint is simply still there (the
-///   scale is a paint-time transform, not a layout change); in
+///   never stops laying out (`RenderIndexedStack` inherits `RenderStack`'s
+///   all-children layout), so its footprint is simply still there; in
 ///   [AppBoxKitChromeHideMode.unmount] a measured same-size placeholder stands in.
-/// - *Hide dematerializes* (ADR 0010, part 3): fade + slight scale-out over
-///   [hideDuration] — Apple's sanctioned `effect = nil` removal for
-///   content-layer glass, replacing the old instant alpha-0. The instant
-///   hide existed because a fade kept the native view bleeding through a
-///   *blur* scrim for the fade's length; kit-owned scrims are now plain dims
-///   (or gone), which cover platform views fine post-2019, so the animated
-///   removal is safe. A host that still presents a *blur* overlay can pass
-///   `hideDuration: Duration.zero` to keep the legacy instant hide.
-/// - *Show fades + scales in* over [showDuration]: masks the reattach (and,
-///   in unmount mode, the re-init flash). Opacity is the one mutator iOS
-///   hybrid composition applies to platform views fully reliably; the scale
-///   is kept slight (0.95) — larger transforms on platform views are dicier,
-///   and any translate would move pixels.
-/// - Hidden children also stop receiving pointers ([IgnorePointer]) —
-///   alpha-0 widgets are otherwise still hit-testable.
+///
+/// **The swap is INSTANT, on both edges — and that is the whole point.**
+/// This gate used to dematerialize: fade + slight scale-out on hide, fade +
+/// scale back in on restore. That is wrong for a platform view, and four
+/// independent sources say so:
+///
+/// 1. **Apple.** WWDC25 #284, verbatim: *"Always prefer setting the effect
+///    property over the **alpha** to ensure that the glass dematerializes or
+///    materializes with the appropriate animation."* And #219: *"Instead of
+///    **fading**, Liquid Glass objects materialize in and out by gradually
+///    modulating the light bending and lensing."* We cannot reach `effect`
+///    from Dart, and a Flutter alpha ramp is precisely the thing Apple names
+///    as the wrong substitute. The old code cited `effect = nil` as its
+///    sanction, but that API's documented purpose is *overlap avoidance*
+///    (Maps hiding buttons when a sheet expands), not transition sequencing.
+/// 2. **This repo, simulator-verified.** `docs/research/flutter-platform-view-best-practices.md`
+///    §3.2 **[R]**: *"animating opacity across a platform-view subtree is the
+///    expensive mistake"*, and recommendation 3: *"Do not opacity-animate any
+///    subtree containing a platform view… Fade forces per-frame native layer
+///    mutations and leaves ghosting UIViews."*
+/// 3. **Flutter, open bugs.** flutter#93757 (`FadeTransition` does not apply to
+///    hybrid-composition platform views) and flutter#24164 (an opacity layer
+///    spanning a platform view splits into two groups) are both OPEN, with no
+///    merged fix. Animating alpha over a `UiKitView` is unsupported, not just
+///    costly.
+/// 4. **The vendored package.** Its own `autoHideOnPageTransition` uses this
+///    exact `IndexedStack` toggle with an explicit "no recreate animation"
+///    rationale, and `ModalHideMixin` restores with a plain `setState` — no
+///    controller, no duration anywhere in the file.
+///
+/// So there is no `showDuration` / `hideDuration`. They were removed rather
+/// than defaulted to zero: silently ignoring a caller's `showDuration: 300`
+/// is worse than not offering it. `hideDuration: Duration.zero` also existed
+/// to stop a fade bleeding through a *blur* scrim — going instant satisfies
+/// that constraint automatically, so the parameter's reason to exist is gone
+/// too, not merely its value.
+///
+/// - Hit-testing and semantics need no [IgnorePointer]: `RenderIndexedStack`
+///   overrides `hitTestChildren` and `visitChildrenForSemantics` to visit only
+///   the displayed child.
 ///
 /// **Ceiling (named on purpose):** all-or-nothing. The package's
 /// `ModalHideMixin` can consult `topModalRect` to keep widgets a partial
 /// sheet doesn't cover; this gate ignores that and hides regardless. For
-/// snackbar blurs (rect null) the behavior is identical. A true crossfade
-/// of native content is impossible — platform views can't be snapshotted by
-/// `RepaintBoundary.toImage`, so there is nothing to fade *from*.
+/// snackbar blurs (rect null) the behavior is identical. A true crossfade of
+/// native content is out of reach *from Dart* — `RepaintBoundary.toImage`
+/// cannot capture a platform view, so there is nothing to fade *from*. (Not
+/// impossible in absolute terms: UIKit's own
+/// `UIView.snapshotView(afterScreenUpdates:)` could supply one, but that is a
+/// plugin-level change on the native side, not something this widget can do.)
+///
+/// **Known interaction — flutter#148639, OPEN.** iOS defers deleting platform
+/// views until a frame is submitted that *contains* a platform-view layer:
+/// with none painted, `HasPlatformViewThisOrNextFrame` is false, the raster
+/// thread merger never engages, `SubmitFrame` is not called, and disposed
+/// views sit in `views_to_dispose_`. While this gate hides, it manufactures
+/// exactly that condition — and a route being popped is disposing its own
+/// platform views at the same moment. The accumulation is bounded here (the
+/// next restore paints a platform view and drains the queue) rather than the
+/// unbounded leak in the issue's repro, which churns views inside a
+/// permanently hidden branch. Worth knowing: it is a reason to keep the
+/// all-hidden window SHORT, not a reason to prefer a different hide
+/// mechanism — `Opacity(0)`, `Offstage(true)` and a non-selected
+/// `IndexedStack` index are identical on this axis (all lay out, none paint).
 ///
 /// No-op in practice on tiers that mount no platform views (Android
 /// composites in-layer; Flutter-fallback tiers are ordinary widgets) — the
@@ -95,23 +157,10 @@ class AppBoxKitNativeChromeGate extends StatefulWidget {
   const AppBoxKitNativeChromeGate({
     super.key,
     required this.child,
-    this.showDuration = const Duration(milliseconds: 180),
-    this.hideDuration = const Duration(milliseconds: 160),
     this.hideMode = AppBoxKitChromeHideMode.keepAlive,
   });
 
   final Widget child;
-
-  /// Fade-in length when the child is restored after a modal dismisses.
-  /// [Duration.zero] = instant reappear.
-  final Duration showDuration;
-
-  /// Dematerialize length when the child hides (keepAlive mode) — the fade +
-  /// slight scale-out of Apple's `effect = nil` semantic. [Duration.zero] =
-  /// the legacy instant alpha-0 hide; use it only behind a *blur* overlay,
-  /// where an animated hide would keep the native view bleeding through the
-  /// blur for the animation's length.
-  final Duration hideDuration;
 
   final AppBoxKitChromeHideMode hideMode;
 
@@ -119,17 +168,12 @@ class AppBoxKitNativeChromeGate extends StatefulWidget {
   State<AppBoxKitNativeChromeGate> createState() => _KitNativeChromeGateState();
 }
 
-class _KitNativeChromeGateState extends State<AppBoxKitNativeChromeGate>
-    with SingleTickerProviderStateMixin {
+class _KitNativeChromeGateState extends State<AppBoxKitNativeChromeGate> {
   /// Depth at mount — the baseline. Hide only when depth exceeds it, so a
   /// gate mounted inside an already-open modal stays visible.
   late final int _mountDepth;
 
   bool _hidden = false;
-
-  /// 1.0 = fully shown. reverse()ed on hide (the dematerialize animation;
-  /// jumped to 0 only when `hideDuration` is zero); forward()ed on restore.
-  late final AnimationController _fade;
 
   /// Child's last laid-out size — the unmount-mode placeholder's footprint.
   /// Written from layout (plain field, no setState: it is only *read* on
@@ -140,28 +184,14 @@ class _KitNativeChromeGateState extends State<AppBoxKitNativeChromeGate>
   void initState() {
     super.initState();
     _mountDepth = CNTabBarRouteObserver.anyModalDepth.value;
-    _fade = AnimationController(
-      vsync: this,
-      duration: widget.showDuration, // forward = restore
-      reverseDuration: widget.hideDuration, // reverse = dematerialize
-      value: 1.0,
-    );
     CNTabBarRouteObserver.anyModalDepth.addListener(_onDepthChanged);
     CNTransitionObserver.activeTransitions.addListener(_onDepthChanged);
-  }
-
-  @override
-  void didUpdateWidget(AppBoxKitNativeChromeGate oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    _fade.duration = widget.showDuration;
-    _fade.reverseDuration = widget.hideDuration;
   }
 
   @override
   void dispose() {
     CNTabBarRouteObserver.anyModalDepth.removeListener(_onDepthChanged);
     CNTransitionObserver.activeTransitions.removeListener(_onDepthChanged);
-    _fade.dispose();
     super.dispose();
   }
 
@@ -199,24 +229,8 @@ class _KitNativeChromeGateState extends State<AppBoxKitNativeChromeGate>
     final hidden = CNTabBarRouteObserver.anyModalDepth.value > _mountDepth ||
         CNTransitionObserver.hasActiveTransitionAbove(context);
     if (hidden == _hidden) return;
+    // One setState, no controller: the swap is a paint toggle on both edges.
     setState(() => _hidden = hidden);
-    if (hidden) {
-      if (widget.hideDuration == Duration.zero) {
-        // Legacy instant hide — only for hosts still presenting a *blur*
-        // overlay (an animated fade would bleed through it). Kit-owned
-        // scrims are plain dims, so the default path dematerializes.
-        _fade.stop();
-        _fade.value = 0.0;
-      } else {
-        // Dematerialize (Apple `effect = nil`): fade + slight scale-out over
-        // hideDuration. The same live view animates away — never unmounted.
-        _fade.reverse();
-      }
-    } else if (widget.showDuration == Duration.zero) {
-      _fade.value = 1.0;
-    } else {
-      _fade.forward(from: 0.0);
-    }
   }
 
   @override
@@ -236,26 +250,38 @@ class _KitNativeChromeGateState extends State<AppBoxKitNativeChromeGate>
       child = _MeasureSize(onSize: (size) => _lastSize = size, child: child);
     }
 
-    // easeOut on restore (quick start, soft land); easeIn on the reverse so
-    // the dematerialize starts leaving immediately instead of lingering.
-    final dematerialize = CurvedAnimation(
-      parent: _fade,
-      curve: Curves.easeOut,
-      reverseCurve: Curves.easeIn,
-    );
-
-    // Constant tree shape across hide/show in keepAlive mode — the child
-    // must never be reparented, or the platform view re-inits anyway. The
-    // scale is paint-time only (Transform), so the footprint never shifts.
-    return IgnorePointer(
-      ignoring: _hidden,
-      child: FadeTransition(
-        opacity: dematerialize,
-        child: ScaleTransition(
-          scale: dematerialize.drive(Tween(begin: 0.95, end: 1.0)),
-          child: child,
-        ),
-      ),
+    // The wrap is UNCONDITIONAL — never `_hidden ? IndexedStack(...) : child`.
+    // Returning the child bare on one branch changes the tree shape at exactly
+    // the moment a platform view is transitioning, which reparents it and
+    // forces the native re-init this gate exists to avoid. Only `index` moves.
+    // (Same reasoning, and the same bug, as the vendored tab bar's Issue #35:
+    // `vendor/cupertino_native_better/lib/components/tab_bar.dart:558-565`.)
+    //
+    // For the same reason the children list must stay FIXED at these two slots,
+    // in this order. Changing an `IndexedStack`'s child-list length or order
+    // disposes and re-creates the subsequent children even when they carry
+    // stable keys (flutter#182303, OPEN) — which would silently reintroduce the
+    // native re-init through the back door. Vary `index`, never the list.
+    //
+    // `StackFit.passthrough` hands our own constraints to both children, so
+    // the box is sized by the parent exactly as it was before this wrap
+    // existed. The placeholder can be empty without collapsing the footprint:
+    // `RenderIndexedStack` lays out every child regardless of `index`.
+    return IndexedStack(
+      // NON-directional on purpose. `IndexedStack`'s default is
+      // `AlignmentDirectional.topStart`, which asserts on a missing
+      // `Directionality` ancestor — this gate is wrapped around leaf glass
+      // tiers inside 13 kit widgets and must not impose a new ancestor
+      // requirement on any of them. Nothing is lost: the placeholder is 0×0,
+      // so the real child is always the sizing child and sits at the origin
+      // under any alignment.
+      alignment: Alignment.topLeft,
+      index: _hidden ? 0 : 1,
+      sizing: StackFit.passthrough,
+      children: [
+        const SizedBox.shrink(),
+        child,
+      ],
     );
   }
 }
@@ -291,19 +317,17 @@ class _RenderMeasureSize extends RenderProxyBox {
 
 /// Fluent sugar for wrapping a native-glass tier in [AppBoxKitNativeChromeGate] — the
 /// kit-wide "autoHideOnPageTransition" every `AppBoxKitNative*` Liquid Glass widget
-/// appends to its Apple/glass tier so the platform view dematerializes (fade +
-/// slight scale) out of the frame during route transitions (and modal overlays)
-/// instead of leaking over the slide. One call, both signals (route transition
-/// + modal depth).
+/// appends to its Apple/glass tier so the platform view leaves the frame during
+/// route transitions (and modal overlays) instead of leaking over the slide.
+/// One call, both signals (route transition + modal depth).
+///
+/// There is deliberately no duration to pass: the swap is instant on both
+/// edges. See the class doc for the four sources that rule out animating it.
 extension AppBoxKitNativeChromeGateX on Widget {
   Widget chromeGated({
-    Duration showDuration = const Duration(milliseconds: 180),
-    Duration hideDuration = const Duration(milliseconds: 160),
     AppBoxKitChromeHideMode hideMode = AppBoxKitChromeHideMode.keepAlive,
   }) =>
       AppBoxKitNativeChromeGate(
-        showDuration: showDuration,
-        hideDuration: hideDuration,
         hideMode: hideMode,
         child: this,
       );
