@@ -215,3 +215,98 @@ constructor.
    Recovered to `stash@{0}`; drop it once C1 lands.
 3. Agent-reported green checks were authored on stale bases and did **not** transfer — the
    baseline above was re-run on the merged tree, not inherited from their reports.
+
+## §3d verdict + C5 landing (2026-08-10, base `4317b93`)
+
+### §3d — the tab-stack fade contradiction is FALSE; the audit misread an opt-in branch
+
+The audit read `appbox_kit_animated_tab_stack.dart:277,281` as fading tab layers. Both lines
+sit behind `if (widget.fade)`. `fade` defaults to **`false`** (`:73`), and the **only**
+production call site — `showcase_application_tab_host_widget.dart:56` — never sets it
+(`grep` over `kit/`, non-test, finds one call site and no `fade:` argument on it). The
+branches are dead at runtime. The comment at `tab_host_widget.dart:53-54` ("slide-only") and
+the code therefore **agree**; there is no contradiction to reconcile. Pinned already by
+`appbox_kit_animated_tab_stack_test.dart:250` ("fade stays off by default (platform-view
+safety)", `expect(find.byType(FadeTransition), findsNothing)`) — green on this base.
+
+### Steelman of `20616f2` — and its commit message is misleading
+
+`20616f2` is titled "crossfade exiting tab layer…", but its diff **adds no fade**. It:
+1. changed the incoming layer's travel from `begin: travel` (0.18) to `begin: Offset(_direction * 1.0, 0)` — full-width **cover** entry;
+2. swapped paint order so the exiting layer is **under** the incoming one.
+
+`docs/plans/tab-switch-pop-cover-parallax.md` states it explicitly: "`fade` stays opt-in with
+unchanged semantics". **Why it exists:** with `fade: false` the old geometry painted the
+opaque exit slot **on top**, travelling only 18% of the width; when the controller completed,
+`_exitingIndex = null` removed a layer still covering ~82% of the frame **in one frame** —
+regression `3b81414`, a measured one-frame pop. Cover geometry fixes it the platform-view-safe
+way: completion happens while the exiting layer is fully occluded, so its removal is
+invisible, and **no opacity is animated over a `UiKitView`**. This is the correct fix and was
+left untouched. `6412916`'s live-run `ColoredBox` backing is the necessary companion —
+background-less tab pages make a "cover" transparent, so the cover must carry the scaffold
+color to actually occlude.
+
+**The one live fade over platform views is elsewhere:** `appbox_kit_native_chrome_gate.dart:252-254`
+wraps native chrome in `FadeTransition` + `ScaleTransition` **unconditionally**, and its own
+doc at `:72` concedes opacity is only *"reliably"* applied to platform views under hybrid
+composition and that scale is not. That runs on every push/pop over gated chrome. Whether it
+ghosts on device is **`unknown`** — not decidable headless.
+
+### Tab-switch flicker still has NO confirmed Flutter-side mechanism
+
+With C1 corrected, C2/C3/C4 landed and §3d disproven, nothing found in this pass explains
+flicker *on a tab switch specifically*. The C5 race below fires on **route push/pop over the
+tab host**, not on a tab switch — see the discriminating fact. Status: **`unknown`**, needs a
+device trace.
+
+### C5 — single hide authority (landed)
+
+**Discriminating fact:** `CNTabBar._pageTransitioning` is driven by
+`ModalRoute.of(context).secondaryAnimation` (`vendor/.../tab_bar.dart:381-382`), **not** by
+`CNTransitionObserver.activeTransitions`. A `StackedTabsRouter` tab switch pushes no route
+above the host, so `secondaryAnimation` never runs and this path does **not** fire on a tab
+switch. It fires when a route is pushed **over the tab host**.
+
+**The race (real, test-confirmed):** on that event two authorities act on the same widget —
+the chrome gate fades alpha 1→0 over 160 ms (`hideDuration`, `:99`), while `CNTabBar`'s
+`IndexedStack` (`tab_bar.dart:566-574`) blanks it **instantly** in frame one. The instant swap
+wins; the fade is spent on something already invisible. That is the "fade-then-pop".
+
+**Fix:** `appbox_kit_tab_bar.dart:101` now passes `autoHideOnPageTransition: false` — the
+gate is the single authority. Safe against the vendor warning at `tab_bar.dart:558-565` (which
+guards against the wrapper toggling *while the feature is on*): a constant `false` returns the
+bare platform view every build, so tree shape stays invariant and the `UiKitView` is never
+re-created.
+
+**Deliberately NOT collapsed:** `autoHideOnModal` stays `true`. The vendor requires the modal
+hide to **destroy** the platform view (`tab_bar.dart:521-526`, Issue #31 — the UITabBar layer
+otherwise renders over modal content); the gate's keep-alive alpha-0 does not destroy it, and
+the gate's own doc `:71` concedes a fade kept the native view bleeding through. Those two
+claims cannot be reconciled headless, so the third path is left as a **documented exception**
+rather than an unverified z-order regression. Both states are pinned by
+`appbox_kit_tab_bar_single_hide_authority_test.dart`.
+
+**Verification on this base:** `flutter analyze --no-pub` clean in `kit/ui_library` and in the
+vendor; `flutter test` **267 passing / 0 failing** in `kit/ui_library` (265 baseline + 2 new);
+**118 passing** in `vendor/cupertino_native_better`. No `pubspec.lock` churn.
+
+### C5 follow-ups from review
+
+**The gate's signal is really installed** (this decides fix-vs-regression): removing
+`autoHideOnPageTransition` hands sole authority to a path that only works if
+`CNTransitionObserver` is registered on the navigator enclosing the gate. It is —
+`kit/showcase_app/lib/main.dart:97`, `navigatorObservers: () => [CNTransitionObserver()]`.
+Had it not been, this change would have deleted the only working hide and let the native bar
+ride over an incoming page.
+
+**The tab-switch negative is now watched, not inferred.** "A tab-index change hides nothing"
+is pinned by the third case in `appbox_kit_tab_bar_single_hide_authority_test.dart`
+(observer installed, boot push settled, index 0→1, `IgnorePointer.ignoring` stays false). If
+that ever goes true, tab-switch flicker HAS a Flutter-side mechanism.
+
+**`unknown` — bar height.** Dropping the `IndexedStack` changes the layout parent: the old
+shape sized against `max(SizedBox(height: h), platformView)` under `StackFit.passthrough`
+with `h = widget.height ?? _intrinsicHeight ?? 50.0`; the new shape sizes to the platform view
+alone. If `h` ever exceeded the native view's height the bar's rendered height shifts a few
+points. Not observable headless — the native tier does not render in a widget test. Verify on
+device alongside the C5 fade-then-pop check.
