@@ -33,11 +33,20 @@ import 'package:appbox_kit_core/common/appbox_kit_glyphs.dart';
 import 'package:appbox_kit_core/platform/appbox_kit_platform.dart';
 import 'package:appbox_kit_ui_library/widgets/appbox_kit_native_chrome_gate.dart';
 import 'package:appbox_kit_ui_library/widgets/appbox_kit_tab_bar.dart';
+import 'package:cupertino_native_better/cupertino_native.dart'
+    show CNTransitionObserver;
 import 'package:cupertino_native_better/cupertino_native_better.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-Widget _host() => MaterialApp(
+/// [observed] installs the transition observer the gate listens to — the
+/// showcase installs exactly this at `main.dart:97`. Off by default: the
+/// observer's boot `didPush` arms a 350 ms fallback timer, and the
+/// property-only tests below never pump long enough to drain it.
+Widget _host({int currentIndex = 0, bool observed = false}) => MaterialApp(
+      navigatorObservers: [
+        if (observed) CNTransitionObserver(),
+      ],
       home: Scaffold(
         body: const SizedBox.expand(),
         bottomNavigationBar: AppBoxKitNativeTabBar(
@@ -45,7 +54,7 @@ Widget _host() => MaterialApp(
             AppBoxKitTab(glyph: AppBoxKitGlyphs.home, label: 'Home'),
             AppBoxKitTab(glyph: AppBoxKitGlyphs.search, label: 'Search'),
           ],
-          currentIndex: 0,
+          currentIndex: currentIndex,
           onTap: (_) {},
         ),
       ),
@@ -53,6 +62,9 @@ Widget _host() => MaterialApp(
 
 void main() {
   setUp(() {
+    // Static transition state leaks between testWidgets zones (FakeAsync
+    // discards the pending end/watchdog timers mid-transition).
+    CNTransitionObserver.resetForTesting();
     // Force tier 1 (iOS 26 Liquid Glass) — the only tier that mounts CNTabBar.
     AppBoxKitPlatform.override =
         const AppBoxKitPlatformOverride(isIOS: true, iosMajor: 26);
@@ -87,4 +99,45 @@ void main() {
             'requires the modal hide to DESTROY it or the native bar renders '
             'over modal content. Not collapsed — unverifiable headless.');
   });
+
+  // The load-bearing negative behind "C5 does not explain TAB-SWITCH flicker":
+  // a tab-index change is not a route event, so no hide authority may fire.
+  // `_pageTransitioning` keys off `ModalRoute.secondaryAnimation`
+  // (vendor tab_bar.dart:381-382) and the gate keys off an enclosing
+  // navigator's transition — a tab switch pushes neither.
+  testWidgets(
+      'kit.ui-library.tab-bar — a tab-index change hides NOTHING (a tab switch '
+      'is not a route transition)', (tester) async {
+    await tester.pumpWidget(_host(observed: true));
+    // Settle the boot `didPush` (its end runs off the observer's fallback
+    // timer, not an animation status).
+    await tester.pumpAndSettle();
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.pump(const Duration(milliseconds: 16));
+
+    expect(_gateHidden(tester), isFalse, reason: 'idle baseline');
+
+    // The tab switch: only the projected index changes.
+    await tester.pumpWidget(_host(currentIndex: 1, observed: true));
+    await tester.pump();
+
+    expect(_gateHidden(tester), isFalse,
+        reason: 'a tab switch pushes no route, so neither the gate nor the '
+            "vendor's secondaryAnimation path may hide the bar — if this ever "
+            'goes true, tab-switch flicker HAS a Flutter-side mechanism');
+  });
 }
+
+/// The gate drives `IgnorePointer.ignoring` synchronously on hide — a cleaner
+/// probe than the animated opacity (which lags a frame). Mirrors the helper in
+/// `appbox_kit_chrome_gate_transition_scope_test.dart:22-32`.
+bool _gateHidden(WidgetTester tester) => tester
+    .widget<IgnorePointer>(
+      find
+          .descendant(
+            of: find.byType(AppBoxKitNativeChromeGate),
+            matching: find.byType(IgnorePointer),
+          )
+          .first,
+    )
+    .ignoring;

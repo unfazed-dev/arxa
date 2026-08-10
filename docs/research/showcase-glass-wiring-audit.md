@@ -192,6 +192,14 @@ racing an instant swap (path 2) produces **fade-then-pop**.
 
 ### 3d. Internal contradiction: fade over platform views
 
+> **DISPROVEN 2026-08-10 — do NOT re-chase.** Both cited lines sit behind
+> `if (widget.fade)`; `fade` defaults to `false` and the sole production call site never sets
+> it, so they are dead at runtime. `20616f2` added no fade — it changed cover geometry. The
+> comments and the code agree. The one *live* unconditional fade over platform views is
+> `appbox_kit_native_chrome_gate.dart:252-254`, which remains `unknown` pending a device
+> trace. Full verdict + evidence: `docs/plans/glass-chrome-root-cause-fixes.md`, section
+> "§3d verdict + C5 landing".
+
 `showcase_application_tab_host_widget.dart:53-54` states the tab transition is
 *"slide-only: fade ghosts platform views on native-chrome tabs (flutter#24164/#148639)"*.
 The implementation it names does fade: `appbox_kit_animated_tab_stack.dart:277` and `:281`

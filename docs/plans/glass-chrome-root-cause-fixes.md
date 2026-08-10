@@ -246,3 +246,24 @@ rather than an unverified z-order regression. Both states are pinned by
 **Verification on this base:** `flutter analyze --no-pub` clean in `kit/ui_library` and in the
 vendor; `flutter test` **267 passing / 0 failing** in `kit/ui_library` (265 baseline + 2 new);
 **118 passing** in `vendor/cupertino_native_better`. No `pubspec.lock` churn.
+
+### C5 follow-ups from review
+
+**The gate's signal is really installed** (this decides fix-vs-regression): removing
+`autoHideOnPageTransition` hands sole authority to a path that only works if
+`CNTransitionObserver` is registered on the navigator enclosing the gate. It is —
+`kit/showcase_app/lib/main.dart:97`, `navigatorObservers: () => [CNTransitionObserver()]`.
+Had it not been, this change would have deleted the only working hide and let the native bar
+ride over an incoming page.
+
+**The tab-switch negative is now watched, not inferred.** "A tab-index change hides nothing"
+is pinned by the third case in `appbox_kit_tab_bar_single_hide_authority_test.dart`
+(observer installed, boot push settled, index 0→1, `IgnorePointer.ignoring` stays false). If
+that ever goes true, tab-switch flicker HAS a Flutter-side mechanism.
+
+**`unknown` — bar height.** Dropping the `IndexedStack` changes the layout parent: the old
+shape sized against `max(SizedBox(height: h), platformView)` under `StackFit.passthrough`
+with `h = widget.height ?? _intrinsicHeight ?? 50.0`; the new shape sizes to the platform view
+alone. If `h` ever exceeded the native view's height the bar's rendered height shifts a few
+points. Not observable headless — the native tier does not render in a widget test. Verify on
+device alongside the C5 fade-then-pop check.
