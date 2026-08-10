@@ -301,3 +301,107 @@ Future<Uint8List?> iconDataToImageBytes(
     return null;
   }
 }
+
+/// A resolved icon payload for a native platform view.
+///
+/// This is the single Dart-side owner of the icon resolution pipeline
+/// (Stage 2 of `docs/plans/icon-pipeline-consolidation.md`). Components
+/// await [resolveIconSource] and map the result onto their (still
+/// per-component, Stage 3 renames them) wire keys.
+sealed class IconSource {
+  const IconSource();
+}
+
+/// A Flutter-bundle asset icon. [resolvedPath] has already been resolved
+/// for the device pixel ratio via [resolveAssetPathForPixelRatio].
+final class IconSourceAsset extends IconSource {
+  /// Creates an asset icon source from an already-resolved asset path.
+  const IconSourceAsset({
+    required this.resolvedPath,
+    this.imageData,
+    this.format,
+  });
+
+  /// Pixel-ratio-resolved asset path (e.g. `icons/2.0x/check.png`).
+  final String resolvedPath;
+
+  /// Raw image bytes accompanying the asset, when the caller provided any.
+  final Uint8List? imageData;
+
+  /// Image format string, guaranteed lowercase ('png', 'svg', 'jpg', …),
+  /// or null when it could not be determined. Lowercasing is normalized
+  /// here at the resolver: the Swift side (Stage 1) compares lowercase
+  /// format strings, so Dart must never send mixed-case ones.
+  final String? format;
+}
+
+/// Pre-rasterized icon bytes produced by [iconDataToImageBytes].
+final class IconSourceBytes extends IconSource {
+  /// Creates a rasterized icon source from PNG [bytes].
+  const IconSourceBytes({required this.bytes});
+
+  /// PNG-encoded icon bitmap.
+  final Uint8List bytes;
+
+  /// [iconDataToImageBytes] always encodes PNG.
+  String get format => 'png';
+}
+
+/// An SF Symbol resolved by name on the native side.
+final class IconSourceSymbol extends IconSource {
+  /// Creates a symbol icon source for the SF Symbol called [name].
+  const IconSourceSymbol(this.name);
+
+  /// SF Symbol name (e.g. `house.fill`).
+  final String name;
+}
+
+/// Resolves the shared component priority chain
+/// `imageAsset > customIcon > icon` into a single [IconSource].
+///
+/// - Asset branch: taken when [assetPath] is non-null (mirrors the
+///   call sites' `imageAsset != null` gate — an empty path still takes
+///   this branch, as before). Resolves the pixel-ratio variant, then
+///   determines the format as `assetFormat ?? detectImageFormat(...)`,
+///   lowercased (the one normalization Stage 2 is allowed to make).
+/// - Custom-icon branch: rasterizes [customIcon] at [customIconSize]
+///   logical pixels. Returns null when rasterization fails — no call
+///   site ever fell through to the symbol branch on failure, and
+///   callers rely on that (FutureBuilder placeholders stay up).
+/// - Symbol branch: returns [IconSourceSymbol] when [symbolName] is
+///   provided; otherwise null (caller renders its no-icon layout).
+Future<IconSource?> resolveIconSource({
+  String? assetPath,
+  Uint8List? assetImageData,
+  String? assetFormat,
+  double? devicePixelRatio,
+  IconData? customIcon,
+  double customIconSize = 20.0,
+  Color customIconColor = CupertinoColors.black,
+  String? symbolName,
+}) async {
+  if (assetPath != null) {
+    final resolvedPath = await resolveAssetPathForPixelRatio(
+      assetPath,
+      devicePixelRatio: devicePixelRatio,
+    );
+    return IconSourceAsset(
+      resolvedPath: resolvedPath,
+      imageData: assetImageData,
+      format: (assetFormat ?? detectImageFormat(resolvedPath, assetImageData))
+          ?.toLowerCase(),
+    );
+  }
+  if (customIcon != null) {
+    final bytes = await iconDataToImageBytes(
+      customIcon,
+      size: customIconSize,
+      color: customIconColor,
+    );
+    return bytes == null ? null : IconSourceBytes(bytes: bytes);
+  }
+  if (symbolName != null) {
+    return IconSourceSymbol(symbolName);
+  }
+  return null;
+}

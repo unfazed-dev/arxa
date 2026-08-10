@@ -688,9 +688,10 @@ class _CNGlassButtonGroupState extends State<CNGlassButtonGroup>
         ? resolveColorToArgb(button.tint, context)
         : null;
 
+    // Divergence (Stage 2): parallel payloads, not a priority chain — resolver called once per payload.
     Uint8List? iconBytes;
     if (button.customIcon != null) {
-      iconBytes = await iconDataToImageBytes(
+      iconBytes = await _rasterCustomIcon(
         button.customIcon!,
         size: button.icon?.size ?? 20.0,
       );
@@ -700,13 +701,10 @@ class _CNGlassButtonGroupState extends State<CNGlassButtonGroup>
     String? imageFormat;
     String? resolvedAssetPath;
     if (button.imageAsset != null) {
-      resolvedAssetPath = await resolveAssetPathForPixelRatio(
-        button.imageAsset!.assetPath,
-      );
-      imageBytes = button.imageAsset!.imageData;
-      imageFormat =
-          button.imageAsset!.imageFormat ??
-          detectImageFormat(resolvedAssetPath, button.imageAsset!.imageData);
+      final assetResult = await _resolveImageAsset(button.imageAsset!);
+      resolvedAssetPath = assetResult?.$1;
+      imageBytes = assetResult?.$2;
+      imageFormat = assetResult?.$3;
     }
 
     final iconSize = button.imageAsset?.size ?? button.icon?.size ?? 20.0;
@@ -765,11 +763,12 @@ class _CNGlassButtonGroupState extends State<CNGlassButtonGroup>
         // Rendered black; the Swift side shows them template-mode so the
         // system menu tints them (incl. destructive red). Null when the
         // item has an SF Symbol (symbol wins, mirrors CNPopupMenuItem).
+        // Divergence (Stage 2): parallel payloads, not a priority chain — resolver called once per payload.
         'menuIconBytes': [
           for (final e in button.popupItems!)
             e.customIcon == null || (e.sfSymbol?.isNotEmpty ?? false)
                 ? null
-                : await iconDataToImageBytes(e.customIcon!, size: 18.0),
+                : await _rasterCustomIcon(e.customIcon!, size: 18.0),
         ],
       },
     };
@@ -788,9 +787,10 @@ class _CNGlassButtonGroupState extends State<CNGlassButtonGroup>
         ? resolveColorToArgb(button.tint, context)
         : null;
 
+    // Divergence (Stage 2): parallel payloads, not a priority chain — resolver called once per payload.
     Uint8List? iconBytes;
     if (button.customIcon != null) {
-      iconBytes = await iconDataToImageBytes(
+      iconBytes = await _rasterCustomIcon(
         button.customIcon!,
         size: button.icon?.size ?? 20.0,
       );
@@ -800,13 +800,10 @@ class _CNGlassButtonGroupState extends State<CNGlassButtonGroup>
     String? imageFormat;
     String? resolvedAssetPath;
     if (button.imageAsset != null) {
-      resolvedAssetPath = await resolveAssetPathForPixelRatio(
-        button.imageAsset!.assetPath,
-      );
-      imageBytes = button.imageAsset!.imageData;
-      imageFormat =
-          button.imageAsset!.imageFormat ??
-          detectImageFormat(resolvedAssetPath, button.imageAsset!.imageData);
+      final assetResult = await _resolveImageAsset(button.imageAsset!);
+      resolvedAssetPath = assetResult?.$1;
+      imageBytes = assetResult?.$2;
+      imageFormat = assetResult?.$3;
     }
 
     final iconSize = button.imageAsset?.size ?? button.icon?.size ?? 20.0;
@@ -855,6 +852,36 @@ class _CNGlassButtonGroupState extends State<CNGlassButtonGroup>
       if (button.config.imagePadding != null)
         'imagePadding': button.config.imagePadding,
     };
+  }
+
+  /// Rasterizes [icon] via the shared resolver and unwraps the PNG bytes.
+  /// Divergence (Stage 2): this component calls the resolver once per
+  /// payload (customIcon-only here), not as part of a priority chain — the
+  /// asset payload is resolved separately by [_resolveImageAsset] and both
+  /// are sent over the wire together.
+  Future<Uint8List?> _rasterCustomIcon(
+    IconData icon, {
+    required double size,
+  }) async {
+    final source = await resolveIconSource(
+      customIcon: icon,
+      customIconSize: size,
+    );
+    return source is IconSourceBytes ? source.bytes : null;
+  }
+
+  /// Resolves an [CNImageAsset]'s pixel-ratio path, raw bytes, and format
+  /// via the shared resolver. Divergence (Stage 2): asset-only call, kept
+  /// separate from [_rasterCustomIcon] — see that method's note.
+  Future<(String resolvedPath, Uint8List? imageBytes, String? imageFormat)?>
+  _resolveImageAsset(CNImageAsset asset) async {
+    final source = await resolveIconSource(
+      assetPath: asset.assetPath,
+      assetImageData: asset.imageData,
+      assetFormat: asset.imageFormat,
+    );
+    if (source is! IconSourceAsset) return null;
+    return (source.resolvedPath, source.imageData, source.format);
   }
 }
 

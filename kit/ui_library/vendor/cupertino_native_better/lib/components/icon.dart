@@ -135,10 +135,16 @@ class _CNIconState extends State<CNIcon> {
 
     // Handle image asset (highest priority)
     if (widget.imageAsset != null) {
-      return FutureBuilder<String>(
-        future: resolveAssetPathForPixelRatio(widget.imageAsset!.assetPath),
+      return FutureBuilder<IconSource?>(
+        future: resolveIconSource(
+          assetPath: widget.imageAsset!.assetPath,
+          assetImageData: widget.imageAsset!.imageData,
+          assetFormat: widget.imageAsset!.imageFormat,
+        ),
         builder: (context, snapshot) {
           if (!snapshot.hasData) {
+            // Divergence (Stage 2): asset branch placeholder sizes off
+            // widget.imageAsset?.size, not widget.symbol?.size.
             final defaultSize =
                 widget.size ?? (widget.imageAsset?.size ?? 24.0);
             return SizedBox(
@@ -146,12 +152,13 @@ class _CNIconState extends State<CNIcon> {
               height: widget.height ?? defaultSize,
             );
           }
-          // Create a new CNImageAsset with resolved path
+          // Create a new CNImageAsset with the resolved path/format.
+          final resolved = snapshot.data! as IconSourceAsset;
           final resolvedImageAsset = CNImageAsset(
-            snapshot.data!,
+            resolved.resolvedPath,
             size: widget.imageAsset!.size,
             color: widget.imageAsset!.color,
-            imageFormat: widget.imageAsset!.imageFormat,
+            imageFormat: resolved.format,
             imageData: widget.imageAsset!.imageData,
             mode: widget.imageAsset!.mode,
             gradient: widget.imageAsset!.gradient,
@@ -163,14 +170,23 @@ class _CNIconState extends State<CNIcon> {
 
     // Handle custom icon (medium priority)
     if (widget.customIcon != null) {
+      // Divergence (Stage 2): rasterization size sources from
+      // widget.symbol?.size (not widget.imageAsset?.size) — mirrors the
+      // placeholder divergence below.
       final iconSize = widget.size ?? widget.symbol?.size ?? 24.0;
-      return FutureBuilder<Uint8List?>(
-        future: iconDataToImageBytes(widget.customIcon!, size: iconSize),
+      return FutureBuilder<IconSource?>(
+        future: resolveIconSource(
+          customIcon: widget.customIcon,
+          customIconSize: iconSize,
+        ),
         builder: (context, snapshot) {
           if (!snapshot.hasData) {
+            // Divergence (Stage 2): customIcon branch placeholder sizes off
+            // widget.symbol?.size, not widget.imageAsset?.size.
             return SizedBox(width: iconSize, height: widget.height ?? iconSize);
           }
-          return _buildNativeIcon(context, customIconBytes: snapshot.data);
+          final resolved = snapshot.data! as IconSourceBytes;
+          return _buildNativeIcon(context, customIconBytes: resolved.bytes);
         },
       );
     }
@@ -198,13 +214,11 @@ class _CNIconState extends State<CNIcon> {
     List<Color>? paletteColors;
 
     if (imageAsset != null) {
-      // Image asset takes precedence
+      // Image asset takes precedence. imageFormat was already resolved (and
+      // format-detected, if needed) by resolveIconSource at the call site.
       assetPath = imageAsset.assetPath;
       imageData = imageAsset.imageData;
-      // Auto-detect format if not provided
-      imageFormat =
-          imageAsset.imageFormat ??
-          detectImageFormat(imageAsset.assetPath, imageAsset.imageData);
+      imageFormat = imageAsset.imageFormat;
       size = widget.size ?? imageAsset.size;
       color = widget.color ?? imageAsset.color;
       mode = widget.mode ?? imageAsset.mode;
@@ -324,15 +338,22 @@ class _CNIconState extends State<CNIcon> {
     int? color;
     String? mode;
     bool? gradient;
+    // Resolved once below when widget.imageAsset != null; reused for both
+    // the setSymbol and setStyle payloads so format is only detected once.
+    IconSourceAsset? resolvedAssetSource;
 
     if (widget.imageAsset != null) {
       // Resolve asset path based on device pixel ratio
-      final resolvedAssetPath = await resolveAssetPathForPixelRatio(
-        widget.imageAsset!.assetPath,
-      );
+      resolvedAssetSource =
+          await resolveIconSource(
+                assetPath: widget.imageAsset!.assetPath,
+                assetImageData: widget.imageAsset!.imageData,
+                assetFormat: widget.imageAsset!.imageFormat,
+              )
+              as IconSourceAsset;
       if (!mounted) return;
 
-      name = resolvedAssetPath;
+      name = resolvedAssetSource.resolvedPath;
       size = widget.size ?? widget.imageAsset!.size;
       color = resolveColorToArgb(
         widget.color ?? widget.imageAsset!.color,
@@ -361,13 +382,7 @@ class _CNIconState extends State<CNIcon> {
       if (widget.imageAsset != null) {
         symbolArgs['assetPath'] = widget.imageAsset!.assetPath;
         symbolArgs['imageData'] = widget.imageAsset!.imageData;
-        // Auto-detect format if not provided
-        symbolArgs['imageFormat'] =
-            widget.imageAsset!.imageFormat ??
-            detectImageFormat(
-              widget.imageAsset!.assetPath,
-              widget.imageAsset!.imageData,
-            );
+        symbolArgs['imageFormat'] = resolvedAssetSource?.format;
       }
 
       await channel.invokeMethod('setSymbol', symbolArgs);
@@ -411,13 +426,7 @@ class _CNIconState extends State<CNIcon> {
       if (widget.imageAsset != null) {
         style['assetPath'] = widget.imageAsset!.assetPath;
         style['imageData'] = widget.imageAsset!.imageData;
-        // Auto-detect format if not provided
-        style['imageFormat'] =
-            widget.imageAsset!.imageFormat ??
-            detectImageFormat(
-              widget.imageAsset!.assetPath,
-              widget.imageAsset!.imageData,
-            );
+        style['imageFormat'] = resolvedAssetSource?.format;
       } else if (widget.symbol != null) {
         // Include the symbol name so native side knows what to render
         style['name'] = widget.symbol!.name;
