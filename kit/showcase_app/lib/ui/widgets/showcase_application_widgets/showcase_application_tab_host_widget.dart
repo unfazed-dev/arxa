@@ -55,6 +55,11 @@ class ShowcaseApplicationTabHostWidget extends StatelessWidget {
           body: AppBoxKitExtendBodyFabLift(
             child: AppBoxKitAnimatedTabStack(
               activeIndex: tabsRouter.activeIndex,
+              // Tab pages are background-less (this host scaffold paints the
+              // shared surface), so the incoming layer must carry the scaffold
+              // color during a run or the outgoing tab reads through it
+              // (ghosting).
+              backgroundColor: Theme.of(context).scaffoldBackgroundColor,
               children: children,
             ),
           ),

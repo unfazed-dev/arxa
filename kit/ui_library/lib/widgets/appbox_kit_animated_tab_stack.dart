@@ -71,6 +71,7 @@ class AppBoxKitAnimatedTabStack extends StatefulWidget {
     this.slideFraction = 0.18,
     this.curve = Curves.easeOutCubic,
     this.fade = false,
+    this.backgroundColor,
     super.key,
   }) : assert(children.length > 0, 'need at least one tab');
 
@@ -100,6 +101,14 @@ class AppBoxKitAnimatedTabStack extends StatefulWidget {
   /// Also cross-fade the pair. Default false: opacity-animating platform-view
   /// subtrees ghosts (see class docs; review check 1c2).
   final bool fade;
+
+  /// Opaque backing painted behind the incoming layer while a switch is
+  /// running, so background-less tab pages actually occlude the outgoing tab
+  /// (otherwise the old tab reads through the new one — ghosting). Pass the
+  /// host scaffold's background color. Null (default) keeps the run
+  /// transparent — this widget is widgets-layer pure and cannot read a
+  /// material Theme itself. Idle frames stay transparent regardless.
+  final Color? backgroundColor;
 
   @override
   State<AppBoxKitAnimatedTabStack> createState() => _KitAnimatedTabStackState();
@@ -206,9 +215,21 @@ class _KitAnimatedTabStackState extends State<AppBoxKitAnimatedTabStack>
       textDirection: textDirection,
       position: Tween<Offset>(begin: Offset(_direction * 1.0, 0), end: Offset.zero)
           .animate(curved),
-      child: Stack(
-        fit: StackFit.expand,
-        children: [
+      // Tab pages are routinely background-less (one host Scaffold paints the
+      // shared surface), which makes the "cover" slide transparent: the old
+      // tab stays readable through the new one for the whole run — perceived
+      // as ghosting. While a run is live, back the incoming layer with the
+      // ambient scaffold color so it actually occludes; idle keeps the color
+      // transparent so tree shape (and GlobalKey slots) never changes and a
+      // deliberately see-through stack still composites over custom app
+      // backgrounds when not animating.
+      child: ColoredBox(
+        color: _exitingIndex == null
+            ? const Color(0x00000000)
+            : widget.backgroundColor ?? const Color(0x00000000),
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
           for (var i = 0; i < widget.children.length; i++)
             if (!_initialized.contains(i) || i == _exitingIndex)
               // Constant-length slot, never hit-testable: a bare expanded box
@@ -222,7 +243,8 @@ class _KitAnimatedTabStackState extends State<AppBoxKitAnimatedTabStack>
                   child: widget.children[i],
                 ),
               ),
-        ],
+          ],
+        ),
       ),
     );
 

@@ -35,7 +35,8 @@ class _ProbeState extends State<_Probe> {
   }
 }
 
-Widget _frame(int index, {bool fade = false, int childCount = 3}) {
+Widget _frame(int index,
+    {bool fade = false, int childCount = 3, Color? backgroundColor}) {
   // Fresh widget instances every build — the same contract
   // StackedTabsRouter.builder's regenerated `children` list has: state must
   // bind to the slot, never to the instance.
@@ -44,6 +45,7 @@ Widget _frame(int index, {bool fade = false, int childCount = 3}) {
     child: AppBoxKitAnimatedTabStack(
       activeIndex: index,
       fade: fade,
+      backgroundColor: backgroundColor,
       children: [
         for (var i = 0; i < childCount; i++) _Probe('tab$i', key: ValueKey(i)),
       ],
@@ -258,5 +260,33 @@ void main() {
     expect(find.byType(FadeTransition), findsNWidgets(2),
         reason: 'incoming fades in, outgoing fades out — wrappers always '
             'present so the tree shape never changes with animation phase');
+  });
+
+  testWidgets(
+      'kit.ui-library.animated-tab-stack — incoming layer carries the opaque '
+      'backing only while a run is live (ghost occlusion)', (tester) async {
+    const bg = Color(0xFFFFF8EE);
+    // The single ColoredBox lives in the incoming layer (the exiting layer
+    // never carries one — it is meant to be seen through to the scaffold).
+    Color runColor() => tester
+        .widget<ColoredBox>(find.descendant(
+            of: find.byType(AppBoxKitAnimatedTabStack),
+            matching: find.byType(ColoredBox)))
+        .color;
+
+    await tester.pumpWidget(_frame(0, backgroundColor: bg));
+    expect(runColor().a, 0,
+        reason: 'idle frames must stay transparent — a deliberately '
+            'see-through stack composites over custom app backgrounds');
+
+    await tester.pumpWidget(_frame(1, backgroundColor: bg));
+    await tester.pump(const Duration(milliseconds: 100)); // mid-run
+    expect(runColor(), bg,
+        reason: 'background-less tab pages do not occlude by themselves: '
+            'without the backing the outgoing tab reads through the incoming '
+            'one for the whole run (the reported ghosting)');
+
+    await tester.pump(const Duration(milliseconds: 300)); // settle
+    expect(runColor().a, 0, reason: 'backing drops with the exit slot');
   });
 }
