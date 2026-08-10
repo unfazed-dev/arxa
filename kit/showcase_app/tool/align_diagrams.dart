@@ -6,6 +6,8 @@
 /// Reads every .dart file, finds diagram blocks in `///` doc comments,
 /// re-aligns tier centers to the middle-tier anchor, regenerates arrows
 /// and the rail, and writes back if changed.
+// CLI tool: stdout IS the interface — print is intentional.
+// ignore_for_file: avoid_print
 library;
 
 import 'dart:io';
