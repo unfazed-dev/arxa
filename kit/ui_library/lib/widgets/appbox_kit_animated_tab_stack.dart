@@ -1,5 +1,7 @@
 import 'package:flutter/widgets.dart';
 
+import 'package:appbox_kit_core/platform/appbox_kit_platform.dart';
+
 /// A kept-alive tab stack with a PAIRED tab-switch transition: on an index
 /// change the outgoing tab's LIVE element slides out (toward the edge opposite
 /// the incoming tab's origin) while the incoming tab slides in — one
@@ -63,6 +65,21 @@ import 'package:flutter/widgets.dart';
 /// group-opacity exclusion flutter#24164) — the ghosting P2 verified on the
 /// iOS 26 simulator. The slide is the smaller mutation surface; re-verify on
 /// device when the tabs carry native chrome (review check 1c2).
+///
+/// **Instant on iOS (the default), and why:** `UITabBarController` cross-cuts
+/// between tabs — it has never slid, faded or parallaxed (HIG "Tab bars") — so
+/// [animated] resolves to false on iOS. That is not merely the native look, it
+/// is the only shape that costs nothing. A run necessarily puts BOTH tabs on
+/// stage at once, so the frame's platform-view set and z-order change
+/// mid-switch, and the iOS embedder answers that by recomposing its overlays
+/// and merging the raster and platform threads — the stall reported as
+/// tab-switch flicker. Going instant also drops the exit slot outright, so the
+/// outgoing tab's [GlobalKey] reparent never happens either. Two earlier
+/// attempts (`20616f2` cover-parallax geometry, `6412916` opaque backing)
+/// fixed artifacts OF the animation and left its cost in place; this removes
+/// the cost on the tier that cannot afford it, and keeps the paired slide for
+/// Material, where the tab bodies are Flutter-rendered and cost nothing to
+/// have on stage together.
 class AppBoxKitAnimatedTabStack extends StatefulWidget {
   const AppBoxKitAnimatedTabStack({
     required this.activeIndex,
@@ -72,6 +89,7 @@ class AppBoxKitAnimatedTabStack extends StatefulWidget {
     this.curve = Curves.easeOutCubic,
     this.fade = false,
     this.backgroundColor,
+    this.animated,
     super.key,
   }) : assert(children.length > 0, 'need at least one tab');
 
@@ -110,6 +128,18 @@ class AppBoxKitAnimatedTabStack extends StatefulWidget {
   /// material Theme itself. Idle frames stay transparent regardless.
   final Color? backgroundColor;
 
+  /// Whether an index change runs the paired transition at all.
+  ///
+  /// Null (default) resolves per platform: **instant on iOS**, animated
+  /// everywhere else — see the class docs for why instant is both the native
+  /// behaviour and the cheap one. Pass `true` to force the slide anyway (a
+  /// non-native affordance on Apple: expect platform-view churn if the tabs
+  /// carry `AppBoxKitNative*` chrome), or `false` to force instant everywhere.
+  ///
+  /// Instant is a real cross-cut, not a zero-duration animation: no controller
+  /// run, no exit slot, no reparent — one frame, one tab on stage.
+  final bool? animated;
+
   @override
   State<AppBoxKitAnimatedTabStack> createState() => _KitAnimatedTabStackState();
 }
@@ -138,6 +168,10 @@ class _KitAnimatedTabStackState extends State<AppBoxKitAnimatedTabStack>
   /// 0 until the first switch, then +1 (moved to a higher index) or -1.
   int _direction = 0;
 
+  /// Whether a switch animates here. Platform-resolved unless pinned by the
+  /// caller: iOS cross-cuts (see class docs), everything else slides.
+  bool get _animates => widget.animated ?? !AppBoxKitPlatform.isIOS;
+
   @override
   void initState() {
     super.initState();
@@ -160,6 +194,25 @@ class _KitAnimatedTabStackState extends State<AppBoxKitAnimatedTabStack>
       _controller.duration = widget.duration;
     }
     if (widget.activeIndex != _currentIndex) {
+      if (!_animates) {
+        // Native cross-cut. Leaving `_exitingIndex` null keeps the exit slot
+        // empty, so exactly ONE tab is on stage in every frame — the frame's
+        // platform-view set never grows mid-switch (no overlay recomposition,
+        // no raster/platform thread merge) and no element is ever reparented.
+        // Clearing it explicitly also lands a switch cleanly if `animated`
+        // flipped to false while a run was still in flight.
+        setState(() {
+          _exitingIndex = null;
+          _currentIndex = widget.activeIndex;
+          _initialized.add(_currentIndex);
+        });
+        // Park any in-flight run at the identity end-state (`stop()` is
+        // implicit in the setter). `_onStatus` no-ops: `_exitingIndex` is null
+        // already. Guarded because the setter notifies unconditionally, and in
+        // the steady iOS path the controller is always already completed.
+        if (!_controller.isCompleted) _controller.value = 1.0;
+        return;
+      }
       _direction = widget.activeIndex > _currentIndex ? 1 : -1;
       setState(() {
         // The leaving tab may have vanished with the same update (a live

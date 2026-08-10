@@ -1,5 +1,6 @@
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:appbox_kit_core/platform/appbox_kit_platform.dart';
 import 'package:appbox_kit_ui_library/widgets/appbox_kit_animated_tab_stack.dart';
 
 // AppBoxKitAnimatedTabStack owns its tab bodies: each must be inflated exactly once
@@ -36,7 +37,10 @@ class _ProbeState extends State<_Probe> {
 }
 
 Widget _frame(int index,
-    {bool fade = false, int childCount = 3, Color? backgroundColor}) {
+    {bool fade = false,
+    int childCount = 3,
+    Color? backgroundColor,
+    bool? animated}) {
   // Fresh widget instances every build — the same contract
   // StackedTabsRouter.builder's regenerated `children` list has: state must
   // bind to the slot, never to the instance.
@@ -45,6 +49,7 @@ Widget _frame(int index,
     child: AppBoxKitAnimatedTabStack(
       activeIndex: index,
       fade: fade,
+      animated: animated,
       backgroundColor: backgroundColor,
       children: [
         for (var i = 0; i < childCount; i++) _Probe('tab$i', key: ValueKey(i)),
@@ -288,5 +293,89 @@ void main() {
 
     await tester.pump(const Duration(milliseconds: 300)); // settle
     expect(runColor().a, 0, reason: 'backing drops with the exit slot');
+  });
+
+  // `UITabBarController` cross-cuts between tabs — it has never slid, faded or
+  // parallaxed — so instant is the native behaviour on iOS. It is also the only
+  // shape that keeps ONE tab on stage per frame: an animated run paints both at
+  // once, so the frame's platform-view set and z-order change mid-switch and the
+  // iOS embedder recomposes overlays + merges the raster/platform threads. That
+  // merge is the reported tab-switch flicker.
+  //
+  // Forced rather than inferred: this suite's host is macOS, where
+  // `AppBoxKitPlatform.isIOS` reads `dart:io` and is false — which is also why
+  // every test above still exercises the animated path unchanged.
+  group('native cross-cut (iOS)', () {
+    setUp(() => AppBoxKitPlatform.override =
+        const AppBoxKitPlatformOverride(isIOS: true));
+    tearDown(AppBoxKitPlatform.reset);
+
+    testWidgets(
+        'kit.ui-library.animated-tab-stack — a switch is an instant cross-cut: never two tabs on '
+        'stage, no exit slot, no motion', (tester) async {
+      await tester.pumpWidget(_frame(0));
+      await tester.pumpWidget(_frame(1));
+
+      // The landing frame — precisely the frame an animated stack spends with
+      // BOTH tabs painted.
+      expect(_onStage('tab0'), findsNothing,
+          reason: 'the outgoing tab leaves the stage in the same frame');
+      expect(_onStage('tab1'), findsOneWidget);
+      expect(
+        tester
+            .widgetList<Offstage>(find.byType(Offstage))
+            .where((o) => !o.offstage),
+        hasLength(1),
+        reason: 'exactly one tab on stage — the platform-view set never grows',
+      );
+      for (final dx in _slideDxs(tester)) {
+        expect(dx, 0.0, reason: 'no controller run, so nothing translates');
+      }
+
+      // Still settled when a run would have been ending: no late reparent.
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(_onStage('tab1'), findsOneWidget);
+      expect(_alive('tab0'), findsOneWidget, reason: 'still kept alive');
+      expect(_inits, ['tab0', 'tab1'],
+          reason: 'no exit slot means no reparent, so nothing re-inflates');
+    });
+
+    testWidgets(
+        'kit.ui-library.animated-tab-stack — instant keeps the kept-alive contract (state survives '
+        'the round trip)', (tester) async {
+      await tester.pumpWidget(_frame(0));
+      await tester.tap(find.text('tab0:0'));
+      await tester.pump();
+
+      await tester.pumpWidget(_frame(1)); // away
+      await tester.pumpWidget(_frame(0)); // and straight back
+      expect(find.text('tab0:1'), findsOneWidget,
+          reason: 'instant must not cost the state the animation preserved');
+      expect(_inits.where((l) => l == 'tab0'), hasLength(1));
+    });
+
+    testWidgets(
+        'kit.ui-library.animated-tab-stack — animated: true forces the paired slide back on '
+        '(escape hatch)', (tester) async {
+      await tester.pumpWidget(_frame(0, animated: true));
+      await tester.pumpWidget(_frame(1, animated: true));
+      await tester.pump(const Duration(milliseconds: 50));
+      expect(_onStage('tab0'), findsOneWidget);
+      expect(_onStage('tab1'), findsOneWidget);
+      expect(_slideDxs(tester).where((d) => d != 0), isNotEmpty,
+          reason: 'an explicit true opts back into the non-native affordance');
+    });
+  });
+
+  testWidgets(
+      'kit.ui-library.animated-tab-stack — animated: false forces the cross-cut off-iOS too',
+      (tester) async {
+    await tester.pumpWidget(_frame(0, animated: false));
+    await tester.pumpWidget(_frame(1, animated: false));
+    expect(_onStage('tab0'), findsNothing);
+    expect(_onStage('tab1'), findsOneWidget);
+    for (final dx in _slideDxs(tester)) {
+      expect(dx, 0.0);
+    }
   });
 }

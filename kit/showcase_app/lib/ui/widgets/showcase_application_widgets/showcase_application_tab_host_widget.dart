@@ -45,20 +45,22 @@ class ShowcaseApplicationTabHostWidget extends StatelessWidget {
           extendBody: true,
           // Mirror the extendBody padding into viewPadding so per-tab FABs
           // float clear of the glass bar (flutter#145680).
-          // Paired, direction-aware switch: the outgoing tab's live element
-          // slides out (toward the edge opposite the incoming tab's origin,
-          // RTL-mirrored) while the incoming slides in. This is the pipeline
-          // default — AppBoxKitAnimatedTabStack, self-driving (it tracks the
-          // previous index, so the router's `animation` is not needed),
-          // slide-only: fade ghosts platform views on native-chrome tabs
-          // (flutter#24164/#148639; review check 1c2).
+          // The pipeline default — AppBoxKitAnimatedTabStack, self-driving (it
+          // tracks the previous index, so the router's `animation` is not
+          // needed). Platform-resolved: an INSTANT cross-cut on iOS, matching
+          // UITabBarController and keeping one tab on stage per frame so a
+          // switch never changes the frame's platform-view set (that change is
+          // what made switches flicker on these native-chrome tabs); the
+          // paired, direction-aware slide on Android, where the tab bodies are
+          // Flutter-rendered. Slide-only there too — fade ghosts platform
+          // views (flutter#24164/#148639; review check 1c2).
           body: AppBoxKitExtendBodyFabLift(
             child: AppBoxKitAnimatedTabStack(
               activeIndex: tabsRouter.activeIndex,
               // Tab pages are background-less (this host scaffold paints the
               // shared surface), so the incoming layer must carry the scaffold
               // color during a run or the outgoing tab reads through it
-              // (ghosting).
+              // (ghosting). Inert on iOS, which never runs.
               backgroundColor: Theme.of(context).scaffoldBackgroundColor,
               children: children,
             ),
