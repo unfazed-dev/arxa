@@ -94,5 +94,31 @@ else
   LEGACY="kit-native host (no app_colors.dart); "
 fi
 
-echo "OK (branding): ${LEGACY}master=$ICON (+monochrome); splash bg=surface (theme-reactive, color_dark); splash logo≤${SPLASH_PX}px; android_12 transparent ${A12_CANVAS_PX}px canvas + themed icon bg"
+# 8. Web entrypoint law (scaffolder SKILL.md "Web entrypoint"): when the app
+#    targets web, index.html must be normalized — font-law preconnect pair (no
+#    css2 stylesheet, no font binaries), theme-reactive splash CSS in the kit
+#    surface pair, and the native-splash picture.
+WEB=""
+if [ -f "web/index.html" ]; then
+  IDX="web/index.html"
+  grep -q 'rel="preconnect" href="https://fonts.googleapis.com"' "$IDX" \
+    || fail "$IDX missing fonts.googleapis.com preconnect (font law)"
+  grep -qE 'rel="preconnect" href="https://fonts\.gstatic\.com" crossorigin' "$IDX" \
+    || fail "$IDX missing fonts.gstatic.com crossorigin preconnect (font law)"
+  grep -q 'fonts.googleapis.com/css2' "$IDX" \
+    && fail "$IDX links a css2 stylesheet — Flutter web gets fonts via the google_fonts package at runtime, preconnects only"
+  grep -qE '\.(woff2?|ttf|otf)' "$IDX" \
+    && fail "$IDX references font binaries — no self-hosted fonts (font law)"
+  grep -q 'background-color: #F5F0E8' "$IDX" \
+    || fail "$IDX splash CSS must set light background #F5F0E8 (kit surface, uppercase hex)"
+  grep -q 'background-color: #1C1814' "$IDX" \
+    || fail "$IDX splash CSS must set dark background #1C1814 under prefers-color-scheme: dark"
+  grep -q 'prefers-color-scheme: dark' "$IDX" \
+    || fail "$IDX splash CSS missing the prefers-color-scheme: dark block — web splash must follow the system theme"
+  grep -q 'id="splash"' "$IDX" \
+    || fail "$IDX missing the flutter_native_splash #splash picture — run dart run flutter_native_splash:create"
+  WEB="; web/index.html normalized (preconnects, themed splash)"
+fi
+
+echo "OK (branding): ${LEGACY}master=$ICON (+monochrome); splash bg=surface (theme-reactive, color_dark); splash logo≤${SPLASH_PX}px; android_12 transparent ${A12_CANVAS_PX}px canvas + themed icon bg${WEB}"
 exit 0

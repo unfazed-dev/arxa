@@ -270,12 +270,40 @@ by `assets.manifest.json`:
   `appbox_kit_app_strings.dart` pattern): every bundled path is an `abxImg*`
   const and emitted code references the NAME, never a loose path string.
 
+- **Web entrypoint (`web/index.html`):** the stacked-cli/Flutter default is a
+  starting point, never the shipped file. On EVERY scaffold the scaffolder
+  normalizes `web/index.html` to the reference shape
+  (`kit/showcase_app/web/index.html` is canon); leaving the cli default is a
+  FAIL. The normalized file carries, in order:
+  1. `<base href="$FLUTTER_BASE_HREF">` — untouched, build-injected.
+  2. `<meta name="description">` = the app's one-line description; iOS meta
+     trio + `apple-touch-icon` → `icons/Icon-192.png` (derived by
+     `flutter_launcher_icons` from the brand master); `favicon.png`.
+  3. **Font-law wiring**: exactly two preconnects —
+     `<link rel="preconnect" href="https://fonts.googleapis.com">` and
+     `<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>` —
+     mirroring the designer's `base.tsx` pair. No `css2` stylesheet link and
+     no self-hosted font files: on web the `google_fonts` package fetches
+     binaries from `fonts.gstatic.com` at runtime, the preconnects just warm
+     the connection (custom `"source": "file"` fonts ship in the Flutter
+     bundle and need no HTML wiring).
+  4. `<title>` = the app display name; `manifest.json` link.
+  5. `flutter_native_splash:create` web output, kept theme-reactive: the
+     `#splash-screen-style` block sets `body` background to the kit surface
+     pair — `#F5F0E8` light, `#1C1814` dark via `prefers-color-scheme`
+     (uppercase hex, matching the native configs) — and the `#splash`
+     `<picture>` carries light/dark srcsets (1x–4x) of the brand splash
+     derivative. Splash teardown stays the generated
+     `removeSplashFromWeb()` script.
+  6. The stock `flutter.js` `loadEntrypoint` bootstrap — no custom loader.
+
 Showcase demonstrates end-to-end: `abxImgShowcaseLogo` →
-`assets/images/showcase_logo.png`, and the full launcher-icon chain:
+`assets/images/showcase_logo.png`, the full launcher-icon chain:
 `assets/brand-icons/appbox-icon.{png,svg}` (copied from
 `kit/assets_default/`) + `flutter_launcher_icons` dev-dep + config yaml +
 committed derived platform icons + `abxImgBrandIcon` + `assets/brand-icons/`
-registered in `pubspec.yaml`.
+registered in `pubspec.yaml`, and the normalized web entrypoint
+(`kit/showcase_app/web/index.html`).
 
 **Layout tokens are names, never numbers.** Every layout value arriving in
 `design.json` is a kit constant name and is emitted verbatim as that
