@@ -385,14 +385,24 @@ void main() {
     rootKey.currentState!.push(
       MaterialPageRoute<void>(builder: (_) => const Text('full-screen-page')),
     );
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 50));
 
-    expect(_gateHidden(tester), isTrue,
-        reason: 'the sibling tab bar stayed painted under a root push — it '
-            'would bleed through the incoming full-screen page. This is the '
-            'ceiling the gate doc names; if this assertion ever fails, the '
-            'predicate cannot tell sibling-of-router from descendant-of-route');
+    // Frame-by-frame, to the same standard as the pop tests above. Two coarse
+    // samples would not do: the gate LATCHES (`if (hidden == _hidden) return;`)
+    // and only re-evaluates when a listener fires, so "hidden at 50 ms" and
+    // "hidden for the whole push" are different claims — and the doc rewrite
+    // this test justifies rests on the second one.
+    final List<int> framesPainted = <int>[];
+    for (int frame = 0; frame < 24; frame++) {
+      await tester.pump(const Duration(milliseconds: 16));
+      if (!_gateHidden(tester)) framesPainted.add(frame);
+    }
+
+    expect(framesPainted, isEmpty,
+        reason: 'the sibling tab bar stayed painted during a root push (frames '
+            '$framesPainted of 24) — it would bleed through the incoming '
+            'full-screen page. This is the ceiling the gate doc names; if this '
+            'fails, the predicate cannot tell sibling-of-router from '
+            'descendant-of-route and the doc must be reverted to a warning');
 
     await _flushWatchdogs(tester);
   });

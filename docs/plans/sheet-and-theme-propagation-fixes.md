@@ -260,3 +260,37 @@ by a test:
   so a spy hard-coded to `<viewType>_0` observes a dead channel from the second
   test onward — which looks exactly like "the fix doesn't work". The harness
   reads the id back from the `create` call instead.
+
+---
+
+## Known consequence of the route swap: sheets are now one height
+
+`CupertinoSheetRoute` has **no detents**. It is a single height governed by
+`topGap`, whose default (`_kTopGapRatio`) leaves ~8% of the screen above it.
+Measured on a 844 pt surface with the three-line shape
+`AppBoxKitBottomSheetService` builds (title, description, button row):
+
+```
+screen=844pt   sheet=776pt   → 92% of screen
+```
+
+The old iOS tier sized to content (`Column(mainAxisSize: min)` inside a floating
+card), so a short confirmation was a compact panel. It is now a near-full-height
+sheet with the content at the top and empty glass below.
+
+This is inherent to the route, not a bug in the wiring: a real
+`UISheetPresentationController` would use `.medium()` for this, and the Dart
+re-implementation has no equivalent. The only lever is `topGap`, already
+forwarded through `CNBottomSheet.showCupertino`.
+
+**Deliberately not guessed.** A fixed `topGap` cannot adapt to content, and
+picking one is a design call, not a correctness fix — so the framework default
+stands until someone chooses. Full-height is a legitimate iOS idiom (Mail
+compose, Settings pickers); whether it suits *these* sheets is a judgement about
+this app.
+
+Also changed, and checked: `isDismissible: false` would now mean no dismiss
+affordance at all, since the route has no dismissible barrier and
+`isDismissible` maps to `enableDrag`. **No sheet call site passes it** — the
+only `barrierDismissible: false` in the kit is on the dialog path
+(`appbox_kit_notification_manager.dart:55` → `alert`, not `notice`).
