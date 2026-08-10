@@ -499,3 +499,70 @@ applied to in-route content.
   `CNTransitionHelper` can still drive the flag manually, and the
   `Glass.identity` form is strictly better than the `@ViewBuilder` if/else it
   replaced, which changed structural identity and re-applied `.glassEffect`.
+
+---
+
+## Open flags — resolved (2026-08-11)
+
+The three items left open when this shipped were revisited. Two are closed, one
+was found to be misstated here rather than defective in code.
+
+### Flag 1 — root-push-over-tab-scaffold ceiling: **false alarm, now tested**
+
+Recorded as "untested, no such configuration exists in the showcase". True of
+the showcase, but the shape is constructible directly, and untestable-there is
+not untestable-in-general. `appbox_kit_chrome_gate_transition_scope_test.dart`
+now builds it: gate as `bottomNavigationBar`, nested `Navigator` in the body,
+push on the **root** navigator.
+
+**The bar hides, correctly.** The worry assumed the sibling gate would read the
+root push as "travelling". It does not, for the same reason the whole predicate
+works: on a *push* no route above the gate exists yet when it evaluates, so
+`secondaryAnimation` is still the unwired `kAlwaysDismissedAnimation` and reads
+`dismissed`. The sibling-vs-descendant distinction the old note wanted is not
+needed for pushes. The gate's class doc has been corrected — it previously
+asserted a defect that does not exist.
+
+### Flag 2 — no showcase test drives a nested pop through a gated widget: **closed, at a different layer**
+
+Attempted first as a real showcase integration test (boot the shell, force the
+iOS 26 tier, navigate Notes → folder, pop, sample every frame). **Not viable
+headless**, and the reason is worth recording so it is not retried blind:
+forcing the iOS 26 tier makes every native widget a `UiKitView` with no
+intrinsic size, so the app bar's row overflows by a fixed 32 pt regardless of
+surface size, and `flutter_test` records rendering errors independently of
+`FlutterError.onError`, so the overflow cannot be narrowly suppressed. Three
+approaches were tried (`pageBack`, widening the surface, an error filter)
+before stopping — per the skill's own 3-attempt rule.
+
+What actually closed the gap: the *structural* difference was reproduced
+synthetically, where no platform views are involved. The new test builds a
+nested router whose routes carry their own gated chrome **beside** a root-level
+gated tab bar — the showcase's real shape, which none of the three original
+tests had between them — pops the nested route, and samples every gate on every
+frame of the 500 ms transition.
+
+**Mutation-checked:** reverting the predicate to the pre-fix unconditional
+`|| hasActiveTransitionAbove(context)` fails both pop tests while the two
+structural tests still pass.
+
+### Flag 3 — "Fix B is retained but inert": **the claim was wrong here, the code is fine**
+
+The Swift is precise; this document was not. Two separate things were collapsed
+under "Fix B":
+
+- **The ternary** `glassEffect(isTransitioning ? .identity : glass, in: shape)`
+  — genuinely inert on the normal path. `CNTransitionObserver` no longer posts
+  the global flag, so only `CNTransitionHelper` drives it. The Swift NOTE says
+  exactly this, correctly.
+- **`.glassEffectTransition(.identity)`** — applied **unconditionally**, one
+  line below, outside the ternary. It is live on every render.
+
+So "nothing drives `isTransitioning` since Fix A, therefore Fix B is inert" is a
+non-sequitur: the transition modifier never depended on that flag. Separately,
+`setTransitioning` *is* still driven on the normal path —
+`liquid_glass_container.dart:108` wires it to `secondaryAnimation`, reaching
+Swift's `applyTransitionContainment` (Issue #29 halo containment), which is a
+different mechanism again from either of the two above.
+
+No code change. The correction is to this document's summary.

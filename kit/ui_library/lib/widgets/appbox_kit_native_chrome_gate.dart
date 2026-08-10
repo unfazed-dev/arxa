@@ -139,19 +139,25 @@ enum AppBoxKitChromeHideMode {
 ///   overrides `hitTestChildren` and `visitChildrenForSemantics` to visit only
 ///   the displayed child.
 ///
-/// **Second ceiling — the case that is NOT device-verified.** The pop
-/// predicate keys on whether a route above this gate already existed. For a
-/// gate that is a *sibling* of the transitioning router rather than a
+/// **Second ceiling — resolved, and it was a false alarm.** This used to warn
+/// that a gate which is a *sibling* of the transitioning router rather than a
 /// descendant of its routes — `bottomNavigationBar` on a Scaffold whose `body`
-/// holds the Navigator, which is exactly where the showcase's tab bar sits — a
-/// **root-level page push over the tab scaffold** would read as "travelling"
-/// and stay painted. Every push in the showcase is nested
-/// (`context.router.pushNamed` inside a tab's own router), so that
-/// configuration does not occur there and could not be tested. If a root-level
-/// page push is ever added over a tab scaffold and the bar bleeds through the
-/// incoming page, this predicate is the place to look — the fix would be to
-/// distinguish descendant-of-a-route from sibling-of-the-router, which
-/// `ModalRoute.of` alone cannot do.
+/// holds the Navigator, exactly where the showcase's tab bar sits — would read
+/// a **root-level page push over the tab scaffold** as "travelling", stay
+/// painted, and bleed through the incoming page. It was recorded as untestable
+/// because every showcase push is nested (`context.router.pushNamed` inside a
+/// tab's own router), so the configuration never occurs there.
+///
+/// Untestable *in the showcase* is not untestable in general: the shape is
+/// constructible directly, and
+/// `appbox_kit_chrome_gate_transition_scope_test.dart` now builds it. The bar
+/// **hides**, correctly. The reason is the same push/pop asymmetry the
+/// predicate is built on: on a push, no route above this gate exists yet when
+/// it evaluates, so `secondaryAnimation` is still the unwired
+/// `kAlwaysDismissedAnimation` and reads *dismissed* — not travelling. The
+/// sibling-vs-descendant distinction the old note wanted is therefore not
+/// needed for pushes. (Still not device-verified — no such configuration
+/// exists to run — but no longer unexamined.)
 ///
 /// **Ceiling (named on purpose):** all-or-nothing. The package's
 /// `ModalHideMixin` can consult `topModalRect` to keep widgets a partial

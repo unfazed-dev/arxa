@@ -259,4 +259,162 @@ void main() {
 
     await _flushWatchdogs(tester);
   });
+
+  testWidgets(
+      'kit.ui-library.chrome-gate-scope — a NESTED pop keeps both the in-route '
+      'chrome and the root tab bar painted, every frame', (WidgetTester tester) async {
+    // The showcase's actual shape, which the three tests above do not have
+    // between them: a nested router (one tab's branch) whose routes carry
+    // their own gated chrome, sitting beside a root-level gated tab bar. The
+    // device report — Liquid Glass re-materializing on back out of the Notes
+    // folder view — came from exactly this configuration.
+    //
+    // Attempted first as a showcase integration test driving the real shell.
+    // That is not viable headless: forcing the iOS 26 tier makes every native
+    // widget a zero-intrinsic-size UiKitView, and the app bar row then
+    // overflows by a fixed 32pt no matter the surface, failing the test for a
+    // reason unrelated to the gate. Reproducing the *structure* here gets the
+    // coverage without platform views. Recorded so the next person does not
+    // repeat the attempt.
+    final GlobalKey<NavigatorState> nestedKey = GlobalKey<NavigatorState>();
+
+    await tester.pumpWidget(
+      CupertinoApp(
+        navigatorObservers: <NavigatorObserver>[CNTransitionObserver()],
+        home: CupertinoPageScaffold(
+          child: Column(
+            children: <Widget>[
+              Expanded(
+                child: Navigator(
+                  key: nestedKey,
+                  observers: <NavigatorObserver>[CNTransitionObserver()],
+                  onGenerateRoute: (RouteSettings settings) =>
+                      CupertinoPageRoute<void>(
+                    settings: settings,
+                    builder: (_) => const AppBoxKitNativeChromeGate(
+                      child: Text('in-route-glass'),
+                    ),
+                  ),
+                ),
+              ),
+              // The root tab bar: a sibling of the nested router, enclosed by
+              // the root navigator only.
+              const AppBoxKitNativeChromeGate(child: Text('root-tab-bar')),
+            ],
+          ),
+        ),
+      ),
+    );
+    await _settleBoot(tester);
+    expect(_allGatesHidden(tester), <bool>[false, false],
+        reason: 'both gates must start painted');
+
+    nestedKey.currentState!.push(
+      CupertinoPageRoute<void>(
+        builder: (_) => const CupertinoPageScaffold(child: Text('detail')),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.pump(const Duration(seconds: 2)); // drain the push watchdog
+
+    nestedKey.currentState!.pop();
+
+    // Frame-by-frame across the whole 500 ms Cupertino pop. A hide lasting one
+    // or two frames is enough to detach the platform view and re-materialize
+    // the glass, and coarse sampling steps straight over it.
+    final List<int> framesWithAHiddenGate = <int>[];
+    for (int frame = 0; frame < 34; frame++) {
+      await tester.pump(const Duration(milliseconds: 16));
+      if (_allGatesHidden(tester).any((bool hidden) => hidden)) {
+        framesWithAHiddenGate.add(frame);
+      }
+    }
+
+    expect(framesWithAHiddenGate, isEmpty,
+        reason: 'a gate left the frame during a NESTED pop (frames '
+            '$framesWithAHiddenGate of 34) — that detach/re-attach is what '
+            'materializes iOS 26 Liquid Glass on back-navigation');
+
+    await tester.pumpAndSettle();
+    await _flushWatchdogs(tester);
+  });
+
+  testWidgets(
+      'kit.ui-library.chrome-gate-scope — a ROOT push over a tab scaffold hides '
+      'the sibling tab bar', (WidgetTester tester) async {
+    // The "second ceiling" named in the gate's own class doc: a gate that is a
+    // SIBLING of the transitioning router (bottomNavigationBar on a Scaffold
+    // whose body holds the Navigator) rather than a descendant of its routes.
+    // The doc records the worry that a root-level push over the tab scaffold
+    // would read as "travelling" and wrongly stay painted, bleeding the bar
+    // through the incoming page — and records it as untestable because the
+    // showcase has no root-level push over a tab scaffold.
+    //
+    // It is untestable *there*, not in general: the configuration is
+    // constructible directly. Building it is what turns a standing worry into
+    // a fact, so this asserts the behaviour the ceiling doubted.
+    final GlobalKey<NavigatorState> rootKey = GlobalKey<NavigatorState>();
+    final GlobalKey<NavigatorState> nestedKey = GlobalKey<NavigatorState>();
+
+    await tester.pumpWidget(
+      MaterialApp(
+        navigatorKey: rootKey,
+        navigatorObservers: <NavigatorObserver>[CNTransitionObserver()],
+        home: Scaffold(
+          body: Navigator(
+            key: nestedKey,
+            observers: <NavigatorObserver>[CNTransitionObserver()],
+            onGenerateRoute: (RouteSettings settings) => MaterialPageRoute<void>(
+              settings: settings,
+              builder: (_) => const Text('tab-content'),
+            ),
+          ),
+          // The gate sits OUTSIDE the router it is a sibling of — the exact
+          // shape the ceiling is about.
+          bottomNavigationBar:
+              const AppBoxKitNativeChromeGate(child: Text('root-tab-bar')),
+        ),
+      ),
+    );
+    await _settleBoot(tester);
+    expect(_gateHidden(tester), isFalse);
+
+    // A ROOT push: the incoming page covers the whole tab scaffold, bar
+    // included. The bar is chrome the route slides OVER — a platform view
+    // there composites above the Flutter scene, so it must leave the frame.
+    rootKey.currentState!.push(
+      MaterialPageRoute<void>(builder: (_) => const Text('full-screen-page')),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 50));
+
+    expect(_gateHidden(tester), isTrue,
+        reason: 'the sibling tab bar stayed painted under a root push — it '
+            'would bleed through the incoming full-screen page. This is the '
+            'ceiling the gate doc names; if this assertion ever fails, the '
+            'predicate cannot tell sibling-of-router from descendant-of-route');
+
+    await _flushWatchdogs(tester);
+  });
+}
+
+/// Paint decision of every mounted gate, in tree order.
+///
+/// `skipOffstage: false` throughout: a gate on a covered route is not painted,
+/// and those are exactly the ones the pop regression is about.
+List<bool> _allGatesHidden(WidgetTester tester) {
+  return find
+      .byType(AppBoxKitNativeChromeGate, skipOffstage: false)
+      .evaluate()
+      .map((Element gate) {
+    final IndexedStack stack = tester.widget<IndexedStack>(
+      find
+          .descendant(
+            of: find.byWidget(gate.widget, skipOffstage: false),
+            matching: find.byType(IndexedStack, skipOffstage: false),
+          )
+          .first,
+    );
+    return stack.index == 0;
+  }).toList();
 }
