@@ -1,4 +1,7 @@
-# Glass Chrome Root-Cause Fixes (Phase 3 hypothesis — awaiting user sign-off)
+# Glass Chrome Root-Cause Fixes — APPROVED, ALL CODE ITEMS CLOSED
+
+**Status: C1–C6 all resolved as of 2026-08-10 (master `a3e615f`). The only remaining step is
+the on-device pass — see "Closure" at the end of this file.**
 
 Date: 2026-08-10. Advisor consult attempted, recorded **skipped** (no API key in env or
 `~/.config/consult-mode/api-key.json`); proceeding on primary sources.
@@ -310,3 +313,51 @@ with `h = widget.height ?? _intrinsicHeight ?? 50.0`; the new shape sizes to the
 alone. If `h` ever exceeded the native view's height the bar's rendered height shifts a few
 points. Not observable headless — the native tier does not render in a widget test. Verify on
 device alongside the C5 fade-then-pop check.
+
+## Closure (2026-08-10, master `a3e615f`)
+
+All six items resolved. Green on every merge, re-run on the merged tree rather than trusted
+from agent reports: `kit/ui_library` **268/268**, vendor `cupertino_native_better` **118/118**,
+`flutter build ios --simulator` exit 0.
+
+| Item | Outcome | Commit |
+|---|---|---|
+| C1 stable icon futures | landed — but a **jank** fix; its flicker premise was disproven | `e5756e2` |
+| C2 chrome-gate scoping | landed — fixes the Notes tab-bar disappearance | `da41ad9` |
+| C3 customIcon guard | landed — SF Symbols back on the native path | `8a73281` |
+| C4 scroll-edge shape stability | landed — fixes the scrolling-list breakage | `920d108` |
+| C5 single hide authority | landed | `034d55f` |
+| C6 occlusion-gate cost | **closed, no code change** — measured, already fine | — |
+
+### Three audit claims were corrected by evidence
+
+The audit reliably located *where* things happen but repeatedly over-attributed *consequences*.
+Weigh its remaining claims accordingly.
+
+1. **C1** — `AsyncSnapshot.inState` preserves `data` (SDK `async.dart:280`, `:612-619`), so a
+   rebuilt FutureBuilder never shows its placeholder. No teardown. Probe: `UiKitView` count
+   stayed 1 across 5 rebuilds.
+2. **C6** — the setState count was right (48/300 steps), the blast radius was not: identical
+   `widget.child` instance ⇒ `Element.updateChild` short-circuits ⇒ **0** child rebuilds. The
+   prescribed fix already existed at `:177`.
+3. **§3d** — the tab-stack fade sits behind `if (widget.fade)`, default `false` (`:73`), and no
+   production caller sets it; the only `fade: true` in the repo is the test that pins the
+   opt-in. Code and the "slide-only" comment agree.
+
+### Remaining: on-device pass (profile/release, physical device)
+
+Symptoms 2, 3 and the slowness have Flutter-side fixes to confirm. **Symptom 1's tab-switch
+case has no confirmed Flutter-side mechanism** — if it still flickers, the leads below are the
+place to look, not the fixed items.
+
+- [ ] Scrolling lists no longer "break" at the scroll-edge threshold (C4).
+- [ ] Notes shell: tab bar stays put during push/pop inside a tab (C2).
+- [ ] No fade-then-pop on the tab bar during route transitions over the tab host (C5).
+- [ ] Scroll stutter / transition lag / cold start improved (C1).
+- [ ] **Tab-switch flicker — still open.** Lead 1: `appbox_kit_native_chrome_gate.dart:252-254`
+      is the one *live, unconditional* `FadeTransition`+`ScaleTransition` over platform views,
+      and its own doc at `:72` concedes the scale is not reliably applied. Lead 2: capture a
+      device trace; widget tests cannot see raster.
+- [ ] **Regression watch:** bar height. C5 dropped the `IndexedStack`, changing the layout
+      parent from `max(SizedBox(h), platformView)` to the platform view alone. If `h` exceeded
+      the native height the bar shifts a few points. Not observable headless.
