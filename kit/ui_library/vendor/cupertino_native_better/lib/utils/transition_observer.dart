@@ -1,6 +1,7 @@
 import 'dart:io' show Platform;
 
-import 'package:flutter/foundation.dart' show ValueListenable, kIsWeb;
+import 'package:flutter/foundation.dart'
+    show ValueListenable, kIsWeb, visibleForTesting;
 import 'package:flutter/widgets.dart';
 import '../cupertino_native_platform_interface.dart';
 
@@ -35,9 +36,26 @@ import '../cupertino_native_platform_interface.dart';
 /// ```
 class CNTransitionObserver extends NavigatorObserver {
   /// Creates a [CNTransitionObserver] instance.
-  CNTransitionObserver();
+  CNTransitionObserver() {
+    _instances.add(this);
+  }
 
   int _transitionCount = 0;
+
+  /// Set once this observer has been seen attached to a [Navigator]. Guards the
+  /// lazy prune in [hasActiveTransitionAbove]: a freshly constructed observer
+  /// is registered BEFORE the navigator adopts it, and looks identical to a
+  /// defunct one (`navigator == null`, count 0). Pruning it there would drop it
+  /// permanently — nothing re-registers — and hosts build observers from a
+  /// closure (`navigatorObservers: () => [CNTransitionObserver()]`), so that
+  /// window is hit on every router rebuild.
+  bool _wasAttached = false;
+
+  /// Every constructed observer — one per navigator that registered one (root
+  /// plus each nested router). [NavigatorObserver] has no dispose hook, so
+  /// defunct instances are pruned lazily in [hasActiveTransitionAbove] once
+  /// they have drained AND their navigator has detached.
+  static final Set<CNTransitionObserver> _instances = <CNTransitionObserver>{};
 
   /// Global count of route transitions in flight across ALL observer instances
   /// (root + nested navigators). This is the Dart-side signal a widget listens
@@ -51,8 +69,69 @@ class CNTransitionObserver extends NavigatorObserver {
   static final ValueNotifier<int> _activeTransitions = ValueNotifier<int>(0);
 
   /// Read-only: `> 0` while any route transition (push / pop / replace /
-  /// remove, or an interactive back-swipe gesture) is animating.
+  /// remove, or an interactive back-swipe gesture) is animating — in ANY
+  /// navigator, root or nested. Use it as a *change signal* (it ticks on every
+  /// begin and end, so listeners get told to re-evaluate); for the actual
+  /// hide decision use [hasActiveTransitionAbove], which scopes the answer to
+  /// the navigators that can actually move the asking widget.
   static ValueListenable<int> get activeTransitions => _activeTransitions;
+
+  /// True when a route transition is animating in a navigator that ENCLOSES
+  /// [context] — i.e. one whose slide actually carries the asking widget.
+  ///
+  /// A push inside one tab's nested router is NOT in the root tab bar's scope
+  /// (only that tab's content slides), whereas a root-navigator push is (the
+  /// whole screen, tab bar included, slides). Reading the raw global
+  /// [activeTransitions] instead made any nested push dematerialize the root
+  /// chrome across every tab — fix C2 of
+  /// `docs/plans/glass-chrome-root-cause-fixes.md`. This mirrors the
+  /// `_mountDepth` baseline that `AppBoxKitNativeChromeGate` already applies to
+  /// modal depth: a scoped signal, never a raw global.
+  static bool hasActiveTransitionAbove(BuildContext context) {
+    if (_activeTransitions.value <= 0) return false;
+
+    // Lazy prune (see [_wasAttached]): an observer that has drained and whose
+    // navigator has detached can never speak again.
+    _instances.removeWhere((CNTransitionObserver observer) {
+      if (observer.navigator != null) {
+        observer._wasAttached = true;
+        return false;
+      }
+      return observer._wasAttached && observer._transitionCount <= 0;
+    });
+
+    // Navigators enclosing [context], innermost outwards. `nav.context` is the
+    // Navigator's own element, so walk from its PARENT — `Navigator.maybeOf`
+    // would hand back the same state and spin forever.
+    final Set<NavigatorState> enclosing = <NavigatorState>{};
+    NavigatorState? nav = Navigator.maybeOf(context);
+    while (nav != null) {
+      enclosing.add(nav);
+      nav = nav.context.findAncestorStateOfType<NavigatorState>();
+    }
+
+    for (final CNTransitionObserver observer in _instances) {
+      if (observer._transitionCount <= 0) continue;
+      final NavigatorState? scope = observer.navigator;
+      // A transitioning observer that has detached mid-flight can no longer
+      // prove its scope (navigator swap, tab-host rebuild). Hide
+      // conservatively until its watchdog drains the count.
+      if (scope == null || enclosing.contains(scope)) return true;
+    }
+    return false;
+  }
+
+  /// Test hook: clears the static transition state that would otherwise leak
+  /// between `testWidgets` zones — each test's FakeAsync discards the pending
+  /// end/watchdog timers, stranding counters mid-transition.
+  @visibleForTesting
+  static void resetForTesting() {
+    _activeTransitions.value = 0;
+    for (final CNTransitionObserver observer in _instances) {
+      observer._transitionCount = 0;
+    }
+    _instances.clear();
+  }
 
   @override
   void didPush(Route<dynamic> route, Route<dynamic>? previousRoute) {
