@@ -87,8 +87,11 @@ class AppBoxKitAnimatedTabStack extends StatefulWidget {
   /// Paired transition duration per switch.
   final Duration duration;
 
-  /// Horizontal travel of BOTH tabs, as a fraction of the stack's width.
-  /// Kept subtle by default so full-chrome tab scaffolds don't "fling".
+  /// Horizontal parallax travel of the UNDERLYING exiting tab, as a fraction
+  /// of the stack's width. The incoming tab always enters full-width on top
+  /// (cover geometry), so completion — which drops the exit slot — happens
+  /// while the exiting tab is fully covered and is therefore invisible.
+  /// Kept subtle by default so the under-layer reads as depth, not a fling.
   final double slideFraction;
 
   /// Easing applied to the slide (and fade when enabled).
@@ -195,9 +198,14 @@ class _KitAnimatedTabStackState extends State<AppBoxKitAnimatedTabStack>
     // move).
     final incoming = SlideTransition(
       // Positive dx enters from the trailing edge; providing the ambient
-      // text direction flips it under RTL.
+      // text direction flips it under RTL. Full-width entry: the incoming
+      // layer paints ON TOP and must fully cover the exiting tab by the time
+      // the animation completes, so dropping the exit slot is invisible
+      // (regression 3b81414: a 0.18-travel opaque exit layer on top was
+      // removed mid-cover, popping ~82% of the frame in one step).
       textDirection: textDirection,
-      position: Tween<Offset>(begin: travel, end: Offset.zero).animate(curved),
+      position: Tween<Offset>(begin: Offset(_direction * 1.0, 0), end: Offset.zero)
+          .animate(curved),
       child: Stack(
         fit: StackFit.expand,
         children: [
@@ -237,17 +245,20 @@ class _KitAnimatedTabStackState extends State<AppBoxKitAnimatedTabStack>
       ),
     );
 
+    // Paint order matters: exiting UNDER, incoming ON TOP. The incoming layer
+    // travels the full width, so when completion drops the exit slot the
+    // removal is already covered — no visible pop (see slideFraction docs).
     return Stack(
       fit: StackFit.expand,
       children: [
         if (widget.fade)
-          FadeTransition(opacity: curved, child: incoming)
-        else
-          incoming,
-        if (widget.fade)
           FadeTransition(opacity: ReverseAnimation(curved), child: exiting)
         else
           exiting,
+        if (widget.fade)
+          FadeTransition(opacity: curved, child: incoming)
+        else
+          incoming,
       ],
     );
   }
