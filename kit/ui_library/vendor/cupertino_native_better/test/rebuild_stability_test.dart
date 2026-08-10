@@ -252,6 +252,69 @@ void main() {
       });
     });
 
+    // The highest-traffic popup configuration, and the one the refactor
+    // changed most: with no icons needing render, `build()` used to await a
+    // `_buildNativePopupMenu` whose internal resolveIconSource calls were all
+    // no-ops. It now goes through the same cached `_prepareCreationParams`
+    // path as every other configuration. No asset loads happen here, so the
+    // resolve-count assertion does not apply — what matters is that the
+    // platform view still mounts at all and survives rebuilds.
+    testWidgets('CNPopupMenuButton with no icons still mounts and is stable', (
+      tester,
+    ) async {
+      await withIOS(() async {
+        final rebuildTick = ValueNotifier<int>(0);
+        addTearDown(rebuildTick.dispose);
+
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: Center(
+                child: ValueListenableBuilder<int>(
+                  valueListenable: rebuildTick,
+                  builder: (context, tick, _) => Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text('tick $tick'),
+                      CNPopupMenuButton(
+                        buttonLabel: 'Menu',
+                        items: const [
+                          CNPopupMenuItem(label: 'a'),
+                          CNPopupMenuDivider(),
+                          CNPopupMenuItem(label: 'b'),
+                        ],
+                        onSelected: (_) {},
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 50));
+        await tester.pump(const Duration(milliseconds: 50));
+
+        expect(
+          find.byType(UiKitView),
+          findsOneWidget,
+          reason:
+              'a symbol/label-only popup menu must still reach its platform '
+              'view — the prepare step has no async icon work to do here',
+        );
+        final firstElement = tester.element(find.byType(UiKitView));
+
+        for (var i = 1; i <= 3; i++) {
+          rebuildTick.value = i;
+          await tester.pump();
+          expect(find.byType(UiKitView), findsOneWidget);
+          expect(tester.element(find.byType(UiKitView)), same(firstElement));
+          await tester.pump(const Duration(milliseconds: 50));
+        }
+      });
+    });
+
     testWidgets('CNPopupMenuButton with menu item image assets', (
       tester,
     ) async {
