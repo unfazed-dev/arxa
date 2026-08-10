@@ -1,0 +1,13 @@
+# Native splash screen (law: brand icon from the app's own
+# assets/brand-icons/ master; values mirror assets.manifest.json brandIcon.
+# Derived platform splash files are committed — regenerate with:
+# dart run flutter_native_splash:create).
+flutter_native_splash:
+  color: "#ffffff"
+  image: "assets/brand-icons/appbox-icon.png"
+  # Android 12+ routes splash through the system launcher-icon pipeline;
+  # the themed monochrome layer (flutter_launcher_icons.yaml) covers
+  # theme adaptation there. This section brands the pre-12 window.
+  android_12:
+    color: "#ffffff"
+    image: "assets/brand-icons/appbox-icon.png"

@@ -33,6 +33,8 @@ library;
 import 'package:flutter/material.dart';
 import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
 
+import 'package:appbox_kit_showcase_app/ui/widgets/showcase_startup_widgets/widgets.dart';
+
 import 'package:appbox_kit_showcase_app/ui/views/showcase_startup_shell/showcase_startup/showcase_startup_viewmodel.dart';
 
 class ShowcaseStartupViewTablet
@@ -41,16 +43,6 @@ class ShowcaseStartupViewTablet
 
   @override
   Widget build(BuildContext context, ShowcaseStartupViewModel viewModel) {
-    return const Scaffold(
-      body: Center(
-        child: Text(
-          'Hello, TABLET UI - ShowcaseStartupView!',
-          style: TextStyle(
-            fontSize: 35,
-            fontWeight: FontWeight.w900,
-          ),
-        ),
-      ),
-    );
+    return const ShowcaseStartupLoadingWidget();
   }
 }

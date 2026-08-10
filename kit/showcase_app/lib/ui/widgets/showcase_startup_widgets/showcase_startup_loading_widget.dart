@@ -2,17 +2,23 @@
 /// and holds no business logic; the view that places it owns the data.
 ///
 /// This is the user interface for the startup loading screen. It shows the
-/// app title and a spinner while the app initializes.
+/// brand icon, the app title and a spinner while the app initializes.
 ///
 /// Requirements:
 /// 1. [Startup loading]
 /// Displays a branded loading screen during app startup.
+/// 2. [Brand icon]
+/// The brand icon (abxImgBrandIcon, the same master that drives the
+/// launcher icons and native splash) is the first element on the screen,
+/// giving a seamless hand-off from the native splash to the Flutter frame.
 ///
 /// History: git log --follow -- kit/showcase_app/lib/ui/widgets/showcase_startup_widgets/showcase_startup_loading_widget.dart
 library;
 
+import 'package:appbox_kit_showcase_app/ui/common/appbox_kit_assets.dart'
+    show abxImgBrandIcon;
 import 'package:appbox_kit_showcase_app/ui/common/appbox_kit_ui_helpers.dart'
-    show appBoxKitHorizontalSpaceSmall;
+    show appBoxKitHorizontalSpaceSmall, appBoxKitVerticalSpaceMedium;
 import 'package:flutter/material.dart';
 
 class ShowcaseStartupLoadingWidget extends StatelessWidget {
@@ -25,6 +31,12 @@ class ShowcaseStartupLoadingWidget extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
+            Image(
+              image: AssetImage(abxImgBrandIcon),
+              width: 96,
+              height: 96,
+            ),
+            appBoxKitVerticalSpaceMedium,
             Text(
               'KIT SHOWCASE',
               style: TextStyle(fontSize: 40, fontWeight: FontWeight.w900),
