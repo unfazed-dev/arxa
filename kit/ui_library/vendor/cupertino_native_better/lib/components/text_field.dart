@@ -116,6 +116,14 @@ class _CNTextFieldState extends State<CNTextField>
   /// listener doesn't echo it back to native via `setText`.
   bool _suppressControllerEcho = false;
 
+  /// Last brightness pushed to native, so a theme flip sends exactly one
+  /// `setBrightness` and a rebuild for any other reason sends none.
+  bool? _lastIsDark;
+
+  /// Deliberately the same expression used for the `isDark` creation param
+  /// below — if the two ever disagree the sync either misfires or never fires.
+  bool get _isDark => Theme.of(context).brightness == Brightness.dark;
+
   @override
   void initState() {
     super.initState();
@@ -124,6 +132,31 @@ class _CNTextFieldState extends State<CNTextField>
     _controller.addListener(_onControllerChanged);
     CNTabBarRouteObserver.anyModalDepth.addListener(_onAnyModalDepthChanged);
     _onAnyModalDepthChanged();
+  }
+
+  /// The native field pins its own appearance with
+  /// `container.overrideUserInterfaceStyle`, which makes it immune to the
+  /// window's trait collection by design — so an app-level theme flip can only
+  /// reach it through this channel call. `Theme.of(context)` registers an
+  /// inherited-widget dependency, so this fires on every theme change.
+  ///
+  /// Without it the field keeps its creation-time appearance forever and only
+  /// corrects itself when the platform view happens to be recreated (which is
+  /// why the stale appearance looked like a *delay* while navigating rather
+  /// than a permanent bug).
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _syncBrightnessIfNeeded();
+  }
+
+  Future<void> _syncBrightnessIfNeeded() async {
+    final channel = _channel;
+    if (channel == null) return;
+    final isDark = _isDark;
+    if (_lastIsDark == isDark) return;
+    _lastIsDark = isDark;
+    await channel.invokeMethod('setBrightness', {'isDark': isDark});
   }
 
   @override
@@ -166,6 +199,10 @@ class _CNTextFieldState extends State<CNTextField>
     final ch = MethodChannel('CNTextField_$id');
     _channel = ch;
     ch.setMethodCallHandler(_onMethodCall);
+    // Seed the brightness baseline to what the creation params just carried, so
+    // the first `didChangeDependencies` after creation is a no-op rather than a
+    // redundant channel round-trip.
+    _lastIsDark = _isDark;
     // Push the initial text so native and Dart agree from frame one (covers the
     // case where the controller was constructed with non-empty text).
     if (_controller.text.isNotEmpty) {
@@ -234,7 +271,7 @@ class _CNTextFieldState extends State<CNTextField>
         'tint': resolveColorToArgb(widget.tint, context),
         'textColor': resolveColorToArgb(widget.textColor, context),
         'placeholderColor': resolveColorToArgb(widget.placeholderColor, context),
-        'isDark': Theme.of(context).brightness == Brightness.dark,
+        'isDark': _isDark,
       };
 
       final platformView = defaultTargetPlatform == TargetPlatform.iOS

@@ -213,6 +213,14 @@ class _CNSearchBarState extends State<CNSearchBar>
   // Issue #29 halo containment via setTransitioning.
   Animation<double>? _secondaryRouteAnim;
 
+  /// Last brightness pushed to native, so a theme flip sends exactly one
+  /// `setBrightness` and a rebuild for any other reason sends none.
+  bool? _lastIsDark;
+
+  /// Deliberately the same expression used for the `isDark` creation param
+  /// below — if the two ever disagree the sync either misfires or never fires.
+  bool get _isDark => Theme.of(context).brightness == Brightness.dark;
+
   CNSearchBarController get _controller =>
       widget.controller ?? (_internalController ??= CNSearchBarController());
 
@@ -250,6 +258,26 @@ class _CNSearchBarState extends State<CNSearchBar>
   void didChangeDependencies() {
     super.didChangeDependencies();
     _attachSecondaryRouteAnim();
+    _syncBrightnessIfNeeded();
+  }
+
+  /// The native search bar pins its own appearance with
+  /// `container.overrideUserInterfaceStyle`, which makes it immune to the
+  /// window's trait collection by design — so an app-level theme flip can only
+  /// reach it through this channel call. `Theme.of(context)` registers an
+  /// inherited-widget dependency, so this fires on every theme change.
+  ///
+  /// Without it the bar keeps its creation-time appearance forever and only
+  /// corrects itself when the platform view happens to be recreated (which is
+  /// why the stale appearance looked like a *delay* while navigating rather
+  /// than a permanent bug).
+  Future<void> _syncBrightnessIfNeeded() async {
+    final channel = _channel;
+    if (channel == null) return;
+    final isDark = _isDark;
+    if (_lastIsDark == isDark) return;
+    _lastIsDark = isDark;
+    await channel.invokeMethod('setBrightness', {'isDark': isDark});
   }
 
   @override
@@ -312,6 +340,10 @@ class _CNSearchBarState extends State<CNSearchBar>
     _channel = ch;
     _controller._attach(ch);
     ch.setMethodCallHandler(_onMethodCall);
+    // Seed the brightness baseline to what the creation params just carried, so
+    // the first `didChangeDependencies` after creation is a no-op rather than a
+    // redundant channel round-trip.
+    _lastIsDark = _isDark;
     _pushContainmentIfNeeded();
   }
 
@@ -443,7 +475,7 @@ class _CNSearchBarState extends State<CNSearchBar>
       'autofocus': widget.autofocus,
       'searchIconName': widget.searchIcon?.name ?? 'magnifyingglass',
       'clearIconName': widget.clearIcon?.name ?? 'xmark.circle.fill',
-      'isDark': Theme.of(context).brightness == Brightness.dark,
+      'isDark': _isDark,
     };
 
     final platformView = defaultTargetPlatform == TargetPlatform.iOS
