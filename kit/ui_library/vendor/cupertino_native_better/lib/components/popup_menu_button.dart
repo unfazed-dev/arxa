@@ -10,6 +10,7 @@ import '../utils/icon_renderer.dart';
 import '../utils/modal_hide_mixin.dart';
 import '../utils/theme_helper.dart';
 import '../utils/version_detector.dart';
+import 'async_resolution_state.dart';
 import 'icon.dart';
 
 /// Base type for entries in a [CNPopupMenuButton] menu.
@@ -195,7 +196,9 @@ class CNPopupMenuButton extends StatefulWidget {
 }
 
 class _CNPopupMenuButtonState extends State<CNPopupMenuButton>
-    with ModalHideMixin<CNPopupMenuButton> {
+    with
+        ModalHideMixin<CNPopupMenuButton>,
+        AsyncResolutionState<CNPopupMenuButton, Map<String, dynamic>> {
   @override
   bool get autoHideOnModal => widget.autoHideOnModal;
 
@@ -227,12 +230,18 @@ class _CNPopupMenuButtonState extends State<CNPopupMenuButton>
   @override
   void didUpdateWidget(covariant CNPopupMenuButton oldWidget) {
     super.didUpdateWidget(oldWidget);
+    syncResolution();
     _syncPropsToNativeIfNeeded();
   }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+    // First resolution happens here, not in initState: _prepareCreationParams
+    // reads inherited widgets (encodeStyle, resolveColorToArgb, _isDark),
+    // which initState forbids. syncResolution is keyed, so unrelated
+    // dependency changes are no-ops.
+    syncResolution();
     _attachSecondaryRouteAnim();
     _syncBrightnessIfNeeded();
   }
@@ -334,64 +343,84 @@ class _CNPopupMenuButtonState extends State<CNPopupMenuButton>
 
     // Priority: imageAsset > customIcon > icon
 
-    // Check if we need to render custom icons or image assets
-    final hasCustomButtonIcon = widget.buttonCustomIcon != null;
-    final hasButtonImageAsset = widget.buttonImageAsset != null;
-    final hasCustomMenuIcons = widget.items.any(
-      (e) => e is CNPopupMenuItem && e.customIcon != null,
-    );
-    final hasMenuImageAssets = widget.items.any(
-      (e) => e is CNPopupMenuItem && e.imageAsset != null,
-    );
-
-    if (hasCustomButtonIcon ||
-        hasCustomMenuIcons ||
-        hasButtonImageAsset ||
-        hasMenuImageAssets) {
-      // Create a key that changes when button or menu icons change
-      final buttonIconKey =
-          '${widget.buttonImageAsset?.assetPath}_${widget.buttonImageAsset?.imageData?.length ?? 0}_${widget.buttonCustomIcon?.hashCode ?? 0}_${widget.buttonCustomIconColor?.toARGB32() ?? 0}';
-      final menuIconsKey = widget.items
-          .map((e) {
-            if (e is CNPopupMenuItem) {
-              return '${e.imageAsset?.assetPath}_${e.imageAsset?.imageData?.length ?? 0}_${e.customIcon?.hashCode ?? 0}_${e.iconColor?.toARGB32() ?? 0}';
-            }
-            return '';
-          })
-          .join('|');
-      return FutureBuilder<Map<String, dynamic>>(
-        key: ValueKey('popupMenu_icons_$buttonIconKey|$menuIconsKey'),
-        future: _renderCustomIcons(context),
-        builder: (context, snapshot) {
-          if (!snapshot.hasData) {
-            return SizedBox(height: widget.height, width: widget.width);
-          }
-          return FutureBuilder<Widget>(
-            future: _buildNativePopupMenu(
-              context,
-              customIconData: snapshot.data,
-            ),
-            builder: (context, widgetSnapshot) {
-              if (!widgetSnapshot.hasData) {
-                return SizedBox(height: widget.height, width: widget.width);
-              }
-              return widgetSnapshot.data!;
-            },
-          );
-        },
-      );
+    // Resolution is hoisted into the State (see AsyncResolutionState), so
+    // build() is synchronous. This collapses what used to be a *nested* pair
+    // of FutureBuilders — an outer one for `_renderCustomIcons` and an inner
+    // one that awaited `_buildNativePopupMenu` (which itself awaited
+    // `resolveIconSource` for the button asset and every menu asset). Both
+    // layers restarted on every parent rebuild. Same shape tab_bar.dart
+    // already adopted: all async work in one prepare step, build() sync.
+    final creationParams = resolvedValue;
+    if (creationParams == null) {
+      // Genuine first load only: resolvedValue is never cleared once a
+      // resolution has landed, so a re-resolve keeps the last-good menu on
+      // screen instead of flashing this placeholder.
+      return SizedBox(height: widget.height, width: widget.width);
     }
-
-    return FutureBuilder<Widget>(
-      future: _buildNativePopupMenu(context, customIconData: null),
-      builder: (context, snapshot) {
-        if (!snapshot.hasData) {
-          return SizedBox(height: widget.height, width: widget.width);
-        }
-        return snapshot.data!;
-      },
-    );
+    return _buildNativePopupMenu(context, creationParams);
   }
+
+  /// Whether any icon on the button or in the menu needs rasterizing or asset
+  /// resolution. When false, [_prepareCreationParams] skips
+  /// [_renderCustomIcons] entirely — matching the pre-refactor branch that
+  /// only mounted the icon-rendering FutureBuilder in that case.
+  bool get _hasIconsNeedingRender =>
+      widget.buttonCustomIcon != null ||
+      widget.buttonImageAsset != null ||
+      widget.items.any(
+        (e) => e is CNPopupMenuItem && (e.customIcon != null || e.imageAsset != null),
+      );
+
+  /// Digest of everything that affects **platform view creation**.
+  ///
+  /// Reproduced verbatim from the pre-refactor `viewKey`, deliberately: this
+  /// controls when the native view is destroyed and re-created, and widening
+  /// it (e.g. adding `checked`) would re-create the view on a checkmark
+  /// toggle that `setItems` already pushes live — trading this fix for a new
+  /// flicker.
+  String get _viewKeyString {
+    final buttonIconKey =
+        '${widget.buttonLabel}_${widget.buttonIcon?.name}_${widget.buttonImageAsset?.assetPath}_${widget.buttonImageAsset?.imageData?.length ?? 0}_${widget.buttonCustomIcon?.hashCode ?? 0}';
+    final itemsKey = widget.items
+        .map((e) {
+          if (e is CNPopupMenuItem) {
+            return '${e.label}_${e.icon?.name}_${e.imageAsset?.assetPath}_${e.imageAsset?.imageData?.length ?? 0}_${e.customIcon?.hashCode ?? 0}';
+          }
+          return 'divider';
+        })
+        .join('|');
+    return 'popupMenu_'
+        '$buttonIconKey|'
+        '$itemsKey|'
+        '${widget.buttonStyle.name}_'
+        '${widget.height}_'
+        '${widget.width}_'
+        '${widget.tint?.toARGB32()}_'
+        '${widget.buttonCustomIconColor?.toARGB32()}_'
+        '$_isDark';
+  }
+
+  /// Value-equal digest of every input [_prepareCreationParams] reads.
+  ///
+  /// Superset of [_viewKeyString] and of the old outer icon-FutureBuilder key
+  /// (which additionally tracked `iconColor`), plus the per-item flags that
+  /// feed the params arrays. Broader than the view key on purpose: a change
+  /// here re-resolves the params without necessarily re-creating the view.
+  @override
+  Object? resolutionKey() {
+    final itemFlags = widget.items
+        .map(
+          (e) => e is CNPopupMenuItem
+              ? '${e.iconColor?.toARGB32() ?? 0}_${e.enabled}_${e.checked}'
+                    '_${e.isDestructive}'
+              : 'divider',
+        )
+        .join('|');
+    return '$_viewKeyString||$itemFlags';
+  }
+
+  @override
+  Future<Map<String, dynamic>?> resolveValue() => _prepareCreationParams();
 
   Future<Map<String, dynamic>> _renderCustomIcons(BuildContext context) async {
     Uint8List? buttonIconBytes;
@@ -439,13 +468,24 @@ class _CNPopupMenuButtonState extends State<CNPopupMenuButton>
     return {'buttonIconBytes': buttonIconBytes, 'menuIconBytes': menuIconBytes};
   }
 
-  Future<Widget> _buildNativePopupMenu(
-    BuildContext context, {
-    Map<String, dynamic>? customIconData,
-  }) async {
-    const viewType = 'CupertinoNativePopupMenuButton';
+  /// Prepares every creation param for the native platform view.
+  ///
+  /// All async work (icon rasterization, asset path + format resolution)
+  /// happens here, guarded by the generation token in [AsyncResolutionState].
+  /// The result is cached so [build] can construct the platform view
+  /// synchronously — this is what stops a parent rebuild from restarting the
+  /// whole resolution. Mirrors `_prepareCreationParams` in tab_bar.dart.
+  ///
+  /// Returns `null` if the State unmounted mid-resolution; the caller keeps
+  /// the last-good params in that case.
+  Future<Map<String, dynamic>?> _prepareCreationParams() async {
+    // Render custom icons first, and only when something actually needs it.
+    final customIconData = _hasIconsNeedingRender
+        ? await _renderCustomIcons(context)
+        : null;
+    if (!mounted) return null;
 
-    // Capture all context-derived values before any async operations
+    // Capture all context-derived values before any further async operations
     final capturedIsDark = _isDark;
     final capturedStyle = encodeStyle(context, tint: _effectiveTint);
     final capturedButtonIconColor = resolveColorToArgb(
@@ -500,7 +540,7 @@ class _CNPopupMenuButtonState extends State<CNPopupMenuButton>
               )
               as IconSourceAsset;
     }
-    if (!mounted) return const SizedBox();
+    if (!mounted) return null;
 
     // Resolve menu item image assets (path + format) concurrently
     final resolvedMenuAssets = await Future.wait(
@@ -516,7 +556,7 @@ class _CNPopupMenuButtonState extends State<CNPopupMenuButton>
         return null;
       }),
     );
-    if (!mounted) return const SizedBox();
+    if (!mounted) return null;
 
     final buttonIconBytes = customIconData?['buttonIconBytes'] as Uint8List?;
     final menuIconBytes =
@@ -639,28 +679,22 @@ class _CNPopupMenuButtonState extends State<CNPopupMenuButton>
       'preserveTopToBottomOrder': widget.preserveTopToBottomOrder,
     };
 
-    // Create a comprehensive key that includes all parameters affecting platform view creation
-    final buttonIconKey =
-        '${widget.buttonLabel}_${widget.buttonIcon?.name}_${widget.buttonImageAsset?.assetPath}_${widget.buttonImageAsset?.imageData?.length ?? 0}_${widget.buttonCustomIcon?.hashCode ?? 0}';
-    final itemsKey = widget.items
-        .map((e) {
-          if (e is CNPopupMenuItem) {
-            return '${e.label}_${e.icon?.name}_${e.imageAsset?.assetPath}_${e.imageAsset?.imageData?.length ?? 0}_${e.customIcon?.hashCode ?? 0}';
-          }
-          return 'divider';
-        })
-        .join('|');
-    final viewKey = ValueKey(
-      'popupMenu_'
-      '$buttonIconKey|'
-      '$itemsKey|'
-      '${widget.buttonStyle.name}_'
-      '${widget.height}_'
-      '${widget.width}_'
-      '${widget.tint?.toARGB32()}_'
-      '${widget.buttonCustomIconColor?.toARGB32()}_'
-      '$_isDark',
-    );
+    return creationParams;
+  }
+
+  /// Builds the native platform view from already-resolved [creationParams].
+  ///
+  /// Fully synchronous: everything that needed an `await` was done in
+  /// [_prepareCreationParams].
+  Widget _buildNativePopupMenu(
+    BuildContext context,
+    Map<String, dynamic> creationParams,
+  ) {
+    const viewType = 'CupertinoNativePopupMenuButton';
+
+    // Create a comprehensive key that includes all parameters affecting
+    // platform view creation. Unchanged from before the refactor.
+    final viewKey = ValueKey(_viewKeyString);
 
     final platformView = defaultTargetPlatform == TargetPlatform.iOS
         ? UiKitView(

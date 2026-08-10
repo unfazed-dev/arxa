@@ -20,6 +20,7 @@ import '../utils/icon_renderer.dart';
 import '../utils/modal_hide_mixin.dart';
 import '../utils/theme_helper.dart';
 import '../utils/version_detector.dart';
+import 'async_resolution_state.dart';
 import 'icon.dart';
 
 /// Configuration for CNButton with default values.
@@ -252,7 +253,8 @@ class CNButton extends StatefulWidget {
   State<CNButton> createState() => _CNButtonState();
 }
 
-class _CNButtonState extends State<CNButton> with ModalHideMixin<CNButton> {
+class _CNButtonState extends State<CNButton>
+    with ModalHideMixin<CNButton>, AsyncResolutionState<CNButton, IconSource> {
   @override
   bool get autoHideOnModal => widget.autoHideOnModal;
 
@@ -316,15 +318,58 @@ class _CNButtonState extends State<CNButton> with ModalHideMixin<CNButton> {
   @override
   void didUpdateWidget(covariant CNButton oldWidget) {
     super.didUpdateWidget(oldWidget);
+    syncResolution();
     _syncPropsToNativeIfNeeded();
   }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+    // First resolution happens here, not in initState: resolveValue may read
+    // inherited widgets, which initState forbids. syncResolution is keyed, so
+    // unrelated dependency changes are no-ops.
+    syncResolution();
     _attachSecondaryRouteAnim();
     _syncBrightnessIfNeeded();
     _syncPropsToNativeIfNeeded();
+  }
+
+  /// Height the icon-resolution placeholder reserves on first mount.
+  double get _placeholderHeight => widget.config.minHeight ?? 44.0;
+
+  /// Rasterization size for the [CNButton.customIcon] branch.
+  ///
+  /// Divergence (Stage 2): this component's customIconSize default is
+  /// `widget.config.customIconSize ?? 20.0` (button-specific config).
+  double get _customIconSize => widget.config.customIconSize ?? 20.0;
+
+  @override
+  Object? resolutionKey() {
+    // Priority: imageAsset > customIcon > icon. The SF Symbol branch needs no
+    // async resolution at all, hence the null.
+    if (widget.imageAsset != null) {
+      final asset = widget.imageAsset!;
+      return ('asset', asset.assetPath, asset.imageData, asset.imageFormat);
+    }
+    if (widget.customIcon != null) {
+      return ('custom', widget.customIcon, _customIconSize);
+    }
+    return null;
+  }
+
+  @override
+  Future<IconSource?> resolveValue() {
+    if (widget.imageAsset != null) {
+      return resolveIconSource(
+        assetPath: widget.imageAsset!.assetPath,
+        assetImageData: widget.imageAsset!.imageData,
+        assetFormat: widget.imageAsset!.imageFormat,
+      );
+    }
+    return resolveIconSource(
+      customIcon: widget.customIcon,
+      customIconSize: _customIconSize,
+    );
   }
 
   void _attachSecondaryRouteAnim() {
@@ -381,53 +426,31 @@ class _CNButtonState extends State<CNButton> with ModalHideMixin<CNButton> {
 
     // Handle image asset (highest priority)
     if (widget.imageAsset != null) {
-      return FutureBuilder<IconSource?>(
-        future: resolveIconSource(
-          assetPath: widget.imageAsset!.assetPath,
-          assetImageData: widget.imageAsset!.imageData,
-          assetFormat: widget.imageAsset!.imageFormat,
-        ),
-        builder: (context, snapshot) {
-          if (!snapshot.hasData) {
-            final defaultHeight = widget.config.minHeight ?? 44.0;
-            return SizedBox(
-              height: defaultHeight,
-              width: widget.config.width ?? defaultHeight,
-            );
-          }
-          // assetPath is always non-null here, so resolveIconSource always
-          // resolves to an IconSourceAsset for this branch.
-          final assetSource = snapshot.data! as IconSourceAsset;
-          return _buildNativeButton(context, assetSource: assetSource);
-        },
-      );
+      // Resolution is hoisted into the State (see AsyncResolutionState), so
+      // build() is synchronous and a parent rebuild no longer restarts it.
+      // The type test doubles as a branch check: after a switch from the
+      // customIcon branch the cached value is still IconSourceBytes until the
+      // new resolution lands.
+      final resolved = resolvedValue;
+      if (resolved is! IconSourceAsset) {
+        return SizedBox(
+          height: _placeholderHeight,
+          width: widget.config.width ?? _placeholderHeight,
+        );
+      }
+      return _buildNativeButton(context, assetSource: resolved);
     }
 
     // Handle custom icon (medium priority)
     if (widget.customIcon != null) {
-      // Divergence (Stage 2): this component's customIconSize default is
-      // widget.config.customIconSize ?? 20.0 (button-specific config).
-      final customIconSize = widget.config.customIconSize ?? 20.0;
-      return FutureBuilder<IconSource?>(
-        future: resolveIconSource(
-          customIcon: widget.customIcon,
-          customIconSize: customIconSize,
-        ),
-        builder: (context, snapshot) {
-          if (!snapshot.hasData) {
-            final defaultHeight = widget.config.minHeight ?? 44.0;
-            return SizedBox(
-              height: defaultHeight,
-              width: widget.config.width ?? defaultHeight,
-            );
-          }
-          final customIconBytes = (snapshot.data! as IconSourceBytes).bytes;
-          return _buildNativeButton(
-            context,
-            customIconBytes: customIconBytes,
-          );
-        },
-      );
+      final resolved = resolvedValue;
+      if (resolved is! IconSourceBytes) {
+        return SizedBox(
+          height: _placeholderHeight,
+          width: widget.config.width ?? _placeholderHeight,
+        );
+      }
+      return _buildNativeButton(context, customIconBytes: resolved.bytes);
     }
 
     // Handle SF Symbol (lowest priority)

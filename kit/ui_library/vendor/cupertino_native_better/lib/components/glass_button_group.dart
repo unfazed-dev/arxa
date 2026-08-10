@@ -10,6 +10,7 @@ import '../channel/params.dart';
 import '../style/button_data.dart';
 import '../style/image_placement.dart';
 import '../style/sf_symbol.dart';
+import 'async_resolution_state.dart';
 import 'button.dart';
 import 'popup_menu_button.dart';
 
@@ -115,7 +116,9 @@ class CNGlassButtonGroup extends StatefulWidget {
 }
 
 class _CNGlassButtonGroupState extends State<CNGlassButtonGroup>
-    with ModalHideMixin<CNGlassButtonGroup> {
+    with
+        ModalHideMixin<CNGlassButtonGroup>,
+        AsyncResolutionState<CNGlassButtonGroup, List<Map<String, dynamic>>> {
   @override
   bool get autoHideOnModal => widget.autoHideOnModal;
 
@@ -142,9 +145,38 @@ class _CNGlassButtonGroupState extends State<CNGlassButtonGroup>
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+    // First resolution happens here, not in initState: the per-button map
+    // builders read inherited widgets through resolveColorToArgb, which
+    // initState forbids. syncResolution is keyed, so unrelated dependency
+    // changes are no-ops.
+    syncResolution();
     _attachSecondaryRouteAnim();
     _syncBrightnessIfNeeded();
   }
+
+  /// Current per-button value snapshots, in the order the native side wants.
+  List<_ButtonSnapshot> _currentButtonSnapshots() => _usingWidgets
+      ? widget._buttonWidgets!
+            .map((b) => _ButtonSnapshot.fromButtonWidget(b))
+            .toList()
+      : widget.buttons.map((b) => _ButtonSnapshot.fromButtonData(b)).toList();
+
+  @override
+  Object? resolutionKey() =>
+      _currentButtonSnapshots().map((s) => s.digest).join('|');
+
+  @override
+  Future<List<Map<String, dynamic>>> resolveValue() => _usingWidgets
+      ? Future.wait(
+          widget._buttonWidgets!.map(
+            (button) => _buttonWidgetToMapAsync(button, context),
+          ),
+        )
+      : Future.wait(
+          widget.buttons.map(
+            (button) => _buttonDataToMapAsync(button, context),
+          ),
+        );
 
   /// Native got `isDark` in creationParams only; re-push it whenever the
   /// inherited theme changes so the group (and its popup Menu) follows in-app
@@ -165,6 +197,7 @@ class _CNGlassButtonGroupState extends State<CNGlassButtonGroup>
   @override
   void didUpdateWidget(covariant CNGlassButtonGroup oldWidget) {
     super.didUpdateWidget(oldWidget);
+    syncResolution();
     _syncButtonsToNativeIfNeeded();
   }
 
@@ -263,56 +296,50 @@ class _CNGlassButtonGroupState extends State<CNGlassButtonGroup>
   Widget _buildNativeGroup(BuildContext context) {
     const viewType = 'CupertinoNativeGlassButtonGroup';
 
-    return FutureBuilder<List<Map<String, dynamic>>>(
-      future: _usingWidgets
-          ? Future.wait(
-              widget._buttonWidgets!.map(
-                (button) => _buttonWidgetToMapAsync(button, context),
-              ),
-            )
-          : Future.wait(
-              widget.buttons.map(
-                (button) => _buttonDataToMapAsync(button, context),
-              ),
-            ),
-      builder: (context, snapshot) {
-        if (!snapshot.hasData) {
-          // CRITICAL: reserve the same layout slot the destroy-state
-          // placeholder uses. Returning SizedBox.shrink() here collapsed
-          // the slot for one frame on every remount (e.g. when a modal
-          // sheet finished dismissing) — the text below jumped up then
-          // back down, visible as an ugly one-frame blink. Mirror the
-          // axis-aware sizing math from the wrapping LayoutBuilder so
-          // the pending frame holds the exact same footprint as both
-          // the hidden placeholder and the resolved live build.
-          return LayoutBuilder(
-            builder: (context, constraints) {
-              if (widget.axis == Axis.horizontal) {
-                final totalHeight = _getEffectiveMinHeight() + 3.0;
-                final width = constraints.hasBoundedWidth
-                    ? constraints.maxWidth + 6.0
-                    : (widget._effectiveButtonCount * 44.0 +
-                          ((widget._effectiveButtonCount - 1) *
-                              widget.spacing) +
-                          6.0);
-                return SizedBox(height: totalHeight, width: width);
-              } else {
-                final rawHeight =
-                    (widget._effectiveButtonCount * _getEffectiveMinHeight()) +
-                    ((widget._effectiveButtonCount - 1) * widget.spacing) +
-                    3.0;
-                final totalHeight = rawHeight.clamp(44.0, 400.0);
-                final width = constraints.hasBoundedWidth
-                    ? constraints.maxWidth
-                    : double.infinity;
-                return SizedBox(height: totalHeight, width: width);
-              }
-            },
-          );
-        }
+    // Resolution is hoisted into the State (see AsyncResolutionState), so
+    // build() is synchronous and a parent rebuild no longer restarts it.
+    final resolvedButtons = resolvedValue;
+    if (resolvedButtons == null) {
+      // CRITICAL: reserve the same layout slot the destroy-state
+      // placeholder uses. Returning SizedBox.shrink() here collapsed
+      // the slot for one frame on every remount (e.g. when a modal
+      // sheet finished dismissing) — the text below jumped up then
+      // back down, visible as an ugly one-frame blink. Mirror the
+      // axis-aware sizing math from the wrapping LayoutBuilder so
+      // the pending frame holds the exact same footprint as both
+      // the hidden placeholder and the resolved live build.
+      //
+      // Reached on genuine first load only: resolvedValue is never cleared
+      // once a resolution has landed.
+      return LayoutBuilder(
+        builder: (context, constraints) {
+          if (widget.axis == Axis.horizontal) {
+            final totalHeight = _getEffectiveMinHeight() + 3.0;
+            final width = constraints.hasBoundedWidth
+                ? constraints.maxWidth + 6.0
+                : (widget._effectiveButtonCount * 44.0 +
+                      ((widget._effectiveButtonCount - 1) * widget.spacing) +
+                      6.0);
+            return SizedBox(height: totalHeight, width: width);
+          } else {
+            final rawHeight =
+                (widget._effectiveButtonCount * _getEffectiveMinHeight()) +
+                ((widget._effectiveButtonCount - 1) * widget.spacing) +
+                3.0;
+            final totalHeight = rawHeight.clamp(44.0, 400.0);
+            final width = constraints.hasBoundedWidth
+                ? constraints.maxWidth
+                : double.infinity;
+            return SizedBox(height: totalHeight, width: width);
+          }
+        },
+      );
+    }
 
+    return Builder(
+      builder: (context) {
         final creationParams = <String, dynamic>{
-          'buttons': snapshot.data!,
+          'buttons': resolvedButtons,
           'axis': widget.axis == Axis.horizontal ? 'horizontal' : 'vertical',
           'spacing': widget.spacing,
           'spacingForGlass': widget.spacingForGlass,
@@ -968,6 +995,17 @@ class _ButtonSnapshot {
           .join('|'),
     );
   }
+
+  /// Value-equal digest of everything [equals] compares, as a single string.
+  ///
+  /// Used as the icon-resolution key (see [AsyncResolutionState]): a `List`
+  /// of snapshots compares by identity, and `widget.buttons` is a fresh list
+  /// on every parent rebuild, so keying on the list itself would re-resolve
+  /// forever. Joining into a string gives real value equality.
+  String get digest => '$label#$iconName#$iconSize#$iconColor'
+      '#$imageAssetPath#$imageAssetDataLength#$imageAssetSize'
+      '#$imageAssetColor#$customIconHash#$style#$enabled#$interaction'
+      '#$tint#$badgeCount#$menuLabelsKey';
 
   bool equals(_ButtonSnapshot other) {
     return label == other.label &&
