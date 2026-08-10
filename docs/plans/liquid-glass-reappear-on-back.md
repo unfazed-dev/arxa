@@ -385,3 +385,82 @@ The folders route's `secondaryAnimation` runs during the pop (stays, no
 materialize); the root route holding the tab bar is static during a nested push
 (hides, correct). `ModalRoute.of(context)` is already in the plumbing via
 `AppBoxKitMotionScope`.
+
+## Resolution — the fix, and why it is defensible rather than lucky
+
+`_applyVisibility` now hides on a transition only when the gate is **not**
+travelling with it:
+
+```dart
+final travellingWithTransition =
+    (_route?.animation?.isAnimating ?? false) ||
+        (_route?.secondaryAnimation?.isAnimating ?? false);
+
+final hidden = anyModalDepth.value > _mountDepth ||
+    (hasActiveTransitionAbove(context) && !travellingWithTransition);
+```
+
+The predicate is read at the instant the observer ticks, and **that instant is
+meaningful** — this is the part not to "fix" later thinking it is a race.
+Measured directly (`GATE-EVAL` instrumentation, since removed):
+
+| edge | `secondaryAnimation` at tick | result |
+|---|---|---|
+| push | `dismissed` | hides — as before |
+| pop | `reverse` | **stays painted** |
+
+Not a coin flip: on **pop** a route was already above me, so my
+`secondaryAnimation` proxy is already wired and merely reverses; on **push**
+nothing was ever above me, so the Navigator has not wired that proxy yet. The
+discriminator is *whether a route above me already existed* — i.e. **am I being
+revealed, or covered for the first time?** Determined by prior wiring state, not
+callback ordering. (Sampling from a post-frame callback registered *before* the
+push reads `forward` instead — that is the misleading reading, one beat later in
+the same frame.)
+
+### Why the transition term was NOT deleted
+
+Tempting, and wrong. The gate takes a `_mountDepth` snapshot precisely because
+it can be mounted in chrome that is a **sibling of the router**, not a
+descendant of its routes — `bottomNavigationBar` on a Scaffold whose `body`
+holds the Navigator, which is exactly where the showcase tab bar sits. Deleting
+the term would have meant rewriting
+`appbox_kit_chrome_gate_transition_scope_test.dart:117`, a test written from a
+**user-confirmed-on-device** regression, with no device readout in hand. That is
+the failure mode recorded in the `conflicting-mechanisms-fix-direction` note:
+disabling the mechanism with device hours behind it to protect newer reasoning.
+
+### Mutation-checked, because 289 green proved nothing here
+
+Reverting to the unconditional `|| hasActiveTransitionAbove(context)`:
+
+```
++2 -1   the new mid-pop test FAILS
+        both pre-existing scope tests still PASS
+```
+
+Which is exactly why the old suite never caught this — neither existing test
+samples a gate on a route being *revealed*.
+
+### Citation corrections landed in the gate doc
+
+- `flutter#93757` is titled **`[android]`** (labels `platform-android`,
+  `team-android`). It cannot support an iOS claim. Retracted from the iOS
+  rationale.
+- **Opacity is not unsupported on iOS.** The embedder applies `kOpacity`
+  directly (`embeddedView.alpha = GetAlphaFloat() * embeddedView.alpha`,
+  flutter/engine PR #9667, 2019).
+- `flutter#24164` did not resolve to a matching issue — flagged unverified.
+
+This removes **one of four pillars** under "no fade", **not the conclusion**.
+Apple's prefer-`effect`-over-`alpha` guidance, the repo's simulator-verified
+ghosting note, and the vendored package's own no-animation implementation all
+stand. The instant swap stays.
+
+### Named ceiling — not device-verified
+
+A **root-level page push over the tab scaffold** would read as "travelling" for
+a tab bar that is a sibling of the router, and stay painted. Every showcase push
+is nested (`context.router.pushNamed`), so that configuration does not occur and
+could not be tested. Recorded in the gate's class doc as the place to look if it
+ever appears.
