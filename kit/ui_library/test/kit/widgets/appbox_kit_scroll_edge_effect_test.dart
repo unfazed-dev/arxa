@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
 
@@ -53,28 +54,27 @@ void main() {
     ));
   }
 
-  Finder effectDescendantFinder(Type type) {
-    return find.descendant(
-      of: find.byKey(effectKey, skipOffstage: false),
-      matching: find.byType(type, skipOffstage: false),
-      skipOffstage: false,
-    );
-  }
-
   double effectAlpha(WidgetTester tester) =>
       effectDescendant<Opacity>(tester).opacity;
 
   // Geometry: child top starts at 160 (below the expanded bar). Collapsed
   // pinned extent = kToolbarHeight (56) with zero window padding. Covered
   // fraction = (56 - (160 - pixels)) / 48.
-  testWidgets('kit.ui-library.scroll-edge-effect — child fully clear of the edge builds its bare subtree',
+  // C4: the wrapper chain never unmounts — at rest it is driven to identity
+  // (opacity 1.0, pointers pass, no ImageFilterLayer pushed) so the child's
+  // Element (and any platform view inside it) survives threshold crossings.
+  bool blurLayerActive(WidgetTester tester) =>
+      tester.layers.whereType<ImageFilterLayer>().isNotEmpty;
+
+  testWidgets('kit.ui-library.scroll-edge-effect — child fully clear of the edge is identity-wrapped',
       (tester) async {
     final controller = ScrollController();
     addTearDown(controller.dispose);
     await tester.pumpWidget(harness(controller: controller));
 
-    expect(effectDescendantFinder(ImageFiltered), findsNothing);
-    expect(effectDescendantFinder(Opacity), findsNothing);
+    expect(blurLayerActive(tester), isFalse);
+    expect(effectAlpha(tester), 1.0);
+    expect(effectDescendant<IgnorePointer>(tester).ignoring, isFalse);
     expect(find.byKey(markerKey), findsOneWidget);
   });
 
@@ -91,7 +91,7 @@ void main() {
     // t = 0.5 → soft math: alpha = 1 - 0.85 * 0.5 = 0.575 (hard would be
     // 0.5, so this pins automatic → soft).
     expect(effectAlpha(tester), closeTo(0.575, 0.001));
-    expect(effectDescendantFinder(ImageFiltered), findsOneWidget);
+    expect(blurLayerActive(tester), isTrue);
     expect(effectDescendant<IgnorePointer>(tester).ignoring, isFalse);
   });
 
@@ -110,7 +110,6 @@ void main() {
     // t = 1 → alpha = 1 - 0.85 = 0.15: the content reads through the blur,
     // it is never hard-hidden — and it keeps taking pointers.
     expect(effectAlpha(tester), closeTo(0.15, 0.001));
-    expect(effectDescendantFinder(ImageFiltered), findsOneWidget);
     expect(effectDescendant<IgnorePointer>(tester).ignoring, isFalse);
     expect(find.byKey(markerKey, skipOffstage: false), findsOneWidget);
   });
@@ -132,20 +131,22 @@ void main() {
     expect(find.byKey(markerKey, skipOffstage: false), findsOneWidget);
   });
 
-  testWidgets('kit.ui-library.scroll-edge-effect — restores to a bare subtree when scrolled back out',
+  testWidgets('kit.ui-library.scroll-edge-effect — restores to identity when scrolled back out',
       (tester) async {
     final controller = ScrollController();
     addTearDown(controller.dispose);
     await tester.pumpWidget(harness(controller: controller));
 
-    controller.jumpTo(300);
+    // Half-covered (a fully-covered sliver child is culled from painting, so
+    // its layers would be absent for that reason alone).
+    controller.jumpTo(128);
     await tester.pump();
-    expect(effectDescendantFinder(ImageFiltered), findsOneWidget);
+    expect(blurLayerActive(tester), isTrue);
 
     controller.jumpTo(0);
     await tester.pump();
-    expect(effectDescendantFinder(ImageFiltered), findsNothing);
-    expect(effectDescendantFinder(Opacity), findsNothing);
+    expect(blurLayerActive(tester), isFalse);
+    expect(effectAlpha(tester), 1.0);
   });
 
   testWidgets('kit.ui-library.scroll-edge-effect — bottom edge fades content straddling the trailing fold',
@@ -179,12 +180,12 @@ void main() {
 
     // t = 0.16 → soft alpha = 1 - 0.85 * 0.16 = 0.864.
     expect(effectAlpha(tester), closeTo(0.864, 0.01));
-    expect(effectDescendantFinder(ImageFiltered), findsOneWidget);
+    expect(blurLayerActive(tester), isTrue);
 
     controller.jumpTo(24); // child bottom fully above the fold
     await tester.pump();
-    expect(effectDescendantFinder(ImageFiltered), findsNothing);
-    expect(effectDescendantFinder(Opacity), findsNothing);
+    expect(blurLayerActive(tester), isFalse);
+    expect(effectAlpha(tester), 1.0);
   });
 
   testWidgets('kit.ui-library.scroll-edge-effect — .scrollEdgeEffect() extension wraps child in an effect',

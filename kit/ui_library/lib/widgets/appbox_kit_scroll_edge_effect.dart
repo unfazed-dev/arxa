@@ -111,6 +111,13 @@ class _KitScrollEdgeEffectState extends State<AppBoxKitScrollEdgeEffect> {
   /// Covered fraction, quantized to 1/50 steps: 0 = fully clear of the edge,
   /// 1 = fully covered.
   double _t = 0.0;
+  bool _engaged = false;
+
+  /// Hysteresis dead band: engage only above [_enterThreshold], release only
+  /// below [_exitThreshold]. A single boundary flips state on ordinary scroll
+  /// jitter for rows resting near pinned chrome ("lists break all the time").
+  static const double _enterThreshold = 0.04;
+  static const double _exitThreshold = 0.01;
 
   @override
   void didChangeDependencies() {
@@ -157,10 +164,19 @@ class _KitScrollEdgeEffectState extends State<AppBoxKitScrollEdgeEffect> {
         ? position.pixels - reveal + widget.occlusionPadding
         : reveal - position.pixels + widget.occlusionPadding;
 
+    final raw = (covered / box.size.height).clamp(0.0, 1.0);
+    if (_engaged) {
+      if (raw <= _exitThreshold) _engaged = false;
+    } else if (raw >= _enterThreshold) {
+      _engaged = true;
+    }
     // Quantize to limit rebuild churn; snap the endpoints so t == 0 is
-    // *exactly* 0 (bare child, zero effect overhead).
-    var t = (covered / box.size.height).clamp(0.0, 1.0);
-    t = t <= 0.02 ? 0.0 : (t >= 0.98 ? 1.0 : (t * 50).roundToDouble() / 50);
+    // *exactly* 0 (identity wrappers, no filter layer) and t == 1 is full.
+    final t = !_engaged
+        ? 0.0
+        : raw >= 0.98
+            ? 1.0
+            : (raw * 50).roundToDouble() / 50;
     if (t == _t) return;
     setState(() => _t = t);
   }
@@ -168,27 +184,87 @@ class _KitScrollEdgeEffectState extends State<AppBoxKitScrollEdgeEffect> {
   @override
   Widget build(BuildContext context) {
     final t = _t;
-    if (t == 0.0) return widget.child; // clear of the edge — zero overhead
-
     final hard = widget.style == AppBoxKitScrollEdgeEffectStyle.hard;
     final sigma = (hard ? 16.0 : 8.0) * t;
     final alpha = hard ? 1.0 - t : 1.0 - 0.85 * t;
 
-    // Blur the child's own pixels (ImageFiltered), never the backdrop — the
-    // effect must behave identically over any tier beneath it. ClipRect
-    // keeps the blur bleed inside the child's slot.
+    // The wrapper chain is ALWAYS mounted — constant tree shape. Returning
+    // widget.child raw at t == 0 changes the tree depth, so the child's
+    // Element (and any platform view inside it) is unmounted and re-created
+    // at every threshold crossing; the remount is the visible artifact. At
+    // rest every wrapper is driven to identity instead: ignoring false,
+    // opacity 1.0 (RenderOpacity pushes no layer at 1.0), Clip.none, and
+    // sigma 0 — _EdgeEffectBlur paints its child directly at sigma 0, so no
+    // ImageFilterLayer/saveLayer is created either.
+    //
+    // Blur the child's own pixels, never the backdrop — the effect must
+    // behave identically over any tier beneath it. ClipRect keeps the blur
+    // bleed inside the child's slot; at rest there is nothing to bleed, so
+    // clipping is disabled rather than unmounted.
     return IgnorePointer(
       ignoring: alpha == 0.0,
       child: Opacity(
         opacity: alpha,
         child: ClipRect(
-          child: ImageFiltered(
-            imageFilter: ui.ImageFilter.blur(sigmaX: sigma, sigmaY: sigma),
+          clipBehavior: sigma == 0.0 ? Clip.none : Clip.hardEdge,
+          child: _EdgeEffectBlur(
+            sigma: sigma,
             child: widget.child,
           ),
         ),
       ),
     );
+  }
+}
+
+/// [ImageFiltered] look-alike that stays mounted at rest without paying for
+/// the filter: at `sigma == 0` the render object paints its child directly —
+/// no [ImageFilterLayer], no saveLayer — while the widget (and therefore the
+/// child's Element) never leaves the tree.
+class _EdgeEffectBlur extends SingleChildRenderObjectWidget {
+  const _EdgeEffectBlur({required this.sigma, super.child});
+
+  final double sigma;
+
+  @override
+  RenderObject createRenderObject(BuildContext context) =>
+      _RenderEdgeEffectBlur(sigma: sigma);
+
+  @override
+  void updateRenderObject(
+      BuildContext context, _RenderEdgeEffectBlur renderObject) {
+    renderObject.sigma = sigma;
+  }
+}
+
+class _RenderEdgeEffectBlur extends RenderProxyBox {
+  _RenderEdgeEffectBlur({required double sigma}) : _sigma = sigma;
+
+  double _sigma;
+  double get sigma => _sigma;
+  set sigma(double value) {
+    if (value == _sigma) return;
+    final wasIdentity = _sigma == 0.0;
+    _sigma = value;
+    if (wasIdentity != (value == 0.0)) markNeedsCompositingBitsUpdate();
+    markNeedsPaint();
+  }
+
+  @override
+  bool get alwaysNeedsCompositing => _sigma > 0.0;
+
+  @override
+  void paint(PaintingContext context, Offset offset) {
+    if (_sigma == 0.0) {
+      layer = null; // identity — child paints in place, no saveLayer
+      super.paint(context, offset);
+      return;
+    }
+    final imageFilterLayer = (layer as ImageFilterLayer?) ?? ImageFilterLayer();
+    imageFilterLayer.imageFilter =
+        ui.ImageFilter.blur(sigmaX: _sigma, sigmaY: _sigma);
+    context.pushLayer(imageFilterLayer, super.paint, offset);
+    layer = imageFilterLayer;
   }
 }
 
