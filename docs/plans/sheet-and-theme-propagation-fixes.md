@@ -93,8 +93,9 @@ reads `hasActiveTransitionAbove` plus the route's own animations (see
 `liquid-glass-reappear-on-back.md`). That is the exact surface of the five-fix
 saga, so it gets a test rather than a device discovery.
 
-**Status: awaiting the user's decision** (Dart Cupertino sheet vs a bespoke
-`UISheetPresentationController` bridge). Not started.
+**Status: decided and shipped** — the user chose the Dart Cupertino sheet over a
+bespoke `UISheetPresentationController` bridge. See "Shipped" at the end of this
+document.
 
 ---
 
