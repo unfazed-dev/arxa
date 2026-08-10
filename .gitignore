@@ -83,6 +83,7 @@ skills/**/node_modules/
 
 # 
 .claude/skills
+.claude/claude-flow-stash
 # --- entitlement issuer secrets (output of deploy/supabase/scripts/keygen.mjs) ---
 # The production Ed25519 private key NEVER enters the repo (runbook §1).
 deploy/supabase/secrets/
