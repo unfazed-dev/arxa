@@ -152,9 +152,10 @@ Future<bool> _assetExists(String assetPath) async {
 ///      reports line-box metrics, not glyph metrics — we can't ask the
 ///      engine ahead of time how far the glyph overflows).
 ///   2. Scan the alpha channel to find the actual non-transparent bounds.
-///   3. Re-blit the cropped glyph into a `size × size` canvas, centered
-///      and scaled down if its visible bounds happen to exceed `size`
-///      (FontAwesome-style overflowing glyphs).
+///   3. Re-render the glyph IN VECTOR at the fontSize that makes its ink
+///      fill `size`, positioned from the linearly-scaled pass-1 bounds.
+///      (Never resample the pass-1 bitmap — a nearest-neighbor upscale
+///      here was the cause of pixelated customIcon glyphs on device.)
 Future<Uint8List?> iconDataToImageBytes(
   IconData iconData, {
   double size = 25.0,
@@ -226,14 +227,23 @@ Future<Uint8List?> iconDataToImageBytes(
     final double glyphPixelWidth = (maxX - minX + 1).toDouble();
     final double glyphPixelHeight = (maxY - minY + 1).toDouble();
 
-    // Re-blit into a square `size × size` (logical pixels) canvas, with
-    // the visible glyph scaled to FILL the canvas (preserving aspect
-    // ratio). Standard icon fonts like CupertinoIcons / Material Icons
-    // render their glyphs inside the em-box with their own built-in
-    // padding — if we just placed the glyph 1:1, the visible ink would
-    // be smaller than the SF Symbol at the same pointSize and the rows
-    // would look mismatched. Scaling to fill the requested `size`
-    // matches SF Symbol's "pointSize is ink size" convention.
+    // Produce a square `size × size` (logical pixels) canvas, with the
+    // visible glyph scaled to FILL the canvas (preserving aspect ratio).
+    // Standard icon fonts like CupertinoIcons / Material Icons render
+    // their glyphs inside the em-box with their own built-in padding —
+    // if we just placed the glyph 1:1, the visible ink would be smaller
+    // than the SF Symbol at the same pointSize and the rows would look
+    // mismatched. Scaling to fill the requested `size` matches SF
+    // Symbol's "pointSize is ink size" convention.
+    //
+    // Crucially, the fill-scaling is done by RE-RENDERING the glyph in
+    // vector at the corrected fontSize — NOT by resampling the pass-1
+    // bitmap. drawImageRect on the cropped ink was the pixelation bug:
+    // a ~1.2–1.6× bitmap upscale through Paint()'s default
+    // FilterQuality.none (nearest neighbor) produced jagged edges on
+    // every customIcon surface (icon buttons, app bar glyphs) while the
+    // SVG asset path stayed crisp. Outline fonts scale linearly with
+    // fontSize, so the pass-1 ink bounds predict the pass-2 ink position.
     final int outputPixelSize = (size * pixelRatio).ceil();
     final double maxGlyphDim = glyphPixelWidth > glyphPixelHeight
         ? glyphPixelWidth
@@ -243,25 +253,42 @@ Future<Uint8List?> iconDataToImageBytes(
     final double drawnHeight = glyphPixelHeight * fitScale;
     final double dstX = (outputPixelSize - drawnWidth) / 2.0;
     final double dstY = (outputPixelSize - drawnHeight) / 2.0;
+    paddedImage.dispose();
+
+    // Ink offset relative to the pass-1 text origin, in physical pixels.
+    // Scales linearly with fontSize, so at `size * fitScale` the ink sits
+    // at `inkRel * fitScale` from wherever we paint the text origin.
+    final double paddingPx = padding * pixelRatio;
+    final double inkRelX = minX - paddingPx;
+    final double inkRelY = minY - paddingPx;
+
+    final TextPainter fillPainter = TextPainter(
+      text: TextSpan(
+        text: String.fromCharCode(iconData.codePoint),
+        style: TextStyle(
+          inherit: false,
+          color: color,
+          fontSize: size * fitScale,
+          fontFamily: iconData.fontFamily,
+          package: iconData.fontPackage,
+        ),
+      ),
+      textDirection: TextDirection.ltr,
+    )..layout();
 
     final ui.PictureRecorder squareRecorder = ui.PictureRecorder();
-    final Canvas squareCanvas = Canvas(squareRecorder);
-    squareCanvas.drawImageRect(
-      paddedImage,
-      Rect.fromLTWH(
-        minX.toDouble(),
-        minY.toDouble(),
-        glyphPixelWidth,
-        glyphPixelHeight,
+    final Canvas squareCanvas = Canvas(squareRecorder)..scale(pixelRatio);
+    fillPainter.paint(
+      squareCanvas,
+      Offset(
+        (dstX - inkRelX * fitScale) / pixelRatio,
+        (dstY - inkRelY * fitScale) / pixelRatio,
       ),
-      Rect.fromLTWH(dstX, dstY, drawnWidth, drawnHeight),
-      Paint(),
     );
     final ui.Image squareImage = await squareRecorder.endRecording().toImage(
       outputPixelSize,
       outputPixelSize,
     );
-    paddedImage.dispose();
 
     final ByteData? pngData = await squareImage.toByteData(
       format: ui.ImageByteFormat.png,

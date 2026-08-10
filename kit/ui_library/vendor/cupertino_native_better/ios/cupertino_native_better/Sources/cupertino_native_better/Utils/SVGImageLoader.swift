@@ -154,20 +154,33 @@ final class SVGImageLoader {
     }
     
     private func performSVGRendering(_ svgImage: SVGKImage, size: CGSize) -> UIImage? {
-        // Set the desired size
-        svgImage.size = size
-        
+        // SVGKit's `uiImage` exports a 1x bitmap of whatever `size` is set, so
+        // rendering at logical point size pixelates on Retina (2x/3x) screens.
+        // Render at physical pixel size, then re-wrap at the screen scale so
+        // callers still see a `size`-point image.
+        let scale = UIScreen.main.scale
+        let pixelSize = CGSize(width: size.width * scale, height: size.height * scale)
+
+        // Set the desired size (in pixels)
+        svgImage.size = pixelSize
+
         // Force immediate rendering
-        let uiImage = svgImage.uiImage
-        
+        var rendered = svgImage.uiImage
+
         // If still nil, try alternative approach
-        if uiImage == nil {
+        if rendered == nil {
             // Sometimes SVGKit needs the size to be set again
-            svgImage.size = size
-            return svgImage.uiImage
+            svgImage.size = pixelSize
+            rendered = svgImage.uiImage
         }
-        
-        return uiImage
+
+        guard let bitmap = rendered else { return nil }
+
+        // Re-wrap the pixel bitmap as a point-sized image at screen scale.
+        if scale != 1.0, let cgImage = bitmap.cgImage {
+            return UIImage(cgImage: cgImage, scale: scale, orientation: bitmap.imageOrientation)
+        }
+        return bitmap
     }
 }
 
