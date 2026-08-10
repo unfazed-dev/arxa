@@ -86,7 +86,11 @@ class AppBoxKitNativeIconButton extends StatelessWidget {
               size: size ?? 18.0,
               color: color ?? Theme.of(context).colorScheme.primary,
             ),
-      customIcon: icon,
+      // Native-first (mirrors the FAB's guard): CNButton priority is
+      // imageAsset > customIcon > icon, so an always-set customIcon would
+      // shadow the SF Symbol path and force the rasterized custom-icon branch.
+      // Pass the Material glyph only when there is no symbol equivalent.
+      customIcon: sfSymbol == null ? icon : null,
       onPressed: onPressed,
       tint: color,
       config: CNButtonConfig(
