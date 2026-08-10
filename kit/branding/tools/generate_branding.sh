@@ -1,103 +1,112 @@
 #!/usr/bin/env bash
-# branding/tools/generate_branding.sh — vendoring codegen for a appbox_kit host app.
+#  branding/tools/generate_branding.sh — vendoring codegen for a appbox_kit host app.
 #
-# Emits into <host_app>:
-#   lib/ui/common/generated/brand_colors.dart   kit ramp constants; accent := kcPrimaryColor
-#   flutter_launcher_icons.yaml                 image_path: assets/icons/icon.png
-#   flutter_native_splash.yaml                  brand-color splash from the same icon
+#  Emits into <host_app>:
+#    -  flutter_launcher_icons.yaml   (brand-icons law: assets/brand-icons/ master)
+#    -  flutter_native_splash.yaml    (theme-reactive: F5F0E8 light / 1C1814 dark)
+#    -  assets/brand-icons/<base>-splash.png            (320px logo raster)
+#    -  assets/brand-icons/<base>-splash-android12.png  (334px logo on transparent 960px canvas)
+#    -  lib/ui/common/generated/brand_colors.dart       (LEGACY hosts only — kit-native
+#       hosts get colors from appbox_kit_core; emitted only when
+#       lib/ui/common/app_colors.dart exists to supply kcPrimaryColor)
 #
-# Idempotent: overwrites the three files every run (safe under pipeline re-gate).
-# Does NOT run flutter_launcher_icons / flutter_native_splash — those need a Flutter
-# environment + `flutter pub get`; invoke them as a separate build step (see footer).
+#  Brand-icon resolution (ratified law, 2026-08-09): the app owns its master in
+#  assets/brand-icons/. If <host>/assets.manifest.json exists, brandIcon.{master,
+#  monochrome,background} are authoritative; otherwise the master is inferred as
+#  the single non -monochrome/-splash png in assets/brand-icons/, background
+#  defaults to #ffffff.
 #
-# Usage: generate_branding.sh <host_app_dir>
+#  After emit, run inside the host:
+#    dart run flutter_launcher_icons && dart run flutter_native_splash:create
 set -euo pipefail
 
-if [[ $# -lt 1 ]]; then
-  echo "usage: $0 <host_app_dir>" >&2
-  exit 2
-fi
-
+[[ $# -ge 1 ]] || { echo "usage: generate_branding.sh <host_app_dir>" >&2; exit 1; }
 HOST="$(cd "$1" && pwd)"
 BRANDING_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 TPL="$BRANDING_DIR/templates"
 
-APP_COLORS="$HOST/lib/ui/common/app_colors.dart"
-GENERATED_DIR="$HOST/lib/ui/common/generated"
+BRAND_DIR="$HOST/assets/brand-icons"
+[[ -d "$BRAND_DIR" ]] || { echo "FAIL: brand-icons dir not found: $BRAND_DIR (law: every app owns assets/brand-icons/)" >&2; exit 1; }
 
-[[ -f "$APP_COLORS" ]] || { echo "FAIL: app_colors not found: $APP_COLORS" >&2; exit 1; }
-[[ -d "$TPL" ]]         || { echo "FAIL: templates missing: $TPL" >&2; exit 1; }
+# --- Resolve master / monochrome / background (manifest wins, else infer) ----
+eval "$(python3 - "$HOST" <<'PY'
+import json, os, sys
+host = sys.argv[1]
+master = mono = ""
+bg = "#ffffff"
+mpath = os.path.join(host, "assets.manifest.json")
+if os.path.exists(mpath):
+    bi = json.load(open(mpath)).get("brandIcon") or {}
+    master = bi.get("master", "")
+    mono = bi.get("monochrome", "")
+    bg = bi.get("background", bg)
+    prefix = "assets/" if master and not master.startswith("assets/") else ""
+    master = prefix + master if master else ""
+    mono = ("assets/" if mono and not mono.startswith("assets/") else "") + mono if mono else ""
+if not master:
+    bdir = os.path.join(host, "assets", "brand-icons")
+    pngs = [f for f in sorted(os.listdir(bdir)) if f.endswith(".png")]
+    masters = [f for f in pngs if not any(s in f for s in ("-monochrome", "-splash"))]
+    if len(masters) != 1:
+        sys.stderr.write(f"FAIL: cannot infer single master in {bdir}: {masters}\n"); sys.exit(1)
+    master = "assets/brand-icons/" + masters[0]
+    cand = masters[0].replace(".png", "-monochrome.png")
+    mono = "assets/brand-icons/" + cand if cand in pngs else master
+print(f'ICON="{master}"')
+print(f'ICON_MONO="{mono}"')
+print(f'ICON_BG="{bg}"')
+PY
+)"
+[[ -f "$HOST/$ICON" ]] || { echo "FAIL: brand master not found: $HOST/$ICON" >&2; exit 1; }
+[[ -f "$HOST/$ICON_MONO" ]] || { echo "FAIL: monochrome layer not found: $HOST/$ICON_MONO" >&2; exit 1; }
 
-# Extract host brand accent (kcPrimaryColor) -> 8-hex ARGB (no 0x), derive 6-hex RGB.
-ACCENT_ARGB=$(grep -E 'kcPrimaryColor[[:space:]]*=[[:space:]]*Color\(0x[0-9A-Fa-f]{8}\)' "$APP_COLORS" \
-  | grep -oE '0x[0-9A-Fa-f]{8}' | head -1 | sed 's/^0x//')
-[[ -n "$ACCENT_ARGB" ]] || { echo "FAIL: kcPrimaryColor Color(0xAARRGGBB) not found in $APP_COLORS" >&2; exit 1; }
-ACCENT_RGB="${ACCENT_ARGB:2:6}"   # strip 2-char alpha -> RR GG BB
+BASE="$(basename "$ICON" .png)"
+SPLASH_LOGO="assets/brand-icons/${BASE}-splash.png"
+SPLASH_LOGO_A12="assets/brand-icons/${BASE}-splash-android12.png"
 
-# Android icon name: derive from the host's AndroidManifest android:icon ref
-# (e.g. @mipmap/launcher_icon -> "launcher_icon") so regeneration matches what
-# the manifest actually references. Defaults to `true` (standard ic_launcher).
-ANDROID_ICON="true"
-MANIFEST="$(find "$HOST/android" -maxdepth 7 -type f -path '*/src/main/AndroidManifest.xml' 2>/dev/null | head -1)"
-if [[ -n "$MANIFEST" ]]; then
-  _NAME="$(grep -oE 'android:icon="@mipmap/[^"]+"' "$MANIFEST" | head -1 | sed -E 's#.*@mipmap/([^"]+)".*#\1#')"
-  [[ -n "$_NAME" ]] && ANDROID_ICON="\"$_NAME\""
-fi
-
-mkdir -p "$GENERATED_DIR"
-
-sed -e "s/{{ACCENT_ARGB}}/$ACCENT_ARGB/g" "$TPL/brand_colors.dart.tmpl" > "$GENERATED_DIR/brand_colors.dart"
-sed -e "s/{{ACCENT_RGB}}/$ACCENT_RGB/g" -e "s/{{ANDROID_ICON}}/$ANDROID_ICON/g" \
-  "$TPL/launcher_icons.yaml.tmpl" > "$HOST/flutter_launcher_icons.yaml"
-# Splash template is now literal (bg = kit surface/bone, not accent-derived) — no substitution.
-cp "$TPL/splash.yaml.tmpl" "$HOST/flutter_native_splash.yaml"
-
-# Rasterize the native-splash logo PNG at 4× logoSize (SPLASH_PX). flutter_native_splash
-# renders `image:` at its source pixel dimensions (no upscale), so a full-res 1024px
-# launcher icon would show enormous on the pre-Flutter OS splash. The reference
-# app uses the same
-# 4× convention (logoSize 80 -> 320px). Keep LOGO_SIZE in sync with AppBoxKitBrandSplash.logoSize
-# (branding/lib/src/appbox_kit_startup_view.dart) + branding_gate.sh.
+# --- Rasterize splash derivatives -------------------------------------------
+#  splash logo: flutter_native_splash renders at source px; 4x the 80dp startup
+#  logo => 320px. android_12: ~240dp icon window over a 960px canvas; a 334px
+#  logo centered on a TRANSPARENT canvas keeps icon_background_color(_dark)
+#  visible (theme-reactive) — sips pads opaquely, so PIL does the padding.
 LOGO_SIZE=80
-SPLASH_PX=$((LOGO_SIZE * 4))   # 320
-SPLASH_PNG="$HOST/assets/icons/splash_logo.png"
-if command -v sips >/dev/null 2>&1; then
-  sips -z "$SPLASH_PX" "$SPLASH_PX" "$HOST/assets/icons/icon.png" --out "$SPLASH_PNG" >/dev/null
+SPLASH_PX=$((LOGO_SIZE * 4))
+A12_CANVAS_PX=960
+A12_LOGO_PX=334
+sips -Z "$SPLASH_PX" "$HOST/$ICON" --out "$HOST/$SPLASH_LOGO" >/dev/null
+python3 - "$HOST/$ICON" "$HOST/$SPLASH_LOGO_A12" "$A12_LOGO_PX" "$A12_CANVAS_PX" <<'PY'
+import sys
+from PIL import Image
+src, dst, logo_px, canvas_px = sys.argv[1], sys.argv[2], int(sys.argv[3]), int(sys.argv[4])
+logo = Image.open(src).convert("RGBA")
+logo.thumbnail((logo_px, logo_px), Image.LANCZOS)
+canvas = Image.new("RGBA", (canvas_px, canvas_px), (0, 0, 0, 0))
+canvas.paste(logo, ((canvas_px - logo.width) // 2, (canvas_px - logo.height) // 2), logo)
+canvas.save(dst)
+PY
+
+# --- Emit configs -------------------------------------------------------------
+sed -e "s|{{ICON}}|$ICON|g" \
+    -e "s|{{ICON_MONO}}|$ICON_MONO|g" \
+    -e "s|{{ICON_BG}}|$ICON_BG|g" \
+    "$TPL/launcher_icons.yaml.tmpl" > "$HOST/flutter_launcher_icons.yaml"
+sed -e "s|{{SPLASH_LOGO}}|$SPLASH_LOGO|g" \
+    -e "s|{{SPLASH_LOGO_A12}}|$SPLASH_LOGO_A12|g" \
+    "$TPL/splash.yaml.tmpl" > "$HOST/flutter_native_splash.yaml"
+
+# --- Legacy brand_colors.dart (only when host carries app_colors.dart) --------
+APP_COLORS="$HOST/lib/ui/common/app_colors.dart"
+if [[ -f "$APP_COLORS" ]]; then
+  ACCENT_ARGB=$(grep -oE 'kcPrimaryColor\s*=\s*Color\(0x[0-9A-Fa-f]{8}\)' "$APP_COLORS" | grep -oE '0x[0-9A-Fa-f]{8}' | head -1)
+  [[ -n "$ACCENT_ARGB" ]] || { echo "FAIL: kcPrimaryColor not found in $APP_COLORS" >&2; exit 1; }
+  GENERATED_DIR="$HOST/lib/ui/common/generated"
+  mkdir -p "$GENERATED_DIR"
+  sed -e "s/{{ACCENT_ARGB}}/$ACCENT_ARGB/g" "$TPL/brand_colors.dart.tmpl" > "$GENERATED_DIR/brand_colors.dart"
+  echo "emit: $GENERATED_DIR/brand_colors.dart (legacy host)"
 else
-  # ponytail: sips is macOS-only — on Linux/CI fall back to a copy so the asset still
-  # resolves; the branding gate then FAILS on the oversized dimensions (no silent ship).
-  # Upgrade path: rasterize via python+PIL (the reference pipeline's freeze_brand.py) if CI needs it.
-  cp "$HOST/assets/icons/icon.png" "$SPLASH_PNG"
-  echo "WARN: sips missing — splash_logo.png is the full-res icon (gate will FAIL on size); resize to ${SPLASH_PX}px or run on macOS." >&2
+  echo "skip: brand_colors.dart (kit-native host — colors come from appbox_kit_core)"
 fi
 
-# android_12 splash logo. Android 12+ renders the android_12 `image:` inside a fixed
-# ~240dp icon window (with icon_background), so — unlike the legacy/iOS splash — the
-# ON-SCREEN size is the logo's fraction of a 960px canvas, NOT raw px. Pointing it at
-# the full-frame icon.png rendered the logo ~2.9× the iOS logo; we pad a small logo
-# into the 960 canvas so android_12 matches the iOS native-splash size.
-# A12_LOGO_PX is a calibration knob. It resizes the icon FRAME (icon.png), not the
-# visible art: because the brand art fills only ~70% of icon.png, a 334px frame lands
-# the art at ~232px = ~24% of the 960 canvas, which measured on-screen parity with the
-# iOS splash (iOS logo ≈13.6% of screen; the android_12 icon window ≈56% of screen, so
-# 0.24×0.56 ≈ 0.136). The ~70% art-ratio cancels vs the iOS splash (both derive from the
-# same icon), so 334 is host-icon-independent. Re-measure only if LOGO_SIZE changes.
-# Keep A12_CANVAS_PX == branding_gate.sh.
-A12_CANVAS_PX=960     # flutter_native_splash with-icon_background spec (960×960, circle 640)
-A12_LOGO_PX=334       # icon-frame resize -> ~232px art (~24% of canvas) -> iOS parity
-A12_SPLASH_PNG="$HOST/assets/icons/splash_logo_android12.png"
-if command -v sips >/dev/null 2>&1; then
-  sips -z "$A12_LOGO_PX" "$A12_LOGO_PX" "$HOST/assets/icons/icon.png" --out "$A12_SPLASH_PNG" >/dev/null
-  sips "$A12_SPLASH_PNG" --padToHeightWidth "$A12_CANVAS_PX" "$A12_CANVAS_PX" --out "$A12_SPLASH_PNG" >/dev/null
-else
-  cp "$HOST/assets/icons/icon.png" "$A12_SPLASH_PNG"
-  echo "WARN: sips missing — splash_logo_android12.png is the full-res icon (gate will FAIL on canvas size); run on macOS." >&2
-fi
-
-echo "OK: branded $HOST (accent=#$ACCENT_RGB argb=$ACCENT_ARGB; logo=${LOGO_SIZE}dp splash=${SPLASH_PX}px)"
-echo "  - $GENERATED_DIR/brand_colors.dart"
-echo "  - $HOST/flutter_launcher_icons.yaml"
-echo "  - $HOST/flutter_native_splash.yaml"
-echo "  - $SPLASH_PNG (${SPLASH_PX}x${SPLASH_PX})"
-echo "  - $A12_SPLASH_PNG (icon@${A12_LOGO_PX}px -> ~24% art in ${A12_CANVAS_PX}px canvas — android_12 iOS-parity)"
-echo "next: (cd $HOST && flutter pub get && dart run flutter_launcher_icons && dart run flutter_native_splash:create)"
+echo "emit: $HOST/flutter_launcher_icons.yaml (master: $ICON)"
+echo "emit: $HOST/flutter_native_splash.yaml (logo: $SPLASH_LOGO, a12: $SPLASH_LOGO_A12)"
+echo "next: (cd $HOST && dart run flutter_launcher_icons && dart run flutter_native_splash:create)"

@@ -75,6 +75,10 @@ dependencies:
   # Attachment binaries live in the app documents dir (rows carry paths).
   path_provider: ^2.1.5
   google_fonts: ^8.2.1
+  # Runtime half of the splash handoff: main.dart preserves the native splash
+  # past the first frame, then removes it once the startup view has rendered
+  # (the codegen half stays in dev_dependencies).
+  flutter_native_splash: ^2.4.8
 
 # Mirrors the root pubspec.yaml dependency_overrides (paths rebased ../).
 # Pub overrides do NOT propagate to a standalone package, so without these the
@@ -121,7 +125,6 @@ dev_dependencies:
   # Launcher-icon chain demo (scaffolder law): derives ALL platform icons
   # from the assets/brand-icons/ master; config in flutter_launcher_icons.yaml.
   flutter_launcher_icons: ^0.14.3
-  flutter_native_splash: ^2.4.8
 flutter:
   # Standalone app: bundles the MaterialIcons font (appbox_kit + the M3E
   # packages require it, else Material icons render as tofu).

@@ -11,15 +11,18 @@ both render correctly.
 | `lib/src/appbox_kit_startup_view.dart` | Presentational splash widget `AppBoxKitBrandSplash`: centered brand mark + bottom progress bar (`Loading · N%`). Owns **no** routing or auth — the host view-model drives those. Named `AppBoxKitBrandSplash` (not `StartupView`) to avoid colliding with every Stacked app's own `StartupView` route. exposes `static const double logoSize = 80` — the canonical brand-logo edge (dp), the pipeline SSOT for logo size. |
 | `lib/appbox_kit_branding.dart` | Barrel export (`AppBoxKitBrandSplash`). |
 | `templates/brand_colors.dart.tmpl` | Kit warm-neutral ramp as `BrandColors` / `BrandDarkColors`, with `{{ACCENT_ARGB}}` placeholder. |
-| `templates/launcher_icons.yaml.tmpl` | `flutter_launcher_icons` config (`assets/icons/icon.png`). |
-| `templates/splash.yaml.tmpl` | native splash whose background is the kit surface (`#F5F0E8` light / `#1C1814` dark, via `color_dark` for system-theme) — NOT the brand accent — and whose `image:` is a dedicated `splash_logo.png` (+ a padded `splash_logo_android12.png` for the Android 12+ path). |
-| `tools/generate_branding.sh` | Idempotent codegen: reads the host's `kcPrimaryColor`, emits the three files above into the host. also rasterizes `assets/icons/splash_logo.png` at 4× logoSize (320px) and a padded `assets/icons/splash_logo_android12.png` (232px logo in a 960px canvas) from `icon.png` via macOS `sips` (non-mac falls back to a copy; the gate then fails on oversize). |
+| `templates/launcher_icons.yaml.tmpl` | `flutter_launcher_icons` config per the brand-icons law (2026-08-09): master + adaptive foreground + Android 13+ theme-adaptive monochrome layer + iOS 18 dark/tinted variants + web icons, all from the app's own `assets/brand-icons/` master (mirrors `assets.manifest.json` `brandIcon`). |
+| `templates/splash.yaml.tmpl` | native splash whose background is the kit surface (`#F5F0E8` light / `#1C1814` dark, via `color_dark` for system-theme) — NOT the brand accent — and whose `image:` is a dedicated `<base>-splash.png` (+ a transparent padded `<base>-splash-android12.png` with theme-reactive `icon_background_color(_dark)` for the Android 12+ path). |
+| `tools/generate_branding.sh` | Idempotent codegen: resolves the brand master from `assets.manifest.json` `brandIcon` (or infers it in `assets/brand-icons/`), emits both configs into the host, and rasterizes `assets/brand-icons/<base>-splash.png` at 4× logoSize (320px, macOS `sips`) plus `<base>-splash-android12.png` (334px logo centered on a transparent 960px canvas, PIL). Legacy hosts with `lib/ui/common/app_colors.dart` additionally get `generated/brand_colors.dart` from their `kcPrimaryColor`; kit-native hosts skip it (colors come from `appbox_kit_core`). |
 
-## The color contract (why a generated copy)
+## The color contract (why a generated copy — LEGACY hosts only)
 
-The host owns its brand colors locally (`generated/brand_colors.dart`) so host
-views need no `appbox_kit` import for color values, and the brand accent comes
-from the host's own `app_colors.dart` — not the kit default. The **theme builder**
+Kit-native hosts (anything scaffolded on `appbox_kit_core`) take their colors
+from the kit directly — no vendored copy is emitted. For legacy hosts that
+carry `lib/ui/common/app_colors.dart`: the host owns its brand colors locally
+(`generated/brand_colors.dart`) so host views need no `appbox_kit` import for
+color values, and the brand accent comes from the host's own `app_colors.dart`
+— not the kit default. The **theme builder**
 (`kitLightTheme` / `kitDarkTheme`) is deliberately **not** copied: it stays
 imported via `package:ui_library`, and the host passes its local accent in:
 
@@ -55,6 +58,6 @@ a `dev_dependency` here, used only for generation).
 
 **Splash background = app surface, not accent.** The native splash background is the kit theme's `scaffoldBackgroundColor` — `AppBoxKitColors.surface` (`#F5F0E8`) light / `AppBoxKitDarkColors.bone` (`#1C1814`) dark — emitted with `color` + `color_dark` so it follows the system theme and matches the in-Flutter `AppBoxKitBrandSplash` (`colorScheme.surface`) with no seam. NOT the brand accent (an accent splash clashed with the warm surface and couldn't go dark).
 
-**Logo size is a pipeline token.** `AppBoxKitBrandSplash.logoSize = 80` (dp) is the SSOT — the host binds its logo `Image.asset` width/height to it. `flutter_native_splash` renders `image:` at its SOURCE pixel dimensions (no upscale), so pointing it at the full-res 1024px launcher `icon.png` made the OS splash logo enormous. `generate_branding.sh` therefore rasterizes a dedicated `assets/icons/splash_logo.png` at 4×80 = 320px (via macOS `sips`). **Android 12+ is different:** it renders the `android_12.image` inside a fixed ~240dp icon window, so the on-screen size is the logo's *fraction* of a 960px canvas, not raw px — the full-frame `icon.png` rendered the logo ~2.9× the iOS one. `generate_branding.sh` instead pads a small logo (~232px, ≈24% of canvas) into a 960px canvas (`assets/icons/splash_logo_android12.png`) so android_12 matches the iOS native-splash size. Matches the asko reference (`logoSize: 80`).
+**Logo size is a pipeline token.** `AppBoxKitBrandSplash.logoSize = 80` (dp) is the SSOT — the host binds its logo `Image.asset` width/height to it. `flutter_native_splash` renders `image:` at its SOURCE pixel dimensions (no upscale), so pointing it at the full-res 1024px brand master made the OS splash logo enormous. `generate_branding.sh` therefore rasterizes a dedicated `assets/brand-icons/<base>-splash.png` at 4×80 = 320px (via macOS `sips`). **Android 12+ is different:** it renders the `android_12.image` inside a fixed ~240dp icon window, so the on-screen size is the logo's *fraction* of a 960px canvas, not raw px — a full-frame master rendered the logo ~2.9× the iOS one. `generate_branding.sh` instead centers a 334px logo on a **transparent** 960px canvas (`<base>-splash-android12.png`) so android_12 matches the iOS native-splash size, and `icon_background_color` / `icon_background_color_dark` supply the theme-reactive backdrop behind the transparent canvas. Matches the asko reference (`logoSize: 80`).
 
 **Startup timing.** `FlutterNativeSplash.preserve()` (host `main.dart`) → `FlutterNativeSplash.remove()` is called FIRST in the startup view-model's `runStartupLogic` (it runs from `onViewModelReady`'s post-frame callback, so the `StartupView` has already painted — no blank frame), then the in-Flutter loading bar runs for `startupLoadingDuration` (2000ms) before routing. Calling `remove()` AFTER the loading wait (the old code) kept the native splash covering the logo + progress bar for the whole duration, so they were never seen.

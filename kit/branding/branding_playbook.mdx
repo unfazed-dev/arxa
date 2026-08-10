@@ -22,7 +22,7 @@
 
 ### Overview & role
 
-Reusable brand layer for `appbox_kit`-built apps. Ships **`AppBoxKitBrandSplash`** — a presentational splash widget (centered brand mark + a `Loading · N%` progress bar) that owns no routing or auth — plus a build-time codegen step (`tools/generate_branding.sh` + `templates/`) that vendors the kit warm-neutral color ramp into a host as `generated/brand_colors.dart`, seeding the brand accent from the host's own `app_colors.dart`. Depends **only on Flutter**, so a kit-themed host and a custom-themed host both render correctly. Reach for it to give a scaffolded app a consistent splash + brand-color layer without coupling host views to the kit.
+Reusable brand layer for `appbox_kit`-built apps. Ships **`AppBoxKitBrandSplash`** — a presentational splash widget (centered brand mark + a `Loading · N%` progress bar) that owns no routing or auth — plus a build-time codegen step (`tools/generate_branding.sh` + `templates/`) that emits the brand-icons-law launcher/splash configs from the app's own `assets/brand-icons/` master and — for legacy hosts carrying `app_colors.dart` — vendors the kit warm-neutral color ramp as `generated/brand_colors.dart` (kit-native hosts take colors from `appbox_kit_core`). Depends **only on Flutter**, so a kit-themed host and a custom-themed host both render correctly. Reach for it to give a scaffolded app a consistent splash + brand-color layer without coupling host views to the kit.
 
 
 ### Public surface
@@ -61,7 +61,7 @@ See `kit_matrix.md` for the full routing + dependency graph.
 
 ### Architecture
 
-`branding` is not a port/adapter kit — it is a **build-time generator plus a tiny presentational runtime**, in two independent halves. (1) `tools/generate_branding.sh` — an idempotent bash codegen (no Flutter needed) that reads the host's `kcPrimaryColor` and emits `generated/brand_colors.dart`, `flutter_launcher_icons.yaml`, and `flutter_native_splash.yaml` into the host, and rasterizes `assets/icons/splash_logo.png` at 4x `AppBoxKitBrandSplash.logoSize`. (2) `lib/src/appbox_kit_startup_view.dart` — the `AppBoxKitBrandSplash` widget the host's `StartupView` renders. Dependency direction is strictly **outbound**: the package depends only on Flutter and imports nothing from `appbox_kit` core, `stacked`, or `stacked_services`. The host's `ThemeData` styles `AppBoxKitBrandSplash`, and the theme builder (`kitLightTheme`/`kitDarkTheme`) stays imported via `package:ui_library` — never copied. Only the color *ramp* is vendored (a generated copy), so host views need no kit import for color values.
+`branding` is not a port/adapter kit — it is a **build-time generator plus a tiny presentational runtime**, in two independent halves. (1) `tools/generate_branding.sh` — an idempotent bash codegen (no Flutter needed) that resolves the brand master from `assets.manifest.json` `brandIcon` (or infers it in `assets/brand-icons/`), emits `flutter_launcher_icons.yaml` and `flutter_native_splash.yaml` into the host, rasterizes `assets/brand-icons/<base>-splash.png` at 4x `AppBoxKitBrandSplash.logoSize` plus the transparent 960px `<base>-splash-android12.png`, and — legacy hosts only (`app_colors.dart` present) — reads `kcPrimaryColor` and emits `generated/brand_colors.dart`. (2) `lib/src/appbox_kit_startup_view.dart` — the `AppBoxKitBrandSplash` widget the host's `StartupView` renders. Dependency direction is strictly **outbound**: the package depends only on Flutter and imports nothing from `appbox_kit` core, `stacked`, or `stacked_services`. The host's `ThemeData` styles `AppBoxKitBrandSplash`, and the theme builder (`kitLightTheme`/`kitDarkTheme`) stays imported via `package:ui_library` — never copied. Only the color *ramp* is vendored (a generated copy), so host views need no kit import for color values.
 
 
 ### Gotchas
@@ -74,7 +74,7 @@ See `kit_matrix.md` for the full routing + dependency graph.
 
 ### Testing
 
-`branding` ships no runtime fakes — `AppBoxKitBrandSplash` is a pure presentational widget with no injected collaborators, so there is nothing to script. Its test seam is **`scripts/branding_gate.sh`**, a read-only assertion (scaffold sub-gate C) that fails loud if a host's generated brand layer drifts: it checks that the accent resolves from `app_colors.dart`, that generated `brand_colors.dart` matches it, that the icon + native-splash configs are present, that the native splash does **not** use the accent as its background and carries `color_dark`, and that `splash_logo.png` is at most 320px (4x `logoSize`). Run it via `pipeline.sh gate scaffold` in consumer mode; it no-ops at the monorepo root (no app to brand).
+`branding` ships no runtime fakes — `AppBoxKitBrandSplash` is a pure presentational widget with no injected collaborators, so there is nothing to script. Its test seam is **`scripts/branding_gate.sh`**, a read-only assertion (scaffold sub-gate C) that fails loud if a host's generated brand layer drifts: it checks the brand-icons law (master + monochrome layer in `assets/brand-icons/`, launcher config mirroring `assets.manifest.json` `brandIcon`), that the native splash carries `color_dark` and uses the `<base>-splash.png` derivative at most 320px (4x `logoSize`), that android_12 uses the transparent 960px padded derivative with `icon_background_color(_dark)`, and — legacy hosts only — that the accent resolves from `app_colors.dart`, generated `brand_colors.dart` matches it, and the splash background is not the accent. Run it via `pipeline.sh gate scaffold` in consumer mode; it no-ops at the monorepo root (no app to brand).
 
 
 ### Features
@@ -84,7 +84,7 @@ See `kit_matrix.md` for the full routing + dependency graph.
 
 ### Decisions / ADRs
 
-- **Vendor the color ramp, don't import it.** The host owns its brand colors locally (`generated/brand_colors.dart`) so host views need no `appbox_kit` import for color values; the accent comes from the host's own `app_colors.dart`, not the kit default. Regenerating each pipeline run keeps the vendored ramp drift-free with `appbox_kit_colors.dart` (which is never modified).
+- **Vendor the color ramp, don't import it (legacy hosts).** Kit-native hosts import colors from `appbox_kit_core`; a legacy host owns its brand colors locally (`generated/brand_colors.dart`) so host views need no `appbox_kit` import for color values; the accent comes from the host's own `app_colors.dart`, not the kit default. Regenerating each pipeline run keeps the vendored ramp drift-free with `appbox_kit_colors.dart` (which is never modified).
 - **Copy the ramp, not the theme builder.** `kitLightTheme`/`kitDarkTheme` stay imported from `package:ui_library`; the host passes its local accent in. Copying the builder would fork kit theming.
 - **`AppBoxKitBrandSplash`, not `StartupView`.** Named to avoid colliding with every Stacked app's own `StartupView` route.
 - **Splash background = surface, not accent.** Regression guard — the native splash renders before Flutter and cannot read `ThemeMode`, so an accent background clashed with the warm surface and never went dark.

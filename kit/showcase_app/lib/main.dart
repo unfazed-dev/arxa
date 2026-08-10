@@ -14,10 +14,16 @@ import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart'
 import 'package:appbox_kit_showcase_app/app/app.locator.dart';
 import 'package:appbox_kit_showcase_app/app/kit_platform_router.dart';
 import 'package:appbox_kit_showcase_app/ui/snackbars/snackbars.dart';
+import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:url_strategy/url_strategy.dart';
 
 Future<void> main() async {
-  WidgetsFlutterBinding.ensureInitialized();
+  final widgetsBinding = WidgetsFlutterBinding.ensureInitialized();
+  // Branding handoff (kit/branding law): hold the native splash past the
+  // first frame so boot never flashes a blank frame, then release it once the
+  // startup view (same surface color + 80dp brand icon) has rendered — the
+  // seam between OS splash and Flutter startup view is invisible.
+  FlutterNativeSplash.preserve(widgetsBinding: widgetsBinding);
   setPathUrlStrategy();
   await setupLocator(stackedRouter: kitPlatformRouter);
   // Kit-owned stacked UI services (Dialog/Snackbar/BottomSheet/Talker).
@@ -36,6 +42,9 @@ Future<void> main() async {
   ).completeOnError('Theme restore failed');
   setupShowcaseSnackbars();
   runApp(const ShowcaseApp());
+  // First Flutter frame = the startup view's brand moment; release the
+  // native splash the moment it is on screen.
+  widgetsBinding.addPostFrameCallback((_) => FlutterNativeSplash.remove());
 }
 
 class ShowcaseApp extends StatefulWidget {
