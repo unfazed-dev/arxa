@@ -105,11 +105,24 @@ enum AppBoxKitChromeHideMode {
 ///    expensive mistake"*, and recommendation 3: *"Do not opacity-animate any
 ///    subtree containing a platform view… Fade forces per-frame native layer
 ///    mutations and leaves ghosting UIViews."*
-/// 3. **Flutter, open bugs.** flutter#93757 (`FadeTransition` does not apply to
-///    hybrid-composition platform views) and flutter#24164 (an opacity layer
-///    spanning a platform view splits into two groups) are both OPEN, with no
-///    merged fix. Animating alpha over a `UiKitView` is unsupported, not just
-///    costly.
+/// 3. ~~**Flutter, open bugs.**~~ **RETRACTED — this pillar was mis-cited, and
+///    it does not hold on iOS.** flutter#93757 is titled *"[android]
+///    FadeTransitions do not work with platform views using hybrid
+///    composition"* and carries `platform-android`/`team-android` labels: it is
+///    Android-specific and cannot support an iOS claim. And opacity is *not*
+///    unsupported on iOS — the embedder applies the `kOpacity` mutator
+///    directly (`embeddedView.alpha = GetAlphaFloat() * embeddedView.alpha`,
+///    landed in flutter/engine PR #9667, 2019). flutter#24164 did not resolve
+///    to a matching issue and should be treated as unverified until someone
+///    checks it.
+///
+///    **This removes one of four pillars, not the conclusion.** Points 1, 2 and
+///    4 stand on their own: Apple's explicit prefer-`effect`-over-`alpha`
+///    guidance, this repo's simulator-verified ghosting observation, and the
+///    vendored package's own no-animation implementation. Keep the instant
+///    swap. The materialize this gate exists to avoid is caused by the view
+///    LEAVING THE FRAME (engine `removeFromSuperview`/`addSubview`), not by
+///    fading — which is why de-tinting could never have fixed it either.
 /// 4. **The vendored package.** Its own `autoHideOnPageTransition` uses this
 ///    exact `IndexedStack` toggle with an explicit "no recreate animation"
 ///    rationale, and `ModalHideMixin` restores with a plain `setState` — no
@@ -125,6 +138,20 @@ enum AppBoxKitChromeHideMode {
 /// - Hit-testing and semantics need no [IgnorePointer]: `RenderIndexedStack`
 ///   overrides `hitTestChildren` and `visitChildrenForSemantics` to visit only
 ///   the displayed child.
+///
+/// **Second ceiling — the case that is NOT device-verified.** The pop
+/// predicate keys on whether a route above this gate already existed. For a
+/// gate that is a *sibling* of the transitioning router rather than a
+/// descendant of its routes — `bottomNavigationBar` on a Scaffold whose `body`
+/// holds the Navigator, which is exactly where the showcase's tab bar sits — a
+/// **root-level page push over the tab scaffold** would read as "travelling"
+/// and stay painted. Every push in the showcase is nested
+/// (`context.router.pushNamed` inside a tab's own router), so that
+/// configuration does not occur there and could not be tested. If a root-level
+/// page push is ever added over a tab scaffold and the bar bleeds through the
+/// incoming page, this predicate is the place to look — the fix would be to
+/// distinguish descendant-of-a-route from sibling-of-the-router, which
+/// `ModalRoute.of` alone cannot do.
 ///
 /// **Ceiling (named on purpose):** all-or-nothing. The package's
 /// `ModalHideMixin` can consult `topModalRect` to keep widgets a partial
@@ -180,6 +207,20 @@ class _KitNativeChromeGateState extends State<AppBoxKitNativeChromeGate> {
   /// the rebuild that hides, by which point the latest layout stamped it).
   Size? _lastSize;
 
+  /// This gate's OWN route, captured once per dependency change rather than
+  /// looked up inside the visibility callback (which can run from a post-frame
+  /// callback, where registering an inherited-widget dependency is not valid).
+  /// Null when the gate is not under a [ModalRoute] at all — a bare
+  /// `runApp(...)` tree, or a test harness — in which case it can never be
+  /// travelling with a route transition, so the gate falls back to hiding.
+  ModalRoute<dynamic>? _route;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _route = ModalRoute.of(context);
+  }
+
   @override
   void initState() {
     super.initState();
@@ -226,8 +267,65 @@ class _KitNativeChromeGateState extends State<AppBoxKitNativeChromeGate> {
     // same baseline-scoping idea as the `_mountDepth` modal check it sits
     // beside. `activeTransitions` remains the change signal (it ticks on every
     // begin/end anywhere); `hasActiveTransitionAbove` makes the decision.
+    // A transition ABOVE me is only a reason to hide if I am NOT part of what
+    // is moving. This is the distinction the gate was missing, and it is why
+    // Liquid Glass re-materialized on every back-navigation:
+    //
+    // - Chrome the route slides OVER (the tab bar in the tab-host scaffold,
+    //   outside every tab's nested router) is static while the page moves. A
+    //   platform view composites above the Flutter scene, so it must leave the
+    //   frame. This is the case `autoHideOnPageTransition` was written for and
+    //   the one with device hours behind it.
+    // - Content INSIDE the transitioning route is the opposite case. It is
+    //   carried by that route's own transform, so there is nothing to prevent
+    //   — and hiding it is actively harmful: leaving the frame makes the engine
+    //   `removeFromSuperview` the platform view, and re-entering the frame
+    //   `addSubview`s it, which is what re-establishes (materializes) iOS 26
+    //   Liquid Glass. Fully visible on pop, invisible on push only because
+    //   there the views are appearing for the first time, where materialize is
+    //   Apple's intended behavior.
+    //
+    // Verified against the SDK on disk rather than assumed, because the old
+    // premise ("a platform view neither clips nor translates with the routes")
+    // is FALSE for Cupertino in-route content:
+    //   * `CupertinoPageTransition` is a plain nested `SlideTransition` +
+    //     `DecoratedBoxTransition` (cupertino/route.dart:563-570) — a
+    //     `Transform`, i.e. the `kTransform` mutator.
+    //   * The iOS embedder applies `kTransform` as a full 4x4 `CATransform3D`,
+    //     and `kClipRect`/`kClipRRect`/`kClipPath` via a `FlutterClippingMaskView`
+    //     (`FlutterPlatformViewsController.mm`, `ApplyMutators`).
+    //   * Cupertino never snapshots: `SnapshotWidget` is consumed in exactly
+    //     one framework file, `material/page_transitions_theme.dart` (the Zoom
+    //     transition). So `allowSnapshotting: true` on `CupertinoPageRoute`
+    //     cannot strand the view here — that caveat is Material-only.
+    //   * Flutter content painted above a platform view becomes an *overlay*
+    //     (widgets/platform_view.dart:632), so staying painted does not bleed
+    //     through the outgoing page — z-order is preserved.
+    // Read at the instant the observer ticks, and that instant is meaningful —
+    // this is the part to not "fix" later thinking it is a race:
+    //
+    // - POP. A route was already above me, so my `secondaryAnimation` proxy is
+    //   already wired to it and sitting at `completed`. The pop reverses it, so
+    //   this reads `reverse` → travelling → I stay painted. I am being
+    //   REVEALED, and revealed content must not re-materialize.
+    // - PUSH. Nothing was above me yet, so the Navigator has not wired anything
+    //   into that proxy at tick time and it reads `dismissed` → not travelling
+    //   → I hide, exactly as before. I am being COVERED for the first time, and
+    //   hiding under an incoming opaque route is invisible.
+    //
+    // So the discriminator is really *whether a route above me already
+    // existed*, which is precisely "am I being revealed, or covered?". It is
+    // determined by prior wiring state, not by callback ordering. (Sampling
+    // from a post-frame callback registered BEFORE the push instead reads
+    // `forward`, one beat later in the same frame — that is the misleading
+    // reading, not this one.)
+    final travellingWithTransition =
+        (_route?.animation?.isAnimating ?? false) ||
+            (_route?.secondaryAnimation?.isAnimating ?? false);
+
     final hidden = CNTabBarRouteObserver.anyModalDepth.value > _mountDepth ||
-        CNTransitionObserver.hasActiveTransitionAbove(context);
+        (CNTransitionObserver.hasActiveTransitionAbove(context) &&
+            !travellingWithTransition);
     if (hidden == _hidden) return;
     // One setState, no controller: the swap is a paint toggle on both edges.
     setState(() => _hidden = hidden);
