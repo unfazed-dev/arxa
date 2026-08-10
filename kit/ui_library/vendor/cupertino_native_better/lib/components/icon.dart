@@ -7,6 +7,7 @@ import '../style/sf_symbol.dart';
 import '../utils/icon_renderer.dart';
 import '../utils/theme_helper.dart';
 import '../utils/platform_view_guard.dart';
+import 'async_resolution_state.dart';
 
 /// A platform-rendered SF Symbol icon, custom image asset, or IconData.
 ///
@@ -60,7 +61,8 @@ class CNIcon extends StatefulWidget {
   State<CNIcon> createState() => _CNIconState();
 }
 
-class _CNIconState extends State<CNIcon> {
+class _CNIconState extends State<CNIcon>
+    with AsyncResolutionState<CNIcon, IconSource> {
   MethodChannel? _channel;
   bool? _lastIsDark;
   String? _lastName;
@@ -83,13 +85,54 @@ class _CNIconState extends State<CNIcon> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+    // First resolution happens here, not in initState: resolveValue may read
+    // inherited widgets, which initState forbids. syncResolution is keyed, so
+    // unrelated dependency changes are no-ops.
+    syncResolution();
     _syncBrightnessIfNeeded();
   }
 
   @override
   void didUpdateWidget(covariant CNIcon oldWidget) {
     super.didUpdateWidget(oldWidget);
+    syncResolution();
     _syncPropsToNativeIfNeeded();
+  }
+
+  /// Rasterization size for the [CNIcon.customIcon] branch.
+  ///
+  /// Divergence (Stage 2): sources from `widget.symbol?.size` (not
+  /// `widget.imageAsset?.size`) — mirrors the placeholder divergence in
+  /// [build].
+  double get _customIconSize => widget.size ?? widget.symbol?.size ?? 24.0;
+
+  @override
+  Object? resolutionKey() {
+    // Priority: imageAsset > customIcon > symbol. The symbol branch needs no
+    // async resolution at all, hence the null.
+    if (widget.imageAsset != null) {
+      final asset = widget.imageAsset!;
+      return ('asset', asset.assetPath, asset.imageData, asset.imageFormat);
+    }
+    if (widget.customIcon != null) {
+      return ('custom', widget.customIcon, _customIconSize);
+    }
+    return null;
+  }
+
+  @override
+  Future<IconSource?> resolveValue() {
+    if (widget.imageAsset != null) {
+      return resolveIconSource(
+        assetPath: widget.imageAsset!.assetPath,
+        assetImageData: widget.imageAsset!.imageData,
+        assetFormat: widget.imageAsset!.imageFormat,
+      );
+    }
+    return resolveIconSource(
+      customIcon: widget.customIcon,
+      customIconSize: _customIconSize,
+    );
   }
 
   @override
@@ -135,60 +178,44 @@ class _CNIconState extends State<CNIcon> {
 
     // Handle image asset (highest priority)
     if (widget.imageAsset != null) {
-      return FutureBuilder<IconSource?>(
-        future: resolveIconSource(
-          assetPath: widget.imageAsset!.assetPath,
-          assetImageData: widget.imageAsset!.imageData,
-          assetFormat: widget.imageAsset!.imageFormat,
-        ),
-        builder: (context, snapshot) {
-          if (!snapshot.hasData) {
-            // Divergence (Stage 2): asset branch placeholder sizes off
-            // widget.imageAsset?.size, not widget.symbol?.size.
-            final defaultSize =
-                widget.size ?? (widget.imageAsset?.size ?? 24.0);
-            return SizedBox(
-              width: defaultSize,
-              height: widget.height ?? defaultSize,
-            );
-          }
-          // Create a new CNImageAsset with the resolved path/format.
-          final resolved = snapshot.data! as IconSourceAsset;
-          final resolvedImageAsset = CNImageAsset(
-            resolved.resolvedPath,
-            size: widget.imageAsset!.size,
-            color: widget.imageAsset!.color,
-            imageFormat: resolved.format,
-            imageData: widget.imageAsset!.imageData,
-            mode: widget.imageAsset!.mode,
-            gradient: widget.imageAsset!.gradient,
-          );
-          return _buildNativeIcon(context, imageAsset: resolvedImageAsset);
-        },
+      // Resolution is hoisted into the State (see AsyncResolutionState), so
+      // build() is synchronous and a parent rebuild no longer restarts it.
+      // The type test doubles as a branch check: after a switch from the
+      // customIcon branch the cached value is still IconSourceBytes until the
+      // new resolution lands.
+      final resolved = resolvedValue;
+      if (resolved is! IconSourceAsset) {
+        // Divergence (Stage 2): asset branch placeholder sizes off
+        // widget.imageAsset?.size, not widget.symbol?.size.
+        final defaultSize = widget.size ?? (widget.imageAsset?.size ?? 24.0);
+        return SizedBox(
+          width: defaultSize,
+          height: widget.height ?? defaultSize,
+        );
+      }
+      // Create a new CNImageAsset with the resolved path/format.
+      final resolvedImageAsset = CNImageAsset(
+        resolved.resolvedPath,
+        size: widget.imageAsset!.size,
+        color: widget.imageAsset!.color,
+        imageFormat: resolved.format,
+        imageData: widget.imageAsset!.imageData,
+        mode: widget.imageAsset!.mode,
+        gradient: widget.imageAsset!.gradient,
       );
+      return _buildNativeIcon(context, imageAsset: resolvedImageAsset);
     }
 
     // Handle custom icon (medium priority)
     if (widget.customIcon != null) {
-      // Divergence (Stage 2): rasterization size sources from
-      // widget.symbol?.size (not widget.imageAsset?.size) — mirrors the
-      // placeholder divergence below.
-      final iconSize = widget.size ?? widget.symbol?.size ?? 24.0;
-      return FutureBuilder<IconSource?>(
-        future: resolveIconSource(
-          customIcon: widget.customIcon,
-          customIconSize: iconSize,
-        ),
-        builder: (context, snapshot) {
-          if (!snapshot.hasData) {
-            // Divergence (Stage 2): customIcon branch placeholder sizes off
-            // widget.symbol?.size, not widget.imageAsset?.size.
-            return SizedBox(width: iconSize, height: widget.height ?? iconSize);
-          }
-          final resolved = snapshot.data! as IconSourceBytes;
-          return _buildNativeIcon(context, customIconBytes: resolved.bytes);
-        },
-      );
+      final iconSize = _customIconSize;
+      final resolved = resolvedValue;
+      if (resolved is! IconSourceBytes) {
+        // Divergence (Stage 2): customIcon branch placeholder sizes off
+        // widget.symbol?.size, not widget.imageAsset?.size.
+        return SizedBox(width: iconSize, height: widget.height ?? iconSize);
+      }
+      return _buildNativeIcon(context, customIconBytes: resolved.bytes);
     }
 
     // Handle SF Symbol (lowest priority)
