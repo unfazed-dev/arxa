@@ -337,5 +337,70 @@ final class ImageUtils {
     
     return createImageFromData(data, format: detectedFormat, size: size, color: color, scale: scale)
   }
+
+  // MARK: - Icon Source Resolution
+
+  /// One owner per icon source, shared by every platform view.
+  ///
+  /// Views keep their own priority ladder because the orders genuinely differ
+  /// (asset-first vs data-first); what they no longer each reimplement is the
+  /// detect/load/tint dance for a single source.
+  ///
+  /// `scale` is required on purpose. Every previous helper defaulted it to
+  /// `UIScreen.main.scale`, which is how the create/update scale split stayed
+  /// invisible; making it explicit forces each site to state what it means.
+
+  /// Resolves a Flutter asset path into a sized, optionally tinted image.
+  static func iconFromAsset(
+    _ assetPath: String,
+    iconSize: CGFloat?,
+    iconColor: UIColor?,
+    providedFormat: String?,
+    scale: CGFloat
+  ) -> UIImage? {
+    return loadFlutterAsset(
+      assetPath,
+      size: squareSize(iconSize),
+      format: detectImageFormat(assetPath: assetPath, providedFormat: providedFormat),
+      color: normalizedTint(iconColor),
+      scale: scale
+    )
+  }
+
+  /// Resolves raw image bytes (PNG/JPG/SVG) into a sized, optionally tinted image.
+  static func iconFromData(
+    _ data: Data,
+    iconSize: CGFloat?,
+    iconColor: UIColor?,
+    providedFormat: String?,
+    scale: CGFloat
+  ) -> UIImage? {
+    return createImageFromData(
+      data,
+      format: detectImageFormat(assetPath: nil, providedFormat: providedFormat, imageData: data),
+      size: squareSize(iconSize),
+      color: normalizedTint(iconColor),
+      scale: scale
+    )
+  }
+
+  /// Resolves PNG bytes rasterized from a Flutter `IconData` glyph. Always
+  /// template-rendered so the host control supplies the tint.
+  static func iconFromTemplateBytes(_ data: Data, scale: CGFloat) -> UIImage? {
+    return UIImage(data: data, scale: scale)?.withRenderingMode(.alwaysTemplate)
+  }
+
+  private static func squareSize(_ iconSize: CGFloat?) -> CGSize? {
+    guard let iconSize = iconSize else { return nil }
+    return CGSize(width: iconSize, height: iconSize)
+  }
+
+  /// Round-trips the tint through ARGB, matching what the call sites did inline.
+  /// The trip is lossy and drops colors whose components can't be read (those
+  /// went untinted before); preserved here so Stage 1 stays behavior-neutral.
+  private static func normalizedTint(_ color: UIColor?) -> UIColor? {
+    guard let color = color, let argb = colorToARGB(color) else { return nil }
+    return colorFromARGB(argb)
+  }
 }
 

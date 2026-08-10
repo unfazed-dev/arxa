@@ -2,6 +2,63 @@ import SwiftUI
 import UIKit
 import Flutter
 
+/// Resolves a glass button's icon from its argument dictionary: asset path
+/// first, then `imageBytes`, then the PNG `iconBytes` rasterized from a Flutter
+/// `IconData`. Each source falls through to the next when it yields nothing.
+///
+/// Scales by the screen scale rather than an `iconScale` — this view type never
+/// received one; see "Divergences found" in
+/// docs/plans/icon-pipeline-consolidation.md.
+private func resolveGlassButtonIcon(
+  _ buttonDict: [String: Any],
+  iconSize: CGFloat,
+  iconColorARGB: Int?
+) -> UIImage? {
+  let scale = UIScreen.main.scale
+  let iconColor = iconColorARGB.map { ImageUtils.colorFromARGB($0) }
+  let format = buttonDict["imageFormat"] as? String
+
+  if let assetPath = buttonDict["assetPath"] as? String, !assetPath.isEmpty {
+    var image = ImageUtils.iconFromAsset(
+      assetPath,
+      iconSize: iconSize,
+      iconColor: iconColor,
+      providedFormat: format,
+      scale: scale
+    )
+    // Untinted loads may come back at the asset's own size; bring them to the
+    // requested box. Tinted loads are already sized by the tinting pass.
+    let size = CGSize(width: iconSize, height: iconSize)
+    if image != nil, iconColorARGB == nil, image!.size != size {
+      image = ImageUtils.scaleImage(image!, to: size, scale: scale)
+    }
+    if let image = image { return image }
+  }
+
+  if let imageBytes = buttonDict["imageBytes"] as? FlutterStandardTypedData,
+     let image = ImageUtils.iconFromData(
+       imageBytes.data,
+       iconSize: iconSize,
+       iconColor: iconColor,
+       providedFormat: format,
+       scale: scale
+     ) {
+    return image
+  }
+
+  if let iconBytes = buttonDict["iconBytes"] as? FlutterStandardTypedData {
+    return ImageUtils.iconFromData(
+      iconBytes.data,
+      iconSize: iconSize,
+      iconColor: nil,
+      providedFormat: "png",
+      scale: scale
+    )
+  }
+
+  return nil
+}
+
 @available(iOS 26.0, *)
 class GlassButtonGroupViewModel: ObservableObject {
   @Published var buttons: [GlassButtonData] = []
@@ -270,10 +327,9 @@ private func decodePopupMenuExtras(_ buttonDict: [String: Any]) -> ([Bool]?, [UI
   if let list = buttonDict["menuIconBytes"] as? [Any?] {
     icons = list.map { entry in
       guard let data = entry as? FlutterStandardTypedData else { return nil }
-      return ImageUtils.createImageFromData(
-        data.data, format: "png",
-        size: CGSize(width: 18, height: 18),
-        scale: UIScreen.main.scale)
+      return ImageUtils.iconFromData(
+        data.data, iconSize: 18, iconColor: nil,
+        providedFormat: "png", scale: UIScreen.main.scale)
     }
   }
   return (destructive, icons)
@@ -342,57 +398,7 @@ class GlassButtonGroupPlatformView: NSObject, FlutterPlatformView {
           let badgeCount = (buttonDict["badgeCount"] as? NSNumber)?.intValue
 
           // Load image from asset path, bytes, or icon bytes
-          var iconImage: UIImage? = nil
-          
-          // Try asset path first
-          if let assetPath = buttonDict["assetPath"] as? String, !assetPath.isEmpty {
-            let format = buttonDict["imageFormat"] as? String
-            let size = CGSize(width: iconSize, height: iconSize)
-            
-            // Use utility function to load and optionally tint image
-            if let argb = iconColorARGB, #available(iOS 13.0, *) {
-              iconImage = ImageUtils.loadAndTintImage(
-                from: assetPath,
-                iconSize: iconSize,
-                iconColor: argb,
-                providedFormat: format,
-                scale: UIScreen.main.scale
-              )
-            } else {
-              iconImage = ImageUtils.loadFlutterAsset(assetPath, size: size, format: format, scale: UIScreen.main.scale)
-            }
-            
-            // If no color but size is specified, scale the image
-            if iconImage != nil, iconColorARGB == nil, iconImage!.size != size {
-              iconImage = ImageUtils.scaleImage(iconImage!, to: size, scale: UIScreen.main.scale)
-            }
-          }
-          
-          // Fallback to imageBytes if assetPath failed or wasn't provided
-          if iconImage == nil, let imageBytes = buttonDict["imageBytes"] as? FlutterStandardTypedData {
-            let format = buttonDict["imageFormat"] as? String
-            let size = CGSize(width: iconSize, height: iconSize)
-            
-            // Use utility function to create and optionally tint image
-            if let argb = iconColorARGB, #available(iOS 13.0, *) {
-              iconImage = ImageUtils.createAndTintImage(
-                from: imageBytes.data,
-                iconSize: iconSize,
-                iconColor: argb,
-                providedFormat: format,
-                scale: UIScreen.main.scale
-              )
-            } else {
-              iconImage = ImageUtils.createImageFromData(imageBytes.data, format: format, size: size, scale: UIScreen.main.scale)
-            }
-          }
-          
-          // Fallback to iconBytes if both assetPath and imageBytes failed
-          if iconImage == nil, let iconBytes = buttonDict["iconBytes"] as? FlutterStandardTypedData {
-            // iconBytes are typically PNG data from IconData rendering
-            let size = CGSize(width: iconSize, height: iconSize)
-            iconImage = ImageUtils.createImageFromData(iconBytes.data, format: "png", size: size, scale: UIScreen.main.scale)
-          }
+          let iconImage = resolveGlassButtonIcon(buttonDict, iconSize: iconSize, iconColorARGB: iconColorARGB)
           
           // Create callback for this button
           let buttonIndex = index
@@ -672,53 +678,7 @@ class GlassButtonGroupPlatformView: NSObject, FlutterPlatformView {
     let badgeCount = (buttonDict["badgeCount"] as? NSNumber)?.intValue
 
     // Load image from asset path, bytes, or icon bytes
-    var iconImage: UIImage? = nil
-
-    // Try asset path first
-    if let assetPath = buttonDict["assetPath"] as? String, !assetPath.isEmpty {
-      let format = buttonDict["imageFormat"] as? String
-      let size = CGSize(width: iconSize, height: iconSize)
-      
-      if let argb = iconColorARGB, #available(iOS 13.0, *) {
-        iconImage = ImageUtils.loadAndTintImage(
-          from: assetPath,
-          iconSize: iconSize,
-          iconColor: argb,
-          providedFormat: format,
-          scale: UIScreen.main.scale
-        )
-      } else {
-        iconImage = ImageUtils.loadFlutterAsset(assetPath, size: size, format: format, scale: UIScreen.main.scale)
-      }
-      
-      if iconImage != nil, iconColorARGB == nil, iconImage!.size != size {
-        iconImage = ImageUtils.scaleImage(iconImage!, to: size, scale: UIScreen.main.scale)
-      }
-    }
-    
-    // Fallback to imageBytes
-    if iconImage == nil, let imageBytes = buttonDict["imageBytes"] as? FlutterStandardTypedData {
-      let format = buttonDict["imageFormat"] as? String
-      let size = CGSize(width: iconSize, height: iconSize)
-      
-      if let argb = iconColorARGB, #available(iOS 13.0, *) {
-        iconImage = ImageUtils.createAndTintImage(
-          from: imageBytes.data,
-          iconSize: iconSize,
-          iconColor: argb,
-          providedFormat: format,
-          scale: UIScreen.main.scale
-        )
-      } else {
-        iconImage = ImageUtils.createImageFromData(imageBytes.data, format: format, size: size, scale: UIScreen.main.scale)
-      }
-    }
-    
-    // Fallback to iconBytes
-    if iconImage == nil, let iconBytes = buttonDict["iconBytes"] as? FlutterStandardTypedData {
-      let size = CGSize(width: iconSize, height: iconSize)
-      iconImage = ImageUtils.createImageFromData(iconBytes.data, format: "png", size: size, scale: UIScreen.main.scale)
-    }
+    let iconImage = resolveGlassButtonIcon(buttonDict, iconSize: iconSize, iconColorARGB: iconColorARGB)
     
     let isRound = (title == nil && iconName != nil) || (title == nil && iconImage != nil)
     
@@ -814,50 +774,7 @@ class GlassButtonGroupPlatformView: NSObject, FlutterPlatformView {
       let glassEffectInteractive = (buttonDict["glassEffectInteractive"] as? NSNumber)?.boolValue ?? false
       let badgeCount = (buttonDict["badgeCount"] as? NSNumber)?.intValue
 
-      var iconImage: UIImage? = nil
-
-      if let assetPath = buttonDict["assetPath"] as? String, !assetPath.isEmpty {
-        let format = buttonDict["imageFormat"] as? String
-        let size = CGSize(width: iconSize, height: iconSize)
-        
-        if let argb = iconColorARGB, #available(iOS 13.0, *) {
-          iconImage = ImageUtils.loadAndTintImage(
-            from: assetPath,
-            iconSize: iconSize,
-            iconColor: argb,
-            providedFormat: format,
-            scale: UIScreen.main.scale
-          )
-        } else {
-          iconImage = ImageUtils.loadFlutterAsset(assetPath, size: size, format: format, scale: UIScreen.main.scale)
-        }
-        
-        if iconImage != nil, iconColorARGB == nil, iconImage!.size != size {
-          iconImage = ImageUtils.scaleImage(iconImage!, to: size, scale: UIScreen.main.scale)
-        }
-      }
-      
-      if iconImage == nil, let imageBytes = buttonDict["imageBytes"] as? FlutterStandardTypedData {
-        let format = buttonDict["imageFormat"] as? String
-        let size = CGSize(width: iconSize, height: iconSize)
-        
-        if let argb = iconColorARGB, #available(iOS 13.0, *) {
-          iconImage = ImageUtils.createAndTintImage(
-            from: imageBytes.data,
-            iconSize: iconSize,
-            iconColor: argb,
-            providedFormat: format,
-            scale: UIScreen.main.scale
-          )
-        } else {
-          iconImage = ImageUtils.createImageFromData(imageBytes.data, format: format, size: size, scale: UIScreen.main.scale)
-        }
-      }
-      
-      if iconImage == nil, let iconBytes = buttonDict["iconBytes"] as? FlutterStandardTypedData {
-        let size = CGSize(width: iconSize, height: iconSize)
-        iconImage = ImageUtils.createImageFromData(iconBytes.data, format: "png", size: size, scale: UIScreen.main.scale)
-      }
+      let iconImage = resolveGlassButtonIcon(buttonDict, iconSize: iconSize, iconColorARGB: iconColorARGB)
       
       let buttonIndex = index
       let menuLabels = buttonDict["menuLabels"] as? [String]

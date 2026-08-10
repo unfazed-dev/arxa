@@ -128,14 +128,8 @@ class CupertinoTabBarNSView: NSView {
     for i in 0..<count {
       // Custom icon bytes take precedence over SF Symbol
       if i < customIconBytes.count, let data = customIconBytes[i],
-         let image = NSImage(data: data) {
-        // Set the scale on the image representation
-        if let rep = image.representations.first {
-          rep.pixelsWide = Int(25.0 * iconScale) // 25pt is the standard icon size
-          rep.pixelsHigh = Int(25.0 * iconScale)
-        }
-        image.size = NSSize(width: 25.0, height: 25.0)
-        image.isTemplate = true  // Allow macOS to tint the icon
+         // 25pt is the standard segmented-control icon size
+         let image = ImageUtils.iconFromTemplateBytes(data, pointSize: 25.0, scale: iconScale) {
         control.setImage(image, forSegment: i)
       } else if i < symbols.count && !symbols[i].isEmpty,
                 #available(macOS 11.0, *),
@@ -183,11 +177,7 @@ class CupertinoTabBarNSView: NSView {
   }
 
   private static func colorFromARGB(_ argb: Int) -> NSColor {
-    let a = CGFloat((argb >> 24) & 0xFF) / 255.0
-    let r = CGFloat((argb >> 16) & 0xFF) / 255.0
-    let g = CGFloat((argb >> 8) & 0xFF) / 255.0
-    let b = CGFloat(argb & 0xFF) / 255.0
-    return NSColor(srgbRed: r, green: g, blue: b, alpha: a)
+    return ImageUtils.colorFromARGB(argb)
   }
 
   @objc private func onChanged(_ sender: NSSegmentedControl) {

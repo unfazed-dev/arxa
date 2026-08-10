@@ -141,13 +141,15 @@ class CupertinoIconPlatformView: NSObject, FlutterPlatformView {
     // Priority: imageData > assetPath > customIconBytes > SF Symbol
     if let data = imageData {
       // Raw image data (PNG, SVG, etc.)
-      img = Self.createImageFromData(data, format: imageFormat, scale: iconScale)
+      img = ImageUtils.iconFromData(data, iconSize: nil, iconColor: nil, providedFormat: imageFormat, scale: iconScale)
     } else if let path = assetPath {
-      // Flutter asset path
-      img = Self.loadFlutterAsset(path)
+      // Flutter asset path. NOTE: this branch ignores `iconScale` and rasterizes
+      // at the screen scale — see "Divergences found" in
+      // docs/plans/icon-pipeline-consolidation.md.
+      img = ImageUtils.iconFromAsset(path, iconSize: nil, iconColor: nil, providedFormat: nil, scale: UIScreen.main.scale)
     } else if let data = customIconBytes {
       // Legacy custom icon bytes (PNG from IconData)
-      img = UIImage(data: data, scale: self.iconScale)?.withRenderingMode(.alwaysTemplate)
+      img = ImageUtils.iconFromTemplateBytes(data, scale: self.iconScale)
     } else if !name.isEmpty {
       // SF Symbol
       img = UIImage(systemName: name)
@@ -213,11 +215,4 @@ class CupertinoIconPlatformView: NSObject, FlutterPlatformView {
     return ImageUtils.colorFromARGB(argb)
   }
 
-  private static func loadFlutterAsset(_ assetPath: String) -> UIImage? {
-    return ImageUtils.loadFlutterAsset(assetPath)
-  }
-
-  private static func createImageFromData(_ data: Data, format: String?, scale: CGFloat) -> UIImage? {
-    return ImageUtils.createImageFromData(data, format: format, scale: scale)
-  }
 }

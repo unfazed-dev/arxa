@@ -375,68 +375,41 @@ class CupertinoPopupMenuButtonPlatformView: NSObject, FlutterPlatformView {
         // Priority: imageAsset > customIconBytes > SF Symbol
         
         // Handle imageAsset (highest priority)
+        let format = i < self.imageAssetFormats.count ? self.imageAssetFormats[i] : nil
+        let iconColor: UIColor? = {
+          if i < self.itemColors.count, let colorNum = self.itemColors[i] as? NSNumber, !(self.itemColors[i] is NSNull) {
+            return Self.colorFromARGB(colorNum.intValue)
+          }
+          return nil
+        }()
+        let iconSize: CGFloat? = {
+          if i < self.itemSizes.count, let sizeNum = self.itemSizes[i] as? NSNumber {
+            return CGFloat(truncating: sizeNum)
+          }
+          return 18.0
+        }()
+
         if i < self.imageAssetPaths.count, !self.imageAssetPaths[i].isEmpty {
-          let assetPath = self.imageAssetPaths[i]
-          let format = i < self.imageAssetFormats.count ? self.imageAssetFormats[i] : nil
-          let iconColorARGB: Int? = {
-            if i < self.itemColors.count, let colorNum = self.itemColors[i] as? NSNumber, !(self.itemColors[i] is NSNull) {
-              return colorNum.intValue
-            }
-            return nil
-          }()
-          let iconSize: CGFloat? = {
-            if i < self.itemSizes.count, let sizeNum = self.itemSizes[i] as? NSNumber {
-              return CGFloat(truncating: sizeNum)
-            }
-            return 18.0
-          }()
-          
-          // Use utility function to load and optionally tint image
-          if let argb = iconColorARGB, #available(iOS 13.0, *) {
-            image = ImageUtils.loadAndTintImage(
-              from: assetPath,
-              iconSize: iconSize,
-              iconColor: argb,
-              providedFormat: format,
-              scale: self.iconScale
-            )
-          } else {
-            let size = CGSize(width: iconSize ?? 18, height: iconSize ?? 18)
-            image = ImageUtils.loadFlutterAsset(assetPath, size: size, format: format, scale: self.iconScale)
-          }
+          image = ImageUtils.iconFromAsset(
+            self.imageAssetPaths[i],
+            iconSize: iconSize,
+            iconColor: iconColor,
+            providedFormat: format,
+            scale: self.iconScale
+          )
         } else if i < self.imageAssetData.count, let data = self.imageAssetData[i] {
-          let format = i < self.imageAssetFormats.count ? self.imageAssetFormats[i] : nil
-          let iconColorARGB: Int? = {
-            if i < self.itemColors.count, let colorNum = self.itemColors[i] as? NSNumber, !(self.itemColors[i] is NSNull) {
-              return colorNum.intValue
-            }
-            return nil
-          }()
-          let iconSize: CGFloat? = {
-            if i < self.itemSizes.count, let sizeNum = self.itemSizes[i] as? NSNumber {
-              return CGFloat(truncating: sizeNum)
-            }
-            return 18.0
-          }()
-          
-          // Use utility function to create and optionally tint image
-          if let argb = iconColorARGB, #available(iOS 13.0, *) {
-            image = ImageUtils.createAndTintImage(
-              from: data,
-              iconSize: iconSize,
-              iconColor: argb,
-              providedFormat: format,
-              scale: self.iconScale
-            )
-          } else {
-            let size: CGSize? = iconSize != nil ? CGSize(width: iconSize!, height: iconSize!) : nil
-            image = ImageUtils.createImageFromData(data, format: format, size: size, scale: self.iconScale)
-          }
+          image = ImageUtils.iconFromData(
+            data,
+            iconSize: iconSize,
+            iconColor: iconColor,
+            providedFormat: format,
+            scale: self.iconScale
+          )
         }
-        
+
         // Handle custom icon bytes (medium priority)
         if image == nil, i < self.customIconBytes.count, let data = self.customIconBytes[i] {
-          image = UIImage(data: data, scale: self.iconScale)?.withRenderingMode(.alwaysTemplate)
+          image = ImageUtils.iconFromTemplateBytes(data, scale: self.iconScale)
           // Apply tint color to custom icon if provided
           if i < self.customIconColors.count, 
              let colorNum = self.customIconColors[i] as? NSNumber,
@@ -543,7 +516,7 @@ class CupertinoPopupMenuButtonPlatformView: NSObject, FlutterPlatformView {
       // Optional: set image where supported (iOS 13 has `image` on UIAlertAction)
       var img: UIImage? = nil
       if i < customIconBytes.count, let data = customIconBytes[i] {
-        img = UIImage(data: data, scale: self.iconScale)?.withRenderingMode(.alwaysTemplate)
+        img = ImageUtils.iconFromTemplateBytes(data, scale: self.iconScale)
         // Apply tint color to custom icon if provided
         if i < self.customIconColors.count,
            let colorNum = self.customIconColors[i] as? NSNumber,
@@ -588,42 +561,30 @@ class CupertinoPopupMenuButtonPlatformView: NSObject, FlutterPlatformView {
     
     // Handle imageAsset (highest priority)
     if let path = btnAssetPath, !path.isEmpty {
-      let iconColorARGB = btnIconColor != nil ? ImageUtils.colorToARGB(btnIconColor!) : nil
-      let size = CGSize(width: btnIconSize ?? 20, height: btnIconSize ?? 20)
-      
-      // Use utility function to load and optionally tint image
-      if let argb = iconColorARGB, #available(iOS 13.0, *) {
-        return ImageUtils.loadAndTintImage(
-          from: path,
-          iconSize: btnIconSize,
-          iconColor: argb,
-          providedFormat: btnImageFormat,
-          scale: iconScale
-        )
-      } else {
-        return ImageUtils.loadFlutterAsset(path, size: size, format: btnImageFormat, scale: iconScale)
-      }
+      // Untinted loads historically defaulted a missing size to 20pt while
+      // tinted loads passed nil (SVG then falls back to 24pt). Kept verbatim —
+      // see "Divergences found" in docs/plans/icon-pipeline-consolidation.md.
+      let assetIconSize = btnIconColor == nil ? (btnIconSize ?? 20) : btnIconSize
+      return ImageUtils.iconFromAsset(
+        path,
+        iconSize: assetIconSize,
+        iconColor: btnIconColor,
+        providedFormat: btnImageFormat,
+        scale: iconScale
+      )
     } else if let data = btnImageData {
-      let iconColorARGB = btnIconColor != nil ? ImageUtils.colorToARGB(btnIconColor!) : nil
-      
-      // Use utility function to create and optionally tint image
-      if let argb = iconColorARGB, #available(iOS 13.0, *) {
-        return ImageUtils.createAndTintImage(
-          from: data,
-          iconSize: btnIconSize,
-          iconColor: argb,
-          providedFormat: btnImageFormat,
-          scale: iconScale
-        )
-      } else {
-        let size: CGSize? = btnIconSize != nil ? CGSize(width: btnIconSize!, height: btnIconSize!) : nil
-        return ImageUtils.createImageFromData(data, format: btnImageFormat, size: size, scale: iconScale)
-      }
+      return ImageUtils.iconFromData(
+        data,
+        iconSize: btnIconSize,
+        iconColor: btnIconColor,
+        providedFormat: btnImageFormat,
+        scale: iconScale
+      )
     }
-    
+
     // Handle custom icon bytes (medium priority)
     if let data = btnCustomIconBytes {
-      var image = UIImage(data: data, scale: self.iconScale)?.withRenderingMode(.alwaysTemplate)
+      let image = ImageUtils.iconFromTemplateBytes(data, scale: self.iconScale)
       // Apply custom icon color if provided, preserving the tint with .alwaysOriginal
       if let image = image, let color = btnIconColor {
         return image.withTintColor(color, renderingMode: .alwaysOriginal)
@@ -754,13 +715,6 @@ class CupertinoPopupMenuButtonPlatformView: NSObject, FlutterPlatformView {
     }
   }
 
-  private static func loadFlutterAsset(_ assetPath: String) -> UIImage? {
-    return ImageUtils.loadFlutterAsset(assetPath)
-  }
-
-  private static func createImageFromData(_ data: Data, format: String?, scale: CGFloat) -> UIImage? {
-    return ImageUtils.createImageFromData(data, format: format, scale: scale)
-  }
 
   deinit {
     if #available(iOS 13.0, *) {
