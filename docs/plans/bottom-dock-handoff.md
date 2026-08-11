@@ -98,3 +98,14 @@ Suite: showcase 123, analyze clean.
 Confirmed with a throwaway probe that only navigates to `/profile` and never
 enters Components, so it is independent of this change. It is why the handoff
 test takes its baseline from Home.
+
+`kShowcaseTabBarBlockHeight = 64` understates the real iOS block (~83pt) for
+its seven other callers too — notes (×3), search, profile, home. There it is
+*scroll* clearance rather than a pinned dock, so the failure is milder (the
+last item sits partly under the bar instead of colliding with it), and it is
+left alone: only the Components dock was in scope.
+
+Both were verified headless, where `AppBoxKitPlatform.supportsLiquidGlass` is
+false — the tests exercise the **fallback** tab bar, not `CNTabBar`. The
+platform-view destroy/re-create on entering and leaving Components has not
+been observed on device.
