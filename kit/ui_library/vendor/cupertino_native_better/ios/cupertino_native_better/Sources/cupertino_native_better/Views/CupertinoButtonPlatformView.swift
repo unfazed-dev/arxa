@@ -475,7 +475,32 @@ class CupertinoButtonPlatformView: NSObject, FlutterPlatformView {
         } else { result(FlutterError(code: "bad_args", message: "Missing icon args", details: nil)) }
       case "setBrightness":
         if let args = call.arguments as? [String: Any], let isDark = (args["isDark"] as? NSNumber)?.boolValue {
-          if #available(iOS 13.0, *) { self.container.overrideUserInterfaceStyle = isDark ? .dark : .light }
+          if #available(iOS 13.0, *) {
+            self.container.overrideUserInterfaceStyle = isDark ? .dark : .light
+            // Also the hosting controller, not only its superview. The glass
+            // tier (`usesSwiftUI`, set when a glassEffect id is present) is
+            // attached as `container.addSubview(hostingController.view)` with
+            // NO `addChild`, so the controller never joins the view-controller
+            // hierarchy and does not participate in its trait propagation.
+            // `GlassButtonGroupView.applyBrightness` — the one implementation
+            // observed restyling in under a frame on device — sets the
+            // controller. This aligns the others with it.
+            self.hostingController?.overrideUserInterfaceStyle = isDark ? .dark : .light
+            // Re-apply the style so the configuration re-resolves its colours in
+            // the new trait. `UIButton.Configuration` bakes resolved colours at
+            // assignment time, so a `.glass()` assigned under the old appearance
+            // keeps that appearance even after the trait changes. This is not a
+            // new idea here — the `setStyle` tint branch already re-applies for
+            // exactly this reason ("Re-apply style so configuration picks up new
+            // base colors", `:329`); brightness has the identical need and was
+            // simply missing it. Corroborated outside this repo by
+            // expo-glass-effect#43743, where setting the colour scheme without
+            // re-assigning the effect left the glass stale while tint/interactive
+            // — which do re-assign — updated immediately.
+            //
+            // No-op on the SwiftUI tier: `applyButtonStyle` guards `!usesSwiftUI`.
+            self.applyButtonStyle(buttonStyle: self.currentButtonStyle, round: self.makeRound)
+          }
           result(nil)
         } else { result(FlutterError(code: "bad_args", message: "Missing isDark", details: nil)) }
       case "setImagePlacement":

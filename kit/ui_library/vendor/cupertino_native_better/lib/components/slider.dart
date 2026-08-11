@@ -389,10 +389,19 @@ class _CNSliderState extends State<CNSlider> with ModalHideMixin<CNSlider> {
   }
 
   Future<void> _syncBrightnessIfNeeded() async {
+    // Read the theme FIRST, before any bail-out. `_isDark` resolves through an
+    // inherited widget, so this read is what registers this State's dependency
+    // on Theme/CupertinoTheme. Returning early on a null channel — which is the
+    // normal state on the first `didChangeDependencies`, and for the whole
+    // `PlatformViewGuard` delay in debug — skipped the read, so no dependency
+    // was ever registered and `didChangeDependencies` never fired again for an
+    // in-app theme change. The view then stayed at its creation-time appearance
+    // until something else happened to rebuild it. Same fix, and the same
+    // reasoning, as `glass_button_group.dart:184-189`.
+    final bool isDark = _isDark;
     final channel = _channel;
     if (channel == null) return;
     // Resolve theme-dependent values before awaiting.
-    final isDark = _isDark;
     final int? tint = null; // No general tint
     final int? thumb = resolveColorToArgb(_effectiveThumbTint, context);
     final int? track = resolveColorToArgb(_effectiveTrackTint, context);

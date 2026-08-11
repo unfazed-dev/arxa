@@ -135,6 +135,11 @@ class CupertinoSearchBarPlatformView: NSObject, FlutterPlatformView {
                    let isDark = (args["isDark"] as? NSNumber)?.boolValue {
                     if #available(iOS 13.0, *) {
                         self.container.overrideUserInterfaceStyle = isDark ? .dark : .light
+                        // Also the hosting controller — it is attached with
+                        // `addSubview(hostingController.view)` and no `addChild`,
+                        // so it is outside the view-controller hierarchy. See
+                        // `GlassButtonGroupView.applyBrightness`.
+                        self.hostingController.overrideUserInterfaceStyle = isDark ? .dark : .light
                     }
                     result(nil)
                 } else {
