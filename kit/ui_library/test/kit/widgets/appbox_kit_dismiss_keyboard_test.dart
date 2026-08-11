@@ -49,6 +49,47 @@ void main() {
         reason: 'a pointer-down anywhere outside must drop the field focus');
   });
 
+  testWidgets(
+      'kit.ui-library.dismiss-keyboard — dragging a scrollable dismisses, and '
+      'the scroll still happens', (tester) async {
+    // This is what `ScrollViewKeyboardDismissBehavior.onDrag` buys, obtained
+    // for free: a drag begins with a pointer-down, which this widget already
+    // observes. Worth pinning because the built-in would NOT be equivalent —
+    // Scrollable's onDrag calls `FocusManager.primaryFocus?.unfocus()` and
+    // nothing else, so it is blind to the native CNTextField tier in exactly
+    // the way this widget exists to fix.
+    final ScrollController controller = ScrollController();
+    addTearDown(controller.dispose);
+    await tester.pumpWidget(MaterialApp(
+      home: AppBoxKitDismissKeyboard(
+        child: Scaffold(
+          body: ListView(
+            controller: controller,
+            children: <Widget>[
+              const TextField(key: Key('field')),
+              for (int i = 0; i < 40; i++) SizedBox(height: 60, child: Text('row $i')),
+            ],
+          ),
+        ),
+      ),
+    ));
+
+    await tester.tap(find.byKey(const Key('field')));
+    await tester.pump();
+    final FocusNode fieldNode = FocusManager.instance.primaryFocus!;
+    expect(fieldNode.hasPrimaryFocus, isTrue,
+        reason: 'anti-vacuous: the field must hold focus before the drag');
+
+    await tester.drag(find.text('row 5'), const Offset(0, -200));
+    await tester.pumpAndSettle();
+
+    expect(fieldNode.hasPrimaryFocus, isFalse,
+        reason: 'scrolling the list must dismiss the keyboard');
+    expect(controller.offset, greaterThan(0),
+        reason: 'and the list must still scroll — dismissing must not eat the '
+            'drag, which is the GestureDetector failure mode');
+  });
+
   testWidgets('kit.ui-library.dismiss-keyboard — does not swallow the tap it dismisses on',
       (tester) async {
     // The reason this is a Listener and not a GestureDetector: a detector
