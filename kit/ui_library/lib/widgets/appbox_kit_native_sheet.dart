@@ -1,5 +1,8 @@
 import 'package:cupertino_native_better/cupertino_native_better.dart'
     show CNBottomSheet, CNTabBarRouteObserver;
+import 'package:flutter/cupertino.dart'
+    show CupertinoColors, CupertinoDynamicColor, kCupertinoModalBarrierColor;
+import 'package:flutter/foundation.dart' show ValueListenable;
 import 'package:flutter/material.dart';
 
 import 'package:appbox_kit_core/platform/appbox_kit_platform.dart';
@@ -71,16 +74,62 @@ import 'appbox_kit_frosted_surface.dart';
 /// call site does this today — the only `barrierDismissible: false` in the kit
 /// is on the dialog path, not a sheet.)
 ///
+/// **Overlay: on by default on BOTH tiers.** [showOverlay] dims the page behind
+/// the sheet and makes a tap there dismiss it. Android already did this
+/// (Material's barrier); iOS did not, because `CupertinoSheetRoute` hardcodes a
+/// transparent, non-dismissible barrier (`cupertino/sheet.dart:777,780`) on the
+/// reasoning that the scaled-back parent card supplies the separation. That
+/// reasoning holds at full height and breaks at a short one, where the
+/// uncovered page reads as still live — and iOS itself dims behind *every*
+/// detent of a `UISheetPresentationController` unless
+/// `largestUndimmedDetentIdentifier` opts out. The iOS tier gets it from a
+/// route subclass in the vendor; the barrier resolves
+/// [kCupertinoModalBarrierColor] per brightness.
+///
+/// This also restores the honest reading of [isDismissible] on iOS. The
+/// previous pass had to document that it could only map to `enableDrag`,
+/// because the route offered no tappable barrier to map it onto; now it means
+/// both, and `isDismissible: false` withholds both.
+///
+/// **Height: [heightFactor] resizes a live sheet.** Null (default) leaves the
+/// height to each framework — Material sizes to content, Cupertino to
+/// `1 - topGap` (92%). Supply a listenable and the sheet is instead
+/// bottom-anchored at that fraction of screen height, **re-reading the value
+/// every time it changes**, so a control inside the sheet can grow and shrink
+/// it under the user's finger.
+///
+/// It has to work that way: `CupertinoSheetRoute._topGap` is `final` and read
+/// once at construction (`cupertino/sheet.dart:686,689`), so the route's own
+/// height is fixed the moment it is pushed. `topGap` can express a height
+/// chosen at present-time and nothing else. Owning the height in the *body*,
+/// inside a route left at its default size, is what makes it live.
+///
+/// The cost, on the iOS tier only, is chrome ownership: the route's top clip
+/// and grabber sit at the route's edge (92%), not the body's, so in this path
+/// the body draws both itself — top-only r=12 corners matching the route's own
+/// `ClipRSuperellipse`, and the framework's 36×5 grabber geometry
+/// (`cupertino/sheet.dart:704-708`). The route's grabber is switched off so
+/// there is exactly one.
+///
+/// The space left above a short sheet is an [Align] with no child there, which
+/// deliberately does **not** hit-test, so taps in it reach the barrier. Filling
+/// it with a transparent `ColoredBox` instead would look identical and be
+/// inert: `_RenderColoredBox` passes `HitTestBehavior.opaque` to its
+/// superclass unconditionally, alpha 0 included (`widgets/basic.dart:8528-8532`).
+///
 /// The public surface is **primitives only** ([builder], [context],
-/// [isDismissible], [showDragHandle], [backgroundColor]) so hosts never import
-/// either underlying dep. The generic return type is honored end-to-end: both
-/// tiers return `Future<T?>`, so a host that closes the sheet with
-/// `Navigator.pop(context, value)` receives `value` here.
+/// [isDismissible], [showDragHandle], [showOverlay], [heightFactor],
+/// [backgroundColor]) so hosts never import either underlying dep. The generic
+/// return type is honored end-to-end: both tiers return `Future<T?>`, so a host
+/// that closes the sheet with `Navigator.pop(context, value)` receives `value`
+/// here.
 Future<T?> appBoxKitShowSheet<T>({
   required WidgetBuilder builder,
   required BuildContext context,
   bool isDismissible = true,
   bool showDragHandle = true,
+  bool showOverlay = true,
+  ValueListenable<double>? heightFactor,
   Color? backgroundColor,
 }) async {
   // Bump the shared modal depth for the sheet's lifetime. No navigator in
@@ -98,23 +147,34 @@ Future<T?> appBoxKitShowSheet<T>({
     if (AppBoxKitPlatform.supportsComposeM3E) {
       return await showModalBottomSheet<T>(
         context: context,
-        builder: builder,
+        builder: heightFactor == null
+            ? builder
+            : (_) => _SizedSheetBody(heightFactor: heightFactor, child: Builder(builder: builder)),
         isDismissible: isDismissible,
         showDragHandle: showDragHandle,
         backgroundColor: backgroundColor,
+        // Material sizes to its child, so an explicit height only survives if
+        // the sheet is allowed past the 9/16 scroll-controlled cap.
+        isScrollControlled: heightFactor != null,
+        // Material's default barrier is already a dim; null keeps it.
+        barrierColor: showOverlay ? null : Colors.transparent,
       );
     }
     // iOS / macOS / else → the framework's Cupertino sheet. It owns the
-    // presentation: parent scale-back, top-corner clip, and the grabber.
+    // presentation: parent scale-back and top-corner clip — plus the grabber,
+    // except in the sized path where the body owns its own edge.
     return await CNBottomSheet.showCupertino<T>(
       context: context,
-      // The route has no dismissible barrier at all, so this is the only
-      // dismiss affordance it can be mapped onto.
+      // Now genuinely both affordances: drag, and (via the barrier below) tap
+      // outside.
       enableDrag: isDismissible,
-      showDragHandle: showDragHandle,
+      showDragHandle: showDragHandle && heightFactor == null,
+      barrierColor: showOverlay ? kCupertinoModalBarrierColor : null,
       pageBuilder: (_) => _CupertinoSheetBody(
         builder: builder,
         backgroundColor: backgroundColor,
+        heightFactor: heightFactor,
+        showDragHandle: showDragHandle,
       ),
     );
   } finally {
@@ -135,29 +195,157 @@ Future<T?> appBoxKitShowSheet<T>({
 /// the corners itself, and a second radius here would show as a lighter seam
 /// inside the clip.
 class _CupertinoSheetBody extends StatelessWidget {
-  const _CupertinoSheetBody({required this.builder, this.backgroundColor});
+  const _CupertinoSheetBody({
+    required this.builder,
+    this.backgroundColor,
+    this.heightFactor,
+    this.showDragHandle = true,
+  });
 
   final WidgetBuilder builder;
 
   /// Opt-out of glass into a flat surface of this colour.
   final Color? backgroundColor;
 
+  /// Live fraction of screen height, or null to fill the route.
+  final ValueListenable<double>? heightFactor;
+
+  /// Only consulted in the sized path — otherwise the route draws the grabber.
+  final bool showDragHandle;
+
+  /// Top-corner radius the route clips itself to (`cupertino/sheet.dart`), which
+  /// the sized body has to reproduce at its own edge.
+  static const double _sheetCornerRadius = 12;
+
   @override
   Widget build(BuildContext context) {
-    // Top: the route hands down `padding.top = 15` so content clears the
-    // grabber it draws (`cupertino/sheet.dart:707,713`), so honouring the
-    // padding here is what keeps the two from overlapping.
-    // Bottom: the sheet reaches the screen edge, so the home indicator inset
-    // is still ours to respect.
-    final Widget content = SafeArea(child: Builder(builder: builder));
+    final ValueListenable<double>? factor = heightFactor;
 
+    if (factor == null) {
+      // Top: the route hands down `padding.top = 15` so content clears the
+      // grabber it draws (`cupertino/sheet.dart:707,713`), so honouring the
+      // padding here is what keeps the two from overlapping.
+      // Bottom: the sheet reaches the screen edge, so the home indicator inset
+      // is still ours to respect.
+      return _surface(SafeArea(child: Builder(builder: builder)));
+    }
+
+    // Built once and passed through `ValueListenableBuilder.child`, so a drag on
+    // a slider inside the sheet resizes a box rather than rebuilding a
+    // `BackdropFilter` subtree sixty times a second.
+    final Widget surface = ClipRSuperellipse(
+      borderRadius: const BorderRadius.vertical(
+        top: Radius.circular(_sheetCornerRadius),
+      ),
+      child: _surface(
+        Column(
+          children: <Widget>[
+            if (showDragHandle) const _SheetGrabber(),
+            // SafeArea belongs *inside* the sized box: outside it, the bottom
+            // inset would shrink the Align and float the sheet off the screen
+            // edge. `top: false` because this edge is mid-screen, not the notch.
+            Expanded(
+              child: SafeArea(top: false, child: Builder(builder: builder)),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    return Align(
+      alignment: Alignment.bottomCenter,
+      child: LayoutBuilder(
+        builder: (BuildContext ctx, BoxConstraints constraints) {
+          final double screenHeight = MediaQuery.sizeOf(ctx).height;
+          return ValueListenableBuilder<double>(
+            valueListenable: factor,
+            child: surface,
+            builder: (_, double value, Widget? child) => SizedBox(
+              // The route's box is `(1 - topGap) * screenHeight` — 92% by
+              // default, measured. Clamping to the incoming constraint keeps a
+              // caller asking for more than the route can give from overflowing
+              // instead of simply filling it.
+              height: (value * screenHeight).clamp(0.0, constraints.maxHeight),
+              child: child,
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _surface(Widget content) {
     final Color? flat = backgroundColor;
     if (flat != null) return ColoredBox(color: flat, child: content);
+    return AppBoxKitFrostedSurface(borderRadius: 0, blur: 30, child: content);
+  }
+}
 
-    return AppBoxKitFrostedSurface(
-      borderRadius: 0,
-      blur: 30,
-      child: content,
+/// The kit's stand-in for the route's grabber, drawn only in the sized path
+/// where the route's own would land at the route's top edge instead of the
+/// sheet's.
+///
+/// Geometry and colour are the framework's (`cupertino/sheet.dart:704-708`,
+/// values Apple-derived), so the two are visually interchangeable. The [key] is
+/// what tells them apart in tests — matching on the 36×5 box alone cannot,
+/// which would let a "there is exactly one grabber" assertion pass while both
+/// were on screen.
+class _SheetGrabber extends StatelessWidget {
+  const _SheetGrabber();
+
+  /// Identifies a kit-drawn grabber, as opposed to the route's.
+  static const Key grabberKey = Key('appbox_kit_sheet_grabber');
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      // `dragHandleTopPadding` (5) above, `dragHandlePadding` (15) below —
+      // the framework's own spacing, which it applies as MediaQuery padding.
+      padding: const EdgeInsets.only(top: 5, bottom: 10),
+      child: SizedBox(
+        key: grabberKey,
+        width: 36,
+        height: 5,
+        child: DecoratedBox(
+          decoration: ShapeDecoration(
+            // Resolved explicitly: a CupertinoDynamicColor handed straight to a
+            // DecoratedBox paints its light variant in both themes.
+            color: CupertinoDynamicColor.resolve(
+              CupertinoColors.tertiaryLabel,
+              context,
+            ),
+            shape: const StadiumBorder(),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Android-tier equivalent of the sized path: Material sizes its sheet to the
+/// child, so resizing the child *is* resizing the sheet.
+///
+/// The Material drag handle sits above this box rather than inside it, so the
+/// presented sheet is its height taller than [heightFactor] asks for. Left as
+/// is: the handle's height is a private Material constant, and subtracting a
+/// guess at it would drift the moment the theme changes it.
+class _SizedSheetBody extends StatelessWidget {
+  const _SizedSheetBody({required this.heightFactor, required this.child});
+
+  final ValueListenable<double> heightFactor;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final double screenHeight = MediaQuery.sizeOf(context).height;
+    return ValueListenableBuilder<double>(
+      valueListenable: heightFactor,
+      child: child,
+      builder: (_, double value, Widget? built) => SizedBox(
+        height: value * screenHeight,
+        width: double.infinity,
+        child: built,
+      ),
     );
   }
 }

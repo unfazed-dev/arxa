@@ -4,19 +4,25 @@
 /// places it owns the data.
 ///
 /// This is the user interface for the overlays demo — a card whose buttons
-/// show a native dialog, a frosted sheet, a center toast, and open the host
-/// shell's drawer.
+/// show a native dialog, a resizable frosted sheet, a center toast, and open
+/// the host shell's drawer.
 ///
 /// Requirements:
 /// 1. [Dialog and sheet] — browse-the-components-gallery
 /// Native dialog and frosted sheet overlays, pushed on the root navigator.
-/// 2. [Center toast] — browse-the-components-gallery
+/// 2. [Sheet height] — browse-the-components-gallery
+/// Three buttons present the sheet at 92% (the framework default), 56% and
+/// 30% of screen height; a native slider inside the open sheet resizes it
+/// live between 20% and 92%.
+/// 3. [Center toast] — browse-the-components-gallery
 /// A center-positioned toast through the notification service.
-/// 3. [Drawer trigger] — browse-the-components-gallery
+/// 4. [Drawer trigger] — browse-the-components-gallery
 /// A button opens the host shell's drawer.
 ///
 /// Relationships: a self-contained presentational widget — no viewmodel
-/// binding; the overlays are imperative kit calls on the root navigator.
+/// binding; the overlays are imperative kit calls on the root navigator. It is
+/// stateful only to own the height notifier the buttons seed and the sheet's
+/// slider drives.
 ///
 /// History: git log --follow -- kit/showcase_app/lib/ui/widgets/showcase_profile_widgets/showcase_components_overlays_card_widget.dart
 library;
@@ -26,8 +32,33 @@ import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
 import 'package:appbox_kit_showcase_app/enums/showcase_profile_enums/enums.dart';
 import 'package:appbox_kit_showcase_app/ui/widgets/common/showcase_tabs_shared/widgets.dart';
 
-class ShowcaseComponentsOverlaysCardWidget extends StatelessWidget {
+/// Sheet heights the three preset buttons present at, as fractions of screen
+/// height. 0.92 is the Cupertino route's own default — `1 - _kTopGapRatio`,
+/// `cupertino/sheet.dart:30`.
+const double _kDefaultSheetHeight = 0.92;
+const double _kMinSheetHeight = 0.20;
+
+class ShowcaseComponentsOverlaysCardWidget extends StatefulWidget {
   const ShowcaseComponentsOverlaysCardWidget({super.key});
+
+  @override
+  State<ShowcaseComponentsOverlaysCardWidget> createState() =>
+      _ShowcaseComponentsOverlaysCardWidgetState();
+}
+
+class _ShowcaseComponentsOverlaysCardWidgetState
+    extends State<ShowcaseComponentsOverlaysCardWidget> {
+  /// Shared by the preset buttons (which seed it) and the sheet's slider
+  /// (which drives it while the sheet is up). One notifier, so there is one
+  /// notion of "how tall is the sheet" rather than two that can disagree.
+  final ValueNotifier<double> _sheetHeight =
+      ValueNotifier<double>(_kDefaultSheetHeight);
+
+  @override
+  void dispose() {
+    _sheetHeight.dispose();
+    super.dispose();
+  }
 
   /// Modals must be pushed on the root navigator so they cover the tab bar.
   static BuildContext _modalContext(BuildContext fallback) =>
@@ -35,6 +66,15 @@ class ShowcaseComponentsOverlaysCardWidget extends StatelessWidget {
 
   static void _toast(BuildContext context, String message) =>
       appBoxKitLocator<AppBoxKitNotificationService>().show(message, context: context);
+
+  void _showSheetAt(BuildContext context, double factor) {
+    _sheetHeight.value = factor;
+    appBoxKitShowSheet<void>(
+      context: _modalContext(context),
+      heightFactor: _sheetHeight,
+      builder: (_) => _ResizableSheetBody(height: _sheetHeight),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -79,34 +119,28 @@ class ShowcaseComponentsOverlaysCardWidget extends StatelessWidget {
             ),
           ),
           appBoxKitVerticalSpaceSmall,
+          const ShowcaseSectionLabelWidget('Sheet height'),
+          appBoxKitVerticalSpaceXSmall,
+          // Equal thirds so the three read as one control, not three buttons
+          // that happen to sit together.
           SizedBox(
             height: abxButtonHeightMedium,
-            child: AppBoxKitNativeButton(
-              label: 'Show frosted sheet',
-              glyph: AppBoxKitGlyphs.sheet,
-              onPressed: () => appBoxKitShowSheet(
-                context: _modalContext(context),
-                builder: (sheetContext) => Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      Text(
-                        'Frosted sheet body',
-                        style: Theme.of(sheetContext).textTheme.titleLarge,
-                      ),
-                      appBoxKitVerticalSpaceXSmall,
-                      Text(
-                        'The grabber above and this body are one '
-                        'AppBoxKitFrostedSurface panel (blur 30, 28dp '
-                        'corners) floating over the dimmed host page.',
-                        style: Theme.of(sheetContext).textTheme.bodyMedium,
-                      ),
-                    ],
+            child: Row(
+              children: [
+                for (final (String label, double factor) in const [
+                  ('92%', _kDefaultSheetHeight),
+                  ('56%', 0.56),
+                  ('30%', 0.30),
+                ]) ...[
+                  Expanded(
+                    child: AppBoxKitNativeButton(
+                      label: label,
+                      onPressed: () => _showSheetAt(context, factor),
+                    ),
                   ),
-                ),
-              ),
+                  if (factor != 0.30) appBoxKitHorizontalSpaceSmall,
+                ],
+              ],
             ),
           ),
           appBoxKitVerticalSpaceSmall,
@@ -131,6 +165,80 @@ class ShowcaseComponentsOverlaysCardWidget extends StatelessWidget {
                 label: 'Open drawer',
                 glyph: AppBoxKitGlyphs.more,
                 onPressed: () => Scaffold.of(scaffoldContext).openDrawer(),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// The sheet's contents: a native slider bound to the same notifier that sizes
+/// the sheet, so dragging it resizes the sheet under the finger.
+///
+/// Layout is deliberate. The slider is pinned above a scrollable body rather
+/// than sitting in one scrolling column: at the 20% minimum the sheet is short
+/// enough that a slider inside the scroll view could be scrolled out of reach,
+/// leaving no way to make the sheet bigger again. The scroll view is what keeps
+/// the prose from overflowing at that height instead of throwing.
+class _ResizableSheetBody extends StatelessWidget {
+  const _ResizableSheetBody({required this.height});
+
+  final ValueNotifier<double> height;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          ValueListenableBuilder<double>(
+            valueListenable: height,
+            builder: (_, double value, __) => Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    'Sheet height',
+                    style: theme.textTheme.titleMedium,
+                  ),
+                ),
+                Text(
+                  '${(value * 100).round()}%',
+                  style: theme.textTheme.titleMedium,
+                ),
+              ],
+            ),
+          ),
+          ValueListenableBuilder<double>(
+            valueListenable: height,
+            builder: (_, double value, __) => AppBoxKitNativeSlider(
+              value: value,
+              min: _kMinSheetHeight,
+              max: _kDefaultSheetHeight,
+              onChanged: (double next) => height.value = next,
+            ),
+          ),
+          Expanded(
+            child: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text(
+                    'Frosted sheet body',
+                    style: theme.textTheme.titleLarge,
+                  ),
+                  appBoxKitVerticalSpaceXSmall,
+                  Text(
+                    'This body is one AppBoxKitFrostedSurface panel with the '
+                    'sheet\'s own top corners and grabber, sized live by the '
+                    'slider above. The page behind is dimmed by the sheet\'s '
+                    'overlay — tap it to dismiss.',
+                    style: theme.textTheme.bodyMedium,
+                  ),
+                ],
               ),
             ),
           ),

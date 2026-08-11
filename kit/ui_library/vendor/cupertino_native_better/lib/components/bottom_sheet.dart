@@ -111,6 +111,13 @@ class CNBottomSheet {
   /// exactly what `showCupertinoSheet` does, `rootNavigator: true` included,
   /// minus the dropped argument. Verified by test: the 36x5 grabber is absent
   /// via the convenience function and present via the route.
+  ///
+  /// [barrierColor] is the one thing the framework route cannot express at all:
+  /// `CupertinoSheetRoute` hardcodes `barrierColor` to transparent and
+  /// `barrierDismissible` to false (`cupertino/sheet.dart:777,780`), so a sheet
+  /// shown through it has no dim and no tap-to-dismiss. Pass a colour to get
+  /// both (see [_CNDimmedSheetRoute]); leave it null for the framework's
+  /// undimmed presentation. Ignored when [useNestedNavigation] is true.
   static Future<T?> showCupertino<T>({
     required BuildContext context,
     required WidgetBuilder pageBuilder,
@@ -118,6 +125,7 @@ class CNBottomSheet {
     bool enableDrag = true,
     bool showDragHandle = false,
     double? topGap,
+    Color? barrierColor,
   }) {
     // `builder:` rather than `scrollableBuilder:` deliberately, on both paths.
     // `scrollableBuilder` doesn't exist on Flutter 3.35 – 3.41.x and using it
@@ -129,8 +137,8 @@ class CNBottomSheet {
 
     if (useNestedNavigation) {
       // Nested navigation is reachable only through `showCupertinoSheet`, so
-      // this path inherits the bug above and cannot show a handle. Stated
-      // rather than silently swallowed.
+      // this path inherits the bug above and cannot show a handle, nor accept a
+      // barrier. Stated rather than silently swallowed.
       return showCupertinoSheet<T>(
         context: context,
         useNestedNavigation: true,
@@ -141,13 +149,21 @@ class CNBottomSheet {
       );
     }
 
-    final CupertinoSheetRoute<T> route = CupertinoSheetRoute<T>(
-      // ignore: deprecated_member_use
-      builder: probed,
-      enableDrag: enableDrag,
-      showDragHandle: showDragHandle,
-      topGap: topGap,
-    );
+    final CupertinoSheetRoute<T> route = barrierColor == null
+        ? CupertinoSheetRoute<T>(
+            // ignore: deprecated_member_use
+            builder: probed,
+            enableDrag: enableDrag,
+            showDragHandle: showDragHandle,
+            topGap: topGap,
+          )
+        : _CNDimmedSheetRoute<T>(
+            builder: probed,
+            dimColor: barrierColor,
+            enableDrag: enableDrag,
+            showDragHandle: showDragHandle,
+            topGap: topGap,
+          );
     return Navigator.of(context, rootNavigator: true).push<T>(route);
   }
 
@@ -177,6 +193,60 @@ class CNBottomSheet {
       anchorPoint: anchorPoint,
       builder: (ctx) => CNSheetGeometryProbe(child: builder(ctx)),
     );
+  }
+}
+
+/// [CupertinoSheetRoute] with a real modal barrier.
+///
+/// The framework route paints no dim and cannot be tapped out of: it overrides
+/// `barrierColor` to [CupertinoColors.transparent] and `barrierDismissible` to
+/// `false` (`cupertino/sheet.dart:777,780`), on the reasoning that the scaled-
+/// back parent card is itself the separation. That holds for a full-height
+/// sheet; it does not for a short one, where the uncovered page reads as still
+/// interactive. iOS itself dims behind *every* detent of a
+/// `UISheetPresentationController` unless `largestUndimmedDetentIdentifier`
+/// opts out, so a dim is the platform-correct default, not an embellishment.
+///
+/// Both of those members are plain `@override` getters on a class carrying no
+/// `final`/`base`/`sealed` modifier (`:634`), so re-overriding them in a
+/// subclass is the supported extension point — no forking of the route, and the
+/// transition, drag-to-dismiss and stacking behaviour are inherited untouched.
+class _CNDimmedSheetRoute<T> extends CupertinoSheetRoute<T> {
+  _CNDimmedSheetRoute({
+    // ignore: deprecated_member_use
+    required super.builder,
+    required this.dimColor,
+    super.enableDrag,
+    super.showDragHandle,
+    super.topGap,
+  });
+
+  /// Barrier fill. Resolved against the ambient brightness by the barrier
+  /// itself when this is a [CupertinoDynamicColor].
+  final Color dimColor;
+
+  @override
+  Color? get barrierColor => dimColor;
+
+  /// Tied to [enableDrag] rather than hardcoded: a sheet the user is forbidden
+  /// to drag away must not become dismissible through the back door of a
+  /// barrier tap.
+  @override
+  bool get barrierDismissible => enableDrag;
+
+  /// Must be non-null whenever [barrierDismissible] is true — `ModalRoute`
+  /// dereferences it to label the barrier for screen readers. Localized when a
+  /// [CupertinoLocalizations] is in scope, with a literal fallback so a host
+  /// that ships none still gets a described barrier instead of an assertion.
+  @override
+  String? get barrierLabel {
+    final BuildContext? navContext = navigator?.context;
+    if (navContext == null) return 'Dismiss';
+    return Localizations.of<CupertinoLocalizations>(
+          navContext,
+          CupertinoLocalizations,
+        )?.modalBarrierDismissLabel ??
+        'Dismiss';
   }
 }
 

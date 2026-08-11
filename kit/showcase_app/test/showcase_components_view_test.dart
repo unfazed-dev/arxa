@@ -102,16 +102,48 @@ void main() {
             'the result');
   });
 
-  testWidgets('Show frosted sheet presents appBoxKitShowSheet', (tester) async {
+  testWidgets('each preset button presents the sheet at its own height',
+      (tester) async {
     await pumpView(tester);
 
-    await tester.tap(find.text('Show frosted sheet'));
-    await tester.pumpAndSettle();
-    expect(find.text('Frosted sheet body'), findsOneWidget);
+    for (final String preset in const ['92%', '56%', '30%']) {
+      await tester.tap(find.text(preset));
+      await tester.pumpAndSettle();
+      expect(find.text('Frosted sheet body'), findsOneWidget,
+          reason: '$preset must present the sheet');
+      // Twice: once on the card's button, once as the open sheet's readout.
+      // One occurrence would mean the sheet opened at some other height.
+      expect(find.text(preset), findsNWidgets(2),
+          reason: 'the open sheet reports the height the button asked for');
 
-    await tester.tapAt(const Offset(20, 20)); // barrier dismiss
+      await tester.tapAt(const Offset(20, 20)); // overlay dismiss
+      await tester.pumpAndSettle();
+      expect(find.text('Frosted sheet body'), findsNothing,
+          reason: 'tapping the overlay closes the sheet');
+    }
+  });
+
+  testWidgets('the slider inside the sheet drives its height', (tester) async {
+    await pumpView(tester);
+
+    await tester.tap(find.text('30%'));
     await tester.pumpAndSettle();
-    expect(find.text('Frosted sheet body'), findsNothing);
+    expect(find.text('30%'), findsWidgets);
+
+    // Invoking onChanged directly rather than dragging: the slider resolves to
+    // a different native control per tier, and what is under test here is the
+    // wiring from the control to the sheet's height, not either tier's gesture
+    // handling (the kit suite covers the resize itself).
+    final AppBoxKitNativeSlider slider =
+        tester.widget<AppBoxKitNativeSlider>(find.byType(AppBoxKitNativeSlider));
+    expect(slider.min, 0.20, reason: 'minimum height is 20% of screen');
+    expect(slider.max, 0.92,
+        reason: 'maximum is the Cupertino route default, 1 - _kTopGapRatio');
+
+    slider.onChanged!(0.75);
+    await tester.pump();
+    expect(find.text('75%'), findsOneWidget,
+        reason: 'the slider and the sheet share one height notifier');
   });
 
   testWidgets('Show center toast fires the center pill', (tester) async {
