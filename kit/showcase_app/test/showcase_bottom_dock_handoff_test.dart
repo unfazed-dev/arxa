@@ -50,6 +50,16 @@ void main() {
     expect(find.byType(AppBoxKitNativeTabBar), findsNothing,
         reason: 'two bars on the same pixels is the bug — the shared tab bar '
             'yields the slot to the route that pinned its own');
+
+    // The yield is only worth anything if the bar then takes the space. The
+    // input bar carries its own SafeArea INSIDE its box, so its outer rect
+    // runs to the physical bottom edge; the 64pt tab-bar lift it used to
+    // carry would leave it stranded above dead space.
+    expect(
+      tester.getRect(find.byType(AppBoxKitNativeInputBar)).bottom,
+      closeTo(tester.view.physicalSize.height / tester.view.devicePixelRatio, 0.5),
+      reason: 'the dock must sit on the bottom edge once the tab bar is gone',
+    );
   }, timeout: const Timeout(Duration(minutes: 2)));
 
   testWidgets(
