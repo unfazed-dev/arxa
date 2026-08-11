@@ -118,6 +118,30 @@ class _ShowcaseAppState extends State<ShowcaseApp>
                 fontFamily: appBoxKitDefaultGoogleFontFamily(),
               ),
               themeMode: snapshot.data ?? ThemeMode.system,
+              // Instant, because half this UI cannot participate in a theme
+              // ANIMATION and the attempt is what made the glass look broken.
+              //
+              // `ThemeData.lerp` fades colours continuously but `brightness` is
+              // a STEP at t=0.5. Flutter-painted surfaces therefore cross-fade
+              // immediately while every native platform view — whose only
+              // appearance lever is a boolean `setBrightness` — holds its OLD
+              // appearance for half the duration and then snaps. That desync IS
+              // the reported bug: a dark glass pill on an already-light page.
+              //
+              // Measured (probe, `CNButton`, one flip):
+              //   default 200ms → `setBrightness` on the wire at 96ms, and 26
+              //     channel round-trips for ONE widget, because the per-frame
+              //     tint guard compares a value that is lerping, so every
+              //     animation frame fires a fresh `setStyle`.
+              //   Duration.zero → `setBrightness` at 0ms, 5 round-trips.
+              // On device that per-frame storm is multiplied by every native
+              // widget on screen, which is why the stale window read as seconds
+              // rather than the ~100ms the step alone costs.
+              //
+              // Nothing is lost: the "smooth theme fade" was never coherent
+              // here — it was half the screen fading while the other half
+              // waited. Now both halves flip on the same frame.
+              themeAnimationDuration: Duration.zero,
             ),
           ),
         ).wake(order: 0),
