@@ -150,6 +150,15 @@ they diverge in explicit light/dark mode — Apple FB13391355; cosmetic, accepte
 same ceiling — and the ceiling stops being cosmetic, because it is now the pill
 itself and not just the dropdown chrome.
 
+**Ruled out — appearance captured at construction.** Compared both paths line by
+line: the popup passes `glass: … Glass.regular` (`:163`) and the non-popup passes
+`glass: glassEffectForStyle(style, …)` (`GlassButtonSwiftUI.swift:62`), but both are
+`Glass` values resolved from the environment at render time, not colours baked at
+init, and `unionId`/`glassEffectId`/`namespace` reach both identically. Nothing in
+the popup branch snapshots an appearance. So the difference is only *where* the glass
+resolves — on a `Menu` versus on a plain view — which is the one thing that cannot be
+settled from source.
+
 Caveat, stated because it does not fit cleanly: an OS-trait-pinned pill would stay
 wrong for as long as the two disagree, whereas the clip shows it correcting after
 ~3 s. So this locates the divergence; it does not yet explain the recovery.
