@@ -13,6 +13,7 @@
 // tab's nested router hid the bar in every tab).
 import 'dart:async';
 
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart'
     show AppBoxKitNativeTabBar, AppBoxKitNativeInputBar;
@@ -60,6 +61,49 @@ void main() {
       closeTo(tester.view.physicalSize.height / tester.view.devicePixelRatio, 0.5),
       reason: 'the dock must sit on the bottom edge once the tab bar is gone',
     );
+  }, timeout: const Timeout(Duration(minutes: 2)));
+
+  testWidgets(
+      'shell-demos.browse-the-application-shell — the composer clears the home '
+      'indicator instead of sitting on it', (tester) async {
+    // Device symptom (2026-08-11): the composer sat flush against the screen
+    // edge, on top of the home indicator. Two Scaffolds were each stripping the
+    // bottom inset before it could reach the dock:
+    //
+    //  1. the host tab bar yielded as a zero-height `SizedBox` rather than
+    //     `null`, and Scaffold removes the body's bottom padding whenever
+    //     `bottomNavigationBar != null` (`scaffold.dart:3032`);
+    //  2. the Components Scaffold left `resizeToAvoidBottomInset` at its
+    //     default `true`, and the `bottomSheet` slot is registered with
+    //     `removeBottomPadding: _resizeToAvoidBottomInset`
+    //     (`scaffold.dart:3086`).
+    //
+    // `removePadding` takes the consumed amount off `viewPadding` too, so
+    // nothing downstream could recover it — measured, the composer received
+    // padding.bottom = 0.0 AND viewPadding.bottom = 0.0.
+    final router = await bootShell(tester);
+    // 34pt home indicator at dpr 3.0.
+    tester.view.padding = const FakeViewPadding(bottom: 102);
+    tester.view.viewPadding = const FakeViewPadding(bottom: 102);
+    addTearDown(tester.view.resetPadding);
+    addTearDown(tester.view.resetViewPadding);
+
+    unawaited(router.navigateNamed('/profile/components'));
+    await settle(tester);
+
+    final Finder bar = find.byType(AppBoxKitNativeInputBar);
+    final MediaQueryData mq = MediaQuery.of(tester.element(bar));
+    expect(mq.padding.bottom, 34,
+        reason: 'the inset must survive both Scaffolds to reach the dock');
+
+    // The bar's own SafeArea is inside its box, so the box grows by the inset
+    // and its content lifts clear.
+    final Finder row = find.descendant(of: bar, matching: find.byType(Row)).first;
+    final double screenBottom =
+        tester.view.physicalSize.height / tester.view.devicePixelRatio;
+    expect(screenBottom - tester.getRect(row).bottom, greaterThanOrEqualTo(34),
+        reason: 'the composer row must sit at least the home-indicator inset '
+            'above the screen edge');
   }, timeout: const Timeout(Duration(minutes: 2)));
 
   testWidgets(

@@ -365,4 +365,10 @@ class CNTextFieldFocus {
   /// Test seam: drop the tracked field without touching a platform channel.
   @visibleForTesting
   static void debugReset() => _current = null;
+
+  /// Test seam: stand in for a focused native field. A [CNTextField] wraps a
+  /// `UiKitView`, which cannot be mounted in a headless test, so the only way
+  /// to exercise the dismissal path is to supply the channel directly.
+  @visibleForTesting
+  static void debugSetCurrent(MethodChannel channel) => _current = channel;
 }
