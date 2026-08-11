@@ -69,6 +69,39 @@ void main() {
     });
   });
 
+  testWidgets(
+      'kit.ui-library.native-toolbar — three labelled actions do not overflow '
+      'a phone-width fallback toolbar', (tester) async {
+    // Device (2026-08-11): the profile showcase's toolbar demo — Share / Edit
+    // / Delete — overflowed by 92px at 390pt. The fallback chose its layout
+    // with `actions.length <= 4 ? Row : Wrap`, predicting fit from the COUNT
+    // of actions when the constraint is width: a labelled action renders as a
+    // FilledButton.tonal several times wider than an icon-only IconButton, so
+    // three of them passed the `<= 4` test and then did not fit.
+    tester.view.physicalSize = const Size(1170, 2532); // 390×844 logical
+    tester.view.devicePixelRatio = 3.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await withAndroidFallback(() async {
+      await tester.pumpWidget(host(AppBoxKitNativeToolbar(
+        actions: [
+          for (final label in const ['Share', 'Edit', 'Delete'])
+            AppBoxKitToolbarAction(
+                label: label, icon: Icons.add, onPressed: () {}),
+        ],
+      )));
+
+      expect(find.text('Delete'), findsOneWidget,
+          reason: 'anti-vacuous: the labelled actions must actually render, '
+              'or an overflow could not occur either way');
+      expect(tester.takeException(), isNull,
+          reason: 'a RenderFlex overflow here means the layout still predicts '
+              'fit from the action COUNT instead of laying out to the '
+              'available width');
+    });
+  });
+
   testWidgets('kit.ui-library.native-toolbar — action onPressed is wired on the fallback tier',
       (tester) async {
     var pressed = false;

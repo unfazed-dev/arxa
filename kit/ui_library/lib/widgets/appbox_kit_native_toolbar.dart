@@ -198,9 +198,23 @@ class AppBoxKitNativeToolbar extends StatelessWidget {
       borderRadius: BorderRadius.circular(28),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-        child: actions.length <= 4
-            ? Row(mainAxisSize: MainAxisSize.min, children: children)
-            : Wrap(spacing: 4, children: children),
+        // Always Wrap, never a count heuristic. `actions.length <= 4 ? Row : …`
+        // predicted fit from the number of actions when the constraint is
+        // WIDTH: a labelled action is a FilledButton.tonal several times wider
+        // than an icon-only IconButton, so three labelled ones ('Share',
+        // 'Edit', 'Delete') overflowed a 390pt phone by 92px while passing the
+        // `<= 4` test. A Wrap whose content fits lays out exactly like the Row
+        // did — one run, same order — so this costs nothing in the common case
+        // and simply stops overflowing in the uncommon one.
+        child: Wrap(
+          spacing: 4,
+          runSpacing: 4,
+          // The children are not uniform height (IconButton 48 vs
+          // FilledButton.tonal ~40); Wrap's default start-alignment would
+          // top-align them where the Row centred them.
+          crossAxisAlignment: WrapCrossAlignment.center,
+          children: children,
+        ),
       ),
     );
   }
