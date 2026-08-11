@@ -19,11 +19,14 @@
 /// History: git log --follow -- kit/showcase_app/lib/ui/widgets/showcase_application_widgets/showcase_application_tab_host_widget.dart
 library;
 
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
 
 import 'package:appbox_kit_showcase_app/app/app.router.dart';
 import 'package:appbox_kit_showcase_app/enums/showcase_application_enums/enums.dart';
+import 'package:appbox_kit_showcase_app/ui/widgets/common/showcase_tabs_shared/showcase_tabs_consts.dart';
 import 'package:appbox_kit_showcase_app/ui/views/showcase_application_hub/showcase_application_hub_view.dart';
 
 class ShowcaseApplicationTabHostWidget extends StatelessWidget {
@@ -56,14 +59,29 @@ class ShowcaseApplicationTabHostWidget extends StatelessWidget {
           // Flutter-rendered. Slide-only there too — fade ghosts platform
           // views (flutter#24164/#148639; review check 1c2).
           body: AppBoxKitExtendBodyFabLift(
-            child: AppBoxKitAnimatedTabStack(
-              activeIndex: tabsRouter.activeIndex,
-              // Tab pages are background-less (this host scaffold paints the
-              // shared surface), so the incoming layer must carry the scaffold
-              // color during a run or the outgoing tab reads through it
-              // (ghosting). Inert on iOS, which never runs.
-              backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-              children: children,
+            child: _DockFabLift(
+              // When the tab bar yields, the route's own dock occupies the same
+              // band — but it lives on a NESTED Scaffold, so the ancestor
+              // Scaffold that positions the gallery FAB sees `bottomSheetSize
+              // == Size.zero` and cannot lift for it. The FAB's clearance was
+              // never about the bar being a bar: it came from the bar's height
+              // reaching `minViewPadding.bottom` and feeding `safeMargin`
+              // (`floating_action_button_location.dart:566`). Keep supplying
+              // that band and the FAB holds the exact position it had.
+              //
+              // viewPadding only — `SafeArea` reads `padding`, so this cannot
+              // push the composer around.
+              extraViewPadding:
+                  _docksOwnBar(tabsRouter.topRoute.name) ? kShowcaseTabBarBlockHeight : 0,
+              child: AppBoxKitAnimatedTabStack(
+                activeIndex: tabsRouter.activeIndex,
+                // Tab pages are background-less (this host scaffold paints the
+                // shared surface), so the incoming layer must carry the
+                // scaffold color during a run or the outgoing tab reads
+                // through it (ghosting). Inert on iOS, which never runs.
+                backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+                children: children,
+              ),
             ),
           ),
           // One bottom dock at a time: a route that pins its own bar there
@@ -113,6 +131,41 @@ class ShowcaseApplicationTabHostWidget extends StatelessWidget {
                 ),
         );
       },
+    );
+  }
+}
+
+/// Raises `viewPadding.bottom` for the subtree, so a descendant [Scaffold]
+/// floats its FAB clear of a band that Scaffold cannot otherwise see.
+///
+/// Deliberately `viewPadding` and not `padding`: [SafeArea] and every
+/// content-inset consumer read `padding`, so raising that would shove real
+/// content around. `FloatingActionButtonLocation` reads `minViewPadding`
+/// (`floating_action_button_location.dart:566`), which is what this feeds —
+/// the same lever [AppBoxKitExtendBodyFabLift] pulls for the tab bar.
+class _DockFabLift extends StatelessWidget {
+  const _DockFabLift({required this.extraViewPadding, required this.child});
+
+  final double extraViewPadding;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    // ALWAYS wrap — never `if (extra <= 0) return child`. That early return
+    // changes the tree SHAPE between builds, so the Element below is not
+    // reused and the whole tab stack remounts: the nested routers lose their
+    // stacks and a pushed route is dropped on the floor. Measured here — the
+    // Components push vanished and the app bounced back to the tab root. It is
+    // the same shape recorded as C4 in
+    // docs/plans/glass-chrome-root-cause-fixes.md. A `+ 0` MediaQuery is free.
+    final MediaQueryData mq = MediaQuery.of(context);
+    return MediaQuery(
+      data: mq.copyWith(
+        viewPadding: mq.viewPadding.copyWith(
+          bottom: mq.viewPadding.bottom + math.max(0.0, extraViewPadding),
+        ),
+      ),
+      child: child,
     );
   }
 }

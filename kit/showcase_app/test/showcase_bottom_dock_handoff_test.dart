@@ -16,7 +16,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart'
-    show AppBoxKitNativeTabBar, AppBoxKitNativeInputBar;
+    show AppBoxKitNativeTabBar, AppBoxKitNativeInputBar, AppBoxKitNativeFabMenu;
 
 import 'helpers.dart';
 
@@ -104,6 +104,18 @@ void main() {
     expect(screenBottom - tester.getRect(row).bottom, greaterThanOrEqualTo(34),
         reason: 'the composer row must sit at least the home-indicator inset '
             'above the screen edge');
+
+    // The FAB must clear the dock. It is on the gallery-chrome Scaffold, an
+    // ANCESTOR of the one holding the composer, so that Scaffold's
+    // `bottomSheetSize` is Size.zero and no FloatingActionButtonLocation can
+    // see the dock — the lift has to come from `viewPadding` raised in the tab
+    // host. Before the fix the FAB sat over the composer's trailing mic.
+    final Finder fab = find.byType(AppBoxKitNativeFabMenu);
+    expect(fab, findsOneWidget,
+        reason: 'anti-vacuous: the gallery FAB must be on screen here');
+    expect(tester.getRect(fab).bottom,
+        lessThanOrEqualTo(tester.getRect(bar).top),
+        reason: 'the FAB must not overlap the composer');
   }, timeout: const Timeout(Duration(minutes: 2)));
 
   testWidgets(
