@@ -30,8 +30,14 @@ class ShowcaseComponentsInputBarWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     // No tab-bar lift: this bar owns the bottom dock while Components is the
     // active tab's top route, and the host tab bar yields the slot
-    // (`showcase_application_tab_host_widget.dart`). The bar's own SafeArea
-    // covers the home indicator.
+    // (`showcase_application_tab_host_widget.dart`), so there is no longer
+    // anything above the screen edge to clear.
+    //
+    // Deliberately NOT claiming the bar's internal SafeArea handles the home
+    // indicator: whether `MediaQuery.padding.bottom` survives the ancestor
+    // Scaffolds to reach it is unmeasured (needs a device — see
+    // docs/plans/bottom-dock-handoff.md). If the indicator ever crowds the
+    // bar, that is the thing to measure first.
     return AppBoxKitNativeInputBar(
       hintText: 'Message',
       leading: [
