@@ -138,6 +138,58 @@ The third is the interesting one: it is the only evidence that the
 `HitTestBehavior.opaque` detail is real rather than a plausible-sounding reading
 of the SDK, and it fails precisely the one test that would notice.
 
+### Two bugs the first round shipped, found in review
+
+Both were invisible to the six tests written alongside the feature, which is the
+point worth keeping.
+
+**1. The geometry probe measured the wrong box.** `CNBottomSheet.showCupertino`
+wraps whatever `pageBuilder` returns in a `CNSheetGeometryProbe`. In the sized
+path that output is the `Align`, which fills the route — so the published
+`topModalRect` was **552 tall, not 180**, measured. Every `ModalHideMixin` widget
+on the host page would have been told it was covered while 62% of the screen was
+clear, tearing down native chrome for nothing — the same symptom class this whole
+session started from.
+
+Fixed by adding `injectGeometryProbe` to `showCupertino` and having the sized
+body place the probe on the box that carries the height. Deliberately *not* by
+adding a second probe: two publish into one `ValueNotifier` every frame,
+last-writer-wins, and the dispose guard compares the rect to its own last value
+so it cannot tell whose it is clearing.
+
+**2. The sized sheet was not full width.** `Align` passes loose constraints, so a
+`SizedBox` given only a height collapsed to its content's intrinsic width —
+measured at 626 of 800, a centered floating card. That is exactly the shape the
+Cupertino route was adopted to eliminate, reintroduced one layer down. Fixed with
+`width: double.infinity`.
+
+Only the relocated probe made either visible. The height assertion passed
+throughout.
+
+### A mutation that passed, and what it changed
+
+Forcing `injectGeometryProbe: true` initially left all 18 tests green. Two probes
+were running, and the rect still came out right because the inner one happened to
+fire second — a correct value produced by ordering luck. A correct rect is
+therefore not evidence that only one probe exists, so the invariant now has its
+own assertion (`findsOneWidget` on the probe) rather than being inferred from the
+rect. With that in place the mutation fails as it should.
+
+### Pre-existing sheets are now barrier-dismissible — checked, not assumed
+
+`showOverlay` defaulting to true makes every existing kit sheet dismissible by an
+outside tap, since `barrierDismissible => enableDrag` and `enableDrag:
+isDismissible`, which defaults true. That is a restoration rather than a break:
+
+- `AppBoxKitBottomSheetService` already forwards a parameter *named*
+  `barrierDismissible` into `isDismissible` (`:56`, `:133`) — callers were
+  already declaring this intent, and iOS was silently ignoring it.
+- `AppBoxKitNotificationService.notice` documents itself as "Fire-and-forget:
+  dismissible by drag/barrier" (`:209-210`). iOS was violating its own doc.
+- The ask surfaces' Cancel button already pops with no value
+  (`appbox_kit_ask_surfaces.dart:79,135`), so a dismissal yields the same `null`
+  callers already had to handle. No new ambiguity is introduced.
+
 ### Known limitation
 
 On the Android tier the Material drag handle is laid out above the sized child

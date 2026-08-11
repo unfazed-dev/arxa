@@ -291,6 +291,16 @@ void main() {
       await tester.tap(find.text('open'));
       await tester.pumpAndSettle();
 
+      // Exactly one probe, asserted separately from the rect it publishes.
+      // Two probes republish into the same ValueNotifier every frame on a
+      // last-writer-wins basis: the rect can still come out right purely
+      // because the inner one happens to fire second, so a correct rect is not
+      // evidence that only one probe exists. The dispose guard compares the
+      // published rect to its own last value and cannot tell whose it was.
+      expect(find.byType(CNSheetGeometryProbe), findsOneWidget,
+          reason: 'the vendor wrapper must not also inject its own probe when '
+              'the body is bottom-anchored');
+
       final Rect? published = CNTabBarRouteObserver.topModalRect.value;
       expect(published, isNotNull,
           reason: 'the sized path must still publish a rect at all');
