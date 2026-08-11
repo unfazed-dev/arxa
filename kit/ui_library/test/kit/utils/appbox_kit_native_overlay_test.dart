@@ -7,6 +7,15 @@ import 'package:get/get.dart' show GetSnackBar, SnackbarController;
 import 'package:appbox_kit_ui_library/utils/appbox_kit_native_overlay.dart';
 
 void main() {
+  // These are plain `test()`s, but the depth counter now consults
+  // `SchedulerBinding.instance` to decide whether it is safe to notify
+  // synchronously (it defers when the change lands mid-build — see
+  // `_ModalDepthNotifier` in the vendor's `tab_bar.dart`). Without a binding
+  // that getter throws. Initializing it is what Flutter's own error text
+  // prescribes, and it changes nothing these tests assert: outside a frame the
+  // phase is `idle`, so notification stays synchronous exactly as before.
+  TestWidgetsFlutterBinding.ensureInitialized();
+
   int depth() => CNTabBarRouteObserver.anyModalDepth.value;
 
   tearDown(() {

@@ -1,4 +1,7 @@
+import 'package:cupertino_native_better/cupertino_native_better.dart'
+    show CNTabBarRouteObserver;
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart' show SchedulerBinding, SchedulerPhase;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:appbox_kit_core/platform/appbox_kit_platform.dart';
 import 'package:appbox_kit_ui_library/widgets/appbox_kit_frosted_surface.dart';
@@ -19,6 +22,52 @@ import 'appbox_kit_native_test_helpers.dart';
 ///   is needed (same pattern as the sheet test's Android case).
 void main() {
   tearDown(AppBoxKitPlatform.reset);
+
+  testWidgets(
+      'kit.ui-library.native-dialog — presenting never notifies modal-depth '
+      'listeners mid-build', (tester) async {
+    // Device crash this reproduces:
+    //
+    //   setState() or markNeedsBuild() called during build.
+    //   This CNTextField widget cannot be marked as needing to build...
+    //   The widget which was currently being built ... was: Builder
+    //
+    // `AppBoxKitFrostedAlertDialog` bumps the shared depth from its initState,
+    // which the framework runs *during* the build phase. `anyModalDepth` is a
+    // ValueNotifier, so that bump notifies synchronously, and every listener
+    // that calls setState — CNTextField (`text_field.dart:194-195`),
+    // AppBoxKitNativeChromeGate, AppBoxKitScrollOcclusionGate — is marked dirty
+    // mid-build. Any of them already built earlier in the same frame (a native
+    // field on the *host* page, e.g. the showcase's input bar) is illegal to
+    // dirty, and the framework throws.
+    //
+    // Asserted as the scheduler phase at notification time rather than by
+    // mounting a CNTextField: the widget under the real fault is a UiKitView
+    // that cannot render headless, and the defect is the notification timing
+    // itself — it endangers every listener, not just that one.
+    final List<SchedulerPhase> phases = <SchedulerPhase>[];
+    void record() => phases.add(SchedulerBinding.instance.schedulerPhase);
+    CNTabBarRouteObserver.anyModalDepth.addListener(record);
+    addTearDown(() => CNTabBarRouteObserver.anyModalDepth.removeListener(record));
+
+    await withAndroidFallback(() async {
+      AppBoxKitPlatform.override = const AppBoxKitPlatformOverride(isIOS: true);
+      await tester.pumpWidget(_hostWithOpener());
+
+      await tester.tap(find.text('open'));
+      await tester.pumpAndSettle();
+    });
+
+    expect(phases, isNotEmpty,
+        reason: 'the dialog must still move the shared depth at all — a test '
+            'that observes nothing would pass vacuously');
+    expect(
+      phases,
+      isNot(contains(SchedulerPhase.persistentCallbacks)),
+      reason: 'notifying while widgets are being built marks host-page '
+          'listeners dirty mid-frame, which throws',
+    );
+  });
 
   testWidgets('kit.ui-library.native-dialog — iOS tier renders the frosted panel with title + message',
       (tester) async {

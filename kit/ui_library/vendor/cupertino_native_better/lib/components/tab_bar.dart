@@ -1,5 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/scheduler.dart' show SchedulerBinding, SchedulerPhase;
 import 'package:flutter/services.dart';
 
 import '../channel/params.dart';
@@ -1590,7 +1591,7 @@ class CNTabBarRouteObserver extends NavigatorObserver {
   /// PopupRoute. Used by [CNButton] (and other iOS 26 glass widgets) to
   /// enable halo-containment clipping while any kind of sheet/popup is
   /// on top, not just full-screen "Sheet" routes.
-  static final ValueNotifier<int> _anyModalDepth = ValueNotifier<int>(0);
+  static final _ModalDepthNotifier _anyModalDepth = _ModalDepthNotifier();
 
   /// Read-only listenable of the current sheet/popup/dialog depth (any
   /// modal-like route, not just full-screen sheets).
@@ -1608,14 +1609,16 @@ class CNTabBarRouteObserver extends NavigatorObserver {
   /// CNTabBarRouteObserver.markAnyModalActive();
   /// controller.closed.whenComplete(CNTabBarRouteObserver.markAnyModalInactive);
   /// ```
+  /// Safe to call from `initState` — see [_ModalDepthNotifier] for why that
+  /// matters.
   static void markAnyModalActive() {
-    _anyModalDepth.value = _anyModalDepth.value + 1;
+    _anyModalDepth.set(_anyModalDepth.value + 1);
   }
 
   /// Pair with [markAnyModalActive]. Clamps at zero.
   static void markAnyModalInactive() {
     final next = _anyModalDepth.value - 1;
-    _anyModalDepth.value = next < 0 ? 0 : next;
+    _anyModalDepth.set(next < 0 ? 0 : next);
   }
 
   /// Live global rect of the currently-presented top modal sheet, OR null
@@ -1679,7 +1682,7 @@ class CNTabBarRouteObserver extends NavigatorObserver {
       _modalDepth.value = _modalDepth.value + 1;
     }
     if (_isAnyModal(route)) {
-      _anyModalDepth.value = _anyModalDepth.value + 1;
+      _anyModalDepth.set(_anyModalDepth.value + 1);
     }
   }
 
@@ -1702,7 +1705,7 @@ class CNTabBarRouteObserver extends NavigatorObserver {
         _decrementAnyModalWhenDismissed(route);
       } else {
         final next = _anyModalDepth.value - 1;
-        _anyModalDepth.value = next < 0 ? 0 : next;
+        _anyModalDepth.set(next < 0 ? 0 : next);
       }
     }
   }
@@ -1713,7 +1716,7 @@ class CNTabBarRouteObserver extends NavigatorObserver {
   void _decrementAnyModalWhenDismissed(Route<dynamic> route) {
     void decrement() {
       final next = _anyModalDepth.value - 1;
-      _anyModalDepth.value = next < 0 ? 0 : next;
+      _anyModalDepth.set(next < 0 ? 0 : next);
     }
 
     // `animation` is defined on TransitionRoute (which all modal/popup/page
@@ -1757,5 +1760,56 @@ class CNTabBarRouteObserver extends NavigatorObserver {
     // Replaced route's pixels are immediately gone; keep synchronous.
     if (oldRoute != null) _bumpDown(oldRoute);
     if (newRoute != null) _bumpUp(newRoute);
+  }
+}
+
+/// Backing store for [CNTabBarRouteObserver.anyModalDepth].
+///
+/// Deliberately not a plain [ValueNotifier]. Modal depth is legitimately bumped
+/// from `initState` — a dialog or sheet body that brackets its own lifetime does
+/// it there, which is the only place that reliably pairs with `dispose`. The
+/// framework runs `initState` *during* the build phase, and a [ValueNotifier]
+/// notifies synchronously, so that bump marks every listener dirty mid-build.
+///
+/// Listeners here call `setState`: `CNTextField` (`text_field.dart:194-195`),
+/// `ModalHideMixin`, `AppBoxKitNativeChromeGate`, `AppBoxKitScrollOcclusionGate`.
+/// Any of them mounted on the *host* page was built earlier in the same frame,
+/// and dirtying an already-built widget is illegal — the framework throws
+/// `setState() or markNeedsBuild() called during build`. On device that
+/// presented as a crash on opening a dialog from a page that had a native text
+/// field on it.
+///
+/// [value] still updates **synchronously**, so a gate reading it in its own
+/// `initState` still snapshots the bumped depth as its mount baseline — the
+/// behaviour `appBoxKitShowNativeDialog` depends on. Only the *notification*
+/// waits for the end of the frame, and only when the change arrives mid-build;
+/// a bump from a tap handler or an async gap notifies immediately as before.
+class _ModalDepthNotifier extends ChangeNotifier implements ValueListenable<int> {
+  int _value = 0;
+  bool _deferred = false;
+
+  @override
+  int get value => _value;
+
+  /// Sets the depth, notifying when it is safe to do so.
+  void set(int next) {
+    if (next == _value) return;
+    _value = next;
+
+    if (SchedulerBinding.instance.schedulerPhase !=
+        SchedulerPhase.persistentCallbacks) {
+      notifyListeners();
+      return;
+    }
+
+    // Mid-build. Coalesce: several bumps in one frame (a dialog's own bracket
+    // landing on top of its presenter's) settle into a single notification
+    // carrying the final depth, instead of one per bump.
+    if (_deferred) return;
+    _deferred = true;
+    SchedulerBinding.instance.addPostFrameCallback((_) {
+      _deferred = false;
+      notifyListeners();
+    });
   }
 }
