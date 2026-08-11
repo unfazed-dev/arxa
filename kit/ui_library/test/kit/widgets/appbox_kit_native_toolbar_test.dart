@@ -102,6 +102,30 @@ void main() {
     });
   });
 
+  testWidgets(
+      'kit.ui-library.native-toolbar — mixed labelled/icon-only actions stay '
+      'vertically centred on each other', (tester) async {
+    // The Wrap that replaced the fallback's Row must keep the Row's centring:
+    // an icon-only IconButton (48) and a labelled FilledButton.tonal (~40) are
+    // different heights, and Wrap defaults to start-alignment, which would
+    // top-align them instead.
+    await withAndroidFallback(() async {
+      await tester.pumpWidget(host(AppBoxKitNativeToolbar(
+        actions: [
+          AppBoxKitToolbarAction(
+              label: 'Share', icon: Icons.share, onPressed: () {}),
+          AppBoxKitToolbarAction(icon: Icons.add, onPressed: () {}),
+        ],
+      )));
+
+      expect(
+        tester.getCenter(find.byType(FilledButton)).dy,
+        closeTo(tester.getCenter(find.byType(IconButton)).dy, 0.5),
+        reason: 'the two action shapes must share a centre line',
+      );
+    });
+  });
+
   testWidgets('kit.ui-library.native-toolbar — action onPressed is wired on the fallback tier',
       (tester) async {
     var pressed = false;
