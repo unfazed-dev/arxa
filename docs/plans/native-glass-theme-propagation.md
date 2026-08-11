@@ -127,6 +127,19 @@ frame — and it carries the correct theme-first sync. Same class, same fix, one
 and one does not. Nothing in this document explains it, and the fixes above are not
 claimed to.
 
+Narrowed as far as source allows. Both instances are unioned glass: the toolbar
+passes `glassEffectUnionId: union` (`appbox_kit_native_toolbar.dart:138`) and
+`CNSplitButton` passes `glassEffectUnionId: _union` (`split_button.dart:75`), so the
+union is not the difference either. The **only** structural difference left is that
+the split group's second half is a `CNButtonData.popup` and the toolbar's are plain
+and icon buttons. That is where an instrumented run should look first.
+
+The next lever if it does turn out to be SwiftUI-side is `.id(...)` keyed on the
+colour scheme over the `GlassEffectContainer`, which forces a full rebuild rather
+than an invalidation. Deliberately **not** applied blind: this is a view whose Dart
+*and* Swift sides both already look correct, so adding a third mechanism on
+speculation is the move this repo has twice had to undo.
+
 Also unexplained: why both laggards recover **together** after ~2–3 s with no input.
 Two independent native caches (a UIKit `.glass()` configuration and a SwiftUI
 `GlassEffectContainer`) share no invalidation path, so a common recovery points at a
