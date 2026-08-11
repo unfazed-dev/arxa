@@ -209,9 +209,13 @@ class AppBoxKitNativeToolbar extends StatelessWidget {
         child: Wrap(
           spacing: 4,
           runSpacing: 4,
-          // The children are not uniform height (IconButton 48 vs
-          // FilledButton.tonal ~40); Wrap's default start-alignment would
-          // top-align them where the Row centred them.
+          // Forward protection, inert today: measured, both action shapes are
+          // 48.0 tall (FilledButton.tonal 144.5×48, IconButton 48×48), so
+          // nothing observable changes if this is dropped — a mutation that
+          // removes it keeps the suite green. It stays because the Row this
+          // replaced defaulted to CENTRE and Wrap defaults to START, so the
+          // day an action shape stops being 48 the difference becomes a
+          // silent top-alignment regression rather than a caught one.
           crossAxisAlignment: WrapCrossAlignment.center,
           children: children,
         ),

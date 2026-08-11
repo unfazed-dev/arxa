@@ -105,10 +105,12 @@ void main() {
   testWidgets(
       'kit.ui-library.native-toolbar — mixed labelled/icon-only actions stay '
       'vertically centred on each other', (tester) async {
-    // The Wrap that replaced the fallback's Row must keep the Row's centring:
-    // an icon-only IconButton (48) and a labelled FilledButton.tonal (~40) are
-    // different heights, and Wrap defaults to start-alignment, which would
-    // top-align them instead.
+    // Pins the OUTCOME (a shared centre line), not the mechanism. Both action
+    // shapes measure 48.0 tall today (FilledButton.tonal 144.5×48, IconButton
+    // 48×48), so this passes under either Wrap alignment — removing
+    // `crossAxisAlignment` does not fail it. That is deliberate: this is the
+    // assertion that starts failing the day an action shape stops being 48,
+    // which is exactly when the Row-to-Wrap swap could regress alignment.
     await withAndroidFallback(() async {
       await tester.pumpWidget(host(AppBoxKitNativeToolbar(
         actions: [

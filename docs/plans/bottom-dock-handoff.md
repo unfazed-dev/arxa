@@ -17,11 +17,22 @@ about the other:
 - Components is a *nested* `Scaffold` inside that body, pinning the input bar
   as its `bottomSheet` — which therefore lands inside the same region.
 
-The old mitigation was a fixed `Padding(bottom: kShowcaseTabBarBlockHeight)`
-(64) on the input bar. A constant can only approximate the bar's real block:
-on iOS the tab bar + home indicator is closer to 83pt, so 64 leaves the two
-overlapping. `Scaffold` never insets its body for a `bottomSheet`, so nothing
-else was compensating either.
+The old mitigation was `Padding(bottom: kShowcaseTabBarBlockHeight)` (64) on
+the input bar — and it was **missing a term**. That constant is documented as
+the bar's height *above the system safe area*, so the clearance contract is
+`MediaQuery.paddingOf(context).bottom + kShowcaseTabBarBlockHeight`. All seven
+other callers write it that way (`showcase_home_view.mobile.dart:53-56` and
+siblings); the input bar was the only one using the bare 64, so it cleared the
+bar but not the home indicator. `Scaffold` never insets its body for a
+`bottomSheet`, so nothing else compensated.
+
+> Corrected after the fact: an earlier revision of this doc claimed the
+> constant itself understates the iOS bar (~83pt) and was therefore wrong for
+> all its callers. That was wrong — 64 is bar-only by design, and the other
+> callers add the safe area explicitly. The defect was one caller's arithmetic,
+> not the constant. Whether an ancestor `Scaffold` had already consumed
+> `MediaQuery.padding` (which would also defeat the input bar's own internal
+> `SafeArea`) was not measured — it needs a device.
 
 ## Fix (per the user's call: the top dock wins)
 
@@ -89,23 +100,35 @@ Mutations run against a committed tree:
 | listenable that never fires | passed — the listener was inert; code deleted rather than the test weakened |
 | "global" scope via `root.isRouteActive` | passed, but it is not a faithful global mutation: auto_route's route-activity is URL-scoped, so it already answers per-active-tab. With a top-down `topRoute` read the cross-tab leak is structurally unreachable — test 2 guards against a future refactor back to a claim counter, not against a reachable state today. |
 
-Suite: showcase 123, analyze clean.
+Suite: showcase 122, analyze clean.
 
-## Found, not fixed (out of scope)
+Verified headless, where `AppBoxKitPlatform.supportsLiquidGlass` is false — the
+tests exercise the **fallback** tab bar, not `CNTabBar`. The platform-view
+destroy/re-create on entering and leaving Components has not been observed on
+device.
 
-`/profile` **root** overflows by 92px in `AppBoxKitNativeToolbar`
-(`appbox_kit_native_toolbar.dart:202`, a `Row`) at phone width (390pt).
-Confirmed with a throwaway probe that only navigates to `/profile` and never
-enters Components, so it is independent of this change. It is why the handoff
-test takes its baseline from Home.
+## Follow-up: the fallback toolbar overflow (fixed)
 
-`kShowcaseTabBarBlockHeight = 64` understates the real iOS block (~83pt) for
-its seven other callers too — notes (×3), search, profile, home. There it is
-*scroll* clearance rather than a pinned dock, so the failure is milder (the
-last item sits partly under the bar instead of colliding with it), and it is
-left alone: only the Components dock was in scope.
+Found while writing the handoff test: `/profile` **root** overflowed by 92px at
+phone width (390pt) in `AppBoxKitNativeToolbar`'s fallback tier — which is why
+that test takes its baseline from Home.
 
-Both were verified headless, where `AppBoxKitPlatform.supportsLiquidGlass` is
-false — the tests exercise the **fallback** tab bar, not `CNTabBar`. The
-platform-view destroy/re-create on entering and leaving Components has not
-been observed on device.
+Root cause: the fallback picked its layout with
+`actions.length <= 4 ? Row : Wrap`, predicting fit from the **count** of
+actions when the constraint is **width**. A labelled action renders as a
+`FilledButton.tonal` (measured 144.5pt wide) against an icon-only
+`IconButton` (48pt), so the profile demo's three labelled actions — Share /
+Edit / Delete — passed the `<= 4` test and then did not fit.
+
+Fix: always `Wrap`. A Wrap whose content fits lays out exactly as the Row did
+(one run, same order), so the common case is unchanged and the overflow is
+structurally gone. Confirmed by re-running the same `/profile` probe: clean.
+
+Mutations:
+
+| Mutation | Result |
+|---|---|
+| restore `actions.length <= 4 ? Row : Wrap` | fails with the original overflow ✅ |
+| drop `crossAxisAlignment: WrapCrossAlignment.center` | **passes** — and stays passing after adding a centring assertion. Measured cause: both action shapes are 48.0 tall, so the alignment is inert today. The argument is kept as forward protection (the Row defaulted to centre, Wrap defaults to start) and both the code comment and the test now say so rather than claiming a height difference that does not exist. |
+
+Suite: ui_library 307, analyze clean.
