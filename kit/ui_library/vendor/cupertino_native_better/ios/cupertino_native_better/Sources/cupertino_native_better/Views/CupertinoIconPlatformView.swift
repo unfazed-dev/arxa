@@ -124,7 +124,7 @@ class CupertinoIconPlatformView: NSObject, FlutterPlatformView {
         if let args = call.arguments as? [String: Any], let isDark = (args["isDark"] as? NSNumber)?.boolValue {
           CNAppearance.trace("CNIcon", "setBrightness isDark=\(isDark)")
           if #available(iOS 13.0, *) {
-            CNAppearance.applyInstantly {
+            CNAppearance.applyInstantly(forcing: [self.container]) {
               self.container.overrideUserInterfaceStyle = isDark ? .dark : .light
             }
           }

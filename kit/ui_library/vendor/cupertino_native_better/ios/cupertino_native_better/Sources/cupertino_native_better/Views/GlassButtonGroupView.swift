@@ -646,7 +646,9 @@ class GlassButtonGroupPlatformView: NSObject, FlutterPlatformView {
     // Apple's design (WWDC25 #284). Correct when glass first appears, wrong
     // for a theme flip, where the Flutter half of the same UI changes in one
     // frame. See `Utils/CNAppearance.swift`.
-    CNAppearance.applyInstantly {
+    CNAppearance.applyInstantly(
+      forcing: [self.container, self.hostingController.view]
+    ) {
       self.hostingController.overrideUserInterfaceStyle = isDark ? .dark : .light
       self.viewModel.isDark = isDark
     }

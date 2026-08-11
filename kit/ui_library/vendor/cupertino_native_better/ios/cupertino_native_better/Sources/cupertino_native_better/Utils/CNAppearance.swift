@@ -32,22 +32,52 @@ import os
 /// for the run loop to do it, so the change is on the very next commit instead
 /// of an unspecified later one.
 ///
-/// This deliberately does NOT force layout. `layoutIfNeeded` inside a Flutter
-/// platform view re-enters a hierarchy whose geometry Flutter owns; the
-/// package's existing uses of it are all on the creation path, hopped onto the
-/// next run-loop turn, and copying that into a per-flip path would trade one
-/// timing bug for another.
+/// ## Why it also forces layout
+///
+/// A hybrid-composition platform view lives in the native hierarchy *above*
+/// `FlutterViewController`, outside Flutter's own render pipeline. Its layer is
+/// therefore not necessarily re-composited when only Flutter-side state
+/// changes — a scroll or a touch forces the pass, which is why an appearance
+/// change "catches up" later instead of on the frame it was commanded
+/// (flutter#69104: recovers "after other operations such as switching pages and
+/// going back" — the exact symptom originally reported against this kit).
+///
+/// Measured here on device: onset varied 0ms to 2117ms, non-deterministically,
+/// for the *same* view across flips, while Dart demonstrably sent on frame 0
+/// and the app rendered 59fps. That is what an incidental re-composite looks
+/// like — whichever view a Flutter repaint happens to touch updates, the rest
+/// wait.
+///
+/// The package already uses `setNeedsLayout`/`layoutIfNeeded` for exactly this
+/// on its creation paths (`CupertinoButtonPlatformView.swift:263-272`,
+/// `:815-824`). This applies the same idiom to the per-flip path, synchronously
+/// rather than hopped onto a later run-loop turn — a deferred force is the bug,
+/// not the fix.
+///
+/// (An earlier revision of this file deliberately omitted the layout force,
+/// on the theory that re-entering a Flutter-owned hierarchy would trade one
+/// timing bug for another. That was reasoning, not evidence, and the evidence
+/// above contradicts it.)
 enum CNAppearance {
-  /// Applies [body] with every implicit animation suppressed, and commits it
-  /// immediately rather than at the run loop's convenience.
+  /// Applies [body] with every implicit animation suppressed, commits it
+  /// immediately, and forces [views] to lay out and redraw now.
+  ///
+  /// Pass every view whose appearance [body] affects — for a hosted SwiftUI
+  /// tier that means the hosting controller's view as well as the container,
+  /// since they are separate layer trees.
   ///
   /// Safe to nest: `CATransaction` is a stack and `performWithoutAnimation`
   /// restores the previous flag.
-  static func applyInstantly(_ body: () -> Void) {
+  static func applyInstantly(forcing views: [UIView?] = [], _ body: () -> Void) {
     CATransaction.begin()
     CATransaction.setDisableActions(true)
     UIView.performWithoutAnimation {
       body()
+      for case let view? in views {
+        view.setNeedsLayout()
+        view.layoutIfNeeded()
+        view.setNeedsDisplay()
+      }
     }
     CATransaction.commit()
     CATransaction.flush()

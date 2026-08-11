@@ -491,7 +491,9 @@ class CupertinoButtonPlatformView: NSObject, FlutterPlatformView {
             // handler that never re-establishes glass (the tab bar's, a lone
             // `overrideUserInterfaceStyle` assignment) is consistently among the
             // fastest views to restyle. See `Utils/CNAppearance.swift`.
-            CNAppearance.applyInstantly {
+            CNAppearance.applyInstantly(
+              forcing: [self.container, self.button, self.hostingController?.view]
+            ) {
             self.container.overrideUserInterfaceStyle = isDark ? .dark : .light
             // Also the hosting controller, not only its superview. The glass
             // tier (`usesSwiftUI`, set when a glassEffect id is present) is

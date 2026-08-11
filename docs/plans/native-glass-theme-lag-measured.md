@@ -118,14 +118,44 @@ added at 18:01 this same day. It is *correct* — `UIButton.Configuration` bakes
 resolved colours at assignment, so it must be re-applied — but it is
 unsuppressed, so it pays for an animation nobody asked for.
 
-## 7. B2 — open, with the instrumentation to close it
+## 7. B2 — cause identified from external evidence, fix applied, unconfirmed
 
-Not determined. Candidates surviving the evidence:
+A hybrid-composition platform view lives in the native hierarchy *above*
+`FlutterViewController`, **outside Flutter's own render pipeline**. Its layer is
+therefore not necessarily re-composited when only Flutter-side state changes; a
+scroll or a touch forces the pass, and the appearance change "catches up" then.
 
-1. UIKit coalescing the trait change to a later layout/update pass, which for a
-   Flutter platform view is scheduled by Flutter, not by UIKit.
-2. Render-server serialisation of glass re-rasterisation across N views
-   (7 views × ~300 ms ≈ the 2.1 s total span).
+That is the non-determinism. Whichever view a Flutter repaint happens to touch
+updates on time; the rest wait for some incidental pass. It also retro-explains
+the *original* symptom this whole investigation started from — "some glass UI is
+still dark, and it fixes itself a while later while navigating" — which is
+almost verbatim [flutter#69104](https://github.com/flutter/flutter/issues/69104),
+where a `UiKitView` "recovers after other operations such as switching pages and
+going back".
+
+Corroborating, for the glass specifically:
+[expo/expo#43743](https://github.com/expo/expo/issues/43743) —
+`overrideUserInterfaceStyle` updates the trait collection but `UIGlassEffect`
+does **not** re-render in response; the effect must be re-assigned.
+`setTintColor`/`setInteractive` re-assign and update instantly; the colour-scheme
+setter did not, and the glass stayed dark until remount.
+
+**Fix applied:** `Utils/CNAppearance.swift` now forces `setNeedsLayout` +
+`layoutIfNeeded` + `setNeedsDisplay` synchronously on every affected view
+(container, button, and the hosting controller's view — separate layer trees)
+inside the same animation-suppressed transaction. This is the package's own
+creation-path idiom (`CupertinoButtonPlatformView.swift:263-272`, `:815-824`)
+applied to the per-flip path, and synchronously rather than hopped to a later
+run-loop turn, since a deferred force is the bug rather than the fix.
+
+**Status: not confirmed on device.** This is an evidence-backed fix for a
+mechanism that matches every measurement, not a verified one. The tracing below
+exists to confirm or refute it on the next run.
+
+Rejected on the same evidence: render-server serialisation of glass
+re-rasterisation across N views (7 × ~300 ms ≈ the 2.1 s span). Arithmetically
+attractive, but it cannot produce a 0 ms onset for the same view on another
+flip, and §4 shows exactly that.
 
 Candidates **excluded by measurement**, recorded so they are not re-tried:
 

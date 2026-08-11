@@ -277,7 +277,7 @@ class CupertinoPopupMenuButtonPlatformView: NSObject, FlutterPlatformView {
           // `docs/plans/native-glass-theme-lag-measured.md` §7.
           CNAppearance.trace("CNPopupMenuButton", "setBrightness isDark=\(isDark)")
           if #available(iOS 13.0, *) {
-            CNAppearance.applyInstantly {
+            CNAppearance.applyInstantly(forcing: [self.container, self.button]) {
               self.container.overrideUserInterfaceStyle = isDark ? .dark : .light
             }
           }
