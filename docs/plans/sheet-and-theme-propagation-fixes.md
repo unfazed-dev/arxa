@@ -305,3 +305,56 @@ affordance at all, since the route has no dismissible barrier and
 `isDismissible` maps to `enableDrag`. **No sheet call site passes it** — the
 only `barrierDismissible: false` in the kit is on the dialog path
 (`appbox_kit_notification_manager.dart:55` → `alert`, not `notice`).
+
+---
+
+## Drag handles on by default (2026-08-11)
+
+Requested: sheets should show a grab handle unless a caller says otherwise.
+`appBoxKitShowSheet` now takes `showDragHandle`, defaulting to **true**, applied
+to both tiers.
+
+**This was a behaviour fix on Android, not just a new knob.** The kit passed
+nothing, and Material resolves
+`showDragHandle ?? (enableDrag && (sheetTheme.showDragHandle ?? false))`
+(`material/bottom_sheet.dart:1161`). With no `bottomSheetTheme.showDragHandle`
+anywhere in the kit, that is `false` — so **Android sheets had no handle at
+all**, on a sheet that was draggable.
+
+### Upstream Flutter bug found while wiring the iOS tier
+
+`showCupertinoSheet` **declares** `showDragHandle` (`cupertino/sheet.dart:190`)
+and **documents** it (`:143`), but **never forwards it** to the
+`CupertinoSheetRoute` it constructs — neither the plain branch (`:202-208`) nor
+the nested-navigation branch (`:242-250`). The argument is accepted and
+silently dropped, so the handle never appears.
+
+This is not a "parameter doesn't exist on this version" problem — it exists and
+compiles on the pinned 3.44.9. `CupertinoSheetRoute` implements the flag
+correctly (`:645`, `:697`, used at `:700`); only the convenience wrapper is
+broken.
+
+Found empirically, not by reading: the first test run asserted the 36×5 grabber
+and found zero. Fix: `CNBottomSheet.showCupertino` now pushes
+`CupertinoSheetRoute` directly for the non-nested path — the same thing
+`showCupertinoSheet` does, `rootNavigator: true` included, minus the dropped
+argument. The nested-navigation path is only reachable through the convenience
+function, so it inherits the bug and is documented as unable to show a handle.
+
+No existing flutter/flutter issue found for this. `showDragHandle` arrived with
+PR #177337; worth filing upstream.
+
+### Interaction to know
+
+On the iOS tier `isDismissible` maps to `enableDrag`, so `isDismissible: false`
+with the default handle would render a grabber that cannot drag. Pass
+`showDragHandle: false` alongside it. No call site does this today.
+
+### Coverage
+
+Four new tests (`ui_library` 293 → 297): handle-by-default and opt-out on each
+tier. The iOS pair matches the grabber by its exact 36×5 geometry
+(`cupertino/sheet.dart:704-708`) so it cannot pass on some other small box. The
+opt-out case is a *separate* test deliberately — re-pumping a second host inside
+one test reuses the `MaterialApp` element and its `Navigator`, leaving the first
+sheet pushed, so the assertion would run against the previous sheet.

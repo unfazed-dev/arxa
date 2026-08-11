@@ -207,13 +207,95 @@ void main() {
       );
     });
   });
+
+  // ---------------------------------------------------------------------
+  // Drag handle: on by default on BOTH tiers.
+  //
+  // Android previously had NO handle. The kit passed nothing, and Material
+  // resolves `showDragHandle ?? (enableDrag && (sheetTheme.showDragHandle ??
+  // false))` (`material/bottom_sheet.dart:1161`) — with no
+  // `bottomSheetTheme.showDragHandle` anywhere in the kit that is `false`. So
+  // this is a behaviour fix on Android, not just a new knob.
+  // ---------------------------------------------------------------------
+
+  testWidgets(
+      'kit.ui-library.native-sheet — Android shows a drag handle by default',
+      (tester) async {
+    AppBoxKitPlatform.override = const AppBoxKitPlatformOverride(isAndroid: true);
+    await tester.pumpWidget(_hostWithOpener());
+
+    await tester.tap(find.text('open'));
+    await tester.pumpAndSettle();
+
+    expect(tester.widget<BottomSheet>(find.byType(BottomSheet)).showDragHandle,
+        isTrue,
+        reason: 'without an explicit value Material resolves this to false via '
+            'the theme, leaving a draggable sheet with no visible affordance');
+  });
+
+  testWidgets(
+      'kit.ui-library.native-sheet — Android honors showDragHandle: false',
+      (tester) async {
+    AppBoxKitPlatform.override = const AppBoxKitPlatformOverride(isAndroid: true);
+    await tester.pumpWidget(_hostWithOpener(showDragHandle: false));
+
+    await tester.tap(find.text('open'));
+    await tester.pumpAndSettle();
+
+    expect(tester.widget<BottomSheet>(find.byType(BottomSheet)).showDragHandle,
+        isFalse);
+  });
+
+  testWidgets(
+      'kit.ui-library.native-sheet — default tier draws the route\'s grabber by '
+      'default', (tester) async {
+    await withAndroidFallback(() async {
+      await tester.pumpWidget(_hostWithOpener());
+      await tester.tap(find.text('open'));
+      await tester.pumpAndSettle();
+
+      expect(_cupertinoGrabber, findsOneWidget,
+          reason: 'the iOS tier must show the route-drawn grabber by default');
+      expect(
+        find.byKey(const ValueKey<String>('appBoxKitNativeSheetGrabber')),
+        findsNothing,
+        reason: 'and exactly one: the kit must not paint a second pill',
+      );
+    });
+  });
+
+  testWidgets(
+      'kit.ui-library.native-sheet — default tier honors showDragHandle: false',
+      (tester) async {
+    // Separate test on purpose. Re-pumping a second `_hostWithOpener()` inside
+    // one test reuses the MaterialApp element and therefore its Navigator, so
+    // the first sheet stays pushed and its grabber is still found — the
+    // opt-out assertion then fails against the *previous* sheet.
+    await withAndroidFallback(() async {
+      await tester.pumpWidget(_hostWithOpener(showDragHandle: false));
+      await tester.tap(find.text('open'));
+      await tester.pumpAndSettle();
+
+      expect(_cupertinoGrabber, findsNothing,
+          reason: 'showDragHandle: false must reach the Cupertino route');
+    });
+  });
 }
+
+/// The Cupertino grabber's exact geometry, from Apple's Figma files via
+/// `cupertino/sheet.dart:704-708`: 36x5. Matching the size is what
+/// distinguishes "the route drew it" from "something else here is small".
+final Finder _cupertinoGrabber = find.byWidgetPredicate(
+  (Widget w) => w is SizedBox && w.width == 36 && w.height == 5,
+  description: 'CupertinoSheetRoute drag handle (36x5)',
+);
 
 /// A trivial host that exposes a button which opens the native sheet from a
 /// real BuildContext (the sheet needs a Navigator ancestor).
 Widget _hostWithOpener({
   WidgetBuilder? sheetBuilder,
   Color? backgroundColor,
+  bool showDragHandle = true,
   void Function(Future<Object?>)? onSheet,
 }) {
   return MaterialApp(
@@ -224,6 +306,7 @@ Widget _hostWithOpener({
             onPressed: () {
               final future = appBoxKitShowSheet<Object?>(
                 context: context,
+                showDragHandle: showDragHandle,
                 backgroundColor: backgroundColor,
                 builder: sheetBuilder ??
                     (_) => const Padding(

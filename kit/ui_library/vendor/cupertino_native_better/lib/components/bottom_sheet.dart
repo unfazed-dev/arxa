@@ -96,8 +96,21 @@ class CNBottomSheet {
   /// `CupertinoColors.tertiaryLabel`, values derived from Apple's Figma files
   /// — `sheet.dart:704-708`) and insets the content's top padding to clear it.
   /// Prefer it over painting a grabber inside [pageBuilder]: doing both yields
-  /// two pills. Available from Flutter 3.44; on older SDKs the argument is
-  /// dropped by the passthrough below rather than failing to compile.
+  /// two pills.
+  ///
+  /// **Upstream bug this works around (Flutter 3.44.9).**
+  /// `showCupertinoSheet` declares `showDragHandle` (`cupertino/sheet.dart:190`)
+  /// and documents it (`:143`), but **never forwards it** to the
+  /// `CupertinoSheetRoute` it builds — neither the plain branch (`:202-208`)
+  /// nor the nested-navigation branch (`:242-250`) passes it along. The
+  /// argument is silently accepted and dropped, so calling that function with
+  /// `showDragHandle: true` produces no handle.
+  ///
+  /// `CupertinoSheetRoute` implements the flag correctly (`:645`, `:697`, used
+  /// at `:700`), so the non-nested path below pushes the route directly —
+  /// exactly what `showCupertinoSheet` does, `rootNavigator: true` included,
+  /// minus the dropped argument. Verified by test: the 36x5 grabber is absent
+  /// via the convenience function and present via the route.
   static Future<T?> showCupertino<T>({
     required BuildContext context,
     required WidgetBuilder pageBuilder,
@@ -106,22 +119,36 @@ class CNBottomSheet {
     bool showDragHandle = false,
     double? topGap,
   }) {
-    return showCupertinoSheet<T>(
-      context: context,
-      useNestedNavigation: useNestedNavigation,
+    // `builder:` rather than `scrollableBuilder:` deliberately, on both paths.
+    // `scrollableBuilder` doesn't exist on Flutter 3.35 – 3.41.x and using it
+    // there hard-breaks the package (Issue #61). `builder:` compiles on every
+    // Flutter that has these APIs and stays fully functional on 3.44+ (a
+    // compile-time deprecation warning only).
+    Widget probed(BuildContext ctx) =>
+        CNSheetGeometryProbe(child: pageBuilder(ctx));
+
+    if (useNestedNavigation) {
+      // Nested navigation is reachable only through `showCupertinoSheet`, so
+      // this path inherits the bug above and cannot show a handle. Stated
+      // rather than silently swallowed.
+      return showCupertinoSheet<T>(
+        context: context,
+        useNestedNavigation: true,
+        enableDrag: enableDrag,
+        topGap: topGap,
+        // ignore: deprecated_member_use
+        builder: probed,
+      );
+    }
+
+    final CupertinoSheetRoute<T> route = CupertinoSheetRoute<T>(
+      // ignore: deprecated_member_use
+      builder: probed,
       enableDrag: enableDrag,
       showDragHandle: showDragHandle,
       topGap: topGap,
-      // Intentionally using `builder:` even though Flutter 3.44 deprecated
-      // it in favor of `scrollableBuilder`. `scrollableBuilder` doesn't
-      // exist on Flutter 3.35 – 3.41.x — using it there hard-breaks the
-      // package (Issue #61). `builder:` compiles on every Flutter that has
-      // `showCupertinoSheet` and remains fully functional on 3.44+ (a
-      // compile-time deprecation warning only). This is the maximally
-      // compatible API surface until we drop <3.44 support.
-      // ignore: deprecated_member_use
-      builder: (ctx) => CNSheetGeometryProbe(child: pageBuilder(ctx)),
     );
+    return Navigator.of(context, rootNavigator: true).push<T>(route);
   }
 
   /// Position-aware wrapper for [showCupertinoModalPopup] — the iOS

@@ -54,15 +54,33 @@ import 'appbox_kit_frosted_surface.dart';
 /// publishes the sheet body's live rect so `ModalHideMixin` widgets on the host
 /// page hide only when geometrically covered.
 ///
+/// **Drag handle: on by default on BOTH tiers.** [showDragHandle] defaults to
+/// `true` and is forwarded to each tier's own grabber — the framework draws it,
+/// never the kit (painting one here as well yields two pills).
+///
+/// This is a deliberate departure from Flutter's Material default, which
+/// resolves `showDragHandle ?? (enableDrag && (sheetTheme.showDragHandle ??
+/// false))` (`material/bottom_sheet.dart:1161`). The kit sets no
+/// `bottomSheetTheme.showDragHandle`, so leaving it unset gave Android sheets
+/// **no handle at all** — a sheet with no visible affordance for the drag it
+/// supports. Passing it explicitly is what makes the two tiers agree.
+///
+/// Interaction worth knowing: on the iOS tier [isDismissible] maps to
+/// `enableDrag`, so `isDismissible: false` with the default handle would show a
+/// grabber that cannot drag. Pass `showDragHandle: false` alongside it. (No
+/// call site does this today — the only `barrierDismissible: false` in the kit
+/// is on the dialog path, not a sheet.)
+///
 /// The public surface is **primitives only** ([builder], [context],
-/// [isDismissible], [backgroundColor]) so hosts never import either underlying
-/// dep. The generic return type is honored end-to-end: both tiers return
-/// `Future<T?>`, so a host that closes the sheet with
+/// [isDismissible], [showDragHandle], [backgroundColor]) so hosts never import
+/// either underlying dep. The generic return type is honored end-to-end: both
+/// tiers return `Future<T?>`, so a host that closes the sheet with
 /// `Navigator.pop(context, value)` receives `value` here.
 Future<T?> appBoxKitShowSheet<T>({
   required WidgetBuilder builder,
   required BuildContext context,
   bool isDismissible = true,
+  bool showDragHandle = true,
   Color? backgroundColor,
 }) async {
   // Bump the shared modal depth for the sheet's lifetime. No navigator in
@@ -82,6 +100,7 @@ Future<T?> appBoxKitShowSheet<T>({
         context: context,
         builder: builder,
         isDismissible: isDismissible,
+        showDragHandle: showDragHandle,
         backgroundColor: backgroundColor,
       );
     }
@@ -92,7 +111,7 @@ Future<T?> appBoxKitShowSheet<T>({
       // The route has no dismissible barrier at all, so this is the only
       // dismiss affordance it can be mapped onto.
       enableDrag: isDismissible,
-      showDragHandle: true,
+      showDragHandle: showDragHandle,
       pageBuilder: (_) => _CupertinoSheetBody(
         builder: builder,
         backgroundColor: backgroundColor,
