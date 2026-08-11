@@ -16,7 +16,51 @@ wrong readings (see Corrections).
 | **"Glass CTA" pill** | **`CNButton`** | **dark ✗** | ~3 s |
 | **"Send" split button** | **`CNGlassButtonGroup`** | **dark ✗** | ~3 s |
 
-## Leading candidate for the Glass CTA
+## ROOT CAUSE (found 08-11 20:xx, second clip) — the theme *animation*
+
+A second clip after the fixes below showed the Glass CTA still dark on a light
+page. Wiring was verified first and was fine: `showcase_app` resolves
+`cupertino_native_better` to the edited directory, and
+`cupertino_native_better.o` / `.swiftmodule` are stamped 19:53 against an 18:01
+edit, so the Swift was recompiled and in the binary.
+
+The cause is not in any component. It is `MaterialApp`'s theme animation:
+
+**`ThemeData.lerp` fades colours continuously, but `brightness` is a STEP at
+t=0.5.** A native platform view's only appearance lever is a boolean
+`setBrightness`, so it *cannot* participate in a theme animation. Flutter-painted
+surfaces cross-fade immediately; every native view holds its old appearance until
+the animation's midpoint, then snaps. That is exactly the reported symptom, and it
+explains why the laggards corrected **together** — they are all released by the
+same step, on the same frame.
+
+Measured with a throwaway probe (one `CNButton`, one flip):
+
+| | default 200 ms | `themeAnimationDuration: Duration.zero` |
+|---|---|---|
+| `setBrightness` reaches the wire | **96 ms** | **0 ms** |
+| channel round-trips for ONE widget | **26** | **5** |
+
+The 26 is the second half of the mechanism: `_syncPropsToNativeIfNeeded` guards on
+`_lastTint != tint`, and tint *lerps*, so **every animation frame** fires a fresh
+`setStyle`. On device that is multiplied by every native widget on screen, in a
+debug build, and `setBrightness` queues behind it — which is why the stale window
+read as seconds rather than the ~100 ms the step alone costs, and why its length
+varied with how much native chrome the screen carried.
+
+**Fix:** `themeAnimationDuration: Duration.zero` on the showcase's
+`MaterialApp.router`. Nothing is lost — the "smooth theme fade" was never coherent
+in an app that is half native chrome; it was half the screen fading while the other
+half waited. Pinned by `showcase_theme_flip_wiring_test.dart` (mutation-checked:
+dropping the line fails it).
+
+> **Latent, not fixed:** the per-frame `setStyle` storm is still there for any
+> consumer that keeps an animated theme. Guarding a channel round-trip on an
+> equality test against a continuously-lerping value is a defect on its own terms.
+> Not fixed blind here because `Duration.zero` removes the storm for this app and a
+> debounce touches all 13 components.
+
+## Leading candidate for the Glass CTA (superseded — see ROOT CAUSE above)
 
 `UIButton.Configuration` never re-resolved after a brightness change — see "Also
 fixed" below. That is the mechanism with both in-repo precedent (the tint branch
