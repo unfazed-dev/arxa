@@ -16,7 +16,7 @@ wrong readings (see Corrections).
 | **"Glass CTA" pill** | **`CNButton`** | **dark ✗** | ~3 s |
 | **"Send" split button** | **`CNGlassButtonGroup`** | **dark ✗** | ~3 s |
 
-## ROOT CAUSE (found 08-11 20:xx, second clip) — the theme *animation*
+## ROOT CAUSE (second clip, 08-11 19:57) — the theme *animation*
 
 A second clip after the fixes below showed the Glass CTA still dark on a light
 page. Wiring was verified first and was fine: `showcase_app` resolves
@@ -43,16 +43,30 @@ Measured with a throwaway probe (one `CNButton`, one flip):
 
 The 26 is the second half of the mechanism: `_syncPropsToNativeIfNeeded` guards on
 `_lastTint != tint`, and tint *lerps*, so **every animation frame** fires a fresh
-`setStyle`. On device that is multiplied by every native widget on screen, in a
-debug build, and `setBrightness` queues behind it — which is why the stale window
-read as seconds rather than the ~100 ms the step alone costs, and why its length
-varied with how much native chrome the screen carried.
+`setStyle` — and each `setStyle` re-runs `applyButtonStyle`, i.e. a full
+configuration rebuild and layout on the platform thread.
+
+> **The step is measured; the device duration is inferred.** 96 ms is measured, but
+> headless with *mocked* channels. The ~1.1 s observed on device is *consistent
+> with* that storm multiplied by every native widget on screen in a debug build
+> (~12 views × 26 calls ≈ 300 round-trips inside a 200 ms window, each triggering
+> UIKit layout), and it would explain why the stale window scaled with how much
+> native chrome a screen carried. It has not been measured on device, and is not
+> claimed as proven.
 
 **Fix:** `themeAnimationDuration: Duration.zero` on the showcase's
 `MaterialApp.router`. Nothing is lost — the "smooth theme fade" was never coherent
 in an app that is half native chrome; it was half the screen fading while the other
 half waited. Pinned by `showcase_theme_flip_wiring_test.dart` (mutation-checked:
 dropping the line fails it).
+
+**Scope of the fix — one app root, deliberately.** `kit/showcase_app/lib/main.dart`
+is the only `MaterialApp` in the repo that embeds the native glass tier; there is no
+scaffolder template that emits an app root (searched `tool/` and all `*.tmpl`/
+`*.njk`/`*.mustache`), and `appbox-studio` depends on neither
+`cupertino_native_better` nor `appbox_kit_ui_library`. So generated apps do **not**
+inherit this automatically — whenever an app root is templated, it must carry
+`themeAnimationDuration: Duration.zero` or reproduce this bug.
 
 > **Latent, not fixed:** the per-frame `setStyle` storm is still there for any
 > consumer that keeps an animated theme. Guarding a channel round-trip on an
@@ -163,7 +177,18 @@ bug one branch down. Latent: under `MaterialApp` the value is a
 - **`CNNativeTabBar`, `CNPopupMenuButton`.** Both restyle within a frame. An earlier
   read of the thumbnails put them in scope; they are out.
 
-## Open — not root-caused
+## The split button (was "open" — now expected to be covered)
+
+**Read the ROOT CAUSE section first.** The theme-animation step applies to this view
+exactly as it does to the Glass CTA, so `themeAnimationDuration: Duration.zero` is
+expected to fix it too, and the popup-`Menu` investigation below is **no longer the
+live theory**. It survives only as the thing to check if the next clip still shows
+Send lagging — and specifically only in the case it predicts: when the in-app theme
+and the OS appearance **disagree** (explicit light while the device is dark, or the
+reverse), which is when FB13391355 bites. Under `ThemeMode.system` the two agree and
+it cannot apply.
+
+### Superseded investigation, kept for that one case
 
 **The "Send" split button.** It is `CNGlassButtonGroup(buttons: [action, menu])`
 (`split_button.dart`), i.e. *the same class as the toolbar*, which restyles within a
