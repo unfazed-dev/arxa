@@ -118,6 +118,18 @@ class CNBottomSheet {
   /// shown through it has no dim and no tap-to-dismiss. Pass a colour to get
   /// both (see [_CNDimmedSheetRoute]); leave it null for the framework's
   /// undimmed presentation. Ignored when [useNestedNavigation] is true.
+  ///
+  /// [injectGeometryProbe] controls whether this wraps [pageBuilder]'s output in
+  /// a [CNSheetGeometryProbe]. Leave it true unless the sheet body does **not**
+  /// fill the route — a body that bottom-anchors itself at some fraction of the
+  /// route makes the automatic probe measure the route box instead of the
+  /// visible sheet, over-reporting the covered area and destroying host-page
+  /// native widgets that nothing is actually covering. Pass false and place a
+  /// [CNSheetGeometryProbe] around the sized part yourself.
+  ///
+  /// Place exactly one either way. Two probes republish into the same
+  /// [ValueNotifier] every frame on a last-writer-wins basis, and the dispose
+  /// guard cannot tell whose rect it is clearing.
   static Future<T?> showCupertino<T>({
     required BuildContext context,
     required WidgetBuilder pageBuilder,
@@ -126,14 +138,16 @@ class CNBottomSheet {
     bool showDragHandle = false,
     double? topGap,
     Color? barrierColor,
+    bool injectGeometryProbe = true,
   }) {
     // `builder:` rather than `scrollableBuilder:` deliberately, on both paths.
     // `scrollableBuilder` doesn't exist on Flutter 3.35 – 3.41.x and using it
     // there hard-breaks the package (Issue #61). `builder:` compiles on every
     // Flutter that has these APIs and stays fully functional on 3.44+ (a
     // compile-time deprecation warning only).
-    Widget probed(BuildContext ctx) =>
-        CNSheetGeometryProbe(child: pageBuilder(ctx));
+    Widget probed(BuildContext ctx) => injectGeometryProbe
+        ? CNSheetGeometryProbe(child: pageBuilder(ctx))
+        : pageBuilder(ctx);
 
     if (useNestedNavigation) {
       // Nested navigation is reachable only through `showCupertinoSheet`, so

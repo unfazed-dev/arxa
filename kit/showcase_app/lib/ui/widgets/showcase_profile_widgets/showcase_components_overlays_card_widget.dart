@@ -20,9 +20,7 @@
 /// A button opens the host shell's drawer.
 ///
 /// Relationships: a self-contained presentational widget — no viewmodel
-/// binding; the overlays are imperative kit calls on the root navigator. It is
-/// stateful only to own the height notifier the buttons seed and the sheet's
-/// slider drives.
+/// binding; the overlays are imperative kit calls on the root navigator.
 ///
 /// History: git log --follow -- kit/showcase_app/lib/ui/widgets/showcase_profile_widgets/showcase_components_overlays_card_widget.dart
 library;
@@ -38,27 +36,8 @@ import 'package:appbox_kit_showcase_app/ui/widgets/common/showcase_tabs_shared/w
 const double _kDefaultSheetHeight = 0.92;
 const double _kMinSheetHeight = 0.20;
 
-class ShowcaseComponentsOverlaysCardWidget extends StatefulWidget {
+class ShowcaseComponentsOverlaysCardWidget extends StatelessWidget {
   const ShowcaseComponentsOverlaysCardWidget({super.key});
-
-  @override
-  State<ShowcaseComponentsOverlaysCardWidget> createState() =>
-      _ShowcaseComponentsOverlaysCardWidgetState();
-}
-
-class _ShowcaseComponentsOverlaysCardWidgetState
-    extends State<ShowcaseComponentsOverlaysCardWidget> {
-  /// Shared by the preset buttons (which seed it) and the sheet's slider
-  /// (which drives it while the sheet is up). One notifier, so there is one
-  /// notion of "how tall is the sheet" rather than two that can disagree.
-  final ValueNotifier<double> _sheetHeight =
-      ValueNotifier<double>(_kDefaultSheetHeight);
-
-  @override
-  void dispose() {
-    _sheetHeight.dispose();
-    super.dispose();
-  }
 
   /// Modals must be pushed on the root navigator so they cover the tab bar.
   static BuildContext _modalContext(BuildContext fallback) =>
@@ -67,13 +46,25 @@ class _ShowcaseComponentsOverlaysCardWidgetState
   static void _toast(BuildContext context, String message) =>
       appBoxKitLocator<AppBoxKitNotificationService>().show(message, context: context);
 
-  void _showSheetAt(BuildContext context, double factor) {
-    _sheetHeight.value = factor;
-    appBoxKitShowSheet<void>(
-      context: _modalContext(context),
-      heightFactor: _sheetHeight,
-      builder: (_) => _ResizableSheetBody(height: _sheetHeight),
-    );
+  /// The height notifier is created per presentation and disposed when the
+  /// sheet's future completes, so its lifetime is exactly the sheet's.
+  ///
+  /// Holding it in State instead would look tidier and be wrong: the sheet is
+  /// pushed on the *root* navigator while this card lives inside a tab shell, so
+  /// the two lifetimes are not nested and a disposed card could tear the
+  /// notifier out from under a still-listening sheet. Scoping it here also keeps
+  /// the widget stateless.
+  static Future<void> _showSheetAt(BuildContext context, double factor) async {
+    final ValueNotifier<double> height = ValueNotifier<double>(factor);
+    try {
+      await appBoxKitShowSheet<void>(
+        context: _modalContext(context),
+        heightFactor: height,
+        builder: (_) => _ResizableSheetBody(height: height),
+      );
+    } finally {
+      height.dispose();
+    }
   }
 
   @override

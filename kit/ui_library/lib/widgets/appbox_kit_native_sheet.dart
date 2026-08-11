@@ -1,5 +1,5 @@
 import 'package:cupertino_native_better/cupertino_native_better.dart'
-    show CNBottomSheet, CNTabBarRouteObserver;
+    show CNBottomSheet, CNSheetGeometryProbe, CNTabBarRouteObserver;
 import 'package:flutter/cupertino.dart'
     show CupertinoColors, CupertinoDynamicColor, kCupertinoModalBarrierColor;
 import 'package:flutter/foundation.dart' show ValueListenable;
@@ -170,6 +170,10 @@ Future<T?> appBoxKitShowSheet<T>({
       enableDrag: isDismissible,
       showDragHandle: showDragHandle && heightFactor == null,
       barrierColor: showOverlay ? kCupertinoModalBarrierColor : null,
+      // In the sized path the body does not fill the route, so the automatic
+      // probe would publish the route box and hide host-page native widgets
+      // that nothing covers. The body places its own probe on the sized box.
+      injectGeometryProbe: heightFactor == null,
       pageBuilder: (_) => _CupertinoSheetBody(
         builder: builder,
         backgroundColor: backgroundColor,
@@ -260,13 +264,27 @@ class _CupertinoSheetBody extends StatelessWidget {
           return ValueListenableBuilder<double>(
             valueListenable: factor,
             child: surface,
-            builder: (_, double value, Widget? child) => SizedBox(
-              // The route's box is `(1 - topGap) * screenHeight` — 92% by
-              // default, measured. Clamping to the incoming constraint keeps a
-              // caller asking for more than the route can give from overflowing
-              // instead of simply filling it.
-              height: (value * screenHeight).clamp(0.0, constraints.maxHeight),
-              child: child,
+            // The probe belongs here, around the box that actually carries the
+            // height — not around the Align, which fills the route.
+            // `ModalHideMixin` widgets on the host page use the published rect
+            // to decide whether they are covered, so measuring the route would
+            // tear down native chrome sitting in the clear space above a short
+            // sheet. Rebuilt each frame but at a fixed position in the tree, so
+            // the probe's State (and its rect) survives the resize.
+            builder: (_, double value, Widget? child) => CNSheetGeometryProbe(
+              child: SizedBox(
+                // The route's box is `(1 - topGap) * screenHeight` — 92% by
+                // default, measured. Clamping to the incoming constraint keeps a
+                // caller asking for more than the route can give from
+                // overflowing instead of simply filling it.
+                height: (value * screenHeight).clamp(0.0, constraints.maxHeight),
+                // Load-bearing. Align passes loose constraints, so a
+                // height-only SizedBox collapses to its content's intrinsic
+                // width and the sheet renders as a centered floating card —
+                // the exact shape the Cupertino route was adopted to remove.
+                width: double.infinity,
+                child: child,
+              ),
             ),
           );
         },

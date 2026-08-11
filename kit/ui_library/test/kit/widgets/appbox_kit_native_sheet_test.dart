@@ -1,5 +1,5 @@
 import 'package:cupertino_native_better/cupertino_native_better.dart'
-    show CNSheetGeometryProbe;
+    show CNSheetGeometryProbe, CNTabBarRouteObserver;
 import 'package:flutter/cupertino.dart' show CupertinoSheetTransition;
 import 'package:flutter/foundation.dart' show ValueListenable;
 import 'package:flutter/material.dart';
@@ -266,6 +266,41 @@ void main() {
       expect(find.text('sheet content'), findsNothing,
           reason: 'the empty area above a short sheet must hit the barrier, '
               'not an invisible box belonging to the sheet');
+    });
+  });
+
+  testWidgets(
+      'kit.ui-library.native-sheet — default tier: the sized sheet spans the '
+      'full width and publishes its own rect, not the route\'s', (tester) async {
+    // Two regressions in one assertion, both invisible to a height-only check.
+    //
+    // Width: Align hands down loose constraints, so a SizedBox given only a
+    // height collapses to its content's intrinsic width — a centered floating
+    // card, which is precisely the shape the Cupertino route replaced.
+    //
+    // Rect: CNBottomSheet's automatic probe wraps the whole pageBuilder output,
+    // which in this path is the Align filling the route (92%). Publishing that
+    // would tell every ModalHideMixin widget on the host page it is covered when
+    // 62% of the screen is clear, tearing down native chrome for nothing — so
+    // the body places the probe on the sized box instead.
+    await withAndroidFallback(() async {
+      final ValueNotifier<double> height = ValueNotifier<double>(0.30);
+      addTearDown(height.dispose);
+
+      await tester.pumpWidget(_hostWithOpener(heightFactor: height));
+      await tester.tap(find.text('open'));
+      await tester.pumpAndSettle();
+
+      final Rect? published = CNTabBarRouteObserver.topModalRect.value;
+      expect(published, isNotNull,
+          reason: 'the sized path must still publish a rect at all');
+      // 800x600 surface, sheet is the bottom 30%.
+      expect(published!.height, closeTo(180, 0.5),
+          reason: 'the published rect must be the visible sheet, not the '
+              'route box (552)');
+      expect(published.top, closeTo(420, 0.5));
+      expect(published.width, closeTo(800, 0.5),
+          reason: 'a sheet is full-bleed; anything narrower is a floating card');
     });
   });
 
