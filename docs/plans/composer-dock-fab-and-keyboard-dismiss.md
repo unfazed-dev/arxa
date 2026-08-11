@@ -1,0 +1,126 @@
+# Composer dock: FAB position, home-indicator clearance, keyboard dismissal
+
+Follow-up to `bottom-dock-handoff.md`. Three reports from one screenshot
+(Profile → Components, 2026-08-11 15:03): the FAB had moved and now overlapped
+the composer's mic button; the composer sat flush on the screen edge instead of
+riding higher like a chat composer; and there was no way to tap out of the
+keyboard.
+
+## 1. The FAB moved — regression from the tab-bar yield
+
+**Root cause.** The FAB's clearance never came from the tab bar being a *bar*.
+`AppBoxKitExtendBodyFabLift` mirrors the `extendBody`-injected bar height into
+`viewPadding.bottom`; `FloatingActionButtonLocation` derives `safeMargin` from
+`minViewPadding.bottom` (`floating_action_button_location.dart:566`). Remove
+the bar and that band disappears, so the FAB dropped ~80pt onto the composer.
+
+**Dead end worth recording.** The first fix was a kit
+`AppBoxKitFabAboveDock` — a `FloatingActionButtonLocation` overriding
+Material's deliberate half-straddle (`fabY = min(fabY, contentBottom -
+sheetHeight - fabHeight / 2)`, `:577-579`). It was written, tested, wired, and
+**measured to do nothing**: the composer is a `bottomSheet` on the *Components*
+Scaffold, while the FAB belongs to the *gallery chrome* Scaffold above it, so
+that Scaffold's `bottomSheetSize` is `Size.zero` and no location on it can ever
+see the dock. Deleted rather than kept as a widget whose doc claimed a case it
+did not fix.
+
+**Actual fix.** Keep supplying the band from above: `_DockFabLift` in the tab
+host raises `viewPadding.bottom` by `kShowcaseTabBarBlockHeight` while the
+active tab's top route docks its own bar. `viewPadding` only — `SafeArea` and
+every content-inset consumer read `padding`, so this cannot shove content.
+Measured: FAB bottom 730, composer top 746 — clear, and 730 is exactly where
+the FAB sat before the regression.
+
+> **`_DockFabLift` always wraps.** The first version early-returned `child`
+> when the lift was 0. That flips the tree *shape* between builds, the Element
+> below is not reused, the whole tab stack remounts, and the nested routers lose
+> their stacks — the Components push was silently dropped and the app bounced to
+> the tab root. Same shape as C4 in `glass-chrome-root-cause-fixes.md`. A `+ 0`
+> MediaQuery is free; the early return is not.
+
+## 2. Composer sat on the home indicator
+
+**Root cause — two Scaffolds, each stripping the inset.** Measured at the
+composer: `padding.bottom == 0.0` **and** `viewPadding.bottom == 0.0`.
+
+1. The tab bar yielded as a zero-height `SizedBox`. Scaffold removes the body's
+   bottom padding whenever `bottomNavigationBar != null` (`scaffold.dart:3032`)
+   — a shrunk-but-present bar still counts, so it consumed the inset and gave
+   nothing back. Now `null`.
+2. The Components Scaffold left `resizeToAvoidBottomInset` at its default
+   `true`, and the `bottomSheet` slot is registered with
+   `removeBottomPadding: _resizeToAvoidBottomInset` (`scaffold.dart:3086`).
+   Now `false`, which is also correct on its own terms: the bar rides the
+   keyboard itself, so the Scaffold must not also resize.
+
+`MediaQueryData.removePadding` subtracts the consumed amount from `viewPadding`
+too (`media_query.dart:946-951`), which is why nothing downstream could recover
+it.
+
+> **Correction.** An intermediate fix changed the kit's
+> `AppBoxKitNativeInputBar` to pad by `max(viewInsets.bottom,
+> viewPadding.bottom)` instead of a `SafeArea`, on the premise that
+> `viewPadding` survives ancestor consumption. It does not — `removePadding`
+> reduces both. That change was measured to have no effect and was reverted;
+> the kit widget is untouched. Both real causes are at the two call sites.
+
+Result: `padding.bottom` arrives as 34, the bar grows 64 → 98, and its content
+sits 42pt off the screen edge.
+
+## 3. Tap out to dismiss the keyboard
+
+**The trap.** `CNTextField` is a `UiKitView` whose focus lives in SwiftUI's
+`@FocusState`, and it carries **no `FocusNode`** — verified, there is no
+`Focus`/`FocusNode` anywhere in it. So `FocusManager.instance.primaryFocus
+?.unfocus()`, which is what every published recipe uses
+([apparencekit](https://apparencekit.dev/flutter-tips/flutter-dismiss-keyboard-on-tap/),
+[LogRocket](https://blog.logrocket.com/how-to-open-dismiss-keyboard-flutter/),
+[KindaCode](https://www.kindacode.com/article/flutter-dismiss-keyboard-when-tap-outside-text-field)),
+has nothing to unfocus and silently leaves the keyboard up on exactly the field
+in the screenshot. The native lever existed all along (`case "unfocus"` →
+`focusBinding.relinquish()` in `CupertinoTextFieldPlatformView.swift:132`) and
+was never called from Dart.
+
+**Shape** (user's call: minimal over a full `FocusNode` rewrite):
+
+- `CNTextFieldFocus` (vendor) — one nullable `MethodChannel`, maintained by the
+  `focusChanged` callback the native side already sends, cleared in `dispose`
+  for the unmount-while-focused path. One variable, not a registry: only one
+  field can hold the keyboard. No listeners, so it cannot notify mid-build —
+  the hazard fixed earlier in `modal-depth-notify-during-build.md`.
+- `AppBoxKitDismissKeyboard` (kit) — the app-wide lever, wrapped once around
+  the app in `main.dart`. Fires **both** paths.
+- `context.dismissKeyboard()` — the imperative extension. Noted because the ask
+  was for "an extension": an `extension on BuildContext` cannot *install*
+  behaviour app-wide, so the widget is what "apply in main" requires; both ship.
+
+**`Listener`, not `GestureDetector`.** A detector competes in the gesture
+arena, and an ancestor that wins swallows the tap — the button under the finger
+never fires. `Listener.onPointerDown` observes the raw pointer before arena
+resolution, so it never competes. It also matches iOS, which closes the
+keyboard as the finger lands. Tested: the button still receives its tap on the
+same gesture that dismisses.
+
+## Verification
+
+Mutations, run on a committed tree (the loop aborts on a dirty one):
+
+| Mutation | Result |
+|---|---|
+| drop the dock FAB lift | fails ✅ |
+| `_DockFabLift` early-returns `child` (shape flip) | fails ✅ — and takes the whole route with it, which is the point |
+| Components back to default `resizeToAvoidBottomInset` | fails ✅ |
+| dismisser drops the native tier (i.e. the stock recipe) | fails ✅ |
+| dismisser drops the Flutter unfocus | fails ✅ |
+
+Suites: vendor 121, ui_library 311, showcase 123; analyze clean in all three.
+
+**Not verified on device.** All measurements are headless, where
+`supportsLiquidGlass` is false — so the *native* `CNTextField` dismissal path is
+asserted through its channel (a `UiKitView` cannot mount in a widget test),
+never against a real keyboard. That one wants a device check.
+
+## Mentioned, not built
+
+`ScrollViewKeyboardDismissBehavior.onDrag` on the Components `ListView` would
+add drag-to-dismiss for free, but it is beyond the ask.
