@@ -178,4 +178,63 @@ void main() {
               'keep its creation-time appearance until the view was recreated');
     });
   });
+
+  // The two tests above cover the two components fixed when this file was
+  // written. Everything else in the package was left uncovered, which is why
+  // the same bug was still on screen months later: in the 08-11 clip the
+  // "Glass CTA" (a CNButton) held its dark pill for ~3 s after the app flipped
+  // to light, while the toolbar — a CNGlassButtonGroup, the one component whose
+  // sync reads the theme before bailing out — restyled within a frame.
+  //
+  // The shape being pinned: `_syncBrightnessIfNeeded` must read the theme
+  // BEFORE `if (channel == null) return`. The read is what registers the
+  // State's dependency on Theme/CupertinoTheme; bailing first means no
+  // dependency, so `didChangeDependencies` never fires again for an in-app
+  // theme change and the view is deaf, not merely slow.
+  testWidgets(
+      'cn.button — an app theme flip pushes setBrightness to the '
+      'already-created native view', (WidgetTester tester) async {
+    await _withIOS(() async {
+      Widget button() => CNButton(label: 'Glass CTA', onPressed: () {});
+
+      await tester.pumpWidget(_app(Brightness.light, button()));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(UiKitView), findsOneWidget,
+          reason: 'anti-vacuous: without a platform view there is no channel '
+              'and every assertion below would pass for the wrong reason');
+      harness.spyOnViewChannel();
+
+      await tester.pumpWidget(_app(Brightness.dark, button()));
+      await tester.pumpAndSettle();
+
+      expect(harness.brightnessPushes, <bool>[true],
+          reason: 'theme flip did not reach the native button — this is the '
+              '"Glass CTA" symptom from the 08-11 clip');
+
+      await tester.pumpWidget(_app(Brightness.light, button()));
+      await tester.pumpAndSettle();
+
+      expect(harness.brightnessPushes, <bool>[true, false],
+          reason: 'flip back to light did not reach the native button');
+    });
+  });
+
+  testWidgets('cn.button — a same-brightness rebuild sends nothing',
+      (WidgetTester tester) async {
+    await _withIOS(() async {
+      await tester.pumpWidget(
+          _app(Brightness.dark, CNButton(label: 'a', onPressed: () {})));
+      await tester.pumpAndSettle();
+      harness.spyOnViewChannel();
+
+      await tester.pumpWidget(
+          _app(Brightness.dark, CNButton(label: 'b', onPressed: () {})));
+      await tester.pumpAndSettle();
+
+      expect(harness.brightnessPushes, isEmpty,
+          reason: 'hoisting the theme read must not cost a channel round-trip '
+              'on every rebuild — the `_lastIsDark` short-circuit still guards');
+    });
+  });
 }
