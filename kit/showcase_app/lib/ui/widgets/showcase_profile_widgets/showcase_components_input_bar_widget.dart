@@ -4,8 +4,8 @@
 /// places it owns the data.
 ///
 /// This is the user interface for the input-bar demo — a docked input bar
-/// lifted clear of the floating tab bar, riding the keyboard via its own
-/// viewInsets padding.
+/// that owns the bottom dock (the host tab bar yields it while Components is
+/// on screen), riding the keyboard via its own viewInsets padding.
 ///
 /// Requirements:
 /// 1. [Input bar] — browse-the-components-gallery
@@ -19,7 +19,6 @@ library;
 
 import 'package:flutter/material.dart';
 import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
-import 'package:appbox_kit_showcase_app/ui/widgets/common/showcase_tabs_shared/widgets.dart';
 
 class ShowcaseComponentsInputBarWidget extends StatelessWidget {
   const ShowcaseComponentsInputBarWidget({super.key});
@@ -29,24 +28,25 @@ class ShowcaseComponentsInputBarWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: kShowcaseTabBarBlockHeight),
-      child: AppBoxKitNativeInputBar(
-        hintText: 'Message',
-        leading: [
-          AppBoxKitNativeIconButton(
-            glyph: AppBoxKitGlyphs.add,
-            onPressed: () => _toast(context, 'Attach'),
-          ),
-        ],
-        trailing: [
-          AppBoxKitNativeIconButton(
-            glyph: AppBoxKitGlyphs.mic,
-            onPressed: () => _toast(context, 'Voice'),
-          ),
-        ],
-        onSubmitted: (text) => _toast(context, 'Sent: $text'),
-      ),
+    // No tab-bar lift: this bar owns the bottom dock while Components is the
+    // active tab's top route, and the host tab bar yields the slot
+    // (`showcase_application_tab_host_widget.dart`). The bar's own SafeArea
+    // covers the home indicator.
+    return AppBoxKitNativeInputBar(
+      hintText: 'Message',
+      leading: [
+        AppBoxKitNativeIconButton(
+          glyph: AppBoxKitGlyphs.add,
+          onPressed: () => _toast(context, 'Attach'),
+        ),
+      ],
+      trailing: [
+        AppBoxKitNativeIconButton(
+          glyph: AppBoxKitGlyphs.mic,
+          onPressed: () => _toast(context, 'Voice'),
+        ),
+      ],
+      onSubmitted: (text) => _toast(context, 'Sent: $text'),
     );
   }
 }

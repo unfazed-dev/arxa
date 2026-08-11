@@ -22,6 +22,7 @@ library;
 import 'package:flutter/material.dart';
 import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
 
+import 'package:appbox_kit_showcase_app/app/app.router.dart';
 import 'package:appbox_kit_showcase_app/enums/showcase_application_enums/enums.dart';
 import 'package:appbox_kit_showcase_app/ui/views/showcase_application_hub/showcase_application_hub_view.dart';
 
@@ -65,24 +66,55 @@ class ShowcaseApplicationTabHostWidget extends StatelessWidget {
               children: children,
             ),
           ),
-          bottomNavigationBar: AppBoxKitNativeTabBar(
-            tabs: [
-              for (final tab in ShowcaseTab.values)
-                AppBoxKitTab(
-                  glyph: switch (tab) {
-                    ShowcaseTab.home => AppBoxKitGlyphs.home,
-                    ShowcaseTab.search => AppBoxKitGlyphs.search,
-                    ShowcaseTab.profile => AppBoxKitGlyphs.profile,
-                    ShowcaseTab.notes => AppBoxKitGlyphs.notes,
-                  },
-                  label: tab.label,
-                ),
-            ],
-            currentIndex: tabsRouter.activeIndex,
-            onTap: tabsRouter.setActiveIndex,
+          // One bottom dock at a time: a route that pins its own bar there
+          // wins the slot and the shared tab bar yields (see [_docksOwnBar]).
+          // Listening to `root` and not to `tabsRouter` is load-bearing — a
+          // push inside a tab's NESTED router notifies itself and the root
+          // controller only (`stacked/…/routing_controller.dart:79-81`), so a
+          // listener on this TabsRouter never learns the profile tab moved to
+          // Components.
+          bottomNavigationBar: ListenableBuilder(
+            listenable: tabsRouter.root,
+            builder: (context, _) {
+              // `topRoute` descends into the ACTIVE tab only, so the yield is
+              // per-tab by construction: switching to Home brings the bar
+              // straight back even though Components is still mounted in the
+              // profile tab's stack. A global "someone claimed the dock"
+              // counter would hide the bar in every tab — the C2 shape in
+              // docs/plans/glass-chrome-root-cause-fixes.md.
+              if (_docksOwnBar(tabsRouter.topRoute.name)) {
+                return const SizedBox.shrink();
+              }
+              return AppBoxKitNativeTabBar(
+                tabs: [
+                  for (final tab in ShowcaseTab.values)
+                    AppBoxKitTab(
+                      glyph: switch (tab) {
+                        ShowcaseTab.home => AppBoxKitGlyphs.home,
+                        ShowcaseTab.search => AppBoxKitGlyphs.search,
+                        ShowcaseTab.profile => AppBoxKitGlyphs.profile,
+                        ShowcaseTab.notes => AppBoxKitGlyphs.notes,
+                      },
+                      label: tab.label,
+                    ),
+                ],
+                currentIndex: tabsRouter.activeIndex,
+                onTap: tabsRouter.setActiveIndex,
+              );
+            },
           ),
         );
       },
     );
   }
 }
+
+/// Routes that pin their own bar in the bottom dock, so the shared tab bar
+/// must not draw there too.
+///
+/// Components hosts a chat input bar as `Scaffold.bottomSheet`; a nested
+/// `Scaffold` extends under the host's `extendBody: true` body, so the two
+/// land on the same pixels. Yielding costs tab switching on that screen —
+/// back is the only way out — which is the accepted trade for one dock.
+bool _docksOwnBar(String routeName) =>
+    routeName == ShowcaseComponentsViewRoute.name;

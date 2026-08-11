@@ -66,8 +66,11 @@ class ShowcaseComponentsViewMobile
       drawer: const ShowcaseComponentsDrawerWidget(),
       bottomSheet: const ShowcaseComponentsInputBarWidget(),
       body: ListView(
-        // Bottom clearance for the docked input bar + the floating tab bar.
-        padding: const EdgeInsets.fromLTRB(0, abxSize16, 0, 160),
+        // Bottom clearance for the docked input bar alone — the host tab bar
+        // yields its slot on this route, so the old extra 64 is dead space.
+        // `Scaffold` never insets the body for a `bottomSheet`; this padding
+        // is the only thing keeping the last card off the bar.
+        padding: const EdgeInsets.fromLTRB(0, abxSize16, 0, 96),
         children: const [
           ShowcaseComponentsInsetWidget(
               child: ShowcaseSectionLabelWidget('Frosted surface')),
