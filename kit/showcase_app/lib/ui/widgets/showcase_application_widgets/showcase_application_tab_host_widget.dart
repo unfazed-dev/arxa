@@ -84,8 +84,17 @@ class ShowcaseApplicationTabHostWidget extends StatelessWidget {
           // stack. A "someone claimed the dock" counter raised by the mounted
           // route would instead hide the bar in every tab — the C2 shape in
           // docs/plans/glass-chrome-root-cause-fixes.md.
+          //
+          // `null` and NOT a zero-height `SizedBox`: `Scaffold` strips the
+          // body's bottom padding whenever `bottomNavigationBar != null`
+          // (`scaffold.dart:3032`), and `removePadding` takes the same amount
+          // off `viewPadding` too (`media_query.dart:946-951`). A shrunk-but-
+          // present bar therefore consumed the home-indicator inset and handed
+          // back nothing, so the route's own dock had no inset left to clear
+          // it with and sat on the indicator. Measured: both `padding.bottom`
+          // and `viewPadding.bottom` arrived at the composer as 0.0.
           bottomNavigationBar: _docksOwnBar(tabsRouter.topRoute.name)
-              ? const SizedBox.shrink()
+              ? null
               : AppBoxKitNativeTabBar(
                   tabs: [
                     for (final tab in ShowcaseTab.values)

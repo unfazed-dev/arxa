@@ -176,6 +176,11 @@ class _CNTextFieldState extends State<CNTextField>
     _controller.removeListener(_onControllerChanged);
     if (_ownsController) _controller.dispose();
     CNTabBarRouteObserver.anyModalDepth.removeListener(_onAnyModalDepthChanged);
+    // Unmounting while focused never delivers a `focusChanged(false)`, so
+    // clear the pointer here or it dangles at a dead platform view.
+    if (identical(CNTextFieldFocus._current, _channel)) {
+      CNTextFieldFocus._current = null;
+    }
     super.dispose();
   }
 
@@ -231,8 +236,18 @@ class _CNTextFieldState extends State<CNTextField>
         widget.onSubmitted?.call((call.arguments['text'] as String?) ?? '');
         break;
       case 'focusChanged':
-        widget.onFocusChanged?.call(
-            (call.arguments['focused'] as bool?) ?? false);
+        final bool focused = (call.arguments['focused'] as bool?) ?? false;
+        // Record which native field holds the keyboard, so an app-level
+        // "tap outside to dismiss" can reach it. A CNTextField is a platform
+        // view with no FocusNode, so Flutter's focus system does not know it
+        // exists and `FocusManager.primaryFocus?.unfocus()` cannot close its
+        // keyboard — see [CNTextFieldFocus].
+        if (focused) {
+          CNTextFieldFocus._current = _channel;
+        } else if (identical(CNTextFieldFocus._current, _channel)) {
+          CNTextFieldFocus._current = null;
+        }
+        widget.onFocusChanged?.call(focused);
         break;
     }
     return null;
@@ -309,4 +324,45 @@ class _CNTextFieldState extends State<CNTextField>
       onSubmitted: widget.onSubmitted,
     );
   }
+}
+
+/// Reaches the keyboard raised by a [CNTextField].
+///
+/// A [CNTextField] is a `UiKitView` wrapping a SwiftUI `TextField`; focus lives
+/// in the native `@FocusState`, and the widget deliberately carries **no**
+/// [FocusNode]. So `FocusManager.instance.primaryFocus?.unfocus()` — the whole
+/// basis of every "tap outside to dismiss" recipe — has nothing to unfocus and
+/// silently leaves the keyboard up.
+///
+/// The native side has always had the lever (`case "unfocus"` →
+/// `focusBinding.relinquish()` in `CupertinoTextFieldPlatformView.swift`); it
+/// was simply never called from Dart. This is that call.
+///
+/// **One variable, not a registry.** Only one field can hold the keyboard, so
+/// tracking the focused one is a single nullable pointer maintained by the
+/// `focusChanged` callback the native side already sends. There is no
+/// collection to iterate, nothing to leak, and no listeners — [dismiss] is a
+/// plain method call, so it cannot notify anything mid-build.
+class CNTextFieldFocus {
+  CNTextFieldFocus._();
+
+  /// Channel of the [CNTextField] currently holding the keyboard, or null.
+  static MethodChannel? _current;
+
+  /// Whether a native field currently holds the keyboard.
+  static bool get hasFocus => _current != null;
+
+  /// Asks the focused native field to resign first responder, closing the
+  /// keyboard. A no-op when no [CNTextField] is focused, so callers may fire
+  /// it unconditionally alongside Flutter's own unfocus.
+  static Future<void> dismiss() async {
+    final MethodChannel? channel = _current;
+    if (channel == null) return;
+    _current = null;
+    await channel.invokeMethod('unfocus');
+  }
+
+  /// Test seam: drop the tracked field without touching a platform channel.
+  @visibleForTesting
+  static void debugReset() => _current = null;
 }

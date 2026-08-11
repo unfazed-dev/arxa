@@ -5,6 +5,7 @@ import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart'
     show
         CNTransitionObserver,
         AppBoxKitAction,
+        AppBoxKitDismissKeyboard,
         AppBoxKitErrorService,
         AppBoxKitThemeService,
         appBoxKitDarkTheme,
@@ -81,41 +82,46 @@ class _ShowcaseAppState extends State<ShowcaseApp>
   @override
   Widget build(BuildContext context) {
     final theme = locator<AppBoxKitThemeService>();
-    return AppBoxKitMotionScope(
-      driver: _boot,
-      spec: _bootSpec,
-      child: StreamBuilder<ThemeMode>(
-        stream: theme.themeMode$,
-        initialData: theme.themeMode$.value,
-        builder: (context, snapshot) => ResponsiveApp(
-          builder: (_) => MaterialApp.router(
-            // Route-transition occlusion: suppresses native iOS 26 glass
-            // (app-bar popup menu, buttons, search bar, glass cards…) during
-            // route slides so a hybrid-composition platform view can't leak
-            // over the outgoing/incoming routes. See NATIVE_COMPONENTS.md.
-            routerDelegate: kitPlatformRouter.delegate(
-              navigatorObservers: () => [CNTransitionObserver()],
+    // Tap-outside-to-dismiss for the whole app, installed once above the
+    // router so every shell and route inherits it — including the native
+    // CNTextField tier, which a plain `unfocus()` cannot reach.
+    return AppBoxKitDismissKeyboard(
+      child: AppBoxKitMotionScope(
+        driver: _boot,
+        spec: _bootSpec,
+        child: StreamBuilder<ThemeMode>(
+          stream: theme.themeMode$,
+          initialData: theme.themeMode$.value,
+          builder: (context, snapshot) => ResponsiveApp(
+            builder: (_) => MaterialApp.router(
+              // Route-transition occlusion: suppresses native iOS 26 glass
+              // (app-bar popup menu, buttons, search bar, glass cards…) during
+              // route slides so a hybrid-composition platform view can't leak
+              // over the outgoing/incoming routes. See NATIVE_COMPONENTS.md.
+              routerDelegate: kitPlatformRouter.delegate(
+                navigatorObservers: () => [CNTransitionObserver()],
+              ),
+              routeInformationParser: kitPlatformRouter.defaultRouteParser(),
+              // Wire the root back dispatcher so the OS back gesture (Android 14+
+              // predictive back) flows into the stacked Router — the legacy
+              // routerDelegate API needs it explicit or back events don't reach the
+              // router. iOS edge-swipe-back is handled by the cupertino page type
+              // AppBoxKitPlatformRouter emits, not by this dispatcher.
+              backButtonDispatcher: RootBackButtonDispatcher(),
+              // Font law v2 demo: the kit catalogue's default `ui` face (Lexend)
+              // resolved at runtime through google_fonts — the same wiring the
+              // scaffolder emits from assets.manifest.json font roles.
+              theme: appBoxKitLightTheme(
+                fontFamily: appBoxKitDefaultGoogleFontFamily(),
+              ),
+              darkTheme: appBoxKitDarkTheme(
+                fontFamily: appBoxKitDefaultGoogleFontFamily(),
+              ),
+              themeMode: snapshot.data ?? ThemeMode.system,
             ),
-            routeInformationParser: kitPlatformRouter.defaultRouteParser(),
-            // Wire the root back dispatcher so the OS back gesture (Android 14+
-            // predictive back) flows into the stacked Router — the legacy
-            // routerDelegate API needs it explicit or back events don't reach the
-            // router. iOS edge-swipe-back is handled by the cupertino page type
-            // AppBoxKitPlatformRouter emits, not by this dispatcher.
-            backButtonDispatcher: RootBackButtonDispatcher(),
-            // Font law v2 demo: the kit catalogue's default `ui` face (Lexend)
-            // resolved at runtime through google_fonts — the same wiring the
-            // scaffolder emits from assets.manifest.json font roles.
-            theme: appBoxKitLightTheme(
-              fontFamily: appBoxKitDefaultGoogleFontFamily(),
-            ),
-            darkTheme: appBoxKitDarkTheme(
-              fontFamily: appBoxKitDefaultGoogleFontFamily(),
-            ),
-            themeMode: snapshot.data ?? ThemeMode.system,
           ),
-        ),
-      ).wake(order: 0),
+        ).wake(order: 0),
+      ),
     );
   }
 }

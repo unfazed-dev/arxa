@@ -64,6 +64,16 @@ class ShowcaseComponentsViewMobile
         title: 'Components',
       ),
       drawer: const ShowcaseComponentsDrawerWidget(),
+      // The composer rides the keyboard itself (viewInsets), so the Scaffold
+      // must not also resize — and, less obviously, `resizeToAvoidBottomInset`
+      // is what decides whether the `bottomSheet` slot keeps its bottom
+      // padding: Scaffold registers that slot with
+      // `removeBottomPadding: _resizeToAvoidBottomInset`
+      // (`scaffold.dart:3086`). Left at the default `true`, the dock is handed
+      // padding.bottom = 0 (and viewPadding with it) and lands on the home
+      // indicator — measured, that was the composer sitting flush at the
+      // screen edge.
+      resizeToAvoidBottomInset: false,
       bottomSheet: const ShowcaseComponentsInputBarWidget(),
       body: ListView(
         // Bottom clearance for the docked input bar alone — the host tab bar

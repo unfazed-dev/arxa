@@ -57,6 +57,12 @@ class ShowcaseGalleryChromeWidget extends StatelessWidget {
         ],
       ),
       body: child,
+      // A gallery route may pin its own bottom dock (Components pins a chat
+      // composer as `bottomSheet`). Material's endFloat would then park the
+      // FAB straddling that dock's top edge, over its trailing control; this
+      // location clears it instead. Identical to endFloat when no dock is
+      // present, so it is set unconditionally.
+      floatingActionButtonLocation: AppBoxKitFabAboveDock.endFloat,
       // Headroom shim: see the M3E clipping note on the kit widget.
       floatingActionButton: SizedBox(
         height: defaultTargetPlatform == TargetPlatform.android ? 280 : null,

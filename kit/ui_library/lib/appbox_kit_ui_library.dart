@@ -44,6 +44,8 @@ export 'widgets/appbox_kit_native_slider.dart';
 export 'widgets/appbox_kit_native_range_slider.dart';
 export 'widgets/appbox_kit_native_icon_button.dart';
 export 'widgets/appbox_kit_native_input_bar.dart';
+export 'widgets/appbox_kit_dismiss_keyboard.dart';
+export 'widgets/appbox_kit_fab_above_dock.dart';
 export 'widgets/appbox_kit_menu_item.dart';
 export 'widgets/appbox_kit_native_fab.dart';
 export 'widgets/appbox_kit_native_fab_menu.dart';
