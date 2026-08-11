@@ -134,11 +134,31 @@ union is not the difference either. The **only** structural difference left is t
 the split group's second half is a `CNButtonData.popup` and the toolbar's are plain
 and icon buttons. That is where an instrumented run should look first.
 
-The next lever if it does turn out to be SwiftUI-side is `.id(...)` keyed on the
-colour scheme over the `GlassEffectContainer`, which forces a full rebuild rather
-than an invalidation. Deliberately **not** applied blind: this is a view whose Dart
-*and* Swift sides both already look correct, so adding a third mechanism on
-speculation is the move this repo has twice had to undo.
+**Located, not yet confirmed.** The popup half is the one segment that does not
+apply its own glass: `applyOwnGlass: !button.isPopup`
+(`GlassButtonGroupView.swift:134`). Its glass chain is instead hoisted **onto the
+SwiftUI `Menu`** (`:161-167`), so that the union sees both halves register at the
+same level — a deliberate fix for a different bug (the halves rendering as separate
+pills, `:126-133`). Every non-popup segment resolves its glass inside
+`GlassButtonSwiftUI`, one level below.
+
+That matters because this same file already records a Menu-specific appearance
+ceiling: "the popup `Menu`'s chrome follows the OS trait, not the in-app theme, when
+they diverge in explicit light/dark mode — Apple FB13391355; cosmetic, accepted"
+(`:630-632`). If the `Menu` resolves against the OS trait rather than the injected
+`.environment(\.colorScheme, …)`, then glass hoisted *onto* that Menu inherits the
+same ceiling — and the ceiling stops being cosmetic, because it is now the pill
+itself and not just the dropdown chrome.
+
+Caveat, stated because it does not fit cleanly: an OS-trait-pinned pill would stay
+wrong for as long as the two disagree, whereas the clip shows it correcting after
+~3 s. So this locates the divergence; it does not yet explain the recovery.
+
+The next lever if it is confirmed SwiftUI-side is `.id(...)` keyed on the colour
+scheme over the `GlassEffectContainer`, forcing a full rebuild rather than an
+invalidation. Deliberately **not** applied blind: this is a view whose Dart *and*
+Swift sides both already look correct, so adding a third mechanism on speculation is
+the move this repo has twice had to undo.
 
 Also unexplained: why both laggards recover **together** after ~2–3 s with no input.
 Two independent native caches (a UIKit `.glass()` configuration and a SwiftUI
