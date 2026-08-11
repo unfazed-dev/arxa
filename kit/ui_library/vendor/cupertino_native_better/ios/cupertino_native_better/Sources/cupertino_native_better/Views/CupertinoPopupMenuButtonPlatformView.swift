@@ -269,7 +269,19 @@ class CupertinoPopupMenuButtonPlatformView: NSObject, FlutterPlatformView {
         } else { result(FlutterError(code: "bad_args", message: "Missing icon args", details: nil)) }
       case "setBrightness":
         if let args = call.arguments as? [String: Any], let isDark = (args["isDark"] as? NSNumber)?.boolValue {
-          if #available(iOS 13.0, *) { self.container.overrideUserInterfaceStyle = isDark ? .dark : .light }
+          // This handler is deliberately minimal — it does NOT re-establish
+          // glass — and on device it was still measured 1134ms late on one flip
+          // and 350ms on the next. That is the evidence separating the two
+          // defects: whatever defers the visual change is outside the handler.
+          // Traced so the next instrumented run can time it. See
+          // `docs/plans/native-glass-theme-lag-measured.md` §7.
+          CNAppearance.trace("CNPopupMenuButton", "setBrightness isDark=\(isDark)")
+          if #available(iOS 13.0, *) {
+            CNAppearance.applyInstantly {
+              self.container.overrideUserInterfaceStyle = isDark ? .dark : .light
+            }
+          }
+          CNAppearance.trace("CNPopupMenuButton", "setBrightness applied")
           result(nil)
         } else { result(FlutterError(code: "bad_args", message: "Missing isDark", details: nil)) }
       case "setButtonTitle":

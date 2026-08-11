@@ -122,9 +122,13 @@ class CupertinoIconPlatformView: NSObject, FlutterPlatformView {
         } else { result(FlutterError(code: "bad_args", message: "Missing style", details: nil)) }
       case "setBrightness":
         if let args = call.arguments as? [String: Any], let isDark = (args["isDark"] as? NSNumber)?.boolValue {
+          CNAppearance.trace("CNIcon", "setBrightness isDark=\(isDark)")
           if #available(iOS 13.0, *) {
-            self.container.overrideUserInterfaceStyle = isDark ? .dark : .light
+            CNAppearance.applyInstantly {
+              self.container.overrideUserInterfaceStyle = isDark ? .dark : .light
+            }
           }
+          CNAppearance.trace("CNIcon", "setBrightness applied")
           result(nil)
         } else { result(FlutterError(code: "bad_args", message: "Missing isDark", details: nil)) }
       default:

@@ -639,8 +639,18 @@ class GlassButtonGroupPlatformView: NSObject, FlutterPlatformView {
   ///     instantly. Setting @Published forces SwiftUI to re-evaluate `body`
   ///     and re-apply the glass in the new trait the same frame.
   private func applyBrightness(_ isDark: Bool) {
-    self.hostingController.overrideUserInterfaceStyle = isDark ? .dark : .light
-    self.viewModel.isDark = isDark
+    CNAppearance.trace("CNGlassButtonGroup", "setBrightness isDark=\(isDark)")
+    // Instant, not animated. `viewModel.isDark` is `@Published`, so this
+    // invalidates the SwiftUI tree and the `.glassEffect` chain is applied
+    // afresh — and establishing glass materialises with an animation by
+    // Apple's design (WWDC25 #284). Correct when glass first appears, wrong
+    // for a theme flip, where the Flutter half of the same UI changes in one
+    // frame. See `Utils/CNAppearance.swift`.
+    CNAppearance.applyInstantly {
+      self.hostingController.overrideUserInterfaceStyle = isDark ? .dark : .light
+      self.viewModel.isDark = isDark
+    }
+    CNAppearance.trace("CNGlassButtonGroup", "setBrightness applied")
   }
 
   /// Toggle Issue #29 halo containment on container + hosting view.

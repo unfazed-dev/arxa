@@ -4,6 +4,10 @@ import SwiftUI
 
 class CupertinoButtonPlatformView: NSObject, FlutterPlatformView {
   private let channel: FlutterMethodChannel
+  /// Instance identity for `CNAppearance.trace`. Sibling views must be
+  /// distinguishable or the per-view spread — the thing being measured — is
+  /// exactly what the log loses.
+  private let viewId: Int64
   private let container: UIView
   private var button: UIButton?
   private var hostingController: UIHostingController<AnyView>?
@@ -23,6 +27,7 @@ class CupertinoButtonPlatformView: NSObject, FlutterPlatformView {
 
   init(frame: CGRect, viewId: Int64, args: Any?, messenger: FlutterBinaryMessenger) {
     self.channel = FlutterMethodChannel(name: "CupertinoNativeButton_\(viewId)", binaryMessenger: messenger)
+    self.viewId = viewId
     self.container = UIView(frame: frame)
     self.button = UIButton(type: .system)
 
@@ -476,6 +481,17 @@ class CupertinoButtonPlatformView: NSObject, FlutterPlatformView {
       case "setBrightness":
         if let args = call.arguments as? [String: Any], let isDark = (args["isDark"] as? NSNumber)?.boolValue {
           if #available(iOS 13.0, *) {
+            CNAppearance.trace("CNButton_\(self.viewId)", "setBrightness isDark=\(isDark)")
+            // Instant, not animated. Re-assigning the configuration below
+            // re-establishes glass, and establishing glass materialises with an
+            // animation by Apple's design (WWDC25 #284) — measured on device as
+            // a uniform ~200-300ms fade on every native view while the Flutter
+            // half of the same UI flips in one frame. That animation is correct
+            // when glass first appears and wrong for a theme flip. The one
+            // handler that never re-establishes glass (the tab bar's, a lone
+            // `overrideUserInterfaceStyle` assignment) is consistently among the
+            // fastest views to restyle. See `Utils/CNAppearance.swift`.
+            CNAppearance.applyInstantly {
             self.container.overrideUserInterfaceStyle = isDark ? .dark : .light
             // Also the hosting controller, not only its superview. The glass
             // tier (`usesSwiftUI`, set when a glassEffect id is present) is
@@ -500,6 +516,8 @@ class CupertinoButtonPlatformView: NSObject, FlutterPlatformView {
             //
             // No-op on the SwiftUI tier: `applyButtonStyle` guards `!usesSwiftUI`.
             self.applyButtonStyle(buttonStyle: self.currentButtonStyle, round: self.makeRound)
+            }
+            CNAppearance.trace("CNButton_\(self.viewId)", "setBrightness applied")
           }
           result(nil)
         } else { result(FlutterError(code: "bad_args", message: "Missing isDark", details: nil)) }
