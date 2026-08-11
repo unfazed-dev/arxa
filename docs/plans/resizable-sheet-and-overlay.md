@@ -98,3 +98,50 @@ Kit tests: height honoured per tier, a notifier change resizes a live sheet,
 overlay present by default and suppressible, and a tap above a short sheet
 reaches the barrier and dismisses. Showcase test: the three buttons present and
 each opening at its height.
+
+## Shipped — 2026-08-11 (`869ddd5`)
+
+ui_library 303 tests (+6), vendor 121, showcase 120; `flutter analyze` clean in
+all three.
+
+### Measured, not assumed
+
+A throwaway probe answered the two questions the design rested on before any
+production code was written:
+
+- The route's content box is **552 of 600 = 0.9200** exactly — `(1 - 0.08) × H`,
+  confirming the default height and giving the clamp its ceiling.
+- A tap at 10% from the top of a 30%-tall bottom-anchored sheet **dismissed it**.
+  Neither the `Align` nor the transition mixin's drag recognizer swallows the
+  gap, so the overlay is genuinely live. Had this failed, the whole approach
+  would have needed a different filler for that space.
+
+### A test that was passing for the wrong reason
+
+The pre-existing "an outside tap does NOT dismiss" case tapped `Offset(400, 50)`
+on an 800×600 surface while the route's box begins at `0.08 × 600 = 48`. It was
+tapping two pixels *inside* the sheet, so it would have passed with or without a
+barrier — it never tested the thing it was named for. It is now inverted and taps
+`y=20`, in the strip that is actually uncovered.
+
+### Mutation-checked
+
+Each new assertion was proven load-bearing by breaking the code it covers:
+
+| Mutation | Result |
+|---|---|
+| `barrierColor` forced to null | 3 failures |
+| `heightFactor` ignored on the iOS tier | 3 failures |
+| gap filled with a transparent `ColoredBox` instead of `Align` | 1 failure — exactly `the space above a short sheet reaches the overlay` |
+
+The third is the interesting one: it is the only evidence that the
+`HitTestBehavior.opaque` detail is real rather than a plausible-sounding reading
+of the SDK, and it fails precisely the one test that would notice.
+
+### Known limitation
+
+On the Android tier the Material drag handle is laid out above the sized child
+rather than inside it, so a presented sheet is the handle's height taller than
+[heightFactor] asks. Not corrected: the handle's height is a private Material
+constant, and subtracting a guess at it would drift the moment the theme changes
+it. The iOS tier is exact.
