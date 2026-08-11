@@ -68,41 +68,40 @@ class ShowcaseApplicationTabHostWidget extends StatelessWidget {
           ),
           // One bottom dock at a time: a route that pins its own bar there
           // wins the slot and the shared tab bar yields (see [_docksOwnBar]).
-          // Listening to `root` and not to `tabsRouter` is load-bearing — a
-          // push inside a tab's NESTED router notifies itself and the root
-          // controller only (`stacked/…/routing_controller.dart:79-81`), so a
-          // listener on this TabsRouter never learns the profile tab moved to
-          // Components.
-          bottomNavigationBar: ListenableBuilder(
-            listenable: tabsRouter.root,
-            builder: (context, _) {
-              // `topRoute` descends into the ACTIVE tab only, so the yield is
-              // per-tab by construction: switching to Home brings the bar
-              // straight back even though Components is still mounted in the
-              // profile tab's stack. A global "someone claimed the dock"
-              // counter would hide the bar in every tab — the C2 shape in
-              // docs/plans/glass-chrome-root-cause-fixes.md.
-              if (_docksOwnBar(tabsRouter.topRoute.name)) {
-                return const SizedBox.shrink();
-              }
-              return AppBoxKitNativeTabBar(
-                tabs: [
-                  for (final tab in ShowcaseTab.values)
-                    AppBoxKitTab(
-                      glyph: switch (tab) {
-                        ShowcaseTab.home => AppBoxKitGlyphs.home,
-                        ShowcaseTab.search => AppBoxKitGlyphs.search,
-                        ShowcaseTab.profile => AppBoxKitGlyphs.profile,
-                        ShowcaseTab.notes => AppBoxKitGlyphs.notes,
-                      },
-                      label: tab.label,
-                    ),
-                ],
-                currentIndex: tabsRouter.activeIndex,
-                onTap: tabsRouter.setActiveIndex,
-              );
-            },
-          ),
+          //
+          // Read at build time, with no listener of its own: a nested push
+          // calls `notifyAll`, which notifies the ROOT controller
+          // (`stacked/…/routing_controller.dart:79-81`); the root delegate
+          // then rebuilds this subtree, so `build` re-runs on every nav change
+          // anywhere. Verified — swapping in a listenable that never fires
+          // left both handoff tests green, so a `ListenableBuilder` here would
+          // be inert decoration. `showcase_bottom_dock_handoff_test.dart` is
+          // what catches it if that ever stops being true.
+          //
+          // `topRoute` descends into the ACTIVE tab only, so the yield is
+          // per-tab by construction: switching to Home brings the bar straight
+          // back even though Components is still mounted in the profile tab's
+          // stack. A "someone claimed the dock" counter raised by the mounted
+          // route would instead hide the bar in every tab — the C2 shape in
+          // docs/plans/glass-chrome-root-cause-fixes.md.
+          bottomNavigationBar: _docksOwnBar(tabsRouter.topRoute.name)
+              ? const SizedBox.shrink()
+              : AppBoxKitNativeTabBar(
+                  tabs: [
+                    for (final tab in ShowcaseTab.values)
+                      AppBoxKitTab(
+                        glyph: switch (tab) {
+                          ShowcaseTab.home => AppBoxKitGlyphs.home,
+                          ShowcaseTab.search => AppBoxKitGlyphs.search,
+                          ShowcaseTab.profile => AppBoxKitGlyphs.profile,
+                          ShowcaseTab.notes => AppBoxKitGlyphs.notes,
+                        },
+                        label: tab.label,
+                      ),
+                  ],
+                  currentIndex: tabsRouter.activeIndex,
+                  onTap: tabsRouter.setActiveIndex,
+                ),
         );
       },
     );
