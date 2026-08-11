@@ -71,6 +71,15 @@ class ShowcaseApplicationTabHostWidget extends StatelessWidget {
               //
               // viewPadding only — `SafeArea` reads `padding`, so this cannot
               // push the composer around.
+              //
+              // ponytail: a constant, not the dock's measured height — the tab
+              // host cannot see into a nested route. It is exact today because
+              // the composer's own bar is `kShowcaseTabBarBlockHeight` tall and
+              // its safe-area inset is already in the base `viewPadding`, so
+              // both sides track the inset together (verified: a 16pt gap at a
+              // 34pt indicator AND at zero). The ceiling is a dock TALLER than
+              // this constant — a multiline composer — which would under-clear.
+              // Measure the dock and plumb the height up if that day comes.
               extraViewPadding:
                   _docksOwnBar(tabsRouter.topRoute.name) ? kShowcaseTabBarBlockHeight : 0,
               child: AppBoxKitAnimatedTabStack(

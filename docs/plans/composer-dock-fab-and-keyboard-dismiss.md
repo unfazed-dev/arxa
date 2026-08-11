@@ -31,6 +31,16 @@ every content-inset consumer read `padding`, so this cannot shove content.
 Measured: FAB bottom 730, composer top 746 — clear, and 730 is exactly where
 the FAB sat before the regression.
 
+**The lift is a constant, and that is checked, not assumed.** It adds
+`kShowcaseTabBarBlockHeight` on top of the existing `viewPadding.bottom` rather
+than the dock's measured height — the tab host cannot see into a nested route.
+The obvious worry is that it only clears because a 34pt indicator makes the
+numbers work; it does not. The composer's height tracks the same inset, so both
+sides move together: measured, the gap is 16pt at a 34pt indicator **and** at
+zero. Tested at both. The real ceiling is a dock *taller* than the constant — a
+multiline composer would under-clear, and that is the day to plumb a measured
+height up.
+
 > **`_DockFabLift` always wraps.** The first version early-returned `child`
 > when the lift was 0. That flips the tree *shape* between builds, the Element
 > below is not reused, the whole tab stack remounts, and the nested routers lose
@@ -113,12 +123,19 @@ Mutations, run on a committed tree (the loop aborts on a dirty one):
 | dismisser drops the native tier (i.e. the stock recipe) | fails ✅ |
 | dismisser drops the Flutter unfocus | fails ✅ |
 
-Suites: vendor 121, ui_library 311, showcase 123; analyze clean in all three.
+Suites: vendor 121, ui_library 311, showcase 124; analyze clean in all three.
+(ui_library went 307 → 314 → 311 across the round: dismiss-keyboard tests
+added, the fab-above-dock ones deleted with the widget.)
 
-**Not verified on device.** All measurements are headless, where
-`supportsLiquidGlass` is false — so the *native* `CNTextField` dismissal path is
-asserted through its channel (a `UiKitView` cannot mount in a widget test),
-never against a real keyboard. That one wants a device check.
+**The native keyboard dismissal has no hardware evidence.** It is asserted by
+mocking `CNTextField`'s method channel — a `UiKitView` cannot mount in a widget
+test, so no real keyboard was ever raised or closed. Everything else here is
+geometry, measured headless and reproducible; this one part, which is the part
+specifically asked for, is verified only as far as "the dismisser calls the
+channel the native side listens on." It wants a device check.
+
+Also headless-only in the weaker sense: `supportsLiquidGlass` is false in tests,
+so the tab bar exercised is the fallback, not `CNTabBar`.
 
 ## Mentioned, not built
 

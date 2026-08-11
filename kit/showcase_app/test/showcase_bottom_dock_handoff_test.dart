@@ -119,6 +119,31 @@ void main() {
   }, timeout: const Timeout(Duration(minutes: 2)));
 
   testWidgets(
+      'shell-demos.browse-the-application-shell — the FAB still clears the '
+      'composer on a device with no home indicator', (tester) async {
+    // The lift is a constant (kShowcaseTabBarBlockHeight) added on top of
+    // whatever `viewPadding.bottom` already is, so the obvious worry is that
+    // it only clears because a 34pt inset happens to make the numbers work.
+    // It does not: the composer's height tracks the same inset, so both sides
+    // move together. Measured, the gap is 16pt at a 34pt inset AND at zero.
+    final router = await bootShell(tester);
+    tester.view.padding = FakeViewPadding.zero;
+    tester.view.viewPadding = FakeViewPadding.zero;
+    addTearDown(tester.view.resetPadding);
+    addTearDown(tester.view.resetViewPadding);
+
+    unawaited(router.navigateNamed('/profile/components'));
+    await settle(tester);
+
+    final Finder bar = find.byType(AppBoxKitNativeInputBar);
+    final Finder fab = find.byType(AppBoxKitNativeFabMenu);
+    expect(bar, findsOneWidget);
+    expect(fab, findsOneWidget);
+    expect(tester.getRect(fab).bottom, lessThanOrEqualTo(tester.getRect(bar).top),
+        reason: 'zero-inset devices must not lose the FAB clearance');
+  }, timeout: const Timeout(Duration(minutes: 2)));
+
+  testWidgets(
       'shell-demos.browse-the-application-shell — the yield is per-tab: Home '
       'keeps its tab bar while Components stays on the profile stack',
       (tester) async {
