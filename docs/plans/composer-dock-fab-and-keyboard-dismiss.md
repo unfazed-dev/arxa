@@ -137,7 +137,33 @@ channel the native side listens on." It wants a device check.
 Also headless-only in the weaker sense: `supportsLiquidGlass` is false in tests,
 so the tab bar exercised is the fallback, not `CNTabBar`.
 
-## Mentioned, not built
+## Drag-to-dismiss: already delivered, not added
 
-`ScrollViewKeyboardDismissBehavior.onDrag` on the Components `ListView` would
-add drag-to-dismiss for free, but it is beyond the ask.
+`ScrollViewKeyboardDismissBehavior.onDrag` was offered as a free extra and then
+**not** added, because measuring showed it was already covered and would have
+been the weaker of the two mechanisms:
+
+- `AppBoxKitDismissKeyboard` listens on `onPointerDown`, and a drag begins with
+  a pointer-down — so scrolling any list already dismisses, app-wide, on both
+  tiers. Tested: the drag dismisses **and** the list still scrolls.
+- The built-in would not be equivalent. `Scrollable`'s onDrag calls
+  `FocusManager.instance.primaryFocus?.unfocus()` and nothing else, so it is
+  blind to the native `CNTextField` tier — the exact half-failure this work
+  exists to remove. Adding it would have been a second, weaker authority for
+  one event.
+
+## Coverage gap this turned up
+
+Every showcase test boots via `bootShell`, which pumps `MaterialApp.router`
+directly and never builds `ShowcaseApp` — so nothing covered the one line in
+`main.dart` that installs the dismisser app-wide. Deleting that line kept the
+entire suite green. `showcase_app_keyboard_dismiss_wiring_test.dart` now
+asserts the widget is present *and* is an ancestor of the `MaterialApp`, since
+installing it underneath would cover only whichever route built it.
+
+Mutations:
+
+| Mutation | Result |
+|---|---|
+| remove the wrapper from `main.dart` | fails ✅ (kept the suite green before this test existed) |
+| `Listener` → `GestureDetector(onTap:)`, i.e. the published recipe | fails 2 ✅ — the drag no longer dismisses and the tap gets swallowed |
