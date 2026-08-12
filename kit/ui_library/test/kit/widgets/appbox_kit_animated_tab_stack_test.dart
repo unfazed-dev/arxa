@@ -70,6 +70,15 @@ List<double> _slideDxs(WidgetTester tester) => tester
     .map((s) => s.position.value.dx)
     .toList();
 
+// The instant (iOS cross-cut) path hides visited tabs by near-zero alpha
+// instead of offstaging them, so this reads the slot Opacity above a tab.
+double _opacityOf(WidgetTester tester, String text) => tester
+    .widget<Opacity>(find.ancestor(
+      of: find.textContaining(text, skipOffstage: false),
+      matching: find.byType(Opacity),
+    ))
+    .opacity;
+
 void main() {
   setUp(_inits.clear);
 
@@ -311,33 +320,53 @@ void main() {
     tearDown(AppBoxKitPlatform.reset);
 
     testWidgets(
-        'kit.ui-library.animated-tab-stack — a switch is an instant cross-cut: never two tabs on '
-        'stage, no exit slot, no motion', (tester) async {
+        'kit.ui-library.animated-tab-stack — a switch is an instant cross-cut: the outgoing tab is '
+        'alpha-hidden in the SAME frame and never leaves the paint tree', (tester) async {
       await tester.pumpWidget(_frame(0));
       await tester.pumpWidget(_frame(1));
 
-      // The landing frame — precisely the frame an animated stack spends with
-      // BOTH tabs painted.
-      expect(_onStage('tab0'), findsNothing,
-          reason: 'the outgoing tab leaves the stage in the same frame');
-      expect(_onStage('tab1'), findsOneWidget);
+      // The UIKit `isHidden` equivalent: a visited tab stays IN the paint
+      // tree at ~1/255 alpha instead of being offstaged. Leaving the paint
+      // tree is what removeFromSuperviews its platform views — every
+      // re-entry is an addSubview, and on iOS 26 every attach is a glass
+      // materialize against a not-yet-composited backdrop (the bright-card
+      // flash); the mid-switch platform-view-SET change is also what
+      // recomposes overlays and ghosts the tab bar. Alpha-hiding keeps the
+      // set constant, so neither happens.
+      expect(_opacityOf(tester, 'tab0'), inInclusiveRange(0.0001, 0.01),
+          reason: 'the outgoing tab hides at ~1/255 alpha, still painted');
+      expect(_opacityOf(tester, 'tab1'), 1.0,
+          reason: 'the incoming tab is fully visible in the same frame');
+      expect(find.byType(Offstage), findsNothing,
+          reason: 'the instant path never offstages a visited tab');
       expect(
-        tester
-            .widgetList<Offstage>(find.byType(Offstage))
-            .where((o) => !o.offstage),
-        hasLength(1),
-        reason: 'exactly one tab on stage — the platform-view set never grows',
-      );
+          tester
+              .widget<IgnorePointer>(find.ancestor(
+                of: _alive('tab0'),
+                matching: find.byType(IgnorePointer),
+              ))
+              .ignoring,
+          isTrue,
+          reason: 'the hidden tab must not take the active tab\'s taps');
+      expect(
+          tester
+              .widget<ExcludeSemantics>(find.ancestor(
+                of: _alive('tab0'),
+                matching: find.byType(ExcludeSemantics),
+              ))
+              .excluding,
+          isTrue,
+          reason: 'an invisible tab is not in the semantics tree');
       for (final dx in _slideDxs(tester)) {
         expect(dx, 0.0, reason: 'no controller run, so nothing translates');
       }
 
-      // Still settled when a run would have been ending: no late reparent.
-      await tester.pump(const Duration(milliseconds: 300));
-      expect(_onStage('tab1'), findsOneWidget);
-      expect(_alive('tab0'), findsOneWidget, reason: 'still kept alive');
+      // Back again: the same element returns to full alpha — no re-inflate.
+      await tester.pumpWidget(_frame(0));
+      expect(_opacityOf(tester, 'tab0'), 1.0,
+          reason: 'a re-visited tab is an alpha flip, not a re-attach');
       expect(_inits, ['tab0', 'tab1'],
-          reason: 'no exit slot means no reparent, so nothing re-inflates');
+          reason: 'alpha-hide keeps the element mounted; nothing re-inflates');
     });
 
     testWidgets(
@@ -383,9 +412,10 @@ void main() {
     await tester.pumpWidget(_frame(2, animated: false));
     expect(tester.takeException(), isNull,
         reason: 'notifying live listeners from didUpdateWidget must not throw');
-    expect(_onStage('tab2'), findsOneWidget);
-    expect(_onStage('tab0'), findsNothing, reason: 'interrupted exit lands');
-    expect(_onStage('tab1'), findsNothing);
+    expect(_opacityOf(tester, 'tab2'), 1.0);
+    expect(_opacityOf(tester, 'tab0'), lessThan(0.01),
+        reason: 'the interrupted exit lands alpha-hidden');
+    expect(_opacityOf(tester, 'tab1'), lessThan(0.01));
     expect(_alive('tab0'), findsOneWidget, reason: 'both stay kept alive');
     expect(_alive('tab1'), findsOneWidget);
     for (final dx in _slideDxs(tester)) {
@@ -399,8 +429,9 @@ void main() {
       (tester) async {
     await tester.pumpWidget(_frame(0, animated: false));
     await tester.pumpWidget(_frame(1, animated: false));
-    expect(_onStage('tab0'), findsNothing);
-    expect(_onStage('tab1'), findsOneWidget);
+    expect(_opacityOf(tester, 'tab0'), lessThan(0.01),
+        reason: 'outgoing tab alpha-hidden, not offstaged');
+    expect(_opacityOf(tester, 'tab1'), 1.0);
     for (final dx in _slideDxs(tester)) {
       expect(dx, 0.0);
     }

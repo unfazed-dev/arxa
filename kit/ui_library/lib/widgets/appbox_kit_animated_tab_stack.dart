@@ -80,6 +80,20 @@ import 'package:appbox_kit_core/platform/appbox_kit_platform.dart';
 /// the cost on the tier that cannot afford it, and keeps the paired slide for
 /// Material, where the tab bodies are Flutter-rendered and cost nothing to
 /// have on stage together.
+///
+/// The cut also never changes the frame's platform-view SET: a visited tab
+/// hides at ~1/255 alpha — the UIKit `isHidden` equivalent, the UIViews stay
+/// in the window — rather than leaving the paint tree. Offstaging would
+/// unpaint it, and an unpainted platform view leaves the native hierarchy:
+/// every re-entry is an `addSubview`, which on iOS 26 is a glass materialize
+/// against a not-yet-composited backdrop (the bright-card flash on tab
+/// switches), and the detach/attach set change itself recomposes the
+/// embedder's overlays (the tab-bar ghost). An earlier attempt instead
+/// bracketed the cut as a manual `CNTransitionObserver` transition so every
+/// chrome gate hid for two settle frames; on device that dematerialized the
+/// whole screen's glass and left the outgoing tab's views lingering for
+/// seconds — strictly worse than the flash. Alpha hides without touching the
+/// native hierarchy at all.
 class AppBoxKitAnimatedTabStack extends StatefulWidget {
   const AppBoxKitAnimatedTabStack({
     required this.activeIndex,
@@ -291,12 +305,37 @@ class _KitAnimatedTabStackState extends State<AppBoxKitAnimatedTabStack>
               // Constant-length slot, never hit-testable: a bare expanded box
               // above the active tab would swallow its taps.
               const IgnorePointer(child: SizedBox.shrink())
-            else
+            else if (_animates)
               Offstage(
                 offstage: i != _currentIndex,
                 child: KeyedSubtree(
                   key: _childKeys[i],
                   child: widget.children[i],
+                ),
+              )
+            else
+              // iOS cross-cut: a visited tab hides at ~1/255 alpha, NEVER by
+              // leaving the paint tree. Offstaging unpaints it, and an
+              // unpainted platform view leaves the native hierarchy — every
+              // re-entry is an addSubview, which on iOS 26 is a glass
+              // materialize against a not-yet-composited backdrop (the
+              // bright-card flash), and the mid-switch platform-view-SET
+              // change recomposes the embedder's overlays (the tab-bar
+              // ghost). Alpha 0.0 hits RenderOpacity's zero shortcut and
+              // unpaints too, so the floor is one engine alpha step; UIKit
+              // ignores views below alpha 0.01 for hit-testing, and
+              // IgnorePointer/ExcludeSemantics cover the Flutter side.
+              Opacity(
+                opacity: i == _currentIndex ? 1.0 : 0.004,
+                child: IgnorePointer(
+                  ignoring: i != _currentIndex,
+                  child: ExcludeSemantics(
+                    excluding: i != _currentIndex,
+                    child: KeyedSubtree(
+                      key: _childKeys[i],
+                      child: widget.children[i],
+                    ),
+                  ),
                 ),
               ),
           ],
