@@ -4,6 +4,7 @@ import 'package:appbox_kit_motion/appbox_kit_motion.dart';
 import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart'
     show
         CNTransitionObserver,
+        CNTabBarRouteObserver,
         AppBoxKitAction,
         AppBoxKitDismissKeyboard,
         AppBoxKitErrorService,
@@ -98,8 +99,16 @@ class _ShowcaseAppState extends State<ShowcaseApp>
               // (app-bar popup menu, buttons, search bar, glass cards…) during
               // route slides so a hybrid-composition platform view can't leak
               // over the outgoing/incoming routes. See NATIVE_COMPONENTS.md.
+              // CNTabBarRouteObserver is the modal half: it bumps
+              // `anyModalDepth` while a sheet/dialog/popup route is up, which
+              // is what makes every chrome-gated surface hide under modals.
+              // Both are inherited by the nested tab routers
+              // (StackedTabsRouter.inheritNavigatorObservers).
               routerDelegate: kitPlatformRouter.delegate(
-                navigatorObservers: () => [CNTransitionObserver()],
+                navigatorObservers: () => [
+                  CNTransitionObserver(),
+                  CNTabBarRouteObserver(),
+                ],
               ),
               routeInformationParser: kitPlatformRouter.defaultRouteParser(),
               // Wire the root back dispatcher so the OS back gesture (Android 14+

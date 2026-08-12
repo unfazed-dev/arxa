@@ -1,5 +1,3 @@
-import 'package:cupertino_native_better/cupertino_native_better.dart'
-    show CNTabBarRouteObserver;
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';

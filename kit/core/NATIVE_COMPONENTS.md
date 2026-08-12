@@ -532,7 +532,11 @@ listens to it and hides while it is non-zero.
 // app root (main.dart), feeding the KitPlatformPagesMixin router:
 MaterialApp.router(
   routerDelegate: kitPlatformRouter.delegate(
-    navigatorObservers: () => [CNTransitionObserver()], // re-exported by ui_library
+    // Both re-exported by ui_library. CNTabBarRouteObserver is the modal half:
+    // it bumps `anyModalDepth` while a sheet/dialog/popup route is up, which is
+    // what makes chrome-gated surfaces hide under modals (the vendored CN
+    // widgets' modal auto-hide also requires it).
+    navigatorObservers: () => [CNTransitionObserver(), CNTabBarRouteObserver()],
   ),
   // …
 )

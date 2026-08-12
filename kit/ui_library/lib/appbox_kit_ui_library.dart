@@ -89,7 +89,7 @@ export 'utils/appbox_kit_native_overlay.dart';
 // "Route-transition occlusion"). CNTransitionHelper is the manual begin/end
 // API for custom/non-Navigator transitions.
 export 'package:cupertino_native_better/cupertino_native.dart'
-    show CNTransitionObserver, CNTransitionHelper;
+    show CNTransitionObserver, CNTransitionHelper, CNTabBarRouteObserver;
 
 // --- AppBoxKitAction (fluent operation API + snackbar vocabulary) ---
 export 'utils/kit_action/appbox_kit_action.dart';
