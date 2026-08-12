@@ -27,7 +27,7 @@
 
 import type { FC, Child } from 'hono/jsx';
 import Base from '../../common/base.tsx';
-import { inspectAttributes } from '../../widgets/common/studio_primitives/widgets.tsx';
+import { inspectAttrs } from '../../widgets/common/studio_primitives/widgets.tsx';
 import { FooterPanel } from '../../widgets/studio_application_hub_widgets/widgets.tsx';
 import Desktop from './studio_application_hub_view.desktop.tsx';
 import Tablet from './studio_application_hub_view.tablet.tsx';
@@ -91,7 +91,7 @@ const StudioApplicationHubView: FC<StudioApplicationHubViewProps> = (props) => (
     <div class="rung rung--desktop"><Desktop {...props} /></div>
     <div class="rung rung--tablet"><Tablet {...props} /></div>
     <div class="rung rung--mobile"><Mobile {...props} /></div>
-    <main class={`shell-main${props.mainClass ? ` ${props.mainClass}` : ''}`} {...inspectAttributes('studio_application_hub:main', { role: 'group' })}>
+    <main class={`shell-main${props.mainClass ? ` ${props.mainClass}` : ''}`} {...inspectAttrs('studio_application_hub:main', { role: 'group' })}>
       {props.surface}
     </main>
     {props.footer ? (

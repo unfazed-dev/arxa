@@ -24,7 +24,7 @@
 //   root — see studio_dashboard_view.tsx History for the deviation note.
 import type { FC } from 'hono/jsx';
 import Icon from '../../../../runtime/icon.tsx';
-import { CtaLink, inspectAttributes, Label, Heading, Txt } from '../../../widgets/common/studio_primitives/widgets.tsx';
+import { CtaLink, inspectAttrs, Label, Heading, Txt } from '../../../widgets/common/studio_primitives/widgets.tsx';
 import { Wrap } from '../../../common/modal.tsx';
 
 type TranslateFn = (key: string, vars?: Record<string, unknown>) => unknown;
@@ -127,15 +127,15 @@ export const GreetingHead: FC<GreetingHeadProps> = ({ translate, accountName, ga
           role="img"
           aria-label={translate('pair.qrAria') as string}
           style={`--qr-modules: ${pairingModal.qr.length}`}
-          {...inspectAttributes('app-dashboard:qr', { role: 'group' })}
+          {...inspectAttrs('app-dashboard:qr', { role: 'group' })}
         >
           {pairingModal.qr.map((row: string, rowIndex: number) => [...row].map((cell, columnIndex) => (
             <span key={`${rowIndex}-${columnIndex}`} class={`qr-c${cell === '1' ? ' on' : ''}`}></span>
           )))}
         </div>
-        <p class="pair-code"><code {...inspectAttributes('app-dashboard:pair-code', { role: 'text' })}>{pairingModal.code}</code></p>
+        <p class="pair-code"><code {...inspectAttrs('app-dashboard:pair-code', { role: 'text' })}>{pairingModal.code}</code></p>
         <p class="pair-expiry"><Icon name="timer" size={14} /><Label name="app-dashboard:pair-expiry">{pairingModal.expiresLabel}</Label></p>
-        <p class="pair-fingerprint muted"><code {...inspectAttributes('app-dashboard:pair-fingerprint', { role: 'text' })}>{pairingModal.fingerprint}</code></p>
+        <p class="pair-fingerprint muted"><code {...inspectAttrs('app-dashboard:pair-fingerprint', { role: 'text' })}>{pairingModal.fingerprint}</code></p>
       </Wrap>
     </div>
   </>
@@ -154,7 +154,7 @@ export const GatesSection: FC<GatesSectionProps> = ({ translate, gates, rung }) 
     <section class="dash-section" aria-labelledby={headingId}>
       <Heading name="app-dashboard:needs-h" level={2} id={headingId}>{translate('dash.needsYouH') as string}</Heading>
       {gates.length ? (
-        <div class="gates-strip" role="list" {...inspectAttributes('app-dashboard:gates-strip', { role: 'group' })}>
+        <div class="gates-strip" role="list" {...inspectAttrs('app-dashboard:gates-strip', { role: 'group' })}>
           {gates.map((gate) => (
             <article class="gate-card" role="listitem" key={gate.id}>
               <div class="gate-card-head">
@@ -167,11 +167,11 @@ export const GatesSection: FC<GatesSectionProps> = ({ translate, gates, rung }) 
               <Txt name="app-dashboard:gate-project" class="gate-project">{gate.project}</Txt>
               <Txt name="app-dashboard:gate-summary" class="gate-summary muted">{gate.summary}</Txt>
               <form class="gate-actions" method="post" action="/dashboard/gates/decide">
-                <input type="hidden" name="gate" value={gate.id} {...inspectAttributes('app-dashboard:gate-input', { role: 'input' })} />
-                <button type="submit" name="decision" value="approve" {...inspectAttributes('app-dashboard:gate-approve', { role: 'action' })}>
+                <input type="hidden" name="gate" value={gate.id} {...inspectAttrs('app-dashboard:gate-input', { role: 'input' })} />
+                <button type="submit" name="decision" value="approve" {...inspectAttrs('app-dashboard:gate-approve', { role: 'action' })}>
                   <Icon name="check" size={16} />{translate('action.approve') as string}
                 </button>
-                <button type="submit" name="decision" value="reject" class="ghost" {...inspectAttributes('app-dashboard:gate-reject', { role: 'action' })}>
+                <button type="submit" name="decision" value="reject" class="ghost" {...inspectAttrs('app-dashboard:gate-reject', { role: 'action' })}>
                   <Icon name="x" size={16} />{translate('action.reject') as string}
                 </button>
               </form>
@@ -198,7 +198,7 @@ export const ProjectsSection: FC<ProjectsSectionProps> = ({ translate, projects,
     <section class="dash-section" aria-labelledby={headingId}>
       <Heading name="app-dashboard:proj-h" level={2} id={headingId}>{translate('dash.projectsH') as string}</Heading>
       {projects.length ? (
-        <div class="proj-grid" {...inspectAttributes('app-dashboard:proj-grid', { role: 'group' })}>
+        <div class="proj-grid" {...inspectAttrs('app-dashboard:proj-grid', { role: 'group' })}>
           {projects.map((project) => (
             <article class={`proj-card${project.current ? ' is-current' : ''}`} key={project.id}>
               <div class="proj-card-head">
@@ -217,8 +217,8 @@ export const ProjectsSection: FC<ProjectsSectionProps> = ({ translate, projects,
                 <Label name="app-dashboard:proj-saved" class="proj-saved muted">{project.detail}</Label>
                 {!project.current && (
                   <form method="post" action="/dashboard/projects/use">
-                    <input type="hidden" name="project" value={project.id} {...inspectAttributes('app-dashboard:proj-use-input', { role: 'input' })} />
-                    <button type="submit" class="ghost" {...inspectAttributes('app-dashboard:proj-use', { role: 'action' })}>{translate('dash.useProject') as string}</button>
+                    <input type="hidden" name="project" value={project.id} {...inspectAttrs('app-dashboard:proj-use-input', { role: 'input' })} />
+                    <button type="submit" class="ghost" {...inspectAttrs('app-dashboard:proj-use', { role: 'action' })}>{translate('dash.useProject') as string}</button>
                   </form>
                 )}
                 <CtaLink href="/intake" label={translate('dash.open') as string} size={16} />
@@ -245,7 +245,7 @@ export const StatsSection: FC<StatsSectionProps> = ({ translate, stats, rung }) 
     /* Analytics trio — CSS bar charts, no JS. */
     <section class="dash-section" aria-labelledby={headingId}>
       <Heading name="app-dashboard:stats-h" level={2} id={headingId}>{translate('dash.thisWeek') as string}</Heading>
-      <div class="stat-trio" {...inspectAttributes('app-dashboard:stat-trio', { role: 'group' })}>
+      <div class="stat-trio" {...inspectAttrs('app-dashboard:stat-trio', { role: 'group' })}>
         {STAT_KEYS.map((key) => {
           const stat = stats[key];
           if (!stat) return null;
@@ -254,7 +254,7 @@ export const StatsSection: FC<StatsSectionProps> = ({ translate, stats, rung }) 
             <article class="stat-card" key={key}>
               <Txt name="app-dashboard:stat-label" class="stat-label muted">{stat.label}</Txt>
               <Txt name="app-dashboard:stat-total" class="stat-total">{stat.total} <Label name="app-dashboard:stat-unit" class="stat-unit">{stat.unit}</Label></Txt>
-              <div class="bars" role="img" aria-label={`${stat.label}: ${barsAria}`} {...inspectAttributes('app-dashboard:bars', { role: 'group' })}>
+              <div class="bars" role="img" aria-label={`${stat.label}: ${barsAria}`} {...inspectAttrs('app-dashboard:bars', { role: 'group' })}>
                 {stat.bars.map((bar, barIndex) => (
                   <span
                     key={barIndex}
@@ -288,27 +288,27 @@ export const WizardSection: FC<WizardSectionProps> = ({ translate, wizard, rung 
       <div class="wizard">
         <Txt name="app-dashboard:wizard-agent" class="wizard-agent">{wizard.prompt}</Txt>
         <form class="wizard-form" method="post" action="/dashboard/projects">
-          <label class="auth-label" for={nameInputId} {...inspectAttributes('app-dashboard:wizard-name-label', { role: 'label' })}>{translate('wizard.nameLabel') as string}</label>
+          <label class="auth-label" for={nameInputId} {...inspectAttrs('app-dashboard:wizard-name-label', { role: 'label' })}>{translate('wizard.nameLabel') as string}</label>
           <input
             id={nameInputId}
             type="text"
             name="name"
             placeholder={translate('wizard.namePlaceholder') as string}
             autocomplete="off"
-            {...inspectAttributes('app-dashboard:wizard-name-input', { role: 'input' })}
+            {...inspectAttrs('app-dashboard:wizard-name-input', { role: 'input' })}
           />
           <fieldset class="wizard-targets">
-            <legend class="auth-label" {...inspectAttributes('app-dashboard:wizard-targets-label', { role: 'label' })}>{translate('wizard.targets') as string}</legend>
+            <legend class="auth-label" {...inspectAttrs('app-dashboard:wizard-targets-label', { role: 'label' })}>{translate('wizard.targets') as string}</legend>
             {(wizard.targets ?? []).map((target) => (
               <label class="wizard-chip" key={target}>
-                <input type="checkbox" name="targets" value={target} checked={target === 'web'} {...inspectAttributes('app-dashboard:wizard-target-input', { role: 'input' })} />
+                <input type="checkbox" name="targets" value={target} checked={target === 'web'} {...inspectAttrs('app-dashboard:wizard-target-input', { role: 'input' })} />
                 <Label name="app-dashboard:wizard-target" class="chip chip--lg chip--muted">{target}</Label>
               </label>
             ))}
           </fieldset>
           <div class="wizard-foot">
             <Txt name="app-dashboard:wizard-note" class="wizard-note muted">{wizard.note}</Txt>
-            <button type="submit" {...inspectAttributes('app-dashboard:wizard-create', { role: 'action' })}><Icon name="plus" size={16} />{translate('wizard.create') as string}</button>
+            <button type="submit" {...inspectAttrs('app-dashboard:wizard-create', { role: 'action' })}><Icon name="plus" size={16} />{translate('wizard.create') as string}</button>
           </div>
         </form>
       </div>

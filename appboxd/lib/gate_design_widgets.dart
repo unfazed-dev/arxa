@@ -1,7 +1,7 @@
 /// The W-gate: the widget placement law and the panel contract, enforced
 /// against ANY design artifact tree (nothing here is studio-specific).
 ///
-/// Seven hard-fail rules, per docs/plans/widget-panel-vocabulary-reconciliation.md
+/// Eight hard-fail rules, per docs/plans/widget-panel-vocabulary-reconciliation.md
 /// D5. Every failure message begins with its rule id and names the concrete fix,
 /// because the reader of a gate failure is someone who has to move a file:
 ///
@@ -21,6 +21,9 @@
 ///       interactive (button|a|input|select|textarea) must carry widget
 ///       identity: a `data-el` attribute, an `inspectAttrs(...)` spread, or
 ///       be a Capitalized library-widget invocation.
+///   W8  factor variants — the five-file law's TSX half: a `<stem>_view.tsx`
+///       with a co-located `<stem>_viewmodel.js` under `ui/views/` carries
+///       all three factor variants (`.desktop`/`.tablet`/`.mobile`) beside it.
 ///
 /// The import graph is the only authority for W1/W2. No such parser existed in
 /// appboxd before this file — the pre-existing "orphan sweeps" (emit_htmx,
@@ -973,7 +976,45 @@ List<LintFinding> _anonymousElementFindings(String artifactDir) {
 
 // ══ entry point ═════════════════════════════════════════════════════════
 
-/// Run W1–W7 over the design artifact at [artifactDir].
+// ══ W8 — factor variants (the five-file law, TSX side) ═══════════════════
+
+/// A view with a viewmodel is a responsive surface, not a static partial:
+/// wherever `<stem>_view.tsx` has a co-located `<stem>_viewmodel.js` under
+/// `ui/views/`, the three factor variants (`.desktop`/`.tablet`/`.mobile`)
+/// must exist beside it. This is the TSX half of the showcase five-file set;
+/// the Dart-tree half is enforced by the emit/structure gates.
+///
+/// Compound extensions (`_view.desktop.tsx`, `_view.sections.tsx`) do not
+/// match the `_view.tsx` suffix and are never stated views themselves.
+List<LintFinding> _factorVariantFindings(String artifactDir) {
+  final findings = <LintFinding>[];
+  final viewsDir = Directory(p.join(artifactDir, 'ui', 'views'));
+  if (!viewsDir.existsSync()) return findings;
+  const factors = ['desktop', 'tablet', 'mobile'];
+  for (final e in viewsDir.listSync(recursive: true)) {
+    if (e is! File || !e.path.endsWith('_view.tsx')) continue;
+    final base = p.basename(e.path);
+    final stem = base.substring(0, base.length - '_view.tsx'.length);
+    final dir = p.dirname(e.path);
+    if (!File(p.join(dir, '${stem}_viewmodel.js')).existsSync()) continue;
+    final missing = factors
+        .where((f) => !File(p.join(dir, '${stem}_view.$f.tsx')).existsSync())
+        .toList();
+    if (missing.isNotEmpty) {
+      final rel = p.split(p.relative(e.path, from: artifactDir)).join('/');
+      findings.add(LintFinding(
+          rel,
+          'W8: stated view is missing '
+          '${missing.map((f) => '`${stem}_view.$f.tsx`').join(', ')} — a view '
+          'with a viewmodel is a responsive surface and carries all three '
+          'factor variants beside it; add the missing variant(s), or remove '
+          'the viewmodel if this is a static partial'));
+    }
+  }
+  return findings;
+}
+
+/// Run W1–W8 over the design artifact at [artifactDir].
 ///
 /// Returns the hard-fail findings in rule order. [notes] collects the advisory
 /// skipped-with-note channel (a rule that cannot apply to this tree yet), which
@@ -993,5 +1034,6 @@ List<LintFinding> gateDesignWidgets(String artifactDir,
     ..._pillRadiusFindings(artifactDir),
     ..._stateNamespaceFindings(artifactDir, notes),
     ..._anonymousElementFindings(artifactDir),
+    ..._factorVariantFindings(artifactDir),
   ];
 }

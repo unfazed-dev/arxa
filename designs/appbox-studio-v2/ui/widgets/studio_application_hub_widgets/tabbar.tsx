@@ -2,7 +2,7 @@
 // staggered-action FAB. Pure CSS visibility; open/close is <details>.
 import { Fragment } from 'hono/jsx';
 import Icon from '../../../runtime/icon.tsx';
-import { inspectAttributes } from '../common/studio_primitives/primitives.tsx';
+import { inspectAttrs } from '../common/studio_primitives/primitives.tsx';
 import { destinations, type TFn } from './destinations.tsx';
 
 interface TabbarProps {
@@ -17,7 +17,7 @@ export function Tabbar(props: TabbarProps) {
   return (
     <Fragment>
       {/* compact: primary nav leaves the header panel and becomes the tabbar */}
-      <nav class="tabbar" aria-label={translate('nav.primary') as string} {...inspectAttributes('studio_hub:tabbar', { role: 'nav' })}>
+      <nav class="tabbar" aria-label={translate('nav.primary') as string} {...inspectAttrs('studio_hub:tabbar', { role: 'nav' })}>
         {shellDestinations.map((destination) => (
           <a
             key={destination.id}
@@ -32,7 +32,7 @@ export function Tabbar(props: TabbarProps) {
       </nav>
 
       {/* compact + medium: staggered-action FAB, pure <details> */}
-      <details class="fab-menu" {...inspectAttributes('studio_hub:fab', { role: 'nav' })}>
+      <details class="fab-menu" {...inspectAttrs('studio_hub:fab', { role: 'nav' })}>
         <summary class="fab" aria-label={translate('nav.quickActions') as string}>
           <Icon name="plus" size={24} />
         </summary>

@@ -1,8 +1,8 @@
-/// Mutation tests for the W-gate (W1–W7).
+/// Mutation tests for the W-gate (W1–W8).
 ///
-/// The shape is one clean synthetic artifact tree that passes all seven rules,
+/// The shape is one clean synthetic artifact tree that passes all eight rules,
 /// then per-rule mutations of that same tree. Each mutation asserts BOTH
-/// directions: the mutated rule fires, and the other six stay silent. A rule
+/// directions: the mutated rule fires, and the other seven stay silent. A rule
 /// that can only be shown to fire, never to be the *only* thing firing, is not
 /// proven non-vacuous — that is the whole point of the exercise.
 library;
@@ -107,6 +107,14 @@ export const page = (c, h) => {
   h.session(c).data.app = { locale: 'en' };
 };
 ''',
+  // ── brief is a stated view (has a viewmodel), so it carries the three
+  //    factor variants (W8).
+  'ui/views/main_shell/intake/brief/brief_view.desktop.tsx':
+      'export default function BriefViewDesktop() { return <div class="rung rung--desktop"></div>; }\n',
+  'ui/views/main_shell/intake/brief/brief_view.tablet.tsx':
+      'export default function BriefViewTablet() { return <div class="rung rung--tablet"></div>; }\n',
+  'ui/views/main_shell/intake/brief/brief_view.mobile.tsx':
+      'export default function BriefViewMobile() { return <div class="rung rung--mobile"></div>; }\n',
   // ── app_shell: the second consumer of the common widgets.
   'ui/views/app_shell/app_shell_view.tsx': '''
 import HeaderPanel from '../../widgets/common/panels/header_panel.tsx';
@@ -131,6 +139,12 @@ export const page = (c, h) => {
   h.session(c).data['app_shell'] = { authed: false };
 };
 ''',
+  'ui/views/app_shell/auth/auth_view.desktop.tsx':
+      'export default function AuthViewDesktop() { return <div class="rung rung--desktop"></div>; }\n',
+  'ui/views/app_shell/auth/auth_view.tablet.tsx':
+      'export default function AuthViewTablet() { return <div class="rung rung--tablet"></div>; }\n',
+  'ui/views/app_shell/auth/auth_view.mobile.tsx':
+      'export default function AuthViewMobile() { return <div class="rung rung--mobile"></div>; }\n',
   // ── the one legal home for the pill radius.
   'assets/css/widgets.css': '.chip { border-radius: 999px; }\n',
   'assets/css/app.css': '.card { border-radius: 8px; }\n'
@@ -142,6 +156,15 @@ export const page = (c, h) => {
 const _workspaceShell = <String, String>{
   'ui/views/workspace_shell/settings/settings_view.tsx':
       'export default function SettingsView() { return <main></main>; }\n',
+  // Factor variants ride along so W6 mutations that hand settings a viewmodel
+  // (making it a stated view) do not co-fire W8. Variants without a viewmodel
+  // owe nothing — W8 checks one direction only.
+  'ui/views/workspace_shell/settings/settings_view.desktop.tsx':
+      'export default function SettingsViewDesktop() { return <div class="rung rung--desktop"></div>; }\n',
+  'ui/views/workspace_shell/settings/settings_view.tablet.tsx':
+      'export default function SettingsViewTablet() { return <div class="rung rung--tablet"></div>; }\n',
+  'ui/views/workspace_shell/settings/settings_view.mobile.tsx':
+      'export default function SettingsViewMobile() { return <div class="rung rung--mobile"></div>; }\n',
 };
 
 /// Materialize [files] (plus [mutations], which overwrite or add) under a fresh
@@ -184,7 +207,7 @@ void main() {
   }
 
   group('clean tree', () {
-    test('passes all seven rules', () {
+    test('passes all eight rules', () {
       final notes = <LintFinding>[];
       final findings = gateDesignWidgets(_tree(tmp, const {}), notes: notes);
       expect(findings, isEmpty, reason: findings.join('\n'));
@@ -1020,6 +1043,39 @@ export default function BriefView() {
   return <main><Toolbar /><Chip text="a" /><Row /><button data-el="btn:go" data-inspect-role="button">Go</button></main>;
 }
 ''',
+      }));
+      expect(findings, isEmpty, reason: findings.join('\n'));
+    });
+  });
+
+  group('W8 factor variants', () {
+    test('a stated view missing one variant fails', () {
+      expectsOnly(
+          'W8',
+          {
+            'ui/views/app_shell/auth/auth_view.tablet.tsx': _deleted,
+          },
+          messageContains: 'auth_view.tablet.tsx');
+    });
+
+    test('a stated view missing all three names every missing file', () {
+      final findings = gateDesignWidgets(_tree(tmp, {
+        'ui/views/main_shell/intake/brief/brief_view.desktop.tsx': _deleted,
+        'ui/views/main_shell/intake/brief/brief_view.tablet.tsx': _deleted,
+        'ui/views/main_shell/intake/brief/brief_view.mobile.tsx': _deleted,
+      }));
+      expect(_rules(findings), {'W8'}, reason: findings.join('\n'));
+      final msg = findings.map((f) => f.message).join('\n');
+      expect(msg, contains('brief_view.desktop.tsx'));
+      expect(msg, contains('brief_view.tablet.tsx'));
+      expect(msg, contains('brief_view.mobile.tsx'));
+    });
+
+    test('a view without a viewmodel is a static partial — no variants owed',
+        () {
+      final findings = gateDesignWidgets(_tree(tmp, {
+        'ui/views/app_shell/legal/legal_view.tsx':
+            'export default function LegalView() { return <main></main>; }\n',
       }));
       expect(findings, isEmpty, reason: findings.join('\n'));
     });

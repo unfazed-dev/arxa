@@ -1,7 +1,7 @@
 // rail.tsx — hub-hosted medium-rung nav: the railbar, the drawer's docked
 // form (slim icon strip that expands to a labeled panel). Pure <details>.
 import Icon from '../../../runtime/icon.tsx';
-import { inspectAttributes } from '../common/studio_primitives/primitives.tsx';
+import { inspectAttrs } from '../common/studio_primitives/primitives.tsx';
 import { destinations, type TFn } from './destinations.tsx';
 
 interface RailProps {
@@ -14,7 +14,7 @@ export function Rail(props: RailProps) {
   const shellDestinations = destinations(translate);
 
   return (
-    <details class="railbar" {...inspectAttributes('studio_hub:rail', { role: 'nav' })}>
+    <details class="railbar" {...inspectAttrs('studio_hub:rail', { role: 'nav' })}>
       <summary class="railbar-strip" aria-label={translate('nav.openRailbar') as string}>
         {shellDestinations.map((destination) => (
           <span key={destination.id} class={`railbar-ico${activeShell === destination.id ? ' is-active' : ''}`}>
