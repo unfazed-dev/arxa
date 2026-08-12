@@ -40,7 +40,18 @@ class ShowcaseSearchFilterCardWidget extends StatelessWidget {
             divisions: 10,
             onChanged: viewModel.setRadius,
           ),
+          // A1 (clip-0813): keep the two platform views adjacent. Flutter
+          // text painted between two platform views forces its own overlay
+          // slice whose rect ignores clip bounds (engine #150646; one overlay
+          // per slice since PR #54010) — the slab/dropped-label signature.
+          // The spacer paints nothing and creates no slice; the price label
+          // therefore sits BELOW its slider. See docs/plans/clip-0813-fix-plan.md.
           appBoxKitVerticalSpaceSmall,
+          AppBoxKitNativeRangeSlider(
+            values: RangeValues(viewModel.priceStart, viewModel.priceEnd),
+            onChanged: (RangeValues v) =>
+                viewModel.setPrice(v.start, v.end),
+          ),
           Row(
             children: [
               const ShowcaseSectionLabelWidget('Price range'),
@@ -48,11 +59,6 @@ class ShowcaseSearchFilterCardWidget extends StatelessWidget {
               ShowcaseValueChipWidget(
                   '${viewModel.priceStart.toStringAsFixed(2)} – ${viewModel.priceEnd.toStringAsFixed(2)}'),
             ],
-          ),
-          AppBoxKitNativeRangeSlider(
-            values: RangeValues(viewModel.priceStart, viewModel.priceEnd),
-            onChanged: (RangeValues v) =>
-                viewModel.setPrice(v.start, v.end),
           ),
         ],
       ),
