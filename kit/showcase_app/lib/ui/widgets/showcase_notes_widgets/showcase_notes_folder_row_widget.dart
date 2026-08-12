@@ -32,7 +32,6 @@ import 'package:flutter/material.dart';
 import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
 import 'package:appbox_kit_showcase_app/data/models/showcase_notes_models/models.dart';
 import 'package:appbox_kit_showcase_app/ui/views/showcase_notes_shell/showcase_notes/showcase_notes_viewmodel.dart';
-import 'package:appbox_kit_showcase_app/ui/widgets/showcase_notes_widgets/widgets.dart';
 
 class ShowcaseNotesFolderRowWidget extends StatelessWidget {
   const ShowcaseNotesFolderRowWidget({
@@ -67,15 +66,100 @@ class ShowcaseNotesFolderRowWidget extends StatelessWidget {
         await viewModel.confirmDeleteFolder(folder);
         return false;
       },
-      child: GestureDetector(
+      // Rendered inline rather than via ShowcaseNotesRowWidget: that widget
+      // is a thin adapter over AppBoxKitListTile, whose Material+InkWell
+      // painted an ink splash over the native Liquid Glass tab chrome while
+      // this row's long-press was still being recognized (ratified in
+      // docs/plans/notes-shell-abxaction-adoption.md, decision 4 — the
+      // InkWell and this GestureDetector's LongPressGestureRecognizer share
+      // one gesture arena, so the InkWell's tap-down highlight painted before
+      // the long press won it). The layout below matches AppBoxKitListTile's
+      // tokens exactly so folder rows stay visually identical to the "All
+      // Notes"/"Recently Deleted" rows in the same section.
+      child: _ShowcaseNotesPressable(
+        onTap: () => context.router.pushNamed('folder/${folder.id}'),
         onLongPress: onRename,
-        child: ShowcaseNotesRowWidget(
-          glyph: AppBoxKitGlyphs.folder,
-          label: folder.name,
-          trailingCount: count,
-          onTap: () => context.router.pushNamed('folder/${folder.id}'),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(minHeight: abxSize48),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(
+              horizontal: abxPad16,
+              vertical: abxPad12,
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  AppBoxKitGlyphs.folder.icon,
+                  size: abxSize20,
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+                const SizedBox(width: abxGap12),
+                Expanded(
+                  child: Text(folder.name, style: theme.textTheme.bodyLarge),
+                ),
+                Text(
+                  '$count',
+                  style: theme.textTheme.bodyMedium
+                      ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                ),
+                Icon(
+                  AppBoxKitGlyphs.chevronRight.icon,
+                  size: abxSize18,
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ],
+            ),
+          ),
         ),
       ),
     );
   }
+}
+
+/// Native-safe press indicator: dims [child] on press-down instead of
+/// painting a Material ink splash — no [Material]/[InkWell]/[InkResponse]
+/// ancestor, so it never leaks over a platform-view surface (Liquid Glass /
+/// M3E). Local to this row; see the usage site for why.
+class _ShowcaseNotesPressable extends StatefulWidget {
+  const _ShowcaseNotesPressable({
+    required this.child,
+    this.onTap,
+    this.onLongPress,
+  });
+
+  final Widget child;
+  final VoidCallback? onTap;
+  final VoidCallback? onLongPress;
+
+  @override
+  State<_ShowcaseNotesPressable> createState() =>
+      _ShowcaseNotesPressableState();
+}
+
+class _ShowcaseNotesPressableState extends State<_ShowcaseNotesPressable> {
+  bool _pressed = false;
+
+  void _setPressed(bool value) {
+    if (_pressed == value) return;
+    setState(() => _pressed = value);
+  }
+
+  @override
+  Widget build(BuildContext context) => Semantics(
+        button: true,
+        child: GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: widget.onTap,
+          onLongPress: widget.onLongPress,
+          onTapDown: (_) => _setPressed(true),
+          onTapUp: (_) => _setPressed(false),
+          onTapCancel: () => _setPressed(false),
+          child: AnimatedOpacity(
+            opacity: _pressed ? 0.6 : 1.0,
+            duration: const Duration(milliseconds: 120),
+            curve: Curves.easeOut,
+            child: widget.child,
+          ),
+        ),
+      );
 }
