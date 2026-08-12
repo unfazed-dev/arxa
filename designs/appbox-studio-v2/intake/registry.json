@@ -57,17 +57,24 @@
       "widgets": [
         {
           "name": "header_panel",
-          "kind": "panel",
-          "note": "shell-owned panel hosting hub-hosted header widget"
+          "composedFrom": [
+            "appbar"
+          ],
+          "note": "shell-owned panel hosting hub-hosted header widget; body-only <nav> strip, no single kind realises it"
         },
         {
           "name": "footer_panel",
-          "kind": "panel"
+          "composedFrom": [
+            "list-row"
+          ],
+          "note": "shell-owned body-only strip; body is the caller's content (e.g. the timeline <ol>)"
         },
         {
           "name": "main_panel",
-          "kind": "panel",
-          "note": "hosts gate strip + project grid + stats + wizard entry"
+          "composedFrom": [
+            "tabs"
+          ],
+          "note": "hosts gate strip + project grid + stats + wizard entry; own chrome is the per-shell segmented panel bar (tabs) — hosted widgets carry their own recipes"
         },
         {
           "name": "gate_strip",
