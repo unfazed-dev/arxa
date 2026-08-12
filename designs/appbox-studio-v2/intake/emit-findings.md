@@ -171,7 +171,8 @@ F0 clears.
   emit does not silently conflate them.
 
 - **F6 — INCIDENT: commit `49249e9` over-captured another agent's in-flight
-  work. Needs operator cleanup.**
+  work. CLOSED 2026-08-12 by correction record (see closure note at the end of
+  this finding); no history rewrite.**
   - Before committing I checked `git status --short designs/appbox-studio-v2/`,
     which reported a single line — `?? designs/appbox-studio-v2/`. Git collapses
     an untracked *directory* to one entry, so the check hid its contents. This
@@ -222,6 +223,24 @@ F0 clears.
     duplicate work against the same artifact path. Their `app.routes.js` +
     `ui/common/` layout should be reconciled against the roster above, and
     against F0 — whoever wrote them faced the same missing registry.
+  - **CLOSED 2026-08-12 — operator ruling (grill D8, see
+    `docs/plans/studio-v2-relay-grill-decisions.md`): correction record, no
+    history rewrite.** Rewriting `49249e9` to narrow its message was judged all
+    risk for cosmetic gain — it is an ancestor of the entire Aug 9–10
+    restructure and naming-sweep lineage. This paragraph is the attribution
+    correction: `49249e9` ("docs: record appbox-studio-v2 emit blockers…")
+    genuinely authored only `intake/design-brief.md` and
+    `intake/emit-findings.md`. The other **9** files in its stat — `README.md`,
+    `app.routes.js`, `assets/css/app.css`, `assets/portalo/.gitkeep`,
+    `assets/studio/.gitkeep`, `runtime/routes.js`,
+    `services/studio_common_services/repositories/fixture_reader.js`,
+    `ui/common/base.tsx`, `ui/common/prefs_viewmodel.js` — were authored by the
+    concurrently emitting agent and swept in by `git add
+    designs/appbox-studio-v2/` after `git status --short` collapsed the
+    untracked directory to one line. (The count "8 swept files" earlier in this
+    finding is that draft's own arithmetic slip; the enumerated list and the
+    commit stat both say 9.) All 9 files are committed byte-identical to how
+    their author wrote them.
 
 ## Recommended next action (operator)
 
