@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import '../channel/params.dart';
 import '../style/glass_effect.dart';
 import '../utils/modal_hide_mixin.dart';
+import '../utils/cn_trace.dart';
 import '../utils/version_detector.dart';
 import 'liquid_glass_container.dart';
 
@@ -194,6 +195,7 @@ class _CNFloatingIslandState extends State<CNFloatingIsland>
 
   CNFloatingIslandController? _internalController;
   bool _isExpanded = false;
+  bool? _lastIsDark;
 
   // Issue #29 halo containment state — toggled via setTransitioning on
   // the native channel while the enclosing route is animating.
@@ -230,6 +232,26 @@ class _CNFloatingIslandState extends State<CNFloatingIsland>
   void didChangeDependencies() {
     super.didChangeDependencies();
     _attachSecondaryRouteAnim();
+    _syncBrightnessIfNeeded();
+  }
+
+  // Pushes the in-app theme to the already-created native view — the
+  // creation-param `isDark` below only covers the first frame, and the
+  // Swift side pins `overrideUserInterfaceStyle`, so inheritance can never
+  // deliver an app-level flip.
+  //
+  // Read the theme FIRST so this State registers an inherited dependency on
+  // Theme even when the platform view (and thus the channel) hasn't been
+  // created yet; bailing before the read means `didChangeDependencies`
+  // never re-fires for in-app theme changes (same fix as
+  // `glass_button_group.dart` / `button.dart`).
+  void _syncBrightnessIfNeeded() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final ch = _controller._channel;
+    if (ch == null) return;
+    if (_lastIsDark == isDark) return;
+    _lastIsDark = isDark;
+    cnTracedSetBrightness(ch, 'CNFloatingIsland', isDark).catchError((_) {});
   }
 
   void _attachSecondaryRouteAnim() {
@@ -296,6 +318,9 @@ class _CNFloatingIslandState extends State<CNFloatingIsland>
     final ch = MethodChannel('CNFloatingIsland_$id');
     _controller._attach(ch);
     ch.setMethodCallHandler(_onMethodCall);
+    // Seed with the value the creation params already carried, so the sync
+    // above only fires on a real flip, not on creation.
+    _lastIsDark = Theme.of(context).brightness == Brightness.dark;
     _onCreationBumpContainment();
   }
 

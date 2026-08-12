@@ -31,6 +31,7 @@ class CupertinoTabBarPlatformView: NSObject, FlutterPlatformView, UITabBarDelega
   private var currentIconSizes: [CGFloat] = [] // Track icon sizes for dynamic height calculation
   private var labelFontFamily: String? = nil
   private var labelFontSize: CGFloat = 0 // 0 means system default (~10pt)
+  private let settleReplay = CNAppearanceSettleReplay()
 
   init(frame: CGRect, viewId: Int64, args: Any?, messenger: FlutterBinaryMessenger) {
     self.channel = FlutterMethodChannel(name: "CupertinoNativeTabBar_\(viewId)", binaryMessenger: messenger)
@@ -895,7 +896,15 @@ channel.setMethodCallHandler { [weak self] call, result in
         } else { result(FlutterError(code: "bad_args", message: "Missing style", details: nil)) }
       case "setBrightness":
         if let args = call.arguments as? [String: Any], let isDark = (args["isDark"] as? NSNumber)?.boolValue {
-          if #available(iOS 13.0, *) { self.container.overrideUserInterfaceStyle = isDark ? .dark : .light }
+          CNAppearance.trace("CNTabBar", "setBrightness isDark=\(isDark)")
+          if #available(iOS 13.0, *) {
+            self.applyBrightness(isDark)
+            // After a rapid flip storm, replay the final state once so a
+            // mid-storm-coalesced render can't strand this view on the
+            // previous theme (14-01 clip). See CNAppearanceSettleReplay.
+            self.settleReplay.poke { [weak self] in self?.applyBrightness(isDark) }
+          }
+          CNAppearance.trace("CNTabBar", "setBrightness applied")
           result(nil)
         } else { result(FlutterError(code: "bad_args", message: "Missing isDark", details: nil)) }
       case "setBadges":
@@ -1072,6 +1081,36 @@ channel.setMethodCallHandler { [weak self] call, result in
   func view() -> UIView { container }
 
   // MARK: - Appearance helpers
+
+  /// Push the in-app brightness to every tier of this tab bar. Extracted
+  /// from the `setBrightness` handler so `CNAppearanceSettleReplay` can
+  /// replay it verbatim after a rapid flip storm (14-01 clip).
+  @available(iOS 13.0, *)
+  private func applyBrightness(_ isDark: Bool) {
+    CNAppearance.applyInstantly(forcing: [self.container]) {
+      self.container.overrideUserInterfaceStyle = isDark ? .dark : .light
+      // Re-add the bar(s): the bare trait pin was the measured fastest
+      // path in earlier clips, but the 02:31 clip caught it losing the
+      // re-composite lottery (white bar seconds into dark, dark into
+      // light, recovery on scroll) — the iOS 26 tab bar IS glass.
+      // Pins are captured first (inter-bar split constraints are
+      // container-owned; self-owned width pins survive removal), so
+      // the split layout needs no re-derivation.
+      let bars = [self.tabBar, self.tabBarLeft, self.tabBarRight].compactMap { $0 }
+      var pins: [NSLayoutConstraint] = []
+      for bar in bars {
+        for c in self.container.constraints
+        where (c.firstItem as? UIView) === bar || (c.secondItem as? UIView) === bar {
+          if !pins.contains(c) { pins.append(c) }
+        }
+      }
+      for bar in bars {
+        bar.removeFromSuperview()
+        self.container.addSubview(bar)
+      }
+      NSLayoutConstraint.activate(pins)
+    }
+  }
 
   /// Builds a UITabBarAppearance with transparent background and optional custom label font.
   @available(iOS 13.0, *)

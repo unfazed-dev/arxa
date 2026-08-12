@@ -110,6 +110,20 @@ struct GlassButtonSwiftUI: View {
 // Apply the per-button glassEffect + union/id modifiers ONLY when
 // `apply` is true. When false (group mode), the button skips its own glass
 // and relies on the group's outer .glassEffect to produce one uniform pill.
+//
+// `.glassEffectTransition(.identity)`: governs ONLY SwiftUI-driven
+// insertion/removal of glass inside a `GlassEffectContainer` in our own tree
+// (incl. the engine's platform-view detach/reattach on scroll — the
+// `LiquidGlassContainerView` rationale, :305-322). It snaps those glass
+// changes to their final state instead of replaying the materialise
+// animation. It does NOT affect the popup `Menu` dismiss morph: that flash
+// is the system presentation layer reparenting the glass (Apple bug, forums
+// 826863 / expo#44126), unreachable from any of our modifiers — rounds 8
+// (this knob) and 9 (post-dismiss re-root replay) both proved inert on
+// device (11-22/11-46 clips). The working cure lives in
+// `GlassButtonGroupView.buttonView`: popup triggers render their glass via
+// the system's own `.buttonStyle(.glass)`, which the morph hands back
+// correctly.
 @available(iOS 26.0, *)
 extension View {
   @ViewBuilder
@@ -124,6 +138,7 @@ extension View {
     if apply {
       self
         .glassEffect(glass, in: shape)
+        .glassEffectTransition(.identity)
         .applyGlassEffectModifiers(unionId: unionId, id: glassEffectId, namespace: namespace)
     } else {
       self

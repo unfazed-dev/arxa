@@ -14,6 +14,7 @@ class CNSearchScaffoldController: UITabBarController, UISearchResultsUpdating, U
     private var searchPlaceholder: String = "Search"
     private var automaticallyActivatesSearch: Bool = true
     private weak var internalSearchController: UISearchController?
+    private let settleReplay = CNAppearanceSettleReplay()
 
     struct TabConfig {
         let title: String?
@@ -220,7 +221,11 @@ class CNSearchScaffoldController: UITabBarController, UISearchResultsUpdating, U
         case "setBrightness":
             if let args = call.arguments as? [String: Any],
                let isDark = args["isDark"] as? Bool {
-                view.overrideUserInterfaceStyle = isDark ? .dark : .light
+                self.applyBrightness(isDark)
+                // After a rapid flip storm, replay the final state once so a
+                // mid-storm-coalesced render can't strand this view on the
+                // previous theme (14-01 clip). See CNAppearanceSettleReplay.
+                self.settleReplay.poke { [weak self] in self?.applyBrightness(isDark) }
                 result(nil)
             } else {
                 result(FlutterError(code: "bad_args", message: "Missing isDark", details: nil))
@@ -250,6 +255,13 @@ class CNSearchScaffoldController: UITabBarController, UISearchResultsUpdating, U
         default:
             result(FlutterMethodNotImplemented)
         }
+    }
+
+    /// Push the in-app brightness to this scaffold's root view. Extracted
+    /// from the `setBrightness` handler so `CNAppearanceSettleReplay` can
+    /// replay it verbatim after a rapid flip storm (14-01 clip).
+    private func applyBrightness(_ isDark: Bool) {
+        view.overrideUserInterfaceStyle = isDark ? .dark : .light
     }
 
     // MARK: - UISearchResultsUpdating

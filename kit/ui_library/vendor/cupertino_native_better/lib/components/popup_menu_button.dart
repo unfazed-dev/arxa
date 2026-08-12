@@ -4,13 +4,16 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/services.dart';
 
 import '../channel/params.dart';
+import '../style/button_data.dart';
 import '../style/button_style.dart';
 import '../style/sf_symbol.dart';
 import '../utils/icon_renderer.dart';
 import '../utils/modal_hide_mixin.dart';
 import '../utils/theme_helper.dart';
+import '../utils/cn_trace.dart';
 import '../utils/version_detector.dart';
 import 'async_resolution_state.dart';
+import 'glass_button_group.dart';
 import 'icon.dart';
 
 /// Base type for entries in a [CNPopupMenuButton] menu.
@@ -331,6 +334,22 @@ class _CNPopupMenuButtonState extends State<CNPopupMenuButton>
       return _buildCupertinoFallback(context);
     }
 
+    // iOS 26 menu-chrome reroute: a `showsMenuAsPrimaryAction` UIButton's
+    // popup chrome does NOT re-derive its appearance per presentation —
+    // measured on device (10-40 clip) it renders with the PREVIOUS
+    // presentation's traits: light menus in dark mode, dark menus in light
+    // mode, always exactly one presentation behind (FB13391355-class; no
+    // public lever reaches the cached presentation). The SwiftUI `Menu`
+    // inside CNGlassButtonGroup — the Send split button's construction —
+    // resolves `.environment(\.colorScheme)` fresh at every presentation
+    // and followed the app theme in both directions in the same clip.
+    // Group-compatible glass icon triggers therefore route through a
+    // one-button group; feature-rich configurations keep the UIKit path
+    // with the documented caveat.
+    if (_canUseGlassGroupTrigger) {
+      return _buildAsGlassGroup(context);
+    }
+
     // Issue #53 fix: when a modal is presented above our host route, destroy
     // the native popup menu's PlatformView so it's removed from the shared
     // iOS PlatformView container.
@@ -368,7 +387,9 @@ class _CNPopupMenuButtonState extends State<CNPopupMenuButton>
       widget.buttonCustomIcon != null ||
       widget.buttonImageAsset != null ||
       widget.items.any(
-        (e) => e is CNPopupMenuItem && (e.customIcon != null || e.imageAsset != null),
+        (e) =>
+            e is CNPopupMenuItem &&
+            (e.customIcon != null || e.imageAsset != null),
       );
 
   /// Digest of everything that affects **platform view creation**.
@@ -1008,7 +1029,7 @@ class _CNPopupMenuButtonState extends State<CNPopupMenuButton>
     // Capture values before awaiting
     final tint = resolveColorToArgb(_effectiveTint, context);
     if (_lastIsDark != isDark) {
-      await ch.invokeMethod('setBrightness', {'isDark': isDark});
+      await cnTracedSetBrightness(ch, 'CNPopupMenuButton', isDark);
       _lastIsDark = isDark;
     }
     if (_lastTint != tint && tint != null) {
@@ -1025,6 +1046,73 @@ class _CNPopupMenuButtonState extends State<CNPopupMenuButton>
     try {
       await ch.invokeMethod('setPressed', {'pressed': pressed});
     } catch (_) {}
+  }
+
+  /// Whether this configuration can take the [CNGlassButtonGroup] route (see
+  /// the reroute in `build`). The group's popup segment is icon-trigger-only
+  /// and supports label/SF-Symbol/custom-icon items with a destructive flag —
+  /// anything richer keeps the UIKit button.
+  bool get _canUseGlassGroupTrigger {
+    if (widget.buttonLabel != null) return false; // group popups are icon-only
+    // prominentGlass would silently degrade to .regular in the group — keep
+    // the real thing on the UIKit path.
+    if (widget.buttonStyle != CNButtonStyle.glass) return false;
+    if (widget.preserveTopToBottomOrder) return false; // UIKit-only ordering
+    if (widget.buttonCustomIconColor != null) {
+      return false; // the group has no custom trigger-icon tint
+    }
+    for (final e in widget.items) {
+      if (e is! CNPopupMenuItem) return false; // dividers
+      if (!e.enabled || e.checked) return false; // no per-item state in group
+      // Per-item tint/asset icons and colored symbols have no group mapping.
+      if (e.iconColor != null || e.imageAsset != null) return false;
+      if (e.icon?.color != null) return false;
+    }
+    return true;
+  }
+
+  /// The glass icon trigger as a one-button [CNGlassButtonGroup] — the same
+  /// SwiftUI `Menu` construction as the Send split button's chevron half,
+  /// whose popup chrome follows the in-app theme on every presentation.
+  Widget _buildAsGlassGroup(BuildContext context) {
+    // .icon sets width = height = size; the group sizes by icon + padding
+    // with a minHeight, so the padding is what makes the capsule a circle.
+    final diameter = widget.height;
+    final iconSize = widget.buttonIcon?.size ?? 20.0;
+    final pad = diameter > iconSize ? (diameter - iconSize) / 2 : 0.0;
+    // The group's slot math is `count * 44 + 6` wide — pin the diameter so
+    // a 56pt FAB isn't compressed by the default 44pt estimate.
+    return SizedBox(
+      width: diameter,
+      height: diameter,
+      child: CNGlassButtonGroup(
+        buttons: [
+          CNButtonData.popup(
+            icon: widget.buttonIcon,
+            customIcon: widget.buttonCustomIcon,
+            imageAsset: widget.buttonImageAsset,
+            popupItems: [
+              for (final e in widget.items.cast<CNPopupMenuItem>())
+                CNButtonDataPopupItem(
+                  label: e.label,
+                  // Name-only mapping: per-item symbol size/color are not
+                  // expressible in the group (guarded above).
+                  sfSymbol: e.icon?.name,
+                  customIcon: e.icon == null ? e.customIcon : null,
+                  isDestructive: e.isDestructive,
+                ),
+            ],
+            onMenuSelected: widget.onSelected,
+            tint: widget.tint,
+            config: CNButtonDataConfig(
+              style: CNButtonStyle.glass,
+              minHeight: diameter,
+              padding: EdgeInsets.all(pad),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   Widget _buildCupertinoFallback(BuildContext context) {

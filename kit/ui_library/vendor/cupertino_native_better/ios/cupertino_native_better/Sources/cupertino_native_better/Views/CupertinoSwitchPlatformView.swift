@@ -5,6 +5,7 @@ import SwiftUI
 class CupertinoSwitchPlatformView: NSObject, FlutterPlatformView {
   private let channel: FlutterMethodChannel
   private let hostingController: UIHostingController<CupertinoSwitchView>
+  private let settleReplay = CNAppearanceSettleReplay()
 
   init(frame: CGRect, viewId: Int64, args: Any?, messenger: FlutterBinaryMessenger) {
     let channel = FlutterMethodChannel(name: "CupertinoNativeSwitch_\(viewId)", binaryMessenger: messenger)
@@ -91,8 +92,13 @@ class CupertinoSwitchPlatformView: NSObject, FlutterPlatformView {
         } else { result(FlutterError(code: "bad_args", message: "Missing label", details: nil)) }
       case "setBrightness":
         if let args = call.arguments as? [String: Any], let isDark = (args["isDark"] as? NSNumber)?.boolValue {
+          CNAppearance.trace("CNSwitch", "setBrightness isDark=\(isDark)")
           if #available(iOS 13.0, *) {
-            self.hostingController.overrideUserInterfaceStyle = isDark ? .dark : .light
+            self.applyBrightness(isDark)
+            // After a rapid flip storm, replay the final state once so a
+            // mid-storm-coalesced render can't strand this view on the
+            // previous theme (14-01 clip). See CNAppearanceSettleReplay.
+            self.settleReplay.poke { [weak self] in self?.applyBrightness(isDark) }
           }
           result(nil)
         } else { result(FlutterError(code: "bad_args", message: "Missing isDark", details: nil)) }
@@ -104,6 +110,15 @@ class CupertinoSwitchPlatformView: NSObject, FlutterPlatformView {
 
   func view() -> UIView {
     return hostingController.view
+  }
+
+  /// Push the in-app brightness to this switch's hosting controller.
+  /// Extracted from the `setBrightness` handler so
+  /// `CNAppearanceSettleReplay` can replay it verbatim after a rapid flip
+  /// storm (14-01 clip).
+  @available(iOS 13.0, *)
+  private func applyBrightness(_ isDark: Bool) {
+    self.hostingController.overrideUserInterfaceStyle = isDark ? .dark : .light
   }
 
   // MARK: - Keyboard avoidance fix (pre-iOS 16.4)

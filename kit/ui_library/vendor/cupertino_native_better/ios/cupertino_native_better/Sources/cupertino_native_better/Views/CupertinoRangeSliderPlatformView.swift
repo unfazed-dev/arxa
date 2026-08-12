@@ -79,6 +79,7 @@ class CupertinoRangeSliderPlatformView: NSObject, FlutterPlatformView {
   private var trackTint: UIColor?
   private var trackBgTint: UIColor?
   private var thumbTint: UIColor?
+  private let settleReplay = CNAppearanceSettleReplay()
 
   init(frame: CGRect, viewId: Int64, args: Any?, messenger: FlutterBinaryMessenger) {
     self.channel = FlutterMethodChannel(name: "CupertinoNativeRangeSlider_\(viewId)", binaryMessenger: messenger)
@@ -155,6 +156,14 @@ class CupertinoRangeSliderPlatformView: NSObject, FlutterPlatformView {
 
   func view() -> UIView { container }
 
+  /// Push the in-app brightness to this slider's container. Extracted from
+  /// the `setBrightness` handler so `CNAppearanceSettleReplay` can replay it
+  /// verbatim after a rapid flip storm (14-01 clip).
+  @available(iOS 13.0, *)
+  private func applyBrightness(_ isDark: Bool) {
+    container.overrideUserInterfaceStyle = isDark ? .dark : .light
+  }
+
   // MARK: - native → Dart
 
   /// Low thumb drag. Interior: clamps to `[min, high − sep]` so it stops
@@ -223,7 +232,14 @@ class CupertinoRangeSliderPlatformView: NSObject, FlutterPlatformView {
       result(nil)
     case "setBrightness":
       if let a = call.arguments as? [String: Any], let d = (a["isDark"] as? NSNumber)?.boolValue {
-        if #available(iOS 13.0, *) { container.overrideUserInterfaceStyle = d ? .dark : .light }
+        CNAppearance.trace("CNRangeSlider", "setBrightness isDark=\(d)")
+        if #available(iOS 13.0, *) {
+          self.applyBrightness(d)
+          // After a rapid flip storm, replay the final state once so a
+          // mid-storm-coalesced render can't strand this view on the
+          // previous theme (14-01 clip). See CNAppearanceSettleReplay.
+          self.settleReplay.poke { [weak self] in self?.applyBrightness(d) }
+        }
         result(nil)
       } else { result(FlutterError(code: "bad_args", message: "isDark", details: nil)) }
     default:

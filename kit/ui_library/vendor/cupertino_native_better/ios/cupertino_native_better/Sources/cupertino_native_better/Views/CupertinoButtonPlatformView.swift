@@ -19,6 +19,7 @@ class CupertinoButtonPlatformView: NSObject, FlutterPlatformView {
   private var currentButtonStyle: String = "automatic"
   private var usesSwiftUI: Bool = false
   private var makeRound: Bool = false
+  private let settleReplay = CNAppearanceSettleReplay()
   // Issue #40: optional label-style overrides applied via attributedTitle.
   private var labelFontFamily: String? = nil
   private var labelFontSize: CGFloat? = nil
@@ -491,34 +492,11 @@ class CupertinoButtonPlatformView: NSObject, FlutterPlatformView {
             // handler that never re-establishes glass (the tab bar's, a lone
             // `overrideUserInterfaceStyle` assignment) is consistently among the
             // fastest views to restyle. See `Utils/CNAppearance.swift`.
-            CNAppearance.applyInstantly(
-              forcing: [self.container, self.button, self.hostingController?.view]
-            ) {
-            self.container.overrideUserInterfaceStyle = isDark ? .dark : .light
-            // Also the hosting controller, not only its superview. The glass
-            // tier (`usesSwiftUI`, set when a glassEffect id is present) is
-            // attached as `container.addSubview(hostingController.view)` with
-            // NO `addChild`, so the controller never joins the view-controller
-            // hierarchy and does not participate in its trait propagation.
-            // `GlassButtonGroupView.applyBrightness` — the one implementation
-            // observed restyling in under a frame on device — sets the
-            // controller. This aligns the others with it.
-            self.hostingController?.overrideUserInterfaceStyle = isDark ? .dark : .light
-            // Re-apply the style so the configuration re-resolves its colours in
-            // the new trait. `UIButton.Configuration` bakes resolved colours at
-            // assignment time, so a `.glass()` assigned under the old appearance
-            // keeps that appearance even after the trait changes. This is not a
-            // new idea here — the `setStyle` tint branch already re-applies for
-            // exactly this reason ("Re-apply style so configuration picks up new
-            // base colors", `:329`); brightness has the identical need and was
-            // simply missing it. Corroborated outside this repo by
-            // expo-glass-effect#43743, where setting the colour scheme without
-            // re-assigning the effect left the glass stale while tint/interactive
-            // — which do re-assign — updated immediately.
-            //
-            // No-op on the SwiftUI tier: `applyButtonStyle` guards `!usesSwiftUI`.
-            self.applyButtonStyle(buttonStyle: self.currentButtonStyle, round: self.makeRound)
-            }
+            self.applyBrightness(isDark)
+            // After a rapid flip storm, replay the final state once so a
+            // mid-storm-coalesced render can't strand this view on the
+            // previous theme (14-01 clip). See CNAppearanceSettleReplay.
+            self.settleReplay.poke { [weak self] in self?.applyBrightness(isDark) }
             CNAppearance.trace("CNButton_\(self.viewId)", "setBrightness applied")
           }
           result(nil)
@@ -679,6 +657,80 @@ class CupertinoButtonPlatformView: NSObject, FlutterPlatformView {
   /// Toggle Issue #29 halo containment based on whether the enclosing
   /// Flutter route is currently animating. See the `setTransitioning`
   /// method call handler for rationale.
+  /// Push the in-app brightness to every tier of this button. Extracted from
+  /// the `setBrightness` handler so `CNAppearanceSettleReplay` can replay it
+  /// verbatim after a rapid flip storm (14-01 clip).
+  @available(iOS 13.0, *)
+  private func applyBrightness(_ isDark: Bool) {
+    // Instant, not animated. Re-assigning the configuration below
+    // re-establishes glass, and establishing glass materialises with an
+    // animation by Apple's design (WWDC25 #284) — measured on device as
+    // a uniform ~200-300ms fade on every native view while the Flutter
+    // half of the same UI flips in one frame. That animation is correct
+    // when glass first appears and wrong for a theme flip. The one
+    // handler that never re-establishes glass (the tab bar's, a lone
+    // `overrideUserInterfaceStyle` assignment) is consistently among the
+    // fastest views to restyle. See `Utils/CNAppearance.swift`.
+    CNAppearance.applyInstantly(
+      forcing: [self.container, self.button, self.hostingController?.view]
+    ) {
+    self.container.overrideUserInterfaceStyle = isDark ? .dark : .light
+    // Also the hosting controller, not only its superview. The glass
+    // tier (`usesSwiftUI`, set when a glassEffect id is present) is
+    // attached as `container.addSubview(hostingController.view)` with
+    // NO `addChild`, so the controller never joins the view-controller
+    // hierarchy and does not participate in its trait propagation.
+    // `GlassButtonGroupView.applyBrightness` — the one implementation
+    // observed restyling in under a frame on device — sets the
+    // controller. This aligns the others with it.
+    self.hostingController?.overrideUserInterfaceStyle = isDark ? .dark : .light
+    // Re-apply the style so the configuration re-resolves its colours in
+    // the new trait. `UIButton.Configuration` bakes resolved colours at
+    // assignment time, so a `.glass()` assigned under the old appearance
+    // keeps that appearance even after the trait changes. This is not a
+    // new idea here — the `setStyle` tint branch already re-applies for
+    // exactly this reason ("Re-apply style so configuration picks up new
+    // base colors", `:329`); brightness has the identical need and was
+    // simply missing it. Corroborated outside this repo by
+    // expo-glass-effect#43743, where setting the colour scheme without
+    // re-assigning the effect left the glass stale while tint/interactive
+    // — which do re-assign — updated immediately.
+    //
+    // Teardown first, uniformly across the UIKit glass tier: assigning
+    // a value-equal `.glass()` configuration no-ops inside UIButton and
+    // the old effect view survives with its pinned appearance — see the
+    // popup button's setBrightness for the full evidence trail.
+    if let button = self.button, !self.usesSwiftUI,
+       #available(iOS 15.0, *), var staleCfg = button.configuration {
+      staleCfg.background = .clear()
+      button.configuration = staleCfg
+      button.updateConfiguration()
+    }
+    // No-op on the SwiftUI tier: `applyButtonStyle` guards `!usesSwiftUI`.
+    self.applyButtonStyle(buttonStyle: self.currentButtonStyle, round: self.makeRound)
+    // Structural refresh for the UIKit tier: re-applying the
+    // configuration onto the SAME view mutates existing layers, and
+    // on device the glass material's re-sample waits for an
+    // incidental re-composite (08-11/12 clips: 2 of 7 identical icon
+    // circles lagged on every flip while the rest were fast — a
+    // per-instance lottery). Leaving and re-entering the hierarchy
+    // tears down the layer's render-tree representation so it
+    // re-composites immediately. Same view object throughout —
+    // content, target, tint, and handlers are untouched; only the
+    // container edge pins are re-created.
+    if let button = self.button, !self.usesSwiftUI {
+      button.removeFromSuperview()
+      self.container.addSubview(button)
+      NSLayoutConstraint.activate([
+        button.leadingAnchor.constraint(equalTo: self.container.leadingAnchor),
+        button.trailingAnchor.constraint(equalTo: self.container.trailingAnchor),
+        button.topAnchor.constraint(equalTo: self.container.topAnchor),
+        button.bottomAnchor.constraint(equalTo: self.container.bottomAnchor),
+      ])
+    }
+    }
+  }
+
   private func applyTransitionContainment(_ active: Bool) {
     if active {
       container.isOpaque = false

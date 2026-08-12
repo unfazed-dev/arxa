@@ -6,6 +6,7 @@ import '../channel/params.dart';
 import '../style/sf_symbol.dart';
 import '../utils/icon_renderer.dart';
 import '../utils/theme_helper.dart';
+import '../utils/cn_trace.dart';
 import '../utils/platform_view_guard.dart';
 import 'async_resolution_state.dart';
 
@@ -479,7 +480,7 @@ class _CNIconState extends State<CNIcon>
     final channel = _channel;
     if (channel == null) return;
     if (_lastIsDark != isDark) {
-      await channel.invokeMethod('setBrightness', {'isDark': isDark});
+      await cnTracedSetBrightness(channel, 'CNIcon', isDark);
       _lastIsDark = isDark;
     }
   }

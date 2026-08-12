@@ -199,6 +199,16 @@ is), and `variants`. **Every such shape must be named in `resolution.order`**; a
 that is not listed falls through to FAIL and turns a correctly-authored kind into a
 build break.
 
+The kit-native widgets this table resolves to carry the iOS 26 liquid-glass
+mechanics internally — theme-flip cures, popup-trigger construction, and the
+rapid-flip settle replay (canon: `docs/plans/native-glass-theme-lag-measured.md`).
+That is a second reason resolution through this table is mandatory and a
+hand-rolled native widget is never an acceptable fallback: a scaffolded app
+gets correct glass **by construction**, not by per-app effort. The vendored
+package self-enforces the wiring:
+`kit/ui_library/vendor/cupertino_native_better/tool/check_theme_wiring.sh`
+fails on any under-wired brightness-handling view.
+
 **Validate after any registry edit:**
 
 ```

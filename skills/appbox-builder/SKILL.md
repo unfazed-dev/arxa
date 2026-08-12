@@ -19,6 +19,28 @@ This role fills the stubs by **composing the primitives ONCE** from `breakdown.j
 
 > ⚠️ **Platform-view touch + coordinates.** Embedded-Compose primitives are platform views: drive their taps with a real motion sequence and exact on-screen coordinates (an off-by-a-card y looks like "the widget is dead" — it isn't). `EagerGestureRecognizer` is set so they receive taps inside scrollables.
 
+## Native liquid glass (iOS 26) — settled mechanics
+
+All native glass comes from the kit wrappers (`AppBoxKit*`) over the vendored
+`cupertino_native_better` — never a hand-rolled platform view in a view, and
+never a new native plugin. The theme-flip machinery lives INSIDE the
+components, so a composed view inherits it by construction: scoped
+`overrideUserInterfaceStyle` (never window-level — that freezes
+`platformBrightness` and breaks `ThemeMode.system`), `@Published isDark` +
+epoch `.id` + rootView re-root on the SwiftUI tier, configuration teardown +
+hierarchy re-attach on the UIKit tier, everything animation-free via
+`CNAppearance.applyInstantly`, and a generation-guarded settle replay
+(`CNAppearanceSettleReplay`) so rapid flip storms deterministically land on
+the final theme. Popup triggers (split-button chevron, FAB, `…`) use custom
+glass hoisted onto the SwiftUI `Menu` — the popup-close flash is a known
+Apple bug (unfixed through iOS 26.4), accepted; the `.buttonStyle(.glass)`
+system-style cure was tried and rejected (undocumented padding → non-native
+geometry). Canon with per-clip evidence:
+`docs/plans/native-glass-theme-lag-measured.md`. Deterministic guard:
+`kit/ui_library/vendor/cupertino_native_better/tool/check_theme_wiring.sh`
+fails if any brightness-handling view is under-wired — run it after touching
+the vendored native tier.
+
 ## Input
 - `.blueprint/<source>/breakdown.json` — `pages[].components[].primitives[]` = the widget inventory per screen.
 - The emitted target (extension-point files carry `@appbox-extension-point`; `lib/ui/primitives.dart` is generated — read it for the available widgets).

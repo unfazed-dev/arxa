@@ -1,6 +1,7 @@
 import '../../appbox_kit_locator.dart' show appBoxKitLocator;
 import '../error/appbox_kit_error_service.dart';
 import 'package:flutter/material.dart' show Brightness, Colors, ThemeMode;
+import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart'
     show WidgetsBinding, WidgetsBindingObserver;
@@ -89,6 +90,13 @@ class AppBoxKitThemeService with ListenableServiceMixin, WidgetsBindingObserver 
     }
 
     if (_themeModeController.value != mode) {
+      // Timeline anchor for the device watcher (tools/watch_device.sh):
+      // CNTrace send/ack lines are measured against this tap time.
+      assert(() {
+        debugPrint(
+            'CNTrace theme flip -> $mode t=${DateTime.now().millisecondsSinceEpoch}');
+        return true;
+      }());
       _themeModeController.add(mode);
       _applySystemUiOverlayStyle();
       await _saveTheme();

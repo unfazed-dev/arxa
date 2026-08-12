@@ -4,7 +4,9 @@ import UIKit
 class CupertinoSegmentedControlPlatformView: NSObject, FlutterPlatformView {
   private let channel: FlutterMethodChannel
   private let container: UIView
-  private let control: UISegmentedControl
+  // `var`, not `let`: theme flips REPLACE the control instance — see
+  // replaceControlForThemeFlip.
+  private var control: UISegmentedControl
   private var labels: [String] = []
   private var symbols: [String] = []
   private var perSymbolSizes: [CGFloat?] = []
@@ -17,6 +19,7 @@ class CupertinoSegmentedControlPlatformView: NSObject, FlutterPlatformView {
   private var defaultIconPalette: [UIColor] = []
   private var defaultIconRenderingMode: String? = nil
   private var defaultIconGradientEnabled: Bool = false
+  private let settleReplay = CNAppearanceSettleReplay()
 
   init(frame: CGRect, viewId: Int64, args: Any?, messenger: FlutterBinaryMessenger) {
     self.channel = FlutterMethodChannel(name: "CupertinoNativeSegmentedControl_\(viewId)", binaryMessenger: messenger)
@@ -121,9 +124,15 @@ class CupertinoSegmentedControlPlatformView: NSObject, FlutterPlatformView {
         } else { result(FlutterError(code: "bad_args", message: "Missing style", details: nil)) }
       case "setBrightness":
         if let args = call.arguments as? [String: Any], let isDark = (args["isDark"] as? NSNumber)?.boolValue {
+          CNAppearance.trace("CNSegmentedControl", "setBrightness isDark=\(isDark)")
           if #available(iOS 13.0, *) {
-            self.container.overrideUserInterfaceStyle = isDark ? .dark : .light
+            self.applyBrightness(isDark)
+            // After a rapid flip storm, replay the final state once so a
+            // mid-storm-coalesced render can't strand this view on the
+            // previous theme (14-01 clip). See CNAppearanceSettleReplay.
+            self.settleReplay.poke { [weak self] in self?.applyBrightness(isDark) }
           }
+          CNAppearance.trace("CNSegmentedControl", "setBrightness applied")
           result(nil)
         } else { result(FlutterError(code: "bad_args", message: "Missing isDark", details: nil)) }
       case "setInteractive":
@@ -142,6 +151,27 @@ class CupertinoSegmentedControlPlatformView: NSObject, FlutterPlatformView {
 
   func view() -> UIView { container }
 
+  /// Push the in-app brightness to every tier of this segmented control.
+  /// Extracted from the `setBrightness` handler so
+  /// `CNAppearanceSettleReplay` can replay it verbatim after a rapid flip
+  /// storm (14-01 clip).
+  @available(iOS 13.0, *)
+  private func applyBrightness(_ isDark: Bool) {
+    CNAppearance.applyInstantly(forcing: [self.container, self.control]) {
+      self.container.overrideUserInterfaceStyle = isDark ? .dark : .light
+      // Full instance replacement. The iOS 26 selection lens is glass;
+      // rebuilding SEGMENTS (round 3) cured the permanently-frozen
+      // double lens (22:51 clip) but the lens's in-flight slide still
+      // leaves frozen smears on the segments it passed over for ~1-2s
+      // at rest (10-11 clip, every flip — the flip is triggered by a
+      // tap on THIS control, so the slide is always mid-flight when
+      // brightness lands). A fresh control has a fresh lens at rest on
+      // the selected segment — no in-flight frames to freeze. Same
+      // cure as the popup button's instance replacement.
+      self.replaceControlForThemeFlip()
+    }
+  }
+
   private func _cnSetInteractiveRecursive(_ view: UIView?, _ interactive: Bool) {
     guard let view = view else { return }
     view.isUserInteractionEnabled = interactive
@@ -158,6 +188,9 @@ class CupertinoSegmentedControlPlatformView: NSObject, FlutterPlatformView {
   }
 
   private func rebuildSegments() {
+    // removeAllSegments() resets selectedSegmentIndex to noSegment — preserve
+    // the selection across rebuilds (setStyle and brightness flips rebuild).
+    let selected = control.selectedSegmentIndex
     control.removeAllSegments()
     let count = max(labels.count, symbols.count)
     for idx in 0..<count {
@@ -207,5 +240,37 @@ class CupertinoSegmentedControlPlatformView: NSObject, FlutterPlatformView {
         control.insertSegment(withTitle: "", at: idx, animated: false)
       }
     }
+    control.selectedSegmentIndex = selected
+  }
+
+  /// Swaps `self.control` for a fresh instance on a theme flip — see the
+  /// setBrightness call site for the device evidence. Content rebuilds from
+  /// fields via `rebuildSegments()`; the rest is captured from the old
+  /// control (selection, tint, enabled/alpha, interaction). The fresh
+  /// control is fully configured BEFORE entering the hierarchy, inside the
+  /// caller's `applyInstantly`, so no intermediate frame renders.
+  private func replaceControlForThemeFlip() {
+    let old = self.control
+    let newControl = UISegmentedControl(items: [])
+    newControl.translatesAutoresizingMaskIntoConstraints = false
+    if #available(iOS 13.0, *) {
+      newControl.selectedSegmentTintColor = old.selectedSegmentTintColor
+    }
+    newControl.isEnabled = old.isEnabled
+    newControl.alpha = old.alpha
+    newControl.isUserInteractionEnabled = old.isUserInteractionEnabled
+    let selected = old.selectedSegmentIndex
+    self.control = newControl
+    rebuildSegments()
+    newControl.selectedSegmentIndex = selected
+    newControl.addTarget(self, action: #selector(onChanged(_:)), for: .valueChanged)
+    old.removeFromSuperview()
+    container.addSubview(newControl)
+    NSLayoutConstraint.activate([
+      newControl.leadingAnchor.constraint(equalTo: container.leadingAnchor),
+      newControl.trailingAnchor.constraint(equalTo: container.trailingAnchor),
+      newControl.topAnchor.constraint(equalTo: container.topAnchor),
+      newControl.bottomAnchor.constraint(equalTo: container.bottomAnchor),
+    ])
   }
 }

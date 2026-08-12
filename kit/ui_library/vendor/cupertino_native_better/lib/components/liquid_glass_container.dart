@@ -6,6 +6,7 @@ import '../channel/params.dart';
 import '../style/glass_effect.dart';
 import '../utils/modal_hide_mixin.dart';
 import '../utils/theme_helper.dart';
+import '../utils/cn_trace.dart';
 import '../utils/platform_view_guard.dart';
 import '../utils/version_detector.dart';
 
@@ -255,7 +256,9 @@ class _LiquidGlassContainerState extends State<LiquidGlassContainer>
     if (_lastIsDark != isDark) {
       _lastIsDark = isDark;
       // Trigger a view refresh to pick up the new system appearance
+      cnTrace('LiquidGlassContainer', 'send isDark=$isDark');
       await _updateConfig();
+      cnTrace('LiquidGlassContainer', 'ack');
     }
   }
 }

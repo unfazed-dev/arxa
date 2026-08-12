@@ -22,6 +22,7 @@ class CupertinoTabBarSearchPlatformView: NSObject, FlutterPlatformView, UITabBar
 
     // Search tab is always the last item
     private var searchItemIndex: Int = -1
+    private let settleReplay = CNAppearanceSettleReplay()
 
     init(frame: CGRect, viewId: Int64, args: Any?, messenger: FlutterBinaryMessenger) {
         self.channel = FlutterMethodChannel(name: "CupertinoNativeTabBar_\(viewId)", binaryMessenger: messenger)
@@ -229,7 +230,12 @@ class CupertinoTabBarSearchPlatformView: NSObject, FlutterPlatformView, UITabBar
             case "setBrightness":
                 if let args = call.arguments as? [String: Any],
                    let isDark = (args["isDark"] as? NSNumber)?.boolValue {
-                    self.container.overrideUserInterfaceStyle = isDark ? .dark : .light
+                    self.applyBrightness(isDark)
+                    // After a rapid flip storm, replay the final state once
+                    // so a mid-storm-coalesced render can't strand this view
+                    // on the previous theme (14-01 clip). See
+                    // CNAppearanceSettleReplay.
+                    self.settleReplay.poke { [weak self] in self?.applyBrightness(isDark) }
                     result(nil)
                 } else {
                     result(FlutterError(code: "bad_args", message: "Missing isDark", details: nil))
@@ -333,6 +339,13 @@ class CupertinoTabBarSearchPlatformView: NSObject, FlutterPlatformView, UITabBar
 
     func view() -> UIView {
         return container
+    }
+
+    /// Push the in-app brightness to this tab bar's container. Extracted
+    /// from the `setBrightness` handler so `CNAppearanceSettleReplay` can
+    /// replay it verbatim after a rapid flip storm (14-01 clip).
+    private func applyBrightness(_ isDark: Bool) {
+        self.container.overrideUserInterfaceStyle = isDark ? .dark : .light
     }
 
     // MARK: - UITabBarDelegate

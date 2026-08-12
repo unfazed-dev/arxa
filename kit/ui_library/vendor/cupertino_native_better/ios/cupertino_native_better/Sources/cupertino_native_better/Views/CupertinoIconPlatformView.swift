@@ -19,6 +19,7 @@ class CupertinoIconPlatformView: NSObject, FlutterPlatformView {
   private var palette: [UIColor] = []
   private var renderingMode: String?
   private var gradientEnabled: Bool = false
+  private let settleReplay = CNAppearanceSettleReplay()
 
   init(frame: CGRect, viewId: Int64, args: Any?, messenger: FlutterBinaryMessenger) {
     self.channel = FlutterMethodChannel(name: "CupertinoNativeIcon_\(viewId)", binaryMessenger: messenger)
@@ -124,9 +125,11 @@ class CupertinoIconPlatformView: NSObject, FlutterPlatformView {
         if let args = call.arguments as? [String: Any], let isDark = (args["isDark"] as? NSNumber)?.boolValue {
           CNAppearance.trace("CNIcon", "setBrightness isDark=\(isDark)")
           if #available(iOS 13.0, *) {
-            CNAppearance.applyInstantly(forcing: [self.container]) {
-              self.container.overrideUserInterfaceStyle = isDark ? .dark : .light
-            }
+            self.applyBrightness(isDark)
+            // After a rapid flip storm, replay the final state once so a
+            // mid-storm-coalesced render can't strand this view on the
+            // previous theme (14-01 clip). See CNAppearanceSettleReplay.
+            self.settleReplay.poke { [weak self] in self?.applyBrightness(isDark) }
           }
           CNAppearance.trace("CNIcon", "setBrightness applied")
           result(nil)
@@ -138,6 +141,16 @@ class CupertinoIconPlatformView: NSObject, FlutterPlatformView {
   }
 
   func view() -> UIView { container }
+
+  /// Push the in-app brightness to this icon's container. Extracted from the
+  /// `setBrightness` handler so `CNAppearanceSettleReplay` can replay it
+  /// verbatim after a rapid flip storm (14-01 clip).
+  @available(iOS 13.0, *)
+  private func applyBrightness(_ isDark: Bool) {
+    CNAppearance.applyInstantly(forcing: [self.container]) {
+      self.container.overrideUserInterfaceStyle = isDark ? .dark : .light
+    }
+  }
 
   private func rebuild() {
     var img: UIImage? = nil

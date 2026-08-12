@@ -90,3 +90,6 @@ deploy/supabase/secrets/
 
 # SwiftPM / SourceKit-LSP build artifacts (vendored Swift packages)
 **/.build/
+
+# Device watcher captures (tools/watch_device.sh)
+logs/

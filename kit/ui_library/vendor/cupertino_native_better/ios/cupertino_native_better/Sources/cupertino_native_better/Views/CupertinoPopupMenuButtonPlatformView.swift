@@ -4,7 +4,9 @@ import UIKit
 class CupertinoPopupMenuButtonPlatformView: NSObject, FlutterPlatformView {
   private let channel: FlutterMethodChannel
   private let container: UIView
-  private let button: UIButton
+  // `var`, not `let`: theme flips REPLACE the button instance — see
+  // replaceButtonForThemeFlip.
+  private var button: UIButton
   private var currentButtonStyle: String = "automatic"
   private var isRoundButton: Bool = false
   private var isTransitioning: Bool = false
@@ -39,6 +41,7 @@ class CupertinoPopupMenuButtonPlatformView: NSObject, FlutterPlatformView {
   private var btnIconColor: UIColor? = nil
   private var btnIconMode: String? = nil
   private var btnIconPalette: [UIColor] = []
+  private let settleReplay = CNAppearanceSettleReplay()
 
   init(frame: CGRect, viewId: Int64, args: Any?, messenger: FlutterBinaryMessenger) {
     self.channel = FlutterMethodChannel(name: "CupertinoNativePopupMenuButton_\(viewId)", binaryMessenger: messenger)
@@ -164,14 +167,7 @@ class CupertinoPopupMenuButtonPlatformView: NSObject, FlutterPlatformView {
 
     // Ensure the image persists across configuration state changes (highlight/menu)
     if #available(iOS 15.0, *) {
-      button.configurationUpdateHandler = { [weak self] btn in
-        guard let self = self else { return }
-        var cfg = btn.configuration ?? .plain()
-        // Preserve existing title; just re-apply image
-        cfg.image = self.makeButtonIconImage()
-        cfg.preferredSymbolConfigurationForImage = self.makeButtonSymbolConfiguration()
-        btn.configuration = cfg
-      }
+      attachConfigurationUpdateHandler(button)
     }
 
     self.itemSizes = sizes
@@ -269,17 +265,13 @@ class CupertinoPopupMenuButtonPlatformView: NSObject, FlutterPlatformView {
         } else { result(FlutterError(code: "bad_args", message: "Missing icon args", details: nil)) }
       case "setBrightness":
         if let args = call.arguments as? [String: Any], let isDark = (args["isDark"] as? NSNumber)?.boolValue {
-          // This handler is deliberately minimal — it does NOT re-establish
-          // glass — and on device it was still measured 1134ms late on one flip
-          // and 350ms on the next. That is the evidence separating the two
-          // defects: whatever defers the visual change is outside the handler.
-          // Traced so the next instrumented run can time it. See
-          // `docs/plans/native-glass-theme-lag-measured.md` §7.
           CNAppearance.trace("CNPopupMenuButton", "setBrightness isDark=\(isDark)")
           if #available(iOS 13.0, *) {
-            CNAppearance.applyInstantly(forcing: [self.container, self.button]) {
-              self.container.overrideUserInterfaceStyle = isDark ? .dark : .light
-            }
+            self.applyBrightness(isDark)
+            // After a rapid flip storm, replay the final state once so a
+            // mid-storm-coalesced render can't strand this view on the
+            // previous theme (14-01 clip). See CNAppearanceSettleReplay.
+            self.settleReplay.poke { [weak self] in self?.applyBrightness(isDark) }
           }
           CNAppearance.trace("CNPopupMenuButton", "setBrightness applied")
           result(nil)
@@ -310,6 +302,28 @@ class CupertinoPopupMenuButtonPlatformView: NSObject, FlutterPlatformView {
 
   func view() -> UIView { container }
 
+  /// Push the in-app brightness to every tier of this popup button.
+  /// Extracted from the `setBrightness` handler so
+  /// `CNAppearanceSettleReplay` can replay it verbatim after a rapid flip
+  /// storm (14-01 clip).
+  @available(iOS 13.0, *)
+  private func applyBrightness(_ isDark: Bool) {
+    CNAppearance.applyInstantly(forcing: [self.container]) {
+      self.container.overrideUserInterfaceStyle = isDark ? .dark : .light
+      // Full instance replacement. Every lesser lever was measured
+      // insufficient on device for menu-bearing buttons: config
+      // re-apply + re-add (01:29 clip) and config teardown (02:31
+      // clip) both left the "…"/"+" holding the old glass for
+      // seconds, recovering exactly on scroll — the menu's
+      // context-menu interaction pins the button's composited
+      // material below anything a configuration or hierarchy nudge
+      // reaches. A NEW UIButton gets new layers AND a new
+      // interaction — the same cure the SwiftUI tier got from its
+      // `.id` epoch (Send pill flips on-frame since).
+      self.replaceButtonForThemeFlip()
+    }
+  }
+
   private func _cnSetInteractiveRecursive(_ view: UIView?, _ interactive: Bool) {
     guard let view = view else { return }
     view.isUserInteractionEnabled = interactive
@@ -332,6 +346,67 @@ class CupertinoPopupMenuButtonPlatformView: NSObject, FlutterPlatformView {
       container.clipsToBounds = false
       button.clipsToBounds = false
     }
+  }
+
+  /// Re-applies the icon across configuration state changes (highlight/menu).
+  /// Extracted so `replaceButtonForThemeFlip` attaches the identical handler
+  /// to the fresh button.
+  @available(iOS 15.0, *)
+  private func attachConfigurationUpdateHandler(_ button: UIButton) {
+    button.configurationUpdateHandler = { [weak self] btn in
+      guard let self = self else { return }
+      var cfg = btn.configuration ?? .plain()
+      // Preserve existing title; just re-apply image
+      cfg.image = self.makeButtonIconImage()
+      cfg.preferredSymbolConfigurationForImage = self.makeButtonSymbolConfiguration()
+      btn.configuration = cfg
+    }
+  }
+
+  /// Swaps `self.button` for a fresh instance on a theme flip — see the
+  /// setBrightness call site for the device evidence. Everything the old
+  /// button carried is rebuilt from fields (style, icon content, symbol
+  /// config, update handler, menu) or copied over (tint, interaction, clip,
+  /// shadow); the title is captured from the old configuration. The fresh
+  /// button is fully configured BEFORE it enters the hierarchy, inside the
+  /// caller's `applyInstantly`, so no intermediate frame can render (the
+  /// one-frame light flash of RN-screens#4163 came from deferred recreation).
+  private func replaceButtonForThemeFlip() {
+    guard #available(iOS 15.0, *) else { return }
+    let old = self.button
+    let newButton = UIButton(type: .system)
+    newButton.translatesAutoresizingMaskIntoConstraints = false
+    newButton.tintColor = old.tintColor
+    newButton.isUserInteractionEnabled = old.isUserInteractionEnabled
+    newButton.clipsToBounds = old.clipsToBounds
+    newButton.layer.shadowOpacity = old.layer.shadowOpacity
+    let title = old.configuration?.title
+    self.button = newButton
+    applyButtonStyle(buttonStyle: self.currentButtonStyle, round: self.isRoundButton)
+    setButtonContent(title: title, image: makeButtonIconImage(), iconOnly: title == nil)
+    if var cfg = newButton.configuration {
+      if let symCfg = makeButtonSymbolConfiguration() {
+        cfg.preferredSymbolConfigurationForImage = symCfg
+      } else if self.btnIconColor == nil, self.btnIconMode == nil, let tint = newButton.tintColor {
+        cfg.preferredSymbolConfigurationForImage = UIImage.SymbolConfiguration(hierarchicalColor: tint)
+      }
+      newButton.configuration = cfg
+    }
+    attachConfigurationUpdateHandler(newButton)
+    rebuildMenu(defaultSizes: self.itemSizes, defaultColors: self.itemColors)
+    if #available(iOS 14.0, *) {
+      newButton.showsMenuAsPrimaryAction = true
+    } else {
+      newButton.addTarget(self, action: #selector(onButtonPressedLegacy(_:)), for: .touchUpInside)
+    }
+    old.removeFromSuperview()
+    container.addSubview(newButton)
+    NSLayoutConstraint.activate([
+      newButton.leadingAnchor.constraint(equalTo: container.leadingAnchor),
+      newButton.trailingAnchor.constraint(equalTo: container.trailingAnchor),
+      newButton.topAnchor.constraint(equalTo: container.topAnchor),
+      newButton.bottomAnchor.constraint(equalTo: container.bottomAnchor),
+    ])
   }
 
   private func rebuildMenu(defaultSizes: [Any]? = nil, defaultColors: [Any]? = nil) {

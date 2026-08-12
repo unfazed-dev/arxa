@@ -22,6 +22,14 @@ class ShowcaseSnackbarSmokeRowWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final notifications = appBoxKitLocator<AppBoxKitNotificationService>();
+    // Resolve per theme: the fixed light ramp reads dim-to-invisible on the
+    // dark glass after a theme flip (the colour crosses to the native tier
+    // as the glyph/tint).
+    final dark = Theme.of(context).brightness == Brightness.dark;
+    final muted = dark ? AppBoxKitDarkColors.ink3 : AppBoxKitColors.muted;
+    final good = dark ? AppBoxKitDarkColors.good : AppBoxKitColors.good;
+    final danger = dark ? AppBoxKitDarkColors.danger : AppBoxKitColors.danger;
+    final warn = dark ? AppBoxKitDarkColors.warn : AppBoxKitColors.warn;
     Widget snackbarButton(
       AppBoxKitGlyph glyph,
       Color color,
@@ -53,16 +61,16 @@ class ShowcaseSnackbarSmokeRowWidget extends StatelessWidget {
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            snackbarButton(AppBoxKitGlyphs.info, AppBoxKitColors.muted,
+            snackbarButton(AppBoxKitGlyphs.info, muted,
                 AppBoxKitNotificationKind.info, 'Info'),
             appBoxKitHorizontalSpaceSmall,
-            snackbarButton(AppBoxKitGlyphs.success, AppBoxKitColors.good,
+            snackbarButton(AppBoxKitGlyphs.success, good,
                 AppBoxKitNotificationKind.success, 'Success'),
             appBoxKitHorizontalSpaceSmall,
-            snackbarButton(AppBoxKitGlyphs.error, AppBoxKitColors.danger,
+            snackbarButton(AppBoxKitGlyphs.error, danger,
                 AppBoxKitNotificationKind.error, 'Error'),
             appBoxKitHorizontalSpaceSmall,
-            snackbarButton(AppBoxKitGlyphs.warning, AppBoxKitColors.warn,
+            snackbarButton(AppBoxKitGlyphs.warning, warn,
                 AppBoxKitNotificationKind.warning, 'Warning',
                 position: AppBoxKitToastPosition.center),
           ],
@@ -71,15 +79,15 @@ class ShowcaseSnackbarSmokeRowWidget extends StatelessWidget {
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            snackbarButton(AppBoxKitGlyphs.compose, AppBoxKitColors.muted,
+            snackbarButton(AppBoxKitGlyphs.compose, muted,
                 AppBoxKitNotificationKind.success, 'Changes saved',
                 title: 'Notes'),
             appBoxKitHorizontalSpaceSmall,
-            snackbarButton(AppBoxKitGlyphs.error, AppBoxKitColors.danger,
+            snackbarButton(AppBoxKitGlyphs.error, danger,
                 AppBoxKitNotificationKind.error, 'Note deleted',
                 actionLabel: 'Undo'),
             appBoxKitHorizontalSpaceSmall,
-            snackbarButton(AppBoxKitGlyphs.info, AppBoxKitColors.muted,
+            snackbarButton(AppBoxKitGlyphs.info, muted,
                 AppBoxKitNotificationKind.info, 'Bottom',
                 position: AppBoxKitToastPosition.bottom),
           ],

@@ -6,6 +6,8 @@ class CupertinoSearchBarPlatformView: NSObject, FlutterPlatformView {
     private let channel: FlutterMethodChannel
     private let hostingController: UIViewController
     private let container: UIView
+    private let appearanceEpoch: CNAppearanceEpoch
+    private let settleReplay = CNAppearanceSettleReplay()
 
     init(frame: CGRect, viewId: Int64, args: Any?, messenger: FlutterBinaryMessenger) {
         self.channel = FlutterMethodChannel(
@@ -16,6 +18,9 @@ class CupertinoSearchBarPlatformView: NSObject, FlutterPlatformView {
 
         // Capture channel for use in closures before super.init()
         let channelRef = self.channel
+        // Local, then assigned — `self` is off-limits before super.init().
+        let appearanceEpoch = CNAppearanceEpoch()
+        self.appearanceEpoch = appearanceEpoch
 
         // Parse arguments
         var placeholder = "Search"
@@ -79,7 +84,8 @@ class CupertinoSearchBarPlatformView: NSObject, FlutterPlatformView {
             },
             onCancelTapped: {
                 channelRef.invokeMethod("cancelTapped", arguments: nil)
-            }
+            },
+            appearanceEpoch: appearanceEpoch
         )
 
         let hosting = UIHostingController(rootView: searchBarView)
@@ -133,14 +139,16 @@ class CupertinoSearchBarPlatformView: NSObject, FlutterPlatformView {
             case "setBrightness":
                 if let args = call.arguments as? [String: Any],
                    let isDark = (args["isDark"] as? NSNumber)?.boolValue {
+                    CNAppearance.trace("CNSearchBar", "setBrightness isDark=\(isDark)")
                     if #available(iOS 13.0, *) {
-                        self.container.overrideUserInterfaceStyle = isDark ? .dark : .light
-                        // Also the hosting controller — it is attached with
-                        // `addSubview(hostingController.view)` and no `addChild`,
-                        // so it is outside the view-controller hierarchy. See
-                        // `GlassButtonGroupView.applyBrightness`.
-                        self.hostingController.overrideUserInterfaceStyle = isDark ? .dark : .light
+                        self.applyBrightness(isDark)
+                        // After a rapid flip storm, replay the final state
+                        // once so a mid-storm-coalesced render can't strand
+                        // this view on the previous theme (14-01 clip). See
+                        // CNAppearanceSettleReplay.
+                        self.settleReplay.poke { [weak self] in self?.applyBrightness(isDark) }
                     }
+                    CNAppearance.trace("CNSearchBar", "setBrightness applied")
                     result(nil)
                 } else {
                     result(FlutterError(code: "bad_args", message: "Missing isDark", details: nil))
@@ -165,6 +173,25 @@ class CupertinoSearchBarPlatformView: NSObject, FlutterPlatformView {
 
     func view() -> UIView {
         return container
+    }
+
+    /// Push the in-app brightness to every tier of this search bar.
+    /// Extracted from the `setBrightness` handler so
+    /// `CNAppearanceSettleReplay` can replay it verbatim after a rapid flip
+    /// storm (14-01 clip).
+    @available(iOS 13.0, *)
+    private func applyBrightness(_ isDark: Bool) {
+        CNAppearance.applyInstantly(forcing: [self.container, self.hostingController.view]) {
+            self.container.overrideUserInterfaceStyle = isDark ? .dark : .light
+            // Also the hosting controller — it is attached with
+            // `addSubview(hostingController.view)` and no `addChild`,
+            // so it is outside the view-controller hierarchy. See
+            // `GlassButtonGroupView.applyBrightness`.
+            self.hostingController.overrideUserInterfaceStyle = isDark ? .dark : .light
+            // Recreate the glass capsule via its `.id` epoch —
+            // the trait pins alone leave the material stale.
+            self.appearanceEpoch.epoch &+= 1
+        }
     }
 
     private func _cnSetInteractiveRecursive(_ view: UIView?, _ interactive: Bool) {
@@ -213,6 +240,10 @@ struct CNSearchBarSwiftUI: View {
     let onSubmitted: (String) -> Void
     let onExpandStateChanged: (Bool) -> Void
     let onCancelTapped: () -> Void
+    // Bumped per theme flip; hung on the glass background via `.id` so the
+    // stale material is recreated WITHOUT re-rooting (which would wipe
+    // @State searchText/isExpanded/focus).
+    @ObservedObject var appearanceEpoch: CNAppearanceEpoch
 
     @State private var isExpanded: Bool
     @State private var searchText: String = ""
@@ -237,7 +268,8 @@ struct CNSearchBarSwiftUI: View {
         onTextChanged: @escaping (String) -> Void,
         onSubmitted: @escaping (String) -> Void,
         onExpandStateChanged: @escaping (Bool) -> Void,
-        onCancelTapped: @escaping () -> Void
+        onCancelTapped: @escaping () -> Void,
+        appearanceEpoch: CNAppearanceEpoch
     ) {
         self.placeholder = placeholder
         self.expandable = expandable
@@ -257,6 +289,7 @@ struct CNSearchBarSwiftUI: View {
         self.onSubmitted = onSubmitted
         self.onExpandStateChanged = onExpandStateChanged
         self.onCancelTapped = onCancelTapped
+        self.appearanceEpoch = appearanceEpoch
         self._isExpanded = State(initialValue: initiallyExpanded || !expandable)
     }
 
@@ -342,9 +375,12 @@ struct CNSearchBarSwiftUI: View {
     @ViewBuilder
     private var glassBackground: some View {
         if #available(iOS 26.0, *) {
-            // Use native glass effect on iOS 26+
+            // Use native glass effect on iOS 26+. The `.id` epoch destroys +
+            // recreates ONLY this background subtree on a theme flip — trait
+            // mutation alone leaves the glass material stale (expo#43743).
             Color.clear
                 .glassEffect(.regular, in: .capsule)
+                .id(appearanceEpoch.epoch)
         } else {
             // Fallback to blur effect
             if let bg = backgroundColor {

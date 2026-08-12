@@ -1,5 +1,6 @@
 import UIKit
 import os
+import Combine
 
 /// Appearance changes that must land on the frame they are commanded.
 ///
@@ -85,16 +86,10 @@ enum CNAppearance {
 
   // MARK: - Diagnostics
 
-  /// `true` when `CN_TRACE_APPEARANCE=1` is set in the environment.
-  ///
-  /// Off by default and read once. The remaining unexplained defect is that a
-  /// view can start its appearance change anywhere from 0ms to 2117ms after
-  /// being told, non-deterministically, while Dart demonstrably sends on frame
-  /// 0 and the app renders at 59fps. Nothing in a widget test can observe when
-  /// a `UIView` actually repaints, so closing it needs timestamps from the
-  /// device itself. Run the app with that variable set (Xcode scheme →
-  /// Run → Arguments → Environment Variables) and filter the console on
-  /// `CNAppearance`.
+  /// os_log gate: `true` when `CN_TRACE_APPEARANCE=1` is set in the
+  /// environment (Xcode scheme → Run → Arguments → Environment Variables).
+  /// For a plain `flutter run` the print below already covers it — os_log
+  /// `.info` never reaches stdout.
   static let tracing: Bool =
     ProcessInfo.processInfo.environment["CN_TRACE_APPEARANCE"] == "1"
 
@@ -107,10 +102,65 @@ enum CNAppearance {
   /// `view` should identify the instance (view type + id), not just the class,
   /// or sibling views collapse into one line and the spread — the thing being
   /// measured — is exactly what is lost.
+  ///
+  /// DEBUG builds always `print` (a handful of lines per theme flip, readable
+  /// in any `flutter run` console — the remaining defect is a 0–2117ms
+  /// non-deterministic onset, still reproducing in the 08-11 22:51 clip with
+  /// recovery exactly on scroll). Set `CN_TRACE_APPEARANCE=0` to silence.
   static func trace(_ view: String, _ event: String) {
+    #if DEBUG
+    if ProcessInfo.processInfo.environment["CN_TRACE_APPEARANCE"] != "0" {
+      print("CNAppearance \(view) \(event) t=\(Date().timeIntervalSince1970 * 1000.0)")
+    }
+    #endif
     guard tracing else { return }
-    let ms = Date().timeIntervalSince1970 * 1000.0
     os_log("%{public}@ %{public}@ t=%{public}.1f",
-           log: log, type: .info, view, event, ms)
+           log: log, type: .info, view, event,
+           Date().timeIntervalSince1970 * 1000.0)
+  }
+}
+
+/// A bump counter SwiftUI glass views hang `.id(epoch)` on their glass
+/// subtree, so a theme flip DESTROYS and recreates the backing effect view
+/// instead of diffing an unchanged `.glassEffect` modifier (which reuses the
+/// stale material — expo#43743; cured the split-button pill via
+/// `GlassButtonGroupViewModel.appearanceEpoch`).
+///
+/// Used where a full rootView re-root would wipe user state (`@State` search
+/// text, focus): only the `.id`'d glass subtree is recreated, siblings diff
+/// clean. Bumped from `setBrightness` inside `applyInstantly`.
+final class CNAppearanceEpoch: ObservableObject {
+  @Published var epoch: Int = 0
+}
+
+/// Generation-guarded settle replay for theme flips.
+///
+/// Rapid successive flips (08-12 14-01 clip) strand individual views on a
+/// STALE theme for seconds: the per-flip teardown/re-attach/re-root lands
+/// mid-storm, the render server coalesces, and a view that was mid-mutation
+/// when the next flip arrived completes with the previous flip's appearance,
+/// then waits for an incidental re-composite to self-heal. Replaying the
+/// same apply once the storm has settled — guarded so only the LATEST
+/// generation's replay runs — makes the end state deterministic without
+/// touching the single-flip fast path. kimitail: the 0.35s delay is a
+/// heuristic, not a proven minimum; it must outlast a flip storm and beat a
+/// finger moving to a popup trigger (a group re-root mid-presentation is
+/// untested).
+final class CNAppearanceSettleReplay {
+  private var generation: Int = 0
+  private let delay: TimeInterval
+
+  init(delay: TimeInterval = 0.35) { self.delay = delay }
+
+  /// Schedules [replay] after the settle delay. Any later `poke` supersedes
+  /// it — intermediate flips never replay, so the closure may capture the
+  /// flip's `isDark`: the only closure that ever runs carries the final value.
+  func poke(_ replay: @escaping () -> Void) {
+    generation &+= 1
+    let g = generation
+    DispatchQueue.main.asyncAfter(deadline: .now() + delay) { [weak self] in
+      guard let self, self.generation == g else { return }
+      replay()
+    }
   }
 }

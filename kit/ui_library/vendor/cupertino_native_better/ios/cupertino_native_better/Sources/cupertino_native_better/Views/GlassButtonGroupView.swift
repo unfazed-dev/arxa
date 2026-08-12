@@ -70,6 +70,14 @@ class GlassButtonGroupViewModel: ObservableObject {
   /// new trait — without it the unioned glass freezes on theme change. See
   /// `applyBrightness` for the full rationale.
   @Published var isDark: Bool = false
+  /// Bumped on every brightness push and fed to `.id(...)` on the SwiftUI root,
+  /// so the glass subtree is DESTROYED and recreated rather than diffed.
+  /// Re-evaluating `body` with unchanged `.glassEffect` modifier values reuses
+  /// the backing effect views: on device (01:29 clip) the Send pill's unioned
+  /// glass still held the old appearance for seconds with `isDark` + a
+  /// rootView re-root alone, recovering only on scroll. Same class of fix as
+  /// the UIButton tier's configuration teardown.
+  @Published var appearanceEpoch: Int = 0
 
   func updateButton(at index: Int, with buttonData: GlassButtonData) {
     guard index >= 0 && index < buttons.count else { return }
@@ -115,22 +123,13 @@ struct GlassButtonGroupSwiftUI: View {
       namespace: namespace,
       config: button.config,
       badgeCount: nil,
-      // NOTE (non-popup): `applyOwnGlass` stays `true` — each button
-      // applies its own `.glassEffect()` so the Button's gesture
-      // recognizer wraps the glass (taps work). The single-outer-glass
-      // approach (applyOwnGlass: false + group-level glass) produced
-      // the right pill visual but iOS 26's `.glassEffect` modifier
-      // intercepts touches at the UIKit layer below where SwiftUI's
-      // `.allowsHitTesting(false)` can reach, killing every tap.
-      //
-      // POPUP segments are the exception: their glass used to be applied
-      // INSIDE the `Menu`'s label (one hierarchy level deeper than a plain
-      // Button's glass), so `glassEffectUnion` could not merge/track the
-      // popup half with its sibling action half — the split-button halves
-      // rendered as separate pills and drifted on update. Fix: skip the
-      // label-level glass and apply the identical glass chain ON the Menu
-      // itself (see below), so both segments register their glass at the
-      // same HStack level inside the GlassEffectContainer.
+      // Popup segments: the glass lives on the Menu (hoisted — label-level
+      // glass broke the `glassEffectUnion` merge with the split button's
+      // action half), so the inner Button must not also apply
+      // `.glassEffect()`; the Menu owns the tap, so the popup Button's
+      // action is empty. NON-popups apply their own `.glassEffect()` so the
+      // gesture recognizer wraps the glass (taps work) — group-level glass
+      // let `.glassEffect` intercept touches at the UIKit layer.
       applyOwnGlass: !button.isPopup
     )
     if button.isPopup, let labels = button.menuLabels, !labels.isEmpty, let onSelected = button.onMenuSelected {
@@ -154,10 +153,22 @@ struct GlassButtonGroupSwiftUI: View {
       } label: {
         baseButton
       }
+      // Borderless: WE supply the glass below — the default menu chrome
+      // would double-render under it.
       .menuStyle(.borderlessButton)
-      // Same glass chain a plain segment applies internally
-      // (GlassButtonSwiftUI.applyConditionalGlassEffect), but hoisted onto
-      // the Menu so the union sees popup + action glass as siblings.
+      // Custom glass hoisted onto the Menu itself (label-level glass broke
+      // the `glassEffectUnion` merge with the split button's action half).
+      //
+      // KNOWN ISSUE, accepted by the user (doc §21–22): dismissing the
+      // menu flashes the trigger with the fallback material for ~0.5–1s —
+      // Apple bug (forums 826863, expo#43953/#44126, unfixed through
+      // 26.4): the morph reparents the custom glass into the presentation
+      // hierarchy and re-composites its backdrop sampling late on dismiss.
+      // The system-style cure (`.buttonStyle(.glass)` on the Menu, rounds
+      // 10–12) did kill the flash but its chrome sizes itself from the
+      // label with undocumented padding — non-native geometry, reverted on
+      // the user's call. The custom chain wins on look (exact 44/56pt,
+      // union merge) until Apple fixes the morph.
       .applyConditionalGlassEffect(
         apply: true,
         glass: button.glassEffectInteractive ? Glass.regular.interactive() : Glass.regular,
@@ -201,6 +212,9 @@ struct GlassButtonGroupSwiftUI: View {
     // freezes `platformBrightness`, breaking ThemeMode.system app-wide.
     // `.environment` is strictly subtree-scoped.
     .environment(\.colorScheme, viewModel.isDark ? .dark : .light)
+    // Force-recreate, not diff, on every brightness push — see
+    // `appearanceEpoch` on the view model for the device evidence.
+    .id(viewModel.appearanceEpoch)
   }
 }
 
@@ -345,6 +359,7 @@ class GlassButtonGroupPlatformView: NSObject, FlutterPlatformView {
   private var badgeViews: [UIKitBadgeView] = []
   private var axis: Axis = .horizontal
   private var spacing: CGFloat = 8.0
+  private let settleReplay = CNAppearanceSettleReplay()
   
   init(frame: CGRect, viewId: Int64, args: Any?, messenger: FlutterBinaryMessenger) {
     // Initialize container with frame provided by Flutter
@@ -601,6 +616,10 @@ class GlassButtonGroupPlatformView: NSObject, FlutterPlatformView {
         if let args = call.arguments as? [String: Any],
            let isDark = (args["isDark"] as? NSNumber)?.boolValue {
           self.applyBrightness(isDark)
+          // After a rapid flip storm, replay the final state once so a
+          // mid-storm-coalesced render can't strand this view on the
+          // previous theme (14-01 clip). See CNAppearanceSettleReplay.
+          self.settleReplay.poke { [weak self] in self?.applyBrightness(isDark) }
           result(nil)
         } else {
           result(FlutterError(code: "bad_args", message: "Missing isDark", details: nil))
@@ -640,17 +659,25 @@ class GlassButtonGroupPlatformView: NSObject, FlutterPlatformView {
   ///     and re-apply the glass in the new trait the same frame.
   private func applyBrightness(_ isDark: Bool) {
     CNAppearance.trace("CNGlassButtonGroup", "setBrightness isDark=\(isDark)")
-    // Instant, not animated. `viewModel.isDark` is `@Published`, so this
-    // invalidates the SwiftUI tree and the `.glassEffect` chain is applied
-    // afresh — and establishing glass materialises with an animation by
-    // Apple's design (WWDC25 #284). Correct when glass first appears, wrong
-    // for a theme flip, where the Flutter half of the same UI changes in one
-    // frame. See `Utils/CNAppearance.swift`.
     CNAppearance.applyInstantly(
       forcing: [self.container, self.hostingController.view]
     ) {
       self.hostingController.overrideUserInterfaceStyle = isDark ? .dark : .light
       self.viewModel.isDark = isDark
+      // Bump the `.id` epoch: re-evaluation alone reuses the backing glass
+      // effect views (modifier values are unchanged), and the re-root below
+      // alone did NOT cure the Send pill on device (01:29 clip) — SwiftUI
+      // diffs the identical tree. The epoch forces destruction + recreation.
+      self.viewModel.appearanceEpoch &+= 1
+      // Re-root, not just invalidate: on device a hybrid platform view's glass
+      // material does not re-sample when only traits/state mutate existing
+      // layers — it waits for an incidental re-composite (08-11/12 clips:
+      // the Send pill held the old appearance 0.5–2.2s per flip while the
+      // glass CARD around it, which re-roots its rootView, flipped on the
+      // frame). A fresh rootView gives SwiftUI a new render tree, and new
+      // layers composite immediately. Same lever as
+      // `LiquidGlassContainerView.updateConfig`.
+      self.hostingController.rootView = GlassButtonGroupSwiftUI(viewModel: self.viewModel)
     }
     CNAppearance.trace("CNGlassButtonGroup", "setBrightness applied")
   }

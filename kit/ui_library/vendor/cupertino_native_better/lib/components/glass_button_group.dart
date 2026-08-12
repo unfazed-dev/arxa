@@ -6,6 +6,7 @@ import '../utils/version_detector.dart';
 import '../utils/icon_renderer.dart';
 import '../utils/modal_hide_mixin.dart';
 import '../utils/theme_helper.dart';
+import '../utils/cn_trace.dart';
 import '../channel/params.dart';
 import '../style/button_data.dart';
 import '../style/image_placement.dart';
@@ -191,7 +192,7 @@ class _CNGlassButtonGroupState extends State<CNGlassButtonGroup>
     if (ch == null) return;
     if (_lastIsDark == isDark) return;
     _lastIsDark = isDark;
-    ch.invokeMethod('setBrightness', {'isDark': isDark}).catchError((_) {});
+    cnTracedSetBrightness(ch, 'CNGlassButtonGroup', isDark).catchError((_) {});
   }
 
   @override
@@ -1002,7 +1003,8 @@ class _ButtonSnapshot {
   /// of snapshots compares by identity, and `widget.buttons` is a fresh list
   /// on every parent rebuild, so keying on the list itself would re-resolve
   /// forever. Joining into a string gives real value equality.
-  String get digest => '$label#$iconName#$iconSize#$iconColor'
+  String get digest =>
+      '$label#$iconName#$iconSize#$iconColor'
       '#$imageAssetPath#$imageAssetDataLength#$imageAssetSize'
       '#$imageAssetColor#$customIconHash#$style#$enabled#$interaction'
       '#$tint#$badgeCount#$menuLabelsKey';

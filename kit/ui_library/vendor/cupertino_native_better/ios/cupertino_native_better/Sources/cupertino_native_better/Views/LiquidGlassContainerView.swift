@@ -7,6 +7,7 @@ class LiquidGlassContainerPlatformView: NSObject, FlutterPlatformView {
   private let container: UIView
   private var hostingController: UIHostingController<LiquidGlassContainerSwiftUI>
   private let channel: FlutterMethodChannel
+  private let settleReplay = CNAppearanceSettleReplay()
 
   // Stored shape config so `applyTransitionContainment` can clip the
   // container's layer to the same rounded shape the SwiftUI glass uses.
@@ -184,6 +185,7 @@ class LiquidGlassContainerPlatformView: NSObject, FlutterPlatformView {
     if let isDarkBool = dict["isDark"] as? Bool {
       isDark = isDarkBool
     }
+    CNAppearance.trace("LiquidGlassContainer", "updateConfig isDark=\(isDark)")
     
     // Update the SwiftUI view
     let newGlassView = LiquidGlassContainerSwiftUI(
@@ -194,8 +196,20 @@ class LiquidGlassContainerPlatformView: NSObject, FlutterPlatformView {
       interactive: interactive
     )
 
-    hostingController.rootView = newGlassView
-    hostingController.overrideUserInterfaceStyle = isDark ? .dark : .light
+    // Instant apply — the same wrapper the button/icon/popup/group brightness
+    // handlers use. Re-rooting the SwiftUI glass re-establishes the effect,
+    // which materialises with an animation by Apple's design, and a
+    // hybrid-composition view can otherwise wait on an incidental
+    // re-composite — on device (08-11 21:25 clip) the glass cards held the
+    // old appearance for seconds after a flip.
+    CNAppearance.applyInstantly(forcing: [container, hostingController.view]) {
+      hostingController.rootView = newGlassView
+      hostingController.overrideUserInterfaceStyle = isDark ? .dark : .light
+    }
+    // After a rapid flip storm, replay the final config once so a
+    // mid-storm-coalesced render can't strand this view on the previous
+    // theme (14-01 clip). See CNAppearanceSettleReplay.
+    settleReplay.poke { [weak self] in self?.updateConfig(args: args) }
     // Keep stored config in sync for `applyTransitionContainment`.
     self.configuredShape = shape
     self.configuredCornerRadius = cornerRadius

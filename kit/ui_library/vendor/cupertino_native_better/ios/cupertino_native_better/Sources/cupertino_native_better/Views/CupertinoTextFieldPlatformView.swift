@@ -16,6 +16,8 @@ class CupertinoTextFieldPlatformView: NSObject, FlutterPlatformView {
   private let container: UIView
   private let model: TextModel
   private let focusBinding: ExternalFocusBinding
+  private let appearanceEpoch: CNAppearanceEpoch
+  private let settleReplay = CNAppearanceSettleReplay()
 
   init(frame: CGRect, viewId: Int64, args: Any?, messenger: FlutterBinaryMessenger) {
     self.channel = FlutterMethodChannel(
@@ -27,6 +29,8 @@ class CupertinoTextFieldPlatformView: NSObject, FlutterPlatformView {
     // safe to capture in the closures below via the local `focusBindingRef`.
     let focusBinding = ExternalFocusBinding()
     self.focusBinding = focusBinding
+    let appearanceEpoch = CNAppearanceEpoch()
+    self.appearanceEpoch = appearanceEpoch
 
     // Parse args (keys mirror CNSearchBar's contract + text-input additions).
     var text = ""
@@ -75,7 +79,7 @@ class CupertinoTextFieldPlatformView: NSObject, FlutterPlatformView {
     )
     self.model = model
 
-    let textFieldView = CNTextFieldSwiftUI(model: model, focusBinding: focusBinding)
+    let textFieldView = CNTextFieldSwiftUI(model: model, focusBinding: focusBinding, appearanceEpoch: appearanceEpoch)
     // Type-erase to AnyView so the stored `UIHostingController<AnyView>` property
     // holds a concrete content type without exposing it on the class surface.
     let hosting = UIHostingController(rootView: AnyView(textFieldView))
@@ -135,14 +139,15 @@ class CupertinoTextFieldPlatformView: NSObject, FlutterPlatformView {
       case "setBrightness":
         if let args = call.arguments as? [String: Any],
            let isDark = (args["isDark"] as? NSNumber)?.boolValue {
+          CNAppearance.trace("CNTextField", "setBrightness isDark=\(isDark)")
           if #available(iOS 13.0, *) {
-            self.container.overrideUserInterfaceStyle = isDark ? .dark : .light
-            // Also the hosting controller — attached with
-            // `addSubview(hostingController.view)` and no `addChild`, so it is
-            // outside the view-controller hierarchy. See
-            // `GlassButtonGroupView.applyBrightness`.
-            self.hostingController.overrideUserInterfaceStyle = isDark ? .dark : .light
+            self.applyBrightness(isDark)
+            // After a rapid flip storm, replay the final state once so a
+            // mid-storm-coalesced render can't strand this view on the
+            // previous theme (14-01 clip). See CNAppearanceSettleReplay.
+            self.settleReplay.poke { [weak self] in self?.applyBrightness(isDark) }
           }
+          CNAppearance.trace("CNTextField", "setBrightness applied")
           result(nil)
         } else {
           result(FlutterError(code: "bad_args", message: "Missing isDark", details: nil))
@@ -162,6 +167,24 @@ class CupertinoTextFieldPlatformView: NSObject, FlutterPlatformView {
 
   func view() -> UIView {
     return container
+  }
+
+  /// Push the in-app brightness to every tier of this text field. Extracted
+  /// from the `setBrightness` handler so `CNAppearanceSettleReplay` can
+  /// replay it verbatim after a rapid flip storm (14-01 clip).
+  @available(iOS 13.0, *)
+  private func applyBrightness(_ isDark: Bool) {
+    CNAppearance.applyInstantly(forcing: [self.container, self.hostingController.view]) {
+      self.container.overrideUserInterfaceStyle = isDark ? .dark : .light
+      // Also the hosting controller — attached with
+      // `addSubview(hostingController.view)` and no `addChild`, so it is
+      // outside the view-controller hierarchy. See
+      // `GlassButtonGroupView.applyBrightness`.
+      self.hostingController.overrideUserInterfaceStyle = isDark ? .dark : .light
+      // Recreate the glass capsule via its `.id` epoch — the trait
+      // pins alone leave the material stale.
+      self.appearanceEpoch.epoch &+= 1
+    }
   }
 
   private func _cnSetInteractiveRecursive(_ view: UIView?, _ interactive: Bool) {
@@ -191,6 +214,9 @@ final class ExternalFocusBinding: ObservableObject {
 struct CNTextFieldSwiftUI: View {
   @ObservedObject var model: TextModel
   @ObservedObject var focusBinding: ExternalFocusBinding
+  // Bumped per theme flip; hung on the glass background via `.id` (see
+  // CNSearchBarSwiftUI for why not a re-root).
+  @ObservedObject var appearanceEpoch: CNAppearanceEpoch
   @FocusState private var isFocused: Bool
 
   var body: some View {
@@ -260,7 +286,10 @@ struct CNTextFieldSwiftUI: View {
   @ViewBuilder
   private var glassBackground: some View {
     if #available(iOS 26.0, *) {
+      // The `.id` epoch destroys + recreates ONLY this background subtree on
+      // a theme flip — trait mutation alone leaves the material stale.
       Color.clear.glassEffect(.regular, in: .capsule)
+        .id(appearanceEpoch.epoch)
     } else {
       Color(.systemGray6)
     }

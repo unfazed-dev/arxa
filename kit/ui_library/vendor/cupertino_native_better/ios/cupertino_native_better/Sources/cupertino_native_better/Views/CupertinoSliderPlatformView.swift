@@ -8,6 +8,7 @@ class CupertinoSliderPlatformView: NSObject, FlutterPlatformView {
   private var minValue: Float
   private var maxValue: Float
   private var step: Double = 0 // 0 = no stepping
+  private let settleReplay = CNAppearanceSettleReplay()
 
   init(frame: CGRect, viewId: Int64, args: Any?, messenger: FlutterBinaryMessenger) {
     self.channel = FlutterMethodChannel(name: "CupertinoNativeSlider_\(viewId)", binaryMessenger: messenger)
@@ -108,8 +109,13 @@ class CupertinoSliderPlatformView: NSObject, FlutterPlatformView {
         } else { result(FlutterError(code: "bad_args", message: "Missing style", details: nil)) }
       case "setBrightness":
         if let args = call.arguments as? [String: Any], let isDark = (args["isDark"] as? NSNumber)?.boolValue {
+          CNAppearance.trace("CNSlider", "setBrightness isDark=\(isDark)")
           if #available(iOS 13.0, *) {
-            self.container.overrideUserInterfaceStyle = isDark ? .dark : .light
+            self.applyBrightness(isDark)
+            // After a rapid flip storm, replay the final state once so a
+            // mid-storm-coalesced render can't strand this view on the
+            // previous theme (14-01 clip). See CNAppearanceSettleReplay.
+            self.settleReplay.poke { [weak self] in self?.applyBrightness(isDark) }
           }
           result(nil)
         } else { result(FlutterError(code: "bad_args", message: "Missing isDark", details: nil)) }
@@ -133,6 +139,14 @@ class CupertinoSliderPlatformView: NSObject, FlutterPlatformView {
   }
 
   func view() -> UIView { container }
+
+  /// Push the in-app brightness to this slider's container. Extracted from
+  /// the `setBrightness` handler so `CNAppearanceSettleReplay` can replay it
+  /// verbatim after a rapid flip storm (14-01 clip).
+  @available(iOS 13.0, *)
+  private func applyBrightness(_ isDark: Bool) {
+    self.container.overrideUserInterfaceStyle = isDark ? .dark : .light
+  }
 
   @objc private func onSliderChanged(_ sender: UISlider) {
     var value = Double(sender.value)

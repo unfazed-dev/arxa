@@ -19,6 +19,7 @@ import '../style/sf_symbol.dart';
 import '../utils/icon_renderer.dart';
 import '../utils/modal_hide_mixin.dart';
 import '../utils/theme_helper.dart';
+import '../utils/cn_trace.dart';
 import '../utils/version_detector.dart';
 import 'async_resolution_state.dart';
 import 'icon.dart';
@@ -1118,7 +1119,7 @@ class _CNButtonState extends State<CNButton>
     // Capture context-derived values before any awaits
     final tint = resolveColorToArgb(_effectiveTint, context);
     if (_lastIsDark != isDark) {
-      await ch.invokeMethod('setBrightness', {'isDark': isDark});
+      await cnTracedSetBrightness(ch, 'CNButton', isDark);
       _lastIsDark = isDark;
     }
     // Also propagate theme-driven tint changes (e.g., accent color changes)
