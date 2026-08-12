@@ -183,8 +183,13 @@ class _KitNativeChromeGateState extends State<AppBoxKitNativeChromeGate>
     // clips nor slides with the routes, so it must leave the frame for the
     // transition, not merely drop its glass tint (which leaves a flat panel
     // floating over the slide — the leak this gate now also closes).
+    // Scoped, not global: only a transition in a navigator ABOVE this gate
+    // slides the gate itself. A push inside one tab's nested router must not
+    // dematerialize the ROOT tab bar in every tab (C2,
+    // docs/plans/glass-chrome-root-cause-fixes.md) — same baseline-scoping
+    // idea as the `_mountDepth` modal check on the line above.
     final hidden = CNTabBarRouteObserver.anyModalDepth.value > _mountDepth ||
-        CNTransitionObserver.activeTransitions.value > 0;
+        CNTransitionObserver.hasActiveTransitionAbove(context);
     if (hidden == _hidden) return;
     setState(() => _hidden = hidden);
     if (hidden) {

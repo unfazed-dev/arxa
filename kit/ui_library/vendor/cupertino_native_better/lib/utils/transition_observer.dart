@@ -35,9 +35,17 @@ import '../cupertino_native_platform_interface.dart';
 /// ```
 class CNTransitionObserver extends NavigatorObserver {
   /// Creates a [CNTransitionObserver] instance.
-  CNTransitionObserver();
+  CNTransitionObserver() {
+    _instances.add(this);
+  }
 
   int _transitionCount = 0;
+
+  /// Every constructed observer instance — one per navigator that registered
+  /// one (root + each nested router). [NavigatorObserver] has no dispose hook,
+  /// so defunct instances are pruned lazily in [hasActiveTransitionAbove]
+  /// once their count has drained and their navigator has detached.
+  static final Set<CNTransitionObserver> _instances = <CNTransitionObserver>{};
 
   /// Global count of route transitions in flight across ALL observer instances
   /// (root + nested navigators). This is the Dart-side signal a widget listens
@@ -51,8 +59,52 @@ class CNTransitionObserver extends NavigatorObserver {
   static final ValueNotifier<int> _activeTransitions = ValueNotifier<int>(0);
 
   /// Read-only: `> 0` while any route transition (push / pop / replace /
-  /// remove, or an interactive back-swipe gesture) is animating.
+  /// remove, or an interactive back-swipe gesture) is animating — in ANY
+  /// navigator, root or nested. Use as a change signal; for the actual
+  /// hide decision use [hasActiveTransitionAbove], which scopes the check
+  /// to the navigators that can move the asking widget.
   static ValueListenable<int> get activeTransitions => _activeTransitions;
+
+  /// True when a route transition is animating in a navigator that is an
+  /// ANCESTOR of [context] — i.e. one whose slide actually moves the asking
+  /// widget. A push inside one tab's nested router is NOT in the root tab
+  /// bar's scope (only that tab's content slides); a root-navigator push is
+  /// (the whole screen, tab bar included, slides). Mirrors the `_mountDepth`
+  /// baseline pattern `AppBoxKitNativeChromeGate` already uses for modal
+  /// depth: a scoped signal, never a raw global.
+  static bool hasActiveTransitionAbove(BuildContext context) {
+    if (_activeTransitions.value <= 0) return false;
+    // Lazy prune: drained instances whose navigator detached are defunct.
+    _instances
+        .removeWhere((o) => o._transitionCount <= 0 && o.navigator == null);
+    // The navigators enclosing [context], innermost to root.
+    final Set<NavigatorState> ancestors = <NavigatorState>{};
+    NavigatorState? nav = Navigator.maybeOf(context);
+    while (nav != null) {
+      ancestors.add(nav);
+      nav = Navigator.maybeOf(nav.context);
+    }
+    for (final CNTransitionObserver observer in _instances) {
+      if (observer._transitionCount <= 0) continue;
+      final NavigatorState? scope = observer.navigator;
+      // A transitioning observer detached from its navigator mid-flight can't
+      // prove its scope — hide conservatively until its watchdog drains it.
+      if (scope == null || ancestors.contains(scope)) return true;
+    }
+    return false;
+  }
+
+  /// Test hook: clears static transition state that would otherwise leak
+  /// across `testWidgets` zones (each test's FakeAsync discards the pending
+  /// end/watchdog timers, stranding the counters mid-transition).
+  @visibleForTesting
+  static void resetForTesting() {
+    _activeTransitions.value = 0;
+    for (final CNTransitionObserver observer in _instances) {
+      observer._transitionCount = 0;
+    }
+    _instances.clear();
+  }
 
   @override
   void didPush(Route<dynamic> route, Route<dynamic>? previousRoute) {
