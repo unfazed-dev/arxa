@@ -71,5 +71,29 @@
   "startupProceed": "Open the studio",
   "@startupProceed": {
     "description": "Label on the manual trigger that ends the startup ceremony."
+  },
+  "stageUnknown": "Unknown",
+  "@stageUnknown": {
+    "description": "Registry label for the unknown (404) ceremony shell."
+  },
+  "unknownPageTitle": "Appbox Studio — Not found",
+  "@unknownPageTitle": {
+    "description": "Document title on the unknown (404) ceremony."
+  },
+  "unknownCode": "404",
+  "@unknownCode": {
+    "description": "Status code line on the unknown notice."
+  },
+  "unknownMsg": "No route for this path.",
+  "@unknownMsg": {
+    "description": "Primary message on the unknown notice."
+  },
+  "unknownHint": "Nothing you had open was lost — this request alone missed.",
+  "@unknownHint": {
+    "description": "Reassurance line under the unknown notice message."
+  },
+  "unknownHome": "Back to the dashboard",
+  "@unknownHome": {
+    "description": "Label on the unknown notice's return-home link."
   }
 }

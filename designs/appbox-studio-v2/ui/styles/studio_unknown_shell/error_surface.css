@@ -1,0 +1,65 @@
+/* error_surface.css — rules owned by studio_unknown_shell, split from assets/css/error_surface.css by the ui/styles law */
+
+/* ---------- the full-page failure ---------- */
+/* A dead route gets a page, not a toast: there is no good panel left to
+   preserve, so there is nothing for a toast to sit politely beside. */
+.error-page {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 1.5rem;
+}
+
+.error-frame {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: .6rem;
+  text-align: center;
+}
+
+.error-page-notice { display: contents; }
+
+.error-page-code {
+  font-size: .78rem;
+  font-weight: 600;
+  letter-spacing: .08em;
+  color: var(--tx-2);
+}
+
+.error-page-msg {
+  font-size: 1.15rem;
+  font-weight: 600;
+  max-width: 34rem;
+}
+
+.error-page-hint {
+  font-size: .85rem;
+  color: var(--tx-2);
+  max-width: 34rem;
+}
+
+.error-page-home {
+  margin-top: .6rem;
+  font-size: .85rem;
+  font-weight: 500;
+}
+
+/* ---------- factor variants ---------- */
+/* Expanded keeps the v1 34rem measure; medium narrows it so the hint wraps
+   instead of stretching thin; compact goes full-bleed and turns the home
+   link into a thumb-sized block target. */
+.error-page--medium .error-page-msg,
+.error-page--medium .error-page-hint { max-width: 26rem; }
+
+.error-page--compact { padding: 1.5rem 1rem; }
+.error-page--compact .error-frame { width: 100%; }
+.error-page--compact .error-page-home {
+  display: block;
+  width: 100%;
+  padding: .7rem 1rem;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+}
