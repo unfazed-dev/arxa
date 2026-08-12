@@ -1,13 +1,20 @@
 /* widgets.css — rules owned by studio_application_hub, split from assets/css/widgets.css by the ui/styles law */
-.shell-project {
-  display: flex; gap: .5rem; align-items: baseline; min-width: 0;
-  padding: .3rem .75rem; border-radius: 999px;
-  color: var(--tx); text-decoration: none; font-size: .84rem;
-  box-shadow: inset 0 0 0 1px var(--border);
+/* .shell-project migrated to `chip chip--lg chip--outline` (D2,
+   widget-panel-vocabulary-reconciliation.md); it survives in markup as a
+   zero-CSS hook for islands/probes only. Sub-spans moved here from
+   studio_dashboard_shell — the hub header authors this cluster. */
+.shell-project-name { font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.shell-project-shell { color: var(--accent); font-weight: 500; }
+.shell-project-shell::before { content: '· '; color: var(--tx-3); }
+.shell-project-saved { color: var(--tx-2); font-size: .76rem; white-space: nowrap; }
+.shell-project-saved::before { content: '· '; color: var(--tx-3); }
+/* compact: match the dashboard barrel's 599px rung */
+@media (max-width: 599px) {
+  .shell-project-saved { display: none; }
 }
-.shell-project:hover { box-shadow: inset 0 0 0 1px var(--tx-3); }
 .fab-action {
-  padding: .42rem .9rem; border-radius: 999px;
+  padding: .42rem .9rem; cursor: pointer;
+  border-radius: 999px; /* w5:not-a-chip */
   background: var(--bg); border: 1px solid var(--border);
   box-shadow: var(--shadow-2);
   color: var(--tx); text-decoration: none; font-size: .82rem; font-weight: 500;
@@ -18,5 +25,6 @@
   display: flex; flex-direction: column; gap: .15rem;
   padding: .35rem; cursor: pointer;
   background: var(--bg); border: 1px solid var(--border);
-  border-radius: 999px; box-shadow: var(--shadow-2);
+  border-radius: 999px; /* w5:not-a-chip */
+  box-shadow: var(--shadow-2);
 }

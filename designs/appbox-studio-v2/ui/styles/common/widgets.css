@@ -10,7 +10,11 @@
 button.chip, a.chip { cursor: pointer; }
 .chip.chip--sm { --chip-font: .62rem; --chip-pad-y: .12rem; --chip-pad-x: .45rem; --chip-gap: .25rem; }
 .chip.chip--lg { --chip-font: .8rem; --chip-pad-y: .3rem; --chip-pad-x: .8rem; --chip-gap: .4rem; }
-a):hover { background: var(--accent); color: var(--on-accent, #FFFCF0); }
+.chip:is(button, a):hover { background: var(--accent); color: var(--on-accent, #FFFCF0); }
+/* outline tone: transparent bg, hairline inset border; owns its hover (border
+   strengthens) so it beats the base accent-fill hover by specificity. */
+.chip.chip--outline { box-shadow: inset 0 0 0 1px var(--border); }
+.chip.chip--outline:hover { background: transparent; color: var(--tx); box-shadow: inset 0 0 0 1px var(--tx-3); }
 .chip.is-set { color: var(--accent); box-shadow: inset 0 0 0 1.5px var(--accent); font-weight: 600; }
 .type-badge {
   font-family: var(--font-label);

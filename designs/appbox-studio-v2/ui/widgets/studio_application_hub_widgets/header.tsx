@@ -56,7 +56,7 @@ export function Header(props: HeaderProps) {
       <a class="shell-brand" href="/" {...inspectAttrs('studio_hub:brand', { role: 'link' })}>appbox studio</a>
 
       {project && (
-        <a class="shell-project" href="/" title={translate('hub.projectBack') as string} {...inspectAttrs('studio_hub:project', { role: 'link' })}>
+        <a class="chip chip--lg chip--outline shell-project" href="/" title={translate('hub.projectBack') as string} {...inspectAttrs('studio_hub:project', { role: 'link' })}>
           <span class="shell-project-name">{project.name}</span>
           <span class="shell-project-shell">{activeLabel}</span>
           {project.savedLabel && <span class="shell-project-saved">{project.savedLabel}</span>}

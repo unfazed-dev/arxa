@@ -71,13 +71,8 @@
 }
 .ico-btn:hover { color: var(--tx); filter: none; box-shadow: inset 0 0 0 1px var(--tx-3); }
 
-/* project info cluster — only rendered when a project context exists.
-   .shell-project box model lives in assets/css/widgets.css (W5 sweep). */
-.shell-project-name { font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.shell-project-shell { color: var(--accent); font-weight: 500; }
-.shell-project-shell::before { content: '· '; color: var(--tx-3); }
-.shell-project-saved { color: var(--tx-2); font-size: .76rem; white-space: nowrap; }
-.shell-project-saved::before { content: '· '; color: var(--tx-3); }
+/* .shell-project-* moved to ui/styles/studio_application_hub/widgets.css —
+   the hub header authors that cluster, so the hub owns the rules. */
 
 /* ---------- touch furnishings: hidden on expanded, shown by rung below ---------- */
 .shell-hub-touch, .tabbar, .fab-menu, .railbar { display: none; }
@@ -219,7 +214,6 @@
   .shell-hub-touch { display: block; }
   /* descendant, not child: the furnishings sits inside the header's body section */
   .shell-links, .panel-header .channel, .panel-header form { display: none; }
-  .shell-project-saved { display: none; }
   .tabbar { display: flex; }
   .fab-menu { display: flex; bottom: calc(var(--tabbar-height) + 1rem); }
   #panel-footer { display: none; }
