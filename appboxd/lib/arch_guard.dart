@@ -59,6 +59,19 @@
 //       jargon tokens are rejected case-insensitively outside backticked spans.
 //       Requirement lines (`N. [Name]`), the Relationships diagram, the
 //       inventory columns, and the History line are exempt zones.
+//   G14 naming: the ratified abxAction vocabulary (`abx*` lowerCamel
+//       constants/identifiers, `AppBoxKit*` PascalCase types) is the one
+//       family — no rename, no rival. Three mechanical checks:
+//       - no `k`-prefixed const/final declaration reintroducing Flutter's
+//         `k`-style for the action/hub vocabulary (`kFooAction`, `kBarHub`,
+//         …) — `abxAction`/`AppBoxKitActionHub` already own it. Declarations
+//         only, so unrelated Flutter constants (`kDebugMode`, `kToolbarHeight`)
+//         used (not declared) in app code are untouched.
+//       - no lowercase-b casing typo (`Appbox` immediately followed by `Kit`)
+//         anywhere an identifier is declared or referenced — canonical
+//         casing is `AppBoxKit` (capital B).
+//       - no rival `Abx*` PascalCase type (`class`/`mixin`) — the sanctioned
+//         type family is `AppBoxKit*`; `abx*` stays lowerCamel constants only.
 
 import 'dart:io';
 
@@ -126,6 +139,27 @@ bool _isGeneratedFile(String rel) {
       base.endsWith('.gen.dart') ||
       base.endsWith('.freezed.dart');
 }
+
+// G14: a k-prefixed const/final declaration reintroducing Flutter's k-style
+// for the action/hub vocabulary the abx family already owns. Declaration
+// syntax only (optional `static`, `const`/`final`, optional `late`, optional
+// type token) — never a bare reference, so imported Flutter constants used
+// (not declared) in app code (`kDebugMode`, `kFloatingActionButtonMargin`)
+// never match.
+final _g14KPrefixActionRe = RegExp(
+    r'\b(?:static\s+)?(?:const|final)\s+(?:late\s+)?(?:[\w<>.?]+\s+)??(k[A-Z]\w*(?:Action|Hub)\w*)\s*=');
+
+// G14: the lowercase-b casing typo — canonical casing is `AppBoxKit`
+// (capital B). Lookahead keeps the pattern source from spelling the typo
+// contiguously (this file is itself scanned, so a literal contiguous match
+// would self-flag); it matches identically to a plain substring search,
+// including mid-identifier (the `dispose…Actions` form).
+final _g14KitCasingRe = RegExp(r'Appbox(?=Kit)');
+
+// G14: a rival PascalCase `Abx*` type declaration — the sanctioned type
+// family is `AppBoxKit*`; `abx*` stays lowerCamel constants/identifiers only.
+final _g14RivalAbxTypeRe =
+    RegExp(r'^(?:abstract\s+)?(?:class|mixin)\s+(Abx\w*)', multiLine: true);
 
 // G13: the bare `library;` directive (own line, multiline-anchored).
 final _libraryRe = RegExp(r'^library;', multiLine: true);
@@ -661,8 +695,24 @@ ArchGuardResult archGuard(String targetDir) {
       }
     }
 
-    // ── G12 enums/sealed types live in lib/enums/ ────────────────────────
+    // ── G14 naming: the ratified abxAction vocabulary is the one family ───
     final relPosix = rel.replaceAll('\\', '/');
+    if (!_isGeneratedFile(relPosix)) {
+      for (final m in _g14KPrefixActionRe.allMatches(src)) {
+        violations.add(ArchGuardFinding('G14', rel,
+            "k-prefixed action/hub constant '${m.group(1)}' — the abxAction vocabulary owns this family, no k-prefix reintroduction"));
+      }
+      if (_g14KitCasingRe.hasMatch(src)) {
+        violations.add(ArchGuardFinding('G14', rel,
+            "lowercase-b casing typo ('Appbox' immediately followed by 'Kit') — canonical casing is 'AppBoxKit' (capital B)"));
+      }
+      for (final m in _g14RivalAbxTypeRe.allMatches(src)) {
+        violations.add(ArchGuardFinding('G14', rel,
+            "rival type ${m.group(1)} — the sanctioned type family is AppBoxKit*; abx* stays lowerCamel constants/identifiers only"));
+      }
+    }
+
+    // ── G12 enums/sealed types live in lib/enums/ ────────────────────────
     if (!relPosix.startsWith('enums/') && !_isGeneratedFile(relPosix)) {
       for (final m in _enumRe.allMatches(src)) {
         violations.add(ArchGuardFinding('G12', rel,

@@ -970,6 +970,92 @@ void main() {
     });
   });
 
+  group('G14 naming — abxAction vocabulary is the one family', () {
+    test('a k-prefixed action constant declaration is a violation', () {
+      _file(tmp, 'lib/ui/kit_action/bad_consts.dart',
+          "const String kSaveAction = 'save';\n");
+      final r = archGuard(tmp.path);
+      expect(r.passed, isFalse);
+      expect(
+          r.violations.any((v) =>
+              v.rule == 'G14' && v.msg.contains("kSaveAction")),
+          isTrue);
+    });
+
+    test('a k-prefixed hub constant declaration is a violation', () {
+      _file(tmp, 'lib/ui/kit_action/bad_hub.dart',
+          "class Foo {\n  static const kNotesHub = 'notes';\n}\n");
+      final r = archGuard(tmp.path);
+      expect(
+          r.violations.any(
+              (v) => v.rule == 'G14' && v.msg.contains('kNotesHub')),
+          isTrue);
+    });
+
+    test('an unrelated Flutter k-constant reference (not declared) does not fire', () {
+      _file(tmp, 'lib/ui/widgets/fab_widget.dart',
+          "import 'package:flutter/material.dart';\n"
+          'double fabBottom(double barTop) =>\n'
+          '    barTop - kFloatingActionButtonMargin;\n');
+      final r = archGuard(tmp.path);
+      expect(r.violations.where((v) => v.rule == 'G14'), isEmpty);
+    });
+
+    test('an unrelated k-prefixed constant outside the action/hub family does not fire', () {
+      _file(tmp, 'lib/ui/widgets/consts.dart',
+          "const double kShowcaseTabBarBlockHeight = 64.0;\n");
+      final r = archGuard(tmp.path);
+      expect(r.violations.where((v) => v.rule == 'G14'), isEmpty);
+    });
+
+    test('the lowercase-b casing typo is a violation', () {
+      _file(tmp, 'lib/ui/kit_action/typo.dart',
+          'void disposeAppboxKitActions() {}\n');
+      final r = archGuard(tmp.path);
+      expect(r.passed, isFalse);
+      expect(
+          r.violations.any(
+              (v) => v.rule == 'G14' && v.msg.contains('casing typo')),
+          isTrue);
+    });
+
+    test('the correct AppBoxKit casing does not fire', () {
+      _file(tmp, 'lib/ui/kit_action/ok.dart',
+          'void disposeAppBoxKitActions() {}\n'
+          'class AppBoxKitActionHub {}\n');
+      final r = archGuard(tmp.path);
+      expect(r.violations.where((v) => v.rule == 'G14'), isEmpty);
+    });
+
+    test('a rival Abx* PascalCase type declaration is a violation', () {
+      _file(tmp, 'lib/ui/kit_action/rival.dart', 'class AbxActionHub {}\n');
+      final r = archGuard(tmp.path);
+      expect(r.passed, isFalse);
+      expect(
+          r.violations.any((v) =>
+              v.rule == 'G14' && v.msg.contains('AbxActionHub')),
+          isTrue);
+    });
+
+    test('the sanctioned abx lowerCamel constants do not fire', () {
+      _file(tmp, 'lib/ui/kit_action/sanctioned.dart',
+          "const String abxPad16 = 'abxPad16';\n"
+          "const String abxAction = 'abxAction';\n"
+          'class AppBoxKitActionHub {}\n');
+      final r = archGuard(tmp.path);
+      expect(r.violations.where((v) => v.rule == 'G14'), isEmpty);
+    });
+
+    test('generated files are exempt — nobody authored the name', () {
+      _file(tmp, 'lib/app/app.router.dart',
+          "const kSaveActionRoute = 'kSaveActionRoute';\n");
+      _file(tmp, 'lib/data/models/note.freezed.dart',
+          'class AbxGenerated {}\n');
+      final r = archGuard(tmp.path);
+      expect(r.violations.where((v) => v.rule == 'G14'), isEmpty);
+    });
+  });
+
   test('violations are sorted by (rule, file)', () {
     _file(tmp, 'lib/ui/zeta_viewmodel.dart', 'class Zeta extends Other {}\n');
     _file(tmp, 'lib/domain/alpha.dart',
