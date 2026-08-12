@@ -210,7 +210,9 @@ enum WidgetHome { common, feature }
 /// Returns null when the path is under `ui/widgets/` but fits no home, and W1
 /// reports each such case BY NAME rather than as a scope problem: a flat
 /// `ui/widgets/x.tsx`, a flat `ui/widgets/common/x.tsx` (common is grouped,
-/// never flat), and an unnamed group `ui/widgets/<name>/` whose name neither is
+/// never flat — EXCEPT the root barrel, see [isCommonRootBarrel], which
+/// [_placementFindings] skips before ever asking for a home), and an unnamed
+/// group `ui/widgets/<name>/` whose name neither is
 /// `common` nor ends `_widgets`. The last is legal in the exemplar only for
 /// genuinely app-agnostic behavior wrappers (`ui/widgets/mouse_transforms/`,
 /// showcase-anatomy.md §2) — a deliberate documented exception, not a home this
@@ -227,6 +229,21 @@ enum WidgetHome { common, feature }
     return (home: WidgetHome.feature, key: 'ui/widgets/$child');
   }
   return null; // unnamed group
+}
+
+/// The `common/` root barrel — the one sanctioned flat file under
+/// `ui/widgets/common/` (showcase-anatomy.md §2: "`common/widgets.dart`
+/// re-exports the groups", mirrored `.tsx` in a design tree). It is a
+/// structural fixture: pure `export … from` lines, which [_importRe] does not
+/// read as edges, so it is legal at zero importers — the exemplar's own root
+/// barrel is unimported. Exempt from W1 (flat-common) and W2 (dead).
+/// Its PRESENCE is not yet gated: that needs export-from edges in the graph —
+/// open ruling, docs/plans/studio-v2-relay-grill-decisions.md.
+bool isCommonRootBarrel(String rel) {
+  final i = rel.lastIndexOf('/');
+  if (i < 0 || rel.substring(0, i) != 'ui/widgets/common') return false;
+  final base = rel.substring(i + 1);
+  return base == 'widgets.tsx' || base == 'widgets.ts';
 }
 
 /// The shell a path belongs to, or null for `ui/common/**` and anything outside
@@ -261,6 +278,12 @@ List<LintFinding> _placementFindings(
   final shells = _shellDirs(artifactDir);
   for (final rel in all) {
     if (!isWidget(rel) && !isRetiredWidgetPath(rel)) continue;
+
+    // ── the common/ root barrel is a mandated fixture, not a widget: flat
+    // under common/ by design and unimported by design (its re-exports are
+    // not graph edges). See [isCommonRootBarrel].
+    if (isCommonRootBarrel(rel)) continue;
+
     final consumers = graph[rel] ?? const <String>{};
 
     // ── W2: a widget nobody imports is a deletion, not a widget.
@@ -324,7 +347,8 @@ String _illegalHomeMessage(String rel) {
         '`ui/widgets/<app>_<feature>_widgets/` (one feature)';
   }
   if (segs[2] == 'common') {
-    return 'W1: `ui/widgets/common/` is grouped, never flat — move into a '
+    return 'W1: `ui/widgets/common/` is grouped, never flat (the root '
+        '`widgets.tsx` barrel is the one exception) — move into a '
         '`ui/widgets/common/<group>/` that names what the group shares';
   }
   return 'W1: `ui/widgets/${segs[2]}/` names no legal home — feature folders '

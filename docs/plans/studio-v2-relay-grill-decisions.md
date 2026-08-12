@@ -29,3 +29,16 @@ Advisor consult skipped: consult-mode returned `status:"error"` (no API key in `
 ## Standing risk (acknowledged, overruled)
 
 Waiting for all 6 shells before the first real freeze (D4) concentrates scaffolder-handoff risk at the end: dry-runs cover the contract shape, but the scaffolder never touches real studio-v2 data until freeze day. Raised twice during the grill; operator ruling stands.
+
+## D9 — common/ root barrel: gate exemption ratified, presence-enforcement open
+
+Ratified 2026-08-12. `isCommonRootBarrel` (appboxd/lib/gate_design_widgets.dart)
+exempts `ui/widgets/common/widgets.tsx|.ts` from W1 (flat-common) and W2 (dead):
+it is a mandated fixture (showcase-anatomy §2), pure `export … from` lines that
+`_importRe` does not read as edges, so zero importers is by design. Barrel
+authored for studio-v2; W-gate suite 60/60.
+
+**Open:** the barrel's PRESENCE is still ungated. Enforcing it requires
+export-from edges in the import graph (today a re-export is invisible, which is
+also why rewiring consumers to the root barrel flips group barrels to W2 dead).
+Rule on graph semantics before adding the missing-barrel check.

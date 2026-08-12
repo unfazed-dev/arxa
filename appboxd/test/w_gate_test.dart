@@ -352,6 +352,36 @@ export default function ChatView() {
             'export default function Ghost() { return <i></i>; }\n',
       }, messageContains: 'zero importers');
     });
+
+    test(
+        'the common/ root barrel is exempt: flat under common/ and '
+        'unimported by design (anatomy §2)', () {
+      final notes = <LintFinding>[];
+      final findings = gateDesignWidgets(
+          _tree(tmp, {
+            'ui/widgets/common/widgets.tsx':
+                "export * from './panels/_panel.tsx';\n"
+                "export * from './chips/chip.tsx';\n",
+          }),
+          notes: notes);
+      expect(findings, isEmpty,
+          reason: 'the root barrel is a mandated fixture, not a widget:\n'
+              '${findings.join('\n')}');
+    });
+
+    test('a flat non-barrel under common/ is still W1, not exempted', () {
+      expectsOnly('W1', {
+        'ui/widgets/common/util.tsx':
+            'export default function Util() { return <i></i>; }\n',
+        'ui/views/main_shell/design/chat/chat_view.tsx': '''
+import Toolbar from '../../../../widgets/main_shell_widgets/toolbar.tsx';
+import Util from '../../../../widgets/common/util.tsx';
+export default function ChatView() {
+  return <main><Toolbar /><Util /></main>;
+}
+''',
+      }, messageContains: 'the one exception');
+    });
   });
 
   group('W3 panels instantiated, never re-implemented', () {
