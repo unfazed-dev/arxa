@@ -5,7 +5,7 @@ import Icon from '../../../../runtime/icon.tsx';
 type TFn = (key: string, vars?: Record<string, unknown>) => unknown;
 
 // inspectAttributes — the ONE source of widget inspect identity. Every library
-// widget spreads this on its root element; screens never hand-write
+// widget spreads this on its root element; views never hand-write
 // data-inspect-* again. name is what the inspect overlay badge shows.
 export function inspectAttributes(
   name: string,

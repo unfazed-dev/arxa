@@ -1,29 +1,33 @@
-// Role: the studio home surface. Hosted by studio_dashboard_shell_view:
-//   mounts the main panel and composes the three DERIVED factor variants
-//   inside it — the needs-you strip (gates), the LIVE project grid
-//   (~/.appbox/projects), an analytics trio, and a new-project wizard, all
-//   defined once in studio_dashboard_view.sections.tsx and read in the same
-//   order at every rung. shell-main-col hands the region height to the
-//   panel so .mp-content is the scroller.
-// Requirements: Q-v2-3.
-// Relationships: studio_dashboard_viewmodel.js -> this -> the three
-//   *_view.<factor>.tsx variants, which compose
-//   studio_dashboard_view.sections.tsx; wrapped by studio_dashboard_shell_view.tsx.
-// History: restructured into the DERIVED factor-variant shape (mirrors
-//   studio_startup_view.tsx) so desktop/tablet/mobile stop triplicating
-//   markup. The section components live in a sibling
-//   studio_dashboard_view.sections.tsx rather than inline in this file:
-//   this view already imports the three variants, and each variant needs
-//   the section components, so keeping the components here would make the
-//   variants import back from this file — a cycle. The sibling file is
-//   acyclic and still colocated in this directory. Section components that
-//   own an aria-labelledby/label-for id pair take a `rung` prop and suffix
-//   the id per rung (needs-h--desktop, wizard-name--tablet, ...): the rung
-//   CSS keeps all three rungs in the DOM at once, so a bare id shared
-//   across the tripled copies would collide three times (see the fix in
-//   ed8866c for the same class of bug on studio_startup) — and stripping
-//   the id instead would leave two of three copies with a dangling
-//   aria-labelledby/for reference, which is worse.
+/// This is the user interface for studio_dashboard.
+///
+/// Role: the studio home surface. Hosted by studio_dashboard_shell_view:
+/// mounts the main panel and composes the three DERIVED factor variants
+/// inside it — the needs-you strip (gates), the LIVE project grid
+/// (~/.appbox/projects), an analytics trio, and a new-project wizard, all
+/// defined once in studio_dashboard_view.sections.tsx and read in the
+/// same order at every rung. shell-main-col hands the region height to
+/// the panel so .mp-content is the scroller. The section components live
+/// in a sibling studio_dashboard_view.sections.tsx rather than inline
+/// here: this view already imports the three factor variants, and each
+/// variant needs the section components, so keeping the components here
+/// would make the variants import back from this file — a cycle. The
+/// sibling file is acyclic and still colocated in this directory. Section
+/// components that own an aria-labelledby/label-for id pair take a
+/// `rung` prop and suffix the id per rung (needs-h--desktop,
+/// wizard-name--tablet, ...): the rung CSS keeps all three rungs in the
+/// DOM at once, so a bare id shared across the tripled copies would
+/// collide three times.
+///
+/// Requirements:
+/// 1. [Desktop/tablet/mobile for every studio view] — Q-v2-3
+///
+/// Relationships: studio_dashboard_viewmodel.js -> this -> the three
+/// *_view.<factor>.tsx variants, which compose
+/// studio_dashboard_view.sections.tsx; wrapped by
+/// studio_dashboard_shell_view.tsx.
+///
+/// History: git log --follow -- ui/views/studio_dashboard_shell/studio_dashboard/studio_dashboard_view.tsx
+
 import type { FC } from 'hono/jsx';
 import StudioDashboardShellView from '../studio_dashboard_shell_view.tsx';
 import { Open } from '../../../widgets/studio_dashboard_widgets/widgets.tsx';

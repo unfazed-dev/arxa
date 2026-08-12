@@ -1,10 +1,18 @@
-// Role: startup surface view. Composes the three DERIVED factor variants inside
-//   the startup shell and exports the #progress Named Fragment that htmx swaps
-//   as boot steps land.
-// Requirements: Q-v2-3, Q-v2-5.
-// Relationships: studio_startup_viewmodel.js -> this -> the three
-//   *_view.<factor>.tsx variants, wrapped by studio_startup_shell_view.tsx.
-// History: created for studio v2.
+/// This is the user interface for studio_startup.
+///
+/// Role: startup surface view. Composes the three DERIVED factor variants
+/// inside the startup shell and exports the #progress Named Fragment
+/// that htmx swaps as boot steps land.
+///
+/// Requirements:
+/// 1. [Desktop/tablet/mobile for every studio view] — Q-v2-3
+/// 2. [Ceremony shells cut over first] — Q-v2-5
+///
+/// Relationships: studio_startup_viewmodel.js -> this -> the three
+/// *_view.<factor>.tsx variants, wrapped by studio_startup_shell_view.tsx.
+///
+/// History: git log --follow -- ui/views/studio_startup_shell/studio_startup/studio_startup_view.tsx
+
 import type { FC } from 'hono/jsx';
 import Shell from '../studio_startup_shell_view.tsx';
 import Desktop from './studio_startup_view.desktop.tsx';

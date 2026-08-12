@@ -1,8 +1,16 @@
-// Role: startup shell layout. Composes the three DERIVED factor variants; CSS
-//   selects one (no <factor> resolver exists in the design runtime).
-// Requirements: Q-v2-3 (desktop/tablet/mobile for every studio view).
-// Relationships: wraps Base; receives the surface as `children`.
-// History: created for studio v2.
+/// This is the user interface for studio_startup_shell.
+///
+/// Role: startup shell layout. Composes the three DERIVED factor
+/// variants; CSS selects one (no <factor> resolver exists in the design
+/// runtime).
+///
+/// Requirements:
+/// 1. [Desktop/tablet/mobile for every studio view] — Q-v2-3
+///
+/// Relationships: wraps Base; receives the surface as `children`.
+///
+/// History: git log --follow -- ui/views/studio_startup_shell/studio_startup_shell_view.tsx
+
 import type { FC, Child } from 'hono/jsx';
 import Base from '../../common/base.tsx';
 import Desktop from './studio_startup_shell_view.desktop.tsx';

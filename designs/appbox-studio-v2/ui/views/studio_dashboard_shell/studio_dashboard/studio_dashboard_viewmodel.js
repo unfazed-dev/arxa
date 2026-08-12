@@ -1,13 +1,19 @@
-// Role: the dashboard surface — the studio home. It presents the needs-you
-//   gate strip, the project grid, the analytics trio and the new-project
-//   wizard, and hands the user manual triggers onward. It owns no pipeline
-//   state.
-// Requirements: Q-v2-1 (manual per-gate/per-project triggers, never implicit
-//   advancement). The POST handlers are design-medium simulations: they
-//   acknowledge the trigger and return home — no state mutates in a fixture.
-// Relationships: app.routes.js -> this -> studio_dashboard_view.tsx, reading
-//   its context through studio_dashboard_facade_service.js.
-// History: created when the hub was dissolved into studio_dashboard_shell.
+/// This is the business logic for studio_dashboard.
+///
+/// Role: the dashboard surface — the studio home. It presents the
+/// needs-you gate strip, the project grid, the analytics trio and the
+/// new-project wizard, and hands the user manual triggers onward. It
+/// owns no pipeline state. The POST handlers are design-medium
+/// simulations: they acknowledge the trigger and return home — no state
+/// mutates in a fixture.
+///
+/// Requirements:
+/// 1. [Manual per-gate/per-project triggers, never implicit advancement] — Q-v2-1
+///
+/// Relationships: app.routes.js -> this -> studio_dashboard_view.tsx,
+/// reading its context through studio_dashboard_facade_service.js.
+///
+/// History: git log --follow -- ui/views/studio_dashboard_shell/studio_dashboard/studio_dashboard_viewmodel.js
 
 export const surfaceId = 'studio_dashboard';
 export const viewId = 'studio_dashboard_view';

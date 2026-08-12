@@ -1,29 +1,30 @@
-// studio_application_hub_view.tsx — the application hub: the app's root
-// frame, per the showcase law (kit/showcase_app/lib/ui/views/
-// showcase_application_hub: the hub is the routed root, NOT a shell — it never
-// carries the shell name; it owns the body outlet and the chrome every shell
-// shares; each hosted shell owns only its own panels).
-// Composes the three DERIVED factor variants; CSS selects one (no <factor>
-// resolver exists in the design runtime). A hosted shell fills the outlet
-// (`surface`) and may feed the footer panel; a panel the shell does not feed
-// does not render — no empty box, no reserved height.
-// Requirements: Q-v2-1 (hub fronts the shell roster), Q-v2-2 (studio_ prefix),
-//   Q-v2-3 (desktop/tablet/mobile for every studio view).
-// Relationships: wraps Base; consumed by every hosted shell view
-//   (studio_dashboard_shell first); viewmodel: studio_application_hub_viewmodel.js;
-//   widgets in ui/widgets/studio_application_hub_widgets/ (showcase canon:
-//   showcase_application_widgets).
-// History: reinstated as the root frame after the de-chrome wrongly dissolved
-//   the hub into studio_dashboard_shell; renamed from *_hub_shell_view after
-//   review — the hub hosts, shells fill; a hub is not a shell. Restructured so
-//   the rung wrappers carry CHROME ONLY and the body outlet + footer render
-//   once at the root: with the outlet inside each rung, a hosted surface that
-//   itself composes the 3-rung pattern (studio_dashboard) was mounted ×3 —
-//   ×9 surface DOM and every rung-suffixed id (needs-h--desktop, ...)
-//   colliding 3×. One resolver per concern: hub rungs resolve chrome, the
-//   surface's own rung block resolves surface layout. Side effect: <main> is
-//   now a direct #app flex child, so .shell-main's flex:1 (the "leftover
-//   height" contract in studio_dashboard_widgets.css) actually applies.
+/// This is the user interface for studio_application_hub.
+///
+/// Role: the application hub — the app's root frame, per the showcase law
+/// (kit/showcase_app/lib/ui/views/showcase_application_hub: the hub is the
+/// routed root, NOT a shell — it never carries the shell name; it owns the
+/// body outlet and the chrome every shell shares; each hosted shell owns
+/// only its own panels). Composes the three DERIVED factor variants; CSS
+/// selects one (no <factor> resolver exists in the design runtime). The
+/// rung wrappers carry CHROME ONLY — the body outlet (`surface`) and the
+/// footer panel render once at the root, outside the rungs, never inside
+/// them: a hosted shell fills the outlet and may feed the footer panel; a
+/// panel the shell does not feed does not render — no empty box, no
+/// reserved height.
+///
+/// Requirements:
+/// 1. [Hub fronts the shell roster] — Q-v2-1
+/// 2. [studio_ prefix] — Q-v2-2
+/// 3. [Desktop/tablet/mobile for every studio view] — Q-v2-3
+///
+/// Relationships: wraps Base; consumed by every hosted shell view
+/// (studio_dashboard_shell first); viewmodel:
+/// studio_application_hub_viewmodel.js; widgets in
+/// ui/widgets/studio_application_hub_widgets/ (showcase canon:
+/// showcase_application_widgets).
+///
+/// History: git log --follow -- ui/views/studio_application_hub/studio_application_hub_view.tsx
+
 import type { FC, Child } from 'hono/jsx';
 import Base from '../../common/base.tsx';
 import { inspectAttributes } from '../../widgets/common/studio_primitives/widgets.tsx';

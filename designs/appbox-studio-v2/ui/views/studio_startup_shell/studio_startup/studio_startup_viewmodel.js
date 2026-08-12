@@ -1,11 +1,18 @@
-// Role: the startup surface — boot ceremony. Reports boot progress and gates
-//   the hand-off to the hub behind a manual trigger. Nothing self-advances:
-//   the step frame comes from ?step=, the hand-off from the trigger.
-// Requirements: Q-v2-1 (splashscreen is a surface, not a shell; advancement is
-//   user-triggered, never implicit).
-// Relationships: studio_startup_facade_service.js -> this ->
-//   studio_startup_view.tsx (+ its #progress Named Fragment).
-// History: created for studio v2.
+/// This is the business logic for studio_startup.
+///
+/// Role: the startup surface — boot ceremony. Reports boot progress and
+/// gates the hand-off to the hub behind a manual trigger. Nothing
+/// self-advances: the step frame comes from ?step=, the hand-off from
+/// the trigger.
+///
+/// Requirements:
+/// 1. [Splashscreen is a surface, not a shell; advancement is
+/// user-triggered, never implicit] — Q-v2-1
+///
+/// Relationships: studio_startup_facade_service.js -> this ->
+/// studio_startup_view.tsx (+ its #progress Named Fragment).
+///
+/// History: git log --follow -- ui/views/studio_startup_shell/studio_startup/studio_startup_viewmodel.js
 
 export const surfaceId = 'studio_startup';
 export const viewId = 'studio_startup_view';
