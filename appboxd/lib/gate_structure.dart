@@ -10,9 +10,10 @@
 //   S1b tracked — structure.json committed (porcelain clean for it; git diff
 //                 --exit-code cannot see a new file)
 //   S2  resolve — every shell root lands on a screen WITH a surface
-//   S3  roster  — the app-shell roster law: app.splash / app.startup /
-//                 app.unknown declared (plus app.access when any surface
-//                 carries requiresAuth) — mirrors the freeze check in
+//   S3  roster  — the app-shell roster law: splash / startup / unknown
+//                 roles filled (plus access when any surface carries
+//                 requiresAuth), by app.<role> id or per-entry role
+//                 field — mirrors the freeze check in
 //                 emit_structure.dart via the same shared function
 
 import 'dart:convert';
@@ -138,14 +139,14 @@ GateResult structureGate(GateContext ctx) {
       if (reg is List) {
         final missing = missingAppShellRoster(reg);
         if (missing.isEmpty) {
-          ok('structure: the app-shell roster is declared '
-              '(app.splash / app.startup / app.unknown, app.access when '
-              'requiresAuth is in play)');
+          ok('structure: the app-shell roster roles are filled '
+              '(splash / startup / unknown, access when requiresAuth is in '
+              'play — by app.<role> id or per-entry role field)');
         } else {
-          fail('structure: registry is missing mandated app-shell surfaces: '
-              '${missing.join(', ')} — every frozen design declares app.splash, '
-              'app.startup and app.unknown in its app-level shell (plus '
-              'app.access when any surface carries requiresAuth)');
+          fail('structure: registry leaves app-shell roster roles unfilled: '
+              '${missing.join(', ')} — every frozen design fills the splash, '
+              'startup and unknown roles (plus access when any surface '
+              'carries requiresAuth), by app.<role> id or a role field');
         }
       }
     } catch (_) {

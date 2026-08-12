@@ -503,5 +503,60 @@ void main() {
           reason: 'an excluded app.unknown routes to nothing');
       expect(File('$a/structure.json').existsSync(), isFalse);
     });
+
+    // Role mapping (canon amended 2026-08-12, grill D2): a non-app.* shell
+    // fills roster roles with per-entry `role` fields — studio-v2's shape.
+    Map<String, Object?> roleEntry(String id, String role,
+        {bool nullSurface = false}) {
+      final short = id.split('.').last;
+      return {
+        'id': id,
+        'role': role,
+        'shell': id.split('.').first,
+        'comp': 'Studio${short[0].toUpperCase()}${short.substring(1)}',
+        'surface':
+            nullSurface ? null : 'studio_shell_${id.replaceAll('.', '_')}_view',
+      };
+    }
+
+    test('per-entry role fields fill the roster without app.* ids', () {
+      final a = '${tmp.path}/r-roles';
+      plantAppShell(a, [
+        roleEntry('studio_startup.splash', 'splash'),
+        roleEntry('studio_startup.home', 'startup'),
+        roleEntry('studio_unknown.lost', 'unknown'),
+      ]);
+      expect(emitStructure(a), 0,
+          reason: 'role declarations satisfy the roster law via mapping');
+    });
+
+    test('a surface:null entry does not fill its declared role', () {
+      final a = '${tmp.path}/r-roles-null';
+      plantAppShell(a, [
+        roleEntry('studio_startup.splash', 'splash', nullSurface: true),
+        roleEntry('studio_startup.home', 'startup'),
+        roleEntry('studio_unknown.lost', 'unknown'),
+      ]);
+      expect(emitStructure(a), 1,
+          reason: 'an excluded splash routes to nothing, role or not');
+      expect(File('$a/structure.json').existsSync(), isFalse);
+    });
+
+    test('requiresAuth pulls the access role; a role field satisfies it', () {
+      final a = '${tmp.path}/r-roles-access';
+      plantAppShell(a, [
+        roleEntry('studio_startup.splash', 'splash'),
+        roleEntry('studio_startup.home', 'startup'),
+        roleEntry('studio_unknown.lost', 'unknown'),
+        {
+          ...roleEntry('studio_auth.signin', 'access'),
+          'requiresAuth': false,
+        },
+        {...roleEntry('studio_design.canvas', ''), 'requiresAuth': true}
+          ..remove('role'),
+      ]);
+      expect(emitStructure(a), 0,
+          reason: 'role: access fills the conditional roster slot');
+    });
   });
 }

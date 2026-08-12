@@ -85,10 +85,10 @@ Map<String, dynamic>? buildStructure(String designRoot) {
   // ---- the app-shell roster law ----
   final missingRoster = missingAppShellRoster(registry);
   if (missingRoster.isNotEmpty) {
-    stderr.writeln('FAIL: registry is missing mandated app-shell surfaces: '
-        '${missingRoster.join(', ')} — every frozen design declares app.splash, '
-        'app.startup and app.unknown in its app-level shell (plus app.access '
-        'when any surface carries requiresAuth)');
+    stderr.writeln('FAIL: registry leaves app-shell roster roles unfilled: '
+        '${missingRoster.join(', ')} — every frozen design fills the splash, '
+        'startup and unknown roles (plus access when any surface carries '
+        'requiresAuth), by literal app.<role> id or a per-entry role field');
     return null;
   }
 
@@ -657,35 +657,41 @@ String? shellDir(String surface) {
 }
 
 // ── the app-shell roster law ──────────────────────────────────────────────
-// Every frozen design declares these surfaces in its app-level shell — the
-// shell whose surfaces route at top level, registry ids `app.*`:
-//   app.splash  — the branded splash view
-//   app.startup — the startup/loading view
-//   app.unknown — the unknown-route (404) view
-// `app.access` (the sign-in gate) joins the roster iff any registry surface
-// carries `requiresAuth`. Enforced here at freeze and mirrored in the
-// structure gate, which calls this same function so the two can never
-// disagree on what the roster demands.
-const appShellRoster = ['app.splash', 'app.startup', 'app.unknown'];
+// The roster is ROLES, not literal ids (canon amended 2026-08-12, grill D2).
+// Every frozen design fills these roles with real surfaces:
+//   splash  — the branded splash view
+//   startup — the startup/loading view
+//   unknown — the unknown-route (404) view
+// `access` (the sign-in gate) joins the roster iff any registry surface
+// carries `requiresAuth`. An entry fills a role either by literal id
+// `app.<role>` (the classic app-level shell, no declaration needed) or by
+// carrying a per-entry `role: "<role>"` field (e.g. studio-v2's
+// `studio_startup.splash` fills `splash`). Enforced here at freeze and
+// mirrored in the structure gate, which calls this same function so the two
+// can never disagree on what the roster demands.
+const appShellRoles = ['splash', 'startup', 'unknown'];
 
-/// Roster ids [registry] fails to declare — absent, or declared with
+/// Roster roles [registry] fails to fill — no entry claims the role (by
+/// `app.<role>` id or `role` field), or the claiming entries all carry
 /// `surface: null` (an excluded splash routes to nothing, so exclusion does
 /// not satisfy the law). Empty when the design is compliant.
 List<String> missingAppShellRoster(List registry) {
-  final surfaced = <String>{};
+  final filled = <String>{};
   var needsAccess = false;
   for (final e in registry) {
     if (e is! Map) continue;
     final ra = e['requiresAuth'];
     if (ra != null && ra != false) needsAccess = true;
     final surface = e['surface'];
-    if (e['id'] is String && surface is String && surface.isNotEmpty) {
-      surfaced.add(e['id'] as String);
-    }
+    if (e['id'] is! String || surface is! String || surface.isEmpty) continue;
+    final id = e['id'] as String;
+    if (id.startsWith('app.')) filled.add(id.substring(4));
+    final role = e['role'];
+    if (role is String && role.isNotEmpty) filled.add(role);
   }
   return [
-    for (final id in [...appShellRoster, if (needsAccess) 'app.access'])
-      if (!surfaced.contains(id)) id,
+    for (final role in [...appShellRoles, if (needsAccess) 'access'])
+      if (!filled.contains(role)) role,
   ];
 }
 
