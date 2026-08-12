@@ -377,6 +377,60 @@ export default function ChatView() {
     });
 
     test(
+        'barrel-law indirection is credited by name: named and default-as '
+        're-exports reach the widget file', () {
+      final findings = gateDesignWidgets(_tree(tmp, {
+        'ui/widgets/main_shell_widgets/gadget.tsx':
+            'export function Gadget() { return <b></b>; }\n',
+        'ui/widgets/main_shell_widgets/gizmo_panel.tsx':
+            'export default function Open() { return <section></section>; }\n',
+        'ui/widgets/main_shell_widgets/widgets.tsx':
+            "export { Gadget } from './gadget.tsx';\n"
+            "export { default as GizmoPanel } from './gizmo_panel.tsx';\n",
+        'ui/views/main_shell/design/chat/chat_view.tsx': '''
+import Toolbar from '../../../../widgets/main_shell_widgets/toolbar.tsx';
+import { Gadget, GizmoPanel } from '../../../../widgets/main_shell_widgets/widgets.tsx';
+export default function ChatView() {
+  return <main><Toolbar /><Gadget /><GizmoPanel /></main>;
+}
+''',
+      }));
+      expect(findings.where((f) => f.message.contains('W2')), isEmpty,
+          reason: 'a consumer importing the name from the barrel consumes '
+              'the widget behind it:\n${findings.join('\n')}');
+    });
+
+    test('a star-exporting barrel credits its target when a name is pulled',
+        () {
+      final findings = gateDesignWidgets(_tree(tmp, {
+        'ui/widgets/main_shell_widgets/gadget.tsx':
+            'export function Gadget() { return <b></b>; }\n',
+        'ui/widgets/main_shell_widgets/widgets.tsx':
+            "export * from './gadget.tsx';\n",
+        'ui/views/main_shell/design/chat/chat_view.tsx': '''
+import Toolbar from '../../../../widgets/main_shell_widgets/toolbar.tsx';
+import { Gadget } from '../../../../widgets/main_shell_widgets/widgets.tsx';
+export default function ChatView() {
+  return <main><Toolbar /><Gadget /></main>;
+}
+''',
+      }));
+      expect(findings.where((f) => f.message.contains('W2')), isEmpty,
+          reason: '`export *` hides its name list — an unresolved name must '
+              'credit the star target:\n${findings.join('\n')}');
+    });
+
+    test('a barrel nobody imports confers nothing — its targets stay dead',
+        () {
+      expectsOnly('W2', {
+        'ui/widgets/main_shell_widgets/gadget.tsx':
+            'export function Gadget() { return <b></b>; }\n',
+        'ui/widgets/main_shell_widgets/orphan_barrel.tsx':
+            "export { Gadget } from './gadget.tsx';\n",
+      }, messageContains: 'zero importers');
+    });
+
+    test(
         'the common/ root barrel is exempt: flat under common/ and '
         'unimported by design (anatomy §2)', () {
       final notes = <LintFinding>[];
@@ -710,6 +764,17 @@ export default function AppShellView() {
       expectsOnly('W5', {
         'assets/css/app.css': '.badge { border-radius: 9999px; }\n',
       }, messageContains: 'assets/css/widgets.css');
+    });
+
+    test(
+        'the styles-law split home `ui/styles/common/widgets.css` is legal '
+        'for the pill', () {
+      final findings = gateDesignWidgets(_tree(tmp, {
+        'ui/styles/common/widgets.css': '.chip { border-radius: 999px; }\n',
+      }));
+      expect(findings.where((f) => f.message.contains('W5')), isEmpty,
+          reason: 'the chip base rule moved here when the ui/styles law '
+              'split assets/css/widgets.css by owner:\n${findings.join('\n')}');
     });
 
     test('pill radius in an inline style fails', () {

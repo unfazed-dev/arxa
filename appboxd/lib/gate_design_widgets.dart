@@ -92,6 +92,11 @@ List<String> panelBaseWidgets(String artifactDir) => _templateFiles(artifactDir)
 /// consolidated here; no per-widget CSS files.
 const widgetsCssPath = 'assets/css/widgets.css';
 
+/// Post-reorg home of the chip base (35791c47 moved v2 css into per-owner
+/// `ui/styles/` barrels): the common barrel owns the pill, so it is the one
+/// split file W5 does not scan. Per-owner barrels still need `w5:not-a-chip`.
+const splitWidgetsCssPath = 'ui/styles/common/widgets.css';
+
 // ══ the import graph ════════════════════════════════════════════════════
 
 /// A TSX import statement. `clause` is the binding list (`X`, `{ A, B as C }`,
@@ -149,6 +154,11 @@ List<String> _templateFiles(String artifactDir) {
 /// not files.
 Map<String, Set<String>> buildIncludeGraph(String artifactDir) {
   final graph = <String, Set<String>>{};
+
+  // ── pass 1: read every template once; record plain import edges and each
+  // file's re-export table (its barrel face).
+  final barrels = <String, _BarrelFace>{};
+  final imports = <String, List<({String resolved, String? clause})>>{};
   for (final rel in _templateFiles(artifactDir)) {
     final src = stripComments(File(p.join(artifactDir, rel)).readAsStringSync());
     final importerDir = p.dirname(rel);
@@ -161,9 +171,71 @@ Map<String, Set<String>> buildIncludeGraph(String artifactDir) {
           p.normalize(p.join(importerDir, importPath)).replaceAll('\\', '/');
       if (resolved == rel) continue;
       (graph[resolved] ??= <String>{}).add(rel);
+      (imports[rel] ??= []).add((resolved: resolved, clause: m.namedGroup('clause')));
+    }
+    for (final m in _exportFromRe.allMatches(src)) {
+      final target =
+          p.normalize(p.join(importerDir, m.namedGroup('path')!)).replaceAll('\\', '/');
+      if (target == rel) continue;
+      final face = barrels[rel] ??= _BarrelFace();
+      final clause = m.namedGroup('clause')!;
+      if (clause.startsWith('*')) {
+        face.starTargets.add(target);
+      } else {
+        // `{ A, default as B }` — the name a consumer sees is the post-`as`
+        // local; map it to the file the barrel lifts it from.
+        for (final part in clause.substring(1, clause.length - 1).split(',')) {
+          final bits = part.trim().split(RegExp(r'\s+as\s+'));
+          if (bits.first.trim().isEmpty) continue;
+          face.named[bits.last.trim()] = target;
+        }
+      }
+    }
+  }
+
+  // ── pass 2: barrel-law credit. A pure `export … from` line is NOT an edge
+  // (an unimported barrel confers nothing); the consumer's import of a NAME
+  // from a barrel is what consumes the file behind it, so the edge runs
+  // consumer → re-export target, resolved through nested barrels.
+  void credit(String consumer, String barrel, String name, Set<String> seen) {
+    if (!seen.add(barrel)) return;
+    final face = barrels[barrel];
+    if (face == null) return;
+    final named = face.named[name];
+    if (named != null) {
+      (graph[named] ??= <String>{}).add(consumer);
+      credit(consumer, named, name, seen);
+      return;
+    }
+    // `export *` hides its name list — an unresolved name must credit the
+    // star target(s).
+    for (final t in face.starTargets) {
+      (graph[t] ??= <String>{}).add(consumer);
+      credit(consumer, t, name, seen);
+    }
+  }
+
+  for (final MapEntry(key: consumer, value: edges) in imports.entries) {
+    for (final (:resolved, :clause) in edges) {
+      if (!barrels.containsKey(resolved)) continue;
+      for (final b in _importBindings(clause)) {
+        credit(consumer, resolved, b.imported, <String>{});
+      }
     }
   }
   return graph;
+}
+
+/// A `export … from './x'` line: star (`export * from`, `export * as N from`)
+/// or named (`export { A, default as B } from`), optionally `export type`.
+final _exportFromRe = RegExp(
+    r'''export\s+(?:type\s+)?(?<clause>\*(?:\s+as\s+[\w$]+)?|\{[^}]*\})\s+from\s+['"](?<path>[^'"]+)['"]''');
+
+/// One file's re-export surface: consumer-visible name → target file, plus
+/// the targets whose name lists are hidden behind `export *`.
+class _BarrelFace {
+  final named = <String, String>{};
+  final starTargets = <String>[];
 }
 
 // ══ scopes ══════════════════════════════════════════════════════════════
@@ -691,7 +763,7 @@ List<LintFinding> _pillRadiusFindings(String artifactDir) {
     // ADR-0002 rules allowlist `/assets/vendor/` for the same reason.
     if (rel.startsWith('assets/vendor/')) continue;
     if (rel.endsWith('.css')) {
-      if (rel == widgetsCssPath) continue;
+      if (rel == widgetsCssPath || rel == splitWidgetsCssPath) continue;
       final src = e.readAsStringSync();
       final unexempt = _pillRadiusRe
           .allMatches(src)
@@ -701,7 +773,8 @@ List<LintFinding> _pillRadiusFindings(String artifactDir) {
         final lines =
             unexempt.map((m) => _lineNumberAt(src, m.start)).join(', ');
         findings.add(LintFinding(rel,
-            'W5: pill radius (999px/9999px) outside `$widgetsCssPath` at line '
+            'W5: pill radius (999px/9999px) outside the widgets barrel '
+            '(`$widgetsCssPath` or `$splitWidgetsCssPath`) at line '
             '$lines — the chip widget owns the pill; move the rule there and '
             'use the chip. If it is a shape and not a chip (progress track, '
             'swatch, device chrome, form input), annotate that line '
