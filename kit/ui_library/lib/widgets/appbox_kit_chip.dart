@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:appbox_kit_core/common/appbox_kit_app_constants.dart';
 import 'package:appbox_kit_core/common/appbox_kit_glyphs.dart';
 
+import 'appbox_kit_pressable.dart';
+
 /// An icon+label pill chip for capability rails — themed, tappable, fully
 /// rounded. Pure-Flutter on every tier — there is **no** native
 /// (Liquid-Glass / M3-Expressive) chip surface to wrap, so this widget is
@@ -12,8 +14,9 @@ import 'package:appbox_kit_core/common/appbox_kit_glyphs.dart';
 /// The chip is a stadium (fully rounded) [Material] tinted
 /// `surfaceContainerHigh` with a minimum height of [abxSize36]; the label uses
 /// the theme's `labelLarge` and the optional leading [glyph] draws at
-/// [abxSize18] in `onSurfaceVariant`. A `null` [onTap] renders the same
-/// visuals without the ink response (a decorative tag).
+/// [abxSize18] in `onSurfaceVariant`. Presses via [AppBoxKitPressable] (a
+/// dim, not Material ink); a `null` [onTap] renders the same visuals without
+/// the press affordance (a decorative tag).
 ///
 /// Rows of these scroll inside a `AppBoxKitChipCarousel`; a chip is also fine
 /// standalone (a wrap of filter tags, a single capability affordance).
@@ -44,7 +47,7 @@ class AppBoxKitChip extends StatelessWidget {
       color: scheme.surfaceContainerHigh,
       shape: const StadiumBorder(),
       clipBehavior: Clip.antiAlias,
-      child: InkWell(
+      child: AppBoxKitPressable(
         onTap: onTap,
         child: ConstrainedBox(
           constraints: const BoxConstraints(minHeight: abxSize36),

@@ -108,10 +108,8 @@ class ShowcaseNotesNoteRowWidget extends StatelessWidget {
       // No InkWell/Material splash here (ratified in
       // docs/plans/notes-shell-abxaction-adoption.md, decision 4): its ink
       // painted over the native Liquid Glass tab chrome on long-press-style
-      // holds. No shared kit-level press-state primitive exists yet (checked
-      // kit/ui_library/lib/utils/kit_action and every kit widget), so this
-      // row owns a minimal local one.
-      child: _ShowcaseNotesPressable(
+      // holds.
+      child: AppBoxKitPressable(
         onTap: () => context.router.pushNamed('note/${note.id}'),
         child: Padding(
           padding: const EdgeInsets.symmetric(
@@ -152,46 +150,4 @@ class ShowcaseNotesNoteRowWidget extends StatelessWidget {
       ),
     );
   }
-}
-
-/// Dims [child] on press-down instead of painting ink over native surfaces.
-class _ShowcaseNotesPressable extends StatefulWidget {
-  const _ShowcaseNotesPressable({
-    required this.child,
-    this.onTap,
-  });
-
-  final Widget child;
-  final VoidCallback? onTap;
-
-  @override
-  State<_ShowcaseNotesPressable> createState() =>
-      _ShowcaseNotesPressableState();
-}
-
-class _ShowcaseNotesPressableState extends State<_ShowcaseNotesPressable> {
-  bool _pressed = false;
-
-  void _setPressed(bool value) {
-    if (_pressed == value) return;
-    setState(() => _pressed = value);
-  }
-
-  @override
-  Widget build(BuildContext context) => Semantics(
-        button: true,
-        child: GestureDetector(
-          behavior: HitTestBehavior.opaque,
-          onTap: widget.onTap,
-          onTapDown: (_) => _setPressed(true),
-          onTapUp: (_) => _setPressed(false),
-          onTapCancel: () => _setPressed(false),
-          child: AnimatedOpacity(
-            opacity: _pressed ? 0.6 : 1.0,
-            duration: const Duration(milliseconds: 120),
-            curve: Curves.easeOut,
-            child: widget.child,
-          ),
-        ),
-      );
 }

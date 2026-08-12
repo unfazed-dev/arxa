@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:appbox_kit_core/common/appbox_kit_app_constants.dart';
 import 'package:appbox_kit_core/common/appbox_kit_glyphs.dart';
 
+import 'appbox_kit_pressable.dart';
+
 /// A grouped-list row: optional leading glyph, title, optional subtitle, and
 /// a trailing slot that takes value text and/or a chevron — or a fully custom
 /// trailing widget. Pure-Flutter on every tier — there is **no** native
@@ -23,10 +25,9 @@ import 'package:appbox_kit_core/common/appbox_kit_glyphs.dart';
 /// The tile is transparent and full-bleed: place it inside a
 /// [AppBoxKitGlassCard]-backed `AppBoxKitListSection` (which owns the group container,
 /// header, and dividers) or inside any card surface directly. The row keeps a
-/// minimum height of [abxSize48] and paints its own ink through a transparent
-/// [Material], so it works over glass tiers that provide no [Material]
-/// ancestor. A `null` [onTap] renders the same visuals without the ink
-/// response (a label row).
+/// minimum height of [abxSize48] and presses via [AppBoxKitPressable] (a dim,
+/// not Material ink — ink paints over the glass tiers). A `null` [onTap]
+/// renders the same visuals without the press affordance (a label row).
 class AppBoxKitListTile extends StatelessWidget {
   const AppBoxKitListTile({
     super.key,
@@ -120,11 +121,8 @@ class AppBoxKitListTile extends StatelessWidget {
       ),
     );
 
-    // Transparent Material so the InkWell always has an ink ancestor — a
-    // glass-card tier (LiquidGlassContainer) provides no Material of its own.
-    return Material(
-      type: MaterialType.transparency,
-      child: InkWell(onTap: onTap, child: row),
-    );
+    // Press feedback is the kit pressable dim, not Material ink — an ink
+    // splash paints over the glass tiers (see AppBoxKitPressable).
+    return AppBoxKitPressable(onTap: onTap, child: row);
   }
 }

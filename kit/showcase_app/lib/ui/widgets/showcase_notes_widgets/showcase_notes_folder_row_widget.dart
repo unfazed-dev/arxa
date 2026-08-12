@@ -66,17 +66,12 @@ class ShowcaseNotesFolderRowWidget extends StatelessWidget {
         await viewModel.confirmDeleteFolder(folder);
         return false;
       },
-      // Rendered inline rather than via ShowcaseNotesRowWidget: that widget
-      // is a thin adapter over AppBoxKitListTile, whose Material+InkWell
-      // painted an ink splash over the native Liquid Glass tab chrome while
-      // this row's long-press was still being recognized (ratified in
-      // docs/plans/notes-shell-abxaction-adoption.md, decision 4 — the
-      // InkWell and this GestureDetector's LongPressGestureRecognizer share
-      // one gesture arena, so the InkWell's tap-down highlight painted before
-      // the long press won it). The layout below matches AppBoxKitListTile's
-      // tokens exactly so folder rows stay visually identical to the "All
-      // Notes"/"Recently Deleted" rows in the same section.
-      child: _ShowcaseNotesPressable(
+      // Rendered inline rather than via ShowcaseNotesRowWidget: this row
+      // needs a long-press (rename) and AppBoxKitListTile exposes tap only.
+      // The layout below matches AppBoxKitListTile's tokens exactly so folder
+      // rows stay visually identical to the "All Notes"/"Recently Deleted"
+      // rows in the same section.
+      child: AppBoxKitPressable(
         onTap: () => context.router.pushNamed('folder/${folder.id}'),
         onLongPress: onRename,
         child: ConstrainedBox(
@@ -114,49 +109,4 @@ class ShowcaseNotesFolderRowWidget extends StatelessWidget {
       ),
     );
   }
-}
-
-/// Dims [child] on press-down instead of painting ink over native surfaces.
-class _ShowcaseNotesPressable extends StatefulWidget {
-  const _ShowcaseNotesPressable({
-    required this.child,
-    this.onTap,
-    this.onLongPress,
-  });
-
-  final Widget child;
-  final VoidCallback? onTap;
-  final VoidCallback? onLongPress;
-
-  @override
-  State<_ShowcaseNotesPressable> createState() =>
-      _ShowcaseNotesPressableState();
-}
-
-class _ShowcaseNotesPressableState extends State<_ShowcaseNotesPressable> {
-  bool _pressed = false;
-
-  void _setPressed(bool value) {
-    if (_pressed == value) return;
-    setState(() => _pressed = value);
-  }
-
-  @override
-  Widget build(BuildContext context) => Semantics(
-        button: true,
-        child: GestureDetector(
-          behavior: HitTestBehavior.opaque,
-          onTap: widget.onTap,
-          onLongPress: widget.onLongPress,
-          onTapDown: (_) => _setPressed(true),
-          onTapUp: (_) => _setPressed(false),
-          onTapCancel: () => _setPressed(false),
-          child: AnimatedOpacity(
-            opacity: _pressed ? 0.6 : 1.0,
-            duration: const Duration(milliseconds: 120),
-            curve: Curves.easeOut,
-            child: widget.child,
-          ),
-        ),
-      );
 }

@@ -33,6 +33,7 @@ export 'widgets/appbox_kit_tab_switch_transition.dart';
 export 'widgets/appbox_kit_animated_tab_stack.dart';
 export 'widgets/appbox_kit_tab_bar.dart';
 export 'widgets/appbox_kit_bottom_nav_scaffold.dart';
+export 'widgets/appbox_kit_pressable.dart';
 export 'widgets/appbox_kit_native_button.dart';
 export 'widgets/appbox_kit_native_segmented_control.dart';
 export 'widgets/appbox_kit_native_chrome_gate.dart';

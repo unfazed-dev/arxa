@@ -83,3 +83,20 @@ proceeding on primary sources per advisor-conventions.
   as deprecated — premise was already stale; citations added instead.
 - Gates green: arch guard at baseline (57/21/12/9), analyze clean, showcase
   tests 128/128. Outstanding: on-device long-press video retest.
+
+## Follow-up sweep (2026-08-12, same day)
+
+Operator caught that "All Notes"/"Recently Deleted" rows still rippled: the
+arena-conflict framing hid that an `InkWell` inks on plain taps too, and
+`ShowcaseNotesRowWidget` → `AppBoxKitListTile` still carried Material ink.
+Full-repo sweep found exactly two remaining ink sources, both in the kit:
+`AppBoxKitListTile:127` and `AppBoxKitChip:47`. The third caller had arrived,
+so the debt was paid: `_ShowcaseNotesPressable` was hoisted to a public
+`AppBoxKitPressable` (`kit/ui_library/lib/widgets/appbox_kit_pressable.dart`,
+barrel-exported), the tile and chip now press via it (no Material ink
+anywhere in the kit), and the two duplicated private copies were deleted.
+Fix lands transitively in every tile consumer: notes rows, admin folder row,
+drawer, settings sections, search options, list section. The folder row's
+inline layout stays (the tile still exposes tap only, and the row needs
+long-press rename). Gates re-verified: analyze clean both packages, guard
+baselines exact (21/12), ui_library 312 + showcase 128 tests pass.
