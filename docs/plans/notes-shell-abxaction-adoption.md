@@ -48,3 +48,38 @@ proceeding on primary sources per advisor-conventions.
 - Moving action code between appbox and kit (no `Abx*` class definitions
   exist anywhere; kit already owns the implementation).
 - Touching surfaces outside the notes shell in this pass.
+
+## Outcome (2026-08-12, fan-out complete)
+
+- **Adoption was already done one layer down.** Every notes-shell mutation
+  routes through `ShowcaseNotesFacadeService` → `AppBoxKitDataFacade.mutate()`
+  (`kit/data/lib/facades/appbox_kit_data_facade.dart:70`), which calls
+  `abxActionHub.send()` with ENTITY-SCOPED keys (`'pin.${note.id}'`). Editor,
+  folder, and notes/shell viewmodels required zero changes. Standing rule
+  learned the hard way (a viewmodel-level wrapper was written and reverted):
+  do NOT wrap facade-reaching viewmodel actions in class-wide
+  `abxActionHub.on(...)` commands — the class-wide key swallows concurrent
+  per-entity ops. Wrap only for debounce/guard/confirm the facade doesn't
+  provide (pattern: `showcase_note_editor_viewmodel.dart` `_autosave`).
+- **Decision 4's premise was corrected in flight**: abxAction is async-op
+  busy/error state, not touch feedback, and the kit has NO reusable
+  press-state primitive. The shipped fix (`0b494bde`) is a local
+  `_ShowcaseNotesPressable` (GestureDetector + AnimatedOpacity dim,
+  `Semantics(button: true)`) duplicated in `showcase_notes_note_row_widget`
+  and `showcase_notes_folder_row_widget`. Deliberate debt: hoist to a kit
+  primitive when a third caller appears.
+- The folder row's leak was inherited from `AppBoxKitListTile`'s
+  Material+InkWell via `ShowcaseNotesRowWidget` (gesture-arena share with the
+  outer long-press); fixed by inlining the row with the same kit tokens.
+  `ShowcaseNotesRowWidget`/`AppBoxKitListTile` untouched (shared blast
+  radius).
+- Audio row / photo strip never had an ink ancestor — no leak possible; left
+  WITHOUT press feedback because wrapping a platform view or BackdropFilter
+  in Opacity forces saveLayer (documented anti-pattern,
+  `rail_item_button_m3e.dart:89`). Needs on-device evidence on both glass
+  tiers before adding.
+- **G14 naming guard** landed (`b3774452`): 3 checks, no self-allowlist,
+  80/80 tests, baselines unchanged. Doc sweep found NO doc framing abxAction
+  as deprecated — premise was already stale; citations added instead.
+- Gates green: arch guard at baseline (57/21/12/9), analyze clean, showcase
+  tests 128/128. Outstanding: on-device long-press video retest.

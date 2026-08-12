@@ -116,10 +116,7 @@ class ShowcaseNotesFolderRowWidget extends StatelessWidget {
   }
 }
 
-/// Native-safe press indicator: dims [child] on press-down instead of
-/// painting a Material ink splash — no [Material]/[InkWell]/[InkResponse]
-/// ancestor, so it never leaks over a platform-view surface (Liquid Glass /
-/// M3E). Local to this row; see the usage site for why.
+/// Dims [child] on press-down instead of painting ink over native surfaces.
 class _ShowcaseNotesPressable extends StatefulWidget {
   const _ShowcaseNotesPressable({
     required this.child,
