@@ -1,3 +1,5 @@
+import 'package:cupertino_native_better/cupertino_native_better.dart'
+    show CNGlassEffect, LiquidGlassConfig, LiquidGlassContainer;
 import 'package:flutter/material.dart';
 import 'package:appbox_kit_core/common/appbox_kit_app_constants.dart';
 
@@ -140,11 +142,35 @@ class AppBoxKitNativeFloatingBar extends StatelessWidget {
                 // button's glass washed to a square ghost for exactly the
                 // capsule's span, while buttons crossing the pill gaps
                 // stayed crisp. A platform-view-safe frosted pill leaves
-                // no native surface in the title region to stack against
-                // (and no dedicated overlay layer above it). The vibrant
-                // fill is also Apple's own degrade for nested glass (§3).
-                // transition-exempt: no platform view — pure Flutter pill.
-                AppBoxKitFrostedSurface(
+                // no native surface in the title region to stack against.
+                // The vibrant fill is also Apple's own degrade for nested
+                // glass (§3).
+                //
+                // The PLAIN native anchor beneath it exists because Flutter
+                // ops floating over a platform-view-bearing scrollable have
+                // no stable home: the engine's view slicer
+                // (flow/view_slicer.cc) keeps them in an overlay above the
+                // platform views only while they intersect a platform-view
+                // rect, and otherwise drops them to a background canvas that
+                // is difference-clipped by every overlay — on device
+                // (clip 21-32 + composited-window probe, 2026-08-13) the
+                // pill's overlay shrank from (16,59,361x78) to the actions'
+                // bbox during top rubber-band overscroll and the pill
+                // vanished wholesale. The anchor is a stationary platform
+                // view exactly under the pill, so the intersection holds
+                // every frame. `plain` renders NO glass material (clear
+                // fill, Glass.identity), so 13-53 cannot recur — this is a
+                // compositing anchor, not a visible surface.
+                // transition-exempt: the anchor renders NOTHING (plain
+                // effect, clear fill, Glass.identity) — there is no visible
+                // glass to leak over a route slide, and gating it would
+                // re-open the erasure for exactly the frames a transition
+                // spans.
+                LiquidGlassContainer(
+                  config: const LiquidGlassConfig(
+                    effect: CNGlassEffect.plain,
+                  ),
+                  child: AppBoxKitFrostedSurface(
                   platformViewSafe: true,
                   borderRadius: 22,
                   child: SizedBox(
@@ -162,6 +188,7 @@ class AppBoxKitNativeFloatingBar extends StatelessWidget {
                         ),
                       ),
                     ),
+                  ),
                   ),
                 ),
                 ),

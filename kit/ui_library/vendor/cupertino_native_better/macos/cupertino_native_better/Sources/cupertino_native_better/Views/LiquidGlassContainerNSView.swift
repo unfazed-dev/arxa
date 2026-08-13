@@ -124,13 +124,17 @@ struct LiquidGlassContainerSwiftUI: View {
   let tint: NSColor?
   let interactive: Bool
 
+  /// LOCAL PATCH #7 (parity with iOS): `plain` = flat tint fill, glass held
+  /// at `.identity` so no material ever exists. See the iOS container.
+  private var isPlain: Bool { effect == "plain" }
+
   var body: some View {
     GeometryReader { geometry in
       shapeForConfig()
-        .fill(Color.clear)
+        .fill(isPlain ? Color(tint ?? .clear) : Color.clear)
         .contentShape(shapeForConfig())
         .allowsHitTesting(false)
-        .glassEffect(glassEffectForConfig(), in: shapeForConfig())
+        .glassEffect(isPlain ? .identity : glassEffectForConfig(), in: shapeForConfig())
         .frame(width: geometry.size.width, height: geometry.size.height)
     }
   }

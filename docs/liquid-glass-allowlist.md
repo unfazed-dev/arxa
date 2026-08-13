@@ -188,13 +188,37 @@ the glass card is the first re-demote, the toolbar second.
    TITLE pill is deliberately not native. Interactive bar controls stay
    native glass; if partial overlaps (warning icon under the search
    button) ever artifact, widen the pill gaps before demoting anything.
-   Pinned by appbox_kit_native_floating_bar_test.
+   The Flutter pill additionally rides a plain (non-glass) native anchor —
+   see rule 7; that anchor renders no material, so this rule's ban and the
+   anchor coexist. Pinned by appbox_kit_native_floating_bar_test.
 6. **Fill color and foreground travel together in fallbacks.** Any fallback
    that sets a CupertinoButton `color` must set the foreground too: solid
    fill → contrasting color, translucent tint wash (glass) → the tint itself
    (vendor PATCH #5). The default foreground flips with `color` and lands
    tone-on-tone both ways (auth's blank Sign In; the profile toolbar's blank
    Share/Edit/Delete).
+7. **Floating Flutter chrome over a platform-view scrollable rides a PLAIN
+   native anchor (clip 21-32, device-attributed 2026-08-13).** The engine's
+   view slicer (`flow/view_slicer.cc`) keeps Flutter ops painted after a
+   platform view in an overlay ONLY while their rects intersect a
+   platform-view rect below them; non-intersecting ops drop to a background
+   canvas that is difference-clipped by every overlay rect. Chrome floating
+   over scrolled platform views therefore has NO stable home: the frosted
+   title pill rendered at rest and while content passed beneath it, but
+   vanished wholesale during top rubber-band overscroll — composited-window
+   probe showed its overlay shrinking from `(16,59,361x78)` to the action
+   buttons' bbox `(281,59,96x44)`, clipping the pill out. Fix ratified: the
+   pill keeps its Flutter frosted visuals and gains a stationary
+   `LiquidGlassContainer(effect: CNGlassEffect.plain)` beneath it (vendor
+   PATCH #7) — `plain` renders NO glass material (clear fill,
+   `Glass.identity`), so rule 5's glass-on-glass ban is not reopened; the
+   anchor exists purely so the pill's ops intersect a platform-view rect
+   every frame. Device-verified: pill present through a driven held
+   rubber-band that reproduced the erasure pre-fix. Any future Flutter-drawn
+   chrome floating over glass-bearing scrollables needs the same anchor —
+   partial-width Flutter overlays are NOT exempt from slicing, only
+   full-width opaque bars were previously called out (rule 4 / 13-32).
+   Pinned by appbox_kit_native_floating_bar_test (anchor pin).
 
 **Resolved residual (2026-08-13, clip 12-48):** `AppBoxKitScrollEdgeEffect`'s
 partial-alpha fade over edge-band children hosting native controls produced

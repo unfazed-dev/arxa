@@ -1,3 +1,5 @@
+import 'package:cupertino_native_better/cupertino_native_better.dart'
+    show CNGlassEffect, LiquidGlassContainer;
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
@@ -28,7 +30,7 @@ void main() {
     // surface, NOT native glass: scrolled native glass buttons crossing a
     // native capsule stack glass-on-glass and wash to square ghosts for
     // exactly the capsule's span (clip 13-53). This pin is the regression
-    // guard for that ruling — do not "upgrade" the title back to
+    // guard for that ruling — do not "upgrade" the title back to a GLASS
     // LiquidGlassContainer.
     final pill = tester.widget<AppBoxKitFrostedSurface>(
       find
@@ -41,6 +43,28 @@ void main() {
     expect(pill.platformViewSafe, isTrue,
         reason: 'a BackdropFilter pill would saveLayer over the platform '
             'views passing beneath (composition rule 1)');
+
+    // …but the pill MUST ride a PLAIN native anchor: without a stationary
+    // platform view beneath it, the engine's view slicer drops the pill's
+    // ops to the difference-clipped background canvas whenever the body's
+    // platform views scroll away (top rubber-band), erasing the pill on
+    // device (clip 21-32 + composited-window probe, 2026-08-13). `plain`
+    // renders no glass material, so this does not reopen the 13-53 ban.
+    final anchor = tester.widget<LiquidGlassContainer>(
+      find
+          .ancestor(
+            of: find.text('Kit Showcase'),
+            matching: find.byType(LiquidGlassContainer),
+          )
+          .first,
+    );
+    expect(anchor.config.effect, CNGlassEffect.plain,
+        reason: 'a glass-effect capsule would stack glass-on-glass with '
+            'passing controls (clip 13-53); no anchor at all re-opens the '
+            'overscroll erasure (view_slicer geometry)');
+    expect(anchor.config.tint, isNull,
+        reason: 'the anchor is a compositing fixture, not a visible surface '
+            '— the frosted pill above it owns every visible pixel');
 
     // Control row is exactly 44 — the same block the boxed bar reserves, so
     // kAppBoxKitFloatingBarBlockHeight stays honest.

@@ -237,15 +237,22 @@ struct LiquidGlassContainerSwiftUI: View {
   /// Observe transition state to disable glass effect during navigation
   @ObservedObject private var transitionObserver = CNTransitionObserver.shared
 
+  /// LOCAL PATCH #7: `plain` renders the shape as a flat tint fill with the
+  /// glass modifier held at `Glass.identity` — same constant-structure trick
+  /// as the transition arm below, so no branch swap and no materialize
+  /// animation. No glass material ever exists, so plain containers cannot
+  /// stack glass-on-glass with passing controls (clip 13-53).
+  private var isPlain: Bool { effect == "plain" }
+
   var body: some View {
     GeometryReader { geometry in
       shapeForConfig()
-        .fill(Color.clear)
+        .fill(isPlain ? Color(tint ?? .clear) : Color.clear)
         .contentShape(shapeForConfig())
         .allowsHitTesting(false)  // Always false - let Flutter handle gestures
         .applyConditionalGlassEffectForContainer(
           isTransitioning: transitionObserver.isTransitioning,
-          glass: glassEffectForConfig(),
+          glass: isPlain ? .identity : glassEffectForConfig(),
           shape: shapeForConfig()
         )
         .frame(width: geometry.size.width, height: geometry.size.height)

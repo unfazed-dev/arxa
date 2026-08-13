@@ -9,6 +9,18 @@ enum CNGlassEffect {
 
   /// Prominent glass effect with enhanced visual prominence.
   prominent,
+
+  /// LOCAL PATCH #7: no glass material at all — the shape is filled with
+  /// [LiquidGlassConfig.tint] (or stays fully transparent when tint is null).
+  /// Exists for Flutter-drawn chrome that floats over platform-view-bearing
+  /// scrollables: the engine's view slicer (`flow/view_slicer.cc`) only keeps
+  /// Flutter ops in an overlay above platform views while they intersect a
+  /// platform-view rect, and drops them into the difference-clipped
+  /// background canvas otherwise — a stationary `plain` container beneath
+  /// such chrome guarantees the intersection every frame. Native side maps
+  /// this to `Glass.identity` plus a plain SwiftUI fill, so no glass ever
+  /// materializes and glass-on-glass stacking (clip 13-53) cannot occur.
+  plain,
 }
 
 /// Shapes for Liquid Glass effects.

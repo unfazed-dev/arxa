@@ -151,6 +151,58 @@ search bar / sliders / switches / toolbar render clean in scroll. Defects:
   (20-57-25) is not on disk (Downloads has nothing newer than Aug 1; mdfind
   finds no match). Re-share requested.
 
+## S7: device pass 21-32 (clip, 2026-08-13) — defect B refined
+
+Clip `ScreenRecording_08-13-2026 21-32-28_1.MP4` (5.6s, Search tab; source
+file auto-offloaded from Downloads after frame extraction — frames preserved
+in session scratchpad `clip2132/`). 22 frames @4fps:
+
+- **The pill vanish is STATE-CORRELATED, not at-rest:** present at rest
+  (f001/f008/f013/f022), present while scrolled up under the bar (f010/f011),
+  absent on EVERY frame of top rubber-band overscroll (f002-f006, f015-f018),
+  restored ≤250ms after settle. NOT the tuck machine: behavior=minimize tucks
+  BOTH ends, and the trailing actions never move in any frame, so `_away`
+  never fired; `_onScroll` also force-restores at `pixels <= 0`.
+- **Theme anomaly (attribution lead):** the resting pill renders a WHITE
+  capsule with DARK text — exactly the LIGHT-branch frosted values (paper
+  fill, ink text) — while every sibling (scrim, cards, labels) renders the
+  dark palette. Current source cannot paint that from one context: the same
+  `scheme` feeds both the pill fill and its label. Suggests the on-screen
+  capsule is not (or not only) the committed Flutter pill.
+- **Tab-stack correction:** iOS is an instant cross-cut, ONE tab on stage per
+  frame (tab host doc, `showcase_application_tab_host_widget.dart`) — the
+  alpha-0.004 ghost-above-active suspect from S5 was the Android slide path
+  and is DEAD on iOS.
+- **Secondary:** bright native slider thumb bleeds through the top-edge scrim
+  ramp next to the pill (f011) — the scrim dims Flutter-drawn dark content
+  fine but a white 30px thumb survives the semi-transparent ramp zone. Watch
+  item, not yet a ruling.
+- Repro rig: temp probes (AppDelegate composited-window snapshot timer +
+  auto-switch-to-Search + driven `animateTo(-140)` held rubber-band) on the
+  attached device, current source — to attribute before fixing.
+
+### S7 resolution — RESOLVED, law rule 7 (2026-08-13)
+
+- Reproduced on current source (theme anomaly was recording tone-mapping —
+  the probe's composited capture shows the correct dark pill at rest).
+- View-tree diff attributed it: the pill's `FlutterOverlayView` shrank from
+  `(16,59,361x78)` at rest to the actions' bbox `(281,59,96x44)` during held
+  overscroll — engine `flow/view_slicer.cc` keeps Flutter ops above platform
+  views only while they intersect a platform-view rect; otherwise they drop
+  to a difference-clipped background canvas. Scroll-state-dependent by
+  construction; no Flutter-side reorder can stabilize it.
+- Fix: vendor PATCH #7 `CNGlassEffect.plain` (no glass material — clear
+  fill + `Glass.identity`, iOS + macOS parity) + the bar wraps its frosted
+  pill in a stationary plain `LiquidGlassContainer` anchor, so the
+  intersection holds every frame. 13-53 stays closed (no glass to wash);
+  transition-gate exemption recorded (anchor renders nothing).
+- Device-verified with the same driven rubber-band: pill present at rest,
+  through the full held overscroll, and over passing content. ui_library
+  suite 356 green incl. new anchor pin in the bar test.
+- Every consumer of AppBoxKitChromeScaffold inherits the fix (all four
+  shells + pushed routes); law rule 7 records the anchor requirement for
+  any future floating Flutter chrome.
+
 ## Device-pass watch items (from S3 agents)
 
 - Long titles overflow the floating bar's non-flex title pill row (pre-existing;
