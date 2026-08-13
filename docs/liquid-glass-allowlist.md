@@ -259,6 +259,35 @@ the glass card is the first re-demote, the toolbar second.
    warm themselves; any kind a pushed route mounts first goes in `alsoWarm`.
    Pinned by appbox_kit_glass_warmup_test (rule-8 translate + kind pin).
 
+10. **An interactive back-swipe is a POP and must read as one — gesture state,
+    not animation state, is the signal (device clip 00-26, 2026-08-14).**
+    `AppBoxKitNativeChromeGate` decides "am I travelling with this transition?"
+    from `route.animation/secondaryAnimation.isAnimating`. Both are false for
+    the whole edge-drag, and the SDK says why: `dragUpdate` sets
+    `controller.value` DIRECTLY (`cupertino/route.dart:846`), which never
+    starts a ticker, and `didStartUserGesture` ticks the observer before the
+    drag has moved anything at all. The gate re-evaluates only on observer
+    ticks and latches, so one wrong read at gesture start hid EVERY gated
+    view in the gesturing navigator for the entire drag — then restored them
+    at the `didPop` tick mid-settle, materializing all the glass in the
+    user's face. Device signature: during the swipe both routes go bare
+    (cards, switch, segmented, native buttons, back chevron all gone) while
+    Flutter-drawn frosted pills and the root-scoped tab bar stay — that
+    survivor set IS the diagnostic, since it is exactly the gate's hide set
+    and nothing else. Fix: OR in
+    `route.navigator.userGestureInProgress`, which `NavigatorState` raises
+    BEFORE notifying observers (`navigator.dart:5827` vs `:5837`) and holds
+    through the settle (`cupertino/route.dart:905` defers
+    `didStopUserGesture` to the settle's status callback). Scoped for free —
+    it is the gate's own navigator, so a nested swipe cannot repaint root
+    chrome, and no push is gesture-driven, so the sibling-bar hide under a
+    root push is untouched. The result is that a gesture pop behaves
+    identically to a button pop, which was already ratified and device-clean.
+    Pinned by appbox_kit_chrome_gate_transition_scope_test (back-swipe test,
+    mutation-checked: without the clause it reports a hidden gate on every
+    drag frame; the drag must cross the halfway line or Cupertino cancels the
+    pop and the frame samples go vacuous).
+
 **Known signature, not a defect — glass edge refraction (labelprobe
 2026-08-13):** each in-scroll glass card shows dim copies of its NEIGHBORING
 section labels just inside its top/bottom edges, riding the card at constant

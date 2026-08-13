@@ -340,6 +340,103 @@ void main() {
   });
 
   testWidgets(
+      'kit.ui-library.chrome-gate-scope — an interactive back-swipe keeps every '
+      'gate painted through drag, commit and settle', (WidgetTester tester) async {
+    // The all-glass-vanishes-under-the-finger regression (device clip 00-26,
+    // 2026-08-14). `didStartUserGesture` ticks the observer BEFORE the drag
+    // moves any controller, so at the only tick of the whole drag both
+    // animation proxies still read a terminal status: `isAnimating` is false
+    // on the dragged route AND the revealed route, and every gate in the
+    // gesturing navigator hid until the `didPop` tick at commit — where the
+    // glass re-materialized mid-settle. The fix reads
+    // `navigator.userGestureInProgress`, which NavigatorState sets before
+    // notifying observers and holds through the settle.
+    final GlobalKey<NavigatorState> nestedKey = GlobalKey<NavigatorState>();
+
+    await tester.pumpWidget(
+      CupertinoApp(
+        navigatorObservers: <NavigatorObserver>[CNTransitionObserver()],
+        home: CupertinoPageScaffold(
+          child: Column(
+            children: <Widget>[
+              Expanded(
+                child: Navigator(
+                  key: nestedKey,
+                  observers: <NavigatorObserver>[CNTransitionObserver()],
+                  onGenerateRoute: (RouteSettings settings) =>
+                      CupertinoPageRoute<void>(
+                    settings: settings,
+                    builder: (_) => const AppBoxKitNativeChromeGate(
+                      child: Text('in-route-glass'),
+                    ),
+                  ),
+                ),
+              ),
+              const AppBoxKitNativeChromeGate(child: Text('root-tab-bar')),
+            ],
+          ),
+        ),
+      ),
+    );
+    await _settleBoot(tester);
+
+    nestedKey.currentState!.push(
+      CupertinoPageRoute<void>(
+        builder: (_) => const CupertinoPageScaffold(child: Text('detail')),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.pump(const Duration(seconds: 2)); // drain the push watchdog
+
+    // Edge-drag from the left, inside the nested navigator's area.
+    final TestGesture gesture =
+        await tester.startGesture(const Offset(5.0, 200.0));
+    await gesture.moveBy(const Offset(30.0, 0.0));
+    await tester.pump();
+
+    final List<String> hiddenDuring = <String>[];
+    void sample(String label) {
+      if (_allGatesHidden(tester).any((bool hidden) => hidden)) {
+        hiddenDuring.add(label);
+      }
+    }
+
+    // The drag: several increments with frames between — the whole window the
+    // clip shows bare. No observer tick fires in here, so whatever the
+    // gesture-start tick decided LATCHES for the entire drag.
+    //
+    // Past the halfway line on purpose (8×60 + 30 = 510 of the 800pt test
+    // surface). `dragEnd` commits only when `controller.value <= 0.5`
+    // (cupertino/route.dart:875) — a shorter drag CANCELS, and the final
+    // "did it actually pop" assertion is what catches that, keeping the
+    // frame samples above from being vacuous.
+    sample('drag-start');
+    for (int step = 0; step < 8; step++) {
+      await gesture.moveBy(const Offset(60.0, 0.0));
+      await tester.pump(const Duration(milliseconds: 16));
+      sample('drag-$step');
+    }
+
+    // Commit: past the halfway line, release. The route pops and settles.
+    await gesture.up();
+    for (int frame = 0; frame < 34; frame++) {
+      await tester.pump(const Duration(milliseconds: 16));
+      sample('settle-$frame');
+    }
+
+    expect(hiddenDuring, isEmpty,
+        reason: 'a gate left the frame during the back-swipe at [$hiddenDuring] '
+            '— that is the all-glass-vanishes-under-the-finger clip, and the '
+            'commit-time re-add is the Liquid Glass materialize');
+
+    await tester.pumpAndSettle();
+    expect(find.text('in-route-glass'), findsOneWidget,
+        reason: 'the swipe must actually have popped back to the first route');
+
+    await _flushWatchdogs(tester);
+  });
+
+  testWidgets(
       'kit.ui-library.chrome-gate-scope — a ROOT push over a tab scaffold hides '
       'the sibling tab bar', (WidgetTester tester) async {
     // The "second ceiling" named in the gate's own class doc: a gate that is a

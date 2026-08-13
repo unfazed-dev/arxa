@@ -325,9 +325,33 @@ class _KitNativeChromeGateState extends State<AppBoxKitNativeChromeGate> {
     // from a post-frame callback registered BEFORE the push instead reads
     // `forward`, one beat later in the same frame — that is the misleading
     // reading, not this one.)
+    // INTERACTIVE BACK-SWIPE (device clip 00-26, 2026-08-14): the two
+    // isAnimating reads above are tick-order truths, and the gesture breaks
+    // their timing. `didStartUserGesture` ticks the observer BEFORE the drag
+    // has moved any controller — both proxies still sit at a terminal status
+    // (`completed`), so isAnimating reads false on the dragged route AND the
+    // route being revealed. Since this gate re-evaluates only on observer
+    // ticks, every gate in the gesturing navigator hid for the entire drag
+    // (all glass on both routes vanished under the finger), then popped back
+    // mid-settle at the `didPop` tick — the re-materialize this predicate
+    // exists to prevent. A gesture pop must read exactly like a button pop:
+    // dragged content is carried by its route's transform (kTransform applies
+    // to platform views — see the SDK verification above), revealed content
+    // must not re-materialize, and z-order slicing keeps it under the
+    // outgoing page either way.
+    //
+    // `userGestureInProgress` is incremented by `NavigatorState` BEFORE it
+    // notifies observers (navigator.dart, didStartUserGesture) — so it is
+    // already readable at the tick that matters — and it is held true through
+    // the settle (the back-gesture controller calls didStopUserGesture from
+    // its settle-completion listener, both on commit and on cancel). Scoped
+    // by construction: it is the gate's OWN navigator, so a nested-router
+    // swipe cannot repaint root chrome, and the sibling-bar hide under a
+    // root PUSH is untouched (no push is gesture-driven).
     final travellingWithTransition =
         (_route?.animation?.isAnimating ?? false) ||
-            (_route?.secondaryAnimation?.isAnimating ?? false);
+            (_route?.secondaryAnimation?.isAnimating ?? false) ||
+            (_route?.navigator?.userGestureInProgress ?? false);
 
     final hidden = CNTabBarRouteObserver.anyModalDepth.value > _mountDepth ||
         (CNTransitionObserver.hasActiveTransitionAbove(context) &&

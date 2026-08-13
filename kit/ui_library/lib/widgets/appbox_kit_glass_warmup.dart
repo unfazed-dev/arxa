@@ -61,6 +61,12 @@ class AppBoxKitGlassWarmup extends StatelessWidget {
   /// boot screen warm themselves and don't belong in this list).
   final List<Widget> alsoWarm;
 
+  // transition-exempt: the warm view is translated 100000px off-screen and
+  // never enters a frame the user sees, so it has no slide to leak over —
+  // the one thing the gate exists to prevent. Gating it would be actively
+  // harmful: the gate unmounts on every route transition, and each re-mount
+  // replays the glass materialization this widget exists to pay ONCE at boot
+  // (law rule 9, docs/research/perf-measurement-native-coexistence.md).
   @override
   Widget build(BuildContext context) {
     if (!AppBoxKitPlatform.supportsLiquidGlass) return child;
