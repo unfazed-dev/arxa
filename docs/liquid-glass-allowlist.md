@@ -22,45 +22,46 @@ Fixed elements floating above content. Glass is *reserved* for this layer
 | AppBoxKitNativeSearchBar (docked/pinned) | Pinned sliver headers count as chrome |
 | AppBoxKitNativeAppBar / SliverAppBar | Already Flutter-drawn; native glass optional future |
 
-### 2. Controls — native OUTSIDE scrollables; Flutter tier INSIDE
-**RULING REVERSED 2026-08-13** (user-ratified, on the clip-0813 probe trail:
-A2 keep-alive negative, A1 reorder partial — see
-`docs/plans/clip-0813-fix-plan.md`). The prior "native everywhere" ruling was
-Apple-correct in design terms but unreachable in this embedding: any platform
-view inside a Scrollable slices all later Flutter paint into overlay layers
-whose rects ignore clip bounds (open engine #150646, no iOS escape hatch) —
-dropped labels, stale white slabs, mis-bounded card fills, at any scroll
-offset, for any content painted after the first platform view. The vendor
-README's "DO NOT put platform views in scrolling lists" wins over visual
-fidelity until the engine bug closes.
+### 2. Controls — INFORMED ALLOWLIST (ratified 2026-08-13, supersedes both prior rulings)
+Button-class controls stay **native Liquid Glass everywhere, including
+scrollables**; continuous/text controls take the **Flutter tier inside
+scrollables**. Native everywhere outside scrollables and in all chrome, for
+every control.
 
-Mechanism: every control wrapper passes
-`preferFlutterTier: Scrollable.maybeOf(context) != null` to its CN component —
-the vendor's own Cupertino/Material fallback renders (with the PATCH #5/#7
-label-contrast and tier-propagation fixes). Native platform views remain
-everywhere OUTSIDE scrollables and in all chrome.
+Evidence trail (all three states device-observed, 2026-08-13):
+1. Native-everywhere: artifacts on Search/Profile scroll (clips 08-24, 11-34).
+2. Full demotion (`4af16e3f`): artifacts GONE — slicing mechanism confirmed
+   (engine #150646, open through Flutter 3.47.0; overlay rects ignore clip
+   bounds).
+3. Home's 7 `AppBoxKitNativeIconButton`s — real UiKitViews inside a ListView,
+   never gated — rendered clean the whole time: CNButton-backed views are
+   exposure-safe in practice. Exposure is compositional, not categorical.
 
 | Kit widget | In-scroll behavior |
 |---|---|
-| AppBoxKitNativeSegmentedControl | Flutter tier (CN fallback) |
-| AppBoxKitNativeSwitch | Flutter tier |
-| AppBoxKitNativeSlider / RangeSlider | Flutter tier |
+| AppBoxKitNativeButton / IconButton | **native glass**, styles pass through 1:1 |
+| AppBoxKitNativeSplitButton | **native glass** (CNGlassButtonGroup) |
+| AppBoxKitNativePopupMenu (in-content trigger) | **native glass** |
+| AppBoxKitNativeSegmentedControl | **native glass** — first to re-demote if artifacts return |
+| AppBoxKitNativeSlider / RangeSlider | Flutter tier (clip-proven offender) |
+| AppBoxKitNativeSwitch | Flutter tier (clip-proven offender) |
+| AppBoxKitNativeSearchBar (in-form) | Flutter tier (slab-central in clips) |
 | AppBoxKitNativeTextField | Flutter tier |
-| AppBoxKitNativeSearchBar (in-form) | Flutter tier |
-| AppBoxKitNativeButton | Flutter tier; **style-mapped** (below) |
-| AppBoxKitNativeSplitButton | Flutter tier |
-| AppBoxKitNativePopupMenu (in-content trigger) | Flutter tier |
 
-**Button style mapping (in scroll content only):** `.glass`/`.glassProminent`
-are opt-in styles Apple uses in chrome and branded moments (Apple Cash send
-screen), not ordinary form CTAs. Inside a Scrollable the kit maps
-`glass → tinted` and `prominentGlass → filled`, and the mapped style shapes
-the Flutter-tier fallback's look. Outside scrollables styles pass through
-unchanged on the native tier.
+Mechanism for the demoted set:
+`preferFlutterTier: Scrollable.maybeOf(context) != null` (with PATCH
+#5/#7/#8/#9 fallback fixes). The re-promoted set passes no tier flag.
 
-If glass controls must ever ride a scrollable again: re-run the auth-view
-probe (see memory note) and re-check #150646 first — the same-day revert of
-the ORIGINAL demotion predates this probe trail and is superseded by it.
+**Known deviation from HIG, accepted knowingly:** Apple's Materials page says
+"Don't use Liquid Glass in the content layer" and gives in-list
+sliders/toggles glass only *during activation*. The demoted set matches that.
+The button-class re-promotion deviates (resting glass buttons in scroll) —
+user-ratified 2026-08-13 as a deliberate product choice, backed by home's
+clean rendering.
+
+**Deselect protocol (if artifacts reappear in a scrollable):** re-demote ONE
+control type per device run, starting with segmented, then popup menu, then
+split button, then button. Never blanket-demote again — attribution first.
 
 ### 3. Glass surfaces — demoted inside scrollables, native when static
 Applied glass (platters, cards, containers) scrolling with content is Apple's
@@ -108,10 +109,8 @@ slices (rule 1). No artifact is currently attributed to it on device; if edge
 band label dropouts appear in a recording after the tab-stack clip landed,
 this is the next suspect (fix direction: scrim-over instead of alpha-on).
 
-**Deviation note — split button:** CNSplitButton renders via
-CNGlassButtonGroup. If a non-glass group style exists it should map like
-buttons; until then it stays native in content as an accepted deviation
-(single showcase demo).
+**Deviation note — split button:** obsolete — under the informed allowlist
+(§2) CNSplitButton is native in content by rule, not by deviation.
 
 ## Performance policy (decided with the allowlist)
 Platform-view cost scales per live view per frame (no cliff; ~45 MB and a
@@ -125,6 +124,10 @@ has twice killed a correct mechanism to protect a defective one.
 - Round 1–2 (2026-08-12): blanket in-scroll demotion of all natives shipped
   and was reverted for controls the same day — it enforced a rule Apple only
   holds for glass *surfaces*. See docs/plans/scrollable-glass-demotion.md.
+- Round 3 (2026-08-13): full control demotion (`4af16e3f`) on the clip-0813
+  probe trail; device run confirmed artifacts gone (mechanism proven), then
+  superseded same day by the informed allowlist (§2) once home's ungated
+  in-scroll icon buttons proved button-class views exposure-safe.
 - Vendor LOCAL PATCH #5 (fallback label contrast) and #6 (preferFlutterTier
   plumbing) remain: #5 fixes the pre-26 tier; #6 serves surfaces (§3) and any
   future opt-in.

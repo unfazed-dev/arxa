@@ -137,6 +137,29 @@ gone); then Profile toolbar/cards (B); C lens comparison still open.
    allowlist-vs-vendor-README control question, with the probe trail as the
    external evidence the grill requires.
 
+## Step 6 — informed allowlist (2026-08-13, supersedes step 5's blanket demotion)
+
+Device verdict on `4af16e3f`: **artifacts GONE** — slicing mechanism
+confirmed. User rejected blanket demotion as the fix (home's glass icon
+buttons — real ungated UiKitViews in a ListView — render clean, proving
+exposure is compositional). Web pass: HIG says no resting glass in the
+content layer (in-list sliders/toggles glass only during activation);
+engine #150646 still open through Flutter 3.47.0; no ecosystem workaround.
+
+Grilled and ratified: **informed allowlist.** Re-promoted to native glass in
+scroll: button (style map removed — 1:1 passthrough), split button, popup
+menu, segmented (user chose to include; first to re-demote if artifacts
+return). Still demoted in scroll: slider, range slider, switch, search bar,
+text field (clip-proven offenders + HIG-aligned). Deselect protocol: one
+control type per device run, never blanket again.
+
+Landed: 4 wrappers un-gated, 2 test pins flipped, allowlist §2 rewritten.
+Suites: ui_library 328/328, showcase 128/128 (M5 invariant unaffected —
+button-class never mounts LiquidGlassContainer).
+Next device check: Search/Profile scroll must STAY clean (demoted offenders
+unchanged) while home/glass CTAs/segmented show real glass again. C (tab
+lens) still open — stock-UITabBar comparison.
+
 ## Consult trail
 
 No API key on this machine; decision-skip recorded via

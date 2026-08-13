@@ -69,9 +69,10 @@ class AppBoxKitNativeSegmentedControl extends StatelessWidget {
           // shrinkWrap makes CNSegmentedControl measure the native control and
           // pin its width, matching the intrinsic-width fallback/M3E tiers.
           shrinkWrap: true,
-          // In-scroll demotion — see AppBoxKitNativeSlider for the rationale
-          // (clip-0813 probe trail; engine #150646).
-          preferFlutterTier: Scrollable.maybeOf(context) != null,
+          // Native glass in scrollables too — segmented joined the informed
+          // allowlist (ratified 2026-08-13; home ran one clean above Flutter
+          // text). First to re-demote if artifacts return — see
+          // docs/liquid-glass-allowlist.md §2.
         ),
       ).chromeGated();
     }

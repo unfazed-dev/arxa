@@ -117,38 +117,35 @@ void main() {
   });
 
   testWidgets(
-      'kit.ui-library.native-button — inside a scrollable demotes to the '
-      'Flutter tier and maps glass styles (glass → tinted, prominentGlass → filled)',
-      (tester) async {
+      'kit.ui-library.native-button — inside a scrollable stays native and '
+      'glass styles pass through unmapped', (tester) async {
     await withAndroidFallback(() async {
-      const mapped = {
-        AppBoxKitButtonStyle.glass: CNButtonStyle.tinted,
-        AppBoxKitButtonStyle.prominentGlass: CNButtonStyle.filled,
-      };
-      for (final entry in mapped.entries) {
+      for (final style in [
+        AppBoxKitButtonStyle.glass,
+        AppBoxKitButtonStyle.prominentGlass,
+      ]) {
         await tester.pumpWidget(host(SingleChildScrollView(
           child: AppBoxKitNativeButton(
             label: 'Go',
-            style: entry.key,
+            style: style,
             onPressed: () {},
           ),
         )));
         final cn = tester.widget<CNButton>(find.byType(CNButton));
         expect(
           cn.config.style,
-          entry.value,
-          reason: 'inside a Scrollable the kit maps ${entry.key.name} → '
-              '${entry.value.name} so no glass material rides the content '
-              'layer, and the mapped style shapes the Flutter-tier fallback '
-              '(docs/liquid-glass-allowlist.md §2, button style mapping)',
+          CNButtonStyle.values.byName(style.name),
+          reason: 'INFORMED ALLOWLIST 2026-08-13 (docs/liquid-glass-allowlist '
+              '.md §2): button-class controls are exposure-safe in scroll '
+              '(home ran 7 native in-scroll CNButton views clean) — glass '
+              'styles pass through 1:1, no in-scroll remap.',
         );
         expect(
           cn.config.preferFlutterTier,
-          isTrue,
-          reason: 'RULING REVERSED 2026-08-13 (clip-0813 probe trail): '
-              'in-scroll platform views slice later Flutter paint into '
-              'clip-ignorant overlays (engine #150646) — in-scroll buttons '
-              'take the Flutter tier.',
+          isFalse,
+          reason: 'in-scroll buttons stay native platform views — only the '
+              'continuous controls (slider/switch/search bar/text field) '
+              'demote in scroll.',
         );
       }
     });

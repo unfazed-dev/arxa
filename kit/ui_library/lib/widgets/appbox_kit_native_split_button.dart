@@ -125,10 +125,9 @@ class AppBoxKitNativeSplitButton extends StatelessWidget {
     // data buttons). Native iOS 26+ renders correctly. Surface only if a host
     // targets labeled split buttons on iOS < 26.
     final scheme = Theme.of(context).colorScheme;
-    // Native everywhere, including scrollables. CNSplitButton renders via
-    // CNGlassButtonGroup, which has no non-glass group style to map to — an
-    // accepted deviation from the in-scroll button style mapping (see
-    // docs/liquid-glass-allowlist.md, "Deviation note — split button").
+    // Native Liquid Glass everywhere, including scrollables — button-class
+    // controls are on the informed allowlist (ratified 2026-08-13, see
+    // docs/liquid-glass-allowlist.md §2).
     return CNSplitButton(
       label: label,
       icon: sfSymbol == null
@@ -154,10 +153,6 @@ class AppBoxKitNativeSplitButton extends StatelessWidget {
               : null)
           : CNSymbol(menuSfSymbol!, size: 18.0, color: scheme.primary),
       customMenuIcon: menuSfSymbol == null ? menuIcon : null,
-      // In-scroll demotion — see AppBoxKitNativeSlider for the rationale
-      // (clip-0813 probe trail; engine #150646). Supersedes the earlier
-      // "native everywhere" deviation note above.
-      preferFlutterTier: Scrollable.maybeOf(context) != null,
     ).chromeGated();
   }
 

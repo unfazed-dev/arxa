@@ -34,17 +34,18 @@ void main() {
         .widget<CNSegmentedControl>(find.byType(CNSegmentedControl));
   }
 
-  testWidgets('kit.ui-library.native-segmented-control — inside a scrollable demotes to the Flutter tier',
+  testWidgets('kit.ui-library.native-segmented-control — stays native inside a scrollable',
       (tester) async {
     await withAndroidFallback(() async {
       final cn = await pumpCN(tester, inScrollable: true);
       expect(
         cn.preferFlutterTier,
-        isTrue,
-        reason: 'RULING REVERSED 2026-08-13 (docs/liquid-glass-allowlist.md '
-            '§2, clip-0813 probe trail): in-scroll platform views slice later '
-            'Flutter paint into clip-ignorant overlays (engine #150646) — '
-            'in-scroll controls take the Flutter tier.',
+        isFalse,
+        reason: 'INFORMED ALLOWLIST 2026-08-13 (docs/liquid-glass-allowlist.md '
+            '§2): button-class + segmented are exposure-safe in scroll (home '
+            'ran 7 native in-scroll views clean; artifacts vanished only for '
+            'the continuous controls). Segmented is first to re-demote if '
+            'device artifacts return.',
       );
     });
   });
