@@ -9,27 +9,15 @@ import 'appbox_kit_frosted_surface.dart';
 /// status-bar inset) to their content's top padding.
 const double kAppBoxKitFloatingBarBlockHeight = 44 + abxGap8;
 
-/// Floating top chrome for the Liquid Glass tier — the top-edge counterpart
-/// of the floating native tab bar.
-///
-/// Why this exists (allowlist rule 4, clips 12-48/13-17/13-32): a
-/// Flutter-drawn opaque app bar cannot coexist with native glass controls in
-/// the scrollable beneath it — culling them at the bar seam pops/shimmers,
-/// and painting them behind the bar flashes body content OVER the bar
-/// (overlay-layer churn, flutter#86787 class). Native chrome resolves both:
-/// this bar's glass surface is a platform view painted after the scrolled
-/// content, so it composites above every platform view in that content with
-/// deterministic UIView z-order — the exact lifecycle that keeps the bottom
-/// tab bar clean. Content scrolls full-bleed behind it and culls at the
-/// physical screen edge, off-screen.
-///
-/// Layout contract: place over a full-bleed body (Stack), and raise the
-/// body's `MediaQuery.padding.top` by [kAppBoxKitFloatingBarBlockHeight] so
-/// descendants inset themselves. The title rides its own native glass
-/// capsule; actions are expected to be native glass controls already
-/// (icon buttons, popup menus). On tiers without native glass the vendor
-/// container degrades to its bare child — hosts should only mount this bar
-/// on `AppBoxKitPlatform.supportsLiquidGlass`.
+/// Tuck/hide motion for the floating chrome. Apple publishes no duration for
+/// the iOS 26 bar minimize; its system chrome uses springs that settle in
+/// roughly 0.4–0.5s, so 400ms with a fast-start/soft-settle ease-out is the
+/// closest overshoot-free match (device-tuned 2026-08-13; 280ms read
+/// snappier than system). One knob — every chrome slide uses this pair.
+const Duration kAppBoxKitFloatingBarMotionDuration =
+    Duration(milliseconds: 400);
+const Curve kAppBoxKitFloatingBarMotionCurve = Curves.easeOutCubic;
+
 /// Which end of [AppBoxKitNativeFloatingBar] tucks away when minimized.
 enum AppBoxKitFloatingBarTuck {
   /// Nothing tucked — the full bar.
@@ -52,6 +40,27 @@ enum AppBoxKitFloatingBarTuck {
       this == AppBoxKitFloatingBarTuck.both;
 }
 
+/// Floating top chrome for the Liquid Glass tier — the top-edge counterpart
+/// of the floating native tab bar.
+///
+/// Why this exists (allowlist rule 4, clips 12-48/13-17/13-32): a
+/// Flutter-drawn opaque app bar cannot coexist with native glass controls in
+/// the scrollable beneath it — culling them at the bar seam pops/shimmers,
+/// and painting them behind the bar flashes body content OVER the bar
+/// (overlay-layer churn, flutter#86787 class). Native chrome resolves both:
+/// this bar's glass surface is a platform view painted after the scrolled
+/// content, so it composites above every platform view in that content with
+/// deterministic UIView z-order — the exact lifecycle that keeps the bottom
+/// tab bar clean. Content scrolls full-bleed behind it and culls at the
+/// physical screen edge, off-screen.
+///
+/// Layout contract: place over a full-bleed body (Stack), and raise the
+/// body's `MediaQuery.padding.top` by [kAppBoxKitFloatingBarBlockHeight] so
+/// descendants inset themselves. The title rides its own native glass
+/// capsule; actions are expected to be native glass controls already
+/// (icon buttons, popup menus). On tiers without native glass the vendor
+/// container degrades to its bare child — hosts should only mount this bar
+/// on `AppBoxKitPlatform.supportsLiquidGlass`.
 class AppBoxKitNativeFloatingBar extends StatelessWidget {
   const AppBoxKitNativeFloatingBar({
     super.key,
@@ -91,8 +100,8 @@ class AppBoxKitNativeFloatingBar extends StatelessWidget {
                   // 2.0× own width clears the 16px edge padding with margin.
                   offset:
                       tuck._tucksLeading ? const Offset(-2, 0) : Offset.zero,
-                  duration: const Duration(milliseconds: 280),
-                  curve: Curves.easeOutCubic,
+                  duration: kAppBoxKitFloatingBarMotionDuration,
+                  curve: kAppBoxKitFloatingBarMotionCurve,
                   child:
                 // Flutter-drawn pill, DELIBERATELY not native glass
                 // (clip 13-53): scrolled native glass buttons crossing a
@@ -133,8 +142,8 @@ class AppBoxKitNativeFloatingBar extends StatelessWidget {
                   // re-materialize on return).
                   offset:
                       tuck._tucksTrailing ? const Offset(2, 0) : Offset.zero,
-                  duration: const Duration(milliseconds: 280),
-                  curve: Curves.easeOutCubic,
+                  duration: kAppBoxKitFloatingBarMotionDuration,
+                  curve: kAppBoxKitFloatingBarMotionCurve,
                   child: IgnorePointer(
                     ignoring: tuck._tucksTrailing,
                     child: Row(
@@ -280,8 +289,8 @@ class _AppBoxKitFloatingChromeState extends State<AppBoxKitFloatingChrome> {
       bar = AnimatedSlide(
         // -1.5× own height clears the status-bar inset the SafeArea adds.
         offset: _away ? const Offset(0, -1.5) : Offset.zero,
-        duration: const Duration(milliseconds: 280),
-        curve: Curves.easeOutCubic,
+        duration: kAppBoxKitFloatingBarMotionDuration,
+        curve: kAppBoxKitFloatingBarMotionCurve,
         child: IgnorePointer(ignoring: _away, child: bar),
       );
     }

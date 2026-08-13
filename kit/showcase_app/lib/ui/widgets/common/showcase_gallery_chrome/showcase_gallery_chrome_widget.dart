@@ -75,9 +75,10 @@ class ShowcaseGalleryChromeWidget extends StatelessWidget {
           : AppBoxKitFloatingChrome(
               title: 'Kit Showcase',
               actions: _actions(context),
-              // Full minimize on trial (2026-08-13): BOTH ends tuck — pill
-              // off the left, actions off the right. Single-end variants:
-              // minimizeTrailing / minimizeLeading.
+              // FINAL (device-ratified 2026-08-13): full minimize — BOTH
+              // ends tuck, pill off the left, actions off the right.
+              // Alternatives kept in the kit: pinned, minimizeTrailing,
+              // minimizeLeading, hide.
               behavior: AppBoxKitFloatingBarBehavior.minimize,
               body: child,
             ),
