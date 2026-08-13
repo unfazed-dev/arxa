@@ -85,29 +85,30 @@ class AppBoxKitEdgeAwareListView extends StatelessWidget {
   /// Strength profile forwarded to every child's effect.
   final AppBoxKitScrollEdgeEffectStyle style;
 
-  /// Extend the viewport's leading edge up behind an OPAQUE `Scaffold.appBar`
-  /// so it sits at the physical screen top instead of the bar seam.
+  /// Extend the viewport's leading edge ABOVE the physical screen top, as
+  /// materialization headroom for native glass in the list.
   ///
   /// Why: sliver children are paint-culled at the viewport's leading edge by a
   /// LAYOUT test (`RenderSliverMultiBoxAdaptor.paint`: child painted only while
-  /// `mainAxisDelta + paintExtent > 0`) — `clipBehavior` never participates, so
-  /// `Clip.none` cannot move the boundary (proven on device, clips 12-48 and
-  /// 13-17). When the list hosts native platform views, culling at the bar
-  /// seam means the engine drops the view mid-screen and re-materializes it on
-  /// re-entry with a visible glass shimmer. This flag oversizes the viewport
-  /// upward (status bar + `kToolbarHeight` + gap) via an [OverflowBox] and adds
-  /// the same amount to the top padding, so resting layout is unchanged but
-  /// children now cull at/above the physical screen edge — the same lifecycle
-  /// `extendBody: true` gives the bottom. ONLY valid under opaque top chrome:
-  /// the bar paints after the body and covers the overdraw region (taps above
-  /// the body's bounds still go to the bar — overflow is paint-only).
+  /// `mainAxisDelta + paintExtent > 0`) — `clipBehavior` never participates
+  /// (proven on device, clips 12-48 and 13-17). A culled child's platform
+  /// views are fully detached, and iOS 26 glass re-runs its materialize
+  /// animation on re-add — so whichever row of a multi-row child leads
+  /// re-entry is VISIBLE mid-animation at the boundary (clip 13-53-b: the
+  /// smoke block's bottom row flashed; the top row, 52px further out, always
+  /// finished off-screen). This flag oversizes the viewport upward (status
+  /// bar + `kToolbarHeight` + gap) via an [OverflowBox] and adds the same
+  /// amount to the top padding, so resting layout is unchanged but the
+  /// cull/re-add boundary sits above the physical top and the animation
+  /// finishes before the view enters the screen.
   ///
-  /// **WARNING (clip 13-32, device-observed):** when the overdraw region hosts
-  /// PLATFORM VIEWS, the engine's overlay-layer churn can flash body content
-  /// OVER a Flutter-drawn bar during fast scrolls (flutter#86787 class) — the
-  /// bar's paint-order guarantee does not survive hybrid-composition slicing.
-  /// Safe only when the content passing behind the bar is pure Flutter, or the
-  /// covering chrome is itself a native view (deterministic UIView z-order).
+  /// **Use only under NATIVE or no top chrome (full-bleed body).** With an
+  /// opaque Flutter-drawn bar, the overdraw region is on-screen under the bar
+  /// and overlay-layer churn flashes body content OVER the bar during fast
+  /// scrolls (clip 13-32, flutter#86787 class) — that arrangement is why the
+  /// gallery's top bar went native (allowlist rule 4). Overflow is
+  /// paint-only: taps above the body's bounds still go to whatever chrome
+  /// floats there.
   final bool extendBehindTopBar;
 
   @override

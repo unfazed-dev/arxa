@@ -132,12 +132,20 @@ LiquidGlassContainer in scrolling lists.
    tab bar is clean — or (b) no platform views in the scrolling content
    under the bar. Direction is a product ruling, not a patch.
    **Ruling (2026-08-13, user-ratified): native top bar.** The gallery
-   chrome now branches: glass tier = `AppBoxKitNativeFloatingBar` (native
-   glass title capsule + the existing native action buttons) floating over
-   a FULL-BLEED body, so content culls at the physical screen edge; other
-   tiers keep the boxed Flutter bar. Nested-route Scaffolds inset via the
-   chrome's raised MediaQuery top padding, unmodified. Plan:
-   docs/plans/native-top-bar.md.
+   chrome now branches: glass tier = `AppBoxKitNativeFloatingBar` (frosted
+   Flutter title pill per rule 5 + the existing native action buttons)
+   floating over a FULL-BLEED body, so content culls at the physical
+   screen edge; other tiers keep the boxed Flutter bar. Nested-route
+   Scaffolds inset via the chrome's raised MediaQuery top padding,
+   unmodified. Plan: docs/plans/native-top-bar.md.
+   **Residual + fix (clip 13-53-b):** re-add at the boundary is
+   TIME-based — the culled smoke block's bottom row re-entered the screen
+   mid-materialization (identical widgets to the clean top row; the only
+   difference was leading re-entry). Fix: `extendBehindTopBar` overdraw is
+   BACK ON for the gallery lists — now safe because the overdraw region is
+   off-screen above a native/full-bleed chrome (the 13-32 flash needed the
+   opaque Flutter bar, which no longer exists). The boundary sits ~120px
+   above the physical top, buying the animation time to finish unseen.
 5. **No native glass may overhang a path scrolled native glass travels
    (clip 13-53).** With the floating native bar, the home smoke row's
    compose button washed to a square ghost for EXACTLY the title capsule's

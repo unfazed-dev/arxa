@@ -41,8 +41,9 @@ class ShowcaseSearchViewMobile
     // chrome, and the gallery app bar is opaque.
     return AppBoxKitEdgeAwareListView(
       bottomOcclusion: kShowcaseTabBarBlockHeight,
-      // NO extendBehindTopBar — see the home list's note (clip 13-32:
-      // content flashes over the bar when platform views paint behind it).
+      // Materialization headroom above the physical top — see the home
+      // list's note (clip 13-53-b; safe since the chrome went native).
+      extendBehindTopBar: true,
       // Trailing clearance so the last section can scroll clear of the
       // floating tab bar (otherwise its edge effect never disengages).
       // Top inset mirrors the home list: full-bleed behind the floating
