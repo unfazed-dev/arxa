@@ -319,6 +319,52 @@ the glass card is the first re-demote, the toolbar second.
     it is latent, so it is pinned by a test rather than left to reasoning. A
     gate mounting mid-drag, or any new tick source, would expose it.
 
+11. **A sheet hides only the chrome it actually COVERS (2026-08-14, closes the
+    all-or-nothing ceiling the gate doc named).** The gate's modal branch hid
+    on `anyModalDepth > _mountDepth` alone, so opening any sheet
+    dematerialized EVERY native glass surface behind it — including the ones
+    still plainly visible in the clear space above a short bottom sheet — and
+    materialized them all back on dismiss. Same "glass vanishes, then pops
+    back" defect as the back-swipe, reached through the modal branch instead
+    of the transition branch. The rect was already there and being ignored:
+    `CNBottomSheet` publishes the sheet's LIVE box each frame through
+    `CNSheetGeometryProbe` for exactly this purpose (its comment: *"measuring
+    the route would tear down native chrome sitting in the clear space above a
+    short sheet"*), and the kit wraps the probe around the sized body, not the
+    route (`appbox_kit_native_sheet.dart:274`). Fix: the gate now consults
+    `CNTabBarRouteObserver.topModalRect` and hides only on overlap — the same
+    predicate the vendor's `ModalHideMixin._computeShouldHide` already
+    applies, deliberately identical so the two authorities cannot disagree
+    about the same sheet. Fails toward HIDING on every uncertainty (no rect
+    published — a plain `showModalBottomSheet`, a dialog — or no measurable
+    box), so the original bleed fix is preserved verbatim for anything that
+    cannot describe its own geometry. No scrim conflict: `CupertinoSheetRoute`
+    hardcodes a transparent barrier and the kit only dims when a caller asks
+    (`showOverlay`). Pinned by appbox_kit_chrome_gate_sheet_coverage_test
+    (4 cases incl. the sheet growing into a gate and the mount-depth baseline
+    that stops a sheet's OWN chrome self-hiding), mutation-checked.
+
+12. **Toasts are Flutter-tier, and the gate test reads CODE, not prose
+    (2026-08-14).** `CNToast` wraps its body in a real `LiquidGlassContainer`
+    (vendor `toast.dart:503`), then runs it through `ScaleTransition` +
+    `FadeTransition` on both edges (`:571-577`) — alpha animation over a
+    platform view, the ghosting idiom this law already forbids — and mounts it
+    via a bare `OverlayEntry` (`:302`) that no gate can reach. It was the one
+    native glass surface in the kit that could not leave the frame for a route
+    slide, and a toast most often fires right after a nav action. Fixed at the
+    call site: every `CNToast` kind now passes `useGlassEffect: false`
+    (`appbox_kit_notification_service.dart`), matching `_centerPill`, the
+    service's other, already-Flutter-drawn toast. Two enforcement holes let it
+    live: the gate test scanned only `lib/widgets` non-recursively (the call
+    site is in `lib/services/`), and `CNToast`/`CNIcon` were absent from its
+    pattern. Both closed — the scan is now all of `lib/` recursively. It also
+    matched RAW source, so a file could satisfy the rule by MENTIONING
+    `.chromeGated()` in a comment: caught in the act, when a comment written
+    to explain this very leak silenced the test about it. The scan now strips
+    whole-line comments before matching, and the opt-out alone is read from
+    raw source. **A rule that can be silenced by writing about it is not
+    enforcement.**
+
 **Known signature, not a defect — glass edge refraction (labelprobe
 2026-08-13):** each in-scroll glass card shows dim copies of its NEIGHBORING
 section labels just inside its top/bottom edges, riding the card at constant

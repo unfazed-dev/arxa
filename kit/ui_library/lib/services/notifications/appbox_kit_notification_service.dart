@@ -318,19 +318,63 @@ class AppBoxKitNotificationService {
     }
     final pos = _cnPosition(position);
     final preset = _cnDuration(duration);
+    // `useGlassEffect: false` on every kind — the Flutter-drawn toast tier.
+    //
+    // NOT a design downgrade; the glass tier is unshippable as the vendor
+    // builds it. `CNToast` wraps its body in a real `LiquidGlassContainer`
+    // platform view (vendor toast.dart:503) and then runs it through
+    // `ScaleTransition` + `FadeTransition` on both edges (:571-577) — which is
+    // precisely the idiom this repo's law forbids over a platform view
+    // (ghosting UIViews; see this gate's own citation in
+    // appbox_kit_native_chrome_gate.dart). Worse, it is mounted through a bare
+    // `OverlayEntry` (:302) with no `.chromeGated()` and no listener on
+    // `CNTransitionObserver`/`CNTabBarRouteObserver`, so it is the one native
+    // glass surface in the kit that cannot leave the frame for a route slide —
+    // it would sit on top of a transition, sharp, exactly the leak the gate
+    // exists to prevent. A toast fires most often right after a nav action, so
+    // that window is the common case, not a corner.
+    //
+    // The Flutter tier keeps the fade (safe over Flutter-drawn content) and
+    // matches `_centerPill`, this service's other toast surface, which is
+    // already Flutter-drawn. Revisit only if the vendor gates the overlay AND
+    // stops alpha-animating it.
+    // transition-exempt: every CNToast call below passes `useGlassEffect:
+    // false`, so the vendor takes its Flutter-drawn branch and constructs NO
+    // platform view (`shouldUseGlass` gates the LiquidGlassContainer at
+    // vendor toast.dart:298-299/503). Nothing here can leak over a route
+    // slide, so there is nothing to gate. If this ever flips back to the
+    // glass tier, DELETE this exemption — the toast's bare OverlayEntry
+    // cannot be gated from the kit and the leak returns.
+    const bool glass = false;
     switch (kind) {
       case AppBoxKitNotificationKind.info:
         CNToast.info(
-            context: ctx, message: message, duration: preset, position: pos);
+            context: ctx,
+            message: message,
+            duration: preset,
+            position: pos,
+            useGlassEffect: glass);
       case AppBoxKitNotificationKind.warning:
         CNToast.warning(
-            context: ctx, message: message, duration: preset, position: pos);
+            context: ctx,
+            message: message,
+            duration: preset,
+            position: pos,
+            useGlassEffect: glass);
       case AppBoxKitNotificationKind.success:
         CNToast.success(
-            context: ctx, message: message, duration: preset, position: pos);
+            context: ctx,
+            message: message,
+            duration: preset,
+            position: pos,
+            useGlassEffect: glass);
       case AppBoxKitNotificationKind.error:
         CNToast.error(
-            context: ctx, message: message, duration: preset, position: pos);
+            context: ctx,
+            message: message,
+            duration: preset,
+            position: pos,
+            useGlassEffect: glass);
     }
   }
 

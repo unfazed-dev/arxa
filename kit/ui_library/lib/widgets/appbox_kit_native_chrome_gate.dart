@@ -232,14 +232,47 @@ class _KitNativeChromeGateState extends State<AppBoxKitNativeChromeGate> {
     super.initState();
     _mountDepth = CNTabBarRouteObserver.anyModalDepth.value;
     CNTabBarRouteObserver.anyModalDepth.addListener(_onDepthChanged);
+    // The sheet's live rect moves every frame while it slides, and each move
+    // can change whether it covers this gate — so it is a decision input, not
+    // just a one-shot at open. See [_modalCoversMe].
+    CNTabBarRouteObserver.topModalRect.addListener(_onDepthChanged);
     CNTransitionObserver.activeTransitions.addListener(_onDepthChanged);
   }
 
   @override
   void dispose() {
     CNTabBarRouteObserver.anyModalDepth.removeListener(_onDepthChanged);
+    CNTabBarRouteObserver.topModalRect.removeListener(_onDepthChanged);
     CNTransitionObserver.activeTransitions.removeListener(_onDepthChanged);
     super.dispose();
+  }
+
+  /// Whether a modal newer than this gate's host route actually COVERS it.
+  ///
+  /// Not merely "is a modal up". A bottom sheet occupies the lower part of the
+  /// screen; blanking the native chrome still plainly visible above it is the
+  /// all-or-nothing ceiling this gate used to have, and it is exactly what
+  /// `CNBottomSheet`'s geometry probe exists to prevent — its own comment:
+  /// *"measuring the route would tear down native chrome sitting in the clear
+  /// space above a short sheet."* The kit published that rect and then ignored
+  /// it here, so every glass surface behind a sheet dematerialized and
+  /// materialized back on dismiss.
+  ///
+  /// Same predicate the vendor's `ModalHideMixin._computeShouldHide` applies
+  /// (`vendor/…/utils/modal_hide_mixin.dart:97-113`) — deliberately identical,
+  /// so the two authorities cannot disagree about the same sheet.
+  ///
+  /// Fails toward HIDING on every uncertainty: no rect published (a plain
+  /// `showModalBottomSheet`, or any sheet without the probe) and no measurable
+  /// box both return true. That keeps the original bleed fix intact for every
+  /// presentation that cannot describe its own geometry.
+  bool _modalCoversMe() {
+    if (CNTabBarRouteObserver.anyModalDepth.value <= _mountDepth) return false;
+    final Rect? modalRect = CNTabBarRouteObserver.topModalRect.value;
+    if (modalRect == null) return true;
+    final RenderObject? box = context.findRenderObject();
+    if (box is! RenderBox || !box.hasSize || !box.attached) return true;
+    return (box.localToGlobal(Offset.zero) & box.size).overlaps(modalRect);
   }
 
   void _onDepthChanged() {
@@ -362,7 +395,7 @@ class _KitNativeChromeGateState extends State<AppBoxKitNativeChromeGate> {
             (_route?.secondaryAnimation?.isAnimating ?? false) ||
             _gestureInEnclosingNavigator(context);
 
-    final hidden = CNTabBarRouteObserver.anyModalDepth.value > _mountDepth ||
+    final hidden = _modalCoversMe() ||
         (CNTransitionObserver.hasActiveTransitionAbove(context) &&
             !travellingWithTransition);
     if (hidden == _hidden) return;
