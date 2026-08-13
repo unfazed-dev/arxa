@@ -132,6 +132,30 @@ void main() {
   });
 
   testWidgets(
+      'kit.ui-library.floating-chrome — minimizeLeading tucks the title pill '
+      'instead, and the actions stay put', (tester) async {
+    await tester
+        .pumpWidget(chromeHarness(AppBoxKitFloatingBarBehavior.minimizeLeading));
+    Offset titleSlide() => tester
+        .widget<AnimatedSlide>(
+          find
+              .ancestor(
+                  of: find.text('Kit Showcase'),
+                  matching: find.byType(AnimatedSlide))
+              .first,
+        )
+        .offset;
+    expect(titleSlide(), Offset.zero);
+    await scrollAway(tester);
+    expect(titleSlide().dx, lessThan(0),
+        reason: 'leading tuck slides the pill off the LEFT edge');
+    expect(actionsSlide(tester), Offset.zero,
+        reason: 'the mirrored variant leaves the actions in place');
+    await scrollBack(tester);
+    expect(titleSlide(), Offset.zero);
+  });
+
+  testWidgets(
       'kit.ui-library.floating-chrome — pinned ignores scrolling entirely',
       (tester) async {
     await tester.pumpWidget(chromeHarness(AppBoxKitFloatingBarBehavior.pinned));
