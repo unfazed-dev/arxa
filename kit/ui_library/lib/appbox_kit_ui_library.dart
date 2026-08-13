@@ -55,6 +55,7 @@ export 'widgets/appbox_kit_native_loading_indicator.dart';
 export 'widgets/appbox_kit_native_progress.dart';
 export 'widgets/appbox_kit_native_search_bar.dart';
 export 'widgets/appbox_kit_native_textfield.dart';
+export 'widgets/appbox_kit_chrome_scaffold.dart';
 export 'widgets/appbox_kit_native_app_bar.dart';
 export 'widgets/appbox_kit_native_floating_bar.dart';
 export 'widgets/appbox_kit_native_sliver_app_bar.dart';

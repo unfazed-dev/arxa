@@ -55,33 +55,16 @@ class ShowcaseGalleryChromeWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Glass tier: NATIVE floating top chrome over a full-bleed body — the
-    // top-edge counterpart of the floating tab bar. A Flutter-drawn opaque
-    // bar cannot coexist with native glass controls scrolling beneath it
-    // (seam pop OR over-bar flash — allowlist rule 4, clips 12-48/13-17/
-    // 13-32; ruling 2026-08-13). Content culls at the physical screen edge;
-    // nested-route Scaffolds inset themselves via the raised MediaQuery
-    // padding, unmodified.
-    final glass = AppBoxKitPlatform.supportsLiquidGlass;
-    return Scaffold(
-      appBar: glass
-          ? null
-          : AppBoxKitNativeAppBar(
-              title: 'Kit Showcase',
-              actions: _actions(context),
-            ),
-      body: !glass
-          ? child
-          : AppBoxKitFloatingChrome(
-              title: 'Kit Showcase',
-              actions: _actions(context),
-              // FINAL (device-ratified 2026-08-13): full minimize — BOTH
-              // ends tuck, pill off the left, actions off the right.
-              // Alternatives kept in the kit: pinned, minimizeTrailing,
-              // minimizeLeading, hide.
-              behavior: AppBoxKitFloatingBarBehavior.minimize,
-              body: child,
-            ),
+    // THE chrome scaffold (liquid-glass law): the tier branch — glass
+    // floating chrome / M3E boxed / fallback boxed — lives in the kit
+    // widget, not here. Behavior stays the device-ratified full minimize
+    // (2026-08-13). This widget is the dogfood consumer the law's plan
+    // names; hand-assembling chrome here again is a law violation.
+    return AppBoxKitChromeScaffold(
+      title: 'Kit Showcase',
+      actions: _actions(context),
+      behavior: AppBoxKitFloatingBarBehavior.minimize,
+      body: child,
       // NOTE on the FAB and a route's bottom dock: when a gallery route pins
       // its own dock (Components pins a chat composer), this Scaffold cannot
       // see it — the dock is a `bottomSheet` on a NESTED Scaffold, so
