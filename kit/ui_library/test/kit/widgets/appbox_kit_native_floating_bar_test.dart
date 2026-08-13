@@ -113,20 +113,47 @@ void main() {
     await tester.pumpAndSettle();
   }
 
+  Offset titleSlide(WidgetTester tester) => tester
+      .widget<AnimatedSlide>(
+        find
+            .ancestor(
+                of: find.text('Kit Showcase'),
+                matching: find.byType(AnimatedSlide))
+            .first,
+      )
+      .offset;
+
   testWidgets(
-      'kit.ui-library.floating-chrome — minimize tucks actions on scroll-away, '
-      'restores on scroll-back, and never unmounts them', (tester) async {
+      'kit.ui-library.floating-chrome — minimize tucks BOTH ends on '
+      'scroll-away, restores on scroll-back, and never unmounts the actions',
+      (tester) async {
     await tester
         .pumpWidget(chromeHarness(AppBoxKitFloatingBarBehavior.minimize));
     expect(actionsSlide(tester), Offset.zero);
+    expect(titleSlide(tester), Offset.zero);
 
     await scrollAway(tester);
     expect(actionsSlide(tester).dx, greaterThan(0),
-        reason: 'scroll-away must SLIDE the actions off the trailing edge');
+        reason: 'full minimize slides the actions off the trailing edge');
+    expect(titleSlide(tester).dx, lessThan(0),
+        reason: 'full minimize slides the pill off the leading edge too');
     expect(find.byKey(const Key('action'), skipOffstage: false), findsOneWidget,
         reason: 'tucked actions stay mounted — unmounting would '
             're-materialize glass on restore');
 
+    await scrollBack(tester);
+    expect(actionsSlide(tester), Offset.zero);
+    expect(titleSlide(tester), Offset.zero);
+  });
+
+  testWidgets(
+      'kit.ui-library.floating-chrome — minimizeTrailing tucks only the '
+      'actions; the title pill stays', (tester) async {
+    await tester.pumpWidget(
+        chromeHarness(AppBoxKitFloatingBarBehavior.minimizeTrailing));
+    await scrollAway(tester);
+    expect(actionsSlide(tester).dx, greaterThan(0));
+    expect(titleSlide(tester), Offset.zero);
     await scrollBack(tester);
     expect(actionsSlide(tester), Offset.zero);
   });

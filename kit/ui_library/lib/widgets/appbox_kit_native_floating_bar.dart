@@ -41,6 +41,16 @@ enum AppBoxKitFloatingBarTuck {
 
   /// The title pill slides off the left edge; the actions stay.
   leading,
+
+  /// Both ends tuck — pill off the left, actions off the right.
+  both;
+
+  bool get _tucksLeading =>
+      this == AppBoxKitFloatingBarTuck.leading ||
+      this == AppBoxKitFloatingBarTuck.both;
+  bool get _tucksTrailing =>
+      this == AppBoxKitFloatingBarTuck.trailing ||
+      this == AppBoxKitFloatingBarTuck.both;
 }
 
 class AppBoxKitNativeFloatingBar extends StatelessWidget {
@@ -80,9 +90,8 @@ class AppBoxKitNativeFloatingBar extends StatelessWidget {
               if (title != null)
                 AnimatedSlide(
                   // 2.0× own width clears the 16px edge padding with margin.
-                  offset: tuck == AppBoxKitFloatingBarTuck.leading
-                      ? const Offset(-2, 0)
-                      : Offset.zero,
+                  offset:
+                      tuck._tucksLeading ? const Offset(-2, 0) : Offset.zero,
                   duration: const Duration(milliseconds: 280),
                   curve: Curves.easeOutCubic,
                   child:
@@ -123,13 +132,12 @@ class AppBoxKitNativeFloatingBar extends StatelessWidget {
                   // 2.0× own width clears the 16px edge padding with margin;
                   // off-screen native views stay attached (no detach, no
                   // re-materialize on return).
-                  offset: tuck == AppBoxKitFloatingBarTuck.trailing
-                      ? const Offset(2, 0)
-                      : Offset.zero,
+                  offset:
+                      tuck._tucksTrailing ? const Offset(2, 0) : Offset.zero,
                   duration: const Duration(milliseconds: 280),
                   curve: Curves.easeOutCubic,
                   child: IgnorePointer(
-                    ignoring: tuck == AppBoxKitFloatingBarTuck.trailing,
+                    ignoring: tuck._tucksTrailing,
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       spacing: abxGap8,
@@ -151,13 +159,16 @@ enum AppBoxKitFloatingBarBehavior {
   /// The bar stays put while content scrolls beneath it.
   pinned,
 
-  /// Apple-style minimize: scrolling away tucks the actions off the trailing
-  /// edge and leaves the title pill; scrolling back (or reaching the top)
-  /// restores them. Mirrors the iOS 26 tab-bar minimize.
+  /// Full minimize: scrolling away tucks BOTH ends — the title pill off the
+  /// leading edge and the actions off the trailing edge; scrolling back (or
+  /// reaching the top) restores them.
   minimize,
 
-  /// Minimize, mirrored: scrolling away tucks the TITLE PILL off the leading
-  /// edge and leaves the actions.
+  /// Minimize, trailing only: the actions tuck; the title pill stays.
+  /// Mirrors the iOS 26 tab-bar minimize.
+  minimizeTrailing,
+
+  /// Minimize, leading only: the TITLE PILL tucks; the actions stay.
   minimizeLeading,
 
   /// The whole bar slides off the top on scroll-away and returns on
@@ -243,6 +254,8 @@ class _AppBoxKitFloatingChromeState extends State<AppBoxKitFloatingChrome> {
           ? AppBoxKitFloatingBarTuck.none
           : switch (widget.behavior) {
               AppBoxKitFloatingBarBehavior.minimize =>
+                AppBoxKitFloatingBarTuck.both,
+              AppBoxKitFloatingBarBehavior.minimizeTrailing =>
                 AppBoxKitFloatingBarTuck.trailing,
               AppBoxKitFloatingBarBehavior.minimizeLeading =>
                 AppBoxKitFloatingBarTuck.leading,
