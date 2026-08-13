@@ -240,6 +240,25 @@ the glass card is the first re-demote, the toolbar second.
    tabs were the only invisible slicing geometry in the app. Pinned by
    appbox_kit_animated_tab_stack_test (off-screen translate pin).
 
+9. **Warm every glass KIND at boot that only pushed routes mount —
+   `AppBoxKitGlassWarmup` (device-measured 2026-08-14).** First
+   materialization of a glass kind is a once-per-PROCESS cost paid on
+   whichever frame first composites it: pushing the first glass-card route
+   cost a 39.6ms raster frame (4.8% of push frames over the 60Hz budget)
+   while pushes 2/3 of the same route peaked at 10–12ms with zero frames
+   over budget. The cost is per KIND, not per view — glass buttons/segmented
+   already on the boot screen were warm; the surface container
+   (`LiquidGlassContainer`, glass card) and the switch each paid their own
+   first-of-kind spike. The kit primitive `AppBoxKitGlassWarmup` wraps the
+   shell root once: it mounts one card-kind container (plus host-listed
+   `alsoWarm` kinds) translated 100000px off-screen per rule 8, IgnorePointer
+   + ExcludeSemantics, kept mounted (set constancy; NOT chromeGated — the
+   gate would churn the exact materialization being prefetched). Measured
+   after: first push worst frame 11–12ms, 0% over the 60Hz budget —
+   indistinguishable from steady-state pushes. Rule: kinds visible at boot
+   warm themselves; any kind a pushed route mounts first goes in `alsoWarm`.
+   Pinned by appbox_kit_glass_warmup_test (rule-8 translate + kind pin).
+
 **Known signature, not a defect — glass edge refraction (labelprobe
 2026-08-13):** each in-scroll glass card shows dim copies of its NEIGHBORING
 section labels just inside its top/bottom edges, riding the card at constant

@@ -41,7 +41,18 @@ class ShowcaseApplicationTabHostWidget extends StatelessWidget {
       // Scaffold. No app bar / FAB / fade here: the host stays structurally
       // identical across switches, so nothing tears down.
       builder: (context, children, tabsRouter) {
-        return Scaffold(
+        // Warms the Liquid Glass surface pipeline once at boot so the FIRST
+        // glass-card route push doesn't materialize on-screen (measured
+        // first-push-only 39.6ms raster spike — docs/plans/
+        // glass-push-hotspot-fix.md). Wraps the shell root, mounted once.
+        return AppBoxKitGlassWarmup(
+            // Motion (pushed, not boot-visible) mounts a native switch; no
+            // boot screen does, so its kind warms here (first-push 23.8ms
+            // residual measured with the container-only warmer).
+            alsoWarm: const [
+              AppBoxKitNativeSwitch(value: false),
+            ],
+            child: Scaffold(
           // Let the body extend behind the floating tab bar pill so content
           // scrolls underneath it (matches AppBoxKitBottomNavScaffold behaviour).
           // Without this the body is laid out above the bar and produces a
@@ -138,7 +149,7 @@ class ShowcaseApplicationTabHostWidget extends StatelessWidget {
                   currentIndex: tabsRouter.activeIndex,
                   onTap: tabsRouter.setActiveIndex,
                 ),
-        );
+        ));
       },
     );
   }

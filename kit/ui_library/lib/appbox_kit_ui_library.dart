@@ -62,6 +62,7 @@ export 'widgets/appbox_kit_native_sliver_app_bar.dart';
 export 'widgets/appbox_kit_native_toolbar.dart';
 export 'widgets/appbox_kit_native_navigation_rail.dart';
 export 'widgets/appbox_kit_glass_card.dart';
+export 'widgets/appbox_kit_glass_warmup.dart';
 export 'widgets/appbox_kit_frosted_surface.dart';
 export 'widgets/appbox_kit_image.dart';
 export 'widgets/appbox_kit_markdown.dart';
