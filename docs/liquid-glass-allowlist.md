@@ -210,7 +210,7 @@ the glass card is the first re-demote, the toolbar second.
    buttons' bbox `(281,59,96x44)`, clipping the pill out. Fix ratified: the
    pill keeps its Flutter frosted visuals and gains a stationary
    `LiquidGlassContainer(effect: CNGlassEffect.plain)` beneath it (vendor
-   PATCH #7) — `plain` renders NO glass material (clear fill,
+   PATCH #10) — `plain` renders NO glass material (clear fill,
    `Glass.identity`), so rule 5's glass-on-glass ban is not reopened; the
    anchor exists purely so the pill's ops intersect a platform-view rect
    every frame. Device-verified: pill present through a driven held

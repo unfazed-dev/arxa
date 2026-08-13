@@ -124,7 +124,7 @@ struct LiquidGlassContainerSwiftUI: View {
   let tint: NSColor?
   let interactive: Bool
 
-  /// LOCAL PATCH #7 (parity with iOS): `plain` = flat tint fill, glass held
+  /// LOCAL PATCH #10 (parity with iOS): `plain` = flat tint fill, glass held
   /// at `.identity` so no material ever exists. See the iOS container.
   private var isPlain: Bool { effect == "plain" }
 

@@ -10,7 +10,7 @@ enum CNGlassEffect {
   /// Prominent glass effect with enhanced visual prominence.
   prominent,
 
-  /// LOCAL PATCH #7: no glass material at all — the shape is filled with
+  /// LOCAL PATCH #10: no glass material at all — the shape is filled with
   /// [LiquidGlassConfig.tint] (or stays fully transparent when tint is null).
   /// Exists for Flutter-drawn chrome that floats over platform-view-bearing
   /// scrollables: the engine's view slicer (`flow/view_slicer.cc`) only keeps

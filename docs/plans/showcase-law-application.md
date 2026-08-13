@@ -191,7 +191,7 @@ in session scratchpad `clip2132/`). 22 frames @4fps:
   views only while they intersect a platform-view rect; otherwise they drop
   to a difference-clipped background canvas. Scroll-state-dependent by
   construction; no Flutter-side reorder can stabilize it.
-- Fix: vendor PATCH #7 `CNGlassEffect.plain` (no glass material — clear
+- Fix: vendor PATCH #10 `CNGlassEffect.plain` (no glass material — clear
   fill + `Glass.identity`, iOS + macOS parity) + the bar wraps its frosted
   pill in a stationary plain `LiquidGlassContainer` anchor, so the
   intersection holds every frame. 13-53 stays closed (no glass to wash);

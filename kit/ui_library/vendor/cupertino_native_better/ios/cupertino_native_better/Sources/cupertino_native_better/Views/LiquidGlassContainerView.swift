@@ -237,7 +237,7 @@ struct LiquidGlassContainerSwiftUI: View {
   /// Observe transition state to disable glass effect during navigation
   @ObservedObject private var transitionObserver = CNTransitionObserver.shared
 
-  /// LOCAL PATCH #7: `plain` renders the shape as a flat tint fill with the
+  /// LOCAL PATCH #10: `plain` renders the shape as a flat tint fill with the
   /// glass modifier held at `Glass.identity` — same constant-structure trick
   /// as the transition arm below, so no branch swap and no materialize
   /// animation. No glass material ever exists, so plain containers cannot
