@@ -107,8 +107,10 @@ class ShowcaseComponentsViewMobile
           // viewPadding.bottom term (unlike home): the tab bar yields this slot
           // and the input bar owns its own SafeArea, so one would double-count.
           //
-          // Top inset: 0 under the boxed bar (Scaffold strips it); the
-          // status-bar block on the glass tier, where the chrome raises it.
+          // Top inset: 0 under the boxed bar (Scaffold strips it); status bar
+          // + kAppBoxKitFloatingBarBlockHeight on glass, where the floating
+          // chrome raises padding.top for its body subtree. Pinned both tiers
+          // by showcase_components_view_test.
           padding: EdgeInsets.fromLTRB(
               0, abxSize16 + MediaQuery.paddingOf(context).top, 0, 96),
           children: const [
