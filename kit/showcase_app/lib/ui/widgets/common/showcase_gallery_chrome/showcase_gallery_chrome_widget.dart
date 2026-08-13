@@ -75,10 +75,11 @@ class ShowcaseGalleryChromeWidget extends StatelessWidget {
           : AppBoxKitFloatingChrome(
               title: 'Kit Showcase',
               actions: _actions(context),
-              // Apple-style minimize (ratified): scroll-away tucks the
-              // actions and leaves the title pill, mirroring the iOS 26
-              // tab-bar minimize; scroll-back or top restores.
-              behavior: AppBoxKitFloatingBarBehavior.minimize,
+              // Trying hide (2026-08-13): whole bar slides off the top on
+              // scroll-away, returns on scroll-back. Previous pick was
+              // minimize (actions tuck, title pill stays) — one-word swap
+              // to go back.
+              behavior: AppBoxKitFloatingBarBehavior.hide,
               body: child,
             ),
       // NOTE on the FAB and a route's bottom dock: when a gallery route pins
