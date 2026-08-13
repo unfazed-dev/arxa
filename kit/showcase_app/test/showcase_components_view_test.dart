@@ -185,4 +185,47 @@ void main() {
     await tester.pumpAndSettle();
     expect(scaffold.isDrawerOpen, isFalse);
   });
+
+  // The list's top padding must be read from a context BELOW the chrome
+  // scaffold (the view wraps its body in a Builder for exactly this): the
+  // glass tier's floating chrome raises MediaQuery.padding.top for its body
+  // subtree ONLY. Read at the view's own context it is wrong on both tiers —
+  // unraised on glass, and the unstripped status bar on boxed.
+  group('list top padding resolves below the chrome', () {
+    const double statusBar = 44;
+
+    Future<EdgeInsets> pumpAndReadPadding(WidgetTester tester) async {
+      tester.view.physicalSize = const Size(1080, 3600);
+      tester.view.devicePixelRatio = 1.0;
+      tester.view.padding = const FakeViewPadding(top: statusBar);
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      addTearDown(tester.view.resetPadding);
+      await tester.pumpWidget(const MaterialApp(home: ShowcaseComponentsView()));
+      await tester.pump();
+      return tester
+          .widget<AppBoxKitEdgeAwareListView>(
+              find.byType(AppBoxKitEdgeAwareListView))
+          .padding!
+          .resolve(TextDirection.ltr);
+    }
+
+    testWidgets('boxed tier takes the bare inset — Scaffold already stripped it',
+        (tester) async {
+      // setUp's Android override is the boxed branch.
+      expect((await pumpAndReadPadding(tester)).top, abxSize16,
+          reason: 'a boxed tier that leaks the status bar into the list is the '
+              'padding read from above the scaffold');
+    });
+
+    testWidgets('glass tier adds the status bar + floating-bar block',
+        (tester) async {
+      AppBoxKitPlatform.override =
+          const AppBoxKitPlatformOverride(isIOS: true, iosMajor: 26);
+      expect((await pumpAndReadPadding(tester)).top,
+          abxSize16 + statusBar + kAppBoxKitFloatingBarBlockHeight,
+          reason: 'missing the raise means the padding was read above the '
+              'floating chrome, tucking the first card under the bar');
+    });
+  });
 }
