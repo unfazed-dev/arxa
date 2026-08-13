@@ -100,7 +100,7 @@ class AppBoxKitNativeFab extends StatelessWidget {
         onPressed: onPressed,
         icon: symbol,
         customIcon: customIcon,
-        config: const CNButtonConfig(
+        config: CNButtonConfig(
           style: CNButtonStyle.prominentGlass,
           // The native tier is a UiKitView (no intrinsic width) → pin width to
           // the measured native button so it sizes like the M3E tiers.
@@ -112,7 +112,7 @@ class AppBoxKitNativeFab extends StatelessWidget {
       icon: symbol,
       customIcon: customIcon,
       onPressed: onPressed,
-      config: const CNButtonConfig(
+      config: CNButtonConfig(
         style: CNButtonStyle.prominentGlass,
         shrinkWrap: true,
         // Match the Android FabM3E footprint (56pt circle) with a 22pt glyph
@@ -123,7 +123,7 @@ class AppBoxKitNativeFab extends StatelessWidget {
         // circle.
         width: 56.0,
         minHeight: 56.0,
-        padding: EdgeInsets.all(17.0),
+        padding: const EdgeInsets.all(17.0),
       ),
     ).chromeGated();
   }

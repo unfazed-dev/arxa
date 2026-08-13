@@ -325,15 +325,39 @@ class _KitAnimatedTabStackState extends State<AppBoxKitAnimatedTabStack>
               // unpaints too, so the floor is one engine alpha step; UIKit
               // ignores views below alpha 0.01 for hit-testing, and
               // IgnorePointer/ExcludeSemantics cover the Flutter side.
+              // Alpha alone is NOT containment: the hidden tab still paints,
+              // and its platform views slice the ACTIVE tab's frame into
+              // overlay textures — on device (2026-08-12) pieces of hidden
+              // subtrees composited over the active tab at visible alpha
+              // (stale white rail-pane rectangle over Profile's Maps button,
+              // "Maps showcase" ghost over Search's options section). The
+              // sub-pixel ClipRect bounds everything a hidden tab can
+              // contribute to the frame while the paint still happens, so the
+              // platform views never leave the native hierarchy (the whole
+              // point of hiding by alpha instead of Offstage). Clip.none on
+              // the active tab = no layer, same driven-to-identity idiom as
+              // the edge effect's blur.
               Opacity(
                 opacity: i == _currentIndex ? 1.0 : 0.004,
                 child: IgnorePointer(
                   ignoring: i != _currentIndex,
                   child: ExcludeSemantics(
                     excluding: i != _currentIndex,
-                    child: KeyedSubtree(
-                      key: _childKeys[i],
-                      child: widget.children[i],
+                    // Both knobs must flip together: clipBehavior only gates
+                    // PAINT clipping — RenderClipRect.hitTest consults the
+                    // clipper even at Clip.none, so a sub-pixel clipper on the
+                    // ACTIVE tab would swallow every tap in the app (caught by
+                    // showcase M5: "All Notes" tap navigated nowhere).
+                    child: ClipRect(
+                      clipBehavior:
+                          i == _currentIndex ? Clip.none : Clip.hardEdge,
+                      clipper: i == _currentIndex
+                          ? null
+                          : const _HiddenTabClipper(),
+                      child: KeyedSubtree(
+                        key: _childKeys[i],
+                        child: widget.children[i],
+                      ),
                     ),
                   ),
                 ),
@@ -379,4 +403,22 @@ class _KitAnimatedTabStackState extends State<AppBoxKitAnimatedTabStack>
       ],
     );
   }
+}
+
+/// Clips a hidden tab's painting to a half-pixel window at the origin.
+///
+/// Half a pixel, not [Rect.zero]: the window must stay non-degenerate so the
+/// subtree is still "painted" in every sense the engine checks — an empty
+/// clip risks the platform views being culled out of the composition, which
+/// is the removeFromSuperview → re-attach glass flash the alpha-hide exists
+/// to prevent. Same idiom as hiding at 0.004 instead of 0.0 (RenderOpacity's
+/// zero shortcut unpaints).
+class _HiddenTabClipper extends CustomClipper<Rect> {
+  const _HiddenTabClipper();
+
+  @override
+  Rect getClip(Size size) => const Rect.fromLTWH(0, 0, 0.5, 0.5);
+
+  @override
+  bool shouldReclip(covariant CustomClipper<Rect> oldClipper) => false;
 }

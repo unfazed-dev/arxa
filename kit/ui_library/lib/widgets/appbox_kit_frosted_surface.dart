@@ -39,7 +39,20 @@ class AppBoxKitFrostedSurface extends StatelessWidget {
     this.blur = 20,
     this.saturation = 1.2,
     this.tint,
+    this.platformViewSafe = false,
   });
+
+  /// When true, drops the [BackdropFilter] and renders a near-opaque vibrant
+  /// fill instead (same tint token, rim, shadow, radius). Required whenever
+  /// the subtree may host platform views: a BackdropFilter saveLayer cannot
+  /// span the frame slices UiKitViews create, so Flutter content inside it
+  /// intermittently drops on device (flutter#175048;
+  /// kit/core/NATIVE_COMPONENTS.md "a BackdropFilter cannot sample or cover
+  /// platform-view pixels"). This is also Apple's own degrade: nested glass
+  /// auto-converts to vibrant fill (WWDC25 design lab). The doc claim above
+  /// that this surface is "occlusion-safe by construction" holds only for
+  /// platform-view-free subtrees — this flag is the guard for the rest.
+  final bool platformViewSafe;
 
   /// The surface content.
   final Widget child;
@@ -78,6 +91,31 @@ class AppBoxKitFrostedSurface extends StatelessWidget {
     final scheme = Theme.of(context).colorScheme;
     final dark = scheme.brightness == Brightness.dark;
     final radius = BorderRadius.circular(borderRadius);
+
+    if (platformViewSafe) {
+      // Vibrant fill: no saveLayer at all. Alpha rides high because there is
+      // no blur to carry legibility over a busy backdrop.
+      return Container(
+        decoration: BoxDecoration(
+          color: tint ??
+              scheme.surfaceContainerLowest
+                  .withValues(alpha: dark ? 0.92 : 0.96),
+          borderRadius: radius,
+          border: Border.all(
+            color: Colors.white.withValues(alpha: dark ? 0.16 : 0.45),
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: dark ? 0.35 : 0.08),
+              blurRadius: 16,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        padding: padding,
+        child: child,
+      );
+    }
 
     return Container(
       decoration: BoxDecoration(

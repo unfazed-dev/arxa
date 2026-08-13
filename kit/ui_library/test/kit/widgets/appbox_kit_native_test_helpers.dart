@@ -34,3 +34,17 @@ Future<void> withAndroidFallback(Future<void> Function() body) async {
     debugDefaultTargetPlatformOverride = saved;
   }
 }
+
+/// Runs [body] with the target platform forced to iOS, so a CN widget whose
+/// `preferFlutterTier` is set takes its **Cupertino** fallback (the demoted
+/// tier real devices get inside scrollables). Same try/finally placement
+/// constraint as [withAndroidFallback].
+Future<void> withCupertinoFallback(Future<void> Function() body) async {
+  final saved = debugDefaultTargetPlatformOverride;
+  debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
+  try {
+    await body();
+  } finally {
+    debugDefaultTargetPlatformOverride = saved;
+  }
+}

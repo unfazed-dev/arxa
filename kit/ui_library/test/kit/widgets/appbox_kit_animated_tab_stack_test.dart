@@ -370,6 +370,54 @@ void main() {
     });
 
     testWidgets(
+        'kit.ui-library.animated-tab-stack — a hidden tab is paint-clipped to a '
+        'sub-pixel window (ghost containment)', (tester) async {
+      // Alpha alone is not containment: a hidden tab still paints every
+      // frame, and its platform views slice the ACTIVE tab's frame into
+      // overlay textures. On device (recordings 2026-08-12) pieces of those
+      // hidden subtrees composited over the active tab at visible alpha — a
+      // stale white rail-pane rectangle over Profile, a "Maps showcase"
+      // ghost and white slab over Search's options section. The clip keeps
+      // the alpha-hide's native-hierarchy guarantee (paint still happens, so
+      // the platform views never detach) while bounding EVERYTHING a hidden
+      // tab can contribute to the frame to half a pixel.
+      await tester.pumpWidget(_frame(0));
+      await tester.pumpWidget(_frame(1));
+
+      ClipRect clipOf(String text) => tester.widget<ClipRect>(find.ancestor(
+            of: find.textContaining(text, skipOffstage: false),
+            matching: find.byType(ClipRect),
+          ));
+
+      final hidden = clipOf('tab0');
+      expect(hidden.clipBehavior, Clip.hardEdge,
+          reason: 'the hidden tab must actually clip');
+      final rect = hidden.clipper!.getClip(const Size(390, 844));
+      expect(rect.width, lessThanOrEqualTo(1.0),
+          reason: 'sub-pixel window: nothing legible can ghost through');
+      expect(rect.height, lessThanOrEqualTo(1.0));
+      expect(rect.isEmpty, isFalse,
+          reason: 'non-degenerate on purpose — a fully-empty clip risks the '
+              'engine culling the platform views out of the composition, '
+              'which is the re-attach flash the alpha-hide exists to avoid');
+
+      final active = clipOf('tab1');
+      expect(active.clipBehavior, Clip.none,
+          reason: 'the active tab pays no clip layer (constant-shape rule: '
+              'the wrapper stays mounted, driven to identity)');
+      expect(active.clipper, isNull,
+          reason: 'clipBehavior only gates PAINT clipping — '
+              'RenderClipRect.hitTest consults the clipper even at Clip.none, '
+              'so a sub-pixel clipper here swallows every tap in the app');
+
+      // Behavioral proof: a tap on the active tab must still land.
+      await tester.tap(find.text('tab1:0'));
+      await tester.pump();
+      expect(find.text('tab1:1'), findsOneWidget,
+          reason: 'the active tab keeps full hit-test coverage');
+    });
+
+    testWidgets(
         'kit.ui-library.animated-tab-stack — instant keeps the kept-alive contract (state survives '
         'the round trip)', (tester) async {
       await tester.pumpWidget(_frame(0));
