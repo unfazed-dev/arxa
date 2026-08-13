@@ -34,7 +34,7 @@ the reference). See *Chrome existence is the design's call*.
 | AppBoxKitNativeSheet / NativeDialog / NativePopupMenu | Transient overlays |
 | AppBoxKitNativeSearchBar (docked/pinned) | Pinned sliver headers count as chrome |
 | AppBoxKitNativeAppBar / SliverAppBar | Flutter-drawn; on the GLASS TIER the gallery replaces it with AppBoxKitNativeFloatingBar (see rule 4 ruling) |
-| AppBoxKitNativeFloatingBar | Native glass floating top chrome (glass tier) — title capsule + native actions over a full-bleed body; the top-edge counterpart of the tab bar. Since the floating-back-affordance ruling (2026-08-13) it takes a `leading` slot (non-tucking — back stays reachable through minimize), so pushed routes with in-scroll native glass use the chrome scaffold too |
+| AppBoxKitNativeFloatingBar | Native glass floating top chrome (glass tier) — title capsule + native actions over a full-bleed body; the top-edge counterpart of the tab bar. Since the floating-back-affordance ruling (2026-08-13) it takes a `leading` slot (tucks off the leading edge with the title pill — device ruling clip 22-34 superseded the same-day non-tucking ratification: a pill leaving without the back button read as a half-minimized bar; scroll-back/top restores both), so pushed routes with in-scroll native glass use the chrome scaffold too |
 
 ### 2. Controls — ALL NATIVE IN SCROLL (ruling 4, 2026-08-13, supersedes the informed allowlist)
 Every control is **native Liquid Glass everywhere, including scrollables**.

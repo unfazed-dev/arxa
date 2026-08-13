@@ -76,14 +76,13 @@ class AppBoxKitNativeFloatingBar extends StatelessWidget {
   /// 2026-08-13 — pushed routes use the floating chrome instead of a
   /// hand-assembled `Scaffold` + boxed bar).
   ///
-  /// **Does not tuck.** [tuck] moves the title pill and the actions only;
-  /// this slot holds its position under every minimize variant, INCLUDING
-  /// [AppBoxKitFloatingBarTuck.leading] (which names the edge the TITLE PILL
-  /// leaves by, not this widget). Apple keeps the back affordance reachable
-  /// while the bar minimizes — a back button that slides away on scroll
-  /// strands the route. Only [AppBoxKitFloatingBarBehavior.hide] takes it
-  /// away, and then the whole bar goes with it via the host's single
-  /// whole-bar slide.
+  /// **Tucks with the leading edge** (device ruling 2026-08-13, clip 22-34:
+  /// the pill sliding away alone while the back button stayed read as a
+  /// half-minimized bar). Any leading-tucking variant slides this slot off
+  /// the left together with the title pill; scroll-back or reaching the top
+  /// restores both, so the route is one small reverse gesture from its back
+  /// affordance, never stranded. While tucked it ignores pointers, like the
+  /// actions.
   ///
   /// A NATIVE glass icon button is lawful here: law rule 5 demotes only the
   /// fixed chrome that scrolled glass passes UNDER (hence the Flutter-drawn
@@ -102,9 +101,9 @@ class AppBoxKitNativeFloatingBar extends StatelessWidget {
   /// is composition rule 1's forbidden shape, while transform mutators are
   /// proven to land on iOS platform views. Tucked widgets stay mounted
   /// throughout, so restoring them never re-materializes glass (clip
-  /// 13-53-b's lesson). [leading] is exempt — see its contract. Drive this
-  /// from scroll direction via [AppBoxKitFloatingChrome], or directly for
-  /// custom hosts.
+  /// 13-53-b's lesson). [leading] rides the leading edge with the pill —
+  /// see its contract. Drive this from scroll direction via
+  /// [AppBoxKitFloatingChrome], or directly for custom hosts.
   final AppBoxKitFloatingBarTuck tuck;
 
   @override
@@ -118,10 +117,20 @@ class AppBoxKitNativeFloatingBar extends StatelessWidget {
           height: 44,
           child: Row(
             children: [
-              // Deliberately OUTSIDE any AnimatedSlide: the back affordance
-              // stays reachable while the bar minimizes (see [leading]).
               if (leading != null) ...[
-                leading!,
+                AnimatedSlide(
+                  // 2.0× own width clears the 16px edge padding with margin;
+                  // off-screen native views stay attached (no detach, no
+                  // re-materialize on return).
+                  offset:
+                      tuck._tucksLeading ? const Offset(-2, 0) : Offset.zero,
+                  duration: kAppBoxKitFloatingBarMotionDuration,
+                  curve: kAppBoxKitFloatingBarMotionCurve,
+                  child: IgnorePointer(
+                    ignoring: tuck._tucksLeading,
+                    child: leading!,
+                  ),
+                ),
                 const SizedBox(width: abxGap8),
               ],
               if (title != null)
@@ -304,16 +313,17 @@ enum AppBoxKitFloatingBarBehavior {
   /// The bar stays put while content scrolls beneath it.
   pinned,
 
-  /// Full minimize: scrolling away tucks BOTH ends — the title pill off the
-  /// leading edge and the actions off the trailing edge; scrolling back (or
-  /// reaching the top) restores them.
+  /// Full minimize: scrolling away tucks BOTH ends — the leading and the
+  /// title pill off the leading edge, the actions off the trailing edge;
+  /// scrolling back (or reaching the top) restores them.
   minimize,
 
   /// Minimize, trailing only: the actions tuck; the title pill stays.
   /// Mirrors the iOS 26 tab-bar minimize.
   minimizeTrailing,
 
-  /// Minimize, leading only: the TITLE PILL tucks; the actions stay.
+  /// Minimize, leading only: the leading and the TITLE PILL tuck; the
+  /// actions stay.
   minimizeLeading,
 
   /// The whole bar slides off the top on scroll-away and returns on
@@ -344,9 +354,10 @@ class AppBoxKitFloatingChrome extends StatefulWidget {
   /// Full-bleed content the bar floats over.
   final Widget body;
 
-  /// See [AppBoxKitNativeFloatingBar.leading] — notably, it does NOT tuck
-  /// under any minimize variant; only [AppBoxKitFloatingBarBehavior.hide]
-  /// takes it away, with the rest of the bar.
+  /// See [AppBoxKitNativeFloatingBar.leading] — it tucks off the leading
+  /// edge together with the title pill under the leading-tucking minimize
+  /// variants, and rides the whole-bar slide under
+  /// [AppBoxKitFloatingBarBehavior.hide].
   final Widget? leading;
 
   /// See [AppBoxKitNativeFloatingBar.title].
