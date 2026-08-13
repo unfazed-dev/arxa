@@ -138,7 +138,19 @@ LiquidGlassContainer in scrolling lists.
    tiers keep the boxed Flutter bar. Nested-route Scaffolds inset via the
    chrome's raised MediaQuery top padding, unmodified. Plan:
    docs/plans/native-top-bar.md.
-5. **Fill color and foreground travel together in fallbacks.** Any fallback
+5. **No native glass may overhang a path scrolled native glass travels
+   (clip 13-53).** With the floating native bar, the home smoke row's
+   compose button washed to a square ghost for EXACTLY the title capsule's
+   span while crossing it — glass-on-glass stacking — and buttons crossing
+   the pill gaps stayed crisp (the discriminating observation). Apple's
+   "don't stack glass" applies across our chrome/content split: fixed
+   chrome elements that scrolled glass passes under must be Flutter-drawn
+   (AppBoxKitFrostedSurface platformViewSafe) — so the floating bar's
+   TITLE pill is deliberately not native. Interactive bar controls stay
+   native glass; if partial overlaps (warning icon under the search
+   button) ever artifact, widen the pill gaps before demoting anything.
+   Pinned by appbox_kit_native_floating_bar_test.
+6. **Fill color and foreground travel together in fallbacks.** Any fallback
    that sets a CupertinoButton `color` must set the foreground too: solid
    fill → contrasting color, translucent tint wash (glass) → the tint itself
    (vendor PATCH #5). The default foreground flips with `color` and lands

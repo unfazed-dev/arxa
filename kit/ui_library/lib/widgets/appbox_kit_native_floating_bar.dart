@@ -1,9 +1,7 @@
-import 'package:cupertino_native_better/cupertino_native_better.dart'
-    show LiquidGlassContainer, LiquidGlassConfig;
 import 'package:flutter/material.dart';
 import 'package:appbox_kit_core/common/appbox_kit_app_constants.dart';
 
-import 'appbox_kit_native_chrome_gate.dart';
+import 'appbox_kit_frosted_surface.dart';
 
 /// Height of the floating bar's control block, below the status bar: the
 /// 44pt control row plus the same breathing gap the boxed app bar reserves.
@@ -53,11 +51,19 @@ class AppBoxKitNativeFloatingBar extends StatelessWidget {
           child: Row(
             children: [
               if (title != null)
-                // Chrome-gated like every glass-bearing kit widget: the
-                // capsule's platform view hides during route slides so it
-                // cannot leak over the outgoing/incoming routes.
-                LiquidGlassContainer(
-                  config: const LiquidGlassConfig(),
+                // Flutter-drawn pill, DELIBERATELY not native glass
+                // (clip 13-53): scrolled native glass buttons crossing a
+                // native glass capsule stack glass-on-glass — the passing
+                // button's glass washed to a square ghost for exactly the
+                // capsule's span, while buttons crossing the pill gaps
+                // stayed crisp. A platform-view-safe frosted pill leaves
+                // no native surface in the title region to stack against
+                // (and no dedicated overlay layer above it). The vibrant
+                // fill is also Apple's own degrade for nested glass (§3).
+                // transition-exempt: no platform view — pure Flutter pill.
+                AppBoxKitFrostedSurface(
+                  platformViewSafe: true,
+                  borderRadius: 22,
                   child: SizedBox(
                     height: 44,
                     child: Padding(
@@ -74,7 +80,7 @@ class AppBoxKitNativeFloatingBar extends StatelessWidget {
                       ),
                     ),
                   ),
-                ).chromeGated(),
+                ),
               const Spacer(),
               if (actions != null)
                 Row(

@@ -1,5 +1,3 @@
-import 'package:cupertino_native_better/cupertino_native_better.dart'
-    show LiquidGlassContainer;
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
@@ -24,15 +22,23 @@ void main() {
       actions: [const SizedBox(key: Key('action'), width: 44, height: 44)],
     ));
 
-    // The title must be INSIDE the glass container: the capsule is what keeps
-    // it legible over full-bleed scrolling content.
-    expect(
-      find.ancestor(
-        of: find.text('Kit Showcase'),
-        matching: find.byType(LiquidGlassContainer),
-      ),
-      findsOneWidget,
+    // The title pill must be the FLUTTER-DRAWN platform-view-safe frosted
+    // surface, NOT native glass: scrolled native glass buttons crossing a
+    // native capsule stack glass-on-glass and wash to square ghosts for
+    // exactly the capsule's span (clip 13-53). This pin is the regression
+    // guard for that ruling — do not "upgrade" the title back to
+    // LiquidGlassContainer.
+    final pill = tester.widget<AppBoxKitFrostedSurface>(
+      find
+          .ancestor(
+            of: find.text('Kit Showcase'),
+            matching: find.byType(AppBoxKitFrostedSurface),
+          )
+          .first,
     );
+    expect(pill.platformViewSafe, isTrue,
+        reason: 'a BackdropFilter pill would saveLayer over the platform '
+            'views passing beneath (composition rule 1)');
 
     // Control row is exactly 44 — the same block the boxed bar reserves, so
     // kAppBoxKitFloatingBarBlockHeight stays honest.
@@ -62,6 +68,6 @@ void main() {
       'empty row without throwing', (tester) async {
     await tester.pumpWidget(harness());
     expect(find.byType(AppBoxKitNativeFloatingBar), findsOneWidget);
-    expect(find.byType(LiquidGlassContainer), findsNothing);
+    expect(find.byType(AppBoxKitFrostedSurface), findsNothing);
   });
 }
