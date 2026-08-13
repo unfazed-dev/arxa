@@ -28,10 +28,16 @@ it. Rules below are the current corpus.
 2. **The tier gate is `wantNative && AppBoxKitPlatform.supportsComposeM3E`**
    — the same two-way structural gate shape `AppBoxKitNativeTabBar`
    established. Never key M3E rendering off bare `Platform.isAndroid`.
-3. **Chrome comes from the chrome scaffold.** `AppBoxKitChromeScaffold`
-   resolves the Android branch to the boxed `AppBoxKitNativeAppBar`
-   (→ `AppBarM3E`). Hand-assembled top chrome is a law violation on this
-   tier exactly as on the glass tier.
+3. **Chrome, where a design declares it, comes from the chrome scaffold.**
+   `AppBoxKitChromeScaffold` resolves the Android branch to the boxed
+   `AppBoxKitNativeAppBar` (→ `AppBarM3E`). Hand-assembled top chrome is a
+   law violation on this tier exactly as on the glass tier. Scope (ruling
+   2026-08-13): this is an ASSEMBLY rule, not an inventory one — the
+   designer's frozen anatomy decides whether a surface has top chrome at
+   all, resolved per surface through the scaffolder's appbar kind, and a
+   surface designed bar-less ships bar-less. A surface never wraps a nested
+   router in chrome its pushed routes would inherit (the double-bar ban;
+   liquid-glass law → *Chrome existence is the design's call*).
 4. **Expressive motion/morph:** M3E's container/scroll motion comes from the
    m3e collection driven by the kit's `M3ETheme` — do not re-implement
    expressive motion in app code. (Morph specifics: no device-proven rules

@@ -77,6 +77,27 @@ The scaffold emits only the `// ── Setup ──` marker in the stub; the bui
 
 See `skills/appbox-builder/BUILDER_playbook.mdx → File structure (semantic frontmatter)` for the full grammar, and `kit/showcase_app/.../showcase_note_editor_viewmodel.dart` for the reference implementation.
 
+### Chrome resolution — the design decides existence (2026-08-13)
+
+Top chrome is not scaffolded by default and never by the platform laws. The
+DESIGN decides whether a surface has it: appbox-designer freezes the
+structure/anatomy, the scaffolder resolves that declaration per surface
+through the appbar kind in `kind-resolution.registry.json`, and builds it to
+the target's standard with native UI wherever applicable. The scaffolder
+never synthesizes an appbar an anatomy did not declare.
+
+| Surface, as the design declares it | Resolves to |
+|---|---|
+| Shell / tab-root top chrome | `shell` variant → `AppBoxKitChromeScaffold` |
+| Pushed surface, native glass in its scroll | `AppBoxKitChromeScaffold` with `leading` (back) |
+| Pushed surface, Flutter-only scroll | bare `AppBoxKitNativeAppBar` |
+| No top chrome declared | nothing — bar-less is lawful output, not a coverage gap |
+
+Chrome is PER SURFACE. Never emit chrome on a surface that hosts a nested
+router such that pushed routes inherit it — that is the double-bar stack the
+lint law pass flags. Per target: iOS/macOS follow the liquid-glass law,
+Android the M3E law, web/desktop their own conventions.
+
 <!-- kb:begin -->
 ### Ownership & regeneration (Q9)
 
@@ -127,12 +148,16 @@ the manifest is wrong — not the showcase.
 ### References
 
 - **Platform laws (2026-08-13):** `docs/liquid-glass-allowlist.md` (THE
-  liquid-glass law) and `docs/m3e-law.md`. Scaffold-relevant consequence:
-  shell/tab-root top chrome resolves through the appbar kind's `shell`
+  liquid-glass law) and `docs/m3e-law.md`. The laws constrain how chrome is
+  ASSEMBLED; the design decides whether a surface has chrome at all — see
+  *Chrome resolution* above for the per-surface table this section's rules
+  apply to. Scaffold-relevant consequence: where the design declares
+  shell/tab-root top chrome it resolves through the appbar kind's `shell`
   variant → `AppBoxKitChromeScaffold` (the laws' reuse unit; runtime tier
   branch inside). Since the floating-back-affordance ruling (2026-08-13)
   the scaffold takes `leading`, so pushed routes with in-scroll native
   glass resolve through it too; bare bars are for Flutter-only-scroll
-  pushed routes. Emitting `Scaffold.appBar` beside in-scroll native glass
-  is a law violation the lint law pass flags.
+  pushed routes; a surface designed without top chrome gets none. Emitting
+  `Scaffold.appBar` beside in-scroll native glass is a law violation the
+  lint law pass flags, as is chrome on a surface hosting a nested router.
 <!-- kb:end -->

@@ -33,6 +33,14 @@ with catalogs. SSOTs: `docs/liquid-glass-allowlist.md` (THE liquid-glass
 law) and `docs/m3e-law.md`. Kit-side the law is enforced by
 `appbox_kit_liquid_glass_law_gate_test.dart` + the transition gate; this
 pass extends the same checks over app code (showcase + scaffolded apps).
+
+**Scope before you grep.** These are ASSEMBLY checks: they constrain how
+chrome and glass compose where a design put them, and never assert that a
+surface should have chrome — a bar-less surface is lawful and is not a
+finding. Checks 1–4 (glass composition) are the iOS/macOS standard; check 5
+(double-bar) is structural and holds on every target; check 6 covers Android
+under the M3E law. Web and desktop are otherwise out of this pass's scope.
+
 Mechanical greps, each hit guilty until a `// glass-law-exempt: <reason>`
 names why:
 
@@ -52,7 +60,22 @@ names why:
 4. **Glass-on-glass overhang** — fixed native glass (a `LiquidGlassContainer`
    or CN control positioned as chrome) overlapping the travel path of
    in-scroll native glass (law rule 5; the title pill precedent).
-5. **M3E shape discipline** — new M3E chrome must repeat the
+5. **Double-bar stack (ancestor chrome over pushed routes)** — any file
+   that references floating chrome (`AppBoxKitChromeScaffold`,
+   `AppBoxKitFloatingChrome`, `AppBoxKitNativeFloatingBar`) AND hosts a
+   nested router (`AutoRouter(`, `RouterOutlet`, `AutoRouteWrapper`, a
+   nested `Navigator`, or a shell/router-host view per
+   `.shell-structure.json`) — file-scoped like check 1, deliberately loose,
+   because the chrome and the router injection are usually written apart
+   (the shell passes a `child`/`body` the router fills, often in another
+   file), so a construction-shaped grep would read well and never fire.
+   Guilty because the floating bar then stacks over every route pushed
+   inside it, and a pushed surface carrying its own bar renders two.
+   Chrome is per-surface; a pushed route must never inherit an ancestor
+   surface's floating chrome. Fix by moving the chrome down to each
+   surface whose design declares it — not by deleting the pushed route's
+   own bar (liquid-glass law → *Chrome existence is the design's call*).
+6. **M3E shape discipline** — new M3E chrome must repeat the
    transparent-container + own-unrounded-Material fix and gate on
    `wantNative && supportsComposeM3E`, never bare `Platform.isAndroid`
    (M3E law rules 1–2).

@@ -132,6 +132,25 @@ search bar / sliders / switches / toolbar render clean in scroll. Defects:
   that set (frosted vibrant fill, tab-stack sub-pixel ClipRect ghost bound,
   fab non-const config) before fix work.
 
+## S6 rulings (user, 2026-08-13 evening)
+
+- **No ancestor chrome over pushed routes** ("there must not be the chrome in
+  views like motion showcase"): the gallery chrome moves from shell level
+  (wrapping the nested router — floating bar stacked over every pushed
+  route's own bar) to PER-SURFACE. Tab roots own their chrome; pushed routes
+  render only their own. Agent: chrome-per-surface.
+- **The law does not apply chrome to all apps**: chrome existence is
+  design-driven — the designer's frozen structure declares per-surface
+  chrome; the registry's appbar kind resolves it (shell/tab-root → shell
+  variant; pushed+glass-in-scroll → shell variant with leading; pushed
+  Flutter-only → bare bar; no-chrome design → bar-less, lawful). The law
+  constrains COMPOSITIONS when native glass is present, per target (iOS →
+  liquid-glass, Android → M3E, web/desktop → their own standards). Agent:
+  law-scope.
+- **Search shell view fix: BLOCKED** — the referenced clip
+  (20-57-25) is not on disk (Downloads has nothing newer than Aug 1; mdfind
+  finds no match). Re-share requested.
+
 ## Device-pass watch items (from S3 agents)
 
 - Long titles overflow the floating bar's non-flex title pill row (pre-existing;

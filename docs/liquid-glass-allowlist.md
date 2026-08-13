@@ -5,8 +5,13 @@ source of truth for which kit widgets are native platform views, which carry
 Liquid Glass, what happens inside scrollables, and the composition rules that
 keep it artifact-free. Enforced by kit gate tests + appbox-lint rules —
 gates, not prose. The reuse unit is the chrome scaffold
-(`AppBoxKitChromeScaffold`); the Android sibling is the M3E law
-(docs/m3e-law.md). Governing principle (decided 2026-08-12, grilled):
+(`AppBoxKitChromeScaffold`) — the lawful ASSEMBLY of top chrome wherever a
+design declares it, never a mandate that a surface HAS chrome (see *Chrome
+existence is the design's call*). The Android sibling is the M3E law
+(docs/m3e-law.md); per target, iOS/macOS answer to this law, Android to
+M3E, and web / Windows / Linux to their own platform conventions — no
+liquid-glass chrome is implied there.
+Governing principle (decided 2026-08-12, grilled):
 **Apple-fidelity — the kit does exactly what iOS 26 does, nothing more,
 nothing less.** When a dispute arises, the answer is "what does Apple's own
 app do here?", verified against the sources at the bottom, not taste.
@@ -16,6 +21,10 @@ app do here?", verified against the sources at the bottom, not taste.
 ### 1. Chrome — native glass, always
 Fixed elements floating above content. Glass is *reserved* for this layer
 (WWDC25 219: "Liquid Glass is best reserved for the navigation layer").
+"Always" scopes to MATERIAL, not to presence: chrome that exists on this tier
+is native glass — it never means a surface must have chrome. A design that
+declares none ships bar-less and is fully lawful (the notes auth panels are
+the reference). See *Chrome existence is the design's call*.
 
 | Kit widget | Notes |
 |---|---|
@@ -133,9 +142,14 @@ the glass card is the first re-demote, the toolbar second.
    chrome now branches: glass tier = `AppBoxKitNativeFloatingBar` (frosted
    Flutter title pill per rule 5 + the existing native action buttons)
    floating over a FULL-BLEED body, so content culls at the physical
-   screen edge; other tiers keep the boxed Flutter bar. Nested-route
-   Scaffolds inset via the chrome's raised MediaQuery top padding,
-   unmodified. Plan: docs/plans/native-top-bar.md.
+   screen edge; other tiers keep the boxed Flutter bar.
+   ⚠️ SUPERSEDED (2026-08-13, chrome-per-surface ruling): the clause
+   "nested-route Scaffolds inset via the chrome's raised MediaQuery top
+   padding, unmodified" described SHELL-level chrome wrapping the nested
+   router — the arrangement now outlawed as the double-bar stack. Chrome is
+   per-surface; a pushed route resolves its own chrome or none. See *Chrome
+   existence is the design's call*.
+   Plan: docs/plans/native-top-bar.md.
    **Residual + fix (clip 13-53-b):** re-add at the boundary is
    TIME-based — the culled smoke block's bottom row re-entered the screen
    mid-materialization (identical widgets to the clean top row; the only
@@ -195,6 +209,40 @@ blur + fade (pure Flutter under the saveLayer). Pinned by
 **Deviation note — split button:** obsolete — under the informed allowlist
 (§2) CNSplitButton is native in content by rule, not by deviation.
 
+## Chrome existence is the design's call (ruling 2026-08-13, user)
+
+This law governs COMPOSITION, never inventory. **appbox-designer decides
+whether a surface has top chrome; the law decides how chrome is assembled
+where it exists.** The designer's frozen structure/anatomy is the authority
+per surface; the scaffolder resolves that declaration through the appbar kind
+(`skills/appbox-scaffolder/kind-resolution.registry.json`) and builds it to
+the target's own standard with native UI wherever applicable. Nothing here
+synthesizes chrome an anatomy did not declare.
+
+| What the design declares for a surface | What resolves |
+|---|---|
+| Shell / tab-root top chrome | `shell` variant → `AppBoxKitChromeScaffold` |
+| Pushed surface, native glass in its scroll | `AppBoxKitChromeScaffold` with `leading` (back) |
+| Pushed surface, Flutter-only scroll | bare boxed bar (`AppBoxKitNativeAppBar`) |
+| No top chrome | nothing — bar-less is fully lawful (notes auth panels) |
+
+**Per target.** This law is the iOS/macOS standard. Android answers to the
+M3E law (docs/m3e-law.md); web and Windows/Linux answer to their own platform
+conventions — no liquid-glass chrome is implied on those targets, and the
+composition rules above are scoped to targets where native glass exists.
+
+**Double-bar ban (structural, 2026-08-13).** A surface must never wrap a
+nested ROUTER in floating chrome. Shell-level chrome over a nested router
+stacks the floating bar above every route pushed inside it, so a pushed
+surface carrying its own bar renders two — the double-bar stack. **A pushed
+route never inherits an ancestor surface's floating chrome**; each surface
+owns its chrome or has none. The gallery's chrome moved from shell level to
+per-surface for exactly this reason. Flagged by the lint law pass.
+
+Where native glass IS present the composition rules bind in full — saveLayer,
+alpha, cull boundary, glass-on-glass overhang. They constrain what the design
+asked for; they never add to it.
+
 ## Performance policy (decided with the allowlist)
 Platform-view cost scales per live view per frame (no cliff; ~45 MB and a
 render-target switch per view — flutter#46666, #40108). The tab stack's
@@ -211,6 +259,11 @@ has twice killed a correct mechanism to protect a defective one.
   probe trail; device run confirmed artifacts gone (mechanism proven), then
   superseded same day by the informed allowlist (§2) once home's ungated
   in-scroll icon buttons proved button-class views exposure-safe.
+- Round 4 (2026-08-13, evening): chrome scoped to the design. The law had
+  read as a blanket "every view gets the chrome scaffold"; the ruling splits
+  existence (designer) from assembly (law) and moves the gallery's chrome
+  from shell level to per-surface, superseding the nested-route inset clause
+  in rule 4 and outlawing the double-bar stack.
 - Vendor LOCAL PATCH #5 (fallback label contrast) and #6 (preferFlutterTier
   plumbing) remain: #5 fixes the pre-26 tier; #6 serves surfaces (§3) and any
   future opt-in.

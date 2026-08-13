@@ -547,8 +547,9 @@ _Avoid_: glass rules, glass allowlist (bare), glass guidelines
 _Layer_: Kit
 
 **Chrome scaffold**:
-The one widget an app screen uses to get its top bar and layout right on
-every kind of device.
+The one widget a screen uses when its design declares a top bar — it gets
+the bar and layout right on every kind of device; a screen designed without
+top chrome simply doesn't use it.
 `AppBoxKitChromeScaffold` — the liquid-glass law's reuse unit: Scaffold-level
 widget carrying the runtime tier branch (Liquid Glass → floating chrome over
 a full-bleed body; Android → boxed bar rendering M3 Expressive; else boxed
