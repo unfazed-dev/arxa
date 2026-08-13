@@ -10,7 +10,7 @@ import type { FC } from 'hono/jsx';
 import { BootChecklist as Checklist } from '../../../widgets/studio_startup_widgets/widgets.tsx';
 import type { StartupProps } from './studio_startup_view.desktop.tsx';
 
-const StudioStartupViewMobile: FC<StartupProps> = ({ steps, ready, title, proceedLabel }) => (
+const StudioStartupViewMobile: FC<StartupProps> = ({ steps, ready, title, proceedLabel, proceedHref }) => (
   <main
     class="splash"
     data-inspect-surface="studio_startup"
@@ -28,7 +28,7 @@ const StudioStartupViewMobile: FC<StartupProps> = ({ steps, ready, title, procee
     >
       {title}
     </div>
-    <Checklist steps={steps} ready={ready} proceedLabel={proceedLabel} block />
+    <Checklist steps={steps} ready={ready} proceedLabel={proceedLabel} proceedHref={proceedHref} block />
     <span
       class="startup-bar"
       role="progressbar"

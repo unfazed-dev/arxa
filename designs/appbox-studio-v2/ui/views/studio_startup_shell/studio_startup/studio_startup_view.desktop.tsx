@@ -18,9 +18,11 @@ export interface StartupProps {
   title: string;
   subtitle: string;
   proceedLabel: string;
+  /** Proceed endpoint carrying the boot guard's validated ?to return-to (R3). */
+  proceedHref?: string;
 }
 
-const StudioStartupViewDesktop: FC<StartupProps> = ({ steps, ready, title, subtitle, proceedLabel }) => (
+const StudioStartupViewDesktop: FC<StartupProps> = ({ steps, ready, title, subtitle, proceedLabel, proceedHref }) => (
   <main
     class="splash"
     data-inspect-surface="studio_startup"
@@ -47,7 +49,7 @@ const StudioStartupViewDesktop: FC<StartupProps> = ({ steps, ready, title, subti
     >
       {subtitle}
     </p>
-    <Checklist steps={steps} ready={ready} proceedLabel={proceedLabel} />
+    <Checklist steps={steps} ready={ready} proceedLabel={proceedLabel} proceedHref={proceedHref} />
     <span
       class="startup-bar"
       role="progressbar"

@@ -1,14 +1,61 @@
 {
-  "registryVersion": "1.0.0",
-  "status": "DRAFT — retro-fitted with intake/registry.json; edges over registry ids, rendered by the flows lens, never bespoke markup",
-  "edges": [
-    { "from": "studio_startup_shell.startup", "to": "studio_dashboard_shell.studio_dashboard", "trigger": "proceed_trigger — boot checklist complete" },
-    { "from": "studio_dashboard_shell.studio_dashboard", "to": "studio_startup_shell.startup", "trigger": "stage_card[startup]" },
-    { "from": "studio_dashboard_shell.studio_dashboard", "to": "studio_auth_shell.auth", "trigger": "stage_card[auth] — disabled until shell lands (Q-v2-5)" },
-    { "from": "studio_dashboard_shell.studio_dashboard", "to": "studio_intake_shell.intake", "trigger": "stage_card[intake] — disabled until shell lands (Q-v2-5)" },
-    { "from": "studio_dashboard_shell.studio_dashboard", "to": "studio_design_shell.design", "trigger": "stage_card[design] — disabled until shell lands (Q-v2-5)" },
-    { "from": "studio_auth_shell.auth", "to": "studio_intake_shell.intake", "trigger": "per-shell manual proceed — credentials produced" },
-    { "from": "studio_intake_shell.intake", "to": "studio_design_shell.design", "trigger": "per-shell manual proceed — intake/registry.json pinned" },
-    { "from": "studio_unknown_shell.unknown", "to": "studio_dashboard_shell.studio_dashboard", "trigger": "cta-link — return to the dashboard" }
-  ]
+ "registryVersion": "1.0.0",
+ "status": "DRAFT — retro-fitted with intake/registry.json; edges over registry ids, rendered by the flows lens, never bespoke markup",
+ "edges": [
+  {
+   "from": "studio_startup_shell.startup",
+   "to": "studio_application_hub.hub",
+   "trigger": "proceed_trigger — boot checklist complete; honors validated ?to return-to"
+  },
+  {
+   "from": "studio_application_hub.hub",
+   "to": "studio_startup_shell.startup",
+   "trigger": "boot guard — un-booted session on any hosted route redirects with ?to return-to"
+  },
+  {
+   "from": "studio_application_hub.hub",
+   "to": "studio_dashboard_shell.studio_dashboard",
+   "trigger": "default hosted stage — / renders the hub frame with the dashboard in the body outlet"
+  },
+  {
+   "from": "studio_dashboard_shell.studio_dashboard",
+   "to": "studio_startup_shell.startup",
+   "trigger": "stage_card[startup]"
+  },
+  {
+   "from": "studio_application_hub.hub",
+   "to": "studio_auth_shell.auth",
+   "trigger": "requiresAuth guard on gated stages — pending shell (Q-v2-5), declared as data only"
+  },
+  {
+   "from": "studio_dashboard_shell.studio_dashboard",
+   "to": "studio_auth_shell.auth",
+   "trigger": "stage_card[auth] — disabled until shell lands (Q-v2-5)"
+  },
+  {
+   "from": "studio_dashboard_shell.studio_dashboard",
+   "to": "studio_intake_shell.intake",
+   "trigger": "stage_card[intake] — disabled until shell lands (Q-v2-5)"
+  },
+  {
+   "from": "studio_dashboard_shell.studio_dashboard",
+   "to": "studio_design_shell.design",
+   "trigger": "stage_card[design] — disabled until shell lands (Q-v2-5)"
+  },
+  {
+   "from": "studio_auth_shell.auth",
+   "to": "studio_intake_shell.intake",
+   "trigger": "per-shell manual proceed — credentials produced"
+  },
+  {
+   "from": "studio_intake_shell.intake",
+   "to": "studio_design_shell.design",
+   "trigger": "per-shell manual proceed — intake/registry.json pinned"
+  },
+  {
+   "from": "studio_unknown_shell.unknown",
+   "to": "studio_application_hub.hub",
+   "trigger": "cta-link — return to the studio root"
+  }
+ ]
 }

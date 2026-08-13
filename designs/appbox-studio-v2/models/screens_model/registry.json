@@ -1,118 +1,131 @@
 {
-  "app": "studio",
-  "vocabulary": "shell > view > widgets; hub hosts only widgets shared across every shell (header, tabbar, rail)",
-  "note": "Derived from Q-v2-1/Q-v2-3. `enabled: false` marks a shell that has not landed yet — Q-v2-5 cuts shells over one at a time behind explicit user validation, so the hub shows the full pipeline but only routes to what exists.",
-  "stages": [
-    {
-      "id": "startup",
-      "labelKey": "stageStartup",
-      "shell": "studio_startup_shell",
-      "consumes": "appbox.config.json",
-      "produces": "session",
-      "href": "/startup",
-      "enabled": true
-    },
-    {
-      "id": "auth",
-      "labelKey": "stageAuth",
-      "shell": "studio_auth_shell",
-      "consumes": "session",
-      "produces": "credentials",
-      "href": "#",
-      "enabled": false
-    },
-    {
-      "id": "intake",
-      "labelKey": "stageIntake",
-      "shell": "studio_intake_shell",
-      "consumes": "brief + brand assets",
-      "produces": "intake/registry.json",
-      "href": "#",
-      "enabled": false
-    },
-    {
-      "id": "design",
-      "labelKey": "stageDesign",
-      "shell": "studio_design_shell",
-      "consumes": "intake/registry.json",
-      "produces": "design artifact",
-      "href": "#",
-      "enabled": false
-    }
-  ],
-  "shells": [
-    {
-      "id": "studio_dashboard_shell",
-      "kind": "shell",
-      "views": [
-        "studio_dashboard_view"
-      ],
-      "widgets": [
-        "header_panel",
-        "footer_panel",
-        "main_panel",
-        "gate_strip",
-        "project_grid",
-        "stats_row",
-        "pairing_modal",
-        "wizard"
-      ]
-    },
-    {
-      "id": "studio_startup_shell",
-      "kind": "ceremony",
-      "views": [
-        "studio_startup_view"
-      ],
-      "widgets": [
-        "boot_checklist",
-        "proceed_trigger"
-      ]
-    },
-    {
-      "id": "studio_unknown_shell",
-      "kind": "ceremony",
-      "views": [
-        "studio_unknown_view"
-      ],
-      "widgets": [],
-      "landed": false
-    },
-    {
-      "id": "studio_auth_shell",
-      "kind": "ceremony",
-      "views": [
-        "studio_auth_view"
-      ],
-      "widgets": [],
-      "landed": false
-    },
-    {
-      "id": "studio_intake_shell",
-      "kind": "working",
-      "views": [
-        "studio_intake_view"
-      ],
-      "widgets": [
-        "interview_thread",
-        "asset_upload_dropzone"
-      ],
-      "landed": false
-    },
-    {
-      "id": "studio_design_shell",
-      "kind": "working",
-      "views": [
-        "studio_design_view"
-      ],
-      "widgets": [
-        "design_canvas",
-        "inspector_panel",
-        "composer_slider_panel",
-        "needs_you_strip",
-        "activity"
-      ],
-      "landed": false
-    }
-  ]
+ "app": "studio",
+ "vocabulary": "shell > view > widgets; the hub is the routed root frame (/) hosting the stage shells (header, tabbar, rail chrome + body outlet); ceremony shells route bare",
+ "note": "Derived from Q-v2-1/Q-v2-3. `enabled: false` marks a shell that has not landed yet — Q-v2-5 cuts shells over one at a time behind explicit user validation, so the hub shows the full pipeline but only routes to what exists. The hub is the routed root (/): hosted stage routes are boot-guarded with ?to return-to; ceremony shells route bare (R1-R4, docs/plans/studio-v2-boot-sequence-wiring.md).",
+ "stages": [
+  {
+   "id": "startup",
+   "labelKey": "stageStartup",
+   "shell": "studio_startup_shell",
+   "consumes": "appbox.config.json",
+   "produces": "session",
+   "href": "/startup",
+   "enabled": true
+  },
+  {
+   "id": "auth",
+   "labelKey": "stageAuth",
+   "shell": "studio_auth_shell",
+   "consumes": "session",
+   "produces": "credentials",
+   "href": "#",
+   "enabled": false
+  },
+  {
+   "id": "intake",
+   "labelKey": "stageIntake",
+   "shell": "studio_intake_shell",
+   "consumes": "brief + brand assets",
+   "produces": "intake/registry.json",
+   "href": "#",
+   "enabled": false
+  },
+  {
+   "id": "design",
+   "labelKey": "stageDesign",
+   "shell": "studio_design_shell",
+   "consumes": "intake/registry.json",
+   "produces": "design artifact",
+   "href": "#",
+   "enabled": false
+  }
+ ],
+ "shells": [
+  {
+   "id": "studio_application_hub",
+   "kind": "hub",
+   "views": [
+    "studio_application_hub_view"
+   ],
+   "widgets": [
+    "header",
+    "tabbar",
+    "rail",
+    "footer_panel"
+   ]
+  },
+  {
+   "id": "studio_dashboard_shell",
+   "kind": "shell",
+   "views": [
+    "studio_dashboard_view"
+   ],
+   "widgets": [
+    "header_panel",
+    "footer_panel",
+    "main_panel",
+    "gate_strip",
+    "project_grid",
+    "stats_row",
+    "pairing_modal",
+    "wizard"
+   ]
+  },
+  {
+   "id": "studio_startup_shell",
+   "kind": "ceremony",
+   "views": [
+    "studio_startup_view"
+   ],
+   "widgets": [
+    "boot_checklist",
+    "proceed_trigger"
+   ]
+  },
+  {
+   "id": "studio_unknown_shell",
+   "kind": "ceremony",
+   "views": [
+    "studio_unknown_view"
+   ],
+   "widgets": [],
+   "landed": false
+  },
+  {
+   "id": "studio_auth_shell",
+   "kind": "ceremony",
+   "views": [
+    "studio_auth_view"
+   ],
+   "widgets": [],
+   "landed": false
+  },
+  {
+   "id": "studio_intake_shell",
+   "kind": "working",
+   "views": [
+    "studio_intake_view"
+   ],
+   "widgets": [
+    "interview_thread",
+    "asset_upload_dropzone"
+   ],
+   "landed": false
+  },
+  {
+   "id": "studio_design_shell",
+   "kind": "working",
+   "views": [
+    "studio_design_view"
+   ],
+   "widgets": [
+    "design_canvas",
+    "inspector_panel",
+    "composer_slider_panel",
+    "needs_you_strip",
+    "activity"
+   ],
+   "landed": false
+  }
+ ]
 }

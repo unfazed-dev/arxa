@@ -36,8 +36,8 @@ const StudioStartupView: FC<StartupProps & { brand: string; tagline: string; bui
 /** Named Fragment: `studio_startup_view.html#progress`. Rung-agnostic on
  *  purpose — the checklist markup is identical at every rung, only the frame
  *  around it changes, so one swap target serves all three. */
-export const Progress: FC<StartupProps> = ({ steps, ready, proceedLabel }) => (
-  <Checklist steps={steps} ready={ready} proceedLabel={proceedLabel} />
+export const Progress: FC<StartupProps> = ({ steps, ready, proceedLabel, proceedHref }) => (
+  <Checklist steps={steps} ready={ready} proceedLabel={proceedLabel} proceedHref={proceedHref} />
 );
 
 export default StudioStartupView;

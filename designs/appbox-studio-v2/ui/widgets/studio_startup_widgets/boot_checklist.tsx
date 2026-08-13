@@ -27,13 +27,15 @@ export interface BootChecklistProps {
   steps: BootStep[];
   ready: boolean;
   proceedLabel: string;
+  /** Proceed endpoint; carries the boot guard's validated ?to return-to (R3). */
+  proceedHref?: string;
   block?: boolean;
 }
 
 const stepClass = (state: BootStep['state']): string =>
   state === 'done' ? 'startup-step is-done' : state === 'running' ? 'startup-step is-current' : 'startup-step';
 
-const BootChecklist: FC<BootChecklistProps> = ({ steps, ready, proceedLabel, block }) => (
+const BootChecklist: FC<BootChecklistProps> = ({ steps, ready, proceedLabel, proceedHref, block }) => (
   <div
     data-el="list-row"
     data-inspect-role="section"
@@ -87,7 +89,7 @@ const BootChecklist: FC<BootChecklistProps> = ({ steps, ready, proceedLabel, blo
       data-inspect-fn="holds the manual hand-off out of the ceremony"
       data-inspect-motion="none"
     >
-      <ProceedTrigger href="/startup/proceed" label={proceedLabel} ready={ready} block={block} />
+      <ProceedTrigger href={proceedHref ?? '/startup/proceed'} label={proceedLabel} ready={ready} block={block} />
     </div>
   </div>
 );
