@@ -110,7 +110,7 @@ void main() {
   // The CN tier is reached via the iOS-26 kit override; withAndroidFallback
   // diverts only the CN-internal render path so no UiKitView is constructed
   // headless.
-  testWidgets('kit.ui-library.native-search-bar — inside a scrollable demotes to the Flutter tier',
+  testWidgets('kit.ui-library.native-search-bar — inside a scrollable keeps the native tier',
       (tester) async {
     await withAndroidFallback(() async {
       AppBoxKitPlatform.override = const AppBoxKitPlatformOverride(
@@ -123,11 +123,10 @@ void main() {
       final cn = tester.widget<CNSearchBar>(find.byType(CNSearchBar));
       expect(
         cn.preferFlutterTier,
-        isTrue,
-        reason: 'RULING REVERSED 2026-08-13 (docs/liquid-glass-allowlist.md '
-            '§2, clip-0813 probe trail): in-scroll platform views slice later '
-            'Flutter paint into clip-ignorant overlays (engine #150646) — '
-            'in-scroll controls take the Flutter tier.',
+        isFalse,
+        reason: 'a Scrollable ancestor must not demote the tier — the slab '
+            'artifacts are compositional and law-gate-enforced away, so '
+            'in-scroll controls stay native.',
       );
     });
   });

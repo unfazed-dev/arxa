@@ -72,7 +72,7 @@ void main() {
     );
   });
 
-  testWidgets('kit.ui-library.native-slider — inside a scrollable demotes to the Flutter tier',
+  testWidgets('kit.ui-library.native-slider — inside a scrollable keeps the native tier',
       (tester) async {
     await withAndroidFallback(() async {
       await tester.pumpWidget(host(const SingleChildScrollView(
@@ -81,11 +81,10 @@ void main() {
       final cn = tester.widget<CNSlider>(find.byType(CNSlider));
       expect(
         cn.preferFlutterTier,
-        isTrue,
-        reason: 'RULING REVERSED 2026-08-13 (docs/liquid-glass-allowlist.md '
-            '§2, clip-0813 probe trail): in-scroll platform views slice later '
-            'Flutter paint into clip-ignorant overlays (engine #150646) — '
-            'in-scroll controls take the Flutter tier.',
+        isFalse,
+        reason: 'a Scrollable ancestor must not demote the tier — the slab '
+            'artifacts are compositional and law-gate-enforced away, so '
+            'in-scroll controls stay native.',
       );
     });
   });

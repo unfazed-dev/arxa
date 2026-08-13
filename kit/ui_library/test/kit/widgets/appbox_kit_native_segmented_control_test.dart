@@ -41,11 +41,10 @@ void main() {
       expect(
         cn.preferFlutterTier,
         isFalse,
-        reason: 'INFORMED ALLOWLIST 2026-08-13 (docs/liquid-glass-allowlist.md '
-            '§2): button-class + segmented are exposure-safe in scroll (home '
-            'ran 7 native in-scroll views clean; artifacts vanished only for '
-            'the continuous controls). Segmented is first to re-demote if '
-            'device artifacts return.',
+        reason: 'RULING 4 2026-08-13 (docs/liquid-glass-allowlist.md §2): all '
+            'controls are native glass in scroll — the in-scroll auto-demotion '
+            'is deleted kit-wide. If device artifacts return, re-demote per '
+            'the widest-glass-first deselect ladder (segmented sits mid-list).',
       );
     });
   });

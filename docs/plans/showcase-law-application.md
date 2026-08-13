@@ -86,6 +86,17 @@ Chosen over exemption and over demoting §2-allowlisted buttons. Work:
 3. Follow-through: law §1 table row for the scaffold's leading, registry note
    ("bare widget for pushed routes" is superseded), gate/docs/tests, commit.
 
+## S4 ruling (user, 2026-08-13): remove in-scroll demotion — ruling 4
+
+"Ensure search, profile and notes shell have the liquid glass ui as before the
+Flutter ui mixed in… remove the non working solution." All SEVEN auto-demoting
+widgets flip in one pass (slider, range slider, switch, search bar, text
+field, toolbar, glass card). Glass card + toolbar demotion was uncommitted
+working-tree work — removal restores HEAD. Law §2/§3 amended (ruling 4);
+deselect ladder now runs widest-glass-first (card → toolbar → search bar/text
+field → sliders/switch → segmented → popup → split → button). Device run is
+the proof.
+
 ## Device-pass watch items (from S3 agents)
 
 - Long titles overflow the floating bar's non-flex title pill row (pre-existing;

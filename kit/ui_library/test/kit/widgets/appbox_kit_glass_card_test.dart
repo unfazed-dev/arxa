@@ -73,4 +73,33 @@ void main() {
       reason: 'opt-out must skip the platform-view glass tier entirely',
     );
   });
+
+  testWidgets('kit.ui-library.glass-card — inside a scrollable keeps the glass tier on iOS 26',
+      (tester) async {
+    // withAndroidFallback diverts only the CN-internal render path (the
+    // container returns its child unchanged on non-Apple defaultTargetPlatform)
+    // so the glass tier is safe to pump headless; the KIT gate still routes on
+    // the iOS-26 override.
+    await withAndroidFallback(() async {
+      AppBoxKitPlatform.override = const AppBoxKitPlatformOverride(
+        isIOS: true,
+        iosMajor: 26,
+      );
+      await tester.pumpWidget(host(const SingleChildScrollView(
+        child: AppBoxKitGlassCard(child: Text('card')),
+      )));
+
+      expect(
+        find.byType(LiquidGlassContainer),
+        findsOneWidget,
+        reason: 'a Scrollable ancestor must not demote the card — cards keep '
+            'real glass everywhere the iOS 26 tier is available',
+      );
+      expect(
+        find.byType(AppBoxKitFrostedSurface),
+        findsNothing,
+        reason: 'the glass tier must not double-paint the frosted fallback',
+      );
+    });
+  });
 }

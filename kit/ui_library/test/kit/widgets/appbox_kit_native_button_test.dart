@@ -143,9 +143,8 @@ void main() {
         expect(
           cn.config.preferFlutterTier,
           isFalse,
-          reason: 'in-scroll buttons stay native platform views — only the '
-              'continuous controls (slider/switch/search bar/text field) '
-              'demote in scroll.',
+          reason: 'in-scroll buttons stay native platform views — since '
+              'ruling 4 (2026-08-13) no control auto-demotes in scroll.',
         );
       }
     });

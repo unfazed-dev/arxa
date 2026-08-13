@@ -72,9 +72,6 @@ class AppBoxKitNativeRangeSlider extends StatelessWidget {
         // never falls back to a default tint in any host.
         trackColor: scheme.primary,
         trackBackgroundColor: scheme.onSurface.withValues(alpha: 0.12),
-        // In-scroll demotion — see AppBoxKitNativeSlider for the rationale
-        // (clip-0813 probe trail; engine #150646).
-        preferFlutterTier: Scrollable.maybeOf(context) != null,
       ).chromeGated();
     }
     if (AppBoxKitPlatform.isIOS) return _cupertinoStyled(context);

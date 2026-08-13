@@ -27,13 +27,15 @@ Fixed elements floating above content. Glass is *reserved* for this layer
 | AppBoxKitNativeAppBar / SliverAppBar | Flutter-drawn; on the GLASS TIER the gallery replaces it with AppBoxKitNativeFloatingBar (see rule 4 ruling) |
 | AppBoxKitNativeFloatingBar | Native glass floating top chrome (glass tier) — title capsule + native actions over a full-bleed body; the top-edge counterpart of the tab bar. Since the floating-back-affordance ruling (2026-08-13) it takes a `leading` slot (non-tucking — back stays reachable through minimize), so pushed routes with in-scroll native glass use the chrome scaffold too |
 
-### 2. Controls — INFORMED ALLOWLIST (ratified 2026-08-13, supersedes both prior rulings)
-Button-class controls stay **native Liquid Glass everywhere, including
-scrollables**; continuous/text controls take the **Flutter tier inside
-scrollables**. Native everywhere outside scrollables and in all chrome, for
-every control.
+### 2. Controls — ALL NATIVE IN SCROLL (ruling 4, 2026-08-13, supersedes the informed allowlist)
+Every control is **native Liquid Glass everywhere, including scrollables**.
+The in-scroll auto-demotion (`preferFlutterTier: Scrollable.maybeOf(context)
+!= null`) is DELETED from all kit widgets. Per-instance demotion flags
+(`wantNative`, `preferFlutterTier`) remain for deliberate exceptions (e.g.
+the components input bar under rule 5).
 
-Evidence trail (all three states device-observed, 2026-08-13):
+Evidence trail (states 1-3 device-observed 2026-08-13; state 4 is the
+chrome-era ratification):
 1. Native-everywhere: artifacts on Search/Profile scroll (clips 08-24, 11-34).
 2. Full demotion (`4af16e3f`): artifacts GONE — slicing mechanism confirmed
    (engine #150646, open through Flutter 3.47.0; overlay rects ignore clip
@@ -41,43 +43,35 @@ Evidence trail (all three states device-observed, 2026-08-13):
 3. Home's 7 `AppBoxKitNativeIconButton`s — real UiKitViews inside a ListView,
    never gated — rendered clean the whole time: CNButton-backed views are
    exposure-safe in practice. Exposure is compositional, not categorical.
-
-| Kit widget | In-scroll behavior |
-|---|---|
-| AppBoxKitNativeButton / IconButton | **native glass**, styles pass through 1:1 |
-| AppBoxKitNativeSplitButton | **native glass** (CNGlassButtonGroup) |
-| AppBoxKitNativePopupMenu (in-content trigger) | **native glass** |
-| AppBoxKitNativeSegmentedControl | **native glass** — first to re-demote if artifacts return |
-| AppBoxKitNativeSlider / RangeSlider | Flutter tier (clip-proven offender) |
-| AppBoxKitNativeSwitch | Flutter tier (clip-proven offender) |
-| AppBoxKitNativeSearchBar (in-form) | Flutter tier (slab-central in clips) |
-| AppBoxKitNativeTextField | Flutter tier |
-
-Mechanism for the demoted set:
-`preferFlutterTier: Scrollable.maybeOf(context) != null` (with PATCH
-#5/#7/#8/#9 fallback fixes). The re-promoted set passes no tier flag.
+4. Ruling 4 (user, chrome era): with every composition that actually fired
+   the artifacts now law-gated away (no saveLayer over platform views, no
+   alpha-hide, no glass-on-glass overhang, cull boundary off-screen under
+   floating chrome), the demotion is a workaround whose cause is gone —
+   removed in one flip; the device run is the proof, the deselect ladder the
+   rollback. Superseded table (states 2-3 era): sliders/range/switch/search
+   bar/text field took the Flutter tier in scroll; that split is history, not
+   law.
 
 **Known deviation from HIG, accepted knowingly:** Apple's Materials page says
 "Don't use Liquid Glass in the content layer" and gives in-list
-sliders/toggles glass only *during activation*. The demoted set matches that.
-The button-class re-promotion deviates (resting glass buttons in scroll) —
-user-ratified 2026-08-13 as a deliberate product choice, backed by home's
-clean rendering.
+sliders/toggles glass only *during activation*. Ruling 4 extends the
+button-class deviation to every control — user-ratified as a deliberate
+product choice.
 
 **Deselect protocol (if artifacts reappear in a scrollable):** re-demote ONE
-control type per device run, starting with segmented, then popup menu, then
-split button, then button. Never blanket-demote again — attribution first.
+type per device run, WIDEST GLASS FIRST — glass card, then toolbar, then
+search bar / text field, then sliders / switch, then segmented, popup menu,
+split button, button last. Never blanket-demote again — attribution first.
 
-### 3. Glass surfaces — demoted inside scrollables, native when static
-Applied glass (platters, cards, containers) scrolling with content is Apple's
-named anti-pattern ("don't break the glass… keep glass out of the scrolling
-content layer" — WWDC25 design lab) and the vendor's own README forbids
-LiquidGlassContainer in scrolling lists.
-
-| Kit widget | In-scroll behavior |
-|---|---|
-| AppBoxKitGlassCard | AppBoxKitFrostedSurface(platformViewSafe: true) — vibrant fill, NO BackdropFilter |
-| AppBoxKitNativeToolbar (in-content demo) | demoted via preferFlutterTier (propagates to children) |
+### 3. Glass surfaces — native in scroll under ruling 4 (2026-08-13)
+Ruling 4 covers surfaces too: AppBoxKitGlassCard and AppBoxKitNativeToolbar
+render native glass inside scrollables (their in-scroll demotion — which had
+never landed beyond an uncommitted working tree — was dropped in the same
+flip). This knowingly deviates from Apple's named anti-pattern ("don't break
+the glass… keep glass out of the scrolling content layer" — WWDC25 design
+lab) and the vendor README's LiquidGlassContainer-in-lists warning, which is
+exactly why these two sit FIRST on the deselect ladder: if any slab returns,
+the glass card is the first re-demote, the toolbar second.
 
 **Composition rules (learned on device, 2026-08-12 evening):**
 1. **No saveLayer effect may wrap a subtree that may host platform views** —
