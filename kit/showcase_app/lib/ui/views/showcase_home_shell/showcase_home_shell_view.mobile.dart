@@ -3,12 +3,13 @@
 /// shell's viewmodel is a passive anchor, so there is nothing to call or read
 /// yet.
 ///
-/// This is the user interface for the home shell's outer frame. It wraps a
-/// nested router in the gallery chrome so the home tab renders inside.
+/// This is the user interface for the home shell's outer frame. It is the bare
+/// nested router: chrome is per-surface, so the home TAB ROOT carries the
+/// gallery chrome and a pushed route carries only its own.
 ///
 /// Requirements:
 /// 1. [Home shell frame] — shell-demos.home-and-application-shells.browse-the-home-shell
-/// The shell wraps a nested router in the gallery chrome so the home tab renders inside.
+/// The shell hosts the home tab's nested router and owns no chrome of its own.
 ///
 /// Relationships:
 ///
@@ -27,7 +28,6 @@ library;
 
 import 'package:flutter/material.dart';
 import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
-import 'package:appbox_kit_showcase_app/ui/widgets/common/showcase_gallery_chrome/showcase_gallery_chrome_widget.dart';
 import 'package:appbox_kit_showcase_app/ui/views/showcase_home_shell/showcase_home_shell_viewmodel.dart';
 
 class ShowcaseHomeShellViewMobile
@@ -36,6 +36,6 @@ class ShowcaseHomeShellViewMobile
 
   @override
   Widget build(BuildContext context, ShowcaseHomeShellViewModel viewModel) {
-    return const ShowcaseGalleryChromeWidget(child: NestedRouter());
+    return const NestedRouter();
   }
 }

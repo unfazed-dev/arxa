@@ -16,7 +16,11 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart'
-    show AppBoxKitNativeTabBar, AppBoxKitNativeInputBar, AppBoxKitNativeFabMenu;
+    show
+        AppBoxKitNativeAppBar,
+        AppBoxKitNativeTabBar,
+        AppBoxKitNativeInputBar,
+        AppBoxKitNativeFabMenu;
 
 import 'helpers.dart';
 
@@ -105,27 +109,32 @@ void main() {
         reason: 'the composer row must sit at least the home-indicator inset '
             'above the screen edge');
 
-    // The FAB must clear the dock. It is on the gallery-chrome Scaffold, an
-    // ANCESTOR of the one holding the composer, so that Scaffold's
-    // `bottomSheetSize` is Size.zero and no FloatingActionButtonLocation can
-    // see the dock — the lift has to come from `viewPadding` raised in the tab
-    // host. Before the fix the FAB sat over the composer's trailing mic.
-    final Finder fab = find.byType(AppBoxKitNativeFabMenu);
-    expect(fab, findsOneWidget,
-        reason: 'anti-vacuous: the gallery FAB must be on screen here');
-    expect(tester.getRect(fab).bottom,
-        lessThanOrEqualTo(tester.getRect(bar).top),
-        reason: 'the FAB must not overlap the composer');
+    // CHANGED 2026-08-13 (per-surface chrome ruling): this used to assert the
+    // gallery FAB was on screen and cleared the composer by geometry. The
+    // gallery chrome now lives on each TAB ROOT, not on the shell, so a pushed
+    // route is no longer a descendant of it — the FAB is gone here and the
+    // overlap it guarded is structurally impossible rather than merely
+    // measured. Pinning the absence keeps the guard non-vacuous.
+    expect(find.byType(AppBoxKitNativeFabMenu), findsNothing,
+        reason: 'a pushed route carries only its own chrome — a gallery FAB '
+            'here means the shell-level wrapper came back and it will sit over '
+            "the composer's trailing mic again");
   }, timeout: const Timeout(Duration(minutes: 2)));
 
   testWidgets(
-      'shell-demos.browse-the-application-shell — the FAB still clears the '
-      'composer on a device with no home indicator', (tester) async {
-    // The lift is a constant (kShowcaseTabBarBlockHeight) added on top of
-    // whatever `viewPadding.bottom` already is, so the obvious worry is that
-    // it only clears because a 34pt inset happens to make the numbers work.
-    // It does not: the composer's height tracks the same inset, so both sides
-    // move together. Measured, the gap is 16pt at a 34pt inset AND at zero.
+      'shell-demos.browse-the-application-shell — a pushed route wears only its '
+      'own chrome, no gallery bar stacked above it', (tester) async {
+    // CHANGED 2026-08-13 (per-surface chrome ruling). This test used to pin the
+    // FAB/composer clearance at a zero bottom inset — the worry being that the
+    // clearance only worked because a 34pt home indicator made the numbers
+    // come out. That arithmetic is now moot: the gallery chrome moved from the
+    // three tab SHELLS onto the three tab ROOT views, so a route pushed on a
+    // tab's nested router has no gallery chrome above it at all.
+    //
+    // Retargeted at the property that replaced it, which is the user-visible
+    // ruling: exactly one bar on a pushed surface, and it is the route's own.
+    // The old assertion could not catch a returning wrapper (a second bar high
+    // on screen never overlaps a composer at the bottom); this one does.
     final router = await bootShell(tester);
     tester.view.padding = FakeViewPadding.zero;
     tester.view.viewPadding = FakeViewPadding.zero;
@@ -135,12 +144,19 @@ void main() {
     unawaited(router.navigateNamed('/profile/components'));
     await settle(tester);
 
-    final Finder bar = find.byType(AppBoxKitNativeInputBar);
-    final Finder fab = find.byType(AppBoxKitNativeFabMenu);
-    expect(bar, findsOneWidget);
-    expect(fab, findsOneWidget);
-    expect(tester.getRect(fab).bottom, lessThanOrEqualTo(tester.getRect(bar).top),
-        reason: 'zero-inset devices must not lose the FAB clearance');
+    expect(find.byType(AppBoxKitNativeInputBar), findsOneWidget,
+        reason: 'anti-vacuous: Components must actually be up');
+
+    Finder barTitled(String title) => find.byWidgetPredicate(
+        (w) => w is AppBoxKitNativeAppBar && w.title == title);
+
+    expect(barTitled('Components'), findsOneWidget,
+        reason: "the pushed route keeps its own 'Components' bar");
+    expect(barTitled('Kit Showcase'), findsNothing,
+        reason: "the gallery's 'Kit Showcase' bar belongs to the tab ROOT; "
+            'finding it here is the double-bar stack the ruling removed');
+    expect(find.byType(AppBoxKitNativeFabMenu), findsNothing,
+        reason: 'the gallery FAB is part of that same tab-root chrome');
   }, timeout: const Timeout(Duration(minutes: 2)));
 
   testWidgets(

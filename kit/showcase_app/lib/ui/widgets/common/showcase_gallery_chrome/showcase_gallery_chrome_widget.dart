@@ -1,10 +1,12 @@
 /// A widget is a reusable UI building block: props in via the constructor,
 /// widgets out via `build`. It never owns business logic.
 ///
-/// This is the user interface for the chrome every widget-gallery tab shares —
-/// the 'Kit Showcase' app bar (search shortcut + overflow menu) and the compose
-/// floating-action-button menu. Each gallery shell puts its nested router
-/// inside this widget so the tab owns its own chrome.
+/// This is the user interface for the chrome every widget-gallery TAB ROOT
+/// shares — the 'Kit Showcase' app bar (search shortcut + overflow menu) and
+/// the compose floating-action-button menu. Chrome is per-surface: each tab
+/// ROOT view puts its own body inside this widget, and the shell above it is a
+/// bare nested router. A route pushed on top of a tab root therefore renders
+/// with only its own chrome — no double-bar stack (ruling 2026-08-13).
 ///
 /// Requirements:
 /// 1. [Gallery chrome] — profile-and-gallery-demos.gallery.browse-the-components-gallery
@@ -65,15 +67,13 @@ class ShowcaseGalleryChromeWidget extends StatelessWidget {
       actions: _actions(context),
       behavior: AppBoxKitFloatingBarBehavior.minimize,
       body: child,
-      // NOTE on the FAB and a route's bottom dock: when a gallery route pins
-      // its own dock (Components pins a chat composer), this Scaffold cannot
-      // see it — the dock is a `bottomSheet` on a NESTED Scaffold, so
-      // `bottomSheetSize` here is `Size.zero` and no
-      // `FloatingActionButtonLocation` can react to it. The lift is supplied
-      // from above instead, by raising `viewPadding.bottom` in the tab host
-      // (`showcase_application_tab_host_widget.dart`), which feeds this
-      // Scaffold's `minViewPadding` and therefore `endFloat`'s safe margin.
-      // Headroom shim: see the M3E clipping note on the kit widget.
+      // The FAB is scoped to the tab root that mounts this chrome. A pushed
+      // route (Components and its composer dock, Motion, Maps) is no longer a
+      // descendant of this Scaffold, so it never has to clear a FAB it does
+      // not own — the old cross-Scaffold lift, raised from the tab host's
+      // `viewPadding.bottom`, is now only load-bearing for a dock pinned by a
+      // tab root itself. Headroom shim: see the M3E clipping note on the kit
+      // widget.
       floatingActionButton: SizedBox(
         height: defaultTargetPlatform == TargetPlatform.android ? 280 : null,
         child: AppBoxKitNativeFabMenu(

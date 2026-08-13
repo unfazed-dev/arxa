@@ -5,9 +5,11 @@
 ///
 /// This is the user interface for the profile surface — the demo of the kit's
 /// navigation rail, toolbar, and feedback surfaces, plus cards that link into
-/// the Motion, Maps, and Components showcases. The mobile variant lays the
-/// demo cards out in a scrolling list; the tablet and desktop variants are
-/// stubs.
+/// the Motion, Maps, and Components showcases. The mobile variant owns the
+/// gallery chrome (chrome is per-surface, so this tab root carries it rather
+/// than the shell — the routes it pushes carry only their own) and lays the
+/// demo cards out in a scrolling list inside it; the tablet and desktop
+/// variants are stubs.
 ///
 /// Requirements:
 /// 1. [Navigation rail] — view-the-profile-surface
@@ -40,6 +42,7 @@ library;
 
 import 'package:flutter/material.dart';
 import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
+import 'package:appbox_kit_showcase_app/ui/widgets/common/showcase_gallery_chrome/showcase_gallery_chrome_widget.dart';
 import 'package:appbox_kit_showcase_app/ui/widgets/common/showcase_tabs_shared/widgets.dart';
 import 'package:appbox_kit_showcase_app/ui/widgets/showcase_profile_widgets/widgets.dart';
 import 'package:appbox_kit_showcase_app/ui/views/showcase_profile_shell/showcase_profile/showcase_profile_viewmodel.dart';
@@ -59,58 +62,67 @@ class ShowcaseProfileViewMobile
     // No topEdge: the gallery chrome's AppBoxKitNativeAppBar is an opaque
     // Scaffold.appBar with no extendBodyBehindAppBar, so content never
     // underlaps it — a top effect would fade content just before it clips.
-    return AppBoxKitEdgeAwareListView(
-      bottomOcclusion: kShowcaseTabBarBlockHeight,
-      // Materialization headroom above the physical top — see the home
-      // list's note (clip 13-53-b; safe since the chrome went native).
-      extendBehindTopBar: true,
-      // Bottom = safe-area + tab-bar block so the last card can scroll
-      // clear of the floating AppBoxKitNativeTabBar — the shell extends the body
-      // under it (extendBody) and previously the button laid out
-      // unreachable beneath the bar.
-      // Top inset mirrors the home list: full-bleed behind the floating
-      // native bar on the glass tier, flush under the boxed bar elsewhere.
-      padding: EdgeInsets.fromLTRB(
-          abxSize16,
-          abxSize16 + MediaQuery.paddingOf(context).top,
-          abxSize16,
-          abxSize16 +
-              MediaQuery.paddingOf(context).bottom +
-              kShowcaseTabBarBlockHeight),
-      children: [
-        ShowcaseProfileRailCardWidget(viewModel: viewModel),
-        appBoxKitVerticalSpaceMedium,
-        const ShowcaseSectionLabelWidget('Toolbar'),
-        const ShowcaseProfileToolbarDemoWidget(),
-        appBoxKitVerticalSpaceMedium,
-        const ShowcaseProfileFeedbackCardWidget(),
-        appBoxKitVerticalSpaceMedium,
-        // Relative push within the profile tab's nested router —
-        // the pushed route's animation drives the demo's
-        // AppBoxKitMotionScope (wake on push, scrubbed set-down on
-        // iOS swipe-back).
-        const ShowcaseProfileNavCardWidget(
-          title: 'Motion',
-          buttonLabel: 'Motion showcase',
-          routeName: 'motion',
+    // Builder below the chrome: the chrome sits INSIDE this view now, and the
+    // glass tier raises MediaQuery.padding.top for its body subtree only — see
+    // the home list's note.
+    return ShowcaseGalleryChromeWidget(
+      child: Builder(
+        builder: (context) => AppBoxKitEdgeAwareListView(
+          bottomOcclusion: kShowcaseTabBarBlockHeight,
+          // Materialization headroom above the physical top — see the home
+          // list's note (clip 13-53-b; safe since the chrome went native).
+          extendBehindTopBar: true,
+          // Bottom = safe-area + tab-bar block so the last card can scroll
+          // clear of the floating AppBoxKitNativeTabBar — the shell extends the
+          // body under it (extendBody) and previously the button laid out
+          // unreachable beneath the bar.
+          // Top inset mirrors the home list: full-bleed behind the floating
+          // native bar on the glass tier, flush under the boxed bar elsewhere.
+          padding: EdgeInsets.fromLTRB(
+              abxSize16,
+              abxSize16 + MediaQuery.paddingOf(context).top,
+              abxSize16,
+              abxSize16 +
+                  MediaQuery.paddingOf(context).bottom +
+                  kShowcaseTabBarBlockHeight),
+          children: [
+            ShowcaseProfileRailCardWidget(viewModel: viewModel),
+            appBoxKitVerticalSpaceMedium,
+            const ShowcaseSectionLabelWidget('Toolbar'),
+            const ShowcaseProfileToolbarDemoWidget(),
+            appBoxKitVerticalSpaceMedium,
+            const ShowcaseProfileFeedbackCardWidget(),
+            appBoxKitVerticalSpaceMedium,
+            // Relative push within the profile tab's nested router —
+            // the pushed route's animation drives the demo's
+            // AppBoxKitMotionScope (wake on push, scrubbed set-down on
+            // iOS swipe-back). The pushed route replaces this chrome rather
+            // than stacking under it — it is not a descendant of the
+            // ShowcaseGalleryChromeWidget above.
+            const ShowcaseProfileNavCardWidget(
+              title: 'Motion',
+              buttonLabel: 'Motion showcase',
+              routeName: 'motion',
+            ),
+            appBoxKitVerticalSpaceMedium,
+            // appbox_kit_maps port — OpenStreetMap out of the box,
+            // Mapbox tiles via --dart-define=MAPBOX_PUBLIC_TOKEN.
+            const ShowcaseProfileNavCardWidget(
+              title: 'Maps',
+              buttonLabel: 'Maps showcase',
+              routeName: 'maps',
+            ),
+            appBoxKitVerticalSpaceMedium,
+            // Video-parity sweep (ADR 0011): drawer, glass sheet,
+            // dialog, input bar, grouped lists, chips, center toast.
+            const ShowcaseProfileNavCardWidget(
+              title: 'Components',
+              buttonLabel: 'Components showcase',
+              routeName: 'components',
+            ),
+          ],
         ),
-        appBoxKitVerticalSpaceMedium,
-        // appbox_kit_maps port — OpenStreetMap out of the box,
-        // Mapbox tiles via --dart-define=MAPBOX_PUBLIC_TOKEN.
-        const ShowcaseProfileNavCardWidget(
-          title: 'Maps',
-          buttonLabel: 'Maps showcase',
-          routeName: 'maps',
-        ),
-        appBoxKitVerticalSpaceMedium,
-        // Video-parity sweep (ADR 0011): drawer, glass sheet,
-        // dialog, input bar, grouped lists, chips, center toast.
-        const ShowcaseProfileNavCardWidget(
-          title: 'Components',
-          buttonLabel: 'Components showcase',
-          routeName: 'components',
-        ),
-      ],
+      ),
     );
   }
 }
