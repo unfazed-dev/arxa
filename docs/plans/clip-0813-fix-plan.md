@@ -164,3 +164,23 @@ lens) still open — stock-UITabBar comparison.
 
 No API key on this machine; decision-skip recorded via
 `consult.sh gate decision --skip` (session `cwd-32d9928e376a`).
+
+## Step 7 — clip 13-17: Clip.none disproven, viewport overdraw lands
+
+Device clip 13-17 showed the top seam shimmer unchanged after 35ed8ec0.
+Root cause of the miss: sliver child culling is layout-based —
+`RenderSliverMultiBoxAdaptor.paint` (SDK, sliver_multi_box_adaptor.dart
+~:738) paints a child only while `mainAxisDelta + paintExtentOf(child) > 0`
+and `mainAxisDelta < remainingPaintExtent`; `clipBehavior` never
+participates, so `Clip.none` could not move the boundary. The bottom is
+clean because `extendBody: true` moves GEOMETRY (trailing edge at the
+physical screen edge), not the clip.
+
+Fix: `AppBoxKitEdgeAwareListView(extendBehindTopBar: true)` — OverflowBox
+oversizes the viewport upward by viewPadding.top + kToolbarHeight + gap,
+bottom-aligned, overdraw returned as top padding. Leading edge now sits
+at/above the physical top; culling and glass re-materialization happen
+off-screen, mirroring the bottom. Scoped to the three gallery tab lists;
+`Scaffold.extendBodyBehindAppBar` again rejected (nested-route Scaffolds
+inside the gallery body would inherit the inset shift). clipBehavior param
+removed as disproven. Suites: ui_library 329, showcase 129.

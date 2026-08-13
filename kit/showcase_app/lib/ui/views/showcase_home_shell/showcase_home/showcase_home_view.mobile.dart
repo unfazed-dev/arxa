@@ -45,11 +45,11 @@ class ShowcaseHomeViewMobile extends ViewModelWidget<ShowcaseHomeViewModel> {
     return AppBoxKitEdgeAwareListView(
       bottomOcclusion: kShowcaseTabBarBlockHeight,
       // The gallery bar is opaque, and this list hosts native glass controls:
-      // without this, the viewport clip culls a platform view AT the bar seam
-      // and re-materializes it on re-entry (visible shimmer, clip 12-48).
-      // Clip.none moves the cull boundary to the physical screen edge — the
-      // top mirrors what extendBody already gives the bottom.
-      clipBehavior: Clip.none,
+      // sliver paint culling is LAYOUT-based (clipBehavior is inert — proven,
+      // clip 13-17), so the viewport itself is oversized up behind the bar.
+      // Children now cull at the physical screen edge, mirroring what
+      // extendBody already gives the bottom (clips 12-48, 13-17).
+      extendBehindTopBar: true,
       // Trailing clearance matches the profile list: without it the last card
       // can never scroll clear of the floating tab bar, so its edge effect
       // would stay permanently engaged.

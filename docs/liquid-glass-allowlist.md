@@ -95,15 +95,24 @@ LiquidGlassContainer in scrolling lists.
    pairs the alpha-hide with a sub-pixel ClipRect: paint still happens (the
    views never detach — 00bc2f0c's guarantee holds), but a hidden tab can
    contribute at most half a pixel to the frame.
-4. **Native views must not cull at a mid-screen clip edge (clip 12-48).**
-   The engine culls a platform view the moment the viewport clip fully
-   excludes it and re-materializes it on re-entry with a visible glass
-   shimmer. Under an opaque top bar the viewport edge is the bar seam —
-   mid-screen, where the eye is. Fix: `AppBoxKitEdgeAwareListView(clipBehavior:
-   Clip.none)` moves the cull boundary to the physical screen edge, so the
-   view transits behind the opaque bar still composited — the same lifecycle
-   `extendBody: true` already gives the bottom edge. ONLY under opaque
-   chrome (the bar paints after the body and covers the overflow).
+4. **Native views must not cull at a mid-screen viewport edge (clips 12-48,
+   13-17).** The engine drops a platform view the moment it stops being
+   painted and re-materializes it on re-entry with a visible glass shimmer.
+   Sliver child culling is **layout-based**, not clip-based:
+   `RenderSliverMultiBoxAdaptor.paint` skips a child once
+   `mainAxisDelta + paintExtent <= 0` at the viewport's leading edge —
+   `clipBehavior` never participates, so the first fix (`Clip.none`,
+   35ed8ec0) was inert and clip 13-17 showed the seam shimmer unchanged.
+   Working fix: `AppBoxKitEdgeAwareListView(extendBehindTopBar: true)`
+   oversizes the viewport upward (OverflowBox, bottom-aligned; overdraw
+   returned as top padding) so the leading edge sits at/above the physical
+   screen top and culling happens off-screen — the same lifecycle
+   `extendBody: true` gives the bottom edge. ONLY under opaque chrome (the
+   bar paints after the body and covers the overdraw; the overflow is
+   paint-only, taps above the body still hit the bar).
+   `Scaffold.extendBodyBehindAppBar` was rejected twice: the gallery body
+   hosts nested-route Scaffolds whose own bars would inherit the inset
+   shift.
 5. **Fill color and foreground travel together in fallbacks.** Any fallback
    that sets a CupertinoButton `color` must set the foreground too: solid
    fill → contrasting color, translucent tint wash (glass) → the tint itself

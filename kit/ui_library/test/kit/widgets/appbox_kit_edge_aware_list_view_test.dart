@@ -34,32 +34,45 @@ void main() {
       find.byType(AppBoxKitScrollEdgeEffect, skipOffstage: false).evaluate().length;
 
   testWidgets(
-      'kit.ui-library.edge-aware-list — clipBehavior forwards to the ListView '
-      '(Clip.none = platform views cull at the screen edge, not the bar seam)',
+      'kit.ui-library.edge-aware-list — extendBehindTopBar oversizes the '
+      'viewport upward so children cull at the screen edge, not the bar seam',
       (tester) async {
+    // Sliver paint culling is layout-based (RenderSliverMultiBoxAdaptor.paint
+    // drops a child once it is fully above the viewport's leading edge;
+    // clipBehavior never participates — clips 12-48/13-17). The fix is
+    // geometry: the ListView must be TALLER than the body, bottom-aligned,
+    // with the extra height returned as top padding so resting layout holds.
     await tester.pumpWidget(MaterialApp(
       home: Scaffold(
         body: AppBoxKitEdgeAwareListView(
-          clipBehavior: Clip.none,
+          extendBehindTopBar: true,
+          padding: const EdgeInsets.all(16),
           children: mixedChildren(),
         ),
       ),
     ));
+    const overdraw = kToolbarHeight + 8.0; // test env: viewPadding.top == 0
+    final body = tester.getRect(find.byType(AppBoxKitEdgeAwareListView));
+    final list = tester.getRect(find.byType(ListView));
+    expect(list.height, body.height + overdraw,
+        reason: 'the viewport leading edge must sit above the physical top');
+    expect(list.bottom, body.bottom,
+        reason: 'the trailing edge must not move — only the top overdraws');
     expect(
-      tester.widget<ListView>(find.byType(ListView)).clipBehavior,
-      Clip.none,
-      reason: 'under an opaque bar the viewport clip is what culls a native '
-          'view at the seam and re-materializes it on re-entry (clip 12-48); '
-          'Clip.none must reach the ListView for the transit fix to hold',
+      (tester.widget<ListView>(find.byType(ListView)).padding as EdgeInsets)
+          .top,
+      16 + overdraw,
+      reason: 'overdraw is returned as top padding so resting layout holds',
     );
-    // Default stays hardEdge — Clip.none is only safe under OPAQUE chrome.
+
+    // Default: no overdraw — the list matches its constraints exactly.
     await tester.pumpWidget(MaterialApp(
       home: Scaffold(
         body: AppBoxKitEdgeAwareListView(children: mixedChildren()),
       ),
     ));
-    expect(tester.widget<ListView>(find.byType(ListView)).clipBehavior,
-        Clip.hardEdge);
+    expect(tester.getRect(find.byType(ListView)),
+        tester.getRect(find.byType(AppBoxKitEdgeAwareListView)));
   });
 
   testWidgets(

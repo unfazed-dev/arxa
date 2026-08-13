@@ -1,4 +1,6 @@
+import 'package:flutter/material.dart' show kToolbarHeight;
 import 'package:flutter/widgets.dart';
+import 'package:appbox_kit_core/common/appbox_kit_app_constants.dart';
 
 import 'appbox_kit_scroll_edge_effect.dart';
 
@@ -54,8 +56,10 @@ class AppBoxKitEdgeAwareListView extends StatelessWidget {
     this.topEdge = false,
     this.bottomOcclusion,
     this.style = AppBoxKitScrollEdgeEffectStyle.automatic,
-    this.clipBehavior = Clip.hardEdge,
-  });
+    this.extendBehindTopBar = false,
+  }) : assert(!(extendBehindTopBar && topEdge),
+            'extendBehindTopBar is for an opaque bar OUTSIDE the scrollable; '
+            'a top edge effect under one fades content the bar already hides');
 
   /// The list's children. Each is wrapped in the configured edge effects —
   /// spacers included, so the treatment is uniform and the wrapping rule has
@@ -81,26 +85,39 @@ class AppBoxKitEdgeAwareListView extends StatelessWidget {
   /// Strength profile forwarded to every child's effect.
   final AppBoxKitScrollEdgeEffectStyle style;
 
-  /// Viewport clip, forwarded to the [ListView]. Pass [Clip.none] when the
-  /// list sits under an OPAQUE top bar and hosts native platform views
-  /// (informed allowlist): the engine culls a platform view the moment the
-  /// viewport clip fully excludes it — at the bar seam, mid-screen — and
-  /// re-materializes it on re-entry with a visible glass shimmer (clip
-  /// 12-48, home's smoke row). With no viewport clip the only boundary left
-  /// is the physical screen edge, so the view transits behind the opaque
-  /// bar still composited and is culled off-screen — the same lifecycle the
-  /// bottom edge gets from `extendBody: true`. Requires opaque top chrome:
-  /// the bar paints after the body and covers the overflow; under
-  /// translucent chrome keep [Clip.hardEdge].
-  final Clip clipBehavior;
+  /// Extend the viewport's leading edge up behind an OPAQUE `Scaffold.appBar`
+  /// so it sits at the physical screen top instead of the bar seam.
+  ///
+  /// Why: sliver children are paint-culled at the viewport's leading edge by a
+  /// LAYOUT test (`RenderSliverMultiBoxAdaptor.paint`: child painted only while
+  /// `mainAxisDelta + paintExtent > 0`) — `clipBehavior` never participates, so
+  /// `Clip.none` cannot move the boundary (proven on device, clips 12-48 and
+  /// 13-17). When the list hosts native platform views, culling at the bar
+  /// seam means the engine drops the view mid-screen and re-materializes it on
+  /// re-entry with a visible glass shimmer. This flag oversizes the viewport
+  /// upward (status bar + `kToolbarHeight` + gap) via an [OverflowBox] and adds
+  /// the same amount to the top padding, so resting layout is unchanged but
+  /// children now cull at/above the physical screen edge — the same lifecycle
+  /// `extendBody: true` gives the bottom. ONLY valid under opaque top chrome:
+  /// the bar paints after the body and covers the overdraw region (taps above
+  /// the body's bounds still go to the bar — overflow is paint-only).
+  final bool extendBehindTopBar;
 
   @override
   Widget build(BuildContext context) {
-    return ListView(
-      padding: padding,
+    // Generous seam-to-top estimate: kToolbarHeight (56) covers the CN bar
+    // (44 + abxGap8 gap) and the Material bar alike. Overshoot just culls a
+    // little earlier off-screen; undershoot would put the boundary back in
+    // view. viewPadding survives Scaffold's body padding removal, so the
+    // status-bar height is still readable here.
+    final overdraw = extendBehindTopBar
+        ? MediaQuery.viewPaddingOf(context).top + kToolbarHeight + abxGap8
+        : 0.0;
+    final list = ListView(
+      padding: (padding ?? EdgeInsets.zero)
+          .add(EdgeInsets.only(top: overdraw)),
       controller: controller,
       physics: physics,
-      clipBehavior: clipBehavior,
       children: [
         for (final child in children)
           _treat(child,
@@ -108,6 +125,20 @@ class AppBoxKitEdgeAwareListView extends StatelessWidget {
               bottomOcclusion: bottomOcclusion,
               style: style),
       ],
+    );
+    if (overdraw == 0) return list;
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final height = constraints.maxHeight + overdraw;
+        // Bottom-aligned: the trailing edge stays put (extendBody's boundary),
+        // only the leading edge moves up behind the bar.
+        return OverflowBox(
+          alignment: Alignment.bottomCenter,
+          minHeight: height,
+          maxHeight: height,
+          child: list,
+        );
+      },
     );
   }
 }
