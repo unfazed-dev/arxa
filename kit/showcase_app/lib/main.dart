@@ -95,6 +95,7 @@ class _ShowcaseAppState extends State<ShowcaseApp>
           initialData: theme.themeMode$.value,
           builder: (context, snapshot) => ResponsiveApp(
             builder: (_) => MaterialApp.router(
+              debugShowCheckedModeBanner: false,
               // Route-transition occlusion: suppresses native iOS 26 glass
               // (app-bar popup menu, buttons, search bar, glass cards…) during
               // route slides so a hybrid-composition platform view can't leak
