@@ -44,12 +44,10 @@ class ShowcaseHomeViewMobile extends ViewModelWidget<ShowcaseHomeViewModel> {
     // chrome's app bar is opaque and does not extend behind.
     return AppBoxKitEdgeAwareListView(
       bottomOcclusion: kShowcaseTabBarBlockHeight,
-      // The gallery bar is opaque, and this list hosts native glass controls:
-      // sliver paint culling is LAYOUT-based (clipBehavior is inert — proven,
-      // clip 13-17), so the viewport itself is oversized up behind the bar.
-      // Children now cull at the physical screen edge, mirroring what
-      // extendBody already gives the bottom (clips 12-48, 13-17).
-      extendBehindTopBar: true,
+      // NO extendBehindTopBar: painting platform views under the Flutter bar
+      // makes body content flash OVER the bar during fast scrolls (clip 13-32,
+      // flutter#86787 class — overlay-layer churn). The seam cull stays until
+      // the top chrome question is settled; see allowlist rule 4.
       // Trailing clearance matches the profile list: without it the last card
       // can never scroll clear of the floating tab bar, so its edge effect
       // would stay permanently engaged.

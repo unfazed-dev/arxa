@@ -101,6 +101,13 @@ class AppBoxKitEdgeAwareListView extends StatelessWidget {
   /// `extendBody: true` gives the bottom. ONLY valid under opaque top chrome:
   /// the bar paints after the body and covers the overdraw region (taps above
   /// the body's bounds still go to the bar — overflow is paint-only).
+  ///
+  /// **WARNING (clip 13-32, device-observed):** when the overdraw region hosts
+  /// PLATFORM VIEWS, the engine's overlay-layer churn can flash body content
+  /// OVER a Flutter-drawn bar during fast scrolls (flutter#86787 class) — the
+  /// bar's paint-order guarantee does not survive hybrid-composition slicing.
+  /// Safe only when the content passing behind the bar is pure Flutter, or the
+  /// covering chrome is itself a native view (deterministic UIView z-order).
   final bool extendBehindTopBar;
 
   @override

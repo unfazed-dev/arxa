@@ -103,13 +103,10 @@ LiquidGlassContainer in scrolling lists.
    `mainAxisDelta + paintExtent <= 0` at the viewport's leading edge —
    `clipBehavior` never participates, so the first fix (`Clip.none`,
    35ed8ec0) was inert and clip 13-17 showed the seam shimmer unchanged.
-   Working fix: `AppBoxKitEdgeAwareListView(extendBehindTopBar: true)`
-   oversizes the viewport upward (OverflowBox, bottom-aligned; overdraw
-   returned as top padding) so the leading edge sits at/above the physical
-   screen top and culling happens off-screen — the same lifecycle
-   `extendBody: true` gives the bottom edge. ONLY under opaque chrome (the
-   bar paints after the body and covers the overdraw; the overflow is
-   paint-only, taps above the body still hit the bar).
+   Second fix (`extendBehindTopBar`, fd5f4422): oversize the viewport
+   upward (OverflowBox, bottom-aligned; overdraw returned as top padding)
+   so culling happens off-screen like the bottom edge — REGRESSED, see
+   counter-evidence below; reverted at the gallery call sites.
    `Scaffold.extendBodyBehindAppBar` was rejected twice: the gallery body
    hosts nested-route Scaffolds whose own bars would inherit the inset
    shift.
@@ -120,8 +117,19 @@ LiquidGlassContainer in scrolling lists.
    survives + direction asymmetry = scroll demotion (no geometry fix helps);
    whole view pops = cull (this rule applies). That iOS 26 glass replays its
    materialization on re-add is device-observed inference — no Apple source
-   states it. Watch-item: flutter#86787 (platform view can flash OVER a
-   pinned header) is the known counter-risk of painting under the bar.
+   states it.
+   **Counter-evidence (clip 13-32): the overdraw fix REGRESSED.** With
+   platform views painting behind the Flutter bar, overlay-layer churn
+   flashed body content OVER the bar during fast scrolls — the flutter#86787
+   class the research pass flagged as watch-item. Overdraw reverted at the
+   gallery call sites the same day. Standing conclusion after three
+   mechanisms (edge-effect alpha, Clip.none, viewport overdraw): a
+   Flutter-drawn opaque bar cannot reliably cover platform views passing
+   behind it (paint order does not survive hybrid-composition slicing), and
+   culling them at the seam shimmers. The robust arrangements are (a)
+   native top chrome — UIView-over-UIView z-order, the reason the bottom
+   tab bar is clean — or (b) no platform views in the scrolling content
+   under the bar. Direction is a product ruling, not a patch.
 5. **Fill color and foreground travel together in fallbacks.** Any fallback
    that sets a CupertinoButton `color` must set the foreground too: solid
    fill → contrasting color, translucent tint wash (glass) → the tint itself
