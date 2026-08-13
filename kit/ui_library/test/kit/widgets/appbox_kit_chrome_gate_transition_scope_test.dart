@@ -437,6 +437,66 @@ void main() {
   });
 
   testWidgets(
+      'kit.ui-library.chrome-gate-scope — an ABANDONED back-swipe never blanks '
+      'the dragged route', (WidgetTester tester) async {
+    // The commonest real gesture: start the drag, change your mind, let it
+    // spring back. It hits the same bug (`didStartUserGesture` fires either
+    // way) but exits through a different SDK branch — `controller.animateTo(1.0)`
+    // with NO `didPop` (cupertino/route.dart:877) — so the restore tick the
+    // committed path gets never arrives. Under the old predicate the route
+    // therefore stayed blank until the watchdog fired.
+    final GlobalKey<NavigatorState> navKey = GlobalKey<NavigatorState>();
+
+    await tester.pumpWidget(
+      CupertinoApp(
+        navigatorKey: navKey,
+        navigatorObservers: <NavigatorObserver>[CNTransitionObserver()],
+        home: const CupertinoPageScaffold(child: Text('first')),
+      ),
+    );
+    await _settleBoot(tester);
+
+    navKey.currentState!.push(
+      CupertinoPageRoute<void>(
+        builder: (_) => const CupertinoPageScaffold(
+          child: AppBoxKitNativeChromeGate(child: Text('in-route-glass')),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.pump(const Duration(seconds: 2));
+
+    // Short drag — deliberately under the halfway line so `dragEnd` cancels.
+    final TestGesture gesture =
+        await tester.startGesture(const Offset(5.0, 200.0));
+    await gesture.moveBy(const Offset(30.0, 0.0));
+    await tester.pump();
+
+    final List<String> hiddenDuring = <String>[];
+    for (int step = 0; step < 4; step++) {
+      await gesture.moveBy(const Offset(25.0, 0.0));
+      await tester.pump(const Duration(milliseconds: 16));
+      if (_allGatesHidden(tester).any((bool h) => h)) hiddenDuring.add('drag-$step');
+    }
+    await gesture.up();
+    for (int frame = 0; frame < 30; frame++) {
+      await tester.pump(const Duration(milliseconds: 16));
+      if (_allGatesHidden(tester).any((bool h) => h)) {
+        hiddenDuring.add('springback-$frame');
+      }
+    }
+
+    expect(hiddenDuring, isEmpty,
+        reason: 'the dragged route blanked during an abandoned swipe at '
+            '[$hiddenDuring]');
+    expect(find.text('in-route-glass'), findsOneWidget,
+        reason: 'an abandoned swipe must NOT have popped — if it did, this '
+            'test is exercising the committed path, not the cancel path');
+
+    await _flushWatchdogs(tester);
+  });
+
+  testWidgets(
       'kit.ui-library.chrome-gate-scope — a ROOT push over a tab scaffold hides '
       'the sibling tab bar', (WidgetTester tester) async {
     // The "second ceiling" named in the gate's own class doc: a gate that is a

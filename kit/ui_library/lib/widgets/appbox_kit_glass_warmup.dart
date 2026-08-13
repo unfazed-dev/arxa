@@ -4,6 +4,7 @@ import 'package:cupertino_native_better/cupertino_native_better.dart'
         CNGlassEffectShape,
         LiquidGlassConfig,
         LiquidGlassContainer;
+import 'package:flutter/material.dart' show Material, MaterialType;
 import 'package:flutter/widgets.dart';
 
 import 'package:appbox_kit_core/platform/appbox_kit_platform.dart';
@@ -84,19 +85,29 @@ class AppBoxKitGlassWarmup extends StatelessWidget {
             offset: const Offset(100000, 0),
             child: IgnorePointer(
               child: ExcludeSemantics(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const LiquidGlassContainer(
-                      config: LiquidGlassConfig(
-                        shape: CNGlassEffectShape.rect,
-                        cornerRadius: 16,
-                        effect: CNGlassEffect.regular,
+                // The warm views are SIBLINGS of the host's Scaffold, so they
+                // sit outside its Material. Any warm kind that falls back to a
+                // Flutter tier (headless tests, or a device path where the
+                // platform view can't build) then asserts "No Material widget
+                // found" and takes the whole app down — measured: the warm
+                // switch broke three showcase chrome tests. Transparency type
+                // paints nothing.
+                child: Material(
+                  type: MaterialType.transparency,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const LiquidGlassContainer(
+                        config: LiquidGlassConfig(
+                          shape: CNGlassEffectShape.rect,
+                          cornerRadius: 16,
+                          effect: CNGlassEffect.regular,
+                        ),
+                        child: SizedBox(width: 44, height: 44),
                       ),
-                      child: SizedBox(width: 44, height: 44),
-                    ),
-                    ...alsoWarm,
-                  ],
+                      ...alsoWarm,
+                    ],
+                  ),
                 ),
               ),
             ),

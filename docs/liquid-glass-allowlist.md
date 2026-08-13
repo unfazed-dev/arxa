@@ -281,7 +281,10 @@ the glass card is the first re-demote, the toolbar second.
     `didStopUserGesture` to the settle's status callback). Scoped for free —
     it is the gate's own navigator, so a nested swipe cannot repaint root
     chrome, and no push is gesture-driven, so the sibling-bar hide under a
-    root push is untouched. The result is that a gesture pop behaves
+    root push is untouched. Deliberate and NOT an oversight: a ROOT-level
+    gesture pop over the tab scaffold now keeps the sibling tab bar painted,
+    because there the bar sits on the route being revealed and travels with
+    it — the same answer the button pop already gives. The result is that a gesture pop behaves
     identically to a button pop, which was already ratified and device-clean.
     Pinned by appbox_kit_chrome_gate_transition_scope_test (back-swipe test,
     mutation-checked: without the clause it reports a hidden gate on every
