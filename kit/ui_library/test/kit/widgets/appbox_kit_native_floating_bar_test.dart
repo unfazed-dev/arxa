@@ -330,6 +330,219 @@ void main() {
     expect(tester.getRect(find.byKey(const Key('leading'))), resting);
   });
 
+  // ---------------------------------------------------------------------
+  // AppBoxKitTopEdgeScrim — the status-bar-zone dissolve. Full-bleed content
+  // (native platform views included, per ruling 4) otherwise rides through
+  // the status bar fully visible and garbles with the clock/Dynamic Island.
+  // The scrim is a Flutter-DRAWN gradient, never an effect: BackdropFilter
+  // cannot sample platform-view pixels and an alpha fade over the content
+  // saveLayers a platform-view-hosting subtree (composition rule 1).
+  //
+  // NOTE: these pin the scrim's SHAPE, not that the arrangement is clean on
+  // device — a full-width opaque Flutter band over passing platform views is
+  // the clip 13-32 shape (see the widget's own doc comment).
+  // ---------------------------------------------------------------------
+
+  const statusBar = 47.0;
+
+  /// No Scaffold: it may consume the top padding the scrim and the bar both
+  /// measure from, which would make the height pins vacuous.
+  Widget scrimHarness(
+          {AppBoxKitFloatingBarBehavior behavior =
+              AppBoxKitFloatingBarBehavior.pinned}) =>
+      MaterialApp(
+        home: Builder(
+          builder: (context) => MediaQuery(
+            data: MediaQuery.of(context).copyWith(
+              padding: const EdgeInsets.only(top: statusBar),
+              viewPadding: const EdgeInsets.only(top: statusBar),
+            ),
+            child: AppBoxKitFloatingChrome(
+              behavior: behavior,
+              title: 'Kit Showcase',
+              actions: [
+                const SizedBox(key: Key('action'), width: 44, height: 44)
+              ],
+              body: ListView(
+                children: [
+                  for (var i = 0; i < 30; i++)
+                    SizedBox(height: 80, key: Key('c$i')),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+
+  testWidgets(
+      'kit.ui-library.top-edge-scrim — covers the status-bar inset and ends '
+      'exactly on the bar\'s bottom edge', (tester) async {
+    await tester.pumpWidget(scrimHarness());
+
+    final scrim = tester.getRect(find.byType(AppBoxKitTopEdgeScrim));
+    expect(scrim.top, 0, reason: 'the dissolve starts at the physical top');
+    expect(scrim.height, greaterThan(statusBar),
+        reason: 'an opaque band shorter than the status bar leaves the clock '
+            'and Dynamic Island garbling with content — the whole defect');
+    expect(scrim.height, statusBar + kAppBoxKitFloatingBarBlockHeight);
+
+    // The alignment that actually matters, and the reason the scrim reads
+    // padding.top (the bar's own SafeArea source) rather than a second
+    // opinion: the fade must finish where the bar block does, under every
+    // inset. Pinning the equality survives whichever source either one picks.
+    expect(scrim.height,
+        tester.getSize(find.byType(AppBoxKitNativeFloatingBar)).height,
+        reason: 'scrim and bar must measure the top inset the same way');
+  });
+
+  testWidgets(
+      'kit.ui-library.top-edge-scrim — never intercepts taps', (tester) async {
+    await tester.pumpWidget(scrimHarness());
+    final ignore = tester.widget<IgnorePointer>(
+      find
+          .descendant(
+              of: find.byType(AppBoxKitTopEdgeScrim),
+              matching: find.byType(IgnorePointer))
+          .first,
+    );
+    expect(ignore.ignoring, isTrue,
+        reason: 'the scrim is decoration over a live scroll view — swallowing '
+            'drags in the top band would deaden scrolling under the chrome');
+  });
+
+  testWidgets(
+      'kit.ui-library.top-edge-scrim — sits UNDER the bar in the chrome Stack '
+      'so the bar row stays fully legible above it', (tester) async {
+    await tester.pumpWidget(scrimHarness());
+    final stack = tester.widget<Stack>(
+      find
+          .descendant(
+              of: find.byType(AppBoxKitFloatingChrome),
+              matching: find.byType(Stack))
+          .first,
+    );
+    final scrimIndex = stack.children.indexWhere(
+        (child) => child is Positioned && child.child is AppBoxKitTopEdgeScrim);
+    expect(scrimIndex, greaterThanOrEqualTo(0),
+        reason: 'the scrim must be a sibling in the chrome Stack, not wrapped '
+            'around the body (wrapping it would saveLayer the content)');
+    expect(scrimIndex, lessThan(stack.children.length - 1),
+        reason: 'painted before the bar');
+    expect(
+      find.descendant(
+          of: find.byWidget(stack.children.last),
+          matching: find.byType(AppBoxKitNativeFloatingBar)),
+      findsOneWidget,
+      reason: 'the bar is the LAST child — it paints over the scrim, never '
+          'under it',
+    );
+  });
+
+  testWidgets(
+      'kit.ui-library.top-edge-scrim — survives the bar tucking and hiding: '
+      'it is what keeps the status bar legible once the bar is gone',
+      (tester) async {
+    await tester
+        .pumpWidget(scrimHarness(behavior: AppBoxKitFloatingBarBehavior.hide));
+    final resting = tester.getRect(find.byType(AppBoxKitTopEdgeScrim));
+
+    await scrollAway(tester);
+    // The bar really left — otherwise the scrim holding still proves nothing.
+    expect(
+        tester.getRect(find.byType(AppBoxKitNativeFloatingBar)).top,
+        lessThan(0),
+        reason: 'hide slid the whole bar off the top');
+    expect(tester.getRect(find.byType(AppBoxKitTopEdgeScrim)), resting,
+        reason: 'the scrim must NOT ride the whole-bar slide — with the bar '
+            'hidden it is the only thing between full-bleed content and the '
+            'Dynamic Island');
+  });
+
+  testWidgets(
+      'kit.ui-library.top-edge-scrim — draws with a gradient fill, adding no '
+      'saveLayer and no alpha over the content', (tester) async {
+    await tester.pumpWidget(scrimHarness());
+    final scrim = find.byType(AppBoxKitTopEdgeScrim);
+    // Composition rule 1, mechanically: none of the saveLayer shapes, and no
+    // Opacity family, may appear in the scrim subtree. The source-scanning
+    // law gate covers the file; this covers the built tree.
+    for (final forbidden in <Finder>[
+      find.byType(BackdropFilter),
+      find.byType(ImageFiltered),
+      find.byType(ShaderMask),
+      find.byType(Opacity),
+      find.byType(AnimatedOpacity),
+      find.byType(FadeTransition),
+    ]) {
+      expect(find.descendant(of: scrim, matching: forbidden), findsNothing,
+          reason: 'the scrim must stay a plain gradient fill — effects here '
+              'would wrap the platform views passing beneath');
+    }
+
+    // The gradient itself: opaque at the top edge, fully clear at the bottom.
+    final decoration = tester
+        .widget<Container>(
+            find.descendant(of: scrim, matching: find.byType(Container)).first)
+        .decoration as BoxDecoration;
+    final gradient = decoration.gradient! as LinearGradient;
+    expect(gradient.colors.first.a, 1.0,
+        reason: 'opaque where the status bar sits');
+    expect(gradient.colors.last.a, 0.0,
+        reason: 'fully clear by the bar\'s bottom edge — a residual tint '
+            'would haze the whole content top');
+    expect(gradient.stops!.first, 0.0);
+    expect(gradient.stops![1], statusBar / (statusBar + kAppBoxKitFloatingBarBlockHeight),
+        reason: 'the ramp starts only once the status-bar band is cleared');
+  });
+
+  testWidgets(
+      'kit.ui-library.top-edge-scrim — fadeExtent shortens the ramp for '
+      'bar-less hosts so it never washes their resting content',
+      (tester) async {
+    // Bar-less hosts (the Notes auth panels) inset their content by their own
+    // top padding, not the bar block. A ramp longer than that inset lays a
+    // partial wash over a heading that never scrolls — the default 52pt ramp
+    // would sit ~54% opaque over content starting 24pt down. The ramp must
+    // reach fully clear exactly at the host's inset.
+    const ramp = 24.0;
+    await tester.pumpWidget(MaterialApp(
+      home: Builder(
+        builder: (context) => MediaQuery(
+          data: MediaQuery.of(context).copyWith(
+            padding: const EdgeInsets.only(top: statusBar),
+            viewPadding: const EdgeInsets.only(top: statusBar),
+          ),
+          child: const Stack(
+            children: [
+              Positioned(
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  child: AppBoxKitTopEdgeScrim(fadeExtent: ramp)),
+            ],
+          ),
+        ),
+      ),
+    ));
+
+    expect(tester.getSize(find.byType(AppBoxKitTopEdgeScrim)).height,
+        statusBar + ramp,
+        reason: 'the scrim ends where the host content begins');
+
+    final gradient = (tester
+            .widget<Container>(find
+                .descendant(
+                    of: find.byType(AppBoxKitTopEdgeScrim),
+                    matching: find.byType(Container))
+                .first)
+            .decoration as BoxDecoration)
+        .gradient! as LinearGradient;
+    // Still opaque across the whole status band — that is the defect being
+    // fixed — but clear by the time the resting hero starts.
+    expect(gradient.stops![1], statusBar / (statusBar + ramp));
+    expect(gradient.colors.last.a, 0.0);
+  });
+
   testWidgets(
       'kit.ui-library.floating-chrome — raises the body MediaQuery top '
       'padding by the bar block so descendants inset themselves',

@@ -192,6 +192,85 @@ class AppBoxKitNativeFloatingBar extends StatelessWidget {
   }
 }
 
+/// Status-bar-zone scrim: a Flutter-DRAWN vertical gradient from the scaffold
+/// background (opaque at y=0, through the status-bar inset) to transparent by
+/// the bottom of the floating bar block. Drawn ON TOP of a full-bleed body so
+/// scrolled content — including native platform views, which ruling 4 now
+/// allows in scrollables — dissolves before it reaches the clock, battery and
+/// Dynamic Island instead of garbling with them.
+///
+/// Why a drawn gradient and not the obvious alternatives: iOS's own
+/// scroll-edge effect is a system chrome affordance, unavailable to
+/// Flutter-composited content, and every effect-based equivalent is barred by
+/// composition rule 1 — a BackdropFilter band cannot sample platform-view
+/// pixels (they would punch through) and an Opacity/fade over the content
+/// saveLayers a platform-view-hosting subtree. A gradient fill adds no layer
+/// at all.
+///
+/// **Watch-item, not a validated mechanism (law rule 4, clip 13-32).** The
+/// nearest precedent — the bar's frosted title pill — is a PARTIAL-width
+/// overlay, and that is the discriminating difference: the arrangement clip
+/// 13-32 rejected was a full-width OPAQUE Flutter bar over passing platform
+/// views, where overlay-layer churn flashed body content OVER the bar during
+/// fast scrolls. This scrim is full-width and opaque at its top edge, so it
+/// is the same shape. It is lawful (no saveLayer, no alpha over platform
+/// views) and reverts in one deletion; if a device clip shows content
+/// flashing over the status band during a fast fling, that is this, and the
+/// answer is native chrome for the band, not another gradient.
+///
+/// Height is `MediaQuery.paddingOf(context).top` plus [fadeExtent] —
+/// deliberately the same `padding.top` the bar's own `SafeArea` reads, so
+/// under the floating chrome the fade lands exactly on the bar's bottom edge
+/// under every inset (pinned by test). Read it from the chrome's own context,
+/// never the body's raised MediaQuery, or the scrim double-counts the block.
+class AppBoxKitTopEdgeScrim extends StatelessWidget {
+  const AppBoxKitTopEdgeScrim({
+    super.key,
+    this.fadeExtent = kAppBoxKitFloatingBarBlockHeight,
+  });
+
+  /// How far BELOW the status-bar inset the gradient takes to reach fully
+  /// clear. The default spans the bar block, which is what the floating
+  /// chrome wants: scrolled content is already dissolving by the time it
+  /// reaches the bar row.
+  ///
+  /// Bar-less hosts must shrink this to their content's own top inset.
+  /// The scrim is opaque at the status-bar line and only reaches clear after
+  /// [fadeExtent], so a ramp longer than the host's resting top padding lays
+  /// a partial wash over static content that never scrolls — a washed-out
+  /// heading instead of a dissolving one. Sizing the ramp to the host's top
+  /// padding makes the scrim bite only on content that has actually scrolled
+  /// up into the band.
+  final double fadeExtent;
+
+  @override
+  Widget build(BuildContext context) {
+    final top = MediaQuery.paddingOf(context).top;
+    final height = top + fadeExtent;
+    final background = Theme.of(context).scaffoldBackgroundColor;
+    return IgnorePointer(
+      child: Container(
+        height: height,
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            // Opaque for the whole status-bar band, then a single ramp to
+            // clear across the control row. withValues, never an Opacity
+            // widget: the law gate scans this file for the alpha shapes.
+            colors: [
+              background,
+              background,
+              background.withValues(alpha: 0),
+            ],
+            stops: [0, top / height, 1],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 /// How [AppBoxKitFloatingChrome] reacts to the body scrolling away from the
 /// top.
 enum AppBoxKitFloatingBarBehavior {
@@ -346,6 +425,11 @@ class _AppBoxKitFloatingChromeState extends State<AppBoxKitFloatingChrome> {
               child: widget.body,
             ),
           ),
+          // Between body and bar, and deliberately OUTSIDE the `hide`
+          // AnimatedSlide above: keeping the status bar legible is the
+          // scrim's whole job, so it must survive the bar tucking or hiding.
+          const Positioned(
+              top: 0, left: 0, right: 0, child: AppBoxKitTopEdgeScrim()),
           Positioned(top: 0, left: 0, right: 0, child: bar),
         ],
       ),

@@ -71,16 +71,49 @@ class ShowcaseNotesViewMobile extends ViewModelWidget<ShowcaseNotesViewModel> {
           return AppBoxKitStreamBuilder<bool>(
             stream: viewModel.showCreateAccount$,
             builder: (context, showCreateAccount) {
+              // Bar-less by design — the auth panel IS the tab root, with no
+              // chrome to inset against. That leaves its heading riding the
+              // status-bar zone, so it takes the top-edge scrim on its own
+              // (the same one AppBoxKitFloatingChrome carries); the scrim is
+              // positioned, not self-sizing, hence the explicit Positioned.
               if (showCreateAccount) {
                 return Scaffold(
-                  body: ShowcaseNotesCreateAccountView(
-                    onBackToSignIn: viewModel.closeCreateAccount,
+                  body: Stack(
+                    children: [
+                      ShowcaseNotesCreateAccountView(
+                        onBackToSignIn: viewModel.closeCreateAccount,
+                      ),
+                      const Positioned(
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        // Ramp = the panel's own abxSize24 scroll padding, so
+                        // the scrim is fully clear exactly where the resting
+                        // hero starts: it dissolves whatever scrolls up into
+                        // the status band without washing the static heading.
+                        child: AppBoxKitTopEdgeScrim(fadeExtent: abxSize24),
+                      ),
+                    ],
                   ),
                 );
               }
               return Scaffold(
-                body: ShowcaseNotesAuthView(
-                  onCreateAccount: viewModel.openCreateAccount,
+                body: Stack(
+                  children: [
+                    ShowcaseNotesAuthView(
+                      onCreateAccount: viewModel.openCreateAccount,
+                    ),
+                    const Positioned(
+                      top: 0,
+                      left: 0,
+                      right: 0,
+                      // Ramp = the panel's own abxSize24 scroll padding, so
+                      // the scrim is fully clear exactly where the resting
+                      // hero starts: it dissolves whatever scrolls up into
+                      // the status band without washing the static heading.
+                      child: AppBoxKitTopEdgeScrim(fadeExtent: abxSize24),
+                    ),
+                  ],
                 ),
               );
             },

@@ -144,6 +144,25 @@ the glass card is the first re-demote, the toolbar second.
    off-screen above a native/full-bleed chrome (the 13-32 flash needed the
    opaque Flutter bar, which no longer exists). The boundary sits ~120px
    above the physical top, buying the animation time to finish unseen.
+   **Top-edge scrim (added 2026-08-13, UNPROVEN on device).** Full-bleed
+   content — native platform views included, per ruling 4 — rides through the
+   STATUS BAR fully visible and garbles with the clock/battery/Dynamic
+   Island. iOS solves this with the system scroll-edge effect, which is
+   unavailable to Flutter-composited content, and every effect-based
+   equivalent is barred by composition rule 1 (a BackdropFilter band cannot
+   sample platform-view pixels; an alpha fade saveLayers the content).
+   `AppBoxKitTopEdgeScrim` is the lawful substitute: a Flutter-DRAWN vertical
+   gradient from `scaffoldBackgroundColor` (opaque across the status-bar
+   inset) to transparent at the bar block's bottom edge, a sibling in the
+   chrome Stack between body and bar, `IgnorePointer`, surviving tuck/hide.
+   It adds no layer, so both gates pass. **But note it is full-width and
+   opaque over passing platform views — the clip 13-32 shape.** The title-pill
+   precedent it was argued from is PARTIAL-width, which is the discriminating
+   difference. Watch the next device run for body content flashing over the
+   status band during a fast fling; if it appears, the answer is native chrome
+   for the band, not another gradient. Pinned by
+   appbox_kit_native_floating_bar_test (5 pins: height, pointer, paint order,
+   tuck/hide survival, no-saveLayer/no-alpha).
 5. **No native glass may overhang a path scrolled native glass travels
    (clip 13-53).** With the floating native bar, the home smoke row's
    compose button washed to a square ghost for EXACTLY the title capsule's

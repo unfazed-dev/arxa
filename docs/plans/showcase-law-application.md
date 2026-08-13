@@ -97,6 +97,41 @@ deselect ladder now runs widest-glass-first (card → toolbar → search bar/tex
 field → sliders/switch → segmented → popup → split → button). Device run is
 the proof.
 
+## S5: device pass 20-20 (clip, 2026-08-13) — two defects, no slabs
+
+Ruling 4's core bet HELD: no slicing slabs, no white rectangles, native
+search bar / sliders / switches / toolbar render clean in scroll. Defects:
+
+- **A (all shells): no top-edge dissolve.** Full-bleed content rides through
+  the status-bar zone fully visible and garbles with the clock/island. iOS
+  handles this with the system scroll-edge effect, unavailable to
+  Flutter-composited content. Fix: lawful Flutter-drawn gradient scrim overlay
+  in the chrome Stack (title-pill precedent) + reusable widget for bar-less
+  auth. Agent: edge-scrim.
+- **B (Search): title pill absent at rest — OPEN, attribution pending.**
+  Diagnosis (agent pill-hunt, empirical): NOT the tuck machine — the pill is
+  laid out at its correct rect, tuck == none, on every frame of a zero-extent
+  rubber-band drag. This is a COMPOSITING erasure. Lead suspect: visited tabs
+  stay painted at alpha 0.004 in INDEX order, so hidden Profile paints ABOVE
+  active Search (probe-confirmed paint order), matching "Search broken /
+  Profile fine"; the same file's doc block records device ghosts from exactly
+  this leak. Fallback suspect: Search is the only tab whose topmost content
+  child is a native platform view (AppBoxKitNativeSearchBar), fitting "pill
+  wins the z-fight exactly while a native view passes beneath it".
+  DEVICE EXPERIMENTS to attribute (next run): (a) visit Notes, return to
+  Profile — ordering predicts Profile's pill now vanishes at rest; (b) Home
+  after visiting Profile — ordering predicts Home's pill absent. The natural
+  fix (paint active tab last) reorders GlobalKey'd subtrees and platform-view
+  composition — the exact change the tab stack's iOS branch exists to prevent
+  — so it is NOT applied before attribution.
+  Non-bug ruled on: zero-extent lists never tuck because the bottom-overscroll
+  guard shadows the accumulator — left AS-IS deliberately: a page with nothing
+  to scroll should not minimize on rubber-band (Apple parity).
+- Housekeeping: HEAD was uncompilable standalone — the floating bar consumed
+  `platformViewSafe`, defined only in an uncommitted working-tree diff; landed
+  that set (frosted vibrant fill, tab-stack sub-pixel ClipRect ghost bound,
+  fab non-const config) before fix work.
+
 ## Device-pass watch items (from S3 agents)
 
 - Long titles overflow the floating bar's non-flex title pill row (pre-existing;
