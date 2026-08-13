@@ -72,29 +72,14 @@ class ShowcaseGalleryChromeWidget extends StatelessWidget {
             ),
       body: !glass
           ? child
-          : Stack(
-              children: [
-                Positioned.fill(
-                  child: MediaQuery(
-                    data: MediaQuery.of(context).copyWith(
-                      padding: MediaQuery.paddingOf(context).copyWith(
-                        top: MediaQuery.paddingOf(context).top +
-                            kAppBoxKitFloatingBarBlockHeight,
-                      ),
-                    ),
-                    child: child,
-                  ),
-                ),
-                Positioned(
-                  top: 0,
-                  left: 0,
-                  right: 0,
-                  child: AppBoxKitNativeFloatingBar(
-                    title: 'Kit Showcase',
-                    actions: _actions(context),
-                  ),
-                ),
-              ],
+          : AppBoxKitFloatingChrome(
+              title: 'Kit Showcase',
+              actions: _actions(context),
+              // Apple-style minimize (ratified): scroll-away tucks the
+              // actions and leaves the title pill, mirroring the iOS 26
+              // tab-bar minimize; scroll-back or top restores.
+              behavior: AppBoxKitFloatingBarBehavior.minimize,
+              body: child,
             ),
       // NOTE on the FAB and a route's bottom dock: when a gallery route pins
       // its own dock (Components pins a chat composer), this Scaffold cannot

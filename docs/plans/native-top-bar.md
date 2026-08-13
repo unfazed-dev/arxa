@@ -52,3 +52,17 @@ a frame, but content can no longer garble with bar chrome.
 4. Docs: allowlist §1 + rule 4 addendum; this plan.
 5. Suites green; device verification: scroll all three tabs past the bar,
    fast flicks and slow half-hidden creeps; pushed routes unchanged.
+
+## Step 2 — scroll behaviors (ratified: Apple-style minimize)
+
+`AppBoxKitFloatingChrome` now owns the Stack + MediaQuery raise + scroll
+wiring, with `AppBoxKitFloatingBarBehavior`: `pinned` (static, default),
+`minimize` (actions slide off the trailing edge, title pill stays — the
+iOS 26 tab-bar minimize, gallery's choice), `hide` (whole bar slides off
+the top). All motion is SLIDE, never fade (composition rule 1), and the
+native actions stay mounted while tucked so restoring never
+re-materializes glass (clip 13-53-b). Restore on scroll-back or at the
+top; the top-restore only fires on update/end notifications so it cannot
+undo the direction notification that starts a scroll-away (pixels == 0 at
+drag start). Pinned by the floating-chrome group in
+appbox_kit_native_floating_bar_test.

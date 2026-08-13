@@ -70,4 +70,114 @@ void main() {
     expect(find.byType(AppBoxKitNativeFloatingBar), findsOneWidget);
     expect(find.byType(AppBoxKitFrostedSurface), findsNothing);
   });
+
+  // ---------------------------------------------------------------------
+  // AppBoxKitFloatingChrome — scroll-reactive behaviors. All motion must be
+  // SLIDE (AnimatedSlide): partial-alpha over the native action buttons is
+  // composition rule 1's forbidden shape, and the buttons must stay mounted
+  // so restoring never re-materializes glass (clip 13-53-b).
+  // ---------------------------------------------------------------------
+
+  Widget chromeHarness(AppBoxKitFloatingBarBehavior behavior) => MaterialApp(
+        home: Scaffold(
+          body: AppBoxKitFloatingChrome(
+            behavior: behavior,
+            title: 'Kit Showcase',
+            actions: [const SizedBox(key: Key('action'), width: 44, height: 44)],
+            body: ListView(
+              children: [
+                for (var i = 0; i < 30; i++) SizedBox(height: 80, key: Key('c$i')),
+              ],
+            ),
+          ),
+        ),
+      );
+
+  Offset actionsSlide(WidgetTester tester) => tester
+      .widget<AnimatedSlide>(
+        find
+            .ancestor(
+                of: find.byKey(const Key('action')),
+                matching: find.byType(AnimatedSlide))
+            .first,
+      )
+      .offset;
+
+  Future<void> scrollAway(WidgetTester tester) async {
+    await tester.fling(find.byType(ListView), const Offset(0, -400), 800);
+    await tester.pumpAndSettle();
+  }
+
+  Future<void> scrollBack(WidgetTester tester) async {
+    await tester.fling(find.byType(ListView), const Offset(0, 200), 800);
+    await tester.pumpAndSettle();
+  }
+
+  testWidgets(
+      'kit.ui-library.floating-chrome — minimize tucks actions on scroll-away, '
+      'restores on scroll-back, and never unmounts them', (tester) async {
+    await tester
+        .pumpWidget(chromeHarness(AppBoxKitFloatingBarBehavior.minimize));
+    expect(actionsSlide(tester), Offset.zero);
+
+    await scrollAway(tester);
+    expect(actionsSlide(tester).dx, greaterThan(0),
+        reason: 'scroll-away must SLIDE the actions off the trailing edge');
+    expect(find.byKey(const Key('action'), skipOffstage: false), findsOneWidget,
+        reason: 'tucked actions stay mounted — unmounting would '
+            're-materialize glass on restore');
+
+    await scrollBack(tester);
+    expect(actionsSlide(tester), Offset.zero);
+  });
+
+  testWidgets(
+      'kit.ui-library.floating-chrome — pinned ignores scrolling entirely',
+      (tester) async {
+    await tester.pumpWidget(chromeHarness(AppBoxKitFloatingBarBehavior.pinned));
+    await scrollAway(tester);
+    expect(actionsSlide(tester), Offset.zero);
+  });
+
+  testWidgets(
+      'kit.ui-library.floating-chrome — hide slides the whole bar up and back',
+      (tester) async {
+    await tester.pumpWidget(chromeHarness(AppBoxKitFloatingBarBehavior.hide));
+    Offset barSlide() => tester
+        .widget<AnimatedSlide>(
+          find
+              .ancestor(
+                  of: find.byType(AppBoxKitNativeFloatingBar),
+                  matching: find.byType(AnimatedSlide))
+              .first,
+        )
+        .offset;
+    expect(barSlide(), Offset.zero);
+    await scrollAway(tester);
+    expect(barSlide().dy, lessThan(0));
+    // Actions must NOT double-slide in hide mode.
+    expect(actionsSlide(tester), Offset.zero);
+    await scrollBack(tester);
+    expect(barSlide(), Offset.zero);
+  });
+
+  testWidgets(
+      'kit.ui-library.floating-chrome — raises the body MediaQuery top '
+      'padding by the bar block so descendants inset themselves',
+      (tester) async {
+    double? seen;
+    await tester.pumpWidget(MaterialApp(
+      home: Scaffold(
+        body: AppBoxKitFloatingChrome(
+          title: 'T',
+          body: Builder(builder: (context) {
+            seen = MediaQuery.paddingOf(context).top;
+            return const SizedBox();
+          }),
+        ),
+      ),
+    ));
+    expect(seen, kAppBoxKitFloatingBarBlockHeight,
+        reason: 'test env has no status bar, so the raise IS the block');
+  });
 }

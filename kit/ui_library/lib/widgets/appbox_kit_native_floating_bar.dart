@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart' show ScrollDirection;
 import 'package:appbox_kit_core/common/appbox_kit_app_constants.dart';
 
 import 'appbox_kit_frosted_surface.dart';
@@ -31,13 +32,27 @@ const double kAppBoxKitFloatingBarBlockHeight = 44 + abxGap8;
 /// container degrades to its bare child — hosts should only mount this bar
 /// on `AppBoxKitPlatform.supportsLiquidGlass`.
 class AppBoxKitNativeFloatingBar extends StatelessWidget {
-  const AppBoxKitNativeFloatingBar({super.key, this.title, this.actions});
+  const AppBoxKitNativeFloatingBar({
+    super.key,
+    this.title,
+    this.actions,
+    this.minimized = false,
+  });
 
   /// Title text, shown in a native glass capsule at the leading edge.
   final String? title;
 
   /// Trailing action widgets — native glass controls, spaced [abxGap8].
   final List<Widget>? actions;
+
+  /// Apple-style minimize: the actions SLIDE off the trailing edge and the
+  /// title pill stays. Slide, never fade — partial-alpha over platform views
+  /// is composition rule 1's forbidden shape, while transform mutators are
+  /// proven to land on iOS platform views. The actions stay mounted
+  /// throughout, so restoring them never re-materializes glass (clip
+  /// 13-53-b's lesson). Drive this from scroll direction via
+  /// [AppBoxKitFloatingChrome], or directly for custom hosts.
+  final bool minimized;
 
   @override
   Widget build(BuildContext context) {
@@ -83,14 +98,147 @@ class AppBoxKitNativeFloatingBar extends StatelessWidget {
                 ),
               const Spacer(),
               if (actions != null)
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  spacing: abxGap8,
-                  children: actions!,
+                AnimatedSlide(
+                  // 2.0× own width clears the 16px edge padding with margin;
+                  // off-screen native views stay attached (no detach, no
+                  // re-materialize on return).
+                  offset: minimized ? const Offset(2, 0) : Offset.zero,
+                  duration: const Duration(milliseconds: 280),
+                  curve: Curves.easeOutCubic,
+                  child: IgnorePointer(
+                    ignoring: minimized,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      spacing: abxGap8,
+                      children: actions!,
+                    ),
+                  ),
                 ),
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// How [AppBoxKitFloatingChrome] reacts to the body scrolling away from the
+/// top.
+enum AppBoxKitFloatingBarBehavior {
+  /// The bar stays put while content scrolls beneath it.
+  pinned,
+
+  /// Apple-style minimize: scrolling away tucks the actions off the trailing
+  /// edge and leaves the title pill; scrolling back (or reaching the top)
+  /// restores them. Mirrors the iOS 26 tab-bar minimize.
+  minimize,
+
+  /// The whole bar slides off the top on scroll-away and returns on
+  /// scroll-back or at the top.
+  hide,
+}
+
+/// Full-bleed body + [AppBoxKitNativeFloatingBar] + the scroll wiring, in one
+/// widget — the glass tier's replacement for `Scaffold.appBar`.
+///
+/// Owns the two pieces every host was about to duplicate:
+/// - raises the body's `MediaQuery.padding.top` by the status-bar inset plus
+///   [kAppBoxKitFloatingBarBlockHeight], so descendants (nested Scaffolds,
+///   lists reading `MediaQuery.paddingOf`) inset themselves correctly;
+/// - listens to the body's vertical scroll notifications and drives
+///   [behavior] — minimize/hide on scroll-away, restore on scroll-back or at
+///   the top. All motion is slide (transform), per composition rule 1.
+class AppBoxKitFloatingChrome extends StatefulWidget {
+  const AppBoxKitFloatingChrome({
+    super.key,
+    required this.body,
+    this.title,
+    this.actions,
+    this.behavior = AppBoxKitFloatingBarBehavior.pinned,
+  });
+
+  /// Full-bleed content the bar floats over.
+  final Widget body;
+
+  /// See [AppBoxKitNativeFloatingBar.title].
+  final String? title;
+
+  /// See [AppBoxKitNativeFloatingBar.actions].
+  final List<Widget>? actions;
+
+  /// Scroll reaction; [AppBoxKitFloatingBarBehavior.pinned] by default.
+  final AppBoxKitFloatingBarBehavior behavior;
+
+  @override
+  State<AppBoxKitFloatingChrome> createState() =>
+      _AppBoxKitFloatingChromeState();
+}
+
+class _AppBoxKitFloatingChromeState extends State<AppBoxKitFloatingChrome> {
+  bool _away = false;
+
+  void _setAway(bool away) {
+    if (_away != away && mounted) setState(() => _away = away);
+  }
+
+  bool _onScroll(ScrollNotification notification) {
+    if (widget.behavior == AppBoxKitFloatingBarBehavior.pinned) return false;
+    if (notification.metrics.axis != Axis.vertical) return false;
+    if (notification is UserScrollNotification) {
+      switch (notification.direction) {
+        case ScrollDirection.reverse:
+          _setAway(true);
+        case ScrollDirection.forward:
+          _setAway(false);
+        case ScrollDirection.idle:
+          break;
+      }
+    } else if ((notification is ScrollUpdateNotification ||
+            notification is ScrollEndNotification) &&
+        notification.metrics.pixels <= 0) {
+      // At (or overscrolled past) the top the chrome always restores — a
+      // minimized bar over top-of-content reads as missing, not tucked.
+      // Update/end only: the direction notification that STARTS a
+      // scroll-away also reports pixels == 0 and must not undo itself.
+      _setAway(false);
+    }
+    return false;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final media = MediaQuery.of(context);
+    final hide = widget.behavior == AppBoxKitFloatingBarBehavior.hide;
+    Widget bar = AppBoxKitNativeFloatingBar(
+      title: widget.title,
+      actions: widget.actions,
+      minimized: !hide && _away,
+    );
+    if (hide) {
+      bar = AnimatedSlide(
+        // -1.5× own height clears the status-bar inset the SafeArea adds.
+        offset: _away ? const Offset(0, -1.5) : Offset.zero,
+        duration: const Duration(milliseconds: 280),
+        curve: Curves.easeOutCubic,
+        child: IgnorePointer(ignoring: _away, child: bar),
+      );
+    }
+    return NotificationListener<ScrollNotification>(
+      onNotification: _onScroll,
+      child: Stack(
+        children: [
+          Positioned.fill(
+            child: MediaQuery(
+              data: media.copyWith(
+                padding: media.padding.copyWith(
+                  top: media.padding.top + kAppBoxKitFloatingBarBlockHeight,
+                ),
+              ),
+              child: widget.body,
+            ),
+          ),
+          Positioned(top: 0, left: 0, right: 0, child: bar),
+        ],
       ),
     );
   }
