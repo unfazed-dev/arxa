@@ -65,6 +65,12 @@ class AppBoxKitNativeSlider extends StatelessWidget {
       // control never falls back to CupertinoColors.activeBlue in any host.
       trackColor: activeColor ?? Theme.of(context).colorScheme.primary,
       step: _cnStep,
+      // Controls demote to the Flutter tier inside scrollables (allowlist
+      // ruling reversed 2026-08-13 on the clip-0813 probe trail): any platform
+      // view in scroll content slices later Flutter paint into overlays whose
+      // rects ignore clip bounds (engine #150646) — dropped labels and stale
+      // white slabs. Native everywhere else.
+      preferFlutterTier: Scrollable.maybeOf(context) != null,
     ).chromeGated();
   }
 

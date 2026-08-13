@@ -1,3 +1,5 @@
+import 'package:cupertino_native_better/cupertino_native_better.dart'
+    show CNSwitch;
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:appbox_kit_core/platform/appbox_kit_platform.dart';
@@ -59,6 +61,38 @@ void main() {
       await tester.pump();
 
       expect(fired, true, reason: 'tapping the switch must invoke onChanged');
+    });
+  });
+
+  testWidgets('kit.ui-library.native-switch — inside a scrollable demotes to the Flutter tier',
+      (tester) async {
+    await withAndroidFallback(() async {
+      await tester.pumpWidget(host(const SingleChildScrollView(
+        child: AppBoxKitNativeSwitch(value: false),
+      )));
+      final cn = tester.widget<CNSwitch>(find.byType(CNSwitch));
+      expect(
+        cn.preferFlutterTier,
+        isTrue,
+        reason: 'RULING REVERSED 2026-08-13 (docs/liquid-glass-allowlist.md '
+            '§2, clip-0813 probe trail): a platform view in scroll content '
+            'slices later Flutter paint into overlays with clip-ignorant '
+            'rects (engine #150646) — dropped labels and stale slabs. '
+            'In-scroll controls take the Flutter tier.',
+      );
+    });
+  });
+
+  testWidgets('kit.ui-library.native-switch — outside a scrollable keeps the native tier',
+      (tester) async {
+    await withAndroidFallback(() async {
+      await tester.pumpWidget(host(const AppBoxKitNativeSwitch(value: false)));
+      final cn = tester.widget<CNSwitch>(find.byType(CNSwitch));
+      expect(
+        cn.preferFlutterTier,
+        isFalse,
+        reason: 'no Scrollable ancestor → native platform view',
+      );
     });
   });
 }

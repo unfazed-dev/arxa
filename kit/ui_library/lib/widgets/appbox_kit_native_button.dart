@@ -89,6 +89,21 @@ class AppBoxKitNativeButton extends StatelessWidget {
     // Android → real M3 Expressive button (shape-morphs on press). Else →
     // CNButton, which self-degrades glass → Cupertino → Material.
     if (AppBoxKitPlatform.supportsComposeM3E) return _m3e(context);
+    // Controls are native platform views everywhere, including scrollables —
+    // but the glass *styles* belong to the chrome layer, so inside a
+    // Scrollable the effective style maps glass → tinted and
+    // prominentGlass → filled (docs/liquid-glass-allowlist.md §2, button
+    // style mapping): still a real native UIButton with the correct iOS 26
+    // resting look, just no glass material riding the content layer. Outside
+    // scrollables every style passes through unchanged.
+    final inScrollable = Scrollable.maybeOf(context) != null;
+    final effectiveStyle = inScrollable
+        ? switch (style) {
+            AppBoxKitButtonStyle.glass => AppBoxKitButtonStyle.tinted,
+            AppBoxKitButtonStyle.prominentGlass => AppBoxKitButtonStyle.filled,
+            _ => style,
+          }
+        : style;
     return CNButton(
       label: label,
       onPressed: onPressed,
@@ -101,9 +116,14 @@ class AppBoxKitNativeButton extends StatelessWidget {
             ),
       config: CNButtonConfig(
         // ponytail: names mirror CNButtonStyle 1:1; byName beats a switch.
-        style: CNButtonStyle.values.byName(style.name),
+        style: CNButtonStyle.values.byName(effectiveStyle.name),
         glassEffectUnionId: glassEffectUnionId,
         imagePadding: imagePadding,
+        // In-scroll demotion (allowlist ruling reversed 2026-08-13 on the
+        // clip-0813 probe trail): a platform view in scroll content slices
+        // later Flutter paint into overlays with clip-ignorant rects (engine
+        // #150646). The style map above still shapes the fallback's look.
+        preferFlutterTier: inScrollable,
         // The native tier is a UiKitView (no intrinsic width) → stretches to
         // fill its parent's loose constraints. shrinkWrap makes CNButton measure
         // the native button and pin width to it, matching every other tier

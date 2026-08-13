@@ -132,6 +132,9 @@ class AppBoxKitNativeTextField extends StatelessWidget {
         tint: tint ?? scheme.primary,
         textColor: textColor ?? scheme.onSurface,
         placeholderColor: placeholderColor ?? scheme.onSurfaceVariant,
+        // In-scroll demotion — see AppBoxKitNativeSlider for the rationale
+        // (clip-0813 probe trail; engine #150646).
+        preferFlutterTier: Scrollable.maybeOf(context) != null,
       ).chromeGated();
       if (enabled) return field;
       // CNTextField has no `enabled` channel param; enforce the documented

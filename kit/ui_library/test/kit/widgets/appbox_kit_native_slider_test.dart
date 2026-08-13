@@ -1,3 +1,5 @@
+import 'package:cupertino_native_better/cupertino_native_better.dart'
+    show CNSlider;
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:m3e_collection/m3e_collection.dart' show SliderM3E;
@@ -68,5 +70,36 @@ void main() {
       isNotNull,
       reason: 'dragging the slider must invoke onChanged',
     );
+  });
+
+  testWidgets('kit.ui-library.native-slider — inside a scrollable demotes to the Flutter tier',
+      (tester) async {
+    await withAndroidFallback(() async {
+      await tester.pumpWidget(host(const SingleChildScrollView(
+        child: AppBoxKitNativeSlider(value: 0.5),
+      )));
+      final cn = tester.widget<CNSlider>(find.byType(CNSlider));
+      expect(
+        cn.preferFlutterTier,
+        isTrue,
+        reason: 'RULING REVERSED 2026-08-13 (docs/liquid-glass-allowlist.md '
+            '§2, clip-0813 probe trail): in-scroll platform views slice later '
+            'Flutter paint into clip-ignorant overlays (engine #150646) — '
+            'in-scroll controls take the Flutter tier.',
+      );
+    });
+  });
+
+  testWidgets('kit.ui-library.native-slider — outside a scrollable keeps the native tier',
+      (tester) async {
+    await withAndroidFallback(() async {
+      await tester.pumpWidget(host(const AppBoxKitNativeSlider(value: 0.5)));
+      final cn = tester.widget<CNSlider>(find.byType(CNSlider));
+      expect(
+        cn.preferFlutterTier,
+        isFalse,
+        reason: 'no Scrollable ancestor → native platform view',
+      );
+    });
   });
 }

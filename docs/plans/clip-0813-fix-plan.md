@@ -105,6 +105,34 @@ the scan measured, not a defect.
    so no slice between them; showcase suite 128/128). ONE variable at a time:
    B2 `cacheExtent` and A3 shadow drop are NOT landed — device-verify A1 on
    Search's first scroll before touching them, so attribution stays clean.
+
+## Step 5 EXECUTED — allowlist ruling reversed (2026-08-13, 11:34 clip)
+
+Device verdict on A1: partial — the reordered PRICE RANGE label renders at
+every offset (mechanism confirmed), but the class survives everywhere else
+(options-card slab, switch-row label drops, card fills in overlays). The full
+trail (A2 negative + A1 partial) reopened the control question per step 5;
+the user ratified **demote controls in scroll, app-wide**.
+
+Landed:
+- All 9 control wrappers pass `preferFlutterTier: Scrollable.maybeOf != null`:
+  slider, range slider, switch, button (style map retained — it shapes the
+  fallback), split button, segmented control, text field, search bar, popup
+  menu. Toolbar already demoted; glass card already demoted (surfaces).
+- `docs/liquid-glass-allowlist.md` §2 rewritten (ruling reversal, rationale,
+  new table). Old "native everywhere" test pins flipped in 5 test files.
+- Vendor PATCH #8: `CNSearchBar`'s Flutter fallback forwarded
+  `preferFlutterTier` into its `LiquidGlassContainer` (silent re-promotion,
+  caught by the M5 demotion invariant — same trap as PATCH #7).
+- Vendor PATCH #9: fallback width clamps to bounded constraints
+  (LayoutBuilder) and the bar yields to the cancel affordance via a loose
+  Flexible (32px / 108px RenderFlex overflows).
+- M5 demotion invariant refined: counts only native-tier-capable
+  `LiquidGlassContainer`s (demoted ones render pure Flutter).
+
+Suites: vendor 128/128, ui_library 328/328, showcase 128/128.
+Next device check: fresh launch → Search first scroll (A-class should be
+gone); then Profile toolbar/cards (B); C lens comparison still open.
 5. If A2 is negative AND A1 reorder fails: only then reopen the
    allowlist-vs-vendor-README control question, with the probe trail as the
    external evidence the grill requires.

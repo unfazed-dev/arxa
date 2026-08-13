@@ -1,3 +1,5 @@
+import 'package:cupertino_native_better/cupertino_native_better.dart'
+    show CNSearchBar;
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:appbox_kit_core/platform/appbox_kit_platform.dart';
@@ -103,5 +105,30 @@ void main() {
 
     expect(find.byType(SearchBar), findsOneWidget);
     expect(find.byType(TextButton), findsNothing);
+  });
+
+  // The CN tier is reached via the iOS-26 kit override; withAndroidFallback
+  // diverts only the CN-internal render path so no UiKitView is constructed
+  // headless.
+  testWidgets('kit.ui-library.native-search-bar — inside a scrollable demotes to the Flutter tier',
+      (tester) async {
+    await withAndroidFallback(() async {
+      AppBoxKitPlatform.override = const AppBoxKitPlatformOverride(
+        isIOS: true,
+        iosMajor: 26,
+      );
+      await tester.pumpWidget(host(const SingleChildScrollView(
+        child: AppBoxKitNativeSearchBar(),
+      )));
+      final cn = tester.widget<CNSearchBar>(find.byType(CNSearchBar));
+      expect(
+        cn.preferFlutterTier,
+        isTrue,
+        reason: 'RULING REVERSED 2026-08-13 (docs/liquid-glass-allowlist.md '
+            '§2, clip-0813 probe trail): in-scroll platform views slice later '
+            'Flutter paint into clip-ignorant overlays (engine #150646) — '
+            'in-scroll controls take the Flutter tier.',
+      );
+    });
   });
 }

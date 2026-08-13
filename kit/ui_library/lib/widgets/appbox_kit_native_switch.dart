@@ -59,6 +59,9 @@ class AppBoxKitNativeSwitch extends StatelessWidget {
       // never falls back to the iOS system green in any host.
       color: activeColor ?? Theme.of(context).colorScheme.primary,
       semanticLabel: semanticLabel,
+      // In-scroll demotion — see AppBoxKitNativeSlider for the rationale
+      // (clip-0813 probe trail; engine #150646).
+      preferFlutterTier: Scrollable.maybeOf(context) != null,
     ).chromeGated();
   }
 }

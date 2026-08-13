@@ -117,6 +117,9 @@ class AppBoxKitNativeSearchBar extends StatelessWidget {
         // UISearchBar defaults to systemBlue for the caret/cancel/clear
         // affordances — pin them to the app theme instead.
         tint: Theme.of(context).colorScheme.primary,
+        // In-scroll demotion — see AppBoxKitNativeSlider for the rationale
+        // (clip-0813 probe trail; engine #150646).
+        preferFlutterTier: Scrollable.maybeOf(context) != null,
       ).chromeGated();
 }
 

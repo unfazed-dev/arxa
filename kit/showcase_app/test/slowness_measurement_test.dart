@@ -627,9 +627,42 @@ void main() {
     expect(framesWithFilterLayer, 0,
         reason: 'a filter layer over glass-backed content is unreachable paint '
             'work — if this regresses, the blur tier gate has been lost');
-    expect(maxPvUnderLiveBlur, greaterThan(0),
-        reason: 'control: glass-backed widgets MUST still be passing under an '
-            'engaged effect, or the zero above is vacuous');
+    // Vacuity control, rewritten for the scrollable-glass demotion rule
+    // (docs/plans/scrollable-glass-demotion.md; docs/liquid-glass-allowlist.md
+    // — controls native everywhere, surfaces demote in scroll). Zero platform
+    // views under a live blur is now the DESIGNED outcome, so `> 0` no longer
+    // proves the counter works. Instead prove the zero has a cause: (a) no
+    // glass surface rides a scrollable, and (b) the demoted cards are actually
+    // there on the fallback tier — an empty screen would pass (a) vacuously.
+    var glassInScroll = 0;
+    var frostedInScroll = 0;
+    for (final s in find.byType(Scrollable).evaluate()) {
+      void visit(Element e) {
+        final name = e.widget.runtimeType.toString();
+        if (name == 'LiquidGlassContainer') {
+          // A mounted container is only a violation if it can take the native
+          // (UiKitView) tier: a demoted one (preferFlutterTier: true, vendor
+          // PATCH #8 — e.g. the in-scroll search bar fallback) renders pure
+          // Flutter and never creates a platform view.
+          final demoted =
+              ((e.widget as dynamic).preferFlutterTier as bool?) ?? false;
+          if (!demoted) glassInScroll++;
+        }
+        if (name == 'AppBoxKitFrostedSurface') frostedInScroll++;
+        e.visitChildren(visit);
+      }
+
+      s.visitChildren(visit);
+    }
+    expect(glassInScroll, 0,
+        reason: 'demotion invariant: a native-tier-capable '
+            'LiquidGlassContainer inside a Scrollable means a tier gate has '
+            'been lost (AppBoxKitGlassCard, or a vendor composite failing to '
+            'propagate preferFlutterTier)');
+    expect(frostedInScroll, greaterThan(0),
+        reason: 'control: demoted (frosted-tier) cards MUST exist inside the '
+            'scrollable, or the zeros above are vacuous — the screen could '
+            'simply be empty');
     debugDefaultTargetPlatformOverride = null;
   }, timeout: const Timeout(Duration(minutes: 3)));
 

@@ -194,6 +194,9 @@ class AppBoxKitNativePopupMenu extends StatelessWidget {
     final customIcon = sfSymbol == null ? (icon ?? Icons.more_vert) : null;
     // Alpha-0 hide the native Liquid Glass trigger during route transitions
     // (+ modal overlays) so it can't leak over a route slide — AppBoxKitNativeChromeGate.
+    // In-scroll demotion — see AppBoxKitNativeSlider for the rationale
+    // (clip-0813 probe trail; engine #150646).
+    final inScrollable = Scrollable.maybeOf(context) != null;
     if (label != null) {
       return AppBoxKitNativeChromeGate(
         child: CNPopupMenuButton(
@@ -201,6 +204,7 @@ class AppBoxKitNativePopupMenu extends StatelessWidget {
           buttonStyle: CNButtonStyle.glass,
           items: _cnItems,
           onSelected: (index) => onSelect?.call(items[index]),
+          preferFlutterTier: inScrollable,
         ),
       );
     }
@@ -211,6 +215,7 @@ class AppBoxKitNativePopupMenu extends StatelessWidget {
         buttonStyle: CNButtonStyle.glass,
         items: _cnItems,
         onSelected: (index) => onSelect?.call(items[index]),
+        preferFlutterTier: inScrollable,
       ),
     );
   }

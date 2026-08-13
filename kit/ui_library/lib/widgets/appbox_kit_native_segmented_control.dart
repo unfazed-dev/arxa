@@ -69,6 +69,9 @@ class AppBoxKitNativeSegmentedControl extends StatelessWidget {
           // shrinkWrap makes CNSegmentedControl measure the native control and
           // pin its width, matching the intrinsic-width fallback/M3E tiers.
           shrinkWrap: true,
+          // In-scroll demotion — see AppBoxKitNativeSlider for the rationale
+          // (clip-0813 probe trail; engine #150646).
+          preferFlutterTier: Scrollable.maybeOf(context) != null,
         ),
       ).chromeGated();
     }

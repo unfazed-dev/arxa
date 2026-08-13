@@ -120,6 +120,7 @@ class CNSearchBar extends StatefulWidget {
     this.searchIcon,
     this.clearIcon,
     this.autoHideOnModal = true,
+    this.preferFlutterTier = false,
   });
 
   /// Placeholder text shown when the search field is empty.
@@ -187,6 +188,11 @@ class CNSearchBar extends StatefulWidget {
   /// app's `navigatorObservers`. No effect on iOS < 26 / non-iOS (Flutter
   /// fallback).
   final bool autoHideOnModal;
+
+  /// LOCAL PATCH #6: tier-split demotion (see button.dart PATCH #4).
+  /// Forces the Flutter fallback tier even where native glass is available;
+  /// hosts set this when the search bar lives under a Scrollable.
+  final bool preferFlutterTier;
 
   @override
   State<CNSearchBar> createState() => _CNSearchBarState();
@@ -444,8 +450,10 @@ class _CNSearchBarState extends State<CNSearchBar>
     final isIOSOrMacOS =
         defaultTargetPlatform == TargetPlatform.iOS ||
         defaultTargetPlatform == TargetPlatform.macOS;
-    final shouldUseNative =
-        isIOSOrMacOS && PlatformVersion.shouldUseNativeGlass;
+    // LOCAL PATCH #6: tier-split demotion (see button.dart PATCH #4).
+    final shouldUseNative = isIOSOrMacOS &&
+        PlatformVersion.shouldUseNativeGlass &&
+        !widget.preferFlutterTier;
 
     if (shouldUseNative) {
       return _buildNativeSearchBar(context);
@@ -537,20 +545,29 @@ class _CNSearchBarState extends State<CNSearchBar>
         widget.placeholderColor ??
         CupertinoColors.placeholderText.resolveFrom(context);
 
-    return AnimatedBuilder(
+    return LayoutBuilder(builder: (context, constraints) {
+      return AnimatedBuilder(
       animation: _expandAnimation,
       builder: (context, child) {
-        final expandedWidth = MediaQuery.of(context).size.width;
+        // LOCAL PATCH #9: the screen width overflows any slot narrower than
+        // the screen (in-scroll demoted bar inside a padded list: caught by
+        // the showcase M5 run as a 32px RenderFlex overflow). Clamp to the
+        // actual incoming constraints; keep the screen width as the unbounded
+        // fallback so overlay/unconstrained hosts keep the old behavior.
+        final expandedWidth = constraints.hasBoundedWidth
+            ? constraints.maxWidth
+            : MediaQuery.of(context).size.width;
         final currentWidth = widget.expandable
             ? widget.collapsedWidth +
                   (expandedWidth - widget.collapsedWidth) *
                       _expandAnimation.value
             : expandedWidth;
 
-        return Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            AnimatedContainer(
+        // PATCH #9 (cont.): in a bounded slot the bar must yield to its
+        // trailing cancel affordance instead of overflowing the Row — a loose
+        // Flexible clamps the animated width to the space the cancel button
+        // leaves. Unbounded hosts keep the fixed width (Flexible would throw).
+        final bar = AnimatedContainer(
               duration: const Duration(milliseconds: 300),
               curve: Curves.easeOutCubic,
               width: currentWidth,
@@ -558,6 +575,13 @@ class _CNSearchBarState extends State<CNSearchBar>
               child: GestureDetector(
                 onTap: _onTap,
                 child: LiquidGlassContainer(
+                  // LOCAL PATCH #8: demotion must propagate through composites
+                  // (same trap as PATCH #7): this "Flutter tier" fallback wraps
+                  // a LiquidGlassContainer, which is itself UiKitView-backed —
+                  // without forwarding the flag, a demoted in-scroll search bar
+                  // silently re-promotes to a platform view (caught by the M5
+                  // demotion invariant).
+                  preferFlutterTier: widget.preferFlutterTier,
                   config: LiquidGlassConfig(
                     effect: CNGlassEffect.regular,
                     shape: CNGlassEffectShape.capsule,
@@ -607,7 +631,11 @@ class _CNSearchBarState extends State<CNSearchBar>
                   ),
                 ),
               ),
-            ),
+            );
+        return Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (constraints.hasBoundedWidth) Flexible(child: bar) else bar,
             if (widget.showCancelButton && _isExpanded) ...[
               const SizedBox(width: 8),
               CupertinoButton(
@@ -622,6 +650,7 @@ class _CNSearchBarState extends State<CNSearchBar>
           ],
         );
       },
-    );
+      );
+    });
   }
 }

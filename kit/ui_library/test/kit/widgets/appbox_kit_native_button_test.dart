@@ -1,5 +1,7 @@
 import 'package:cupertino_native_better/cupertino_native_better.dart'
-    show CNButton, CNButtonStyle;
+    show CNButton, CNButtonConfig, CNButtonStyle;
+import 'package:flutter/cupertino.dart' show CupertinoButton;
+import 'package:flutter/widgets.dart' show SingleChildScrollView;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:m3e_collection/m3e_collection.dart'
     show ButtonM3E, ButtonM3EStyle;
@@ -111,6 +113,139 @@ void main() {
               'the Apple tier. ${style.name} must resolve.',
         );
       }
+    });
+  });
+
+  testWidgets(
+      'kit.ui-library.native-button — inside a scrollable demotes to the '
+      'Flutter tier and maps glass styles (glass → tinted, prominentGlass → filled)',
+      (tester) async {
+    await withAndroidFallback(() async {
+      const mapped = {
+        AppBoxKitButtonStyle.glass: CNButtonStyle.tinted,
+        AppBoxKitButtonStyle.prominentGlass: CNButtonStyle.filled,
+      };
+      for (final entry in mapped.entries) {
+        await tester.pumpWidget(host(SingleChildScrollView(
+          child: AppBoxKitNativeButton(
+            label: 'Go',
+            style: entry.key,
+            onPressed: () {},
+          ),
+        )));
+        final cn = tester.widget<CNButton>(find.byType(CNButton));
+        expect(
+          cn.config.style,
+          entry.value,
+          reason: 'inside a Scrollable the kit maps ${entry.key.name} → '
+              '${entry.value.name} so no glass material rides the content '
+              'layer, and the mapped style shapes the Flutter-tier fallback '
+              '(docs/liquid-glass-allowlist.md §2, button style mapping)',
+        );
+        expect(
+          cn.config.preferFlutterTier,
+          isTrue,
+          reason: 'RULING REVERSED 2026-08-13 (clip-0813 probe trail): '
+              'in-scroll platform views slice later Flutter paint into '
+              'clip-ignorant overlays (engine #150646) — in-scroll buttons '
+              'take the Flutter tier.',
+        );
+      }
+    });
+  });
+
+  testWidgets(
+      'kit.ui-library.native-button — outside a scrollable glass styles pass '
+      'through unchanged', (tester) async {
+    await withAndroidFallback(() async {
+      for (final style in [
+        AppBoxKitButtonStyle.glass,
+        AppBoxKitButtonStyle.prominentGlass,
+      ]) {
+        await tester.pumpWidget(host(AppBoxKitNativeButton(
+          label: 'Go',
+          style: style,
+          onPressed: () {},
+        )));
+        final cn = tester.widget<CNButton>(find.byType(CNButton));
+        expect(
+          cn.config.style,
+          CNButtonStyle.values.byName(style.name),
+          reason: 'no Scrollable ancestor → the glass styles are in contract '
+              '(docs/liquid-glass-allowlist.md §2) and must not be remapped',
+        );
+      }
+    });
+  });
+
+  testWidgets(
+      'kit.ui-library.native-button — CN pre-26 fallback: solid styles keep a '
+      'visible label (foreground contrasts with fill)', (tester) async {
+    // Exercises CNButton's own Flutter-tier fallback directly (the pre-26
+    // Cupertino tier + vendor PATCH #5): preferFlutterTier forces the
+    // CupertinoButton path, where a solid fill must carry an explicit
+    // contrasting foreground.
+    await withCupertinoFallback(() async {
+      for (final style in [
+        CNButtonStyle.prominentGlass,
+        CNButtonStyle.filled,
+        CNButtonStyle.borderedProminent,
+      ]) {
+        await tester.pumpWidget(host(CNButton(
+          label: 'Sign In',
+          onPressed: () {},
+          config: CNButtonConfig(
+            preferFlutterTier: true,
+            style: style,
+          ),
+        )));
+        final button =
+            tester.widget<CupertinoButton>(find.byType(CupertinoButton));
+        expect(
+          button.foregroundColor,
+          isNotNull,
+          reason: '$style falls back to a CupertinoButton with a solid tint '
+              'fill; the plain-style default foreground is primaryColor — the '
+              'SAME color as the fill — which rendered auth\'s Sign In as a '
+              'blank purple capsule. The fallback must pass an explicit '
+              'contrasting foreground (vendor PATCH #5).',
+        );
+        expect(button.foregroundColor, isNot(equals(button.color)),
+            reason: 'label color must differ from the fill it sits on');
+      }
+    });
+  });
+
+  testWidgets(
+      'kit.ui-library.native-button — CN pre-26 fallback: glass style keeps a '
+      'visible label (tint foreground on the translucent tint fill)',
+      (tester) async {
+    // Glass falls back to a TRANSLUCENT tint fill (tint at 10% alpha), and
+    // CupertinoButton's default foreground whenever `color` is non-null is
+    // primaryContrastingColor — white on a 10% wash over a light background
+    // is invisible (the profile toolbar's blank Share/Edit/Delete labels on
+    // device, 2026-08-12). Apple's pre-26 tinted look is
+    // tint-on-translucent-tint, so the fallback must pass the tint through
+    // as the foreground.
+    await withCupertinoFallback(() async {
+      await tester.pumpWidget(host(CNButton(
+        label: 'Share',
+        onPressed: () {},
+        config: const CNButtonConfig(
+          preferFlutterTier: true,
+          style: CNButtonStyle.glass,
+        ),
+      )));
+      final button =
+          tester.widget<CupertinoButton>(find.byType(CupertinoButton));
+      expect(button.foregroundColor, isNotNull,
+          reason: 'glass fallback sets a translucent fill, which flips the '
+              'CupertinoButton default foreground to primaryContrastingColor '
+              '— invisible over the wash; the tint must be passed explicitly');
+      expect(button.foregroundColor, isNot(equals(button.color)),
+          reason: 'label color must differ from the fill it sits on');
+      expect(button.foregroundColor!.a, 1.0,
+          reason: 'the label carries the full-alpha tint, not the 10% wash');
     });
   });
 
