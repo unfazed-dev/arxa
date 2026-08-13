@@ -337,26 +337,45 @@ class _KitAnimatedTabStackState extends State<AppBoxKitAnimatedTabStack>
               // point of hiding by alpha instead of Offstage). Clip.none on
               // the active tab = no layer, same driven-to-identity idiom as
               // the edge effect's blur.
-              Opacity(
-                opacity: i == _currentIndex ? 1.0 : 0.004,
-                child: IgnorePointer(
-                  ignoring: i != _currentIndex,
-                  child: ExcludeSemantics(
-                    excluding: i != _currentIndex,
-                    // Both knobs must flip together: clipBehavior only gates
-                    // PAINT clipping — RenderClipRect.hitTest consults the
-                    // clipper even at Clip.none, so a sub-pixel clipper on the
-                    // ACTIVE tab would swallow every tap in the app (caught by
-                    // showcase M5: "All Notes" tap navigated nowhere).
-                    child: ClipRect(
-                      clipBehavior:
-                          i == _currentIndex ? Clip.none : Clip.hardEdge,
-                      clipper: i == _currentIndex
-                          ? null
-                          : const _HiddenTabClipper(),
-                      child: KeyedSubtree(
-                        key: _childKeys[i],
-                        child: widget.children[i],
+              //
+              // And the CLIP is not containment either: the view slicer
+              // (flow/view_slicer.cc) intersects the active tab's Flutter ops
+              // with hidden platform views' UNCLIPPED rects — on device
+              // (2026-08-13, labelprobe) Motion's section labels were sliced
+              // to a hidden tab's 147pt-wide title-pill-anchor rect
+              // ("FLUTTER_ANIMATE A", "abled" fragments) even though the
+              // hidden tab painted through the half-pixel clipper. Only a
+              // TRANSFORM changes the rects the slicer sees, so hidden tabs
+              // are additionally translated far off-screen: the platform-view
+              // set stays constant (no detach, no glass re-materialize — the
+              // tucked-chrome idiom, law composition rule 1's proven mutator)
+              // while their rects can never again intersect on-screen ops.
+              // Driven to identity on the active tab: no layer, no shift.
+              Transform.translate(
+                offset: i == _currentIndex
+                    ? Offset.zero
+                    : const Offset(100000, 0),
+                child: Opacity(
+                  opacity: i == _currentIndex ? 1.0 : 0.004,
+                  child: IgnorePointer(
+                    ignoring: i != _currentIndex,
+                    child: ExcludeSemantics(
+                      excluding: i != _currentIndex,
+                      // Both knobs must flip together: clipBehavior only gates
+                      // PAINT clipping — RenderClipRect.hitTest consults the
+                      // clipper even at Clip.none, so a sub-pixel clipper on the
+                      // ACTIVE tab would swallow every tap in the app (caught by
+                      // showcase M5: "All Notes" tap navigated nowhere).
+                      child: ClipRect(
+                        clipBehavior:
+                            i == _currentIndex ? Clip.none : Clip.hardEdge,
+                        clipper: i == _currentIndex
+                            ? null
+                            : const _HiddenTabClipper(),
+                        child: KeyedSubtree(
+                          key: _childKeys[i],
+                          child: widget.children[i],
+                        ),
                       ),
                     ),
                   ),

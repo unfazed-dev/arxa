@@ -220,6 +220,36 @@ the glass card is the first re-demote, the toolbar second.
    full-width opaque bars were previously called out (rule 4 / 13-32).
    Pinned by appbox_kit_native_floating_bar_test (anchor pin).
 
+8. **Hidden-but-painted platform views must be transformed off-screen — alpha
+   and clip do NOT contain their slicing geometry (clip 22-43, labelprobe,
+   device-attributed 2026-08-13).** The view slicer intersects Flutter ops
+   with hidden platform views' UNCLIPPED, full-alpha rects: the animated tab
+   stack's 0.004-alpha ghost tabs (kept painted so tab switches never change
+   the platform-view set) sliced the ACTIVE tab's section labels against a
+   hidden tab's rects — Motion's "FLUTTER_ANIMATE ADAPTER" clipped to exactly
+   a hidden 147pt title-pill-anchor rect, "Motion enabled" cut to "abled" by
+   hidden 44pt icon-button rects — even though the hidden tabs painted
+   through a half-pixel clipper. Only a TRANSFORM changes the rects the
+   slicer sees. Fix ratified: hidden tabs additionally ride a
+   `Transform.translate` 100000px off-screen (driven to identity on the
+   active tab) — the platform-view set stays constant (no detach, no glass
+   re-materialize; the tucked-chrome idiom), while hidden rects can never
+   intersect on-screen ops. Every tab and every pushed route inherits this
+   from the shared stack; routes beneath opaque pushed routes are not
+   painted at all (verified: no second anchor in the probe dumps), so ghost
+   tabs were the only invisible slicing geometry in the app. Pinned by
+   appbox_kit_animated_tab_stack_test (off-screen translate pin).
+
+**Known signature, not a defect — glass edge refraction (labelprobe
+2026-08-13):** each in-scroll glass card shows dim copies of its NEIGHBORING
+section labels just inside its top/bottom edges, riding the card at constant
+offset. This is the liquid-glass material's edge lensing sampling adjacent
+screen content — it survives full repaints (`FLTDisablePartialRepaint`
+verified no-op against it) and matches no slicer geometry. Dark-on-dark makes
+it read as a ghost because the rest of the glass effect is invisible. If it
+ever bothers on device, the levers are design ones: more spacing between
+labels and glass edges, or a more opaque card tint — not engine flags.
+
 **Resolved residual (2026-08-13, clip 12-48):** `AppBoxKitScrollEdgeEffect`'s
 partial-alpha fade over edge-band children hosting native controls produced
 exactly the predicted artifact (home's smoke row + Glass CTA: glyphs washed

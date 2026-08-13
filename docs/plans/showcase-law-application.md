@@ -215,3 +215,34 @@ in session scratchpad `clip2132/`). 22 frames @4fps:
   capsule (solid), not a frosted pill — restyle only if the device pass objects.
 - MediaQuery padding under the chrome must be read BELOW the scaffold (Builder
   wrap) — the floating chrome raises padding.top for its body subtree only.
+
+## S8 — in-scroll label erasure, all views (clip 22-43, resolved 2026-08-13)
+
+Defect: Flutter section labels partially erased during scroll in Motion
+("GESTURE DRIVER + SPRINGS" → "TURE …", "Motion enabled" → "abled",
+"SPEC PRESETS" → "> PRESETS"); complete at rest. Same view-slicer class as S7
+but hitting IN-SCROLL content, so the S7 anchor idiom could not apply.
+
+Attribution (labelprobe rig: AppDelegate drawHierarchy snapshots + UIView tree
+dumps at 1.2s, auto-navigated tab-switch + pushed Motion route + driven
+oscillating scroll): the erasing rects belong to HIDDEN TABS. The animated tab
+stack keeps non-active tabs painted at alpha 0.004 (frozen platform-view set —
+the tab-switch-flicker fix) and clipped to half a pixel, but the slicer
+intersects active-tab ops with the hidden platform views' UNCLIPPED rects:
+"FLUTTER_ANIMATE ADAPTER" was clipped to width 147 = exactly a hidden tab's
+title-pill-anchor rect (16,59,147x44). S7's anchors made this dramatically
+worse: every tab now carries a stationary anchor platform view.
+
+Fix (law rule 8): hidden tabs additionally ride Transform.translate(100000, 0)
+— transform is the only mutator the slicer's geometry respects; set constancy
+preserved (no detach/re-materialize). One edit in the shared
+appbox_kit_animated_tab_stack.dart; every view in every shell inherits.
+Device-verified with the same driven scroll: all labels complete in every
+mid-scroll frame. Falsified en route: FLTDisablePartialRepaint (reverted — the
+remaining dim in-card label copies survive full repaints; they are liquid-glass
+EDGE REFRACTION of neighboring labels, a material behavior, recorded as a
+known signature with design-side levers only).
+
+Scope check: routes beneath opaque pushed routes are not painted (no second
+pill anchor in any dump), so ghost tabs were the app's only invisible slicing
+geometry — nothing per-view to fix, nine native-in-scroll views inherit.

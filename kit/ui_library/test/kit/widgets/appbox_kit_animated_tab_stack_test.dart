@@ -418,6 +418,44 @@ void main() {
     });
 
     testWidgets(
+        'kit.ui-library.animated-tab-stack — a hidden tab is translated far '
+        'off-screen so the view slicer never cuts the active tab against its '
+        'platform-view rects', (tester) async {
+      // The clip is not containment for the SLICER: flow/view_slicer.cc
+      // intersects the active tab's ops with hidden platform views'
+      // UNCLIPPED rects — on device (labelprobe 2026-08-13) Motion's section
+      // labels were sliced to a hidden tab's 147pt title-pill-anchor rect
+      // ("FLUTTER_ANIMATE A", "abled"). Only a transform changes the rects
+      // the slicer sees; off-screen native views stay attached (the
+      // tucked-chrome idiom), so the platform-view set — the alpha-hide's
+      // whole point — still never changes.
+      await tester.pumpWidget(_frame(0));
+      await tester.pumpWidget(_frame(1));
+
+      Transform translateOf(String text) => tester.widget<Transform>(
+            find
+                .ancestor(
+                  of: find.textContaining(text, skipOffstage: false),
+                  matching: find.byType(Transform),
+                )
+                .first,
+          );
+
+      final hiddenOffset =
+          translateOf('tab0').transform.getTranslation();
+      expect(hiddenOffset.x.abs(), greaterThanOrEqualTo(10000),
+          reason: 'hidden platform-view rects must sit far outside any '
+              'plausible screen so no on-screen op can intersect them');
+
+      final activeOffset =
+          translateOf('tab1').transform.getTranslation();
+      expect(activeOffset.x, 0,
+          reason: 'driven to identity on the active tab — no shift, and the '
+              'constant wrapper keeps the tree shape stable across switches');
+      expect(activeOffset.y, 0);
+    });
+
+    testWidgets(
         'kit.ui-library.animated-tab-stack — instant keeps the kept-alive contract (state survives '
         'the round trip)', (tester) async {
       await tester.pumpWidget(_frame(0));
