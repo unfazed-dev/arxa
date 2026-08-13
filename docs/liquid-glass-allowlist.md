@@ -113,6 +113,15 @@ LiquidGlassContainer in scrolling lists.
    `Scaffold.extendBodyBehindAppBar` was rejected twice: the gallery body
    hosts nested-route Scaffolds whose own bars would inherit the inset
    shift.
+   Corroboration (engine source, 2026-08-13): an unpainted platform view is
+   `removeFromSuperview`'d entirely (FlutterPlatformViewsController.mm
+   ~:1011) and re-added via `addSubview:` on re-entry — so a cull kills the
+   WHOLE view, label included. Discriminator vs the fade signature: label
+   survives + direction asymmetry = scroll demotion (no geometry fix helps);
+   whole view pops = cull (this rule applies). That iOS 26 glass replays its
+   materialization on re-add is device-observed inference — no Apple source
+   states it. Watch-item: flutter#86787 (platform view can flash OVER a
+   pinned header) is the known counter-risk of painting under the bar.
 5. **Fill color and foreground travel together in fallbacks.** Any fallback
    that sets a CupertinoButton `color` must set the foreground too: solid
    fill → contrasting color, translucent tint wash (glass) → the tint itself
