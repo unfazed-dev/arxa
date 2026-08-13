@@ -338,9 +338,27 @@ the glass card is the first re-demote, the toolbar second.
     about the same sheet. Fails toward HIDING on every uncertainty (no rect
     published — a plain `showModalBottomSheet`, a dialog — or no measurable
     box), so the original bleed fix is preserved verbatim for anything that
-    cannot describe its own geometry. No scrim conflict: `CupertinoSheetRoute`
-    hardcodes a transparent barrier and the kit only dims when a caller asks
-    (`showOverlay`). Pinned by appbox_kit_chrome_gate_sheet_coverage_test
+    cannot describe its own geometry.
+
+    **The scrim, stated correctly (an earlier draft of this rule got it
+    backwards).** `CupertinoSheetRoute` does hardcode a transparent barrier —
+    but the kit OVERRIDES that, and dimming is the DEFAULT, not opt-in:
+    `showOverlay` defaults `true` (`appbox_kit_native_sheet.dart:131`), so the
+    normal path passes `kCupertinoModalBarrierColor` and lands on
+    `_CNDimmedSheetRoute` (vendor `bottom_sheet.dart:228`), a full-screen dim
+    over the page. So glass left painted above a short sheet sits under a
+    scrim. That is still the right call, because a SOLID-COLOUR barrier is an
+    ordinary paint op: it intersects the platform view's rect, so the slicer
+    hoists it into an overlay ABOVE the native view (rule 7's mechanism) and
+    the dim lands. This is the one case a `BackdropFilter` cannot do — a blur
+    must sample the native layer it can't see, which is the whole reason the
+    modal hide exists at all. Solid dims and blurs are NOT interchangeable
+    here; do not generalise from one to the other. **Reasoned from rule 7, not
+    device-verified.** Falsifiable signature if it is wrong: glass above an
+    open sheet reads BRIGHTER than the dimmed content around it. That would be
+    a tint bug, not a reason to go back to blanking the whole page.
+
+    Pinned by appbox_kit_chrome_gate_sheet_coverage_test
     (4 cases incl. the sheet growing into a gate and the mount-depth baseline
     that stops a sheet's OWN chrome self-hiding), mutation-checked.
 
