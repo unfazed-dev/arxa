@@ -152,6 +152,10 @@ class _KitChipCarouselState extends State<AppBoxKitChipCarousel> {
 
     // Fade only the side(s) with hidden content. dstIn keeps the rail's own
     // painting untouched where the gradient is opaque.
+    // glass-law-exempt: chips are Flutter-only by the ratified chip contract
+    // (D2 chip singularity ruling) — no platform view can enter this rail, so
+    // the saveLayer never spans one. If a native chip is ever ratified, this
+    // fade must move to plain viewport clipping first.
     return ShaderMask(
       blendMode: BlendMode.dstIn,
       shaderCallback: (rect) {

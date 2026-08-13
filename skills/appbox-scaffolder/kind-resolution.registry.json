@@ -51,12 +51,14 @@
       "widget": "AppBoxKitNativeAppBar",
       "variants": {
         "sliver": "AppBoxKitNativeSliverAppBar",
-        "toolbar": "AppBoxKitNativeToolbar"
+        "toolbar": "AppBoxKitNativeToolbar",
+        "shell": "AppBoxKitChromeScaffold"
       },
       "companions": [
         "AppBoxKitToolbarAction",
         "AppBoxKitNativeIconButton"
-      ]
+      ],
+      "note": "Shell/tab-root top chrome resolves through the `shell` variant — AppBoxKitChromeScaffold, THE liquid-glass law's reuse unit (docs/liquid-glass-allowlist.md; ratified 2026-08-13). It carries the runtime tier branch (Liquid Glass floating chrome / Android M3E boxed / fallback boxed), so emitted code never hand-assembles Scaffold.appBar next to in-scroll native glass. The bare `widget` remains correct for nested pushed-route bars."
     },
     "bottom-sheet": {
       "widget": "AppBoxKitBottomSheetService",
