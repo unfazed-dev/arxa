@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart' show ScrollDirection;
 import 'package:appbox_kit_core/common/appbox_kit_app_constants.dart';
 
 import 'appbox_kit_frosted_surface.dart';
@@ -215,30 +214,45 @@ class AppBoxKitFloatingChrome extends StatefulWidget {
 class _AppBoxKitFloatingChromeState extends State<AppBoxKitFloatingChrome> {
   bool _away = false;
 
+  /// Hysteresis: accumulated same-direction travel, reset on reversal. The
+  /// state only toggles after [_toggleThreshold] px of committed travel, so
+  /// finger micro-jitter mid-drag and the rubber-band bounce after a hard
+  /// fling cannot twitch the chrome. (The 280ms AnimatedSlide retargets
+  /// smoothly either way — this guards the TRIGGER, not the animation.)
+  double _travel = 0;
+
+  /// ~half a control row of committed travel before the chrome reacts.
+  static const double _toggleThreshold = 24;
+
   void _setAway(bool away) {
     if (_away != away && mounted) setState(() => _away = away);
   }
 
   bool _onScroll(ScrollNotification notification) {
     if (widget.behavior == AppBoxKitFloatingBarBehavior.pinned) return false;
-    if (notification.metrics.axis != Axis.vertical) return false;
-    if (notification is UserScrollNotification) {
-      switch (notification.direction) {
-        case ScrollDirection.reverse:
-          _setAway(true);
-        case ScrollDirection.forward:
-          _setAway(false);
-        case ScrollDirection.idle:
-          break;
-      }
-    } else if ((notification is ScrollUpdateNotification ||
-            notification is ScrollEndNotification) &&
-        notification.metrics.pixels <= 0) {
+    final metrics = notification.metrics;
+    if (metrics.axis != Axis.vertical) return false;
+    if (notification is ScrollUpdateNotification) {
       // At (or overscrolled past) the top the chrome always restores — a
       // minimized bar over top-of-content reads as missing, not tucked.
-      // Update/end only: the direction notification that STARTS a
-      // scroll-away also reports pixels == 0 and must not undo itself.
-      _setAway(false);
+      if (metrics.pixels <= 0) {
+        _travel = 0;
+        _setAway(false);
+        return false;
+      }
+      // Bottom rubber-band: the bounce-back is not the user asking for
+      // chrome — don't accumulate while overscrolled.
+      if (metrics.pixels >= metrics.maxScrollExtent) return false;
+      final delta = notification.scrollDelta ?? 0;
+      if (delta == 0) return false;
+      // Reversal resets the accumulator: travel must be committed.
+      if (delta.sign != _travel.sign) _travel = 0;
+      _travel += delta;
+      if (_travel > _toggleThreshold) _setAway(true);
+      if (_travel < -_toggleThreshold) _setAway(false);
+    } else if (notification is ScrollEndNotification) {
+      _travel = 0;
+      if (metrics.pixels <= 0) _setAway(false);
     }
     return false;
   }

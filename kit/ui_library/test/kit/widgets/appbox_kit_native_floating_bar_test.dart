@@ -183,6 +183,21 @@ void main() {
   });
 
   testWidgets(
+      'kit.ui-library.floating-chrome — sub-threshold jitter never toggles '
+      '(24px hysteresis on committed travel)', (tester) async {
+    await tester
+        .pumpWidget(chromeHarness(AppBoxKitFloatingBarBehavior.minimize));
+    // Scroll away for real, then jitter back by less than the threshold:
+    // the chrome must stay tucked.
+    await scrollAway(tester);
+    expect(actionsSlide(tester).dx, greaterThan(0));
+    await tester.drag(find.byType(ListView), const Offset(0, 10));
+    await tester.pumpAndSettle();
+    expect(actionsSlide(tester).dx, greaterThan(0),
+        reason: '10px of reverse travel is jitter, not intent');
+  });
+
+  testWidgets(
       'kit.ui-library.floating-chrome — pinned ignores scrolling entirely',
       (tester) async {
     await tester.pumpWidget(chromeHarness(AppBoxKitFloatingBarBehavior.pinned));
