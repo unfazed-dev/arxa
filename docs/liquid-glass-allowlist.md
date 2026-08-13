@@ -102,12 +102,15 @@ LiquidGlassContainer in scrolling lists.
    tone-on-tone both ways (auth's blank Sign In; the profile toolbar's blank
    Share/Edit/Delete).
 
-**Known residual (watch on device):** `AppBoxKitScrollEdgeEffect` drives a
-partial-alpha Opacity over whatever crosses an edge band — post-allowlist
-that child may host native controls, which puts a saveLayer over platform-view
-slices (rule 1). No artifact is currently attributed to it on device; if edge
-band label dropouts appear in a recording after the tab-stack clip landed,
-this is the next suspect (fix direction: scrim-over instead of alpha-on).
+**Resolved residual (2026-08-13, clip 12-48):** `AppBoxKitScrollEdgeEffect`'s
+partial-alpha fade over edge-band children hosting native controls produced
+exactly the predicted artifact (home's smoke row + Glass CTA: glyphs washed
+out ahead of the shell, pale ghosts, pop-in on re-entry). Fix landed: the
+effect is now **fully inert on the Liquid Glass tier** (alpha gated alongside
+the blur) — children exit by plain viewport clipping, which is what iOS does
+under opaque chrome anyway and costs zero layers. The frosted tiers keep the
+blur + fade (pure Flutter under the saveLayer). Pinned by
+`appbox_kit_scroll_edge_effect_tier_test.dart`.
 
 **Deviation note — split button:** obsolete — under the informed allowlist
 (§2) CNSplitButton is native in content by rule, not by deviation.

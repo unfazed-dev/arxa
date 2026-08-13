@@ -208,7 +208,19 @@ class _KitScrollEdgeEffectState extends State<AppBoxKitScrollEdgeEffect> {
     // a notes-folder scroll (kit/showcase_app/test/slowness_measurement_test.dart, M5).
     final blurs = !AppBoxKitPlatform.supportsLiquidGlass;
     final sigma = blurs ? (hard ? 16.0 : 8.0) * t : 0.0;
-    final alpha = hard ? 1.0 - t : 1.0 - 0.85 * t;
+    // The ALPHA is tier-gated too (2026-08-13, clip 12-48): on the Liquid
+    // Glass tier scroll content hosts real platform views (informed
+    // allowlist), and a partial-alpha fade over a UiKitView lands as
+    // per-frame native view mutations — glyphs wash out ahead of the shell,
+    // pale ghosts linger, and content pops back in on re-entry (home's
+    // smoke row / Glass CTA on device). The kit's bars are opaque on this
+    // tier, and Apple only soft-fades content under TRANSLUCENT chrome —
+    // under an opaque bar iOS clips crisply, which is also the zero-cost
+    // path (no opacity layer, no mutator churn). So the glass tier renders
+    // the effect inert and children exit by plain viewport clipping; the
+    // frosted tiers keep the full blur + fade (pure Flutter, no platform
+    // views under the saveLayer).
+    final alpha = !blurs ? 1.0 : (hard ? 1.0 - t : 1.0 - 0.85 * t);
 
     // The wrapper chain is ALWAYS mounted — constant tree shape. Returning
     // widget.child raw at t == 0 changes the tree depth, so the child's
