@@ -437,6 +437,81 @@ void main() {
   });
 
   testWidgets(
+      'kit.ui-library.chrome-gate-scope — a gesture on an OUTER navigator keeps '
+      'gates inside a nested router painted', (WidgetTester tester) async {
+    // `userGestureInProgress` lives on ONE NavigatorState, and it is the
+    // navigator that owns the dragged route — so asking only my OWN route's
+    // navigator is not enough. A gate inside a nested router, on a route the
+    // OUTER navigator is revealing, sees: its own route not animating, its own
+    // (nested) navigator not gesturing — yet it IS travelling, carried by the
+    // outer route's transform.
+    //
+    // This is the shape the SDK audit found for CupertinoSheetRoute's nested
+    // content (sheet.dart:855 hands the drag controller `route.navigator!`,
+    // the ROOT navigator, while content inside the sheet's own Navigator reads
+    // a different NavigatorState). Reproduced here with plain Cupertino routes
+    // because the mechanism is the navigator mismatch, not the sheet.
+    final GlobalKey<NavigatorState> rootKey = GlobalKey<NavigatorState>();
+
+    await tester.pumpWidget(
+      CupertinoApp(
+        navigatorKey: rootKey,
+        navigatorObservers: <NavigatorObserver>[CNTransitionObserver()],
+        home: CupertinoPageScaffold(
+          child: Navigator(
+            observers: <NavigatorObserver>[CNTransitionObserver()],
+            onGenerateRoute: (RouteSettings settings) => CupertinoPageRoute<void>(
+              settings: settings,
+              builder: (_) => const AppBoxKitNativeChromeGate(
+                child: Text('nested-glass'),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    await _settleBoot(tester);
+
+    // Cover it with a ROOT-level route, then swipe THAT back. The gate below
+    // is two navigators down from the gesture.
+    rootKey.currentState!.push(
+      CupertinoPageRoute<void>(
+        builder: (_) => const CupertinoPageScaffold(child: Text('covering')),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.pump(const Duration(seconds: 2));
+
+    final TestGesture gesture =
+        await tester.startGesture(const Offset(5.0, 200.0));
+    await gesture.moveBy(const Offset(30.0, 0.0));
+    await tester.pump();
+
+    final List<String> hiddenDuring = <String>[];
+    for (int step = 0; step < 8; step++) {
+      await gesture.moveBy(const Offset(60.0, 0.0));
+      await tester.pump(const Duration(milliseconds: 16));
+      if (_allGatesHidden(tester).any((bool h) => h)) hiddenDuring.add('drag-$step');
+    }
+    await gesture.up();
+    for (int frame = 0; frame < 34; frame++) {
+      await tester.pump(const Duration(milliseconds: 16));
+      if (_allGatesHidden(tester).any((bool h) => h)) {
+        hiddenDuring.add('settle-$frame');
+      }
+    }
+
+    expect(hiddenDuring, isEmpty,
+        reason: 'a gate inside a nested router blanked while an OUTER '
+            'navigator drove the gesture, at [$hiddenDuring] — asking only '
+            'route.navigator.userGestureInProgress misses the enclosing one');
+    expect(find.text('nested-glass'), findsOneWidget,
+        reason: 'the swipe must actually have popped the covering route');
+
+    await _flushWatchdogs(tester);
+  });
+
+  testWidgets(
       'kit.ui-library.chrome-gate-scope — an ABANDONED back-swipe never blanks '
       'the dragged route', (WidgetTester tester) async {
     // The commonest real gesture: start the drag, change your mind, let it
@@ -493,6 +568,80 @@ void main() {
         reason: 'an abandoned swipe must NOT have popped — if it did, this '
             'test is exercising the committed path, not the cancel path');
 
+    await _flushWatchdogs(tester);
+  });
+
+  testWidgets(
+      'kit.ui-library.chrome-gate-scope — a Material sheet drag never blanks '
+      'the sheet\'s own chrome', (WidgetTester tester) async {
+    // `ModalBottomSheetRoute` is the one interactive dismissal that does NOT
+    // go through `didStartUserGesture` (grepped: zero matches in
+    // material/bottom_sheet.dart). Its drag sets the ROUTE's own controller
+    // value directly (`animationController!.value -= ...`, bottom_sheet.dart:285),
+    // so during the drag `isAnimating` is false AND no gesture flag is set —
+    // the same blind spot that blanked the back-swipe.
+    //
+    // This test exists to establish whether that blind spot is REACHABLE for
+    // this gate. It is not enough to reason that no observer tick fires during
+    // the drag (the gate latches, so it would never re-evaluate): a gate that
+    // MOUNTS mid-drag, or any future tick source, would compute the wrong
+    // answer. Pinning the observable behaviour is what makes the reasoning
+    // falsifiable.
+    await tester.pumpWidget(
+      MaterialApp(
+        navigatorObservers: <NavigatorObserver>[
+          CNTransitionObserver(),
+          CNTabBarRouteObserver(),
+        ],
+        home: Scaffold(
+          body: Builder(
+            builder: (BuildContext context) => Center(
+              child: ElevatedButton(
+                onPressed: () => showModalBottomSheet<void>(
+                  context: context,
+                  builder: (_) => const SizedBox(
+                    height: 300,
+                    child: AppBoxKitNativeChromeGate(child: Text('sheet-glass')),
+                  ),
+                ),
+                child: const Text('open'),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    await _settleBoot(tester);
+
+    await tester.tap(find.text('open'));
+    await tester.pumpAndSettle();
+    await tester.pump(const Duration(seconds: 2)); // drain the push watchdog
+    expect(_gateHiddenAround(tester, 'sheet-glass'), isFalse,
+        reason: 'the sheet\'s own chrome must be painted once it is open');
+
+    // Drag the sheet DOWN without releasing — the window where the route's
+    // controller moves with no ticker and no gesture flag.
+    final TestGesture gesture =
+        await tester.startGesture(tester.getCenter(find.text('sheet-glass')));
+    final List<String> hiddenDuring = <String>[];
+    for (int step = 0; step < 6; step++) {
+      await gesture.moveBy(const Offset(0.0, 20.0));
+      await tester.pump(const Duration(milliseconds: 16));
+      if (_gateHiddenAround(tester, 'sheet-glass')) hiddenDuring.add('drag-$step');
+    }
+    await gesture.up();
+    for (int frame = 0; frame < 20; frame++) {
+      await tester.pump(const Duration(milliseconds: 16));
+      if (find.text('sheet-glass', skipOffstage: false).evaluate().isEmpty) break;
+      if (_gateHiddenAround(tester, 'sheet-glass')) hiddenDuring.add('release-$frame');
+    }
+
+    expect(hiddenDuring, isEmpty,
+        reason: 'the sheet\'s own chrome blanked during its drag at '
+            '[$hiddenDuring] — Material sheets bypass didStartUserGesture, so '
+            'if this fails the gate needs a sheet-specific travelling signal');
+
+    await tester.pumpAndSettle();
     await _flushWatchdogs(tester);
   });
 
@@ -563,6 +712,19 @@ void main() {
 
     await _flushWatchdogs(tester);
   });
+}
+
+/// Paint decision of the innermost gate wrapping [text].
+bool _gateHiddenAround(WidgetTester tester, String text) {
+  final IndexedStack stack = tester.widget<IndexedStack>(
+    find
+        .ancestor(
+          of: find.text(text, skipOffstage: false),
+          matching: find.byType(IndexedStack, skipOffstage: false),
+        )
+        .first,
+  );
+  return stack.index == 0;
 }
 
 /// Paint decision of every mounted gate, in tree order.

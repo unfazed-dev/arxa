@@ -291,6 +291,34 @@ the glass card is the first re-demote, the toolbar second.
     drag frame; the drag must cross the halfway line or Cupertino cancels the
     pop and the frame samples go vacuous).
 
+    **Ask EVERY enclosing navigator, not just your own (amended same day
+    after an SDK sweep of all interactive dismissals).** `userGestureInProgress`
+    lives on the single `NavigatorState` that owns the DRAGGED route, which is
+    not necessarily the asking widget's. `CupertinoSheetRoute` is the shape
+    that proves it: it pushes onto the ROOT navigator and hands its drag
+    controller `route.navigator!` (`sheet.dart:210/855`), so a gate inside the
+    sheet's own nested `Navigator` sees no gesture on its own navigator and no
+    animation on its own route — and blanks while visibly travelling with the
+    sheet. Reproduced headlessly with plain Cupertino routes (the mechanism is
+    the navigator mismatch, not the sheet) and fixed by walking outwards with
+    `findAncestorStateOfType`, the same walk `hasActiveTransitionAbove` does.
+    A navigator that encloses you can move you.
+
+    **Coverage of the other interactive dismissals (SDK-swept, 2026-08-14):**
+    iOS edge back-swipe (`cupertino/route.dart:835`), Cupertino sheet
+    drag-to-dismiss (`cupertino/sheet.dart:1053`) and Android predictive back
+    (`widgets/routes.dart:569`, reached from the platform-channel handlers)
+    ALL raise the gesture flag — covered. `showCupertinoModalPopup` has no
+    drag dismissal at all and pops with a genuinely ticking animation —
+    covered by `isAnimating`. The one true blind spot is Material's
+    `ModalBottomSheetRoute`: it never calls `didStartUserGesture` (zero
+    matches in `material/bottom_sheet.dart`) and its drag sets the route
+    controller's value directly (`:285`), so BOTH signals read false.
+    Measured as NOT reachable for this gate — the gate re-evaluates only on
+    observer ticks and latches, and a Material sheet drag fires no tick — but
+    it is latent, so it is pinned by a test rather than left to reasoning. A
+    gate mounting mid-drag, or any new tick source, would expose it.
+
 **Known signature, not a defect — glass edge refraction (labelprobe
 2026-08-13):** each in-scroll glass card shows dim copies of its NEIGHBORING
 section labels just inside its top/bottom edges, riding the card at constant

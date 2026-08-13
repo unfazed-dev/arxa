@@ -344,14 +344,23 @@ class _KitNativeChromeGateState extends State<AppBoxKitNativeChromeGate> {
     // notifies observers (navigator.dart, didStartUserGesture) — so it is
     // already readable at the tick that matters — and it is held true through
     // the settle (the back-gesture controller calls didStopUserGesture from
-    // its settle-completion listener, both on commit and on cancel). Scoped
-    // by construction: it is the gate's OWN navigator, so a nested-router
-    // swipe cannot repaint root chrome, and the sibling-bar hide under a
-    // root PUSH is untouched (no push is gesture-driven).
+    // its settle-completion listener, both on commit and on cancel).
+    //
+    // Asked of every ENCLOSING navigator, not just this route's own: the flag
+    // lives on the single NavigatorState that owns the DRAGGED route, which is
+    // not necessarily mine. A gate inside a nested router, on a route an outer
+    // navigator is revealing, is travelling — carried by the outer route's
+    // transform — while its own navigator reports no gesture at all. That is
+    // exactly CupertinoSheetRoute's shape: it hands its drag controller
+    // `route.navigator!` (the ROOT navigator, sheet.dart:855) while content
+    // inside the sheet's own Navigator reads a different NavigatorState, so
+    // the sheet's contents blanked under the finger. Same walk as
+    // `hasActiveTransitionAbove` uses, and the same reasoning: a navigator
+    // that encloses me can move me.
     final travellingWithTransition =
         (_route?.animation?.isAnimating ?? false) ||
             (_route?.secondaryAnimation?.isAnimating ?? false) ||
-            (_route?.navigator?.userGestureInProgress ?? false);
+            _gestureInEnclosingNavigator(context);
 
     final hidden = CNTabBarRouteObserver.anyModalDepth.value > _mountDepth ||
         (CNTransitionObserver.hasActiveTransitionAbove(context) &&
@@ -412,6 +421,24 @@ class _KitNativeChromeGateState extends State<AppBoxKitNativeChromeGate> {
       ],
     );
   }
+}
+
+/// True when ANY navigator enclosing [context] is running a user gesture
+/// (iOS edge back-swipe, Cupertino sheet drag-to-dismiss, Android predictive
+/// back — all three funnel through `didStartUserGesture`).
+///
+/// Walks outwards from the innermost navigator. `nav.context` is the
+/// Navigator's own element, so the step is `findAncestorStateOfType` from
+/// there — `Navigator.maybeOf` would hand back the same state and spin
+/// forever. Deliberately NOT an inherited-widget lookup: this runs from a
+/// post-frame callback, where registering a dependency is invalid.
+bool _gestureInEnclosingNavigator(BuildContext context) {
+  NavigatorState? nav = Navigator.maybeOf(context);
+  while (nav != null) {
+    if (nav.userGestureInProgress) return true;
+    nav = nav.context.findAncestorStateOfType<NavigatorState>();
+  }
+  return false;
 }
 
 /// Records the child's size after every layout (unmount mode only).
