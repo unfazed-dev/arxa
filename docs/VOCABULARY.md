@@ -534,6 +534,48 @@ research keeps finding.
 _Avoid_: mock, placeholder, fake (as shipped behaviour)
 _Layer_: Kit
 
+**Liquid-glass law**:
+The rulebook for using Apple's see-through "liquid glass" look without
+visual glitches when things scroll.
+The ratified ruleset for native Liquid Glass on iOS/macOS 26+ — control
+allowlist, composition rules (no saveLayer over platform views, chrome-gate
+every glass widget, no glass-on-glass overhang, materialization headroom,
+slide-never-fade), and the deselect protocol. SSOT:
+`docs/liquid-glass-allowlist.md`; enforced by kit gate tests + appbox-lint
+rules, not by prose. Sibling: the M3E law (`docs/m3e-law.md`) for Android.
+_Avoid_: glass rules, glass allowlist (bare), glass guidelines
+_Layer_: Kit
+
+**Chrome scaffold**:
+The one widget an app screen uses to get its top bar and layout right on
+every kind of device.
+`AppBoxKitChromeScaffold` — the liquid-glass law's reuse unit: Scaffold-level
+widget carrying the runtime tier branch (Liquid Glass → floating chrome over
+a full-bleed body; Android → boxed bar rendering M3 Expressive; else boxed
+fallback). Hosts never hand-assemble top chrome.
+_Avoid_: app scaffold, adaptive scaffold, hand-assembled Scaffold.appBar
+_Layer_: Kit
+
+**Floating chrome**:
+The glass tier's top bar: a title pill and buttons floating over content
+that scrolls underneath, tucking away as you scroll.
+`AppBoxKitFloatingChrome` / `AppBoxKitNativeFloatingBar` — full-bleed body,
+native action controls, Flutter frosted title pill (glass-on-glass ban),
+scroll behaviors pinned/minimize/minimizeTrailing/minimizeLeading/hide with
+24px travel hysteresis; minimize (both ends tuck) is the ratified default.
+_Avoid_: floating app bar, glass bar, overlay bar
+_Layer_: Kit
+
+**Materialization headroom**:
+Extra invisible space above the screen so glass buttons finish their
+"appear" animation before you can see them.
+The viewport overdraw (`extendBehindTopBar`) that moves the sliver
+cull/re-add boundary above the physical screen top; iOS 26 glass re-runs its
+materialize animation on re-attach, so the boundary must sit off-screen.
+Only under native or no top chrome (law rule 4).
+_Avoid_: cull margin, cache extent (it is paint, not layout)
+_Layer_: Kit
+
 ---
 
 ## Design medium

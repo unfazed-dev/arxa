@@ -1,11 +1,15 @@
-# Liquid Glass allowlist — what renders native, where
+# The liquid-glass law — native glass on iOS/macOS, ratified
 
-Single source of truth for which kit widgets are native platform views, which
-carry Liquid Glass, and what happens inside scrollables. Governing principle
-(decided 2026-08-12, grilled): **Apple-fidelity — the kit does exactly what
-iOS 26 does, nothing more, nothing less.** When a dispute arises, the answer
-is "what does Apple's own app do here?", verified against the sources at the
-bottom, not taste.
+**THE liquid-glass law** (term ratified 2026-08-13; VOCABULARY.md): single
+source of truth for which kit widgets are native platform views, which carry
+Liquid Glass, what happens inside scrollables, and the composition rules that
+keep it artifact-free. Enforced by kit gate tests + appbox-lint rules —
+gates, not prose. The reuse unit is the chrome scaffold
+(`AppBoxKitChromeScaffold`); the Android sibling is the M3E law
+(docs/m3e-law.md). Governing principle (decided 2026-08-12, grilled):
+**Apple-fidelity — the kit does exactly what iOS 26 does, nothing more,
+nothing less.** When a dispute arises, the answer is "what does Apple's own
+app do here?", verified against the sources at the bottom, not taste.
 
 ## The three classes
 

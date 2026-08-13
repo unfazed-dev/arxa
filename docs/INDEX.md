@@ -8,6 +8,12 @@ assigned plan. Do not read the research unless your plan points you at it.
 of truth for project vocabulary — every human and agent uses its terms, and
 word-meaning conflicts resolve there.
 
+**Platform laws:** [liquid-glass-allowlist.md](liquid-glass-allowlist.md) is
+the **liquid-glass law** (native glass on iOS/macOS 26+: allowlist,
+composition rules, deselect protocol — enforced by kit gates + appbox-lint);
+[m3e-law.md](m3e-law.md) is its Android sibling for Material 3 Expressive.
+The chrome scaffold (`AppBoxKitChromeScaffold`) is both laws' reuse unit.
+
 **Owner:** Totem Labs. **Founder:** Evan F Pierre Louis.
 
 ---
