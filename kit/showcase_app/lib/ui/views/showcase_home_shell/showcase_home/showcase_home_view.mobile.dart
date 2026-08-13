@@ -51,9 +51,12 @@ class ShowcaseHomeViewMobile extends ViewModelWidget<ShowcaseHomeViewModel> {
       // Trailing clearance matches the profile list: without it the last card
       // can never scroll clear of the floating tab bar, so its edge effect
       // would stay permanently engaged.
+      // Top inset: 0 under the boxed app bar (Scaffold strips it); the
+      // status-bar + floating-bar block on the glass tier, where the gallery
+      // chrome lays this list full-bleed behind native floating chrome.
       padding: EdgeInsets.fromLTRB(
           abxSize16,
-          abxSize16,
+          abxSize16 + MediaQuery.paddingOf(context).top,
           abxSize16,
           abxSize16 +
               MediaQuery.paddingOf(context).bottom +

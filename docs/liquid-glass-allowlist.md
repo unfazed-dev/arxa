@@ -20,7 +20,8 @@ Fixed elements floating above content. Glass is *reserved* for this layer
 | AppBoxKitNativeFab / FabMenu | Scaffold FAB slot |
 | AppBoxKitNativeSheet / NativeDialog / NativePopupMenu | Transient overlays |
 | AppBoxKitNativeSearchBar (docked/pinned) | Pinned sliver headers count as chrome |
-| AppBoxKitNativeAppBar / SliverAppBar | Already Flutter-drawn; native glass optional future |
+| AppBoxKitNativeAppBar / SliverAppBar | Flutter-drawn; on the GLASS TIER the gallery replaces it with AppBoxKitNativeFloatingBar (see rule 4 ruling) |
+| AppBoxKitNativeFloatingBar | Native glass floating top chrome (glass tier) — title capsule + native actions over a full-bleed body; the top-edge counterpart of the tab bar |
 
 ### 2. Controls — INFORMED ALLOWLIST (ratified 2026-08-13, supersedes both prior rulings)
 Button-class controls stay **native Liquid Glass everywhere, including
@@ -130,6 +131,13 @@ LiquidGlassContainer in scrolling lists.
    native top chrome — UIView-over-UIView z-order, the reason the bottom
    tab bar is clean — or (b) no platform views in the scrolling content
    under the bar. Direction is a product ruling, not a patch.
+   **Ruling (2026-08-13, user-ratified): native top bar.** The gallery
+   chrome now branches: glass tier = `AppBoxKitNativeFloatingBar` (native
+   glass title capsule + the existing native action buttons) floating over
+   a FULL-BLEED body, so content culls at the physical screen edge; other
+   tiers keep the boxed Flutter bar. Nested-route Scaffolds inset via the
+   chrome's raised MediaQuery top padding, unmodified. Plan:
+   docs/plans/native-top-bar.md.
 5. **Fill color and foreground travel together in fallbacks.** Any fallback
    that sets a CupertinoButton `color` must set the foreground too: solid
    fill → contrasting color, translucent tint wash (glass) → the tint itself

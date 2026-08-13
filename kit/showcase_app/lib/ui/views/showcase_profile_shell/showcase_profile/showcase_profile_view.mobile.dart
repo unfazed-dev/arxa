@@ -67,9 +67,11 @@ class ShowcaseProfileViewMobile
       // clear of the floating AppBoxKitNativeTabBar — the shell extends the body
       // under it (extendBody) and previously the button laid out
       // unreachable beneath the bar.
+      // Top inset mirrors the home list: full-bleed behind the floating
+      // native bar on the glass tier, flush under the boxed bar elsewhere.
       padding: EdgeInsets.fromLTRB(
           abxSize16,
-          abxSize16,
+          abxSize16 + MediaQuery.paddingOf(context).top,
           abxSize16,
           abxSize16 +
               MediaQuery.paddingOf(context).bottom +

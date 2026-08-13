@@ -30,33 +30,72 @@ class ShowcaseGalleryChromeWidget extends StatelessWidget {
   const ShowcaseGalleryChromeWidget({required this.child, super.key});
   final Widget child;
 
+  List<Widget> _actions(BuildContext context) {
+    final tabsRouter = context.tabsRouter;
+    return [
+      AppBoxKitNativeIconButton(
+        glyph: AppBoxKitGlyphs.search,
+        onPressed: () => tabsRouter.setActiveIndex(ShowcaseTab.search.index),
+      ),
+      AppBoxKitNativePopupMenu(
+        glyph: AppBoxKitGlyphs.more,
+        items: const [
+          AppBoxKitMenuItem(label: 'Refresh', glyph: AppBoxKitGlyphs.refresh),
+          AppBoxKitMenuItem(label: 'Settings', glyph: AppBoxKitGlyphs.settings),
+          AppBoxKitMenuItem(
+              label: 'Sign out',
+              glyph: AppBoxKitGlyphs.signOut,
+              isDestructive: true),
+        ],
+        onSelect: (item) => appBoxKitLocator<AppBoxKitNotificationService>()
+            .show(item.label, context: context),
+      ),
+    ];
+  }
+
   @override
   Widget build(BuildContext context) {
-    final tabsRouter = context.tabsRouter;
+    // Glass tier: NATIVE floating top chrome over a full-bleed body — the
+    // top-edge counterpart of the floating tab bar. A Flutter-drawn opaque
+    // bar cannot coexist with native glass controls scrolling beneath it
+    // (seam pop OR over-bar flash — allowlist rule 4, clips 12-48/13-17/
+    // 13-32; ruling 2026-08-13). Content culls at the physical screen edge;
+    // nested-route Scaffolds inset themselves via the raised MediaQuery
+    // padding, unmodified.
+    final glass = AppBoxKitPlatform.supportsLiquidGlass;
     return Scaffold(
-      appBar: AppBoxKitNativeAppBar(
-        title: 'Kit Showcase',
-        actions: [
-          AppBoxKitNativeIconButton(
-            glyph: AppBoxKitGlyphs.search,
-            onPressed: () => tabsRouter.setActiveIndex(ShowcaseTab.search.index),
-          ),
-          AppBoxKitNativePopupMenu(
-            glyph: AppBoxKitGlyphs.more,
-            items: const [
-              AppBoxKitMenuItem(label: 'Refresh', glyph: AppBoxKitGlyphs.refresh),
-              AppBoxKitMenuItem(label: 'Settings', glyph: AppBoxKitGlyphs.settings),
-              AppBoxKitMenuItem(
-                  label: 'Sign out',
-                  glyph: AppBoxKitGlyphs.signOut,
-                  isDestructive: true),
-            ],
-            onSelect: (item) => appBoxKitLocator<AppBoxKitNotificationService>()
-                .show(item.label, context: context),
-          ),
-        ],
-      ),
-      body: child,
+      appBar: glass
+          ? null
+          : AppBoxKitNativeAppBar(
+              title: 'Kit Showcase',
+              actions: _actions(context),
+            ),
+      body: !glass
+          ? child
+          : Stack(
+              children: [
+                Positioned.fill(
+                  child: MediaQuery(
+                    data: MediaQuery.of(context).copyWith(
+                      padding: MediaQuery.paddingOf(context).copyWith(
+                        top: MediaQuery.paddingOf(context).top +
+                            kAppBoxKitFloatingBarBlockHeight,
+                      ),
+                    ),
+                    child: child,
+                  ),
+                ),
+                Positioned(
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  child: AppBoxKitNativeFloatingBar(
+                    title: 'Kit Showcase',
+                    actions: _actions(context),
+                  ),
+                ),
+              ],
+            ),
       // NOTE on the FAB and a route's bottom dock: when a gallery route pins
       // its own dock (Components pins a chat composer), this Scaffold cannot
       // see it — the dock is a `bottomSheet` on a NESTED Scaffold, so

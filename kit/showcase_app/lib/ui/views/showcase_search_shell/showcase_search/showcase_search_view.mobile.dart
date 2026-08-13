@@ -45,9 +45,11 @@ class ShowcaseSearchViewMobile
       // content flashes over the bar when platform views paint behind it).
       // Trailing clearance so the last section can scroll clear of the
       // floating tab bar (otherwise its edge effect never disengages).
+      // Top inset mirrors the home list: full-bleed behind the floating
+      // native bar on the glass tier, flush under the boxed bar elsewhere.
       padding: EdgeInsets.fromLTRB(
           abxSize16,
-          abxSize16,
+          abxSize16 + MediaQuery.paddingOf(context).top,
           abxSize16,
           abxSize16 +
               MediaQuery.paddingOf(context).bottom +
