@@ -64,10 +64,30 @@ enum AppBoxKitFloatingBarTuck {
 class AppBoxKitNativeFloatingBar extends StatelessWidget {
   const AppBoxKitNativeFloatingBar({
     super.key,
+    this.leading,
     this.title,
     this.actions,
     this.tuck = AppBoxKitFloatingBarTuck.none,
   });
+
+  /// Back/close affordance at the row start, before the title pill (ratified
+  /// 2026-08-13 — pushed routes use the floating chrome instead of a
+  /// hand-assembled `Scaffold` + boxed bar).
+  ///
+  /// **Does not tuck.** [tuck] moves the title pill and the actions only;
+  /// this slot holds its position under every minimize variant, INCLUDING
+  /// [AppBoxKitFloatingBarTuck.leading] (which names the edge the TITLE PILL
+  /// leaves by, not this widget). Apple keeps the back affordance reachable
+  /// while the bar minimizes — a back button that slides away on scroll
+  /// strands the route. Only [AppBoxKitFloatingBarBehavior.hide] takes it
+  /// away, and then the whole bar goes with it via the host's single
+  /// whole-bar slide.
+  ///
+  /// A NATIVE glass icon button is lawful here: law rule 5 demotes only the
+  /// fixed chrome that scrolled glass passes UNDER (hence the Flutter-drawn
+  /// title pill), while "interactive bar controls stay native glass" — the
+  /// same carve-out the bar's action icon buttons already ship on.
+  final Widget? leading;
 
   /// Title text, shown in a native glass capsule at the leading edge.
   final String? title;
@@ -80,8 +100,9 @@ class AppBoxKitNativeFloatingBar extends StatelessWidget {
   /// is composition rule 1's forbidden shape, while transform mutators are
   /// proven to land on iOS platform views. Tucked widgets stay mounted
   /// throughout, so restoring them never re-materializes glass (clip
-  /// 13-53-b's lesson). Drive this from scroll direction via
-  /// [AppBoxKitFloatingChrome], or directly for custom hosts.
+  /// 13-53-b's lesson). [leading] is exempt — see its contract. Drive this
+  /// from scroll direction via [AppBoxKitFloatingChrome], or directly for
+  /// custom hosts.
   final AppBoxKitFloatingBarTuck tuck;
 
   @override
@@ -95,9 +116,19 @@ class AppBoxKitNativeFloatingBar extends StatelessWidget {
           height: 44,
           child: Row(
             children: [
+              // Deliberately OUTSIDE any AnimatedSlide: the back affordance
+              // stays reachable while the bar minimizes (see [leading]).
+              if (leading != null) ...[
+                leading!,
+                const SizedBox(width: abxGap8),
+              ],
               if (title != null)
                 AnimatedSlide(
                   // 2.0× own width clears the 16px edge padding with margin.
+                  // ponytail: with a [leading] present the pill starts one
+                  // control-width further in, so a very short title tucks to
+                  // just shy of the leading edge rather than past it. Widen
+                  // the multiplier only if a device clip shows a sliver.
                   offset:
                       tuck._tucksLeading ? const Offset(-2, 0) : Offset.zero,
                   duration: kAppBoxKitFloatingBarMotionDuration,
@@ -198,6 +229,7 @@ class AppBoxKitFloatingChrome extends StatefulWidget {
   const AppBoxKitFloatingChrome({
     super.key,
     required this.body,
+    this.leading,
     this.title,
     this.actions,
     this.behavior = AppBoxKitFloatingBarBehavior.pinned,
@@ -205,6 +237,11 @@ class AppBoxKitFloatingChrome extends StatefulWidget {
 
   /// Full-bleed content the bar floats over.
   final Widget body;
+
+  /// See [AppBoxKitNativeFloatingBar.leading] — notably, it does NOT tuck
+  /// under any minimize variant; only [AppBoxKitFloatingBarBehavior.hide]
+  /// takes it away, with the rest of the bar.
+  final Widget? leading;
 
   /// See [AppBoxKitNativeFloatingBar.title].
   final String? title;
@@ -271,6 +308,7 @@ class _AppBoxKitFloatingChromeState extends State<AppBoxKitFloatingChrome> {
     final media = MediaQuery.of(context);
     final hide = widget.behavior == AppBoxKitFloatingBarBehavior.hide;
     Widget bar = AppBoxKitNativeFloatingBar(
+      leading: widget.leading,
       title: widget.title,
       actions: widget.actions,
       tuck: !_away

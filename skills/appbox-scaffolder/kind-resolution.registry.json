@@ -58,7 +58,7 @@
         "AppBoxKitToolbarAction",
         "AppBoxKitNativeIconButton"
       ],
-      "note": "Shell/tab-root top chrome resolves through the `shell` variant — AppBoxKitChromeScaffold, THE liquid-glass law's reuse unit (docs/liquid-glass-allowlist.md; ratified 2026-08-13). It carries the runtime tier branch (Liquid Glass floating chrome / Android M3E boxed / fallback boxed), so emitted code never hand-assembles Scaffold.appBar next to in-scroll native glass. The bare `widget` remains correct for nested pushed-route bars."
+      "note": "Shell/tab-root top chrome resolves through the `shell` variant — AppBoxKitChromeScaffold, THE liquid-glass law's reuse unit (docs/liquid-glass-allowlist.md; ratified 2026-08-13). It carries the runtime tier branch (Liquid Glass floating chrome / Android M3E boxed / fallback boxed), so emitted code never hand-assembles Scaffold.appBar next to in-scroll native glass. Pushed routes: since the floating-back-affordance ruling (2026-08-13) the scaffold takes a `leading` slot, so pushed routes whose scroll content holds native glass ALSO resolve through the `shell` variant (leading: back). The bare `widget` remains correct only for pushed routes with Flutter-only scroll content."
     },
     "bottom-sheet": {
       "widget": "AppBoxKitBottomSheetService",

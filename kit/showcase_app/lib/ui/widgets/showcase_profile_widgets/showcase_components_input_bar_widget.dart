@@ -39,6 +39,12 @@ class ShowcaseComponentsInputBarWidget extends StatelessWidget {
     // docs/plans/bottom-dock-handoff.md). If the indicator ever crowds the
     // bar, that is the thing to measure first.
     return AppBoxKitNativeInputBar(
+      // Law rule 5 (no native glass overhanging a scrolled-glass travel path):
+      // the field capsule is this bar's title-pill analog — a wide fixed glass
+      // span the list's native glass buttons pass under — so it takes the
+      // Flutter tier. The leading/trailing icon buttons stay native, per the
+      // same rule's "interactive bar controls stay native glass".
+      wantNative: false,
       hintText: 'Message',
       leading: [
         AppBoxKitNativeIconButton(

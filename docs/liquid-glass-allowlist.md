@@ -25,7 +25,7 @@ Fixed elements floating above content. Glass is *reserved* for this layer
 | AppBoxKitNativeSheet / NativeDialog / NativePopupMenu | Transient overlays |
 | AppBoxKitNativeSearchBar (docked/pinned) | Pinned sliver headers count as chrome |
 | AppBoxKitNativeAppBar / SliverAppBar | Flutter-drawn; on the GLASS TIER the gallery replaces it with AppBoxKitNativeFloatingBar (see rule 4 ruling) |
-| AppBoxKitNativeFloatingBar | Native glass floating top chrome (glass tier) — title capsule + native actions over a full-bleed body; the top-edge counterpart of the tab bar |
+| AppBoxKitNativeFloatingBar | Native glass floating top chrome (glass tier) — title capsule + native actions over a full-bleed body; the top-edge counterpart of the tab bar. Since the floating-back-affordance ruling (2026-08-13) it takes a `leading` slot (non-tucking — back stays reachable through minimize), so pushed routes with in-scroll native glass use the chrome scaffold too |
 
 ### 2. Controls — INFORMED ALLOWLIST (ratified 2026-08-13, supersedes both prior rulings)
 Button-class controls stay **native Liquid Glass everywhere, including

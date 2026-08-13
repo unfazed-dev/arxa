@@ -87,31 +87,32 @@ class ShowcaseNotesViewMobile extends ViewModelWidget<ShowcaseNotesViewModel> {
           );
         }
 
-        return Scaffold(
-          // THE one app bar — AppBoxKitNativeAppBar in Scaffold.appBar (never a sliver,
-          // never a stock AppBar) — with the new-folder + overflow actions on it.
-          appBar: AppBoxKitNativeAppBar(
-            title: 'Folders',
-            actions: [
-              AppBoxKitNativeIconButton(
-                glyph: AppBoxKitGlyphs.newFolder,
-                onPressed: viewModel.createFolderWithPrompt,
-              ),
-              AppBoxKitNativePopupMenu(
-                glyph: AppBoxKitGlyphs.more,
-                items: const [
-                  AppBoxKitMenuItem(
-                    label: 'Sign Out',
-                    glyph: AppBoxKitGlyphs.signOut,
-                    isDestructive: true,
-                  ),
-                ],
-                onSelect: (_) => viewModel.signOut(),
-              ),
-            ],
-          ),
+        // Shell/tab-root chrome resolves through AppBoxKitChromeScaffold per
+        // docs/liquid-glass-allowlist.md — it picks the boxed app bar or the
+        // native floating bar per runtime tier; hosts never assemble chrome.
+        return AppBoxKitChromeScaffold(
+          title: 'Folders',
+          actions: [
+            AppBoxKitNativeIconButton(
+              glyph: AppBoxKitGlyphs.newFolder,
+              onPressed: viewModel.createFolderWithPrompt,
+            ),
+            AppBoxKitNativePopupMenu(
+              glyph: AppBoxKitGlyphs.more,
+              items: const [
+                AppBoxKitMenuItem(
+                  label: 'Sign Out',
+                  glyph: AppBoxKitGlyphs.signOut,
+                  isDestructive: true,
+                ),
+              ],
+              onSelect: (_) => viewModel.signOut(),
+            ),
+          ],
           body: SafeArea(
-            // top: false — the fixed app bar owns the status-bar inset.
+            // top: false — the boxed app bar owns the status-bar inset, and on
+            // the glass tier the chrome reports its bar block as raised
+            // MediaQuery top padding that the first sliver consumes instead.
             //
             // bottom: false — the host shell uses extendBody, so the viewport must
             // extend behind the floating tab bar (content scrolls under the glass
@@ -152,11 +153,17 @@ class ShowcaseNotesViewMobile extends ViewModelWidget<ShowcaseNotesViewModel> {
     return AppBoxKitMotionScope(
       child: CustomScrollView(
         slivers: [
-          // Account subtitle — a thin sliver at the top of the list.
+          // Account subtitle — a thin sliver at the top of the list. Its top
+          // inset clears the chrome: 0 under the boxed app bar (Scaffold strips
+          // it), the status-bar + floating-bar block on the glass tier, where
+          // the chrome lays this list full-bleed behind native floating chrome.
           SliverToBoxAdapter(
             child: Padding(
-              padding: const EdgeInsets.symmetric(
-                  horizontal: abxSize16, vertical: abxSize4),
+              padding: EdgeInsets.fromLTRB(
+                  abxSize16,
+                  abxSize4 + MediaQuery.paddingOf(context).top,
+                  abxSize16,
+                  abxSize4),
               child: Text(
                 session.user.displayName ?? session.user.email ?? '',
                 style: theme.textTheme.bodySmall

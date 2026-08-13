@@ -75,6 +75,9 @@ class ShowcaseNoteEditorViewMobile
 
     // One scaffold shell shared by the loading state and the loaded note, so
     // the back button never drops out while note$'s first event is pending.
+    // glass-law-exempt: pushed route keeps its boxed bar; the body's native
+    // glass rides a SingleChildScrollView, whose single child is clipped —
+    // never sliver-culled — so rule 4's cull-seam shimmer cannot fire here.
     Scaffold shell({String? title, List<Widget>? actions, required Widget body}) =>
         Scaffold(
           appBar: AppBoxKitNativeAppBar(

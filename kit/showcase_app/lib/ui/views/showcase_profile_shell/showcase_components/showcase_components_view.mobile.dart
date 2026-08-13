@@ -55,14 +55,16 @@ class ShowcaseComponentsViewMobile
 
   @override
   Widget build(BuildContext context, ShowcaseComponentsViewModel viewModel) {
-    return Scaffold(
-      appBar: AppBoxKitNativeAppBar(
-        leading: AppBoxKitNativeIconButton(
-          glyph: AppBoxKitGlyphs.back,
-          onPressed: () => context.popRoute(),
-        ),
-        title: 'Components',
+    return AppBoxKitChromeScaffold(
+      // THE reuse unit (law): a pushed route sets `leading` rather than
+      // hand-assembling Scaffold + AppBoxKitNativeAppBar. The native back
+      // button is lawful in the bar's leading slot under rule 5's
+      // interactive-bar-controls carve-out.
+      leading: AppBoxKitNativeIconButton(
+        glyph: AppBoxKitGlyphs.back,
+        onPressed: () => context.popRoute(),
       ),
+      title: 'Components',
       drawer: const ShowcaseComponentsDrawerWidget(),
       // The composer rides the keyboard itself (viewInsets), so the Scaffold
       // must not also resize — and, less obviously, `resizeToAvoidBottomInset`
@@ -75,27 +77,58 @@ class ShowcaseComponentsViewMobile
       // screen edge.
       resizeToAvoidBottomInset: false,
       bottomSheet: const ShowcaseComponentsInputBarWidget(),
-      body: ListView(
-        // Bottom clearance for the docked input bar alone — the host tab bar
-        // yields its slot on this route, so the old extra 64 is dead space.
-        // `Scaffold` never insets the body for a `bottomSheet`; this padding
-        // is the only thing keeping the last card off the bar.
-        padding: const EdgeInsets.fromLTRB(0, abxSize16, 0, 96),
-        children: const [
-          ShowcaseComponentsInsetWidget(
-              child: ShowcaseSectionLabelWidget('Frosted surface')),
-          appBoxKitVerticalSpaceSmall,
-          ShowcaseComponentsInsetWidget(child: ShowcaseComponentsFrostedSectionWidget()),
-          appBoxKitVerticalSpaceMedium,
-          ShowcaseComponentsInsetWidget(
-              child: ShowcaseSectionLabelWidget('Chip carousel')),
-          appBoxKitVerticalSpaceSmall,
-          ShowcaseComponentsChipRailWidget(),
-          appBoxKitVerticalSpaceMedium,
-          ShowcaseComponentsSettingsSectionWidget(),
-          appBoxKitVerticalSpaceMedium,
-          ShowcaseComponentsInsetWidget(child: ShowcaseComponentsOverlaysCardWidget()),
-        ],
+      // Edge treatment owned by the list (see AppBoxKitEdgeAwareListView) so a
+      // child added later inherits it instead of regressing the screen.
+      //
+      // Builder: the padding below must be read BELOW the scaffold. The glass
+      // tier's floating chrome raises MediaQuery.padding.top for its body
+      // subtree only, so reading it at this view's own context (above the
+      // scaffold) would miss the raise and tuck the first card under the bar.
+      body: Builder(
+        builder: (context) => AppBoxKitEdgeAwareListView(
+          // Materialization headroom, lawful since the migration above: on the
+          // glass tier the body is full-bleed under NATIVE floating chrome, so
+          // the cull/re-add boundary sits off-screen and iOS 26's glass
+          // re-materialize finishes unseen (clip 13-53-b). The flag is
+          // unconditional across tiers and that is safe: 13-32 needed platform
+          // views painting behind an opaque Flutter bar, and the boxed tiers
+          // have none in this list. The overlays card's buttons are the only
+          // platform-view-capable children (the chip rail, settings group and
+          // frosted section are pure Flutter, and the native slider lives in a
+          // PRESENTED sheet, not in the scroll), and on boxed tiers they are
+          // AppBarM3E/IconButtonM3E on Android and CNButton's CupertinoButton
+          // fallback pre-26 (button.dart:1158) — Flutter either way. So the
+          // overdraw there is Flutter-only paint behind the bar.
+          extendBehindTopBar: true,
+          // Bottom clearance for the docked input bar alone — the host tab bar
+          // yields its slot on this route, so the old extra 64 is dead space.
+          // `Scaffold` never insets the body for a `bottomSheet`; this padding
+          // is the only thing keeping the last card off the bar. No tab-bar or
+          // viewPadding.bottom term (unlike home): the tab bar yields this slot
+          // and the input bar owns its own SafeArea, so one would double-count.
+          //
+          // Top inset: 0 under the boxed bar (Scaffold strips it); the
+          // status-bar block on the glass tier, where the chrome raises it.
+          padding: EdgeInsets.fromLTRB(
+              0, abxSize16 + MediaQuery.paddingOf(context).top, 0, 96),
+          children: const [
+            ShowcaseComponentsInsetWidget(
+                child: ShowcaseSectionLabelWidget('Frosted surface')),
+            appBoxKitVerticalSpaceSmall,
+            ShowcaseComponentsInsetWidget(
+                child: ShowcaseComponentsFrostedSectionWidget()),
+            appBoxKitVerticalSpaceMedium,
+            ShowcaseComponentsInsetWidget(
+                child: ShowcaseSectionLabelWidget('Chip carousel')),
+            appBoxKitVerticalSpaceSmall,
+            ShowcaseComponentsChipRailWidget(),
+            appBoxKitVerticalSpaceMedium,
+            ShowcaseComponentsSettingsSectionWidget(),
+            appBoxKitVerticalSpaceMedium,
+            ShowcaseComponentsInsetWidget(
+                child: ShowcaseComponentsOverlaysCardWidget()),
+          ],
+        ),
       ),
     );
   }

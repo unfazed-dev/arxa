@@ -7,9 +7,11 @@ import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
 /// above the platform views scrolling beneath it (allowlist rule 4 — the
 /// Flutter-drawn bar could not do this: seam pop or over-bar flash).
 void main() {
-  Widget harness({String? title, List<Widget>? actions}) => MaterialApp(
+  Widget harness({Widget? leading, String? title, List<Widget>? actions}) =>
+      MaterialApp(
         home: Scaffold(
-          body: AppBoxKitNativeFloatingBar(title: title, actions: actions),
+          body: AppBoxKitNativeFloatingBar(
+              leading: leading, title: title, actions: actions),
         ),
       );
 
@@ -71,6 +73,36 @@ void main() {
     expect(find.byType(AppBoxKitFrostedSurface), findsNothing);
   });
 
+  testWidgets(
+      'kit.ui-library.native-floating-bar — leading renders at the row start, '
+      'before the title pill, and is absent when null', (tester) async {
+    // A pushed route's back affordance (ratified 2026-08-13). Null leading
+    // must leave the old layout untouched: the pill starts at the bar's own
+    // 16px inset.
+    await tester.pumpWidget(harness(title: 'Kit Showcase'));
+    final pillLeftWithoutLeading =
+        tester.getRect(find.byType(AppBoxKitFrostedSurface).first).left;
+
+    await tester.pumpWidget(harness(
+      leading: const SizedBox(key: Key('leading'), width: 44, height: 44),
+      title: 'Kit Showcase',
+      actions: [const SizedBox(key: Key('action'), width: 44, height: 44)],
+    ));
+    final leadingRect = tester.getRect(find.byKey(const Key('leading')));
+    final pillRect = tester.getRect(find.byType(AppBoxKitFrostedSurface).first);
+
+    expect(leadingRect.left, pillLeftWithoutLeading,
+        reason: 'the leading takes the row-start slot the pill used to hold');
+    expect(pillRect.left, greaterThanOrEqualTo(leadingRect.right),
+        reason: 'the title pill follows the leading, never overlaps it');
+    expect(tester.getRect(find.byKey(const Key('action'))).left,
+        greaterThan(pillRect.right),
+        reason: 'actions still trail everything');
+    // Block height is a constant hosts inset by — a leading must not grow it.
+    expect(tester.getSize(find.byType(AppBoxKitNativeFloatingBar)).height,
+        kAppBoxKitFloatingBarBlockHeight);
+  });
+
   // ---------------------------------------------------------------------
   // AppBoxKitFloatingChrome — scroll-reactive behaviors. All motion must be
   // SLIDE (AnimatedSlide): partial-alpha over the native action buttons is
@@ -78,10 +110,13 @@ void main() {
   // so restoring never re-materializes glass (clip 13-53-b).
   // ---------------------------------------------------------------------
 
-  Widget chromeHarness(AppBoxKitFloatingBarBehavior behavior) => MaterialApp(
+  Widget chromeHarness(AppBoxKitFloatingBarBehavior behavior,
+          {Widget? leading}) =>
+      MaterialApp(
         home: Scaffold(
           body: AppBoxKitFloatingChrome(
             behavior: behavior,
+            leading: leading,
             title: 'Kit Showcase',
             actions: [const SizedBox(key: Key('action'), width: 44, height: 44)],
             body: ListView(
@@ -225,6 +260,74 @@ void main() {
     expect(actionsSlide(tester), Offset.zero);
     await scrollBack(tester);
     expect(barSlide(), Offset.zero);
+  });
+
+  // ---------------------------------------------------------------------
+  // The leading slot's tuck contract (ratified 2026-08-13): minimize moves
+  // the title pill and the actions ONLY. Apple keeps the back affordance
+  // reachable while the bar minimizes — a back button that slides away on
+  // scroll strands the route. `hide` is the one exception, and it comes for
+  // free from the whole-bar slide.
+  // ---------------------------------------------------------------------
+
+  const leadingProbe = SizedBox(key: Key('leading'), width: 44, height: 44);
+
+  testWidgets(
+      'kit.ui-library.floating-chrome — full minimize tucks the pill and the '
+      'actions but NEVER the leading', (tester) async {
+    await tester.pumpWidget(chromeHarness(
+        AppBoxKitFloatingBarBehavior.minimize,
+        leading: leadingProbe));
+    final resting = tester.getRect(find.byKey(const Key('leading')));
+
+    await scrollAway(tester);
+    // The tuck really ran — otherwise leading holding still proves nothing.
+    expect(titleSlide(tester).dx, lessThan(0));
+    expect(actionsSlide(tester).dx, greaterThan(0));
+    // getRect applies ancestor transforms, so an identical rect rules out
+    // both a stray slide wrapper and a layout shift.
+    expect(tester.getRect(find.byKey(const Key('leading'))), resting,
+        reason: 'the back affordance must stay put and stay tappable while '
+            'the rest of the bar minimizes');
+    expect(
+      find.ancestor(
+          of: find.byKey(const Key('leading')),
+          matching: find.byType(AnimatedSlide)),
+      findsNothing,
+      reason: 'no slide machinery may wrap the leading at all — a zero '
+          'offset today is one refactor away from a tuck',
+    );
+  });
+
+  testWidgets(
+      'kit.ui-library.floating-chrome — minimizeLeading tucks the TITLE PILL, '
+      'not the leading slot that shares its name', (tester) async {
+    // The naming collision is the trap: AppBoxKitFloatingBarTuck.leading /
+    // minimizeLeading name the EDGE the pill leaves by, not this widget.
+    await tester.pumpWidget(chromeHarness(
+        AppBoxKitFloatingBarBehavior.minimizeLeading,
+        leading: leadingProbe));
+    final resting = tester.getRect(find.byKey(const Key('leading')));
+    await scrollAway(tester);
+    expect(titleSlide(tester).dx, lessThan(0));
+    expect(tester.getRect(find.byKey(const Key('leading'))), resting);
+  });
+
+  testWidgets(
+      'kit.ui-library.floating-chrome — hide slides the WHOLE bar away, '
+      'leading included', (tester) async {
+    await tester.pumpWidget(chromeHarness(AppBoxKitFloatingBarBehavior.hide,
+        leading: leadingProbe));
+    final resting = tester.getRect(find.byKey(const Key('leading')));
+    await scrollAway(tester);
+    expect(
+      tester.getRect(find.byKey(const Key('leading'))).top,
+      lessThan(resting.top),
+      reason: 'hide is the one behavior that takes the leading away, and it '
+          'falls out of the existing whole-bar AnimatedSlide',
+    );
+    await scrollBack(tester);
+    expect(tester.getRect(find.byKey(const Key('leading'))), resting);
   });
 
   testWidgets(

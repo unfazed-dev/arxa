@@ -44,7 +44,11 @@ names why:
 3. **Hand-assembled top chrome** — `Scaffold(` with an `appBar:` in a file
    that ALSO puts native glass controls in scrollable content; the chrome
    scaffold (`AppBoxKitChromeScaffold`) is the only lawful assembly
-   (law rule 4). Nested pushed-route Scaffolds with a boxed bar are lawful.
+   (law rule 4) — it takes `leading` for pushed-route back buttons since
+   the floating-back-affordance ruling (2026-08-13). A nested pushed-route
+   Scaffold with a boxed bar is lawful only while its scroll content is
+   Flutter-only or provably clip-not-cull (SingleChildScrollView — the
+   note-editor exemption).
 4. **Glass-on-glass overhang** — fixed native glass (a `LiquidGlassContainer`
    or CN control positioned as chrome) overlapping the travel path of
    in-scroll native glass (law rule 5; the title pill precedent).
