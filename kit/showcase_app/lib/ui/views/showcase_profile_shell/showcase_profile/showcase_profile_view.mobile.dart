@@ -61,6 +61,9 @@ class ShowcaseProfileViewMobile
     // underlaps it — a top effect would fade content just before it clips.
     return AppBoxKitEdgeAwareListView(
       bottomOcclusion: kShowcaseTabBarBlockHeight,
+      // Native views transit behind the opaque bar instead of culling at the
+      // seam — see the home list's note (clip 12-48).
+      clipBehavior: Clip.none,
       // Bottom = safe-area + tab-bar block so the last card can scroll
       // clear of the floating AppBoxKitNativeTabBar — the shell extends the body
       // under it (extendBody) and previously the button laid out

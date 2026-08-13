@@ -34,6 +34,35 @@ void main() {
       find.byType(AppBoxKitScrollEdgeEffect, skipOffstage: false).evaluate().length;
 
   testWidgets(
+      'kit.ui-library.edge-aware-list — clipBehavior forwards to the ListView '
+      '(Clip.none = platform views cull at the screen edge, not the bar seam)',
+      (tester) async {
+    await tester.pumpWidget(MaterialApp(
+      home: Scaffold(
+        body: AppBoxKitEdgeAwareListView(
+          clipBehavior: Clip.none,
+          children: mixedChildren(),
+        ),
+      ),
+    ));
+    expect(
+      tester.widget<ListView>(find.byType(ListView)).clipBehavior,
+      Clip.none,
+      reason: 'under an opaque bar the viewport clip is what culls a native '
+          'view at the seam and re-materializes it on re-entry (clip 12-48); '
+          'Clip.none must reach the ListView for the transit fix to hold',
+    );
+    // Default stays hardEdge — Clip.none is only safe under OPAQUE chrome.
+    await tester.pumpWidget(MaterialApp(
+      home: Scaffold(
+        body: AppBoxKitEdgeAwareListView(children: mixedChildren()),
+      ),
+    ));
+    expect(tester.widget<ListView>(find.byType(ListView)).clipBehavior,
+        Clip.hardEdge);
+  });
+
+  testWidgets(
       'kit.ui-library.edge-aware-list — no edge configured means no effect at all',
       (tester) async {
     // An edge effect with no chrome on that edge is wrong, not redundant: it

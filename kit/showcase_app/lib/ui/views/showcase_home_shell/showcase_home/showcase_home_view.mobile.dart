@@ -44,6 +44,12 @@ class ShowcaseHomeViewMobile extends ViewModelWidget<ShowcaseHomeViewModel> {
     // chrome's app bar is opaque and does not extend behind.
     return AppBoxKitEdgeAwareListView(
       bottomOcclusion: kShowcaseTabBarBlockHeight,
+      // The gallery bar is opaque, and this list hosts native glass controls:
+      // without this, the viewport clip culls a platform view AT the bar seam
+      // and re-materializes it on re-entry (visible shimmer, clip 12-48).
+      // Clip.none moves the cull boundary to the physical screen edge — the
+      // top mirrors what extendBody already gives the bottom.
+      clipBehavior: Clip.none,
       // Trailing clearance matches the profile list: without it the last card
       // can never scroll clear of the floating tab bar, so its edge effect
       // would stay permanently engaged.

@@ -41,6 +41,9 @@ class ShowcaseSearchViewMobile
     // chrome, and the gallery app bar is opaque.
     return AppBoxKitEdgeAwareListView(
       bottomOcclusion: kShowcaseTabBarBlockHeight,
+      // Native views transit behind the opaque bar instead of culling at the
+      // seam — see the home list's note (clip 12-48).
+      clipBehavior: Clip.none,
       // Trailing clearance so the last section can scroll clear of the
       // floating tab bar (otherwise its edge effect never disengages).
       padding: EdgeInsets.fromLTRB(

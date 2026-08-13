@@ -95,7 +95,16 @@ LiquidGlassContainer in scrolling lists.
    pairs the alpha-hide with a sub-pixel ClipRect: paint still happens (the
    views never detach — 00bc2f0c's guarantee holds), but a hidden tab can
    contribute at most half a pixel to the frame.
-4. **Fill color and foreground travel together in fallbacks.** Any fallback
+4. **Native views must not cull at a mid-screen clip edge (clip 12-48).**
+   The engine culls a platform view the moment the viewport clip fully
+   excludes it and re-materializes it on re-entry with a visible glass
+   shimmer. Under an opaque top bar the viewport edge is the bar seam —
+   mid-screen, where the eye is. Fix: `AppBoxKitEdgeAwareListView(clipBehavior:
+   Clip.none)` moves the cull boundary to the physical screen edge, so the
+   view transits behind the opaque bar still composited — the same lifecycle
+   `extendBody: true` already gives the bottom edge. ONLY under opaque
+   chrome (the bar paints after the body and covers the overflow).
+5. **Fill color and foreground travel together in fallbacks.** Any fallback
    that sets a CupertinoButton `color` must set the foreground too: solid
    fill → contrasting color, translucent tint wash (glass) → the tint itself
    (vendor PATCH #5). The default foreground flips with `color` and lands

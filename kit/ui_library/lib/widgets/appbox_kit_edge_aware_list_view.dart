@@ -54,6 +54,7 @@ class AppBoxKitEdgeAwareListView extends StatelessWidget {
     this.topEdge = false,
     this.bottomOcclusion,
     this.style = AppBoxKitScrollEdgeEffectStyle.automatic,
+    this.clipBehavior = Clip.hardEdge,
   });
 
   /// The list's children. Each is wrapped in the configured edge effects —
@@ -80,12 +81,26 @@ class AppBoxKitEdgeAwareListView extends StatelessWidget {
   /// Strength profile forwarded to every child's effect.
   final AppBoxKitScrollEdgeEffectStyle style;
 
+  /// Viewport clip, forwarded to the [ListView]. Pass [Clip.none] when the
+  /// list sits under an OPAQUE top bar and hosts native platform views
+  /// (informed allowlist): the engine culls a platform view the moment the
+  /// viewport clip fully excludes it — at the bar seam, mid-screen — and
+  /// re-materializes it on re-entry with a visible glass shimmer (clip
+  /// 12-48, home's smoke row). With no viewport clip the only boundary left
+  /// is the physical screen edge, so the view transits behind the opaque
+  /// bar still composited and is culled off-screen — the same lifecycle the
+  /// bottom edge gets from `extendBody: true`. Requires opaque top chrome:
+  /// the bar paints after the body and covers the overflow; under
+  /// translucent chrome keep [Clip.hardEdge].
+  final Clip clipBehavior;
+
   @override
   Widget build(BuildContext context) {
     return ListView(
       padding: padding,
       controller: controller,
       physics: physics,
+      clipBehavior: clipBehavior,
       children: [
         for (final child in children)
           _treat(child,
