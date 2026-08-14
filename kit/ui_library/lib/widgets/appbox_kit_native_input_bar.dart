@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'package:appbox_kit_core/common/appbox_kit_app_constants.dart';
+import 'appbox_kit_frosted_surface.dart';
 import 'appbox_kit_native_icon_button.dart';
 import 'appbox_kit_native_textfield.dart';
 
@@ -25,7 +26,11 @@ import 'appbox_kit_native_textfield.dart';
 /// capsule on iOS and its M3E container shape on Android; on the Material
 /// fallback tier the bar passes a 28pt radius + filled surface so the field
 /// reads as the same pill. Drawing another capsule container behind the row
-/// would double-draw the glass — the bar itself stays transparent.
+/// would double-draw the glass — the bar draws no capsule of its own. By
+/// default ([opaqueGlass]) it does paint a flat opaque base behind the row
+/// (tint token at alpha 1.0, platform-view-safe — the action slots are CN
+/// platform views) so content never scrolls visibly through the bar; pass
+/// `opaqueGlass: false` for the old fully transparent backing.
 ///
 /// ## Keyboard riding
 ///
@@ -51,6 +56,7 @@ class AppBoxKitNativeInputBar extends StatelessWidget {
     this.autofocus = false,
     this.enabled = true,
     this.wantNative = true,
+    this.opaqueGlass = true,
   });
 
   /// Owns the input text (forwarded to [AppBoxKitNativeTextField.controller]).
@@ -88,6 +94,14 @@ class AppBoxKitNativeInputBar extends StatelessWidget {
   /// Material [TextField] tier everywhere — the path widget tests take). The
   /// action buttons self-gate per platform like every `AppBoxKitNative*` sibling.
   final bool wantNative;
+
+  /// Opaque flat base behind the bar (default `true`): the tint token at
+  /// alpha 1.0 on the platform-view-safe frosted branch (no BackdropFilter
+  /// saveLayer — [leading]/[trailing] are CN platform views, and a saveLayer
+  /// cannot span the frame slices UiKitViews create, flutter#175048). The
+  /// base wraps the bottom [SafeArea] so the home-indicator strip is painted
+  /// too. `false` restores the fully transparent bar.
+  final bool opaqueGlass;
 
   @override
   Widget build(BuildContext context) {
@@ -132,9 +146,20 @@ class AppBoxKitNativeInputBar extends StatelessWidget {
     // the bar onto the keyboard; SafeArea covers the home indicator. The two
     // never stack — MediaQuery.padding bottoms out at 0 once the keyboard
     // consumes the inset.
+    // Opaque base wraps the SafeArea (so the home-indicator strip is painted)
+    // but sits INSIDE the viewInsets padding (so the whole surface lifts onto
+    // the keyboard with the bar).
+    final Widget backed = opaqueGlass
+        ? AppBoxKitFrostedSurface(
+            borderRadius: 0,
+            platformViewSafe: true,
+            tint: scheme.surfaceContainerLowest.withValues(alpha: 1.0),
+            child: SafeArea(top: false, child: bar),
+          )
+        : SafeArea(top: false, child: bar);
     return Padding(
       padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
-      child: SafeArea(top: false, child: bar),
+      child: backed,
     );
   }
 }

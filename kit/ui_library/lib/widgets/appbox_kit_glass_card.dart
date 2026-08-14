@@ -37,6 +37,7 @@ class AppBoxKitGlassCard extends StatelessWidget {
     this.padding = const EdgeInsets.all(16),
     this.borderRadius,
     this.wantNative = true,
+    this.opaqueGlass = true,
   });
 
   /// The card content.
@@ -56,6 +57,16 @@ class AppBoxKitGlassCard extends StatelessWidget {
   /// Host opt-in to native chrome. `true` (default) renders Liquid Glass on
   /// iOS 26; `false` forces the Flutter-drawn frosted tier everywhere.
   final bool wantNative;
+
+  /// Density ruling (default `true`): the native tier keeps real Liquid Glass
+  /// densified by a partial-alpha surface tint (the vendor's `prominent`
+  /// variant is a silent no-op — see the tier-1 comment), and the
+  /// frosted tier becomes a fully opaque surface (tint token at alpha 1.0,
+  /// platform-view-safe branch — card bodies may host CN platform views, and
+  /// a BackdropFilter saveLayer cannot span the frame slices UiKitViews
+  /// create, flutter#175048). `false` restores the old translucent read on
+  /// both tiers ([CNGlassEffect.regular] + blurred frosted).
+  final bool opaqueGlass;
 
   @override
   Widget build(BuildContext context) {
@@ -78,7 +89,20 @@ class AppBoxKitGlassCard extends StatelessWidget {
           // cornerRadius only in rect mode.
           shape: CNGlassEffectShape.rect,
           cornerRadius: borderRadius ?? 16,
+          // Density ruling: still real Liquid Glass (the liquid-glass law
+          // holds), densified via the native glass TINT — the one density
+          // lever the vendor actually applies. Do NOT reach for
+          // [CNGlassEffect.prominent] here: LiquidGlassContainerView.swift's
+          // glassEffectForConfig() hard-codes `Glass.regular` ("prominent
+          // glass API may be available in future"), so `prominent` is a
+          // silent no-op on this container.
           effect: CNGlassEffect.regular,
+          tint: opaqueGlass
+              ? Theme.of(context)
+                  .colorScheme
+                  .surfaceContainerLowest
+                  .withValues(alpha: 0.45)
+              : null,
         ),
         child: content,
       ).chromeGated();
@@ -87,6 +111,22 @@ class AppBoxKitGlassCard extends StatelessWidget {
     // One path on purpose: ADR 0010 makes the frosted material the correct
     // content-layer surface on EVERY non-iOS-26 tier, and unlike the old
     // Material Card it can't desync visually from the iOS glass tier.
+    if (opaqueGlass) {
+      // Same frosted read, opaque base — mirrors the sheet's opaque branch:
+      // tint token at alpha 1.0 makes the backdrop blur invisible anyway, so
+      // take the platform-view-safe branch (no BackdropFilter saveLayer).
+      return Builder(
+        builder: (BuildContext context) => AppBoxKitFrostedSurface(
+          borderRadius: borderRadius ?? 16,
+          platformViewSafe: true,
+          tint: Theme.of(context)
+              .colorScheme
+              .surfaceContainerLowest
+              .withValues(alpha: 1.0),
+          child: content,
+        ),
+      );
+    }
     return AppBoxKitFrostedSurface(
       borderRadius: borderRadius ?? 16,
       child: content,

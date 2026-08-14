@@ -85,6 +85,7 @@ Future<T?> appBoxKitShowNativeDialog<T>({
   String? message,
   required List<AppBoxKitNativeDialogAction<T>> actions,
   bool barrierDismissible = true,
+  bool opaqueGlass = true,
 }) async {
   // Bump the shared modal depth for the dialog's lifetime (same bracket as
   // appBoxKitShowSheet): no navigator registers CNTabBarRouteObserver, so the
@@ -130,6 +131,7 @@ Future<T?> appBoxKitShowNativeDialog<T>({
         title: title,
         message: message,
         actions: actions,
+        opaqueGlass: opaqueGlass,
       ),
     );
   } finally {
@@ -157,6 +159,7 @@ class AppBoxKitFrostedAlertDialog<T> extends StatefulWidget {
     required this.message,
     required this.actions,
     this.popOnAction = true,
+    this.opaqueGlass = true,
   });
 
   final String title;
@@ -167,6 +170,13 @@ class AppBoxKitFrostedAlertDialog<T> extends StatefulWidget {
   /// [appBoxKitShowNativeDialog] wants the pop; embedded hosts (stacked
   /// DialogService) set false and dismiss via their own completer.
   final bool popOnAction;
+
+  /// Opaque panel (default `true`): the frosted surface takes the tint token
+  /// at alpha 1.0 on the platform-view-safe branch — the panel hosts CN
+  /// native buttons (platform views), and a BackdropFilter saveLayer cannot
+  /// span the frame slices UiKitViews create (flutter#175048). `false`
+  /// restores the translucent frosted panel.
+  final bool opaqueGlass;
 
   @override
   State<AppBoxKitFrostedAlertDialog<T>> createState() =>
@@ -201,6 +211,13 @@ class _KitFrostedAlertDialogState<T> extends State<AppBoxKitFrostedAlertDialog<T
         child: AppBoxKitFrostedSurface(
           borderRadius: 24,
           padding: const EdgeInsets.fromLTRB(16, 20, 16, 16),
+          // Opaque-by-default ruling: a fully opaque fill makes the backdrop
+          // blur invisible anyway, so take the platform-view-safe branch (the
+          // action column hosts CN native buttons).
+          platformViewSafe: widget.opaqueGlass,
+          tint: widget.opaqueGlass
+              ? theme.colorScheme.surfaceContainerLowest.withValues(alpha: 1.0)
+              : null,
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
