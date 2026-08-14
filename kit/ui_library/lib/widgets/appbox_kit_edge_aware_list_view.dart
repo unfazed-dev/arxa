@@ -4,6 +4,20 @@ import 'package:appbox_kit_core/common/appbox_kit_app_constants.dart';
 
 import 'appbox_kit_scroll_edge_effect.dart';
 
+/// Which scroll edges an edge-aware container treats. A four-value enum, not
+/// a `Set<AppBoxKitScrollEdge>`, so the default is a compile-time constant
+/// and "no edges" is a named, greppable decision rather than an empty
+/// literal.
+enum AppBoxKitScrollEdges {
+  none,
+  top,
+  bottom,
+  both;
+
+  bool get treatsTop => this == top || this == both;
+  bool get treatsBottom => this == bottom || this == both;
+}
+
 /// A [ListView] that applies [AppBoxKitScrollEdgeEffect] to every child, so the
 /// edge treatment is a property of the *scrollable* rather than something each
 /// leaf widget has to remember.
@@ -20,16 +34,19 @@ import 'appbox_kit_scroll_edge_effect.dart';
 /// The leaf sugar stays public — a `CustomScrollView` (slivers) still needs it,
 /// and that is the right tool there. This widget is for the box-child case.
 ///
-/// **Edges are opt-in, and that is deliberate.** An edge effect with no chrome
-/// on that edge is wrong, not merely redundant: it fades content out just
-/// before the viewport clips it. Pass an edge only where something actually
-/// overlays the scrollable —
-/// - [topEdge] for chrome pinned *inside* the scrollable (a pinned sliver
-///   header). Content under an opaque `Scaffold.appBar` never underlaps it
-///   (absent `extendBodyBehindAppBar`), so the default is `false`.
-/// - [bottomOcclusion] for chrome stacked *over* the scrollable from outside
-///   (a floating tab bar above `Scaffold(extendBody: true)`); pass its height.
-///   `null` (the default) means nothing overlays the bottom.
+/// **Edges are ON by default, and turned off by design choice** (ratified
+/// 2026-08-14, superseding the original opt-in stance): the soft dissolve at
+/// both scroll edges is part of the kit's look, not merely occlusion repair,
+/// so a fade with no chrome under it is a design effect rather than a bug.
+/// Steer with [edges] (`none` / `top` / `bottom` / `both`, default `both`):
+/// - **Top** fades content as it leaves the leading edge. Skipped
+///   automatically under [extendBehindTopBar]: the cull boundary then sits
+///   above the physical screen, so the band would be off-screen by
+///   construction — wrapping for it buys nothing.
+/// - **Bottom** fades content into whatever the trailing edge holds. The band
+///   height is auto-derived from `MediaQuery.paddingOf(context).bottom` —
+///   which is the tab-bar block under `Scaffold(extendBody: true)` and the
+///   home-indicator inset elsewhere — or overridden via [bottomOcclusion].
 ///
 /// **Do not also call `.scrollEdgeEffect()` on a child** — the wrappers nest,
 /// and the inner one measures its own coverage against the same viewport, so
@@ -53,13 +70,11 @@ class AppBoxKitEdgeAwareListView extends StatelessWidget {
     this.padding,
     this.controller,
     this.physics,
-    this.topEdge = false,
+    this.edges = AppBoxKitScrollEdges.both,
     this.bottomOcclusion,
     this.style = AppBoxKitScrollEdgeEffectStyle.automatic,
     this.extendBehindTopBar = false,
-  }) : assert(!(extendBehindTopBar && topEdge),
-            'extendBehindTopBar is for an opaque bar OUTSIDE the scrollable; '
-            'a top edge effect under one fades content the bar already hides');
+  });
 
   /// The list's children. Each is wrapped in the configured edge effects —
   /// spacers included, so the treatment is uniform and the wrapping rule has
@@ -75,11 +90,15 @@ class AppBoxKitEdgeAwareListView extends StatelessWidget {
   final ScrollController? controller;
   final ScrollPhysics? physics;
 
-  /// Treat the leading edge. Only for chrome pinned *inside* the scrollable.
-  final bool topEdge;
+  /// Which edges get the fade. Default: both — turning one off is a design
+  /// decision, made here, per edge. The top treatment is additionally skipped
+  /// under [extendBehindTopBar] (band off-screen by construction).
+  final AppBoxKitScrollEdges edges;
 
-  /// Height of chrome overlaying the trailing edge from outside the
-  /// scrollable. `null` = nothing overlays it, so no bottom effect.
+  /// Override for the bottom band height. `null` (default) auto-derives it
+  /// from `MediaQuery.paddingOf(context).bottom` — correct for a floating tab
+  /// bar over `extendBody: true` and for the bare home-indicator inset alike.
+  /// Ignored unless [edges] treats the bottom.
   final double? bottomOcclusion;
 
   /// Strength profile forwarded to every child's effect.
@@ -121,6 +140,12 @@ class AppBoxKitEdgeAwareListView extends StatelessWidget {
     final overdraw = extendBehindTopBar
         ? MediaQuery.viewPaddingOf(context).top + kToolbarHeight + abxGap8
         : 0.0;
+    // Under overdraw the cull boundary is above the physical top, so a top
+    // band could never be seen — skip the wrapper rather than pay for it.
+    final treatTop = edges.treatsTop && !extendBehindTopBar;
+    final bottomBand = edges.treatsBottom
+        ? (bottomOcclusion ?? MediaQuery.paddingOf(context).bottom)
+        : null;
     final list = ListView(
       padding: (padding ?? EdgeInsets.zero)
           .add(EdgeInsets.only(top: overdraw)),
@@ -129,8 +154,8 @@ class AppBoxKitEdgeAwareListView extends StatelessWidget {
       children: [
         for (final child in children)
           _treat(child,
-              topEdge: topEdge,
-              bottomOcclusion: bottomOcclusion,
+              topEdge: treatTop,
+              bottomOcclusion: bottomBand,
               style: style),
       ],
     );
@@ -181,8 +206,8 @@ Widget _treat(
 ///
 /// Use this wherever a list of box children lives inside a `CustomScrollView`
 /// — typically alongside a pinned header, which is the reason to be in slivers
-/// at all and the reason [topEdge] usually belongs here (content genuinely
-/// underlaps chrome pinned *inside* the scrollable).
+/// at all and the reason the default top treatment earns its keep here
+/// (content genuinely underlaps chrome pinned *inside* the scrollable).
 ///
 /// The item builder returns the *untreated* child; wrappers are added around
 /// whatever it returns. Any per-item animation the builder applies (a
@@ -193,7 +218,7 @@ Widget _treat(
 /// ```dart
 /// AppBoxKitEdgeAwareSliverList(
 ///   padding: const EdgeInsets.all(16),
-///   topEdge: true,                    // pinned search header above
+///   // edges defaults to both — the pinned search header above is covered
 ///   bottomOcclusion: kTabBarBlockHeight,
 ///   itemCount: groups.length,
 ///   itemBuilder: (context, i) => GroupSection(groups[i]),
@@ -205,7 +230,7 @@ class AppBoxKitEdgeAwareSliverList extends StatelessWidget {
     required this.itemCount,
     required this.itemBuilder,
     this.padding,
-    this.topEdge = false,
+    this.edges = AppBoxKitScrollEdges.both,
     this.bottomOcclusion,
     this.style = AppBoxKitScrollEdgeEffectStyle.automatic,
   });
@@ -219,11 +244,14 @@ class AppBoxKitEdgeAwareSliverList extends StatelessWidget {
   /// Padding around the list, applied as a `SliverPadding` outside it.
   final EdgeInsetsGeometry? padding;
 
-  /// Treat the leading edge — for chrome pinned inside the scrollable.
-  final bool topEdge;
+  /// Which edges get the fade. Default: both. Slivers have no overdraw flag,
+  /// so top is honored whenever set — the pinned-header case this container
+  /// exists for.
+  final AppBoxKitScrollEdges edges;
 
-  /// Height of chrome overlaying the trailing edge from outside the
-  /// scrollable. `null` = nothing overlays it.
+  /// Override for the bottom band height. `null` (default) auto-derives it
+  /// from `MediaQuery.paddingOf(context).bottom`. Ignored unless [edges]
+  /// treats the bottom.
   final double? bottomOcclusion;
 
   final AppBoxKitScrollEdgeEffectStyle style;
@@ -234,8 +262,10 @@ class AppBoxKitEdgeAwareSliverList extends StatelessWidget {
       itemCount: itemCount,
       itemBuilder: (context, index) => _treat(
         itemBuilder(context, index),
-        topEdge: topEdge,
-        bottomOcclusion: bottomOcclusion,
+        topEdge: edges.treatsTop,
+        bottomOcclusion: edges.treatsBottom
+            ? (bottomOcclusion ?? MediaQuery.paddingOf(context).bottom)
+            : null,
         style: style,
       ),
     );

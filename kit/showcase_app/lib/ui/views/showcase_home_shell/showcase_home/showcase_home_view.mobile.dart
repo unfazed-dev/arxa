@@ -51,8 +51,8 @@ class ShowcaseHomeViewMobile extends ViewModelWidget<ShowcaseHomeViewModel> {
             // Edge treatment owned by the list (see AppBoxKitEdgeAwareListView):
             // before this, only 2 of the 5 cards here carried
             // `.scrollEdgeEffect()`, so most of the home list slid under the tab
-            // bar untreated. No topEdge — the gallery chrome's app bar is opaque
-            // and does not extend behind.
+            // bar untreated. Top fade is auto-skipped by the wrapper under
+            // extendBehindTopBar (cull boundary off-screen by construction).
             AppBoxKitEdgeAwareListView(
           bottomOcclusion: kShowcaseTabBarBlockHeight,
           // Materialization headroom (clip 13-53-b): a culled child re-enters

@@ -142,11 +142,10 @@ class ShowcaseNotesFolderViewMobile
                     // iOS 26 scroll edge effects (ADR 0010) are owned by the
                     // list, not the item: the pinned search header above is
                     // detected zero-config via getOffsetToReveal (hence
-                    // topEdge), and the floating tab bar sits outside the
+                    // the default top treatment), and the floating tab bar sits outside the
                     // scrollable, so its occlusion is explicit. An item added
                     // here inherits both instead of having to remember them.
                     AppBoxKitEdgeAwareSliverList(
-                      topEdge: true,
                       bottomOcclusion: kShowcaseTabBarBlockHeight,
                       padding: EdgeInsets.fromLTRB(abxSize16, abxSize8, abxSize16,
                           abxSize80 + MediaQuery.paddingOf(context).bottom),

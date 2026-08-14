@@ -17,13 +17,13 @@ void main() {
       ];
 
   Widget harness({
-    bool topEdge = false,
+    AppBoxKitScrollEdges edges = AppBoxKitScrollEdges.both,
     double? bottomOcclusion,
   }) =>
       MaterialApp(
         home: Scaffold(
           body: AppBoxKitEdgeAwareListView(
-            topEdge: topEdge,
+            edges: edges,
             bottomOcclusion: bottomOcclusion,
             children: mixedChildren(),
           ),
@@ -80,14 +80,14 @@ void main() {
       (tester) async {
     // An edge effect with no chrome on that edge is wrong, not redundant: it
     // would fade content out just before the viewport clips it.
-    await tester.pumpWidget(harness());
+    await tester.pumpWidget(harness(edges: AppBoxKitScrollEdges.none));
     expect(effectCount(tester), 0);
   });
 
   testWidgets(
       'kit.ui-library.edge-aware-list — bottom occlusion treats EVERY child exactly once',
       (tester) async {
-    await tester.pumpWidget(harness(bottomOcclusion: 64));
+    await tester.pumpWidget(harness(edges: AppBoxKitScrollEdges.bottom, bottomOcclusion: 64));
 
     // One per child, no more: the count is the anti-double-apply assertion.
     // A child arriving already wrapped (a leaf that still calls the sugar)
@@ -112,7 +112,7 @@ void main() {
   testWidgets(
       'kit.ui-library.edge-aware-list — both edges nest one wrapper per edge per child',
       (tester) async {
-    await tester.pumpWidget(harness(topEdge: true, bottomOcclusion: 64));
+    await tester.pumpWidget(harness(bottomOcclusion: 64));
     expect(effectCount(tester), mixedChildren().length * 2);
 
     for (final key in const ['card', 'spacer', 'toolbar']) {
@@ -132,7 +132,7 @@ void main() {
     // Order matters for the geometry each wrapper measures; this preserves the
     // hand-written order the conversion replaced (top applied first, so it
     // ends up the inner wrapper).
-    await tester.pumpWidget(harness(topEdge: true, bottomOcclusion: 64));
+    await tester.pumpWidget(harness(bottomOcclusion: 64));
 
     final wrappers = find
         .ancestor(
@@ -150,7 +150,7 @@ void main() {
   testWidgets(
       'kit.ui-library.edge-aware-list — occlusion padding reaches the bottom wrapper',
       (tester) async {
-    await tester.pumpWidget(harness(bottomOcclusion: 64));
+    await tester.pumpWidget(harness(edges: AppBoxKitScrollEdges.bottom, bottomOcclusion: 64));
     final effect = tester.widget<AppBoxKitScrollEdgeEffect>(
       find.byType(AppBoxKitScrollEdgeEffect, skipOffstage: false).first,
     );
@@ -163,7 +163,7 @@ void main() {
   // -------------------------------------------------------------------------
 
   Widget sliverHarness({
-    bool topEdge = false,
+    AppBoxKitScrollEdges edges = AppBoxKitScrollEdges.both,
     double? bottomOcclusion,
     EdgeInsetsGeometry? padding,
   }) =>
@@ -173,7 +173,7 @@ void main() {
             slivers: [
               const SliverAppBar(pinned: true, title: Text('Bar')),
               AppBoxKitEdgeAwareSliverList(
-                topEdge: topEdge,
+                edges: edges,
                 bottomOcclusion: bottomOcclusion,
                 padding: padding,
                 itemCount: 3,
@@ -188,7 +188,7 @@ void main() {
   testWidgets(
       'kit.ui-library.edge-aware-sliver-list — treats every item exactly once',
       (tester) async {
-    await tester.pumpWidget(sliverHarness(bottomOcclusion: 64));
+    await tester.pumpWidget(sliverHarness(edges: AppBoxKitScrollEdges.bottom, bottomOcclusion: 64));
     expect(effectCount(tester), 3);
     for (var i = 0; i < 3; i++) {
       expect(
@@ -204,14 +204,14 @@ void main() {
   testWidgets(
       'kit.ui-library.edge-aware-sliver-list — no edge configured means no effect',
       (tester) async {
-    await tester.pumpWidget(sliverHarness());
+    await tester.pumpWidget(sliverHarness(edges: AppBoxKitScrollEdges.none));
     expect(effectCount(tester), 0);
   });
 
   testWidgets(
       'kit.ui-library.edge-aware-sliver-list — both edges nest one wrapper per edge, top inside',
       (tester) async {
-    await tester.pumpWidget(sliverHarness(topEdge: true, bottomOcclusion: 64));
+    await tester.pumpWidget(sliverHarness(bottomOcclusion: 64));
     expect(effectCount(tester), 6);
 
     final wrappers = find

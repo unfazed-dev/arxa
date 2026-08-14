@@ -59,9 +59,9 @@ class ShowcaseProfileViewMobile
     // `.scrollEdgeEffect()` calls skipped ("cards only") and which therefore
     // stayed crisp at full alpha while their neighbours faded.
     //
-    // No topEdge: the gallery chrome's AppBoxKitNativeAppBar is an opaque
-    // Scaffold.appBar with no extendBodyBehindAppBar, so content never
-    // underlaps it — a top effect would fade content just before it clips.
+    // Top fade is auto-skipped by the wrapper: extendBehindTopBar moves the
+    // cull boundary above the physical top, so a top band is off-screen by
+    // construction (edges stays at its both-on default).
     // Builder below the chrome: the chrome sits INSIDE this view now, and the
     // glass tier raises MediaQuery.padding.top for its body subtree only — see
     // the home list's note.

@@ -45,8 +45,8 @@ class ShowcaseSearchViewMobile
         builder: (context) =>
             // Edge treatment owned by the list (see AppBoxKitEdgeAwareListView)
             // — this also covers the search bar, which the per-widget calls
-            // skipped. No topEdge: the search bar scrolls with the content, it
-            // is not pinned chrome, and the gallery app bar is opaque.
+            // skipped. Top fade is auto-skipped here: extendBehindTopBar puts the
+            // cull boundary above the physical top, so a top band is unseen.
             AppBoxKitEdgeAwareListView(
           bottomOcclusion: kShowcaseTabBarBlockHeight,
           // Materialization headroom above the physical top — see the home
