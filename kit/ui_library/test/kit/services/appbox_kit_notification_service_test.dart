@@ -322,4 +322,61 @@ void main() {
     // Drain CNToast's auto-dismiss Timer (medium = 3.5s) before teardown.
     await tester.pump(const Duration(seconds: 4));
   });
+
+  testWidgets(
+      'kit.ui-library.notification-service — toast tiers mount in the ROOT overlay, not a nested navigator\'s',
+      (tester) async {
+    // Regression: a context inside a nested Navigator (tab shell, sheet)
+    // resolves a NEARER Overlay whose entries paint under anything the shell
+    // stacks above that navigator — a scrolling surface could cover the toast.
+    // Both CNToast call sites and the kit center pill must pass
+    // `rootOverlay: true`. Asserted structurally (which OverlayState hosts the
+    // entry), not by paint order, so the test pins the exact mechanism.
+    final svc = _RecordingSnackbarService();
+    appBoxKitLocator.registerSingleton<SnackbarService>(svc);
+    AppBoxKitPlatform.override = const AppBoxKitPlatformOverride(isAndroid: true);
+
+    late BuildContext innerContext;
+    await tester.pumpWidget(MaterialApp(
+      home: Scaffold(
+        body: Navigator(
+          onGenerateRoute: (settings) => MaterialPageRoute<void>(
+            settings: settings,
+            builder: (context) => Builder(builder: (context) {
+              innerContext = context;
+              return const SizedBox.shrink();
+            }),
+          ),
+        ),
+      ),
+    ));
+
+    // Fixture is real only if the nested navigator supplies a nearer overlay.
+    final nearest = Overlay.of(innerContext);
+    final root = Overlay.of(innerContext, rootOverlay: true);
+    expect(nearest, isNot(same(root)),
+        reason: 'nested Navigator must own its own Overlay for this test '
+            'to distinguish the two insertion targets');
+
+    await service.show(
+      'saved',
+      position: AppBoxKitToastPosition.center,
+      duration: const Duration(seconds: 2),
+      context: innerContext,
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+
+    final pill = find.byKey(const Key('appBoxKitCenterToastPill'));
+    expect(pill, findsOneWidget);
+    final hostOverlay =
+        tester.element(pill).findAncestorStateOfType<OverlayState>();
+    expect(hostOverlay, same(root),
+        reason: 'the center pill must outrank every surface in the app — '
+            'inserting into the nested overlay lets shell chrome cover it');
+
+    // Drain the auto-dismiss Timer before teardown.
+    await tester.pump(const Duration(seconds: 2));
+    expect(pill, findsNothing);
+  });
 }

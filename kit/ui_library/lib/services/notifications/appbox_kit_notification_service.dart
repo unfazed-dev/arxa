@@ -257,7 +257,12 @@ class AppBoxKitNotificationService {
     final ctx = (context != null && context.mounted)
         ? context
         : StackedService.navigatorKey?.currentContext;
-    final overlay = (ctx != null && ctx.mounted) ? Overlay.maybeOf(ctx) : null;
+    // `rootOverlay: true` — the pill must outrank every surface in the app
+    // (mirrors the CNToast tier). The nearest overlay can be a nested
+    // navigator's, whose entries paint under the shell's own chrome.
+    final overlay = (ctx != null && ctx.mounted)
+        ? Overlay.maybeOf(ctx, rootOverlay: true)
+        : null;
     if (overlay == null) {
       // Pre-boot: no Overlay to host the pill. No-op; never throw.
       debugPrint('AppBoxKitNotificationService: no Overlay for center pill tier; '

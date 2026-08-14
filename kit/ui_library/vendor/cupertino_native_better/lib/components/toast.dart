@@ -125,7 +125,11 @@ class CNToast {
     // We store the OverlayState — not the BuildContext — on the queued
     // entry so a later `_showNext()` firing from a Timer can never
     // dereference a deactivated caller widget (Issue #46 bug A).
-    final overlay = Overlay.of(context);
+    // `rootOverlay: true` — toasts must outrank every surface in the app.
+    // The nearest overlay can be a nested navigator's (tab shell, sheet);
+    // entries there paint under anything the shell stacks above that
+    // navigator, so a scroll or bar could cover the toast.
+    final overlay = Overlay.of(context, rootOverlay: true);
 
     _queue.add(
       _ToastEntry(
@@ -247,7 +251,11 @@ class CNToast {
   }) {
     final handle = CNLoadingToastHandle._();
 
-    final overlay = Overlay.of(context);
+    // `rootOverlay: true` — toasts must outrank every surface in the app.
+    // The nearest overlay can be a nested navigator's (tab shell, sheet);
+    // entries there paint under anything the shell stacks above that
+    // navigator, so a scroll or bar could cover the toast.
+    final overlay = Overlay.of(context, rootOverlay: true);
     final shouldUseGlass =
         PlatformVersion.supportsLiquidGlass && useGlassEffect;
 
