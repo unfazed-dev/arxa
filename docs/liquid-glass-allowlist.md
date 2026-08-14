@@ -72,6 +72,19 @@ type per device run, WIDEST GLASS FIRST — glass card, then toolbar, then
 search bar / text field, then sliders / switch, then segmented, popup menu,
 split button, button last. Never blanket-demote again — attribution first.
 
+**Sanctioned exception — app fidelity mode (QF-4, 2026-08-14):** the
+scaffolder's per-platform fidelity map (`flutter | mix | native`, chosen in
+the app's scaffold config) is the ONE lawful global demotion. It is a
+product choice made before any surface exists, not a glitch response: a
+platform scaffolded `flutter` ships the Flutter tier wholesale with the
+native-tier wiring tree-shaken out, and no gate or lint may read that as
+blanket demotion. `native` is strict — an unsupported tier is a
+build/assert error, never a silent fallback; `mix` is the default and is
+this law unchanged. Inside any running `mix`/`native` app the ladder above
+remains the only lawful demotion path — the exception covers scaffold-time
+mode selection, never a live app's rollback. Rulings:
+docs/plans/designer-scaffolder-grill-decisions.md QF-1…QF-4.
+
 ### 3. Glass surfaces — native in scroll under ruling 4 (2026-08-13)
 Ruling 4 covers surfaces too: AppBoxKitGlassCard and AppBoxKitNativeToolbar
 render native glass inside scrollables (their in-scroll demotion — which had

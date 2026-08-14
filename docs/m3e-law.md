@@ -42,6 +42,15 @@ it. Rules below are the current corpus.
    m3e collection driven by the kit's `M3ETheme` — do not re-implement
    expressive motion in app code. (Morph specifics: no device-proven rules
    yet — first Android device pass owes this section its clips.)
+5. **App fidelity mode — sanctioned exception (QF-4, 2026-08-14).** The
+   scaffolder's per-platform fidelity map may set Android to `flutter`,
+   shipping the Flutter tier wholesale with M3E wiring tree-shaken out —
+   the one lawful global demotion, mirroring the liquid-glass law's
+   deselect-ladder exception. `mix` is the default (rule 2's gate as-is);
+   `native` is strict — an unsupported tier is a build/assert error, never
+   a silent fallback. Inside a running `mix`/`native` Android app, demotion
+   still follows the allowlist's deselect ladder. Rulings:
+   docs/plans/designer-scaffolder-grill-decisions.md QF-1…QF-4.
 
 ## Open questions (owed to the first Android device pass)
 

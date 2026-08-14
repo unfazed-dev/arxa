@@ -729,6 +729,22 @@ _Avoid_: blanket demotion, ladder (bare — that is the viewport ladder),
 fallback order, deselect protocol (superseded name)
 _Layer_: Kit
 
+**App fidelity mode**:
+The scaffold-time, per-platform choice of design tier — the one sanctioned
+global demotion.
+A per-platform map in the app's scaffold config ({ios, android, web,
+desktop} → `flutter | mix | native`): `mix` (default) is the kit's tier
+gate as-is; `flutter` ships the Flutter tier wholesale, native wiring
+tree-shaken at scaffold; `native` is strict — an unsupported tier is a
+build/assert error, never a silent fallback. `flutter` is the only legal
+value where no native tier exists (web, desktop today). Sanctioned
+exception to the deselect ladder's blanket-demote ban; inside a running
+mix/native app, demotion still follows the ladder. Rulings QF-1…QF-4 in
+docs/plans/designer-scaffolder-grill-decisions.md.
+_Avoid_: fidelity switch, tier mode (bare), pure-Flutter mode (use
+`flutter` mode), full native (use `native` mode / strict), global demotion
+_Layer_: Pipeline / Kit
+
 **Double-bar ban**:
 No screen may wrap a nested set of screens in its own top bar, or pushed
 screens end up wearing two.
