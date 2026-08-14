@@ -531,6 +531,23 @@ class _ToastOverlayState extends State<_ToastOverlay>
         ),
         child: content,
       );
+      // LOCAL PATCH (app-box): PLAIN native anchor under the Flutter-drawn
+      // toast (same mechanism as the kit input bar / floating-bar title pill).
+      // The toast paints last in the scene, but the engine's view slicer
+      // (flow/view_slicer.cc) hoists Flutter ops above a platform view only
+      // where they intersect one — a toast with no platform view of its own
+      // ends up above earlier platform views yet UNDER any platform view
+      // later in scene order (e.g. glass chips scrolling beneath it) and
+      // under Flutter ops hoisted above those. The stationary anchor is the
+      // scene-last platform view, so the toast's ops always hoist into the
+      // topmost overlay layer. `plain` renders nothing (clear fill,
+      // Glass.identity): the fade/scale above it ghosts nothing visible, and
+      // on tiers without native glass the container degrades to its bare
+      // child.
+      content = LiquidGlassContainer(
+        config: const LiquidGlassConfig(effect: CNGlassEffect.plain),
+        child: content,
+      );
     }
 
     // Position the toast

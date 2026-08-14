@@ -1,21 +1,29 @@
 import 'dart:async' show Timer;
 
 import 'package:cupertino_native_better/cupertino_native_better.dart'
-    show CNToast, CNToastDuration, CNToastPosition;
+    show
+        CNGlassEffect,
+        CNToast,
+        CNToastDuration,
+        CNToastPosition,
+        LiquidGlassConfig,
+        LiquidGlassContainer;
 import 'package:flutter/material.dart';
 import 'package:stacked_services/stacked_services.dart'
     show SnackbarService, StackedService;
 
-import 'package:appbox_kit_core/common/appbox_kit_colors.dart' show AppBoxKitColors;
+import 'package:appbox_kit_core/common/appbox_kit_colors.dart'
+    show AppBoxKitColors;
 import 'package:appbox_kit_core/appbox_kit_locator.dart' show appBoxKitLocator;
 import 'package:appbox_kit_ui_library/utils/kit_action/appbox_kit_snackbar_type.dart'
     show AppBoxKitSnackbarType;
-import '../../utils/appbox_kit_native_overlay.dart' show appBoxKitWithNativeChromeHidden;
-import 'package:appbox_kit_core/platform/appbox_kit_platform.dart' show AppBoxKitPlatform;
+import '../../utils/appbox_kit_native_overlay.dart'
+    show appBoxKitWithNativeChromeHidden;
+import 'package:appbox_kit_core/platform/appbox_kit_platform.dart'
+    show AppBoxKitPlatform;
 
 import '../../widgets/appbox_kit_native_dialog.dart';
-import '../../widgets/appbox_kit_native_sheet.dart'
-    show appBoxKitShowSheet;
+import '../../widgets/appbox_kit_native_sheet.dart' show appBoxKitShowSheet;
 import 'appbox_kit_ask_surfaces.dart';
 
 /// Severity for [AppBoxKitNotificationService.show]. Drives the M3E-tier snackbar
@@ -265,7 +273,8 @@ class AppBoxKitNotificationService {
         : null;
     if (overlay == null) {
       // Pre-boot: no Overlay to host the pill. No-op; never throw.
-      debugPrint('AppBoxKitNotificationService: no Overlay for center pill tier; '
+      debugPrint(
+          'AppBoxKitNotificationService: no Overlay for center pill tier; '
           'message dropped: "$message"');
       return;
     }
@@ -317,7 +326,8 @@ class AppBoxKitNotificationService {
         : StackedService.navigatorKey?.currentContext;
     if (ctx == null || !ctx.mounted) {
       // Pre-boot: no Overlay to host CNToast. No-op; never throw.
-      debugPrint('AppBoxKitNotificationService: no BuildContext for iOS toast tier; '
+      debugPrint(
+          'AppBoxKitNotificationService: no BuildContext for iOS toast tier; '
           'message dropped: "$message"');
       return;
     }
@@ -344,12 +354,16 @@ class AppBoxKitNotificationService {
     // already Flutter-drawn. Revisit only if the vendor gates the overlay AND
     // stops alpha-animating it.
     // transition-exempt: every CNToast call below passes `useGlassEffect:
-    // false`, so the vendor takes its Flutter-drawn branch and constructs NO
-    // platform view (`shouldUseGlass` gates the LiquidGlassContainer at
-    // vendor toast.dart:298-299/503). Nothing here can leak over a route
-    // slide, so there is nothing to gate. If this ever flips back to the
-    // glass tier, DELETE this exemption — the toast's bare OverlayEntry
-    // cannot be gated from the kit and the leak returns.
+    // false`, so the vendor takes its Flutter-drawn branch. That branch DOES
+    // mount one platform view — the PLAIN slicer anchor (vendor toast.dart,
+    // non-glass branch; same mechanism as the kit input bar and this
+    // service's center pill) that keeps the toast's Flutter ops in the
+    // topmost overlay layer while native glass scrolls beneath it. `plain`
+    // renders nothing (clear fill, Glass.identity), so if it rides over a
+    // route slide it shows nothing — there is still nothing visible to gate.
+    // If this ever flips back to the glass tier, DELETE this exemption — the
+    // toast's bare OverlayEntry cannot be gated from the kit and the leak
+    // returns.
     const bool glass = false;
     switch (kind) {
       case AppBoxKitNotificationKind.info:
@@ -383,12 +397,17 @@ class AppBoxKitNotificationService {
     }
   }
 
-  static AppBoxKitSnackbarType _snackbarVariant(AppBoxKitNotificationKind kind) =>
+  static AppBoxKitSnackbarType _snackbarVariant(
+          AppBoxKitNotificationKind kind) =>
       switch (kind) {
-        AppBoxKitNotificationKind.info => AppBoxKitSnackbarType.appBoxKitAutoProcessInfo,
-        AppBoxKitNotificationKind.success => AppBoxKitSnackbarType.appBoxKitAutoProcessSuccess,
-        AppBoxKitNotificationKind.error => AppBoxKitSnackbarType.appBoxKitAutoProcessError,
-        AppBoxKitNotificationKind.warning => AppBoxKitSnackbarType.appBoxKitAutoProcessWarning,
+        AppBoxKitNotificationKind.info =>
+          AppBoxKitSnackbarType.appBoxKitAutoProcessInfo,
+        AppBoxKitNotificationKind.success =>
+          AppBoxKitSnackbarType.appBoxKitAutoProcessSuccess,
+        AppBoxKitNotificationKind.error =>
+          AppBoxKitSnackbarType.appBoxKitAutoProcessError,
+        AppBoxKitNotificationKind.warning =>
+          AppBoxKitSnackbarType.appBoxKitAutoProcessWarning,
       };
 
   static CNToastPosition _cnPosition(AppBoxKitToastPosition p) => switch (p) {
@@ -519,73 +538,90 @@ class _KitCenterToastPillState extends State<_KitCenterToastPill>
       child: Material(
         type: MaterialType.transparency,
         child: Align(
-          child: FadeTransition(
-            opacity: _fade,
-            child: ScaleTransition(
-              scale: _scale,
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 32),
-                child: Container(
-                  key: const Key('appBoxKitCenterToastPill'),
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-                  decoration: BoxDecoration(
-                    color: bg,
-                    borderRadius: BorderRadius.circular(100),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.15),
-                        blurRadius: 16,
-                        offset: const Offset(0, 6),
-                      ),
-                    ],
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(icon, color: fg),
-                      const SizedBox(width: 12),
-                      Flexible(
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            if (widget.title != null)
+          // PLAIN native anchor — same mechanism as the CNToast Flutter tier
+          // (vendor toast.dart) and the kit input bar: the pill is
+          // Flutter-drawn in the root overlay above platform-view-bearing
+          // scrollables, and the engine's view slicer (flow/view_slicer.cc)
+          // keeps Flutter ops in the topmost overlay layer only while they
+          // intersect a platform-view rect — otherwise passing in-scroll
+          // native glass renders OVER the pill. This stationary anchor is the
+          // scene-last platform view, so the pill's ops always hoist above
+          // every earlier platform view. `plain` renders nothing (clear fill,
+          // Glass.identity), so the fade/scale above it can ghost nothing
+          // visible; on tiers without native glass the container degrades to
+          // its bare child. Pill-sized on purpose — a full-screen native
+          // anchor would swallow touches destined for content behind the
+          // toast.
+          child: LiquidGlassContainer(
+            config: const LiquidGlassConfig(effect: CNGlassEffect.plain),
+            child: FadeTransition(
+              opacity: _fade,
+              child: ScaleTransition(
+                scale: _scale,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 32),
+                  child: Container(
+                    key: const Key('appBoxKitCenterToastPill'),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 20, vertical: 14),
+                    decoration: BoxDecoration(
+                      color: bg,
+                      borderRadius: BorderRadius.circular(100),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.15),
+                          blurRadius: 16,
+                          offset: const Offset(0, 6),
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(icon, color: fg),
+                        const SizedBox(width: 12),
+                        Flexible(
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              if (widget.title != null)
+                                Text(
+                                  widget.title!,
+                                  style: TextStyle(
+                                    color: fg,
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
                               Text(
-                                widget.title!,
+                                widget.message,
                                 style: TextStyle(
                                   color: fg,
                                   fontSize: 15,
-                                  fontWeight: FontWeight.w600,
+                                  fontWeight: FontWeight.w500,
                                 ),
                               ),
-                            Text(
-                              widget.message,
-                              style: TextStyle(
-                                color: fg,
-                                fontSize: 15,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      if (widget.actionLabel != null) ...[
-                        const SizedBox(width: 12),
-                        TextButton(
-                          onPressed: () {
-                            widget.onAction?.call();
-                            // Authoritative removal (no ticker dependency).
-                            widget.onDismissed();
-                          },
-                          child: Text(
-                            widget.actionLabel!,
-                            style: TextStyle(
-                                color: fg, fontWeight: FontWeight.w600),
+                            ],
                           ),
                         ),
+                        if (widget.actionLabel != null) ...[
+                          const SizedBox(width: 12),
+                          TextButton(
+                            onPressed: () {
+                              widget.onAction?.call();
+                              // Authoritative removal (no ticker dependency).
+                              widget.onDismissed();
+                            },
+                            child: Text(
+                              widget.actionLabel!,
+                              style: TextStyle(
+                                  color: fg, fontWeight: FontWeight.w600),
+                            ),
+                          ),
+                        ],
                       ],
-                    ],
+                    ),
                   ),
                 ),
               ),

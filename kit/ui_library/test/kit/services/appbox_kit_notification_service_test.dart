@@ -1,3 +1,5 @@
+import 'package:cupertino_native_better/cupertino_native_better.dart'
+    show LiquidGlassContainer;
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:stacked_services/stacked_services.dart';
@@ -70,7 +72,8 @@ void main() {
       (tester) async {
     final svc = _RecordingSnackbarService();
     appBoxKitLocator.registerSingleton<SnackbarService>(svc);
-    AppBoxKitPlatform.override = const AppBoxKitPlatformOverride(isAndroid: true);
+    AppBoxKitPlatform.override =
+        const AppBoxKitPlatformOverride(isAndroid: true);
 
     await tester.pumpWidget(host(const SizedBox.shrink()));
     await service.show(
@@ -144,7 +147,8 @@ void main() {
     );
   });
 
-  testWidgets('kit.ui-library.notification-service — iOS/desktop tier, with actionLabel → SnackbarService fallback',
+  testWidgets(
+      'kit.ui-library.notification-service — iOS/desktop tier, with actionLabel → SnackbarService fallback',
       (tester) async {
     final svc = _RecordingSnackbarService();
     appBoxKitLocator.registerSingleton<SnackbarService>(svc);
@@ -171,11 +175,13 @@ void main() {
     expect(svc.lastAction, isNotNull);
   });
 
-  testWidgets('kit.ui-library.notification-service — variant override is honored on the snackbar tier',
+  testWidgets(
+      'kit.ui-library.notification-service — variant override is honored on the snackbar tier',
       (tester) async {
     final svc = _RecordingSnackbarService();
     appBoxKitLocator.registerSingleton<SnackbarService>(svc);
-    AppBoxKitPlatform.override = const AppBoxKitPlatformOverride(isAndroid: true);
+    AppBoxKitPlatform.override =
+        const AppBoxKitPlatformOverride(isAndroid: true);
 
     await tester.pumpWidget(host(const SizedBox.shrink()));
     await service.show(
@@ -196,7 +202,8 @@ void main() {
       (tester) async {
     final svc = _RecordingSnackbarService();
     appBoxKitLocator.registerSingleton<SnackbarService>(svc);
-    AppBoxKitPlatform.override = const AppBoxKitPlatformOverride(isAndroid: true);
+    AppBoxKitPlatform.override =
+        const AppBoxKitPlatformOverride(isAndroid: true);
 
     await tester.pumpWidget(host(const SizedBox.shrink()));
     await service.show(
@@ -219,6 +226,18 @@ void main() {
     expect(pill, findsOneWidget);
     expect(find.text('saved'), findsOneWidget);
 
+    // The pill rides a PLAIN compositing anchor (same mechanism as the input
+    // bar's opaque base): without it, in-scroll native glass renders OVER the
+    // toast because the view slicer only hoists Flutter ops that intersect a
+    // platform-view rect. Pure Dart here: the vendored container only bridges
+    // when a UiKitView materializes.
+    expect(
+      find.ancestor(of: pill, matching: find.byType(LiquidGlassContainer)),
+      findsOneWidget,
+      reason: 'center pill must mount the plain slicer anchor — without it '
+          'scrolling native glass covers the toast',
+    );
+
     // M3-idiomatic floating pill: horizontally centered at screen center.
     final screen = tester.getSize(find.byType(Scaffold));
     final center = tester.getCenter(pill);
@@ -232,7 +251,8 @@ void main() {
     expect(pill, findsNothing);
   });
 
-  testWidgets('kit.ui-library.notification-service — iOS action tier, position center → center pill hosts the action',
+  testWidgets(
+      'kit.ui-library.notification-service — iOS action tier, position center → center pill hosts the action',
       (tester) async {
     final svc = _RecordingSnackbarService();
     appBoxKitLocator.registerSingleton<SnackbarService>(svc);
@@ -271,7 +291,8 @@ void main() {
       (tester) async {
     final svc = _RecordingSnackbarService();
     appBoxKitLocator.registerSingleton<SnackbarService>(svc);
-    AppBoxKitPlatform.override = const AppBoxKitPlatformOverride(isAndroid: true);
+    AppBoxKitPlatform.override =
+        const AppBoxKitPlatformOverride(isAndroid: true);
 
     await tester.pumpWidget(host(const SizedBox.shrink()));
     await service.show(
@@ -334,7 +355,8 @@ void main() {
     // entry), not by paint order, so the test pins the exact mechanism.
     final svc = _RecordingSnackbarService();
     appBoxKitLocator.registerSingleton<SnackbarService>(svc);
-    AppBoxKitPlatform.override = const AppBoxKitPlatformOverride(isAndroid: true);
+    AppBoxKitPlatform.override =
+        const AppBoxKitPlatformOverride(isAndroid: true);
 
     late BuildContext innerContext;
     await tester.pumpWidget(MaterialApp(

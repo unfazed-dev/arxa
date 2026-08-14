@@ -161,6 +161,12 @@ class AppBoxKitNativeInputBar extends StatelessWidget {
     // the intersection every frame. `plain` renders nothing (clear fill,
     // Glass.identity), so no glass-on-glass stacking can occur; on tiers
     // without native glass the vendor container degrades to its bare child.
+    // transition-exempt: this container is the PLAIN anchor above — it mounts
+    // a platform view that renders nothing (clear fill), so riding a route
+    // slide shows nothing and there is nothing to chrome-gate. Gating it
+    // would also defeat its purpose: the anchor must stay mounted during
+    // transitions to keep the opaque base hoisted. If the effect ever
+    // changes from `plain` to real glass, DELETE this exemption and gate it.
     final Widget backed = opaqueGlass
         ? LiquidGlassContainer(
             config: const LiquidGlassConfig(effect: CNGlassEffect.plain),
