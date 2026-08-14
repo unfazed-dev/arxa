@@ -3,6 +3,8 @@ import 'dart:io' show Platform;
 import 'package:flutter/foundation.dart'
     show defaultTargetPlatform, kIsWeb, TargetPlatform;
 
+import 'appbox_kit_fidelity.dart';
+
 /// Single source of truth for host platform + native-chrome capability gating.
 ///
 /// Pure Dart; safe on web (every `dart:io` [Platform] read is guarded by
@@ -54,15 +56,47 @@ class AppBoxKitPlatform {
   }
 
   // --- native-chrome capability (the tier-1 gate) ---
-  /// iOS 26+ renders real Liquid Glass via standard UIKit hosted in a platform view.
-  static bool get supportsLiquidGlass => isIOS && iosMajor >= 26;
+  // Raw capability (pre-fidelity-policy). Used only by
+  // AppBoxKitFidelity.validateAtRoot and the debug assert below; widgets
+  // gate on the supports* getters, which compose the app fidelity mode.
 
-  /// Android hosts Jetpack Compose Material 3 / M3-Expressive via a platform view.
-  static bool get supportsComposeM3E => isAndroid;
+  /// Raw: iOS 26+ renders real Liquid Glass via standard UIKit hosted in a
+  /// platform view.
+  static bool get liquidGlassCapability => isIOS && iosMajor >= 26;
 
-  /// Any real native chrome is renderable on this platform.
-  static bool get supportsNativeChrome =>
-      supportsLiquidGlass || supportsComposeM3E;
+  /// Raw: Android hosts Jetpack Compose Material 3 / M3-Expressive via a
+  /// platform view.
+  static bool get composeM3ECapability => isAndroid;
+
+  /// Raw: any real native chrome is renderable on this platform.
+  static bool get nativeChromeCapability =>
+      liquidGlassCapability || composeM3ECapability;
+
+  /// Capability ∧ fidelity policy: `flutter` mode clamps this false
+  /// everywhere (const-foldable — native branches tree-shake).
+  static bool get supportsLiquidGlass =>
+      AppBoxKitFidelity.allowsNative && liquidGlassCapability;
+
+  /// Capability ∧ fidelity policy.
+  static bool get supportsComposeM3E =>
+      AppBoxKitFidelity.allowsNative && composeM3ECapability;
+
+  /// Any native chrome renderable AND allowed by the declared fidelity mode.
+  static bool get supportsNativeChrome {
+    // QF-1 amendment: strict-mode release throw lives at root init only;
+    // this per-gate check is the debug-only backstop in the shared helper.
+    assert(() {
+      if (AppBoxKitFidelity.strict && !nativeChromeCapability) {
+        throw FidelityViolation(
+          'native fidelity with no native chrome capability reached a tier '
+          'gate — AppBoxKitFidelity.validateAtRoot() was not called at app '
+          'root, or the target config is wrong',
+        );
+      }
+      return true;
+    }());
+    return supportsLiquidGlass || supportsComposeM3E;
+  }
 
   // --- widget-tree platform (Cupertino-vs-Material fallback choice) ---
   static TargetPlatform get targetPlatform =>

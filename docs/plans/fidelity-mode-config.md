@@ -45,17 +45,41 @@ The kit gains one small surface (mirrors the existing
 `AppBoxKitPlatform.override` / `AppBoxKitPlatformOverride` pattern in
 `kit/core/lib/platform/appbox_kit_platform.dart`):
 
-- `AppBoxKitFidelity.mode` — a compile-time const the generated app root
-  sets from the map for the platform being built.
+- `AppBoxKitFidelity.mode` — resolved from
+  `const String.fromEnvironment('APPBOX_FIDELITY', defaultValue: 'mix')`.
+  The scaffolder emits `--dart-define=APPBOX_FIDELITY=<mode>` per build
+  target, derived mechanically from the `fidelity` map (advisor 2026-08-14:
+  a runtime static cannot tree-shake and adds mutable global state; only a
+  const environment value participates in const conditionals). The review
+  gate re-derives the define from `targets.derivation.json` and fails on
+  mismatch — the emitted const cannot silently drift from the config.
 - Tier gate composition: `wantNative && supports* && fidelity.allowsNative`,
-  where `flutter` ⇒ `allowsNative == false` (every two-tier widget and every
-  vendor `preferFlutterTier` default resolves to the Flutter tier).
-- Strict: `native` mode installs a fail-fast — at first tier-gate evaluation
-  where `supports*` is false, throw a named `FidelityViolation` (debug AND
-  release; QF-1: error, not fallback). No per-widget silent demotion.
+  where `allowsNative` is `const` (`mode != 'flutter'`) so `flutter` mode
+  tree-shakes every native branch (every two-tier widget and every vendor
+  `preferFlutterTier` default resolves to the Flutter tier).
+- Strict (`native`, QF-1 as amended): ONE fail-fast validation at app-root
+  init — if `supports*` is false at startup, throw a named
+  `FidelityViolation` (debug AND release). Deterministic single crash
+  point; QF-1's "error, not fallback" is preserved, only the throw site
+  moved from first-gate-evaluation to root init (amendment recorded in
+  designer-scaffolder-grill-decisions.md). Per-gate check survives as a
+  debug-only assert in the shared gate helper. No per-widget silent
+  demotion.
+- Testability: the gate is factored as a pure function; a
+  `kDebugMode`-guarded test override channel exists (tree-shaken in
+  release builds). Tests never flip the const directly.
 - Per-widget `preferFlutterTier`/`wantNative` still exist and still win
   locally in `mix`; in `native` mode a per-widget `preferFlutterTier: true`
   is a lint error (it contradicts the declared mode).
+
+**Defaults (explicit):**
+- `fidelity` map absent ⇒ `{ios: mix, android: mix, web: flutter,
+  desktop: flutter}` (§1).
+- `APPBOX_FIDELITY` define absent (un-scaffolded kit dev) ⇒ `mix` — on
+  web/desktop `supports*` is already false, so `mix` resolves to the
+  Flutter tier there with no native wiring exercised.
+- Per-widget `native`/`preferFlutterTier` absent in `mix` ⇒ platform
+  default: `wantNative = AppBoxKitPlatform.supportsNativeChrome`.
 
 ## 3. Tree-shake at scaffold (QF-2, code half)
 

@@ -376,3 +376,25 @@ did not exist and "no Flutter at all" is not expressible in the kit.
 QF-1…QF-4 locked. Consult-mode advisor skipped (no API key configured — script returned
 `status:"error"`; recorded per convention, proceeded on primary sources). Next: spec the
 config file format + scaffolder emission and draft the law amendment, as separate steps.
+
+## QF-1 amendment — strict-native throw site (advisor-driven, 2026-08-14)
+
+- QF-1's ruling stands: `native` mode error, never silent fallback.
+- Amended mechanism: the release-mode throw moves from **first tier-gate
+  evaluation** to **one validation at app-root init** — `supports*` is
+  platform-level and statically knowable at startup, so a lazy per-gate
+  throw was a nondeterministic crash point (whichever gated widget builds
+  first) punishing users for a config error. Root-init validation gives one
+  deterministic `FidelityViolation` with one stack trace.
+- Per-gate check survives as a **debug-only assert** in the shared gate
+  helper; no per-widget release throws (drift risk across ~10 widgets).
+- Same consult also ruled the mode const: `--dart-define=APPBOX_FIDELITY`
+  + `const bool.fromEnvironment` composition — a runtime static cannot
+  tree-shake (only const environment values participate in const
+  conditionals) and would add order-dependent test state. Gate factored as
+  a pure function with a kDebugMode-guarded test override.
+- Source: consult-mode implementation domain, confidence 0.78, this
+  session (anthropic wire, glm-5.3).
+- Known hazard carried forward: `supportsComposeM3E` is unconditionally
+  true on Android today, so the root-init validation cannot fire there
+  until the Android floor is established by the device pass (spec §5).

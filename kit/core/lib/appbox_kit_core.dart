@@ -16,6 +16,7 @@ export 'appbox_kit_locator.dart';
 
 // --- Platform detection (native-chrome gating) ---
 export 'platform/appbox_kit_platform.dart';
+export 'platform/appbox_kit_fidelity.dart';
 
 // --- Native-chrome widgets (adaptive: Liquid Glass / Compose M3 / Flutter fallback) ---
 // Controls
