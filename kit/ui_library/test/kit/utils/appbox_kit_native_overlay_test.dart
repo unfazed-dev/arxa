@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:cupertino_native_better/cupertino_native_better.dart'
     show CNTabBarRouteObserver;
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart' show GetSnackBar, SnackbarController;
 import 'package:appbox_kit_ui_library/utils/appbox_kit_native_overlay.dart';
@@ -65,5 +66,93 @@ void main() {
             'releasing here is the sharp-native-views-over-blur bug');
     // controller.future can only complete via a real show/dismiss cycle;
     // tearDown drains the held depth.
+  });
+
+  // ADR 0010 second amendment: native glass scrim lease. On the test host
+  // LiquidGlassContainer degrades to its bare child, so these exercise the
+  // lease/refcount/fade machinery, not the UIKit effect itself.
+  Finder scrimDim() => find.byWidgetPredicate(
+      (w) => w is ColoredBox && w.color == Colors.black54);
+
+  testWidgets(
+      'kit.ui-library.native-overlay — scrim lease mounts one shared entry, '
+      'ref-counts, and removes after fade', (tester) async {
+    await tester.pumpWidget(const MaterialApp(home: SizedBox.shrink()));
+    final overlay = tester.state<OverlayState>(find.byType(Overlay).first);
+
+    final leaseA =
+        AppBoxKitSnackbarScrimLease.acquire(overlay, Colors.black54);
+    final leaseB =
+        AppBoxKitSnackbarScrimLease.acquire(overlay, Colors.black54);
+    await tester.pump();
+
+    expect(AppBoxKitSnackbarScrimLease.debugScrimMounted, isTrue);
+    expect(AppBoxKitSnackbarScrimLease.debugDepth, 2);
+    expect(scrimDim(), findsOneWidget,
+        reason: 'two concurrent leases share ONE entry — no double dim');
+
+    unawaited(leaseB.release());
+    await tester.pump(const Duration(milliseconds: 250));
+    expect(AppBoxKitSnackbarScrimLease.debugScrimMounted, isTrue,
+        reason: 'outstanding lease must keep the scrim up');
+
+    unawaited(leaseA.release());
+    await tester.pump(); // fade-out begins
+    await tester.pump(const Duration(milliseconds: 250)); // fade elapses
+    await tester.pump(); // removal lands
+    expect(AppBoxKitSnackbarScrimLease.debugScrimMounted, isFalse);
+    expect(scrimDim(), findsNothing);
+  });
+
+  testWidgets(
+      'kit.ui-library.native-overlay — helper inserts scrim for lifetime of '
+      'present() and tears it down after', (tester) async {
+    await tester.pumpWidget(const MaterialApp(home: SizedBox.shrink()));
+    final overlay = tester.state<OverlayState>(find.byType(Overlay).first);
+
+    final presented = Completer<void>();
+    final done = appBoxKitWithNativeChromeHidden(
+      () => presented.future,
+      scrimOverlay: overlay,
+    );
+    await tester.pump();
+
+    expect(scrimDim(), findsOneWidget,
+        reason: 'scrim must be up while the presentation is live');
+    expect(depth(), 1, reason: 'chrome hide and scrim travel together');
+
+    presented.complete();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 250));
+    await tester.pump();
+    await done;
+
+    expect(scrimDim(), findsNothing);
+    expect(AppBoxKitSnackbarScrimLease.debugScrimMounted, isFalse);
+    expect(depth(), 0);
+  });
+
+  testWidgets(
+      'kit.ui-library.native-overlay — scrim survives a new lease arriving '
+      'mid-fade', (tester) async {
+    await tester.pumpWidget(const MaterialApp(home: SizedBox.shrink()));
+    final overlay = tester.state<OverlayState>(find.byType(Overlay).first);
+
+    final leaseA =
+        AppBoxKitSnackbarScrimLease.acquire(overlay, Colors.black54);
+    await tester.pump();
+    unawaited(leaseA.release());
+    await tester.pump(const Duration(milliseconds: 100)); // mid-fade
+
+    final leaseB =
+        AppBoxKitSnackbarScrimLease.acquire(overlay, Colors.black54);
+    await tester.pump(const Duration(milliseconds: 250));
+    expect(AppBoxKitSnackbarScrimLease.debugScrimMounted, isTrue,
+        reason: 'the mid-fade re-lease must cancel the pending removal');
+
+    unawaited(leaseB.release());
+    await tester.pump(const Duration(milliseconds: 250));
+    await tester.pump();
+    expect(AppBoxKitSnackbarScrimLease.debugScrimMounted, isFalse);
   });
 }

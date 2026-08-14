@@ -105,6 +105,20 @@ class AppBoxKitNotificationService {
       // Resolve at call time (not construction) so tests can register a stub
       // SnackbarService before invoking show().
       final snackbar = appBoxKitLocator<SnackbarService>();
+      // ADR 0010 second amendment: on the Liquid Glass tier the GetX
+      // BackdropFilter scrim is a structural no-op (in-page CN platform views
+      // slice the scene; only the dim composites), so the configs register
+      // overlayBlur 0 there and the frost comes from a kit-owned native glass
+      // scrim entry inserted before the GetX entries. Other tiers keep the
+      // sigma-20 GetX path and pass no overlay.
+      OverlayState? scrimOverlay;
+      if (AppBoxKitPlatform.supportsLiquidGlass) {
+        final ctx =
+            _overlayContext(context, 'snackbar scrim skipped: "$message"');
+        if (ctx != null) {
+          scrimOverlay = Overlay.maybeOf(ctx, rootOverlay: true);
+        }
+      }
       return appBoxKitWithNativeChromeHidden(
         () => snackbar.showCustomSnackBar(
           message: message,
@@ -114,6 +128,7 @@ class AppBoxKitNotificationService {
           mainButtonTitle: actionLabel,
           onMainButtonTapped: onAction,
         ),
+        scrimOverlay: scrimOverlay,
       );
     }
     return _cnToast(message, kind, duration, context, position);

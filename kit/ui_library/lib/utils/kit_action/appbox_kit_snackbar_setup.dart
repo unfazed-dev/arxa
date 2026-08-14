@@ -5,6 +5,8 @@ import 'package:appbox_kit_core/common/appbox_kit_app_constants.dart'
     show abxPad8, abxPad12, abxPad16, abxPad80, abxRad8;
 import 'package:appbox_kit_core/common/appbox_kit_colors.dart';
 import 'package:appbox_kit_core/appbox_kit_locator.dart' show appBoxKitLocator;
+import 'package:appbox_kit_core/platform/appbox_kit_platform.dart'
+    show AppBoxKitPlatform;
 import 'appbox_kit_snackbar_type.dart';
 
 /// Registers a [SnackbarConfig] for every [AppBoxKitSnackbarType] variant using the
@@ -32,15 +34,20 @@ void setupAppBoxKitSnackbars() {
   // ADR 0010 amendment: the scrim is a REAL blur (sigma 20 ≈ Apple's regular
   // material, the AppBoxKitFrostedSurface default) + a plain-dim color fill. GetX
   // only mounts its scrim entry when overlayBlur > 0, always as a
-  // BackdropFilter — which cannot cover iOS platform views, so the CN chrome
-  // would bleed through the blur sharp. The notification seat
-  // (AppBoxKitNotificationService.show) therefore wraps every stacked-snackbar
-  // presentation in appBoxKitWithNativeChromeHidden: the native chrome dematerializes
-  // (fade + scale) for the snackbar's full lifetime, the blur covers the
-  // Flutter scene, and the scrim entry's gesture restores
-  // tap-outside-to-dismiss. Callers using SnackbarService directly (bypassing
-  // AppBoxKitNotificationService) get the blur WITHOUT the chrome hide — don't.
-  const scrimBlur = 20.0;
+  // BackdropFilter — which cannot sample iOS platform views.
+  //
+  // ADR 0010 SECOND amendment: the chrome hide only dematerializes
+  // autoHideOnModal widgets (post-Issue-#53, the tab bar alone), so on the
+  // Liquid Glass tier in-page CN components keep slicing the scene and the
+  // GetX BackdropFilter blurs nothing — only its child dim composited. On
+  // that tier overlayBlur is therefore 0 (no dead filter, no double dim) and
+  // the frost + dim + tap-to-dismiss come from the kit-owned native glass
+  // scrim entry (appbox_kit_native_overlay.dart), which
+  // AppBoxKitNotificationService.show inserts before the GetX entries. All
+  // other tiers keep the sigma-20 GetX path. Callers using SnackbarService
+  // directly (bypassing AppBoxKitNotificationService) get neither the chrome
+  // hide nor the native scrim — don't.
+  final scrimBlur = AppBoxKitPlatform.supportsLiquidGlass ? 0.0 : 20.0;
   const scrimColor = Colors.black54;
 
   SnackbarConfig appBoxKitConfig({
