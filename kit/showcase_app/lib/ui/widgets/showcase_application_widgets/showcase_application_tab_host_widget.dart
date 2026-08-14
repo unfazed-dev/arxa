@@ -53,103 +53,113 @@ class ShowcaseApplicationTabHostWidget extends StatelessWidget {
               AppBoxKitNativeSwitch(value: false),
             ],
             child: Scaffold(
-          // Let the body extend behind the floating tab bar pill so content
-          // scrolls underneath it (matches AppBoxKitBottomNavScaffold behaviour).
-          // Without this the body is laid out above the bar and produces a
-          // hard cut against the scaffold background.
-          extendBody: true,
-          // Mirror the extendBody padding into viewPadding so per-tab FABs
-          // float clear of the glass bar (flutter#145680).
-          // The pipeline default — AppBoxKitAnimatedTabStack, self-driving (it
-          // tracks the previous index, so the router's `animation` is not
-          // needed). Platform-resolved: an INSTANT cross-cut on iOS, matching
-          // UITabBarController and keeping one tab on stage per frame so a
-          // switch never changes the frame's platform-view set (that change is
-          // what made switches flicker on these native-chrome tabs); the
-          // paired, direction-aware slide on Android, where the tab bodies are
-          // Flutter-rendered. Slide-only there too — fade ghosts platform
-          // views (flutter#24164/#148639; review check 1c2).
-          body: AppBoxKitExtendBodyFabLift(
-            child: _DockFabLift(
-              // When the tab bar yields, the route's own dock occupies the same
-              // band — but it lives on a NESTED Scaffold, so the ancestor
-              // Scaffold that positions the gallery FAB sees `bottomSheetSize
-              // == Size.zero` and cannot lift for it. The FAB's clearance was
-              // never about the bar being a bar: it came from the bar's height
-              // reaching `minViewPadding.bottom` and feeding `safeMargin`
-              // (`floating_action_button_location.dart:566`). Keep supplying
-              // that band and the FAB holds the exact position it had.
-              //
-              // viewPadding only — `SafeArea` reads `padding`, so this cannot
-              // push the composer around.
-              //
-              // ponytail: a constant, not the dock's measured height — the tab
-              // host cannot see into a nested route. It is exact today because
-              // the composer's own bar is `kShowcaseTabBarBlockHeight` tall and
-              // its safe-area inset is already in the base `viewPadding`, so
-              // both sides track the inset together (verified: a 16pt gap at a
-              // 34pt indicator AND at zero). The ceiling is a dock TALLER than
-              // this constant — a multiline composer — which would under-clear.
-              // Measure the dock and plumb the height up if that day comes.
-              extraViewPadding:
-                  _docksOwnBar(tabsRouter.topRoute.name) ? kShowcaseTabBarBlockHeight : 0,
-              child: AppBoxKitAnimatedTabStack(
-                activeIndex: tabsRouter.activeIndex,
-                // Tab pages are background-less (this host scaffold paints the
-                // shared surface), so the incoming layer must carry the
-                // scaffold color during a run or the outgoing tab reads
-                // through it (ghosting). Inert on iOS, which never runs.
-                backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-                children: children,
-              ),
-            ),
-          ),
-          // One bottom dock at a time: a route that pins its own bar there
-          // wins the slot and the shared tab bar yields (see [_docksOwnBar]).
-          //
-          // Read at build time, with no listener of its own: a nested push
-          // calls `notifyAll`, which notifies the ROOT controller
-          // (`stacked/…/routing_controller.dart:79-81`); the root delegate
-          // then rebuilds this subtree, so `build` re-runs on every nav change
-          // anywhere. Verified — swapping in a listenable that never fires
-          // left both handoff tests green, so a `ListenableBuilder` here would
-          // be inert decoration. `showcase_bottom_dock_handoff_test.dart` is
-          // what catches it if that ever stops being true.
-          //
-          // `topRoute` descends into the ACTIVE tab only, so the yield is
-          // per-tab by construction: switching to Home brings the bar straight
-          // back even though Components is still mounted in the profile tab's
-          // stack. A "someone claimed the dock" counter raised by the mounted
-          // route would instead hide the bar in every tab — the C2 shape in
-          // docs/plans/glass-chrome-root-cause-fixes.md.
-          //
-          // `null` and NOT a zero-height `SizedBox`: `Scaffold` strips the
-          // body's bottom padding whenever `bottomNavigationBar != null`
-          // (`scaffold.dart:3032`), and `removePadding` takes the same amount
-          // off `viewPadding` too (`media_query.dart:946-951`). A shrunk-but-
-          // present bar therefore consumed the home-indicator inset and handed
-          // back nothing, so the route's own dock had no inset left to clear
-          // it with and sat on the indicator. Measured: both `padding.bottom`
-          // and `viewPadding.bottom` arrived at the composer as 0.0.
-          bottomNavigationBar: _docksOwnBar(tabsRouter.topRoute.name)
-              ? null
-              : AppBoxKitNativeTabBar(
-                  tabs: [
-                    for (final tab in ShowcaseTab.values)
-                      AppBoxKitTab(
-                        glyph: switch (tab) {
-                          ShowcaseTab.home => AppBoxKitGlyphs.home,
-                          ShowcaseTab.search => AppBoxKitGlyphs.search,
-                          ShowcaseTab.profile => AppBoxKitGlyphs.profile,
-                          ShowcaseTab.notes => AppBoxKitGlyphs.notes,
-                        },
-                        label: tab.label,
-                      ),
-                  ],
-                  currentIndex: tabsRouter.activeIndex,
-                  onTap: tabsRouter.setActiveIndex,
+              // Let the body extend behind the floating tab bar pill so content
+              // scrolls underneath it (matches AppBoxKitBottomNavScaffold behaviour).
+              // Without this the body is laid out above the bar and produces a
+              // hard cut against the scaffold background.
+              extendBody: true,
+              // Mirror the extendBody padding into viewPadding so per-tab FABs
+              // float clear of the glass bar (flutter#145680).
+              // The pipeline default — AppBoxKitAnimatedTabStack, self-driving (it
+              // tracks the previous index, so the router's `animation` is not
+              // needed). Platform-resolved: an INSTANT cross-cut on iOS, matching
+              // UITabBarController and keeping one tab on stage per frame so a
+              // switch never changes the frame's platform-view set (that change is
+              // what made switches flicker on these native-chrome tabs); the
+              // paired, direction-aware slide on Android, where the tab bodies are
+              // Flutter-rendered. Slide-only there too — fade ghosts platform
+              // views (flutter#24164/#148639; review check 1c2).
+              // Scrim host OUTSIDE both viewPadding-raising wrappers: its opaque
+              // band is sized from the RAW device inset, and both lifts below
+              // mirror bar clearance into `viewPadding` for their subtrees.
+              // Bottom mirror of the top chrome's status-bar scrim — the per-child
+              // scroll edge effect is inert on the glass tier, so this is the only
+              // bottom-edge dissolve on device (clip 18-50).
+              body: AppBoxKitBottomEdgeScrimHost(
+                child: AppBoxKitExtendBodyFabLift(
+                  child: _DockFabLift(
+                    // When the tab bar yields, the route's own dock occupies the same
+                    // band — but it lives on a NESTED Scaffold, so the ancestor
+                    // Scaffold that positions the gallery FAB sees `bottomSheetSize
+                    // == Size.zero` and cannot lift for it. The FAB's clearance was
+                    // never about the bar being a bar: it came from the bar's height
+                    // reaching `minViewPadding.bottom` and feeding `safeMargin`
+                    // (`floating_action_button_location.dart:566`). Keep supplying
+                    // that band and the FAB holds the exact position it had.
+                    //
+                    // viewPadding only — `SafeArea` reads `padding`, so this cannot
+                    // push the composer around.
+                    //
+                    // ponytail: a constant, not the dock's measured height — the tab
+                    // host cannot see into a nested route. It is exact today because
+                    // the composer's own bar is `kShowcaseTabBarBlockHeight` tall and
+                    // its safe-area inset is already in the base `viewPadding`, so
+                    // both sides track the inset together (verified: a 16pt gap at a
+                    // 34pt indicator AND at zero). The ceiling is a dock TALLER than
+                    // this constant — a multiline composer — which would under-clear.
+                    // Measure the dock and plumb the height up if that day comes.
+                    extraViewPadding: _docksOwnBar(tabsRouter.topRoute.name)
+                        ? kShowcaseTabBarBlockHeight
+                        : 0,
+                    child: AppBoxKitAnimatedTabStack(
+                      activeIndex: tabsRouter.activeIndex,
+                      // Tab pages are background-less (this host scaffold paints the
+                      // shared surface), so the incoming layer must carry the
+                      // scaffold color during a run or the outgoing tab reads
+                      // through it (ghosting). Inert on iOS, which never runs.
+                      backgroundColor:
+                          Theme.of(context).scaffoldBackgroundColor,
+                      children: children,
+                    ),
+                  ),
                 ),
-        ));
+              ),
+              // One bottom dock at a time: a route that pins its own bar there
+              // wins the slot and the shared tab bar yields (see [_docksOwnBar]).
+              //
+              // Read at build time, with no listener of its own: a nested push
+              // calls `notifyAll`, which notifies the ROOT controller
+              // (`stacked/…/routing_controller.dart:79-81`); the root delegate
+              // then rebuilds this subtree, so `build` re-runs on every nav change
+              // anywhere. Verified — swapping in a listenable that never fires
+              // left both handoff tests green, so a `ListenableBuilder` here would
+              // be inert decoration. `showcase_bottom_dock_handoff_test.dart` is
+              // what catches it if that ever stops being true.
+              //
+              // `topRoute` descends into the ACTIVE tab only, so the yield is
+              // per-tab by construction: switching to Home brings the bar straight
+              // back even though Components is still mounted in the profile tab's
+              // stack. A "someone claimed the dock" counter raised by the mounted
+              // route would instead hide the bar in every tab — the C2 shape in
+              // docs/plans/glass-chrome-root-cause-fixes.md.
+              //
+              // `null` and NOT a zero-height `SizedBox`: `Scaffold` strips the
+              // body's bottom padding whenever `bottomNavigationBar != null`
+              // (`scaffold.dart:3032`), and `removePadding` takes the same amount
+              // off `viewPadding` too (`media_query.dart:946-951`). A shrunk-but-
+              // present bar therefore consumed the home-indicator inset and handed
+              // back nothing, so the route's own dock had no inset left to clear
+              // it with and sat on the indicator. Measured: both `padding.bottom`
+              // and `viewPadding.bottom` arrived at the composer as 0.0.
+              bottomNavigationBar: _docksOwnBar(tabsRouter.topRoute.name)
+                  ? null
+                  : AppBoxKitNativeTabBar(
+                      tabs: [
+                        for (final tab in ShowcaseTab.values)
+                          AppBoxKitTab(
+                            glyph: switch (tab) {
+                              ShowcaseTab.home => AppBoxKitGlyphs.home,
+                              ShowcaseTab.search => AppBoxKitGlyphs.search,
+                              ShowcaseTab.profile => AppBoxKitGlyphs.profile,
+                              ShowcaseTab.notes => AppBoxKitGlyphs.notes,
+                            },
+                            label: tab.label,
+                          ),
+                      ],
+                      currentIndex: tabsRouter.activeIndex,
+                      onTap: tabsRouter.setActiveIndex,
+                    ),
+            ));
       },
     );
   }

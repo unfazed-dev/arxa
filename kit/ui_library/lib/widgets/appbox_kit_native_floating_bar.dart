@@ -145,61 +145,61 @@ class AppBoxKitNativeFloatingBar extends StatelessWidget {
                   duration: kAppBoxKitFloatingBarMotionDuration,
                   curve: kAppBoxKitFloatingBarMotionCurve,
                   child:
-                // Flutter-drawn pill, DELIBERATELY not native glass
-                // (clip 13-53): scrolled native glass buttons crossing a
-                // native glass capsule stack glass-on-glass — the passing
-                // button's glass washed to a square ghost for exactly the
-                // capsule's span, while buttons crossing the pill gaps
-                // stayed crisp. A platform-view-safe frosted pill leaves
-                // no native surface in the title region to stack against.
-                // The vibrant fill is also Apple's own degrade for nested
-                // glass (§3).
-                //
-                // The PLAIN native anchor beneath it exists because Flutter
-                // ops floating over a platform-view-bearing scrollable have
-                // no stable home: the engine's view slicer
-                // (flow/view_slicer.cc) keeps them in an overlay above the
-                // platform views only while they intersect a platform-view
-                // rect, and otherwise drops them to a background canvas that
-                // is difference-clipped by every overlay — on device
-                // (clip 21-32 + composited-window probe, 2026-08-13) the
-                // pill's overlay shrank from (16,59,361x78) to the actions'
-                // bbox during top rubber-band overscroll and the pill
-                // vanished wholesale. The anchor is a stationary platform
-                // view exactly under the pill, so the intersection holds
-                // every frame. `plain` renders NO glass material (clear
-                // fill, Glass.identity), so 13-53 cannot recur — this is a
-                // compositing anchor, not a visible surface.
-                // transition-exempt: the anchor renders NOTHING (plain
-                // effect, clear fill, Glass.identity) — there is no visible
-                // glass to leak over a route slide, and gating it would
-                // re-open the erasure for exactly the frames a transition
-                // spans.
-                LiquidGlassContainer(
-                  config: const LiquidGlassConfig(
-                    effect: CNGlassEffect.plain,
-                  ),
-                  child: AppBoxKitFrostedSurface(
-                  platformViewSafe: true,
-                  borderRadius: 22,
-                  child: SizedBox(
-                    height: 44,
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: Center(
-                        child: Text(
-                          title!,
-                          style: TextStyle(
-                            color: scheme.onSurface,
-                            fontSize: 17,
-                            fontWeight: FontWeight.w600,
+                      // Flutter-drawn pill, DELIBERATELY not native glass
+                      // (clip 13-53): scrolled native glass buttons crossing a
+                      // native glass capsule stack glass-on-glass — the passing
+                      // button's glass washed to a square ghost for exactly the
+                      // capsule's span, while buttons crossing the pill gaps
+                      // stayed crisp. A platform-view-safe frosted pill leaves
+                      // no native surface in the title region to stack against.
+                      // The vibrant fill is also Apple's own degrade for nested
+                      // glass (§3).
+                      //
+                      // The PLAIN native anchor beneath it exists because Flutter
+                      // ops floating over a platform-view-bearing scrollable have
+                      // no stable home: the engine's view slicer
+                      // (flow/view_slicer.cc) keeps them in an overlay above the
+                      // platform views only while they intersect a platform-view
+                      // rect, and otherwise drops them to a background canvas that
+                      // is difference-clipped by every overlay — on device
+                      // (clip 21-32 + composited-window probe, 2026-08-13) the
+                      // pill's overlay shrank from (16,59,361x78) to the actions'
+                      // bbox during top rubber-band overscroll and the pill
+                      // vanished wholesale. The anchor is a stationary platform
+                      // view exactly under the pill, so the intersection holds
+                      // every frame. `plain` renders NO glass material (clear
+                      // fill, Glass.identity), so 13-53 cannot recur — this is a
+                      // compositing anchor, not a visible surface.
+                      // transition-exempt: the anchor renders NOTHING (plain
+                      // effect, clear fill, Glass.identity) — there is no visible
+                      // glass to leak over a route slide, and gating it would
+                      // re-open the erasure for exactly the frames a transition
+                      // spans.
+                      LiquidGlassContainer(
+                    config: const LiquidGlassConfig(
+                      effect: CNGlassEffect.plain,
+                    ),
+                    child: AppBoxKitFrostedSurface(
+                      platformViewSafe: true,
+                      borderRadius: 22,
+                      child: SizedBox(
+                        height: 44,
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          child: Center(
+                            child: Text(
+                              title!,
+                              style: TextStyle(
+                                color: scheme.onSurface,
+                                fontSize: 17,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
                           ),
                         ),
                       ),
                     ),
                   ),
-                  ),
-                ),
                 ),
               const Spacer(),
               if (actions != null)
@@ -303,6 +303,104 @@ class AppBoxKitTopEdgeScrim extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+/// Bottom-edge counterpart of [AppBoxKitTopEdgeScrim]: a Flutter-DRAWN
+/// vertical gradient from transparent down to the scaffold background —
+/// opaque through the home-indicator band, with the ramp landing on the tab
+/// bar row. Drawn ON TOP of a full-bleed `extendBody: true` body so scrolled
+/// content dissolves before it hard-clips at the physical bottom edge,
+/// mirroring the dissolve the top chrome already gets.
+///
+/// Exists because the per-child [AppBoxKitScrollEdgeEffect] is deliberately
+/// inert on the Liquid Glass tier (alpha over platform-view-hosting subtrees
+/// ghosts — clip 12-48), so on device the bottom edge showed NO fade at all
+/// (clip 18-50) while the top dissolved via the scrim. Same lawful mechanism
+/// as the top: a gradient fill, no saveLayer, no alpha over platform views,
+/// and it reverts in one deletion. The clip 13-32 watch-item on full-width
+/// background-colored overlays applies here identically.
+///
+/// Height is `MediaQuery.viewPaddingOf(context).bottom` plus [fadeExtent] —
+/// the RAW device inset, so read it OUTSIDE [AppBoxKitExtendBodyFabLift] (or
+/// any wrapper that mirrors bar clearance into `viewPadding`), or the scrim
+/// double-counts the bar block and washes resting content.
+class AppBoxKitBottomEdgeScrim extends StatelessWidget {
+  const AppBoxKitBottomEdgeScrim({
+    super.key,
+    this.fadeExtent = kAppBoxKitFloatingBarBlockHeight,
+  });
+
+  /// How far ABOVE the home-indicator inset the gradient takes to reach fully
+  /// clear. The default spans the floating-bar block, which is what the tab
+  /// bar wants: content is already dissolving by the time it reaches the bar
+  /// row. Bar-less hosts must shrink this to their content's own bottom
+  /// inset, for the same wash-over-static-content reason as the top scrim.
+  final double fadeExtent;
+
+  @override
+  Widget build(BuildContext context) {
+    final bottom = MediaQuery.viewPaddingOf(context).bottom;
+    final height = bottom + fadeExtent;
+    final background = Theme.of(context).scaffoldBackgroundColor;
+    return IgnorePointer(
+      child: Container(
+        height: height,
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            // A single ramp from clear across the bar row, then opaque for
+            // the whole home-indicator band. withValues, never an Opacity
+            // widget: the law gate scans this file for the alpha shapes.
+            colors: [
+              background.withValues(alpha: 0),
+              background,
+              background,
+            ],
+            stops: [0, fadeExtent / height, 1],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Overlays [AppBoxKitBottomEdgeScrim] on a full-bleed body: the body fills,
+/// the scrim pins to the bottom edge between the body and whatever bottom
+/// chrome the host mounts (`bottomNavigationBar` renders above the body, so
+/// mounting the scrim inside the body Stack keeps it under the bar).
+///
+/// Wrap the *body* of a `Scaffold(extendBody: true, bottomNavigationBar: …)`
+/// OUTSIDE any viewPadding-raising wrapper ([AppBoxKitExtendBodyFabLift]),
+/// so the scrim reads the raw device inset. [enabled] exists so a route can
+/// opt out by design; the kit default is ON at both edges.
+class AppBoxKitBottomEdgeScrimHost extends StatelessWidget {
+  const AppBoxKitBottomEdgeScrimHost({
+    super.key,
+    required this.child,
+    this.enabled = true,
+    this.fadeExtent = kAppBoxKitFloatingBarBlockHeight,
+  });
+
+  final Widget child;
+  final bool enabled;
+  final double fadeExtent;
+
+  @override
+  Widget build(BuildContext context) {
+    if (!enabled) return child;
+    return Stack(
+      children: [
+        Positioned.fill(child: child),
+        Positioned(
+          bottom: 0,
+          left: 0,
+          right: 0,
+          child: AppBoxKitBottomEdgeScrim(fadeExtent: fadeExtent),
+        ),
+      ],
     );
   }
 }

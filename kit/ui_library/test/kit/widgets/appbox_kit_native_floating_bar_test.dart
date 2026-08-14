@@ -599,4 +599,86 @@ void main() {
     expect(seen, kAppBoxKitFloatingBarBlockHeight,
         reason: 'test env has no status bar, so the raise IS the block');
   });
+
+  // ---------------------------------------------------------------------
+  // AppBoxKitBottomEdgeScrim — the bottom-edge mirror. The per-child scroll
+  // edge effect is deliberately inert on the glass tier (alpha over platform
+  // views), so this gradient is the ONLY bottom dissolve on device (clip
+  // 18-50). Same shape law as the top scrim: gradient fill, no saveLayer.
+  // ---------------------------------------------------------------------
+
+  const homeInset = 34.0;
+
+  Widget bottomScrimHarness({bool enabled = true}) => MaterialApp(
+        home: Builder(
+          builder: (context) => MediaQuery(
+            data: MediaQuery.of(context).copyWith(
+              viewPadding: const EdgeInsets.only(bottom: homeInset),
+            ),
+            child: AppBoxKitBottomEdgeScrimHost(
+              enabled: enabled,
+              child: ListView(
+                children: [
+                  for (var i = 0; i < 30; i++)
+                    SizedBox(height: 80, key: Key('b$i')),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+
+  testWidgets(
+      'kit.ui-library.bottom-edge-scrim — pins to the physical bottom edge '
+      'and spans the home-indicator inset plus the fade ramp',
+      (tester) async {
+    await tester.pumpWidget(bottomScrimHarness());
+
+    final scrim = tester.getRect(find.byType(AppBoxKitBottomEdgeScrim));
+    final screen = tester.getRect(find.byType(AppBoxKitBottomEdgeScrimHost));
+    expect(scrim.bottom, screen.bottom,
+        reason: 'the dissolve ends at the physical bottom');
+    expect(scrim.height, homeInset + kAppBoxKitFloatingBarBlockHeight,
+        reason: 'opaque through the indicator band, ramp across the bar row');
+  });
+
+  testWidgets(
+      'kit.ui-library.bottom-edge-scrim — gradient is clear at its top and '
+      'opaque across the whole indicator band', (tester) async {
+    await tester.pumpWidget(bottomScrimHarness());
+
+    final gradient = (tester
+            .widget<Container>(find
+                .descendant(
+                    of: find.byType(AppBoxKitBottomEdgeScrim),
+                    matching: find.byType(Container))
+                .first)
+            .decoration as BoxDecoration)
+        .gradient! as LinearGradient;
+    expect(gradient.colors.first.a, 0.0,
+        reason: 'content above the ramp must be untouched');
+    expect(gradient.colors.last.a, 1.0,
+        reason: 'fully opaque at the physical edge — the hard-clip fix');
+    expect(
+        gradient.stops![1],
+        kAppBoxKitFloatingBarBlockHeight /
+            (homeInset + kAppBoxKitFloatingBarBlockHeight),
+        reason: 'the ramp finishes where the indicator band begins');
+  });
+
+  testWidgets(
+      'kit.ui-library.bottom-edge-scrim — never intercepts taps and the '
+      'toggle removes it entirely', (tester) async {
+    await tester.pumpWidget(bottomScrimHarness());
+    expect(
+        find.descendant(
+            of: find.byType(AppBoxKitBottomEdgeScrim),
+            matching: find.byType(IgnorePointer)),
+        findsOneWidget,
+        reason: 'a decorative band must not eat scrolls/taps over the bar');
+
+    await tester.pumpWidget(bottomScrimHarness(enabled: false));
+    expect(find.byType(AppBoxKitBottomEdgeScrim), findsNothing,
+        reason: 'enabled:false is a design opt-out, not an invisible scrim');
+  });
 }

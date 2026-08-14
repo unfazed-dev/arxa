@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'appbox_kit_lazy_indexed_stack.dart';
+import 'appbox_kit_native_floating_bar.dart';
 import 'appbox_kit_tab_bar.dart';
 
 /// Fully-automated bottom-nav scaffold: owns the active index, lays out the tab
@@ -56,6 +57,7 @@ class AppBoxKitBottomNavScaffold extends StatefulWidget {
     this.native,
     this.appBar,
     this.floatingActionButton,
+    this.bottomEdgeScrim = true,
   }) : assert(
           views.length == tabs.length,
           'views must match tabs (one builder per tab)',
@@ -71,8 +73,16 @@ class AppBoxKitBottomNavScaffold extends StatefulWidget {
   final PreferredSizeWidget? appBar;
   final Widget? floatingActionButton;
 
+  /// Bottom-edge dissolve under the bar ([AppBoxKitBottomEdgeScrim]) — the
+  /// counterpart of the top chrome's status-bar scrim, ON by default at both
+  /// edges by design. The per-child scroll edge effect is inert on the glass
+  /// tier, so without this scrolled content hard-clips at the physical bottom
+  /// edge (device clip 18-50).
+  final bool bottomEdgeScrim;
+
   @override
-  State<AppBoxKitBottomNavScaffold> createState() => _KitBottomNavScaffoldState();
+  State<AppBoxKitBottomNavScaffold> createState() =>
+      _KitBottomNavScaffoldState();
 }
 
 class _KitBottomNavScaffoldState extends State<AppBoxKitBottomNavScaffold> {
@@ -99,8 +109,15 @@ class _KitBottomNavScaffoldState extends State<AppBoxKitBottomNavScaffold> {
           true, // required: native glass samples the body beneath the bar
       appBar: widget.appBar,
       floatingActionButton: widget.floatingActionButton,
-      body: AppBoxKitExtendBodyFabLift(
-        child: AppBoxKitLazyIndexedStack(index: _index, builders: widget.views),
+      // Scrim host OUTSIDE the FabLift: the scrim sizes its opaque band from
+      // the RAW device inset (`viewPadding.bottom`), which the FabLift raises
+      // to the full bar clearance for its subtree.
+      body: AppBoxKitBottomEdgeScrimHost(
+        enabled: widget.bottomEdgeScrim,
+        child: AppBoxKitExtendBodyFabLift(
+          child:
+              AppBoxKitLazyIndexedStack(index: _index, builders: widget.views),
+        ),
       ),
       bottomNavigationBar: AppBoxKitNativeTabBar(
         tabs: widget.tabs,
