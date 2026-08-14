@@ -561,20 +561,25 @@ class _KitCenterToastPillState extends State<_KitCenterToastPill>
           // intersect a platform-view rect — otherwise passing in-scroll
           // native glass renders OVER the pill. This stationary anchor is the
           // scene-last platform view, so the pill's ops always hoist above
-          // every earlier platform view. `plain` renders nothing (clear fill,
-          // Glass.identity), so the fade/scale above it can ghost nothing
-          // visible; on tiers without native glass the container degrades to
-          // its bare child. Pill-sized on purpose — a full-screen native
-          // anchor would swallow touches destined for content behind the
-          // toast.
-          child: LiquidGlassContainer(
-            config: const LiquidGlassConfig(effect: CNGlassEffect.plain),
-            child: FadeTransition(
-              opacity: _fade,
-              child: ScaleTransition(
-                scale: _scale,
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 32),
+          // every earlier platform view.
+          //
+          // The anchor sits INNERMOST, wrapping exactly the opaque decorated
+          // pill (same geometry as the vendor CNToast fallback). `plain` is
+          // NOT pixel-free in practice: any anchor margin exposed beyond the
+          // pill renders a faint hard-edged rectangle (its own rect) on the
+          // glass tier — observed on-device 2026-08-15 when the anchor
+          // wrapped the fade/scale + 32px padding. Full occlusion by the
+          // pill is the invariant; keep transitions and padding OUTSIDE.
+          // Pill-sized on purpose — a full-screen native anchor would also
+          // swallow touches destined for content behind the toast.
+          child: FadeTransition(
+            opacity: _fade,
+            child: ScaleTransition(
+              scale: _scale,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 32),
+                child: LiquidGlassContainer(
+                  config: const LiquidGlassConfig(effect: CNGlassEffect.plain),
                   child: Container(
                     key: const Key('appBoxKitCenterToastPill'),
                     padding: const EdgeInsets.symmetric(
