@@ -66,7 +66,7 @@ class CNSlider extends StatefulWidget {
     this.trackColor,
     this.trackBackgroundColor,
     this.step,
-    this.autoHideOnModal = true,
+    this.autoHideOnModal = false,
     this.preferFlutterTier = false,
   });
 

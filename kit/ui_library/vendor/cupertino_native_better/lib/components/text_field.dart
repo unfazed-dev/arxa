@@ -46,7 +46,7 @@ class CNTextField extends StatefulWidget {
     this.tint,
     this.textColor,
     this.placeholderColor,
-    this.autoHideOnModal = true,
+    this.autoHideOnModal = false,
     this.preferFlutterTier = false,
   });
 

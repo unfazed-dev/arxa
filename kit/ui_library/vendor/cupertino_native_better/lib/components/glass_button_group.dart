@@ -65,7 +65,7 @@ class CNGlassButtonGroup extends StatefulWidget {
     this.axis = Axis.horizontal,
     this.spacing = 8.0,
     this.spacingForGlass = 40.0,
-    this.autoHideOnModal = true,
+    this.autoHideOnModal = false,
     this.preferFlutterTier = false,
   }) : _buttonWidgets = null;
 
@@ -81,7 +81,7 @@ class CNGlassButtonGroup extends StatefulWidget {
     this.axis = Axis.horizontal,
     this.spacing = 8.0,
     this.spacingForGlass = 40.0,
-    this.autoHideOnModal = true,
+    this.autoHideOnModal = false,
     this.preferFlutterTier = false,
   }) : buttons = const [],
        _buttonWidgets = buttonWidgets;

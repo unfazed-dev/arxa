@@ -1,16 +1,18 @@
-// Sheet coverage — the all-or-nothing modal ceiling, closed (law rule 11).
+// Sheet coverage is NOT a hide channel — closed the other way.
 //
 // `AppBoxKitNativeChromeGate` used to hide on `anyModalDepth > _mountDepth`
-// alone, so opening ANY sheet dematerialized EVERY native glass surface behind
-// it — including the ones still plainly visible in the clear space above a
-// short bottom sheet — and materialized them all back on dismiss. That is the
-// same "glass vanishes, then pops back" defect as the back-swipe, reached
-// through the modal branch instead of the transition branch.
+// and, later, on rect-overlap with the published sheet rect. Both channels
+// blanked native glass that was still plainly visible behind or beside a
+// sheet — a sheet is `opaque: false`, the page below it stays live for the
+// sheet's whole lifetime, and iOS keeps the platform views interactive under
+// its own sheets (WWDC21-10063: content behind a medium detent stays
+// rendered). Hiding on modal signals IS the "glass vanishes, then pops back"
+// defect, reached through the modal branch instead of the transition branch.
 //
-// `CNBottomSheet` already publishes the sheet's live rect for exactly this
-// reason (its probe comment: "measuring the route would tear down native
-// chrome sitting in the clear space above a short sheet"). The kit published
-// that rect and then ignored it. These tests pin the narrowed predicate.
+// Today the gate's single hide authority is a real opaque route transition
+// (`CNTransitionObserver.hasActiveTransitionAbove`). These tests pin the
+// modal branch shut: no combination of modal depth and published rects may
+// blank a gate, anywhere on the surface, at any coverage.
 import 'package:cupertino_native_better/cupertino_native_better.dart'
     show CNTabBarRouteObserver;
 import 'package:flutter/material.dart';
@@ -36,9 +38,8 @@ bool _hidden(WidgetTester tester, String text) {
 ///   mid-glass  y 300..400
 ///   (gap)      y 400..600   <- deliberately empty
 ///
-/// The trailing gap matters: a gate flush against the bottom edge would be
-/// overlapped by ANY bottom sheet, making "the sheet has not reached it yet"
-/// untestable. mid-glass sits clear of the edge so coverage can be toggled.
+/// The bands let the tests publish rects that overlap one gate, both, or
+/// neither — and assert the answer is always the same: painted.
 Widget _page() {
   return const MaterialApp(
     home: Scaffold(
@@ -69,55 +70,36 @@ void main() {
   });
 
   testWidgets(
-      'kit.ui-library.chrome-gate-sheet — a short sheet hides only the chrome it '
-      'actually covers', (WidgetTester tester) async {
+      'kit.ui-library.chrome-gate-sheet — a sheet rect never blanks the chrome '
+      'it overlaps, at any coverage', (WidgetTester tester) async {
     await tester.pumpWidget(_page());
     expect(_hidden(tester, 'top-glass'), isFalse);
     expect(_hidden(tester, 'mid-glass'), isFalse);
 
-    // A sheet occupying the bottom 250pt of the 600pt-tall surface: it
-    // overlaps mid-glass (300..400) and comes nowhere near top-glass (0..100).
     CNTabBarRouteObserver.markAnyModalActive();
+
+    // A short sheet occupying the bottom 250pt: overlaps mid-glass (300..400),
+    // nowhere near top-glass (0..100).
     CNTabBarRouteObserver.publishTopModalRect(
       const Rect.fromLTRB(0, 350, 800, 600),
-    );
-    await tester.pump();
-
-    expect(_hidden(tester, 'mid-glass'), isTrue,
-        reason: 'chrome the sheet covers must still leave the frame — a '
-            'platform view composites above the Flutter scene and would '
-            'punch through the sheet');
-    expect(_hidden(tester, 'top-glass'), isFalse,
-        reason: 'chrome in the CLEAR SPACE above a short sheet must stay '
-            'painted: leaving the frame is what makes iOS 26 Liquid Glass '
-            're-materialize when the sheet closes');
-  });
-
-  testWidgets(
-      'kit.ui-library.chrome-gate-sheet — a sheet that grows to cover a gate '
-      'hides it as it arrives', (WidgetTester tester) async {
-    await tester.pumpWidget(_page());
-    CNTabBarRouteObserver.markAnyModalActive();
-
-    // The probe republishes every frame while the sheet slides up, so coverage
-    // is a moving decision, not a one-shot at open.
-    CNTabBarRouteObserver.publishTopModalRect(
-      const Rect.fromLTRB(0, 500, 800, 600),
     );
     await tester.pump();
     expect(_hidden(tester, 'mid-glass'), isFalse,
-        reason: 'sheet (500..600) has not reached mid-glass (300..400) yet');
+        reason: 'the sheet is translucent glass over a LIVE page — blanking '
+            'the chrome under it is the dematerialize/pop-back defect');
+    expect(_hidden(tester, 'top-glass'), isFalse);
 
+    // The sheet grows to full-screen coverage.
     CNTabBarRouteObserver.publishTopModalRect(
-      const Rect.fromLTRB(0, 350, 800, 600),
+      const Rect.fromLTRB(0, 0, 800, 600),
     );
     await tester.pump();
-    expect(_hidden(tester, 'mid-glass'), isTrue,
-        reason: 'sheet now overlaps mid-glass');
-    expect(_hidden(tester, 'top-glass'), isFalse,
-        reason: 'and still does not reach the top one');
+    expect(_hidden(tester, 'mid-glass'), isFalse,
+        reason: 'coverage is not a hide signal — only a real opaque route '
+            'transition is');
+    expect(_hidden(tester, 'top-glass'), isFalse);
 
-    // Dismissed: everything comes back.
+    // Dismissed: nothing changed, so nothing "comes back".
     CNTabBarRouteObserver.publishTopModalRect(null);
     CNTabBarRouteObserver.markAnyModalInactive();
     await tester.pump();
@@ -126,30 +108,30 @@ void main() {
   });
 
   testWidgets(
-      'kit.ui-library.chrome-gate-sheet — a modal that publishes NO rect still '
-      'hides everything', (WidgetTester tester) async {
-    // The safety fallback. A plain `showModalBottomSheet`, a dialog, or any
-    // presentation without the geometry probe cannot describe itself, so the
-    // original bleed-free behaviour must be preserved verbatim — narrowing is
-    // an optimisation for sheets that CAN describe themselves, never a
-    // weakening of the default.
+      'kit.ui-library.chrome-gate-sheet — a modal that publishes NO rect hides '
+      'nothing either', (WidgetTester tester) async {
+    // The old "safety fallback" inverted. A plain `showModalBottomSheet`, a
+    // dialog, or any presentation without the geometry probe used to fail
+    // toward hiding — which blanked every gate on screen for a dialog the
+    // size of a postage stamp. Non-opaque presentations keep the page below
+    // fully composited, so there is nothing to protect and everything to lose.
     await tester.pumpWidget(_page());
     CNTabBarRouteObserver.markAnyModalActive();
     await tester.pump();
 
-    expect(_hidden(tester, 'top-glass'), isTrue,
-        reason: 'no published rect → fail toward hiding');
-    expect(_hidden(tester, 'mid-glass'), isTrue,
-        reason: 'no published rect → fail toward hiding');
+    expect(_hidden(tester, 'top-glass'), isFalse,
+        reason: 'no rect, no hide — depth alone is not a channel');
+    expect(_hidden(tester, 'mid-glass'), isFalse,
+        reason: 'no rect, no hide — depth alone is not a channel');
   });
 
   testWidgets(
       'kit.ui-library.chrome-gate-sheet — a gate mounted INSIDE the sheet never '
       'hides itself', (WidgetTester tester) async {
-    // The mount-depth baseline: a gate built inside the sheet's own content
-    // overlaps the sheet rect by definition, so rect-awareness must not make
-    // it self-destruct. Depth is bumped BEFORE it mounts, exactly as a real
-    // presentation does.
+    // A gate built inside the sheet's own content overlaps the sheet rect by
+    // definition. It must come up painted — trivially true now that modal
+    // signals hide nothing, and kept as a canary in case a coverage channel
+    // ever returns.
     CNTabBarRouteObserver.markAnyModalActive();
     CNTabBarRouteObserver.publishTopModalRect(
       const Rect.fromLTRB(0, 400, 800, 600),
@@ -170,7 +152,7 @@ void main() {
     await tester.pump();
 
     expect(_hidden(tester, 'sheet-glass'), isFalse,
-        reason: 'the sheet\'s own chrome sits inside the sheet rect; the '
-            'mount-depth baseline is what stops it hiding itself');
+        reason: "the sheet's own chrome must stay painted inside its own "
+            'presentation');
   });
 }

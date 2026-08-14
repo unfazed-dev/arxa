@@ -54,7 +54,7 @@ class CNSwitch extends StatefulWidget {
     this.controller,
     this.height = 44.0,
     this.color,
-    this.autoHideOnModal = true,
+    this.autoHideOnModal = false,
     this.semanticLabel,
     this.preferFlutterTier = false,
   });

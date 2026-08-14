@@ -119,7 +119,7 @@ class CNSearchBar extends StatefulWidget {
     this.controller,
     this.searchIcon,
     this.clearIcon,
-    this.autoHideOnModal = true,
+    this.autoHideOnModal = false,
     this.preferFlutterTier = false,
   });
 

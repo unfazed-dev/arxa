@@ -30,7 +30,7 @@ class CNSegmentedControl extends StatefulWidget {
     this.iconPaletteColors,
     this.iconGradientEnabled,
     this.iconRenderingMode,
-    this.autoHideOnModal = true,
+    this.autoHideOnModal = false,
     this.preferFlutterTier = false,
   });
 

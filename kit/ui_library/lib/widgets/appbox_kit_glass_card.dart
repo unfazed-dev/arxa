@@ -65,6 +65,14 @@ class AppBoxKitGlassCard extends StatelessWidget {
     // Tier 1 — iOS 26 Liquid Glass.
     if (wantNative && AppBoxKitPlatform.supportsLiquidGlass) {
       return LiquidGlassContainer(
+        // The chrome gate below is the single hiding authority for this card.
+        // The vendor's ModalHideMixin destroy path (Issue #53) must stay OFF
+        // here: it swaps only the glass platform view for a placeholder while
+        // `child` keeps rendering, which is exactly the "card glass vanishes
+        // mid-drag but the buttons inside stay" artifact. The #53 bleed is now
+        // contained natively (setTransitioning halo containment), so the
+        // position-aware destroy is a defective duplicate for this surface.
+        autoHideOnModal: false,
         config: LiquidGlassConfig(
           // A card is rect-shaped, not a capsule — LiquidGlassConfig honors
           // cornerRadius only in rect mode.

@@ -69,7 +69,7 @@ class CNRangeSlider extends StatefulWidget {
     this.thumbColor,
     this.trackColor,
     this.trackBackgroundColor,
-    this.autoHideOnModal = true,
+    this.autoHideOnModal = false,
     this.preferFlutterTier = false,
   });
 

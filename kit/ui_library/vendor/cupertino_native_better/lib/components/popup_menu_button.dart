@@ -94,7 +94,7 @@ class CNPopupMenuButton extends StatefulWidget {
     this.shrinkWrap = false,
     this.buttonStyle = CNButtonStyle.plain,
     this.preserveTopToBottomOrder = false,
-    this.autoHideOnModal = true,
+    this.autoHideOnModal = false,
     this.preferFlutterTier = false,
   }) : buttonIcon = null,
        buttonCustomIcon = null,
@@ -116,7 +116,7 @@ class CNPopupMenuButton extends StatefulWidget {
     double size = 44.0, // button diameter (width = height)
     this.buttonStyle = CNButtonStyle.glass,
     this.preserveTopToBottomOrder = false,
-    this.autoHideOnModal = true,
+    this.autoHideOnModal = false,
     this.preferFlutterTier = false,
   }) : buttonLabel = null,
        round = true,

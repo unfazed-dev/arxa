@@ -202,10 +202,6 @@ class AppBoxKitNativeChromeGate extends StatefulWidget {
 }
 
 class _KitNativeChromeGateState extends State<AppBoxKitNativeChromeGate> {
-  /// Depth at mount — the baseline. Hide only when depth exceeds it, so a
-  /// gate mounted inside an already-open modal stays visible.
-  late final int _mountDepth;
-
   bool _hidden = false;
 
   /// Child's last laid-out size — the unmount-mode placeholder's footprint.
@@ -230,52 +226,32 @@ class _KitNativeChromeGateState extends State<AppBoxKitNativeChromeGate> {
   @override
   void initState() {
     super.initState();
-    _mountDepth = CNTabBarRouteObserver.anyModalDepth.value;
-    CNTabBarRouteObserver.anyModalDepth.addListener(_onDepthChanged);
-    // The sheet's live rect moves every frame while it slides, and each move
-    // can change whether it covers this gate — so it is a decision input, not
-    // just a one-shot at open. See [_modalCoversMe].
-    CNTabBarRouteObserver.topModalRect.addListener(_onDepthChanged);
     CNTabBarRouteObserver.sheetGestureDepth.addListener(_onDepthChanged);
     CNTransitionObserver.activeTransitions.addListener(_onDepthChanged);
   }
 
   @override
   void dispose() {
-    CNTabBarRouteObserver.anyModalDepth.removeListener(_onDepthChanged);
-    CNTabBarRouteObserver.topModalRect.removeListener(_onDepthChanged);
     CNTabBarRouteObserver.sheetGestureDepth.removeListener(_onDepthChanged);
     CNTransitionObserver.activeTransitions.removeListener(_onDepthChanged);
     super.dispose();
   }
 
-  /// Whether a modal newer than this gate's host route actually COVERS it.
-  ///
-  /// Not merely "is a modal up". A bottom sheet occupies the lower part of the
-  /// screen; blanking the native chrome still plainly visible above it is the
-  /// all-or-nothing ceiling this gate used to have, and it is exactly what
-  /// `CNBottomSheet`'s geometry probe exists to prevent — its own comment:
-  /// *"measuring the route would tear down native chrome sitting in the clear
-  /// space above a short sheet."* The kit published that rect and then ignored
-  /// it here, so every glass surface behind a sheet dematerialized and
-  /// materialized back on dismiss.
-  ///
-  /// Same predicate the vendor's `ModalHideMixin._computeShouldHide` applies
-  /// (`vendor/…/utils/modal_hide_mixin.dart:97-113`) — deliberately identical,
-  /// so the two authorities cannot disagree about the same sheet.
-  ///
-  /// Fails toward HIDING on every uncertainty: no rect published (a plain
-  /// `showModalBottomSheet`, or any sheet without the probe) and no measurable
-  /// box both return true. That keeps the original bleed fix intact for every
-  /// presentation that cannot describe its own geometry.
-  bool _modalCoversMe() {
-    if (CNTabBarRouteObserver.anyModalDepth.value <= _mountDepth) return false;
-    final Rect? modalRect = CNTabBarRouteObserver.topModalRect.value;
-    if (modalRect == null) return true;
-    final RenderObject? box = context.findRenderObject();
-    if (box is! RenderBox || !box.hasSize || !box.attached) return true;
-    return (box.localToGlobal(Offset.zero) & box.size).overlaps(modalRect);
-  }
+  // TOMBSTONE (2026-08-14): `_modalCoversMe` — the modal-coverage hide
+  // authority (rect-overlap against `topModalRect`, fails-toward-hiding when
+  // no rect was published) — is REMOVED, together with its
+  // `anyModalDepth`/`topModalRect` listeners and the `_mountDepth` baseline.
+  // It existed for the bleed era, when sheet/dialog bodies were native and a
+  // platform view allegedly could not be covered by Flutter content. Both
+  // premises are dead: sheet/dialog bodies are Flutter-drawn frost (ADR 0010
+  // content tier), and the 08-14 recordings show the modal barrier dimming
+  // live native chrome correctly wherever it was NOT hidden. What the hide
+  // bought was exactly the ratified defect: whole pages of native widgets
+  // dematerializing under dialogs (no rect ⇒ hide everything) and sections
+  // blanking during sheet drags, then popping back on settle. Do not
+  // reintroduce a coverage hide here without new bleed evidence; the vendor
+  // twin (`ModalHideMixin._computeShouldHide`) was neutered the same day so
+  // the two authorities still cannot disagree.
 
   void _onDepthChanged() {
     // The transition/modal notifiers can fire mid-build: the Navigator flushes
@@ -294,8 +270,7 @@ class _KitNativeChromeGateState extends State<AppBoxKitNativeChromeGate> {
 
   void _applyVisibility() {
     if (!mounted) return;
-    // Hide while a modal overlay covers the view (depth past the mount
-    // baseline) OR while a route transition is animating — push/pop/replace or
+    // Hide ONLY while an opaque route transition is animating — push/pop/replace or
     // the interactive back-swipe (CNTransitionObserver.activeTransitions). A
     // native platform view composites ABOVE the Flutter scene and neither
     // clips nor slides with the routes, so it must leave the frame for the
@@ -305,8 +280,8 @@ class _KitNativeChromeGateState extends State<AppBoxKitNativeChromeGate> {
     // gate actually carries the gate along. A push inside one tab's nested
     // router must not dematerialize the ROOT tab bar across every tab — that
     // was C2 of docs/plans/glass-chrome-root-cause-fixes.md, and it is the
-    // same baseline-scoping idea as the `_mountDepth` modal check it sits
-    // beside. `activeTransitions` remains the change signal (it ticks on every
+    // same baseline-scoping idea the removed `_mountDepth` modal check used.
+    // `activeTransitions` remains the change signal (it ticks on every
     // begin/end anywhere); `hasActiveTransitionAbove` makes the decision.
     // A transition ABOVE me is only a reason to hide if I am NOT part of what
     // is moving. This is the distinction the gate was missing, and it is why
@@ -398,16 +373,20 @@ class _KitNativeChromeGateState extends State<AppBoxKitNativeChromeGate> {
     // back-gesture controller), on a dedicated channel because
     // `didStartUserGesture` would fire hero flights and IgnorePointer as
     // pop side effects. While up, a transition above must not blanket-hide
-    // this gate: coverage stays live via `_modalCoversMe` instead.
+    // this gate at all — coverage no longer hides anything.
     final travellingWithTransition =
         (_route?.animation?.isAnimating ?? false) ||
             (_route?.secondaryAnimation?.isAnimating ?? false) ||
             _gestureInEnclosingNavigator(context) ||
             CNTabBarRouteObserver.sheetGestureDepth.value > 0;
 
-    final hidden = _modalCoversMe() ||
-        (CNTransitionObserver.hasActiveTransitionAbove(context) &&
-            !travellingWithTransition);
+    // Modal coverage no longer hides this gate (see the `_modalCoversMe`
+    // tombstone above): the barrier dims live native views, so the only
+    // remaining hide reason is an opaque route transition above — and
+    // non-opaque overlays (dialogs, sheets, popups) never count as
+    // transitions in the first place (filtered in `CNTransitionObserver`).
+    final hidden = CNTransitionObserver.hasActiveTransitionAbove(context) &&
+        !travellingWithTransition;
     if (hidden == _hidden) return;
     // One setState, no controller: the swap is a paint toggle on both edges.
     setState(() => _hidden = hidden);

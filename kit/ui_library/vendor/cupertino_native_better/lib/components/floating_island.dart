@@ -116,7 +116,7 @@ class CNFloatingIsland extends StatefulWidget {
     this.springResponse = 0.4,
     this.margin = const EdgeInsets.all(16),
     this.controller,
-    this.autoHideOnModal = true,
+    this.autoHideOnModal = false,
   });
 
   /// Content shown when collapsed (compact mode).

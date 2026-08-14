@@ -24,7 +24,7 @@ class LiquidGlassContainer extends StatefulWidget {
     super.key,
     required this.child,
     required this.config,
-    this.autoHideOnModal = true,
+    this.autoHideOnModal = false,
     this.preferFlutterTier = false,
   });
 

@@ -1,6 +1,6 @@
-import 'package:cupertino_native_better/cupertino_native_better.dart'
-    show CNTabBarRouteObserver;
-import 'package:flutter/widgets.dart';
+import 'package:cupertino_native_better/cupertino_native.dart'
+    show CNTabBarRouteObserver, CNTransitionObserver;
+import 'package:flutter/cupertino.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:appbox_kit_ui_library/widgets/appbox_kit_native_chrome_gate.dart';
 
@@ -27,12 +27,11 @@ class _InitSpyState extends State<_InitSpy> {
 }
 
 void main() {
-  int depth() => CNTabBarRouteObserver.anyModalDepth.value;
-
   tearDown(() {
-    // Drain any depth a test left behind — the counter is a static global
-    // (same discipline as kit_native_overlay_test.dart).
-    while (depth() > 0) {
+    // Drain any modal depth a test left behind — the counter is a static
+    // global (same discipline as kit_native_overlay_test.dart).
+    CNTabBarRouteObserver.publishTopModalRect(null);
+    while (CNTabBarRouteObserver.anyModalDepth.value > 0) {
       CNTabBarRouteObserver.markAnyModalInactive();
     }
   });
@@ -41,21 +40,55 @@ void main() {
   const gateKey = Key('gate');
 
   var initCount = 0;
-  setUp(() => initCount = 0);
+  setUp(() {
+    initCount = 0;
+    CNTransitionObserver.resetForTesting();
+  });
+
+  final navKey = GlobalKey<NavigatorState>();
 
   Widget host({
     AppBoxKitChromeHideMode hideMode = AppBoxKitChromeHideMode.keepAlive,
   }) {
-    return Center(
-      child: AppBoxKitNativeChromeGate(
-        key: gateKey,
-        hideMode: hideMode,
-        child: _InitSpy(
-          onInit: () => initCount++,
-          child: const SizedBox(key: childKey, width: 120, height: 50),
+    return CupertinoApp(
+      navigatorKey: navKey,
+      navigatorObservers: <NavigatorObserver>[CNTransitionObserver()],
+      home: Center(
+        child: AppBoxKitNativeChromeGate(
+          key: gateKey,
+          hideMode: hideMode,
+          child: _InitSpy(
+            onInit: () => initCount++,
+            child: const SizedBox(key: childKey, width: 120, height: 50),
+          ),
         ),
       ),
     );
+  }
+
+  /// The gate's only remaining hide authority is a REAL opaque route
+  /// transition above it (`CNTransitionObserver.hasActiveTransitionAbove`).
+  /// Modal depth and sheet rects were removed as channels — a sheet or dialog
+  /// leaves the page below visible for its whole lifetime, so hiding on it IS
+  /// the "glass vanishes, then pops back" defect. Tests therefore drive the
+  /// hide the way production does: push, then hold the transition mid-flight.
+  /// Assertions about the hidden state must happen mid-flight — once an
+  /// opaque push SETTLES, the Navigator offstages the whole home route and a
+  /// default finder goes empty for reasons that have nothing to do with the
+  /// gate.
+  Future<void> beginCover(WidgetTester tester) async {
+    navKey.currentState!.push(PageRouteBuilder<void>(
+      opaque: true,
+      transitionDuration: const Duration(milliseconds: 300),
+      reverseTransitionDuration: const Duration(milliseconds: 300),
+      pageBuilder: (_, __, ___) => const SizedBox.expand(),
+    ));
+    await tester.pump(); // the frame the transition starts — and the hide
+  }
+
+  Future<void> abandonCover(WidgetTester tester) async {
+    navKey.currentState!.pop();
+    await tester.pumpAndSettle();
   }
 
   /// 1 = child painted, 0 = placeholder painted. Reading the index is reading
@@ -63,7 +96,8 @@ void main() {
   /// exposes semantics for only this child.
   int? paintedIndex(WidgetTester tester) => tester
       .widget<IndexedStack>(find.descendant(
-          of: find.byKey(gateKey), matching: find.byType(IndexedStack)))
+          of: find.byKey(gateKey, skipOffstage: false),
+          matching: find.byType(IndexedStack, skipOffstage: false)))
       .index;
 
   /// Every element below the gate. A coarse shape check only — note its limit:
@@ -79,7 +113,9 @@ void main() {
       e.visitChildren(visit);
     }
 
-    tester.element(find.byKey(gateKey)).visitChildren(visit);
+    tester
+        .element(find.byKey(gateKey, skipOffstage: false))
+        .visitChildren(visit);
     return n;
   }
 
@@ -96,8 +132,8 @@ void main() {
     final shownSize = tester.getSize(find.byKey(gateKey));
     expect(find.byKey(childKey), findsOneWidget);
 
-    CNTabBarRouteObserver.markAnyModalActive();
-    await tester.pump();
+    await beginCover(tester);
+    await tester.pump(const Duration(milliseconds: 50)); // mid-flight
 
     expect(find.byKey(childKey), findsNothing,
         reason: 'NOT PAINTED — a platform view still in the frame floats over '
@@ -105,15 +141,14 @@ void main() {
     expect(find.byKey(childKey, skipOffstage: false), findsOneWidget,
         reason: 'STILL MOUNTED — unmounting destroys the native view and buys '
             'a re-init + thread-merge stall on the way back');
-    expect(tester.getSize(find.byKey(gateKey)), shownSize,
+    expect(tester.getSize(find.byKey(gateKey, skipOffstage: false)), shownSize,
         reason: 'SAME FOOTPRINT — a collapsing box reflows the layout around '
             'it mid-transition');
     expect(initCount, 1, reason: 'SAME INSTANCE — this is the reparenting '
         'guard: any wrapper swap that re-parents the child shows up here as a '
         'second initState, whatever the hide mechanism is called');
 
-    CNTabBarRouteObserver.markAnyModalInactive();
-    await tester.pump();
+    await abandonCover(tester);
     expect(find.byKey(childKey), findsOneWidget);
     expect(tester.getSize(find.byKey(gateKey)), shownSize);
     expect(initCount, 1);
@@ -129,15 +164,30 @@ void main() {
     // prefer `effect` over alpha (WWDC25 #284). If either transition comes
     // back, the reappear-on-back artifact comes back with it.
     await tester.pumpWidget(host());
-    expect(find.byType(FadeTransition, skipOffstage: false), findsNothing);
-    expect(find.byType(ScaleTransition, skipOffstage: false), findsNothing);
-    expect(find.byType(Opacity, skipOffstage: false), findsNothing);
-    expect(find.byType(AnimatedOpacity, skipOffstage: false), findsNothing);
+    final inGate = find.descendant(
+        of: find.byKey(gateKey, skipOffstage: false),
+        matching: find.byType(FadeTransition, skipOffstage: false));
+    expect(inGate, findsNothing);
+    expect(
+        find.descendant(
+            of: find.byKey(gateKey, skipOffstage: false),
+            matching: find.byType(ScaleTransition, skipOffstage: false)),
+        findsNothing);
+    expect(
+        find.descendant(
+            of: find.byKey(gateKey, skipOffstage: false),
+            matching: find.byType(Opacity, skipOffstage: false)),
+        findsNothing);
+    expect(
+        find.descendant(
+            of: find.byKey(gateKey, skipOffstage: false),
+            matching: find.byType(AnimatedOpacity, skipOffstage: false)),
+        findsNothing);
   });
 
   testWidgets(
-      'kit.ui-library.native-chrome-gate — visible at depth 0: child is the painted index',
-      (tester) async {
+      'kit.ui-library.native-chrome-gate — visible when no transition is running: '
+      'child is the painted index', (tester) async {
     await tester.pumpWidget(host());
     expect(find.byKey(childKey), findsOneWidget);
     expect(paintedIndex(tester), 1);
@@ -150,11 +200,11 @@ void main() {
     final shownSize = tester.getSize(find.byKey(gateKey));
     final shownNodes = nodeCount(tester);
 
-    CNTabBarRouteObserver.markAnyModalActive();
-    await tester.pump();
+    await beginCover(tester);
 
     expect(paintedIndex(tester), 0,
-        reason: 'one frame is the whole hide — no ramp to sit through');
+        reason: 'the frame the transition starts is the whole hide — no ramp '
+            'to sit through');
 
     // The two halves of "unpainted but alive", asserted separately because
     // each without the other is the bug. Default finders skip offstage
@@ -167,34 +217,32 @@ void main() {
             'the route slide');
     expect(find.byKey(childKey, skipOffstage: false), findsOneWidget,
         reason: 'still mounted: unmounting is what re-creates the native view');
-    expect(tester.getSize(find.byKey(gateKey)), shownSize,
+    expect(tester.getSize(find.byKey(gateKey, skipOffstage: false)), shownSize,
         reason: 'RenderIndexedStack lays out every child, so an empty '
             'placeholder cannot collapse the footprint');
     expect(nodeCount(tester), shownNodes,
         reason: 'tree shape must not change at the toggle — only the index');
     expect(initCount, 1);
 
-    // Nothing is in flight: settling changes nothing.
-    await tester.pump(const Duration(milliseconds: 400));
+    // Still hidden while the push keeps sliding.
+    await tester.pump(const Duration(milliseconds: 150));
     expect(paintedIndex(tester), 0);
     expect(initCount, 1);
   });
 
   testWidgets(
-      'kit.ui-library.native-chrome-gate — keepAlive restore is INSTANT and remounts nothing '
+      'kit.ui-library.native-chrome-gate — keepAlive restore remounts nothing '
       '(the anti-jank guarantee)', (tester) async {
     await tester.pumpWidget(host());
     final shownNodes = nodeCount(tester);
 
-    CNTabBarRouteObserver.markAnyModalActive();
-    await tester.pump();
+    await beginCover(tester);
     expect(paintedIndex(tester), 0);
 
-    CNTabBarRouteObserver.markAnyModalInactive();
-    await tester.pump();
+    await abandonCover(tester);
 
     expect(paintedIndex(tester), 1,
-        reason: 'restored in the frame the signal cleared — this is what makes '
+        reason: 'restored when the transition ends — this is what makes '
             'chrome arrive WITH the settled route instead of zooming in after '
             'it');
     expect(nodeCount(tester), shownNodes);
@@ -212,10 +260,9 @@ void main() {
       (tester) async {
     await tester.pumpWidget(host());
     for (var i = 0; i < 5; i++) {
-      CNTabBarRouteObserver.markAnyModalActive();
-      await tester.pump();
-      CNTabBarRouteObserver.markAnyModalInactive();
-      await tester.pump();
+      await beginCover(tester);
+      await tester.pump(const Duration(milliseconds: 50));
+      await abandonCover(tester);
     }
     expect(initCount, 1,
         reason: 'five navigations must not cost five native re-inits');
@@ -228,36 +275,41 @@ void main() {
     await tester.pumpWidget(host(hideMode: AppBoxKitChromeHideMode.unmount));
     final shownSize = tester.getSize(find.byKey(gateKey));
 
-    CNTabBarRouteObserver.markAnyModalActive();
-    await tester.pump();
+    await beginCover(tester);
     expect(find.byKey(childKey, skipOffstage: false), findsNothing,
         reason: 'unmount mode really unmounts — gone from the tree entirely, '
             'not merely offstage the way keepAlive leaves it');
-    expect(tester.getSize(find.byKey(gateKey)), shownSize,
+    expect(tester.getSize(find.byKey(gateKey, skipOffstage: false)), shownSize,
         reason: 'measured placeholder holds the footprint');
 
-    CNTabBarRouteObserver.markAnyModalInactive();
-    await tester.pump();
+    await abandonCover(tester);
     expect(find.byKey(childKey), findsOneWidget);
     expect(initCount, 2, reason: 'remount is inherent to this mode');
   });
 
   testWidgets(
-      'kit.ui-library.native-chrome-gate — mount-depth snapshot: a gate mounted INSIDE an open modal does not '
-      'self-destroy, but hides when depth grows past its baseline',
+      'kit.ui-library.native-chrome-gate — modal depth and sheet rects are NOT hide '
+      'channels: a sheet or dialog above keeps the gate painted',
       (tester) async {
-    CNTabBarRouteObserver.markAnyModalActive(); // depth 1 BEFORE mount
+    // The removed defect, pinned. A sheet/dialog/popup is `opaque: false`; the
+    // page below stays visible for its whole lifetime, so hiding on modal
+    // depth or rect coverage IS the user-visible blink: chrome dematerializes
+    // on open and pops back on dismiss. Only a real opaque route transition
+    // may hide.
     await tester.pumpWidget(host());
+
+    CNTabBarRouteObserver.markAnyModalActive();
+    await tester.pump();
     expect(paintedIndex(tester), 1,
-        reason: 'baseline is the mount-time depth, not zero');
+        reason: 'modal depth alone must not blank chrome any more');
 
-    CNTabBarRouteObserver.markAnyModalActive(); // depth 2 > baseline 1
+    CNTabBarRouteObserver.publishTopModalRect(
+      const Rect.fromLTRB(0, 0, 800, 600), // full-screen coverage
+    );
     await tester.pump();
-    expect(paintedIndex(tester), 0);
-
-    CNTabBarRouteObserver.markAnyModalInactive(); // back to baseline
-    await tester.pump();
-    expect(paintedIndex(tester), 1);
+    expect(paintedIndex(tester), 1,
+        reason: 'even a full-coverage sheet rect must not blank chrome — the '
+            'sheet itself is translucent glass over a live page');
     expect(initCount, 1);
   });
 }

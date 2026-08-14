@@ -226,4 +226,58 @@ void main() {
     await tester.pump(const Duration(seconds: 3));
     expect(CNTransitionObserver.activeTransitions.value, 0);
   });
+
+  testWidgets(
+      'non-opaque routes (dialogs, popups) never drive the chrome hide',
+      (WidgetTester tester) async {
+    // The hide exists so a platform view leaves the frame while a page COVERS
+    // the screen. A dialog / modal popup / sheet is `opaque: false` — the page
+    // below stays visible for its whole lifetime, so counting it blanks native
+    // chrome on open and re-materializes it on close: the user-visible blink.
+    final GlobalKey<NavigatorState> navKey = GlobalKey<NavigatorState>();
+    await tester.pumpWidget(CupertinoApp(
+      navigatorKey: navKey,
+      navigatorObservers: <NavigatorObserver>[CNTransitionObserver()],
+      home: const CupertinoPageScaffold(child: Text('home')),
+    ));
+    await tester.pumpAndSettle();
+    await tester.pump(const Duration(milliseconds: 400));
+
+    showCupertinoDialog<void>(
+      context: navKey.currentContext!,
+      builder: (_) => const CupertinoAlertDialog(title: Text('dialog')),
+    );
+    await tester.pump();
+    expect(CNTransitionObserver.activeTransitions.value, 0,
+        reason: 'a dialog push must not hide native chrome mid-transition');
+    await tester.pumpAndSettle();
+    expect(CNTransitionObserver.activeTransitions.value, 0);
+
+    navKey.currentState!.pop();
+    await tester.pump();
+    expect(CNTransitionObserver.activeTransitions.value, 0,
+        reason: 'a dialog dismiss uncovers nothing — no hide window');
+    await tester.pumpAndSettle();
+    expect(CNTransitionObserver.activeTransitions.value, 0);
+    await tester.pump(const Duration(seconds: 2));
+  });
+
+  testWidgets(
+      'a user gesture on a non-opaque route cannot latch the counter negative',
+      (WidgetTester tester) async {
+    final CNTransitionObserver observer = CNTransitionObserver();
+    final PageRouteBuilder<void> translucent = PageRouteBuilder<void>(
+      opaque: false,
+      pageBuilder: (_, __, ___) => const SizedBox(),
+    );
+    // Start is skipped by the opacity filter…
+    observer.didStartUserGesture(translucent, null);
+    expect(CNTransitionObserver.activeTransitions.value, 0);
+    // …so the unconditional stop must not decrement what was never begun.
+    observer.didStopUserGesture();
+    expect(CNTransitionObserver.activeTransitions.value, 0,
+        reason: 'stop without a counted start must be a no-op, or every '
+            'later real transition ends one hide too early');
+    translucent.dispose();
+  });
 }

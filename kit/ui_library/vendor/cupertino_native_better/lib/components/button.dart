@@ -179,7 +179,7 @@ class CNButton extends StatefulWidget {
     this.customIcon,
     this.imageAsset,
     this.config = const CNButtonConfig(),
-    this.autoHideOnModal = true,
+    this.autoHideOnModal = false,
   }) : badgeCount = null,
        super();
 
@@ -202,7 +202,7 @@ class CNButton extends StatefulWidget {
     this.tint,
     this.badgeCount,
     this.config = const CNButtonConfig(style: CNButtonStyle.glass),
-    this.autoHideOnModal = true,
+    this.autoHideOnModal = false,
   }) : label = null,
        assert(
          icon != null || customIcon != null || imageAsset != null,
