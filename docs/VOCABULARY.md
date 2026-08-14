@@ -600,11 +600,18 @@ travelling with it. Modal coverage is NOT a hide reason — a sheet or dialog
 never blanks the chrome behind it; the barrier scrim dims still-painted
 glass instead (rule 11 step 2, tombstoned against reintroduction). Reads
 navigator gesture state, not animation state, so an interactive back-swipe
-reads as the pop it is. The tab bar's destroy-hide is the one ratified
-exception. Anything else toggling chrome visibility is a violation, not a
+reads as the pop it is. The tab bar's **destroy-hide exception** is the one
+ratified deviation: on modal, the native tab bar must be *destroyed*, not
+merely unpainted — the `UITabBar` layer keeps rendering above Flutter-drawn
+modal content otherwise, and the gate's `keepAlive` mode leaves it
+mounted-but-unpainted, which is precisely not destroying it. Pinned by
+`ui_library/test/kit/widgets/appbox_kit_tab_bar_single_hide_authority_test.dart`.
+Anything else toggling chrome visibility is a violation, not a
 second mechanism.
 _Avoid_: chrome hider, visibility manager, hide flag (ad hoc), gate (bare —
-also names the Pipeline assertion unit and "gate test")
+also names the Pipeline assertion unit and "gate test"), Issue 31 exception
+(upstream issue number as a name dates poorly — cite the number, don't name
+after it)
 _Layer_: Kit
 
 **View slicer**:
@@ -1024,3 +1031,4 @@ Dead words and what replaced them. Never reintroduce the left column.
 | right rail | **Composer Panel** | same consolidation; the composer panel is permanent and single-state; dead in code |
 | mainboard | **Main Panel** | proposed during the panel consolidation, renamed before it ever landed |
 | detent route / detent-tracked dim | **`appBoxKitShowSheet`** (the one body-sized Cupertino sheet) | retired 2026-08-14: it took only the unsized case and put two sheet chromes in one app; the tracked dim is now a static barrier under `showOverlay`, and the body owns its own grabber |
+| Issue 31 exception | **destroy-hide exception** (Chrome gate) | retired 2026-08-14: named after an upstream issue number, which dates poorly; the number stays as a citation, the mechanism is named for what it does |

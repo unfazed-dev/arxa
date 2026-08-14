@@ -438,7 +438,7 @@ defaults `autoHideOnModal: false`. The one exception is the native tab bar.
 | Widget | Guard today | Notes |
 |---|---|---|
 | `CNButton`, `CNSegmentedControl`, `CNSwitch`, `CNSlider`, `CNSearchBar`, `CNPopupMenuButton`, `CNGlassButtonGroup`, `CNLiquidGlassContainer`, `CNFloatingIsland`, `CNTextField`, `CNRangeSlider` | **none on modal** — `autoHideOnModal: false` is now the vendor default | The position-aware destroy path is off. Route transitions are still covered, by the gate. |
-| `CNTabBar` (via `AppBoxKitNativeTabBar`) | **`autoHideOnModal: true` — the documented Issue 31 exception** | The only surface where the modal hide must *destroy* the platform view: the native `UITabBar` layer keeps rendering above Flutter-drawn modal content otherwise (vendor `tab_bar.dart:521-526`). The gate's `keepAlive` mode leaves it mounted-but-unpainted, which is precisely **not** destroying it, so folding this into the gate would need `hideMode: unmount` plus on-device z-order verification. Left as an exception rather than an unverified regression, and pinned by `ui_library/test/kit/widgets/appbox_kit_tab_bar_single_hide_authority_test.dart`. |
+| `CNTabBar` (via `AppBoxKitNativeTabBar`) | **`autoHideOnModal: true` — the documented destroy-hide exception (upstream issue 31)** | The only surface where the modal hide must *destroy* the platform view: the native `UITabBar` layer keeps rendering above Flutter-drawn modal content otherwise (vendor `tab_bar.dart:521-526`). The gate's `keepAlive` mode leaves it mounted-but-unpainted, which is precisely **not** destroying it, so folding this into the gate would need `hideMode: unmount` plus on-device z-order verification. Left as an exception rather than an unverified regression, and pinned by `ui_library/test/kit/widgets/appbox_kit_tab_bar_single_hide_authority_test.dart`. |
 | `AppBoxKitGlassCard`'s native tier | **`autoHideOnModal: false`, explicitly** | The mixin swapped only the glass platform view for a placeholder while `child` kept rendering — the "card glass vanishes mid-drag but the buttons inside stay" artifact. The Issue #53 bleed is contained natively now (`setTransitioning` halo containment), so the destroy was a defective duplicate. |
 | `CNIcon`, `search_scaffold`, any third-party platform view (maps, webview, video) | **wrap in `AppBoxKitNativeChromeGate`** | Still the kit-side guard — but understand it as *transition* protection now, not modal protection. |
 
@@ -461,7 +461,7 @@ non-issue there.
 | `AppBoxKitNativeFab` | glass `CNButton` | ❌ vendor default is now `false` |
 | `AppBoxKitNativeFabMenu` | glass `CNPopupMenuButton` | ❌ vendor default is now `false` |
 | `AppBoxKitNativeSearchBar` | `CNSearchBar` | ❌ vendor default is now `false` |
-| `AppBoxKitNativeTabBar` | `CNTabBar` | ✅ **`true` — the sole Issue 31 exception** (see the table above) |
+| `AppBoxKitNativeTabBar` | `CNTabBar` | ✅ **`true` — the sole destroy-hide exception** (see the table above) |
 | `AppBoxKitNativeAppBar` | `CupertinoNavigationBar` | ❌ none — stock Cupertino widget, **not** a CN platform view (nothing to bleed) |
 | `AppBoxKitNativeNavigationRail` | Material `NavigationRail` | ❌ none — Flutter Material widget (nothing to bleed) |
 
