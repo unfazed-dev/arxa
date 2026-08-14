@@ -1,9 +1,12 @@
 import 'package:cupertino_native_better/cupertino_native_better.dart'
     show
         CNBottomSheet,
+        CNButton,
+        CNButtonConfig,
+        CNButtonStyle,
         CNSheetGeometryProbe,
-        CNTabBarRouteObserver,
-        showCNDetentSheet;
+        CNSymbol,
+        CNTabBarRouteObserver;
 import 'package:flutter/cupertino.dart'
     show CupertinoColors, CupertinoDynamicColor, kCupertinoModalBarrierColor;
 import 'package:flutter/foundation.dart' show ValueListenable;
@@ -12,6 +15,7 @@ import 'package:flutter/material.dart';
 import 'package:appbox_kit_core/platform/appbox_kit_platform.dart';
 
 import 'appbox_kit_frosted_surface.dart';
+import 'appbox_kit_native_chrome_gate.dart';
 
 /// Shows a platform-adaptive modal sheet hosting [builder].
 ///
@@ -135,7 +139,8 @@ Future<T?> appBoxKitShowSheet<T>({
   bool showOverlay = true,
   ValueListenable<double>? heightFactor,
   Color? backgroundColor,
-  bool opaqueGlass = false,
+  bool opaqueGlass = true,
+  bool showCloseButton = true,
 }) async {
   // Bump the shared modal depth for the sheet's lifetime. No navigator in
   // either app registers `CNTabBarRouteObserver`, so route pushes alone never
@@ -165,40 +170,21 @@ Future<T?> appBoxKitShowSheet<T>({
         barrierColor: showOverlay ? null : Colors.transparent,
       );
     }
-    // iOS / macOS / else, unsized → the UIKit-shaped detent sheet: opens at
-    // medium (half screen), drags to large, grabber and top-corner clip owned
-    // by the route. This is the apple-solution path — the framework's
-    // full-height Cupertino sheet is wrong for browse surfaces.
-    if (heightFactor == null) {
-      return await showCNDetentSheet<T>(
-        context: context,
-        enableDrag: isDismissible,
-        barrierDismissible: isDismissible,
-        showDragHandle: showDragHandle,
-        barrierColor: showOverlay ? kCupertinoModalBarrierColor : null,
-        // The route probes the *detent-sized* box itself, so the automatic
-        // probe is correct here (unlike the sized legacy path below).
-        injectGeometryProbe: true,
-        builder: (_) => _CupertinoSheetBody(
-          builder: builder,
-          backgroundColor: backgroundColor,
-          opaqueGlass: opaqueGlass,
-          heightFactor: null,
-          // Route draws the grabber; a second one in the body would double up.
-          showDragHandle: false,
-        ),
-      );
-    }
-    // iOS / macOS sized path → the framework's Cupertino sheet. The detent
-    // route only knows medium/large, so a live [heightFactor] still rides the
-    // legacy body-sized presentation.
+    // iOS / macOS → ONE presentation for every sheet: the body-sized
+    // Cupertino path below. The detent route (`showCNDetentSheet`) used to
+    // take the unsized case, which put two visually different sheet chromes
+    // in the same app; the on-device ruling was that the sized sheet (the
+    // showcase 92%/56%/30% controls) is the keeper, so unsized callers now
+    // ride it at a fixed medium height instead of a second sheet type.
+    final ValueListenable<double> effectiveHeight =
+        heightFactor ?? const _FixedHeight(_kUnsizedHeightFactor);
     return await CNBottomSheet.showCupertino<T>(
       context: context,
       // Now genuinely both affordances: drag, and (via the barrier below) tap
       // outside.
       enableDrag: isDismissible,
-      // This branch is now sized-only (the unsized case returned above), so
-      // the body owns its own edge and the route grabber stays off.
+      // Every sheet is body-sized now (unsized callers ride a fixed medium
+      // height), so the body owns its own edge and the route grabber stays off.
       showDragHandle: false,
       barrierColor: showOverlay ? kCupertinoModalBarrierColor : null,
       // In the sized path the body does not fill the route, so the automatic
@@ -209,7 +195,8 @@ Future<T?> appBoxKitShowSheet<T>({
         builder: builder,
         backgroundColor: backgroundColor,
         opaqueGlass: opaqueGlass,
-        heightFactor: heightFactor,
+        showCloseButton: showCloseButton,
+        heightFactor: effectiveHeight,
         showDragHandle: showDragHandle,
       ),
     );
@@ -235,6 +222,7 @@ class _CupertinoSheetBody extends StatelessWidget {
     required this.builder,
     this.backgroundColor,
     this.opaqueGlass = false,
+    this.showCloseButton = true,
     this.heightFactor,
     this.showDragHandle = true,
   });
@@ -248,6 +236,11 @@ class _CupertinoSheetBody extends StatelessWidget {
   /// fully opaque base, so nothing behind the sheet shows through. Ignored
   /// when [backgroundColor] is set (flat always wins).
   final bool opaqueGlass;
+
+  /// Draws a native glass `xmark` icon button pinned to the sheet's top-right
+  /// corner that pops the sheet route (Apple HIG "Sheets": always provide an
+  /// obvious dismiss control in addition to drag/tap-outside).
+  final bool showCloseButton;
 
   /// Live fraction of screen height, or null to fill the route.
   final ValueListenable<double>? heightFactor;
@@ -269,7 +262,9 @@ class _CupertinoSheetBody extends StatelessWidget {
       // padding here is what keeps the two from overlapping.
       // Bottom: the sheet reaches the screen edge, so the home indicator inset
       // is still ours to respect.
-      return _surface(SafeArea(child: Builder(builder: builder)));
+      return _surface(
+        SafeArea(child: _withClose(Builder(builder: builder))),
+      );
     }
 
     // Built once and passed through `ValueListenableBuilder.child`, so a drag on
@@ -280,16 +275,19 @@ class _CupertinoSheetBody extends StatelessWidget {
         top: Radius.circular(_sheetCornerRadius),
       ),
       child: _surface(
-        Column(
-          children: <Widget>[
-            if (showDragHandle) const _SheetGrabber(),
-            // SafeArea belongs *inside* the sized box: outside it, the bottom
-            // inset would shrink the Align and float the sheet off the screen
-            // edge. `top: false` because this edge is mid-screen, not the notch.
-            Expanded(
-              child: SafeArea(top: false, child: Builder(builder: builder)),
-            ),
-          ],
+        _withClose(
+          Column(
+            children: <Widget>[
+              if (showDragHandle) const _SheetGrabber(),
+              // SafeArea belongs *inside* the sized box: outside it, the bottom
+              // inset would shrink the Align and float the sheet off the screen
+              // edge. `top: false` because this edge is mid-screen, not the
+              // notch.
+              Expanded(
+                child: SafeArea(top: false, child: Builder(builder: builder)),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -330,16 +328,46 @@ class _CupertinoSheetBody extends StatelessWidget {
     );
   }
 
+  /// Overlays the native close button on [content]'s top-right corner.
+  ///
+  /// The button pops the enclosing sheet route — `Builder` gives it a context
+  /// *below* the route so `Navigator.of` resolves to the presenting navigator.
+  Widget _withClose(Widget content) {
+    if (!showCloseButton) return content;
+    return Stack(
+      children: <Widget>[
+        content,
+        Positioned(
+          top: 6,
+          right: 12,
+          child: Builder(
+            builder: (BuildContext context) => CNButton.icon(
+              icon: const CNSymbol('xmark', size: 15),
+              config: const CNButtonConfig(style: CNButtonStyle.glass),
+              onPressed: () => Navigator.of(context).maybePop(),
+              // Native glass inside the sheet route: the gate exempts content
+              // travelling with its own route and only hides under an opaque
+              // route transition pushed above — exactly the leak this guards.
+            ).chromeGated(),
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _surface(Widget content) {
     final Color? flat = backgroundColor;
     if (flat != null) return ColoredBox(color: flat, child: content);
     if (opaqueGlass) {
-      // Same frosted material, opaque base: the tint token at alpha 1.0
-      // instead of the translucent default — glass styling without see-through.
+      // Same frosted read, opaque base: the tint token at alpha 1.0. A fully
+      // opaque fill makes the backdrop blur invisible anyway, so take the
+      // platform-view-safe branch (no BackdropFilter saveLayer) — sheet
+      // bodies host CN platform views, and a saveLayer cannot span the frame
+      // slices UiKitViews create (flutter#175048).
       return Builder(
         builder: (BuildContext context) => AppBoxKitFrostedSurface(
           borderRadius: 0,
-          blur: 30,
+          platformViewSafe: true,
           tint: Theme.of(context)
               .colorScheme
               .surfaceContainerLowest
@@ -419,4 +447,25 @@ class _SizedSheetBody extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Height every unsized sheet opens at now that the detent route is retired —
+/// matches the detent route's old medium stop so existing call sites keep
+/// their familiar opening size.
+const double _kUnsizedHeightFactor = 0.56;
+
+/// Const [ValueListenable] wrapper so unsized callers ride the same
+/// body-sized presentation as live-height callers without allocating a
+/// [ValueNotifier] nobody will ever update.
+class _FixedHeight extends ValueListenable<double> {
+  const _FixedHeight(this.value);
+
+  @override
+  final double value;
+
+  @override
+  void addListener(VoidCallback listener) {}
+
+  @override
+  void removeListener(VoidCallback listener) {}
 }

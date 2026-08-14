@@ -1,6 +1,7 @@
 import 'package:cupertino_native_better/cupertino_native_better.dart'
     show CNSheetGeometryProbe, CNTabBarRouteObserver;
-import 'package:flutter/cupertino.dart' show CupertinoSheetTransition;
+import 'package:flutter/cupertino.dart'
+    show CupertinoSheetTransition, kCupertinoModalBarrierColor;
 import 'package:flutter/foundation.dart' show ValueListenable;
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -84,21 +85,20 @@ void main() {
       await tester.tap(find.text('open'));
       await tester.pumpAndSettle();
 
-      // The whole point of the change. The old iOS tier was a Material
-      // `showModalBottomSheet` with transparent chrome around a floating
-      // inset card, which read on device as "similar to a bottom sheet but
-      // not one". The CN detent route is what supplies the real presentation:
-      // detent snapping, a route-drawn grabber, and a detent-tracked dim.
-      expect(_routeGrabber, findsOneWidget,
-          reason: 'iOS tier must route through the CN detent sheet route');
+      // One presentation for every sheet: unsized callers ride the same
+      // body-sized Cupertino path as the showcase's 92%/56%/30% controls,
+      // at a fixed medium height. The detent route is retired — it put a
+      // second, visually different sheet chrome in the same app.
+      expect(_kitGrabber, findsOneWidget,
+          reason: 'iOS tier must present the body-sized Cupertino sheet');
       expect(find.byType(BottomSheet), findsNothing,
           reason: 'a Material BottomSheet on the iOS tier is the old defect');
     });
   });
 
   testWidgets(
-      'kit.ui-library.native-sheet — default tier fills the sheet with glass '
-      'and leaves the grabber to the route', (tester) async {
+      'kit.ui-library.native-sheet — default tier fills the sheet with opaque '
+      'glass and draws the kit grabber', (tester) async {
     await withAndroidFallback(() async {
       await tester.pumpWidget(_hostWithOpener());
 
@@ -118,15 +118,21 @@ void main() {
       final surface = tester.widget<AppBoxKitFrostedSurface>(frosted);
       expect(surface.borderRadius, 0,
           reason: 'the route owns the corner shape; the body must not re-round');
-      expect(surface.blur, 30, reason: 'the prominent sheet material blur');
+      // opaqueGlass is the default now — the on-device ruling: a translucent
+      // sheet reads as a defect, not a material. Opaque base means the
+      // platform-view-safe branch (no BackdropFilter saveLayer over CN views).
+      expect(surface.platformViewSafe, isTrue,
+          reason: 'opaque sheets must take the platform-view-safe branch');
+      expect(surface.tint, isNotNull);
+      expect(surface.tint!.a, 1.0,
+          reason: 'the default sheet surface must be fully opaque');
 
-      // The route draws the grabber itself when showDragHandle is set. If the
-      // kit also painted one there would visibly be two pills.
-      expect(
-        find.byKey(const ValueKey<String>('appBoxKitNativeSheetGrabber')),
-        findsNothing,
-        reason: 'the kit must not paint a grabber over the route\'s own',
-      );
+      // The body owns its top edge in the body-sized path, so the grabber is
+      // the kit's; the route's would sit at the route edge, not the sheet's.
+      expect(_kitGrabber, findsOneWidget,
+          reason: 'the body draws the grabber in the body-sized path');
+      expect(_cupertinoGrabber, findsNothing,
+          reason: 'exactly one pill: the route grabber must be off');
     });
   });
 
@@ -193,14 +199,10 @@ void main() {
       await tester.pumpWidget(_hostWithOpener());
       await tester.tap(find.text('open'));
       await tester.pumpAndSettle();
-      // The dim tracks the detent — 0 at the opening (lowest) detent so the
-      // page behind stays legible, opaque at the top — matching the reference
-      // recording. Drag to the top detent before asserting visibility.
-      await tester.drag(_routeGrabber, const Offset(0, -400));
-      await tester.pumpAndSettle();
-      final Color dim = tester.widget<ColoredBox>(_detentDim).color;
-      expect(dim.a, greaterThan(0),
-          reason: 'the Cupertino tier must dim at the top detent');
+      // The body-sized route dims through a plain modal barrier at the
+      // Cupertino token — static, unlike the retired detent route's tracked dim.
+      expect(_cupertinoBarrier, findsOneWidget,
+          reason: 'the Cupertino tier must dim behind the sheet');
     });
   });
 
@@ -211,8 +213,8 @@ void main() {
       await tester.pumpWidget(_hostWithOpener(showOverlay: false));
       await tester.tap(find.text('open'));
       await tester.pumpAndSettle();
-      expect(find.byKey(const Key('cn_detent_sheet_dim')), findsNothing,
-          reason: 'showOverlay: false must omit the dim layer entirely');
+      expect(_cupertinoBarrier, findsNothing,
+          reason: 'showOverlay: false must omit the dim entirely');
     });
   });
 
@@ -423,20 +425,17 @@ void main() {
   });
 
   testWidgets(
-      'kit.ui-library.native-sheet — default tier draws the route\'s grabber by '
+      'kit.ui-library.native-sheet — default tier draws the kit\'s grabber by '
       'default', (tester) async {
     await withAndroidFallback(() async {
       await tester.pumpWidget(_hostWithOpener());
       await tester.tap(find.text('open'));
       await tester.pumpAndSettle();
 
-      expect(_cupertinoGrabber, findsOneWidget,
-          reason: 'the iOS tier must show the route-drawn grabber by default');
-      expect(
-        find.byKey(const ValueKey<String>('appBoxKitNativeSheetGrabber')),
-        findsNothing,
-        reason: 'and exactly one: the kit must not paint a second pill',
-      );
+      expect(_kitGrabber, findsOneWidget,
+          reason: 'the iOS tier must show the kit-drawn grabber by default');
+      expect(_cupertinoGrabber, findsNothing,
+          reason: 'and exactly one: the route must not paint a second pill');
     });
   });
 
@@ -452,8 +451,10 @@ void main() {
       await tester.tap(find.text('open'));
       await tester.pumpAndSettle();
 
+      expect(_kitGrabber, findsNothing,
+          reason: 'showDragHandle: false must suppress the kit grabber');
       expect(_cupertinoGrabber, findsNothing,
-          reason: 'showDragHandle: false must reach the Cupertino route');
+          reason: 'and the route grabber is always off in this path');
     });
   });
 }
@@ -466,28 +467,19 @@ void main() {
 /// no longer say *which* drew it — hence the key exclusion. Without it, a "there
 /// is exactly one grabber" assertion would pass with both on screen.
 final Finder _cupertinoGrabber = find.byWidgetPredicate(
-  (Widget w) =>
-      w is SizedBox &&
-      w.width == 36 &&
-      w.height == 5 &&
-      (w.key == null || w.key == const Key('cn_detent_sheet_grabber')),
-  description: 'route-drawn drag handle (36x5, framework or CN detent route)',
+  (Widget w) => w is SizedBox && w.width == 36 && w.height == 5 && w.key == null,
+  description: 'route-drawn drag handle (36x5, framework)',
 );
 
-/// The CN detent route's own grabber, by key. Presence proves the unsized
-/// path went through the detent route rather than the framework sheet.
-final Finder _routeGrabber =
-    find.byKey(const Key('cn_detent_sheet_grabber'));
-
-/// The kit-drawn grabber, used only when the body owns its own top edge.
+/// The kit-drawn grabber. The body owns its own top edge in the body-sized
+/// path, so this is the only pill that should ever appear.
 final Finder _kitGrabber = find.byKey(const Key('appbox_kit_sheet_grabber'));
 
-/// The detent route's dim layer: a `ColoredBox` whose alpha tracks the detent
-/// (0 at the lowest, full at the top), not a `ModalBarrier` — so visibility is
-/// asserted by reading the colour, after dragging to the top detent.
-final Finder _detentDim = find.descendant(
-  of: find.byKey(const Key('cn_detent_sheet_dim')),
-  matching: find.byType(ColoredBox),
+/// The body-sized route's dim: a plain `ModalBarrier` at the Cupertino
+/// barrier token — static, unlike the retired detent route's tracked dim.
+final Finder _cupertinoBarrier = find.byWidgetPredicate(
+  (Widget w) => w is ModalBarrier && w.color == kCupertinoModalBarrierColor,
+  description: 'modal barrier at kCupertinoModalBarrierColor',
 );
 
 /// A trivial host that exposes a button which opens the native sheet from a
