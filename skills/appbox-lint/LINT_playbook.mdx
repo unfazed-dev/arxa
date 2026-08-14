@@ -39,7 +39,9 @@ chrome and glass compose where a design put them, and never assert that a
 surface should have chrome — a bar-less surface is lawful and is not a
 finding. Checks 1–4 (glass composition) are the iOS/macOS standard; check 5
 (double-bar) is structural and holds on every target; check 6 covers Android
-under the M3E law. Web and desktop are otherwise out of this pass's scope.
+under the M3E law; check 7 (chrome hidden outside the gate) rides the same
+iOS/macOS platform-view rationale as 1–4. Web and desktop are otherwise out
+of this pass's scope.
 
 Mechanical greps, each hit guilty until a `// glass-law-exempt: <reason>`
 names why:
@@ -79,6 +81,19 @@ names why:
    transparent-container + own-unrounded-Material fix and gate on
    `wantNative && supportsComposeM3E`, never bare `Platform.isAndroid`
    (M3E law rules 1–2).
+7. **Chrome hidden outside the gate** — `Offstage(`/`Visibility(`/a
+   conditional that drops the widget from the tree, wrapped around
+   `AppBoxKitNative*`/`CN*` chrome in app code, or app code writing
+   `CNTabBarRouteObserver.anyModalDepth` directly.
+   `AppBoxKitNativeChromeGate` is the only lawful way to take
+   platform-view pixels off screen while a Flutter overlay is up: the
+   `UiKitView` composites above the Flutter scene, so a hand-rolled hide
+   bypasses the gate's OR'd overlay signals and restore fade, and rots
+   the moment a new overlay kind ships. Raising the signal via
+   `appBoxKitWithNativeChromeHidden` is lawful (that is how a snackbar
+   registers its on-screen lifetime); doing the hiding by hand is the
+   finding. Files under `kit/ui_library/lib/` are the gate's
+   implementation and are exempt by location.
 
 ### Outputs
 
