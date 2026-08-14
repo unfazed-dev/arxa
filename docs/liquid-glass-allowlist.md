@@ -158,7 +158,8 @@ the glass card is the first re-demote, the toolbar second.
    off-screen above a native/full-bleed chrome (the 13-32 flash needed the
    opaque Flutter bar, which no longer exists). The boundary sits ~120px
    above the physical top, buying the animation time to finish unseen.
-   **Top-edge scrim (added 2026-08-13, UNPROVEN on device).** Full-bleed
+   **Top-edge scrim (added 2026-08-13; the dissolve is device-confirmed
+   2026-08-14, clip 18-50).** Full-bleed
    content — native platform views included, per ruling 4 — rides through the
    STATUS BAR fully visible and garbles with the clock/battery/Dynamic
    Island. iOS solves this with the system scroll-edge effect, which is
@@ -174,9 +175,16 @@ the glass card is the first re-demote, the toolbar second.
    precedent it was argued from is PARTIAL-width, which is the discriminating
    difference. Watch the next device run for body content flashing over the
    status band during a fast fling; if it appears, the answer is native chrome
-   for the band, not another gradient. Pinned by
-   appbox_kit_native_floating_bar_test (5 pins: height, pointer, paint order,
-   tuck/hide survival, no-saveLayer/no-alpha).
+   for the band, not another gradient. **Status split (2026-08-14):** clip
+   18-50 shows the top edge dissolving through the scrim as designed, so the
+   MECHANISM is device-confirmed; the clip-13-32 flash above remains an open
+   watch-item — no clip has triggered it, which is not the same as ruling it
+   out. The scrim has since gained a bottom-edge sibling and the pair became
+   the kit's whole scroll-edge dissolve — see rule 15. Pinned by
+   appbox_kit_native_floating_bar_test (6 top-edge-scrim pins: height/ends on
+   the bar edge, pointer, paint order under the bar, tuck/hide survival,
+   gradient-fill no-saveLayer/no-alpha, fadeExtent ramp) and, for the
+   bar-less host, showcase_notes_top_edge_scrim_test.
 5. **No native glass may overhang a path scrolled native glass travels
    (clip 13-53).** With the floating native bar, the home smoke row's
    compose button washed to a square ghost for EXACTLY the title capsule's
@@ -219,6 +227,29 @@ the glass card is the first re-demote, the toolbar second.
    partial-width Flutter overlays are NOT exempt from slicing, only
    full-width opaque bars were previously called out (rule 4 / 13-32).
    Pinned by appbox_kit_native_floating_bar_test (anchor pin).
+
+   **Generalized beyond chrome, and paint order does NOT exempt you
+   (2026-08-14, `1549ba8e` + `0d620115`).** Three more surfaces hit the same
+   wall and take the same anchor: the components input bar's opaque base
+   (`1549ba8e`), the `CNToast` Flutter tier (vendor `toast.dart` LOCAL PATCH),
+   and the notification service's center pill (`0d620115`). The input bar is
+   rule 7's original shape — Flutter chrome floating over a platform-view
+   scrollable — but the two overlay entries sharpen the mechanism: a toast
+   mounted in the root overlay paints LAST in the scene and is still not safe.
+   The slicer hoists Flutter ops above a platform view only where they
+   intersect one, so an op with no platform view of its own lands above every
+   EARLIER platform view yet under any platform view later in scene order (a
+   glass chip scrolling beneath it) and under the ops hoisted above that one.
+   A stationary `plain` anchor is scene-last by construction, so the entry's
+   ops always hoist into the topmost overlay layer. **Being drawn last is not
+   being composited last** — the rule is intersection, not paint order.
+   Corollary from the pill: size the anchor to the SURFACE, never full-screen
+   — a full-bleed native anchor swallows touches meant for the content behind
+   a transient overlay. Pinned by appbox_kit_native_input_bar_test
+   ('opaque base rides a plain compositing anchor', which also asserts the
+   anchor is absent when `opaqueGlass: false`) and, for the pill, by the
+   anchor assertion inside appbox_kit_notification_service_test's Android
+   center-pill case.
 
 8. **Hidden-but-painted platform views must be transformed off-screen — alpha
    and clip do NOT contain their slicing geometry (clip 22-43, labelprobe,
@@ -319,8 +350,14 @@ the glass card is the first re-demote, the toolbar second.
     it is latent, so it is pinned by a test rather than left to reasoning. A
     gate mounting mid-drag, or any new tick source, would expose it.
 
-11. **A sheet hides only the chrome it actually COVERS (2026-08-14, closes the
-    all-or-nothing ceiling the gate doc named).** The gate's modal branch hid
+11. **A modal never hides the chrome behind it — the modal hide is GONE, and
+    an opaque route transition above is the chrome gate's only remaining hide
+    reason (2026-08-14, `e2787605`).** Reached in two steps on one day. Both
+    are recorded, because step 1 is the intuitive fix and it is still wrong;
+    anyone re-deriving it from first principles will land there.
+
+    *Step 1 — narrow the hide to actual coverage (superseded within hours).*
+    The gate's modal branch hid
     on `anyModalDepth > _mountDepth` alone, so opening any sheet
     dematerialized EVERY native glass surface behind it — including the ones
     still plainly visible in the clear space above a short bottom sheet — and
@@ -340,6 +377,41 @@ the glass card is the first re-demote, the toolbar second.
     box), so the original bleed fix is preserved verbatim for anything that
     cannot describe its own geometry.
 
+    ⚠️ *Step 2 — delete it (`e2787605`, the standing law).* **Modal coverage
+    is no longer a hide reason AT ALL, and the chrome gate is the SOLE hide
+    authority.** Narrowing the hide to the overlapped rect was the right
+    direction and not far enough — the remaining hide still fired on exactly
+    the cases with no geometry to reason about, which is where it hurt most:
+    no rect published meant hide EVERYTHING, so a dialog dematerialized whole
+    pages of native widgets, and sections blanked mid-sheet-drag and popped
+    back on settle. That is the ratified defect, reached one more way. Both
+    premises the coverage hide rested on are dead: sheet and dialog bodies are
+    Flutter-drawn frost (ADR 0010 content tier), not native, so there is no
+    platform view to bleed; and the 08-14 recordings show the modal barrier
+    dimming LIVE native chrome correctly wherever it was not hidden. Removed:
+    `_modalCoversMe`, the `_mountDepth` baseline, and the `anyModalDepth` /
+    `topModalRect` listeners. The vendor twin
+    (`ModalHideMixin._computeShouldHide`) was neutered the same day, and
+    `autoHideOnModal` now defaults `false` across the liquid-glass components
+    (button, glass button group, popup menu, split button, segmented control,
+    slider, range slider, switch, text field, search bar, floating island,
+    liquid glass container) — the two authorities still cannot disagree,
+    because neither hides. What remains is one reason and one only: **an
+    opaque route transition above a gate that is not travelling with it**
+    (rule 10). Non-opaque overlays — dialogs, sheets, popups — never register
+    as transitions in the first place, filtered in `CNTransitionObserver`.
+    **The one documented exception is the tab bar**, whose modal-destroy path
+    is deliberately LEFT ON: vendor Issue #31 is that alpha-0 does not stop a
+    `UITabBar` painting over a sheet, so the destroy is load-bearing there and
+    is not an oversight to "clean up". Do not reintroduce a coverage hide
+    without NEW bleed evidence — a tombstone in
+    `appbox_kit_native_chrome_gate.dart` says so at the deletion site. Pinned
+    by appbox_kit_tab_bar_single_hide_authority_test (3 cases: the gate is the
+    single authority, the Issue #31 destroy path stays on, and a tab-index
+    change hides nothing) and by
+    appbox_kit_native_chrome_gate_test's 'modal depth and sheet rects are NOT
+    hide channels' case.
+
     **The scrim, stated correctly (an earlier draft of this rule got it
     backwards).** `CupertinoSheetRoute` does hardcode a transparent barrier —
     but the kit OVERRIDES that, and dimming is the DEFAULT, not opt-in:
@@ -353,14 +425,21 @@ the glass card is the first re-demote, the toolbar second.
     the dim lands. This is the one case a `BackdropFilter` cannot do — a blur
     must sample the native layer it can't see, which is the whole reason the
     modal hide exists at all. Solid dims and blurs are NOT interchangeable
-    here; do not generalise from one to the other. **Reasoned from rule 7, not
-    device-verified.** Falsifiable signature if it is wrong: glass above an
+    here; do not generalise from one to the other. **Originally reasoned from
+    rule 7; corroborated on device 2026-08-14** — with the coverage hide gone,
+    the recordings show the barrier dimming live native chrome, which is the
+    prediction. This clause now carries the whole load: under `e2787605` a
+    scrim over still-painted glass is the ONLY thing separating an open modal
+    from the content behind it. Falsifiable signature if it is wrong: glass
+    above an
     open sheet reads BRIGHTER than the dimmed content around it. That would be
     a tint bug, not a reason to go back to blanking the whole page.
 
-    Pinned by appbox_kit_chrome_gate_sheet_coverage_test
-    (4 cases incl. the sheet growing into a gate and the mount-depth baseline
-    that stops a sheet's OWN chrome self-hiding), mutation-checked.
+    Pinned by appbox_kit_chrome_gate_sheet_coverage_test — rewritten by
+    `e2787605` and now 3 cases, each asserting the NEGATIVE the supersession
+    installed: a sheet rect never blanks the chrome it overlaps at any
+    coverage, a modal publishing no rect hides nothing either, and a gate
+    mounted inside the sheet never hides itself.
 
 12. **Toasts are Flutter-tier, and the gate test reads CODE, not prose
     (2026-08-14).** `CNToast` wraps its body in a real `LiquidGlassContainer`
@@ -375,13 +454,140 @@ the glass card is the first re-demote, the toolbar second.
     service's other, already-Flutter-drawn toast. Two enforcement holes let it
     live: the gate test scanned only `lib/widgets` non-recursively (the call
     site is in `lib/services/`), and `CNToast`/`CNIcon` were absent from its
-    pattern. Both closed — the scan is now all of `lib/` recursively. It also
+    pattern. Both closed — the scan is now all of `lib/` recursively. **The
+    gate that carries this is appbox_kit_glass_transition_gate_test**, not the
+    similarly-named appbox_kit_liquid_glass_law_gate_test (which scans
+    `lib/widgets` non-recursively for saveLayer widgets and the floating bar's
+    slide motion, and is a different rule); check the right one before
+    concluding this clause is stale prose. It also
     matched RAW source, so a file could satisfy the rule by MENTIONING
     `.chromeGated()` in a comment: caught in the act, when a comment written
     to explain this very leak silenced the test about it. The scan now strips
     whole-line comments before matching, and the opt-out alone is read from
     raw source. **A rule that can be silenced by writing about it is not
     enforcement.**
+
+13. **Glass surfaces that CONTAIN content are opaque-based by default — the
+    material reads as glass, the base does not see through (2026-08-14,
+    `755dc23c` + `abe2b056`).** Translucency belongs to the navigation layer;
+    a surface you put a form, a list or a paragraph on has to be legible over
+    whatever scrolls behind it, and on the glass tier "whatever scrolls
+    behind it" is now native platform views (ruling 4). The lever is a
+    uniform `opaqueGlass` flag, and the implementation is the same one every
+    time: keep the frosted material (rim, saturation, the whole read) and
+    ground it on the surface tint token at **alpha 1.0**. Because a fully
+    opaque fill makes a backdrop blur invisible anyway, the opaque branch
+    takes `AppBoxKitFrostedSurface(platformViewSafe: true)` — so composition
+    rule 1 is satisfied for free rather than by discipline, which matters
+    because every one of these surfaces hosts CN platform views (dialog
+    action columns, input bar action slots, card bodies).
+
+    **The defaults are deliberately NOT uniform — state them per widget:**
+
+    | Surface | `opaqueGlass` default | What it does |
+    |---|---|---|
+    | `appBoxKitShowSheet` | `false` (opt-in) | Frosted sheet on an opaque base. Ignored when `backgroundColor` is set — a flat colour always wins |
+    | `appBoxKitShowNativeDialog` / `AppBoxKitFrostedAlertDialog` | `true` | Opaque frosted panel; the action column is native buttons |
+    | `AppBoxKitNativeInputBar` | `true` | Opaque flat base behind the row. Exact nesting, which matters: `Padding(viewInsets)` › plain anchor (rule 7) › opaque frosted base › `SafeArea(top: false)` › bar — the base wraps the `SafeArea` so the home-indicator strip is painted, the anchor sits OUTSIDE the base, and both sit inside the `viewInsets` padding so the whole surface rides the keyboard up |
+    | `AppBoxKitGlassCard` | `true` | Two tiers, below |
+
+    **The glass card is TWO tiers and only one of them goes opaque.** On the
+    native tier the card stays real Liquid Glass — this law is not repealed
+    for cards — merely DENSIFIED, via a partial-alpha surface tint (alpha
+    0.45) over `CNGlassEffect.regular`. The tint is the only density lever the
+    vendor actually applies: **do not reach for `CNGlassEffect.prominent`**,
+    because `LiquidGlassContainerView.swift`'s `glassEffectForConfig()`
+    hard-codes `Glass.regular` (its own comment defers prominent to a future
+    API), so `prominent` is a SILENT no-op on this container — it will look
+    like the flag did nothing, and the flag did nothing. Only the frosted
+    fallback tier takes the full alpha-1.0 opaque branch. Setting
+    `opaqueGlass: false` restores the old translucent read on both tiers.
+    **The tint does not change the card's place on the deselect ladder (§2):**
+    a densified native card is still native glass in a scrollable, so if slabs
+    return it is still the FIRST re-demote — rule 5's overhang ban and the
+    ladder both read tier, not opacity.
+    Pinned by appbox_kit_native_sheet_test ('default tier fills the sheet with
+    opaque glass and draws the kit grabber') and appbox_kit_native_input_bar_test
+    ('opaque base rides a plain compositing anchor', both polarities).
+
+14. **Transient overlays mount in the ROOT overlay — no nested navigator's
+    surface may cover them (2026-08-14, `27f549a8`).** `Overlay.of(context)`
+    resolves the NEAREST overlay, which inside a tab shell or a sheet is a
+    nested `Navigator`'s. Entries there paint under everything the shell
+    stacks above that navigator, so a scrolling surface or a bar could cover a
+    toast the user is meant to read. Every transient tier now passes
+    `rootOverlay: true`: both `CNToast` call sites (vendor `toast.dart`) and
+    the kit's center pill (`appbox_kit_notification_service.dart`). A toast
+    outranks every surface in the app or it is not a toast. This is a
+    placement rule and does not touch rule 12's tier ruling — these entries
+    are Flutter-drawn, which is precisely why they can be stacked by ordinary
+    means; and being in the root overlay is still not sufficient on its own,
+    because scene order beats paint order (see rule 7's generalization, which
+    is why they also carry a plain anchor). Pinned by
+    appbox_kit_notification_service_test ('toast tiers mount in the ROOT
+    overlay, not a nested navigator's'), which asserts the mechanism
+    STRUCTURALLY — which `OverlayState` hosts the entry — rather than by paint
+    order, and whose fixture first proves the nested navigator really does
+    supply a nearer overlay.
+
+15. **The scroll-edge dissolve is the SCRIM PAIR, not the per-child edge
+    effect (2026-08-14, `d6994258` + `8fc38af7`).** These are easy to confuse
+    and only one of them does anything on the glass tier.
+    `AppBoxKitScrollEdgeEffect` is deliberately INERT there (see *Resolved
+    residual*, clip 12-48: its partial-alpha fade over children hosting native
+    controls washed glyphs and left ghosts), so on device the bottom edge
+    showed NO fade at all — content hard-clipped at the physical screen edge
+    (clip 18-50) — while the top dissolved, because the top had a scrim and the
+    bottom had nothing. The mechanism that actually dissolves on every tier is
+    the pair `AppBoxKitTopEdgeScrim` / `AppBoxKitBottomEdgeScrim`:
+    Flutter-DRAWN vertical gradient fills, no saveLayer, no alpha over
+    platform views, `IgnorePointer`, each reverting in one deletion. The
+    bottom is the mirror of the top — transparent at the ramp, opaque through
+    the home-indicator band, drawn over a full-bleed `extendBody: true` body,
+    hosted by `AppBoxKitBottomEdgeScrimHost` (`bottomEdgeScrim`, default on).
+
+    **Two toggles, do not confuse them.** `AppBoxKitScrollEdges` governs the
+    per-child EFFECT on the edge-aware containers (the tier-inert one); the
+    scaffold's `bottomEdgeScrim` flag governs the SCRIM host. They are
+    independent, and on the glass tier only the second one has any visible
+    consequence.
+
+    **Both are ON by default, and turned off by design choice** (ratified
+    2026-08-14, superseding the original opt-in stance;
+    `AppBoxKitScrollEdges` — `none` / `top` / `bottom` / `both`, default
+    `both`; `AppBoxKitBottomNavScaffold.bottomEdgeScrim` default `true`). The
+    dissolve is part of the kit's look, not merely occlusion
+    repair, so a fade with no chrome under it is a design effect rather than a
+    bug. A four-value enum rather than a `Set`, so the default is a
+    compile-time constant and "no edges" is a named, greppable decision. The
+    top edge is skipped automatically under `extendBehindTopBar` — the cull
+    boundary then sits above the physical screen (rule 4), so the band would
+    be off-screen by construction.
+
+    **Geometry trap, and it is the one that bites: the bottom scrim reads the
+    RAW device inset** (`MediaQuery.viewPaddingOf(context).bottom` plus the
+    fade extent). It must therefore be mounted OUTSIDE
+    `AppBoxKitExtendBodyFabLift` — or any wrapper that mirrors bar clearance
+    into `viewPadding` — or it double-counts the bar block and washes resting
+    content. `AppBoxKitBottomNavScaffold` hosts it outside the lift for
+    exactly this reason.
+
+    **Inherited watch-item.** Both scrims are full-width and opaque at their
+    outer edge, which is the clip 13-32 shape (rule 4): the discriminating
+    precedent, the title pill, is PARTIAL-width. The top's dissolve is now
+    device-confirmed and the flash has not appeared, but "not yet observed" is
+    not "ruled out" — if a clip shows body content flashing over either band
+    during a fast fling, the answer is native chrome for that band, not
+    another gradient. Pinned by appbox_kit_native_floating_bar_test
+    (3 bottom-edge-scrim cases: pins to the physical bottom edge and spans the
+    indicator inset plus the ramp; gradient clear at top and opaque across the
+    whole indicator band; never intercepts taps and the toggle removes it
+    entirely — plus the 6 top-edge-scrim cases in rule 4) and, for the effect
+    it replaces, appbox_kit_scroll_edge_effect_tier_test. The both-on default
+    is carried by the `AppBoxKitScrollEdges` doc comment and its call sites,
+    not by a dedicated test — the nearest pin,
+    appbox_kit_edge_aware_list_view_test's 'no edge configured means no effect
+    at all', fixes the `none` end of the enum only.
 
 **Known signature, not a defect — glass edge refraction (labelprobe
 2026-08-13):** each in-scroll glass card shows dim copies of its NEIGHBORING
@@ -461,6 +667,14 @@ has twice killed a correct mechanism to protect a defective one.
   existence (designer) from assembly (law) and moves the gallery's chrome
   from shell level to per-surface, superseding the nested-route inset clause
   in rule 4 and outlawing the double-bar stack.
+- Round 5 (2026-08-14): the hide era ends and the opaque era begins. The
+  chrome gate's modal-coverage hide was narrowed to overlap and then deleted
+  outright (rule 11 supersession, `e2787605`) — the gate is the sole hide
+  authority, the tab bar the one Issue #31 exception. In its place, surfaces
+  stop relying on things vanishing behind them: content-bearing glass is
+  opaque-based (rule 13), transient overlays move to the root overlay and take
+  a slicer anchor (rules 14 + 7), and the scroll-edge dissolve is re-seated on
+  the scrim pair after the per-child effect proved inert on glass (rule 15).
 - Vendor LOCAL PATCH #5 (fallback label contrast) and #6 (preferFlutterTier
   plumbing) remain: #5 fixes the pre-26 tier; #6 serves surfaces (§3) and any
   future opt-in.
