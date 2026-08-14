@@ -135,6 +135,7 @@ Future<T?> appBoxKitShowSheet<T>({
   bool showOverlay = true,
   ValueListenable<double>? heightFactor,
   Color? backgroundColor,
+  bool opaqueGlass = false,
 }) async {
   // Bump the shared modal depth for the sheet's lifetime. No navigator in
   // either app registers `CNTabBarRouteObserver`, so route pushes alone never
@@ -181,6 +182,7 @@ Future<T?> appBoxKitShowSheet<T>({
         builder: (_) => _CupertinoSheetBody(
           builder: builder,
           backgroundColor: backgroundColor,
+          opaqueGlass: opaqueGlass,
           heightFactor: null,
           // Route draws the grabber; a second one in the body would double up.
           showDragHandle: false,
@@ -206,6 +208,7 @@ Future<T?> appBoxKitShowSheet<T>({
       pageBuilder: (_) => _CupertinoSheetBody(
         builder: builder,
         backgroundColor: backgroundColor,
+        opaqueGlass: opaqueGlass,
         heightFactor: heightFactor,
         showDragHandle: showDragHandle,
       ),
@@ -231,6 +234,7 @@ class _CupertinoSheetBody extends StatelessWidget {
   const _CupertinoSheetBody({
     required this.builder,
     this.backgroundColor,
+    this.opaqueGlass = false,
     this.heightFactor,
     this.showDragHandle = true,
   });
@@ -239,6 +243,11 @@ class _CupertinoSheetBody extends StatelessWidget {
 
   /// Opt-out of glass into a flat surface of this colour.
   final Color? backgroundColor;
+
+  /// Keep the frosted-glass styling (rim, saturation, blur) but ground it on a
+  /// fully opaque base, so nothing behind the sheet shows through. Ignored
+  /// when [backgroundColor] is set (flat always wins).
+  final bool opaqueGlass;
 
   /// Live fraction of screen height, or null to fill the route.
   final ValueListenable<double>? heightFactor;
@@ -324,6 +333,21 @@ class _CupertinoSheetBody extends StatelessWidget {
   Widget _surface(Widget content) {
     final Color? flat = backgroundColor;
     if (flat != null) return ColoredBox(color: flat, child: content);
+    if (opaqueGlass) {
+      // Same frosted material, opaque base: the tint token at alpha 1.0
+      // instead of the translucent default — glass styling without see-through.
+      return Builder(
+        builder: (BuildContext context) => AppBoxKitFrostedSurface(
+          borderRadius: 0,
+          blur: 30,
+          tint: Theme.of(context)
+              .colorScheme
+              .surfaceContainerLowest
+              .withValues(alpha: 1.0),
+          child: content,
+        ),
+      );
+    }
     return AppBoxKitFrostedSurface(borderRadius: 0, blur: 30, child: content);
   }
 }
