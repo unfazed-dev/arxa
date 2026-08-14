@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart'
     show ValueListenable, visibleForTesting;
 import 'package:flutter/widgets.dart';
@@ -127,18 +129,36 @@ class CNTransitionObserver extends NavigatorObserver {
     _activeTransitions.value = 0;
     for (final CNTransitionObserver observer in _instances) {
       observer._transitionCount = 0;
+      observer._gestureTransitionActive = false;
     }
     _instances.clear();
   }
 
+  /// Only OPAQUE transition routes drive the chrome hide.
+  ///
+  /// The hide exists for one reason: a hybrid-composition platform view cannot
+  /// slide with a full-screen route, so it must leave the frame while a page
+  /// covers the screen. A non-opaque route (dialog, `showCupertinoModalPopup`,
+  /// `CupertinoSheetRoute`, bottom sheet — all `opaque: false`) never covers
+  /// the screen: the previous route stays live and visible for the modal's
+  /// whole lifetime. Hiding chrome there IS the user-visible bug — native
+  /// glass blinks out on open and re-materializes on close.
+  static bool _drivesChromeHide(Route<dynamic>? route) =>
+      route is TransitionRoute<dynamic> && route.opaque;
+
   @override
   void didPush(Route<dynamic> route, Route<dynamic>? previousRoute) {
+    if (!_drivesChromeHide(route)) return;
     _beginTransition();
     _scheduleEndTransition(route);
   }
 
   @override
   void didPop(Route<dynamic> route, Route<dynamic>? previousRoute) {
+    // Same opacity rule as didPush: dismissing a translucent modal never
+    // un-covers the screen (it was never covered), so there is nothing for
+    // native chrome to collide with.
+    if (!_drivesChromeHide(route)) return;
     _beginTransition();
     // Time the end against the route that is actually ANIMATING, which on a pop
     // is the OUTGOING `route` (its controller runs 1→0 to `dismissed`) — not
@@ -158,12 +178,17 @@ class CNTransitionObserver extends NavigatorObserver {
 
   @override
   void didReplace({Route<dynamic>? newRoute, Route<dynamic>? oldRoute}) {
+    // The incoming route is the one that animates (and the one that could
+    // cover the screen); gate on it.
+    if (!_drivesChromeHide(newRoute)) return;
     _beginTransition();
     _scheduleEndTransition(newRoute);
   }
 
   @override
   void didRemove(Route<dynamic> route, Route<dynamic>? previousRoute) {
+    // Removing a translucent route uncovers nothing — skip, same rule.
+    if (!_drivesChromeHide(route)) return;
     _beginTransition();
     // Intentionally still `previousRoute`, unlike didPop above: a remove is not
     // animated, so there is no in-flight animation to track and this lands on
@@ -180,13 +205,26 @@ class CNTransitionObserver extends NavigatorObserver {
   @override
   void didStartUserGesture(
       Route<dynamic> route, Route<dynamic>? previousRoute) {
+    // A back-swipe on a translucent route drags content the previous page is
+    // already visible under — same opacity rule. The flag below keeps the
+    // unconditional `didStopUserGesture` from decrementing a begin that never
+    // happened (the counter must never latch negative).
+    if (!_drivesChromeHide(route)) return;
+    _gestureTransitionActive = true;
     _beginTransition();
   }
 
   @override
   void didStopUserGesture() {
+    if (!_gestureTransitionActive) return;
+    _gestureTransitionActive = false;
     _endTransition();
   }
+
+  /// Whether the current user gesture was counted by [didStartUserGesture].
+  /// A [NavigatorObserver] is attached to exactly one navigator, and a
+  /// navigator runs at most one route gesture at a time, so a bool suffices.
+  bool _gestureTransitionActive = false;
 
   void _beginTransition() {
     _transitionCount++;
@@ -215,7 +253,7 @@ class CNTransitionObserver extends NavigatorObserver {
         animation.status != AnimationStatus.completed &&
         animation.status != AnimationStatus.dismissed) {
       // End exactly once per scheduled transition, no matter which of the
-      // listener / watchdog paths fires first.
+      // listener / disposal paths fires first.
       bool ended = false;
       void end() {
         if (ended) return;
@@ -247,23 +285,31 @@ class CNTransitionObserver extends NavigatorObserver {
 
       animation.addStatusListener(listener);
 
-      // Watchdog: if the route is disposed mid-flight (navigator swap,
+      // Disposal guard: if the route is disposed mid-flight (navigator swap,
       // popUntil, tab-host rebuild) the terminal status never arrives and
-      // the counter would stay pinned > 0, hiding chrome forever. `end` is
-      // idempotent, so a late real notification stays balanced.
-      final Duration budget =
-          (route is TransitionRoute<dynamic>
-              ? route.transitionDuration
-              : Duration.zero) +
-          const Duration(milliseconds: 1000);
-      Future<void>.delayed(budget, () {
-        if (ended) return;
-        animation!.removeStatusListener(listener);
-        end();
-      });
+      // the counter would stay pinned > 0, hiding chrome forever.
+      // `TransitionRoute.dispose()` completes `_transitionCompleter`
+      // unconditionally (routes.dart), so `route.completed` fires in exactly
+      // that case — no wall-clock Timer needed. (The old watchdog Timer
+      // stayed pending through widget-test teardown and tripped
+      // `!timersPending` in every test that ends mid-transition on purpose.)
+      // `end` is idempotent, so a late real notification stays balanced.
+      if (route is TransitionRoute<dynamic>) {
+        final Animation<double> watched = animation;
+        route.completed.whenComplete(() {
+          if (ended) return;
+          watched.removeStatusListener(listener);
+          end();
+        });
+      }
     } else {
-      // No animation or already complete, end after a short delay
-      Future.delayed(const Duration(milliseconds: 350), _endTransition);
+      // No animation to watch means there is no visual transition to wait
+      // out — end synchronously. The old 350ms wall-clock guess held the
+      // chrome gate closed for a third of a second with nothing on screen
+      // animating, and its pending Timer tripped `!timersPending` in widget
+      // tests. The animation status is the one authority for "transition
+      // running"; when it is absent, the transition is already over.
+      _endTransition();
     }
   }
 
