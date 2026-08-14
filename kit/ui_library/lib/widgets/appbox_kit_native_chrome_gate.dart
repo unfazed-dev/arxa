@@ -236,6 +236,7 @@ class _KitNativeChromeGateState extends State<AppBoxKitNativeChromeGate> {
     // can change whether it covers this gate — so it is a decision input, not
     // just a one-shot at open. See [_modalCoversMe].
     CNTabBarRouteObserver.topModalRect.addListener(_onDepthChanged);
+    CNTabBarRouteObserver.sheetGestureDepth.addListener(_onDepthChanged);
     CNTransitionObserver.activeTransitions.addListener(_onDepthChanged);
   }
 
@@ -243,6 +244,7 @@ class _KitNativeChromeGateState extends State<AppBoxKitNativeChromeGate> {
   void dispose() {
     CNTabBarRouteObserver.anyModalDepth.removeListener(_onDepthChanged);
     CNTabBarRouteObserver.topModalRect.removeListener(_onDepthChanged);
+    CNTabBarRouteObserver.sheetGestureDepth.removeListener(_onDepthChanged);
     CNTransitionObserver.activeTransitions.removeListener(_onDepthChanged);
     super.dispose();
   }
@@ -390,10 +392,18 @@ class _KitNativeChromeGateState extends State<AppBoxKitNativeChromeGate> {
     // the sheet's contents blanked under the finger. Same walk as
     // `hasActiveTransitionAbove` uses, and the same reasoning: a navigator
     // that encloses me can move me.
+    // `sheetGestureDepth` is the detent-sheet analogue of the navigator
+    // gesture walk below: raised on finger-down, held through the settle
+    // (released from the settle-completion callback, mirroring the
+    // back-gesture controller), on a dedicated channel because
+    // `didStartUserGesture` would fire hero flights and IgnorePointer as
+    // pop side effects. While up, a transition above must not blanket-hide
+    // this gate: coverage stays live via `_modalCoversMe` instead.
     final travellingWithTransition =
         (_route?.animation?.isAnimating ?? false) ||
             (_route?.secondaryAnimation?.isAnimating ?? false) ||
-            _gestureInEnclosingNavigator(context);
+            _gestureInEnclosingNavigator(context) ||
+            CNTabBarRouteObserver.sheetGestureDepth.value > 0;
 
     final hidden = _modalCoversMe() ||
         (CNTransitionObserver.hasActiveTransitionAbove(context) &&

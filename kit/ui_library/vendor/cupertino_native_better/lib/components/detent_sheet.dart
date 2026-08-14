@@ -1,6 +1,7 @@
 import 'package:flutter/cupertino.dart';
 
 import 'bottom_sheet.dart' show CNSheetGeometryProbe;
+import 'tab_bar.dart' show CNTabBarRouteObserver;
 
 /// The `UISheetPresentationController` detent model, recreated in Flutter.
 ///
@@ -299,7 +300,39 @@ class _CNDetentSheetState<T> extends State<_CNDetentSheet<T>>
         span <= 0 ? 0 : ((_fraction.value - lowest) / span).clamp(0.0, 1.0);
   }
 
+  /// True while the finger is down; cleared in [_onDragEnd]/drag-cancel so
+  /// the settle-completion callback knows whether a NEW drag re-took the
+  /// sheet (in which case the flag must stay up).
+  bool _dragging = false;
+
+  /// Whether THIS state currently holds one unit of
+  /// [CNTabBarRouteObserver.sheetGestureDepth]. Guards double-increments;
+  /// released on settle completion, drag cancel, and dispose.
+  bool _gestureHeld = false;
+
+  void _holdGesture() {
+    if (_gestureHeld) return;
+    _gestureHeld = true;
+    CNTabBarRouteObserver.markSheetGestureStart();
+  }
+
+  void _releaseGesture() {
+    if (!_gestureHeld) return;
+    _gestureHeld = false;
+    CNTabBarRouteObserver.markSheetGestureEnd();
+  }
+
+  void _onDragCancel() {
+    _dragging = false;
+    _releaseGesture();
+  }
+
   void _onDragUpdate(DragUpdateDetails details) {
+    // Raise here, not only in a start handler: held through the settle and
+    // re-held if a new drag catches a settling sheet (the settle callback
+    // checks [_dragging] before releasing).
+    _dragging = true;
+    _holdGesture();
     final double screenHeight = MediaQuery.sizeOf(context).height;
     _fraction.stop();
     // Below the lowest detent the sheet follows the finger only when it may
@@ -310,6 +343,7 @@ class _CNDetentSheetState<T> extends State<_CNDetentSheet<T>>
   }
 
   void _onDragEnd(DragEndDetails details) {
+    _dragging = false;
     final double screenHeight = MediaQuery.sizeOf(context).height;
     final double vy = details.velocity.pixelsPerSecond.dy / screenHeight;
     final double at = _fraction.value;
@@ -333,7 +367,11 @@ class _CNDetentSheetState<T> extends State<_CNDetentSheet<T>>
                 m == null || f > m ? f : m);
         if (target == null) {
           if (route.enableDrag) {
+            // Hand off to the pop transition: the route's own animation
+            // (isAnimating) keeps gates travelling from here, so the flag
+            // can drop immediately.
             Navigator.of(context).pop();
+            _releaseGesture();
             return;
           }
           target = route._lowestFraction;
@@ -348,15 +386,28 @@ class _CNDetentSheetState<T> extends State<_CNDetentSheet<T>>
               (a - at).abs() <= (b - at).abs() ? a : b);
       if (route.enableDrag && at < route._lowestFraction / 2) {
         Navigator.of(context).pop();
+        _releaseGesture();
         return;
       }
     }
 
-    _fraction.animateTo(target, curve: Curves.linearToEaseOut);
+    // Held through the settle, exactly like the back-gesture controller's
+    // status-listener release: gates must not re-evaluate mid-settle. If a
+    // new drag interrupts the settle ([_onDragUpdate] stops the ticker,
+    // firing this as a cancel), [_dragging] is already true again and the
+    // hold survives.
+    _fraction
+        .animateTo(target, curve: Curves.linearToEaseOut)
+        .whenCompleteOrCancel(() {
+      if (!_dragging) _releaseGesture();
+    });
   }
 
   @override
   void dispose() {
+    // Mid-gesture teardown (route killed under the finger): a leaked unit
+    // would latch the flag up for every gate forever.
+    _releaseGesture();
     _fraction.removeListener(_publishRecede);
     _fraction.dispose();
     super.dispose();
@@ -383,8 +434,13 @@ class _CNDetentSheetState<T> extends State<_CNDetentSheet<T>>
           final double screenHeight = MediaQuery.sizeOf(ctx).height;
           final Widget dragged = GestureDetector(
             behavior: HitTestBehavior.opaque,
+            onVerticalDragStart: (DragStartDetails _) {
+              _dragging = true;
+              _holdGesture();
+            },
             onVerticalDragUpdate: _onDragUpdate,
             onVerticalDragEnd: _onDragEnd,
+            onVerticalDragCancel: _onDragCancel,
             child: AnimatedBuilder(
               animation: _fraction,
               child: content,
@@ -401,33 +457,18 @@ class _CNDetentSheetState<T> extends State<_CNDetentSheet<T>>
             ),
           );
           if (!route.injectGeometryProbe) return dragged;
-          // Coverage is evaluated against the LARGEST detent, fixed for the
-          // sheet's whole lifetime — NOT the live dragged rect. Hiding a
-          // native Liquid Glass view is instant, but every re-show replays
-          // Apple's ~300ms materialize animation (iOS 26), so live-rect
-          // toggling makes background widgets pop in mid-drag. A stable
-          // cover rect means gates settle once at open and release once as
-          // the sheet slides out. The probe wraps an empty spacer so the
-          // opaque GestureDetector above keeps the *visible* sheet's hit
-          // area and taps above the sheet still reach the barrier.
-          final double coverHeight = (route._highestFraction * screenHeight)
-              .clamp(0.0, constraints.maxHeight);
-          return Stack(
-            alignment: Alignment.bottomCenter,
-            children: <Widget>[
-              ExcludeSemantics(
-                child: IgnorePointer(
-                  child: CNSheetGeometryProbe(
-                    child: SizedBox(
-                      height: coverHeight,
-                      width: double.infinity,
-                    ),
-                  ),
-                ),
-              ),
-              dragged,
-            ],
-          );
+          // Coverage tracks the LIVE dragged rect. The previous frozen
+          // largest-detent cover (meant to avoid replaying Apple's ~300ms
+          // Liquid Glass materialize on re-show) hid every widget under the
+          // largest detent for the sheet's whole lifetime — background
+          // chrome the sheet never touched at its current detent appeared
+          // only after full dismissal, the exact delayed-appearance defect
+          // the reference recording rejects. Position-aware visibility is
+          // the mechanism to keep; the materialize replay is confined to
+          // widgets the sheet edge actually crosses. Gates are kept from
+          // blanket-blanking mid-drag by [CNTabBarRouteObserver.
+          // sheetGestureDepth], held finger-down through settle-completion.
+          return CNSheetGeometryProbe(child: dragged);
         },
       ),
     );

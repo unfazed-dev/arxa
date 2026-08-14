@@ -1652,6 +1652,34 @@ class CNTabBarRouteObserver extends NavigatorObserver {
     _topModalRect.value = rect;
   }
 
+  /// Count of sheet drags currently in progress — finger down OR the
+  /// released sheet still settling to its detent. Raised by
+  /// `CNDetentSheetRoute`'s drag handlers and held through the settle, the
+  /// same discipline as `NavigatorState.userGestureInProgress` (the
+  /// back-gesture controller releases from its settle-completion listener).
+  /// A dedicated channel, NOT the navigator flag, because the framework
+  /// interprets `didStartUserGesture` as a pop gesture: it starts hero
+  /// flights (heroes.dart) and wraps route content in `IgnorePointer` —
+  /// wrong side effects for a detent resize that pops nothing.
+  static final ValueNotifier<int> _sheetGestureDepth = ValueNotifier<int>(0);
+
+  /// Read-only listenable of the sheet-gesture depth (see
+  /// [_sheetGestureDepth]).
+  static ValueListenable<int> get sheetGestureDepth => _sheetGestureDepth;
+
+  /// Raise the sheet-gesture flag. Every start must be balanced by exactly
+  /// one [markSheetGestureEnd].
+  static void markSheetGestureStart() {
+    _sheetGestureDepth.value = _sheetGestureDepth.value + 1;
+  }
+
+  /// Lower the sheet-gesture flag. Clamps at zero so a stray end cannot
+  /// latch the counter negative (mirrors [markAnyModalInactive]).
+  static void markSheetGestureEnd() {
+    final int next = _sheetGestureDepth.value - 1;
+    _sheetGestureDepth.value = next < 0 ? 0 : next;
+  }
+
   /// Heuristic for "is this route a full-screen-ish sheet that should
   /// trigger tab-bar auto-hide?". Intentionally narrow: only matches
   /// routes whose runtime type name contains `Sheet`. This catches the
