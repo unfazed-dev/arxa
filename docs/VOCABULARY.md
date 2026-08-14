@@ -564,7 +564,7 @@ that scrolls underneath, tucking away as you scroll.
 native action controls, Flutter frosted title pill (glass-on-glass ban),
 scroll behaviors pinned/minimize/minimizeTrailing/minimizeLeading/hide with
 24px travel hysteresis; minimize (both ends tuck) is the ratified default.
-_Avoid_: floating app bar, glass bar, overlay bar
+_Avoid_: floating app bar, glass bar, overlay bar, floating bar (bare)
 _Layer_: Kit
 
 **Materialization headroom**:
@@ -610,8 +610,44 @@ _Layer_: Kit
 The soft fade at the top and bottom of the screen that lets content
 dissolve under the status bar and tab bar instead of hard-clipping.
 `AppBoxKitTopEdgeScrim` / `bottomEdgeScrim` — vertical gradient dissolves
-under floating chrome on the glass tier; a fade, never a dimming barrier.
-_Avoid_: overlay (bare), dim, barrier, shadow
+under floating chrome on the glass tier; per-edge toggles
+(`AppBoxKitScrollEdges`, both-on default); a fade, never a dimming barrier.
+Sibling of the scroll edge effect: one semantic, tier-split — the scrim
+supplies the dissolve on the glass tier, the effect elsewhere.
+_Avoid_: overlay (bare), dim, barrier, shadow, scrim (bare — also names the
+modal dim barrier and the snackbar blur, which are different things)
+_Layer_: Kit
+
+**Scroll edge effect**:
+The progressive blur of content under a pinned bar — switched off on the
+glass tier, where the edge scrim does the job instead.
+`AppBoxKitScrollEdgeEffect` — progressive blur applied to content pixels
+beneath pinned chrome; deliberately inert on the Liquid Glass tier because
+its partial-alpha fade over children would hide native controls — the edge
+scrim supplies the dissolve there (ADR 0010). Two entries, one semantic:
+cross-reference, never conflate.
+_Avoid_: edge blur, scroll fade (bare), treating it as the glass-tier
+dissolve
+_Layer_: Kit
+
+**Opaque-by-default**:
+Pop-up surfaces start fully solid — see-through backing is the exception,
+not the default.
+Every Flutter-drawn modal/backing surface (sheet, native dialog, input bar,
+the glass card's Flutter tier) takes a fully opaque base; blur is dropped
+rather than paid for over platform views. The glass card's native tier is
+excluded — it densifies through native tint instead.
+_Avoid_: translucent default, frosted default, blur backing (Flutter tier)
+_Layer_: Kit
+
+**Transient overlay**:
+Short-lived pop-ups — toasts, snackbars, the center pill — that always sit
+above everything, app-wide.
+The app's highest surface tier: resolves the ROOT overlay, never the
+nearest one, and each tier sits on a plain anchor so nested navigators and
+scrolling native glass cannot cover or slice it.
+_Avoid_: toast layer (bare), notification (for toasts), nearest-overlay
+show
 _Layer_: Kit
 
 **Plain anchor**:
@@ -629,7 +665,8 @@ dim and grabber in step with where the sheet actually is.
 The CN detent sheet route (`showCNDetentSheet`) — detent-tracked dim,
 route-drawn grabber, live sheet rect published during drags so the chrome
 gate sees true coverage.
-_Avoid_: bottom sheet (bare), modal (bare), half sheet
+_Avoid_: bottom sheet (bare), modal (bare), half sheet, native sheet
+(neither sheet tier is native — the `…ShowNativeSheet` name is retired)
 _Layer_: Kit
 
 ---
