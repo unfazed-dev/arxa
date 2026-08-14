@@ -66,6 +66,7 @@ class CNGlassButtonGroup extends StatefulWidget {
     this.spacing = 8.0,
     this.spacingForGlass = 40.0,
     this.autoHideOnModal = true,
+    this.preferFlutterTier = false,
   }) : _buttonWidgets = null;
 
   /// Creates a group from existing CNButton widgets.
@@ -81,6 +82,7 @@ class CNGlassButtonGroup extends StatefulWidget {
     this.spacing = 8.0,
     this.spacingForGlass = 40.0,
     this.autoHideOnModal = true,
+    this.preferFlutterTier = false,
   }) : buttons = const [],
        _buttonWidgets = buttonWidgets;
 
@@ -107,6 +109,11 @@ class CNGlassButtonGroup extends StatefulWidget {
   /// the app's `navigatorObservers`. No effect on iOS < 26 / non-iOS
   /// (Flutter fallback).
   final bool autoHideOnModal;
+
+  /// LOCAL PATCH #6: tier-split demotion (see button.dart PATCH #4).
+  /// Forces the Flutter fallback tier even where native glass is available;
+  /// hosts set this when the group lives under a Scrollable.
+  final bool preferFlutterTier;
 
   /// Returns the effective button count (from data or widgets).
   int get _effectiveButtonCount =>
@@ -237,8 +244,10 @@ class _CNGlassButtonGroupState extends State<CNGlassButtonGroup>
     final isIOSOrMacOS =
         defaultTargetPlatform == TargetPlatform.iOS ||
         defaultTargetPlatform == TargetPlatform.macOS;
-    final shouldUseNative =
-        isIOSOrMacOS && PlatformVersion.shouldUseNativeGlass;
+    // LOCAL PATCH #6: tier-split demotion (see button.dart PATCH #4).
+    final shouldUseNative = isIOSOrMacOS &&
+        PlatformVersion.shouldUseNativeGlass &&
+        !widget.preferFlutterTier;
 
     if (!shouldUseNative) {
       return _buildFlutterFallback(context);
@@ -585,12 +594,16 @@ class _CNGlassButtonGroupState extends State<CNGlassButtonGroup>
           badgeCount: button.badgeCount,
           config: CNButtonConfig(
             width: button.config.width,
+            // LOCAL PATCH #7: children inherit the group tier — dropping this
+            // flag re-promoted demoted children to native UiKitViews (truncated
+            // 80pt-wide labels on device).
+            preferFlutterTier: widget.preferFlutterTier,
             style: button.config.style,
             shrinkWrap: true,
             padding: button.config.padding,
             borderRadius: button.config.borderRadius,
             minHeight: button.config.minHeight,
-            imagePadding: button.config.imagePadding,
+            imagePadding: button.config.imagePadding ?? 6.0, // LOCAL PATCH #7: fallback Row gap
             imagePlacement: button.config.imagePlacement,
             glassEffectUnionId: button.config.glassEffectUnionId,
             glassEffectId: button.config.glassEffectId,
@@ -608,12 +621,16 @@ class _CNGlassButtonGroupState extends State<CNGlassButtonGroup>
           tint: button.tint,
           config: CNButtonConfig(
             width: button.config.width,
+            // LOCAL PATCH #7: children inherit the group tier — dropping this
+            // flag re-promoted demoted children to native UiKitViews (truncated
+            // 80pt-wide labels on device).
+            preferFlutterTier: widget.preferFlutterTier,
             style: button.config.style,
             shrinkWrap: true,
             padding: button.config.padding,
             borderRadius: button.config.borderRadius,
             minHeight: button.config.minHeight,
-            imagePadding: button.config.imagePadding,
+            imagePadding: button.config.imagePadding ?? 6.0, // LOCAL PATCH #7: fallback Row gap
             imagePlacement: button.config.imagePlacement,
             glassEffectUnionId: button.config.glassEffectUnionId,
             glassEffectId: button.config.glassEffectId,
@@ -647,6 +664,8 @@ class _CNGlassButtonGroupState extends State<CNGlassButtonGroup>
           onSelected: data.onMenuSelected!,
           tint: data.tint,
           buttonStyle: data.config.style,
+          // LOCAL PATCH #7: popup children inherit the group tier too.
+          preferFlutterTier: widget.preferFlutterTier,
         );
       }
       if (data.isIcon) {
@@ -660,12 +679,16 @@ class _CNGlassButtonGroupState extends State<CNGlassButtonGroup>
           badgeCount: data.badgeCount,
           config: CNButtonConfig(
             width: data.config.width,
+            // LOCAL PATCH #7: children inherit the group tier — dropping this
+            // flag re-promoted demoted children to native UiKitViews (truncated
+            // 80pt-wide labels on device).
+            preferFlutterTier: widget.preferFlutterTier,
             style: data.config.style,
             shrinkWrap: true,
             padding: data.config.padding,
             borderRadius: data.config.borderRadius,
             minHeight: data.config.minHeight,
-            imagePadding: data.config.imagePadding,
+            imagePadding: data.config.imagePadding ?? 6.0, // LOCAL PATCH #7: fallback Row gap
             imagePlacement:
                 data.config.imagePlacement ?? CNImagePlacement.leading,
             glassEffectUnionId: data.config.glassEffectUnionId,
@@ -685,12 +708,16 @@ class _CNGlassButtonGroupState extends State<CNGlassButtonGroup>
           tint: data.tint,
           config: CNButtonConfig(
             width: data.config.width,
+            // LOCAL PATCH #7: children inherit the group tier — dropping this
+            // flag re-promoted demoted children to native UiKitViews (truncated
+            // 80pt-wide labels on device).
+            preferFlutterTier: widget.preferFlutterTier,
             style: data.config.style,
             shrinkWrap: true,
             padding: data.config.padding,
             borderRadius: data.config.borderRadius,
             minHeight: data.config.minHeight,
-            imagePadding: data.config.imagePadding,
+            imagePadding: data.config.imagePadding ?? 6.0, // LOCAL PATCH #7: fallback Row gap
             imagePlacement:
                 data.config.imagePlacement ?? CNImagePlacement.leading,
             glassEffectUnionId: data.config.glassEffectUnionId,

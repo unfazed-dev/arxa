@@ -64,6 +64,8 @@ export 'components/switch.dart';
 export 'components/tab_bar.dart';
 export 'components/native_tab_bar.dart';
 export 'components/bottom_sheet.dart' show CNBottomSheet, CNSheetGeometryProbe;
+export 'components/detent_sheet.dart'
+    show CNDetentSheetRoute, CNSheetDetent, showCNDetentSheet;
 export 'components/popup_menu_button.dart';
 export 'components/popup_gesture.dart';
 export 'components/segmented_control.dart';

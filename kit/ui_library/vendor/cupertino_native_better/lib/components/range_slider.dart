@@ -70,6 +70,7 @@ class CNRangeSlider extends StatefulWidget {
     this.trackColor,
     this.trackBackgroundColor,
     this.autoHideOnModal = true,
+    this.preferFlutterTier = false,
   });
 
   /// Current selection. [RangeValues.start] is the low thumb, [.end] the high.
@@ -108,6 +109,11 @@ class CNRangeSlider extends StatefulWidget {
   /// When true (default), destroys the native view's PlatformView while a modal
   /// sheet is presented above this widget's host route (Issue #53 z-order bleed).
   final bool autoHideOnModal;
+
+  /// LOCAL PATCH #6: tier-split demotion (see button.dart PATCH #4).
+  /// Forces the Flutter fallback tier even where native glass is available;
+  /// hosts set this when the range slider lives under a Scrollable.
+  final bool preferFlutterTier;
 
   @override
   State<CNRangeSlider> createState() => _CNRangeSliderState();
@@ -159,7 +165,9 @@ class _CNRangeSliderState extends State<CNRangeSlider>
       ),
     };
 
-    if (defaultTargetPlatform == TargetPlatform.iOS) {
+    // LOCAL PATCH #6: tier-split demotion (see button.dart PATCH #4).
+    if (defaultTargetPlatform == TargetPlatform.iOS &&
+        !widget.preferFlutterTier) {
       return wrapWithModalInteractionGuard(
         ClipRect(
           child: SizedBox(

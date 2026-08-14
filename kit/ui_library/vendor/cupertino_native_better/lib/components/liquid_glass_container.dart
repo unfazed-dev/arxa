@@ -25,6 +25,7 @@ class LiquidGlassContainer extends StatefulWidget {
     required this.child,
     required this.config,
     this.autoHideOnModal = true,
+    this.preferFlutterTier = false,
   });
 
   /// The child widget to apply the glass effect to.
@@ -41,6 +42,12 @@ class LiquidGlassContainer extends StatefulWidget {
   /// app's `navigatorObservers`. No effect on iOS < 26 / non-iOS (fallback
   /// path returns the child unchanged).
   final bool autoHideOnModal;
+
+  /// LOCAL PATCH #6: tier-split demotion (see button.dart PATCH #4).
+  /// Forces the Flutter fallback (child returned unchanged) even where native
+  /// glass is available; hosts set this when the container lives under a
+  /// Scrollable.
+  final bool preferFlutterTier;
 
   @override
   State<LiquidGlassContainer> createState() => _LiquidGlassContainerState();
@@ -130,7 +137,10 @@ class _LiquidGlassContainerState extends State<LiquidGlassContainer>
     final isIOSOrMacOS =
         defaultTargetPlatform == TargetPlatform.iOS ||
         defaultTargetPlatform == TargetPlatform.macOS;
-    final shouldUseNative = isIOSOrMacOS && PlatformVersion.supportsLiquidGlass;
+    // LOCAL PATCH #6: tier-split demotion (see button.dart PATCH #4).
+    final shouldUseNative = isIOSOrMacOS &&
+        PlatformVersion.supportsLiquidGlass &&
+        !widget.preferFlutterTier;
 
     if (!shouldUseNative) {
       return widget.child;

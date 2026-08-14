@@ -47,6 +47,7 @@ class CNTextField extends StatefulWidget {
     this.textColor,
     this.placeholderColor,
     this.autoHideOnModal = true,
+    this.preferFlutterTier = false,
   });
 
   /// Owns the input text. Two-way synced: programmatic writes forward to the
@@ -86,6 +87,11 @@ class CNTextField extends StatefulWidget {
 
   /// See class doc. Mirrors [CNSearchBar.autoHideOnModal].
   final bool autoHideOnModal;
+
+  /// LOCAL PATCH #6: tier-split demotion (see button.dart PATCH #4).
+  /// Forces the Flutter fallback tier even where the native field is
+  /// available; hosts set this when the field lives under a Scrollable.
+  final bool preferFlutterTier;
 
   @override
   State<CNTextField> createState() => _CNTextFieldState();
@@ -279,9 +285,11 @@ class _CNTextFieldState extends State<CNTextField>
     // field still renders a `systemGray6` capsule — so the platform view is
     // valid on all iOS/macOS. The kit wrapper decides whether to use this tier
     // or the Material fallback; this widget always builds the native field.
+    // LOCAL PATCH #6: tier-split demotion (see button.dart PATCH #4).
     if (!kIsWeb &&
         (defaultTargetPlatform == TargetPlatform.iOS ||
-            defaultTargetPlatform == TargetPlatform.macOS)) {
+            defaultTargetPlatform == TargetPlatform.macOS) &&
+        !widget.preferFlutterTier) {
       final hidden = maybeHiddenPlaceholder(height: _kFieldHeight);
       if (hidden != null) return hidden;
 

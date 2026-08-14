@@ -899,6 +899,11 @@ class CupertinoButtonPlatformView: NSObject, FlutterPlatformView {
   }
   
   @objc private func onPressed(_ sender: UIButton?) {
+    // CNTrace PROBE (temporary, 2026-08-13 app-bar search-button debug):
+    // logs every native press BEFORE the guard so a guard rejection is
+    // visible in the run log. Remove once the dead app-bar button is
+    // root-caused.
+    NSLog("[CNTrace] native onPressed enabled=\(isEnabled) interactive=\(isInteractive)")
     guard isEnabled && isInteractive else { return }
     channel.invokeMethod("pressed", arguments: nil)
   }

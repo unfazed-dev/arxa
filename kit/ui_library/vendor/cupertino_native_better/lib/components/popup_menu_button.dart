@@ -95,6 +95,7 @@ class CNPopupMenuButton extends StatefulWidget {
     this.buttonStyle = CNButtonStyle.plain,
     this.preserveTopToBottomOrder = false,
     this.autoHideOnModal = true,
+    this.preferFlutterTier = false,
   }) : buttonIcon = null,
        buttonCustomIcon = null,
        buttonCustomIconColor = null,
@@ -116,6 +117,7 @@ class CNPopupMenuButton extends StatefulWidget {
     this.buttonStyle = CNButtonStyle.glass,
     this.preserveTopToBottomOrder = false,
     this.autoHideOnModal = true,
+    this.preferFlutterTier = false,
   }) : buttonLabel = null,
        round = true,
        width = size,
@@ -187,6 +189,11 @@ class CNPopupMenuButton extends StatefulWidget {
   /// Requires `CNTabBarRouteObserver()` to be registered in the app's
   /// `navigatorObservers`. No effect on iOS < 26 / non-iOS (Flutter fallback).
   final bool autoHideOnModal;
+
+  /// LOCAL PATCH #6: tier-split demotion (see button.dart PATCH #4).
+  /// Forces the Flutter fallback tier even where native glass is available;
+  /// hosts set this when the popup menu lives under a Scrollable.
+  final bool preferFlutterTier;
 
   /// Whether this instance is configured as an icon button variant.
   bool get isIconButton =>
@@ -325,8 +332,10 @@ class _CNPopupMenuButtonState extends State<CNPopupMenuButton>
     final isIOSOrMacOS =
         defaultTargetPlatform == TargetPlatform.iOS ||
         defaultTargetPlatform == TargetPlatform.macOS;
-    final shouldUseNative =
-        isIOSOrMacOS && PlatformVersion.shouldUseNativeGlass;
+    // LOCAL PATCH #6: tier-split demotion (see button.dart PATCH #4).
+    final shouldUseNative = isIOSOrMacOS &&
+        PlatformVersion.shouldUseNativeGlass &&
+        !widget.preferFlutterTier;
 
     // Fallback to Flutter widgets for non-iOS/macOS or iOS/macOS < 26
     if (!shouldUseNative) {

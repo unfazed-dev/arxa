@@ -128,6 +128,13 @@ class CNButtonConfig {
   /// When null, uses the system default weight for the selected [style].
   final FontWeight? labelFontWeight;
 
+  /// LOCAL PATCH #4: force the Flutter fallback tier even where native glass
+  /// is available (iOS/macOS 26+). Platform-view glass inside a scrollable is
+  /// out of contract (see appbox_kit_scroll_edge_effect.dart tier-split note);
+  /// hosts set this when the button lives under a Scrollable so it renders the
+  /// same CupertinoButton tier that pre-26 OSes get.
+  final bool preferFlutterTier;
+
   /// Creates a configuration for [CNButton].
   const CNButtonConfig({
     this.padding,
@@ -148,6 +155,7 @@ class CNButtonConfig {
     this.labelFontSize,
     this.labelColor,
     this.labelFontWeight,
+    this.preferFlutterTier = false,
   });
 }
 
@@ -409,8 +417,9 @@ class _CNButtonState extends State<CNButton>
     final isIOSOrMacOS =
         defaultTargetPlatform == TargetPlatform.iOS ||
         defaultTargetPlatform == TargetPlatform.macOS;
-    final shouldUseNative =
-        isIOSOrMacOS && PlatformVersion.shouldUseNativeGlass;
+    final shouldUseNative = isIOSOrMacOS &&
+        PlatformVersion.shouldUseNativeGlass &&
+        !widget.config.preferFlutterTier;
 
     // Fallback to Flutter implementation for non-iOS/macOS or iOS/macOS < 26
     if (!shouldUseNative) {
@@ -779,6 +788,12 @@ class _CNButtonState extends State<CNButton>
   Future<dynamic> _onMethodCall(MethodCall call) async {
     switch (call.method) {
       case 'pressed':
+        // CNTrace PROBE (temporary, 2026-08-13 app-bar search-button debug):
+        // logs every native press arriving in Dart. Remove once the dead
+        // app-bar button is root-caused.
+        debugPrint('[CNTrace] pressed → ch=${_channel?.name} label=${widget.label} '
+            'enabled=${widget.enabled} interaction=${widget.config.interaction} '
+            'hasHandler=${widget.onPressed != null}');
         if (widget.enabled &&
             widget.config.interaction &&
             widget.onPressed != null) {
@@ -1298,6 +1313,27 @@ class _CNButtonState extends State<CNButton>
               const EdgeInsets.symmetric(horizontal: 12, vertical: 8));
     final borderRadius = widget.config.borderRadius ?? defaultHeight / 2;
 
+    // LOCAL PATCH #5: any style that sets a background `color` flips
+    // CupertinoButton's default foreground and can land tone-on-tone:
+    // - solid fills (color == tint): the plain-style default foreground is
+    //   ALSO the tint — tint-on-tint, invisible label. Pass the contrasting
+    //   color explicitly.
+    // - glass (color == tint at 10% alpha): a non-null `color` makes the
+    //   default foreground primaryContrastingColor — white over a translucent
+    //   wash on a light backdrop, invisible label (the profile toolbar's
+    //   blank Share/Edit/Delete on device). Apple's pre-26 tinted look is
+    //   tint-on-translucent-tint, so pass the tint through.
+    // Honor config.labelColor everywhere.
+    final foregroundColor = widget.config.labelColor ??
+        switch (widget.config.style) {
+          CNButtonStyle.filled ||
+          CNButtonStyle.borderedProminent ||
+          CNButtonStyle.prominentGlass =>
+            CupertinoTheme.of(context).primaryContrastingColor,
+          CNButtonStyle.glass => _effectiveTint,
+          _ => null,
+        };
+
     final button = SizedBox(
       height: defaultHeight,
       width: buttonWidth,
@@ -1309,6 +1345,7 @@ class _CNButtonState extends State<CNButton>
         borderRadius: BorderRadius.circular(borderRadius),
         pressedOpacity: 0.4, // Explicit press feedback
         color: _getCupertinoButtonColor(context),
+        foregroundColor: foregroundColor,
         onPressed:
             (widget.enabled &&
                 widget.config.interaction &&

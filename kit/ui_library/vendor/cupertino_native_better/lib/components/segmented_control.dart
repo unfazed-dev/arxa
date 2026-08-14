@@ -31,6 +31,7 @@ class CNSegmentedControl extends StatefulWidget {
     this.iconGradientEnabled,
     this.iconRenderingMode,
     this.autoHideOnModal = true,
+    this.preferFlutterTier = false,
   });
 
   /// Segment labels to display, in order.
@@ -79,6 +80,11 @@ class CNSegmentedControl extends StatefulWidget {
   /// `navigatorObservers`. No effect on iOS < 26 / non-iOS (Flutter fallback).
   final bool autoHideOnModal;
 
+  /// LOCAL PATCH #6: tier-split demotion (see button.dart PATCH #4).
+  /// Forces the Flutter fallback tier even where native glass is available;
+  /// hosts set this when the control lives under a Scrollable.
+  final bool preferFlutterTier;
+
   @override
   State<CNSegmentedControl> createState() => _CNSegmentedControlState();
 }
@@ -125,8 +131,10 @@ class _CNSegmentedControlState extends State<CNSegmentedControl>
     final isIOSOrMacOS =
         defaultTargetPlatform == TargetPlatform.iOS ||
         defaultTargetPlatform == TargetPlatform.macOS;
-    final shouldUseNative =
-        isIOSOrMacOS && PlatformVersion.shouldUseNativeGlass;
+    // LOCAL PATCH #6: tier-split demotion (see button.dart PATCH #4).
+    final shouldUseNative = isIOSOrMacOS &&
+        PlatformVersion.shouldUseNativeGlass &&
+        !widget.preferFlutterTier;
 
     // Fallback to Flutter widgets for non-iOS/macOS or iOS/macOS < 26
     if (!shouldUseNative) {

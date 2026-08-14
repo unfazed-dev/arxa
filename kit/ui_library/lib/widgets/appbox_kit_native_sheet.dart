@@ -1,5 +1,9 @@
 import 'package:cupertino_native_better/cupertino_native_better.dart'
-    show CNBottomSheet, CNSheetGeometryProbe, CNTabBarRouteObserver;
+    show
+        CNBottomSheet,
+        CNSheetGeometryProbe,
+        CNTabBarRouteObserver,
+        showCNDetentSheet;
 import 'package:flutter/cupertino.dart'
     show CupertinoColors, CupertinoDynamicColor, kCupertinoModalBarrierColor;
 import 'package:flutter/foundation.dart' show ValueListenable;
@@ -160,20 +164,45 @@ Future<T?> appBoxKitShowSheet<T>({
         barrierColor: showOverlay ? null : Colors.transparent,
       );
     }
-    // iOS / macOS / else → the framework's Cupertino sheet. It owns the
-    // presentation: parent scale-back and top-corner clip — plus the grabber,
-    // except in the sized path where the body owns its own edge.
+    // iOS / macOS / else, unsized → the UIKit-shaped detent sheet: opens at
+    // medium (half screen), drags to large, grabber and top-corner clip owned
+    // by the route. This is the apple-solution path — the framework's
+    // full-height Cupertino sheet is wrong for browse surfaces.
+    if (heightFactor == null) {
+      return await showCNDetentSheet<T>(
+        context: context,
+        enableDrag: isDismissible,
+        barrierDismissible: isDismissible,
+        showDragHandle: showDragHandle,
+        barrierColor: showOverlay ? kCupertinoModalBarrierColor : null,
+        // The route probes the *detent-sized* box itself, so the automatic
+        // probe is correct here (unlike the sized legacy path below).
+        injectGeometryProbe: true,
+        builder: (_) => _CupertinoSheetBody(
+          builder: builder,
+          backgroundColor: backgroundColor,
+          heightFactor: null,
+          // Route draws the grabber; a second one in the body would double up.
+          showDragHandle: false,
+        ),
+      );
+    }
+    // iOS / macOS sized path → the framework's Cupertino sheet. The detent
+    // route only knows medium/large, so a live [heightFactor] still rides the
+    // legacy body-sized presentation.
     return await CNBottomSheet.showCupertino<T>(
       context: context,
       // Now genuinely both affordances: drag, and (via the barrier below) tap
       // outside.
       enableDrag: isDismissible,
-      showDragHandle: showDragHandle && heightFactor == null,
+      // This branch is now sized-only (the unsized case returned above), so
+      // the body owns its own edge and the route grabber stays off.
+      showDragHandle: false,
       barrierColor: showOverlay ? kCupertinoModalBarrierColor : null,
       // In the sized path the body does not fill the route, so the automatic
       // probe would publish the route box and hide host-page native widgets
       // that nothing covers. The body places its own probe on the sized box.
-      injectGeometryProbe: heightFactor == null,
+      injectGeometryProbe: false,
       pageBuilder: (_) => _CupertinoSheetBody(
         builder: builder,
         backgroundColor: backgroundColor,

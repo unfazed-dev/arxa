@@ -87,10 +87,10 @@ void main() {
       // The whole point of the change. The old iOS tier was a Material
       // `showModalBottomSheet` with transparent chrome around a floating
       // inset card, which read on device as "similar to a bottom sheet but
-      // not one". The Cupertino route is what supplies the real presentation:
-      // the page behind scales down and rounds its corners.
-      expect(find.byType(CupertinoSheetTransition), findsWidgets,
-          reason: 'iOS tier must route through showCupertinoSheet');
+      // not one". The CN detent route is what supplies the real presentation:
+      // detent snapping, a route-drawn grabber, and a detent-tracked dim.
+      expect(_routeGrabber, findsOneWidget,
+          reason: 'iOS tier must route through the CN detent sheet route');
       expect(find.byType(BottomSheet), findsNothing,
           reason: 'a Material BottomSheet on the iOS tier is the old defect');
     });
@@ -193,9 +193,14 @@ void main() {
       await tester.pumpWidget(_hostWithOpener());
       await tester.tap(find.text('open'));
       await tester.pumpAndSettle();
-      expect(_dimBarrier(tester), findsWidgets,
-          reason: 'the Cupertino tier must dim by default, as iOS does at '
-              'every detent');
+      // The dim tracks the detent — 0 at the opening (lowest) detent so the
+      // page behind stays legible, opaque at the top — matching the reference
+      // recording. Drag to the top detent before asserting visibility.
+      await tester.drag(_routeGrabber, const Offset(0, -400));
+      await tester.pumpAndSettle();
+      final Color dim = tester.widget<ColoredBox>(_detentDim).color;
+      expect(dim.a, greaterThan(0),
+          reason: 'the Cupertino tier must dim at the top detent');
     });
   });
 
@@ -206,9 +211,8 @@ void main() {
       await tester.pumpWidget(_hostWithOpener(showOverlay: false));
       await tester.tap(find.text('open'));
       await tester.pumpAndSettle();
-      expect(_dimBarrier(tester), findsNothing,
-          reason: 'showOverlay: false must fall back to the framework route\'s '
-              'transparent barrier');
+      expect(find.byKey(const Key('cn_detent_sheet_dim')), findsNothing,
+          reason: 'showOverlay: false must omit the dim layer entirely');
     });
   });
 
@@ -462,21 +466,29 @@ void main() {
 /// no longer say *which* drew it — hence the key exclusion. Without it, a "there
 /// is exactly one grabber" assertion would pass with both on screen.
 final Finder _cupertinoGrabber = find.byWidgetPredicate(
-  (Widget w) => w is SizedBox && w.width == 36 && w.height == 5 && w.key == null,
-  description: 'CupertinoSheetRoute drag handle (36x5, unkeyed)',
+  (Widget w) =>
+      w is SizedBox &&
+      w.width == 36 &&
+      w.height == 5 &&
+      (w.key == null || w.key == const Key('cn_detent_sheet_grabber')),
+  description: 'route-drawn drag handle (36x5, framework or CN detent route)',
 );
+
+/// The CN detent route's own grabber, by key. Presence proves the unsized
+/// path went through the detent route rather than the framework sheet.
+final Finder _routeGrabber =
+    find.byKey(const Key('cn_detent_sheet_grabber'));
 
 /// The kit-drawn grabber, used only when the body owns its own top edge.
 final Finder _kitGrabber = find.byKey(const Key('appbox_kit_sheet_grabber'));
 
-/// The dim behind the sheet, if any. `ModalBarrier` is present either way — a
-/// transparent one is what "no overlay" looks like — so the colour is the
-/// assertion, not the widget's existence.
-Finder _dimBarrier(WidgetTester tester) => find.byWidgetPredicate(
-      (Widget w) =>
-          w is ModalBarrier && w.color != null && w.color!.a > 0,
-      description: 'ModalBarrier painting a visible dim',
-    );
+/// The detent route's dim layer: a `ColoredBox` whose alpha tracks the detent
+/// (0 at the lowest, full at the top), not a `ModalBarrier` — so visibility is
+/// asserted by reading the colour, after dragging to the top detent.
+final Finder _detentDim = find.descendant(
+  of: find.byKey(const Key('cn_detent_sheet_dim')),
+  matching: find.byType(ColoredBox),
+);
 
 /// A trivial host that exposes a button which opens the native sheet from a
 /// real BuildContext (the sheet needs a Navigator ancestor).

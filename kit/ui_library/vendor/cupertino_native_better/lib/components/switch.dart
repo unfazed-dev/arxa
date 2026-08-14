@@ -56,6 +56,7 @@ class CNSwitch extends StatefulWidget {
     this.color,
     this.autoHideOnModal = true,
     this.semanticLabel,
+    this.preferFlutterTier = false,
   });
 
   /// Whether the switch is on.
@@ -91,6 +92,11 @@ class CNSwitch extends StatefulWidget {
   /// it wraps the switch in a [Semantics] node. Without it, iOS exposes the
   /// native switch as an **unlabeled** AX element.
   final String? semanticLabel;
+
+  /// LOCAL PATCH #6: tier-split demotion (see button.dart PATCH #4).
+  /// Forces the Flutter fallback tier even where native glass is available;
+  /// hosts set this when the switch lives under a Scrollable.
+  final bool preferFlutterTier;
 
   @override
   State<CNSwitch> createState() => _CNSwitchState();
@@ -145,8 +151,10 @@ class _CNSwitchState extends State<CNSwitch> with ModalHideMixin<CNSwitch> {
     final isIOSOrMacOS =
         defaultTargetPlatform == TargetPlatform.iOS ||
         defaultTargetPlatform == TargetPlatform.macOS;
-    final shouldUseNative =
-        isIOSOrMacOS && PlatformVersion.shouldUseNativeGlass;
+    // LOCAL PATCH #6: tier-split demotion (see button.dart PATCH #4).
+    final shouldUseNative = isIOSOrMacOS &&
+        PlatformVersion.shouldUseNativeGlass &&
+        !widget.preferFlutterTier;
 
     // Fallback to Flutter widgets for non-iOS/macOS or iOS/macOS < 26
     if (!shouldUseNative) {

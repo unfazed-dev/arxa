@@ -40,6 +40,7 @@ class CNSplitButton extends StatelessWidget {
     required this.onSelected,
     this.menuIcon,
     this.customMenuIcon,
+    this.preferFlutterTier = false,
   });
 
   /// Action-face label. At least one of [label], [icon], [customIcon] should
@@ -68,6 +69,11 @@ class CNSplitButton extends StatelessWidget {
 
   /// Material [IconData] fallback for the chevron segment.
   final IconData? customMenuIcon;
+
+  /// LOCAL PATCH #6: tier-split demotion (see button.dart PATCH #4).
+  /// Threaded through to the backing [CNGlassButtonGroup]; hosts set this
+  /// when the split button lives under a Scrollable.
+  final bool preferFlutterTier;
 
   static const _union = 'cn-split-button';
   static const _config = CNButtonDataConfig(
@@ -104,6 +110,10 @@ class CNSplitButton extends StatelessWidget {
       config: _config,
     );
 
-    return CNGlassButtonGroup(buttons: [action, menu]);
+    // LOCAL PATCH #6: tier-split demotion (see button.dart PATCH #4).
+    return CNGlassButtonGroup(
+      buttons: [action, menu],
+      preferFlutterTier: preferFlutterTier,
+    );
   }
 }

@@ -67,6 +67,7 @@ class CNSlider extends StatefulWidget {
     this.trackBackgroundColor,
     this.step,
     this.autoHideOnModal = true,
+    this.preferFlutterTier = false,
   });
 
   /// Current slider value.
@@ -113,6 +114,11 @@ class CNSlider extends StatefulWidget {
   /// registered in the app's `navigatorObservers`. No effect on non-iOS or
   /// iOS < 26 (Flutter fallback path).
   final bool autoHideOnModal;
+
+  /// LOCAL PATCH #6: tier-split demotion (see button.dart PATCH #4).
+  /// Forces the Flutter fallback tier even where native glass is available;
+  /// hosts set this when the slider lives under a Scrollable.
+  final bool preferFlutterTier;
 
   @override
   State<CNSlider> createState() => _CNSliderState();
@@ -178,8 +184,10 @@ class _CNSliderState extends State<CNSlider> with ModalHideMixin<CNSlider> {
     final isIOSOrMacOS =
         defaultTargetPlatform == TargetPlatform.iOS ||
         defaultTargetPlatform == TargetPlatform.macOS;
-    final shouldUseNative =
-        isIOSOrMacOS && PlatformVersion.shouldUseNativeGlass;
+    // LOCAL PATCH #6: tier-split demotion (see button.dart PATCH #4).
+    final shouldUseNative = isIOSOrMacOS &&
+        PlatformVersion.shouldUseNativeGlass &&
+        !widget.preferFlutterTier;
 
     // Fallback to Flutter widgets for non-iOS/macOS or iOS/macOS < 26
     if (!shouldUseNative) {
