@@ -540,7 +540,7 @@ visual glitches when things scroll.
 The ratified ruleset for native Liquid Glass on iOS/macOS 26+ — control
 allowlist, composition rules (no saveLayer over platform views, chrome-gate
 every glass widget, no glass-on-glass overhang, materialization headroom,
-slide-never-fade), and the deselect protocol. SSOT:
+slide-never-fade), and the deselect ladder. SSOT:
 `docs/liquid-glass-allowlist.md`; enforced by kit gate tests + appbox-lint
 rules, not by prose. Sibling: the M3E law (`docs/m3e-law.md`) for Android.
 _Avoid_: glass rules, glass allowlist (bare), glass guidelines
@@ -584,7 +584,8 @@ else is allowed to hide chrome.
 per-widget coverage, hiding only the chrome a modal actually overlaps; the
 tab bar's destroy-hide is its ratified exception. Anything else toggling
 chrome visibility is a violation, not a second mechanism.
-_Avoid_: chrome hider, visibility manager, hide flag (ad hoc)
+_Avoid_: chrome hider, visibility manager, hide flag (ad hoc), gate (bare —
+also names the Pipeline assertion unit and "gate test")
 _Layer_: Kit
 
 **View slicer**:
@@ -609,11 +610,13 @@ _Layer_: Kit
 **Edge scrim**:
 The soft fade at the top and bottom of the screen that lets content
 dissolve under the status bar and tab bar instead of hard-clipping.
-`AppBoxKitTopEdgeScrim` / `bottomEdgeScrim` — vertical gradient dissolves
-under floating chrome on the glass tier; per-edge toggles
-(`AppBoxKitScrollEdges`, both-on default); a fade, never a dimming barrier.
-Sibling of the scroll edge effect: one semantic, tier-split — the scrim
-supplies the dissolve on the glass tier, the effect elsewhere.
+`AppBoxKitTopEdgeScrim` / `AppBoxKitBottomEdgeScrim` — Flutter-drawn
+vertical gradient fills (no saveLayer, `IgnorePointer`), hosted by
+`AppBoxKitBottomEdgeScrimHost` (scaffold `bottomEdgeScrim` flag, default
+on); the only dissolve that works on every tier; a fade, never a dimming
+barrier. Rule 15: two independent toggles, do not confuse — the scaffold's
+`bottomEdgeScrim` governs the scrim host; `AppBoxKitScrollEdges` governs
+the per-child scroll edge effect (tier-inert on glass).
 _Avoid_: overlay (bare), dim, barrier, shadow, scrim (bare — also names the
 modal dim barrier and the snackbar blur, which are different things)
 _Layer_: Kit
@@ -622,10 +625,11 @@ _Layer_: Kit
 The progressive blur of content under a pinned bar — switched off on the
 glass tier, where the edge scrim does the job instead.
 `AppBoxKitScrollEdgeEffect` — progressive blur applied to content pixels
-beneath pinned chrome; deliberately inert on the Liquid Glass tier because
-its partial-alpha fade over children would hide native controls — the edge
-scrim supplies the dissolve there (ADR 0010). Two entries, one semantic:
-cross-reference, never conflate.
+beneath pinned chrome; toggled per-child by `AppBoxKitScrollEdges`
+(none/top/bottom/both, default both); deliberately inert on the Liquid
+Glass tier because its partial-alpha fade over children washed glyphs on
+native controls — the edge scrim supplies the dissolve there (rule 15, ADR
+0010). Two entries, one semantic: cross-reference, never conflate.
 _Avoid_: edge blur, scroll fade (bare), treating it as the glass-tier
 dissolve
 _Layer_: Kit
@@ -659,14 +663,19 @@ tier and floating bar are both anchored this way.
 _Avoid_: glass anchor, overlay hack, wrapper view
 _Layer_: Kit
 
-**Detent route**:
-The route type for iOS sheets that stop at partial heights, keeping the
-dim and grabber in step with where the sheet actually is.
-The CN detent sheet route (`showCNDetentSheet`) — detent-tracked dim,
-route-drawn grabber, live sheet rect published during drags so the chrome
-gate sees true coverage.
-_Avoid_: bottom sheet (bare), modal (bare), half sheet, native sheet
-(neither sheet tier is native — the `…ShowNativeSheet` name is retired)
+**Sheet**:
+The slide-up panel — every sheet is the same body-sized kind with a close
+button; there is no second sheet look in the app.
+The body-sized Cupertino path (`CNBottomSheet.showCupertino`, Flutter's
+`showCupertinoSheet`); unsized callers ride a fixed medium height; native
+close icon top-right (`showCloseButton`, default true); the body owns its
+own edge (r=12 top corners + 36×5 grabber) and the route's grabber is off
+so there is exactly one. The CN detent route (`showCNDetentSheet`,
+detent-tracked dim, route-drawn grabber) is retired — it put two visually
+different sheet chromes in the same app.
+_Avoid_: detent route (retired), native sheet (neither sheet tier is
+native — `…ShowNativeSheet` is retired), bottom sheet (bare), modal (bare),
+half sheet
 _Layer_: Kit
 
 ---

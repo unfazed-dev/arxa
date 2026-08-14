@@ -67,7 +67,7 @@ sliders/toggles glass only *during activation*. Ruling 4 extends the
 button-class deviation to every control — user-ratified as a deliberate
 product choice.
 
-**Deselect protocol (if artifacts reappear in a scrollable):** re-demote ONE
+**Deselect ladder (if artifacts reappear in a scrollable):** re-demote ONE
 type per device run, WIDEST GLASS FIRST — glass card, then toolbar, then
 search bar / text field, then sliders / switch, then segmented, popup menu,
 split button, button last. Never blanket-demote again — attribution first.
