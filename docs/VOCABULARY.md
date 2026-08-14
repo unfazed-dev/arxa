@@ -577,6 +577,61 @@ Only under native or no top chrome (law rule 4).
 _Avoid_: cull margin, cache extent (it is paint, not layout)
 _Layer_: Kit
 
+**Chrome gate**:
+The one switch that hides top/bottom bars when a sheet covers them — nothing
+else is allowed to hide chrome.
+`AppBoxKitNativeChromeGate` — the sole hide authority (law ¶72–125, 380–420):
+per-widget coverage, hiding only the chrome a modal actually overlaps; the
+tab bar's destroy-hide is its ratified exception. Anything else toggling
+chrome visibility is a violation, not a second mechanism.
+_Avoid_: chrome hider, visibility manager, hide flag (ad hoc)
+_Layer_: Kit
+
+**View slicer**:
+The iOS engine step that cuts Flutter drawing into layers around native
+views — the reason hidden native things must move off-screen, not just
+"be invisible".
+The engine's `flow/view_slicer.cc` compositing pass; it slices around
+platform-view rects wherever they are, so hidden tabs are translated
+off-screen (law rule 8) and overlays sit on plain anchors (law rule 7).
+_Avoid_: compositor (bare), clipping bug, iOS quirk
+_Layer_: Kit
+
+**Glass warm-up**:
+A boot-time trick that plays each kind of glass once before the user sees
+it, so the first real screen doesn't stutter.
+`AppBoxKitGlassWarmup` — off-screen materialization of each glass kind at
+startup (law rule 9), erasing first-push jank that per-route fixes could
+not.
+_Avoid_: preload, shader warm-up (it is view materialization, not shaders)
+_Layer_: Kit
+
+**Edge scrim**:
+The soft fade at the top and bottom of the screen that lets content
+dissolve under the status bar and tab bar instead of hard-clipping.
+`AppBoxKitTopEdgeScrim` / `bottomEdgeScrim` — vertical gradient dissolves
+under floating chrome on the glass tier; a fade, never a dimming barrier.
+_Avoid_: overlay (bare), dim, barrier, shadow
+_Layer_: Kit
+
+**Plain anchor**:
+Putting floating things (toasts, the floating bar) on an ordinary
+non-glass native container so the engine can't slice or restyle them.
+A plain native container in the root overlay hosting overlay widgets —
+escapes view-slicer geometry and glass-on-glass interference; the toast
+tier and floating bar are both anchored this way.
+_Avoid_: glass anchor, overlay hack, wrapper view
+_Layer_: Kit
+
+**Detent route**:
+The route type for iOS sheets that stop at partial heights, keeping the
+dim and grabber in step with where the sheet actually is.
+The CN detent sheet route (`showCNDetentSheet`) — detent-tracked dim,
+route-drawn grabber, live sheet rect published during drags so the chrome
+gate sees true coverage.
+_Avoid_: bottom sheet (bare), modal (bare), half sheet
+_Layer_: Kit
+
 ---
 
 ## Design medium
