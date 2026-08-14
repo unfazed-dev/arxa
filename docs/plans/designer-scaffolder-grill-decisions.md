@@ -324,3 +324,55 @@ binding"), designer SKILL.md (compose-time rule), scaffolder SKILL.md
 ## GRILL COMPLETE
 Q1–Q15, audit resolutions, ratifications, and Q-v2-1…5 locked (Q-v2-2 deferred, reopen
 point recorded). Next: execute studio v2 build-out per this log.
+
+---
+
+# Fidelity-mode grill (2026-08-14) — how the scaffolder chooses design fidelity
+
+Founder asked: appbox covers ios/android/web/desktop; wants a config file that scaffolds
+the design as (1) pure Flutter, (2) mix of native chrome + Flutter (default), or
+(3) full native only. Docs-grounded state before ruling: mix is already the kit's
+runtime default (tier gate `wantNative && AppBoxKitPlatform.supports*`); pure Flutter
+exists only per-widget via `preferFlutterTier` (no app-level knob); "full native only"
+did not exist and "no Flutter at all" is not expressible in the kit.
+
+## QF-1 — meaning of "full native only" (user-confirmed: strict mode)
+
+- Mode 3 = **strict mode**: every widget with a native tier must use it; an unsupported
+  platform is an **assert/build error**, never a silent frosted fallback.
+- Explicitly NOT SwiftUI/Compose codegen — "no Flutter at all" is a separate product,
+  out of kit scope, not a config value.
+
+## QF-2 — where the knob lives (user-confirmed: both, data + tree-shake)
+
+- **Runtime root default is the SSOT**: scaffolder-written config data, emitted as one
+  app-root default that flips every widget's `wantNative`/`preferFlutterTier` default.
+  Mode is data, consistent with P06/R3 (targets are a data edit, not a code edit).
+- **Plus tree-shake at scaffold time**: when a platform's mode is `flutter`, the
+  scaffolder omits the native-tier wiring (glass warm-up, chrome gate, view slicer
+  hookups) rather than leaving dormant law machinery in the generated app.
+
+## QF-3 — config shape (user-confirmed: per-platform map)
+
+- Not one global enum. A per-platform map, e.g.
+  `{ios: native, android: native, web: flutter, desktop: flutter}`.
+- `flutter` is the **only legal value** where no native tier exists (web/desktop today);
+  the scaffolder must reject `mix`/`native` there rather than silently no-op.
+- iOS native tier = Liquid Glass; Android native tier = Compose M3E — the map is honest
+  about the platform matrix instead of pretending one switch covers it.
+
+## QF-4 — blanket-demote law conflict (user-confirmed: formal amendment)
+
+- A global `flutter` mode is mechanically the one-switch blanket demotion the deselect
+  ladder bans (liquid-glass-allowlist.md "Deselect protocol" :70-73, ruling 4 :55-62,
+  rule 13 :505-508; M3E law).
+- Resolution: **formal amendment** — add a named sanctioned exception, **"app fidelity
+  mode"**, to the allowlist + M3E law (same pattern as the destroy-hide exception), so
+  gates/lints explicitly recognize scaffolded pure-Flutter apps as lawful. The
+  one-at-a-time attribution ladder remains binding for glitch response inside any
+  mix/strict app.
+
+## FIDELITY GRILL COMPLETE
+QF-1…QF-4 locked. Consult-mode advisor skipped (no API key configured — script returned
+`status:"error"`; recorded per convention, proceeded on primary sources). Next: spec the
+config file format + scaffolder emission and draft the law amendment, as separate steps.
