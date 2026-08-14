@@ -577,6 +577,20 @@ Only under native or no top chrome (law rule 4).
 _Avoid_: cull margin, cache extent (it is paint, not layout)
 _Layer_: Kit
 
+**Glass tier / Native tier**:
+Which look a screen is actually rendering: the real Apple see-through
+material drawn by iOS itself, or a Flutter-painted imitation used everywhere
+else.
+The runtime branch every law rule is scoped against — glass tier (native
+Liquid Glass platform views on iOS/macOS 26+), M3E tier (Compose Material 3
+Expressive on Android), frosted/fallback tier (Flutter-drawn). "Native tier"
+names the platform-view branch of a two-tier widget; the tier gate is always
+a structural `wantNative && platform-supports` check, never a bare
+`Platform.isX` test.
+_Avoid_: platform check, `Platform.isIOS` / `Platform.isAndroid` branching,
+fallback (bare, when the tier is meant)
+_Layer_: Kit
+
 **Chrome gate**:
 The one switch that hides top/bottom bars when a sheet covers them — nothing
 else is allowed to hide chrome.
@@ -616,7 +630,11 @@ vertical gradient fills (no saveLayer, `IgnorePointer`), hosted by
 on); the only dissolve that works on every tier; a fade, never a dimming
 barrier. Rule 15: two independent toggles, do not confuse — the scaffold's
 `bottomEdgeScrim` governs the scrim host; `AppBoxKitScrollEdges` governs
-the per-child scroll edge effect (tier-inert on glass).
+the per-child scroll edge effect (tier-inert on glass). The top scrim is
+skipped automatically under `extendBehindTopBar`; the bottom scrim reads the
+RAW device inset (`MediaQuery.viewPaddingOf(context).bottom`) and must mount
+outside any wrapper that mirrors bar clearance into `viewPadding`, or it
+double-counts the bar block.
 _Avoid_: overlay (bare), dim, barrier, shadow, scrim (bare — also names the
 modal dim barrier and the snackbar blur, which are different things)
 _Layer_: Kit
@@ -666,16 +684,51 @@ _Layer_: Kit
 **Sheet**:
 The slide-up panel — every sheet is the same body-sized kind with a close
 button; there is no second sheet look in the app.
-The body-sized Cupertino path (`CNBottomSheet.showCupertino`, Flutter's
-`showCupertinoSheet`); unsized callers ride a fixed medium height; native
-close icon top-right (`showCloseButton`, default true); the body owns its
-own edge (r=12 top corners + 36×5 grabber) and the route's grabber is off
-so there is exactly one. The CN detent route (`showCNDetentSheet`,
-detent-tracked dim, route-drawn grabber) is retired — it put two visually
-different sheet chromes in the same app.
+The body-sized Cupertino path (`appBoxKitShowSheet()` →
+`CNBottomSheet.showCupertino`, Flutter's `showCupertinoSheet`); unsized
+callers ride a fixed medium height; native close icon top-right
+(`showCloseButton`, default true); dim is a STATIC Cupertino barrier under
+`showOverlay` (default true), never tracked; the body owns its own edge
+(r=12 top corners + 36×5 grabber) and the route's grabber is off so there
+is exactly one. The CN detent route (`showCNDetentSheet`, detent-tracked
+dim, route-drawn grabber) is retired — it put two visually different sheet
+chromes in the same app.
 _Avoid_: detent route (retired), native sheet (neither sheet tier is
 native — `…ShowNativeSheet` is retired), bottom sheet (bare), modal (bare),
 half sheet
+_Layer_: Kit
+
+**Deselect ladder**:
+The agreed order for switching controls back off native glass, one at a
+time, if the artifacts ever return.
+The rollback protocol for ruling 4's native-everywhere stance: re-demote ONE
+widget type per device run, widest glass first — glass card, toolbar, search
+bar / text field, sliders / switch, segmented, popup menu, split button,
+button last. Never blanket-demote; attribution comes first. Reads tier, not
+opacity, so a densified card is still the first re-demote.
+_Avoid_: blanket demotion, ladder (bare — that is the viewport ladder),
+fallback order, deselect protocol (superseded name)
+_Layer_: Kit
+
+**Double-bar ban**:
+No screen may wrap a nested set of screens in its own top bar, or pushed
+screens end up wearing two.
+A structural rule of both platform laws: a surface must never wrap a nested
+ROUTER in floating chrome, because shell-level chrome stacks above every
+route pushed inside it. A pushed route never inherits an ancestor surface's
+floating chrome — each surface owns its chrome or has none. Flagged by the
+lint law pass.
+_Avoid_: nested chrome, shell-level app bar, inherited chrome
+_Layer_: Kit
+
+**Chrome existence**:
+Whether a screen has a top bar at all is a design decision, not something
+the glass rules impose.
+The laws govern COMPOSITION, never inventory: appbox-designer's frozen
+anatomy decides whether a surface has top chrome; the law decides how chrome
+is assembled where it exists. "Native glass always" scopes to MATERIAL, not
+to presence — a bar-less surface is fully lawful and is not a lint finding.
+_Avoid_: every screen needs a bar, chrome requirement, mandatory app bar
 _Layer_: Kit
 
 ---
@@ -958,3 +1011,4 @@ Dead words and what replaced them. Never reintroduce the left column.
 | left rail | **Activity Panel** | same consolidation; dead in code |
 | right rail | **Composer Panel** | same consolidation; the composer panel is permanent and single-state; dead in code |
 | mainboard | **Main Panel** | proposed during the panel consolidation, renamed before it ever landed |
+| detent route / detent-tracked dim | **`appBoxKitShowSheet`** (the one body-sized Cupertino sheet) | retired 2026-08-14: it took only the unsized case and put two sheet chromes in one app; the tracked dim is now a static barrier under `showOverlay`, and the body owns its own grabber |
