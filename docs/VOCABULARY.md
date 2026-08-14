@@ -592,12 +592,17 @@ fallback (bare, when the tier is meant)
 _Layer_: Kit
 
 **Chrome gate**:
-The one switch that hides top/bottom bars when a sheet covers them — nothing
-else is allowed to hide chrome.
-`AppBoxKitNativeChromeGate` — the sole hide authority (law ¶72–125, 380–420):
-per-widget coverage, hiding only the chrome a modal actually overlaps; the
-tab bar's destroy-hide is its ratified exception. Anything else toggling
-chrome visibility is a violation, not a second mechanism.
+The one switch that takes native glass off the screen while a screen slides
+away, so it doesn't flicker back into view.
+`AppBoxKitNativeChromeGate` — the SOLE hide authority for native glass, with
+exactly one hide reason: an opaque route transition above a gate that is not
+travelling with it. Modal coverage is NOT a hide reason — a sheet or dialog
+never blanks the chrome behind it; the barrier scrim dims still-painted
+glass instead (rule 11 step 2, tombstoned against reintroduction). Reads
+navigator gesture state, not animation state, so an interactive back-swipe
+reads as the pop it is. The tab bar's destroy-hide is the one ratified
+exception. Anything else toggling chrome visibility is a violation, not a
+second mechanism.
 _Avoid_: chrome hider, visibility manager, hide flag (ad hoc), gate (bare —
 also names the Pipeline assertion unit and "gate test")
 _Layer_: Kit
@@ -673,12 +678,19 @@ show
 _Layer_: Kit
 
 **Plain anchor**:
-Putting floating things (toasts, the floating bar) on an ordinary
-non-glass native container so the engine can't slice or restyle them.
-A plain native container in the root overlay hosting overlay widgets —
-escapes view-slicer geometry and glass-on-glass interference; the toast
-tier and floating bar are both anchored this way.
-_Avoid_: glass anchor, overlay hack, wrapper view
+Putting floating things (the floating bar's title pill, toast tiers) on an
+ordinary non-glass native container so the engine keeps them on top instead
+of erasing them.
+A stationary plain-effect container (`plain` renders no material, so rule
+5's glass-on-glass ban stays closed) beneath a Flutter-drawn surface. It
+does not escape the view slicer — it exploits it: the anchor exists so the
+surface's ops DO intersect a platform-view rect every frame, hoisting them
+into the topmost overlay layer. Size the anchor to the SURFACE, never
+full-screen — a full-bleed anchor swallows touches meant for content
+beneath. Transient tiers additionally mount in the root overlay, but that
+is rule 14, not the anchor.
+_Avoid_: glass anchor, overlay hack, wrapper view, escapes the slicer (it
+exploits it)
 _Layer_: Kit
 
 **Sheet**:
