@@ -1,3 +1,5 @@
+import 'package:cupertino_native_better/cupertino_native_better.dart'
+    show LiquidGlassContainer;
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:m3e_collection/m3e_collection.dart' show IconButtonM3E;
@@ -167,5 +169,31 @@ void main() {
     expect(tester.takeException(), isAssertionError,
         reason: 'the bar enforces the one-size bar-glyph contract (18pt '
             'default) — a custom size breaks leading/trailing alignment');
+  });
+
+  testWidgets('kit.ui-library.native-input-bar — opaque base rides a plain compositing anchor',
+      (tester) async {
+    // The anchor (LiquidGlassContainer, CNGlassEffect.plain) is what keeps the
+    // opaque base in the slicer overlay above passing platform views — without
+    // it the base drops to the background canvas and the bar reads translucent
+    // (same mechanism as the floating bar's title pill). Pure Dart here: the
+    // vendored container only bridges when a UiKitView materializes.
+    await pumpBar(tester,
+        const AppBoxKitNativeInputBar(hintText: 'Message', wantNative: false));
+    expect(
+      find.ancestor(
+        of: find.byType(SafeArea),
+        matching: find.byType(LiquidGlassContainer),
+      ),
+      findsOneWidget,
+      reason: 'opaqueGlass (default) mounts the plain anchor under the base',
+    );
+
+    await pumpBar(
+        tester,
+        const AppBoxKitNativeInputBar(
+            hintText: 'Message', wantNative: false, opaqueGlass: false));
+    expect(find.byType(LiquidGlassContainer), findsNothing,
+        reason: 'transparent backing needs no anchor — nothing to keep opaque');
   });
 }

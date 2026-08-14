@@ -1,3 +1,5 @@
+import 'package:cupertino_native_better/cupertino_native_better.dart'
+    show CNGlassEffect, LiquidGlassConfig, LiquidGlassContainer;
 import 'package:flutter/material.dart';
 
 import 'package:appbox_kit_core/common/appbox_kit_app_constants.dart';
@@ -149,12 +151,25 @@ class AppBoxKitNativeInputBar extends StatelessWidget {
     // Opaque base wraps the SafeArea (so the home-indicator strip is painted)
     // but sits INSIDE the viewInsets padding (so the whole surface lifts onto
     // the keyboard with the bar).
+    // PLAIN native anchor (same mechanism as the floating bar's title pill):
+    // the bar floats over a platform-view-bearing scrollable, and the
+    // engine's view slicer (flow/view_slicer.cc) keeps Flutter ops above the
+    // platform views only while they intersect a platform-view rect —
+    // otherwise the opaque base drops to the difference-clipped background
+    // canvas and passing native glass renders OVER it, reading as a
+    // translucent bar. The stationary platform view under the surface holds
+    // the intersection every frame. `plain` renders nothing (clear fill,
+    // Glass.identity), so no glass-on-glass stacking can occur; on tiers
+    // without native glass the vendor container degrades to its bare child.
     final Widget backed = opaqueGlass
-        ? AppBoxKitFrostedSurface(
-            borderRadius: 0,
-            platformViewSafe: true,
-            tint: scheme.surfaceContainerLowest.withValues(alpha: 1.0),
-            child: SafeArea(top: false, child: bar),
+        ? LiquidGlassContainer(
+            config: const LiquidGlassConfig(effect: CNGlassEffect.plain),
+            child: AppBoxKitFrostedSurface(
+              borderRadius: 0,
+              platformViewSafe: true,
+              tint: scheme.surfaceContainerLowest.withValues(alpha: 1.0),
+              child: SafeArea(top: false, child: bar),
+            ),
           )
         : SafeArea(top: false, child: bar);
     return Padding(
