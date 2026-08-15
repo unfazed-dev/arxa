@@ -392,9 +392,22 @@ and two separate mechanisms were letting other things paint over them:
 2. **Native glass scrolling over Flutter ops.** The overlay's Flutter drawing
    has to stay in the topmost layer while real platform-view glass scrolls
    beneath it. Each transient tier therefore anchors on a **plain**
-   `LiquidGlassContainer` — a platform view that renders *nothing* (clear fill,
-   `Glass.identity`) and exists only to pin the view-slicer geometry. Same
-   mechanism the input bar's opaque base and the floating bar's title pill use.
+   `LiquidGlassContainer` — a platform view that exists only to pin the
+   view-slicer geometry. Same mechanism the input bar's opaque base and the
+   floating bar's title pill use. **"Plain" is not "invisible" (2026-08-14,
+   `e75839df`):** natively it paints nothing (`.clear` fill at
+   `Glass.identity`, LiquidGlassContainerView.swift:249), but an unoccluded
+   anchor still forces a view-slicer seam at its unclipped rect — observed
+   on-device as a faint hard-edged rectangle behind the center pill. The
+   occlusion invariant is therefore kit-wide: **the anchor must wrap exactly the opaque decorated surface —
+   no padding, transitions, or constraint slack inside the anchor.**
+   Transitions/padding sit outside it; opacity and scale mutators land on
+   platform views, so that is safe. **"Occluded" means no exposed anchor
+   margin (ruled 2026-08-14):** the surface's own decorated fill covers the
+   whole anchor rect at its designed alpha — the frosted 0.92/0.96 default
+   qualifies, and padding *inside* the decorated container is lawful. The
+   defect class is clear margin between anchor and decoration, not fill
+   transmission; forcing alpha 1.0 buys nothing against the seam.
 
 The toast tier itself is **Flutter-drawn** (`useGlassEffect: false` on every
 kind), and that is load-bearing rather than a downgrade: the vendor's glass

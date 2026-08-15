@@ -66,6 +66,30 @@ void main() {
         reason: 'the anchor is a compositing fixture, not a visible surface '
             '— the frosted pill above it owns every visible pixel');
 
+    // FULL-OCCLUSION invariant (on-device 2026-08-15; reference fix
+    // e75839df). `plain` is NOT pixel-free in practice: any anchor area the
+    // opaque pill does not cover renders a faint hard-edged luminance
+    // rectangle on the Liquid Glass tier. So the anchor must wrap EXACTLY
+    // the decorated pill — the tuck AnimatedSlide and every gap stay
+    // OUTSIDE it. Rect equality is the mechanical guard: interpose a
+    // Padding, an Align or a slack SizedBox and this fails.
+    expect(
+      tester.getRect(find
+          .ancestor(
+            of: find.text('Kit Showcase'),
+            matching: find.byType(LiquidGlassContainer),
+          )
+          .first),
+      tester.getRect(find
+          .ancestor(
+            of: find.text('Kit Showcase'),
+            matching: find.byType(AppBoxKitFrostedSurface),
+          )
+          .first),
+      reason: 'exposed anchor margin renders a hard-edged rect on the glass '
+          'tier — keep transitions and padding outside the anchor',
+    );
+
     // Control row is exactly 44 — the same block the boxed bar reserves, so
     // kAppBoxKitFloatingBarBlockHeight stays honest.
     final row = tester.getRect(find.byKey(const Key('action')));

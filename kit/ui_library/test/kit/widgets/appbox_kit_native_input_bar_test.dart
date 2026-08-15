@@ -6,6 +6,7 @@ import 'package:m3e_collection/m3e_collection.dart' show IconButtonM3E;
 import 'package:appbox_kit_core/common/appbox_kit_glyphs.dart';
 import 'package:appbox_kit_core/platform/appbox_kit_platform.dart';
 import 'package:text_field_m3e/text_field_m3e.dart' show TextFieldM3E;
+import 'package:appbox_kit_ui_library/widgets/appbox_kit_frosted_surface.dart';
 import 'package:appbox_kit_ui_library/widgets/appbox_kit_native_icon_button.dart';
 import 'package:appbox_kit_ui_library/widgets/appbox_kit_native_input_bar.dart';
 
@@ -187,6 +188,20 @@ void main() {
       ),
       findsOneWidget,
       reason: 'opaqueGlass (default) mounts the plain anchor under the base',
+    );
+
+    // FULL-OCCLUSION invariant (on-device 2026-08-15; reference fix
+    // e75839df). `plain` is NOT pixel-free in practice: any anchor area the
+    // opaque base does not cover renders a faint hard-edged luminance
+    // rectangle on the Liquid Glass tier. So the anchor wraps EXACTLY the
+    // opaque frosted base — the keyboard viewInsets Padding stays OUTSIDE
+    // it. Rect equality is the mechanical guard against padding or a
+    // transition creeping back inside.
+    expect(
+      tester.getRect(find.byType(LiquidGlassContainer)),
+      tester.getRect(find.byType(AppBoxKitFrostedSurface)),
+      reason: 'exposed anchor margin renders a hard-edged rect on the glass '
+          'tier — keep padding and transitions outside the anchor',
     );
 
     await pumpBar(
