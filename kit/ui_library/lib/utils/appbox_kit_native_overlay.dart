@@ -212,6 +212,11 @@ class _AppBoxKitSnackbarNativeScrim extends StatelessWidget {
               // without native glass the container degrades to its bare
               // child (never inserted there anyway — service gates on
               // supportsLiquidGlass).
+              // transition-exempt: transient overlay, not chrome — the scrim
+              // lives in the ROOT overlay above every route by design (the
+              // snackbar law: highest surface, resolves the root overlay). It
+              // must ride over route slides, not gate with them; its lifetime
+              // is the lease's, torn down by release(), never by navigation.
               const LiquidGlassContainer(
                 config: LiquidGlassConfig(
                   effect: CNGlassEffect.regular,
