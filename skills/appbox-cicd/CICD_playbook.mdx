@@ -1,0 +1,127 @@
+# CICD_playbook — the canon for appbox-cicd
+
+<narrative>
+This playbook is the canon for standing up CI/CD the appbox way. The skill
+exists because pipelines rot fastest at the decision layer: an agent that
+guesses visibility, runner, or trunk policy builds a contract nobody agreed
+to. Everything below was first walked end-to-end on the energize engagement
+(2026-08-16) and generalized from the t3ci analysis of app-box's own CI.
+</narrative>
+
+## 1. The decision tree (grill order IS dependency order)
+
+| # | Decision | Depends on | Wrong guess costs |
+|---|---|---|---|
+| 1 | Deliverable | — | Gates for code that will never exist |
+| 2 | Repo shape | 1 | CI structure, path filters, monorepo caching |
+| 3 | Stack | 1,2 | Every gate command, runner OS, caching key |
+| 4 | Hosting/visibility | — | Runner SAFETY (self-hosted only on private) |
+| 5 | Runner | 3,4 | Minutes cost vs machine-uptime coupling |
+| 6 | Gates | 2,3,5 | What merge means — the repo's actual contract |
+| 7 | Trunk/protection | 6 | Rename after push is history surgery |
+| 8 | Agent letter | 6 | Mandates must name the real check command |
+| 9 | CD timing | 1 | Deploy machinery with no target = overbuild |
+
+Grill rules: one question per turn; each option carries a recommendation
+and its tradeoff in one sentence; facts discoverable from the environment
+(git remote? gh auth? existing workflow?) are looked up, never asked.
+
+## 2. The t3ci improvement list (all embodied, none optional)
+
+1. `timeout-minutes` on EVERY job — a hung job holds merges forever.
+2. Concurrency `ci-${{ github.ref }}` + `cancel-in-progress: true`.
+3. Commit convention REQUIRED at day one for zero-history repos; advisory
+   only with measured legacy excuses (app-box: 94/644 commits).
+4. Explicit caching on GitHub-hosted runners (self-hosted may lean on warm
+   caches — say so in a comment, don't leave it implicit).
+5. Per-repo runner registration (`~/actions-runner-<repo>`), launchd
+   service, labels `macOS,ARM64`; document the sleeping-laptop queue.
+6. Branch protection via `gh api` (idempotent PUT), `strict: true`,
+   contexts = exact job names, re-applied after any job rename.
+7. One root check command — local green = CI green, no drift.
+8. Protection enabled only AFTER a watched green run (never lock a red
+   trunk).
+9. The non-Actions status-context escape hatch (a local script can post a
+   `local-ci` context for checks only your machine can run).
+
+## 3. Generated artifacts (templates)
+
+### scripts/check.sh — shape laws
+
+- `set -uo pipefail`; cd to repo root from ${0%/*}/..
+- fvm PATH injection: `[ -d "$HOME/fvm/default/bin" ] && export PATH=...`
+- "Green by absence": missing pubspec/package dir → explicit skip message,
+  never red. Empty repos are green; only real code can be red.
+- Commit gate prints each BAD subject — the fix must be obvious from output.
+- Commit gate uses `git rev-list --no-merges` — PR events test an
+  auto-generated merge commit ("Merge X into Y") whose mechanical subject
+  would false-positive a naive prefix check. Found live on energize PR #1:
+  local reproduction passed (no test-merge exists locally) while CI failed.
+  Every generated gate carries the exclusion from day one.
+- Appbox-built target: wrap `appbox gate --all`; exit 2 (env/not-applicable)
+  is a SKIP, not a failure — treat it as the gates' README contracts.
+
+### .github/workflows/ci.yml — shape laws
+
+- `on: push: [main]` + `pull_request` (unfiltered) — trunk pushes check too.
+- Job per area, each = one `scripts/check.sh <area>` call. CI never runs
+  raw dart/flutter directly; the script is the single contract surface.
+- Convention job: `fetch-depth: 0`; PRs check `origin/main..HEAD`, pushes
+  check `HEAD`.
+- Self-hosted jobs pin labels `[self-hosted, macOS, ARM64]`; hosted jobs
+  pin `ubuntu-latest` + setup actions + cache.
+
+### docs/ci-setup.md — the runner recipe
+
+Per-repo registration commands, svc.sh service install, the
+sleeping-laptop caveat, the protection PUT, and the solo loop
+(`scripts/check.sh` → `gh pr create --fill` → `gh pr checks --watch` →
+`gh pr merge --squash --auto`).
+
+### The agent letter (AGENTS.md) — what changes per repo
+
+- Mandates name THIS repo's real commands (`scripts/check.sh`, not
+  `appbox gate` unless it IS an appbox target).
+- Blast radius lists THIS repo's production surfaces.
+- file-pr lists THIS repo's required-check job names.
+- babysit-pr knows THIS repo's runner-flake signature (queued ≠ red).
+- Model-routing table ships EMPTY; only the project's own audit fills it.
+
+## 4. Appbox-built targets — wiring, never duplicating
+
+| Concern | Wire this | Never do |
+|---|---|---|
+| Full gate suite | `appbox gate --all` (dependency order) | Re-assert gates in scripts |
+| Architecture | `appbox gate arch` (arch_guard) | Inline validators |
+| Tests | `appbox gate tests` (T1/T2/T3) | Custom anti-pattern scans |
+| Visual | `appbox lens` / gate lens | Custom screenshot diffing |
+| Docs KB | `appbox docs` | Custom link checkers |
+| Deploy | `appbox deploy doctor` then HALT | Mint approvalTokens |
+
+The deploy gate is agent-proof by design: CI prepares, `doctor`-checks,
+and halts at the approval gate recording a `halted` ledger row. The
+operator confirms target+version+account; only then does deploy run.
+
+## 5. Verification recipes
+
+- Day zero: `scripts/check.sh` on the empty repo → PASS (green by absence).
+- Every commit: local check == CI verdict — if they ever disagree, the
+  script drifted from the workflow: fix the drift, not the check.
+- First protection: `gh run watch` green BEFORE the protection PUT.
+- PR-event parity: the first real PR must confirm the convention job is
+  green on GitHub's test-merge commit — the one case no local run can
+  reproduce (that is how the --no-merges law was earned).
+- Job rename: update `contexts` in the same commit, or merges brick.
+- Self-test idea (R5): each generated artifact carries a negative case —
+  a repo with a bad commit subject must fail `check.sh commits`; a
+  workflow missing timeout-minutes fails review.
+
+## 6. Failure modes this skill exists to prevent
+
+- **Confident pipeline fiction** — generated CI that never ran, protecting
+  nothing (verify: first run watched green).
+- **Advisory drift** — every check becomes optional, merges mean nothing.
+- **Infra-as-code-red** — agent "fixes" code because a runner slept
+  (queued ≠ red; babysit-pr owns the call).
+- **Overbuild** — deploy stages, matrix jobs, caching layers for repos
+  that will never need them. The scope ceiling applies to pipelines.
