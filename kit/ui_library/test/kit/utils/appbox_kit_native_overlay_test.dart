@@ -74,6 +74,13 @@ void main() {
   Finder scrimDim() => find.byWidgetPredicate(
       (w) => w is ColoredBox && w.color == Colors.black54);
 
+  /// The scrim's own AnimatedOpacity target — located through the dim so a
+  /// stray AnimatedOpacity elsewhere in the overlay can't satisfy the finder.
+  double scrimOpacity(WidgetTester tester) => tester
+      .widget<AnimatedOpacity>(
+          find.ancestor(of: scrimDim(), matching: find.byType(AnimatedOpacity)))
+      .opacity;
+
   testWidgets(
       'kit.ui-library.native-overlay — scrim lease mounts one shared entry, '
       'ref-counts, and removes after fade', (tester) async {
@@ -130,6 +137,65 @@ void main() {
     expect(scrimDim(), findsNothing);
     expect(AppBoxKitSnackbarScrimLease.debugScrimMounted, isFalse);
     expect(depth(), 0);
+  });
+
+  testWidgets(
+      'kit.ui-library.native-overlay — scrim FADES IN: mounts at opacity 0 and '
+      'lights on the next frame', (tester) async {
+    // Regression: `acquire` used to set `_visible` true BEFORE inserting the
+    // entry, so AnimatedOpacity's first build was already 1.0 and never
+    // animated — a full-screen Glass.regular frost SNAPPED on while dismissal
+    // got a 200ms fade. Symmetry is the assertion: 0 on the mount frame, 1
+    // after the post-frame callback lands.
+    await tester.pumpWidget(const MaterialApp(home: SizedBox.shrink()));
+    final overlay = tester.state<OverlayState>(find.byType(Overlay).first);
+
+    final lease = AppBoxKitSnackbarScrimLease.acquire(overlay, Colors.black54);
+    await tester.pump(); // mount frame
+
+    expect(scrimOpacity(tester), 0.0,
+        reason: 'the frost must not snap on at full strength');
+
+    await tester.pump(); // post-frame callback lights it
+    expect(scrimOpacity(tester), 1.0,
+        reason: 'the fade-in target must be reached once mounted');
+
+    await tester.pump(const Duration(milliseconds: 250));
+    unawaited(lease.release());
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 250));
+    await tester.pump();
+    expect(AppBoxKitSnackbarScrimLease.debugScrimMounted, isFalse);
+  });
+
+  testWidgets(
+      'kit.ui-library.native-overlay — a second lease in the SAME turn cannot '
+      'defeat the fade-in', (tester) async {
+    // GetX queues concurrent snackbars, so two acquires can land in one
+    // synchronous turn: the first creates the entry dark and schedules the
+    // post-frame, the second finds `_entry != null`. If that second call
+    // flipped `_visible` immediately it would light the entry BEFORE its mount
+    // frame rendered and the frost would snap on exactly as before the fix —
+    // the concurrent path being the one GetX actually produces.
+    await tester.pumpWidget(const MaterialApp(home: SizedBox.shrink()));
+    final overlay = tester.state<OverlayState>(find.byType(Overlay).first);
+
+    final leaseA = AppBoxKitSnackbarScrimLease.acquire(overlay, Colors.black54);
+    final leaseB = AppBoxKitSnackbarScrimLease.acquire(overlay, Colors.black54);
+    await tester.pump(); // mount frame
+
+    expect(scrimOpacity(tester), 0.0,
+        reason: 'the co-arriving lease must not pre-light the mount frame');
+
+    await tester.pump();
+    expect(scrimOpacity(tester), 1.0);
+
+    unawaited(leaseA.release());
+    unawaited(leaseB.release());
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 250));
+    await tester.pump();
+    expect(AppBoxKitSnackbarScrimLease.debugScrimMounted, isFalse);
   });
 
   testWidgets(

@@ -87,6 +87,11 @@ class AppBoxKitSnackbarScrimLease {
 
   static int _depth = 0;
   static OverlayEntry? _entry;
+
+  /// True between inserting a fresh entry and its mount frame landing, so a
+  /// lease arriving in the same turn defers the fade-in flip to the scheduled
+  /// post-frame instead of pre-lighting the entry.
+  static bool _mountPending = false;
   static final ValueNotifier<bool> _visible = ValueNotifier<bool>(false);
   static final List<SnackbarController> _controllers = <SnackbarController>[];
 
@@ -101,8 +106,16 @@ class AppBoxKitSnackbarScrimLease {
   static AppBoxKitSnackbarScrimLease acquire(
       OverlayState overlay, Color color) {
     _depth++;
-    _visible.value = true;
     if (_entry == null) {
+      // Mount DARK and light it on the next frame. Setting `_visible` true
+      // before the insert made the entry's first build already 1.0, and
+      // AnimatedOpacity does not animate its initial value — so a full-screen
+      // Glass.regular frost snapped on at full strength while dismissal got a
+      // 200ms fade. The post-frame flip gives the entry one frame at 0, so the
+      // implicit animation has a value to travel from and the fade is
+      // symmetric in and out.
+      _visible.value = false;
+      _mountPending = true;
       _entry = OverlayEntry(
         builder: (_) => _AppBoxKitSnackbarNativeScrim(
           visible: _visible,
@@ -111,6 +124,20 @@ class AppBoxKitSnackbarScrimLease {
         ),
       );
       overlay.insert(_entry!);
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _mountPending = false;
+        // Guard the release that beat the frame: no lease left means the
+        // scrim is already tearing down and must not light back up.
+        if (_depth > 0) _visible.value = true;
+      });
+    } else if (!_mountPending) {
+      // Entry already up and past its mount frame (a lease arriving mid-fade):
+      // flip immediately so AnimatedOpacity animates back up from wherever the
+      // fade-out had reached. While a mount is still pending — GetX queues
+      // concurrent snackbars, so two acquires can share one synchronous turn —
+      // the scheduled post-frame owns the flip; lighting it here would pre-lit
+      // the mount frame and restore the snap-on this fix removes.
+      _visible.value = true;
     }
     return AppBoxKitSnackbarScrimLease._();
   }
@@ -138,6 +165,10 @@ class AppBoxKitSnackbarScrimLease {
     _entry?.remove();
     _entry?.dispose();
     _entry = null;
+    // Clear alongside the entry it guards: a teardown that beat the mount
+    // frame must not leave the next acquire deferring to a callback that
+    // already ran.
+    _mountPending = false;
     _controllers.clear();
   }
 }
