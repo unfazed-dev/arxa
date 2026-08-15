@@ -688,8 +688,12 @@ _Layer_: Kit
 Putting floating things (the floating bar's title pill, toast tiers) on an
 ordinary non-glass native container so the engine keeps them on top instead
 of erasing them.
-A stationary plain-effect container (`plain` renders no material, so rule
-5's glass-on-glass ban stays closed) beneath a Flutter-drawn surface. It
+A stationary plain-effect container (`plain` draws no glass material, so
+rule 5's glass-on-glass ban stays closed — but it is NOT invisible: an
+unoccluded anchor forces a view-slicer seam at its unclipped rect, seen as
+a faint hard-edged rectangle on the glass tier, 2026-08-14 `e75839df`, so
+the anchor must be fully occluded by its opaque surface — nothing
+interposed inside it) beneath a Flutter-drawn surface. It
 does not escape the view slicer — it exploits it: the anchor exists so the
 surface's ops DO intersect a platform-view rect every frame, hoisting them
 into the topmost overlay layer. Size the anchor to the SURFACE, never
