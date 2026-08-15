@@ -81,6 +81,16 @@ void main() {
           find.ancestor(of: scrimDim(), matching: find.byType(AnimatedOpacity)))
       .opacity;
 
+  /// The value actually on screen — AnimatedOpacity's internal FadeTransition
+  /// animation, not the widget's target. Pins the tween itself: a swap to
+  /// plain `Opacity` breaks the finder, and `duration: Duration.zero` can't
+  /// produce a mid-tween fractional value.
+  double renderedScrimOpacity(WidgetTester tester) => tester
+      .widget<FadeTransition>(
+          find.ancestor(of: scrimDim(), matching: find.byType(FadeTransition)))
+      .opacity
+      .value;
+
   testWidgets(
       'kit.ui-library.native-overlay — scrim lease mounts one shared entry, '
       'ref-counts, and removes after fade', (tester) async {
@@ -159,6 +169,17 @@ void main() {
     await tester.pump(); // post-frame callback lights it
     expect(scrimOpacity(tester), 1.0,
         reason: 'the fade-in target must be reached once mounted');
+
+    // Pin the tween, not just the target: halfway through the 200ms fade the
+    // RENDERED opacity must be strictly mid-flight. Duration.zero or a plain
+    // `Opacity` swap would pass the target assertions above yet fail here.
+    await tester.pump(const Duration(milliseconds: 100));
+    final midFade = renderedScrimOpacity(tester);
+    expect(midFade, greaterThan(0.0),
+        reason: 'mid-tween the scrim must already be visible');
+    expect(midFade, lessThan(1.0),
+        reason: 'mid-tween the scrim must not have snapped to full strength — '
+            'a zero-duration tween would already read 1.0 here');
 
     await tester.pump(const Duration(milliseconds: 250));
     unawaited(lease.release());
