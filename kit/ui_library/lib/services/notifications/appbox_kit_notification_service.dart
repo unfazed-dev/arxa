@@ -565,11 +565,18 @@ class _KitCenterToastPillState extends State<_KitCenterToastPill>
           //
           // The anchor sits INNERMOST, wrapping exactly the opaque decorated
           // pill (same geometry as the vendor CNToast fallback). `plain` is
-          // NOT pixel-free in practice: any anchor margin exposed beyond the
-          // pill renders a faint hard-edged rectangle (its own rect) on the
-          // glass tier — observed on-device 2026-08-15 when the anchor
-          // wrapped the fade/scale + 32px padding. Full occlusion by the
-          // pill is the invariant; keep transitions and padding OUTSIDE.
+          // NOT pixel-free in practice — though the cost is a SLICE, not a
+          // fill: LiquidGlassContainerView.swift renders plain as
+          // `.fill(Color(tint ?? .clear))` with the glass modifier held at
+          // `Glass.identity`, so with no tint it paints nothing at all. What
+          // shows is the engine's view slicer splitting Flutter layers at the
+          // platform view's UNCLIPPED rect (the same mechanism
+          // AppBoxKitGlassWarmup's off-screen translate exists to dodge), so
+          // any anchor margin exposed beyond the pill surfaces as a faint
+          // hard-edged seam on the glass tier — observed on-device
+          // 2026-08-15 when the anchor wrapped the fade/scale + 32px padding.
+          // Full occlusion by the pill is the invariant; keep transitions and
+          // padding OUTSIDE.
           // Pill-sized on purpose — a full-screen native anchor would also
           // swallow touches destined for content behind the toast.
           child: FadeTransition(
