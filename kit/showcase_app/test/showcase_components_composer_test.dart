@@ -131,6 +131,15 @@ void main() {
 
       expect(find.text('gallery-shot.png'), findsOneWidget,
           reason: 'the fake pick appears as a pending chip');
+      expect(
+        find.ancestor(
+          of: find.byType(SingleChildScrollView),
+          matching: find.byType(AppBoxKitOpaqueBarBase),
+        ),
+        findsOneWidget,
+        reason: 'the pending strip paints the opaque bar base — thread '
+            'content must never show through behind the chips',
+      );
       expect(find.widgetWithIcon(IconButtonM3E, Icons.send), findsOneWidget,
           reason: 'a pending attachment counts as a draft');
 
@@ -139,6 +148,41 @@ void main() {
 
       expect(find.text('gallery-shot.png'), findsOneWidget,
           reason: 'after send the chip is replaced by a thread bubble');
+    });
+
+    testWidgets(
+        'showcase.components-composer — a chip\'s remove control is a plain (outline-less) button that discards the pick',
+        (tester) async {
+      await pumpView(tester);
+
+      await tester.tap(find.widgetWithIcon(IconButtonM3E, Icons.add));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Choose file'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('handoff-spec.pdf'), findsOneWidget,
+          reason: 'the fake file pick appears as a pending chip');
+
+      // The remove control is the chromeless (plain) icon button — no glass
+      // circle inside the chip. Tapping it removes the pick.
+      final Finder removeButton = find.byWidgetPredicate(
+          (w) => w is AppBoxKitNativeIconButton && w.plain);
+      expect(removeButton, findsOneWidget,
+          reason: 'the chip remove action is a plain icon button');
+      expect(
+        tester.widget<AppBoxKitNativeIconButton>(removeButton).glyph?.icon,
+        AppBoxKitGlyphs.close.icon,
+        reason: 'the plain action carries the close glyph',
+      );
+
+      await tester.tap(find.descendant(
+          of: removeButton, matching: find.byType(IconButtonM3E)));
+      await tester.pumpAndSettle();
+
+      expect(find.text('handoff-spec.pdf'), findsNothing,
+          reason: 'tapping the chip\'s plain remove button discards the pick');
+      expect(micGlyph, findsOneWidget,
+          reason: 'no pending picks — the draft is empty again');
     });
   });
 

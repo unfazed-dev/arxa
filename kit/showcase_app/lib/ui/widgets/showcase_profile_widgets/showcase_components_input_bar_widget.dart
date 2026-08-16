@@ -203,32 +203,37 @@ class _ShowcaseComponentsInputBarWidgetState
       mainAxisSize: MainAxisSize.min,
       children: [
         if (_pending.isNotEmpty)
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-            child: SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(
-                children: [
-                  for (final (index, attachment) in _pending.indexed)
-                    Padding(
-                      padding: EdgeInsets.only(left: index == 0 ? 0 : 8),
-                      child: _PendingChip(
-                        icon: switch (attachment.kind) {
-                          ShowcaseComposerAttachmentKind.camera =>
-                            AppBoxKitGlyphs.camera.icon,
-                          ShowcaseComposerAttachmentKind.photo =>
-                            AppBoxKitGlyphs.photo.icon,
-                          ShowcaseComposerAttachmentKind.file =>
-                            AppBoxKitGlyphs.folder.icon,
-                          ShowcaseComposerAttachmentKind.location =>
-                            AppBoxKitGlyphs.locationPin.icon,
-                        },
-                        label: attachment.name,
-                        onRemove: () =>
-                            setState(() => _pending.removeAt(index)),
+          // The pending strip paints the SAME opaque base the bar uses —
+          // without it the thread scrolls visibly through the gap between
+          // chips (the row alone paints nothing).
+          AppBoxKitOpaqueBarBase(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+              child: SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  children: [
+                    for (final (index, attachment) in _pending.indexed)
+                      Padding(
+                        padding: EdgeInsets.only(left: index == 0 ? 0 : 8),
+                        child: _PendingChip(
+                          icon: switch (attachment.kind) {
+                            ShowcaseComposerAttachmentKind.camera =>
+                              AppBoxKitGlyphs.camera.icon,
+                            ShowcaseComposerAttachmentKind.photo =>
+                              AppBoxKitGlyphs.photo.icon,
+                            ShowcaseComposerAttachmentKind.file =>
+                              AppBoxKitGlyphs.folder.icon,
+                            ShowcaseComposerAttachmentKind.location =>
+                              AppBoxKitGlyphs.locationPin.icon,
+                          },
+                          label: attachment.name,
+                          onRemove: () =>
+                              setState(() => _pending.removeAt(index)),
+                        ),
                       ),
-                    ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),
@@ -480,9 +485,12 @@ class _PendingChip extends StatelessWidget {
           Icon(icon, size: 16, color: scheme.primary),
           appBoxKitHorizontalSpaceXSmall,
           Text(label, style: TextStyle(color: scheme.onSurface, fontSize: 12)),
+          // Plain (chromeless) — the glass circle reads as a button inside
+          // the chip; the remove affordance is the bare glyph.
           AppBoxKitNativeIconButton(
             glyph: AppBoxKitGlyphs.close,
             size: 16,
+            plain: true,
             onPressed: onRemove,
           ),
         ],

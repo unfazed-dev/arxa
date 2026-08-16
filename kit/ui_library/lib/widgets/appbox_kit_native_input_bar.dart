@@ -1,9 +1,7 @@
-import 'package:cupertino_native_better/cupertino_native_better.dart'
-    show CNGlassEffect, LiquidGlassConfig, LiquidGlassContainer;
 import 'package:flutter/material.dart';
 
 import 'package:appbox_kit_core/common/appbox_kit_app_constants.dart';
-import 'appbox_kit_frosted_surface.dart';
+import 'appbox_kit_opaque_bar_base.dart';
 import 'appbox_kit_input_tap_behavior.dart' show abxInputTapGroupId;
 import 'appbox_kit_native_icon_button.dart';
 import 'appbox_kit_native_textfield.dart';
@@ -194,32 +192,14 @@ class AppBoxKitNativeInputBar extends StatelessWidget {
     // Opaque base wraps the SafeArea (so the home-indicator strip is painted)
     // but sits INSIDE the viewInsets padding (so the whole surface lifts onto
     // the keyboard with the bar).
-    // PLAIN native anchor (same mechanism as the floating bar's title pill):
-    // the bar floats over a platform-view-bearing scrollable, and the
-    // engine's view slicer (flow/view_slicer.cc) keeps Flutter ops above the
-    // platform views only while they intersect a platform-view rect —
-    // otherwise the opaque base drops to the difference-clipped background
-    // canvas and passing native glass renders OVER it, reading as a
-    // translucent bar. The stationary platform view under the surface holds
-    // the intersection every frame. `plain` renders nothing (clear fill,
-    // Glass.identity), so no glass-on-glass stacking can occur; on tiers
-    // without native glass the vendor container degrades to its bare child.
-    // transition-exempt: this container is the PLAIN anchor above — it mounts
-    // a platform view that renders nothing (clear fill), so riding a route
-    // slide shows nothing and there is nothing to chrome-gate. Gating it
-    // would also defeat its purpose: the anchor must stay mounted during
-    // transitions to keep the opaque base hoisted. If the effect ever
-    // changes from `plain` to real glass, DELETE this exemption and gate it.
+    // The opaque base is [AppBoxKitOpaqueBarBase] — the shared pinned-strip
+    // panel (plain native anchor + platform-view-safe opaque fill; full
+    // rationale lives on that widget). The SafeArea rides INSIDE it so the
+    // home-indicator strip is painted too, and the whole surface sits
+    // INSIDE the viewInsets padding so it lifts onto the keyboard with the
+    // bar (class docs § Keyboard riding).
     final Widget backed = opaqueGlass
-        ? LiquidGlassContainer(
-            config: const LiquidGlassConfig(effect: CNGlassEffect.plain),
-            child: AppBoxKitFrostedSurface(
-              borderRadius: 0,
-              platformViewSafe: true,
-              tint: scheme.surfaceContainerLowest.withValues(alpha: 1.0),
-              child: SafeArea(top: false, child: bar),
-            ),
-          )
+        ? AppBoxKitOpaqueBarBase(child: SafeArea(top: false, child: bar))
         : SafeArea(top: false, child: bar);
     return Padding(
       padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),

@@ -1,5 +1,5 @@
 import 'package:cupertino_native_better/cupertino_native_better.dart'
-    show CNButton;
+    show CNButton, CNButtonStyle;
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:m3e_collection/m3e_collection.dart' show IconButtonM3E;
@@ -119,6 +119,40 @@ void main() {
         reason: 'with no SF Symbol equivalent the rasterized Material glyph is '
             'the only Apple-tier rendering — customIcon must still be passed',
       );
+    });
+  });
+
+  // Chromeless variant: inline glyph actions (a chip's remove control, a
+  // dense row action) must not carry the glass capsule — the outlined
+  // circle reads as a button INSIDE a button. Plain routes CNButtonStyle.plain
+  // on the Apple tier; the M3E tier is already chromeless at rest.
+  testWidgets(
+      'kit.ui-library.native-icon-button — plain requests the chromeless Apple-tier style',
+      (tester) async {
+    await withAndroidFallback(() async {
+      await tester.pumpWidget(host(const AppBoxKitNativeIconButton(
+        icon: Icons.close,
+        plain: true,
+      )));
+
+      final cn = tester.widget<CNButton>(find.byType(CNButton));
+      expect(
+        cn.config.style,
+        CNButtonStyle.plain,
+        reason: 'plain must drop the glass capsule so the glyph renders bare',
+      );
+    });
+  });
+
+  testWidgets(
+      'kit.ui-library.native-icon-button — default style stays glass (regression)',
+      (tester) async {
+    await withAndroidFallback(() async {
+      await tester.pumpWidget(host(const AppBoxKitNativeIconButton(icon: Icons.add)));
+
+      final cn = tester.widget<CNButton>(find.byType(CNButton));
+      expect(cn.config.style, CNButtonStyle.glass,
+          reason: 'bar actions keep their Liquid Glass circle unless plain is set');
     });
   });
 }

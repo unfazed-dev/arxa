@@ -42,6 +42,7 @@ class AppBoxKitNativeIconButton extends StatelessWidget {
     this.onPressed,
     this.color,
     this.size,
+    this.plain = false,
   })  : _icon = icon,
         _sfSymbol = sfSymbol;
 
@@ -70,6 +71,14 @@ class AppBoxKitNativeIconButton extends StatelessWidget {
   // ponytail: IconButtonM3E is theme-driven (no per-instance color param), so
   // color is icon-level only on the Android tier.
   final Color? color;
+
+  /// Chromeless variant: the Apple tier renders [CNButtonStyle.plain] — no
+  /// glass capsule or ring, the bare glyph — for inline glyph actions that
+  /// sit INSIDE another surface (a chip's remove control, a dense row
+  /// action), where the default Liquid Glass circle reads as a button
+  /// within a button. The Android tier ([IconButtonM3E]) is already
+  /// chromeless at rest and ignores this flag.
+  final bool plain;
 
   /// Icon point size. Honored per tier; null falls back to the kit default:
   /// 18pt on the Apple tier (HIG nav-bar/toolbar glyph scale — CNSymbol's own
@@ -102,6 +111,7 @@ class AppBoxKitNativeIconButton extends StatelessWidget {
       onPressed: onPressed,
       tint: color,
       config: CNButtonConfig(
+        style: plain ? CNButtonStyle.plain : CNButtonStyle.glass,
         customIconSize: size ?? 18.0,
         // The native tier is a UiKitView (no intrinsic width) → stretches to
         // fill its parent's loose constraints. shrinkWrap makes CNButton measure

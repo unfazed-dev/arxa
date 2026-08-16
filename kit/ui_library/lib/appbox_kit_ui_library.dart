@@ -55,6 +55,7 @@ export 'widgets/appbox_kit_native_range_slider.dart';
 export 'widgets/appbox_kit_native_icon_button.dart';
 export 'widgets/appbox_kit_input_tap_behavior.dart';
 export 'widgets/appbox_kit_native_input_bar.dart';
+export 'widgets/appbox_kit_opaque_bar_base.dart';
 export 'widgets/appbox_kit_dismiss_keyboard.dart';
 export 'widgets/appbox_kit_menu_item.dart';
 export 'widgets/appbox_kit_native_fab.dart';
