@@ -52,7 +52,9 @@ Subcommands:
   emit --answers <f> [--project <name>] [--brief-out p] [--registry-out p]
                         Emit brief.md + seeded registry.json from answers;
                         with --project every output lands in the project's
-                        ~/.appbox intake/ dir (answers/brief/registry/flows).
+                        ~/.appbox intake/ dir (answers/brief/registry/flows),
+                        and the answers' targets/locales sync into the
+                        project's settings/project.json (answers are the SSOT).
                         Without --project an explicit --brief-out (or the
                         INTAKE_BRIEF_OUT env var) is REQUIRED — the bare
                         default used to silently overwrite

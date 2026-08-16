@@ -1,6 +1,6 @@
 // project_cli — CLI entry for `appbox project`.
 //
-//   appbox project init <name> [--targets ios,android,macos] [--locales en,pl]
+//   appbox project init <name> [--targets ios,android] [--locales en]
 //   appbox project use <name>
 //   appbox project list
 //
@@ -30,8 +30,8 @@ int projectMain(List<String> args) {
 int _init(List<String> args) {
   if (args.isEmpty) return _usage();
   final name = args.first;
-  var targets = const ['ios', 'android', 'macos'];
-  var locales = const ['en', 'pl'];
+  var targets = const ['ios', 'android'];
+  var locales = const ['en'];
   for (var i = 1; i < args.length; i++) {
     switch (args[i]) {
       case '--targets':
@@ -77,7 +77,7 @@ int _usage() {
 Usage: appbox project <sub> [options]
 
 Subcommands:
-  init <name> [--targets ios,android,macos] [--locales en,pl]
+  init <name> [--targets ios,android] [--locales en]
                Create ~/.appbox/projects/<name>/ (intake/design/build/settings)
   use <name>   Make <name> the current project
   list         List projects (* = current)

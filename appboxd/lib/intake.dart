@@ -1265,6 +1265,17 @@ class IntakeEngine {
       // and no `adr/` at all — [collectDecisions] returns `[]` and `emitAdrs`
       // renders nothing, which is the honest output rather than a gap.
       writeDecisionLog(dir, collectDecisions(answers));
+      // Targets/locales wiring: the answers are the SSOT for what the project
+      // builds and speaks — init-time flags are a pre-conversation guess. Emit
+      // syncs settings ← answers so the designer's viewport ladder and l10n
+      // can never disagree with intake. Partial: absent fields leave settings
+      // untouched.
+      final answerTargets = _fieldList(answers['targets']);
+      final answerLocales = _fieldList(answers['locales']);
+      if (answerTargets != null || answerLocales != null) {
+        updateProjectSettings(project,
+            targets: answerTargets, locales: answerLocales);
+      }
     } else {
       // F2: with neither --project nor an explicit target, the legacy
       // default resolved to <repoRoot>/docs/design/brief.md — inside any
@@ -1378,6 +1389,15 @@ int _countInferred(Map<String, dynamic> answers) {
 }
 
 // ----------------------------------------------------------------- io + paths
+
+/// The list value of an answers field ({value: [...], provenance}), or null
+/// when the field is absent/malformed — used for the settings sync only.
+List<String>? _fieldList(dynamic field) {
+  if (field is! Map) return null;
+  final value = field['value'];
+  if (value is! List) return null;
+  return value.whereType<String>().toList();
+}
 
 String defaultBriefOut() =>
     Platform.environment['INTAKE_BRIEF_OUT'] ?? '${repoRoot()}/docs/intake/brief.md';

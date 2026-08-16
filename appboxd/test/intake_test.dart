@@ -420,6 +420,47 @@ void main() {
     });
   });
 
+  group('emit — settings sync (targets/locales wiring)', () {
+    late Directory home;
+    setUp(() {
+      home = Directory.systemTemp.createTempSync('appbox_sync_test');
+      appboxHomeOverride = '${home.path}/.appbox';
+    });
+    tearDown(() {
+      appboxHomeOverride = null;
+      if (home.existsSync()) home.deleteSync(recursive: true);
+    });
+
+    test('emit --project syncs the elicited combo over init-time guesses', () {
+      ensureProject('energize-studio'); // defaults: ios+android / en
+      final a = goodAnswers();
+      a['targets'] = {
+        'value': ['ios', 'android', 'macos', 'web'],
+        'provenance': 'founder',
+      };
+      a['locales'] = {
+        'value': ['en', 'fr', 'mfe'],
+        'provenance': 'founder',
+      };
+      final res = const IntakeEngine().emit(a, project: 'energize-studio');
+      expect(res.ok, isTrue, reason: res.errors.join('; '));
+      final settings = readProjectSettings('energize-studio')!;
+      expect(settings['targets'], ['ios', 'android', 'macos', 'web'],
+          reason: 'answers are the SSOT — the founder combo wins');
+      expect(settings['locales'], ['en', 'fr', 'mfe']);
+    });
+
+    test('emit --project on a not-yet-inited project creates it synced', () {
+      final a = goodAnswers(); // targets: [macos], no locales field
+      final res = const IntakeEngine().emit(a, project: 'fresh-proj');
+      expect(res.ok, isTrue, reason: res.errors.join('; '));
+      final settings = readProjectSettings('fresh-proj')!;
+      expect(settings['targets'], ['macos'], reason: 'synced from answers');
+      expect(settings['locales'], ['en'],
+          reason: 'absent field keeps the default');
+    });
+  });
+
   group('validate — new field groups', () {
     Map<String, dynamic> withNewFields() {
       final a = goodAnswers();

@@ -79,7 +79,7 @@ void useProject(String name) {
 /// Create the project layout + settings/project.json. Idempotent: existing
 /// dirs are kept, a missing project.json is (re)written, an existing one is
 /// left untouched (init never clobbers project state).
-void ensureProject(String name, {List<String> targets = const ['ios', 'android', 'macos'], List<String> locales = const ['en', 'pl']}) {
+void ensureProject(String name, {List<String> targets = const ['ios', 'android'], List<String> locales = const ['en']}) {
   if (!validProjectName(name)) {
     throw ArgumentError('bad project name "$name" — lowercase alnum + dash, like a surface id');
   }
@@ -96,6 +96,22 @@ void ensureProject(String name, {List<String> targets = const ['ios', 'android',
       'locales': locales,
     })}\n');
   }
+}
+
+/// Sync targets/locales into settings/project.json from the elicited intake
+/// answers. Init flags are a guess made BEFORE any conversation; the answers
+/// are the founder-stated SSOT, so `intake emit --project` overwrites with
+/// them (emit syncs — unlike init, which never clobbers). Partial: only the
+/// fields passed are written; `name` and any other keys are preserved.
+/// Creates the project first when missing (emit on a fresh APPBOX_HOME).
+void updateProjectSettings(String name, {List<String>? targets, List<String>? locales}) {
+  ensureProject(name);
+  final settings = readProjectSettings(name) ?? <String, dynamic>{};
+  if (targets != null) settings['targets'] = targets;
+  if (locales != null) settings['locales'] = locales;
+  const encoder = JsonEncoder.withIndent('  ');
+  File(projectSettingsPath(name))
+      .writeAsStringSync('${encoder.convert(settings)}\n');
 }
 
 /// Read settings/project.json; null when absent (a pre-init or foreign dir).

@@ -29,13 +29,33 @@ void main() {
     }
     final settings = readProjectSettings('portalo')!;
     expect(settings['name'], 'portalo');
-    expect(settings['targets'], ['ios', 'android', 'macos']);
-    expect(settings['locales'], ['en', 'pl']);
+    expect(settings['targets'], ['ios', 'android']);
+    expect(settings['locales'], ['en']);
     // determinism: no clock fields, byte-stable content
     expect(settings.keys.toList(), ['name', 'targets', 'locales']);
     final again = File(projectSettingsPath('portalo')).readAsStringSync();
     ensureProject('portalo'); // idempotent, no clobber
     expect(File(projectSettingsPath('portalo')).readAsStringSync(), again);
+  });
+
+  test('updateProjectSettings syncs elicited answers over init guesses', () {
+    ensureProject('portalo', targets: ['web'], locales: ['en', 'fr']);
+    // full sync — the founder-stated combo overrides everything
+    updateProjectSettings('portalo',
+        targets: ['ios', 'android', 'macos', 'web'],
+        locales: ['en', 'fr', 'mfe']);
+    var settings = readProjectSettings('portalo')!;
+    expect(settings['targets'], ['ios', 'android', 'macos', 'web']);
+    expect(settings['locales'], ['en', 'fr', 'mfe']);
+    expect(settings['name'], 'portalo', reason: 'name is preserved');
+    // partial sync — only the field passed is written
+    updateProjectSettings('portalo', targets: ['web']);
+    settings = readProjectSettings('portalo')!;
+    expect(settings['targets'], ['web']);
+    expect(settings['locales'], ['en', 'fr', 'mfe']);
+    // creates a missing project instead of crashing (emit on fresh home)
+    updateProjectSettings('new-proj', locales: ['en']);
+    expect(readProjectSettings('new-proj')!['locales'], ['en']);
   });
 
   test('use/list round-trip current; default is portalo', () {
