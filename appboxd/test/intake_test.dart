@@ -1437,6 +1437,89 @@ void _mergeRegistryTests() {
       expect(mergeRegistry(pure, path), pure);
     });
   });
+
+  // F1 — client strings are neutralized before they land in generated
+  // markdown. The brief is consumed downstream (designer, story-map chain,
+  // gate parse); raw script tags, links, emphasis, pipes and newlines from
+  // an elicited value must never reach the artifact as active markup.
+  group('brief — client-string safety (markdown injection neutralized)', () {
+    test('script/link/bold/pipe/newline payloads do not survive raw', () {
+      final a = goodAnswers();
+      a['product'] = {
+        'value': 'Demo <script>alert(1)</script>',
+        'provenance': 'client',
+      };
+      a['contentAnchors'] = {
+        'value': [
+          '[click](https://evil.example)',
+          'bold **injection** | pipe',
+          'line1\nline2',
+        ],
+        'provenance': 'client',
+      };
+      ((a['surfaces'] as List)[0] as Map)['label'] =
+          'Home <b>raw</b> [l](javascript:alert(2))';
+      final brief = emitBrief(a);
+      expect(brief.contains('<script>'), isFalse);
+      expect(brief.contains('<b>'), isFalse);
+      expect(brief.contains('[click](https://evil.example)'), isFalse);
+      expect(brief.contains('[l](javascript:'), isFalse);
+      expect(brief.contains('**injection**'), isFalse);
+      expect(brief.contains('line1\nline2'), isFalse);
+      // the payload is still VISIBLE (escaped), never silently dropped —
+      // intake elicits verbatim, it just refuses to emit active markup
+      expect(brief.contains('&lt;script&gt;'), isTrue);
+      expect(brief.contains('\\[click\\]'), isTrue);
+    });
+
+    test('benign values render byte-identically (escape is a no-op)', () {
+      expect(emitBrief(goodAnswers()), expectedBrief);
+    });
+  });
+
+  // F2 — intake emit with neither --project nor --brief-out used to
+  // silently overwrite repoRoot/docs/design/brief.md, a TRACKED file when
+  // run inside any appbox repo. It must refuse instead.
+  group('emit — no silent default-path write (F2)', () {
+    test('no project and no brief-out refuses with an actionable error', () {
+      final res = const IntakeEngine().emit(goodAnswers());
+      expect(res.ok, isFalse);
+      expect(res.errors, isNotEmpty);
+      expect(res.errors.first, contains('--project'));
+      expect(res.errors.first, contains('--brief-out'));
+      expect(res.errors.first, contains('refus'), reason: 'say why');
+    });
+
+    test('explicit --brief-out still works (opt-in, not banned)', () async {
+      final dir = await Directory.systemTemp.createTemp('f2_out_');
+      addTearDown(() => dir.deleteSync(recursive: true));
+      final res = const IntakeEngine().emit(goodAnswers(),
+          briefOut: '${dir.path}/brief.md',
+          registryOut: '${dir.path}/registry.json');
+      expect(res.ok, isTrue);
+      expect(File('${dir.path}/brief.md').existsSync(), isTrue);
+    });
+  });
+
+  // F6 — a missing surfaces key reported as "must be a list" pointed the
+  // author at a type error that did not exist. Absent means "none named at
+  // intake" (the designer authors the registry); only a PRESENT non-list is
+  // a type defect.
+  group('validate — surfaces absent vs mistyped wording (F6)', () {
+    test('absent surfaces is legal: designer authors the registry', () {
+      final a = goodAnswers()..remove('surfaces');
+      expect(validateIntake(a).errors, isEmpty);
+      expect(emitBrief(a).contains('No surfaces named at intake'), isTrue);
+    });
+
+    test('present-but-not-a-list names the actual type', () {
+      final a = goodAnswers()..['surfaces'] = 'home, settings';
+      final errs = validateIntake(a).errors;
+      expect(errs, hasLength(1));
+      expect(errs.single, contains('must be a list of surface objects'));
+      expect(errs.single, contains('str'));
+    });
+  });
 }
 
 /// The published schema, found from wherever `dart test` was invoked. Mirrors

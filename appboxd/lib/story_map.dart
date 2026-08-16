@@ -63,6 +63,10 @@ const colWidth = 210;
 final idRe = RegExp(r'^([a-z][a-z0-9]*)\.([a-z][a-z0-9]*)$');
 final _slugWordRe = RegExp(r'[a-z0-9]+');
 
+// Characters an explicit feature id must not carry: they break the
+// markdown table the gate parses (see validateData, F3).
+final _badIdChars = RegExp(r'[\s`|]');
+
 // ── data model ─────────────────────────────────────────────────────
 
 /// One derived surface (Epic → shell, Feature → surface). A feature whose
@@ -127,13 +131,26 @@ List<String> validateData(Map<String, dynamic> data) {
   }
   if (errors.isNotEmpty) return errors;
 
+  // F3: explicit feature ids are document-global — track first use for
+  // duplicate detection.
+  final explicitIds = <String, String>{};
   final releaseNames = <String>{};
+  final releaseIndex = <String, int>{};
   for (var i = 0; i < releases.length; i++) {
     final rel = releases[i];
     if (_missingName(rel)) {
       errors.add("releases[$i]: missing 'name'");
     } else {
-      releaseNames.add(rel['name'] as String);
+      final name = rel['name'] as String;
+      // F3: duplicate release names make deriveSurfaces' relOrder map
+      // last-write-wins — swimlane order silently depends on order.
+      if (releaseIndex.containsKey(name)) {
+        errors.add("releases[$i]: duplicate release name '$name' "
+            '(also releases[${releaseIndex[name]}])');
+      } else {
+        releaseIndex[name] = i;
+      }
+      releaseNames.add(name);
     }
   }
 
@@ -154,14 +171,43 @@ List<String> validateData(Map<String, dynamic> data) {
         errors.add("Epic '${epic['name']}' features[$fi]: missing 'name'");
         continue;
       }
+      // F3: an explicit feature id rides verbatim into the traceability
+      // table; a duplicate shadows (byId last-write-wins) and structural
+      // characters (| backtick whitespace) break the markdown the gate
+      // parses. Duplicate EPIC/FEATURE NAMES stay legal — slug suffixing
+      // is the design (see storyMapSelfTest).
+      final fid = feat['id'];
+      if (fid != null) {
+        final where = "'${epic['name']}' / '${feat['name']}'";
+        if (fid is! String || fid.isEmpty || _badIdChars.hasMatch(fid)) {
+          errors.add("Epic '${epic['name']}' features[$fi] '${feat['name']}': "
+              'feature id must be a non-empty string without spaces, '
+              "'|' or backticks (got '$fid')");
+        } else if (explicitIds.containsKey(fid)) {
+          errors.add("Epic '${epic['name']}' features[$fi] '${feat['name']}': "
+              "duplicate feature id '$fid' (already used by ${explicitIds[fid]})");
+        } else {
+          explicitIds[fid] = where;
+        }
+      }
       final storiesRaw = feat['stories'];
       final stories = storiesRaw is List ? storiesRaw : const [];
+      final storyIndex = <String, int>{};
       for (var si = 0; si < stories.length; si++) {
         final story = stories[si];
         final tag = "'${feat['name']}' story[$si]";
         if (_missingName(story)) {
           errors.add('$tag: missing \'name\'');
           continue;
+        }
+        // F3: two stories with one name in one feature are
+        // indistinguishable in the map and downstream traceability.
+        final storyName = story['name'] as String;
+        if (storyIndex.containsKey(storyName)) {
+          errors.add('$tag: duplicate story name (also '
+              'story[${storyIndex[storyName]}])');
+        } else {
+          storyIndex[storyName] = si;
         }
         final pri = (story['priority'] as String?) ?? '';
         if (!validPriorities.contains(pri)) {
@@ -287,7 +333,7 @@ String renderBrief(
   final d = derived ?? deriveSurfaces(data);
   if (answers != null) return _renderUnifiedBrief(data, d, answers);
   final lines = <String>[
-    "# ${data['project']} — design brief",
+    "# ${mdEscape(data['project'] as String)} — design brief",
     '',
     'Elicited via appbox-story-mapper; the full story map lives alongside',
     'this brief (`story-map.json`, `story_map.html`). Priorities are MoSCoW,',
@@ -296,7 +342,7 @@ String renderBrief(
     '',
     '## Product',
     '',
-    data['project'] as String,
+    mdEscape(data['project'] as String),
     '',
   ];
   lines.addAll(_releaseLines(data));
@@ -307,7 +353,10 @@ String renderBrief(
     ..add('| id | label | priority | release |')
     ..add('|----|-------|----------|---------|');
   for (final s in d.surfaces) {
-    lines.add('| `${s.id}` | ${s.label} | ${s.priority} | ${s.release} |');
+    // F1: label + release name are client strings; id/priority are
+    // engine-constrained (derived) — mdEscape is a no-op on them.
+    lines.add('| `${mdEscape(s.id)}` | ${mdEscape(s.label)} | '
+        '${s.priority} | ${mdEscape(s.release)} |');
   }
   lines.add('');
   lines.addAll(_outOfScopeLines(d));
@@ -328,7 +377,7 @@ String _renderUnifiedBrief(
       ? productNode['value'].toString()
       : data['project'] as String;
   final lines = <String>[
-    '# $product — design brief',
+    '# ${mdEscape(product)} — design brief',
     '',
     '> Emitted by the intake → story-map chain from elicited answers.',
     '> Fields marked **[inferred]** were not stated by the client and MUST',
@@ -379,18 +428,21 @@ List<String> _unifiedSurfaceTable(
     final states = surf['states'];
     final String statesCell;
     if (states is List && states.isNotEmpty) {
-      statesCell = states.join(', ');
+      statesCell = states.map((x) => mdEscape(x.toString())).join(', ');
     } else {
       final derived = deriveStates(surf);
       statesCell = derived.isEmpty ? '' : '${derived.join(', ')} [inferred]';
     }
     final deriv = explicitIds.contains(sid) ? byId[sid] : null;
-    lines.add('| `$sid` | ${surf['label']} | $statesCell | '
-        '${deriv?.priority ?? ''} | ${deriv?.release ?? ''} |');
+    // F1: sid/label are intake-validated (escape is a no-op) but explicit
+    // story-map ids can carry hostile text; rollup release is a client name.
+    lines.add('| `${mdEscape(sid)}` | ${mdEscape('${surf['label']}')} | $statesCell | '
+        '${deriv?.priority ?? ''} | ${mdEscape(deriv?.release ?? '')} |');
   }
   for (final s in d.surfaces) {
     if (declaredIds.contains(s.id)) continue;
-    lines.add('| `${s.id}` | ${s.label} — [inferred] |  | ${s.priority} | ${s.release} |');
+    lines.add('| `${mdEscape(s.id)}` | ${mdEscape(s.label)} — [inferred] |  | '
+        '${s.priority} | ${mdEscape(s.release)} |');
   }
   lines.add('');
   return lines;
@@ -400,9 +452,9 @@ List<String> _releaseLines(Map<String, dynamic> data) {
   final lines = <String>['## Releases', ''];
   for (final rel in (data['releases'] as List).cast<Map<String, dynamic>>()) {
     final desc = rel['description'] is String
-        ? ' — ${rel['description'] as String}'
+        ? ' — ${mdEscape(rel['description'] as String)}'
         : '';
-    lines.add("- **${rel['name']}**$desc");
+    lines.add("- **${mdEscape(rel['name'] as String)}**$desc");
   }
   return lines;
 }
@@ -410,19 +462,20 @@ List<String> _releaseLines(Map<String, dynamic> data) {
 List<String> _hierarchyLines(Map<String, dynamic> data) {
   final lines = <String>['', '## The things the app must do', ''];
   for (final epic in (data['epics'] as List).cast<Map<String, dynamic>>()) {
-    lines.add('### ${epic['name']}');
+    lines.add('### ${mdEscape(epic['name'] as String)}');
     lines.add('');
     for (final feat
         in ((epic['features'] as List?) ?? const []).cast<Map<String, dynamic>>()) {
-      lines.add('#### ${feat['name']}');
+      lines.add('#### ${mdEscape(feat['name'] as String)}');
       lines.add('');
       for (final s
           in ((feat['stories'] as List?) ?? const []).cast<Map<String, dynamic>>()) {
-        final desc =
-            s['description'] is String ? ' — ${s['description'] as String}' : '';
+        final desc = s['description'] is String
+            ? ' — ${mdEscape(s['description'] as String)}'
+            : '';
         final pri = (s['priority'] as String?) ?? '?';
-        final rel = (s['release'] as String?) ?? '?';
-        lines.add('- [$pri/$rel] ${s['name']}$desc');
+        final rel = mdEscape((s['release'] as String?) ?? '?');
+        lines.add('- [$pri/$rel] ${mdEscape(s['name'] as String)}$desc');
       }
       lines.add('');
     }
@@ -436,7 +489,7 @@ List<String> _outOfScopeLines(Surfaces d) {
     lines.add('## Out of scope');
     lines.add('');
     for (final o in d.outOfScope) {
-      lines.add("- ${o.feature} (${o.epic}) — all stories Won't-have this cycle");
+      lines.add("- ${mdEscape(o.feature)} (${mdEscape(o.epic)}) — all stories Won't-have this cycle");
     }
     lines.add('');
   }

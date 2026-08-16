@@ -300,12 +300,12 @@ List<PipelineDecision>? _edgeFeedback(Map<String, dynamic> answers) {
       title: 'Success toasts derived for mutation edges',
       decision: 'A `success` toast was added to '
           '${hits.length} edge(s) that declared no feedback — '
-          '${hits.map((h) => 'trigger "${h.$2}" in `${h.$1}`').join(', ')}. '
+          '${hits.map((h) => 'trigger "${mdEscape(h.$2)}" in `${h.$1}`').join(', ')}. '
           'Each toast\'s text is the trigger VERBATIM and each carries '
           '`inferred: true`.',
       because: '`deriveFeedback` (intake.dart): the edge declared no '
           '`feedback`, and `_words(trigger).any(_mutationWords.contains)` was '
-          'true — ${hits.map((h) => '"${h.$2}" matched ${h.$3.map((w) => '"$w"').join(', ')}').join('; ')}. '
+          'true — ${hits.map((h) => '"${mdEscape(h.$2)}" matched ${h.$3.map((w) => '"$w"').join(', ')}').join('; ')}. '
           '`kind` is hard-coded `success` at that site; `error` and `info` were '
           'never evaluated.',
       constrains: [

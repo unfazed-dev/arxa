@@ -7,6 +7,8 @@
 
 **Scope of this document:** lets a human OR an LLM (or the desktop wizard) drive the intake engine without reading the skill source. Folded from `SKILL.md`.
 
+**Pipeline position:** stage 1 of the skill chain — upstream `appbox-orchestrator` (stage Ø front door, optional) or stage 0 `appbox-story-mapper` / `appbox-moodboarder` (optional), downstream `appbox-story-mapper` (the chain's tail, via `--answers`) then `appbox-designer` (brief + registry seed). Full chain, stage numbers, per-stage artifacts: `docs/research/pipeline-map.md` §1.
+
 ## Table of contents
 
 0. Header & TOC · 1. Overview & role · 2. Inputs · 3. Procedure · 4. Outputs · 5. Rules · 6. References
@@ -24,7 +26,7 @@ Intake elicits; it does not generate (architecture §22). A phase that *writes* 
 
 ### Procedure
 
-Elicit the field set with the client or founder; capture verbatim, rephrase nothing; where the client was silent, mark the field `inferred` with a placeholder (never an invented value). Ask, beyond the core fields:
+Elicit the field set with the client or founder; capture verbatim, rephrase nothing; where the client was silent, mark the field `inferred` with a placeholder (never an invented value). **One question at a time** — ask, wait, record, then next; attach a recommendation to every closed question (recommended option first, one sentence of tradeoff — the `appbox-cicd` grill pattern) and use `ask_user_question` for closed picks; a web search may inform your next question about an unfamiliar domain/brand, but search results are never `client` provenance (confirm with the client, or record `inferred`). Ask, beyond the core fields:
 
 - **Audience (JTBD):** "Finish this sentence for each kind of user — *When [situation], I want [motivation], so I can [outcome]*." Record the sentence verbatim.
 - **Design direction:** "Which three-to-five adjectives should the design feel like? Which should it deliberately avoid?" → `direction: {adjectives: [...], avoids: [...]}`.
@@ -32,7 +34,7 @@ Elicit the field set with the client or founder; capture verbatim, rephrase noth
 - **Locales:** "Which languages must the app ship in, and which is the default?" → `locales` (rendered after Targets in the brief).
 - **Per-surface states:** for each named surface, "Which UI states must this screen cover — loading, empty, error, offline, …?" → the surface's `states` list, carried into the registry seed and the brief's surface table.
 
-Author the answers document; each named surface is `{id, label, shell, provenance}` (plus optional `states`) with `id` = `<shell>.<short>` — do not set `comp` or `surface`. Emit: `appbox intake emit --answers <f>` (the Dart port of the archived `intake.py`) validates the answers and seeds `registry.json` (one entry per surface, `surface` null, `comp` derived) at the **design root** — `designs/<app>/models/screens_model/registry.json`, or structure.json's `"registry"` field; `docs/design/registry.json` is only the fallback when no design root exists. The unified `docs/design/brief.md` is written by the chain's tail — `appbox emit story-map --answers <f>` (intake sections + releases + the epic/feature/story hierarchy + the surface inventory, every `inferred` field visibly marked). Validate-only while authoring: `appbox intake validate <f>`. Hand-written brief: `appbox intake seed --brief docs/design/brief.md` derives the registry seed from the brief's surface table without rewriting a word; a brief with no table yields an empty seed (not an error). Output paths are overridable via `--brief-out` / `--registry-out` or `INTAKE_BRIEF_OUT` / `INTAKE_REGISTRY_OUT`. Invalid input writes nothing.
+Author the answers document; each named surface is `{id, label, shell, provenance}` (plus optional `states`) with `id` = `<shell>.<short>` — do not set `comp` or `surface`. Emit: `appbox intake emit --answers <f> --project <name>` (the Dart port of the archived `intake.py`) validates the answers and seeds `registry.json` (one entry per surface, `surface` null, `comp` derived) at the **design root** — `designs/<app>/models/screens_model/registry.json`, or structure.json's `"registry"` field; `docs/design/registry.json` is only the fallback when no design root exists. The unified `docs/design/brief.md` is written by the chain's tail — `appbox emit story-map --answers <f>` (intake sections + releases + the epic/feature/story hierarchy + the surface inventory, every `inferred` field visibly marked). Validate-only while authoring: `appbox intake validate <f>`. Hand-written brief: `appbox intake seed --brief docs/design/brief.md` derives the registry seed from the brief's surface table without rewriting a word; a brief with no table yields an empty seed (not an error). Output paths are overridable via `--brief-out` / `--registry-out` or `INTAKE_BRIEF_OUT` / `INTAKE_REGISTRY_OUT`. Without `--project` the emit now **refuses** unless `--brief-out`/`INTAKE_BRIEF_OUT` is given (the old default silently overwrote `<repoRoot>/docs/design/brief.md`). Client strings are markdown-escaped by the emitter — record verbatim. Invalid input writes nothing.
 
 ### Outputs
 

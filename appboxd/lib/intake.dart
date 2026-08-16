@@ -167,10 +167,17 @@ ValidationResult validateIntake(Map<String, dynamic> answers) {
     }
   }
 
-  // surfaces: shape + the shell==id-prefix invariant + uniqueness
+  // surfaces: shape + the shell==id-prefix invariant + uniqueness.
+  // ABSENT is legal — "no surfaces named at intake, the designer authors
+  // the registry" (emitBrief renders exactly that). Only a PRESENT non-list
+  // is a type defect, and the error must say so (F6: a missing key used to
+  // report "must be a list", pointing the author at a defect that wasn't).
   var surfaces = answers['surfaces'];
-  if (surfaces is! List) {
-    errs.add('surfaces: must be a list');
+  if (surfaces == null) {
+    surfaces = const [];
+  } else if (surfaces is! List) {
+    errs.add(
+        'surfaces: must be a list of surface objects, got ${_pyTypeName(surfaces)}');
     surfaces = const [];
   }
   final seen = <String>{};
@@ -828,13 +835,13 @@ List<String> _block(String key, String title, Map<String, dynamic>? node) {
   } else if (val is List) {
     if (val.isNotEmpty) {
       for (final item in val) {
-        lines.add('- $item');
+        lines.add('- ${mdEscape(item.toString())}');
       }
     } else {
       lines.add('_None stated._');
     }
   } else {
-    lines.add(val.toString());
+    lines.add(mdEscape(val.toString()));
   }
   lines.add('');
   lines.add('_provenance: ${prov}_');
@@ -848,11 +855,11 @@ List<String> _directionLines(Map val) {
   final out = <String>[];
   final adjectives = val['adjectives'];
   if (adjectives is List && adjectives.isNotEmpty) {
-    out.add('- adjectives: ${adjectives.join(', ')}');
+    out.add('- adjectives: ${adjectives.map((x) => mdEscape(x.toString())).join(', ')}');
   }
   final avoids = val['avoids'];
   if (avoids is List && avoids.isNotEmpty) {
-    out.add('- avoids: ${avoids.join(', ')}');
+    out.add('- avoids: ${avoids.map((x) => mdEscape(x.toString())).join(', ')}');
   }
   if (out.isEmpty) out.add('_None stated._');
   return out;
@@ -863,8 +870,8 @@ List<String> _layoutTemplateLines(Map val) {
   // grid-template-areas per rung of the viewport ladder, and the named
   // containers. The value is passed through verbatim — never reworded.
   final out = <String>[
-    '- category: ${val['category']}',
-    '- archetype: ${val['archetype']}',
+    '- category: ${mdEscape('${val['category']}')}',
+    '- archetype: ${mdEscape('${val['archetype']}')}',
     '',
   ];
   final areas = val['areas'];
@@ -877,7 +884,7 @@ List<String> _layoutTemplateLines(Map val) {
       out.add('$rung:');
       out.add('```');
       for (final row in rows) {
-        out.add('"$row"');
+        out.add('"${mdEscape(row.toString())}"');
       }
       out.add('```');
       out.add('');
@@ -890,21 +897,64 @@ List<String> _layoutTemplateLines(Map val) {
     for (final entry in containers.entries) {
       final name = entry.key;
       final meta = entry.value;
+      final safeName = mdEscape(name.toString());
       if (meta is Map) {
-        final ctype = (meta['type'] ?? '').toString();
-        final hints = (meta['hints'] ?? '').toString();
+        final ctype = mdEscape((meta['type'] ?? '').toString());
+        final hints = mdEscape((meta['hints'] ?? '').toString());
         if (hints.isNotEmpty) {
-          out.add('- `$name` — $ctype: $hints');
+          out.add('- `$safeName` — $ctype: $hints');
         } else {
-          out.add('- `$name` — $ctype');
+          out.add('- `$safeName` — $ctype');
         }
       } else {
-        out.add('- `$name` — $meta');
+        out.add('- `$safeName` — ${mdEscape('$meta')}');
       }
     }
     out.add('');
   }
   return out;
+}
+
+/// Neutralize CLIENT-SUPPLIED strings before they land in generated
+/// markdown (brief.md, the PRD, ADRs, the unified chain brief). Markdown has
+/// no boundary between "content" and "markup", so an elicited value carrying
+/// a script tag, a [link](url), **emphasis**, a table pipe or a newline
+/// would otherwise become active document structure the moment anyone
+/// renders the artifact. The escape is a NO-OP on benign prose: only the
+/// characters markdown/HTML treat as syntax are touched, via backslash
+/// escapes (CommonMark renders those as the literal character) and HTML
+/// entities for angle brackets. Newlines/tabs flatten to spaces — a client
+/// string is inline content, never new document structure.
+String mdEscape(String s) {
+  if (s.isEmpty) return s;
+  final b = StringBuffer();
+  for (final r in s.runes) {
+    switch (r) {
+      case 0x5C: // \ — escape it or a smuggled escape would mask the next char
+        b.write(r'\\');
+      case 0x3C:
+        b.write('&lt;');
+      case 0x3E:
+        b.write('&gt;');
+      case 0x5B:
+        b.write(r'\[');
+      case 0x5D:
+        b.write(r'\]');
+      case 0x60: // backtick — code spans
+        b.write('\\`');
+      case 0x2A:
+        b.write(r'\*');
+      case 0x7C:
+        b.write(r'\|');
+      case 0x09: // tab
+      case 0x0A: // \n
+      case 0x0D: // \r
+        b.write(' ');
+      default:
+        b.write(String.fromCharCode(r));
+    }
+  }
+  return b.toString();
 }
 
 /// Render the intake brief sections (the `## Title` blocks in `_fieldTitles`
@@ -928,7 +978,7 @@ String emitBrief(Map<String, dynamic> answers) {
       ? productNode['value'].toString()
       : '(unnamed product)';
   final lines = <String>[
-    '# $product — design brief',
+    '# ${mdEscape(product)} — design brief',
     '',
     '> Emitted by appbox-intake from elicited answers.',
     '> **Intake elicits; it does not generate** (architecture §22).',
@@ -956,13 +1006,16 @@ String emitBrief(Map<String, dynamic> answers) {
       final states = surf['states'];
       final String statesCell;
       if (states is List && states.isNotEmpty) {
-        statesCell = states.join(', ');
+        statesCell = states.map((x) => mdEscape(x.toString())).join(', ');
       } else {
         final derived = deriveStates(surf);
         statesCell = derived.isEmpty ? '' : '${derived.join(', ')} [inferred]';
       }
-      lines.add('| `${surf['id']}` | ${surf['shell']} | '
-          '${deriveComp(surf['id'] as String)} | ${surf['label']} | $statesCell | _null_ |');
+      // F1: label and states are CLIENT strings — a pipe/backtick/newline
+      // in them would break the table the gate parses. ids/shell/comp are
+      // grammar-constrained (mdEscape is a no-op on them).
+      lines.add('| `${mdEscape('${surf['id']}')}` | ${mdEscape('${surf['shell']}')} | '
+          '${deriveComp(surf['id'] as String)} | ${mdEscape('${surf['label']}')} | $statesCell | _null_ |');
     }
     lines.add('');
     lines.add('Every `surface` is `null` — intake names what the client asked for; '
@@ -985,8 +1038,10 @@ List<String> _feedbackSection(Map<String, dynamic> answers) {
       final fb = e['feedback'];
       if (fb is! Map) continue;
       final mark = fb['inferred'] == true ? ' [inferred]' : '';
-      rows.add('| `${f['id']}` | `${e['from']}` → `${e['to']}` | '
-          '${fb['kind']} | ${fb['text']}$mark |');
+      // F1: flow id + feedback text are client strings; from/to are
+      // grammar-checked surface ids (escape is a no-op there).
+      rows.add('| `${mdEscape('${f['id']}')}` | `${mdEscape('${e['from']}')}` → `${mdEscape('${e['to']}')}` | '
+          '${fb['kind']} | ${mdEscape('${fb['text']}')}$mark |');
     }
   }
   if (rows.isEmpty) return const [];
@@ -1211,6 +1266,22 @@ class IntakeEngine {
       // renders nothing, which is the honest output rather than a gap.
       writeDecisionLog(dir, collectDecisions(answers));
     } else {
+      // F2: with neither --project nor an explicit target, the legacy
+      // default resolved to <repoRoot>/docs/design/brief.md — inside any
+      // appbox repo that is a TRACKED file, and emit OVERWRITES, so a bare
+      // `intake emit --answers f.json` silently destroyed it. Refuse; the
+      // env var keeps scripted/legacy flows explicit rather than implicit.
+      if (briefOut == null &&
+          Platform.environment['INTAKE_BRIEF_OUT'] == null) {
+        return EmitResult.failure([
+          'refusing to emit with no output target: --project is absent and '
+          '--brief-out is unset, and the default path would silently '
+          'overwrite ${defaultBriefOut()}. Pass --project <name> '
+          '(recommended — projects live in ~/.appbox), or --brief-out <path> '
+          '(+ --registry-out <path>), or set INTAKE_BRIEF_OUT to opt back '
+          'into the default path.',
+        ]);
+      }
       briefPath = briefOut ?? defaultBriefOut();
       registryPath = registryOut ?? defaultRegistryOut();
     }

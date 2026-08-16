@@ -310,6 +310,207 @@ void main() {
       await dir.delete(recursive: true);
     });
 
+    test('emits into non-existent nested dirs (from-scratch folders)', () async {
+      final dir = await Directory.systemTemp.createTemp('sm_nested_');
+      final out = '${dir.path}/docs/design/story_map.html';
+      final data = '${dir.path}/deep/nested/tree/o.data.json';
+      final brief = '${dir.path}/docs/design/brief.md';
+      final rc = storyMapMain(
+          ['-i', _sampleJsonPath, '-o', out, '--data-out', data, '--brief-out', brief]);
+      expect(rc, 0, reason: 'emit must create parent dirs, not crash');
+      expect(File(out).existsSync(), isTrue);
+      expect(File(data).existsSync(), isTrue);
+      expect(File(brief).existsSync(), isTrue);
+      await dir.delete(recursive: true);
+    });
+
+  // F1 — elicited story-map strings (project, releases, epics, features,
+  // stories, surface labels) are client input. They must not reach the
+  // brief as active markdown/HTML: the gate parses these tables and the
+  // designer renders this brief.
+  group('renderBrief — client-string safety (markdown injection)', () {
+    final hostile = <String, dynamic>{
+      'project': 'P <script>alert(1)</script>',
+      'releases': [
+        {'name': 'R1 [x](https://evil.example)', 'description': 'd **bold** | pipe'}
+      ],
+      'epics': [
+        {
+          'name': 'E `code`',
+          'features': [
+            {
+              'name': 'F\n# injected heading',
+              'stories': [
+                {
+                  'name': 'S<b>raw</b>',
+                  'priority': 'must',
+                  'release': 'R1 [x](https://evil.example)',
+                  'description': '[l](javascript:alert(2))',
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    };
+
+    test('structure is fine — the payloads are values, not shape defects', () {
+      expect(validateData(hostile), isEmpty);
+    });
+
+    test('brief renders the payloads escaped, never as active markup', () {
+      final brief = renderBrief(hostile);
+      expect(brief.contains('<script>'), isFalse);
+      expect(brief.contains('<b>'), isFalse);
+      expect(brief.contains('[x](https://evil.example)'), isFalse);
+      expect(brief.contains('[l](javascript:'), isFalse);
+      expect(brief.contains('**bold**'), isFalse);
+      // the newline payload is FLATTENED into the heading text — it must
+      // not become a line of its own document structure
+      expect(brief.contains('F # injected heading'), isTrue);
+      expect(
+          brief.split('\n').any((l) => l.trimLeft().startsWith('# injected')),
+          isFalse);
+      expect(brief.contains('&lt;script&gt;'), isTrue);
+      expect(brief.contains('\\[x\\]'), isTrue);
+    });
+
+    test('HTML path stays escaped (regression guard)', () {
+      final html = renderHtml(hostile, now: '2024-01-01 00:00');
+      expect(html.contains('<script>alert'), isFalse);
+      expect(html.contains('&lt;script&gt;'), isTrue);
+    });
+  });
+
+  // F3 — duplicate identifiers shadow downstream: duplicate release names
+  // make relOrder last-write-wins, duplicate explicit feature ids collide
+  // in the traceability table, duplicate story names in a feature are
+  // indistinguishable in the map. All three must be validation errors.
+  // Duplicate EPIC names stay legal — slug suffixing is the design (see
+  // storyMapSelfTest's second User System epic).
+  group('validateData — duplicate detection (F3)', () {
+    test('duplicate release names are rejected and both indexes named', () {
+      final dup = {
+        'project': 'P',
+        'releases': [
+          {'name': 'R1'},
+          {'name': 'R1'},
+        ],
+        'epics': [
+          {
+            'name': 'E',
+            'features': [
+              {'name': 'F', 'stories': []},
+            ],
+          },
+        ],
+      };
+      final errs = validateData(dup);
+      expect(errs.where((e) => e.contains("duplicate release name 'R1'")),
+          isNotEmpty);
+    });
+
+    test('duplicate explicit feature ids are rejected document-wide', () {
+      final dup = {
+        'project': 'P',
+        'releases': [
+          {'name': 'R1'}
+        ],
+        'epics': [
+          {
+            'name': 'E1',
+            'features': [
+              {'name': 'F1', 'id': 'app.mediaRive', 'stories': []},
+            ],
+          },
+          {
+            'name': 'E2',
+            'features': [
+              {'name': 'F2', 'id': 'app.mediaRive', 'stories': []},
+            ],
+          },
+        ],
+      };
+      expect(validateData(dup).any((e) => e.contains("duplicate feature id 'app.mediaRive'")),
+          isTrue);
+    });
+
+    test('duplicate story names within one feature are rejected', () {
+      final dup = {
+        'project': 'P',
+        'releases': [
+          {'name': 'R1'}
+        ],
+        'epics': [
+          {
+            'name': 'E',
+            'features': [
+              {
+                'name': 'F',
+                'stories': [
+                  {'name': 'Same', 'priority': 'must', 'release': 'R1'},
+                  {'name': 'Same', 'priority': 'could', 'release': 'R1'},
+                ],
+              },
+            ],
+          },
+        ],
+      };
+      expect(validateData(dup).any((e) => e.contains('duplicate story name')),
+          isTrue);
+    });
+
+    test('same story name in DIFFERENT features stays legal', () {
+      final ok = {
+        'project': 'P',
+        'releases': [
+          {'name': 'R1'}
+        ],
+        'epics': [
+          {
+            'name': 'E',
+            'features': [
+              {
+                'name': 'F1',
+                'stories': [
+                  {'name': 'Same', 'priority': 'must', 'release': 'R1'},
+                ],
+              },
+              {
+                'name': 'F2',
+                'stories': [
+                  {'name': 'Same', 'priority': 'could', 'release': 'R1'},
+                ],
+              },
+            ],
+          },
+        ],
+      };
+      expect(validateData(ok), isEmpty);
+    });
+
+    test('explicit feature id sanity: pipe, backtick, space rejected', () {
+      for (final bad in ['a|b', 'a\\`b', 'a b', '']) {
+        final doc = {
+          'project': 'P',
+          'releases': [
+            {'name': 'R1'}
+          ],
+          'epics': [
+            {
+              'name': 'E',
+              'features': [
+                {'name': 'F', 'id': bad, 'stories': []},
+              ],
+            },
+          ],
+        };
+        expect(validateData(doc).any((e) => e.contains("feature id")), isTrue,
+            reason: 'id "$bad" must be rejected');
+      }
+    });
+  });
+
     test('--answers emits the unified brief; bad answers exit 1 writing nothing', () async {
       final dir = await Directory.systemTemp.createTemp('sm_chain_');
       final out = '${dir.path}/o.html';

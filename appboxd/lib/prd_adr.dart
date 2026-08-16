@@ -126,7 +126,7 @@ String emitPrd(Map<String, dynamic> answers) {
       : '(unnamed product)';
 
   final lines = <String>[
-    '# $product — PRD',
+    '# ${mdEscape(product)} — PRD',
     '',
     '> Emitted by appbox-intake from elicited answers.',
     '> **Intake elicits; it does not generate** (architecture §22).',
@@ -205,7 +205,7 @@ List<String> _sourceBlock(String key, Map<String, dynamic> answers,
     final items = <String>[
       for (final s in surfaces)
         if (s is Map)
-          '- `${s['id']}` — ${s['label']} (shell: ${s['shell']})'
+          '- `${s['id']}` — ${mdEscape('${s['label']}')} (shell: ${s['shell']})'
               '${s['provenance'] == 'inferred' ? ' [inferred]' : ''}',
     ];
     if (items.isEmpty) return const [];
@@ -226,13 +226,13 @@ List<String> _sourceBlock(String key, Map<String, dynamic> answers,
     // An answered-but-empty list is a real answer ("nothing is out of
     // scope") and must not be silently upgraded into an open question.
     for (final item in value) {
-      body.add('- $item');
+      body.add('- ${mdEscape(item.toString())}');
     }
     if (body.isEmpty) body.add('_None stated._');
   } else if (value == null) {
     return const [];
   } else {
-    body.add(value.toString());
+    body.add(mdEscape(value.toString()));
   }
 
   final out = <String>[];

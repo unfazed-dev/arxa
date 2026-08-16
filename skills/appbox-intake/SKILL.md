@@ -1,9 +1,11 @@
 ---
 name: appbox-intake
-description: Use to turn a client conversation into validated intake answers plus a seeded registry.json and flows.json — the head of ONE chain whose tail (`appbox emit story-map`) emits the unified design brief. OPTIONAL, runs before design. Elicits requirements; never generates design or code. Trigger on "intake a project", "write the brief", "seed the registry", "what does the client want". Drives `appbox intake` (the Dart port in appboxd/lib/intake.dart).
+description: Use when a client conversation needs to become validated intake answers plus a seeded registry.json and flows.json — the head of ONE chain whose tail (`appbox emit story-map`) emits the unified design brief. OPTIONAL, runs before design. Elicits requirements; never generates design or code. Trigger on "intake a project", "write the brief", "seed the registry", "what does the client want". Drives `appbox intake` (the Dart port in appboxd/lib/intake.dart).
 ---
 
 # appbox-intake — elicit the answers, seed the registry + flows
+
+> Per-skill playbook (the folded canon for this phase): [`INTAKE_playbook.mdx`](INTAKE_playbook.mdx)
 
 ## Core principle
 
@@ -35,6 +37,11 @@ Locales, Brand, Design direction, Content anchors, Constraints, Out of scope,
 Layout template) + Releases + the epic/feature/story hierarchy + a **surface
 inventory built from the intake-declared surfaces**. Standalone story-map (no
 answers) still works exactly as before — intake is optional (plan 10.7).
+
+**Chain position:** stage 1 of `appbox-orchestrator` (Ø, front door) → `appbox-story-mapper / appbox-moodboarder` (0, optional) → `appbox-intake` (1) → `appbox-designer` (2) → `appbox-scaffolder` (3) → `appbox-builder` (4) → `appbox-tester` (5) → `appbox-reviewer` (6) → `appbox-deployer` (9) — cross-cutting: `appbox-lint` (7), `appbox-lens` (8), `appbox-cicd` (10, day-zero frame wrapping all stages). Stage numbers and every stage's input/output artifacts: `docs/research/pipeline-map.md` §1; the visual map: `docs/appbox-system-map.md`; the CLI FSM phases: `appboxd/lib/phases.dart`.
+
+- **Upstream:** the client conversation — optionally preceded by stage 0 (`appbox-story-mapper`, `appbox-moodboarder`) when the run began as a story map; the whole run may be started and dispatched by `appbox-orchestrator` (stage Ø, the front door), which hands off to `appbox-cicd` day-zero bootstrap before this stage.
+- **Downstream:** `appbox-story-mapper` is this chain's tail (`--answers` → the unified brief); then `appbox-designer`, which consumes the brief + registry seed and the emitted `## Layout template` section **verbatim**.
 
 ## Projects live in ~/.appbox
 
@@ -168,17 +175,6 @@ You do **not** produce: views, viewmodels, routes, copy, layouts, component
 libraries, or anything that is design. That is the next phase. If you find
 yourself writing a screen, stop — you are in the wrong skill.
 
-The unified `docs/design/brief.md` is emitted by the chain's tail —
-`appbox emit story-map --answers <answers.json>` (when `--answers` is omitted
-it auto-discovers `pipeline/state/run.intake.json`, then
-`pipeline/state/default.intake.json`). Every field whose provenance is
-`inferred` is **visibly marked** in the brief — a reader who skims must not
-miss it.
-
-You do **not** produce: views, viewmodels, routes, copy, layouts, component
-libraries, or anything that is design. That is the next phase. If you find
-yourself writing a screen, stop — you are in the wrong skill.
-
 ## Provenance is the whole contract
 
 Every field records **who supplied it**: `client` (stated by the client),
@@ -189,12 +185,35 @@ only value that gets marked. Recording content as `client` that the client did
 not state is the single most damaging thing this skill can do; it manufactures
 authority the brief does not have.
 
+## How to elicit — one question at a time
+
+The question set is a CONVERSATION, never a form dump:
+
+- **One question at a time.** Ask, wait for the answer, record it, then ask
+  the next. Never paste the whole schema or a wall of questions.
+- **Attach a recommendation to every closed question** — recommended option
+  first, one sentence of tradeoff — the way `appbox-cicd`'s bootstrap grills
+  its nine decisions. Use the `ask_user_question` tool for closed picks
+  (targets, locales, layout category/archetype, priority clashes); keep
+  open fields (the JTBD audience sentence, `contentAnchors`) free-form.
+- **Variable N** — personas, surfaces, anchors: take as many as the client
+  names and stop. One is a valid answer; so is seven.
+- **Ground with search, attribute honestly.** When the client names a
+  domain, brand or competitor you don't know, a web search may inform YOUR
+  next question — but search results are never `client` provenance. Either
+  ask the client to confirm (then it is `client`), or record `inferred`.
+  Cite the anchor in the conversation, not in the answers.
+- **Escape is the emitter's job, not yours.** Record client strings
+  verbatim, markup included — `intake emit` neutralizes markdown/HTML in
+  elicited values before they reach the brief.
+
 ## Procedure
 
 1. **Elicit, do not write.** Work through the question set (the fields in
-   `intake.schema.json`) with the client or founder. Capture answers verbatim —
-   rephrase nothing. Where the client did not answer, leave the field absent or
-   mark it `inferred` with a placeholder value, never an invented one.
+   `intake.schema.json`) with the client or founder — one question at a
+   time (see above). Capture answers verbatim — rephrase nothing. Where the
+   client did not answer, leave the field absent or mark it `inferred` with
+   a placeholder value, never an invented one.
 
 2. **Author the answers document.** One JSON object conforming to
    `intake.schema.json`. Each surface the client named becomes an entry with
@@ -234,13 +253,17 @@ authority the brief does not have.
    ```
    With `--project`, every output lands in the project's
    `~/.appbox/projects/<name>/intake/` dir (answers/brief/registry/flows).
-   Without it, `emit` seeds the registry at the design root
+   Without `--project`, `emit` **refuses to run** unless you pass an
+   explicit `--brief-out` (or set `INTAKE_BRIEF_OUT`) — the old default
+   silently overwrote `<repoRoot>/docs/design/brief.md`, which inside any
+   appbox repo is a tracked file. The registry path (when explicitly
+   emitted) still defaults to the design root
    (`designs/<app>/models/screens_model/registry.json`, or structure.json's
    `"registry"` field; `docs/design/registry.json` only when no design root
-   exists). Paths are overridable via `--brief-out` / `--registry-out`, or the
-   `INTAKE_BRIEF_OUT` / `INTAKE_REGISTRY_OUT` env vars. Invalid input writes
-   **nothing** — no partial artefacts. Then run the chain's tail to write the
-   unified brief:
+   exists), overridable via `--registry-out` / `INTAKE_REGISTRY_OUT`.
+   Invalid input writes **nothing** — no partial artefacts. Client strings
+   are markdown-escaped by the emitter. Then run the chain's tail to write
+   the unified brief:
    ```sh
    appbox emit story-map --answers <answers.json> \
      --output docs/design/story_map.html \

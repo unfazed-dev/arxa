@@ -1,0 +1,43 @@
+<Callout id="header" tone="info">
+# appbox-designer — Per-Skill Playbook
+
+`appbox-designer` · status: **active**
+
+**Role (one line):** turn the versioned `intake/registry.json` into the server-rendered htmx + CSS prototype — zero custom client-side JS, named vendored islands only, genuine MVVM — whose structure the scaffolder transliterates into Flutter.
+
+**Scope of this document:** lets a human OR an LLM drive the design phase without reading the skill source. Folded from `SKILL.md`.
+
+**Pipeline position:** stage 2 — upstream `appbox-intake` (brief + `intake/registry.json`) and `appbox-moodboarder`; downstream `appbox-scaffolder` (FROZEN `structure.json`); a stage-6 review REJECT rewinds here. Full chain, stage numbers, per-stage artifacts: `docs/research/pipeline-map.md` §1.
+
+## Table of contents
+
+0. Header & TOC · 1. Overview & role · 2. Inputs · 3. Procedure · 4. Outputs · 5. Rules · 6. References
+
+</Callout>
+
+### Overview & role
+
+The design stage of the pipeline. Every artifact is a Hono + htmx MVVM app (surface = view template + co-located viewmodel) and is the **triad** — prototype, flows, views: three lenses over one view registry, never three artifacts; flows are `{from, to, trigger}` data edges threaded through the data spine. The artifact is a typed input to a build pipeline, structurally isomorphic to `kit/showcase_app/lib` — structure is authored while designing, never back-filled.
+
+### Inputs
+
+A pinned `intake/registry.json` version (full run: every feature) or a frozen run artifact for a registry diff (**delta run**: only the new/changed feature; already-designed features are never regenerated, shared join points are scaffolder-owned and additive-only). The pinned `intake/flows.json` alongside it — with the registry, the only authoring surface: intake elicits/derives + confirms the flows, and the design viewer live-reads AND edits that same file (move/add/remove POST the design server, which rewrites flows.json), never a copy. The design brief when intake produced one — consume its Layout Template verbatim; moodboard slices for visual direction. The viewport ladder from project config — never assumed, never hardcoded; authoring at phone width only is the single most expensive mistake available here.
+
+### Procedure
+
+Load contracts first: `references/showcase-anatomy.md` (the structure contract), `references/delta-runs.md` (run type + touch scope), `system-prompt.md` (craft SSOT), `DESIGN-ARCHITECTURE.md` (binding data-spine contract), `references/app-architecture.md`, `references/kit-catalog.md` when the brief names kit capabilities, `references/viewport-ladder.md`, `references/harness-tools.md`, `runtime/README.md`; skim `examples/hello-hda/`. Ask (AskUserQuestion) for new or ambiguous work — context, fidelity, variations, output folder, design systems. Set up by copying `examples/hello-hda/` into `designs/<name>/`; import design systems (`appbox design ds-import`) and record deliverables (`appbox design record-asset`). Build widgets-first at the two tiers only — `ui/widgets/common/<group>/` cross-shell, `ui/widgets/<app>_<feature>_widgets/` — with `kind` from the closed 15-kind vocabulary (`starter-partials/widgets/` file list; a kind outside it is a gate failure on both sides, never improvise a mapping). Compose surfaces from the library only, author every rung in the ladder, and let emit stamp the `inspectAttrs` triple and `///` frontmatter. Serve and verify: `appbox design serve <dir> --port 4319` (background) → `appbox design lint <dir>` (no ad-hoc JS / named islands) → `appbox lens check` (console clean) → `appbox lens shoot` at every ladder width plus overflow and failed-request checks → `npx tsc -p <artifact>` clean. Fix before surfacing; hand the user the served URL. Productionize on request: `appbox design eject <dir> <out-dir>`.
+
+### Outputs
+
+`designs/<name>/` with `ui/views/*` (base view + `.desktop`/`.tablet`/`.mobile` variants + `.sections.tsx`), barreled `ui/widgets/*`, `ui/styles/<owner>/` barrels, the derived `models/screens_model/registry.json` (a projection — regenerated, never edited), the route table the freeze step reads, and the emit-produced artifact-root `tsconfig.json`.
+
+### Rules
+
+`intake/registry.json` is the only authoring surface — never author a second source of truth. Locked laws: vocabulary (hub > shell > view > widgets; "screen"/"page" banned as structural nouns), filenames (no leading `_`, no version/era prefixes), styles (`ui/styles/<owner>/` only, one barrel per folder, `base.tsx` links barrels and nothing else), widget barrels, exactly one application hub per app, the two-tier widget placement law, named islands only. Layout values are kit constant names (`abxPad*`/`abxGap*`/`abxHug`/`abxFill`…), never raw numbers — an off-ladder value is a request to add a kit constant. You compose; you never resolve — `widget: null` means composed; name the variant and author the recipe. Auto Layout default-ON (`data-layout`, `data-resize-x/y`, `data-layout-ignore` to exempt). Localized artifacts keep every string in `l10n/app_<locale>.arb` rendered via the `t` prop, and `appbox design pseudolocalize` runs before handoff. Artifacts stay self-contained (assets copied in; vendored SRI-pinned libraries only). The runtimes are Dart — run `appbox design doctor` to preflight.
+
+<!-- kb:begin -->
+### References
+- `DESIGN-ARCHITECTURE.md` (binding contract) · `system-prompt.md` (craft SSOT) · `CONTEXT.md` (vocabulary) — skill-local.
+- `references/` — showcase-anatomy (structure contract), delta-runs, app-architecture, kit-catalog, viewport-ladder, ui-recipes, harness-tools. `runtime/README.md` — artifact contract. `examples/hello-hda/` — reference artifact. `built-in-skills/` — per-mode skills (declare-structure, wireframe, hi-fi-design, interactive-prototype, mobile-prototype, design-system guides, productionize). `docs/adr/` — runtime decisions.
+- `appbox design serve|lint|doctor|pseudolocalize|eject|ds-import|record-asset`, `appbox lens check|shoot` — the Dart runtimes this skill drives.
+<!-- kb:end -->

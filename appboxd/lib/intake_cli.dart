@@ -52,7 +52,11 @@ Subcommands:
   emit --answers <f> [--project <name>] [--brief-out p] [--registry-out p]
                         Emit brief.md + seeded registry.json from answers;
                         with --project every output lands in the project's
-                        ~/.appbox intake/ dir (answers/brief/registry/flows)
+                        ~/.appbox intake/ dir (answers/brief/registry/flows).
+                        Without --project an explicit --brief-out (or the
+                        INTAKE_BRIEF_OUT env var) is REQUIRED — the bare
+                        default used to silently overwrite
+                        <repoRoot>/docs/design/brief.md and now refuses
   seed --brief <f> [--registry-out p]
                         Derive registry.json from a hand-written brief (10.7)
   flows confirm --project <name> --flow <id> --as founder|client
@@ -413,6 +417,39 @@ int _selfTest() {
     if (!brief.contains('| id | shell | comp | label | states | surface |') ||
         !brief.contains('| `projects.home` | projects | ProjectsHome | Home | empty, loading | _null_ |')) {
       throw 'states column missing from the brief surface table';
+    }
+    // 11b. F6 — absent surfaces is LEGAL (the designer authors the
+    // registry); only a present non-list is a type defect.
+    final noSurfaces = goodAnswers()..remove('surfaces');
+    if (validateIntake(noSurfaces).errors.isNotEmpty) {
+      throw 'absent surfaces must validate: ${validateIntake(noSurfaces).errors}';
+    }
+    if (!emitBrief(noSurfaces).contains('No surfaces named at intake')) {
+      throw 'absent surfaces must render the designer-authors note';
+    }
+    final badSurfaces = goodAnswers()..['surfaces'] = 'x';
+    if (!validateIntake(badSurfaces).errors.any((e) => e.contains('list of surface objects'))) {
+      throw 'mistyped surfaces must name the type';
+    }
+    // 11c. F1 — hostile client strings never reach the brief as markup.
+    final hostile = goodAnswers();
+    hostile['product'] = {
+      'value': 'D <script>alert(1)</script> [x](https://evil.example)',
+      'provenance': 'client',
+    };
+    final hostileBrief = emitBrief(hostile);
+    if (hostileBrief.contains('<script>') ||
+        hostileBrief.contains('[x](https://evil.example)')) {
+      throw 'raw markup leaked into the brief';
+    }
+    if (!hostileBrief.contains('&lt;script&gt;')) {
+      throw 'payload must stay visible, escaped';
+    }
+    // 11d. F2 — emit with no target refuses instead of defaulting into
+    // the repo tree (the default used to overwrite a tracked file).
+    final refused = const IntakeEngine().emit(goodAnswers());
+    if (refused.ok || !refused.errors.first.contains('refusing')) {
+      throw 'untargeted emit must refuse: ${refused.errors}';
     }
     // 12. a brief with no surface table -> empty seed
     if (seedFromBrief('# Just prose\n\nNo table here.\n').isNotEmpty) {

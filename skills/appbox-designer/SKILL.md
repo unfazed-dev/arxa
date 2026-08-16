@@ -1,25 +1,11 @@
 ---
 name: appbox-designer
-description: >-
-  Design an application prototype whose structure the appbox pipeline
-  consumes — server-rendered htmx + CSS with zero custom client-side
-  JavaScript — named islands only: reusable, vendored, SRI-pinned runtimes
-  and first-party glue islands in runtime/vendor/, in a genuine MVVM
-  structure: app shells, views,
-  dashboards, interactive prototypes and wireframes, authored at every
-  viewport in the active ladder. Use when the user asks to design, mock up,
-  prototype, wireframe or visualize an application, product view or user
-  flow that will be scaffolded into a real app. Consumes the versioned
-  `intake/registry.json` as its single authoring surface (all design
-  instructions including seed data) and materializes a *derived*
-  `registry.json`, an `inspectAttrs` triple on every surface and a route table
-  the freeze step can read — one view registry viewed through three lenses
-  (views / flows / proto), flows authored as data edges over it. Output is
-  structurally isomorphic to `kit/showcase_app/lib`, so the scaffolder can
-  transliterate rather than interpret. Not for slide decks or printable documents.
+description: "Use when the user asks to design, mock up, prototype, wireframe or visualize an application, product view or user flow that will be scaffolded into a real app — the artifact is a server-rendered htmx + CSS prototype with zero custom client-side JavaScript (named vendored islands only) in a genuine MVVM structure: app shells, views, dashboards, interactive prototypes and wireframes, authored at every viewport in the active ladder. Consumes the versioned intake/registry.json (+ intake/flows.json, the flows SSOT) as the pipeline's only authoring surface and materializes a derived registry.json, an inspectAttrs triple on every surface and a route table the freeze step reads; output is structurally isomorphic to kit/showcase_app/lib so the scaffolder transliterates rather than interprets. Not for slide decks or printable documents."
 ---
 
 # appbox-designer
+
+> Per-skill playbook (the folded canon for this phase): [`DESIGNER_playbook.mdx`](DESIGNER_playbook.mdx)
 
 The design stage of the appbox pipeline. Every artifact is a Hono + htmx MVVM
 app with **no ad-hoc client-side JavaScript — named islands only**. An
@@ -35,6 +21,13 @@ structure rather than pixels.
 you produce is a *typed input to a build pipeline*. Structure is authored while
 designing, never back-filled. See
 [`references/app-architecture.md`](references/app-architecture.md).
+
+## Pipeline position
+
+Stage 2 of `appbox-orchestrator` (Ø, front door) → `appbox-story-mapper / appbox-moodboarder` (0, optional) → `appbox-intake` (1) → `appbox-designer` (2) → `appbox-scaffolder` (3) → `appbox-builder` (4) → `appbox-tester` (5) → `appbox-reviewer` (6) → `appbox-deployer` (9) — cross-cutting: `appbox-lint` (7), `appbox-lens` (8), `appbox-cicd` (10, day-zero frame wrapping all stages). Stage numbers and every stage's input/output artifacts: `docs/research/pipeline-map.md` §1; the visual map: `docs/appbox-system-map.md`; the CLI FSM phases: `appboxd/lib/phases.dart`.
+
+- **Upstream (feeds this skill):** `appbox-intake` — the brief (or a hand-written one) + seeded `intake/registry.json` (the emitted `## Layout template` section is consumed **verbatim**) + `intake/flows.json`, the flows SSOT — with the registry, the pipeline's only authoring surface: intake elicits/derives + confirms the flows, and the design viewer live-reads AND edits that same file (never a copy; DESIGN-ARCHITECTURE "The output triad"). `appbox-moodboarder` moodboards are consulted alongside the brief.
+- **Downstream (consumes this skill's output):** `appbox-scaffolder` — the FROZEN `structure.json` this stage emits is its only input; `appbox-lens` captures the evidence; a stage-6 review REJECT rewinds the FSM back here.
 
 **The triad output.** Every artifact is *three switchable lenses over one
 view registry* — **prototype** (wired navigation over each entry's `route`),

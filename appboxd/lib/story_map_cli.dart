@@ -23,7 +23,33 @@ Options:
                          (default: pipeline/state/run.intake.json, then
                          default.intake.json, under the repo root)
       --self-test        Run the embedded self-check and exit
+
+Input JSON contract (validated before anything is written; exit 1 lists
+every defect at once):
+  project    string, required — the product name
+  releases   non-empty array of {name} — release names are UNIQUE (each is
+             a swimlane; a duplicate makes the order ambiguous)
+  epics      non-empty array of {name, features}
+  features   non-empty array of {name, id?, stories}
+               id — optional explicit surface id (e.g. app.mediaRive);
+               unique document-wide, no spaces/'|'/backticks. Without it
+               the id is derived: <epic-slug>.<feature-slug>
+  stories    array of {name, priority, release, description?, points?}
+               priority — must|should|could|wont (MoSCoW)
+               release  — must name one of the releases above
+               name     — unique within its feature
+  Duplicate epic/feature NAMES are fine (slug suffixing); duplicate release
+  names, explicit feature ids and per-feature story names are errors.
 ''';
+
+/// Writes [content] to [path], creating parent dirs as needed — emitters run
+/// in from-scratch folders where docs/design/ does not exist yet (this used
+/// to crash with PathNotFoundException; the repo layout pre-created the dirs).
+void _writeCreatingDirs(String path, String content) {
+  final f = File(path);
+  if (!f.parent.existsSync()) f.parent.createSync(recursive: true);
+  f.writeAsStringSync(content);
+}
 
 /// Entry point for `appbox emit story-map`. Returns the process exit code.
 int storyMapMain(List<String> args) {
@@ -123,17 +149,17 @@ int storyMapMain(List<String> args) {
     }
   }
 
-  File(output).writeAsStringSync(renderHtml(data));
+  _writeCreatingDirs(output, renderHtml(data));
   print('Story map generated: $output');
 
   if (dataOut != null) {
-    File(dataOut).writeAsStringSync(serializeDataJson(data));
+    _writeCreatingDirs(dataOut, serializeDataJson(data));
     print('Story-map data written: $dataOut');
   }
 
   if (briefOut != null) {
     final d = deriveSurfaces(data);
-    File(briefOut).writeAsStringSync(renderBrief(data, derived: d, answers: answers));
+    _writeCreatingDirs(briefOut, renderBrief(data, derived: d, answers: answers));
     print('Design brief written: $briefOut '
         '(${d.surfaces.length} surfaces, ${d.outOfScope.length} out-of-scope)');
   }
@@ -302,6 +328,72 @@ void storyMapSelfTest() {
     throw StateError('brief missing out-of-scope section');
   }
   renderHtml(sample); // HTML path must not regress.
+
+  // F1 — hostile client strings must not reach the brief as active markup.
+  final hostile = <String, dynamic>{
+    'project': 'P <script>alert(1)</script>',
+    'releases': [
+      {'name': 'R1'}
+    ],
+    'epics': [
+      {
+        'name': 'E',
+        'features': [
+          {
+            'name': 'F **bold** [x](https://evil.example)',
+            'stories': [
+              {'name': 'S<b>b</b>', 'priority': 'must', 'release': 'R1'},
+            ],
+          },
+        ],
+      },
+    ],
+  };
+  if (validateData(hostile).isNotEmpty) {
+    throw StateError('hostile VALUES are not shape defects');
+  }
+  final hostileBrief = renderBrief(hostile);
+  if (hostileBrief.contains('<script>') ||
+      hostileBrief.contains('<b>') ||
+      hostileBrief.contains('[x](https://evil.example)') ||
+      hostileBrief.contains('**bold**')) {
+    throw StateError('raw markup leaked into the brief');
+  }
+  if (!hostileBrief.contains('&lt;script&gt;')) {
+    throw StateError('payload must stay visible, escaped');
+  }
+
+  // F3 — duplicates that shadow downstream are rejected, and the message
+  // names the offender.
+  final dup = <String, dynamic>{
+    'project': 'P',
+    'releases': [
+      {'name': 'R1'},
+      {'name': 'R1'},
+    ],
+    'epics': [
+      {
+        'name': 'E',
+        'features': [
+          {'name': 'F', 'id': 'app.x', 'stories': []},
+          {'name': 'F2', 'id': 'app.x', 'stories': []},
+          {
+            'name': 'F3',
+            'stories': [
+              {'name': 'Same', 'priority': 'must', 'release': 'R1'},
+              {'name': 'Same', 'priority': 'wont', 'release': 'R1'},
+            ],
+          },
+        ],
+      },
+    ],
+  };
+  final dupErrs = validateData(dup);
+  if (!dupErrs.any((e) => e.contains("duplicate release name 'R1'")) ||
+      !dupErrs.any((e) => e.contains("duplicate feature id 'app.x'")) ||
+      !dupErrs.any((e) => e.contains('duplicate story name'))) {
+    throw StateError('duplicate detection incomplete: $dupErrs');
+  }
 }
 
 bool _listEq(List<String> a, List<String> b) {
