@@ -1,14 +1,14 @@
-// Role: design shell at the medium rung. Pass-through frame: the
-//   hosted surface drops the activity rail and keeps canvas + inspector
-//   by its own arrangement at this width.
+// Role: design loop shell frame at the medium rung. No per-rung frame
+//   divergence — the ported v1 panel media queries carry the ladder and
+//   the hosted design surface renders once at the shell root (the
+//   single-render law for id-anchored htmx surfaces). Renders nothing;
+//   a real medium-rung frame need lands here.
 // Requirements: Q-v2-3.
-// Relationships: mounted by studio_design_shell_view.tsx.
+// Relationships: studio_design_shell_view.tsx (single-render law).
 // History: git log --follow -- ui/views/studio_design_shell/studio_design_shell_view.tablet.tsx
 import type { FC } from 'hono/jsx';
 import type { StudioDesignShellViewProps } from './studio_design_shell_view.tsx';
 
-const StudioDesignShellViewTablet: FC<StudioDesignShellViewProps> = ({ surface }) => (
-  <>{surface}</>
-);
+const V: FC<StudioDesignShellViewProps> = () => null;
 
-export default StudioDesignShellViewTablet;
+export default V;

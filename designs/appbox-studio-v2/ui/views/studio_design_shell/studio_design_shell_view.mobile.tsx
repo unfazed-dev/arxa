@@ -1,14 +1,14 @@
-// Role: design shell at the compact rung. Scroll-column frame — the
-//   composer sheet stays pinned to the viewport while the canvas
-//   scrolls above it.
+// Role: design loop shell frame at the compact rung. No per-rung frame
+//   divergence — the ported v1 panel media queries carry the ladder and
+//   the hosted design surface renders once at the shell root (the
+//   single-render law for id-anchored htmx surfaces). Renders nothing;
+//   a real compact-rung frame need lands here.
 // Requirements: Q-v2-3.
-// Relationships: mounted by studio_design_shell_view.tsx.
+// Relationships: studio_design_shell_view.tsx (single-render law).
 // History: git log --follow -- ui/views/studio_design_shell/studio_design_shell_view.mobile.tsx
 import type { FC } from 'hono/jsx';
 import type { StudioDesignShellViewProps } from './studio_design_shell_view.tsx';
 
-const StudioDesignShellViewMobile: FC<StudioDesignShellViewProps> = ({ surface }) => (
-  <div class="design-scroll">{surface}</div>
-);
+const V: FC<StudioDesignShellViewProps> = () => null;
 
-export default StudioDesignShellViewMobile;
+export default V;

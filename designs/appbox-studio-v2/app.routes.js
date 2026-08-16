@@ -11,7 +11,9 @@ import * as mapping from './ui/views/studio_intake_shell/studio_intake_mapping/s
 import * as direction from './ui/views/studio_intake_shell/studio_intake_direction/studio_intake_direction_viewmodel.js';
 import * as brief from './ui/views/studio_intake_shell/studio_intake_brief/studio_intake_brief_viewmodel.js';
 import * as moodboard from './ui/views/studio_intake_shell/studio_intake_moodboard/studio_intake_moodboard_viewmodel.js';
-import * as design from './ui/views/studio_design_shell/studio_design/studio_design_viewmodel.js';
+import * as prototype from './ui/views/studio_design_shell/studio_design_prototype/studio_design_prototype_viewmodel.js';
+import * as dchat from './ui/views/studio_design_shell/studio_design_chat/studio_design_chat_viewmodel.js';
+import * as freeze from './ui/views/studio_design_shell/studio_design_freeze/studio_design_freeze_viewmodel.js';
 import * as preferences from './ui/common/preferences_viewmodel.js';
 import { booted } from './ui/common/boot_guard_viewmodel.js';
 
@@ -141,8 +143,48 @@ export default [
   ['GET', '/intake/moodboard/panel', booted(moodboard.panel)],
   ['GET', '/intake/moodboard/panel/size/:panel/:size', booted(moodboard.panelSize)],
   ['POST', '/intake/moodboard/messages', booted(moodboard.sendMessage)], // posted-by: composer.tsx composerAction (intake facade)
-  ['GET', '/design', booted(design.view)],
-  ['POST', '/design/compose', booted(design.compose)],
+  // design.prototype — the design stage (shell root: /design)
+  ['GET', '/design', booted(prototype.page)],
+  ['GET', '/design/panel', booted(prototype.panel)],
+  ['GET', '/design/panel/size/:panel/:size', booted(prototype.panelSize)],
+  ['GET', '/design/panel/:view', booted(prototype.panelView)],
+  ['GET', '/design/viewer', booted(prototype.viewer)],
+  ['GET', '/design/file', booted(prototype.file)],
+  ['GET', '/design/screen/:id', booted(prototype.screen)],
+  ['POST', '/design/flows/:flow/move/:screen', booted(prototype.flowMove)], // posted-by: design_viewer tile toolbar + drag.js island
+  ['POST', '/design/flows/:flow/add/:screen', booted(prototype.flowAdd)],
+  ['POST', '/design/flows/:flow/remove/:screen', booted(prototype.flowRemove)],
+  ['POST', '/design/panel/size/:panel', booted(prototype.panelSizePx)], // posted-by: drag.js island
+  ['POST', '/design/undo/:stack', booted(prototype.undo)],
+  ['POST', '/design/redo/:stack', booted(prototype.redo)],
+  ['GET', '/design/drawer/:screen', booted(prototype.drawer)],
+  ['GET', '/design/inspector', booted(prototype.inspector)],
+  ['POST', '/design/inspector/select', booted(prototype.inspectorSelect)], // posted-by: inspect.js island
+  ['POST', '/design/inspector/unlock', booted(prototype.inspectorUnlock)],
+  ['POST', '/design/widget/arm', booted(prototype.widgetArm)],
+  ['POST', '/design/widget/select', booted(prototype.widgetSelect)], // posted-by: canvas.js + drawer Tools strip
+  ['POST', '/design/widget/attr', booted(prototype.widgetAttr)],
+  ['POST', '/design/widget/text', booted(prototype.widgetText)],
+  ['POST', '/design/widget/clear', booted(prototype.widgetClear)],
+  // design.chat — the one design chat
+  ['GET', '/design/chat', booted(dchat.page)],
+  ['POST', '/design/chat/messages', booted(dchat.send)],
+  ['GET', '/design/chat/context/:id', booted(dchat.context)],
+  ['POST', '/design/chat/context/element', booted(dchat.elementContext)], // posted-by: inspect.js island
+  ['GET', '/design/chat/context/element/remove', booted(dchat.elementContextRemove)],
+  ['POST', '/design/chat/context/bulk', booted(dchat.bulkContext)], // posted-by: drag.js island
+  ['GET', '/design/chat/model/:id', booted(dchat.model)],
+  ['GET', '/design/chat/tray', booted(dchat.tray)],
+  ['GET', '/design/chat/screen/:id', booted(dchat.select)],
+  ['POST', '/design/chat/screen/:id/revert/:cp', booted(dchat.revert)],
+  // design.freeze — freeze & trace + the manifest approval gate
+  ['GET', '/design/freeze', booted(freeze.page)],
+  ['GET', '/design/freeze/file', booted(freeze.file)],
+  ['POST', '/design/freeze/messages', booted(freeze.send)],
+  ['POST', '/design/freeze/recheck', booted(freeze.recheck)],
+  ['GET', '/design/freeze/context/:id', booted(freeze.context)],
+  ['GET', '/design/freeze/model/:id', booted(freeze.model)],
+  ['GET', '/design/freeze/tray', booted(freeze.tray)],
   // /preferences/accent: no v2 sender has landed (the accent picker is a
   // dashboard-registry follow-up) — the route stays out rather than dead.
   ['POST', '/preferences/theme', preferences.setTheme],

@@ -1,254 +1,68 @@
-/* design.css — the canvas studio. .device/.dv-frame/.composer/.panel
-   vocabulary carried from v1 viewer.css / composer.css / panels.css per
-   the VISUAL PARITY LAW; the arrangement is v2's three-region studio. */
-.design-scroll {
-  min-height: 0;
-  display: flex;
-  flex-direction: column;
-}
-.design-stage {
-  display: grid;
-  gap: 1rem;
-  width: min(100%, 90rem);
-  margin: 0 auto;
-  padding: 1rem 1.25rem 2rem;
-}
-.design-stage--desktop {
-  grid-template-columns: 15rem minmax(0, 1fr) 17rem;
-  align-items: start;
-  min-height: calc(100dvh - 6rem);
-}
-.design-stage--tablet,
-.design-stage--mobile {
-  grid-template-columns: minmax(0, 1fr);
-}
-.design-center {
-  display: flex;
-  flex-direction: column;
-  gap: 0.8rem;
-  min-width: 0;
+/* design.css — design-shell surfaces (prototype / chat / freeze).
+   Reuses app.css idioms (facts-bar, mp-content, msg, provenance, log-lines,
+   evidence, finding, toast) and the panel chrome from composer.css /
+   panels.css; only surface-specific styles live here. Context tones:
+   composer.css owns the shared palette (cyan/violet/olive/amber), viewer.css
+   extends it (blue/ember) — one hue per pinned screen, shared by chips,
+   outlines, thumbs and cards. */
+
+/* ---------- shared: screen type badge ---------- */
+.tb-screen { color: var(--accent); background: var(--accent-soft); }
+
+/* the design main-panel content scrolls like any .mp-content */
+.mp-content { overflow: auto; }
+
+/* ---------- the design thread (inside the composer panel) ---------- */
+.chat-thread {
+  display: flex; flex-direction: column; gap: .55rem;
+  padding: .1rem;
 }
 
-/* needs-you chips */
-.needs-you {
-  display: flex;
-  gap: 0.5rem;
-  flex-wrap: wrap;
+.checkpoint {
+  align-self: stretch;
+  display: flex; flex-direction: column; gap: .55rem;
+  padding: .7rem .85rem; border-radius: var(--radius-s);
+  background: var(--bg-2); border: 1px solid var(--border);
 }
-.needs-you--stacked {
-  flex-direction: column;
-  align-items: stretch;
-}
-.chip-form { display: contents; }
-.chip--decision {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-  padding: 0.35rem 0.7rem;
-  border: 1px solid rgba(217, 119, 6, 0.4);
-  border-radius: 999px;
-  background: rgba(217, 119, 6, 0.1);
-  color: inherit;
-  font: inherit;
-  font-size: 0.82rem;
-  cursor: pointer;
-}
-.chip--decision:hover {
-  border-color: rgba(217, 119, 6, 0.8);
-}
+.checkpoint.is-reverted { opacity: .62; }
+.cp-head { display: flex; gap: .6rem; align-items: baseline; flex-wrap: wrap; }
+.cp-head .msg-time { margin-left: auto; }
+.cp-diff { display: flex; gap: .45rem; flex-wrap: wrap; }
+.cp-revert { margin: 0; }
+.cp-revert button { padding: .3rem .75rem; font-size: .76rem; }
 
-/* the canvas */
-.design-canvas {
-  border: 1px solid var(--abx-border, rgba(125, 125, 155, 0.2));
-  border-radius: 1.2rem;
-  background:
-    radial-gradient(circle, rgba(125, 125, 155, 0.12) 1px, transparent 1px) 0 0 / 24px 24px,
-    var(--abx-canvas, rgba(125, 125, 155, 0.05));
-  padding: 1rem;
-  overflow: auto;
-}
-.canvas-tiles {
-  display: flex;
-  gap: 1rem;
-  align-items: flex-start;
-  flex-wrap: wrap;
-  justify-content: center;
-}
-.device {
-  display: flex;
-  flex-direction: column;
-  margin: 0;
-  border: 3px solid #232326;
-  border-radius: 1rem;
-  background: #232326;
-  box-shadow: var(--shadow-2, 0 12px 32px rgba(15, 15, 25, 0.2));
-  overflow: hidden;
-}
-.device--desktop .dv-frame { width: 30rem; }
-.device--tablet .dv-frame { width: 15rem; }
-.device--mobile .dv-frame { width: 11rem; }
-.dv-frame {
-  display: block;
-  height: auto;
-  border: 0;
-  background: #fff;
-}
-.device-caption {
-  padding: 0.3rem 0.5rem;
-  font-size: 0.72rem;
-  color: #d5d5e0;
-  background: #232326;
-}
+/* ---------- the activity panel: screens / artifacts / files views ---------- */
+a.av-row { text-decoration: none; color: inherit; }
+a.av-row:hover { border-color: var(--tx-3); }
+.av-row code { overflow-wrap: anywhere; }
+/* a pinned screen's activity card carries its context tone (same hue as the
+   canvas outline and the chat chip) */
+.msg-ctx { border-color: var(--ctx); }
+.msg-ctx .cta-main { color: var(--ctx); box-shadow: inset 0 0 0 1px var(--ctx); }
 
-/* the inspector */
-.inspector {
-  display: flex;
-  flex-direction: column;
-  gap: 0.6rem;
-  padding: 1rem;
-  border: 1px solid var(--abx-border, rgba(125, 125, 155, 0.25));
-  border-radius: 1rem;
-  background: var(--abx-surface, #fff);
-}
-.inspector-title { margin: 0; font-size: 1rem; }
-.inspector-tabs {
-  display: flex;
-  flex-direction: column;
-  gap: 0.4rem;
-}
-.inspector-tab input {
-  position: absolute;
-  opacity: 0;
-  pointer-events: none;
-}
-.inspector-tab label {
-  display: inline-block;
-  padding: 0.3rem 0.7rem;
-  border-radius: 999px 999px 0 0;
-  border: 1px solid transparent;
-  font-size: 0.85rem;
-  cursor: pointer;
-  color: var(--abx-muted, #5a5a6e);
-}
-.inspector-tab .inspector-fields { display: none; }
-.inspector-tab input:checked ~ label {
-  border-color: var(--abx-border, rgba(125, 125, 155, 0.35));
-  border-bottom-color: transparent;
-  color: inherit;
-  font-weight: 600;
-}
-.inspector-tab input:checked ~ .inspector-fields {
-  display: flex;
-  flex-direction: column;
-  gap: 0.45rem;
-  padding-top: 0.5rem;
-  border-top: 1px solid var(--abx-border, rgba(125, 125, 155, 0.25));
-}
-.inspector-fields { margin: 0; }
-.inspector-field {
-  display: flex;
-  justify-content: space-between;
-  gap: 0.6rem;
-  font-size: 0.85rem;
-}
-.inspector-field dt { color: var(--abx-muted, #5a5a6e); }
-.inspector-field dd { margin: 0; font-weight: 550; text-align: right; }
-.inspector-tab-details summary {
-  cursor: pointer;
-  font-weight: 600;
-  padding: 0.35rem 0;
-}
-.inspector--folded { padding: 0.75rem; }
+/* ---------- freeze: stacked single column ---------- */
+.freeze-stack { display: flex; flex-direction: column; gap: 2.2rem; }
+.freeze-stack .artifact { margin: 0; max-width: none; }
+.freeze-manifest .big-metric { font-size: clamp(2rem, 4.5vw, 3.2rem); }
 
-/* the composer sheet */
-.composer-sheet {
-  position: sticky;
-  bottom: 0.5rem;
-  border-radius: 1.4rem;
-  background: var(--abx-surface, #fff);
-  border: 1px solid var(--abx-border, rgba(125, 125, 155, 0.25));
-  box-shadow: var(--shadow-2, 0 12px 32px rgba(15, 15, 25, 0.18));
-  padding: 0.35rem 0.5rem 0.4rem;
-}
-.composer {
-  display: flex;
-  flex-direction: column;
-  gap: 0.35rem;
-}
-.composer textarea {
-  width: 100%;
-  padding: 0.45rem 0.55rem 0.3rem;
-  border: 1px solid var(--abx-border, rgba(125, 125, 155, 0.35));
-  border-radius: 0.8rem;
-  background: transparent;
-  color: inherit;
-  font: inherit;
-  resize: vertical;
-}
-.composer textarea:focus-visible {
-  outline: 2px solid var(--accent, #0891b2);
-  outline-offset: 1px;
-}
-.composer-controls {
-  display: flex;
-  align-items: center;
-  gap: 0.8rem;
-  flex-wrap: wrap;
-}
-.slider-row {
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-  flex: 1 1 10rem;
-}
-.slider-label { font-size: 0.78rem; white-space: nowrap; }
+/* the approval card — the human gate that unlocks Build */
+.approval-card .display { margin-bottom: .2rem; }
+.approval-note { font-size: .88rem; color: var(--tx-2); }
+.approval-card.is-approved .approval-note { color: var(--ok); }
+.approval-card form { margin: 0; }
 
-/* the activity rail */
-.panel-activity {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  padding: 1rem;
-  border: 1px solid var(--abx-border, rgba(125, 125, 155, 0.25));
-  border-radius: 1rem;
-  background: var(--abx-surface, #fff);
-  position: sticky;
-  top: 1rem;
+.trace-rows { display: flex; flex-direction: column; }
+.trace-row {
+  display: grid; grid-template-columns: 8.5rem minmax(0, 1.3fr) minmax(0, 1fr);
+  gap: .8rem; align-items: baseline;
+  padding: .55rem 0; border-bottom: 1px solid var(--border);
+  font-size: .82rem;
 }
-.panel-activity-title { margin: 0; font-size: 1rem; }
-.activity-list {
-  display: flex;
-  flex-direction: column;
-  gap: 0.4rem;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-.activity-row {
-  display: grid;
-  grid-template-columns: auto 1fr;
-  grid-template-rows: auto auto;
-  gap: 0 0.4rem;
-  font-size: 0.82rem;
-}
-.activity-time { grid-row: span 2; font-size: 0.72rem; white-space: nowrap; }
-.activity-actor { font-weight: 550; }
-.activity-event { font-size: 0.78rem; }
+.trace-row:last-child { border-bottom: 0; }
+.trace-surface { font-weight: 600; }
+.trace-story { color: var(--tx-2); }
+.trace-code code { overflow-wrap: anywhere; }
 
-.design-chips-details summary {
-  cursor: pointer;
-  font-weight: 600;
-  padding: 0.4rem 0;
-}
-
-.sr-only {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0 0 0 0);
-  white-space: nowrap;
-  border: 0;
+@media (max-width: 599px) {
+  .trace-row { grid-template-columns: 1fr; gap: .2rem; }
 }
