@@ -1288,7 +1288,8 @@ void deregisterServeInstance(int pid) {
 ///
 /// The key is (artifactDir, port), and BOTH halves are load-bearing (task #69).
 /// It used to be artifactDir alone, which sounds narrow and is not: in practice
-/// every server in this repo serves the same `designs/appbox-studio` dir, so
+/// every server in this repo serves the same studio design dir (v1 then;
+/// `designs/appbox-studio-v2` since 2026-08-16), so
 /// the predicate was a constant and the sweep was global. Measured on the live
 /// registry while writing this: 14 pidfiles, every one of them the identical
 /// artifactDir. One ^C therefore SIGTERMed every design server on the machine —

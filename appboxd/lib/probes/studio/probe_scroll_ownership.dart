@@ -1,7 +1,8 @@
 // probe_scroll_ownership.dart — the shell is viewport-locked; panels own scroll.
 //
 // The doctrine this enforces is the studio's own, stated in
-// designs/appbox-studio/assets/css/app.css ("THE SHELL IS VIEWPORT-LOCKED"):
+// designs/appbox-studio/assets/css/app.css ("THE SHELL IS VIEWPORT-LOCKED";
+// v2 carries the doctrine under ui/styles/common/ — cited at its v1 home:
 // at the expanded rung the PAGE never scrolls, no shell REGION is a scroll
 // container, and scrolling belongs to the panels — each panel owns its own
 // scroller. It is a studio probe, not a contract probe, because the doctrine

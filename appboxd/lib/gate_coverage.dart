@@ -72,7 +72,7 @@ GateResult coverageGate(GateContext ctx) {
   }
 
   // ---- §6: design freshness, against THIS app's design dir (not ctx.designRoot,
-  // which points at the repo's own designs/appbox-studio). Fail-open only on an empty
+  // which points at the repo's own designs/appbox-studio-v2). Fail-open only on an empty
   // hash (legacy); a written hash that no longer matches means the design moved.
   final stored = ctx.state.get('designHash') as String?;
   if (stored == null || stored.isEmpty) {
