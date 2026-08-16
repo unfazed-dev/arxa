@@ -265,7 +265,10 @@ exactly for this). The registry now carries 17 entries: the 8-step intake
 item-engine and the design prototype/chat/freeze trio, each step a
 five-file set with a null-frame trio (loop single-render law — id-anchored
 htmx targets), the loop widgets at ui/widgets/common/studio_panels/, and
-the v1 loop CSS wholesale. One recorded roster deviation: the freeze
+the v1 loop CSS wholesale (app.css included from the second live-review
+pass — its split copy had dropped 180 selectors, leaving the filmstrip
+and the activity panel's content views unstyled). One recorded roster
+deviation: the freeze
 surface's continue CTA routes to the stage roster (/) because the scaffold
 stage is not in the v2 roster yet — v1 routed it to /scaffold.
 

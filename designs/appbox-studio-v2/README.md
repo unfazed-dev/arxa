@@ -26,12 +26,19 @@ activity + timeline footer). Consequences the structure laws inherit:
   panels, composer card, timeline, mini panel) with an aliased barrel —
   panel.tsx and activity_panel.tsx both export Top/Bottom, so export-*
   would silently drop them.
-- **The loop CSS is v1's, wholesale**: `common/panels.css`,
-  `common/widgets.css`, `common/composer.css` and
+- **The loop CSS is v1's, wholesale**: `common/app.css`,
+  `common/panels.css`, `common/widgets.css`, `common/composer.css` and
   `studio_intake_shell/intake.css` / `studio_design_shell/{design,viewer}.css`
-  are the v1 files. Substring-presence splitting produced false
+  are the v1 files (app.css keeps one v2-only block appended: the rung
+  gating for the five-file law). Substring-presence splitting produced false
   "already-ported" positives (comments, compound selectors) and lost
-  blocks; the files are kept verbatim instead.
+  blocks; the files are kept verbatim instead. The app.css omission was
+  caught in live review (2026-08-16, later still): the split file dropped
+  180 v1 selectors — the whole `.dv-strip`/`.dv-thumb*` filmstrip chrome,
+  the `.msg-*`/`.log-*` activity-panel content views, `.composer-plus/-sugs/-send`,
+  `.facts-bar`, `.insp-crumb*` and the htmx request states — so the
+  filmstrip thumbs and the activity panel's views rendered unstyled while
+  their markup was byte-identical to v1. The file is v1 verbatim now.
 
 ## Recipe → web extension map (Q-v2-4)
 
