@@ -3,11 +3,11 @@
 
 `appbox-story-mapper` · status: **active**
 
-**Role (one line):** elicit requirements as an Epic → Feature → Story map (MoSCoW priorities, release swimlanes) and emit the unified `docs/design/brief.md` + `story-map.json` + interactive HTML — the tail of the intake chain, handing off to `appbox-designer`.
+**Role (one line):** elicit requirements as an Epic → Feature → Story map (MoSCoW priorities, release swimlanes) and emit the unified `docs/intake/brief.md` + `story-map.json` + interactive HTML — the tail of the intake chain, handing off to `appbox-designer`.
 
 **Scope of this document:** lets a human OR an LLM run the story-map phase without reading the skill source. Folded from `SKILL.md`.
 
-**Pipeline position:** stage 0 (optional — pre-intake standalone, or answer-driven after `appbox-intake`) — downstream `appbox-moodboarder` (slices `story-map.json`), then `appbox-designer` (consumes `docs/design/brief.md`). Full chain, stage numbers, per-stage artifacts: `docs/research/pipeline-map.md` §1.
+**Pipeline position:** stage 0 (optional — pre-intake standalone, or answer-driven after `appbox-intake`) — downstream `appbox-moodboarder` (slices `story-map.json`), then `appbox-designer` (consumes `docs/intake/brief.md`). Full chain, stage numbers, per-stage artifacts: `docs/research/pipeline-map.md` §1.
 
 ## Table of contents
 
@@ -25,15 +25,15 @@ Product requirements from the user — project name, 2–8 epics, 1–6 features
 
 ### Procedure
 
-Gather per the conversation guide (opening → per-epic walkthrough → confirm priorities → confirm releases), building the JSON per the SKILL.md field reference (`releases[].name` must match each story's `release`; `priority` is validated). Emit one command — `appbox emit story-map --input data.json --output docs/design/story_map.html --data-out docs/design/story-map.json --brief-out docs/design/brief.md` (stdin without `--input`; add `--answers` when chaining). Self-check with `appbox emit story-map --self-test` (slugs, gate parse, all-wont rule), then `appbox gate intake` for registry↔brief traceability both ways. Hand off: `brief.md` + `story-map.json` to the designer, `story_map.html` to the client for scope confirmation; optionally `appbox intake seed --brief docs/design/brief.md`.
+Gather per the conversation guide (opening → per-epic walkthrough → confirm priorities → confirm releases), building the JSON per the SKILL.md field reference (`releases[].name` must match each story's `release`; `priority` is validated). Emit one command — `appbox emit story-map --input data.json --output docs/intake/story_map.html --data-out docs/intake/story-map.json --brief-out docs/intake/brief.md` (stdin without `--input`; add `--answers` when chaining). Self-check with `appbox emit story-map --self-test` (slugs, gate parse, all-wont rule), then `appbox gate intake` for registry↔brief traceability both ways. Hand off: `brief.md` + `story-map.json` to the designer, `story_map.html` to the client for scope confirmation; optionally `appbox intake seed --brief docs/intake/brief.md`.
 
 ### Outputs
 
-`docs/design/story_map.html` — self-contained interactive map (three-tier cards, MoSCoW colors, release swimlanes, stats panel); `docs/design/story-map.json` — the full-fidelity machine handoff (priorities, releases, points); `docs/design/brief.md` — the unified brief with provenance-marked intake fields (`client`|`founder`|`inferred`, `inferred` visible), `## Surface inventory`, and `## Layout template` when elicited.
+`docs/intake/story_map.html` — self-contained interactive map (three-tier cards, MoSCoW colors, release swimlanes, stats panel); `docs/intake/story-map.json` — the full-fidelity machine handoff (priorities, releases, points); `docs/intake/brief.md` — the unified brief with provenance-marked intake fields (`client`|`founder`|`inferred`, `inferred` visible), `## Surface inventory`, and `## Layout template` when elicited.
 
 ### Rules
 
-With answers, the surface inventory IS the intake-declared surfaces: features pin by explicit `id` equal to a declared surface id, and only unmatched derivations are flagged ` — [inferred]`. This skill never binds a `surface` to registry entries — intake names; the designer binds. CJK-only names slug to `s` — prefer readable slugs and confirm derived ids with the user before emitting. Over 50 stories → consider splitting into sub-maps. Keep the standard layout (all three artifacts under `docs/design/`) so `appbox gate intake` needs no flags.
+With answers, the surface inventory IS the intake-declared surfaces: features pin by explicit `id` equal to a declared surface id, and only unmatched derivations are flagged ` — [inferred]`. This skill never binds a `surface` to registry entries — intake names; the designer binds. CJK-only names slug to `s` — prefer readable slugs and confirm derived ids with the user before emitting. Over 50 stories → consider splitting into sub-maps. Keep the standard layout (all three artifacts under `docs/intake/`) so `appbox gate intake` needs no flags.
 
 <!-- kb:begin -->
 ### References

@@ -312,9 +312,9 @@ void main() {
 
     test('emits into non-existent nested dirs (from-scratch folders)', () async {
       final dir = await Directory.systemTemp.createTemp('sm_nested_');
-      final out = '${dir.path}/docs/design/story_map.html';
+      final out = '${dir.path}/docs/intake/story_map.html';
       final data = '${dir.path}/deep/nested/tree/o.data.json';
-      final brief = '${dir.path}/docs/design/brief.md';
+      final brief = '${dir.path}/docs/intake/brief.md';
       final rc = storyMapMain(
           ['-i', _sampleJsonPath, '-o', out, '--data-out', data, '--brief-out', brief]);
       expect(rc, 0, reason: 'emit must create parent dirs, not crash');

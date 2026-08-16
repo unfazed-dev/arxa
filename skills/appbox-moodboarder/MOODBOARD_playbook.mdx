@@ -7,7 +7,7 @@
 
 **Scope of this document:** lets a human OR an LLM run a moodboard pass without reading the skill source. Folded from `SKILL.md`.
 
-**Pipeline position:** stage 0 — upstream `appbox-story-mapper` (`docs/design/story-map.json`); downstream `appbox-designer` (consults the moodboard with the brief); captures via `appbox-lens`. Full chain, stage numbers, per-stage artifacts: `docs/research/pipeline-map.md` §1.
+**Pipeline position:** stage 0 — upstream `appbox-story-mapper` (`docs/intake/story-map.json`); downstream `appbox-designer` (consults the moodboard with the brief); captures via `appbox-lens`. Full chain, stage numbers, per-stage artifacts: `docs/research/pipeline-map.md` §1.
 
 ## Table of contents
 
@@ -17,11 +17,11 @@
 
 ### Overview & role
 
-The moodboarder elicits **visual direction** the way the story-mapper elicits scope: it gathers and captures; it does NOT design (architecture §22). It runs after `appbox-story-mapper` (needs `docs/design/story-map.json`) and before `appbox-designer`, which reads the moodboard slice for the epic it is authoring — the "patterns this slice must have" list is the visual bar.
+The moodboarder elicits **visual direction** the way the story-mapper elicits scope: it gathers and captures; it does NOT design (architecture §22). It runs after `appbox-story-mapper` (needs `docs/intake/story-map.json`) and before `appbox-designer`, which reads the moodboard slice for the epic it is authoring — the "patterns this slice must have" list is the visual bar.
 
 ### Inputs
 
-`docs/design/story-map.json` — sliced one gathering slice per epic (per feature when an epic holds 3+ features); and the stories each slice must satisfy, the anchor for every reference's "why it fits".
+`docs/intake/story-map.json` — sliced one gathering slice per epic (per feature when an epic holds 3+ features); and the stories each slice must satisfy, the anchor for every reference's "why it fits".
 
 ### Procedure
 
@@ -39,5 +39,5 @@ Skip and note screens behind auth; never capture with credentials. A failed capt
 ### References
 - `moodboard.schema.json` (skill-local) — the moodboard data contract.
 - `skills/appbox-lens/SKILL.md` + `LENS_playbook.mdx` — the capture tool and its conventions.
-- `docs/design/brief.md` — the `intake.moodboard` surface that survives regeneration.
+- `docs/intake/brief.md` — the `intake.moodboard` surface that survives regeneration.
 <!-- kb:end -->

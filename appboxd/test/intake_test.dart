@@ -558,8 +558,8 @@ void main() {
       if (tmp.existsSync()) tmp.deleteSync(recursive: true);
     });
 
-    test('no design root -> legacy docs/design/registry.json fallback', () {
-      expect(defaultRegistryOut(), '${tmp.path}/docs/design/registry.json');
+    test('no design root -> docs/intake/registry.json fallback', () {
+      expect(defaultRegistryOut(), '${tmp.path}/docs/intake/registry.json');
     });
 
     test('design root without structure.json -> models/screens_model default', () {

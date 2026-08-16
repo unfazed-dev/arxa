@@ -9,7 +9,7 @@
 //      left empty-bodied, and — when a story map exists — every story with
 //      priority must/should has its id string appear in at least one file
 //      under <app>/test. Discovery order: <app>/intake/map.json, then
-//      <app>/docs/design/story-map.json; `--project <name>` reads
+//      <app>/docs/intake/story-map.json; `--project <name>` reads
 //      ~/.appbox/projects/<name>/intake/map.json instead. No map → WARN + pass
 //      (portalo-era projects predate the story-mapper; the gate never
 //      false-fails them).
@@ -225,7 +225,7 @@ GateResult testsGate(GateContext ctx, {String? project}) {
   if (mapPath == null) {
     warn('no story map found — story coverage not enforced (T1); '
         'portalo-era projects lack maps (looked: '
-        '${project != null ? '${shellDir(project, 'intake')}/map.json' : '$app/intake/map.json, $app/docs/design/story-map.json'})');
+        '${project != null ? '${shellDir(project, 'intake')}/map.json' : '$app/intake/map.json, $app/docs/intake/story-map.json'})');
   } else {
     final List<({String id, String priority})> required;
     try {
@@ -310,7 +310,7 @@ String? _discoverStoryMap(String app, String? project) {
   }
   for (final candidate in [
     '$app/intake/map.json',
-    '$app/docs/design/story-map.json',
+    '$app/docs/intake/story-map.json',
   ]) {
     if (File(candidate).existsSync()) return candidate;
   }

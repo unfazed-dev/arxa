@@ -37,8 +37,8 @@ fronts — DW1: byte-identical output). `answers` carries provenance
 (`client|founder|inferred`) on every field; `artefacts` records where
 `appbox intake emit` wrote. The registry seed lands at the design root
 (`designs/<app>/models/screens_model/registry.json`, or structure.json's
-`"registry"` field; `docs/design/registry.json` only when no design root
-exists); the unified `docs/design/brief.md` is written by the chain's tail,
+`"registry"` field; `docs/intake/registry.json` only when no design root
+exists); the unified `docs/intake/brief.md` is written by the chain's tail,
 `appbox emit story-map --answers <f>`.
 The traceability gate (10.6) reads this slot to assert no orphans: every
 registry surface traces to an intake answer, and vice versa.

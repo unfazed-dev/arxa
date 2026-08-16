@@ -7,7 +7,7 @@
 //
 // Sources (first non-empty wins):
 //   1. intake answers — pipeline/state/run.intake.json, then default.intake.json
-//   2. hand-written brief (10.7) — the design's brief.md, then docs/design/brief.md
+//   2. hand-written brief (10.7) — the design's brief.md, then docs/intake/brief.md
 //
 // When the source is intake answers AND a brief exists on disk, the gate ALSO
 // checks the brief carries the chain's sections (`## Surface inventory`, plus
@@ -17,7 +17,7 @@
 //
 // The registry path comes from structure.json's "registry" field (default
 // models/screens_model/registry.json), relative to the design root — the
-// engine's seed path, never the legacy docs/design/ path. If no source AND no
+// engine's seed path, never the client-repo docs/intake/ fallback. If no source AND no
 // registry exist, the gate passes vacuously (greenfield). A registry with
 // entries but no traceable source is a FAIL: every entry is untraced.
 //
@@ -332,7 +332,7 @@ String _resolveRegistry(String designRoot) {
 String? _resolveBrief(String designRoot, String repoRoot) {
   final local = File('$designRoot/brief.md');
   if (local.existsSync()) return local.path;
-  final docs = File('$repoRoot/docs/design/brief.md');
+  final docs = File('$repoRoot/docs/intake/brief.md');
   if (docs.existsSync()) return docs.path;
   return null;
 }

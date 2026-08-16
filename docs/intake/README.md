@@ -1,6 +1,7 @@
-# docs/design/ — the live design source
+# docs/intake/ — the live intake-chain source
 
-This is the **current** design source for appbox:
+This is the **current** intake source for appbox — story-mapper artifacts
+(the chain's tail). Designer-stage artifacts live in `designs/<name>/`, never here:
 
 - `brief.md` — the design brief, elicited via the `appbox-story-mapper` skill
   (provenance-marked; `inferred` fields flagged).

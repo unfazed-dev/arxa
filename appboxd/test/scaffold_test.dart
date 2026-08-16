@@ -821,10 +821,10 @@ void main() {
       expect(t, isNot(contains('projects.home.create-project')));
     });
 
-    test('docs/design/story-map.json is the fallback discovery', () {
+    test('docs/intake/story-map.json is the fallback discovery', () {
       final des = plantDesign('${tmp.path}/d');
       final app = '${tmp.path}/app3';
-      plantMap(app, 'docs/design/story-map.json');
+      plantMap(app, 'docs/intake/story-map.json');
       expect(scaffold(des, app, ['macos'], derivationPath, configPath), 0);
       final t = File('$app/test/viewmodels/projects_home_viewmodel_test.dart')
           .readAsStringSync();

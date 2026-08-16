@@ -1,6 +1,6 @@
 ---
 name: appbox-story-mapper
-description: "Use when product requirements need eliciting as an Epic → Feature → Story user story map (MoSCoW priorities, release swimlanes) — the tail of the intake chain: consumes `appbox intake` answers (--answers, auto-discovered from pipeline/state when omitted) and emits the unified docs/design/brief.md (intake sections + releases + story hierarchy + surface inventory), plus an interactive HTML story map and story-map.json. Also valid standalone (no answers — intake is optional, plan 10.7): features then derive surfaces as before, flagged [inferred]. The intake traceability gate (appbox gate intake, plan 10.6) traces the registry against the brief both ways. Trigger on story mapping, backlog visualization, MoSCoW priority, release planning, organize requirements into a story map, or 'map the requirements before design'."
+description: "Use when product requirements need eliciting as an Epic → Feature → Story user story map (MoSCoW priorities, release swimlanes) — the tail of the intake chain: consumes `appbox intake` answers (--answers, auto-discovered from pipeline/state when omitted) and emits the unified docs/intake/brief.md (intake sections + releases + story hierarchy + surface inventory), plus an interactive HTML story map and story-map.json. Also valid standalone (no answers — intake is optional, plan 10.7): features then derive surfaces as before, flagged [inferred]. The intake traceability gate (appbox gate intake, plan 10.6) traces the registry against the brief both ways. Trigger on story mapping, backlog visualization, MoSCoW priority, release planning, organize requirements into a story map, or 'map the requirements before design'."
 license: MIT
 ---
 
@@ -16,11 +16,11 @@ hands those requirements to `appbox-designer`.
 ## Where this sits in the appbox pipeline
 
 ```
-appbox intake (answers)  →  appbox emit story-map  →  docs/design/brief.md (unified) + story-map.json + story_map.html  →  appbox-designer
+appbox intake (answers)  →  appbox emit story-map  →  docs/intake/brief.md (unified) + story-map.json + story_map.html  →  appbox-designer
 ```
 
 - This skill is the **tail of the intake chain** — one chain, one brief. Given
-  intake answers, it emits the **unified** `docs/design/brief.md`: the intake
+  intake answers, it emits the **unified** `docs/intake/brief.md`: the intake
   sections, then Releases, then the epic/feature/story hierarchy, then a
   surface inventory built from the intake-declared surfaces.
 - It also remains valid **standalone** (no answers): `appbox-intake` is
@@ -37,7 +37,7 @@ appbox intake (answers)  →  appbox emit story-map  →  docs/design/brief.md (
 
 **Chain position:** stage 0 of `appbox-orchestrator` (Ø, front door) → `appbox-story-mapper / appbox-moodboarder` (0, optional) → `appbox-intake` (1) → `appbox-designer` (2) → `appbox-scaffolder` (3) → `appbox-builder` (4) → `appbox-tester` (5) → `appbox-reviewer` (6) → `appbox-deployer` (9) — cross-cutting: `appbox-lint` (7), `appbox-lens` (8), `appbox-cicd` (10, day-zero frame wrapping all stages). Stage numbers and every stage's input/output artifacts: `docs/research/pipeline-map.md` §1; the visual map: `docs/appbox-system-map.md`; the CLI FSM phases: `appboxd/lib/phases.dart`.
 - **Upstream:** the client's requirements (`data.json`) — or `appbox-intake` answers (`--answers`), which make the emitted brief the unified one.
-- **Downstream:** `appbox-moodboarder` slices the emitted `story-map.json` per epic; `appbox-designer` consumes `docs/design/brief.md` as its input contract.
+- **Downstream:** `appbox-moodboarder` slices the emitted `story-map.json` per epic; `appbox-designer` consumes `docs/intake/brief.md` as its input contract.
 
 ### Intake owns the surface inventory; stories ATTACH
 
@@ -191,23 +191,23 @@ One command emits all three handoff artifacts:
 ```bash
 appbox emit story-map \
   --input data.json \
-  --output docs/design/story_map.html \
-  --data-out docs/design/story-map.json \
-  --brief-out docs/design/brief.md
+  --output docs/intake/story_map.html \
+  --data-out docs/intake/story-map.json \
+  --brief-out docs/intake/brief.md
 
 # Chained after intake: answers make the brief UNIFIED (intake sections first)
 appbox emit story-map \
   --input data.json \
   --answers pipeline/state/run.intake.json \
-  --output docs/design/story_map.html \
-  --data-out docs/design/story-map.json \
-  --brief-out docs/design/brief.md
+  --output docs/intake/story_map.html \
+  --data-out docs/intake/story-map.json \
+  --brief-out docs/intake/brief.md
 
 # Read JSON from stdin
 echo '{"project":"demo",...}' | appbox emit story-map \
-  --output docs/design/story_map.html \
-  --data-out docs/design/story-map.json \
-  --brief-out docs/design/brief.md
+  --output docs/intake/story_map.html \
+  --data-out docs/intake/story-map.json \
+  --brief-out docs/intake/brief.md
 ```
 
 #### Command Arguments
@@ -221,7 +221,7 @@ echo '{"project":"demo",...}' | appbox emit story-map \
 | `--answers` | ❌ | Intake answers JSON — makes the emitted brief the **unified** one. When omitted, auto-discovers `pipeline/state/run.intake.json`, then `pipeline/state/default.intake.json`; when neither exists (or has no answers), the story map runs standalone as before (10.7) |
 | `--self-test` | ❌ | Run the handoff self-check (slugs, gate parse, all-wont rule) and exit |
 
-Standard appbox layout: all three under `docs/design/` — the gate's default
+Standard appbox layout: all three under `docs/intake/` — the gate's default
 paths, so `appbox gate intake` needs no flags.
 
 #### The unified brief (when answers are present)
@@ -247,7 +247,7 @@ with `inferred` visibly marked.
 - **`story_map.html`** → the human artifact: show it to the client to confirm
   scope before design starts.
 - Optionally seed the registry without rewriting a word:
-  `appbox intake seed --brief docs/design/brief.md`
+  `appbox intake seed --brief docs/intake/brief.md`
   (plan 10.7 — the brief passes through unmodified).
 
 The script produces a **self-contained HTML file** (no external dependencies) with these features:

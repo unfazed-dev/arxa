@@ -301,11 +301,11 @@ void main() {
       expect(detailsOf(r), contains('e.f.ship-it'));
     });
 
-    test('intake/map.json wins over docs/design/story-map.json', () {
+    test('intake/map.json wins over docs/intake/story-map.json', () {
       plantMap('intake/map.json'); // covered below
       // The design-doc map carries a story nothing covers; discovery must
       // never reach it.
-      write('docs/design/story-map.json', '''
+      write('docs/intake/story-map.json', '''
 {"epics": [{"id": "e", "features": [{"id": "e.f",
   "stories": [{"id": "e.f.ghost", "priority": "must"}]}]}]}
 ''');
@@ -314,8 +314,8 @@ void main() {
       expect(r.passed, isTrue, reason: detailsOf(r));
     });
 
-    test('docs/design/story-map.json is the fallback', () {
-      write('docs/design/story-map.json', '''
+    test('docs/intake/story-map.json is the fallback', () {
+      write('docs/intake/story-map.json', '''
 {"epics": [{"id": "e", "features": [{"id": "e.f",
   "stories": [{"id": "e.f.ghost", "priority": "must"}]}]}]}
 ''');

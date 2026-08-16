@@ -1,6 +1,6 @@
 ---
 name: appbox-moodboarder
-description: "Use when a story map / requirements brief should become a browsable moodboard of real reference apps — fans out one gathering subagent per epic, captures screenshots of the key screens with the appbox lens under semantic filenames, and assembles the moodboard the appbox-designer consults alongside docs/design/brief.md. Runs after appbox-story-mapper, before design. Trigger on moodboard, design references, visual direction, 'what should it look like', gather reference apps, capture screenshots for design."
+description: "Use when a story map / requirements brief should become a browsable moodboard of real reference apps — fans out one gathering subagent per epic, captures screenshots of the key screens with the appbox lens under semantic filenames, and assembles the moodboard the appbox-designer consults alongside docs/intake/brief.md. Runs after appbox-story-mapper, before design. Trigger on moodboard, design references, visual direction, 'what should it look like', gather reference apps, capture screenshots for design."
 license: MIT
 ---
 
@@ -20,14 +20,14 @@ still the design.
 
 ## When to run
 
-After `docs/design/story-map.json` exists, before `appbox-designer` runs.
+After `docs/intake/story-map.json` exists, before `appbox-designer` runs.
 Also runnable standalone whenever a requirement needs visual references
 ("get me a moodboard for X").
 
 **Chain position:** stage 0 of `appbox-orchestrator` (Ø, front door) → `appbox-story-mapper / appbox-moodboarder` (0, optional) → `appbox-intake` (1) → `appbox-designer` (2) → `appbox-scaffolder` (3) → `appbox-builder` (4) → `appbox-tester` (5) → `appbox-reviewer` (6) → `appbox-deployer` (9) — cross-cutting: `appbox-lint` (7), `appbox-lens` (8), `appbox-cicd` (10, day-zero frame wrapping all stages). Stage numbers and every stage's input/output artifacts: `docs/research/pipeline-map.md` §1; the visual map: `docs/appbox-system-map.md`; the CLI FSM phases: `appboxd/lib/phases.dart`.
 
-- **Upstream:** `appbox-story-mapper` — `docs/design/story-map.json` defines the slices.
-- **Downstream:** `appbox-designer`, which consults the moodboard alongside `docs/design/brief.md` before authoring. Captures use `appbox-lens`.
+- **Upstream:** `appbox-story-mapper` — `docs/intake/story-map.json` defines the slices.
+- **Downstream:** `appbox-designer`, which consults the moodboard alongside `docs/intake/brief.md` before authoring. Captures use `appbox-lens`.
 
 ## The orchestration
 
@@ -135,7 +135,7 @@ Zero MISSING lines = pass.
 
 ## Handoff
 
-- `docs/moodboards/` is named in `docs/design/brief.md`'s world via the
+- `docs/moodboards/` is named in `docs/intake/brief.md`'s world via the
   `intake.moodboard` surface (story-map dataset) — regeneration keeps it.
 - `appbox-designer`: consult the moodboard slice for the epic you are
   authoring BEFORE writing surfaces; the "patterns this slice must have"

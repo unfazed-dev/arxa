@@ -1118,15 +1118,15 @@
   },
   "files": [
     {
-      "path": "docs/design/brief.md",
+      "path": "docs/intake/brief.md",
       "badge": "frozen"
     },
     {
-      "path": "docs/design/story-map.json",
+      "path": "docs/intake/story-map.json",
       "badge": "frozen"
     },
     {
-      "path": "docs/design/story_map.html",
+      "path": "docs/intake/story_map.html",
       "badge": "new"
     },
     {
@@ -1150,11 +1150,11 @@
       "badge": "new"
     },
     {
-      "path": "docs/design/flows.svg",
+      "path": "docs/intake/flows.svg",
       "badge": "new"
     },
     {
-      "path": "docs/design/brief.pdf",
+      "path": "docs/intake/brief.pdf",
       "badge": "new"
     },
     {

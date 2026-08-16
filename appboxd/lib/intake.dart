@@ -8,12 +8,12 @@
 //
 //   1. validate — check an answers document, where every field carries
 //      provenance (client | founder | inferred).
-//   2. emit     — turn validated answers into docs/design/brief.md (every
+//   2. emit     — turn validated answers into docs/intake/brief.md (every
 //      `inferred` field visibly marked) and a seeded registry.json (ids,
 //      shells, comps; surface ALWAYS null — intake names, never designs).
 //      The default registry path is the GATE's canonical one (structure.json's
-//      "registry" field under designs/appbox-studio), not the legacy
-//      docs/design/ path — see defaultRegistryOut().
+//      "registry" field under designs/appbox-studio), not the client-repo
+//      docs/intake/ fallback — see defaultRegistryOut().
 //
 // [renderBriefSections] is public so the intake → story-map chain
 // (story_map.dart renderBrief's `answers` path) can emit the UNIFIED brief
@@ -1380,7 +1380,7 @@ int _countInferred(Map<String, dynamic> answers) {
 // ----------------------------------------------------------------- io + paths
 
 String defaultBriefOut() =>
-    Platform.environment['INTAKE_BRIEF_OUT'] ?? '${repoRoot()}/docs/design/brief.md';
+    Platform.environment['INTAKE_BRIEF_OUT'] ?? '${repoRoot()}/docs/intake/brief.md';
 
 /// Default registry output: the GATE's canonical path, not the legacy
 /// docs/design/ one (which the gate never reads). This is a deliberate
@@ -1405,8 +1405,8 @@ String defaultRegistryOut() {
     rel = 'models/screens_model/registry.json';
   }
   if (!Directory(designRoot).existsSync()) {
-    // No design root yet (pre-scaffold) — the legacy fallback.
-    return '$root/docs/design/registry.json';
+    // No design root yet (pre-scaffold) — the client-repo fallback.
+    return '$root/docs/intake/registry.json';
   }
   final struct = File('$designRoot/structure.json');
   if (struct.existsSync()) {

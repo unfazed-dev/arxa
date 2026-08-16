@@ -24,14 +24,14 @@ first run the buyer skips intake entirely and still reaches the showcase app
 ## Where intake sits — one chain, one brief
 
 ```
-appbox intake  →  validated answers  →  appbox emit story-map --answers <f>  →  docs/design/brief.md (unified)
+appbox intake  →  validated answers  →  appbox emit story-map --answers <f>  →  docs/intake/brief.md (unified)
                      +
               registry + flows seeded in the project's ~/.appbox intake/ dir
 ```
 
 Intake is the **head** of a single sequential chain; `appbox emit story-map`
 (appbox-story-mapper) is its **tail** and writes the unified
-`docs/design/brief.md`. When answers are present, that brief is the intake
+`docs/intake/brief.md`. When answers are present, that brief is the intake
 sections (Product, Audience, What the app must do, Existing systems, Targets,
 Locales, Brand, Design direction, Content anchors, Constraints, Out of scope,
 Layout template) + Releases + the epic/feature/story hierarchy + a **surface
@@ -125,7 +125,7 @@ Two artefacts, written by the chain:
    project's `intake/` dir (with `--project`), or at the design root
    (`designs/<app>/models/screens_model/registry.json`, or whatever
    structure.json's `"registry"` field names) without it — the same path
-   `appbox gate intake` reads. `docs/design/registry.json` is only a fallback
+   `appbox gate intake` reads. `docs/intake/registry.json` is only a fallback
    when no design root exists. One entry per surface the client named, with
    keys `{id, label, shell, comp, route, surface}`. `comp` and `route` are
    derived by convention (`shop.cart` → `ShopCart`, `/cart`), never authored —
@@ -164,7 +164,7 @@ designer later produces views + flows + prototype deterministically. Shape
   appbox intake flows confirm --project <name> --flow <id> --as founder|client
   ```
 
-The unified `docs/design/brief.md` is emitted by the chain's tail —
+The unified `docs/intake/brief.md` is emitted by the chain's tail —
 `appbox emit story-map --answers <answers.json>` (when `--answers` is omitted
 it auto-discovers `pipeline/state/run.intake.json`, then
 `pipeline/state/default.intake.json`). Every field whose provenance is
@@ -255,27 +255,27 @@ The question set is a CONVERSATION, never a form dump:
    `~/.appbox/projects/<name>/intake/` dir (answers/brief/registry/flows).
    Without `--project`, `emit` **refuses to run** unless you pass an
    explicit `--brief-out` (or set `INTAKE_BRIEF_OUT`) — the old default
-   silently overwrote `<repoRoot>/docs/design/brief.md`, which inside any
+   silently overwrote the repo-root brief (then docs/design/brief.md), which inside any
    appbox repo is a tracked file. The registry path (when explicitly
    emitted) still defaults to the design root
    (`designs/<app>/models/screens_model/registry.json`, or structure.json's
-   `"registry"` field; `docs/design/registry.json` only when no design root
+   `"registry"` field; `docs/intake/registry.json` only when no design root
    exists), overridable via `--registry-out` / `INTAKE_REGISTRY_OUT`.
    Invalid input writes **nothing** — no partial artefacts. Client strings
    are markdown-escaped by the emitter. Then run the chain's tail to write
    the unified brief:
    ```sh
    appbox emit story-map --answers <answers.json> \
-     --output docs/design/story_map.html \
-     --data-out docs/design/story-map.json \
-     --brief-out docs/design/brief.md
+     --output docs/intake/story_map.html \
+     --data-out docs/intake/story-map.json \
+     --brief-out docs/intake/brief.md
    ```
 
 5. **Or accept a hand-written brief (plan 10.7).** A brief a human wrote is the
    ideal case — it is already the client's words. Seed the registry from its
    surface table without rewriting a word:
    ```sh
-   appbox intake seed --brief docs/design/brief.md
+   appbox intake seed --brief docs/intake/brief.md
    ```
    A brief with no surface table yields an empty seed (the designer authors the
    registry). That is not an error; intake is optional.

@@ -56,8 +56,8 @@ REJECT rewinds FSM to design"| p3`).
   — they gather and curate, never design.
 - Input: a JSON requirements object (`data.json`) for story-mapper; the
   client's visual references for moodboarder.
-- Output: `docs/design/story_map.html` + `docs/design/story-map.json` +
-  `docs/design/brief.md` (story-mapper, via `appbox emit story-map --input
+- Output: `docs/intake/story_map.html` + `docs/intake/story-map.json` +
+  `docs/intake/brief.md` (story-mapper, via `appbox emit story-map --input
   data.json --output ... --data-out ... --brief-out ...`, "Step 3: Generate
   the artifacts"); `docs/moodboards/*` + `moodboard.json` (moodboarder).
   When intake answers exist, `--answers <f>` makes the brief the **unified**
@@ -67,7 +67,7 @@ REJECT rewinds FSM to design"| p3`).
 - Skill: `skills/appbox-intake/SKILL.md`.
 - Input: elicited client answers conforming to
   `skills/appbox-intake/intake.schema.json`, or a hand-written
-  `docs/design/brief.md` (`appbox intake seed --brief ...`).
+  `docs/intake/brief.md` (`appbox intake seed --brief ...`).
 - Output ("What you produce (and what you do not)"): `answers.json`,
   `brief.md`, `registry.json`, `flows.json`, `personas.json`, `map.json`,
   `moodboard.json`, `direction.json` — written to

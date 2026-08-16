@@ -12,16 +12,16 @@ these directories are historical and intentionally left as-is.
 - **appbox-variants/** — six candidate design directions (canvas, focus,
   native, precision, thread, tool) explored before the contract was settled.
   Archived 2026-07-29 in `857f64f` when the chat-centric contract won.
-  Superseded by `docs/design/` (story map, 101 stories).
+  Superseded by `docs/intake/` (story map, 101 stories).
 
 - **design-v1/** — first-pass design docs (brief, personas, journeys, flows).
   Archived 2026-07-28 in `6530bb9`. Superseded by design-v2, which was itself
-  later superseded by `docs/design/`.
+  later superseded by `docs/intake/`.
 
 - **design-v2/** — the old design documentation: personas (Evan/Michelle),
   journeys, the flows library, and design briefs written in retired `app_box`
   vocabulary. Archived 2026-07-28 in `6530bb9` when the story-map-driven
-  design flow replaced it. Superseded by `docs/design/` (brief.md +
+  design flow replaced it. Superseded by `docs/intake/` (brief.md +
   story-map.json + story_map.html, produced by the appbox-story-mapper skill).
 
 - **spikes/** — the `genui` spike (exploration of Google's genui SDK).

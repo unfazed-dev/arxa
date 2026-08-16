@@ -2,7 +2,7 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "$id": "skills/appbox-intake/intake.schema.json",
   "title": "appbox intake answers",
-  "description": "What the intake engine ELICITS — never generates. Each field records who supplied it: 'client' (stated by the client), 'founder' (stated by the founder), or 'inferred' (could not be elicited; a placeholder the emitted brief MUST flag for confirmation). The engine turns a document conforming to this schema into docs/design/brief.md plus a seeded registry.json. Recording content here that was not elicited is the single violation this schema exists to prevent (architecture §22: intake elicits; it does not generate).",
+  "description": "What the intake engine ELICITS — never generates. Each field records who supplied it: 'client' (stated by the client), 'founder' (stated by the founder), or 'inferred' (could not be elicited; a placeholder the emitted brief MUST flag for confirmation). The engine turns a document conforming to this schema into docs/intake/brief.md plus a seeded registry.json. Recording content here that was not elicited is the single violation this schema exists to prevent (architecture §22: intake elicits; it does not generate).",
   "type": "object",
   "required": [
     "product",

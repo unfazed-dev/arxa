@@ -43,7 +43,7 @@ every defect at once):
 ''';
 
 /// Writes [content] to [path], creating parent dirs as needed — emitters run
-/// in from-scratch folders where docs/design/ does not exist yet (this used
+/// in from-scratch folders where docs/intake/ does not exist yet (this used
 /// to crash with PathNotFoundException; the repo layout pre-created the dirs).
 void _writeCreatingDirs(String path, String content) {
   final f = File(path);

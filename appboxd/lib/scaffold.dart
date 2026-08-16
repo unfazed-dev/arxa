@@ -329,7 +329,7 @@ String _stubViewmodelTest(
   if (stories == null || stories.isEmpty) {
     b.write('\n');
     if (stories == null) {
-      b.write('    // No story map found (intake/map.json, docs/design/story-map.json) —\n');
+      b.write('    // No story map found (intake/map.json, docs/intake/story-map.json) —\n');
       b.write('    // run `appbox intake` first, then re-scaffold to seed one test per story.\n');
     } else {
       b.write('    // The story map attaches no stories to this surface yet — extend\n');
@@ -367,7 +367,7 @@ String _dartSingleQuoted(String s) => s
 
 /// Story-map discovery for the test seeds — the same lookup the tests gate
 /// enforces (gate_tests T2): `<app>/intake/map.json`, then
-/// `<app>/docs/design/story-map.json`. Returns surface-id -> stories (surfaces
+/// `<app>/docs/intake/story-map.json`. Returns surface-id -> stories (surfaces
 /// derive from features exactly as story_map.dart's deriveSurfaces rolls them
 /// up, so the ids match the structure.json screen ids), or null when no map
 /// exists / the map does not parse — never a scaffold failure.
@@ -375,7 +375,7 @@ Map<String, List<Map<String, dynamic>>>? _storiesBySurface(String appRoot) {
   String? mapPath;
   for (final candidate in [
     '$appRoot/intake/map.json',
-    '$appRoot/docs/design/story-map.json',
+    '$appRoot/docs/intake/story-map.json',
   ]) {
     if (File(candidate).existsSync()) {
       mapPath = candidate;
