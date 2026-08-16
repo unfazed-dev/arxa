@@ -154,12 +154,14 @@ void main() {
             'alpha-1.0 fill',
       );
       expect(
-        find.ancestor(
-          of: find.byType(SingleChildScrollView),
-          matching: find.byType(AppBoxKitOpaqueBarBase),
+        find.descendant(
+          of: find.byType(AppBoxKitNativeInputBar),
+          matching: find.text('gallery-shot.png'),
         ),
-        findsNothing,
-        reason: 'the strip paints no panel — the chips are the surface',
+        findsOneWidget,
+        reason: 'the chips dock INSIDE the bar — the anchored pinned-chrome '
+            'layer, where the view slicer holds the fill (no luminance '
+            'artifacts while scrolling)',
       );
       expect(find.widgetWithIcon(IconButtonM3E, Icons.send), findsOneWidget,
           reason: 'a pending attachment counts as a draft');

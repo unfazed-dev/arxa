@@ -199,43 +199,42 @@ class _ShowcaseComponentsInputBarWidgetState
 
   @override
   Widget build(BuildContext context) {
+    // The pending chips dock INSIDE the bar via its `above` slot — the
+    // same anchored pinned-chrome layer as the bar itself. (A Flutter row
+    // floating outside that layer suffers the view-slicer artifact over
+    // the platform-view scrollable below: luminance wash while scrolling.)
+    Widget? pendingRow;
+    if (_pending.isNotEmpty) {
+          pendingRow = SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: [
+                for (final (index, attachment) in _pending.indexed)
+                  Padding(
+                    padding: EdgeInsets.only(left: index == 0 ? 0 : 8),
+                    child: _PendingChip(
+                      icon: switch (attachment.kind) {
+                        ShowcaseComposerAttachmentKind.camera =>
+                          AppBoxKitGlyphs.camera.icon,
+                        ShowcaseComposerAttachmentKind.photo =>
+                          AppBoxKitGlyphs.photo.icon,
+                        ShowcaseComposerAttachmentKind.file =>
+                          AppBoxKitGlyphs.folder.icon,
+                        ShowcaseComposerAttachmentKind.location =>
+                          AppBoxKitGlyphs.locationPin.icon,
+                      },
+                      label: attachment.name,
+                      onRemove: () =>
+                          setState(() => _pending.removeAt(index)),
+                    ),
+                  ),
+              ],
+            ),
+      );
+    }
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        if (_pending.isNotEmpty)
-          // No panel behind the row — each CHIP is the opaque surface,
-          // floating over the thread (the messenger attachment-preview
-          // idiom). A strip base in the same tint token as the chips
-          // would merge them into one blob.
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-            child: SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(
-                children: [
-                  for (final (index, attachment) in _pending.indexed)
-                    Padding(
-                      padding: EdgeInsets.only(left: index == 0 ? 0 : 8),
-                      child: _PendingChip(
-                        icon: switch (attachment.kind) {
-                          ShowcaseComposerAttachmentKind.camera =>
-                            AppBoxKitGlyphs.camera.icon,
-                          ShowcaseComposerAttachmentKind.photo =>
-                            AppBoxKitGlyphs.photo.icon,
-                          ShowcaseComposerAttachmentKind.file =>
-                            AppBoxKitGlyphs.folder.icon,
-                          ShowcaseComposerAttachmentKind.location =>
-                            AppBoxKitGlyphs.locationPin.icon,
-                        },
-                        label: attachment.name,
-                        onRemove: () =>
-                            setState(() => _pending.removeAt(index)),
-                      ),
-                    ),
-                ],
-              ),
-            ),
-          ),
         // The whole bar rebuilds on a phase change so the trailing action
         // can swap glyphs — the button widget stays at the same tree
         // position, which is what lets the native tier animate the swap
@@ -247,6 +246,7 @@ class _ShowcaseComponentsInputBarWidgetState
             return Stack(
               children: [
                 AppBoxKitNativeInputBar(
+                  above: pendingRow,
                   // Native composer (default tiers): the field is a real
                   // multiline Liquid Glass composer on iOS and a growing
                   // TextFieldM3E on Android. The bar's action taps join

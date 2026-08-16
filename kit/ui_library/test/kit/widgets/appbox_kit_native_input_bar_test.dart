@@ -57,6 +57,37 @@ void main() {
         reason: 'leading + trailing slots render as M3E icon buttons');
   });
 
+  // The `above` slot docks a row (a composer's pending attachments) INSIDE
+  // the bar's anchored opaque backing — the same pinned-chrome layer as the
+  // bar. A Flutter-drawn row floating OUTSIDE that layer suffers the
+  // view-slicer artifact over platform-view scrollables (luminance wash
+  // while scrolling); inside the anchor the fill stays hoisted.
+  testWidgets(
+      'kit.ui-library.native-input-bar — above slot docks inside the anchored opaque backing',
+      (tester) async {
+    AppBoxKitPlatform.override =
+        const AppBoxKitPlatformOverride(isAndroid: true);
+    await pumpBar(
+        tester,
+        AppBoxKitNativeInputBar(
+          hintText: 'Message',
+          wantNative: false,
+          above: const Text('pending-chip'),
+          leading: const [addAction],
+          trailing: [micAction(() {})],
+        ));
+
+    expect(
+      find.ancestor(
+        of: find.text('pending-chip'),
+        matching: find.byType(AppBoxKitFrostedSurface),
+      ),
+      findsOneWidget,
+      reason: 'the above row renders inside the bar\'s opaque backing — '
+          'the anchored pinned-chrome layer, not floating over the scroll',
+    );
+  });
+
   testWidgets(
       'kit.ui-library.native-input-bar — renders field + leading/trailing actions (fallback tiers)',
       (tester) async {

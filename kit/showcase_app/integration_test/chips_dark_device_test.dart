@@ -6,7 +6,6 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
-import 'package:appbox_kit_core/appbox_kit_core.dart';
 import 'package:appbox_kit_media/appbox_kit_media.dart';
 import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
 import 'package:appbox_kit_showcase_app/ui/views/showcase_profile_shell/showcase_components/showcase_components_view.dart';

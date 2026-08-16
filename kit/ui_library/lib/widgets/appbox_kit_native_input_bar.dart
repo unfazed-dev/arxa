@@ -60,6 +60,7 @@ class AppBoxKitNativeInputBar extends StatelessWidget {
     super.key,
     this.controller,
     this.hintText,
+    this.above,
     this.leading = const [],
     this.trailing = const [],
     this.onChanged,
@@ -79,6 +80,18 @@ class AppBoxKitNativeInputBar extends StatelessWidget {
 
   /// Placeholder text, passed through to [AppBoxKitNativeTextField.hintText].
   final String? hintText;
+
+  /// Row docked directly above the field row (a composer's pending-
+  /// attachment chips) — rendered INSIDE the bar's opaque backing, i.e. at
+  /// the same pinned-chrome layer as the bar itself. This is where
+  /// scroll-adjacent content belongs: a Flutter-drawn row floating OUTSIDE
+  /// this layer suffers the engine view-slicer artifact over
+  /// platform-view-bearing scrollables (its fill drops to the clipped
+  /// background canvas — visible as a luminance wash while scrolling);
+  /// inside, the bar's plain native anchor holds the intersection and the
+  /// fill stays hoisted. The row is laid out full-width above the actions
+  /// and joins the input tap group with the rest of the bar.
+  final Widget? above;
 
   /// Actions before the field (e.g. a `AppBoxKitGlyphs.add` attach button). Each
   /// renders at the kit's bar-glyph size; do not set
@@ -152,35 +165,47 @@ class AppBoxKitNativeInputBar extends StatelessWidget {
       child: Padding(
         padding:
             const EdgeInsets.symmetric(horizontal: abxPad12, vertical: abxPad8),
-        child: Row(
-          // Composer alignment: when multiline, the field grows UPWARD from the
-          // bottom row of actions (Messages idiom) — CrossAxisAlignment.end keeps
-          // every action pinned at the field's last line. Single-line bars keep
-          // the historical centered row.
-          crossAxisAlignment:
-              multiline ? CrossAxisAlignment.end : CrossAxisAlignment.center,
-          spacing: abxGap8,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            ...leading,
-            Expanded(
-              child: AppBoxKitNativeTextField(
-                controller: controller,
-                hintText: hintText,
-                keyboardType: keyboardType,
-                minLines: multiline ? minLines : null,
-                maxLines: multiline ? maxLines : 1,
-                autofocus: autofocus,
-                enabled: enabled,
-                onChanged: onChanged,
-                onSubmitted: onSubmitted,
-                wantNative: wantNative,
-                // Material-fallback capsule: the CN/M3E tiers own their pill
-                // shape and ignore both params (see class docs § Pill shape).
-                fillColor: scheme.surfaceContainerHigh,
-                borderRadius: abxRad28,
+            if (above != null)
+              Padding(
+                padding: const EdgeInsets.only(bottom: abxPad8),
+                child: above!,
               ),
+            Row(
+              // Composer alignment: when multiline, the field grows UPWARD from the
+              // bottom row of actions (Messages idiom) — CrossAxisAlignment.end keeps
+              // every action pinned at the field's last line. Single-line bars keep
+              // the historical centered row.
+              crossAxisAlignment: multiline
+                  ? CrossAxisAlignment.end
+                  : CrossAxisAlignment.center,
+              spacing: abxGap8,
+              children: [
+                ...leading,
+                Expanded(
+                  child: AppBoxKitNativeTextField(
+                    controller: controller,
+                    hintText: hintText,
+                    keyboardType: keyboardType,
+                    minLines: multiline ? minLines : null,
+                    maxLines: multiline ? maxLines : 1,
+                    autofocus: autofocus,
+                    enabled: enabled,
+                    onChanged: onChanged,
+                    onSubmitted: onSubmitted,
+                    wantNative: wantNative,
+                    // Material-fallback capsule: the CN/M3E tiers own their pill
+                    // shape and ignore both params (see class docs § Pill shape).
+                    fillColor: scheme.surfaceContainerHigh,
+                    borderRadius: abxRad28,
+                  ),
+                ),
+                ...trailing,
+              ],
             ),
-            ...trailing,
           ],
         ),
       ),
