@@ -46,13 +46,13 @@ void main() {
       'kit.ui-library.chrome-scaffold — glass tier drops Scaffold.appBar and '
       'wraps the body in floating chrome with the behavior forwarded',
       (tester) async {
-    await tester.pumpWidget(harness(
-        forceGlass: true, behavior: AppBoxKitFloatingBarBehavior.hide));
+    await tester.pumpWidget(
+        harness(forceGlass: true, behavior: AppBoxKitFloatingBarBehavior.hide));
     expect(tester.widget<Scaffold>(find.byType(Scaffold)).appBar, isNull,
         reason: 'a boxed bar over full-bleed native glass is the exact '
             'arrangement the law forbids (rule 4)');
-    final chrome = tester.widget<AppBoxKitFloatingChrome>(
-        find.byType(AppBoxKitFloatingChrome));
+    final chrome = tester
+        .widget<AppBoxKitFloatingChrome>(find.byType(AppBoxKitFloatingChrome));
     expect(chrome.behavior, AppBoxKitFloatingBarBehavior.hide);
     expect(chrome.title, 'Kit Showcase');
     expect(find.byType(AppBoxKitNativeAppBar), findsNothing);
@@ -71,8 +71,7 @@ void main() {
     await tester.pumpWidget(harness(forceGlass: true));
     expect(
       tester
-          .widget<AppBoxKitFloatingChrome>(
-              find.byType(AppBoxKitFloatingChrome))
+          .widget<AppBoxKitFloatingChrome>(find.byType(AppBoxKitFloatingChrome))
           .behavior,
       AppBoxKitFloatingBarBehavior.minimize,
     );
@@ -90,8 +89,8 @@ void main() {
       'kit.ui-library.chrome-scaffold — boxed tiers hand leading to the '
       'native app bar and suppress the implied back button', (tester) async {
     await tester.pumpWidget(harness(leading: leadingProbe));
-    final bar =
-        tester.widget<AppBoxKitNativeAppBar>(find.byType(AppBoxKitNativeAppBar));
+    final bar = tester
+        .widget<AppBoxKitNativeAppBar>(find.byType(AppBoxKitNativeAppBar));
     expect(bar.leading, same(leadingProbe));
     expect(bar.automaticallyImplyLeading, isFalse,
         reason: 'a supplied leading IS the back affordance — implying a '
@@ -117,8 +116,7 @@ void main() {
     await tester.pumpWidget(harness(forceGlass: true, leading: leadingProbe));
     expect(
       tester
-          .widget<AppBoxKitFloatingChrome>(
-              find.byType(AppBoxKitFloatingChrome))
+          .widget<AppBoxKitFloatingChrome>(find.byType(AppBoxKitFloatingChrome))
           .leading,
       same(leadingProbe),
     );
@@ -139,8 +137,8 @@ void main() {
         forceGlass: glass,
         bottomSheet: const SizedBox(key: Key('sheet'), height: 80),
       ));
-      expect(tester.widget<Scaffold>(find.byType(Scaffold)).bottomSheet,
-          isNotNull,
+      expect(
+          tester.widget<Scaffold>(find.byType(Scaffold)).bottomSheet, isNotNull,
           reason: 'bottomSheet dropped on ${glass ? 'glass' : 'boxed'} tier');
       expect(find.byKey(const Key('sheet')), findsOneWidget);
     }
@@ -161,7 +159,8 @@ void main() {
       ));
       final scaffold = tester.widget<Scaffold>(find.byType(Scaffold));
       final tier = glass ? 'glass' : 'boxed';
-      expect(scaffold.drawer, isNotNull, reason: 'drawer dropped on $tier tier');
+      expect(scaffold.drawer, isNotNull,
+          reason: 'drawer dropped on $tier tier');
       expect(scaffold.resizeToAvoidBottomInset, isFalse,
           reason: 'resizeToAvoidBottomInset dropped on $tier tier');
     }

@@ -17,10 +17,13 @@ import 'appbox_kit_native_test_helpers.dart';
 void main() {
   tearDown(AppBoxKitPlatform.reset);
 
-  testWidgets('kit.ui-library.glass-card — Android wantNative routes to the frosted tier, not glass',
+  testWidgets(
+      'kit.ui-library.glass-card — Android wantNative routes to the frosted tier, not glass',
       (tester) async {
-    AppBoxKitPlatform.override = const AppBoxKitPlatformOverride(isAndroid: true);
-    await tester.pumpWidget(host(const AppBoxKitGlassCard(child: Text('card'))));
+    AppBoxKitPlatform.override =
+        const AppBoxKitPlatformOverride(isAndroid: true);
+    await tester
+        .pumpWidget(host(const AppBoxKitGlassCard(child: Text('card'))));
 
     expect(
       find.byType(AppBoxKitFrostedSurface),
@@ -34,10 +37,12 @@ void main() {
     );
   });
 
-  testWidgets('kit.ui-library.glass-card — default tier builds clean and renders the child',
+  testWidgets(
+      'kit.ui-library.glass-card — default tier builds clean and renders the child',
       (tester) async {
     await withAndroidFallback(() async {
-      await tester.pumpWidget(host(const AppBoxKitGlassCard(child: Text('card'))));
+      await tester
+          .pumpWidget(host(const AppBoxKitGlassCard(child: Text('card'))));
 
       expect(
         find.byType(AppBoxKitFrostedSurface),
@@ -52,7 +57,8 @@ void main() {
     });
   });
 
-  testWidgets('kit.ui-library.glass-card — wantNative=false opts out of glass even on iOS 26',
+  testWidgets(
+      'kit.ui-library.glass-card — wantNative=false opts out of glass even on iOS 26',
       (tester) async {
     AppBoxKitPlatform.override = const AppBoxKitPlatformOverride(
       isIOS: true,
@@ -74,7 +80,8 @@ void main() {
     );
   });
 
-  testWidgets('kit.ui-library.glass-card — inside a scrollable keeps the glass tier on iOS 26',
+  testWidgets(
+      'kit.ui-library.glass-card — inside a scrollable keeps the glass tier on iOS 26',
       (tester) async {
     // withAndroidFallback diverts only the CN-internal render path (the
     // container returns its child unchanged on non-Apple defaultTargetPlatform)

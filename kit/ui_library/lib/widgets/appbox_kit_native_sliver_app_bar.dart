@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:m3e_collection/m3e_collection.dart' show SliverAppBarM3E;
-import 'package:appbox_kit_core/common/appbox_kit_app_constants.dart' show abxGap8;
+import 'package:appbox_kit_core/common/appbox_kit_app_constants.dart'
+    show abxGap8;
 import 'package:appbox_kit_core/platform/appbox_kit_platform.dart';
 
 import 'appbox_kit_native_icon_button.dart';

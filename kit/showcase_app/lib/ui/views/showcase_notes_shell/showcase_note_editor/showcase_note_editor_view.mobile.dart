@@ -78,7 +78,8 @@ class ShowcaseNoteEditorViewMobile
     // glass-law-exempt: pushed route keeps its boxed bar; the body's native
     // glass rides a SingleChildScrollView, whose single child is clipped —
     // never sliver-culled — so rule 4's cull-seam shimmer cannot fire here.
-    Scaffold shell({String? title, List<Widget>? actions, required Widget body}) =>
+    Scaffold shell(
+            {String? title, List<Widget>? actions, required Widget body}) =>
         Scaffold(
           appBar: AppBoxKitNativeAppBar(
             leading: AppBoxKitNativeIconButton(
@@ -99,12 +100,15 @@ class ShowcaseNoteEditorViewMobile
       loadingBuilder: (context) =>
           shell(body: const Center(child: AppBoxKitNativeLoadingIndicator())),
       builder: (context, note) => shell(
-        title: note == null ? null : viewModel.editedLabel(context, note.updatedAt),
+        title: note == null
+            ? null
+            : viewModel.editedLabel(context, note.updatedAt),
         actions: note == null
             ? null
             : [
                 AppBoxKitNativeIconButton(
-                  glyph: note.pinned ? AppBoxKitGlyphs.pin : AppBoxKitGlyphs.unpin,
+                  glyph:
+                      note.pinned ? AppBoxKitGlyphs.pin : AppBoxKitGlyphs.unpin,
                   color: note.pinned ? theme.colorScheme.primary : null,
                   onPressed: viewModel.togglePin,
                 ),

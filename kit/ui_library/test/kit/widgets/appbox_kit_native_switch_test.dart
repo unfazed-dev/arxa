@@ -33,12 +33,14 @@ void main() {
     });
   });
 
-  testWidgets('kit.ui-library.native-switch — Android kit gate is a no-op (no M3E branch) and still builds',
+  testWidgets(
+      'kit.ui-library.native-switch — Android kit gate is a no-op (no M3E branch) and still builds',
       (tester) async {
     await withAndroidFallback(() async {
       // Switches have no M3E tier; forcing the kit gate to Android must NOT
       // change the render — still CNSwitch → Material Switch fallback.
-      AppBoxKitPlatform.override = const AppBoxKitPlatformOverride(isAndroid: true);
+      AppBoxKitPlatform.override =
+          const AppBoxKitPlatformOverride(isAndroid: true);
       await tester.pumpWidget(host(const AppBoxKitNativeSwitch(value: true)));
 
       expect(
@@ -49,7 +51,8 @@ void main() {
     });
   });
 
-  testWidgets('kit.ui-library.native-switch — onChanged is wired', (tester) async {
+  testWidgets('kit.ui-library.native-switch — onChanged is wired',
+      (tester) async {
     await withAndroidFallback(() async {
       bool? fired;
       await tester.pumpWidget(host(AppBoxKitNativeSwitch(
@@ -64,7 +67,8 @@ void main() {
     });
   });
 
-  testWidgets('kit.ui-library.native-switch — inside a scrollable keeps the native tier',
+  testWidgets(
+      'kit.ui-library.native-switch — inside a scrollable keeps the native tier',
       (tester) async {
     await withAndroidFallback(() async {
       await tester.pumpWidget(host(const SingleChildScrollView(
@@ -81,7 +85,8 @@ void main() {
     });
   });
 
-  testWidgets('kit.ui-library.native-switch — outside a scrollable keeps the native tier',
+  testWidgets(
+      'kit.ui-library.native-switch — outside a scrollable keeps the native tier',
       (tester) async {
     await withAndroidFallback(() async {
       await tester.pumpWidget(host(const AppBoxKitNativeSwitch(value: false)));

@@ -55,9 +55,12 @@ void main() {
       ..registerLazySingleton(() => AppBoxKitErrorService())
       // Fake: the real service's CNToast path needs a mounted navigator
       // context, which a data-layer suite doesn't have.
-      ..registerLazySingleton<AppBoxKitNotificationService>(() => FakeAppBoxKitNotificationService())
-      ..registerLazySingleton<ShowcaseNotesRepositoryService>(() => ShowcaseNotesRepositoryService())
-      ..registerLazySingleton<ShowcaseNotesFacadeService>(() => ShowcaseNotesFacadeService());
+      ..registerLazySingleton<AppBoxKitNotificationService>(
+          () => FakeAppBoxKitNotificationService())
+      ..registerLazySingleton<ShowcaseNotesRepositoryService>(
+          () => ShowcaseNotesRepositoryService())
+      ..registerLazySingleton<ShowcaseNotesFacadeService>(
+          () => ShowcaseNotesFacadeService());
 
     await AppData.initialize(
       config: const AppBoxKitDataConfig(

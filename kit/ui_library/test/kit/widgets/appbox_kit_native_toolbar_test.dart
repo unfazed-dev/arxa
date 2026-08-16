@@ -16,8 +16,10 @@ import 'appbox_kit_native_test_helpers.dart';
 void main() {
   tearDown(AppBoxKitPlatform.reset);
 
-  testWidgets('kit.ui-library.native-toolbar — Android wantNative → ToolbarM3E', (tester) async {
-    AppBoxKitPlatform.override = const AppBoxKitPlatformOverride(isAndroid: true);
+  testWidgets('kit.ui-library.native-toolbar — Android wantNative → ToolbarM3E',
+      (tester) async {
+    AppBoxKitPlatform.override =
+        const AppBoxKitPlatformOverride(isAndroid: true);
     await tester.pumpWidget(host(AppBoxKitNativeToolbar(
       actions: [
         AppBoxKitToolbarAction(icon: Icons.add, onPressed: () {}),
@@ -32,7 +34,9 @@ void main() {
     );
   });
 
-  testWidgets('kit.ui-library.native-toolbar — iOS glass tier pins button minHeight to height', (tester) async {
+  testWidgets(
+      'kit.ui-library.native-toolbar — iOS glass tier pins button minHeight to height',
+      (tester) async {
     AppBoxKitPlatform.override = const AppBoxKitPlatformOverride(isIOS: true);
     await withAndroidFallback(() async {
       // Material glyph (customIcon path) — same as the split button test — to
@@ -41,8 +45,8 @@ void main() {
         actions: [AppBoxKitToolbarAction(icon: Icons.add, onPressed: () {})],
       )));
 
-      final group = tester
-          .widget<CNGlassButtonGroup>(find.byType(CNGlassButtonGroup));
+      final group =
+          tester.widget<CNGlassButtonGroup>(find.byType(CNGlassButtonGroup));
       expect(
         group.buttons.single.config.minHeight,
         44.0,
@@ -54,7 +58,8 @@ void main() {
   // ponytail: withAndroidFallback is belt-and-suspenders here — the macOS host
   // routes to the Material fallback (no CN widget is constructed), but wrapping
   // matches the kit's canonical native-widget test convention.
-  testWidgets('kit.ui-library.native-toolbar — default platform builds clean (Material fallback row)',
+  testWidgets(
+      'kit.ui-library.native-toolbar — default platform builds clean (Material fallback row)',
       (tester) async {
     await withAndroidFallback(() async {
       await tester.pumpWidget(host(AppBoxKitNativeToolbar(
@@ -128,7 +133,8 @@ void main() {
     });
   });
 
-  testWidgets('kit.ui-library.native-toolbar — action onPressed is wired on the fallback tier',
+  testWidgets(
+      'kit.ui-library.native-toolbar — action onPressed is wired on the fallback tier',
       (tester) async {
     var pressed = false;
     await withAndroidFallback(() async {

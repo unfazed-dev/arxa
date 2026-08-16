@@ -13,6 +13,36 @@ class CupertinoButtonNSView: NSView {
   private var usesSwiftUI: Bool = false
   private var makeRound: Bool = false
 
+  /// Latest SwiftUI-tier content state. The glass tier re-roots its hosting
+  /// controller on icon/enabled updates (see `updateSwiftUIView`), so every
+  /// value the SwiftUI tree was originally built with must survive between
+  /// updates. Deliberately plain types only — no GlassButtonConfig, which is
+  /// macOS 26-gated and would gate this whole class. NSButton-tier code
+  /// never reads these.
+  private struct SwiftButtonState {
+    var title: String? = nil
+    var iconName: String? = nil
+    var iconImage: NSImage? = nil
+    var iconSize: CGFloat = 20
+    var iconColor: NSColor? = nil
+    var tint: NSColor? = nil
+    var style: String = "glass"
+    var glassEffectUnionId: String? = nil
+    var glassEffectId: String? = nil
+    var glassEffectInteractive: Bool = false
+    var paddingTop: CGFloat? = nil
+    var paddingBottom: CGFloat? = nil
+    var paddingLeft: CGFloat? = nil
+    var paddingRight: CGFloat? = nil
+    var paddingHorizontal: CGFloat? = nil
+    var paddingVertical: CGFloat? = nil
+    var borderRadius: CGFloat? = nil
+    var minHeight: CGFloat? = nil
+    var spacing: CGFloat? = nil
+    var badgeCount: Int? = nil
+  }
+  private var swiftState = SwiftButtonState()
+
   init(viewId: Int64, args: Any?, messenger: FlutterBinaryMessenger) {
     self.channel = FlutterMethodChannel(name: "CupertinoNativeButton_\(viewId)", binaryMessenger: messenger)
     super.init(frame: .zero)
@@ -354,6 +384,11 @@ class CupertinoButtonNSView: NSView {
           if !usesSwiftUI, let button = self.button {
             button.isEnabled = self.isEnabled
           }
+          // SwiftUI tier: the disabled state lives in the view tree —
+          // re-root so the new isEnabled reaches it.
+          if usesSwiftUI, #available(macOS 26.0, *) {
+            updateSwiftUIView()
+          }
           result(nil)
         } else { result(FlutterError(code: "bad_args", message: "Missing enabled", details: nil)) }
       case "setButtonIcon":
@@ -390,6 +425,20 @@ class CupertinoButtonNSView: NSView {
               }
             } else if let c = args["buttonIconColor"] as? NSNumber {
               image = image.tinted(with: Self.colorFromARGB(c.intValue))
+            }
+            if usesSwiftUI, #available(macOS 26.0, *) {
+              // Glass tier: keep the LIVE SF Symbol (name) so
+              // Image(systemName:) renders it and the replace content
+              // transition can animate the swap.
+              swiftState.iconName = name
+              swiftState.iconImage = nil
+              if let sz = args["buttonIconSize"] as? NSNumber {
+                swiftState.iconSize = CGFloat(truncating: sz)
+              }
+              if let c = args["buttonIconColor"] as? NSNumber {
+                swiftState.iconColor = Self.colorFromARGB(c.intValue)
+              }
+              updateSwiftUIView()
             }
             if !usesSwiftUI, let button = self.button {
               button.image = image
@@ -442,6 +491,52 @@ class CupertinoButtonNSView: NSView {
     channel.invokeMethod("pressed", arguments: nil)
   }
   
+  /// Namespace-bearing wrapper for [GlassButtonSwiftUI], hoisted out of
+  /// `setupSwiftUIButton` so runtime updates rebuild the SAME concrete type
+  /// (see `updateSwiftUIView`). SwiftUI keeps view identity across
+  /// same-type AnyView updates, which is the precondition for the SF Symbol
+  /// replace transition inside the glass view to run.
+  @available(macOS 26.0, *)
+  private struct SwiftButtonWrapper: View {
+    @Namespace private var namespace
+
+    let title: String?
+    let iconName: String?
+    let iconImage: NSImage?
+    let iconSize: CGFloat
+    let iconColor: Color?
+    let tint: Color?
+    let isRound: Bool
+    let style: String
+    let isEnabled: Bool
+    let onPressed: () -> Void
+    let glassEffectUnionId: String?
+    let glassEffectId: String?
+    let glassEffectInteractive: Bool
+    let config: GlassButtonConfig
+    let badgeCount: Int?
+
+    var body: some View {
+      GlassButtonSwiftUI(
+        title: title,
+        iconName: iconName,
+        iconImage: iconImage,
+        iconSize: iconSize,
+        iconColor: iconColor,
+        tint: tint,
+        isRound: isRound,
+        style: style,
+        isEnabled: isEnabled,
+        onPressed: onPressed,
+        glassEffectUnionId: glassEffectUnionId,
+        glassEffectId: glassEffectId,
+        glassEffectInteractive: glassEffectInteractive,
+        config: config,
+        badgeCount: badgeCount
+      )
+    }
+  }
+
   @available(macOS 26.0, *)
   private func setupSwiftUIButton(
     title: String?,
@@ -480,68 +575,34 @@ class CupertinoButtonNSView: NSView {
       spacing: spacing ?? 8.0
     )
     
-    // Create a wrapper view that provides a namespace for the button
-    struct ButtonWrapperView: View {
-      @Namespace private var namespace
-
-      let title: String?
-      let iconName: String?
-      let iconImage: NSImage?
-      let iconSize: CGFloat
-      let iconColor: Color?
-      let tint: Color?
-      let isRound: Bool
-      let style: String
-      let isEnabled: Bool
-      let onPressed: () -> Void
-      let glassEffectUnionId: String?
-      let glassEffectId: String?
-      let glassEffectInteractive: Bool
-      let config: GlassButtonConfig
-      let badgeCount: Int?
-
-      var body: some View {
-        GlassButtonSwiftUI(
-          title: title,
-          iconName: iconName,
-          iconImage: iconImage,
-          iconSize: iconSize,
-          iconColor: iconColor,
-          tint: tint,
-          isRound: isRound,
-          style: style,
-          isEnabled: isEnabled,
-          onPressed: onPressed,
-          glassEffectUnionId: glassEffectUnionId,
-          glassEffectId: glassEffectId,
-          glassEffectInteractive: glassEffectInteractive,
-          config: config,
-          badgeCount: badgeCount
-        )
-      }
-    }
-    
-    let swiftUIButton = ButtonWrapperView(
+    // Persist the SwiftUI-tier state so later updates (`setButtonIcon`,
+    // `setEnabled` → `updateSwiftUIView`) can re-root with every original
+    // parameter intact.
+    swiftState = SwiftButtonState(
       title: title,
       iconName: iconName,
       iconImage: iconImage,
       iconSize: iconSize,
       iconColor: iconColor,
       tint: tint,
-      isRound: isRound,
       style: style,
-      isEnabled: enabled,
-      onPressed: { [weak self] in
-        self?.onPressed(nil)
-      },
       glassEffectUnionId: glassEffectUnionId,
       glassEffectId: glassEffectId,
       glassEffectInteractive: glassEffectInteractive,
-      config: config,
+      paddingTop: paddingTop,
+      paddingBottom: paddingBottom,
+      paddingLeft: paddingLeft,
+      paddingRight: paddingRight,
+      paddingHorizontal: paddingHorizontal,
+      paddingVertical: paddingVertical,
+      borderRadius: borderRadius,
+      minHeight: minHeight,
+      spacing: spacing,
       badgeCount: badgeCount
     )
-    
-    let hostingController = NSHostingController(rootView: AnyView(swiftUIButton))
+    self.isEnabled = enabled
+
+    let hostingController = NSHostingController(rootView: AnyView(makeSwiftUIWrapper()))
     hostingController.view.layer?.backgroundColor = NSColor.clear.cgColor
     self.hostingController = hostingController
     
@@ -570,6 +631,54 @@ class CupertinoButtonNSView: NSView {
         hostingController.view.layout()
       }
     }
+  }
+
+  /// Rebuilds the SwiftUI wrapper from CURRENT stored state (`swiftState` +
+  /// `isEnabled` + `makeRound`). The erased root type never changes, so
+  /// SwiftUI keeps the view graph identity and diffs the parameter change
+  /// in place.
+  @available(macOS 26.0, *)
+  private func makeSwiftUIWrapper() -> SwiftButtonWrapper {
+    SwiftButtonWrapper(
+      title: swiftState.title,
+      iconName: swiftState.iconName,
+      iconImage: swiftState.iconImage,
+      iconSize: swiftState.iconSize,
+      iconColor: swiftState.iconColor != nil ? Color(swiftState.iconColor!) : nil,
+      tint: swiftState.tint != nil ? Color(swiftState.tint!) : nil,
+      isRound: makeRound,
+      style: swiftState.style,
+      isEnabled: isEnabled,
+      onPressed: { [weak self] in
+        self?.onPressed(nil)
+      },
+      glassEffectUnionId: swiftState.glassEffectUnionId,
+      glassEffectId: swiftState.glassEffectId,
+      glassEffectInteractive: swiftState.glassEffectInteractive,
+      config: GlassButtonConfig(
+        borderRadius: swiftState.borderRadius,
+        top: swiftState.paddingTop,
+        bottom: swiftState.paddingBottom,
+        left: swiftState.paddingLeft,
+        right: swiftState.paddingRight,
+        horizontal: swiftState.paddingHorizontal,
+        vertical: swiftState.paddingVertical,
+        minHeight: swiftState.minHeight ?? 44.0,
+        spacing: swiftState.spacing ?? 8.0
+      ),
+      badgeCount: swiftState.badgeCount
+    )
+  }
+
+  /// Live-updates the glass tier in place: re-roots the SAME hosting
+  /// controller with a fresh wrapper built from current state. This is the
+  /// path that was missing — `setButtonIcon` guarded `!usesSwiftUI`, so icon
+  /// changes used to be silently dropped on the macOS 26 glass tier. The
+  /// same-type update preserves view identity, which lets the SF Symbol
+  /// replace transition in GlassButtonSwiftUI animate the iconName change.
+  @available(macOS 26.0, *)
+  private func updateSwiftUIView() {
+    hostingController?.rootView = AnyView(makeSwiftUIWrapper())
   }
 
   private static func colorFromARGB(_ argb: Int) -> NSColor {

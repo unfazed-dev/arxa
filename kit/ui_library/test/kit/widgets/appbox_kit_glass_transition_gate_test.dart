@@ -18,7 +18,9 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  test('kit.ui-library.glass-transition-gate — every native-glass widget transition-gates its platform view', () {
+  test(
+      'kit.ui-library.glass-transition-gate — every native-glass widget transition-gates its platform view',
+      () {
     // ALL of `lib/`, recursively — not just `lib/widgets`.
     //
     // The old scan was `Directory('lib/widgets').listSync()`: one directory,

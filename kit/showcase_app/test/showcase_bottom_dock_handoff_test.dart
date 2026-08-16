@@ -20,7 +20,8 @@ import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart'
         AppBoxKitNativeAppBar,
         AppBoxKitNativeTabBar,
         AppBoxKitNativeInputBar,
-        AppBoxKitNativeFabMenu;
+        AppBoxKitNativeFabMenu,
+        AppBoxKitBottomEdgeScrim;
 
 import 'helpers.dart';
 
@@ -62,7 +63,8 @@ void main() {
     // carry would leave it stranded above dead space.
     expect(
       tester.getRect(find.byType(AppBoxKitNativeInputBar)).bottom,
-      closeTo(tester.view.physicalSize.height / tester.view.devicePixelRatio, 0.5),
+      closeTo(
+          tester.view.physicalSize.height / tester.view.devicePixelRatio, 0.5),
       reason: 'the dock must sit on the bottom edge once the tab bar is gone',
     );
   }, timeout: const Timeout(Duration(minutes: 2)));
@@ -102,7 +104,8 @@ void main() {
 
     // The bar's own SafeArea is inside its box, so the box grows by the inset
     // and its content lifts clear.
-    final Finder row = find.descendant(of: bar, matching: find.byType(Row)).first;
+    final Finder row =
+        find.descendant(of: bar, matching: find.byType(Row)).first;
     final double screenBottom =
         tester.view.physicalSize.height / tester.view.devicePixelRatio;
     expect(screenBottom - tester.getRect(row).bottom, greaterThanOrEqualTo(34),
@@ -177,5 +180,34 @@ void main() {
     expect(find.byType(AppBoxKitNativeTabBar), findsOneWidget,
         reason: 'a mounted-but-inactive Components must not hold the dock; '
             'that cross-tab leak is C2 and it strands the user with no tabs');
+  }, timeout: const Timeout(Duration(minutes: 2)));
+
+  testWidgets(
+      'shell-demos.browse-the-application-shell — the route that takes the '
+      'dock takes the edge: the bottom scrim yields with the tab bar',
+      (tester) async {
+    // The scrim's fadeExtent spans the floating-tab-bar block — it exists to
+    // dissolve content under the SHARED bar. A route that pins its own dock
+    // (the Components composer) already yields the tab bar; if the scrim
+    // stays up it keeps dissolving content into the background right where
+    // the route's own bar sits, defeating that bar's glass sampling of the
+    // content scrolling under it.
+    final router = await bootShell(tester);
+
+    unawaited(router.navigateNamed('/home'));
+    await settle(tester);
+    expect(find.byType(AppBoxKitBottomEdgeScrim), findsOneWidget,
+        reason: 'anti-vacuous: the bottom-edge dissolve must be up under the '
+            'shared tab bar, or the yield below proves nothing');
+
+    unawaited(router.navigateNamed('/profile/components'));
+    await settle(tester);
+
+    expect(find.byType(AppBoxKitNativeInputBar), findsOneWidget,
+        reason: 'anti-vacuous: Components must be up');
+    expect(find.byType(AppBoxKitBottomEdgeScrim), findsNothing,
+        reason: 'the scrim must yield the edge with the tab bar — one dock, '
+            'one bottom-edge treatment, both owned by whichever bar is '
+            'actually there');
   }, timeout: const Timeout(Duration(minutes: 2)));
 }

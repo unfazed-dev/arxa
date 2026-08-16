@@ -79,9 +79,12 @@ class ShowcaseGalleryChromeWidget extends StatelessWidget {
         child: AppBoxKitNativeFabMenu(
           glyph: AppBoxKitGlyphs.add,
           items: const [
-            AppBoxKitMenuItem(label: 'New post', glyph: AppBoxKitGlyphs.compose),
-            AppBoxKitMenuItem(label: 'New photo', glyph: AppBoxKitGlyphs.camera),
-            AppBoxKitMenuItem(label: 'New event', glyph: AppBoxKitGlyphs.newEvent),
+            AppBoxKitMenuItem(
+                label: 'New post', glyph: AppBoxKitGlyphs.compose),
+            AppBoxKitMenuItem(
+                label: 'New photo', glyph: AppBoxKitGlyphs.camera),
+            AppBoxKitMenuItem(
+                label: 'New event', glyph: AppBoxKitGlyphs.newEvent),
           ],
           onSelect: (item) => appBoxKitLocator<AppBoxKitNotificationService>()
               .show(item.label, context: context),

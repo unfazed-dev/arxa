@@ -59,6 +59,11 @@ Non-compliant surface: six files still assemble their own `appBar:`:
 - fix-components → #4 rule 5 fixed (`AppBoxKitNativeInputBar.wantNative: false`,
   icon buttons stay native per the rule 5 carve-out); rule 4 correctly REFUSED —
   see correction below. DONE otherwise (6/6).
+  [SUPERSEDED 2026-08: the field's rule-5 demotion was reversed when the native
+  field became a multiline composer (`CNTextField` `TextField(axis: .vertical)`;
+  the demotion existed only because the native field was single-line). The bar
+  is native on every tier now — see the widget's rationale comment and the
+  allowlist's rule-5 entry for the geometry that keeps it lawful.]
 - fix-motion → #5 rule 1 fixed (three wakeAll segments; `spec.copyWith(fade:
   false)` on slots 4-8, covering BOTH the replay card's native buttons and the
   spec-controls segmented control); rule 4 refused likewise. DONE (2/2).
@@ -213,6 +218,8 @@ in session scratchpad `clip2132/`). 22 frames @4fps:
   Flutter bar — check Android/pre-26 iOS for 13-32-class artifacts.
 - Components input bar demoted via `wantNative: false` renders the Material
   capsule (solid), not a frosted pill — restyle only if the device pass objects.
+  [SUPERSEDED 2026-08: demotion reversed — the bar is native on every tier
+  (multiline composer); this styling note applied to the demoted era only.]
 - MediaQuery padding under the chrome must be read BELOW the scaffold (Builder
   wrap) — the floating chrome raises padding.top for its body subtree only.
 

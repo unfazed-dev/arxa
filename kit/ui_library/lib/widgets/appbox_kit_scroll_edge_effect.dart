@@ -165,7 +165,8 @@ class _KitScrollEdgeEffectState extends State<AppBoxKitScrollEdgeEffect> {
     // covered. Bottom is symmetric: pixels short of the trailing reveal =
     // covered (the child still pokes out under the trailing fold).
     final reveal = viewport
-        .getOffsetToReveal(box, widget.edge == AppBoxKitScrollEdge.top ? 0.0 : 1.0)
+        .getOffsetToReveal(
+            box, widget.edge == AppBoxKitScrollEdge.top ? 0.0 : 1.0)
         .offset;
     final covered = widget.edge == AppBoxKitScrollEdge.top
         ? position.pixels - reveal + widget.occlusionPadding
@@ -317,7 +318,8 @@ class _RenderEdgeEffectBlur extends RenderProxyBox {
 extension AppBoxKitScrollEdgeEffectX on Widget {
   Widget scrollEdgeEffect({
     Key? key,
-    AppBoxKitScrollEdgeEffectStyle style = AppBoxKitScrollEdgeEffectStyle.automatic,
+    AppBoxKitScrollEdgeEffectStyle style =
+        AppBoxKitScrollEdgeEffectStyle.automatic,
     AppBoxKitScrollEdge edge = AppBoxKitScrollEdge.top,
     double occlusionPadding = 0.0,
   }) =>

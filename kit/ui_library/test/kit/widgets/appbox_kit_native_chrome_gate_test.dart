@@ -144,9 +144,10 @@ void main() {
     expect(tester.getSize(find.byKey(gateKey, skipOffstage: false)), shownSize,
         reason: 'SAME FOOTPRINT — a collapsing box reflows the layout around '
             'it mid-transition');
-    expect(initCount, 1, reason: 'SAME INSTANCE — this is the reparenting '
-        'guard: any wrapper swap that re-parents the child shows up here as a '
-        'second initState, whatever the hide mechanism is called');
+    expect(initCount, 1,
+        reason: 'SAME INSTANCE — this is the reparenting '
+            'guard: any wrapper swap that re-parents the child shows up here as a '
+            'second initState, whatever the hide mechanism is called');
 
     await abandonCover(tester);
     expect(find.byKey(childKey), findsOneWidget);

@@ -8,7 +8,8 @@ void main() {
     test(
         'search-and-attachments.media-attachments.attach-a-photo-to-a-note — '
         'parses the wire values into their actions', () {
-      expect(ShowcaseQuickAction.fromRoute('camera'), ShowcaseQuickAction.camera);
+      expect(
+          ShowcaseQuickAction.fromRoute('camera'), ShowcaseQuickAction.camera);
       expect(ShowcaseQuickAction.fromRoute('mic'), ShowcaseQuickAction.mic);
     });
 

@@ -5,6 +5,8 @@ description: Use when filling the extension-point View/ViewModel bodies in an em
 
 # builder — fill extension points by composing adaptive primitives
 
+> Per-skill playbook (the folded canon for this phase): [`BUILDER_playbook.mdx`](BUILDER_playbook.mdx)
+
 ## Core principle
 The blueprint emits two things this role relies on:
 1. the **adaptive primitive layer** (`lib/ui/primitives.dart`, generated) — `AdaptiveScaffold`, `AdaptiveButton`, `AdaptiveCard`, `AdaptiveTextField`, `AdaptiveSegmented`, `AdaptiveProgress`. Each reads `currentStrategy()` and renders the native family internally.
@@ -12,9 +14,16 @@ The blueprint emits two things this role relies on:
 
 This role fills the stubs by **composing the primitives ONCE** from `breakdown.json`. A view never branches on platform and never writes a `switch(currentStrategy())` — that triplicated every view and is why glass/expressive went unfilled. Same breakdown → same widget code (freeze + replay — ADR-0002 #5).
 
+## Pipeline position
+
+Stage 4 of `appbox-orchestrator` (Ø, front door) → `appbox-story-mapper / appbox-moodboarder` (0, optional) → `appbox-intake` (1) → `appbox-designer` (2) → `appbox-scaffolder` (3) → `appbox-builder` (4) → `appbox-tester` (5) → `appbox-reviewer` (6) → `appbox-deployer` (9) — cross-cutting: `appbox-lint` (7), `appbox-lens` (8), `appbox-cicd` (10, day-zero frame wrapping all stages). Stage numbers and every stage's input/output artifacts: `docs/research/pipeline-map.md` §1; the visual map: `docs/appbox-system-map.md`; the CLI FSM phases: `appboxd/lib/phases.dart`.
+
+- **Upstream:** `appbox-scaffolder` — the stub tree (`@appbox-extension-point` View/ViewModel pairs) plus the `deps` recorded in each stub header.
+- **Downstream:** `appbox-tester` — filled bodies handed over arch_guard-clean (pre-check `appbox gate arch` here; the stage-6 `appbox-reviewer` owns the binding verdict — its violations rewind to this skill). The build phase's `appbox-lens` goldens compare design-vs-built.
+
 ## The three families (inside the primitives, not the views)
 - **glass** (iOS) — real native Liquid Glass via `native_liquid_glass` (`UiKitView` → UIKit, iOS 26+; graceful fallback elsewhere). True-native, honors the mandate.
-- **expressive** (Android) — real native Material 3 Expressive via Jetpack **Compose**, embedded as a Flutter `PlatformView` (`_ExpressiveView` → `AndroidView 'appbox/expressive'`; Kotlin `ExpressivePlatformView.kt` is emitted by `emit.py`, NOT the snapshot golden — it patches the `stacked create` scaffold: Compose plugin + `material3:1.5.0-alpha*` + AGP≥9.1 + Gradle≥9.3.1 + compileSdk 37). Compose-embed covers the LEAF primitives whose whole surface is the touch target — button, segmented, progress. Composite primitives (cards-with-content, text fields) and content-width inline buttons stay Flutter Material 3 (a platform view is a leaf — can't host Flutter children — and content-width needs an intrinsic-sizing leaf). All Material 3; diverges from iOS glass.
+- **expressive** (Android) — real native Material 3 Expressive via Jetpack **Compose**, embedded as a Flutter `PlatformView` (`_ExpressiveView` → `AndroidView 'appbox/expressive'`; Kotlin `ExpressivePlatformView.kt` is emitted by `appboxd/lib/emit_stage.dart` (the `appbox emit scaffold` chain — the Dart port of the former Python emitter, now archived), NOT the snapshot golden — it patches the `stacked create` scaffold: Compose plugin + `material3:1.5.0-alpha*` + AGP≥9.1 + Gradle≥9.3.1 + compileSdk 37). Compose-embed covers the LEAF primitives whose whole surface is the touch target — button, segmented, progress. Composite primitives (cards-with-content, text fields) and content-width inline buttons stay Flutter Material 3 (a platform view is a leaf — can't host Flutter children — and content-width needs an intrinsic-sizing leaf). All Material 3; diverges from iOS glass.
 - **shadcn** (web/desktop) — `shadcn_ui` `Shad*` (^0.55.0).
 
 > ⚠️ **Platform-view touch + coordinates.** Embedded-Compose primitives are platform views: drive their taps with a real motion sequence and exact on-screen coordinates (an off-by-a-card y looks like "the widget is dead" — it isn't). `EagerGestureRecognizer` is set so they receive taps inside scrollables.
@@ -97,4 +106,4 @@ threaded through `structure.json`. For each named kit:
   handoff notes instead of inventing values.
 
 ## Output
-- Filled `*_view.dart` / `*_viewmodel.dart` composing the primitive layer. Run `arch_guard` → must PASS before handoff to tester.
+- Filled `*_view.dart` / `*_viewmodel.dart` composing the primitive layer. Pre-check `arch_guard` (the reviewer's stage-6 gate) → clean before handoff to tester.

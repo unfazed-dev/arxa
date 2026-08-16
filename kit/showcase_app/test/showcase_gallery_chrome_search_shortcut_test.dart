@@ -36,8 +36,8 @@ void main() {
     unawaited(router.navigateNamed('/home'));
     await settle(tester);
 
-    AppBoxKitNativeTabBar bar() =>
-        tester.widget<AppBoxKitNativeTabBar>(find.byType(AppBoxKitNativeTabBar));
+    AppBoxKitNativeTabBar bar() => tester
+        .widget<AppBoxKitNativeTabBar>(find.byType(AppBoxKitNativeTabBar));
     expect(bar().currentIndex, ShowcaseTab.home.index,
         reason: 'anti-vacuous: must start on Home or the switch below proves '
             'nothing');

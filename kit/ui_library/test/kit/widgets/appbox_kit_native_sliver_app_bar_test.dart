@@ -4,7 +4,8 @@ import 'package:appbox_kit_ui_library/widgets/appbox_kit_native_sliver_app_bar.d
 // Real bar buttons for the leading/trailing symmetry guard — scoped `show` so
 // the barrel's own AppBoxKitNativeSliverAppBar export doesn't clash with the direct
 // import above.
-import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart' show AppBoxKitNativeIconButton, AppBoxKitGlyphs;
+import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart'
+    show AppBoxKitNativeIconButton, AppBoxKitGlyphs;
 
 import 'appbox_kit_native_test_helpers.dart';
 
@@ -31,7 +32,8 @@ void main() {
   // + snap off. Force
   // the Material tier (wantNative:false) so the underlying SliverAppBar is
   // inspectable, then check the three flags landed.
-  testWidgets('kit.ui-library.native-sliver-app-bar — defaults: pinned on, floating + snap off (Material tier)',
+  testWidgets(
+      'kit.ui-library.native-sliver-app-bar — defaults: pinned on, floating + snap off (Material tier)',
       (tester) async {
     await tester.pumpWidget(
       MaterialApp(
@@ -53,7 +55,9 @@ void main() {
 
   // SliverAppBar invariant (Flutter docs): snap may be true only if floating
   // is. The widget bakes the assert so bad call sites fail at construction.
-  test('kit.ui-library.native-sliver-app-bar — snap without floating is rejected', () {
+  test(
+      'kit.ui-library.native-sliver-app-bar — snap without floating is rejected',
+      () {
     expect(
       () => AppBoxKitNativeSliverAppBar(floating: false, snap: true),
       throwsA(isA<AssertionError>()),
@@ -68,7 +72,8 @@ void main() {
   // in any appbar. This renders the Material tier (wantNative:false = the iOS
   // sliver path) and measures the ACTUAL trailing edge, not just the property —
   // a keyed plain box (no internal padding) so the gap is exactly the inset.
-  testWidgets('kit.ui-library.native-sliver-app-bar — Material tier insets trailing actions by 16 (not hugging)',
+  testWidgets(
+      'kit.ui-library.native-sliver-app-bar — Material tier insets trailing actions by 16 (not hugging)',
       (tester) async {
     const trailing = Key('trailing-action');
     await tester.pumpWidget(
@@ -106,7 +111,9 @@ void main() {
   // gaps its trailing actions by abxGap8; the kit sliver bar must match so two
   // bar buttons sit the same distance apart in either appbar. Keyed plain boxes
   // (no internal chrome) so the measured gap IS the explicit spacing.
-  testWidgets('kit.ui-library.native-sliver-app-bar — Material tier spaces adjacent actions by abxGap8', (tester) async {
+  testWidgets(
+      'kit.ui-library.native-sliver-app-bar — Material tier spaces adjacent actions by abxGap8',
+      (tester) async {
     const a = Key('action-a');
     const b = Key('action-b');
     await tester.pumpWidget(
@@ -134,7 +141,8 @@ void main() {
       right.left - left.right,
       moreOrLessEquals(8, epsilon: 0.5), // abxGap8 — matches the CN bar
 
-      reason: 'kit sliver bar must gap adjacent actions by abxGap8 to match the '
+      reason:
+          'kit sliver bar must gap adjacent actions by abxGap8 to match the '
           'fixed CN bar (Row spacing: abxGap8)',
     );
   });
@@ -146,7 +154,8 @@ void main() {
   // (matching the trailing) and centers it at natural size. Uses REAL kit icon
   // buttons so the guard measures what actually renders (height + center), not
   // just padding math.
-  testWidgets('kit.ui-library.native-sliver-app-bar — Material tier: leading matches trailing (inset, size, center)',
+  testWidgets(
+      'kit.ui-library.native-sliver-app-bar — Material tier: leading matches trailing (inset, size, center)',
       (tester) async {
     await tester.pumpWidget(
       MaterialApp(
@@ -160,7 +169,8 @@ void main() {
                 leading: AppBoxKitNativeIconButton(
                     glyph: AppBoxKitGlyphs.back, onPressed: () {}),
                 actions: [
-                  AppBoxKitNativeIconButton(glyph: AppBoxKitGlyphs.more, onPressed: () {}),
+                  AppBoxKitNativeIconButton(
+                      glyph: AppBoxKitGlyphs.more, onPressed: () {}),
                 ],
               ),
               const SliverFillRemaining(child: SizedBox.shrink()),
@@ -190,7 +200,8 @@ void main() {
   // When a FlexibleSpaceBar is provided it owns the title (the sample's
   // collapsing-header pattern); the toolbar title is suppressed so the text
   // doesn't render twice.
-  testWidgets('kit.ui-library.native-sliver-app-bar — flexibleSpace owns the title (no double render)',
+  testWidgets(
+      'kit.ui-library.native-sliver-app-bar — flexibleSpace owns the title (no double render)',
       (tester) async {
     await tester.pumpWidget(
       MaterialApp(
@@ -262,7 +273,8 @@ void main() {
 
   // The 160 is only the sample DEFAULT — a surface needing a taller header
   // keeps its own expandedHeight.
-  testWidgets('kit.ui-library.native-sliver-app-bar — explicit expandedHeight beats the background 160 default',
+  testWidgets(
+      'kit.ui-library.native-sliver-app-bar — explicit expandedHeight beats the background 160 default',
       (tester) async {
     await tester.pumpWidget(
       MaterialApp(
@@ -287,7 +299,9 @@ void main() {
 
   // flexibleSpace owns the whole slot — passing both is a caller bug, baked
   // into the constructor like the snap/floating invariant.
-  test('kit.ui-library.native-sliver-app-bar — flexibleSpace and background together are rejected', () {
+  test(
+      'kit.ui-library.native-sliver-app-bar — flexibleSpace and background together are rejected',
+      () {
     expect(
       () => AppBoxKitNativeSliverAppBar(
         flexibleSpace: const FlexibleSpaceBar(),
@@ -303,7 +317,8 @@ void main() {
   // chrome from the AppBoxKitNativeIconButton actions. The kit implies its own back
   // button (same helper as AppBoxKitNativeAppBar). withAndroidFallback: a real
   // AppBoxKitNativeIconButton builds a CN UiKitView that can't render headless.
-  testWidgets('kit.ui-library.native-sliver-app-bar — Material tier: implied leading is a AppBoxKitNativeIconButton + pops',
+  testWidgets(
+      'kit.ui-library.native-sliver-app-bar — Material tier: implied leading is a AppBoxKitNativeIconButton + pops',
       (tester) async {
     await withAndroidFallback(() async {
       await tester.pumpWidget(MaterialApp(
@@ -327,7 +342,8 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byType(AppBoxKitNativeIconButton), findsOneWidget,
-          reason: 'implied leading must be the same AppBoxKitNativeIconButton the '
+          reason:
+              'implied leading must be the same AppBoxKitNativeIconButton the '
               'action slots use (parity with AppBoxKitNativeAppBar)');
       expect(find.byType(BackButton), findsNothing,
           reason: 'the stock Material BackButton must NOT render');

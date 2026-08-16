@@ -949,6 +949,19 @@ void _mutateDanglingTarget(String art, String skill) {
       return;
     }
   }
+  // The fixture no longer carries a literal hx-target="#…" (widgets take the
+  // target as a prop), so PLANT one on the first element that already speaks
+  // htmx — a dangling target the check must name. Without this the mutation
+  // is a no-op and negative mode reports it unproven.
+  final anchorRe = RegExp(r'(hx-(?:get|post|put|patch|delete|trigger)="[^"]*")');
+  for (final f in _htmlFiles(art)) {
+    final src = f.readAsStringSync();
+    final m = anchorRe.firstMatch(src);
+    if (m == null) continue;
+    f.writeAsStringSync(
+        src.replaceFirst(anchorRe, '${m.group(0)!} hx-target="#zznope"'));
+    return;
+  }
 }
 
 void _mutateEmojiIcon(String art, String skill) {

@@ -48,7 +48,8 @@ class AppBoxKitBottomSheetService extends BottomSheetService {
   }) {
     final context = _context;
     if (context == null) {
-      debugPrint('AppBoxKitBottomSheetService: no navigator context; sheet skipped');
+      debugPrint(
+          'AppBoxKitBottomSheetService: no navigator context; sheet skipped');
       return Future.value(null);
     }
     return appBoxKitShowSheet<SheetResponse>(
@@ -126,7 +127,8 @@ class AppBoxKitBottomSheetService extends BottomSheetService {
     );
     final context = _context;
     if (sheetBuilder == null || context == null) {
-      debugPrint('AppBoxKitBottomSheetService: no builder/context; sheet skipped');
+      debugPrint(
+          'AppBoxKitBottomSheetService: no builder/context; sheet skipped');
       return Future.value(null);
     }
     return appBoxKitShowSheet<SheetResponse<T>>(

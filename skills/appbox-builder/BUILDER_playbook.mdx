@@ -7,6 +7,8 @@
 
 **Scope of this document:** lets a human OR an LLM drive the build phase without reading the skill source. Folded from `SKILL.md`.
 
+**Pipeline position:** stage 4 — upstream `appbox-scaffolder` (stub tree + `deps` headers); downstream `appbox-tester` (hand over arch_guard-clean — pre-check the reviewer's stage-6 gate) and the build-phase `appbox-lens` goldens. Full chain, stage numbers, per-stage artifacts: `docs/research/pipeline-map.md` §1.
+
 ## Table of contents
 
 0. Header & TOC · 1. Overview & role · 2. Inputs · 3. Procedure · 4. Outputs · 5. Rules · 6. View/ViewModel boundaries · 7. Enums layer · 8. Kit wiring · 9. References
@@ -28,7 +30,7 @@ For each `<Screen>View` + `<Screen>ViewModel`: match the page by screen id; map 
 
 ### Outputs
 
-Filled `*_view.dart` / `*_viewmodel.dart` composing the primitive layer. Run `arch_guard` → must PASS before handoff to the tester.
+Filled `*_view.dart` / `*_viewmodel.dart` composing the primitive layer. Pre-check `arch_guard` (the reviewer's stage-6 gate) → clean before handoff to the tester.
 
 ### Rules
 

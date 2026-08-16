@@ -34,7 +34,8 @@ import 'package:appbox_kit_showcase_app/ui/views/showcase_application_hub/showca
 import 'package:appbox_kit_showcase_app/ui/views/showcase_application_hub/showcase_application_hub_view.mobile.dart';
 import 'package:appbox_kit_showcase_app/ui/views/showcase_application_hub/showcase_application_hub_viewmodel.dart';
 
-class ShowcaseApplicationHubView extends StackedView<ShowcaseApplicationHubViewModel> {
+class ShowcaseApplicationHubView
+    extends StackedView<ShowcaseApplicationHubViewModel> {
   const ShowcaseApplicationHubView({super.key});
 
   /// Identity stamped at emit time (Q12 triple).

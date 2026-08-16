@@ -46,7 +46,8 @@ void main() {
   tearDownAll(() => appBoxKitLocator.reset());
 
   setUp(() {
-    AppBoxKitPlatform.override = const AppBoxKitPlatformOverride(isAndroid: true);
+    AppBoxKitPlatform.override =
+        const AppBoxKitPlatformOverride(isAndroid: true);
     if (appBoxKitLocator.isRegistered<SnackbarService>()) {
       appBoxKitLocator.unregister<SnackbarService>();
     }
@@ -134,8 +135,8 @@ void main() {
     // a different native control per tier, and what is under test here is the
     // wiring from the control to the sheet's height, not either tier's gesture
     // handling (the kit suite covers the resize itself).
-    final AppBoxKitNativeSlider slider =
-        tester.widget<AppBoxKitNativeSlider>(find.byType(AppBoxKitNativeSlider));
+    final AppBoxKitNativeSlider slider = tester
+        .widget<AppBoxKitNativeSlider>(find.byType(AppBoxKitNativeSlider));
     expect(slider.min, 0.20, reason: 'minimum height is 20% of screen');
     expect(slider.max, 0.92,
         reason: 'maximum is the Cupertino route default, 1 - _kTopGapRatio');
@@ -172,9 +173,11 @@ void main() {
     expect(scaffold.isDrawerOpen, isTrue,
         reason: 'Open drawer calls Scaffold.of(context).openDrawer()');
     expect(find.byType(AppBoxKitDrawer), findsOneWidget,
-        reason: 'the opened drawer builds the AppBoxKitDrawer (glassPeek) subtree');
+        reason:
+            'the opened drawer builds the AppBoxKitDrawer (glassPeek) subtree');
     expect(find.text('About'), findsOneWidget,
-        reason: 'menu rows are AppBoxKitListTiles inside a AppBoxKitListSection');
+        reason:
+            'menu rows are AppBoxKitListTiles inside a AppBoxKitListSection');
     expect(find.byType(AppBoxKitListSection), findsNWidgets(2),
         reason: 'the drawer menu group builds on first open');
 
@@ -201,7 +204,8 @@ void main() {
       addTearDown(tester.view.resetPhysicalSize);
       addTearDown(tester.view.resetDevicePixelRatio);
       addTearDown(tester.view.resetPadding);
-      await tester.pumpWidget(const MaterialApp(home: ShowcaseComponentsView()));
+      await tester
+          .pumpWidget(const MaterialApp(home: ShowcaseComponentsView()));
       await tester.pump();
       return tester
           .widget<AppBoxKitEdgeAwareListView>(
@@ -210,7 +214,8 @@ void main() {
           .resolve(TextDirection.ltr);
     }
 
-    testWidgets('boxed tier takes the bare inset — Scaffold already stripped it',
+    testWidgets(
+        'boxed tier takes the bare inset — Scaffold already stripped it',
         (tester) async {
       // setUp's Android override is the boxed branch.
       expect((await pumpAndReadPadding(tester)).top, abxSize16,
@@ -227,5 +232,33 @@ void main() {
           reason: 'missing the raise means the padding was read above the '
               'floating chrome, tucking the first card under the bar');
     });
+  });
+
+  // The docked input bar owns this surface's trailing edge: its opaqueGlass
+  // backing and its own SafeArea handle the underlap, so content must not
+  // ALSO dissolve into it. `edges: top` is that per-edge design decision
+  // (the both default is the kit's look everywhere else); with
+  // extendBehindTopBar suppressing the top band here, no edge wrapper
+  // mounts at all.
+  testWidgets(
+      'profile-and-gallery-demos.gallery.browse-the-components-gallery — '
+      'docked input bar surface excludes the bottom scroll fade',
+      (tester) async {
+    tester.view.physicalSize = const Size(1080, 3600);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    await tester.pumpWidget(const MaterialApp(home: ShowcaseComponentsView()));
+    await tester.pump();
+
+    final AppBoxKitEdgeAwareListView list =
+        tester.widget<AppBoxKitEdgeAwareListView>(
+            find.byType(AppBoxKitEdgeAwareListView));
+    expect(list.edges, AppBoxKitScrollEdges.top,
+        reason: 'the input bar owns the trailing edge, so the list must not '
+            'fade content into it');
+    expect(find.byType(AppBoxKitScrollEdgeEffect), findsNothing,
+        reason: 'top is suppressed by extendBehindTopBar and bottom is '
+            'excluded — the same wrapper-free state as edges: none');
   });
 }

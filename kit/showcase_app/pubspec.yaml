@@ -122,6 +122,11 @@ dev_dependencies:
   build_runner: ^2.15.0
   flutter_test:
     sdk: flutter
+  # Device-only verification of the native input tiers (CN platform view on
+  # iOS, TextFieldM3E on Android) — headless widget tests cannot mount
+  # UiKitView. integration_test/input_composer_device_test.dart.
+  integration_test:
+    sdk: flutter
   flutter_lints: ^6.0.0
   # Matches kit/auth (repo mocking convention).
   mocktail: ^1.0.4

@@ -45,14 +45,16 @@ double appBoxKitScreenHeightFraction(
   int dividedBy = 1,
   double offsetBy = 0,
   double max = 3000,
-}) => min((appBoxKitScreenHeight(context) - offsetBy) / dividedBy, max);
+}) =>
+    min((appBoxKitScreenHeight(context) - offsetBy) / dividedBy, max);
 
 double appBoxKitScreenWidthFraction(
   BuildContext context, {
   int dividedBy = 1,
   double offsetBy = 0,
   double max = 3000,
-}) => min((appBoxKitScreenWidth(context) - offsetBy) / dividedBy, max);
+}) =>
+    min((appBoxKitScreenWidth(context) - offsetBy) / dividedBy, max);
 
 double appBoxKitHalfScreenWidth(BuildContext context) =>
     appBoxKitScreenWidthFraction(context, dividedBy: 2);

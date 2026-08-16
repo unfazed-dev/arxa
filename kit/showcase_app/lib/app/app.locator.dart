@@ -11,6 +11,7 @@ import 'package:appbox_kit_core/extensions/appbox_kit_selectable_extension.dart'
 import 'package:appbox_kit_core/services/error/appbox_kit_error_service.dart';
 import 'package:appbox_kit_core/services/theme/appbox_kit_theme_service.dart';
 import 'package:appbox_kit_haptics/src/appbox_kit_haptic_service.dart';
+import 'package:appbox_kit_media/src/audio/appbox_kit_audio_recorder_service.dart';
 import 'package:appbox_kit_ui_library/extensions/appbox_kit_overlay_extension.dart';
 import 'package:appbox_kit_ui_library/services/navigation/appbox_kit_navigation_controller_service.dart';
 import 'package:appbox_kit_ui_library/services/notifications/appbox_kit_notification_service.dart';
@@ -41,6 +42,8 @@ Future<void> setupLocator(
   locator.registerLazySingleton(() => AppBoxKitNavigationControllerService());
   locator.registerLazySingleton(() => AppBoxKitOverlayService());
   locator.registerLazySingleton(() => AppBoxKitSelectableService());
+  locator.registerLazySingleton<AppBoxKitAudioRecorderService>(
+      () => AppBoxKitRecordAudioRecorderService());
   locator.registerLazySingleton(() => ShowcaseNotesRepositoryService());
   locator.registerLazySingleton(() => ShowcaseNotesFacadeService());
   locator.registerLazySingleton(() => ShowcaseNotesMediaAdapterService());

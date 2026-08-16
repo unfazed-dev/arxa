@@ -56,7 +56,8 @@
 library;
 
 import 'package:appbox_kit_data/appbox_kit_data.dart';
-import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart' show appBoxKitLocator;
+import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart'
+    show appBoxKitLocator;
 import 'package:uuid/uuid.dart';
 
 import 'package:appbox_kit_showcase_app/data/models/showcase_notes_models/showcase_note_model.dart';
@@ -67,13 +68,16 @@ class ShowcaseNotesRepositoryService {
 
   static const _uuid = Uuid();
 
-  AppBoxKitRepository<ShowcaseNoteModel> get _notes => appBoxKitLocator<AppBoxKitRepository<ShowcaseNoteModel>>();
-  AppBoxKitRepository<ShowcaseNoteFolderModel> get _folders => appBoxKitLocator<AppBoxKitRepository<ShowcaseNoteFolderModel>>();
+  AppBoxKitRepository<ShowcaseNoteModel> get _notes =>
+      appBoxKitLocator<AppBoxKitRepository<ShowcaseNoteModel>>();
+  AppBoxKitRepository<ShowcaseNoteFolderModel> get _folders =>
+      appBoxKitLocator<AppBoxKitRepository<ShowcaseNoteFolderModel>>();
 
   // ── Reads ──────────────────────────────────────────────────────────────────
 
   /// [1. Read notes and folders] The owner's folders, in display order.
-  Stream<List<ShowcaseNoteFolderModel>> foldersOf(String owner) => _folders.watchAll(AppBoxKitQuery(
+  Stream<List<ShowcaseNoteFolderModel>> foldersOf(String owner) =>
+      _folders.watchAll(AppBoxKitQuery(
         filters: [AppBoxKitFilter.eq('owner', owner)],
         orderBy: 'sort_order',
       ));
@@ -81,7 +85,8 @@ class ShowcaseNotesRepositoryService {
   /// [1. Read notes and folders] Every note the owner has, live and deleted,
   /// newest-edited first — the single upstream the facade's derived streams map
   /// over.
-  Stream<List<ShowcaseNoteModel>> allNotesOf(String owner) => _notes.watchAll(AppBoxKitQuery(
+  Stream<List<ShowcaseNoteModel>> allNotesOf(String owner) =>
+      _notes.watchAll(AppBoxKitQuery(
         filters: [AppBoxKitFilter.eq('owner', owner)],
         orderBy: 'updated_at',
         descending: true,
@@ -92,18 +97,20 @@ class ShowcaseNotesRepositoryService {
       _folders.watchAll(const AppBoxKitQuery(orderBy: 'created_at'));
 
   /// [1. Read notes and folders] Every owner's notes (admin visibility — deliberately unfiltered).
-  Stream<List<ShowcaseNoteModel>> allNotes() => _notes.watchAll(const AppBoxKitQuery());
+  Stream<List<ShowcaseNoteModel>> allNotes() =>
+      _notes.watchAll(const AppBoxKitQuery());
 
   /// [1. Read notes and folders] Live watch on a single note by id.
   Stream<ShowcaseNoteModel?> watchNote(String id) => _notes.watchById(id);
 
   /// [1. Read notes and folders] One-shot fetch of the owner's notes (for multi-step mutations).
-  Future<List<ShowcaseNoteModel>> notesOf(String owner) =>
-      _notes.getAll(AppBoxKitQuery(filters: [AppBoxKitFilter.eq('owner', owner)]));
+  Future<List<ShowcaseNoteModel>> notesOf(String owner) => _notes
+      .getAll(AppBoxKitQuery(filters: [AppBoxKitFilter.eq('owner', owner)]));
 
   /// [1. Read notes and folders] One-shot fetch of a folder's notes (for cascade delete).
   Future<List<ShowcaseNoteModel>> notesInFolder(String folderId) =>
-      _notes.getAll(AppBoxKitQuery(filters: [AppBoxKitFilter.eq('folder_id', folderId)]));
+      _notes.getAll(
+          AppBoxKitQuery(filters: [AppBoxKitFilter.eq('folder_id', folderId)]));
 
   // ── Writes ─────────────────────────────────────────────────────────────────
 
@@ -121,7 +128,8 @@ class ShowcaseNotesRepositoryService {
   }
 
   /// [4. Create a folder][7. Id minting] Mints a fresh id and constructs the folder row.
-  ShowcaseNoteFolderModel newFolder(String owner, String name, {required int sortOrder}) =>
+  ShowcaseNoteFolderModel newFolder(String owner, String name,
+          {required int sortOrder}) =>
       ShowcaseNoteFolderModel(
         id: _uuid.v4(),
         name: name,
@@ -131,23 +139,28 @@ class ShowcaseNotesRepositoryService {
       );
 
   /// [2. Create a note] Writes the note (create or replace).
-  Future<ShowcaseNoteModel> upsertNote(ShowcaseNoteModel note) => _notes.upsert(note);
+  Future<ShowcaseNoteModel> upsertNote(ShowcaseNoteModel note) =>
+      _notes.upsert(note);
 
   /// [3. Delete a note] Removes the note by id.
   Future<void> deleteNote(String id) => _notes.delete(id);
 
   /// [4. Create a folder] Writes the folder (create or replace).
-  Future<ShowcaseNoteFolderModel> upsertFolder(ShowcaseNoteFolderModel folder) => _folders.upsert(folder);
+  Future<ShowcaseNoteFolderModel> upsertFolder(
+          ShowcaseNoteFolderModel folder) =>
+      _folders.upsert(folder);
 
   /// Removes the folder by id (cascade is facade work).
   Future<void> deleteFolder(String id) => _folders.delete(id);
 
   /// [5. Move a note into a folder][8. Patch writes] Writes only the columns
   /// that changed, so concurrent edits to other columns survive.
-  Future<ShowcaseNoteModel> patchNote(ShowcaseNoteModel original, ShowcaseNoteModel patched) =>
+  Future<ShowcaseNoteModel> patchNote(
+          ShowcaseNoteModel original, ShowcaseNoteModel patched) =>
       _notes.patch(original, patched);
 
   /// [8. Patch writes] Narrow column update for an existing folder.
-  Future<ShowcaseNoteFolderModel> patchFolder(ShowcaseNoteFolderModel original, ShowcaseNoteFolderModel patched) =>
+  Future<ShowcaseNoteFolderModel> patchFolder(
+          ShowcaseNoteFolderModel original, ShowcaseNoteFolderModel patched) =>
       _folders.patch(original, patched);
 }

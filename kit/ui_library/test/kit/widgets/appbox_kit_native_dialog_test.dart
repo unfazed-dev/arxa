@@ -48,7 +48,8 @@ void main() {
     final List<SchedulerPhase> phases = <SchedulerPhase>[];
     void record() => phases.add(SchedulerBinding.instance.schedulerPhase);
     CNTabBarRouteObserver.anyModalDepth.addListener(record);
-    addTearDown(() => CNTabBarRouteObserver.anyModalDepth.removeListener(record));
+    addTearDown(
+        () => CNTabBarRouteObserver.anyModalDepth.removeListener(record));
 
     await withAndroidFallback(() async {
       AppBoxKitPlatform.override = const AppBoxKitPlatformOverride(isIOS: true);
@@ -69,7 +70,8 @@ void main() {
     );
   });
 
-  testWidgets('kit.ui-library.native-dialog — iOS tier renders the frosted panel with title + message',
+  testWidgets(
+      'kit.ui-library.native-dialog — iOS tier renders the frosted panel with title + message',
       (tester) async {
     await withAndroidFallback(() async {
       AppBoxKitPlatform.override = const AppBoxKitPlatformOverride(isIOS: true);
@@ -93,7 +95,8 @@ void main() {
     });
   });
 
-  testWidgets('kit.ui-library.native-dialog — iOS tier stacks actions in order, primary filled first',
+  testWidgets(
+      'kit.ui-library.native-dialog — iOS tier stacks actions in order, primary filled first',
       (tester) async {
     await withAndroidFallback(() async {
       AppBoxKitPlatform.override = const AppBoxKitPlatformOverride(isIOS: true);
@@ -135,7 +138,8 @@ void main() {
     });
   });
 
-  testWidgets('kit.ui-library.native-dialog — tapping an action runs onPressed and pops with its value',
+  testWidgets(
+      'kit.ui-library.native-dialog — tapping an action runs onPressed and pops with its value',
       (tester) async {
     await withAndroidFallback(() async {
       AppBoxKitPlatform.override = const AppBoxKitPlatformOverride(isIOS: true);
@@ -165,7 +169,8 @@ void main() {
     });
   });
 
-  testWidgets('kit.ui-library.native-dialog — barrier tap dismisses (null result) when dismissible',
+  testWidgets(
+      'kit.ui-library.native-dialog — barrier tap dismisses (null result) when dismissible',
       (tester) async {
     await withAndroidFallback(() async {
       AppBoxKitPlatform.override = const AppBoxKitPlatformOverride(isIOS: true);
@@ -182,7 +187,9 @@ void main() {
     });
   });
 
-  testWidgets('kit.ui-library.native-dialog — barrierDismissible false ignores barrier taps', (tester) async {
+  testWidgets(
+      'kit.ui-library.native-dialog — barrierDismissible false ignores barrier taps',
+      (tester) async {
     await withAndroidFallback(() async {
       AppBoxKitPlatform.override = const AppBoxKitPlatformOverride(isIOS: true);
       final results = <String?>[];
@@ -201,8 +208,11 @@ void main() {
     });
   });
 
-  testWidgets('kit.ui-library.native-dialog — Android tier renders a stock M3 AlertDialog', (tester) async {
-    AppBoxKitPlatform.override = const AppBoxKitPlatformOverride(isAndroid: true);
+  testWidgets(
+      'kit.ui-library.native-dialog — Android tier renders a stock M3 AlertDialog',
+      (tester) async {
+    AppBoxKitPlatform.override =
+        const AppBoxKitPlatformOverride(isAndroid: true);
     final results = <String?>[];
     await tester.pumpWidget(_hostWithOpener(onResult: results.add));
 

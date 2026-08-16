@@ -1,0 +1,43 @@
+<Callout id="header" tone="info">
+# appbox-moodboarder — Per-Skill Playbook
+
+`appbox-moodboarder` · status: **active**
+
+**Role (one line):** turn a story map into a browsable moodboard of real reference apps — one gathering subagent per epic, key screens captured with the appbox lens, assembled under `docs/moodboards/` for the designer to consult alongside the brief.
+
+**Scope of this document:** lets a human OR an LLM run a moodboard pass without reading the skill source. Folded from `SKILL.md`.
+
+**Pipeline position:** stage 0 — upstream `appbox-story-mapper` (`docs/design/story-map.json`); downstream `appbox-designer` (consults the moodboard with the brief); captures via `appbox-lens`. Full chain, stage numbers, per-stage artifacts: `docs/research/pipeline-map.md` §1.
+
+## Table of contents
+
+0. Header & TOC · 1. Overview & role · 2. Inputs · 3. Procedure · 4. Outputs · 5. Rules · 6. References
+
+</Callout>
+
+### Overview & role
+
+The moodboarder elicits **visual direction** the way the story-mapper elicits scope: it gathers and captures; it does NOT design (architecture §22). It runs after `appbox-story-mapper` (needs `docs/design/story-map.json`) and before `appbox-designer`, which reads the moodboard slice for the epic it is authoring — the "patterns this slice must have" list is the visual bar.
+
+### Inputs
+
+`docs/design/story-map.json` — sliced one gathering slice per epic (per feature when an epic holds 3+ features); and the stories each slice must satisfy, the anchor for every reference's "why it fits".
+
+### Procedure
+
+Dispatch one gathering subagent per slice, in parallel (one message, ≤8), on the SKILL.md prompt template: 6–10 shipping apps, the concrete screens/patterns to steal and why they fit the stories, 1–3 key screens each as `{screen_slug, url}` (publicly reachable, nothing behind login), freshness graded 🔥/🌡️/❄️, searches anchored to the current year. Capture each key screen with the lens — `dart run appboxd/tool/lens_shot.dart <url> docs/moodboards/shots/<slice-slug>/<ref-slug>__<screen-slug>.png 390 844` (device viewports when references inform a full-parity app). Assemble `docs/moodboards/<slice-slug>.md` per the assembly format, ending with the top-10 "Patterns this slice must have", each traceable to a reference. Verify with the runnable resolver (below); zero MISSING lines = pass. Hand off — the brief keeps the moodboard alive via the `intake.moodboard` surface.
+
+### Outputs
+
+`docs/moodboards/<slice-slug>.md` plus `docs/moodboards/shots/<slice-slug>/<ref-slug>__<screen-slug>.png` — lowercase ascii, double-underscore separators, `__2` for a second state of the same screen — and per-shot provenance (final URL + title logged).
+
+### Rules
+
+Skip and note screens behind auth; never capture with credentials. A failed capture is recorded as `_(capture failed: reason)_` in the doc — never a hotlinked URL silently substituted. The verify step resolves every embedded path on disk: ```grep -o 'shots/[^)]*' docs/moodboards/*.md | while read -r p; do [ -f "docs/moodboards/$p" ] || echo "MISSING: $p"; done``` — an asset check that verifies strings instead of resolving paths is this project's recurring green-gate defect. Plain shots only here: golden compares, console gates and native captures belong to the build visual gates. The lens's isolation (own headless Chrome per run) makes parallel slice capture safe with no env juggling.
+
+<!-- kb:begin -->
+### References
+- `moodboard.schema.json` (skill-local) — the moodboard data contract.
+- `skills/appbox-lens/SKILL.md` + `LENS_playbook.mdx` — the capture tool and its conventions.
+- `docs/design/brief.md` — the `intake.moodboard` surface that survives regeneration.
+<!-- kb:end -->

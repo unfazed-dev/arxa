@@ -4,6 +4,11 @@
 // mutation fails with the offending file / story id named. T3 runs real
 // `dart test` subprocesses against pure-Dart micro-fixtures (never flutter),
 // so those cases carry a generous timeout.
+//
+// Numbering is the canon's (behavior-tdd-rules.md §Traceability + AGENTS.md):
+//   T1 traceability — story-ID citation coverage + no empty stubs/groups
+//   T2 anti-pattern scan — the canon's banned mechanical tests
+//   T3 tests pass
 
 import 'dart:io';
 
@@ -102,15 +107,178 @@ void main() {
       expect(detailsOf(r), contains('WARN'));
       expect(detailsOf(r), contains('nothing to check'));
     });
+
+    test('an empty group() stub fails and names the file (canon T1)', () {
+      plantPassingTestFile();
+      write('test/group_stub_test.dart',
+          "void main() { group('folders', () {}); }\n");
+      final r = run();
+      expect(r.passed, isFalse);
+      expect(detailsOf(r), contains('empty group() stub (T1)'));
+      expect(detailsOf(r), contains('group_stub_test.dart'));
+    });
   });
 
-  group('T2: story coverage', () {
+  group('T2: anti-pattern scan (banned mechanical tests)', () {
+    test('a constructor test fails and names the file', () {
+      plantMap('intake/map.json');
+      plantPassingTestFile();
+      write('test/folders_ctor_test.dart',
+          "void main() { test('constructor sets name', () => expect(Folder('x').name, 'x')); }\n");
+      final r = run();
+      expect(r.passed, isFalse);
+      expect(detailsOf(r), contains('getter/constructor/toString test (T2)'));
+      expect(detailsOf(r), contains('folders_ctor_test.dart'));
+    });
+
+    test('a toString test fails too', () {
+      plantMap('intake/map.json');
+      plantPassingTestFile();
+      write('test/folders_str_test.dart',
+          "void main() { test('toString is readable', () => expect(Folder('x').toString(), contains('x'))); }\n");
+      final r = run();
+      expect(r.passed, isFalse);
+      expect(detailsOf(r), contains('getter/constructor/toString test (T2)'));
+    });
+
+    test('a verify()-only test fails (mock-verification theater)', () {
+      plantMap('intake/map.json');
+      plantPassingTestFile();
+      write('test/sync_verify_test.dart', """
+void main() {
+  test('notes.folders.create-folder — save calls the repository', () async {
+    await vm.save();
+    verify(() => repo.save(any()));
+  });
+}
+""");
+      final r = run();
+      expect(r.passed, isFalse);
+      expect(detailsOf(r), contains('verify()-only test (T2)'));
+      expect(detailsOf(r), contains('sync_verify_test.dart'));
+    });
+
+    test('a stub-then-assert-the-stub round-trip fails', () {
+      plantMap('intake/map.json');
+      plantPassingTestFile();
+      write('test/roundtrip_test.dart', """
+void main() {
+  test('notes.folders.create-folder — lists folders', () {
+    when(() => repo.all()).thenReturn([folder]);
+    expect(repo.all(), [folder]);
+  });
+}
+""");
+      final r = run();
+      expect(r.passed, isFalse);
+      expect(detailsOf(r), contains('stub-then-assert round-trip (T2)'));
+      expect(detailsOf(r), contains('roundtrip_test.dart'));
+    });
+
+    test('verify at a trust boundary WITH a real expect passes', () {
+      plantMap('intake/map.json');
+      write('test/enqueue_test.dart', """
+void main() {
+  test('notes.folders.create-folder — enqueueSync forwards and surfaces queued', () async {
+    await vm.enqueueSync();
+    verify(() => sync.enqueue(any()));
+    expect(vm.queued, 1);
+  });
+}
+""");
+      final r = run();
+      expect(r.passed, isTrue, reason: detailsOf(r));
+    });
+
+    test('a single trust-boundary verify with PINNED arguments passes (canon-blessed)', () {
+      plantMap('intake/map.json');
+      // The showcase/canon shape: the facade owns the write, so the verify's
+      // pinned arguments ARE the observable behavior — no expect required.
+      write('test/delegate_test.dart', """
+void main() {
+  test('notes.folders.create-folder — createFolder trims and delegates', () async {
+    when(() => facade.currentSession).thenReturn(_evan);
+    final vm = ShowcaseNotesViewModel();
+    await vm.createFolder('  Errands ');
+    verify(() => facade.createFolder('user-1', 'Errands', sortOrder: 2))
+        .called(1);
+  });
+}
+""");
+      final r = run();
+      expect(r.passed, isTrue, reason: detailsOf(r));
+    });
+
+    test('verifyNever with any() matchers passes (negative-boundary is real behavior)', () {
+      plantMap('intake/map.json');
+      write('test/negative_boundary_test.dart', """
+void main() {
+  test('notes.folders.create-folder — a blank name is dropped before the facade', () async {
+    final vm = ShowcaseNotesViewModel();
+    await vm.createFolder('   ');
+    verifyNever(() => facade.createFolder(any(), any(), sortOrder: any(named: 'sortOrder')));
+  });
+}
+""");
+      final r = run();
+      expect(r.passed, isTrue, reason: detailsOf(r));
+    });
+
+    test('a bare-any verify pile fails (theater, however many verifies)', () {
+      plantMap('intake/map.json');
+      plantPassingTestFile();
+      write('test/double_verify_test.dart', """
+void main() {
+  test('notes.folders.create-folder — save persists and notifies', () async {
+    await vm.save();
+    verify(() => repo.save(any()));
+    verify(() => bus.emit(any()));
+  });
+}
+""");
+      final r = run();
+      expect(r.passed, isFalse);
+      expect(detailsOf(r), contains('verify()-only test (T2)'));
+      expect(detailsOf(r), contains('double_verify_test.dart'));
+    });
+
+    test('a two-phase verifyNever + pinned verify passes (corpus regression)', () {
+      plantMap('intake/map.json');
+      // The showcase shape: cancel-path asserted with verifyNever(any), then
+      // the happy-path verified with PINNED arguments — two verifies, both
+      // meaningful; the count rule would false-fail this.
+      write('test/two_phase_test.dart', """
+void main() {
+  test('notes.folders.create-folder — createFolderWithPrompt creates the folder only when the prompt returns a name', () async {
+    await vm.createFolderWithPrompt();
+    verifyNever(() => facade.createFolder(any(), any(), sortOrder: any(named: 'sortOrder')));
+    notifications.promptResult = 'Errands';
+    await vm.createFolderWithPrompt();
+    verify(() => facade.createFolder('user-1', 'Errands', sortOrder: 0)).called(1);
+  });
+}
+""");
+      final r = run();
+      expect(r.passed, isTrue, reason: detailsOf(r));
+    });
+
+    test('a behavior test whose name merely contains "creates" passes', () {
+      plantMap('intake/map.json');
+      write('test/behavior_test.dart',
+          "// covers notes.folders.create-folder\n"
+          "void main() { test('notes.folders.create-folder — creates folder and emits it in folder list', () {}); }\n");
+      final r = run();
+      expect(r.passed, isTrue, reason: detailsOf(r));
+    });
+  });
+
+  group('T1: story coverage (traceability)', () {
     test('an uncovered must story fails and names the id', () {
       plantMap('intake/map.json');
       write('test/unrelated_test.dart', "void main() { test('x', () {}); }\n");
       final r = run();
       expect(r.passed, isFalse);
-      expect(detailsOf(r), contains('uncovered story (T2)'));
+      expect(detailsOf(r), contains('uncovered story (T1)'));
       expect(detailsOf(r), contains('notes.folders.create-folder'));
     });
 

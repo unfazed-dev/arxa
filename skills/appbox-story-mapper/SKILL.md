@@ -1,10 +1,12 @@
 ---
 name: appbox-story-mapper
-description: "Elicit product requirements as an Epic → Feature → Story user story map (MoSCoW priorities, release swimlanes) — the tail of the intake chain: consumes `appbox intake` answers (--answers, auto-discovered from pipeline/state when omitted) and emits the unified docs/design/brief.md (intake sections + releases + story hierarchy + surface inventory), plus an interactive HTML story map and story-map.json. Also valid standalone (no answers — intake is optional, plan 10.7): features then derive surfaces as before, flagged [inferred]. The intake traceability gate (appbox gate intake, plan 10.6) traces the registry against the brief both ways. Trigger on story mapping, backlog visualization, MoSCoW priority, release planning, organize requirements into a story map, or 'map the requirements before design'."
+description: "Use when product requirements need eliciting as an Epic → Feature → Story user story map (MoSCoW priorities, release swimlanes) — the tail of the intake chain: consumes `appbox intake` answers (--answers, auto-discovered from pipeline/state when omitted) and emits the unified docs/design/brief.md (intake sections + releases + story hierarchy + surface inventory), plus an interactive HTML story map and story-map.json. Also valid standalone (no answers — intake is optional, plan 10.7): features then derive surfaces as before, flagged [inferred]. The intake traceability gate (appbox gate intake, plan 10.6) traces the registry against the brief both ways. Trigger on story mapping, backlog visualization, MoSCoW priority, release planning, organize requirements into a story map, or 'map the requirements before design'."
 license: MIT
 ---
 
 # appbox-story-mapper — story map → brief → designer
+
+> Per-skill playbook (the folded canon for this phase): [`STORYMAP_playbook.mdx`](STORYMAP_playbook.mdx)
 
 Visualizes product requirements as an interactive HTML page using the **Epic →
 Feature → Story** three-tier structure, with MoSCoW priority color coding and
@@ -32,6 +34,10 @@ appbox intake (answers)  →  appbox emit story-map  →  docs/design/brief.md (
   `appbox gate intake` (pure Dart, `appboxd/lib/gate_intake.dart`; plan 10.6)
   parses — so the gate passes unchanged: every registry surface the designer
   authors traces to a row here, no orphans either way.
+
+**Chain position:** stage 0 of `appbox-orchestrator` (Ø, front door) → `appbox-story-mapper / appbox-moodboarder` (0, optional) → `appbox-intake` (1) → `appbox-designer` (2) → `appbox-scaffolder` (3) → `appbox-builder` (4) → `appbox-tester` (5) → `appbox-reviewer` (6) → `appbox-deployer` (9) — cross-cutting: `appbox-lint` (7), `appbox-lens` (8), `appbox-cicd` (10, day-zero frame wrapping all stages). Stage numbers and every stage's input/output artifacts: `docs/research/pipeline-map.md` §1; the visual map: `docs/appbox-system-map.md`; the CLI FSM phases: `appboxd/lib/phases.dart`.
+- **Upstream:** the client's requirements (`data.json`) — or `appbox-intake` answers (`--answers`), which make the emitted brief the unified one.
+- **Downstream:** `appbox-moodboarder` slices the emitted `story-map.json` per epic; `appbox-designer` consumes `docs/design/brief.md` as its input contract.
 
 ### Intake owns the surface inventory; stories ATTACH
 

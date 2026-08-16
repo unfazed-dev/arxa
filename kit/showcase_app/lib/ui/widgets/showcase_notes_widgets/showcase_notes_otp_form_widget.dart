@@ -94,7 +94,8 @@ class ShowcaseNotesOtpFormWidget extends StatelessWidget {
                 ),
                 if (busy) ...[
                   appBoxKitVerticalSpaceSmall,
-                  const Center(child: AppBoxKitNativeLoadingIndicator(size: 20)),
+                  const Center(
+                      child: AppBoxKitNativeLoadingIndicator(size: 20)),
                 ],
               ],
             ),

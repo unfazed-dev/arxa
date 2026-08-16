@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import 'package:appbox_kit_core/common/appbox_kit_app_constants.dart';
 import 'appbox_kit_frosted_surface.dart';
+import 'appbox_kit_input_tap_behavior.dart' show abxInputTapGroupId;
 import 'appbox_kit_native_icon_button.dart';
 import 'appbox_kit_native_textfield.dart';
 
@@ -34,6 +35,17 @@ import 'appbox_kit_native_textfield.dart';
 /// platform views) so content never scrolls visibly through the bar; pass
 /// `opaqueGlass: false` for the old fully transparent backing.
 ///
+/// ## Action taps never dismiss
+///
+/// The bar is ONE input surface: its [leading]/[trailing] action slots sit in
+/// the same tap-region group as the field ([abxInputTapGroupId]), so tapping
+///  or the mic while the keyboard is up keeps the keyboard (the iOS
+/// Messages idiom) — the tap classifies as INSIDE, never as an outside tap.
+/// Taps outside the whole bar still run the per-input dismissal default
+/// ([AppBoxKitInputTapBehavior]). Standalone [AppBoxKitNativeIconButton]s
+/// elsewhere in an app deliberately do NOT join the group — only this bar's
+/// own slots are part of the input surface.
+///
 /// ## Keyboard riding
 ///
 /// The bar rides the keyboard itself: it pads by
@@ -55,6 +67,9 @@ class AppBoxKitNativeInputBar extends StatelessWidget {
     this.onChanged,
     this.onSubmitted,
     this.keyboardType,
+    this.multiline = true,
+    this.minLines = 1,
+    this.maxLines = 6,
     this.autofocus = false,
     this.enabled = true,
     this.wantNative = true,
@@ -84,6 +99,19 @@ class AppBoxKitNativeInputBar extends StatelessWidget {
 
   /// Keyboard type, honored on every field tier.
   final TextInputType? keyboardType;
+
+  /// Composer contract (default `true`): the field is a growing multiline
+  /// input — one line at rest, growing with content to [maxLines], then
+  /// scrolling internally. `false` restores the single-line search-style bar
+  /// (the historical behavior).
+  final bool multiline;
+
+  /// Minimum visible lines when [multiline] (default 1 = one line at rest).
+  final int? minLines;
+
+  /// Maximum lines before the field scrolls internally (default 6, the
+  /// chat-composer idiom). Ignored when [multiline] is false.
+  final int? maxLines;
 
   /// Autofocus on appearance.
   final bool autofocus;
@@ -117,31 +145,46 @@ class AppBoxKitNativeInputBar extends StatelessWidget {
       'so leading/trailing stay aligned — omit `size`.',
     );
     final scheme = Theme.of(context).colorScheme;
-    final bar = Padding(
-      padding: const EdgeInsets.symmetric(horizontal: abxPad12, vertical: abxPad8),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        spacing: abxGap8,
-        children: [
-          ...leading,
-          Expanded(
-            child: AppBoxKitNativeTextField(
-              controller: controller,
-              hintText: hintText,
-              keyboardType: keyboardType,
-              autofocus: autofocus,
-              enabled: enabled,
-              onChanged: onChanged,
-              onSubmitted: onSubmitted,
-              wantNative: wantNative,
-              // Material-fallback capsule: the CN/M3E tiers own their pill
-              // shape and ignore both params (see class docs § Pill shape).
-              fillColor: scheme.surfaceContainerHigh,
-              borderRadius: abxRad28,
+    // The row (field + action slots + its padding) joins the input tap group:
+    // action taps are INSIDE the input surface and never dismiss the keyboard
+    // (class docs § Action taps never dismiss). Nested same-group regions are
+    // the documented TapRegion shape — all members act as one region.
+    final Widget bar = TextFieldTapRegion(
+      groupId: abxInputTapGroupId,
+      child: Padding(
+        padding:
+            const EdgeInsets.symmetric(horizontal: abxPad12, vertical: abxPad8),
+        child: Row(
+          // Composer alignment: when multiline, the field grows UPWARD from the
+          // bottom row of actions (Messages idiom) — CrossAxisAlignment.end keeps
+          // every action pinned at the field's last line. Single-line bars keep
+          // the historical centered row.
+          crossAxisAlignment:
+              multiline ? CrossAxisAlignment.end : CrossAxisAlignment.center,
+          spacing: abxGap8,
+          children: [
+            ...leading,
+            Expanded(
+              child: AppBoxKitNativeTextField(
+                controller: controller,
+                hintText: hintText,
+                keyboardType: keyboardType,
+                minLines: multiline ? minLines : null,
+                maxLines: multiline ? maxLines : 1,
+                autofocus: autofocus,
+                enabled: enabled,
+                onChanged: onChanged,
+                onSubmitted: onSubmitted,
+                wantNative: wantNative,
+                // Material-fallback capsule: the CN/M3E tiers own their pill
+                // shape and ignore both params (see class docs § Pill shape).
+                fillColor: scheme.surfaceContainerHigh,
+                borderRadius: abxRad28,
+              ),
             ),
-          ),
-          ...trailing,
-        ],
+            ...trailing,
+          ],
+        ),
       ),
     );
     // Keyboard riding (class docs § Keyboard riding): viewInsets padding lifts

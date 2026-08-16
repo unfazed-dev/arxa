@@ -31,6 +31,19 @@ class TextModel: ObservableObject {
   /// Keyboard type: "default", "number", "emailAddress", "phone".
   @Published var keyboardType: String
 
+  /// Multiline: minimum visible lines. `nil` = single-line (the historical
+  /// behavior). Non-nil renders `TextField(axis: .vertical)` with a
+  /// `lineLimit(min...max)` range so the field grows as lines are added.
+  /// Secure fields ignore this — `SecureField` has no vertical axis.
+  var minLines: Int?
+
+  /// Multiline: maximum visible lines; `nil` with `minLines` = unbounded
+  /// growth. Past the cap the field scrolls internally.
+  var maxLines: Int?
+
+  /// Convenience: either lines param present = the growing composer tier.
+  var isMultiline: Bool { minLines != nil || maxLines != nil }
+
   /// Accent / caret / clear-button tint.
   @Published var tint: Color
 
@@ -53,30 +66,40 @@ class TextModel: ObservableObject {
   /// Fired when focus enters/leaves the field.
   var onFocusChanged: (Bool) -> Void
 
+  /// Fired when the multiline field's intrinsic height changes (logical pt),
+  /// so Flutter can grow the platform-view slot. Single-line never fires.
+  var onHeightChanged: ((Double) -> Void)?
+
   init(
     text: String,
     placeholder: String,
     isSecure: Bool,
     autofocus: Bool,
     keyboardType: String,
+    minLines: Int?,
+    maxLines: Int?,
     tint: Color,
     textColor: Color?,
     placeholderColor: Color?,
     onChange: @escaping (String) -> Void,
     onSubmit: @escaping (String) -> Void,
-    onFocusChanged: @escaping (Bool) -> Void
+    onFocusChanged: @escaping (Bool) -> Void,
+    onHeightChanged: ((Double) -> Void)? = nil
   ) {
     self.text = text
     self.placeholder = placeholder
     self.isSecure = isSecure
     self.autofocus = autofocus
     self.keyboardType = keyboardType
+    self.minLines = minLines
+    self.maxLines = maxLines
     self.tint = tint
     self.textColor = textColor
     self.placeholderColor = placeholderColor
     self.onChange = onChange
     self.onSubmit = onSubmit
     self.onFocusChanged = onFocusChanged
+    self.onHeightChanged = onHeightChanged
   }
 
   // MARK: - Keyboard

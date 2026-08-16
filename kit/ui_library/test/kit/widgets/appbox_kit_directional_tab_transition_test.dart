@@ -30,7 +30,8 @@ class _ProbeState extends State<_Probe> {
 void main() {
   setUp(() => _probeInits = 0);
 
-  testWidgets('kit.ui-library.directional-tab-transition — retains the tabs-stack element across tab switches',
+  testWidgets(
+      'kit.ui-library.directional-tab-transition — retains the tabs-stack element across tab switches',
       (tester) async {
     Widget frame(int index) => Directionality(
           textDirection: TextDirection.ltr,
@@ -54,6 +55,7 @@ void main() {
     // Later switch (1 -> 0) must also preserve it.
     await tester.pumpWidget(frame(0));
     await tester.pump();
-    expect(_probeInits, 1, reason: 'the tabs stack must survive later switches');
+    expect(_probeInits, 1,
+        reason: 'the tabs stack must survive later switches');
   });
 }

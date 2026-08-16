@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 
 import 'package:appbox_kit_core/common/appbox_kit_app_constants.dart';
 import 'package:appbox_kit_core/platform/appbox_kit_platform.dart';
+import 'appbox_kit_input_tap_behavior.dart';
 import 'appbox_kit_native_chrome_gate.dart';
 
 /// Adaptive search bar — two-way structural gate (mirrors [AppBoxKitNativeTabBar]'s
@@ -80,17 +81,21 @@ class AppBoxKitNativeSearchBar extends StatelessWidget {
     final field = isCN ? _cn(context) : _material();
     // No trailing action → bare field, the exact contract both existing callers
     // (notes folder, search showcase) rely on.
-    if (actionLabel == null || onAction == null) return field;
-    return Row(
-      spacing: abxGap8,
-      children: [
-        Expanded(child: field),
-        _TrailingAction(
-          label: actionLabel!,
-          onPressed: onAction!,
-          materialTier: !isCN,
-        ),
-      ],
+    if (actionLabel == null || onAction == null) {
+      return AppBoxKitInputTapBehavior(child: field);
+    }
+    return AppBoxKitInputTapBehavior(
+      child: Row(
+        spacing: abxGap8,
+        children: [
+          Expanded(child: field),
+          _TrailingAction(
+            label: actionLabel!,
+            onPressed: onAction!,
+            materialTier: !isCN,
+          ),
+        ],
+      ),
     );
   }
 

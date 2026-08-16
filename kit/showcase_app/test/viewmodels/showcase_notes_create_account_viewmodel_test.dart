@@ -27,8 +27,8 @@ void main() {
       // late Talker — initialize it before any op can fail (ui_library
       // playbook).
       await locator<AppBoxKitErrorService>().initialize();
-      facade =
-          locator<ShowcaseNotesFacadeService>() as MockShowcaseNotesFacadeService;
+      facade = locator<ShowcaseNotesFacadeService>()
+          as MockShowcaseNotesFacadeService;
       auth = MockAppBoxKitAuthService();
       when(() => facade.auth).thenReturn(auth);
     });
@@ -65,10 +65,11 @@ void main() {
       // given
       final vm = createViewModel();
       when(() => auth.signUpWithEmailPassword(
-            email: any(named: 'email'),
-            password: any(named: 'password'),
-          )).thenThrow(
-          const AppBoxKitAuthException('That email is already registered'));
+                email: any(named: 'email'),
+                password: any(named: 'password'),
+              ))
+          .thenThrow(
+              const AppBoxKitAuthException('That email is already registered'));
       // Seed null, the guard's clear-to-null, then the surfaced message.
       final expectation = expectLater(
         vm.errorMessage$,

@@ -152,7 +152,8 @@ name `AppBoxKit*` widgets. An unmapped kind exits non-zero via that file's
 > correct on the view would still have hit `FAIL` in the resolver.
 >
 > **Never settle a coverage question in prose — this note was wrong twice.**
-> Run `python3 skills/appbox-scaffolder/scripts/validate-registry.py`. It derives
+> Run `appbox gate kind_registry` (the promoted Python port,
+> `appboxd/lib/gate_kind_registry.dart`). It derives
 > the vocabulary from the partials directory (the SSOT), checks every target
 > against real class names under `kit/ui_library/lib`, verifies every
 > `widget: null` shape is reachable from `resolution.order`, and catches

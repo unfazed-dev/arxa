@@ -16,7 +16,9 @@ import 'appbox_kit_native_test_helpers.dart';
 /// - the load-error fallback (`errorBuilder` → placeholder glyph), and
 /// - the custom-placeholder + radius parameters.
 void main() {
-  testWidgets('kit.ui-library.image — constructs an Image.asset with the given path', (tester) async {
+  testWidgets(
+      'kit.ui-library.image — constructs an Image.asset with the given path',
+      (tester) async {
     await tester.pumpWidget(host(const AppBoxKitImage(
       asset: 'assets/some/product.jpg',
       size: 48,
@@ -24,13 +26,13 @@ void main() {
 
     final image = tester.widget<Image>(find.byType(Image));
     expect(image, isA<Image>());
-    expect((image.image as AssetImage).assetName,
-      'assets/some/product.jpg');
+    expect((image.image as AssetImage).assetName, 'assets/some/product.jpg');
     expect(image.width, 48);
     expect(image.height, 48);
   });
 
-  testWidgets('kit.ui-library.image — empty asset shows the placeholder glyph and never throws',
+  testWidgets(
+      'kit.ui-library.image — empty asset shows the placeholder glyph and never throws',
       (tester) async {
     await tester.pumpWidget(host(const AppBoxKitImage(asset: '', size: 48)));
     await tester.pump();
@@ -42,24 +44,26 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('kit.ui-library.image — a missing asset falls back to the placeholder glyph',
+  testWidgets(
+      'kit.ui-library.image — a missing asset falls back to the placeholder glyph',
       (tester) async {
     // A path that does not exist in the bundle — the errorBuilder must
-      // catch the decode failure and show the placeholder instead of the
-      // framework's red error box.
-      await tester.pumpWidget(host(const AppBoxKitImage(
-        asset: 'assets/does/not/exist.jpg',
-        size: 48,
-      )));
-      // Pump past the asset-load failure so the errorBuilder runs.
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 10));
+    // catch the decode failure and show the placeholder instead of the
+    // framework's red error box.
+    await tester.pumpWidget(host(const AppBoxKitImage(
+      asset: 'assets/does/not/exist.jpg',
+      size: 48,
+    )));
+    // Pump past the asset-load failure so the errorBuilder runs.
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 10));
 
-      expect(find.byIcon(AppBoxKitGlyphs.photo.icon), findsOneWidget,
-          reason: 'errorBuilder should render the placeholder glyph');
+    expect(find.byIcon(AppBoxKitGlyphs.photo.icon), findsOneWidget,
+        reason: 'errorBuilder should render the placeholder glyph');
   });
 
-  testWidgets('kit.ui-library.image — honors a custom placeholder glyph', (tester) async {
+  testWidgets('kit.ui-library.image — honors a custom placeholder glyph',
+      (tester) async {
     await tester.pumpWidget(host(const AppBoxKitImage(
       asset: '',
       size: 48,
@@ -71,7 +75,8 @@ void main() {
     expect(find.byIcon(AppBoxKitGlyphs.photo.icon), findsNothing);
   });
 
-  testWidgets('kit.ui-library.image — size sets both width and height', (tester) async {
+  testWidgets('kit.ui-library.image — size sets both width and height',
+      (tester) async {
     await tester.pumpWidget(host(const AppBoxKitImage(
       asset: 'assets/x.jpg',
       size: 64,

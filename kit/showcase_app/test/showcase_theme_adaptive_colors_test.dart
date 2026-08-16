@@ -79,14 +79,21 @@ void main() {
     }
 
     expect(await pumpFor(light), [
-      AppBoxKitColors.muted, AppBoxKitColors.good, AppBoxKitColors.danger,
-      AppBoxKitColors.warn, AppBoxKitColors.muted, AppBoxKitColors.danger,
+      AppBoxKitColors.muted,
+      AppBoxKitColors.good,
+      AppBoxKitColors.danger,
+      AppBoxKitColors.warn,
+      AppBoxKitColors.muted,
+      AppBoxKitColors.danger,
       AppBoxKitColors.muted,
     ]);
     expect(await pumpFor(dark), [
-      AppBoxKitDarkColors.ink3, AppBoxKitDarkColors.good,
-      AppBoxKitDarkColors.danger, AppBoxKitDarkColors.warn,
-      AppBoxKitDarkColors.ink3, AppBoxKitDarkColors.danger,
+      AppBoxKitDarkColors.ink3,
+      AppBoxKitDarkColors.good,
+      AppBoxKitDarkColors.danger,
+      AppBoxKitDarkColors.warn,
+      AppBoxKitDarkColors.ink3,
+      AppBoxKitDarkColors.danger,
       AppBoxKitDarkColors.ink3,
     ]);
   });

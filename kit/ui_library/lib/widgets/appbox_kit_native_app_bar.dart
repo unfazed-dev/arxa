@@ -25,7 +25,8 @@ import 'appbox_kit_native_sliver_app_bar.dart';
 /// must collapse/float with the scroll, use [AppBoxKitNativeSliverAppBar] as the
 /// first sliver instead (the kit default there is `pinned; floating + snap off`).
 /// [AppBoxKitNativeAppBar.sliver] delegates to it for back-compat.
-class AppBoxKitNativeAppBar extends StatelessWidget implements PreferredSizeWidget {
+class AppBoxKitNativeAppBar extends StatelessWidget
+    implements PreferredSizeWidget {
   const AppBoxKitNativeAppBar({
     super.key,
     this.title,

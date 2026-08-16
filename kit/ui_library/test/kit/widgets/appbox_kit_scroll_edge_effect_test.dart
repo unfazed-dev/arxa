@@ -14,7 +14,8 @@ void main() {
 
   Widget harness({
     required ScrollController controller,
-    AppBoxKitScrollEdgeEffectStyle style = AppBoxKitScrollEdgeEffectStyle.automatic,
+    AppBoxKitScrollEdgeEffectStyle style =
+        AppBoxKitScrollEdgeEffectStyle.automatic,
     AppBoxKitScrollEdge edge = AppBoxKitScrollEdge.top,
   }) {
     return MaterialApp(
@@ -66,7 +67,8 @@ void main() {
   bool blurLayerActive(WidgetTester tester) =>
       tester.layers.whereType<ImageFilterLayer>().isNotEmpty;
 
-  testWidgets('kit.ui-library.scroll-edge-effect — child fully clear of the edge is identity-wrapped',
+  testWidgets(
+      'kit.ui-library.scroll-edge-effect — child fully clear of the edge is identity-wrapped',
       (tester) async {
     final controller = ScrollController();
     addTearDown(controller.dispose);
@@ -95,7 +97,8 @@ void main() {
     expect(effectDescendant<IgnorePointer>(tester).ignoring, isFalse);
   });
 
-  testWidgets('kit.ui-library.scroll-edge-effect — fully covered child — soft keeps a faint remnant',
+  testWidgets(
+      'kit.ui-library.scroll-edge-effect — fully covered child — soft keeps a faint remnant',
       (tester) async {
     final controller = ScrollController();
     addTearDown(controller.dispose);
@@ -114,7 +117,9 @@ void main() {
     expect(find.byKey(markerKey, skipOffstage: false), findsOneWidget);
   });
 
-  testWidgets('kit.ui-library.scroll-edge-effect — hard style fully obscures and ignores pointers', (tester) async {
+  testWidgets(
+      'kit.ui-library.scroll-edge-effect — hard style fully obscures and ignores pointers',
+      (tester) async {
     final controller = ScrollController();
     addTearDown(controller.dispose);
     await tester.pumpWidget(harness(
@@ -131,7 +136,8 @@ void main() {
     expect(find.byKey(markerKey, skipOffstage: false), findsOneWidget);
   });
 
-  testWidgets('kit.ui-library.scroll-edge-effect — restores to identity when scrolled back out',
+  testWidgets(
+      'kit.ui-library.scroll-edge-effect — restores to identity when scrolled back out',
       (tester) async {
     final controller = ScrollController();
     addTearDown(controller.dispose);
@@ -149,7 +155,8 @@ void main() {
     expect(effectAlpha(tester), 1.0);
   });
 
-  testWidgets('kit.ui-library.scroll-edge-effect — bottom edge fades content straddling the trailing fold',
+  testWidgets(
+      'kit.ui-library.scroll-edge-effect — bottom edge fades content straddling the trailing fold',
       (tester) async {
     final controller = ScrollController();
     addTearDown(controller.dispose);
@@ -188,7 +195,8 @@ void main() {
     expect(effectAlpha(tester), 1.0);
   });
 
-  testWidgets('kit.ui-library.scroll-edge-effect — .scrollEdgeEffect() extension wraps child in an effect',
+  testWidgets(
+      'kit.ui-library.scroll-edge-effect — .scrollEdgeEffect() extension wraps child in an effect',
       (tester) async {
     const childKey = Key('ext-child');
     final wrapped = const SizedBox(key: childKey, height: 40).scrollEdgeEffect(

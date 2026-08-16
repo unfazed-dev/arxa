@@ -7,7 +7,8 @@ The scaffolder skill (plan 03 / dogfood 14.8). Scaffolds app surfaces from a fro
 | `SKILL.md` | The skill. Structure contract, modes, recipe, kind resolution, ownership, verdicts. |
 | `SCAFFOLD_playbook.mdx` | Worked procedure and command surface. |
 | `kind-resolution.registry.json` | **Q7 SSOT** — designed kind → kit-native widget. Closed vocabulary; unresolvable kind fails loudly. Shared with `appbox-designer`. |
-| `scripts/validate-registry.py` | Q7 check (manual — no CI wiring yet; run it after any registry edit). Asserts the registry covers the partials vocabulary exactly, targets real kit classes, names every `widget:null` shape in `resolution.order`, and carries no duplicate kind keys. Run after any registry edit. |
+| `appbox gate kind_registry` | **Q7 check, promoted to a gate** (`appboxd/lib/gate_kind_registry.dart`; rides `gate --all` + CI). Asserts the registry covers the partials vocabulary exactly, targets real kit classes, names every `widget:null` shape in `resolution.order`, carries no duplicate kind keys, and closes the Q12 inspect-identity set. Run after any registry edit. |
+| `scripts/validate-registry.py` | The Python original — now superseded by the gate above; kept as the port's reference implementation. |
 
 One more SSOT lives outside this skill, showcase-adjacent, with its schema beside it:
 

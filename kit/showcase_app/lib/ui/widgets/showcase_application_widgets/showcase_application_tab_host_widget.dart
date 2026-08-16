@@ -75,7 +75,15 @@ class ShowcaseApplicationTabHostWidget extends StatelessWidget {
               // Bottom mirror of the top chrome's status-bar scrim — the per-child
               // scroll edge effect is inert on the glass tier, so this is the only
               // bottom-edge dissolve on device (clip 18-50).
+              //
+              // Yields with the tab bar: the scrim's fadeExtent spans the
+              // floating-bar block, sized to dissolve content under the SHARED
+              // bar. A route that docks its own bar (the Components composer)
+              // must get the raw edge — keeping the scrim up dissolves content
+              // into the background right where that route's own bar sits,
+              // defeating its glass sampling of the content scrolling under it.
               body: AppBoxKitBottomEdgeScrimHost(
+                enabled: !_docksOwnBar(tabsRouter.topRoute.name),
                 child: AppBoxKitExtendBodyFabLift(
                   child: _DockFabLift(
                     // When the tab bar yields, the route's own dock occupies the same

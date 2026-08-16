@@ -16,6 +16,7 @@ library;
 
 import 'dart:convert';
 import 'dart:io';
+import 'dart:isolate';
 import 'dart:typed_data';
 
 import 'package:path/path.dart' as p;
@@ -1329,10 +1330,49 @@ List<DoctorRow> _realRows(String runtimeDir) {
 /// the real Dart-toolchain probes against [runtimeDir] (the skill runtime, or
 /// repo-root-relative when null).
 DoctorReport doctorCheck({Iterable<DoctorRow>? probes, String? runtimeDir}) {
-  final rows = probes?.toList() ??
-      _realRows(runtimeDir ?? '${_findRepoRoot() ?? Directory.current.path}'
-          '/skills/appbox-designer/runtime');
+  final rows = probes?.toList() ?? _realRows(runtimeDir ?? skillRuntimeDir());
   return DoctorReport(rows);
+}
+
+/// The designer skill's runtime/ dir resolved from the appbox INSTALLATION,
+/// not the CWD: CWD walk-up first (in-repo use unchanged), then the running
+/// script's location (the PATH wrapper runs
+/// `dart run /…/app-box/appboxd/bin/appbox.dart` from any folder — a
+/// from-scratch project must not make doctor report the checkout's own
+/// committed runtime as missing).
+String skillRuntimeDir() =>
+    p.join(_findRepoRoot() ?? _scriptRepoRoot() ?? Directory.current.path,
+        'skills', 'appbox-designer', 'runtime');
+
+/// Locates the appbox checkout that is executing, wherever the user's CWD
+/// sits. Two anchors, most-reliable first: this library's own package URI
+/// (resolves under both `dart run` and `dart test`), then the running
+/// script's file. Walk-up stops at the repo marker config/appbox.config.json.
+String? _scriptRepoRoot() {
+  for (final anchor in <Uri?>[
+    () {
+      try {
+        return Isolate.resolvePackageUriSync(
+            Uri.parse('package:appboxd/design_tools.dart'));
+      } catch (_) {
+        return null;
+      }
+    }(),
+    Platform.script,
+  ]) {
+    if (anchor == null || anchor.scheme != 'file') continue;
+    var dir = File.fromUri(anchor).parent;
+    while (true) {
+      if (File(p.join(dir.path, 'config', 'appbox.config.json'))
+          .existsSync()) {
+        return dir.path;
+      }
+      final parent = dir.parent;
+      if (parent.path == dir.path) break;
+      dir = parent;
+    }
+  }
+  return null; // AOT/compiled contexts without a source-file anchor
 }
 
 /// `appbox design doctor` — exit 0 all-present / 1 missing.

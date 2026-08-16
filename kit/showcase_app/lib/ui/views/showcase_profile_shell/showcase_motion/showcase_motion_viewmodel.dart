@@ -51,8 +51,8 @@ class ShowcaseMotionViewModel extends BaseViewModel {
 
   /// [1. Preset selection][2. Master switch] The active spec: selected preset +
   /// master switch. Feeds every [AppBoxKitMotionScope] on the demo surface.
-  AppBoxKitMotionSpec get spec =>
-      ShowcaseMotionPreset.values[_presetIndex].spec.copyWith(enabled: _enabled);
+  AppBoxKitMotionSpec get spec => ShowcaseMotionPreset.values[_presetIndex].spec
+      .copyWith(enabled: _enabled);
 
   // ── Actions ───────────────────────────────────────────────────────────────
 

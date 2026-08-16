@@ -15,15 +15,24 @@ export 'package:appbox_kit_core/appbox_kit_core.dart';
 export 'package:stacked/stacked.dart';
 export 'package:stacked/stacked_annotations.dart';
 export 'package:rxdart/rxdart.dart'
-    show BehaviorSubject, ValueStream, Rx, SwitchMapExtension,
-        StartWithExtension, ConnectableStreamExtensions;
+    show
+        BehaviorSubject,
+        ValueStream,
+        Rx,
+        SwitchMapExtension,
+        StartWithExtension,
+        ConnectableStreamExtensions;
 
 // The stacked_services types an app legitimately touches: registrations and
 // its own snackbar palette config. Dialogs/sheets/toasts themselves go
 // through AppBoxKitNotificationService's verbs — apps never call the stacked
 // dialog/sheet services directly.
 export 'package:stacked_services/stacked_services.dart'
-    show RouterService, SnackbarService, SnackbarConfig, SnackPosition,
+    show
+        RouterService,
+        SnackbarService,
+        SnackbarConfig,
+        SnackPosition,
         StackedService;
 
 export 'services/appbox_kit_ui_services_setup.dart';
@@ -44,6 +53,7 @@ export 'widgets/appbox_kit_native_switch.dart';
 export 'widgets/appbox_kit_native_slider.dart';
 export 'widgets/appbox_kit_native_range_slider.dart';
 export 'widgets/appbox_kit_native_icon_button.dart';
+export 'widgets/appbox_kit_input_tap_behavior.dart';
 export 'widgets/appbox_kit_native_input_bar.dart';
 export 'widgets/appbox_kit_dismiss_keyboard.dart';
 export 'widgets/appbox_kit_menu_item.dart';
@@ -94,6 +104,10 @@ export 'utils/appbox_kit_native_overlay.dart';
 // API for custom/non-Navigator transitions.
 export 'package:cupertino_native_better/cupertino_native.dart'
     show CNTransitionObserver, CNTransitionHelper, CNTabBarRouteObserver;
+// The native-tier focus tracker — hosts and integration tests observe CN
+// keyboard state through it (a CNTextField has no Flutter FocusNode).
+export 'package:cupertino_native_better/cupertino_native_better.dart'
+    show CNTextFieldFocus;
 
 // --- AppBoxKitAction (fluent operation API + snackbar vocabulary) ---
 export 'utils/kit_action/appbox_kit_action.dart';

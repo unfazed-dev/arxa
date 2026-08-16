@@ -156,7 +156,8 @@ extension AppBoxKitContainerRetractButtonPositionExtension
     }
   }
 
-  Offset getSlideInDirection(AppBoxKitContainerExpandDirection expandDirection) {
+  Offset getSlideInDirection(
+      AppBoxKitContainerExpandDirection expandDirection) {
     switch (this) {
       case AppBoxKitContainerRetractButtonPosition.topLeft:
         return const Offset(-1.0, -1.0);

@@ -83,7 +83,8 @@ void main() {
         'notes.note-crud.edit-a-note — body seeds once from the loaded note and later note\$ emits never clobber what the user typed',
         () async {
       // given
-      final subject = seededSubject<ShowcaseNoteModel?>(note(body: 'seed body'));
+      final subject =
+          seededSubject<ShowcaseNoteModel?>(note(body: 'seed body'));
       // Autosave made observable: the mock records every saved body so the test
       // can wait on the debounced write instead of a wall clock.
       final saves = StreamController<String>();
@@ -94,7 +95,8 @@ void main() {
         return note(body: body);
       });
       final vm = await openEditor(subject);
-      expect(vm.body, 'seed body', reason: 'seeded once from the first note\$ emit');
+      expect(vm.body, 'seed body',
+          reason: 'seeded once from the first note\$ emit');
       final save = expectLater(saves.stream, emits('typed draft'));
 
       // when — the user types, then a write-back emit arrives before the

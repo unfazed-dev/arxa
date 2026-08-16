@@ -102,7 +102,8 @@ class AppBoxKitNativeToolbar extends StatelessWidget {
   Widget build(BuildContext context) {
     // ponytail: gate order mirrors AppBoxKitNativeSplitButton — M3E first (Android),
     // then Liquid Glass (iOS), else Material fallback.
-    if (wantNative && AppBoxKitPlatform.supportsComposeM3E) return _m3e(context);
+    if (wantNative && AppBoxKitPlatform.supportsComposeM3E)
+      return _m3e(context);
     if (wantNative && AppBoxKitPlatform.isIOS) return _glass(context);
     return _fallback(context);
   }

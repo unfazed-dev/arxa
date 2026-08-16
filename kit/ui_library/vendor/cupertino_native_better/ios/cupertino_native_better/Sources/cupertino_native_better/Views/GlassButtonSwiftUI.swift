@@ -47,6 +47,14 @@ struct GlassButtonSwiftUI: View {
           Image(systemName: iconName)
             .font(.system(size: iconSize))
             .foregroundColor(effectiveIconColor)
+            // SF Symbol replace content transition (iOS 17+ API; this view is
+            // gated iOS 26+). When iconName changes — e.g. a voice recorder's
+            // mic → stop → mic toggle — the system animates the glyph swap
+            // (old symbol exits down, new enters up) instead of hard-cutting.
+            // Requires the change to arrive as an in-place SwiftUI update, not
+            // a view recreation — see CupertinoButtonPlatformView.updateSwiftUIView.
+            .contentTransition(.symbolEffect(.replace))
+            .animation(.snappy, value: iconName)
         }
 
         if let title = title {

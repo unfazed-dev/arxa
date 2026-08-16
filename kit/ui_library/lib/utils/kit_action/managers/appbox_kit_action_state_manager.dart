@@ -26,14 +26,16 @@ class AppBoxKitActionState {
 class AppBoxKitActionStateManager {
   AppBoxKitActionStateManager._(); // coverage:ignore-line
 
-  static final Map<String, BehaviorSubject<AppBoxKitActionState>> _subjects = {};
+  static final Map<String, BehaviorSubject<AppBoxKitActionState>> _subjects =
+      {};
 
   /// The live state stream for [widgetId] — a seeded [ValueStream], so late
   /// subscribers get the current state immediately (no loading flash).
   static ValueStream<AppBoxKitActionState> state$(String widgetId) =>
       _subjects.putIfAbsent(
         widgetId,
-        () => BehaviorSubject<AppBoxKitActionState>.seeded(const AppBoxKitActionState()),
+        () => BehaviorSubject<AppBoxKitActionState>.seeded(
+            const AppBoxKitActionState()),
       );
 
   /// Operation started: busy, stale error cleared.

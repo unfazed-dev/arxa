@@ -1,12 +1,15 @@
-// main_shell.tsx — shell layout component (replaces main_shell_view.html).
-// Wraps Base + composes NavRail, LangSwitcher, BottomNav around the surface.
+// main_shell_view.tsx — shell layout component (replaces main_shell_view.html).
+// Wraps Base and mounts the three DERIVED factor variants in rung divs — the
+// ladder CSS shows exactly one at a time, so the hosted surface renders three
+// times and only the visible copy is reachable. Per-rung divergence of the
+// shell's frame lands in the variants, not here.
 import type { FC, Child } from 'hono/jsx';
 import Base from '../../common/base.tsx';
-import NavRail from './shared/widgets/nav_rail.tsx';
-import LangSwitcher from './shared/widgets/lang_switcher.tsx';
-import BottomNav from './shared/widgets/bottom_nav.tsx';
+import Desktop from './main_shell_view.desktop.tsx';
+import Tablet from './main_shell_view.tablet.tsx';
+import Mobile from './main_shell_view.mobile.tsx';
 
-interface NavItem {
+export interface NavItem {
   id: string;
   label: string;
   icon?: string;
@@ -14,34 +17,22 @@ interface NavItem {
   current?: boolean;
 }
 
-interface MainShellProps {
+export interface MainShellProps {
   title?: string;
   locale?: string;
   accent?: string;
   locales: string[];
   translate: (key: string, vars?: Record<string, unknown>) => unknown;
   rail?: { brand?: string; drawer?: boolean; items: NavItem[] };
-  rail_drawer?: { brand?: string; drawer?: boolean; items: NavItem[] };
   children?: Child;
 }
 
-const MainShell: FC<MainShellProps> = ({
-  title,
-  locale,
-  accent,
-  locales,
-  translate,
-  rail,
-  children,
-}) => (
-  <Base title={title} locale={locale} accent={accent}>
+const MainShell: FC<MainShellProps> = (props) => (
+  <Base title={props.title} locale={props.locale} accent={props.accent}>
     <div class="shell">
-      <NavRail rail={rail} />
-      <div class="shell__col">
-        <LangSwitcher locales={locales} locale={locale ?? 'en'} translate={translate as (key: string) => string} />
-        <main class="shell-main">{children}</main>
-        <BottomNav rail={rail} />
-      </div>
+      <div class="rung rung--desktop"><Desktop {...props} /></div>
+      <div class="rung rung--tablet"><Tablet {...props} /></div>
+      <div class="rung rung--mobile"><Mobile {...props} /></div>
     </div>
   </Base>
 );

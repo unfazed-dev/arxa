@@ -77,7 +77,9 @@ class ShowcaseNotesNoteRowWidget extends StatelessWidget {
         child: Icon(
           isTrash
               ? AppBoxKitGlyphs.restore.icon
-              : (note.pinned ? AppBoxKitGlyphs.unpin.icon : AppBoxKitGlyphs.pin.icon),
+              : (note.pinned
+                  ? AppBoxKitGlyphs.unpin.icon
+                  : AppBoxKitGlyphs.pin.icon),
           color: isTrash
               ? theme.colorScheme.onTertiary
               : theme.colorScheme.onPrimary,
@@ -87,7 +89,8 @@ class ShowcaseNotesNoteRowWidget extends StatelessWidget {
         color: theme.colorScheme.error,
         alignment: Alignment.centerRight,
         padding: const EdgeInsets.symmetric(horizontal: abxSize20),
-        child: Icon(AppBoxKitGlyphs.delete.icon, color: theme.colorScheme.onError),
+        child:
+            Icon(AppBoxKitGlyphs.delete.icon, color: theme.colorScheme.onError),
       ),
       confirmDismiss: (direction) async {
         if (isTrash) {

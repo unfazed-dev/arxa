@@ -82,7 +82,8 @@ class AppBoxKitListTile extends StatelessWidget {
         child: Row(
           children: [
             if (glyph != null) ...[
-              Icon(glyph!.icon, size: abxSize20, color: scheme.onSurfaceVariant),
+              Icon(glyph!.icon,
+                  size: abxSize20, color: scheme.onSurfaceVariant),
               const SizedBox(width: abxGap12),
             ],
             Expanded(

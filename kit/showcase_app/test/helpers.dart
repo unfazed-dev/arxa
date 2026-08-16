@@ -5,8 +5,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:appbox_kit_showcase_app/app/app.locator.dart'
-    show setupLocator;
+import 'package:appbox_kit_showcase_app/app/app.locator.dart' show setupLocator;
 import 'package:appbox_kit_showcase_app/app/app.router.dart';
 import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
 import 'package:appbox_kit_data/appbox_kit_data.dart';

@@ -36,7 +36,7 @@ class AppBoxKitImage extends StatelessWidget {
     this.radius,
     this.placeholder,
     this.semanticLabel,
-  })  : assert(
+  }) : assert(
           size == null || (width == null && height == null),
           'Pass either size (square) or width/height, not both.',
         );

@@ -30,8 +30,8 @@ void main() {
       // late Talker — initialize it before any op can fail (ui_library
       // playbook).
       await locator<AppBoxKitErrorService>().initialize();
-      facade =
-          locator<ShowcaseNotesFacadeService>() as MockShowcaseNotesFacadeService;
+      facade = locator<ShowcaseNotesFacadeService>()
+          as MockShowcaseNotesFacadeService;
       auth = MockAppBoxKitAuthService();
       when(() => facade.auth).thenReturn(auth);
     });
@@ -98,10 +98,10 @@ void main() {
       // given
       final vm = createViewModel();
       when(() => auth.signInWithEmailPassword(
-            email: any(named: 'email'),
-            password: any(named: 'password'),
-          )).thenThrow(
-          const AppBoxKitAuthException('Invalid email or password'));
+                email: any(named: 'email'),
+                password: any(named: 'password'),
+              ))
+          .thenThrow(const AppBoxKitAuthException('Invalid email or password'));
       // Seed null, the guard's clear-to-null, then the surfaced message.
       final expectation = expectLater(
         vm.errorMessage$,
@@ -155,7 +155,8 @@ void main() {
       await second; // completes with the in-flight run's result, never a guard error
       // then — the second tap did not re-run the op
       verify(() => auth.signInWithEmailPassword(
-          email: any(named: 'email'), password: any(named: 'password'))).called(1);
+          email: any(named: 'email'),
+          password: any(named: 'password'))).called(1);
     });
 
     test(

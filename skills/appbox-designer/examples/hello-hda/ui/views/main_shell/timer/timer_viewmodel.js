@@ -10,9 +10,15 @@ export const page = (context, helpers) => {
   return helpers.render(context, VIEW, { ...chrome('timer', helpers.translate(context)), remaining: 30 });
 };
 
+// The rung comes from the request (?rung=desktop) so the fragment re-renders
+// the SAME rung's element the swap replaces — each factor variant mounts its
+// own timer (rung-suffixed id), and the asking element names itself.
 /** @param {import('hono').Context} c @param {import('../../../../runtime/types').Helpers} h */
 export const tick = (context, helpers) =>
-  helpers.render(context, `${VIEW}#tick`, { remaining: helpers.timers.remaining('rest') });
+  helpers.render(context, `${VIEW}#tick`, {
+    remaining: helpers.timers.remaining('rest'),
+    rung: context.req.query('rung'),
+  });
 
 /** @param {import('hono').Context} c @param {import('../../../../runtime/types').Helpers} h */
 export const extend = (context, helpers) => {
@@ -23,5 +29,5 @@ export const extend = (context, helpers) => {
 /** @param {import('hono').Context} c @param {import('../../../../runtime/types').Helpers} h */
 export const skip = (context, helpers) => {
   helpers.timers.stop('rest');
-  return helpers.render(context, `${VIEW}#tick`, { remaining: 0 });
+  return tick(context, helpers);
 };

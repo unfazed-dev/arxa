@@ -3,6 +3,7 @@ import 'dart:async' show Timer;
 import 'package:cupertino_native_better/cupertino_native_better.dart'
     show
         CNGlassEffect,
+        CNGlassShadow,
         CNToast,
         CNToastDuration,
         CNToastPosition,
@@ -46,9 +47,12 @@ enum AppBoxKitToastPosition { top, center, bottom }
 /// - **Android** ([AppBoxKitPlatform.supportsComposeM3E]) → host [SnackbarService]
 ///   (native Material `ScaffoldMessenger`), wrapped in [appBoxKitWithNativeChromeHidden]
 ///   so the iOS hybrid-composition z-order fix applies where it matters.
-/// - **iOS / else, no action** → [CNToast] (real Liquid Glass on iOS 26+,
-///   Flutter Cupertino below). This is the default — there is no snackbar on
-///   iOS unless an action is required.
+/// - **iOS / else, no action** → [CNToast] (Flutter-drawn capsule on every
+///   OS: the vendor's glass tier is disabled — `useGlassEffect: false` on
+///   every kind per `docs/liquid-glass-allowlist.md` rule 12; only an
+///   invisible `plain` native anchor + CALayer shadow remain on iOS 26+).
+///   This is the default — there is no snackbar on iOS unless an action is
+///   required.
 /// - **iOS / else, with [actionLabel]** → [SnackbarService] fallback, because
 ///   CNToast is fire-and-forget and cannot host an action button. The action
 ///   parameter is the ONLY thing that promotes iOS from a toast to a snackbar;
@@ -577,6 +581,17 @@ class _KitCenterToastPillState extends State<_KitCenterToastPill>
           // 2026-08-15 when the anchor wrapped the fade/scale + 32px padding.
           // Full occlusion by the pill is the invariant; keep transitions and
           // padding OUTSIDE.
+          //
+          // The pill also paints NO BoxShadow of its own (LOCAL PATCH #11,
+          // vendor toast.dart / LiquidGlassContainerView.swift): a shadow
+          // painted inside the anchored subtree spills past the pill's layer
+          // bounds, and the slicer + the fade's opacity surface clip it at
+          // the pill's rectangular bounding box — observed on-device
+          // 2026-08-15 as a hard-edged rectangle where the soft shadow should
+          // be. Elevation rides the anchor config instead: a native CALayer
+          // shadow on the glass tier (composited by Core Animation, outside
+          // every Flutter layer bound) and a shape-matched ShapeDecoration
+          // shadow on the fallback tier — identical geometry either way.
           // Pill-sized on purpose — a full-screen native anchor would also
           // swallow touches destined for content behind the toast.
           child: FadeTransition(
@@ -586,7 +601,14 @@ class _KitCenterToastPillState extends State<_KitCenterToastPill>
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 32),
                 child: LiquidGlassContainer(
-                  config: const LiquidGlassConfig(effect: CNGlassEffect.plain),
+                  config: const LiquidGlassConfig(
+                    effect: CNGlassEffect.plain,
+                    shadow: CNGlassShadow(
+                      opacity: 0.15,
+                      radius: 16,
+                      offset: Offset(0, 6),
+                    ),
+                  ),
                   child: Container(
                     key: const Key('appBoxKitCenterToastPill'),
                     padding: const EdgeInsets.symmetric(
@@ -594,13 +616,6 @@ class _KitCenterToastPillState extends State<_KitCenterToastPill>
                     decoration: BoxDecoration(
                       color: bg,
                       borderRadius: BorderRadius.circular(100),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.15),
-                          blurRadius: 16,
-                          offset: const Offset(0, 6),
-                        ),
-                      ],
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,

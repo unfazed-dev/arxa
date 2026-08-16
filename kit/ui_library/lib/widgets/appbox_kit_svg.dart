@@ -14,8 +14,8 @@ class AppBoxKitSvg extends StatelessWidget {
     this.height,
     this.color,
     this.semanticsLabel,
-  }) : _asset = asset,
-       _url = null;
+  })  : _asset = asset,
+        _url = null;
 
   const AppBoxKitSvg.network(
     String url, {
@@ -24,8 +24,8 @@ class AppBoxKitSvg extends StatelessWidget {
     this.height,
     this.color,
     this.semanticsLabel,
-  }) : _asset = null,
-       _url = url;
+  })  : _asset = null,
+        _url = url;
 
   final String? _asset;
   final String? _url;
@@ -42,9 +42,8 @@ class AppBoxKitSvg extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colorFilter = color == null
-        ? null
-        : ColorFilter.mode(color!, BlendMode.srcIn);
+    final colorFilter =
+        color == null ? null : ColorFilter.mode(color!, BlendMode.srcIn);
     final asset = _asset;
     if (asset != null) {
       return SvgPicture.asset(

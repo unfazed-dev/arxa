@@ -41,7 +41,8 @@ class ShowcaseNoteFolderModel {
         createdAt: createdAt,
       );
 
-  factory ShowcaseNoteFolderModel.fromJson(Map<String, dynamic> json) => ShowcaseNoteFolderModel(
+  factory ShowcaseNoteFolderModel.fromJson(Map<String, dynamic> json) =>
+      ShowcaseNoteFolderModel(
         id: json['id'] as String,
         name: json['name'] as String,
         sortOrder: json['sort_order'] as int,

@@ -88,7 +88,8 @@ class AppBoxKitScrollOcclusionGate extends StatefulWidget {
   final AppBoxKitChromeHideMode hideMode;
 
   @override
-  State<AppBoxKitScrollOcclusionGate> createState() => _KitScrollOcclusionGateState();
+  State<AppBoxKitScrollOcclusionGate> createState() =>
+      _KitScrollOcclusionGateState();
 }
 
 class _KitScrollOcclusionGateState extends State<AppBoxKitScrollOcclusionGate> {

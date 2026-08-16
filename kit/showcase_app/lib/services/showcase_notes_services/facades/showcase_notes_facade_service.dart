@@ -94,8 +94,10 @@ import 'package:appbox_kit_showcase_app/services/showcase_notes_services/adapter
 class ShowcaseNotesFacadeService extends AppBoxKitDataFacade {
   // ── Setup ──────────────────────────────────────────────────────────────────
 
-  ShowcaseNotesRepositoryService get _repo => appBoxKitLocator<ShowcaseNotesRepositoryService>();
-  ShowcaseNotesMediaAdapterService get _media => appBoxKitLocator<ShowcaseNotesMediaAdapterService>();
+  ShowcaseNotesRepositoryService get _repo =>
+      appBoxKitLocator<ShowcaseNotesRepositoryService>();
+  ShowcaseNotesMediaAdapterService get _media =>
+      appBoxKitLocator<ShowcaseNotesMediaAdapterService>();
 
   Stream<AppBoxKitAuthSession?> get session$ => auth.session$;
   AppBoxKitAuthSession? get currentSession => auth.currentSession;
@@ -127,9 +129,11 @@ class ShowcaseNotesFacadeService extends AppBoxKitDataFacade {
 
   // ── Streams ─────────────────────────────────────────────────────────
 
-  Stream<List<ShowcaseNoteFolderModel>> folders$(String owner) => _repo.foldersOf(owner);
+  Stream<List<ShowcaseNoteFolderModel>> folders$(String owner) =>
+      _repo.foldersOf(owner);
 
-  Stream<List<ShowcaseNoteModel>> _allNotes$(String owner) => _repo.allNotesOf(owner);
+  Stream<List<ShowcaseNoteModel>> _allNotes$(String owner) =>
+      _repo.allNotesOf(owner);
 
   Stream<ShowcaseNotesOverview> overview$(String owner) => Rx.combineLatest2(
         folders$(owner),
@@ -165,7 +169,8 @@ class ShowcaseNotesFacadeService extends AppBoxKitDataFacade {
           for (final note in notes.where((note) => !note.isDeleted)) {
             counts[note.folderId] = (counts[note.folderId] ?? 0) + 1;
           }
-          return ShowcaseNotesAdminOverview(folders: folders, liveCountByFolder: counts);
+          return ShowcaseNotesAdminOverview(
+              folders: folders, liveCountByFolder: counts);
         },
       );
 
@@ -174,7 +179,8 @@ class ShowcaseNotesFacadeService extends AppBoxKitDataFacade {
   Stream<List<ShowcaseNoteModel>> notesIn$(String owner, {String? folderId}) =>
       _allNotes$(owner).map((notes) => notes
           .where((note) =>
-              !note.isDeleted && (folderId == null || note.folderId == folderId))
+              !note.isDeleted &&
+              (folderId == null || note.folderId == folderId))
           .toList());
 
   Stream<List<ShowcaseNoteModel>> trash$(String owner) => _allNotes$(owner)
@@ -190,7 +196,9 @@ class ShowcaseNotesFacadeService extends AppBoxKitDataFacade {
     final needle = query.trim().toLowerCase();
     return notesIn$(owner).map((notes) => needle.isEmpty
         ? notes
-        : notes.where((note) => note.body.toLowerCase().contains(needle)).toList());
+        : notes
+            .where((note) => note.body.toLowerCase().contains(needle))
+            .toList());
   }
 
   // Adapter pass-throughs — viewmodels never import the adapter.
@@ -238,7 +246,8 @@ class ShowcaseNotesFacadeService extends AppBoxKitDataFacade {
 
   /// Every mutation's hub key + snackbar copy lives on [ShowcaseNotesFacadeOp];
   /// this just forwards the op's fields into [mutate].
-  Future<T> _mutateOp<T>(Future<T> Function() operation, ShowcaseNotesFacadeOp op,
+  Future<T> _mutateOp<T>(
+          Future<T> Function() operation, ShowcaseNotesFacadeOp op,
           {String? entity, String? fallback}) =>
       mutate<T>(
         operation,
@@ -250,13 +259,15 @@ class ShowcaseNotesFacadeService extends AppBoxKitDataFacade {
       );
 
   /// [1. Create notes] Creates and persists a new note in the given folder.
-  Future<ShowcaseNoteModel> createNote(String owner, String folderId) => _mutateOp<ShowcaseNoteModel>(
+  Future<ShowcaseNoteModel> createNote(String owner, String folderId) =>
+      _mutateOp<ShowcaseNoteModel>(
         () => _repo.upsertNote(_repo.newNote(owner, folderId)),
         ShowcaseNotesFacadeOp.create,
       );
 
   /// [2. Save note text] Updates the note's body and timestamp.
-  Future<ShowcaseNoteModel> saveBody(ShowcaseNoteModel note, String body) => _mutateOp<ShowcaseNoteModel>(
+  Future<ShowcaseNoteModel> saveBody(ShowcaseNoteModel note, String body) =>
+      _mutateOp<ShowcaseNoteModel>(
         () => _repo.patchNote(
           note,
           note.copyWith(body: body, updatedAt: DateTime.now().toUtc()),
@@ -266,13 +277,15 @@ class ShowcaseNotesFacadeService extends AppBoxKitDataFacade {
       );
 
   /// [4. Pin/unpin] Toggles the note's pinned state.
-  Future<ShowcaseNoteModel> togglePin(ShowcaseNoteModel note) => _mutateOp<ShowcaseNoteModel>(
+  Future<ShowcaseNoteModel> togglePin(ShowcaseNoteModel note) =>
+      _mutateOp<ShowcaseNoteModel>(
         () => _repo.patchNote(note, note.copyWith(pinned: !note.pinned)),
         ShowcaseNotesFacadeOp.pin,
         entity: note.id,
       );
 
-  Future<ShowcaseNoteModel> addAttachment(ShowcaseNoteModel note, ShowcaseNoteAttachmentModel attachment) =>
+  Future<ShowcaseNoteModel> addAttachment(
+          ShowcaseNoteModel note, ShowcaseNoteAttachmentModel attachment) =>
       _mutateOp<ShowcaseNoteModel>(
         () => _repo.patchNote(
           note,
@@ -287,7 +300,8 @@ class ShowcaseNotesFacadeService extends AppBoxKitDataFacade {
 
   /// [9. Attach photo] Picks or captures a photo and attaches it in one step.
   /// Returns the updated note, or the unchanged note when the picker is cancelled.
-  Future<ShowcaseNoteModel> addPhoto(ShowcaseNoteModel note, {required bool fromCamera}) async {
+  Future<ShowcaseNoteModel> addPhoto(ShowcaseNoteModel note,
+      {required bool fromCamera}) async {
     final attachment = await _media.pickPhoto(fromCamera: fromCamera);
     if (attachment == null) return note;
     return addAttachment(note, attachment);
@@ -303,7 +317,8 @@ class ShowcaseNotesFacadeService extends AppBoxKitDataFacade {
   }
 
   /// Removes an attachment from the note, then deletes its file.
-  Future<ShowcaseNoteModel> removeAttachment(ShowcaseNoteModel note, ShowcaseNoteAttachmentModel attachment) async {
+  Future<ShowcaseNoteModel> removeAttachment(
+      ShowcaseNoteModel note, ShowcaseNoteAttachmentModel attachment) async {
     final updated = await _mutateOp<ShowcaseNoteModel>(
       () => _repo.patchNote(
         note,
@@ -321,7 +336,8 @@ class ShowcaseNotesFacadeService extends AppBoxKitDataFacade {
   }
 
   /// [5. Trash/restore] Sends the note to Recently Deleted.
-  Future<ShowcaseNoteModel> moveToTrash(ShowcaseNoteModel note) => _mutateOp<ShowcaseNoteModel>(
+  Future<ShowcaseNoteModel> moveToTrash(ShowcaseNoteModel note) =>
+      _mutateOp<ShowcaseNoteModel>(
         () => _repo.patchNote(
           note,
           note.copyWith(
@@ -334,7 +350,8 @@ class ShowcaseNotesFacadeService extends AppBoxKitDataFacade {
       );
 
   /// [5. Trash/restore] Brings the note back from Recently Deleted.
-  Future<ShowcaseNoteModel> restore(ShowcaseNoteModel note) => _mutateOp<ShowcaseNoteModel>(
+  Future<ShowcaseNoteModel> restore(ShowcaseNoteModel note) =>
+      _mutateOp<ShowcaseNoteModel>(
         () => _repo.patchNote(note, note.copyWith(deletedAt: () => null)),
         ShowcaseNotesFacadeOp.restore,
         entity: note.id,
@@ -342,7 +359,8 @@ class ShowcaseNotesFacadeService extends AppBoxKitDataFacade {
 
   /// [7. Move note to folder] Refiles a live note into another folder. No-ops
   /// when signed out, already there, or trashed; does not change updatedAt.
-  Future<ShowcaseNoteModel> moveNoteToFolder(ShowcaseNoteModel note, String folderId) {
+  Future<ShowcaseNoteModel> moveNoteToFolder(
+      ShowcaseNoteModel note, String folderId) {
     if (currentSession == null || note.folderId == folderId || note.isDeleted) {
       return Future.value(note);
     }
@@ -390,12 +408,13 @@ class ShowcaseNotesFacadeService extends AppBoxKitDataFacade {
   Future<ShowcaseNoteFolderModel> createFolder(String owner, String name,
           {required int sortOrder}) =>
       _mutateOp<ShowcaseNoteFolderModel>(
-        () =>
-            _repo.upsertFolder(_repo.newFolder(owner, name, sortOrder: sortOrder)),
+        () => _repo
+            .upsertFolder(_repo.newFolder(owner, name, sortOrder: sortOrder)),
         ShowcaseNotesFacadeOp.folderCreate,
       );
 
-  Future<ShowcaseNoteFolderModel> renameFolder(ShowcaseNoteFolderModel folder, String name) =>
+  Future<ShowcaseNoteFolderModel> renameFolder(
+          ShowcaseNoteFolderModel folder, String name) =>
       _mutateOp<ShowcaseNoteFolderModel>(
         () => _repo.patchFolder(folder, folder.copyWith(name: name)),
         ShowcaseNotesFacadeOp.folderRename,
@@ -431,7 +450,8 @@ class ShowcaseNotesFacadeService extends AppBoxKitDataFacade {
 
   /// Groups notes the way iOS Notes does: Pinned first, then Today / Yesterday
   /// / Previous 7 Days / Previous 30 Days / months / years.
-  static List<ShowcaseNoteGroup> groupNotes(List<ShowcaseNoteModel> notes, DateTime now) {
+  static List<ShowcaseNoteGroup> groupNotes(
+      List<ShowcaseNoteModel> notes, DateTime now) {
     final pinned = notes.where((note) => note.pinned).toList();
     final rest = notes.where((note) => !note.pinned).toList();
 

@@ -17,6 +17,7 @@ import 'package:appbox_kit_showcase_app/ui/views/showcase_notes_shell/showcase_n
 import 'package:appbox_kit_showcase_app/ui/views/showcase_notes_shell/showcase_notes_folder/showcase_notes_folder_view.dart';
 import 'package:appbox_kit_showcase_app/ui/views/showcase_notes_shell/showcase_note_editor/showcase_note_editor_view.dart';
 import 'package:appbox_kit_haptics/appbox_kit_haptics.dart';
+import 'package:appbox_kit_media/appbox_kit_media.dart';
 import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
 import 'package:appbox_kit_showcase_app/services/showcase_notes_services/repositories/showcase_notes_repository_service.dart';
 import 'package:appbox_kit_showcase_app/services/showcase_notes_services/facades/showcase_notes_facade_service.dart';
@@ -93,6 +94,14 @@ import 'package:appbox_kit_showcase_app/services/showcase_notes_services/adapter
     // Data layer (appbox_kit_data layering): the Notes Repository — the
     // notes-domain gateway over the kit's AppBoxKitRepository<ShowcaseNoteModel>/<ShowcaseNoteFolderModel> —
     // then the Facade, the only layer viewmodels talk to.
+    // Kit media — the audio recorder behind the composer's hold-to-record
+    // (record plugin → AVAudioRecorder/AudioRecord). Registered under its
+    // interface so tests swap in the kit's scriptable fake; the notes shell
+    // default-constructs its own instance inside the media adapter.
+    LazySingleton(
+      classType: AppBoxKitRecordAudioRecorderService,
+      asType: AppBoxKitAudioRecorderService,
+    ),
     LazySingleton(classType: ShowcaseNotesRepositoryService),
     LazySingleton(classType: ShowcaseNotesFacadeService),
     LazySingleton(classType: ShowcaseNotesMediaAdapterService),

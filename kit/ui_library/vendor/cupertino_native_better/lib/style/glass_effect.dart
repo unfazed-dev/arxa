@@ -35,6 +35,59 @@ enum CNGlassEffectShape {
   circle,
 }
 
+/// LOCAL PATCH #11: elevation shadow spec for a LiquidGlassContainer.
+///
+/// Exists for Flutter-drawn chrome that rides a plain slicer anchor (toasts,
+/// floating pills): the child must NOT paint its own `BoxShadow`, because a
+/// shadow painted inside the anchored subtree spills past the child's layer
+/// bounds and the engine's view slicer / the fade's opacity surface clip it
+/// at the pill's rectangular bounding box — observed on-device (2026-08-15
+/// clip) as a faint hard-edged rectangle where the soft shadow should be.
+///
+/// Declared here instead, on the container's config:
+/// - **Native tier** — the shadow renders as a CALayer shadow on the
+///   platform view itself (shadowPath matched to the configured shape),
+///   composited by Core Animation outside every Flutter layer bound.
+/// - **Fallback tier** — the container wraps its child with a
+///   [ShapeDecoration] shadow matched to the configured shape, reproducing
+///   exactly what the old in-decoration `BoxShadow` painted.
+@immutable
+class CNGlassShadow {
+  /// Shadow color. Defaults to opaque black; [opacity] scales its alpha.
+  final Color color;
+
+  /// Shadow opacity 0..1 (multiplied into [color]'s alpha natively).
+  final double opacity;
+
+  /// Blur radius in logical pixels (maps 1:1 to CALayer.shadowRadius).
+  final double radius;
+
+  /// Shadow offset in logical pixels.
+  final Offset offset;
+
+  /// Creates a glass shadow with soft-black defaults (15% opacity, 16px
+  /// blur, no offset) — pass [color]/[opacity]/[radius]/[offset] to tune.
+  const CNGlassShadow({
+    this.color = const Color(0xFF000000),
+    this.opacity = 0.15,
+    this.radius = 16,
+    this.offset = Offset.zero,
+  });
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is CNGlassShadow &&
+          color == other.color &&
+          opacity == other.opacity &&
+          radius == other.radius &&
+          offset == other.offset;
+
+  @override
+  int get hashCode =>
+      color.hashCode ^ opacity.hashCode ^ radius.hashCode ^ offset.hashCode;
+}
+
 /// Configuration for Liquid Glass effects.
 class LiquidGlassConfig {
   /// The glass effect variant to apply.
@@ -52,6 +105,13 @@ class LiquidGlassConfig {
   /// Whether the glass effect should be interactive (responds to touch/pointer).
   final bool interactive;
 
+  /// LOCAL PATCH #11: optional elevation shadow — see [CNGlassShadow].
+  ///
+  /// Rendered natively (CALayer) on the glass tier and as a shape-matched
+  /// ShapeDecoration on the fallback tier. The child should not paint its
+  /// own shadow when this is set.
+  final CNGlassShadow? shadow;
+
   /// Creates a configuration for Liquid Glass effects.
   const LiquidGlassConfig({
     this.effect = CNGlassEffect.regular,
@@ -59,6 +119,7 @@ class LiquidGlassConfig {
     this.cornerRadius,
     this.tint,
     this.interactive = false,
+    this.shadow,
   });
 
   @override
@@ -70,7 +131,8 @@ class LiquidGlassConfig {
           shape == other.shape &&
           cornerRadius == other.cornerRadius &&
           tint == other.tint &&
-          interactive == other.interactive;
+          interactive == other.interactive &&
+          shadow == other.shadow;
 
   @override
   int get hashCode =>
@@ -78,7 +140,8 @@ class LiquidGlassConfig {
       shape.hashCode ^
       (cornerRadius?.hashCode ?? 0) ^
       (tint?.hashCode ?? 0) ^
-      interactive.hashCode;
+      interactive.hashCode ^
+      (shadow?.hashCode ?? 0);
 }
 
 /// Extension on Widget to apply Liquid Glass effects.

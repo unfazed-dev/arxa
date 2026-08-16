@@ -36,6 +36,16 @@ REJECT rewinds FSM to design"| p3`).
 
 ### Stage-by-stage: skill, input artifact, output artifact
 
+**Ø. Orchestration (front door, optional)**
+- Skill: `skills/appbox-orchestrator/SKILL.md`.
+- Position: stage Ø — the operator’s front door, before everything. Interactive
+  start (asks where + name + targets + locales; runs `appbox project init` /
+  `use` verbatim, `appboxd/lib/project_cli.dart`), dispatch to the ONE next
+  skill by pipeline state (`projectStage()` in `appboxd/lib/project.dart`),
+  and the cross-stage where-are-we view. Never owns a stage, never writes
+  artifacts, never enforces ordering — the FSM/gates stay the only enforcer.
+  First call after project creation is `appbox-cicd` day-zero bootstrap.
+
 **0. Story mapping / moodboarding (pre-intake, optional)**
 - Skill: `skills/appbox-story-mapper/SKILL.md`, `skills/appbox-moodboarder/SKILL.md`.
 - Position: "story-mapper → moodboarder → appbox-designer"
@@ -162,6 +172,29 @@ REJECT rewinds FSM to design"| p3`).
   operator before pushing," `skills/appbox-deployer/SKILL.md` "Output").
 - Output: "A shipped build (store track), a shorebird patch version, and/or a
   web deployment URL (Pages, Workers or Vercel)."
+
+**10. CI/CD (cross-cutting automation around the tail; not a build stage)**
+- Skill: `skills/appbox-cicd/SKILL.md` ("elicit the decisions, then wire the
+  pipeline").
+- Position: not a build stage — **the frame the build grows inside**:
+  invocable at day zero (before intake; `appbox-orchestrator` dispatches here
+  first), wrapping ALL gates via `appbox gate --all`; the tail (tester suites,
+  reviewer verdicts, deployer gates) runs inside it once artifacts exist
+  (`skills/appbox-cicd/SKILL.md` "Pipeline position"). Two modes: **bootstrap**
+  (no CI — grill + generate) and **adopt** (CI exists — audit against the
+  guardrail list + a report-only PR sweep: read PRs, `gh pr checks`, reproduce
+  red checks locally, one feedback report; never bot-comments, never merges).
+  Also generates the PR stage convention: `[abx-<skill-name>]` title tags +
+  `.github/pull_request_template.md`, warn-not-fail until bedded in.
+- Grills nine CI decisions in dependency order (deliverable → repo shape →
+  stack → visibility → runner → gates → trunk → agent letter → CD timing) into
+  `docs/ci-decisions.md`, then generates `scripts/check.sh` (the one-root
+  check: local green = CI green), `.github/workflows/ci.yml`, branch
+  protection via `gh api`, and runner setup.
+- For appbox-built targets it wires `appbox gate --all` and never
+  re-implements a validator; the deploy job PREPARES and HALTS at the
+  deployer's approval gate (human gate 3 stands — CI can never mint the
+  token).
 
 ## 2. The scaffold stage's exact contract
 

@@ -64,15 +64,15 @@ void main() {
       (tester) async {
     // The control. Without it the glass-tier assertion below is vacuous: it
     // would pass just as happily if the effect never engaged at all.
-    AppBoxKitPlatform.override =
-        const AppBoxKitPlatformOverride(isIOS: false);
+    AppBoxKitPlatform.override = const AppBoxKitPlatformOverride(isIOS: false);
     final controller = ScrollController();
     addTearDown(controller.dispose);
     await tester.pumpWidget(harness(controller));
     await engage(tester, controller);
 
     expect(alpha(tester), lessThan(1.0),
-        reason: 'the effect must actually be engaged for this to mean anything');
+        reason:
+            'the effect must actually be engaged for this to mean anything');
     expect(blurLayerActive(tester), isTrue,
         reason: 'frosted tier: content is Flutter-drawn, so the blur applies');
   });

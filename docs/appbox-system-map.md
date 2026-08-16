@@ -17,11 +17,14 @@ flowchart TD
     user["Operator / client"]
 
     subgraph skills["Kimi CLI skills — skills/"]
+        sk_orch["appbox-orchestrator — front door (stage Ø): interactive start + dispatch, owns no phase"]
         sk_intake["appbox-intake / story-mapper / moodboarder"]
         sk_design["appbox-designer"]
         sk_build["appbox-scaffolder / appbox-builder / appbox-tester"]
         sk_gate["appbox-reviewer / appbox-lens / appbox-lint"]
         sk_deploy["appbox-deployer"]
+        sk_cicd["appbox-cicd — day-zero CI frame around the build"]
+        sk_orch -->|"appbox project init + dispatch (stage Ø)"| cli
     end
 
     subgraph daemon["appboxd — CLI + daemon (appboxd/)"]
@@ -60,6 +63,7 @@ flowchart TD
     emitters -->|"scaffold: structure.json + targets → lib/ui/views"| studio
     server -->|"static webRoot: appbox-studio/build/web"| studio
     cli -->|"fastlane / shorebird / cloudflare (lib/deploy.dart)"| stores["App stores / OTA / web"]
+    sk_cicd -->|"GitHub Actions wraps ALL gates (appbox gate --all) from day zero; deploy halts for operator"| cli
     gateway --> providers["LLM providers (config/model-fabric.json)"]
 ```
 
@@ -68,7 +72,10 @@ flowchart TD
 FSM phase order (`lib/phases.dart`): intake → prototype → design → scaffold →
 review → build → deploy, with per-phase gates (`phaseGates`). Human checkpoints
 an agent can reach but never pass are marked ⧗; the studio design surfaces where
-they happen are named under each.
+they happen are named under each. Above the FSM sits `appbox-orchestrator`
+(stage Ø, `skills/appbox-orchestrator/SKILL.md`) — the interactive front
+door that runs `appbox project init` and dispatches to the next skill; it
+owns no phase and enforces nothing.
 
 ```mermaid
 flowchart LR

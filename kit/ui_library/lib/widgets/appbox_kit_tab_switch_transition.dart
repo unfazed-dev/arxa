@@ -67,7 +67,8 @@ class AppBoxKitTabSwitchTransition extends StatefulWidget {
   final Widget child;
 
   @override
-  State<AppBoxKitTabSwitchTransition> createState() => _KitTabSwitchTransitionState();
+  State<AppBoxKitTabSwitchTransition> createState() =>
+      _KitTabSwitchTransitionState();
 }
 
 class _KitTabSwitchTransitionState extends State<AppBoxKitTabSwitchTransition>

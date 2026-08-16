@@ -40,8 +40,14 @@ the reference). See *Chrome existence is the design's call*.
 Every control is **native Liquid Glass everywhere, including scrollables**.
 The in-scroll auto-demotion (`preferFlutterTier: Scrollable.maybeOf(context)
 != null`) is DELETED from all kit widgets. Per-instance demotion flags
-(`wantNative`, `preferFlutterTier`) remain for deliberate exceptions (e.g.
-the components input bar under rule 5).
+(`wantNative`, `preferFlutterTier`) remain for deliberate exceptions.
+(The components input bar's rule-5 demotion was REVERSED 2026-08: the field
+went native as a multiline composer once `CNTextField` gained
+`TextField(axis: .vertical)` — the demotion's actual reason, the single-line
+native field, ceased to exist. Rule 5 governs fixed glass spans scrolled
+glass passes UNDER; the components list's 96pt bottom clearance keeps
+scrolled buttons off the bar, and the underlap zone is the bar's opaque
+Flutter base (rule 7 anchor), not the field.)
 
 Evidence trail (states 1-3 device-observed 2026-08-13; state 4 is the
 chrome-era ratification):

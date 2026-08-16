@@ -119,8 +119,7 @@ void main() {
     print('[M2] total elements in tree at boot = ${totalElements(tester)}');
 
     // The load-bearing assertion: the router's laziness question.
-    expect(home, findsOneWidget,
-        reason: 'active tab must be inflated at boot');
+    expect(home, findsOneWidget, reason: 'active tab must be inflated at boot');
   }, timeout: const Timeout(Duration(minutes: 2)));
 
   // ---------------------------------------------------------------------
@@ -167,14 +166,16 @@ void main() {
       final name = e.widget.runtimeType.toString();
       final isPv = platformViewBackedTypes.contains(name);
       if (isPv) {
-        final pvAncestors =
-            chain.where((a) => platformViewBackedTypes.contains(
+        final pvAncestors = chain
+            .where((a) => platformViewBackedTypes.contains(
                   a.widget.runtimeType.toString(),
-                )).toList();
+                ))
+            .toList();
         final owner = chain.reversed
             .map((a) => a.widget.runtimeType.toString())
             .firstWhere(
-              (n) => n.startsWith('AppBoxKitNative') || n.startsWith('Showcase'),
+              (n) =>
+                  n.startsWith('AppBoxKitNative') || n.startsWith('Showcase'),
               orElse: () => '<none>',
             );
         if (pvAncestors.isEmpty) {
@@ -327,8 +328,7 @@ void main() {
 
     // Drive a real scroll: 300 discrete steps, each followed by a frame.
     final listFinder = find.byType(Scrollable).first;
-    final gesture =
-        await tester.startGesture(tester.getCenter(listFinder));
+    final gesture = await tester.startGesture(tester.getCenter(listFinder));
     var frames = 0;
     var framesWithLiveBlur = 0;
     for (var i = 0; i < 300; i++) {
@@ -371,7 +371,8 @@ void main() {
     // C6 was closed against (`Element.updateChild` skips an identical
     // `widget.child`), which was measured but never pinned.
     expect(controlDelta, greaterThan(0),
-        reason: 'the control must really rebuild, or the measurement is vacuous');
+        reason:
+            'the control must really rebuild, or the measurement is vacuous');
     expect(childDelta, 0,
         reason: 'a scroll must not rebuild the subtree under the effect — if '
             'this regresses, scroll cost returns and C6 reopens');
@@ -432,8 +433,8 @@ void main() {
         '$framesWithLiveBlur');
     // ignore: avoid_print
     print('[M3b] total elements before=$beforeTotal after=$afterTotal');
-    final pvBefore = platformViewBackedTypes
-        .fold<int>(0, (a, t) => a + (before[t] ?? 0));
+    final pvBefore =
+        platformViewBackedTypes.fold<int>(0, (a, t) => a + (before[t] ?? 0));
     final pvAfter =
         platformViewBackedTypes.fold<int>(0, (a, t) => a + (after[t] ?? 0));
     // ignore: avoid_print
@@ -500,7 +501,8 @@ void main() {
     // sitting offstage, so it must NOT be read as "notes' own effect count".
     // The decomposition below is the one that means something.
     // ignore: avoid_print
-    print('[M5] AppBoxKitScrollEdgeEffect instances mounted app-wide = $effects');
+    print(
+        '[M5] AppBoxKitScrollEdgeEffect instances mounted app-wide = $effects');
     // ignore: avoid_print
     print('[M5] total elements on notes folder = ${totalElements(tester)}');
 

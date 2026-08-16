@@ -37,10 +37,9 @@ class ShowcaseProfileFeedbackCardWidget extends StatelessWidget {
             child: AppBoxKitNativeButton(
               label: 'Show toast',
               glyph: AppBoxKitGlyphs.alertsBadge,
-              onPressed: () => appBoxKitLocator<AppBoxKitNotificationService>().show(
-                  'Hello from Kit!',
-                  kind: AppBoxKitNotificationKind.info,
-                  context: context),
+              onPressed: () => appBoxKitLocator<AppBoxKitNotificationService>()
+                  .show('Hello from Kit!',
+                      kind: AppBoxKitNotificationKind.info, context: context),
             ),
           ),
           appBoxKitVerticalSpaceSmall,
@@ -54,7 +53,8 @@ class ShowcaseProfileFeedbackCardWidget extends StatelessWidget {
               // navigator context. Never pass a tab's own context here —
               // tabs live inside a NestedRouter, and a modal pushed on
               // the nested navigator renders behind the tab bar.
-              onPressed: () => appBoxKitLocator<AppBoxKitNotificationService>().notice(
+              onPressed: () =>
+                  appBoxKitLocator<AppBoxKitNotificationService>().notice(
                 title: 'Native sheet',
                 message: 'The kit presents through its '
                     'adaptive sheet — CNBottomSheet on iOS, Material 3 '

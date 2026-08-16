@@ -77,7 +77,8 @@ class AppBoxKitNativeSegmentedControl extends StatelessWidget {
       ).chromeGated();
     }
     // Tier 2 — Android Material 3 Expressive: connected button group.
-    if (wantNative && AppBoxKitPlatform.supportsComposeM3E) return _m3e(context);
+    if (wantNative && AppBoxKitPlatform.supportsComposeM3E)
+      return _m3e(context);
     // Tier 3 — Cupertino (Apple < 26) / Material (desktop/web).
     return _KitFallbackSegmentedControl(
       segments: segments,

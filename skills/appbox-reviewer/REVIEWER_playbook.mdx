@@ -7,6 +7,8 @@
 
 **Scope of this document:** lets a human OR an LLM run the review phase without reading the skill source. Folded from `SKILL.md`.
 
+**Pipeline position:** stage 6 — upstream `appbox-tester` (suite + freeze) and `appbox-builder` (the built target this gate judges; arch_guard/ponytail findings route back to it); downstream `appbox-deployer` (GREEN required); REJECT rewinds to `appbox-designer`. HUMAN GATE 2. Full chain, stage numbers, per-stage artifacts: `docs/research/pipeline-map.md` §1.
+
 ## Table of contents
 
 0. Header & TOC · 1. Overview & role · 2. Inputs · 3. Procedure · 4. Outputs · 5. Rules · 6. References

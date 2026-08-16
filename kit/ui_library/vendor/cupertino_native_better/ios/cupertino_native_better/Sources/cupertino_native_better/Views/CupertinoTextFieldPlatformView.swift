@@ -42,6 +42,8 @@ class CupertinoTextFieldPlatformView: NSObject, FlutterPlatformView {
     var textColor: Color? = nil
     var placeholderColor: Color? = nil
     var isDark = false
+    var minLines: Int? = nil
+    var maxLines: Int? = nil
 
     if let dict = args as? [String: Any] {
       if let v = dict["text"] as? String { text = v }
@@ -53,6 +55,8 @@ class CupertinoTextFieldPlatformView: NSObject, FlutterPlatformView {
       if let v = dict["textColor"] as? NSNumber { textColor = Color(uiColor: ImageUtils.colorFromARGB(v.intValue)) }
       if let v = dict["placeholderColor"] as? NSNumber { placeholderColor = Color(uiColor: ImageUtils.colorFromARGB(v.intValue)) }
       if let v = dict["isDark"] as? Bool { isDark = v }
+      if let v = dict["minLines"] as? Int { minLines = v }
+      if let v = dict["maxLines"] as? Int { maxLines = v }
     }
 
     // Capture the channel for closures (self.channel is already initialized).
@@ -64,6 +68,8 @@ class CupertinoTextFieldPlatformView: NSObject, FlutterPlatformView {
       isSecure: isSecure,
       autofocus: autofocus,
       keyboardType: keyboardType,
+      minLines: minLines,
+      maxLines: maxLines,
       tint: tint,
       textColor: textColor,
       placeholderColor: placeholderColor,
@@ -75,6 +81,9 @@ class CupertinoTextFieldPlatformView: NSObject, FlutterPlatformView {
       },
       onFocusChanged: { focused in
         channelRef.invokeMethod("focusChanged", arguments: ["focused": focused])
+      },
+      onHeightChanged: { height in
+        channelRef.invokeMethod("heightChanged", arguments: ["height": height])
       }
     )
     self.model = model
@@ -219,7 +228,106 @@ struct CNTextFieldSwiftUI: View {
   @ObservedObject var appearanceEpoch: CNAppearanceEpoch
   @FocusState private var isFocused: Bool
 
+  @ViewBuilder
   var body: some View {
+    // The multiline composer needs TextField(axis:) + range lineLimit (iOS 16+).
+    // Below iOS 16 the field gracefully degrades to the single-line capsule —
+    // the pre-composer behavior on those OSes.
+    if model.isMultiline && !model.isSecure {
+      if #available(iOS 16.0, *) {
+        multilineBody
+      } else {
+        singleLineBody
+      }
+    } else {
+      singleLineBody
+    }
+  }
+
+  /// The growing composer (Apple's sanctioned shape: `TextField(axis: .vertical)`
+  /// + a `lineLimit(min...max)` range — it starts one line tall and grows with
+  /// content, switching to internal scrolling at the cap). Height reports flow
+  /// to Flutter (`heightChanged`) so the platform-view slot tracks the capsule;
+  /// the frame change is animated (SwiftUI does not animate it for free).
+  /// iOS 16+ (the axis initializer + range lineLimit); below, the guarded call
+  /// site falls back to the single-line capsule.
+  @available(iOS 16.0, *)
+  private var multilineBody: some View {
+    let minH = CGFloat(44)
+    return HStack(alignment: .bottom, spacing: 8) {
+      TextField(model.placeholder, text: $model.text, axis: .vertical)
+        .keyboardType(model.uiKeyboardType)
+        .foregroundColor(model.textColor ?? .primary)
+        .focused($isFocused)
+        .lineLimit((model.minLines ?? 1)...(model.maxLines ?? Int.max))
+        .submitLabel(.send)
+        .onSubmit { model.onSubmit(model.text) }
+        .onChange(of: model.text) { newValue in
+          model.onChange(newValue)
+        }
+
+      if !model.text.isEmpty {
+        Button(action: {
+          model.text = ""
+          model.onChange("")
+        }) {
+          Image(systemName: "xmark.circle.fill")
+            .font(.system(size: 16))
+            .foregroundColor(model.placeholderColor ?? .secondary)
+        }
+        .transition(.opacity.combined(with: .scale))
+      }
+    }
+    .padding(.horizontal, 12)
+    .padding(.vertical, 10)
+    .frame(maxWidth: .infinity)
+    // NO maxHeight .infinity: the host box (Flutter side) is sized by the
+    // heightChanged report; content claiming infinity inside a bounded host
+    // compresses the TextField to its 22pt minimum and shrinks the tap area
+    // to that sliver (measured via the AX tree on device, 2026-08).
+    .frame(minHeight: minH, alignment: .bottomLeading)
+    .background(multilineGlassBackground)
+    .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
+    .animation(.easeOut(duration: 0.18), value: model.text)
+    .onChange(of: isFocused) { focused in
+      model.onFocusChanged(focused)
+    }
+    .onChange(of: focusBinding.state) { state in
+      switch state {
+      case .requesting:
+        isFocused = true
+        focusBinding.state = .idle
+      case .relinquishing:
+        isFocused = false
+        focusBinding.state = .idle
+      case .idle:
+        break
+      }
+    }
+    .onAppear {
+      if model.autofocus {
+        DispatchQueue.main.async { isFocused = true }
+      }
+    }
+    .background(
+      // Intrinsic-height reporter — the DEADLOCK-FREE kind. Reporting the
+      // composed frame's own height is circular: the Flutter host proposes the
+      // current box height, so the report always equals the proposal and the
+      // box never grows (measured on device: text clipped to one line forever).
+      // Instead a HIDDEN measuring Text — same width, same line-limit range,
+      // `fixedSize(vertical: true)` so it takes its IDEAL height — reports the
+      // content's true wrapped height; the Flutter box grows to match (clamped
+      // by maxLines' ceiling there).
+      HeightReporter(model: model) { height in
+        model.onHeightChanged?(Double((height).rounded()))
+      }
+      .opacity(0)
+      .allowsHitTesting(false)
+      .accessibilityHidden(true)
+    )
+  }
+
+  private var singleLineBody: some View {
     HStack(spacing: 8) {
       field
         .foregroundColor(model.textColor ?? .primary)
@@ -293,5 +401,47 @@ struct CNTextFieldSwiftUI: View {
     } else {
       Color(.systemGray6)
     }
+  }
+
+  /// Multiline variant of [glassBackground]: a rounded rectangle, not a capsule
+  /// — a `Capsule` taller than ~2× its width degenerates to a stadium with
+  /// semicircular ends, wrong for a growing composer. Continuous corners match
+  /// the kit's pill language; same `.id` epoch theme-recreate rule.
+  @ViewBuilder
+  private var multilineGlassBackground: some View {
+    if #available(iOS 26.0, *) {
+      Color.clear.glassEffect(.regular, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
+        .id(appearanceEpoch.epoch)
+    } else {
+      Color(.systemGray6)
+    }
+  }
+}
+
+/// Invisible intrinsic-height measurer. A hidden `Text` mirroring the field's
+/// content (same width via the background placement, same lineLimit range,
+/// `fixedSize(vertical: true)` for its ideal wrapped height) whose measured
+/// height is reported so Flutter can grow the platform-view slot. NOT the
+/// composed frame's height — that is circular with the host's proposal.
+/// iOS 16+ (range lineLimit), matching the multiline body it serves.
+@available(iOS 16.0, *)
+private struct HeightReporter: View {
+  @ObservedObject var model: TextModel
+  let onChange: (CGFloat) -> Void
+
+  var body: some View {
+    Text(model.text.isEmpty ? " " : model.text)
+      .font(.body)
+      .lineLimit((model.minLines ?? 1)...(model.maxLines ?? Int.max))
+      .fixedSize(horizontal: false, vertical: true)
+      .frame(maxWidth: .infinity, alignment: .leading)
+      .padding(.vertical, 10)
+      .background(
+        GeometryReader { proxy in
+          Color.clear
+            .onChange(of: proxy.size.height) { h in onChange(h) }
+            .onAppear { onChange(proxy.size.height) }
+        }
+      )
   }
 }

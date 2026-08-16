@@ -5,6 +5,8 @@ description: Use when writing/running tests for a appbox-built target — mockta
 
 # tester — behavior-TDD (Ports mocked), visual, smoke, E2E
 
+> Per-skill playbook (the folded canon for this phase): [`TESTER_playbook.mdx`](TESTER_playbook.mdx)
+
 ## Core principle
 **Behavior-TDD is the mandated posture.** The canon is
 [behavior-tdd-rules.md](behavior-tdd-rules.md) — test anatomy, streams rules,
@@ -13,6 +15,16 @@ banned anti-patterns, mocking/static-state discipline, story-ID traceability.
 The architecture contract is statically enforced by `arch_guard` (ADR-0003) — do
 NOT re-assert "ViewModel extends BaseViewModel" or "Supabase in infrastructure"
 in tests. This role writes FEATURE tests: the behavior, not the contract.
+When the repo's CI is wired ([`appbox-cicd`](../appbox-cicd/SKILL.md)), these
+suites run inside it — `scripts/check.sh <area>` wrapping `appbox gate tests`;
+CI re-uses this gate, it never re-implements it.
+
+## Pipeline position
+
+Stage 5 of `appbox-orchestrator` (Ø, front door) → `appbox-story-mapper / appbox-moodboarder` (0, optional) → `appbox-intake` (1) → `appbox-designer` (2) → `appbox-scaffolder` (3) → `appbox-builder` (4) → `appbox-tester` (5) → `appbox-reviewer` (6) → `appbox-deployer` (9) — cross-cutting: `appbox-lint` (7), `appbox-lens` (8), `appbox-cicd` (10, day-zero frame wrapping all stages). Stage numbers and every stage's input/output artifacts: `docs/research/pipeline-map.md` §1; the visual map: `docs/appbox-system-map.md`; the CLI FSM phases: `appboxd/lib/phases.dart`.
+
+- **Upstream:** `appbox-builder` — filled View/ViewModel bodies, handed over arch_guard-clean (the binding verdict is stage 6's).
+- **Downstream:** `appbox-reviewer` — it gates on this stage's output: a passing suite (unit → widget → smoke → visual → E2E) plus the freeze. The visual/smoke layers capture via `appbox-lens`.
 
 ## TDD loop (red-first, mandated for new code)
 1. **Red** — write the test first, named `<story-id> — <behavior sentence>`

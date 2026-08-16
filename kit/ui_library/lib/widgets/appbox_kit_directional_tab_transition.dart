@@ -74,9 +74,8 @@ class AppBoxKitDirectionalTabTransition extends StatefulWidget {
   ///   child: ...,
   /// )
   /// ```
-  static Animation<double>? timelineOf(BuildContext context) => context
-      .dependOnInheritedWidgetOfExactType<_KitTabTimeline>()
-      ?.timeline;
+  static Animation<double>? timelineOf(BuildContext context) =>
+      context.dependOnInheritedWidgetOfExactType<_KitTabTimeline>()?.timeline;
 
   @override
   State<AppBoxKitDirectionalTabTransition> createState() =>

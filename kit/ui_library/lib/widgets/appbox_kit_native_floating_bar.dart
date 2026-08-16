@@ -103,7 +103,11 @@ class AppBoxKitNativeFloatingBar extends StatelessWidget {
   /// throughout, so restoring them never re-materializes glass (clip
   /// 13-53-b's lesson). [leading] rides the leading edge with the pill —
   /// see its contract. Drive this from scroll direction via
-  /// [AppBoxKitFloatingChrome], or directly for custom hosts.
+  /// [AppBoxKitFloatingChrome], or directly for custom hosts — but note the
+  /// chrome also hard-clips the bar's left/right edges to its slot so a
+  /// route transform (the iOS back-swipe) cannot carry the parked ends back
+  /// into the frame; a direct host that tucks must clip likewise
+  /// (horizontally only — a full-rect clip slices the pill's shadow).
   final AppBoxKitFloatingBarTuck tuck;
 
   @override
@@ -390,16 +394,23 @@ class AppBoxKitBottomEdgeScrimHost extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (!enabled) return child;
+    // Shape-stable by construction: the Stack and the body's Positioned.fill
+    // slot exist regardless of [enabled]; only the scrim child comes and
+    // goes. An `if (!enabled) return child` early return would swap the
+    // subtree's shape on a flag flip and remount everything below — dropping
+    // nested-router stacks mid-push (the C4 class, measured in the showcase
+    // tab host) — and `enabled` exists precisely to be steered per-route at
+    // runtime by hosts that yield the bottom edge.
     return Stack(
       children: [
         Positioned.fill(child: child),
-        Positioned(
-          bottom: 0,
-          left: 0,
-          right: 0,
-          child: AppBoxKitBottomEdgeScrim(fadeExtent: fadeExtent),
-        ),
+        if (enabled)
+          Positioned(
+            bottom: 0,
+            left: 0,
+            right: 0,
+            child: AppBoxKitBottomEdgeScrim(fadeExtent: fadeExtent),
+          ),
       ],
     );
   }
@@ -547,6 +558,59 @@ class _AppBoxKitFloatingChromeState extends State<AppBoxKitFloatingChrome> {
         child: IgnorePointer(ignoring: _away, child: bar),
       );
     }
+    // Route-transform containment (device clip: tucked chrome flashing mid
+    // back-swipe). The minimize tuck parks the leading + pill off the leading
+    // screen edge and the actions off the trailing edge with a TRANSFORM —
+    // they stay mounted and painted (clip 13-53-b), merely translated
+    // off-screen. A Cupertino back-swipe translates the whole outgoing route
+    // right by up to a full screen width, and that transform is an ancestor
+    // of this bar, so the parked leading end rides it straight back into the
+    // visible frame — exactly once per swipe, then gone (the forward push
+    // mirrors it at the trailing edge). Untucked chrome rides the same
+    // transform at its normal position, which is why the defect only ever
+    // showed while tucked. This hard ClipRect pins PAINT to the bar slot's
+    // LEFT/RIGHT edges — which ride the same route transform — so tucked
+    // ends are culled at the route edge no matter where the route is. When
+    // the route is stationary the slot edge IS the screen edge, so nothing
+    // about the ratified minimize motion changes.
+    //
+    // HORIZONTAL ONLY, on pain of slicing the pill's shadow: the title
+    // pill's BoxShadow (blurRadius 16, offset (0, 4)) feathers ~20px below
+    // the pill, but the slot reserves only abxGap8 of slack beneath it — a
+    // full-rect clip hard-cuts that feather mid-fade (the luminance/shadow
+    // regression, device-verified). The clip's job is the horizontal axis —
+    // the tucks slide horizontally and the back-swipe carries them back in
+    // horizontally; vertically the slot is bounded by the physical screen
+    // edge exactly as it was before containment existed, so the clipper
+    // leaves y open.
+    //
+    // Placement is deliberate:
+    // - Around the bar ONLY, never the Stack: the body and the
+    //   AppBoxKitTopEdgeScrim are siblings below, structurally unreachable
+    //   by this clip.
+    // - AROUND the AnimatedSlide tuck machinery, never replacing it: law
+    //   rule 8 — clip bounds paint, but the view slicer reads UNCLIPPED
+    //   rects, so only the transforms bound slicing geometry. Same pairing
+    //   as the hidden-tab stack's clip + transform.
+    // Why a clip and not the alternatives: composition rule 1 bans
+    // alpha/saveLayer shapes over platform views; a hard-edge ClipRect adds
+    // no saveLayer, and kClipRect is an embedder-applied mutator on iOS
+    // platform views (FlutterPlatformViewsController.mm, ApplyMutators — the
+    // same SDK verification AppBoxKitNativeChromeGate cites), so the native
+    // glass leading/actions are clipped by the native side, not just the
+    // canvas. A bigger tuck multiplier would keep the ends off-screen
+    // through a full-width swipe but quadruples the slide distance inside
+    // the device-tuned 400ms — visibly faster than the system minimize.
+    // Always mounted, never conditional (the C4 tree-shape lesson): a bar
+    // that never tucks still wraps, so the subtree shape is constant.
+    // (NATIVE_COMPONENTS.md carries the clip-over-platform-view reliability
+    // caveat — mostly reliable on Flutter 3.41+, residuals
+    // flutter#176473/#188971.)
+    bar = ClipRect(
+      clipBehavior: Clip.hardEdge,
+      clipper: const _AppBoxKitHorizontalContainmentClipper(),
+      child: bar,
+    );
     return NotificationListener<ScrollNotification>(
       onNotification: _onScroll,
       child: Stack(
@@ -571,4 +635,28 @@ class _AppBoxKitFloatingChromeState extends State<AppBoxKitFloatingChrome> {
       ),
     );
   }
+}
+
+/// The containment clip's shape: the bar slot's left/right edges, vertically
+/// open. Horizontal because the tucks and the route transforms that expose
+/// them are horizontal; vertically open because the pill's BoxShadow (and any
+/// chrome elevation) legitimately feathers past the slot's top/bottom — the
+/// physical screen edge owns vertical culling, as it did before containment
+/// existed. A widget-rect clip here hard-cut the shadow's 20px feather at
+/// the slot's 8px bottom slack (the luminance/shadow regression).
+class _AppBoxKitHorizontalContainmentClipper extends CustomClipper<Rect> {
+  const _AppBoxKitHorizontalContainmentClipper();
+
+  // Finite slack, not double.infinity: the canvas clip would tolerate it,
+  // but the iOS platform-view path frames a FlutterClippingMaskView with
+  // this rect when a native view straddles the edge mid-tuck — an infinite
+  // frame is not a legal UIView frame. 10000 mirrors the tab stack's
+  // off-screen idiom: far past any shadow feather, never reachable by paint
+  // that matters.
+  @override
+  Rect getClip(Size size) =>
+      Rect.fromLTRB(0, -10000, size.width, size.height + 10000);
+
+  @override
+  bool shouldReclip(_AppBoxKitHorizontalContainmentClipper oldClipper) => false;
 }

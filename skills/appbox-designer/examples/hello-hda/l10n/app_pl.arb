@@ -9,6 +9,8 @@
   "home.tagline": "Nawigacja z boost, stan renderowany po stronie serwera, zero własnego JS po stronie klienta.",
   "home.greetingsHeader": "Powitania",
   "home.toTimer": "Przejdź do minutnika",
+  "home.islands.toggle": "Szczegóły",
+  "home.islands.copy": "Wyspy nie ładują JS, dopóki nie spełni się ich warunek. Ta treść była ukryta przez serwer; wyspa przełącznika odsłoniła ją po pierwszej interakcji — bez startu frameworka, bez hydratacji.",
   "itemCount": "{count, plural, =0{Brak powitań z greeting_facade} one{{count} powitanie z greeting_facade} few{{count} powitania z greeting_facade} many{{count} powitań z greeting_facade} other{{count} powitania z greeting_facade}}",
 
   "accent.label": "Akcent",
@@ -21,6 +23,7 @@
   "timer.pageTitle": "Minutnik — hello-hda",
   "timer.title": "Minutnik odpoczynku",
   "timer.tagline": "Serwer trzyma termin; strona odpytuje co sekundę. Bez napisanego JS.",
+  "timer.extend": "+15 s",
   "timer.skip": "Pomiń",
   "timer.done": "Koniec — dobra seria.",
 

@@ -111,7 +111,7 @@ One service — `KitNotificationService.show(message, {kind, position, duration,
 
 Routing in `show()`:
 - **Android** (`KitPlatform.supportsComposeM3E`) → host `SnackbarService` (native Material `ScaffoldMessenger`), wrapped in `withNativeChromeHidden`.
-- **iOS / desktop, no `actionLabel`** → `CNToast` (real Liquid Glass on iOS 26, Flutter Cupertino below). Default — **no snackbar on iOS unless an action is required**.
+- **iOS / desktop, no `actionLabel`** → `CNToast` (Flutter-drawn capsule on every OS — the vendor's glass tier is disabled, `docs/liquid-glass-allowlist.md` rule 12). Default — **no snackbar on iOS unless an action is required**.
 - **iOS / desktop, with `actionLabel`** → `SnackbarService` fallback (CNToast can't host an action button). `actionLabel` is the ONLY thing that promotes iOS from toast to snackbar.
 
 - `kind` (`KitNotificationKind`) drives the CNToast preset (iOS: `info`/`success`/`error`/`warning` — `warning` is the yellow/orange `CNToast.warning`, NOT info-blue) and the snackbar variant (Android: mapped to `KitSnackbarType.kitAutoProcess{Info,Success,Error,Warning}`).

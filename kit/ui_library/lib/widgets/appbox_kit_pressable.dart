@@ -54,12 +54,10 @@ class _AppBoxKitPressableState extends State<AppBoxKitPressable> {
         onTapDown: (_) => _setPressed(true),
         onTapUp: (_) => _setPressed(false),
         onTapCancel: () => _setPressed(false),
-        onLongPressStart: widget.onLongPress == null
-            ? null
-            : (_) => _setPressed(true),
-        onLongPressEnd: widget.onLongPress == null
-            ? null
-            : (_) => _setPressed(false),
+        onLongPressStart:
+            widget.onLongPress == null ? null : (_) => _setPressed(true),
+        onLongPressEnd:
+            widget.onLongPress == null ? null : (_) => _setPressed(false),
         child: AnimatedOpacity(
           opacity: _pressed ? 0.6 : 1.0,
           duration: const Duration(milliseconds: 120),

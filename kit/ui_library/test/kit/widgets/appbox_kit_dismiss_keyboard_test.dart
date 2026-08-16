@@ -3,145 +3,47 @@ import 'package:cupertino_native_better/cupertino_native_better.dart'
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show MethodCall, MethodChannel;
 import 'package:flutter_test/flutter_test.dart';
-import 'package:appbox_kit_ui_library/widgets/appbox_kit_dismiss_keyboard.dart';
+import 'package:appbox_kit_ui_library/widgets/appbox_kit_input_tap_behavior.dart';
 
-/// [AppBoxKitDismissKeyboard] tests.
+/// `appBoxKitDismissKeyboard` tests — the two-tier dismissal function the
+/// per-input tap region calls.
 ///
-/// The load-bearing fact behind this widget: a `CNTextField` is a platform view
-/// with no [FocusNode], so `FocusManager.instance.primaryFocus?.unfocus()` —
-/// what every published tap-to-dismiss recipe does — cannot close the keyboard
-/// it raised. The widget therefore fires both paths.
+/// The load-bearing fact: a `CNTextField` is a platform view with no
+/// [FocusNode], so `FocusManager.instance.primaryFocus?.unfocus()` — what
+/// every published tap-to-dismiss recipe does — cannot close the keyboard it
+/// raised. The function therefore fires both paths.
+///
+/// The app-wide Listener wrapper these tests used to cover is retired (the
+/// re-tap regression); the per-input behavior contracts live in
+/// appbox_kit_input_keyboard_behavior_test.dart.
 void main() {
   tearDown(CNTextFieldFocus.debugReset);
 
-  Widget host({VoidCallback? onButton}) => MaterialApp(
-        home: AppBoxKitDismissKeyboard(
-          child: Scaffold(
-            body: Column(
-              children: [
-                const TextField(key: Key('field')),
-                ElevatedButton(
-                  key: const Key('button'),
-                  onPressed: onButton,
-                  child: const Text('press me'),
-                ),
-                const SizedBox(key: Key('empty'), height: 200, width: 200),
-              ],
-            ),
-          ),
-        ),
-      );
-
-  testWidgets('kit.ui-library.dismiss-keyboard — a tap outside the field drops its focus',
-      (tester) async {
-    await tester.pumpWidget(host());
+  testWidgets(
+      'kit.ui-library.input-keyboard — dismisses the Flutter tier by '
+      'unfocusing the primary focus', (tester) async {
+    await tester.pumpWidget(MaterialApp(
+      home: Scaffold(body: TextField(key: Key('field'))),
+    ));
     await tester.tap(find.byKey(const Key('field')));
     await tester.pump();
+    final FocusNode node = FocusManager.instance.primaryFocus!;
+    expect(node.hasPrimaryFocus, isTrue,
+        reason: 'anti-vacuous: the field must hold focus first');
 
-    final FocusNode fieldNode = FocusManager.instance.primaryFocus!;
-    expect(fieldNode.hasPrimaryFocus, isTrue,
-        reason: 'anti-vacuous: the field must actually take focus first');
-
-    await tester.tap(find.byKey(const Key('empty')));
+    appBoxKitDismissKeyboard();
     await tester.pump();
 
-    expect(fieldNode.hasPrimaryFocus, isFalse,
-        reason: 'a pointer-down anywhere outside must drop the field focus');
+    expect(node.hasPrimaryFocus, isFalse,
+        reason: 'the Flutter tier dismissal is the primary-focus unfocus');
   });
 
   testWidgets(
-      'kit.ui-library.dismiss-keyboard — dragging a scrollable dismisses, and '
-      'the scroll still happens', (tester) async {
-    // This is what `ScrollViewKeyboardDismissBehavior.onDrag` buys, obtained
-    // for free: a drag begins with a pointer-down, which this widget already
-    // observes. Worth pinning because the built-in would NOT be equivalent —
-    // Scrollable's onDrag calls `FocusManager.primaryFocus?.unfocus()` and
-    // nothing else, so it is blind to the native CNTextField tier in exactly
-    // the way this widget exists to fix.
-    final ScrollController controller = ScrollController();
-    addTearDown(controller.dispose);
-    await tester.pumpWidget(MaterialApp(
-      home: AppBoxKitDismissKeyboard(
-        child: Scaffold(
-          body: ListView(
-            controller: controller,
-            children: <Widget>[
-              const TextField(key: Key('field')),
-              for (int i = 0; i < 40; i++) SizedBox(height: 60, child: Text('row $i')),
-            ],
-          ),
-        ),
-      ),
-    ));
-
-    await tester.tap(find.byKey(const Key('field')));
-    await tester.pump();
-    final FocusNode fieldNode = FocusManager.instance.primaryFocus!;
-    expect(fieldNode.hasPrimaryFocus, isTrue,
-        reason: 'anti-vacuous: the field must hold focus before the drag');
-
-    await tester.drag(find.text('row 5'), const Offset(0, -200));
-    await tester.pumpAndSettle();
-
-    expect(fieldNode.hasPrimaryFocus, isFalse,
-        reason: 'scrolling the list must dismiss the keyboard');
-    expect(controller.offset, greaterThan(0),
-        reason: 'and the list must still scroll — dismissing must not eat the '
-            'drag, which is the GestureDetector failure mode');
-  });
-
-  testWidgets('kit.ui-library.dismiss-keyboard — does not swallow the tap it dismisses on',
-      (tester) async {
-    // The reason this is a Listener and not a GestureDetector: a detector
-    // competes in the gesture arena and an ancestor that wins it eats the tap.
-    var pressed = 0;
-    await tester.pumpWidget(host(onButton: () => pressed++));
-    await tester.tap(find.byKey(const Key('field')));
-    await tester.pump();
-    final FocusNode fieldNode = FocusManager.instance.primaryFocus!;
-
-    await tester.tap(find.byKey(const Key('button')));
-    await tester.pump();
-
-    expect(pressed, 1,
-        reason: 'the button under the finger must still fire — dismissing the '
-            'keyboard must never cost the user their tap');
-    expect(fieldNode.hasPrimaryFocus, isFalse,
-        reason: 'and the field still loses focus on that same tap');
-  });
-
-  testWidgets('kit.ui-library.dismiss-keyboard — enabled: false suspends dismissal',
-      (tester) async {
-    await tester.pumpWidget(MaterialApp(
-      home: AppBoxKitDismissKeyboard(
-        enabled: false,
-        child: const Scaffold(
-          body: Column(
-            children: [
-              TextField(key: Key('field')),
-              SizedBox(key: Key('empty'), height: 200, width: 200),
-            ],
-          ),
-        ),
-      ),
-    ));
-    await tester.tap(find.byKey(const Key('field')));
-    await tester.pump();
-    final FocusNode fieldNode = FocusManager.instance.primaryFocus!;
-
-    await tester.tap(find.byKey(const Key('empty')));
-    await tester.pump();
-
-    expect(fieldNode.hasPrimaryFocus, isTrue,
-        reason: 'a screen driving focus itself must be able to opt out');
-  });
-
-  testWidgets('kit.ui-library.dismiss-keyboard — also dismisses the native tier, which has no FocusNode',
-      (tester) async {
-    // The whole point of the widget. A CNTextField cannot be mounted headless
-    // (UiKitView), so the native side is stood in for by its channel: this
-    // asserts the dismisser reaches CNTextFieldFocus at all, which is the step
-    // every stock recipe omits and which no FocusNode assertion can observe.
+      'kit.ui-library.input-keyboard — also dismisses the native tier, '
+      'which has no FocusNode', (tester) async {
+    // A CNTextField cannot be mounted headless (UiKitView), so the native side
+    // is stood in for by its channel: this asserts the dismisser reaches
+    // CNTextFieldFocus at all — the step every stock recipe omits.
     const MethodChannel channel = MethodChannel('CNTextField_test');
     final List<String> calls = <String>[];
     tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
@@ -158,13 +60,30 @@ void main() {
     expect(CNTextFieldFocus.hasFocus, isTrue,
         reason: 'anti-vacuous: something must be focused to dismiss');
 
-    await tester.pumpWidget(host());
-    await tester.tap(find.byKey(const Key('empty')));
+    await tester.pumpWidget(MaterialApp(
+      home: Scaffold(body: Container()),
+    ));
+    appBoxKitDismissKeyboard();
     await tester.pump();
 
     expect(calls, contains('unfocus'),
         reason: 'the native field holds the keyboard and no FocusNode; only '
             'its own channel can close it');
     expect(CNTextFieldFocus.hasFocus, isFalse);
+  });
+
+  testWidgets(
+      'kit.ui-library.input-keyboard — safe no-op when nothing is '
+      'focused on either tier', (tester) async {
+    await tester.pumpWidget(MaterialApp(
+      home: Scaffold(body: Container()),
+    ));
+    // No editable focused, no native channel: must not throw. (It DOES
+    // unfocus the navigator scope — unfocus walks scopes — which is benign:
+    // the retired app-wide listener did exactly that on every background tap.)
+    appBoxKitDismissKeyboard();
+    await tester.pump();
+    expect(FocusManager.instance.primaryFocus, isA<FocusScopeNode>(),
+        reason: 'no editable gained or lost anything; only the scope settled');
   });
 }

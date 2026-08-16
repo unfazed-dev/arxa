@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:m3e_collection/m3e_collection.dart'
-    show ExtendedFabM3E, FabM3E;
+import 'package:m3e_collection/m3e_collection.dart' show ExtendedFabM3E, FabM3E;
 import 'package:appbox_kit_core/platform/appbox_kit_platform.dart';
 import 'package:appbox_kit_ui_library/widgets/appbox_kit_fab_morph.dart';
 import 'package:appbox_kit_ui_library/widgets/appbox_kit_native_fab.dart';
@@ -23,9 +22,11 @@ void main() {
   // Round FAB routes to AppBoxKitFabMorph, NOT FabM3E: since the "consistent morphing"
   // change the round M3E FAB shape-morphs on press, and FabM3E's shape is static,
   // so the kit swaps in AppBoxKitFabMorph. Labeled still uses ExtendedFabM3E (below).
-  testWidgets('kit.ui-library.native-fab — Android routes to AppBoxKitFabMorph (round, shape-morphs)',
+  testWidgets(
+      'kit.ui-library.native-fab — Android routes to AppBoxKitFabMorph (round, shape-morphs)',
       (tester) async {
-    AppBoxKitPlatform.override = const AppBoxKitPlatformOverride(isAndroid: true);
+    AppBoxKitPlatform.override =
+        const AppBoxKitPlatformOverride(isAndroid: true);
     await tester.pumpWidget(host(const AppBoxKitNativeFab(icon: Icons.add)));
 
     expect(
@@ -45,9 +46,11 @@ void main() {
     );
   });
 
-  testWidgets('kit.ui-library.native-fab — Android routes to ExtendedFabM3E when label is set',
+  testWidgets(
+      'kit.ui-library.native-fab — Android routes to ExtendedFabM3E when label is set',
       (tester) async {
-    AppBoxKitPlatform.override = const AppBoxKitPlatformOverride(isAndroid: true);
+    AppBoxKitPlatform.override =
+        const AppBoxKitPlatformOverride(isAndroid: true);
     await tester.pumpWidget(
       host(const AppBoxKitNativeFab(icon: Icons.add, label: 'Compose')),
     );
@@ -64,7 +67,9 @@ void main() {
     );
   });
 
-  testWidgets('kit.ui-library.native-fab — default platform builds clean (CN glass tier)', (tester) async {
+  testWidgets(
+      'kit.ui-library.native-fab — default platform builds clean (CN glass tier)',
+      (tester) async {
     await withAndroidFallback(() async {
       await tester.pumpWidget(host(const AppBoxKitNativeFab(icon: Icons.add)));
 

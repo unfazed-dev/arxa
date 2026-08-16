@@ -1,5 +1,6 @@
 import 'package:cupertino_native_better/cupertino_native_better.dart'
     show CNGlassEffect, LiquidGlassContainer;
+import 'package:flutter/cupertino.dart' show CupertinoPageRoute;
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
@@ -96,8 +97,8 @@ void main() {
     expect(row.height, 44);
 
     // Actions trail the title.
-    expect(row.left,
-        greaterThan(tester.getRect(find.text('Kit Showcase')).right));
+    expect(
+        row.left, greaterThan(tester.getRect(find.text('Kit Showcase')).right));
   });
 
   testWidgets(
@@ -166,10 +167,13 @@ void main() {
             behavior: behavior,
             leading: leading,
             title: 'Kit Showcase',
-            actions: [const SizedBox(key: Key('action'), width: 44, height: 44)],
+            actions: [
+              const SizedBox(key: Key('action'), width: 44, height: 44)
+            ],
             body: ListView(
               children: [
-                for (var i = 0; i < 30; i++) SizedBox(height: 80, key: Key('c$i')),
+                for (var i = 0; i < 30; i++)
+                  SizedBox(height: 80, key: Key('c$i')),
               ],
             ),
           ),
@@ -244,8 +248,8 @@ void main() {
   testWidgets(
       'kit.ui-library.floating-chrome — minimizeLeading tucks the title pill '
       'instead, and the actions stay put', (tester) async {
-    await tester
-        .pumpWidget(chromeHarness(AppBoxKitFloatingBarBehavior.minimizeLeading));
+    await tester.pumpWidget(
+        chromeHarness(AppBoxKitFloatingBarBehavior.minimizeLeading));
     Offset titleSlide() => tester
         .widget<AnimatedSlide>(
           find
@@ -334,8 +338,7 @@ void main() {
   testWidgets(
       'kit.ui-library.floating-chrome — full minimize tucks the leading off '
       'the LEFT edge with the pill, and never unmounts it', (tester) async {
-    await tester.pumpWidget(chromeHarness(
-        AppBoxKitFloatingBarBehavior.minimize,
+    await tester.pumpWidget(chromeHarness(AppBoxKitFloatingBarBehavior.minimize,
         leading: leadingProbe));
     expect(leadingSlide(tester), Offset.zero);
 
@@ -389,6 +392,155 @@ void main() {
     );
     await scrollBack(tester);
     expect(tester.getRect(find.byKey(const Key('leading'))), resting);
+  });
+
+  // ---------------------------------------------------------------------
+  // Route-transform containment (device clip: tucked chrome flashing mid
+  // back-swipe). The minimize tuck parks the leading + pill off the LEFT
+  // screen edge with a transform — it never UNPAINTS them. A Cupertino
+  // back-swipe translates the whole outgoing route right by up to a full
+  // screen width, and that transform is an ancestor of the bar, so the
+  // parked widgets ride it straight back into the visible frame. Untucked
+  // chrome rides the same transform at its normal position, which is why
+  // the defect only ever showed when tucked. The bar's answer is a hard
+  // ClipRect at its own bounds: the box rides the same route transform, so
+  // paint is culled at the route edge no matter where the route is.
+  // ---------------------------------------------------------------------
+
+  testWidgets(
+      'kit.ui-library.floating-chrome — a back-swipe cannot drag tucked '
+      'chrome back on screen: the bar hard-clips its ends to its own bounds',
+      (tester) async {
+    final navigatorKey = GlobalKey<NavigatorState>();
+    Widget swipeHarness() => MaterialApp(
+          navigatorKey: navigatorKey,
+          home: const Scaffold(body: Text('root-page')),
+        );
+
+    await tester.pumpWidget(swipeHarness());
+    navigatorKey.currentState!.push(
+      CupertinoPageRoute<void>(
+        builder: (_) => Scaffold(
+          body: AppBoxKitFloatingChrome(
+            behavior: AppBoxKitFloatingBarBehavior.minimize,
+            leading: const SizedBox(key: Key('leading'), width: 44, height: 44),
+            title: 'Kit Showcase',
+            actions: [
+              const SizedBox(key: Key('action'), width: 44, height: 44)
+            ],
+            body: ListView(
+              children: [
+                for (var i = 0; i < 30; i++)
+                  SizedBox(height: 80, key: Key('c$i')),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // Tuck for real: the pill and leading slide off the left edge and STAY
+    // painted (transform, never unmount — clip 13-53-b).
+    await tester.fling(find.byType(ListView), const Offset(0, -400), 800);
+    await tester.pumpAndSettle();
+    expect(titleSlide(tester).dx, lessThan(0));
+    expect(leadingSlide(tester).dx, lessThan(0));
+
+    final clipFinder = find.ancestor(
+      of: find.text('Kit Showcase'),
+      matching: find.byType(ClipRect),
+    );
+    final viewport = Offset.zero & tester.binding.renderViews.first.size;
+
+    // Edge-drag a back-swipe, sampling every frame of the drag: the window
+    // the device clip shows the tucked pills flashing in.
+    final gesture = await tester.startGesture(const Offset(5.0, 200.0));
+    await gesture.moveBy(const Offset(30.0, 0.0));
+    await tester.pump();
+
+    var sawCarriedOnScreen = false;
+    Future<void> sample() async {
+      final pillRect = tester.getRect(find.text('Kit Showcase'));
+      if (pillRect.overlaps(viewport)) sawCarriedOnScreen = true;
+      final leadingRect = tester.getRect(find.byKey(const Key('leading')));
+      for (final rect in [pillRect, leadingRect]) {
+        if (!rect.overlaps(viewport)) continue;
+        // The clip exists, is HARD (no saveLayer), sits at the bar's own
+        // bounds, and culls every pixel the swipe carried back on screen.
+        expect(clipFinder, findsOneWidget,
+            reason: 'the swipe carried a tucked widget back into the viewport '
+                "and nothing bounds the bar's paint — the reported flash");
+        expect(tester.widget<ClipRect>(clipFinder).clipBehavior, Clip.hardEdge,
+            reason: 'hard paint culling, no saveLayer — an anti-aliased or '
+                'effect-based edge is composition rule 1 territory');
+        final clipRect = tester.getRect(clipFinder);
+        expect(
+            clipRect, tester.getRect(find.byType(AppBoxKitNativeFloatingBar)),
+            reason: "containment lives at the bar's own box, which rides the "
+                'same route transform as the tucked ends');
+        expect(clipRect.intersect(rect).isEmpty, isTrue,
+            reason: 'a tucked widget the swipe dragged back on screen must be '
+                "paint-culled at the bar's bounds, not rendered");
+      }
+    }
+
+    await sample();
+    // Past the halfway line so the release COMMITS the pop (8×60+30 = 510 of
+    // the 800pt surface) — a cancel keeps the route and the final pop check
+    // below would go vacuous.
+    for (var step = 0; step < 8; step++) {
+      await gesture.moveBy(const Offset(60.0, 0.0));
+      await tester.pump(const Duration(milliseconds: 16));
+      await sample();
+    }
+    expect(sawCarriedOnScreen, isTrue,
+        reason: 'anti-vacuity: the drag must genuinely carry the tucked pill '
+            'back into the viewport, or the clip assertions above prove nothing');
+
+    await gesture.up();
+    await tester.pumpAndSettle();
+    expect(find.text('root-page'), findsOneWidget,
+        reason: 'the swipe must actually have popped — otherwise the drag '
+            'samples above asserted nothing about a real back-swipe');
+  });
+
+  testWidgets(
+      'kit.ui-library.floating-chrome — the containment clip is '
+      'horizontal-only so the pill shadow feathers past the slot',
+      (tester) async {
+    // The first containment clip bounded the bar's whole slot rect — and
+    // hard-cut the title pill's BoxShadow (blurRadius 16, offset (0, 4):
+    // ~20px of feather below the pill against the slot's 8px bottom slack,
+    // visible as a sliced shadow on device. The clip's JOB is horizontal:
+    // the tucks slide horizontally, and the back-swipe carries parked ends
+    // back in horizontally. Vertically the slot is already bounded by the
+    // physical screen edge, exactly as before containment existed. So the
+    // clipper must clip x to the slot and leave y open.
+    await tester
+        .pumpWidget(chromeHarness(AppBoxKitFloatingBarBehavior.minimize));
+    final clipFinder = find.ancestor(
+      of: find.text('Kit Showcase'),
+      matching: find.byType(ClipRect),
+    );
+    expect(clipFinder, findsOneWidget);
+    final size = tester.getSize(clipFinder);
+    final clip = tester.widget<ClipRect>(clipFinder).clipper?.getClip(size);
+    expect(clip, isNotNull,
+        reason: 'a null clipper clips to the widget rect — the shadow-slicing '
+            'slot bounds this test guards against');
+    expect(clip!.left, 0,
+        reason:
+            'leading-edge containment is the back-swipe fix — do not loosen');
+    expect(clip.right, size.width,
+        reason:
+            'trailing-edge containment is the forward-push fix — do not loosen');
+    expect(clip.top, lessThan(0),
+        reason: 'the pill shadow feathers upward past the slot top too');
+    expect(clip.bottom, greaterThan(size.height + 16),
+        reason: 'the pill\'s BoxShadow (blur 16, offset (0,4)) needs ~20px '
+            'below the pill; the slot reserves only 8 — a slot-bottom clip '
+            'hard-cuts the feather mid-fade (the luminance/shadow regression)');
   });
 
   // ---------------------------------------------------------------------
@@ -456,8 +608,8 @@ void main() {
         reason: 'scrim and bar must measure the top inset the same way');
   });
 
-  testWidgets(
-      'kit.ui-library.top-edge-scrim — never intercepts taps', (tester) async {
+  testWidgets('kit.ui-library.top-edge-scrim — never intercepts taps',
+      (tester) async {
     await tester.pumpWidget(scrimHarness());
     final ignore = tester.widget<IgnorePointer>(
       find
@@ -509,8 +661,7 @@ void main() {
 
     await scrollAway(tester);
     // The bar really left — otherwise the scrim holding still proves nothing.
-    expect(
-        tester.getRect(find.byType(AppBoxKitNativeFloatingBar)).top,
+    expect(tester.getRect(find.byType(AppBoxKitNativeFloatingBar)).top,
         lessThan(0),
         reason: 'hide slid the whole bar off the top');
     expect(tester.getRect(find.byType(AppBoxKitTopEdgeScrim)), resting,
@@ -552,7 +703,8 @@ void main() {
         reason: 'fully clear by the bar\'s bottom edge — a residual tint '
             'would haze the whole content top');
     expect(gradient.stops!.first, 0.0);
-    expect(gradient.stops![1], statusBar / (statusBar + kAppBoxKitFloatingBarBlockHeight),
+    expect(gradient.stops![1],
+        statusBar / (statusBar + kAppBoxKitFloatingBarBlockHeight),
         reason: 'the ramp starts only once the status-bar band is cleared');
   });
 
@@ -654,8 +806,7 @@ void main() {
 
   testWidgets(
       'kit.ui-library.bottom-edge-scrim — pins to the physical bottom edge '
-      'and spans the home-indicator inset plus the fade ramp',
-      (tester) async {
+      'and spans the home-indicator inset plus the fade ramp', (tester) async {
     await tester.pumpWidget(bottomScrimHarness());
 
     final scrim = tester.getRect(find.byType(AppBoxKitBottomEdgeScrim));
@@ -704,5 +855,48 @@ void main() {
     await tester.pumpWidget(bottomScrimHarness(enabled: false));
     expect(find.byType(AppBoxKitBottomEdgeScrim), findsNothing,
         reason: 'enabled:false is a design opt-out, not an invisible scrim');
+  });
+
+  testWidgets(
+      'kit.ui-library.bottom-edge-scrim — steering enabled at runtime must '
+      'not remount the child subtree', (tester) async {
+    // C4 class (recorded in the showcase tab host): a build whose output
+    // SHAPE changes with a flag remounts everything below it — nested
+    // routers lose their stacks mid-push and the push is dropped on the
+    // floor. `enabled` exists so a route can opt out, i.e. it is steered at
+    // RUNTIME by hosts that yield the bottom edge per-route, so the host
+    // must swap only its own scrim child and keep the body's slot stable.
+    Widget harness({required bool enabled}) => MaterialApp(
+          home: Builder(
+            builder: (context) => MediaQuery(
+              data: MediaQuery.of(context).copyWith(
+                viewPadding: const EdgeInsets.only(bottom: homeInset),
+              ),
+              child: AppBoxKitBottomEdgeScrimHost(
+                enabled: enabled,
+                child: ListView(
+                  children: const [SizedBox(height: 80, key: Key('probe'))],
+                ),
+              ),
+            ),
+          ),
+        );
+
+    await tester.pumpWidget(harness(enabled: true));
+    final Element probe = tester.element(find.byKey(const Key('probe')));
+
+    await tester.pumpWidget(harness(enabled: false));
+    expect(find.byType(AppBoxKitBottomEdgeScrim), findsNothing,
+        reason: 'the opt-out still opts out');
+    expect(tester.element(find.byKey(const Key('probe'))), same(probe),
+        reason: 'a flag flip that remounts the body drops nested-router '
+            'stacks mid-push (C4) — the yield use-case steers this flag at '
+            'runtime');
+
+    await tester.pumpWidget(harness(enabled: true));
+    expect(find.byType(AppBoxKitBottomEdgeScrim), findsOneWidget,
+        reason: 're-enabling restores the scrim');
+    expect(tester.element(find.byKey(const Key('probe'))), same(probe),
+        reason: 're-enabling must be shape-stable too');
   });
 }

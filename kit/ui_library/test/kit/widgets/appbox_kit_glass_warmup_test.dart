@@ -21,7 +21,8 @@ void main() {
       isIOS: true,
       iosMajor: 26,
     );
-    await tester.pumpWidget(host(const AppBoxKitGlassWarmup(child: Text('app'))));
+    await tester
+        .pumpWidget(host(const AppBoxKitGlassWarmup(child: Text('app'))));
 
     expect(find.text('app'), findsOneWidget,
         reason: 'the wrapped shell must still render');
@@ -51,7 +52,8 @@ void main() {
       (tester) async {
     AppBoxKitPlatform.override =
         const AppBoxKitPlatformOverride(isAndroid: true);
-    await tester.pumpWidget(host(const AppBoxKitGlassWarmup(child: Text('app'))));
+    await tester
+        .pumpWidget(host(const AppBoxKitGlassWarmup(child: Text('app'))));
 
     expect(find.text('app'), findsOneWidget);
     expect(find.byType(LiquidGlassContainer), findsNothing,

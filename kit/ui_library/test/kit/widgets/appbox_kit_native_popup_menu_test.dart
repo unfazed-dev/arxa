@@ -26,9 +26,11 @@ void main() {
     AppBoxKitMenuItem(label: 'Delete', icon: Icons.delete, isDestructive: true),
   ];
 
-  testWidgets('kit.ui-library.native-popup-menu — Android opens a showMenu popup (same route as split button)',
+  testWidgets(
+      'kit.ui-library.native-popup-menu — Android opens a showMenu popup (same route as split button)',
       (tester) async {
-    AppBoxKitPlatform.override = const AppBoxKitPlatformOverride(isAndroid: true);
+    AppBoxKitPlatform.override =
+        const AppBoxKitPlatformOverride(isAndroid: true);
     await tester.pumpWidget(
       host(const AppBoxKitNativePopupMenu(icon: Icons.more_vert, items: items)),
     );
@@ -48,11 +50,13 @@ void main() {
     expect(find.text('Rename'), findsOneWidget);
   });
 
-  testWidgets('kit.ui-library.native-popup-menu — default platform routes to CNPopupMenuButton (icon trigger)',
+  testWidgets(
+      'kit.ui-library.native-popup-menu — default platform routes to CNPopupMenuButton (icon trigger)',
       (tester) async {
     await withAndroidFallback(() async {
       await tester.pumpWidget(
-        host(const AppBoxKitNativePopupMenu(icon: Icons.more_vert, items: items)),
+        host(const AppBoxKitNativePopupMenu(
+            icon: Icons.more_vert, items: items)),
       );
 
       expect(
@@ -63,7 +67,8 @@ void main() {
     });
   });
 
-  testWidgets('kit.ui-library.native-popup-menu — default platform routes to CNPopupMenuButton (text trigger)',
+  testWidgets(
+      'kit.ui-library.native-popup-menu — default platform routes to CNPopupMenuButton (text trigger)',
       (tester) async {
     await withAndroidFallback(() async {
       await tester.pumpWidget(

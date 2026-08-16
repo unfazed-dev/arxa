@@ -1,9 +1,11 @@
 ---
 name: appbox-deployer
-description: Use when shipping an appbox-built target to stores (fastlane: TestFlight/App Store + Play internal/production), pushing an OTA Dart patch (shorebird), or deploying a web build to Cloudflare Pages/Workers or Vercel. Trigger on "deploy", "ship to TestFlight", "release to Play", "push an OTA patch", "hotfix", "deploy to Cloudflare Pages", "deploy to Vercel".
+description: 'Use when shipping an appbox-built target to stores (fastlane: TestFlight/App Store + Play internal/production), pushing an OTA Dart patch (shorebird), or deploying a web build to Cloudflare Pages/Workers or Vercel. Trigger on "deploy", "ship to TestFlight", "release to Play", "push an OTA patch", "hotfix", "deploy to Cloudflare Pages", "deploy to Vercel".'
 ---
 
 # deployer — stores (fastlane) + OTA patches (shorebird) + web (Cloudflare Pages/Workers, Vercel)
+
+> Per-skill playbook (the folded canon for this phase): [`DEPLOYER_playbook.mdx`](DEPLOYER_playbook.mdx)
 
 ## Core principle
 fastlane, shorebird and wrangler are existing CLIs; this role drives them with a
@@ -16,6 +18,13 @@ The mechanics live in `appboxd/lib/deploy.dart` (the Dart port of the former
 `appbox deploy --self-test` exercises **every command shape under a scripted
 runner with no toolchain, no credentials and no signing identity** — the one
 property that makes a deploy stage self-testable.
+
+## Pipeline position
+
+Stage 9 (packaging + deploy — the chain's end) of `appbox-orchestrator` (Ø, front door) → `appbox-story-mapper / appbox-moodboarder` (0, optional) → `appbox-intake` (1) → `appbox-designer` (2) → `appbox-scaffolder` (3) → `appbox-builder` (4) → `appbox-tester` (5) → `appbox-reviewer` (6) → `appbox-deployer` (9) — cross-cutting: `appbox-lint` (7), `appbox-lens` (8), `appbox-cicd` (10, day-zero frame wrapping all stages). HUMAN GATE 3 (`deploy --approval`, human-supplied, never minted by code) sits here. Stage numbers and every stage's input/output artifacts: `docs/research/pipeline-map.md` §1; the visual map: `docs/appbox-system-map.md`; the CLI FSM phases: `appboxd/lib/phases.dart`.
+
+- **Upstream:** `appbox-reviewer` — ship only after the stage-6 GREEN verdict; the `native_deps` packaging gate runs in the build phase before this.
+- **Downstream:** none — stores / OTA / web are the terminus. `appbox-cicd`'s deploy job PREPARES and HALTS at this approval gate.
 
 ## Targets — wired (honest about verification tier)
 
@@ -75,6 +84,9 @@ asserts those three in pipeline state (`approvalTokens.deploy`); an agent may
 prepare, run `doctor` preflight, reach the gate and **stop** — it can never mint
 the approval token. `appbox deploy deploy` requires that approval as an argument and
 halts (recording a `halted` ledger row, minting nothing) without it.
+When CI is wired ([`appbox-cicd`](../appbox-cicd/SKILL.md)), the deploy job
+PREPARES, `doctor`-checks and halts right here — the pipeline automation can
+never mint the token either.
 
 `doctor(config)` is **preflight, not the gate** — it reports readiness; the gate
 still has to assert a value.

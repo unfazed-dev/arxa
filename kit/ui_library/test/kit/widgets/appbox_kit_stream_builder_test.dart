@@ -26,16 +26,16 @@ void main() {
       expect(
         find.text('value: 1'),
         findsOneWidget,
-        reason:
-            'ValueStream initialData should resolve before the first pump, '
+        reason: 'ValueStream initialData should resolve before the first pump, '
             'skipping the loading state entirely.',
       );
       expect(find.byType(CircularProgressIndicator), findsNothing);
     },
   );
 
-  testWidgets('kit.ui-library.stream-builder — plain StreamController shows loading then data',
-      (tester) async {
+  testWidgets(
+    'kit.ui-library.stream-builder — plain StreamController shows loading then data',
+    (tester) async {
       final controller = StreamController<int>();
       addTearDown(controller.close);
 
@@ -61,7 +61,8 @@ void main() {
     },
   );
 
-  testWidgets('kit.ui-library.stream-builder — error path renders errorBuilder', (tester) async {
+  testWidgets('kit.ui-library.stream-builder — error path renders errorBuilder',
+      (tester) async {
     final controller = StreamController<int>();
     addTearDown(controller.close);
 
@@ -85,7 +86,8 @@ void main() {
     );
   });
 
-  testWidgets('kit.ui-library.stream-builder — nullable stream: emitted null reaches the builder, no spinner',
+  testWidgets(
+      'kit.ui-library.stream-builder — nullable stream: emitted null reaches the builder, no spinner',
       (tester) async {
     final subject = BehaviorSubject<String?>.seeded(null);
     addTearDown(subject.close);

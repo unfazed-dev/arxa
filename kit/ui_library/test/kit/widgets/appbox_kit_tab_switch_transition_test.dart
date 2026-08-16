@@ -28,7 +28,8 @@ class _ProbeState extends State<_Probe> {
 void main() {
   setUp(() => _probeInits = 0);
 
-  testWidgets('kit.ui-library.tab-switch-transition — retains the tabs-stack element across tab switches',
+  testWidgets(
+      'kit.ui-library.tab-switch-transition — retains the tabs-stack element across tab switches',
       (tester) async {
     Widget frame(int index) => Directionality(
           textDirection: TextDirection.ltr,
@@ -48,10 +49,13 @@ void main() {
 
     await tester.pumpWidget(frame(0));
     await tester.pump();
-    expect(_probeInits, 1, reason: 'the tabs stack must survive later switches');
+    expect(_probeInits, 1,
+        reason: 'the tabs stack must survive later switches');
   });
 
-  testWidgets('kit.ui-library.tab-switch-transition — no phantom motion before the first switch', (tester) async {
+  testWidgets(
+      'kit.ui-library.tab-switch-transition — no phantom motion before the first switch',
+      (tester) async {
     await tester.pumpWidget(
       const Directionality(
         textDirection: TextDirection.ltr,
@@ -66,7 +70,8 @@ void main() {
         reason: 'startup parks the controller at 1.0 — zero offset');
   });
 
-  testWidgets('kit.ui-library.tab-switch-transition — direction helper: higher index enters from trailing edge, '
+  testWidgets(
+      'kit.ui-library.tab-switch-transition — direction helper: higher index enters from trailing edge, '
       'lower from leading (LTR)', (tester) async {
     Widget frame(int index) => Directionality(
           textDirection: TextDirection.ltr,
@@ -96,7 +101,8 @@ void main() {
         reason: 'the entrance settles home');
   });
 
-  testWidgets('kit.ui-library.tab-switch-transition — fade stays off by default (platform-view safety)',
+  testWidgets(
+      'kit.ui-library.tab-switch-transition — fade stays off by default (platform-view safety)',
       (tester) async {
     await tester.pumpWidget(
       const Directionality(

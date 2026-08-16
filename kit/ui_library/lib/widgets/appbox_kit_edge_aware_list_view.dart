@@ -147,16 +147,13 @@ class AppBoxKitEdgeAwareListView extends StatelessWidget {
         ? (bottomOcclusion ?? MediaQuery.paddingOf(context).bottom)
         : null;
     final list = ListView(
-      padding: (padding ?? EdgeInsets.zero)
-          .add(EdgeInsets.only(top: overdraw)),
+      padding: (padding ?? EdgeInsets.zero).add(EdgeInsets.only(top: overdraw)),
       controller: controller,
       physics: physics,
       children: [
         for (final child in children)
           _treat(child,
-              topEdge: treatTop,
-              bottomOcclusion: bottomBand,
-              style: style),
+              topEdge: treatTop, bottomOcclusion: bottomBand, style: style),
       ],
     );
     if (overdraw == 0) return list;

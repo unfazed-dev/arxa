@@ -630,6 +630,29 @@ export default [
       expect(report.stdoutLines, anyElement(contains('1 missing')));
       expect(report.stdoutLines, anyElement(contains('brew install ffmpeg')));
     });
+
+    test('skillRuntimeDir resolves from a foreign CWD (script-anchored)',
+        () {
+      // The from-scratch story: the agent works in ~/their-app, not in the
+      // app-box checkout. The skill runtime is a property of the appbox
+      // INSTALLATION — doctor must find it regardless of CWD.
+      final home = Directory.current;
+      final foreign = Directory.systemTemp.createTempSync('foreign_cwd');
+      try {
+        Directory.current = foreign;
+        final htmx =
+            File(p.join(skillRuntimeDir(), 'vendor', 'htmx.min.js'));
+        expect(htmx.existsSync(), isTrue,
+            reason:
+                'runtime must resolve via the script location when the CWD '
+                'walk fails, not via the foreign CWD');
+        final ladder = File(p.join(skillRuntimeDir(), 'ladder.json'));
+        expect(ladder.existsSync(), isTrue);
+      } finally {
+        Directory.current = home;
+        foreign.deleteSync(recursive: true);
+      }
+    });
   });
 
   // ── design_cli dispatch ─────────────────────────────────────────────

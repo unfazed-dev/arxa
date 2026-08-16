@@ -51,19 +51,24 @@ void main() {
     ));
   }
 
-  double gateAlpha(WidgetTester tester) => gateDescendant<Opacity>(tester).opacity;
+  double gateAlpha(WidgetTester tester) =>
+      gateDescendant<Opacity>(tester).opacity;
 
   // Geometry: gate top starts at 160 (below the expanded bar). Collapsed
   // pinned extent = kToolbarHeight (56) with zero window padding. Covered
   // fraction = (56 - (160 - pixels)) / 48.
-  testWidgets('kit.ui-library.scroll-occlusion-gate — fully visible child paints at alpha 1', (tester) async {
+  testWidgets(
+      'kit.ui-library.scroll-occlusion-gate — fully visible child paints at alpha 1',
+      (tester) async {
     final controller = ScrollController();
     addTearDown(controller.dispose);
     await tester.pumpWidget(harness(controller: controller));
     expect(gateAlpha(tester), 1.0);
   });
 
-  testWidgets('kit.ui-library.scroll-occlusion-gate — partially covered child fades proportionally', (tester) async {
+  testWidgets(
+      'kit.ui-library.scroll-occlusion-gate — partially covered child fades proportionally',
+      (tester) async {
     final controller = ScrollController();
     addTearDown(controller.dispose);
     await tester.pumpWidget(harness(controller: controller));
@@ -76,7 +81,8 @@ void main() {
     expect(alpha, lessThan(0.8));
   });
 
-  testWidgets('kit.ui-library.scroll-occlusion-gate — fully covered child snaps to alpha 0 and ignores pointers',
+  testWidgets(
+      'kit.ui-library.scroll-occlusion-gate — fully covered child snaps to alpha 0 and ignores pointers',
       (tester) async {
     final controller = ScrollController();
     addTearDown(controller.dispose);
@@ -93,7 +99,9 @@ void main() {
     expect(find.byKey(markerKey, skipOffstage: false), findsOneWidget);
   });
 
-  testWidgets('kit.ui-library.scroll-occlusion-gate — restores to alpha 1 when scrolled back out', (tester) async {
+  testWidgets(
+      'kit.ui-library.scroll-occlusion-gate — restores to alpha 1 when scrolled back out',
+      (tester) async {
     final controller = ScrollController();
     addTearDown(controller.dispose);
     await tester.pumpWidget(harness(controller: controller));
@@ -107,7 +115,8 @@ void main() {
     expect(gateDescendant<IgnorePointer>(tester).ignoring, isFalse);
   });
 
-  testWidgets('kit.ui-library.scroll-occlusion-gate — unmount mode swaps in a same-size placeholder when covered',
+  testWidgets(
+      'kit.ui-library.scroll-occlusion-gate — unmount mode swaps in a same-size placeholder when covered',
       (tester) async {
     final controller = ScrollController();
     addTearDown(controller.dispose);
@@ -145,7 +154,8 @@ void main() {
       }
     });
 
-    testWidgets('kit.ui-library.scroll-occlusion-gate — hides while a modal opened above it is active',
+    testWidgets(
+        'kit.ui-library.scroll-occlusion-gate — hides while a modal opened above it is active',
         (tester) async {
       final controller = ScrollController();
       addTearDown(controller.dispose);
@@ -163,7 +173,8 @@ void main() {
       expect(gateDescendant<IgnorePointer>(tester).ignoring, isFalse);
     });
 
-    testWidgets('kit.ui-library.scroll-occlusion-gate — gate mounted inside an open modal stays visible',
+    testWidgets(
+        'kit.ui-library.scroll-occlusion-gate — gate mounted inside an open modal stays visible',
         (tester) async {
       // Content *inside* a sheet captures the depth at mount time — only
       // modals opened above it may hide it.
@@ -183,11 +194,12 @@ void main() {
     });
   });
 
-  testWidgets('kit.ui-library.scroll-occlusion-gate — .scrollOcclusion() extension wraps child in a gate',
+  testWidgets(
+      'kit.ui-library.scroll-occlusion-gate — .scrollOcclusion() extension wraps child in a gate',
       (tester) async {
     const childKey = Key('ext-child');
-    final gated = const SizedBox(key: childKey, height: 40)
-        .scrollOcclusion(occlusionPadding: 8, hideMode: AppBoxKitChromeHideMode.unmount);
+    final gated = const SizedBox(key: childKey, height: 40).scrollOcclusion(
+        occlusionPadding: 8, hideMode: AppBoxKitChromeHideMode.unmount);
 
     expect(gated, isA<AppBoxKitScrollOcclusionGate>());
     final gate = gated as AppBoxKitScrollOcclusionGate;

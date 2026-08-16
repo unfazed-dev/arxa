@@ -65,7 +65,8 @@ void main() {
     // Android tier so .show() routes to the snackbar tier (the stub). This is
     // the path where the hop is observable; the iOS-CNToast tier is covered in
     // kit_notification_service_test.dart.
-    AppBoxKitPlatform.override = const AppBoxKitPlatformOverride(isAndroid: true);
+    AppBoxKitPlatform.override =
+        const AppBoxKitPlatformOverride(isAndroid: true);
   });
 
   tearDown(() {
@@ -105,7 +106,8 @@ void main() {
 
     expect(snackbar.calls, 1);
     expect(snackbar.lastMessage, 'done');
-    expect(snackbar.lastVariant, AppBoxKitSnackbarType.appBoxKitAutoProcessSuccess);
+    expect(snackbar.lastVariant,
+        AppBoxKitSnackbarType.appBoxKitAutoProcessSuccess);
   });
 
   testWidgets(
@@ -119,10 +121,12 @@ void main() {
 
     expect(snackbar.calls, 1);
     expect(snackbar.lastMessage, 'failed');
-    expect(snackbar.lastVariant, AppBoxKitSnackbarType.appBoxKitAutoProcessError);
+    expect(
+        snackbar.lastVariant, AppBoxKitSnackbarType.appBoxKitAutoProcessError);
   });
 
-  testWidgets('kit.ui-library.action-notifications — host-enum variant override flows through unchanged',
+  testWidgets(
+      'kit.ui-library.action-notifications — host-enum variant override flows through unchanged',
       (tester) async {
     // AppBoxKitActionConfig's *SnackbarType is dynamic — a host may pass its own enum
     // variant. The service must forward it verbatim on the snackbar tier

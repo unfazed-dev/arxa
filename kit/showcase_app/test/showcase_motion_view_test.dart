@@ -14,7 +14,8 @@ void main() {
   tearDownAll(() => appBoxKitLocator.reset());
 
   setUp(() {
-    AppBoxKitPlatform.override = const AppBoxKitPlatformOverride(isAndroid: true);
+    AppBoxKitPlatform.override =
+        const AppBoxKitPlatformOverride(isAndroid: true);
   });
   tearDown(AppBoxKitPlatform.reset);
 
@@ -47,7 +48,8 @@ void main() {
           .resolve(TextDirection.ltr);
     }
 
-    testWidgets('boxed tier takes the bare inset — Scaffold already stripped it',
+    testWidgets(
+        'boxed tier takes the bare inset — Scaffold already stripped it',
         (tester) async {
       // setUp's Android override is the boxed branch.
       expect((await pumpAndReadPadding(tester)).top, abxSize16,

@@ -10,7 +10,7 @@
     "v1.1.0 did NOT add missing kinds — v1.0.0 already covered all 15. It fixed a real defect:",
     "`composedFrom` and `presentation` were absent from `resolution.order`, so the two kinds",
     "using them (panel-activity, modal) would have fallen through to FAIL despite being",
-    "correctly authored. A reachability bug, not a coverage bug. See scripts/validate-registry.py.",
+    "correctly authored. A reachability bug, not a coverage bug. Enforced by appbox gate kind_registry (the Dart port of scripts/validate-registry.py).",
     "v1.2.0 added the Q12 inspect identity: `designVocabulary.inspectAttrs` (the Dart shape's",
     "one home, in kit core) and `anatomyNodes` (the closed anatomy-node-id vocabulary). It added",
     "no kinds and changed no resolution. See the `anatomyNodes._comment` for why that set has",

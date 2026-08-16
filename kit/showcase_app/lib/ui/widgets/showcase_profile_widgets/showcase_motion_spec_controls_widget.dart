@@ -46,7 +46,9 @@ class ShowcaseMotionSpecControlsWidget extends StatelessWidget {
     return Column(
       children: [
         AppBoxKitNativeSegmentedControl(
-          segments: [for (final preset in ShowcaseMotionPreset.values) preset.label],
+          segments: [
+            for (final preset in ShowcaseMotionPreset.values) preset.label
+          ],
           selectedIndex: viewModel.presetIndex,
           onChanged: viewModel.setPreset,
         ),

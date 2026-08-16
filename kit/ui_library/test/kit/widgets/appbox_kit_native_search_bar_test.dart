@@ -15,8 +15,11 @@ import 'appbox_kit_native_test_helpers.dart';
 void main() {
   tearDown(AppBoxKitPlatform.reset);
 
-  testWidgets('kit.ui-library.native-search-bar — Android wantNative routes to Material SearchBar', (tester) async {
-    AppBoxKitPlatform.override = const AppBoxKitPlatformOverride(isAndroid: true);
+  testWidgets(
+      'kit.ui-library.native-search-bar — Android wantNative routes to Material SearchBar',
+      (tester) async {
+    AppBoxKitPlatform.override =
+        const AppBoxKitPlatformOverride(isAndroid: true);
     await tester.pumpWidget(host(const AppBoxKitNativeSearchBar()));
 
     expect(
@@ -27,7 +30,9 @@ void main() {
     );
   });
 
-  testWidgets('kit.ui-library.native-search-bar — default platform builds clean', (tester) async {
+  testWidgets(
+      'kit.ui-library.native-search-bar — default platform builds clean',
+      (tester) async {
     await tester.pumpWidget(host(const AppBoxKitNativeSearchBar(hint: 'Find')));
 
     expect(
@@ -38,9 +43,11 @@ void main() {
     expect(find.text('Find'), findsOneWidget);
   });
 
-  testWidgets('kit.ui-library.native-search-bar — onChanged is wired (text entered via the controller-backed field)',
+  testWidgets(
+      'kit.ui-library.native-search-bar — onChanged is wired (text entered via the controller-backed field)',
       (tester) async {
-    AppBoxKitPlatform.override = const AppBoxKitPlatformOverride(isAndroid: true);
+    AppBoxKitPlatform.override =
+        const AppBoxKitPlatformOverride(isAndroid: true);
     final controller = TextEditingController();
     String? fired;
     await tester.pumpWidget(host(AppBoxKitNativeSearchBar(
@@ -64,8 +71,11 @@ void main() {
   // The trailing action is opt-in: with no actionLabel/onAction (the default
   // both existing call sites rely on) the field renders bare — no trailing
   // button of any kind.
-  testWidgets('kit.ui-library.native-search-bar — default (no action) renders no trailing button', (tester) async {
-    AppBoxKitPlatform.override = const AppBoxKitPlatformOverride(isAndroid: true);
+  testWidgets(
+      'kit.ui-library.native-search-bar — default (no action) renders no trailing button',
+      (tester) async {
+    AppBoxKitPlatform.override =
+        const AppBoxKitPlatformOverride(isAndroid: true);
     await tester.pumpWidget(host(const AppBoxKitNativeSearchBar()));
 
     expect(find.byType(SearchBar), findsOneWidget);
@@ -77,9 +87,11 @@ void main() {
   // button in a Row. Tested on the Material tier (TextButton); the iOS
   // CupertinoButton tier is code-verified only — a native UiKitView can't
   // render in a headless test.
-  testWidgets('kit.ui-library.native-search-bar — actionLabel renders a TextButton that fires onAction',
+  testWidgets(
+      'kit.ui-library.native-search-bar — actionLabel renders a TextButton that fires onAction',
       (tester) async {
-    AppBoxKitPlatform.override = const AppBoxKitPlatformOverride(isAndroid: true);
+    AppBoxKitPlatform.override =
+        const AppBoxKitPlatformOverride(isAndroid: true);
     var fired = 0;
     await tester.pumpWidget(host(AppBoxKitNativeSearchBar(
       actionLabel: 'Cancel',
@@ -98,8 +110,11 @@ void main() {
 
   // Either param null (here actionLabel set, onAction omitted) must NOT render a
   // button — both are required. Guards the half-set footgun.
-  testWidgets('kit.ui-library.native-search-bar — actionLabel without onAction renders no button', (tester) async {
-    AppBoxKitPlatform.override = const AppBoxKitPlatformOverride(isAndroid: true);
+  testWidgets(
+      'kit.ui-library.native-search-bar — actionLabel without onAction renders no button',
+      (tester) async {
+    AppBoxKitPlatform.override =
+        const AppBoxKitPlatformOverride(isAndroid: true);
     await tester.pumpWidget(
         host(const AppBoxKitNativeSearchBar(actionLabel: 'Cancel')));
 
@@ -110,7 +125,8 @@ void main() {
   // The CN tier is reached via the iOS-26 kit override; withAndroidFallback
   // diverts only the CN-internal render path so no UiKitView is constructed
   // headless.
-  testWidgets('kit.ui-library.native-search-bar — inside a scrollable keeps the native tier',
+  testWidgets(
+      'kit.ui-library.native-search-bar — inside a scrollable keeps the native tier',
       (tester) async {
     await withAndroidFallback(() async {
       AppBoxKitPlatform.override = const AppBoxKitPlatformOverride(

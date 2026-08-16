@@ -137,8 +137,8 @@ class ShowcaseNotesViewModel extends AppBoxKitViewModel {
   /// Asks first (hand-written — the message interpolates the folder name);
   /// on confirm the folder is deleted and its notes move to Recently Deleted.
   Future<void> confirmDeleteFolder(ShowcaseNoteFolderModel folder) async {
-    final confirmed = await appBoxKitLocator<AppBoxKitNotificationService>()
-        .confirm(
+    final confirmed =
+        await appBoxKitLocator<AppBoxKitNotificationService>().confirm(
       title: 'Delete Folder',
       message: 'Notes in "${folder.name}" will move to Recently Deleted.',
       actionLabel: 'Delete',

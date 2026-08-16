@@ -61,10 +61,11 @@ void main() {
     );
   });
 
-  testWidgets('kit.ui-library.drawer — glassPeek mirrors the rounded corner for an endDrawer',
+  testWidgets(
+      'kit.ui-library.drawer — glassPeek mirrors the rounded corner for an endDrawer',
       (tester) async {
-    await tester
-        .pumpWidget(host(const AppBoxKitDrawer(child: Text('menu')), end: true));
+    await tester.pumpWidget(
+        host(const AppBoxKitDrawer(child: Text('menu')), end: true));
     await openDrawer(tester, end: true);
 
     expect(
@@ -77,7 +78,9 @@ void main() {
     );
   });
 
-  testWidgets('kit.ui-library.drawer — plain renders the stock themed Drawer look', (tester) async {
+  testWidgets(
+      'kit.ui-library.drawer — plain renders the stock themed Drawer look',
+      (tester) async {
     await tester.pumpWidget(host(const AppBoxKitDrawer(
       variant: AppBoxKitDrawerVariant.plain,
       child: Text('menu'),
@@ -95,7 +98,9 @@ void main() {
         reason: 'the stock M3 drawer width');
   });
 
-  testWidgets('kit.ui-library.drawer — width override wins over the variant default', (tester) async {
+  testWidgets(
+      'kit.ui-library.drawer — width override wins over the variant default',
+      (tester) async {
     await tester.pumpWidget(host(const AppBoxKitDrawer(
       width: 400,
       child: Text('menu'),
@@ -141,7 +146,9 @@ void main() {
     await openDrawer(tester);
 
     expect(
-      tester.widget<AppBoxKitMotionScope>(find.byType(AppBoxKitMotionScope)).driver,
+      tester
+          .widget<AppBoxKitMotionScope>(find.byType(AppBoxKitMotionScope))
+          .driver,
       same(driver),
       reason: 'the passed driver IS the scope driver the rows slice from',
     );
@@ -151,7 +158,8 @@ void main() {
     expect(
       tester
           .widget<FadeTransition>(find.descendant(
-              of: find.byType(AppBoxKitWake), matching: find.byType(FadeTransition)))
+              of: find.byType(AppBoxKitWake),
+              matching: find.byType(FadeTransition)))
           .opacity
           .value,
       closeTo(Curves.easeOutCubic.transform(0.4), 1e-9),
@@ -176,7 +184,8 @@ void main() {
 
     final fades = tester
         .widgetList<FadeTransition>(find.descendant(
-            of: find.byType(AppBoxKitWake), matching: find.byType(FadeTransition)))
+            of: find.byType(AppBoxKitWake),
+            matching: find.byType(FadeTransition)))
         .toList();
     expect(fades, hasLength(3));
     expect(fades[0].opacity.value,

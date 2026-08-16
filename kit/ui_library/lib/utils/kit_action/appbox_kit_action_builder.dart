@@ -62,8 +62,7 @@ class AppBoxKitActionBuilder<T> implements Future<T> {
       _asFuture().then(onValue, onError: onError);
 
   @override
-  Future<T> catchError(Function onError,
-          {bool Function(Object error)? test}) =>
+  Future<T> catchError(Function onError, {bool Function(Object error)? test}) =>
       _asFuture().catchError(onError, test: test);
 
   @override
@@ -314,7 +313,8 @@ class AppBoxKitActionBuilder<T> implements Future<T> {
   ///     error: 'Failed to save',
   ///   );
   /// ```
-  AppBoxKitActionBuilder<T> withNotificationType(AppBoxKitNotificationType type) {
+  AppBoxKitActionBuilder<T> withNotificationType(
+      AppBoxKitNotificationType type) {
     _config.loadingNotificationType = type;
     _config.successNotificationType = type;
     _config.errorNotificationType = type;
@@ -404,7 +404,8 @@ class AppBoxKitActionBuilder<T> implements Future<T> {
   ///     await _routerService.replaceWith(HomeRoute());
   ///   });
   /// ```
-  AppBoxKitActionBuilder<T> onSuccess(FutureOr<void> Function(T result) callback) {
+  AppBoxKitActionBuilder<T> onSuccess(
+      FutureOr<void> Function(T result) callback) {
     _config.onSuccessCallback = callback;
     return this;
   }
@@ -557,7 +558,8 @@ class AppBoxKitActionBuilder<T> implements Future<T> {
   ///     rebuildUi();
   ///   });
   /// ```
-  AppBoxKitActionBuilder<T> withProgress(void Function(double progress) onProgress) {
+  AppBoxKitActionBuilder<T> withProgress(
+      void Function(double progress) onProgress) {
     _config.onProgressCallback = onProgress;
     return this;
   }

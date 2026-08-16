@@ -147,45 +147,48 @@ class ShowcaseNotesFolderViewMobile
                     // here inherits both instead of having to remember them.
                     AppBoxKitEdgeAwareSliverList(
                       bottomOcclusion: kShowcaseTabBarBlockHeight,
-                      padding: EdgeInsets.fromLTRB(abxSize16, abxSize8, abxSize16,
+                      padding: EdgeInsets.fromLTRB(
+                          abxSize16,
+                          abxSize8,
+                          abxSize16,
                           abxSize80 + MediaQuery.paddingOf(context).bottom),
                       itemCount: groups.length,
                       itemBuilder: (context, i) {
-                          final group = groups[i];
-                          return Padding(
-                            padding: const EdgeInsets.only(bottom: abxSize16),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                ShowcaseSectionLabelWidget(group.label),
-                                appBoxKitVerticalSpaceSmall,
-                                // The kit's grouped-inset section owns the group
-                                // card + hairline dividers (replacing the app's
-                                // hand-rolled NotesSection); margin zero — the
-                                // enclosing SliverPadding already insets 16.
-                                AppBoxKitListSection(
-                                  margin: EdgeInsets.zero,
-                                  children: [
-                                    for (final note in group.notes)
-                                      ShowcaseNotesNoteRowWidget(
-                                        key: ValueKey(note.id),
-                                        note: note,
-                                        viewModel: viewModel,
-                                        onDeletePermanently: () => viewModel
-                                            .confirmDeletePermanently(note),
-                                        formatDate: _relativeDate,
-                                      ),
-                                  ],
-                                ),
-                              ],
-                            ),
-                          )
-                              // Lazy list: rows wake in build (≈viewport) order —
-                              // acceptable here, groups are few and above the fold.
-                              // The wake now sits INSIDE the list's edge wrappers;
-                              // harmless, because the effect measures layout
-                              // geometry, which a paint-time animation never moves.
-                              .wake(order: i);
+                        final group = groups[i];
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: abxSize16),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              ShowcaseSectionLabelWidget(group.label),
+                              appBoxKitVerticalSpaceSmall,
+                              // The kit's grouped-inset section owns the group
+                              // card + hairline dividers (replacing the app's
+                              // hand-rolled NotesSection); margin zero — the
+                              // enclosing SliverPadding already insets 16.
+                              AppBoxKitListSection(
+                                margin: EdgeInsets.zero,
+                                children: [
+                                  for (final note in group.notes)
+                                    ShowcaseNotesNoteRowWidget(
+                                      key: ValueKey(note.id),
+                                      note: note,
+                                      viewModel: viewModel,
+                                      onDeletePermanently: () => viewModel
+                                          .confirmDeletePermanently(note),
+                                      formatDate: _relativeDate,
+                                    ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        )
+                            // Lazy list: rows wake in build (≈viewport) order —
+                            // acceptable here, groups are few and above the fold.
+                            // The wake now sits INSIDE the list's edge wrappers;
+                            // harmless, because the effect measures layout
+                            // geometry, which a paint-time animation never moves.
+                            .wake(order: i);
                       },
                     ),
                 ],

@@ -47,7 +47,8 @@ class AppBoxKitStreamBuilder<T> extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final valueStream = stream is ValueStream<T> ? stream as ValueStream<T> : null;
+    final valueStream =
+        stream is ValueStream<T> ? stream as ValueStream<T> : null;
     // hasValue, not valueOrNull: a seeded-null BehaviorSubject HAS a value
     // (null is the data), valueOrNull can't tell the two apart.
     final hasSeed = initialData != null || (valueStream?.hasValue ?? false);

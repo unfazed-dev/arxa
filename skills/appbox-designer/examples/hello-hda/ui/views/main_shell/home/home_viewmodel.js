@@ -11,6 +11,6 @@ export const page = (context, helpers) => {
   return helpers.render(context, 'ui/views/main_shell/home/home_view.html', {
     ...chrome('home', helpers.translate(context)),
     ...ctx,
-    demoCount: Number.isInteger(n) && n >= 0 ? n : ctx.count,
+    demoCount: Number.isInteger(demoCount) && demoCount >= 0 ? demoCount : ctx.count,
   });
 };

@@ -60,7 +60,8 @@ abstract final class AppBoxKitGlyphs {
   static const person = AppBoxKitGlyph(Icons.person, 'person');
   static const lock = AppBoxKitGlyph(Icons.lock, 'lock');
   static const alerts = AppBoxKitGlyph(Icons.notifications, 'bell');
-  static const alertsBadge = AppBoxKitGlyph(Icons.notifications_active, 'bell.badge');
+  static const alertsBadge =
+      AppBoxKitGlyph(Icons.notifications_active, 'bell.badge');
 
   // -- Surfaces -------------------------------------------------------------
   static const sheet = AppBoxKitGlyph(Icons.layers, 'rectangle.stack');
@@ -75,7 +76,8 @@ abstract final class AppBoxKitGlyphs {
       AppBoxKitGlyph(Icons.warning_amber_outlined, 'exclamationmark.triangle');
 
   // -- Notes / media (showcase Notes app) ------------------------------------
-  static const notes = AppBoxKitGlyph(Icons.sticky_note_2_outlined, 'note.text');
+  static const notes =
+      AppBoxKitGlyph(Icons.sticky_note_2_outlined, 'note.text');
   static const folder = AppBoxKitGlyph(Icons.folder_outlined, 'folder');
   static const newFolder =
       AppBoxKitGlyph(Icons.create_new_folder_outlined, 'folder.badge.plus');
@@ -88,7 +90,8 @@ abstract final class AppBoxKitGlyphs {
   static const restore =
       AppBoxKitGlyph(Icons.restore_from_trash, 'arrow.uturn.backward');
   static const photo = AppBoxKitGlyph(Icons.photo, 'photo');
-  static const chevronRight = AppBoxKitGlyph(Icons.chevron_right, 'chevron.right');
+  static const chevronRight =
+      AppBoxKitGlyph(Icons.chevron_right, 'chevron.right');
 
   // -- Tab destinations (app shell) ------------------------------------------
   /// Train tab — workouts / fitness.
@@ -98,7 +101,8 @@ abstract final class AppBoxKitGlyphs {
   static const shop = AppBoxKitGlyph(Icons.storefront, 'bag.fill');
 
   /// Support tab — help / assistance.
-  static const support = AppBoxKitGlyph(Icons.support_agent, 'questionmark.circle.fill');
+  static const support =
+      AppBoxKitGlyph(Icons.support_agent, 'questionmark.circle.fill');
 
   /// Community tab — people / social.
   static const community = AppBoxKitGlyph(Icons.groups, 'person.3.fill');
@@ -114,7 +118,8 @@ abstract final class AppBoxKitGlyphs {
 
   /// Trust / guarantee shield — returns, secure-checkout, warranty rows.
   /// Material `verified_user`; Apple `checkmark.shield.fill`.
-  static const shield = AppBoxKitGlyph(Icons.verified_user, 'checkmark.shield.fill');
+  static const shield =
+      AppBoxKitGlyph(Icons.verified_user, 'checkmark.shield.fill');
 
   // -- Commerce (cart → checkout → shipping → delivery) ----------------------
   /// Shopping cart (the cart surface itself). Material `shopping_cart`; Apple
@@ -143,10 +148,12 @@ abstract final class AppBoxKitGlyphs {
 
   /// Delivery truck (shipping method + carrier). `Icons.local_shipping` pairs
   /// with `truck.box.fill`.
-  static const truck = AppBoxKitGlyph(Icons.local_shipping_outlined, 'truck.box.fill');
+  static const truck =
+      AppBoxKitGlyph(Icons.local_shipping_outlined, 'truck.box.fill');
 
   /// Sealed package / parcel (an order + tracking number).
-  static const package = AppBoxKitGlyph(Icons.inventory_2_outlined, 'shippingbox.fill');
+  static const package =
+      AppBoxKitGlyph(Icons.inventory_2_outlined, 'shippingbox.fill');
 
   /// Receipt / order summary (the "we emailed your receipt" notice).
   static const receipt =
@@ -156,7 +163,8 @@ abstract final class AppBoxKitGlyphs {
   /// Leading back / pop affordance. `chevron.backward` is the iOS back symbol
   /// (canonical pair to `arrow_back_ios_new`); prefer it over ad-hoc
   /// `chevron.left` at call sites so the same back glyph renders on every tier.
-  static const back = AppBoxKitGlyph(Icons.arrow_back_ios_new, 'chevron.backward');
+  static const back =
+      AppBoxKitGlyph(Icons.arrow_back_ios_new, 'chevron.backward');
 
   // -- Icon namespaces (by-name resolution) ----------------------------------
   /// Lucide icons by Lucide design name (kebab-case, as on lucide.dev):

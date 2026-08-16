@@ -101,8 +101,8 @@ void main() {
         () async {
       // given
       stubSignedIn();
-      when(() => facade.folders$('user-1')).thenAnswer(
-          (_) => Stream.value([_folder('folder-work', 'Work', 1)]));
+      when(() => facade.folders$('user-1'))
+          .thenAnswer((_) => Stream.value([_folder('folder-work', 'Work', 1)]));
       final vm = ShowcaseNotesFolderViewModel(folderKey: 'folder-work');
       addTearDown(vm.dispose);
 
@@ -246,12 +246,13 @@ void main() {
       verify(() => facade.togglePin(pinned)).called(1);
     });
 
-    test('notes.trash-and-restore.trash-a-note — moveToTrash delegates to the facade',
+    test(
+        'notes.trash-and-restore.trash-a-note — moveToTrash delegates to the facade',
         () async {
       // given
       final live = _note('n1', 'Q2 retro');
-      when(() => facade.moveToTrash(any())).thenAnswer(
-          (_) async => live.copyWith(deletedAt: () => DateTime.utc(2026, 7, 12)));
+      when(() => facade.moveToTrash(any())).thenAnswer((_) async =>
+          live.copyWith(deletedAt: () => DateTime.utc(2026, 7, 12)));
       final vm = ShowcaseNotesFolderViewModel(folderKey: 'folder-work');
       addTearDown(vm.dispose);
 

@@ -2,7 +2,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:appbox_kit_showcase_app/app/app.locator.dart';
 import 'package:appbox_kit_showcase_app/ui/views/showcase_search_shell/showcase_search/showcase_search_viewmodel.dart';
 
-
 // No intake story maps to the search-filters demo surface (map.json has no
 // search-demo story — `search-and-attachments.search.*` covers the notes text
 // search, a different feature), so these names carry behavior sentences only.

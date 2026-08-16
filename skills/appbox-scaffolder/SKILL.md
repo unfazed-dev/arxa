@@ -1,9 +1,11 @@
 ---
 name: appbox-scaffolder
-description: Use to turn a FROZEN design into the per-surface Flutter file set the coverage gate asserts. Scaffolds app surfaces from structure.json + targets; form factors follow targets (macos -> 3 files/surface, ios/android -> 4), never empty. Trigger on "scaffold the app", "generate the views", "emit the Dart", "why does coverage find no lib/ui/views". Drives `appbox emit scaffold` (the Dart port in appboxd/lib/scaffold.dart).
+description: Use when a FROZEN design must become the per-surface Flutter file set the coverage gate asserts. Scaffolds app surfaces from structure.json + targets; form factors follow targets (macos -> 3 files/surface, ios/android -> 4), never empty. Trigger on "scaffold the app", "generate the views", "emit the Dart", "why does coverage find no lib/ui/views". Drives `appbox emit scaffold` (the Dart port in appboxd/lib/scaffold.dart).
 ---
 
 # appbox-scaffolder — produce the Dart tree the gates assert
+
+> Per-skill playbook (the folded canon for this phase): [`SCAFFOLD_playbook.mdx`](SCAFFOLD_playbook.mdx)
 
 ## Core principle
 
@@ -19,6 +21,13 @@ Flutter file set, so "scaffold D1" and "coverage of D1" had no target.
 It is the **inverse of the structure gate**: where that gate asserts the tree
 matches the registry, the scaffolder emits that tree from a frozen
 `structure.json`. What it writes is exactly what `gates/coverage` then walks.
+
+## Pipeline position
+
+Stage 3 of `appbox-orchestrator` (Ø, front door) → `appbox-story-mapper / appbox-moodboarder` (0, optional) → `appbox-intake` (1) → `appbox-designer` (2) → `appbox-scaffolder` (3) → `appbox-builder` (4) → `appbox-tester` (5) → `appbox-reviewer` (6) → `appbox-deployer` (9) — cross-cutting: `appbox-lint` (7), `appbox-lens` (8), `appbox-cicd` (10, day-zero frame wrapping all stages). Stage numbers and every stage's input/output artifacts: `docs/research/pipeline-map.md` §1; the visual map: `docs/appbox-system-map.md`; the CLI FSM phases: `appboxd/lib/phases.dart`.
+
+- **Upstream:** `appbox-designer` — a FROZEN `structure.json` + the target set are the inputs; an unfrozen design is never scaffolded.
+- **Downstream:** `appbox-builder` — fills the stub tree and wires the `deps`/`kits` recorded in each stub header; the `scaffold` S0–S10 + `coverage` C1–C5 gates (and `appbox-reviewer`'s arch gates) assert what this skill produces.
 
 ## What you produce (and what you do not)
 
@@ -64,7 +73,7 @@ builder, but resolving the actual package deps is the builder's wiring step,
 not yours.
 That means a dependency which cannot be built for a declared target is not
 something you can prevent here — it is caught over the assembled app by
-[`gates/native_deps`](../../gates/native_deps/README.md), which asserts that
+`appbox gate native_deps` (`appboxd/lib/gate_native_deps.dart`), which asserts that
 every plugin is packaged for each target's native toolchain (today: Swift
 Package Manager on Apple platforms, where Flutter 3.44 warns that an
 unmigrated plugin "will become an error in a future version"). If that gate
@@ -209,10 +218,10 @@ package self-enforces the wiring:
 `kit/ui_library/vendor/cupertino_native_better/tool/check_theme_wiring.sh`
 fails on any under-wired brightness-handling view.
 
-**Validate after any registry edit:**
+**Validate after any registry edit** (a real gate — it also rides `appbox gate --all` and CI):
 
 ```
-python3 skills/appbox-scaffolder/scripts/validate-registry.py
+appbox gate kind_registry
 ```
 
 It checks the registry against its two ground truths — the partials directory

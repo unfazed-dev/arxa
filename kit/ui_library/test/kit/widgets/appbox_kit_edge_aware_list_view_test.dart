@@ -30,8 +30,10 @@ void main() {
         ),
       );
 
-  int effectCount(WidgetTester tester) =>
-      find.byType(AppBoxKitScrollEdgeEffect, skipOffstage: false).evaluate().length;
+  int effectCount(WidgetTester tester) => find
+      .byType(AppBoxKitScrollEdgeEffect, skipOffstage: false)
+      .evaluate()
+      .length;
 
   testWidgets(
       'kit.ui-library.edge-aware-list — extendBehindTopBar oversizes the '
@@ -87,7 +89,8 @@ void main() {
   testWidgets(
       'kit.ui-library.edge-aware-list — bottom occlusion treats EVERY child exactly once',
       (tester) async {
-    await tester.pumpWidget(harness(edges: AppBoxKitScrollEdges.bottom, bottomOcclusion: 64));
+    await tester.pumpWidget(
+        harness(edges: AppBoxKitScrollEdges.bottom, bottomOcclusion: 64));
 
     // One per child, no more: the count is the anti-double-apply assertion.
     // A child arriving already wrapped (a leaf that still calls the sugar)
@@ -150,7 +153,8 @@ void main() {
   testWidgets(
       'kit.ui-library.edge-aware-list — occlusion padding reaches the bottom wrapper',
       (tester) async {
-    await tester.pumpWidget(harness(edges: AppBoxKitScrollEdges.bottom, bottomOcclusion: 64));
+    await tester.pumpWidget(
+        harness(edges: AppBoxKitScrollEdges.bottom, bottomOcclusion: 64));
     final effect = tester.widget<AppBoxKitScrollEdgeEffect>(
       find.byType(AppBoxKitScrollEdgeEffect, skipOffstage: false).first,
     );
@@ -188,7 +192,8 @@ void main() {
   testWidgets(
       'kit.ui-library.edge-aware-sliver-list — treats every item exactly once',
       (tester) async {
-    await tester.pumpWidget(sliverHarness(edges: AppBoxKitScrollEdges.bottom, bottomOcclusion: 64));
+    await tester.pumpWidget(
+        sliverHarness(edges: AppBoxKitScrollEdges.bottom, bottomOcclusion: 64));
     expect(effectCount(tester), 3);
     for (var i = 0; i < 3; i++) {
       expect(

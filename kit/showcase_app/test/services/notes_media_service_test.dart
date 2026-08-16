@@ -11,7 +11,6 @@ import 'package:appbox_kit_showcase_app/services/showcase_notes_services/adapter
 
 import '../helpers/test_helpers.dart';
 
-
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -120,7 +119,8 @@ void main() {
       expect(recorder.isRecording, isTrue);
       expect(
         recorder.startedPaths.single,
-        allOf(contains('appbox_kit_showcase_app/attachments/'), endsWith('.m4a')),
+        allOf(
+            contains('appbox_kit_showcase_app/attachments/'), endsWith('.m4a')),
       );
     });
 

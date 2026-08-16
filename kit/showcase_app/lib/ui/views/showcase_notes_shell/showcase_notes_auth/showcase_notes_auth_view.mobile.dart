@@ -131,7 +131,8 @@ class ShowcaseNotesAuthViewMobile
                     appBoxKitVerticalSpaceMedium,
                     if (mode == ShowcaseNotesAuthMode.password)
                       ShowcaseNotesPasswordFormWidget(
-                          viewModel: viewModel, onCreateAccount: onCreateAccount)
+                          viewModel: viewModel,
+                          onCreateAccount: onCreateAccount)
                     else
                       ShowcaseNotesOtpFormWidget(viewModel: viewModel),
                   ],

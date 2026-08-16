@@ -17,6 +17,19 @@
     sans-serif;
 }
 * { box-sizing: border-box; }
+/* The ladder rungs — every stated view mounts its three factor variants and
+   this shows exactly one. Boundaries are the Material 3 window size classes
+   (compact <600, medium 600–839, expanded ≥840), never a freeze width. */
+.rung { display: none; }
+@media (max-width: 599px) {
+.rung--mobile { display: block; }
+}
+@media (min-width: 600px) and (max-width: 839px) {
+.rung--tablet { display: block; }
+}
+@media (min-width: 840px) {
+.rung--desktop { display: block; }
+}
 /* Scrollbars must blend into ANY theme: transparent track, thumb tinted from
    the theme ink (var(--tx)) with currentColor only as fallback — one consistent
    tint across containers whose local text colors differ (rails, chips, code).

@@ -25,6 +25,14 @@ import 'appbox_kit_native_chrome_gate.dart';
 /// stays free of the dep.
 ///
 /// [onPressed] is nullable: `null` disables the button on both tiers.
+///
+/// Changing the glyph (or [sfSymbol]) at runtime ANIMATES on the Apple
+/// tiers: the update reaches the mounted native button in place (no
+/// platform-view recreation) and the SF Symbol replace transition swaps the
+/// glyphs — mic → stop → mic toggles read as one continuous control. This
+/// is the idiom for stateful trailing actions (a voice recorder's button
+/// IS its state). Keep the widget at the same tree position (same type,
+/// same key) so the update flows as a prop change.
 class AppBoxKitNativeIconButton extends StatelessWidget {
   const AppBoxKitNativeIconButton({
     super.key,

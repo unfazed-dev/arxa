@@ -148,7 +148,8 @@ void main() {
         reason: 'reparented through the exit, never re-inflated');
   });
 
-  testWidgets('kit.ui-library.animated-tab-stack — direction helper: backward switch mirrors both slides',
+  testWidgets(
+      'kit.ui-library.animated-tab-stack — direction helper: backward switch mirrors both slides',
       (tester) async {
     await tester.pumpWidget(_frame(0));
     await tester.pumpWidget(_frame(2)); // forward, then let it settle
@@ -163,7 +164,9 @@ void main() {
         reason: 'backward switch: outgoing through the trailing edge');
   });
 
-  testWidgets('kit.ui-library.animated-tab-stack — no phantom motion before the first switch', (tester) async {
+  testWidgets(
+      'kit.ui-library.animated-tab-stack — no phantom motion before the first switch',
+      (tester) async {
     await tester.pumpWidget(_frame(0));
     for (final dx in _slideDxs(tester)) {
       expect(dx, 0.0, reason: 'startup parks the controller at 1.0');
@@ -233,7 +236,9 @@ void main() {
     expect(_alive('tab1'), findsOneWidget, reason: 'tab1 kept alive');
   });
 
-  testWidgets('kit.ui-library.animated-tab-stack — tab-list shrink mid-exit cuts the exit short', (tester) async {
+  testWidgets(
+      'kit.ui-library.animated-tab-stack — tab-list shrink mid-exit cuts the exit short',
+      (tester) async {
     // Live recomposition (the host's per-Session tab list) can remove the
     // leaving tab while its exit is still running.
     await tester.pumpWidget(_frame(2));
@@ -261,7 +266,8 @@ void main() {
     expect(_inits.where((l) => l == 'tab0'), hasLength(1));
   });
 
-  testWidgets('kit.ui-library.animated-tab-stack — fade stays off by default (platform-view safety)',
+  testWidgets(
+      'kit.ui-library.animated-tab-stack — fade stays off by default (platform-view safety)',
       (tester) async {
     await tester.pumpWidget(_frame(0));
     expect(find.byType(FadeTransition), findsNothing,
@@ -269,7 +275,9 @@ void main() {
             '(flutter#148639/#24164) — fade must be opt-in (check 1c2)');
   });
 
-  testWidgets('kit.ui-library.animated-tab-stack — fade opt-in cross-fades the pair', (tester) async {
+  testWidgets(
+      'kit.ui-library.animated-tab-stack — fade opt-in cross-fades the pair',
+      (tester) async {
     await tester.pumpWidget(_frame(0, fade: true));
     expect(find.byType(FadeTransition), findsNWidgets(2),
         reason: 'incoming fades in, outgoing fades out — wrappers always '
@@ -321,7 +329,8 @@ void main() {
 
     testWidgets(
         'kit.ui-library.animated-tab-stack — a switch is an instant cross-cut: the outgoing tab is '
-        'alpha-hidden in the SAME frame and never leaves the paint tree', (tester) async {
+        'alpha-hidden in the SAME frame and never leaves the paint tree',
+        (tester) async {
       await tester.pumpWidget(_frame(0));
       await tester.pumpWidget(_frame(1));
 
@@ -441,14 +450,12 @@ void main() {
                 .first,
           );
 
-      final hiddenOffset =
-          translateOf('tab0').transform.getTranslation();
+      final hiddenOffset = translateOf('tab0').transform.getTranslation();
       expect(hiddenOffset.x.abs(), greaterThanOrEqualTo(10000),
           reason: 'hidden platform-view rects must sit far outside any '
               'plausible screen so no on-screen op can intersect them');
 
-      final activeOffset =
-          translateOf('tab1').transform.getTranslation();
+      final activeOffset = translateOf('tab1').transform.getTranslation();
       expect(activeOffset.x, 0,
           reason: 'driven to identity on the active tab — no shift, and the '
               'constant wrapper keeps the tree shape stable across switches');
@@ -493,7 +500,8 @@ void main() {
     await tester.pumpWidget(_frame(0, animated: true));
     await tester.pumpWidget(_frame(1, animated: true));
     await tester.pump(const Duration(milliseconds: 50));
-    expect(_onStage('tab0'), findsOneWidget, reason: 'a run really is in flight');
+    expect(_onStage('tab0'), findsOneWidget,
+        reason: 'a run really is in flight');
 
     await tester.pumpWidget(_frame(2, animated: false));
     expect(tester.takeException(), isNull,

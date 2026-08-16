@@ -447,9 +447,10 @@ class _CNSearchBarState extends State<CNSearchBar>
 
   @override
   Widget build(BuildContext context) {
-    final isIOSOrMacOS =
-        defaultTargetPlatform == TargetPlatform.iOS ||
-        defaultTargetPlatform == TargetPlatform.macOS;
+    // iOS-only: the macOS plugin registers no search-bar factory, so an
+    // AppKitView here would crash at creation. (The glass gate below already
+    // excluded macOS in practice; this makes the exclusion structural.)
+    final isIOSOrMacOS = defaultTargetPlatform == TargetPlatform.iOS;
     // LOCAL PATCH #6: tier-split demotion (see button.dart PATCH #4).
     final shouldUseNative = isIOSOrMacOS &&
         PlatformVersion.shouldUseNativeGlass &&

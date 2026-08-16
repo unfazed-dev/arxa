@@ -3,7 +3,6 @@ import 'package:appbox_kit_showcase_app/app/app.locator.dart';
 import 'package:appbox_kit_showcase_app/enums/showcase_profile_enums/enums.dart';
 import 'package:appbox_kit_showcase_app/ui/views/showcase_profile_shell/showcase_profile/showcase_profile_viewmodel.dart';
 
-
 void main() {
   group('ShowcaseProfileViewModel', () {
     tearDown(() => locator.reset());

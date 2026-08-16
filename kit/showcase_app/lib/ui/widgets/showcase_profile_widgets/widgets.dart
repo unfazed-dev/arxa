@@ -1,5 +1,6 @@
 // Barrel for profile shell widgets.
 export 'package:appbox_kit_showcase_app/ui/widgets/showcase_profile_widgets/showcase_components_chip_rail_widget.dart';
+export 'package:appbox_kit_showcase_app/ui/widgets/showcase_profile_widgets/showcase_components_conversation_widget.dart';
 export 'package:appbox_kit_showcase_app/ui/widgets/showcase_profile_widgets/showcase_components_drawer_widget.dart';
 export 'package:appbox_kit_showcase_app/ui/widgets/showcase_profile_widgets/showcase_components_frosted_section_widget.dart';
 export 'package:appbox_kit_showcase_app/ui/widgets/showcase_profile_widgets/showcase_components_input_bar_widget.dart';

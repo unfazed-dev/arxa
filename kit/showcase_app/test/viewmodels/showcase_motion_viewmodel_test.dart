@@ -22,7 +22,8 @@ void main() {
 
     test(
         'profile-and-gallery-demos.gallery.view-the-motion-demo — '
-        'setPreset + setEnabled derive the spec through copyWith(enabled:)', () {
+        'setPreset + setEnabled derive the spec through copyWith(enabled:)',
+        () {
       // given
       final vm = ShowcaseMotionViewModel();
       // when

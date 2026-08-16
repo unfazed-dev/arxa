@@ -2,6 +2,17 @@ import Flutter
 import UIKit
 import SwiftUI
 
+/// LOCAL PATCH #11: plain container UIView with a layout hook, so the
+/// platform view can rebuild its bounds-dependent `shadowPath` whenever the
+/// engine resizes it (platform views track their Flutter child's size).
+final class CNShadowContainerView: UIView {
+  var onLayout: (() -> Void)?
+  override func layoutSubviews() {
+    super.layoutSubviews()
+    onLayout?()
+  }
+}
+
 @available(iOS 26.0, *)
 class LiquidGlassContainerPlatformView: NSObject, FlutterPlatformView {
   private let container: UIView
@@ -17,9 +28,77 @@ class LiquidGlassContainerPlatformView: NSObject, FlutterPlatformView {
   private var configuredShape: String = "capsule"
   private var configuredCornerRadius: CGFloat? = nil
 
+  // LOCAL PATCH #11: optional elevation shadow spec (LiquidGlassConfig.shadow
+  // on the Dart side). Flutter-drawn chrome riding a plain anchor cannot
+  // paint its own BoxShadow — the engine's view slicer and the fade's
+  // opacity surface clip anything past the child's layer bounds (observed
+  // on-device 2026-08-15 as a hard-edged rectangle where the soft shadow
+  // should be). Instead the container's OWN layer casts the shadow: Core
+  // Animation composites it outside every Flutter layer bound, matched to
+  // the configured shape via shadowPath.
+  private var configuredShadowColor: UIColor? = nil
+  private var configuredShadowRadius: CGFloat = 0
+  private var configuredShadowOffset: CGSize = .zero
+
+  /// LOCAL FIX (2026-08-15 idle-loop): the last APPLIED `isDark`. The settle
+  /// replay re-invokes `updateConfig` with the SAME args, so the poke at the
+  /// end of `updateConfig` must fire only when the appearance actually
+  /// changed — otherwise every replay re-schedules itself.
+  private var configuredIsDark: Bool? = nil
+
+  /// (Re)applies the configured elevation shadow to the container's layer.
+  /// `nil` spec clears it. Called on init/updateConfig and after transition
+  /// containment releases the layer (containment zeroes shadowOpacity while
+  /// active — see Issue #29/#36 — so it must restore this shadow on exit).
+  private func applyConfiguredShadow() {
+    guard let color = configuredShadowColor else {
+      container.layer.shadowOpacity = 0
+      container.layer.shadowPath = nil
+      return
+    }
+    container.layer.shadowColor = color.cgColor
+    container.layer.shadowOpacity = 1.0
+    container.layer.shadowRadius = configuredShadowRadius
+    container.layer.shadowOffset = configuredShadowOffset
+    let bounds = container.bounds
+    let radius = roundedCornerRadiusForCurrentShape()
+    let path: CGPath
+    if bounds.width > 0 && bounds.height > 0 {
+      switch configuredShape {
+      case "circle":
+        path = UIBezierPath(ovalIn: bounds).cgPath
+      case "rect":
+        path = UIBezierPath(roundedRect: bounds, cornerRadius: radius).cgPath
+      default: // capsule
+        path = UIBezierPath(roundedRect: bounds,
+                            cornerRadius: min(bounds.width, bounds.height) / 2.0).cgPath
+      }
+    } else {
+      path = UIBezierPath(rect: bounds).cgPath
+    }
+    container.layer.shadowPath = path
+  }
+
+  /// Parses the optional 'shadow' creation/update param
+  /// ({color: ARGB int, radius: double, dx: double, dy: double}).
+  private static func parseShadow(_ dict: [String: Any]?) -> (UIColor, CGFloat, CGSize)? {
+    guard let shadow = dict?["shadow"] as? [String: Any],
+          let colorInt = shadow["color"] as? Int else { return nil }
+    let uiColor = UIColor(
+      red: CGFloat((colorInt >> 16) & 0xFF) / 255.0,
+      green: CGFloat((colorInt >> 8) & 0xFF) / 255.0,
+      blue: CGFloat(colorInt & 0xFF) / 255.0,
+      alpha: CGFloat((colorInt >> 24) & 0xFF) / 255.0
+    )
+    let radius = CGFloat((shadow["radius"] as? NSNumber)?.doubleValue ?? 0)
+    let dx = CGFloat((shadow["dx"] as? NSNumber)?.doubleValue ?? 0)
+    let dy = CGFloat((shadow["dy"] as? NSNumber)?.doubleValue ?? 0)
+    return (uiColor, radius, CGSize(width: dx, height: dy))
+  }
+
   init(frame: CGRect, viewId: Int64, args: Any?, messenger: FlutterBinaryMessenger) {
     self.channel = FlutterMethodChannel(name: "CupertinoNativeLiquidGlassContainer_\(viewId)", binaryMessenger: messenger)
-    self.container = UIView(frame: frame)
+    self.container = CNShadowContainerView(frame: frame)
     self.container.backgroundColor = .clear
     
     // Parse arguments
@@ -75,6 +154,18 @@ class LiquidGlassContainerPlatformView: NSObject, FlutterPlatformView {
     super.init()
     self.configuredShape = shape
     self.configuredCornerRadius = cornerRadius
+
+    // LOCAL PATCH #11: elevation shadow spec (see applyConfiguredShadow).
+    if let (color, radius, offset) = LiquidGlassContainerPlatformView.parseShadow(args as? [String: Any]) {
+      self.configuredShadowColor = color
+      self.configuredShadowRadius = radius
+      self.configuredShadowOffset = offset
+    }
+    // shadowPath depends on the laid-out bounds — re-apply on every layout
+    // pass (engine resizes the platform view with its Flutter child).
+    (self.container as? CNShadowContainerView)?.onLayout = { [weak self] in
+      self?.applyConfiguredShadow()
+    }
     
     // Sync Flutter's brightness mode with Swift at initialization
     if #available(iOS 13.0, *) {
@@ -136,6 +227,10 @@ class LiquidGlassContainerPlatformView: NSObject, FlutterPlatformView {
       container.layer.cornerRadius = 0
       hostingController.view.clipsToBounds = false
       hostingController.view.layer.cornerRadius = 0
+      // LOCAL PATCH #11: containment zeroes the configured elevation shadow
+      // on entry — restore it on exit, or the toast/floating-pill shadow
+      // would permanently vanish after any transition.
+      applyConfiguredShadow()
     }
   }
 
@@ -209,10 +304,32 @@ class LiquidGlassContainerPlatformView: NSObject, FlutterPlatformView {
     // After a rapid flip storm, replay the final config once so a
     // mid-storm-coalesced render can't strand this view on the previous
     // theme (14-01 clip). See CNAppearanceSettleReplay.
-    settleReplay.poke { [weak self] in self?.updateConfig(args: args) }
+    //
+    // GUARD: poke only when the applied appearance CHANGED. The replay
+    // closure calls updateConfig with the same args, so an unconditional
+    // poke here made every replay re-schedule itself — a perpetual 0.35s
+    // loop (2026-08-15 device log: updateConfig every ~365ms on every glass
+    // container from the first theme flip until process death, each tick a
+    // forced applyInstantly layout + rootView re-root). Poking on change
+    // only keeps the storm-settle contract: each flip supersedes the last,
+    // the final generation replays exactly once, and that replay (same
+    // isDark) pokes nothing.
+    if isDark != configuredIsDark {
+      configuredIsDark = isDark
+      settleReplay.poke { [weak self] in self?.updateConfig(args: args) }
+    }
     // Keep stored config in sync for `applyTransitionContainment`.
     self.configuredShape = shape
     self.configuredCornerRadius = cornerRadius
+    // LOCAL PATCH #11: re-apply the elevation shadow when the config changes.
+    if let (color, radius, offset) = LiquidGlassContainerPlatformView.parseShadow(dict) {
+      self.configuredShadowColor = color
+      self.configuredShadowRadius = radius
+      self.configuredShadowOffset = offset
+    } else {
+      self.configuredShadowColor = nil
+    }
+    applyConfiguredShadow()
   }
   
   func view() -> UIView {

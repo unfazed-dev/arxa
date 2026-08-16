@@ -12,7 +12,7 @@ export default [
   ['GET', '/', home.page],
   ['GET', '/timer', timer.page],
   ['GET', '/timer/tick', timer.tick],
-  ['POST', '/timer/extend', timer.extend],
-  ['POST', '/timer/skip', timer.skip],
+  ['POST', '/timer/extend', timer.extend], // posted-by: ActionButton (timer_view.sections.tsx) — hx attrs ride widget props
+  ['POST', '/timer/skip', timer.skip], // posted-by: ActionButton (timer_view.sections.tsx) — hx attrs ride widget props
   ['POST', '/prefs/accent', prefs.setAccent],
 ];

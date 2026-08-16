@@ -32,7 +32,8 @@ void main() {
   testWidgets(
       'kit.ui-library.native-sheet — Android routes to showModalBottomSheet (no probe, no glass body)',
       (tester) async {
-    AppBoxKitPlatform.override = const AppBoxKitPlatformOverride(isAndroid: true);
+    AppBoxKitPlatform.override =
+        const AppBoxKitPlatformOverride(isAndroid: true);
     await tester.pumpWidget(_hostWithOpener());
 
     await tester.tap(find.text('open'));
@@ -55,7 +56,8 @@ void main() {
     );
   });
 
-  testWidgets('kit.ui-library.native-sheet — default tier routes to CNBottomSheet.show (geometry probe)',
+  testWidgets(
+      'kit.ui-library.native-sheet — default tier routes to CNBottomSheet.show (geometry probe)',
       (tester) async {
     await withAndroidFallback(() async {
       await tester.pumpWidget(_hostWithOpener());
@@ -117,7 +119,8 @@ void main() {
       // second radius here would show as a seam inside that clip.
       final surface = tester.widget<AppBoxKitFrostedSurface>(frosted);
       expect(surface.borderRadius, 0,
-          reason: 'the route owns the corner shape; the body must not re-round');
+          reason:
+              'the route owns the corner shape; the body must not re-round');
       // opaqueGlass is the default now — the on-device ruling: a translucent
       // sheet reads as a defect, not a material. Opaque base means the
       // platform-view-safe branch (no BackdropFilter saveLayer over CN views).
@@ -136,7 +139,8 @@ void main() {
     });
   });
 
-  testWidgets('kit.ui-library.native-sheet — default tier: content tap works and dismiss returns the value',
+  testWidgets(
+      'kit.ui-library.native-sheet — default tier: content tap works and dismiss returns the value',
       (tester) async {
     Future<Object?>? sheetFuture;
     await withAndroidFallback(() async {
@@ -277,7 +281,8 @@ void main() {
 
   testWidgets(
       'kit.ui-library.native-sheet — default tier: the sized sheet spans the '
-      'full width and publishes its own rect, not the route\'s', (tester) async {
+      'full width and publishes its own rect, not the route\'s',
+      (tester) async {
     // Two regressions in one assertion, both invisible to a height-only check.
     //
     // Width: Align hands down loose constraints, so a SizedBox given only a
@@ -316,7 +321,8 @@ void main() {
               'route box (552)');
       expect(published.top, closeTo(420, 0.5));
       expect(published.width, closeTo(800, 0.5),
-          reason: 'a sheet is full-bleed; anything narrower is a floating card');
+          reason:
+              'a sheet is full-bleed; anything narrower is a floating card');
     });
   });
 
@@ -342,7 +348,8 @@ void main() {
   testWidgets(
       'kit.ui-library.native-sheet — Android: heightFactor sizes the sheet',
       (tester) async {
-    AppBoxKitPlatform.override = const AppBoxKitPlatformOverride(isAndroid: true);
+    AppBoxKitPlatform.override =
+        const AppBoxKitPlatformOverride(isAndroid: true);
     final ValueNotifier<double> height = ValueNotifier<double>(0.30);
     addTearDown(height.dispose);
 
@@ -361,7 +368,8 @@ void main() {
             'the height');
   });
 
-  testWidgets('kit.ui-library.native-sheet — default tier: a caller backgroundColor opts out of the glass',
+  testWidgets(
+      'kit.ui-library.native-sheet — default tier: a caller backgroundColor opts out of the glass',
       (tester) async {
     await withAndroidFallback(() async {
       await tester.pumpWidget(_hostWithOpener(backgroundColor: Colors.red));
@@ -399,7 +407,8 @@ void main() {
   testWidgets(
       'kit.ui-library.native-sheet — Android shows a drag handle by default',
       (tester) async {
-    AppBoxKitPlatform.override = const AppBoxKitPlatformOverride(isAndroid: true);
+    AppBoxKitPlatform.override =
+        const AppBoxKitPlatformOverride(isAndroid: true);
     await tester.pumpWidget(_hostWithOpener());
 
     await tester.tap(find.text('open'));
@@ -414,7 +423,8 @@ void main() {
   testWidgets(
       'kit.ui-library.native-sheet — Android honors showDragHandle: false',
       (tester) async {
-    AppBoxKitPlatform.override = const AppBoxKitPlatformOverride(isAndroid: true);
+    AppBoxKitPlatform.override =
+        const AppBoxKitPlatformOverride(isAndroid: true);
     await tester.pumpWidget(_hostWithOpener(showDragHandle: false));
 
     await tester.tap(find.text('open'));
@@ -467,7 +477,8 @@ void main() {
 /// no longer say *which* drew it — hence the key exclusion. Without it, a "there
 /// is exactly one grabber" assertion would pass with both on screen.
 final Finder _cupertinoGrabber = find.byWidgetPredicate(
-  (Widget w) => w is SizedBox && w.width == 36 && w.height == 5 && w.key == null,
+  (Widget w) =>
+      w is SizedBox && w.width == 36 && w.height == 5 && w.key == null,
   description: 'route-drawn drag handle (36x5, framework)',
 );
 

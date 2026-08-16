@@ -100,10 +100,10 @@ void main() {
           ),
         ),
       );
-      when(() => facade.createFolder(any(), any(),
-              sortOrder: any(named: 'sortOrder')))
-          .thenAnswer((i) async =>
-              _folder('f3', i.positionalArguments[1] as String, 2));
+      when(() =>
+          facade.createFolder(any(), any(),
+              sortOrder: any(named: 'sortOrder'))).thenAnswer(
+          (i) async => _folder('f3', i.positionalArguments[1] as String, 2));
       final vm = ShowcaseNotesViewModel();
       addTearDown(vm.dispose);
 
@@ -116,7 +116,8 @@ void main() {
           .called(1);
     });
 
-    test('notes.folders.create-a-folder — a blank name is dropped before the facade',
+    test(
+        'notes.folders.create-a-folder — a blank name is dropped before the facade',
         () async {
       // given
       when(() => facade.currentSession).thenReturn(_evan);
@@ -204,10 +205,10 @@ void main() {
           ),
         ),
       );
-      when(() => facade.createFolder(any(), any(),
-              sortOrder: any(named: 'sortOrder')))
-          .thenAnswer(
-              (i) async => _folder('f9', i.positionalArguments[1] as String, 0));
+      when(() =>
+          facade.createFolder(any(), any(),
+              sortOrder: any(named: 'sortOrder'))).thenAnswer(
+          (i) async => _folder('f9', i.positionalArguments[1] as String, 0));
       // The kit notification fake (registered by
       // registerAppBoxKitActionServices) scripts the prompt.
       final notifications = locator<AppBoxKitNotificationService>()

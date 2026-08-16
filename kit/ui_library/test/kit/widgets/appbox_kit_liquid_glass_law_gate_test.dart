@@ -26,7 +26,8 @@ void main() {
     expect(dir.existsSync(), isTrue,
         reason: 'run from the ui_library package root');
 
-    final saveLayer = RegExp(r'\b(BackdropFilter|ImageFiltered|ShaderMask)\s*\(');
+    final saveLayer =
+        RegExp(r'\b(BackdropFilter|ImageFiltered|ShaderMask)\s*\(');
     final optOut = RegExp(r'//\s*glass-law-exempt:');
     // Files whose saveLayer usage is the platform-view-safe machinery itself:
     // the frosted surface's blur branch is only reachable when
@@ -63,9 +64,11 @@ void main() {
   test(
       'kit.ui-library.liquid-glass-law-gate — floating chrome animates by '
       'slide, never by alpha', () {
-    final src =
-        File('lib/widgets/appbox_kit_native_floating_bar.dart').readAsStringSync();
-    expect(RegExp(r'\b(AnimatedOpacity|Opacity|FadeTransition)\s*\(').hasMatch(src),
+    final src = File('lib/widgets/appbox_kit_native_floating_bar.dart')
+        .readAsStringSync();
+    expect(
+        RegExp(r'\b(AnimatedOpacity|Opacity|FadeTransition)\s*\(')
+            .hasMatch(src),
         isFalse,
         reason: 'partial alpha over the bar\'s native actions is the law\'s '
             'forbidden shape (composition rule 1) — tuck and hide must remain '

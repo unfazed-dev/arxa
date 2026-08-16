@@ -20,9 +20,13 @@ import 'appbox_kit_native_test_helpers.dart';
 void main() {
   tearDown(AppBoxKitPlatform.reset);
 
-  testWidgets('kit.ui-library.native-icon-button — Android routes to IconButtonM3E', (tester) async {
-    AppBoxKitPlatform.override = const AppBoxKitPlatformOverride(isAndroid: true);
-    await tester.pumpWidget(host(const AppBoxKitNativeIconButton(icon: Icons.add)));
+  testWidgets(
+      'kit.ui-library.native-icon-button — Android routes to IconButtonM3E',
+      (tester) async {
+    AppBoxKitPlatform.override =
+        const AppBoxKitPlatformOverride(isAndroid: true);
+    await tester
+        .pumpWidget(host(const AppBoxKitNativeIconButton(icon: Icons.add)));
 
     expect(
       find.byType(IconButtonM3E),
@@ -31,9 +35,12 @@ void main() {
     );
   });
 
-  testWidgets('kit.ui-library.native-icon-button — default platform builds clean', (tester) async {
+  testWidgets(
+      'kit.ui-library.native-icon-button — default platform builds clean',
+      (tester) async {
     await withAndroidFallback(() async {
-      await tester.pumpWidget(host(const AppBoxKitNativeIconButton(icon: Icons.add)));
+      await tester
+          .pumpWidget(host(const AppBoxKitNativeIconButton(icon: Icons.add)));
 
       expect(
         find.byType(IconButtonM3E),
@@ -43,8 +50,11 @@ void main() {
     });
   });
 
-  testWidgets('kit.ui-library.native-icon-button — onPressed is wired on the M3E tier', (tester) async {
-    AppBoxKitPlatform.override = const AppBoxKitPlatformOverride(isAndroid: true);
+  testWidgets(
+      'kit.ui-library.native-icon-button — onPressed is wired on the M3E tier',
+      (tester) async {
+    AppBoxKitPlatform.override =
+        const AppBoxKitPlatformOverride(isAndroid: true);
     var fired = false;
     await tester.pumpWidget(host(AppBoxKitNativeIconButton(
       icon: Icons.add,
@@ -68,7 +78,9 @@ void main() {
   // constructor args deterministically select the platform-view creationParams
   // branch, and a real UiKitView can't be constructed in a headless
   // flutter_test (see [withAndroidFallback]).
-  testWidgets('kit.ui-library.native-icon-button — SF Symbol input must NOT pass customIcon', (tester) async {
+  testWidgets(
+      'kit.ui-library.native-icon-button — SF Symbol input must NOT pass customIcon',
+      (tester) async {
     await withAndroidFallback(() async {
       await tester.pumpWidget(host(const AppBoxKitNativeIconButton(
         icon: Icons.add,
@@ -79,7 +91,8 @@ void main() {
       expect(
         cn.icon?.name,
         'plus',
-        reason: 'SF-symbol-capable input must ride CNButton\'s native symbol path',
+        reason:
+            'SF-symbol-capable input must ride CNButton\'s native symbol path',
       );
       expect(
         cn.customIcon,
@@ -90,7 +103,9 @@ void main() {
     });
   });
 
-  testWidgets('kit.ui-library.native-icon-button — icon without SF Symbol still passes customIcon', (tester) async {
+  testWidgets(
+      'kit.ui-library.native-icon-button — icon without SF Symbol still passes customIcon',
+      (tester) async {
     await withAndroidFallback(() async {
       await tester.pumpWidget(host(const AppBoxKitNativeIconButton(
         icon: Icons.add,

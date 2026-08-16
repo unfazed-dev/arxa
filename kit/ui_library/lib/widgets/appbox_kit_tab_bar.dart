@@ -18,8 +18,8 @@ class AppBoxKitTab {
     IconData? icon,
     required this.label,
     String? sfSymbol,
-  })  : assert(
-            glyph != null || icon != null, 'AppBoxKitTab needs a glyph or an icon'),
+  })  : assert(glyph != null || icon != null,
+            'AppBoxKitTab needs a glyph or an icon'),
         _icon = icon,
         _sfSymbol = sfSymbol;
 
@@ -157,7 +157,8 @@ class AppBoxKitNativeTabBar extends StatelessWidget {
       );
     }
     // Tier 2 — Android Material 3 Expressive (selection pill morphs).
-    if (wantNative && AppBoxKitPlatform.supportsComposeM3E) return _m3e(context);
+    if (wantNative && AppBoxKitPlatform.supportsComposeM3E)
+      return _m3e(context);
     // Tier 3 — Cupertino (Apple < 26) / Material (desktop/web).
     return _KitFallbackTabBar(
       tabs: tabs,

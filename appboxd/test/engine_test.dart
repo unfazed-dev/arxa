@@ -20,7 +20,7 @@ String repoRoot() {
 
 void main() {
   group('stage registry', () {
-    test('returns the 12 Dart gates in dependency order', () {
+    test('returns the 14 Dart gates in dependency order', () {
       final stages = loadStages(repoRoot());
       expect(
         stages.map((s) => s.name).toList(),
@@ -28,7 +28,9 @@ void main() {
           'intake',
           'freeze',
           'structure',
+          'kind_registry',
           'scaffold',
+          'fidelity',
           'coverage',
           'tests',
           'memory',

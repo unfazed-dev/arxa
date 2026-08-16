@@ -7,6 +7,8 @@
 
 **Scope of this document:** lets a human OR an LLM run a docs-consistency pass without reading the skill source. Folded from `SKILL.md`.
 
+**Pipeline position:** cross-cutting stage 7, not phase-bound — audits the knowledge-base claims every other appbox skill makes, from `appbox-intake`'s brief contract to `appbox-deployer`'s gates; run before a session handoff or after any behavior change. Full chain, stage numbers, per-stage artifacts: `docs/research/pipeline-map.md` §1.
+
 ## Table of contents
 
 0. Header & TOC · 1. Overview & role · 2. Inputs · 3. Procedure · 4. Outputs · 5. Rules · 6. References
@@ -19,12 +21,12 @@ The expensive failure isn't a missing doc — it's a confidently wrong one. A si
 
 ### Inputs
 
-- The knowledge base: `docs/` (prose), catalogs (`*.json`, enforced runtime truth), cross-session memory, and the relevant code comments.
-- The source-of-truth hierarchy (`docs/KNOWLEDGE.md` or equivalent).
+- The knowledge base layers (real paths): `config/catalogs/*.json` (enforced runtime truth), `docs/` prose (`INDEX.md` the index, `VOCABULARY.md` the glossary SSOT), `memory/facts/*.json` + `memory/stages/*.LESSONS.md` (cross-session memory), and the shipped gates/emitters in `appboxd/lib/`.
+- The hierarchy itself: enforced layers (catalogs + code) outrank prose and memory; vocabulary conflicts resolve in `docs/VOCABULARY.md`.
 
 ### Procedure
 
-Mechanical pass — run `appbox docs` (the Dart port of the archived `lint_kb.py`): flags docs missing from the index, dead `.md` links, orphan pages, half-wired supersede pointers, unresolved memory wikilinks; exit 1 = at least one error; fix errors before continuing. Semantic pass — for each topic touched recently (read the last few changelog entries), cross-check the claim across all layers (catalogs ↔ docs ↔ memory ↔ code comment) and find disagreement. Resolve per the hierarchy: the lower layer is the bug; fix the doc/memory to match the catalog/code, never the reverse unless primary-source-verified. Record it: append a changelog entry; when a claim is superseded, leave a one-line `⚠️ SUPERSEDED by (y)` pointer and write the new entry — append-only, never rewrite history.
+Mechanical pass — run `appbox docs` (the Dart port of the archived `lint_kb.py`): flags dead `.md` links as errors; unindexed docs, KB-lint orphans, half-wired supersede pointers and unresolved memory wikilinks as warnings. Also run `appbox lint` (repo conventions, R2/R3). Fix errors before continuing. Semantic pass — for each topic touched recently (`git log --oneline -15`; `memory/stages/*.LESSONS.md` is the de-facto change log), cross-check the claim across all layers (`config/catalogs/*.json` ↔ `docs/` ↔ `memory/` ↔ the gate/emitter in `appboxd/lib/`) and find disagreement. Resolve per the hierarchy: the enforced layer wins; fix the doc/memory to match the catalog/code, never the reverse unless primary-source-verified (then fix the catalog/code itself, with evidence). Record it: history is git — durable lessons land ONLY as gate-triggered appends in `memory/stages/<stage>.LESSONS.md` (`gate X failed because Y; do Z`); everything else is the direct doc/memory fix in the commit. There is no `docs/changelog.md` and no `skills/refresh` — those were retired with the pre-Dart toolchain.
 
 ### Law pass — liquid-glass & M3E (ratified 2026-08-13)
 
@@ -97,14 +99,14 @@ names why:
 
 ### Outputs
 
-A green mechanical pass plus a list of semantic corrections applied (each with a changelog entry). Note gaps the lint can't fix: a concept lacking a page, a plan whose status is unverified, a catalog that may be stale.
+A green mechanical pass plus a list of semantic corrections applied (each landed as the direct doc/memory fix in the commit; durable gate-failure lessons as `memory/stages/<stage>.LESSONS.md` appends). Note gaps the lint can't fix: a concept lacking a page in `docs/INDEX.md`, a plan whose status is unverified, a catalog that may be stale.
 
 ### Rules
 
 Run the law pass whenever the touched code renders UI — the laws are
 catalogs in the hierarchy sense (they enforce; prose lags), and a law
 violation in app code is the same class of rot as a doc contradicting a
-catalog. Don't trust memory or a doc over a catalog/code — catalogs enforce, prose lags; on conflict the prose is wrong. Don't rewrite the changelog — supersede with a pointer + new entry. Don't fix only the file you noticed — a wrong claim usually lives in 2-3 places; grep the assertion across all layers and fix every copy. Don't skip the semantic pass because the script went green. Keep `appbox docs` (the Dart docs_lint — `appboxd/lib/docs_lint.dart` + `appboxd/test/docs_lint_test.dart`) green when you change it.
+catalog. Don't trust memory or a doc over a catalog/code — catalogs enforce, prose lags; on conflict the prose is wrong. Don't fix only the file you noticed — a wrong claim usually lives in 2-3 places; grep the assertion across all layers and fix every copy. Don't skip the semantic pass because the script went green. Don't write speculative lessons — `memory/stages/` is gate-triggered append-only, and a lint observation is not a gate failure. Keep `appbox docs` (the Dart docs_lint — `appboxd/lib/docs_lint.dart` + `appboxd/test/docs_lint_test.dart`) green when you change it.
 
 <!-- kb:begin -->
 ### References

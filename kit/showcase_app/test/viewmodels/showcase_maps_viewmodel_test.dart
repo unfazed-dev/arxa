@@ -3,7 +3,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:appbox_kit_showcase_app/app/app.locator.dart';
 import 'package:appbox_kit_showcase_app/ui/views/showcase_profile_shell/showcase_maps/showcase_maps_viewmodel.dart';
 
-
 void main() {
   group('ShowcaseMapsViewModel', () {
     tearDown(() => locator.reset());

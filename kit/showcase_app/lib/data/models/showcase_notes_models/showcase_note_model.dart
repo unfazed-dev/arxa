@@ -81,8 +81,10 @@ class ShowcaseNoteModel {
   }
 
   String get _attachmentSummary {
-    final photos = attachments.where((a) => a.kind == ShowcaseNoteAttachmentKind.photo);
-    final audio = attachments.where((a) => a.kind == ShowcaseNoteAttachmentKind.audio);
+    final photos =
+        attachments.where((a) => a.kind == ShowcaseNoteAttachmentKind.photo);
+    final audio =
+        attachments.where((a) => a.kind == ShowcaseNoteAttachmentKind.audio);
     return [
       if (photos.isNotEmpty) '📷 ${photos.length}',
       if (audio.isNotEmpty) '🎙 ${audio.length}',
@@ -110,15 +112,16 @@ class ShowcaseNoteModel {
         updatedAt: updatedAt ?? this.updatedAt,
       );
 
-  factory ShowcaseNoteModel.fromJson(Map<String, dynamic> json) => ShowcaseNoteModel(
+  factory ShowcaseNoteModel.fromJson(Map<String, dynamic> json) =>
+      ShowcaseNoteModel(
         id: json['id'] as String,
         folderId: json['folder_id'] as String,
         owner: json['owner'] as String,
         body: json['body'] as String,
         pinned: json['pinned'] as bool? ?? false,
         attachments: (json['attachments'] as List? ?? const [])
-            .map((a) =>
-                ShowcaseNoteAttachmentModel.fromJson(Map<String, dynamic>.from(a as Map)))
+            .map((a) => ShowcaseNoteAttachmentModel.fromJson(
+                Map<String, dynamic>.from(a as Map)))
             .toList(),
         deletedAt: json['deleted_at'] == null
             ? null

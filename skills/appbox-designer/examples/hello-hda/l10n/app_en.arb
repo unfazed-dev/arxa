@@ -10,6 +10,8 @@
   "home.tagline": "Boosted navigation, server-rendered state, zero custom client-side JS.",
   "home.greetingsHeader": "Greetings",
   "home.toTimer": "Go to the timer",
+  "home.islands.toggle": "Details",
+  "home.islands.copy": "Islands load zero JS until their condition fires. This content was hidden by the server; the toggle island revealed it after first interaction — no framework boot, no hydration.",
   "itemCount": "{count, plural, =0{No greetings from greeting_facade yet} one{One greeting from greeting_facade} other{{count} greetings from greeting_facade}}",
 
   "accent.label": "Accent",
@@ -22,6 +24,7 @@
   "timer.pageTitle": "Timer — hello-hda",
   "timer.title": "Rest timer",
   "timer.tagline": "The server holds the deadline; the page polls once a second. No JS written.",
+  "timer.extend": "+15s",
   "timer.skip": "Skip",
   "timer.done": "Done — nice set.",
 

@@ -23,8 +23,10 @@ import 'appbox_kit_native_test_helpers.dart';
 void main() {
   tearDown(AppBoxKitPlatform.reset);
 
-  testWidgets('kit.ui-library.native-slider — Android routes to SliderM3E', (tester) async {
-    AppBoxKitPlatform.override = const AppBoxKitPlatformOverride(isAndroid: true);
+  testWidgets('kit.ui-library.native-slider — Android routes to SliderM3E',
+      (tester) async {
+    AppBoxKitPlatform.override =
+        const AppBoxKitPlatformOverride(isAndroid: true);
     await tester.pumpWidget(host(const AppBoxKitNativeSlider(value: 0.5)));
 
     expect(
@@ -34,7 +36,8 @@ void main() {
     );
   });
 
-  testWidgets('kit.ui-library.native-slider — default platform routes to CN (not SliderM3E) and builds clean',
+  testWidgets(
+      'kit.ui-library.native-slider — default platform routes to CN (not SliderM3E) and builds clean',
       (tester) async {
     await withAndroidFallback(() async {
       await tester.pumpWidget(host(const AppBoxKitNativeSlider(value: 0.3)));
@@ -52,8 +55,11 @@ void main() {
     });
   });
 
-  testWidgets('kit.ui-library.native-slider — onChanged is wired on the M3E tier', (tester) async {
-    AppBoxKitPlatform.override = const AppBoxKitPlatformOverride(isAndroid: true);
+  testWidgets(
+      'kit.ui-library.native-slider — onChanged is wired on the M3E tier',
+      (tester) async {
+    AppBoxKitPlatform.override =
+        const AppBoxKitPlatformOverride(isAndroid: true);
     double? fired;
     await tester.pumpWidget(host(AppBoxKitNativeSlider(
       value: 0.0,
@@ -72,7 +78,8 @@ void main() {
     );
   });
 
-  testWidgets('kit.ui-library.native-slider — inside a scrollable keeps the native tier',
+  testWidgets(
+      'kit.ui-library.native-slider — inside a scrollable keeps the native tier',
       (tester) async {
     await withAndroidFallback(() async {
       await tester.pumpWidget(host(const SingleChildScrollView(
@@ -89,7 +96,8 @@ void main() {
     });
   });
 
-  testWidgets('kit.ui-library.native-slider — outside a scrollable keeps the native tier',
+  testWidgets(
+      'kit.ui-library.native-slider — outside a scrollable keeps the native tier',
       (tester) async {
     await withAndroidFallback(() async {
       await tester.pumpWidget(host(const AppBoxKitNativeSlider(value: 0.5)));

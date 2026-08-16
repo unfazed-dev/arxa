@@ -77,10 +77,18 @@ class ShowcaseNotesMediaAdapterService with AppBoxKitActionOwner {
     // here at construction so late-binding viewmodels still get the last value.
     // One listen per stream (each commands to a different subject) — all
     // owner-keyed, so [dispose]'s disposeAppBoxKitActions() cancels them.
-    listen('bridge.elapsed', to: [_recorder.elapsed$], onData: (value) => recording$.add(value as Duration?));
-    listen('bridge.position', to: [_player.position$], onData: (value) => _position.add(value as Duration));
-    listen('bridge.duration', to: [_player.duration$], onData: (value) => _duration.add(value as Duration?));
-    listen('bridge.state', to: [_player.state$], onData: (value) => _playerState.add(value as AppBoxKitPlaybackState));
+    listen('bridge.elapsed',
+        to: [_recorder.elapsed$],
+        onData: (value) => recording$.add(value as Duration?));
+    listen('bridge.position',
+        to: [_player.position$],
+        onData: (value) => _position.add(value as Duration));
+    listen('bridge.duration',
+        to: [_player.duration$],
+        onData: (value) => _duration.add(value as Duration?));
+    listen('bridge.state',
+        to: [_player.state$],
+        onData: (value) => _playerState.add(value as AppBoxKitPlaybackState));
   }
 
   static const _uuid = Uuid();
@@ -106,7 +114,8 @@ class ShowcaseNotesMediaAdapterService with AppBoxKitActionOwner {
   final BehaviorSubject<Duration?> _duration =
       BehaviorSubject<Duration?>.seeded(null);
   final BehaviorSubject<AppBoxKitPlaybackState> _playerState =
-      BehaviorSubject<AppBoxKitPlaybackState>.seeded(AppBoxKitPlaybackState.idle);
+      BehaviorSubject<AppBoxKitPlaybackState>.seeded(
+          AppBoxKitPlaybackState.idle);
 
   /// [5. Camera detection] Whether the camera exists — false on the simulator,
   /// where the UI hides the "Take Photo" action.
@@ -172,7 +181,9 @@ class ShowcaseNotesMediaAdapterService with AppBoxKitActionOwner {
             maxWidth: 2048,
             imageQuality: 85,
           );
-          if (result is! AppBoxKitMediaCaptured) return null; // cancelled / denied / failed
+          if (result is! AppBoxKitMediaCaptured) {
+            return null; // cancelled / denied / failed
+          }
           final media = result.media;
 
           final id = _uuid.v4();

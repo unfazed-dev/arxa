@@ -11,8 +11,10 @@ import '../utils/modal_hide_mixin.dart';
 ///
 /// Backed by `UITextField` via SwiftUI hosted in a `UiKitView` (iOS 26+ renders
 /// `.glassEffect(.regular, in: .capsule)`; below iOS 26 a `Color(.systemGray6)`
-/// capsule). On macOS it hosts the same SwiftUI field via `AppKitView`. This is
-/// the primitive [AppBoxKitNativeTextField] wraps on its Liquid Glass tier.
+/// capsule). **iOS-only**: the macOS plugin registers no `CNTextField` factory,
+/// so this widget never builds the platform view there (hosts fall to their
+/// Material tier on macOS). This is the primitive [AppBoxKitNativeTextField]
+/// wraps on its Liquid Glass tier.
 ///
 /// **Two-way controller** (the gap [CNSearchBar] leaves open): pass a
 /// [TextEditingController] and it stays in sync both ways — programmatic
@@ -40,6 +42,8 @@ class CNTextField extends StatefulWidget {
     this.obscureText = false,
     this.keyboardType,
     this.autofocus = false,
+    this.minLines,
+    this.maxLines,
     this.onChanged,
     this.onSubmitted,
     this.onFocusChanged,
@@ -66,6 +70,17 @@ class CNTextField extends StatefulWidget {
 
   /// Autofocus on appearance.
   final bool autofocus;
+
+  /// Multiline: minimum visible lines. `null` (default) = single-line — the
+  /// historical behavior. Non-null switches the native field to a vertical-axis
+  /// `TextField` with a `lineLimit(min...max)` range so the capsule grows as
+  /// lines are added. `obscureText` fields ignore this (SwiftUI `SecureField`
+  /// has no vertical axis).
+  final int? minLines;
+
+  /// Multiline: maximum visible lines; `null` with [minLines] = unbounded.
+  /// Past the cap the native field scrolls internally.
+  final int? maxLines;
 
   /// Fired on every keystroke with the current text.
   final ValueChanged<String>? onChanged;
@@ -104,6 +119,12 @@ class CNTextField extends StatefulWidget {
 /// (Column under a scroll view) — same contract as [CNSearchBar.expandedHeight].
 const double _kFieldHeight = 44.0;
 
+/// Multiline ceiling: one resting line (~22pt of text in a 44pt capsule) +
+/// 5 more lines of growth, kept in whole points. The native field reports its
+/// own intrinsic height; this bounds the Flutter box (and the platform-view
+/// slot) so a runaway report can never push the bar off screen.
+const double _kMaxMultilineFieldHeight = 154.0;
+
 class _CNTextFieldState extends State<CNTextField>
     with ModalHideMixin<CNTextField> {
   @override
@@ -129,6 +150,11 @@ class _CNTextFieldState extends State<CNTextField>
   /// Deliberately the same expression used for the `isDark` creation param
   /// below — if the two ever disagree the sync either misfires or never fires.
   bool get _isDark => Theme.of(context).brightness == Brightness.dark;
+
+  /// Multiline height bridge: the growing box registers here to receive the
+  /// native field's intrinsic-height reports (`heightChanged`). Null on the
+  /// single-line tier (fixed 44pt box, nothing to grow).
+  void Function(double height)? _heightReporter;
 
   @override
   void initState() {
@@ -232,6 +258,14 @@ class _CNTextFieldState extends State<CNTextField>
 
   Future<dynamic> _onMethodCall(MethodCall call) async {
     switch (call.method) {
+      case 'heightChanged':
+        // Multiline: the native field measured its intrinsic height (logical
+        // pt, already clamped Swift-side by lineLimit). Flow it to the growing
+        // box so the platform view's slot tracks the capsule.
+        final double height =
+            ((call.arguments['height'] as num?)?.toDouble()) ?? _kFieldHeight;
+        _heightReporter?.call(height.clamp(_kFieldHeight, _kMaxMultilineFieldHeight));
+        break;
       case 'textChanged':
         final text = (call.arguments['text'] as String?) ?? '';
         if (_controller.text != text) {
@@ -287,8 +321,7 @@ class _CNTextFieldState extends State<CNTextField>
     // or the Material fallback; this widget always builds the native field.
     // LOCAL PATCH #6: tier-split demotion (see button.dart PATCH #4).
     if (!kIsWeb &&
-        (defaultTargetPlatform == TargetPlatform.iOS ||
-            defaultTargetPlatform == TargetPlatform.macOS) &&
+        defaultTargetPlatform == TargetPlatform.iOS &&
         !widget.preferFlutterTier) {
       final hidden = maybeHiddenPlaceholder(height: _kFieldHeight);
       if (hidden != null) return hidden;
@@ -299,6 +332,8 @@ class _CNTextFieldState extends State<CNTextField>
         'placeholder': widget.placeholder ?? '',
         'isSecure': widget.obscureText,
         'autofocus': widget.autofocus,
+        'minLines': widget.minLines,
+        'maxLines': widget.maxLines,
         'keyboardType': _keyboardTypeString(),
         'tint': resolveColorToArgb(widget.tint, context),
         'textColor': resolveColorToArgb(widget.textColor, context),
@@ -306,25 +341,29 @@ class _CNTextFieldState extends State<CNTextField>
         'isDark': _isDark,
       };
 
-      final platformView = defaultTargetPlatform == TargetPlatform.iOS
-          ? UiKitView(
-              viewType: viewType,
-              creationParams: creationParams,
-              creationParamsCodec: const StandardMessageCodec(),
-              onPlatformViewCreated: _onPlatformViewCreated,
-            )
-          : AppKitView(
-              viewType: viewType,
-              creationParams: creationParams,
-              creationParamsCodec: const StandardMessageCodec(),
-              onPlatformViewCreated: _onPlatformViewCreated,
-            );
+      // iOS-only (see the tier doc above): the macOS plugin registers no
+      // 'CNTextField' factory, so an AppKitView here would crash at creation.
+      final platformView = UiKitView(
+        viewType: viewType,
+        creationParams: creationParams,
+        creationParamsCodec: const StandardMessageCodec(),
+        onPlatformViewCreated: _onPlatformViewCreated,
+      );
 
       // Bounded height is mandatory: UiKitView/AppKitView (and the
       // SizedBox.expand placeholder Flutter builds before the native view is
-      // created) size to constraints.biggest.
+      // created) size to constraints.biggest. Multiline flexes: the native
+      // field reports its intrinsic height over the channel (`heightChanged`)
+      // and the box animates to it — bounded by maxLines' capped height so the
+      // platform view never outgrows its slot.
+      final bool multiline =
+          widget.minLines != null || widget.maxLines != null;
       return wrapWithModalInteractionGuard(
-        SizedBox(height: _kFieldHeight, child: platformView),
+        multiline
+            ? _GrowingNativeField(
+                child: platformView,
+              )
+            : SizedBox(height: _kFieldHeight, child: platformView),
       );
     }
 
@@ -348,6 +387,66 @@ class _CNTextFieldState extends State<CNTextField>
 /// A [CNTextField] is a `UiKitView` wrapping a SwiftUI `TextField`; focus lives
 /// in the native `@FocusState`, and the widget deliberately carries **no**
 /// [FocusNode]. So `FocusManager.instance.primaryFocus?.unfocus()` — the whole
+/// The multiline field's flexing host: listens for the native field's
+/// `heightChanged` reports (through the owning State's reporter) and animates
+/// the platform-view box to the measured intrinsic height, clamped to
+/// [_kMaxMultilineFieldHeight]. Single-line fields never mount this — their
+/// 44pt box is fixed, exactly as before.
+class _GrowingNativeField extends StatefulWidget {
+  const _GrowingNativeField({required this.child});
+
+  final Widget child;
+
+  @override
+  State<_GrowingNativeField> createState() => _GrowingNativeFieldState();
+}
+
+class _GrowingNativeFieldState extends State<_GrowingNativeField>
+    with SingleTickerProviderStateMixin {
+  double _height = _kFieldHeight;
+
+  /// Cached in didChangeDependencies: dispose() may NOT look up ancestors
+  /// (the element is deactivated by then — "Looking up a deactivated widget's
+  /// ancestor is unsafe", caught on device 2026-08). Null before first build.
+  _CNTextFieldState? _hostState;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Register once the element tree is wired (initState forbids ancestor
+    // lookups). The owning CNTextField State is the direct ancestor host.
+    _hostState = context.findAncestorStateOfType<_CNTextFieldState>();
+    _hostState?._heightReporter = _onNativeHeight;
+  }
+
+  @override
+  void dispose() {
+    if (_hostState?._heightReporter == _onNativeHeight) {
+      _hostState?._heightReporter = null;
+    }
+    _hostState = null;
+    super.dispose();
+  }
+
+  void _onNativeHeight(double height) {
+    if (height == _height || !mounted) return;
+    setState(() => _height = height);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedSize(
+      duration: const Duration(milliseconds: 180),
+      curve: Curves.easeOutCubic,
+      child: SizedBox(
+        height: _height.clamp(_kFieldHeight, _kMaxMultilineFieldHeight),
+        width: double.infinity,
+        child: widget.child,
+      ),
+    );
+  }
+}
+
 /// basis of every "tap outside to dismiss" recipe — has nothing to unfocus and
 /// silently leaves the keyboard up.
 ///

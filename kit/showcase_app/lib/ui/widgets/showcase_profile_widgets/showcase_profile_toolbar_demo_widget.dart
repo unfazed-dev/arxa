@@ -40,8 +40,9 @@ class ShowcaseProfileToolbarDemoWidget extends StatelessWidget {
             label: 'Delete',
             glyph: AppBoxKitGlyphs.delete,
             isDestructive: true,
-            onPressed: () => appBoxKitLocator<AppBoxKitNotificationService>().show('Deleted',
-                kind: AppBoxKitNotificationKind.error, context: context)),
+            onPressed: () => appBoxKitLocator<AppBoxKitNotificationService>()
+                .show('Deleted',
+                    kind: AppBoxKitNotificationKind.error, context: context)),
       ],
     );
   }

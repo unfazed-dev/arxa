@@ -18,7 +18,8 @@ class TranslateOnHoverWidget extends StatefulWidget {
   final double? x;
   final double? y;
   // You can also pass the translation in here if you want to
-  const TranslateOnHoverWidget({super.key, required this.child, this.x, this.y});
+  const TranslateOnHoverWidget(
+      {super.key, required this.child, this.x, this.y});
 
   @override
   State<TranslateOnHoverWidget> createState() => _TranslateOnHoverState();

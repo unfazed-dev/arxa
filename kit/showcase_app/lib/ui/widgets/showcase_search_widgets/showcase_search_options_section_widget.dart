@@ -16,7 +16,8 @@ import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
 import 'package:appbox_kit_showcase_app/ui/views/showcase_search_shell/showcase_search/showcase_search_viewmodel.dart';
 
 class ShowcaseSearchOptionsSectionWidget extends StatelessWidget {
-  const ShowcaseSearchOptionsSectionWidget({super.key, required this.viewModel});
+  const ShowcaseSearchOptionsSectionWidget(
+      {super.key, required this.viewModel});
 
   final ShowcaseSearchViewModel viewModel;
 

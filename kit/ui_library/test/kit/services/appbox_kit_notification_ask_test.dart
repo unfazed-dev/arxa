@@ -19,7 +19,8 @@ void main() {
 
   setUp(() {
     service = AppBoxKitNotificationService();
-    AppBoxKitPlatform.override = const AppBoxKitPlatformOverride(isAndroid: true);
+    AppBoxKitPlatform.override =
+        const AppBoxKitPlatformOverride(isAndroid: true);
   });
 
   tearDown(() {
@@ -72,7 +73,8 @@ void main() {
     expect(result, isFalse);
   });
 
-  test('kit.ui-library.notification-service — confirm pre-boot resolves false, never throws',
+  test(
+      'kit.ui-library.notification-service — confirm pre-boot resolves false, never throws',
       () async {
     expect(await service.confirm(title: 'Sure?'), isFalse);
     expect(await service.prompt(title: 'Name'), isNull);
@@ -117,7 +119,8 @@ void main() {
       'kit.ui-library.notification-service — alert shows a single action and dismisses',
       (tester) async {
     await pumpCaller(tester, (context) async {
-      await service.alert(title: 'Saved', message: 'All good', context: context);
+      await service.alert(
+          title: 'Saved', message: 'All good', context: context);
     });
     expect(find.text('Saved'), findsOneWidget);
     expect(find.text('All good'), findsOneWidget);

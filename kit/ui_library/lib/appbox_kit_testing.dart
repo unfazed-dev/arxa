@@ -175,14 +175,16 @@ class FakeAppBoxKitNotificationService extends AppBoxKitNotificationService {
   // ---- query helpers ---------------------------------------------------------
 
   /// The most recently recorded call, or null if none.
-  AppBoxKitNotificationRecord? get lastCall => calls.isEmpty ? null : calls.last;
+  AppBoxKitNotificationRecord? get lastCall =>
+      calls.isEmpty ? null : calls.last;
 
   /// Every recorded message, in call order.
   List<String> get messages =>
       calls.map((c) => c.message).toList(growable: false);
 
   /// All recorded calls with [kind].
-  List<AppBoxKitNotificationRecord> callsOfKind(AppBoxKitNotificationKind kind) =>
+  List<AppBoxKitNotificationRecord> callsOfKind(
+          AppBoxKitNotificationKind kind) =>
       calls.where((c) => c.kind == kind).toList(growable: false);
 
   /// True if a message containing [substring] was shown at least once.

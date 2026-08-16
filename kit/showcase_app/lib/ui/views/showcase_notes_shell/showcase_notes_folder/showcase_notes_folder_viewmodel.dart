@@ -163,7 +163,8 @@ class ShowcaseNotesFolderViewModel extends AppBoxKitViewModel {
 
   /// [6. Delete permanently] Asks first (the hub's confirm gate); on confirm
   /// the note is permanently deleted.
-  late final _confirmDeletePermanently = abxActionHub.on<ShowcaseNoteModel, void>(
+  late final _confirmDeletePermanently =
+      abxActionHub.on<ShowcaseNoteModel, void>(
     ShowcaseNotesFolderOp.deletePermanently.name,
     (note) => deletePermanently(note),
     confirmTitle: 'Delete Note',

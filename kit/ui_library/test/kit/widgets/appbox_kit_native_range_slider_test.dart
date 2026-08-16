@@ -17,8 +17,11 @@ import 'appbox_kit_native_test_helpers.dart';
 void main() {
   tearDown(AppBoxKitPlatform.reset);
 
-  testWidgets('kit.ui-library.native-range-slider — Android routes to RangeSliderM3E', (tester) async {
-    AppBoxKitPlatform.override = const AppBoxKitPlatformOverride(isAndroid: true);
+  testWidgets(
+      'kit.ui-library.native-range-slider — Android routes to RangeSliderM3E',
+      (tester) async {
+    AppBoxKitPlatform.override =
+        const AppBoxKitPlatformOverride(isAndroid: true);
     await tester.pumpWidget(host(const AppBoxKitNativeRangeSlider(
       values: RangeValues(0.2, 0.8),
     )));
@@ -26,11 +29,13 @@ void main() {
     expect(
       find.byType(RangeSliderM3E),
       findsOneWidget,
-      reason: 'supportsComposeM3E → kit must route to RangeSliderM3E on Android',
+      reason:
+          'supportsComposeM3E → kit must route to RangeSliderM3E on Android',
     );
   });
 
-  testWidgets('kit.ui-library.native-range-slider — default platform routes to Material RangeSlider and builds clean',
+  testWidgets(
+      'kit.ui-library.native-range-slider — default platform routes to Material RangeSlider and builds clean',
       (tester) async {
     await withAndroidFallback(() async {
       await tester.pumpWidget(host(const AppBoxKitNativeRangeSlider(
@@ -50,8 +55,11 @@ void main() {
     });
   });
 
-  testWidgets('kit.ui-library.native-range-slider — onChanged is wired on the M3E tier', (tester) async {
-    AppBoxKitPlatform.override = const AppBoxKitPlatformOverride(isAndroid: true);
+  testWidgets(
+      'kit.ui-library.native-range-slider — onChanged is wired on the M3E tier',
+      (tester) async {
+    AppBoxKitPlatform.override =
+        const AppBoxKitPlatformOverride(isAndroid: true);
     RangeValues? fired;
     await tester.pumpWidget(host(AppBoxKitNativeRangeSlider(
       values: const RangeValues(0.0, 0.5),

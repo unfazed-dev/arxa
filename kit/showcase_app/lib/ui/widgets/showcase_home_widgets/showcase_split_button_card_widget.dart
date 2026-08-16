@@ -30,22 +30,28 @@ class ShowcaseSplitButtonCardWidget extends StatelessWidget {
             child: AppBoxKitNativeSplitButton(
               label: 'Send',
               glyph: AppBoxKitGlyphs.send,
-              onAction: () => appBoxKitLocator<AppBoxKitNotificationService>().show(
+              onAction: () =>
+                  appBoxKitLocator<AppBoxKitNotificationService>().show(
                 'Send this message?',
                 kind: AppBoxKitNotificationKind.warning,
                 actionLabel: 'Confirm',
-                onAction: () => appBoxKitLocator<AppBoxKitNotificationService>().show('Sent',
-                    kind: AppBoxKitNotificationKind.success, context: context),
+                onAction: () => appBoxKitLocator<AppBoxKitNotificationService>()
+                    .show('Sent',
+                        kind: AppBoxKitNotificationKind.success,
+                        context: context),
                 context: context,
               ),
               menuItems: const [
-                AppBoxKitMenuItem(label: 'Send now', glyph: AppBoxKitGlyphs.send),
-                AppBoxKitMenuItem(label: 'Schedule', glyph: AppBoxKitGlyphs.schedule),
-                AppBoxKitMenuItem(label: 'Save draft', glyph: AppBoxKitGlyphs.saveDraft),
+                AppBoxKitMenuItem(
+                    label: 'Send now', glyph: AppBoxKitGlyphs.send),
+                AppBoxKitMenuItem(
+                    label: 'Schedule', glyph: AppBoxKitGlyphs.schedule),
+                AppBoxKitMenuItem(
+                    label: 'Save draft', glyph: AppBoxKitGlyphs.saveDraft),
               ],
               onMenuSelected: (item) =>
-                  appBoxKitLocator<AppBoxKitNotificationService>().show(item.label,
-                      context: context),
+                  appBoxKitLocator<AppBoxKitNotificationService>()
+                      .show(item.label, context: context),
             ),
           ),
         ],

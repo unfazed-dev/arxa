@@ -20,7 +20,8 @@ import 'appbox_kit_action_owner.dart';
 ///   `AppBoxKitStreamBuilder(stream: viewModel.actionState$('save'), …)`.
 /// - **Auto-dispose:** [dispose] routes through [disposeAppBoxKitActions], so every
 ///   resource the VM's ops created dies with it.
-abstract class AppBoxKitViewModel extends BaseViewModel with AppBoxKitActionOwner {
+abstract class AppBoxKitViewModel extends BaseViewModel
+    with AppBoxKitActionOwner {
   @override
   void dispose() {
     disposeAppBoxKitActions();

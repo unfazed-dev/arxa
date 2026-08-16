@@ -22,6 +22,8 @@ class TextFieldM3E extends StatefulWidget {
     this.obscureText = false,
     this.keyboardType,
     this.textInputAction,
+    this.minLines,
+    this.maxLines,
     this.onChanged,
     this.onSubmitted,
     this.leadingIcon,
@@ -46,6 +48,14 @@ class TextFieldM3E extends StatefulWidget {
   final bool obscureText;
   final TextInputType? keyboardType;
   final TextInputAction? textInputAction;
+
+  /// Minimum lines (with [maxLines], the growing-composer contract).
+  /// `null` = single-line (the historical default).
+  final int? minLines;
+
+  /// Maximum lines; `null` with [minLines] set = unbounded growth.
+  final int? maxLines;
+
   final ValueChanged<String>? onChanged;
   final ValueChanged<String>? onSubmitted;
 
@@ -105,9 +115,9 @@ class _TextFieldM3EState extends State<TextFieldM3E> {
   }
 
   double get _restingRadius => switch (widget.shape) {
-        TextFieldM3EShape.round => widget.size.outerRoundRadius,
-        TextFieldM3EShape.square => widget.size.outerSquareRadius,
-      };
+    TextFieldM3EShape.round => widget.size.outerRoundRadius,
+    TextFieldM3EShape.square => widget.size.outerSquareRadius,
+  };
 
   @override
   Widget build(BuildContext context) {
@@ -121,13 +131,14 @@ class _TextFieldM3EState extends State<TextFieldM3E> {
     final Color fill = !widget.enabled
         ? scheme.onSurface.withValues(alpha: TextFieldM3ETokens.disabledAlpha)
         : _focused
-            ? scheme.surfaceContainerHighest
-            : scheme.surfaceContainerHigh;
+        ? scheme.surfaceContainerHighest
+        : scheme.surfaceContainerHigh;
 
     final Color contentColor = widget.enabled
         ? scheme.onSurface
-        : scheme.onSurface
-            .withValues(alpha: TextFieldM3ETokens.disabledContentAlpha);
+        : scheme.onSurface.withValues(
+            alpha: TextFieldM3ETokens.disabledContentAlpha,
+          );
     final Color hintColor = widget.enabled
         ? scheme.onSurfaceVariant
         : contentColor;
@@ -138,27 +149,36 @@ class _TextFieldM3EState extends State<TextFieldM3E> {
             width: TextFieldM3ETokens.focusStrokeWidth,
           )
         : _focused
-            ? Border.all(
-                color: scheme.primary,
-                width: TextFieldM3ETokens.focusStrokeWidth,
-              )
-            : null;
+        ? Border.all(
+            color: scheme.primary,
+            width: TextFieldM3ETokens.focusStrokeWidth,
+          )
+        : null;
 
     final textStyle =
-        (theme.textTheme.bodyLarge ?? const TextStyle(fontSize: 16))
-            .copyWith(color: contentColor);
+        (theme.textTheme.bodyLarge ?? const TextStyle(fontSize: 16)).copyWith(
+          color: contentColor,
+        );
 
     final field = AnimatedContainer(
       duration: TextFieldM3ETokens.morphDuration,
       curve: TextFieldM3ETokens.morphCurve,
-      constraints: BoxConstraints(
-        minHeight: widget.size.height < TextFieldM3ETokens.minTapTarget
-            ? widget.size.height
-            : TextFieldM3ETokens.minTapTarget,
-      ),
-      height: widget.size.height,
-      padding:
-          EdgeInsets.symmetric(horizontal: widget.size.horizontalPadding),
+      constraints: (widget.minLines != null || widget.maxLines != null)
+          ? BoxConstraints(
+              minHeight: widget.size.height < TextFieldM3ETokens.minTapTarget
+                  ? widget.size.height
+                  : TextFieldM3ETokens.minTapTarget,
+            )
+          : BoxConstraints(
+              minHeight: widget.size.height < TextFieldM3ETokens.minTapTarget
+                  ? widget.size.height
+                  : TextFieldM3ETokens.minTapTarget,
+              maxHeight: widget.size.height,
+            ),
+      height: (widget.minLines != null || widget.maxLines != null)
+          ? null
+          : widget.size.height,
+      padding: EdgeInsets.symmetric(horizontal: widget.size.horizontalPadding),
       decoration: BoxDecoration(
         color: fill,
         borderRadius: BorderRadius.circular(radius),
@@ -183,6 +203,8 @@ class _TextFieldM3EState extends State<TextFieldM3E> {
               obscureText: widget.obscureText,
               keyboardType: widget.keyboardType,
               textInputAction: widget.textInputAction,
+              minLines: widget.minLines,
+              maxLines: widget.maxLines,
               onChanged: widget.onChanged,
               onSubmitted: widget.onSubmitted,
               style: textStyle,
@@ -218,9 +240,9 @@ class _TextFieldM3EState extends State<TextFieldM3E> {
             ),
             child: Text(
               widget.errorText!,
-              style: (theme.textTheme.bodySmall ??
-                      const TextStyle(fontSize: 12))
-                  .copyWith(color: scheme.error),
+              style:
+                  (theme.textTheme.bodySmall ?? const TextStyle(fontSize: 12))
+                      .copyWith(color: scheme.error),
             ),
           ),
         ],

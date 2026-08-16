@@ -28,11 +28,13 @@ import 'package:appbox_kit_showcase_app/ui/widgets/showcase_application_widgets/
 
 import 'package:appbox_kit_showcase_app/ui/views/showcase_application_hub/showcase_application_hub_viewmodel.dart';
 
-class ShowcaseApplicationHubViewMobile extends ViewModelWidget<ShowcaseApplicationHubViewModel> {
+class ShowcaseApplicationHubViewMobile
+    extends ViewModelWidget<ShowcaseApplicationHubViewModel> {
   const ShowcaseApplicationHubViewMobile({super.key});
 
   @override
-  Widget build(BuildContext context, ShowcaseApplicationHubViewModel viewModel) {
+  Widget build(
+      BuildContext context, ShowcaseApplicationHubViewModel viewModel) {
     return const ShowcaseApplicationTabHostWidget();
   }
 }

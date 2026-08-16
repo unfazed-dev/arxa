@@ -102,11 +102,8 @@ class ShowcaseMotionViewMobile
             // Top inset: 0 under the boxed bar (Scaffold strips it); the
             // status-bar + floating-bar block on glass, where the body is
             // full-bleed. Bottom 120 unchanged.
-            padding: EdgeInsets.fromLTRB(
-                abxSize16,
-                abxSize16 + MediaQuery.paddingOf(context).top,
-                abxSize16,
-                120),
+            padding: EdgeInsets.fromLTRB(abxSize16,
+                abxSize16 + MediaQuery.paddingOf(context).top, abxSize16, 120),
             children: <Widget>[
               ...<Widget>[
                 const ShowcaseMotionHeaderCardWidget(),

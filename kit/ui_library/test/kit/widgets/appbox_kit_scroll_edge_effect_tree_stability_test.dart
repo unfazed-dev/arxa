@@ -183,6 +183,5 @@ class _ProbeChildState extends State<_ProbeChild> {
   }
 
   @override
-  Widget build(BuildContext context) =>
-      const SizedBox(height: 48, width: 48);
+  Widget build(BuildContext context) => const SizedBox(height: 48, width: 48);
 }

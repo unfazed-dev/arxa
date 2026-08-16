@@ -49,8 +49,7 @@ class ShowcaseSearchFilterCardWidget extends StatelessWidget {
           appBoxKitVerticalSpaceSmall,
           AppBoxKitNativeRangeSlider(
             values: RangeValues(viewModel.priceStart, viewModel.priceEnd),
-            onChanged: (RangeValues v) =>
-                viewModel.setPrice(v.start, v.end),
+            onChanged: (RangeValues v) => viewModel.setPrice(v.start, v.end),
           ),
           Row(
             children: [

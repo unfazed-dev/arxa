@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:text_field_m3e/text_field_m3e.dart' show TextFieldM3E;
 
 import 'package:appbox_kit_core/platform/appbox_kit_platform.dart';
+import 'appbox_kit_input_tap_behavior.dart';
 import 'appbox_kit_native_chrome_gate.dart';
 
 /// Adaptive text field — three-tier, matching the rest of the `AppBoxKitNative*`
@@ -32,11 +33,14 @@ class AppBoxKitNativeTextField extends StatelessWidget {
     this.hintText,
     this.obscureText = false,
     this.keyboardType,
+    this.minLines,
+    this.maxLines,
     this.autofocus = false,
     this.enabled = true,
     this.onChanged,
     this.onSubmitted,
     this.wantNative = true,
+    this.dismissKeyboardOnOutsideTap = true,
     this.fillColor,
     this.borderRadius,
     this.tint,
@@ -64,6 +68,17 @@ class AppBoxKitNativeTextField extends StatelessWidget {
   /// Keyboard type. Honored on every tier.
   final TextInputType? keyboardType;
 
+  /// Multiline composer contract (with [maxLines]): minimum visible lines.
+  /// `null` (default) = single-line field — the historical behavior. On the
+  /// CN tier this switches the Swift field to `TextField(axis: .vertical)` +
+  /// `lineLimit(min...max)` and the capsule grows natively; SecureField has no
+  /// vertical axis, so `obscureText` fields stay single-line regardless.
+  final int? minLines;
+
+  /// Maximum lines; `null` with [minLines] = unbounded growth. Capped fields
+  /// scroll internally past the cap on every tier.
+  final int? maxLines;
+
   /// Autofocus on appearance.
   final bool autofocus;
 
@@ -80,6 +95,13 @@ class AppBoxKitNativeTextField extends StatelessWidget {
   /// Host opt-out of native chrome. `true` (default) routes to [CNTextField]
   /// on iOS/macOS; `false` forces the Material [TextField] tier everywhere.
   final bool wantNative;
+
+  /// Tap-outside keyboard dismissal default (see [AppBoxKitInputTapBehavior]).
+  /// On by default; every tier is wrapped in the kit's grouped tap region, so
+  /// tapping outside dismisses on both the Flutter and native focus tiers and
+  /// re-tapping the focused field never drops the keyboard. Set false only
+  /// when a screen drives focus itself.
+  final bool dismissKeyboardOnOutsideTap;
 
   /// Background fill for the Material tiers (ignored on the CN glass tier,
   /// which owns its capsule surface). `null` = theme default.
@@ -111,8 +133,10 @@ class AppBoxKitNativeTextField extends StatelessWidget {
     // below). Matches the search bar's `wantNative && supportsLiquidGlass`
     // shape, but the CN text field is valid on ALL iOS/macOS (it degrades to a
     // non-glass capsule), so we gate on platform rather than on the glass flag.
-    final useNativeTier =
-        wantNative && (AppBoxKitPlatform.isIOS || AppBoxKitPlatform.isDesktop);
+    // iOS-only: the vendored CNTextField registers no macOS factory, so a
+    // macOS desktop host takes the Material tier below (an AppKitView for an
+    // unregistered view type would crash at creation).
+    final useNativeTier = wantNative && AppBoxKitPlatform.isIOS;
     if (useNativeTier) {
       // isDesktop covers macOS; the CN bridge switches UiKitView→AppKitView
       // internally. Android is excluded — it takes the Material M3E tier below.
@@ -126,6 +150,8 @@ class AppBoxKitNativeTextField extends StatelessWidget {
         placeholder: placeholder ?? hintText,
         obscureText: obscureText,
         keyboardType: keyboardType,
+        minLines: minLines,
+        maxLines: maxLines,
         autofocus: autofocus,
         onChanged: onChanged,
         onSubmitted: onSubmitted,
@@ -133,25 +159,37 @@ class AppBoxKitNativeTextField extends StatelessWidget {
         textColor: textColor ?? scheme.onSurface,
         placeholderColor: placeholderColor ?? scheme.onSurfaceVariant,
       ).chromeGated();
-      if (enabled) return field;
       // CNTextField has no `enabled` channel param; enforce the documented
       // "built but non-interactive" contract on the Flutter side.
-      return IgnorePointer(
-        child: Opacity(opacity: 0.5, child: field),
-      );
+      final Widget tier = enabled
+          ? field
+          : IgnorePointer(child: Opacity(opacity: 0.5, child: field));
+      return _withInputTapBehavior(tier);
     }
 
     // Android M3 Expressive → the vendored [TextFieldM3E] fork (focus
     // shape-morph, matching the split-button/toolbar/FAB morph), gated exactly
     // like every AppBoxKitNative* sibling. `wantNative: false` skips it to the
     // Material fallback below.
-    if (wantNative && AppBoxKitPlatform.supportsComposeM3E) return _m3e(context);
+    if (wantNative && AppBoxKitPlatform.supportsComposeM3E) {
+      return _withInputTapBehavior(_m3e(context));
+    }
 
     // Fallback (web, or any tier with `wantNative: false`) → Material 3
     // TextField. Plain themed field; carries a filled surface only when a
     // `fillColor` is supplied.
-    return _material(context);
+    return _withInputTapBehavior(_material(context));
   }
+
+  /// The per-input dismissal default (see [AppBoxKitInputTapBehavior]) — one
+  /// wrap, all three tiers, so every host and scaffolded app gets it by
+  /// construction. Region wraps the FULL tier bounds (the CN capsule / M3E
+  /// container / Material decoration), not just the editable box, so taps on
+  /// the field's padding are inside the group too.
+  Widget _withInputTapBehavior(Widget tier) => AppBoxKitInputTapBehavior(
+        dismissOnOutsideTap: dismissKeyboardOnOutsideTap,
+        child: tier,
+      );
 
   Widget _m3e(BuildContext context) {
     // M3E owns its filled container shape + size via tokens, so the Material
@@ -163,6 +201,8 @@ class AppBoxKitNativeTextField extends StatelessWidget {
       placeholder: placeholder ?? hintText,
       obscureText: obscureText,
       keyboardType: keyboardType,
+      minLines: minLines,
+      maxLines: maxLines,
       autofocus: autofocus,
       enabled: enabled,
       onChanged: onChanged,
@@ -179,6 +219,8 @@ class AppBoxKitNativeTextField extends StatelessWidget {
       enabled: enabled,
       obscureText: obscureText,
       keyboardType: keyboardType,
+      minLines: minLines,
+      maxLines: obscureText ? 1 : maxLines,
       autofocus: autofocus,
       onChanged: onChanged,
       onSubmitted: onSubmitted,

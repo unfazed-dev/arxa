@@ -141,9 +141,10 @@ void registerAppBoxKitFontLicenses() {
   LicenseRegistry.addLicense(() async* {
     for (final f in appBoxKitFontOptions) {
       if (!await appBoxKitFontIsBundled(f)) continue;
-      final text =
-          await rootBundle.loadString('packages/appbox_kit_core/fonts/${f.id}.LICENSE');
-      yield LicenseEntryWithLineBreaks(<String>['appbox_kit_core', f.cssName], text);
+      final text = await rootBundle
+          .loadString('packages/appbox_kit_core/fonts/${f.id}.LICENSE');
+      yield LicenseEntryWithLineBreaks(
+          <String>['appbox_kit_core', f.cssName], text);
     }
   });
 }

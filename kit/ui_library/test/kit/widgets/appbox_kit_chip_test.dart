@@ -9,7 +9,8 @@ import 'appbox_kit_native_test_helpers.dart';
 /// AppBoxKitChip tests — label/glyph rendering, theming (stadium shape + container
 /// tint), tap handling, and the minimum-height invariant.
 void main() {
-  testWidgets('kit.ui-library.chip — renders label + leading glyph', (tester) async {
+  testWidgets('kit.ui-library.chip — renders label + leading glyph',
+      (tester) async {
     await tester.pumpWidget(host(const AppBoxKitChip(
       glyph: AppBoxKitGlyphs.camera,
       label: 'Photo',
@@ -19,7 +20,8 @@ void main() {
     expect(find.byIcon(AppBoxKitGlyphs.camera.icon), findsOneWidget);
   });
 
-  testWidgets('kit.ui-library.chip — text-only chip renders no icon', (tester) async {
+  testWidgets('kit.ui-library.chip — text-only chip renders no icon',
+      (tester) async {
     await tester.pumpWidget(host(const AppBoxKitChip(label: 'Plain')));
 
     expect(find.text('Plain'), findsOneWidget);
@@ -38,7 +40,9 @@ void main() {
     expect(taps, 1);
   });
 
-  testWidgets('kit.ui-library.chip — is a stadium pill tinted surfaceContainerHigh', (tester) async {
+  testWidgets(
+      'kit.ui-library.chip — is a stadium pill tinted surfaceContainerHigh',
+      (tester) async {
     await tester.pumpWidget(host(const AppBoxKitChip(label: 'Themed')));
 
     final material = tester.widget<Material>(find.descendant(
@@ -51,7 +55,8 @@ void main() {
         reason: 'the tint comes from the kit theme, not a hardcoded color');
   });
 
-  testWidgets('kit.ui-library.chip — never shrinks below abxSize36', (tester) async {
+  testWidgets('kit.ui-library.chip — never shrinks below abxSize36',
+      (tester) async {
     await tester.pumpWidget(host(const AppBoxKitChip(label: 'Height')));
 
     expect(

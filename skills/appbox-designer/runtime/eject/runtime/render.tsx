@@ -7,7 +7,7 @@
 import type { FC } from 'hono/jsx';
 import TimerPage, { Tick } from '../../../examples/hello-hda/ui/views/main_shell/timer/timer_view.tsx';
 import HomePage from '../../../examples/hello-hda/ui/views/main_shell/home/home_view.tsx';
-import MainShell from '../../../examples/hello-hda/ui/views/main_shell/main_shell.tsx';
+import MainShell from '../../../examples/hello-hda/ui/views/main_shell/main_shell_view.tsx';
 
 type ComponentMap = { default: FC<Record<string, unknown>>; [fragment: string]: FC<Record<string, unknown>> };
 

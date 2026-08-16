@@ -29,14 +29,16 @@ void main() {
     // on POP. AppBoxKitNativeChromeGate already removes the view from the frame,
     // which de-tinting cannot do, so the native flag is a second authority that
     // buys nothing and costs an animation.
-    final src = File('vendor/cupertino_native_better/lib/utils/transition_observer.dart')
+    final src = File(
+            'vendor/cupertino_native_better/lib/utils/transition_observer.dart')
         .readAsStringSync();
 
     // Strip doc comments: the reasoning above is quoted in the source, and it
     // names the very methods we are forbidding.
     final code = src
         .split('\n')
-        .where((l) => !l.trimLeft().startsWith('//') && !l.trimLeft().startsWith('///'))
+        .where((l) =>
+            !l.trimLeft().startsWith('//') && !l.trimLeft().startsWith('///'))
         .join('\n');
 
     // CNTransitionHelper is a deliberate manual-control escape hatch and keeps
@@ -54,7 +56,8 @@ void main() {
         reason: 'same: endTransition is what fires the materialize, exactly as '
             'the revealed route becomes visible');
     expect(observerBody.contains('void _beginTransition('), isTrue,
-        reason: 'control: the Dart-side counter bookkeeping must still be here, '
+        reason:
+            'control: the Dart-side counter bookkeeping must still be here, '
             'or the two assertions above are passing because the whole method '
             'vanished rather than because the native call did');
     expect(code.contains('class CNTransitionHelper'), isTrue,
@@ -227,8 +230,7 @@ void main() {
     expect(CNTransitionObserver.activeTransitions.value, 0);
   });
 
-  testWidgets(
-      'non-opaque routes (dialogs, popups) never drive the chrome hide',
+  testWidgets('non-opaque routes (dialogs, popups) never drive the chrome hide',
       (WidgetTester tester) async {
     // The hide exists so a platform view leaves the frame while a page COVERS
     // the screen. A dialog / modal popup / sheet is `opaque: false` — the page

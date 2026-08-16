@@ -30,10 +30,9 @@ ShowcaseNoteAttachmentModel _attachment(String id) =>
 _MockMediaAdapter _registerMediaMock() {
   final media = _MockMediaAdapter();
   when(() => media.deleteFile(any())).thenAnswer((_) async {});
-  appBoxKitLocator
-      .registerSingleton<ShowcaseNotesMediaAdapterService>(media);
-  addTearDown(() =>
-      appBoxKitLocator.unregister<ShowcaseNotesMediaAdapterService>());
+  appBoxKitLocator.registerSingleton<ShowcaseNotesMediaAdapterService>(media);
+  addTearDown(
+      () => appBoxKitLocator.unregister<ShowcaseNotesMediaAdapterService>());
   return media;
 }
 
@@ -68,12 +67,15 @@ void main() {
       // Fake: the real service's CNToast path needs a mounted navigator
       // context, which a data-layer suite doesn't have. Recording double from
       // package:appbox_kit_ui_library/appbox_kit_testing.dart.
-      ..registerLazySingleton<AppBoxKitNotificationService>(() => FakeAppBoxKitNotificationService())
+      ..registerLazySingleton<AppBoxKitNotificationService>(
+          () => FakeAppBoxKitNotificationService())
 
       // Registered by the @StackedApp appBoxKitLocator in the app; this suite stays
       // self-contained (data layer only), so it registers them itself.
-      ..registerLazySingleton<ShowcaseNotesRepositoryService>(() => ShowcaseNotesRepositoryService())
-      ..registerLazySingleton<ShowcaseNotesFacadeService>(() => ShowcaseNotesFacadeService());
+      ..registerLazySingleton<ShowcaseNotesRepositoryService>(
+          () => ShowcaseNotesRepositoryService())
+      ..registerLazySingleton<ShowcaseNotesFacadeService>(
+          () => ShowcaseNotesFacadeService());
 
     await AppData.initialize(
       // Snapshot persistence needs a platform channel; tests run in-memory.
@@ -120,13 +122,15 @@ void main() {
     expect(overview.trashCount, 1);
 
     final idService = appBoxKitLocator<AppBoxKitIdService>();
-    String fid(String key) => idService.canonicalId(kShowcaseNoteFoldersTable, key);
+    String fid(String key) =>
+        idService.canonicalId(kShowcaseNoteFoldersTable, key);
     expect(overview.liveCountByFolder[fid('folder-work')], 3);
     expect(overview.liveCountByFolder[fid('folder-personal')], 3);
     expect(overview.liveCountByFolder[fid('folder-notes')], 1);
   });
 
-  test('notes.trash-and-restore.trash-a-note — trash\$ holds the seeded deleted draft',
+  test(
+      'notes.trash-and-restore.trash-a-note — trash\$ holds the seeded deleted draft',
       () async {
     final trash = await notes.trash$(evanId).first;
     expect(trash.map((n) => n.title), ['Old draft']);
@@ -143,7 +147,9 @@ void main() {
       'notes.pin-notes.pin-a-note-to-the-top-of-the-inbox — groupNotes buckets by iOS Notes sections, pinned first',
       () {
     final now = DateTime(2026, 7, 12, 12);
-    ShowcaseNoteModel note(String id, DateTime updatedAt, {bool pinned = false}) => ShowcaseNoteModel(
+    ShowcaseNoteModel note(String id, DateTime updatedAt,
+            {bool pinned = false}) =>
+        ShowcaseNoteModel(
           id: id,
           folderId: 'f',
           owner: 'o',
@@ -179,7 +185,8 @@ void main() {
       'notes.note-crud.create-a-note — mutation round-trip: create → save (notes.note-crud.edit-a-note) → pin (notes.pin-notes.pin-a-note-to-the-top-of-the-inbox) → trash (notes.trash-and-restore.trash-a-note) → restore (notes.trash-and-restore.restore-a-trashed-note) → purge (notes.note-crud.delete-a-note-forever)',
       () async {
     final idService = appBoxKitLocator<AppBoxKitIdService>();
-    final folderId = idService.canonicalId(kShowcaseNoteFoldersTable, 'folder-notes');
+    final folderId =
+        idService.canonicalId(kShowcaseNoteFoldersTable, 'folder-notes');
 
     final created = await notes.createNote(evanId, folderId);
     expect(created.body, isEmpty);
@@ -227,8 +234,10 @@ void main() {
   test(
       'notes.folders.move-a-note-into-a-folder — moving a note changes which folder stream it appears in',
       () async {
-    final source = await notes.createFolder(evanId, 'Move source', sortOrder: 100);
-    final target = await notes.createFolder(evanId, 'Move target', sortOrder: 101);
+    final source =
+        await notes.createFolder(evanId, 'Move source', sortOrder: 100);
+    final target =
+        await notes.createFolder(evanId, 'Move target', sortOrder: 101);
     final note = await notes.createNote(evanId, source.id);
 
     Future<List<String>> idsIn(String folderId) async =>
@@ -246,19 +255,22 @@ void main() {
 
     // Guards — identical() proves the no-op returned the input without a
     // repository write.
-    expect(identical(await notes.moveNoteToFolder(moved, target.id), moved), isTrue,
+    expect(identical(await notes.moveNoteToFolder(moved, target.id), moved),
+        isTrue,
         reason: 'same-folder move is a no-op');
 
     await notes.auth.signOut();
     addTearDown(() => notes.auth
         .signInWithEmailPassword(email: 'evan@seed.local', password: 'x'));
-    expect(identical(await notes.moveNoteToFolder(moved, source.id), moved), isTrue,
+    expect(identical(await notes.moveNoteToFolder(moved, source.id), moved),
+        isTrue,
         reason: 'signed-out move is a no-op');
     await notes.auth
         .signInWithEmailPassword(email: 'evan@seed.local', password: 'x');
 
     final trashed = await notes.moveToTrash(moved);
-    expect((await notes.moveNoteToFolder(trashed, source.id)).folderId, target.id,
+    expect(
+        (await notes.moveNoteToFolder(trashed, source.id)).folderId, target.id,
         reason: 'trashed notes stay put — restore returns to the folder');
 
     // Leave the store as found for order-independence.
@@ -288,18 +300,20 @@ void main() {
       () async {
     final idService = appBoxKitLocator<AppBoxKitIdService>();
     final kitRepo = appBoxKitLocator<AppBoxKitRepository<ShowcaseNoteModel>>();
-    final folderId = idService.canonicalId(kShowcaseNoteFoldersTable, 'folder-notes');
+    final folderId =
+        idService.canonicalId(kShowcaseNoteFoldersTable, 'folder-notes');
     final note = await notes.createNote(evanId, folderId);
 
     // A second surface edits the body after the editor read `note`.
-    await kitRepo.upsert(
-        note.copyWith(body: 'concurrent edit', updatedAt: DateTime.now().toUtc()));
+    await kitRepo.upsert(note.copyWith(
+        body: 'concurrent edit', updatedAt: DateTime.now().toUtc()));
 
     final trashed = await notes.moveToTrash(note);
 
     expect(trashed.isDeleted, isTrue);
     expect(trashed.body, 'concurrent edit',
-        reason: 'trash writes only deleted_at/pinned — never clobbers another edit');
+        reason:
+            'trash writes only deleted_at/pinned — never clobbers another edit');
 
     // Leave the store as found for order-independence.
     await notes.deletePermanently(trashed);
@@ -310,11 +324,12 @@ void main() {
       () async {
     final idService = appBoxKitLocator<AppBoxKitIdService>();
     final kitRepo = appBoxKitLocator<AppBoxKitRepository<ShowcaseNoteModel>>();
-    final folderId = idService.canonicalId(kShowcaseNoteFoldersTable, 'folder-notes');
+    final folderId =
+        idService.canonicalId(kShowcaseNoteFoldersTable, 'folder-notes');
     final note = await notes.createNote(evanId, folderId);
 
-    await kitRepo.upsert(
-        note.copyWith(body: 'concurrent edit', updatedAt: DateTime.now().toUtc()));
+    await kitRepo.upsert(note.copyWith(
+        body: 'concurrent edit', updatedAt: DateTime.now().toUtc()));
 
     final pinned = await notes.togglePin(note);
 
@@ -332,7 +347,8 @@ void main() {
     // store at the moment its delete runs
     final media = _registerMediaMock();
     final idService = appBoxKitLocator<AppBoxKitIdService>();
-    final folderId = idService.canonicalId(kShowcaseNoteFoldersTable, 'folder-notes');
+    final folderId =
+        idService.canonicalId(kShowcaseNoteFoldersTable, 'folder-notes');
     final created = await notes.createNote(evanId, folderId);
     final withPhoto = await notes.addAttachment(created, _attachment('p1'));
     when(() => media.deleteFile(any())).thenAnswer((_) async {
@@ -342,7 +358,8 @@ void main() {
     });
 
     // when
-    final updated = await notes.removeAttachment(withPhoto, withPhoto.attachments.single);
+    final updated =
+        await notes.removeAttachment(withPhoto, withPhoto.attachments.single);
 
     // then
     expect(updated.attachments, isEmpty);
@@ -358,7 +375,8 @@ void main() {
     // given
     final media = _registerMediaMock();
     final idService = appBoxKitLocator<AppBoxKitIdService>();
-    final folderId = idService.canonicalId(kShowcaseNoteFoldersTable, 'folder-notes');
+    final folderId =
+        idService.canonicalId(kShowcaseNoteFoldersTable, 'folder-notes');
     final created = await notes.createNote(evanId, folderId);
     final withMedia = await notes.addAttachment(created, _attachment('p1'));
 
@@ -377,7 +395,8 @@ void main() {
     // given — a trashed note carrying a photo
     final media = _registerMediaMock();
     final idService = appBoxKitLocator<AppBoxKitIdService>();
-    final folderId = idService.canonicalId(kShowcaseNoteFoldersTable, 'folder-notes');
+    final folderId =
+        idService.canonicalId(kShowcaseNoteFoldersTable, 'folder-notes');
     final created = await notes.createNote(evanId, folderId);
     final withPhoto = await notes.addAttachment(created, _attachment('p1'));
     await notes.moveToTrash(withPhoto);
@@ -400,7 +419,8 @@ void main() {
     when(() => media.pickPhoto(fromCamera: any(named: 'fromCamera')))
         .thenAnswer((_) async => null);
     final idService = appBoxKitLocator<AppBoxKitIdService>();
-    final folderId = idService.canonicalId(kShowcaseNoteFoldersTable, 'folder-notes');
+    final folderId =
+        idService.canonicalId(kShowcaseNoteFoldersTable, 'folder-notes');
     final created = await notes.createNote(evanId, folderId);
 
     // when
@@ -426,7 +446,8 @@ void main() {
     );
     when(() => media.stopRecording()).thenAnswer((_) async => memo);
     final idService = appBoxKitLocator<AppBoxKitIdService>();
-    final folderId = idService.canonicalId(kShowcaseNoteFoldersTable, 'folder-notes');
+    final folderId =
+        idService.canonicalId(kShowcaseNoteFoldersTable, 'folder-notes');
     final created = await notes.createNote(evanId, folderId);
 
     // when

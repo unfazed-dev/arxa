@@ -6,9 +6,10 @@ import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart'
         CNTransitionObserver,
         CNTabBarRouteObserver,
         AppBoxKitAction,
-        AppBoxKitDismissKeyboard,
+        AppBoxKitAccentSwatch,
         AppBoxKitErrorService,
         AppBoxKitThemeService,
+        appBoxKitAccentByName,
         appBoxKitDarkTheme,
         appBoxKitDefaultGoogleFontFamily,
         appBoxKitLightTheme,
@@ -68,6 +69,13 @@ class _ShowcaseAppState extends State<ShowcaseApp>
   /// Fade-only: a rise/slide at the app root would shift the entire UI.
   static const _bootSpec = AppBoxKitMotionSpec(offset: Offset.zero);
 
+  /// The showcase's brand accent: the authored 'moss' swatch from the kit's
+  /// theme.json SSOT. The kit default is the studio violet
+  /// ([AppBoxKitColors.accent]); per the kit law a host uses that as-is or
+  /// overrides the brand accent per mode via the theme constructors
+  /// (appbox_kit_colors.dart header) — this app wears moss.
+  static final AppBoxKitAccentSwatch _accent = appBoxKitAccentByName('moss');
+
   @override
   void initState() {
     super.initState();
@@ -83,76 +91,79 @@ class _ShowcaseAppState extends State<ShowcaseApp>
   @override
   Widget build(BuildContext context) {
     final theme = locator<AppBoxKitThemeService>();
-    // Tap-outside-to-dismiss for the whole app, installed once above the
-    // router so every shell and route inherits it — including the native
-    // CNTextField tier, which a plain `unfocus()` cannot reach.
-    return AppBoxKitDismissKeyboard(
-      child: AppBoxKitMotionScope(
-        driver: _boot,
-        spec: _bootSpec,
-        child: StreamBuilder<ThemeMode>(
-          stream: theme.themeMode$,
-          initialData: theme.themeMode$.value,
-          builder: (context, snapshot) => ResponsiveApp(
-            builder: (_) => MaterialApp.router(
-              debugShowCheckedModeBanner: false,
-              // Route-transition occlusion: suppresses native iOS 26 glass
-              // (app-bar popup menu, buttons, search bar, glass cards…) during
-              // route slides so a hybrid-composition platform view can't leak
-              // over the outgoing/incoming routes. See NATIVE_COMPONENTS.md.
-              // CNTabBarRouteObserver is the modal half: it bumps
-              // `anyModalDepth` while a sheet/dialog/popup route is up, which
-              // is what makes every chrome-gated surface hide under modals.
-              // Both are inherited by the nested tab routers
-              // (StackedTabsRouter.inheritNavigatorObservers).
-              routerDelegate: kitPlatformRouter.delegate(
-                navigatorObservers: () => [
-                  CNTransitionObserver(),
-                  CNTabBarRouteObserver(),
-                ],
-              ),
-              routeInformationParser: kitPlatformRouter.defaultRouteParser(),
-              // Wire the root back dispatcher so the OS back gesture (Android 14+
-              // predictive back) flows into the stacked Router — the legacy
-              // routerDelegate API needs it explicit or back events don't reach the
-              // router. iOS edge-swipe-back is handled by the cupertino page type
-              // AppBoxKitPlatformRouter emits, not by this dispatcher.
-              backButtonDispatcher: RootBackButtonDispatcher(),
-              // Font law v2 demo: the kit catalogue's default `ui` face (Lexend)
-              // resolved at runtime through google_fonts — the same wiring the
-              // scaffolder emits from assets.manifest.json font roles.
-              theme: appBoxKitLightTheme(
-                fontFamily: appBoxKitDefaultGoogleFontFamily(),
-              ),
-              darkTheme: appBoxKitDarkTheme(
-                fontFamily: appBoxKitDefaultGoogleFontFamily(),
-              ),
-              themeMode: snapshot.data ?? ThemeMode.system,
-              // Instant, because half this UI cannot participate in a theme
-              // ANIMATION and the attempt is what made the glass look broken.
-              //
-              // `ThemeData.lerp` fades colours continuously but `brightness` is
-              // a STEP at t=0.5. Flutter-painted surfaces therefore cross-fade
-              // immediately while every native platform view — whose only
-              // appearance lever is a boolean `setBrightness` — holds its OLD
-              // appearance for half the duration and then snaps. That desync IS
-              // the reported bug: a dark glass pill on an already-light page.
-              //
-              // Measured (probe, `CNButton`, one flip):
-              //   default 200ms → `setBrightness` on the wire at 96ms, and 26
-              //     channel round-trips for ONE widget, because the per-frame
-              //     tint guard compares a value that is lerping, so every
-              //     animation frame fires a fresh `setStyle`.
-              //   Duration.zero → `setBrightness` at 0ms, 5 round-trips.
-              // On device that per-frame storm is multiplied by every native
-              // widget on screen, which is why the stale window read as seconds
-              // rather than the ~100ms the step alone costs.
-              //
-              // Nothing is lost: the "smooth theme fade" was never coherent
-              // here — it was half the screen fading while the other half
-              // waited. Now both halves flip on the same frame.
-              themeAnimationDuration: Duration.zero,
+    // Keyboard dismissal is NOT wired here anymore: the app-wide
+    // Listener-based wrapper was the re-tap regression's root cause (a raw
+    // pointer-down cannot tell an outside tap from a re-tap on the focused
+    // field). Every kit input now carries the default itself
+    // (AppBoxKitInputTapBehavior, a grouped TextFieldTapRegion) — scaffolded
+    // apps inherit it per input, with nothing to wire in main.
+    return AppBoxKitMotionScope(
+      driver: _boot,
+      spec: _bootSpec,
+      child: StreamBuilder<ThemeMode>(
+        stream: theme.themeMode$,
+        initialData: theme.themeMode$.value,
+        builder: (context, snapshot) => ResponsiveApp(
+          builder: (_) => MaterialApp.router(
+            debugShowCheckedModeBanner: false,
+            // Route-transition occlusion: suppresses native iOS 26 glass
+            // (app-bar popup menu, buttons, search bar, glass cards…) during
+            // route slides so a hybrid-composition platform view can't leak
+            // over the outgoing/incoming routes. See NATIVE_COMPONENTS.md.
+            // CNTabBarRouteObserver is the modal half: it bumps
+            // `anyModalDepth` while a sheet/dialog/popup route is up, which
+            // is what makes every chrome-gated surface hide under modals.
+            // Both are inherited by the nested tab routers
+            // (StackedTabsRouter.inheritNavigatorObservers).
+            routerDelegate: kitPlatformRouter.delegate(
+              navigatorObservers: () => [
+                CNTransitionObserver(),
+                CNTabBarRouteObserver(),
+              ],
             ),
+            routeInformationParser: kitPlatformRouter.defaultRouteParser(),
+            // Wire the root back dispatcher so the OS back gesture (Android 14+
+            // predictive back) flows into the stacked Router — the legacy
+            // routerDelegate API needs it explicit or back events don't reach the
+            // router. iOS edge-swipe-back is handled by the cupertino page type
+            // AppBoxKitPlatformRouter emits, not by this dispatcher.
+            backButtonDispatcher: RootBackButtonDispatcher(),
+            // Font law v2 demo: the kit catalogue's default `ui` face (Lexend)
+            // resolved at runtime through google_fonts — the same wiring the
+            // scaffolder emits from assets.manifest.json font roles.
+            theme: appBoxKitLightTheme(
+              accent: _accent.light.accent,
+              fontFamily: appBoxKitDefaultGoogleFontFamily(),
+            ),
+            darkTheme: appBoxKitDarkTheme(
+              accent: _accent.dark.accent,
+              fontFamily: appBoxKitDefaultGoogleFontFamily(),
+            ),
+            themeMode: snapshot.data ?? ThemeMode.system,
+            // Instant, because half this UI cannot participate in a theme
+            // ANIMATION and the attempt is what made the glass look broken.
+            //
+            // `ThemeData.lerp` fades colours continuously but `brightness` is
+            // a STEP at t=0.5. Flutter-painted surfaces therefore cross-fade
+            // immediately while every native platform view — whose only
+            // appearance lever is a boolean `setBrightness` — holds its OLD
+            // appearance for half the duration and then snaps. That desync IS
+            // the reported bug: a dark glass pill on an already-light page.
+            //
+            // Measured (probe, `CNButton`, one flip):
+            //   default 200ms → `setBrightness` on the wire at 96ms, and 26
+            //     channel round-trips for ONE widget, because the per-frame
+            //     tint guard compares a value that is lerping, so every
+            //     animation frame fires a fresh `setStyle`.
+            //   Duration.zero → `setBrightness` at 0ms, 5 round-trips.
+            // On device that per-frame storm is multiplied by every native
+            // widget on screen, which is why the stale window read as seconds
+            // rather than the ~100ms the step alone costs.
+            //
+            // Nothing is lost: the "smooth theme fade" was never coherent
+            // here — it was half the screen fading while the other half
+            // waited. Now both halves flip on the same frame.
+            themeAnimationDuration: Duration.zero,
           ),
         ).wake(order: 0),
       ),

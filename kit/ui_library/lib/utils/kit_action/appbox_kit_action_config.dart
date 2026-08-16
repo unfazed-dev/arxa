@@ -90,13 +90,16 @@ class AppBoxKitActionConfig<T> {
   // ===== Notification Types =====
 
   /// Type of notification for loading state (snackbar, dialog, bottomSheet, none)
-  AppBoxKitNotificationType loadingNotificationType = AppBoxKitNotificationType.snackbar;
+  AppBoxKitNotificationType loadingNotificationType =
+      AppBoxKitNotificationType.snackbar;
 
   /// Type of notification for success state (snackbar, dialog, bottomSheet, none)
-  AppBoxKitNotificationType successNotificationType = AppBoxKitNotificationType.snackbar;
+  AppBoxKitNotificationType successNotificationType =
+      AppBoxKitNotificationType.snackbar;
 
   /// Type of notification for error state (snackbar, dialog, bottomSheet, none)
-  AppBoxKitNotificationType errorNotificationType = AppBoxKitNotificationType.snackbar;
+  AppBoxKitNotificationType errorNotificationType =
+      AppBoxKitNotificationType.snackbar;
 
   // ===== Retry Logic =====
 

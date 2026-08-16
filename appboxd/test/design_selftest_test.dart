@@ -168,17 +168,23 @@ void main() {
   });
 
   // ── 2b. the half-migrated tree ─────────────────────────────────────────
-  // The fixture is fully on the retired tiers, so the mixed state — the new
-  // `ui/widgets/` root occupied while stragglers remain behind — has no
-  // fixture of its own. It is the state that actually occurs during a
-  // migration and the one neither shape describes, so it gets planted
-  // explicitly rather than left to a rerun.
+  // The fixture is now FULLY on the two-tier homes (the hello-hda migration
+  // landed), so every mixed state — the `ui/widgets/` root occupied while a
+  // widget sits in a homeless group, or a straggler remains in the retired
+  // tiers — has no fixture of its own. Those are the states that actually
+  // occur during a migration, so they are planted explicitly.
   group('two-tier widget law', () {
-    test('a new-root widget alongside retired-tier stragglers fails, named',
+    test('homeless new-root widgets and retired-tier stragglers fail, named',
         () async {
       final tmp = await _copyFixture('selftest-mixed-tier-');
       try {
+        // Homeless: under ui/widgets/ but in an unnamed group.
         File(p.join(tmp, 'ui', 'widgets', 'components', '_stale.html'))
+          ..createSync(recursive: true)
+          ..writeAsStringSync('<nav class="stale">left behind</nav>\n');
+        // Straggler: a widgets/ dir back inside the shell tree (retired tier).
+        File(p.join(tmp, 'ui', 'views', 'main_shell', 'home', 'widgets',
+                '_straggler.html'))
           ..createSync(recursive: true)
           ..writeAsStringSync('<nav class="stale">left behind</nav>\n');
         final r = await runSelftest(
@@ -193,14 +199,21 @@ void main() {
       }
     });
 
-    test('the fixture itself passes via the transition-tolerance branch',
+    test('the fixture itself passes as a lawful two-tier artifact',
         () async {
       // Guards the planted mixed state above from going vacuous: the fixture
-      // must not itself occupy the new `ui/widgets/` root, otherwise the
-      // mixed-state test would be probing a state the fixture already has.
-      expect(
-          Directory(p.join(_fixture, 'ui', 'widgets')).existsSync(), isFalse,
-          reason: 'fixture is expected to sit wholly on the retired tiers');
+      // must sit wholly in LEGAL two-tier homes (every top-level group under
+      // ui/widgets/ is common/ or <app>_<feature>_widgets/), otherwise the
+      // mixed-state plant would be probing a state the fixture already has.
+      final root = Directory(p.join(_fixture, 'ui', 'widgets'));
+      expect(root.existsSync(), isTrue,
+          reason: 'fixture is expected to sit on the two-tier homes');
+      for (final e in root.listSync()) {
+        if (e is! Directory) continue;
+        final name = p.basename(e.path);
+        expect(name == 'common' || name.endsWith('_widgets'), isTrue,
+            reason: 'illegal widget group under ui/widgets/: $name');
+      }
       final r = await runSelftest(
           artifactDir: _fixture, skillDir: _cleanSkill, skipRender: true);
       expect(

@@ -24,8 +24,10 @@ import 'appbox_kit_native_test_helpers.dart';
 void main() {
   tearDown(AppBoxKitPlatform.reset);
 
-  Future<ButtonM3E> pumpM3E(WidgetTester tester, AppBoxKitButtonStyle style) async {
-    AppBoxKitPlatform.override = const AppBoxKitPlatformOverride(isAndroid: true);
+  Future<ButtonM3E> pumpM3E(
+      WidgetTester tester, AppBoxKitButtonStyle style) async {
+    AppBoxKitPlatform.override =
+        const AppBoxKitPlatformOverride(isAndroid: true);
     await tester.pumpWidget(host(AppBoxKitNativeButton(
       label: 'Go',
       style: style,
@@ -35,11 +37,13 @@ void main() {
     return tester.widget<ButtonM3E>(find.byType(ButtonM3E));
   }
 
-  testWidgets('kit.ui-library.native-button — Android routes to ButtonM3E', (tester) async {
+  testWidgets('kit.ui-library.native-button — Android routes to ButtonM3E',
+      (tester) async {
     await pumpM3E(tester, AppBoxKitButtonStyle.glass);
   });
 
-  testWidgets('kit.ui-library.native-button — emphasis map: plain → text (never a filled CTA)',
+  testWidgets(
+      'kit.ui-library.native-button — emphasis map: plain → text (never a filled CTA)',
       (tester) async {
     final button = await pumpM3E(tester, AppBoxKitButtonStyle.plain);
     expect(
@@ -51,7 +55,9 @@ void main() {
     );
   });
 
-  testWidgets('kit.ui-library.native-button — emphasis map: high-emphasis styles → filled', (tester) async {
+  testWidgets(
+      'kit.ui-library.native-button — emphasis map: high-emphasis styles → filled',
+      (tester) async {
     for (final style in [
       AppBoxKitButtonStyle.prominentGlass,
       AppBoxKitButtonStyle.filled,
@@ -63,7 +69,9 @@ void main() {
     }
   });
 
-  testWidgets('kit.ui-library.native-button — emphasis map: mid-emphasis surfaces → tonal', (tester) async {
+  testWidgets(
+      'kit.ui-library.native-button — emphasis map: mid-emphasis surfaces → tonal',
+      (tester) async {
     for (final style in [
       AppBoxKitButtonStyle.glass,
       AppBoxKitButtonStyle.gray,
@@ -75,12 +83,16 @@ void main() {
     }
   });
 
-  testWidgets('kit.ui-library.native-button — emphasis map: bordered → outlined', (tester) async {
+  testWidgets(
+      'kit.ui-library.native-button — emphasis map: bordered → outlined',
+      (tester) async {
     final button = await pumpM3E(tester, AppBoxKitButtonStyle.bordered);
     expect(button.style, ButtonM3EStyle.outlined);
   });
 
-  testWidgets('kit.ui-library.native-button — default platform builds clean (no M3E)', (tester) async {
+  testWidgets(
+      'kit.ui-library.native-button — default platform builds clean (no M3E)',
+      (tester) async {
     await withAndroidFallback(() async {
       await tester.pumpWidget(host(AppBoxKitNativeButton(
         label: 'Go',
@@ -94,7 +106,8 @@ void main() {
     });
   });
 
-  testWidgets('kit.ui-library.native-button — CN tier (Liquid Glass) passes every kit style through 1:1',
+  testWidgets(
+      'kit.ui-library.native-button — CN tier (Liquid Glass) passes every kit style through 1:1',
       (tester) async {
     await withAndroidFallback(() async {
       for (final style in AppBoxKitButtonStyle.values) {
@@ -107,7 +120,8 @@ void main() {
         expect(
           cn.config.style,
           CNButtonStyle.values.byName(style.name),
-          reason: 'AppBoxKitButtonStyle is a 1:1 name mirror of CNButtonStyle and '
+          reason:
+              'AppBoxKitButtonStyle is a 1:1 name mirror of CNButtonStyle and '
               'the kit resolves it via values.byName — if the enums drift '
               '(rename/removal on either side), byName throws at RUNTIME on '
               'the Apple tier. ${style.name} must resolve.',
@@ -245,8 +259,11 @@ void main() {
     });
   });
 
-  testWidgets('kit.ui-library.native-button — onPressed is wired on the M3E tier', (tester) async {
-    AppBoxKitPlatform.override = const AppBoxKitPlatformOverride(isAndroid: true);
+  testWidgets(
+      'kit.ui-library.native-button — onPressed is wired on the M3E tier',
+      (tester) async {
+    AppBoxKitPlatform.override =
+        const AppBoxKitPlatformOverride(isAndroid: true);
     var fired = false;
     await tester.pumpWidget(host(AppBoxKitNativeButton(
       label: 'Go',

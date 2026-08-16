@@ -25,7 +25,8 @@ void main() {
 
   tearDownAll(teardownShowcase);
 
-  testWidgets('outer ShowcaseApplicationHubView owns no per-tab chrome (stable host)',
+  testWidgets(
+      'outer ShowcaseApplicationHubView owns no per-tab chrome (stable host)',
       (tester) async {
     await bootShell(tester);
 

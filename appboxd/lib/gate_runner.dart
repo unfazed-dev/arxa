@@ -10,8 +10,10 @@ import 'dart:io';
 import 'package:appboxd/gate_advertise.dart';
 import 'package:appboxd/gate_coverage.dart';
 import 'package:appboxd/gate_deploy.dart';
+import 'package:appboxd/gate_fidelity.dart';
 import 'package:appboxd/gate_freeze.dart';
 import 'package:appboxd/gate_intake.dart';
+import 'package:appboxd/gate_kind_registry.dart';
 import 'package:appboxd/gate_lens.dart';
 import 'package:appboxd/gate_memory.dart';
 import 'package:appboxd/gate_native_deps.dart';
@@ -27,7 +29,9 @@ const gateOrder = [
   'intake',
   'freeze',
   'structure',
+  'kind_registry',
   'scaffold',
+  'fidelity',
   'coverage',
   'tests',
   'memory',
@@ -146,6 +150,8 @@ Future<GateResult?> _tryDartGate(String name, GateContext ctx) async {
       return intakeGate(ctx, project: ctx.project);
     case 'structure':
       return structureGate(ctx);
+    case 'kind_registry':
+      return kindRegistryGate(ctx);
     case 'deploy':
       return deployGate(ctx);
     case 'native_deps':
@@ -154,6 +160,8 @@ Future<GateResult?> _tryDartGate(String name, GateContext ctx) async {
       return lensGate(ctx);
     case 'coverage':
       return coverageGate(ctx);
+    case 'fidelity':
+      return fidelityGate(ctx);
     case 'scaffold':
       return scaffoldGate(ctx);
     case 'tests':

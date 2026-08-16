@@ -35,7 +35,8 @@ import 'package:appbox_kit_showcase_app/ui/views/showcase_startup_shell/showcase
 import 'package:appbox_kit_showcase_app/ui/views/showcase_startup_shell/showcase_startup_shell_view.mobile.dart';
 import 'package:appbox_kit_showcase_app/ui/views/showcase_startup_shell/showcase_startup_shell_viewmodel.dart';
 
-class ShowcaseStartupShellView extends StackedView<ShowcaseStartupShellViewModel> {
+class ShowcaseStartupShellView
+    extends StackedView<ShowcaseStartupShellViewModel> {
   const ShowcaseStartupShellView({super.key});
 
   /// Identity stamped at emit time (Q12 triple).

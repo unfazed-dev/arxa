@@ -44,7 +44,8 @@ class ShowcaseComponentsOverlaysCardWidget extends StatelessWidget {
       StackedService.navigatorKey?.currentContext ?? fallback;
 
   static void _toast(BuildContext context, String message) =>
-      appBoxKitLocator<AppBoxKitNotificationService>().show(message, context: context);
+      appBoxKitLocator<AppBoxKitNotificationService>()
+          .show(message, context: context);
 
   /// The height notifier is created per presentation and disposed when the
   /// sheet's future completes, so its lifetime is exactly the sheet's.
@@ -81,7 +82,8 @@ class ShowcaseComponentsOverlaysCardWidget extends StatelessWidget {
               label: 'Show dialog',
               glyph: AppBoxKitGlyphs.info,
               onPressed: () async {
-                final result = await appBoxKitShowNativeDialog<ShowcaseDialogResult>(
+                final result =
+                    await appBoxKitShowNativeDialog<ShowcaseDialogResult>(
                   context: _modalContext(context),
                   title: 'Delete note?',
                   message: 'This cannot be undone.',
@@ -140,7 +142,8 @@ class ShowcaseComponentsOverlaysCardWidget extends StatelessWidget {
             child: AppBoxKitNativeButton(
               label: 'Show center toast',
               glyph: AppBoxKitGlyphs.alertsBadge,
-              onPressed: () => appBoxKitLocator<AppBoxKitNotificationService>().show(
+              onPressed: () =>
+                  appBoxKitLocator<AppBoxKitNotificationService>().show(
                 'Centered',
                 position: AppBoxKitToastPosition.center,
                 context: context,

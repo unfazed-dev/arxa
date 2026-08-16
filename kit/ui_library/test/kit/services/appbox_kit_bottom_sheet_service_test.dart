@@ -21,7 +21,8 @@ void main() {
         home: const Scaffold(body: SizedBox()),
       );
 
-  testWidgets('kit.ui-library.bottom-sheet — showCustomSheet renders the registered builder and returns '
+  testWidgets(
+      'kit.ui-library.bottom-sheet — showCustomSheet renders the registered builder and returns '
       'the completer response', (tester) async {
     await withAndroidFallback(() async {
       final service = AppBoxKitBottomSheetService()
@@ -31,8 +32,7 @@ void main() {
                 children: [
                   Text(request.title!),
                   TextButton(
-                    onPressed: () =>
-                        completer(SheetResponse(confirmed: true)),
+                    onPressed: () => completer(SheetResponse(confirmed: true)),
                     child: const Text('confirm'),
                   ),
                 ],
@@ -40,8 +40,7 @@ void main() {
         });
       await tester.pumpWidget(hostApp());
 
-      final future =
-          service.showCustomSheet(variant: 'notice', title: 'hello');
+      final future = service.showCustomSheet(variant: 'notice', title: 'hello');
       await tester.pumpAndSettle();
 
       expect(find.text('hello'), findsOneWidget,
@@ -58,9 +57,11 @@ void main() {
     });
   });
 
-  testWidgets('kit.ui-library.bottom-sheet — Android tier presents via plain showModalBottomSheet',
+  testWidgets(
+      'kit.ui-library.bottom-sheet — Android tier presents via plain showModalBottomSheet',
       (tester) async {
-    AppBoxKitPlatform.override = const AppBoxKitPlatformOverride(isAndroid: true);
+    AppBoxKitPlatform.override =
+        const AppBoxKitPlatformOverride(isAndroid: true);
     final service = AppBoxKitBottomSheetService()
       ..setCustomSheetBuilders({
         'notice': (context, request, completer) => Text(request.title!),
@@ -75,7 +76,8 @@ void main() {
         reason: 'Android tier uses plain showModalBottomSheet');
   });
 
-  testWidgets('kit.ui-library.bottom-sheet — showBottomSheet renders title/description and confirm '
+  testWidgets(
+      'kit.ui-library.bottom-sheet — showBottomSheet renders title/description and confirm '
       'completes with confirmed: true', (tester) async {
     await withAndroidFallback(() async {
       final service = AppBoxKitBottomSheetService();

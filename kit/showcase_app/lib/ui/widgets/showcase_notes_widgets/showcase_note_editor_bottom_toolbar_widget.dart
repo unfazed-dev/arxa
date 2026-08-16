@@ -81,7 +81,8 @@ class ShowcaseNoteEditorBottomToolbarWidget extends StatelessWidget {
                         ],
                         AppBoxKitNativeIconButton(
                           glyph: AppBoxKitGlyphs.photo,
-                          onPressed: () => viewModel.addPhoto(fromCamera: false),
+                          onPressed: () =>
+                              viewModel.addPhoto(fromCamera: false),
                         ),
                         const Spacer(),
                         AppBoxKitNativeIconButton(
@@ -89,7 +90,8 @@ class ShowcaseNoteEditorBottomToolbarWidget extends StatelessWidget {
                           onPressed: () async {
                             final started = await viewModel.startRecording();
                             if (!started && context.mounted) {
-                              appBoxKitLocator<AppBoxKitNotificationService>().show(
+                              appBoxKitLocator<AppBoxKitNotificationService>()
+                                  .show(
                                 'Microphone permission needed',
                                 kind: AppBoxKitNotificationKind.warning,
                                 context: context,

@@ -49,6 +49,21 @@ class LiquidGlassContainer extends StatefulWidget {
   /// Scrollable.
   final bool preferFlutterTier;
 
+  /// Whether this container would mount its native platform-view tier right
+  /// now — the exact predicate [build] uses. Callers that must adapt their
+  /// child to the tier (e.g. drop a child-painted shadow in favour of
+  /// [LiquidGlassConfig.shadow]) consult this so there is one source of
+  /// truth. Reflects the current [PlatformViewGuard] state.
+  static bool willUseNativeTier({bool preferFlutterTier = false}) {
+    final isIOSOrMacOS =
+        defaultTargetPlatform == TargetPlatform.iOS ||
+        defaultTargetPlatform == TargetPlatform.macOS;
+    return isIOSOrMacOS &&
+        PlatformVersion.supportsLiquidGlass &&
+        !preferFlutterTier &&
+        PlatformViewGuard.isReady;
+  }
+
   @override
   State<LiquidGlassContainer> createState() => _LiquidGlassContainerState();
 }
@@ -143,15 +158,53 @@ class _LiquidGlassContainerState extends State<LiquidGlassContainer>
         !widget.preferFlutterTier;
 
     if (!shouldUseNative) {
-      return widget.child;
+      return _fallbackChild(widget.child);
     }
 
     if (!PlatformViewGuard.isReady) {
       PlatformViewGuard.ensureScheduled();
-      return widget.child;
+      return _fallbackChild(widget.child);
     }
 
     return _buildNativeContainer(context);
+  }
+
+  /// LOCAL PATCH #11: fallback-tier elevation. When the config declares a
+  /// [CNGlassShadow], the fallback path wraps the child in a shape-matched
+  /// ShapeDecoration shadow (same geometry the native tier renders as a
+  /// CALayer shadow), so pre-26 tiers keep the exact elevation the glass
+  /// tier shows. Without a shadow spec the child is returned unchanged —
+  /// the historical contract.
+  Widget _fallbackChild(Widget child) {
+    final shadow = widget.config.shadow;
+    if (shadow == null) return child;
+    return DecoratedBox(
+      decoration: ShapeDecoration(
+        shape: _shapeBorderForConfig(widget.config),
+        shadows: [
+          BoxShadow(
+            color: shadow.color.withValues(alpha: shadow.opacity),
+            blurRadius: shadow.radius,
+            offset: shadow.offset,
+          ),
+        ],
+      ),
+      child: child,
+    );
+  }
+
+  /// The ShapeBorder matching [config] — the fallback shadow's silhouette.
+  static ShapeBorder _shapeBorderForConfig(LiquidGlassConfig config) {
+    switch (config.shape) {
+      case CNGlassEffectShape.rect:
+        return RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(config.cornerRadius ?? 0),
+        );
+      case CNGlassEffectShape.circle:
+        return const CircleBorder();
+      case CNGlassEffectShape.capsule:
+        return const StadiumBorder();
+    }
   }
 
   Widget _buildNativeContainer(BuildContext context) {
@@ -169,7 +222,7 @@ class _LiquidGlassContainerState extends State<LiquidGlassContainer>
       return Stack(
         clipBehavior: Clip.none,
         fit: StackFit.passthrough,
-        children: [hidden, widget.child],
+        children: [hidden, _fallbackChild(widget.child)],
       );
     }
 
@@ -183,6 +236,7 @@ class _LiquidGlassContainerState extends State<LiquidGlassContainer>
         'tint': resolveColorToArgb(widget.config.tint!, context),
       'interactive': widget.config.interactive,
       'isDark': ThemeHelper.isDark(context),
+      if (widget.config.shadow != null) 'shadow': _shadowParams(widget.config),
     };
 
     final platformView = defaultTargetPlatform == TargetPlatform.iOS
@@ -219,6 +273,27 @@ class _LiquidGlassContainerState extends State<LiquidGlassContainer>
     );
   }
 
+  /// LOCAL PATCH #11: serializes [LiquidGlassConfig.shadow] for the creation
+  /// params and `updateConfig` payloads. Color travels as ARGB with the
+  /// spec's opacity already multiplied in, matching how `tint` travels.
+  static Map<String, dynamic> _shadowParams(LiquidGlassConfig config) {
+    final s = config.shadow!;
+    return <String, dynamic>{
+      'color': _argbWithOpacity(s.color, s.opacity),
+      'radius': s.radius,
+      'dx': s.offset.dx,
+      'dy': s.offset.dy,
+    };
+  }
+
+  static int _argbWithOpacity(Color color, double opacity) {
+    final alpha = (color.a * opacity * 255).round().clamp(0, 255);
+    return (alpha << 24) |
+        ((color.r * 255).round() << 16) |
+        ((color.g * 255).round() << 8) |
+        (color.b * 255).round();
+  }
+
   void _onCreated(int id) {
     _channel = MethodChannel('CupertinoNativeLiquidGlassContainer_$id');
     _channel!.setMethodCallHandler((call) async {
@@ -243,6 +318,7 @@ class _LiquidGlassContainerState extends State<LiquidGlassContainer>
           'tint': resolveColorToArgb(widget.config.tint!, context),
         'interactive': widget.config.interactive,
         'isDark': _isDark,
+        if (widget.config.shadow != null) 'shadow': _shadowParams(widget.config),
       });
     } catch (e) {
       // Ignore errors - view might not be ready yet

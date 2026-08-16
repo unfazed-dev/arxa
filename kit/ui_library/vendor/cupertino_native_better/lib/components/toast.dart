@@ -517,17 +517,20 @@ class _ToastOverlayState extends State<_ToastOverlay>
         child: content,
       );
     } else {
+      // LOCAL PATCH #11: the pill paints NO shadow of its own — a BoxShadow
+      // painted inside the anchored subtree spills past the pill's layer
+      // bounds, and on the glass tier the view slicer + the fade's opacity
+      // surface clip it at the pill's rectangular bounding box (observed
+      // on-device 2026-08-15: a faint hard-edged rectangle where the soft
+      // shadow should be, and in worse scenes the whole shadow vanishing).
+      // Elevation is declared on the anchor config instead: a CALayer shadow
+      // on the native tier (Core Animation composites it outside every
+      // Flutter layer bound), and the container's own shape-matched
+      // ShapeDecoration shadow on the fallback tier.
       content = Container(
         decoration: BoxDecoration(
           color: backgroundColor,
           borderRadius: BorderRadius.circular(100),
-          boxShadow: [
-            BoxShadow(
-              color: CupertinoColors.black.withValues(alpha: 0.15),
-              blurRadius: 16,
-              offset: const Offset(0, 6),
-            ),
-          ],
         ),
         child: content,
       );
@@ -543,9 +546,16 @@ class _ToastOverlayState extends State<_ToastOverlay>
       // topmost overlay layer. `plain` renders nothing (clear fill,
       // Glass.identity): the fade/scale above it ghosts nothing visible, and
       // on tiers without native glass the container degrades to its bare
-      // child.
+      // child (plus the fallback elevation shadow above).
       content = LiquidGlassContainer(
-        config: const LiquidGlassConfig(effect: CNGlassEffect.plain),
+        config: const LiquidGlassConfig(
+          effect: CNGlassEffect.plain,
+          shadow: CNGlassShadow(
+            opacity: 0.15,
+            radius: 16,
+            offset: Offset(0, 6),
+          ),
+        ),
         child: content,
       );
     }

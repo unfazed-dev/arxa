@@ -162,8 +162,8 @@ class ShowcaseNotesViewMobile extends ViewModelWidget<ShowcaseNotesViewModel> {
                 }
                 return AppBoxKitStreamBuilder<ShowcaseNotesAdminOverview?>(
                   stream: viewModel.adminOverview$,
-                  builder: (context, admin) =>
-                      _foldersScrollView(context, viewModel, session, overview, admin),
+                  builder: (context, admin) => _foldersScrollView(
+                      context, viewModel, session, overview, admin),
                 );
               },
             ),
@@ -300,29 +300,32 @@ class ShowcaseNotesViewMobile extends ViewModelWidget<ShowcaseNotesViewModel> {
     final trashIndex = overview.folders.isNotEmpty ? 2 : 1;
     final slivers = <Widget>[
       staggeredSliver(
-        padding: const EdgeInsets.fromLTRB(abxSize16, abxSize12, abxSize16, abxSize4),
+        padding: const EdgeInsets.fromLTRB(
+            abxSize16, abxSize12, abxSize16, abxSize4),
         section: allNotesSection(),
         index: 0,
       ),
       if (overview.folders.isNotEmpty)
         staggeredSliver(
-          padding:
-              const EdgeInsets.symmetric(horizontal: abxSize16, vertical: abxSize4),
+          padding: const EdgeInsets.symmetric(
+              horizontal: abxSize16, vertical: abxSize4),
           section: foldersSection(),
           index: 1,
         ),
       staggeredSliver(
         padding: admin == null
-            ? const EdgeInsets.fromLTRB(abxSize16, abxSize4, abxSize16, abxSize80)
-            : const EdgeInsets.symmetric(horizontal: abxSize16, vertical: abxSize4),
+            ? const EdgeInsets.fromLTRB(
+                abxSize16, abxSize4, abxSize16, abxSize80)
+            : const EdgeInsets.symmetric(
+                horizontal: abxSize16, vertical: abxSize4),
         section: trashSection(),
         index: trashIndex,
       ),
       if (admin != null) ...[
         SliverToBoxAdapter(
           child: Padding(
-            padding:
-                const EdgeInsets.fromLTRB(abxSize16, abxSize12, abxSize16, abxSize4),
+            padding: const EdgeInsets.fromLTRB(
+                abxSize16, abxSize12, abxSize16, abxSize4),
             child: Text(
               'All users (admin)',
               style: theme.textTheme.bodySmall
@@ -331,7 +334,8 @@ class ShowcaseNotesViewMobile extends ViewModelWidget<ShowcaseNotesViewModel> {
           ),
         ),
         staggeredSliver(
-          padding: const EdgeInsets.fromLTRB(abxSize16, abxSize4, abxSize16, abxSize80),
+          padding: const EdgeInsets.fromLTRB(
+              abxSize16, abxSize4, abxSize16, abxSize80),
           section: adminSection(),
           index: trashIndex + 1,
         ),
@@ -340,4 +344,3 @@ class ShowcaseNotesViewMobile extends ViewModelWidget<ShowcaseNotesViewModel> {
     return slivers;
   }
 }
-

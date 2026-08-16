@@ -382,7 +382,10 @@ void main() {
     test('10: a served viewmodel route (GET /timer) → 200', () async {
       final r = await _get('${srv!.url}timer');
       expect(r.status, 200);
-      expect(r.body, contains('id="timer"'));
+      // The stated view mounts its three factor variants (five-file law),
+    // each with a rung-suffixed timer id (timer--desktop/tablet/mobile) — a
+    // bare id would collide across the tripled copies.
+    expect(r.body, contains('id="timer--desktop"'));
     });
 
     // Task #21: contract probes derive their targets from the design instead
@@ -434,11 +437,16 @@ void main() {
     });
 
     test('12: hot reload picks up an edit (same port)', () async {
+      // `class="muted"` lives in the sections file since the five-file-law
+      // migration (the base view mounts factor variants; the body — and its
+      // literals — are defined once in home_view.sections.tsx).
       final view = File(p.join(
-          tempDir, 'ui', 'views', 'main_shell', 'home', 'home_view.tsx'));
+          tempDir, 'ui', 'views', 'main_shell', 'home', 'home_view.sections.tsx'));
       final original = view.readAsStringSync();
-      // Edit a literal that actually lives in the view (not l10n text).
-      const marker = 'data-reload-marker="1"';
+      // Edit a literal that actually reaches the DOM (not l10n text). The
+      // Txt widget forwards name/class/id only — an unknown prop would be
+      // dropped and the assertion would fail even though the reload worked.
+      const marker = 'id="reload-marker"';
       try {
         view.writeAsStringSync(
             original.replaceFirst('class="muted"', 'class="muted" $marker'));

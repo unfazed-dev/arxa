@@ -1,5 +1,5 @@
 import 'package:cupertino_native_better/cupertino_native_better.dart'
-    show LiquidGlassContainer;
+    show CNGlassEffect, LiquidGlassContainer;
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:stacked_services/stacked_services.dart';
@@ -249,6 +249,72 @@ void main() {
     // fires the dismiss Timer (which removes the entry directly).
     await tester.pump(const Duration(seconds: 2));
     expect(pill, findsNothing);
+  });
+
+  testWidgets(
+      'kit.ui-library.notification-service — center pill elevation rides the anchor config, never a pill-painted BoxShadow',
+      (tester) async {
+    // 2026-08-15 device clip: the pill's own BoxShadow spilled past the
+    // anchor platform view's rect and past the pill's layer bounds; the view
+    // slicer + the fade's opacity surface clipped it at the pill's
+    // RECTANGULAR bounding box — a faint hard-edged rectangle where the soft
+    // shadow should be (and in worse scenes the shadow vanished outright).
+    // Elevation must be declared on the anchor's LiquidGlassConfig (native
+    // CALayer shadow on the glass tier, shape-matched ShapeDecoration on the
+    // fallback tier) and the pill decoration must stay shadow-free.
+    final svc = _RecordingSnackbarService();
+    appBoxKitLocator.registerSingleton<SnackbarService>(svc);
+    AppBoxKitPlatform.override =
+        const AppBoxKitPlatformOverride(isAndroid: true);
+
+    await tester.pumpWidget(host(const SizedBox.shrink()));
+    await service.show(
+      'elevation',
+      kind: AppBoxKitNotificationKind.info,
+      position: AppBoxKitToastPosition.center,
+      duration: const Duration(seconds: 2),
+      context: tester.element(find.byType(Scaffold)),
+    );
+    await tester.pump();
+
+    final pill = find.byKey(const Key('appBoxKitCenterToastPill'));
+    expect(pill, findsOneWidget);
+
+    // The anchor carries the elevation spec.
+    final anchor = tester.widget<LiquidGlassContainer>(
+      find.ancestor(of: pill, matching: find.byType(LiquidGlassContainer)),
+    );
+    expect(anchor.config.effect, CNGlassEffect.plain);
+    final shadow = anchor.config.shadow;
+    expect(shadow, isNotNull,
+        reason: 'elevation is declared on the anchor config');
+    expect(shadow!.radius, 16.0);
+    expect(shadow.opacity, 0.15);
+    expect(shadow.offset, const Offset(0, 6));
+
+    // The pill paints no shadow of its own — the artifact's cause.
+    final decoration =
+        tester.widget<Container>(pill).decoration as BoxDecoration;
+    expect(decoration.boxShadow, isNull,
+        reason: 'a pill-painted BoxShadow spills past the anchor rect and '
+            'renders as a hard-edged rectangle on the glass tier');
+
+    // The fallback tier still paints the elevation (shape-matched shadow
+    // under the anchor) — pre-glass devices keep the same look.
+    final shapeShadow = find.descendant(
+      of: find.byType(LiquidGlassContainer),
+      matching: find.byWidgetPredicate((w) {
+        if (w is! DecoratedBox) return false;
+        final d = w.decoration;
+        return d is ShapeDecoration &&
+            d.shadows != null &&
+            d.shadows!.isNotEmpty;
+      }),
+    );
+    expect(shapeShadow, findsOneWidget,
+        reason: 'the fallback tier must keep painting the elevation shadow');
+
+    await tester.pump(const Duration(seconds: 2));
   });
 
   testWidgets(

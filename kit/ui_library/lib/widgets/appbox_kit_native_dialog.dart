@@ -183,7 +183,8 @@ class AppBoxKitFrostedAlertDialog<T> extends StatefulWidget {
       _KitFrostedAlertDialogState<T>();
 }
 
-class _KitFrostedAlertDialogState<T> extends State<AppBoxKitFrostedAlertDialog<T>> {
+class _KitFrostedAlertDialogState<T>
+    extends State<AppBoxKitFrostedAlertDialog<T>> {
   @override
   void initState() {
     super.initState();
@@ -262,7 +263,8 @@ class _KitFrostedAlertDialogState<T> extends State<AppBoxKitFrostedAlertDialog<T
       label: action.label,
       glyph: action.glyph,
       style: switch (action.role) {
-        AppBoxKitDialogActionRole.primary => AppBoxKitButtonStyle.prominentGlass,
+        AppBoxKitDialogActionRole.primary =>
+          AppBoxKitButtonStyle.prominentGlass,
         AppBoxKitDialogActionRole.secondary => AppBoxKitButtonStyle.glass,
         AppBoxKitDialogActionRole.destructive => AppBoxKitButtonStyle.tinted,
       },

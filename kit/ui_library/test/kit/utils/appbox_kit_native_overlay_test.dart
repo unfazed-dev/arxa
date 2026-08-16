@@ -27,19 +27,23 @@ void main() {
     }
   });
 
-  test('kit.ui-library.native-overlay — balances depth for a plain future that completes on dismiss',
+  test(
+      'kit.ui-library.native-overlay — balances depth for a plain future that completes on dismiss',
       () async {
     expect(depth(), 0);
     await appBoxKitWithNativeChromeHidden(() async {});
     expect(depth(), 0);
   });
 
-  test('kit.ui-library.native-overlay — balances depth when present() returns null', () async {
+  test(
+      'kit.ui-library.native-overlay — balances depth when present() returns null',
+      () async {
     await appBoxKitWithNativeChromeHidden(() => null);
     expect(depth(), 0);
   });
 
-  test('kit.ui-library.native-overlay — balances depth when present() throws', () async {
+  test('kit.ui-library.native-overlay — balances depth when present() throws',
+      () async {
     await expectLater(
       appBoxKitWithNativeChromeHidden(() => Future.error(StateError('boom'))),
       throwsStateError,
@@ -71,8 +75,8 @@ void main() {
   // ADR 0010 second amendment: native glass scrim lease. On the test host
   // LiquidGlassContainer degrades to its bare child, so these exercise the
   // lease/refcount/fade machinery, not the UIKit effect itself.
-  Finder scrimDim() => find.byWidgetPredicate(
-      (w) => w is ColoredBox && w.color == Colors.black54);
+  Finder scrimDim() => find
+      .byWidgetPredicate((w) => w is ColoredBox && w.color == Colors.black54);
 
   /// The scrim's own AnimatedOpacity target — located through the dim so a
   /// stray AnimatedOpacity elsewhere in the overlay can't satisfy the finder.
@@ -97,10 +101,8 @@ void main() {
     await tester.pumpWidget(const MaterialApp(home: SizedBox.shrink()));
     final overlay = tester.state<OverlayState>(find.byType(Overlay).first);
 
-    final leaseA =
-        AppBoxKitSnackbarScrimLease.acquire(overlay, Colors.black54);
-    final leaseB =
-        AppBoxKitSnackbarScrimLease.acquire(overlay, Colors.black54);
+    final leaseA = AppBoxKitSnackbarScrimLease.acquire(overlay, Colors.black54);
+    final leaseB = AppBoxKitSnackbarScrimLease.acquire(overlay, Colors.black54);
     await tester.pump();
 
     expect(AppBoxKitSnackbarScrimLease.debugScrimMounted, isTrue);
@@ -225,14 +227,12 @@ void main() {
     await tester.pumpWidget(const MaterialApp(home: SizedBox.shrink()));
     final overlay = tester.state<OverlayState>(find.byType(Overlay).first);
 
-    final leaseA =
-        AppBoxKitSnackbarScrimLease.acquire(overlay, Colors.black54);
+    final leaseA = AppBoxKitSnackbarScrimLease.acquire(overlay, Colors.black54);
     await tester.pump();
     unawaited(leaseA.release());
     await tester.pump(const Duration(milliseconds: 100)); // mid-fade
 
-    final leaseB =
-        AppBoxKitSnackbarScrimLease.acquire(overlay, Colors.black54);
+    final leaseB = AppBoxKitSnackbarScrimLease.acquire(overlay, Colors.black54);
     await tester.pump(const Duration(milliseconds: 250));
     expect(AppBoxKitSnackbarScrimLease.debugScrimMounted, isTrue,
         reason: 'the mid-fade re-lease must cancel the pending removal');

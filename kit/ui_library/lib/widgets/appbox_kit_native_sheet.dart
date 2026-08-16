@@ -159,7 +159,8 @@ Future<T?> appBoxKitShowSheet<T>({
         context: context,
         builder: heightFactor == null
             ? builder
-            : (_) => _SizedSheetBody(heightFactor: heightFactor, child: Builder(builder: builder)),
+            : (_) => _SizedSheetBody(
+                heightFactor: heightFactor, child: Builder(builder: builder)),
         isDismissible: isDismissible,
         showDragHandle: showDragHandle,
         backgroundColor: backgroundColor,
@@ -313,7 +314,8 @@ class _CupertinoSheetBody extends StatelessWidget {
                 // default, measured. Clamping to the incoming constraint keeps a
                 // caller asking for more than the route can give from
                 // overflowing instead of simply filling it.
-                height: (value * screenHeight).clamp(0.0, constraints.maxHeight),
+                height:
+                    (value * screenHeight).clamp(0.0, constraints.maxHeight),
                 // Load-bearing. Align passes loose constraints, so a
                 // height-only SizedBox collapses to its content's intrinsic
                 // width and the sheet renders as a centered floating card —

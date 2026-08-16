@@ -5,10 +5,19 @@ description: Use whenever anything regarding appbox needs to be seen — capturi
 
 # appbox-lens — see appbox with appbox's own eyes
 
+> Per-skill playbook (the folded canon for this phase): [`LENS_playbook.mdx`](LENS_playbook.mdx)
+
 Standing doctrine: **for anything regarding appbox, appbox's own tools come
 first** (the `appbox` CLI and this lens) before any external or archived
 tooling. If a capture verb is missing, extend `appboxd/lib/lens.dart` /
 `appboxd/lib/cdp.dart` — never reach for `archives/tooling-pre-dart/`.
+
+## Pipeline position
+
+Cross-cutting stage 8 — capture/verification, valid wherever a rendered surface exists. The stage chain: `appbox-orchestrator` (Ø, front door) → `appbox-story-mapper / appbox-moodboarder` (0, optional) → `appbox-intake` (1) → `appbox-designer` (2) → `appbox-scaffolder` (3) → `appbox-builder` (4) → `appbox-tester` (5) → `appbox-reviewer` (6) → `appbox-deployer` (9) — cross-cutting: `appbox-lint` (7), `appbox-lens` (8), `appbox-cicd` (10, day-zero frame wrapping all stages). Stage numbers and every stage's input/output artifacts: `docs/research/pipeline-map.md` §1; the visual map: `docs/appbox-system-map.md`; the CLI FSM phases: `appboxd/lib/phases.dart`.
+
+- **Used by:** `appbox-moodboarder` (reference-app shots), the build phase (design-vs-built goldens over `appbox-builder` output), `appbox-tester` (visual + smoke layers), `appbox-reviewer` (visual evidence for the verdict).
+- **Fixed upstream/downstream:** none — any skill with a surface feeds it; its PNGs + `LensResult` feed whichever gate asked for evidence.
 
 ## What the lens is
 

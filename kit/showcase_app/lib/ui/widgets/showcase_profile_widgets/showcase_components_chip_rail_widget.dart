@@ -23,7 +23,8 @@ class ShowcaseComponentsChipRailWidget extends StatelessWidget {
   const ShowcaseComponentsChipRailWidget({super.key});
 
   static void _toast(BuildContext context, String message) =>
-      appBoxKitLocator<AppBoxKitNotificationService>().show(message, context: context);
+      appBoxKitLocator<AppBoxKitNotificationService>()
+          .show(message, context: context);
 
   @override
   Widget build(BuildContext context) {

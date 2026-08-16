@@ -42,7 +42,9 @@ void main() {
     );
   });
 
-  testWidgets('kit.ui-library.frosted-surface — tint + rim highlight ride the theme (light)', (tester) async {
+  testWidgets(
+      'kit.ui-library.frosted-surface — tint + rim highlight ride the theme (light)',
+      (tester) async {
     final light = ThemeData.light();
     // One theme per test: a second pumpWidget with a different MaterialApp
     // theme does not reliably re-propagate the inherited theme in
@@ -57,7 +59,9 @@ void main() {
         Colors.white.withValues(alpha: 0.45));
   });
 
-  testWidgets('kit.ui-library.frosted-surface — tint + rim highlight ride the theme (dark)', (tester) async {
+  testWidgets(
+      'kit.ui-library.frosted-surface — tint + rim highlight ride the theme (dark)',
+      (tester) async {
     final dark = ThemeData.dark();
     await tester.pumpWidget(
         host(const AppBoxKitFrostedSurface(child: Text('x')), theme: dark));
@@ -69,10 +73,11 @@ void main() {
         Colors.white.withValues(alpha: 0.16));
   });
 
-  testWidgets('kit.ui-library.frosted-surface — tint override wins over the theme-derived default',
+  testWidgets(
+      'kit.ui-library.frosted-surface — tint override wins over the theme-derived default',
       (tester) async {
-    await tester.pumpWidget(
-        host(const AppBoxKitFrostedSurface(tint: Colors.red, child: Text('x'))));
+    await tester.pumpWidget(host(
+        const AppBoxKitFrostedSurface(tint: Colors.red, child: Text('x'))));
     expect(surfaceDecoration(tester).color, Colors.red);
   });
 }

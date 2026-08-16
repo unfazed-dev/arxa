@@ -23,7 +23,8 @@ void main() {
 
   const addAction = AppBoxKitNativeIconButton(glyph: AppBoxKitGlyphs.add);
   AppBoxKitNativeIconButton micAction(VoidCallback? onPressed) =>
-      AppBoxKitNativeIconButton(glyph: AppBoxKitGlyphs.mic, onPressed: onPressed);
+      AppBoxKitNativeIconButton(
+          glyph: AppBoxKitGlyphs.mic, onPressed: onPressed);
 
   Future<void> pumpBar(
     WidgetTester tester,
@@ -37,9 +38,11 @@ void main() {
         ),
       ));
 
-  testWidgets('kit.ui-library.native-input-bar — Android wantNative routes field + actions to the M3E tier',
+  testWidgets(
+      'kit.ui-library.native-input-bar — Android wantNative routes field + actions to the M3E tier',
       (tester) async {
-    AppBoxKitPlatform.override = const AppBoxKitPlatformOverride(isAndroid: true);
+    AppBoxKitPlatform.override =
+        const AppBoxKitPlatformOverride(isAndroid: true);
     await pumpBar(
         tester,
         AppBoxKitNativeInputBar(
@@ -54,9 +57,11 @@ void main() {
         reason: 'leading + trailing slots render as M3E icon buttons');
   });
 
-  testWidgets('kit.ui-library.native-input-bar — renders field + leading/trailing actions (fallback tiers)',
+  testWidgets(
+      'kit.ui-library.native-input-bar — renders field + leading/trailing actions (fallback tiers)',
       (tester) async {
-    AppBoxKitPlatform.override = const AppBoxKitPlatformOverride(isAndroid: true);
+    AppBoxKitPlatform.override =
+        const AppBoxKitPlatformOverride(isAndroid: true);
     await pumpBar(
         tester,
         AppBoxKitNativeInputBar(
@@ -75,15 +80,18 @@ void main() {
         reason: 'trailing slot renders the mic glyph');
   });
 
-  testWidgets('kit.ui-library.native-input-bar — action tap callbacks fire', (tester) async {
-    AppBoxKitPlatform.override = const AppBoxKitPlatformOverride(isAndroid: true);
+  testWidgets('kit.ui-library.native-input-bar — action tap callbacks fire',
+      (tester) async {
+    AppBoxKitPlatform.override =
+        const AppBoxKitPlatformOverride(isAndroid: true);
     var lead = 0, trail = 0;
     await pumpBar(
         tester,
         AppBoxKitNativeInputBar(
           wantNative: false,
           leading: [
-            AppBoxKitNativeIconButton(glyph: AppBoxKitGlyphs.add, onPressed: () => lead++),
+            AppBoxKitNativeIconButton(
+                glyph: AppBoxKitGlyphs.add, onPressed: () => lead++),
           ],
           trailing: [micAction(() => trail++)],
         ));
@@ -98,20 +106,30 @@ void main() {
         reason: 'tapping the trailing action must fire its callback');
   });
 
-  testWidgets('kit.ui-library.native-input-bar — hint text passes through to the field', (tester) async {
-    AppBoxKitPlatform.override = const AppBoxKitPlatformOverride(isAndroid: true);
-    await pumpBar(tester,
-        const AppBoxKitNativeInputBar(hintText: 'Ask anything', wantNative: false));
+  testWidgets(
+      'kit.ui-library.native-input-bar — hint text passes through to the field',
+      (tester) async {
+    AppBoxKitPlatform.override =
+        const AppBoxKitPlatformOverride(isAndroid: true);
+    await pumpBar(
+        tester,
+        const AppBoxKitNativeInputBar(
+            hintText: 'Ask anything', wantNative: false));
 
     expect(find.text('Ask anything'), findsOneWidget,
         reason: 'hintText must reach the field as its hint/placeholder');
   });
 
-  testWidgets('kit.ui-library.native-input-bar — onChanged is wired through the field', (tester) async {
-    AppBoxKitPlatform.override = const AppBoxKitPlatformOverride(isAndroid: true);
+  testWidgets(
+      'kit.ui-library.native-input-bar — onChanged is wired through the field',
+      (tester) async {
+    AppBoxKitPlatform.override =
+        const AppBoxKitPlatformOverride(isAndroid: true);
     String? fired;
-    await pumpBar(tester,
-        AppBoxKitNativeInputBar(wantNative: false, onChanged: (v) => fired = v));
+    await pumpBar(
+        tester,
+        AppBoxKitNativeInputBar(
+            wantNative: false, onChanged: (v) => fired = v));
 
     await tester.enterText(find.byType(TextField), 'hello');
     await tester.pump();
@@ -120,10 +138,12 @@ void main() {
         reason: 'typing in the bar field must fire onChanged');
   });
 
-  testWidgets('kit.ui-library.native-input-bar — keyboard viewInsets lift the bar (keyboard riding)',
+  testWidgets(
+      'kit.ui-library.native-input-bar — keyboard viewInsets lift the bar (keyboard riding)',
       (tester) async {
     addTearDown(tester.view.reset);
-    AppBoxKitPlatform.override = const AppBoxKitPlatformOverride(isAndroid: true);
+    AppBoxKitPlatform.override =
+        const AppBoxKitPlatformOverride(isAndroid: true);
     // resizeToAvoidBottomInset: false so the Scaffold leaves viewInsets in the
     // MediaQuery for the bar to consume itself (the documented host pattern).
     const bar = AppBoxKitNativeInputBar(hintText: 'Message', wantNative: false);
@@ -142,9 +162,12 @@ void main() {
             'keyboard in a bottomSheet/Stack/bottomNavigationBar slot');
   });
 
-  testWidgets('kit.ui-library.native-input-bar — bottom SafeArea pads for the home indicator', (tester) async {
+  testWidgets(
+      'kit.ui-library.native-input-bar — bottom SafeArea pads for the home indicator',
+      (tester) async {
     addTearDown(tester.view.reset);
-    AppBoxKitPlatform.override = const AppBoxKitPlatformOverride(isAndroid: true);
+    AppBoxKitPlatform.override =
+        const AppBoxKitPlatformOverride(isAndroid: true);
     const bar = AppBoxKitNativeInputBar(hintText: 'Message', wantNative: false);
 
     await pumpBar(tester, bar, resizeToAvoidBottomInset: false);
@@ -160,11 +183,14 @@ void main() {
             'inset instead of the viewInsets padding');
   });
 
-  testWidgets('kit.ui-library.native-input-bar — actions overriding glyph size trip the one-size assert',
+  testWidgets(
+      'kit.ui-library.native-input-bar — actions overriding glyph size trip the one-size assert',
       (tester) async {
     await tester.pumpWidget(host(AppBoxKitNativeInputBar(
       wantNative: false,
-      trailing: [AppBoxKitNativeIconButton(glyph: AppBoxKitGlyphs.mic, size: 24)],
+      trailing: [
+        AppBoxKitNativeIconButton(glyph: AppBoxKitGlyphs.mic, size: 24)
+      ],
     )));
 
     expect(tester.takeException(), isAssertionError,
@@ -172,7 +198,8 @@ void main() {
             'default) — a custom size breaks leading/trailing alignment');
   });
 
-  testWidgets('kit.ui-library.native-input-bar — opaque base rides a plain compositing anchor',
+  testWidgets(
+      'kit.ui-library.native-input-bar — opaque base rides a plain compositing anchor',
       (tester) async {
     // The anchor (LiquidGlassContainer, CNGlassEffect.plain) is what keeps the
     // opaque base in the slicer overlay above passing platform views — without
@@ -210,5 +237,47 @@ void main() {
             hintText: 'Message', wantNative: false, opaqueGlass: false));
     expect(find.byType(LiquidGlassContainer), findsNothing,
         reason: 'transparent backing needs no anchor — nothing to keep opaque');
+  });
+
+  testWidgets(
+      'kit.ui-library.native-input-bar — tapping a bar action keeps the field '
+      'focused (actions join the input tap group)', (tester) async {
+    AppBoxKitPlatform.override =
+        const AppBoxKitPlatformOverride(isAndroid: true);
+    await pumpBar(
+        tester,
+        AppBoxKitNativeInputBar(
+          hintText: 'Message',
+          wantNative: false,
+          leading: const [addAction],
+          trailing: [micAction(() {})],
+        ));
+
+    await tester.tap(find.byType(TextField));
+    await tester.pump();
+    final FocusNode node = FocusManager.instance.primaryFocus!;
+    expect(node.hasFocus, isTrue, reason: 'precondition: field focused');
+
+    // The regression (2026-08-16, on-device): tapping the bar's own +/mic
+    // dropped the keyboard — the actions sat OUTSIDE the field's tap region,
+    // so the tap classified as "outside" and ran the dismissal. The bar is one
+    // input surface (iOS Messages idiom): an action tap must never dismiss.
+    await tester.tap(find.widgetWithIcon(IconButtonM3E, Icons.add));
+    await tester.pump();
+    expect(node.hasFocus, isTrue,
+        reason: 'bar actions are part of the input surface — the keyboard '
+            'must survive an action tap');
+    await tester.tap(find.widgetWithIcon(IconButtonM3E, Icons.mic));
+    await tester.pump();
+    expect(node.hasFocus, isTrue,
+        reason: 'trailing actions keep the keyboard too (same surface)');
+
+    // The per-input dismissal default itself is unchanged: a tap OUTSIDE the
+    // whole bar still dismisses.
+    await tester.tapAt(const Offset(10, 10));
+    await tester.pump();
+    expect(node.hasFocus, isFalse,
+        reason: 'outside taps still dismiss — the fix extends the inside '
+            'region, it does not remove dismissal');
   });
 }

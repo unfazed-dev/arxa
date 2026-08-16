@@ -30,7 +30,8 @@ void main() {
   tearDown(() => appBoxKitLocator.reset());
 
   group('owner-identity keys', () {
-    test('kit.ui-library.action-owner — action(name, operation) state is observable via actionState\$',
+    test(
+        'kit.ui-library.action-owner — action(name, operation) state is observable via actionState\$',
         () async {
       final vm = _FakeVm();
       final gate = Completer<void>();
@@ -51,7 +52,9 @@ void main() {
       vm.dispose();
     });
 
-    test('kit.ui-library.action-owner — awaiting the same builder twice runs the operation once', () async {
+    test(
+        'kit.ui-library.action-owner — awaiting the same builder twice runs the operation once',
+        () async {
       final vm = _FakeVm();
       var runs = 0;
 
@@ -67,7 +70,8 @@ void main() {
       vm.dispose();
     });
 
-    test('kit.ui-library.action-owner — same name on two owners runs in parallel (independent keys)',
+    test(
+        'kit.ui-library.action-owner — same name on two owners runs in parallel (independent keys)',
         () async {
       final vmA = _FakeVm();
       final vmB = _FakeVm();
@@ -95,7 +99,8 @@ void main() {
   });
 
   group('auto-dispose', () {
-    test('kit.ui-library.action-owner — AppBoxKitViewModel.dispose cancels owner watches (no callback after)',
+    test(
+        'kit.ui-library.action-owner — AppBoxKitViewModel.dispose cancels owner watches (no callback after)',
         () async {
       final vm = _FakeVm();
       final subject = BehaviorSubject<int>.seeded(0);
@@ -118,7 +123,8 @@ void main() {
       expect(calls, callsAfterDispose);
     });
 
-    test('kit.ui-library.action-owner — disposeOwner closes the op state subject (fresh state after)',
+    test(
+        'kit.ui-library.action-owner — disposeOwner closes the op state subject (fresh state after)',
         () async {
       final vm = _FakeVm();
       // Bind the state stream so a subject exists.

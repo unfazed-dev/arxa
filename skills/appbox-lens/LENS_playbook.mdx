@@ -1,0 +1,42 @@
+<Callout id="header" tone="info">
+# appbox-lens — Per-Skill Playbook
+
+`appbox-lens` · status: **active**
+
+**Role (one line):** see appbox with appbox's own eyes — capture screenshots, compare against goldens, and inspect DOM/a11y/net/tokens at the viewport ladder via `appboxd/lib/lens.dart` over `appboxd/lib/cdp.dart` (the promoted probe-runner port).
+
+**Scope of this document:** lets a human OR an LLM run any capture or visual-evidence task without reading the skill source. Folded from `SKILL.md`.
+
+**Pipeline position:** cross-cutting stage 8, not phase-bound — used by `appbox-moodboarder`, the build phase (design-vs-built goldens), `appbox-tester` (visual + smoke) and `appbox-reviewer` (verdict evidence). Full chain, stage numbers, per-stage artifacts: `docs/research/pipeline-map.md` §1.
+
+## Table of contents
+
+0. Header & TOC · 1. Overview & role · 2. Inputs · 3. Procedure · 4. Outputs · 5. Rules · 6. References
+
+</Callout>
+
+### Overview & role
+
+The lens is a Dart library that launches its own headless Chrome (`--headless=new`, throwaway temp profile, ephemeral port), navigates, settles, captures, and collects console/page errors. It is the promoted probe-runner port — the archived probe-runner under `archives/tooling-pre-dart/` is never reached for. The lens captures and inspects only; native interaction (tap/swipe/type) belongs to Patrol and `flutter_test`. Every probe-runner verb is ported or dropped with reason — the audit is `capability-map.md`.
+
+### Inputs
+
+A URL (a served artifact route, `http://localhost:<port>/<route>`) or a surface map for `runLensGate`; the viewport ladder from project config (never hardcoded; defaults 390×844 / 744×1133 / 1280×832); golden files for compare passes; a settle budget — 1500ms default, 3000–3500ms for WASM, GLB, fonts and animation runtimes.
+
+### Procedure
+
+Prefer the CLI: `appbox lens check <url> <out.png> [w h settle] [--selector=<css>] [--expect=<js>]` (navigate + assert: golden capture, console-clean, optional input) and `appbox lens shoot <url> [--rungs=…] [--out=dir]` (the viewport-ladder pass); `appbox lens --help` lists every verb. One-off captures use `dart run appboxd/tool/lens_shot.dart <url> <out.png> [w h settle] [--full]`, input driving `tool/lens_check.dart --expect <js>`. Gates and comparisons use the Dart API — `captureGolden`, `compareGolden(mode: byte|pixel|ssim, threshold:)` returning `LensResult`, and `runLensGate(surfaces, goldenDir, …)` for a name→URL map.
+
+### Outputs
+
+Evidence PNGs at `designs/<design>/evidence/<topic>/<surface>-<width>.png` (semantic lowercase names) and, for gate callers, one `LensResult` (`passed`, `similarity`, `diffPixels`, `note`) per surface.
+
+### Rules
+
+Console/page errors always fail, regardless of pixel match — a surface with a runtime bug is red even when it looks right. Evidence claiming "responsive" covers every width in the active ladder. Read the PNG back before declaring done: a green exit with a blank canvas is a fail. Goldens are frozen approvals — re-capture only when the design itself changed, never to make a red check green. Every invocation owns its Chrome, so parallel slices need no port/profile juggling and the user's browser is never touched. A missing verb means extending `lens.dart`/`cdp.dart`, never reviving archived tooling. Two recorded partials (not gaps): `adb_shot` latin1 round-trip and WAAPI-only flipbook recovery, both carrying `kimitail:` upgrade notes.
+
+<!-- kb:begin -->
+### References
+- `capability-map.md` (skill-local) — verb-by-verb port audit: what shipped, what was dropped with reason.
+- `appboxd/lib/lens.dart`, `appboxd/lib/cdp.dart`, `appboxd/lib/lens/*.dart` — the library. `appboxd/tool/lens_shot.dart` / `lens_check.dart` — shell drivers. `appbox lens --help` — the live verb table.
+<!-- kb:end -->

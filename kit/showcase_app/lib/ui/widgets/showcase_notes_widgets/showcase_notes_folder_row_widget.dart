@@ -60,7 +60,8 @@ class ShowcaseNotesFolderRowWidget extends StatelessWidget {
         color: theme.colorScheme.error,
         alignment: Alignment.centerRight,
         padding: const EdgeInsets.symmetric(horizontal: abxSize20),
-        child: Icon(AppBoxKitGlyphs.delete.icon, color: theme.colorScheme.onError),
+        child:
+            Icon(AppBoxKitGlyphs.delete.icon, color: theme.colorScheme.onError),
       ),
       confirmDismiss: (_) async {
         await viewModel.confirmDeleteFolder(folder);

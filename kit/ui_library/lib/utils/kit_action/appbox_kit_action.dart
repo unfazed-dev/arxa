@@ -6,7 +6,8 @@ import 'package:appbox_kit_core/appbox_kit_locator.dart';
 import 'package:appbox_kit_core/services/error/appbox_kit_error_service.dart';
 import 'package:rxdart/rxdart.dart' show ValueStream;
 
-export 'managers/appbox_kit_action_state_manager.dart' show AppBoxKitActionState;
+export 'managers/appbox_kit_action_state_manager.dart'
+    show AppBoxKitActionState;
 export 'appbox_kit_action_builder.dart' show AppBoxKitActionBuilder;
 
 // ═══════════════════════════════════════════════════════════════════════════════

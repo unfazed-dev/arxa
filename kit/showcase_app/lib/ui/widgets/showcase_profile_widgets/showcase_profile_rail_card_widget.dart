@@ -79,8 +79,7 @@ class ShowcaseProfileRailCardWidget extends StatelessWidget {
                 const VerticalDivider(),
                 Expanded(
                   child: Center(
-                    child: Text(
-                        'Selected: ${viewModel.rail.label}',
+                    child: Text('Selected: ${viewModel.rail.label}',
                         style: const TextStyle(fontWeight: FontWeight.w600)),
                   ),
                 ),

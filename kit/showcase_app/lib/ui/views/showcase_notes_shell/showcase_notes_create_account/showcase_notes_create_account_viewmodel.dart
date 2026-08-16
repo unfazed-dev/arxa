@@ -45,7 +45,8 @@ import 'package:appbox_kit_showcase_app/services/showcase_notes_services/facades
 class ShowcaseNotesCreateAccountViewModel extends AppBoxKitViewModel {
   // ── Setup ──────────────────────────────────────────────────────────────────
 
-  final ShowcaseNotesFacadeService _notes = appBoxKitLocator<ShowcaseNotesFacadeService>();
+  final ShowcaseNotesFacadeService _notes =
+      appBoxKitLocator<ShowcaseNotesFacadeService>();
 
   AppBoxKitAuthService get auth => _notes.auth;
 
@@ -64,7 +65,8 @@ class ShowcaseNotesCreateAccountViewModel extends AppBoxKitViewModel {
   /// [1. Create account] Live busy/error state of the sign-up op — the stream
   /// form of the old `.withLoading(setBusy)`: the form binds it to disable
   /// buttons and show the inline spinner while sign-up runs.
-  ValueStream<AppBoxKitActionState> get signUpState$ => actionState$(ShowcaseNotesAuthOp.signUp.name);
+  ValueStream<AppBoxKitActionState> get signUpState$ =>
+      actionState$(ShowcaseNotesAuthOp.signUp.name);
 
   /// Inline form error (seeded null = none): auth errors show their message,
   /// anything else gets the generic one.

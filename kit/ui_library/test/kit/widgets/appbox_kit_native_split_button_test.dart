@@ -28,8 +28,11 @@ void main() {
     AppBoxKitMenuItem(label: 'Delete', icon: Icons.delete, isDestructive: true),
   ];
 
-  testWidgets('kit.ui-library.native-split-button — Android routes to SplitButtonM3E', (tester) async {
-    AppBoxKitPlatform.override = const AppBoxKitPlatformOverride(isAndroid: true);
+  testWidgets(
+      'kit.ui-library.native-split-button — Android routes to SplitButtonM3E',
+      (tester) async {
+    AppBoxKitPlatform.override =
+        const AppBoxKitPlatformOverride(isAndroid: true);
     await tester.pumpWidget(host(const AppBoxKitNativeSplitButton(
       label: 'Save',
       icon: Icons.save,
@@ -39,11 +42,13 @@ void main() {
     expect(
       find.byType(SplitButtonM3E<AppBoxKitMenuItem>),
       findsOneWidget,
-      reason: 'supportsComposeM3E → kit must route to SplitButtonM3E on Android',
+      reason:
+          'supportsComposeM3E → kit must route to SplitButtonM3E on Android',
     );
   });
 
-  testWidgets('kit.ui-library.native-split-button — iOS routes to CNGlassButtonGroup and builds clean',
+  testWidgets(
+      'kit.ui-library.native-split-button — iOS routes to CNGlassButtonGroup and builds clean',
       (tester) async {
     AppBoxKitPlatform.override = const AppBoxKitPlatformOverride(isIOS: true);
     await withAndroidFallback(() async {
@@ -70,7 +75,8 @@ void main() {
   // Menu parity with the appbar/FAB menu: destructive + Material-icon
   // fallback must survive the AppBoxKitMenuItem → CNButtonDataPopupItem mapping
   // (they used to be dropped on this tier).
-  testWidgets('kit.ui-library.native-split-button — iOS tier maps destructive + Material fallback icon',
+  testWidgets(
+      'kit.ui-library.native-split-button — iOS tier maps destructive + Material fallback icon',
       (tester) async {
     AppBoxKitPlatform.override = const AppBoxKitPlatformOverride(isIOS: true);
     await withAndroidFallback(() async {
@@ -99,7 +105,8 @@ void main() {
     });
   });
 
-  testWidgets('kit.ui-library.native-split-button — default (else) routes to Material PopupMenuButton',
+  testWidgets(
+      'kit.ui-library.native-split-button — default (else) routes to Material PopupMenuButton',
       (tester) async {
     await tester.pumpWidget(host(const AppBoxKitNativeSplitButton(
       label: 'Save',

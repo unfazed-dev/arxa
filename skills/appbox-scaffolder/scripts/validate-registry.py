@@ -1,6 +1,11 @@
 #!/usr/bin/env python3
 """Q7 check: validate kind-resolution.registry.json against its two ground truths.
 
+SUPERSEDED 2026-08: promoted to a real gate — run `appbox gate kind_registry`
+(appboxd/lib/gate_kind_registry.dart), which rides `gate --all` and CI. This
+script stays as the port's reference implementation; behavior is parity-locked
+by appboxd/test/gate_kind_registry_test.dart.
+
 Manual for now — nothing in CI executes this yet. Run it after any registry edit.
 
 Ground truth 1 — VOCABULARY: skills/appbox-designer/starter-partials/widgets/_<kind>.tsx.

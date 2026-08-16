@@ -170,8 +170,8 @@ void main() {
     await _settleBoot(tester);
 
     expect(
-      identical(tester.element(find.byType(AppBoxKitNativeChromeGate)),
-          gateElement),
+      identical(
+          tester.element(find.byType(AppBoxKitNativeChromeGate)), gateElement),
       isTrue,
       reason: 'gate was rebuilt — the restore assertion below would be vacuous',
     );
@@ -183,7 +183,8 @@ void main() {
 
   testWidgets(
       'kit.ui-library.chrome-gate-scope — a POP leaves the REVEALED route\'s '
-      'in-route chrome painted for the whole slide', (WidgetTester tester) async {
+      'in-route chrome painted for the whole slide',
+      (WidgetTester tester) async {
     // The Liquid-Glass-reappears-on-back regression, at the layer that causes
     // it. Leaving the frame makes the engine `removeFromSuperview` the platform
     // view; re-entering `addSubview`s it, and re-insertion is what materializes
@@ -249,7 +250,8 @@ void main() {
     await tester.pumpAndSettle();
     expect(
       identical(
-        tester.element(find.byType(AppBoxKitNativeChromeGate, skipOffstage: false)),
+        tester.element(
+            find.byType(AppBoxKitNativeChromeGate, skipOffstage: false)),
         gateElement,
       ),
       isTrue,
@@ -262,7 +264,8 @@ void main() {
 
   testWidgets(
       'kit.ui-library.chrome-gate-scope — a NESTED pop keeps both the in-route '
-      'chrome and the root tab bar painted, every frame', (WidgetTester tester) async {
+      'chrome and the root tab bar painted, every frame',
+      (WidgetTester tester) async {
     // The showcase's actual shape, which the three tests above do not have
     // between them: a nested router (one tab's branch) whose routes carry
     // their own gated chrome, sitting beside a root-level gated tab bar. The
@@ -341,7 +344,8 @@ void main() {
 
   testWidgets(
       'kit.ui-library.chrome-gate-scope — an interactive back-swipe keeps every '
-      'gate painted through drag, commit and settle', (WidgetTester tester) async {
+      'gate painted through drag, commit and settle',
+      (WidgetTester tester) async {
     // The all-glass-vanishes-under-the-finger regression (device clip 00-26,
     // 2026-08-14). `didStartUserGesture` ticks the observer BEFORE the drag
     // moves any controller, so at the only tick of the whole drag both
@@ -425,7 +429,8 @@ void main() {
     }
 
     expect(hiddenDuring, isEmpty,
-        reason: 'a gate left the frame during the back-swipe at [$hiddenDuring] '
+        reason:
+            'a gate left the frame during the back-swipe at [$hiddenDuring] '
             '— that is the all-glass-vanishes-under-the-finger clip, and the '
             'commit-time re-add is the Liquid Glass materialize');
 
@@ -460,7 +465,8 @@ void main() {
         home: CupertinoPageScaffold(
           child: Navigator(
             observers: <NavigatorObserver>[CNTransitionObserver()],
-            onGenerateRoute: (RouteSettings settings) => CupertinoPageRoute<void>(
+            onGenerateRoute: (RouteSettings settings) =>
+                CupertinoPageRoute<void>(
               settings: settings,
               builder: (_) => const AppBoxKitNativeChromeGate(
                 child: Text('nested-glass'),
@@ -491,7 +497,8 @@ void main() {
     for (int step = 0; step < 8; step++) {
       await gesture.moveBy(const Offset(60.0, 0.0));
       await tester.pump(const Duration(milliseconds: 16));
-      if (_allGatesHidden(tester).any((bool h) => h)) hiddenDuring.add('drag-$step');
+      if (_allGatesHidden(tester).any((bool h) => h))
+        hiddenDuring.add('drag-$step');
     }
     await gesture.up();
     for (int frame = 0; frame < 34; frame++) {
@@ -551,7 +558,8 @@ void main() {
     for (int step = 0; step < 4; step++) {
       await gesture.moveBy(const Offset(25.0, 0.0));
       await tester.pump(const Duration(milliseconds: 16));
-      if (_allGatesHidden(tester).any((bool h) => h)) hiddenDuring.add('drag-$step');
+      if (_allGatesHidden(tester).any((bool h) => h))
+        hiddenDuring.add('drag-$step');
     }
     await gesture.up();
     for (int frame = 0; frame < 30; frame++) {
@@ -601,7 +609,8 @@ void main() {
                   context: context,
                   builder: (_) => const SizedBox(
                     height: 300,
-                    child: AppBoxKitNativeChromeGate(child: Text('sheet-glass')),
+                    child:
+                        AppBoxKitNativeChromeGate(child: Text('sheet-glass')),
                   ),
                 ),
                 child: const Text('open'),
@@ -627,13 +636,16 @@ void main() {
     for (int step = 0; step < 6; step++) {
       await gesture.moveBy(const Offset(0.0, 20.0));
       await tester.pump(const Duration(milliseconds: 16));
-      if (_gateHiddenAround(tester, 'sheet-glass')) hiddenDuring.add('drag-$step');
+      if (_gateHiddenAround(tester, 'sheet-glass'))
+        hiddenDuring.add('drag-$step');
     }
     await gesture.up();
     for (int frame = 0; frame < 20; frame++) {
       await tester.pump(const Duration(milliseconds: 16));
-      if (find.text('sheet-glass', skipOffstage: false).evaluate().isEmpty) break;
-      if (_gateHiddenAround(tester, 'sheet-glass')) hiddenDuring.add('release-$frame');
+      if (find.text('sheet-glass', skipOffstage: false).evaluate().isEmpty)
+        break;
+      if (_gateHiddenAround(tester, 'sheet-glass'))
+        hiddenDuring.add('release-$frame');
     }
 
     expect(hiddenDuring, isEmpty,
@@ -670,7 +682,8 @@ void main() {
           body: Navigator(
             key: nestedKey,
             observers: <NavigatorObserver>[CNTransitionObserver()],
-            onGenerateRoute: (RouteSettings settings) => MaterialPageRoute<void>(
+            onGenerateRoute: (RouteSettings settings) =>
+                MaterialPageRoute<void>(
               settings: settings,
               builder: (_) => const Text('tab-content'),
             ),

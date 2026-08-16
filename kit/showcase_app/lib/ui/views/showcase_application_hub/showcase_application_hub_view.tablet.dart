@@ -26,11 +26,13 @@ import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
 
 import 'package:appbox_kit_showcase_app/ui/views/showcase_application_hub/showcase_application_hub_viewmodel.dart';
 
-class ShowcaseApplicationHubViewTablet extends ViewModelWidget<ShowcaseApplicationHubViewModel> {
+class ShowcaseApplicationHubViewTablet
+    extends ViewModelWidget<ShowcaseApplicationHubViewModel> {
   const ShowcaseApplicationHubViewTablet({super.key});
 
   @override
-  Widget build(BuildContext context, ShowcaseApplicationHubViewModel viewModel) {
+  Widget build(
+      BuildContext context, ShowcaseApplicationHubViewModel viewModel) {
     return const Scaffold(
       body: Center(
         child: Text(

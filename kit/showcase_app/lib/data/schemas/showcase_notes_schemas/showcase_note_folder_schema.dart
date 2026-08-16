@@ -19,7 +19,8 @@ const showcaseNoteFolderSchema = AppBoxKitTableSchema(
     // table locally, as an id namespace everywhere. Phase-2 ceiling: the SQL
     // emitter will emit a FK to "kit_auth_users", which on Supabase should be
     // mapped to auth.users (or the FK dropped) by the operator.
-    AppBoxKitColumn('owner', AppBoxKitColumnType.reference, references: kAppBoxKitAuthUsersTable),
+    AppBoxKitColumn('owner', AppBoxKitColumnType.reference,
+        references: kAppBoxKitAuthUsersTable),
     AppBoxKitColumn('created_at', AppBoxKitColumnType.timestamptz),
   ],
 );

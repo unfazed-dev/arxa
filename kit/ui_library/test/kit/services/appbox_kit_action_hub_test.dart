@@ -33,11 +33,11 @@ void main() {
 
   tearDown(() => appBoxKitLocator.reset());
 
-  AppBoxKitActionHub hub() =>
-      AppBoxKitActionHub(owner: Object());
+  AppBoxKitActionHub hub() => AppBoxKitActionHub(owner: Object());
 
   group('kit.ui-library.action-hub — send handles', () {
-    test('send executes hot and the handle completes with the result', () async {
+    test('send executes hot and the handle completes with the result',
+        () async {
       final p = hub();
       var ran = 0;
       final command = p.on<String, String>('op', (payload) async {
@@ -93,7 +93,8 @@ void main() {
       p.dispose();
     });
 
-    test('a guarded send shares a fast run even when dispatched same-frame', () async {
+    test('a guarded send shares a fast run even when dispatched same-frame',
+        () async {
       // Regression: async command delivery let a fast op complete before the
       // second command was processed, defeating the double-tap guard. The
       // sync command channel starts the run inside send.
@@ -112,7 +113,9 @@ void main() {
       p.dispose();
     });
 
-    test('the guard is keyed across commands and one-shot runs of the same owner', () async {
+    test(
+        'the guard is keyed across commands and one-shot runs of the same owner',
+        () async {
       final p = hub();
       final gate = Completer<void>();
       var runs = 0;
@@ -126,13 +129,15 @@ void main() {
       await viaPipe;
       await viaRun;
       expect(runs, 0,
-          reason: 'the one-shot run observed the command run already in flight');
+          reason:
+              'the one-shot run observed the command run already in flight');
       p.dispose();
     });
   });
 
   group('kit.ui-library.action-hub — debounce', () {
-    test('superseded handles complete with the eventual run (last payload)', () async {
+    test('superseded handles complete with the eventual run (last payload)',
+        () async {
       final p = hub();
       final seen = <String>[];
       final command = p.on<String, String>(
@@ -158,7 +163,8 @@ void main() {
   });
 
   group('kit.ui-library.action-hub — retry and timeout', () {
-    test('retry re-runs the operation until success within maxAttempts', () async {
+    test('retry re-runs the operation until success within maxAttempts',
+        () async {
       final p = hub();
       var attempts = 0;
       final command = p.on<Null, String>(
@@ -176,7 +182,8 @@ void main() {
       p.dispose();
     });
 
-    test('retry exhaustion routes the last failure into the error path', () async {
+    test('retry exhaustion routes the last failure into the error path',
+        () async {
       final p = hub();
       var attempts = 0;
       final errors = <Object>[];
@@ -192,7 +199,8 @@ void main() {
 
       await expectLater(command.send(null), throwsException);
       expect(attempts, 2);
-      expect(errors, hasLength(1), reason: 'onError taps once, on the final failure');
+      expect(errors, hasLength(1),
+          reason: 'onError taps once, on the final failure');
       p.dispose();
     });
 
@@ -254,7 +262,8 @@ void main() {
       p.dispose();
     });
 
-    test('without errorMessage the handle completes with the original error', () async {
+    test('without errorMessage the handle completes with the original error',
+        () async {
       final p = hub();
       final command = p.on<Null, String>(
         'op',
@@ -279,7 +288,8 @@ void main() {
       p.dispose();
     });
 
-    test('confirm gate: a decline never runs the op, an accept runs it once', () async {
+    test('confirm gate: a decline never runs the op, an accept runs it once',
+        () async {
       final p = hub();
       var ran = 0;
       final command = p.on<Null, void>(
@@ -343,7 +353,8 @@ void main() {
       );
       await command.send(null);
       expect(notifications.calls.single.message, 'Saved');
-      expect(notifications.calls.single.kind, AppBoxKitNotificationKind.success);
+      expect(
+          notifications.calls.single.kind, AppBoxKitNotificationKind.success);
       p.dispose();
     });
 
@@ -355,8 +366,8 @@ void main() {
         errorNotification: 'Snackbar message',
       );
       final states = <String>[];
-      final sub = command.state$.listen(
-          (state) => states.add('${state.busy}:${state.errorMessage}'));
+      final sub = command.state$
+          .listen((state) => states.add('${state.busy}:${state.errorMessage}'));
 
       await expectLater(command.send(null), throwsException);
       await pumpEventQueue();
@@ -373,7 +384,8 @@ void main() {
   });
 
   group('kit.ui-library.action-hub — key sharing and dispose', () {
-    test('command state shares the AppBoxKitAction registry key (deriveKey)', () async {
+    test('command state shares the AppBoxKitAction registry key (deriveKey)',
+        () async {
       final owner = Object();
       final p = AppBoxKitActionHub(owner: owner);
       // Bound via the builder-side entry point — one subject, one key.
@@ -383,14 +395,16 @@ void main() {
 
       command.send(null);
       expect(builderSide.value.busy, isTrue,
-          reason: 'the command writes the same derived key actionState\$ reads');
+          reason:
+              'the command writes the same derived key actionState\$ reads');
       gate.complete();
       await pumpEventQueue();
       expect(builderSide.value.busy, isFalse);
       p.dispose();
     });
 
-    test('send after dispose drops silently and the handle reports it', () async {
+    test('send after dispose drops silently and the handle reports it',
+        () async {
       final p = hub();
       var runs = 0;
       final command = p.on<Null, void>('op', (_) async => runs++);
@@ -402,7 +416,8 @@ void main() {
       expect(runs, 0);
     });
 
-    test('dispose completes pending debounced handles and cancels the timer', () async {
+    test('dispose completes pending debounced handles and cancels the timer',
+        () async {
       final p = hub();
       var runs = 0;
       final command = p.on<Null, void>(
@@ -418,7 +433,8 @@ void main() {
       expect(runs, 0, reason: 'the pending timer died with the hub');
     });
 
-    test('an in-flight op runs to completion after dispose (cooperative-only)', () async {
+    test('an in-flight op runs to completion after dispose (cooperative-only)',
+        () async {
       final p = hub();
       final gate = Completer<void>();
       var finished = false;
@@ -435,7 +451,8 @@ void main() {
           reason: 'Dart futures cannot be aborted — dispose never kills a run');
     });
 
-    test('flushOnDispose executes a pending debounced send immediately', () async {
+    test('flushOnDispose executes a pending debounced send immediately',
+        () async {
       final p = hub();
       final seen = <String>[];
       final command = p.on<String, String>(
@@ -456,7 +473,8 @@ void main() {
       expect(await handle, 'saved:final draft');
     });
 
-    test('flushOnDispose attaches to an in-flight run (guard semantics)', () async {
+    test('flushOnDispose attaches to an in-flight run (guard semantics)',
+        () async {
       final p = hub();
       final gate = Completer<String>();
       final debouncedRuns = <String>[];
@@ -485,7 +503,8 @@ void main() {
   });
 
   group('kit.ui-library.action-hub — throttle and parallel execution', () {
-    test('throttle is leading-edge: dispatches inside the window share the run', () async {
+    test('throttle is leading-edge: dispatches inside the window share the run',
+        () async {
       final p = hub();
       var runs = 0;
       final command = p.on<String, String>(
@@ -561,7 +580,8 @@ void main() {
   });
 
   group('kit.ui-library.action-hub — success and loading taps', () {
-    test('onSuccess runs after the op and before the handle completes', () async {
+    test('onSuccess runs after the op and before the handle completes',
+        () async {
       final p = hub();
       final order = <String>[];
       final command = p.on<Null, String>(
@@ -580,7 +600,8 @@ void main() {
       p.dispose();
     });
 
-    test('an onSuccess tap error logs a warning and never fails the run', () async {
+    test('an onSuccess tap error logs a warning and never fails the run',
+        () async {
       final p = hub();
       final command = p.on<Null, String>(
         'op',

@@ -164,7 +164,7 @@ This approach works reliably in **both debug and release builds**.
 | `LiquidGlassContainer` | Apply Liquid Glass effects to any Flutter widget | - |
 | `CNGlassCard` | **(Experimental)** Pre-styled card with optional breathing glow animation | - |
 | `CNTabBarNative` | **iOS 26 Native Tab Bar** with UITabBarController + search | - |
-| `CNToast` | Toast notifications with Liquid Glass effects | - |
+| `CNToast` | Toast notifications; glass tier available on iOS 26+ (`useGlassEffect: true`) — the app-box kit pins `useGlassEffect: false` on every kind (Flutter-drawn, app-box allowlist rule 12) | - |
 
 ### Icon Support
 

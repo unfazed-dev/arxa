@@ -52,7 +52,8 @@ class ShowcaseNoteEditorBodyWidget extends StatefulWidget {
   final ShowcaseNoteModel note;
 
   @override
-  State<ShowcaseNoteEditorBodyWidget> createState() => _ShowcaseNoteEditorBodyState();
+  State<ShowcaseNoteEditorBodyWidget> createState() =>
+      _ShowcaseNoteEditorBodyState();
 }
 
 class _ShowcaseNoteEditorBodyState extends State<ShowcaseNoteEditorBodyWidget> {

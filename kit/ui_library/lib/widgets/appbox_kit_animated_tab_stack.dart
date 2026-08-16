@@ -283,8 +283,9 @@ class _KitAnimatedTabStackState extends State<AppBoxKitAnimatedTabStack>
       // (regression 3b81414: a 0.18-travel opaque exit layer on top was
       // removed mid-cover, popping ~82% of the frame in one step).
       textDirection: textDirection,
-      position: Tween<Offset>(begin: Offset(_direction * 1.0, 0), end: Offset.zero)
-          .animate(curved),
+      position:
+          Tween<Offset>(begin: Offset(_direction * 1.0, 0), end: Offset.zero)
+              .animate(curved),
       // Tab pages are routinely background-less (one host Scaffold paints the
       // shared surface), which makes the "cover" slide transparent: the old
       // tab stays readable through the new one for the whole run — perceived
@@ -300,87 +301,87 @@ class _KitAnimatedTabStackState extends State<AppBoxKitAnimatedTabStack>
         child: Stack(
           fit: StackFit.expand,
           children: [
-          for (var i = 0; i < widget.children.length; i++)
-            if (!_initialized.contains(i) || i == _exitingIndex)
-              // Constant-length slot, never hit-testable: a bare expanded box
-              // above the active tab would swallow its taps.
-              const IgnorePointer(child: SizedBox.shrink())
-            else if (_animates)
-              Offstage(
-                offstage: i != _currentIndex,
-                child: KeyedSubtree(
-                  key: _childKeys[i],
-                  child: widget.children[i],
-                ),
-              )
-            else
-              // iOS cross-cut: a visited tab hides at ~1/255 alpha, NEVER by
-              // leaving the paint tree. Offstaging unpaints it, and an
-              // unpainted platform view leaves the native hierarchy — every
-              // re-entry is an addSubview, which on iOS 26 is a glass
-              // materialize against a not-yet-composited backdrop (the
-              // bright-card flash), and the mid-switch platform-view-SET
-              // change recomposes the embedder's overlays (the tab-bar
-              // ghost). Alpha 0.0 hits RenderOpacity's zero shortcut and
-              // unpaints too, so the floor is one engine alpha step; UIKit
-              // ignores views below alpha 0.01 for hit-testing, and
-              // IgnorePointer/ExcludeSemantics cover the Flutter side.
-              // Alpha alone is NOT containment: the hidden tab still paints,
-              // and its platform views slice the ACTIVE tab's frame into
-              // overlay textures — on device (2026-08-12) pieces of hidden
-              // subtrees composited over the active tab at visible alpha
-              // (stale white rail-pane rectangle over Profile's Maps button,
-              // "Maps showcase" ghost over Search's options section). The
-              // sub-pixel ClipRect bounds everything a hidden tab can
-              // contribute to the frame while the paint still happens, so the
-              // platform views never leave the native hierarchy (the whole
-              // point of hiding by alpha instead of Offstage). Clip.none on
-              // the active tab = no layer, same driven-to-identity idiom as
-              // the edge effect's blur.
-              //
-              // And the CLIP is not containment either: the view slicer
-              // (flow/view_slicer.cc) intersects the active tab's Flutter ops
-              // with hidden platform views' UNCLIPPED rects — on device
-              // (2026-08-13, labelprobe) Motion's section labels were sliced
-              // to a hidden tab's 147pt-wide title-pill-anchor rect
-              // ("FLUTTER_ANIMATE A", "abled" fragments) even though the
-              // hidden tab painted through the half-pixel clipper. Only a
-              // TRANSFORM changes the rects the slicer sees, so hidden tabs
-              // are additionally translated far off-screen: the platform-view
-              // set stays constant (no detach, no glass re-materialize — the
-              // tucked-chrome idiom, law composition rule 1's proven mutator)
-              // while their rects can never again intersect on-screen ops.
-              // Driven to identity on the active tab: no layer, no shift.
-              Transform.translate(
-                offset: i == _currentIndex
-                    ? Offset.zero
-                    : const Offset(100000, 0),
-                child: Opacity(
-                  opacity: i == _currentIndex ? 1.0 : 0.004,
-                  child: IgnorePointer(
-                    ignoring: i != _currentIndex,
-                    child: ExcludeSemantics(
-                      excluding: i != _currentIndex,
-                      // Both knobs must flip together: clipBehavior only gates
-                      // PAINT clipping — RenderClipRect.hitTest consults the
-                      // clipper even at Clip.none, so a sub-pixel clipper on the
-                      // ACTIVE tab would swallow every tap in the app (caught by
-                      // showcase M5: "All Notes" tap navigated nowhere).
-                      child: ClipRect(
-                        clipBehavior:
-                            i == _currentIndex ? Clip.none : Clip.hardEdge,
-                        clipper: i == _currentIndex
-                            ? null
-                            : const _HiddenTabClipper(),
-                        child: KeyedSubtree(
-                          key: _childKeys[i],
-                          child: widget.children[i],
+            for (var i = 0; i < widget.children.length; i++)
+              if (!_initialized.contains(i) || i == _exitingIndex)
+                // Constant-length slot, never hit-testable: a bare expanded box
+                // above the active tab would swallow its taps.
+                const IgnorePointer(child: SizedBox.shrink())
+              else if (_animates)
+                Offstage(
+                  offstage: i != _currentIndex,
+                  child: KeyedSubtree(
+                    key: _childKeys[i],
+                    child: widget.children[i],
+                  ),
+                )
+              else
+                // iOS cross-cut: a visited tab hides at ~1/255 alpha, NEVER by
+                // leaving the paint tree. Offstaging unpaints it, and an
+                // unpainted platform view leaves the native hierarchy — every
+                // re-entry is an addSubview, which on iOS 26 is a glass
+                // materialize against a not-yet-composited backdrop (the
+                // bright-card flash), and the mid-switch platform-view-SET
+                // change recomposes the embedder's overlays (the tab-bar
+                // ghost). Alpha 0.0 hits RenderOpacity's zero shortcut and
+                // unpaints too, so the floor is one engine alpha step; UIKit
+                // ignores views below alpha 0.01 for hit-testing, and
+                // IgnorePointer/ExcludeSemantics cover the Flutter side.
+                // Alpha alone is NOT containment: the hidden tab still paints,
+                // and its platform views slice the ACTIVE tab's frame into
+                // overlay textures — on device (2026-08-12) pieces of hidden
+                // subtrees composited over the active tab at visible alpha
+                // (stale white rail-pane rectangle over Profile's Maps button,
+                // "Maps showcase" ghost over Search's options section). The
+                // sub-pixel ClipRect bounds everything a hidden tab can
+                // contribute to the frame while the paint still happens, so the
+                // platform views never leave the native hierarchy (the whole
+                // point of hiding by alpha instead of Offstage). Clip.none on
+                // the active tab = no layer, same driven-to-identity idiom as
+                // the edge effect's blur.
+                //
+                // And the CLIP is not containment either: the view slicer
+                // (flow/view_slicer.cc) intersects the active tab's Flutter ops
+                // with hidden platform views' UNCLIPPED rects — on device
+                // (2026-08-13, labelprobe) Motion's section labels were sliced
+                // to a hidden tab's 147pt-wide title-pill-anchor rect
+                // ("FLUTTER_ANIMATE A", "abled" fragments) even though the
+                // hidden tab painted through the half-pixel clipper. Only a
+                // TRANSFORM changes the rects the slicer sees, so hidden tabs
+                // are additionally translated far off-screen: the platform-view
+                // set stays constant (no detach, no glass re-materialize — the
+                // tucked-chrome idiom, law composition rule 1's proven mutator)
+                // while their rects can never again intersect on-screen ops.
+                // Driven to identity on the active tab: no layer, no shift.
+                Transform.translate(
+                  offset: i == _currentIndex
+                      ? Offset.zero
+                      : const Offset(100000, 0),
+                  child: Opacity(
+                    opacity: i == _currentIndex ? 1.0 : 0.004,
+                    child: IgnorePointer(
+                      ignoring: i != _currentIndex,
+                      child: ExcludeSemantics(
+                        excluding: i != _currentIndex,
+                        // Both knobs must flip together: clipBehavior only gates
+                        // PAINT clipping — RenderClipRect.hitTest consults the
+                        // clipper even at Clip.none, so a sub-pixel clipper on the
+                        // ACTIVE tab would swallow every tap in the app (caught by
+                        // showcase M5: "All Notes" tap navigated nowhere).
+                        child: ClipRect(
+                          clipBehavior:
+                              i == _currentIndex ? Clip.none : Clip.hardEdge,
+                          clipper: i == _currentIndex
+                              ? null
+                              : const _HiddenTabClipper(),
+                          child: KeyedSubtree(
+                            key: _childKeys[i],
+                            child: widget.children[i],
+                          ),
                         ),
                       ),
                     ),
                   ),
                 ),
-              ),
           ],
         ),
       ),

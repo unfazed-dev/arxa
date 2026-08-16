@@ -88,7 +88,8 @@ class AppBoxKitAsyncExecutor<T> {
 
     // Normal execution
     if (config.debugMode) {
-      _talker.debug('[AppBoxKitAction] ▶️ Normal execution for ${config.widgetId}');
+      _talker.debug(
+          '[AppBoxKitAction] ▶️ Normal execution for ${config.widgetId}');
     }
     return _executeNormal();
   }
@@ -169,8 +170,8 @@ class AppBoxKitAsyncExecutor<T> {
 
       // 6. Handle success
       if (config.debugMode) {
-        _talker
-            .info('[AppBoxKitAction] ✅ Operation succeeded for ${config.widgetId}');
+        _talker.info(
+            '[AppBoxKitAction] ✅ Operation succeeded for ${config.widgetId}');
       }
       await _handleSuccess(result);
 

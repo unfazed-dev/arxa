@@ -37,7 +37,8 @@ class ShowcaseNoteAttachmentModel {
     required this.createdAt,
   });
 
-  factory ShowcaseNoteAttachmentModel.fromJson(Map<String, dynamic> json) => ShowcaseNoteAttachmentModel(
+  factory ShowcaseNoteAttachmentModel.fromJson(Map<String, dynamic> json) =>
+      ShowcaseNoteAttachmentModel(
         id: json['id'] as String,
         kind: ShowcaseNoteAttachmentKind.values.byName(json['kind'] as String),
         fileName: json['file_name'] as String,

@@ -30,8 +30,7 @@ mixin AppBoxKitActionOwner {
 
   /// Factory for [abxActionHub] — override to configure hub-level defaults
   /// (`errorMessage`, `onSend`, `onError`) shared by every command.
-  AppBoxKitActionHub createHub() =>
-      AppBoxKitActionHub(owner: this);
+  AppBoxKitActionHub createHub() => AppBoxKitActionHub(owner: this);
 
   /// Run an operation owned by this object. The [name] label combines with
   /// the owner's identity into the registry key (`RuntimeType#hash.name`), so

@@ -32,7 +32,8 @@ void main() {
 
   tearDownAll(teardownShowcase);
 
-  testWidgets('shell-demos.browse-the-application-shell — the app flips its '
+  testWidgets(
+      'shell-demos.browse-the-application-shell — the app flips its '
       'theme instantly, so native glass and Flutter surfaces change together',
       (tester) async {
     await tester.pumpWidget(const ShowcaseApp());

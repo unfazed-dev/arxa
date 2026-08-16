@@ -1,8 +1,14 @@
 // timer_view.tsx — timer page + Tick fragment (replaces timer_view.html).
-// Default export TimerPage: wraps MainShell → Base.
-// Named export Tick: the fragment for htmx poll swaps.
+// Default export TimerPage: wraps MainShell and mounts the three DERIVED
+// factor variants in rung divs. Named export Tick: the #tick fragment the
+// viewmodel renders for htmx poll/extend/skip swaps (rung comes from the
+// request query so the response replaces the asking rung's element).
 import type { FC } from 'hono/jsx';
 import MainShell from '../main_shell_view.tsx';
+import Desktop from './timer_view.desktop.tsx';
+import Tablet from './timer_view.tablet.tsx';
+import Mobile from './timer_view.mobile.tsx';
+import { TimerTick } from './timer_view.sections.tsx';
 
 type TranslateFn = (key: string, vars?: Record<string, unknown>) => unknown;
 
@@ -33,44 +39,20 @@ const TimerPage: FC<TimerPageProps> = ({ translate, locale, locales = [], rail, 
     translate={translate}
     rail={rail as { brand?: string; drawer?: boolean; items: NavItem[] }}
   >
-    <h1>{translate('timer.title') as string}</h1>
-    <p>{translate('timer.tagline') as string}</p>
-    <Tick remaining={remaining} translate={translate} />
-    <div class="action-row">
-      <button class="btn" hx-post="/timer/extend" hx-target="#timer" hx-swap="outerHTML">
-        +15s
-      </button>
-      <button class="btn btn--ghost" hx-post="/timer/skip" hx-target="#timer" hx-swap="outerHTML">
-        {translate('timer.skip') as string}
-      </button>
+    <div class="rung rung--desktop">
+      <Desktop translate={translate} remaining={remaining} rung="desktop" />
+    </div>
+    <div class="rung rung--tablet">
+      <Tablet translate={translate} remaining={remaining} rung="tablet" />
+    </div>
+    <div class="rung rung--mobile">
+      <Mobile translate={translate} remaining={remaining} rung="mobile" />
     </div>
   </MainShell>
 );
 
-interface TickProps {
-  remaining?: number;
-  translate: TranslateFn;
-}
-
-export const Tick: FC<TickProps> = ({ remaining, translate }) => {
-  if (remaining && remaining > 0) {
-    return (
-      <div
-        id="timer"
-        class="timer"
-        hx-get="/timer/tick"
-        hx-trigger="load delay:1s"
-        hx-swap="outerHTML"
-      >
-        {remaining}s
-      </div>
-    );
-  }
-  return (
-    <div id="timer" class="timer done">
-      {translate('timer.done') as string}
-    </div>
-  );
-};
+export const Tick: FC<{ remaining?: number; translate: TranslateFn; rung?: string }> = (props) => (
+  <TimerTick {...props} />
+);
 
 export default TimerPage;

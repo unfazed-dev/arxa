@@ -269,9 +269,8 @@ class AppBoxKitActionHub {
         loadingNotification: loadingNotification,
         loadingNotificationType: loadingNotificationType,
         onError: onError ?? _onError,
-        onSuccess: onSuccess == null
-            ? null
-            : (result) => onSuccess(result as R),
+        onSuccess:
+            onSuccess == null ? null : (result) => onSuccess(result as R),
         onSend: onSend ?? _onDispatch,
         debounce: debounce,
         throttle: throttle,
@@ -521,8 +520,8 @@ class AppBoxKitActionHub {
   /// AppBoxKitErrorManager + notification parity: log via the error service,
   /// tap the custom handler, record the message on state$, optional error
   /// notification; then fallback (errorMessage set) or rethrow.
-  Future<dynamic> _handleError(
-      _AppBoxKitCommandConfig config, Object error, StackTrace stackTrace) async {
+  Future<dynamic> _handleError(_AppBoxKitCommandConfig config, Object error,
+      StackTrace stackTrace) async {
     final errorService = appBoxKitLocator<AppBoxKitErrorService>();
     errorService.handle(
       exception: error,

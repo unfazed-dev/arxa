@@ -36,8 +36,10 @@ import 'package:appboxd/validate_docs.dart';
 import 'package:appboxd/gate_advertise.dart';
 import 'package:appboxd/gate_coverage.dart';
 import 'package:appboxd/gate_deploy.dart';
+import 'package:appboxd/gate_fidelity.dart';
 import 'package:appboxd/gate_freeze.dart';
 import 'package:appboxd/gate_intake.dart';
+import 'package:appboxd/gate_kind_registry.dart';
 import 'package:appboxd/gate_lens.dart';
 import 'package:appboxd/gate_memory.dart';
 import 'package:appboxd/gate_native_deps.dart';
@@ -130,8 +132,9 @@ Usage: appbox <command> [options]
 
 Commands:
   gate <name>    Run a gate by name (arch, gen-freshness, trace, intake, freeze,
-                 structure, scaffold, coverage, tests, memory, advertise, review,
-                 native_deps, lens, deploy, tier1, capability, api-map)
+                 structure, kind_registry, scaffold, coverage, tests, memory,
+                 advertise, review, native_deps, lens, deploy, tier1, capability,
+                 api-map)
                  tier1 accepts --promote: on a green run, write the evidence
                  ledger + port-tested tiers (the only path that sets a tier)
   crud <op>      Feature CRUD on the authored layer (list/show/create/update/
@@ -171,14 +174,34 @@ Options:
 // ── gate ───────────────────────────────────────────────────────────
 
 Future<void> _runGate(List<String> args) async {
+  const gateNames = 'arch gen-freshness trace intake freeze structure kind_registry scaffold '
+      'coverage tests memory advertise review native_deps lens deploy tier1 '
+      'capability api-map';
   if (args.isEmpty) {
     stderr.writeln('appbox gate: missing gate name');
-    stderr.writeln('  gates: arch gen-freshness trace intake freeze structure scaffold coverage tests memory advertise review native_deps lens deploy tier1');
+    stderr.writeln('  gates: $gateNames');
     exit(2);
   }
 
   final gateName = args.first;
   final rest = args.sublist(1);
+
+  // `appbox gate --help` is help, not an unknown gate name — it used to fall
+  // through to the resolver and exit 2 on `unknown gate "--help"`.
+  if (gateName == '--help' || gateName == '-h') {
+    stdout.writeln('Usage: appbox gate <name> [options]');
+    stdout.writeln('');
+    stdout.writeln('Gates: $gateNames');
+    stdout.writeln('');
+    stdout.writeln('Common flags:');
+    stdout.writeln('  --app <root>    App root (defaults to repo root)');
+    stdout.writeln('  --check         Drift-check mode (no writes, no test runs)');
+    stdout.writeln('  --self-test     Run the gate\'s embedded self-test');
+    stdout.writeln('  --sarif <path>  Write SARIF output to <path>');
+    stdout.writeln('  --repo <root>   Repo root override');
+    stdout.writeln('  --project <n>   Gate a project shell in ~/.appbox/projects/<n>');
+    exit(0);
+  }
 
   // --all runs the full gate suite.
   if (gateName == '--all' || gateName == 'all') {
@@ -344,6 +367,8 @@ Future<GateResult> _dispatchGate(String name, GateContext ctx,
       return intakeGate(ctx, project: project);
     case 'structure':
       return structureGate(ctx);
+    case 'kind_registry':
+      return kindRegistryGate(ctx);
     case 'deploy':
       return deployGate(ctx);
     case 'native_deps':
@@ -352,6 +377,8 @@ Future<GateResult> _dispatchGate(String name, GateContext ctx,
       return lensGate(ctx);
     case 'coverage':
       return coverageGate(ctx);
+    case 'fidelity':
+      return fidelityGate(ctx);
     case 'scaffold':
       return scaffoldGate(ctx);
     case 'tests':

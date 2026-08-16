@@ -59,7 +59,8 @@ import 'package:appbox_kit_showcase_app/services/showcase_notes_services/facades
 class ShowcaseNotesAuthViewModel extends AppBoxKitViewModel {
   // ── Setup ──────────────────────────────────────────────────────────────────
 
-  final ShowcaseNotesFacadeService _notes = appBoxKitLocator<ShowcaseNotesFacadeService>();
+  final ShowcaseNotesFacadeService _notes =
+      appBoxKitLocator<ShowcaseNotesFacadeService>();
 
   AppBoxKitAuthService get auth => _notes.auth;
 
@@ -103,11 +104,13 @@ class ShowcaseNotesAuthViewModel extends AppBoxKitViewModel {
 
   /// [1. Email sign-in] The credential flow the segmented control selected.
   final BehaviorSubject<ShowcaseNotesAuthMode> _mode =
-      BehaviorSubject<ShowcaseNotesAuthMode>.seeded(ShowcaseNotesAuthMode.password);
+      BehaviorSubject<ShowcaseNotesAuthMode>.seeded(
+          ShowcaseNotesAuthMode.password);
   ValueStream<ShowcaseNotesAuthMode> get mode$ => _mode.stream;
 
   /// [1. Email sign-in] Flips once [requestOtp] succeeds — the view then shows the code field.
-  final BehaviorSubject<bool> _otpRequested = BehaviorSubject<bool>.seeded(false);
+  final BehaviorSubject<bool> _otpRequested =
+      BehaviorSubject<bool>.seeded(false);
   ValueStream<bool> get otpRequested$ => _otpRequested.stream;
 
   /// Inline form error (seeded null = none): auth errors show their message,
@@ -120,35 +123,38 @@ class ShowcaseNotesAuthViewModel extends AppBoxKitViewModel {
   // Commands decide when — and whether — Actions run.
 
   /// [1. Email sign-in] Password path — sign in with email + password.
-  late final _signIn = abxActionHub.on<(String, String), void>(ShowcaseNotesAuthOp.signIn.name,
+  late final _signIn = abxActionHub.on<(String, String), void>(
+      ShowcaseNotesAuthOp.signIn.name,
       (p) => auth.signInWithEmailPassword(email: p.$1, password: p.$2));
 
   /// [1. Email sign-in] Password path — sign up with email + password.
-  late final _signUp = abxActionHub.on<(String, String), void>(ShowcaseNotesAuthOp.signUp.name,
+  late final _signUp = abxActionHub.on<(String, String), void>(
+      ShowcaseNotesAuthOp.signUp.name,
       (p) => auth.signUpWithEmailPassword(email: p.$1, password: p.$2));
 
   /// [1. Email sign-in] OTP path — request a one-time code for the email.
-  late final _requestOtp =
-      abxActionHub.on<String, void>(ShowcaseNotesAuthOp.requestOtp.name, (email) async {
+  late final _requestOtp = abxActionHub
+      .on<String, void>(ShowcaseNotesAuthOp.requestOtp.name, (email) async {
     await auth.requestOtp(email: email);
     _otpRequested.add(true);
   });
 
   /// [1. Email sign-in] OTP path — confirm the code the user entered.
   late final _confirmOtp = abxActionHub.on<(String, String), void>(
-      ShowcaseNotesAuthOp.confirmOtp.name, (p) => auth.confirmOtp(email: p.$1, code: p.$2));
+      ShowcaseNotesAuthOp.confirmOtp.name,
+      (p) => auth.confirmOtp(email: p.$1, code: p.$2));
 
   /// [2. Google sign-in] Signs the user in with Google.
-  late final _google =
-      abxActionHub.on<Null, void>(ShowcaseNotesAuthOp.google.name, (_) => auth.signInWithGoogle());
+  late final _google = abxActionHub.on<Null, void>(
+      ShowcaseNotesAuthOp.google.name, (_) => auth.signInWithGoogle());
 
   /// [3. Apple sign-in] Signs the user in with Apple.
-  late final _apple =
-      abxActionHub.on<Null, void>(ShowcaseNotesAuthOp.apple.name, (_) => auth.signInWithApple());
+  late final _apple = abxActionHub.on<Null, void>(
+      ShowcaseNotesAuthOp.apple.name, (_) => auth.signInWithApple());
 
   /// [4. Anonymous] Signs the user in without an account.
-  late final _anonymous =
-      abxActionHub.on<Null, void>(ShowcaseNotesAuthOp.anonymous.name, (_) => auth.signInAnonymously());
+  late final _anonymous = abxActionHub.on<Null, void>(
+      ShowcaseNotesAuthOp.anonymous.name, (_) => auth.signInAnonymously());
 
   // ── Actions ──────────────────────────────────────────
 

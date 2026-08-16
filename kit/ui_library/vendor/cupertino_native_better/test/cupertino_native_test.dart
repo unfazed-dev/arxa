@@ -63,9 +63,11 @@ void main() {
 
   group('CNGlassEffect', () {
     test('has all expected values', () {
-      expect(CNGlassEffect.values.length, 2);
+      // LOCAL PATCH #10 added `plain` (compositing anchor; renders no glass).
+      expect(CNGlassEffect.values.length, 3);
       expect(CNGlassEffect.values, contains(CNGlassEffect.regular));
       expect(CNGlassEffect.values, contains(CNGlassEffect.prominent));
+      expect(CNGlassEffect.values, contains(CNGlassEffect.plain));
     });
 
     test('enum names are correct', () {

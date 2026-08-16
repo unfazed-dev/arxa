@@ -30,11 +30,11 @@ void main() {
     await tester.pumpWidget(host(
       inScrollable ? SingleChildScrollView(child: control) : control,
     ));
-    return tester
-        .widget<CNSegmentedControl>(find.byType(CNSegmentedControl));
+    return tester.widget<CNSegmentedControl>(find.byType(CNSegmentedControl));
   }
 
-  testWidgets('kit.ui-library.native-segmented-control — stays native inside a scrollable',
+  testWidgets(
+      'kit.ui-library.native-segmented-control — stays native inside a scrollable',
       (tester) async {
     await withAndroidFallback(() async {
       final cn = await pumpCN(tester, inScrollable: true);
@@ -49,7 +49,8 @@ void main() {
     });
   });
 
-  testWidgets('kit.ui-library.native-segmented-control — outside a scrollable keeps the native tier',
+  testWidgets(
+      'kit.ui-library.native-segmented-control — outside a scrollable keeps the native tier',
       (tester) async {
     await withAndroidFallback(() async {
       final cn = await pumpCN(tester, inScrollable: false);
