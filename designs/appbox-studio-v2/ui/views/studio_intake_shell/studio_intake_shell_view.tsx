@@ -1,29 +1,34 @@
 /// This is the user interface for studio_intake_shell.
 ///
-/// Role: the intake shell's own composition. Mounts THROUGH the
-/// application hub (the hub owns the frame: header, tabbar, rail, body
-/// outlet). This shell only brings what is its own: the intake
-/// stylesheet and the hosted surface. The registry lists no footer
-/// panel for intake — a panel this shell does not feed does not exist
-/// in it.
+/// Role: the intake loop shell — the v1 main_shell intake composition,
+/// ported for visual parity. The shell owns NO panels of its own: it is
+/// the pass-through frame that mounts the hosted step surface (the
+/// .panels loop: composer | main | activity) into the hub's body outlet
+/// and feeds the footer timeline. The surface renders ONCE — never inside
+/// per-rung wrappers — because the loop's htmx swap targets are id
+/// anchors (#panels, #mp-content, #panel-activity-body) and the loop's
+/// own media queries (v1 assets/css/panels.css, ported to
+/// ui/styles/common/panels.css) carry the ladder: below 840px the panel
+/// row stacks and the page is the scroller, per the #app clamp release.
+/// Per-rung divergence of a STEP'S stage content lives in each step
+/// view's factor trio inside its .mp-content, not here.
 ///
 /// Requirements:
 /// 1. [Shell fronts the pipeline] — Q-v2-1
 /// 2. [studio_ prefix] — Q-v2-2
-/// 3. [Desktop/tablet/mobile for every studio view] — Q-v2-3
+/// 3. [Desktop/tablet/mobile for every studio view] — Q-v2-3 (via each
+///    step view's trio; the shell frame is rung-invariant by design)
 ///
-/// Relationships: wraps studio_application_hub_view.tsx; composes the
-/// three DERIVED factor variants around the hosted surface (CSS selects
-/// one); viewmodel: studio_intake_shell_viewmodel.js; consumed by
-/// studio_intake/studio_intake_view.tsx.
+/// Relationships: wraps studio_application_hub_view.tsx; consumed by the
+/// eight step views under studio_intake_shell/<step>/; viewmodel:
+/// studio_intake_shell_viewmodel.js; widgets in
+/// ui/widgets/common/studio_panels/ (the loop panel family).
 ///
-/// History: git log --follow -- ui/views/studio_intake_shell/studio_intake_shell_view.tsx
+/// History: ported from v1 ui/views/main_shell/main_shell_view.tsx
+/// (intake composition), 2026-08-16.
 
 import type { FC, Child } from 'hono/jsx';
 import Hub from '../studio_application_hub/studio_application_hub_view.tsx';
-import Desktop from './studio_intake_shell_view.desktop.tsx';
-import Tablet from './studio_intake_shell_view.tablet.tsx';
-import Mobile from './studio_intake_shell_view.mobile.tsx';
 
 type TFn = (key: string, vars?: Record<string, unknown>) => unknown;
 
@@ -40,23 +45,24 @@ export interface StudioIntakeShellViewProps {
   locale?: string;
   activeShell: string;
   preferences?: Preferences;
+  /** v1 facade spelling of preferences — the ported step views pass prefs;
+   *  the adapter keeps them verbatim while the hub speaks preferences. */
+  prefs?: Preferences;
   project?: { name?: string; savedLabel?: string; [key: string]: unknown };
   surface?: Child;
   mainClass?: string;
   headerExtra?: Child;
+  footer?: Child;
   [key: string]: unknown;
 }
 
 const StudioIntakeShellView: FC<StudioIntakeShellViewProps> = (props) => (
   <Hub
     {...props}
-    surface={
-      <>
-        <div class="rung rung--desktop"><Desktop {...props} /></div>
-        <div class="rung rung--tablet"><Tablet {...props} /></div>
-        <div class="rung rung--mobile"><Mobile {...props} /></div>
-      </>
-    }
+    preferences={props.preferences ?? props.prefs}
+    mainClass={props.mainClass ?? 'shell-main-loop'}
+    surface={props.surface}
+    footerSpec={{ bodyTag: 'ol', bodyClass: 'timeline', bodyId: 'timeline' }}
   />
 );
 

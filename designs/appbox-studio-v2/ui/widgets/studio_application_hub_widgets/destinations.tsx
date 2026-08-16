@@ -9,6 +9,21 @@
 
 export type TFn = (key: string, vars?: Record<string, unknown>) => unknown;
 
+/** The hub chrome's view of the preferences bag (theme/accent/font rides
+ *  #app attributes; the shapes live here so header + destinations agree). */
+export interface Preferences {
+  theme?: string;
+  accent?: string;
+  font?: string;
+  [key: string]: unknown;
+}
+
+export interface Project {
+  name?: string;
+  savedLabel?: string;
+  [key: string]: unknown;
+}
+
 export interface Destination {
   id: string;
   label: string;

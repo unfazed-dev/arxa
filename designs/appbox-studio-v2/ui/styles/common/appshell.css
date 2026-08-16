@@ -37,3 +37,11 @@
 .modal-card > .muted { margin: 0; }
 .bar { flex: 1; height: var(--bar-height); min-height: 3px; background: var(--accent); border-radius: 3px 3px 0 0; opacity: .85; }
 .bar:hover { opacity: 1; }
+
+/* ---------- v1 chrome.css: pass 2 (comment-safe presence check) ---------- */
+/* ---------- touch chrome: hidden on expanded, shown by rung below ---------- */
+.shell-chrome-touch, .tabbar, .fab-menu, .railbar { display: none; }
+
+.shell-chrome-touch summary { list-style: none; }
+
+.shell-chrome-touch summary::-webkit-details-marker { display: none; }

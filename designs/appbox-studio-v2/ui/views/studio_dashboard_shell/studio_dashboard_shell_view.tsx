@@ -21,23 +21,12 @@
 
 import type { FC, Child } from 'hono/jsx';
 import Hub from '../studio_application_hub/studio_application_hub_view.tsx';
+import type { Preferences, Project } from '../../widgets/studio_application_hub_widgets/destinations.tsx';
 import Desktop from './studio_dashboard_shell_view.desktop.tsx';
 import Tablet from './studio_dashboard_shell_view.tablet.tsx';
 import Mobile from './studio_dashboard_shell_view.mobile.tsx';
 
 type TFn = (key: string, vars?: Record<string, unknown>) => unknown;
-
-interface Project {
-  name?: string;
-  savedLabel?: string;
-}
-
-interface Preferences {
-  theme?: string;
-  accent?: string;
-  font?: string;
-  [key: string]: unknown;
-}
 
 export interface StudioDashboardShellViewProps {
   translate: TFn;

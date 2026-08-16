@@ -1,182 +1,287 @@
-/* intake.css — the interview surface. q-card / mode-card / mode-name /
-   mode-desc classes carried from v1 assets/css per the VISUAL PARITY LAW
-   (the carousel became a thread; the card vocabulary is unchanged). */
-.intake-scroll {
-  min-height: 0;
-  display: flex;
-  flex-direction: column;
-}
-.intake-stage {
-  display: grid;
-  gap: 1.2rem;
-  width: min(100%, 72rem);
-  margin: 0 auto;
-  padding: 1.2rem 1.5rem 2rem;
-}
-.intake-stage--desktop {
-  grid-template-columns: minmax(0, 1fr) 20rem;
-  align-items: start;
-}
-.intake-stage--tablet,
-.intake-stage--mobile {
-  grid-template-columns: minmax(0, 1fr);
-}
-.intake-main {
-  display: flex;
-  flex-direction: column;
-  gap: 0.9rem;
-  min-width: 0;
-}
-.intake-rail {
-  position: sticky;
-  top: 1rem;
-}
-.intake-lede { margin: 0; }
+/* intake.css — intake.* surfaces: the typeform journey (step stages, item
+   strips, provenance chips, mode cards), the live story map (status dots,
+   rollups), the brief document, the moodboard gallery, and the intake
+   activity-panel views. Builds on app.css tokens + composer.css/panels.css
+   shared chrome; nothing here restyles them. Linked per-page via
+   head-support (see integration_intake.md). */
 
-/* the thread */
-.interview-thread {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-}
-.interview-thread--stacked {
-  padding-bottom: 1rem;
-}
-.mode-cards {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 0.6rem;
-}
-.intake-stage--mobile .mode-cards {
-  grid-template-columns: minmax(0, 1fr);
-}
-.mode-card {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-  width: 100%;
-  padding: 0.8rem 0.9rem;
-  border: 1px solid var(--abx-border, rgba(125, 125, 155, 0.25));
-  border-radius: 0.9rem;
-  background: var(--abx-surface, #fff);
-  color: inherit;
-  font: inherit;
-  text-align: left;
-  cursor: pointer;
-}
-.mode-card:hover {
-  border-color: var(--accent, #0891b2);
-}
-.mode-name { font-weight: 600; }
-.mode-desc { font-size: 0.8rem; }
-
-.thread-turns {
-  display: flex;
-  flex-direction: column;
-  gap: 0.55rem;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
+/* ---------- the interview: question cards on the typeform stage ---------- */
 .q-card {
-  display: flex;
-  flex-direction: column;
-  gap: 0.3rem;
-  padding: 0.75rem 0.9rem;
-  border: 1px solid var(--abx-border, rgba(125, 125, 155, 0.2));
-  border-radius: 0.8rem;
-  background: var(--abx-surface, #fff);
+  flex: 0 0 min(88%, 19rem); scroll-snap-align: start;
+  display: flex; flex-direction: column; gap: .5rem;
+  padding: .7rem .8rem; border-radius: var(--radius);
+  background: var(--bg-2); border: 1px solid var(--border);
 }
-.q-card.is-current {
-  border-color: var(--accent, #0891b2);
+.q-card.is-current, .q-card.is-editing { border-color: var(--accent); }
+.q-card.is-skipped { opacity: .72; }
+.q-text { margin: 0; font-size: .86rem; font-weight: 500; color: var(--tx); }
+.q-form { display: flex; gap: .4rem; }
+.q-form input[type="text"] {
+  flex: 1; min-width: 0; font: inherit; font-size: .84rem;
+  padding: .45rem .7rem; border-radius: 999px; /* w5:not-a-chip */
+  border: 1px solid var(--border); background: var(--bg); color: var(--tx);
 }
-.q-card.is-skipped { opacity: 0.7; }
-.q-text { font-weight: 550; }
-.q-text--current { font-weight: 650; }
-.q-answer {
-  font-size: 0.9rem;
-  color: var(--abx-muted, #5a5a6e);
-  display: flex;
-  align-items: center;
-  gap: 0.35rem;
+.q-form input[type="text"]:focus { outline: none; border-color: var(--accent); }
+.q-sugs { display: flex; gap: .35rem; flex-wrap: wrap; }
+.q-sugs form, .q-replies form { display: inline; }
+.q-skip { margin-top: auto; }
+.q-skip button {
+  font: inherit; font-size: .74rem; cursor: pointer;
+  padding: 0; border: 0; background: none; color: var(--tx-3);
 }
+.q-skip button:hover { color: var(--accent); }
+.q-answer { margin: 0; font-size: .84rem; color: var(--tx-2); }
+.q-edit { font-size: .74rem; color: var(--tx-3); text-decoration: none; }
+.q-edit:hover { color: var(--accent); }
+/* quick-reply chips on an agent message (depth choice, approve) */
+.q-replies { display: flex; gap: .4rem; flex-wrap: wrap; margin-top: .5rem; }
 
-.thread-composer {
-  position: sticky;
-  bottom: 0.5rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.45rem;
-  padding: 0.9rem;
-  border: 1px solid var(--abx-border, rgba(125, 125, 155, 0.25));
-  border-radius: 1rem;
-  background: var(--abx-surface, #fff);
-  box-shadow: var(--shadow-2, 0 12px 32px rgba(15, 15, 25, 0.12));
+/* ---------- intake.mapping: the live story map ---------- */
+.map-legend { display: flex; gap: .4rem; flex-wrap: wrap; align-items: center; }
+.map-legend-dots { display: inline-flex; gap: .35rem; align-items: center; font-size: .72rem; color: var(--tx-2); margin-left: auto; }
+.swimlane { margin-top: 1.6rem; }
+.swimlane-head { display: flex; gap: .6rem; align-items: baseline; flex-wrap: wrap; }
+.swimlane-title { margin: 0; color: var(--tx); font-size: 1.05rem; }
+.swimlane-desc { font-size: .8rem; }
+/* epics as horizontally scrolling columns inside each release swimlane */
+.map-grid {
+  margin-top: .8rem; padding-bottom: .4rem;
+  display: flex; gap: .8rem; align-items: flex-start;
+  overflow-x: auto; scroll-snap-type: x proximity;
 }
-.composer-row {
-  display: flex;
-  gap: 0.5rem;
-  flex-wrap: wrap;
+.map-epic {
+  flex: 0 0 17rem; scroll-snap-align: start;
+  display: flex; flex-direction: column; gap: .55rem;
+  padding: .75rem .8rem; border-radius: var(--radius);
+  background: var(--bg-2); border: 1px solid var(--border);
 }
-.composer-row input[type='text'] {
-  flex: 1 1 14rem;
-  padding: 0.55rem 0.7rem;
-  border: 1px solid var(--abx-border, rgba(125, 125, 155, 0.35));
-  border-radius: 0.6rem;
-  background: transparent;
-  color: inherit;
-  font: inherit;
+.map-epic-name {
+  margin: 0; font-size: .82rem; font-weight: 600; color: var(--tx);
 }
-.composer-row input[type='text']:focus-visible {
-  outline: 2px solid var(--accent, #0891b2);
-  outline-offset: 1px;
+.map-feature { display: flex; flex-direction: column; gap: .35rem; }
+.map-feature-name {
+  font-family: var(--font-label);
+  font-size: .62rem; font-weight: 500; letter-spacing: .09em; text-transform: uppercase;
+  color: var(--tx-2);
 }
+.story-card {
+  display: flex; gap: .5rem; align-items: flex-start;
+  padding: .5rem .6rem; border-radius: var(--radius-s);
+  background: var(--bg); border: 1px solid var(--border);
+  color: var(--tx); text-decoration: none; font-size: .8rem; line-height: 1.4;
+}
+.story-card:hover { border-color: var(--accent); filter: none; }
+.story-card.pri-must { border-left: 3px solid var(--accent); }
+.story-card.pri-should { border-left: 3px solid var(--amber); }
+.story-card.pri-could { border-left: 3px solid var(--border); }
+.story-card .pri-chip { margin-left: auto; }
+.story-text { min-width: 0; }
 
-/* the upload rail */
-.asset-drop {
-  display: flex;
-  flex-direction: column;
-  gap: 0.7rem;
+/* live status dots: base .status-dot lives in widgets.css (chip contract) —
+   only the intake tone hooks and the one layout exception live here */
+/* story-card rows are align-items:flex-start (text wraps); center the dot on
+   the FIRST line: (1.4 line-height x .8rem - 7px) / 2 */
+.story-card .status-dot { margin-top: .34rem; }
+.st-done { background: var(--ok); }
+.st-in-progress { background: var(--accent); }
+.st-blocked { background: var(--fail); }
+.st-pending { background: var(--tx-3); }
+.story-status { display: inline-flex; gap: .35rem; align-items: center; font-size: .74rem; color: var(--tx-2); }
+
+/* one story, large */
+.story-artifact .display { max-width: 30ch; }
+.trace-list {
+  list-style: none; margin: .3rem 0 0; padding: 0;
+  display: flex; gap: .45rem; flex-wrap: wrap;
 }
-.asset-drop-title {
-  margin: 0;
-  font-size: 1rem;
+/* ---------- the activity views: thread / artifacts / files ---------- */
+.rv-list { display: flex; flex-direction: column; gap: .6rem; padding: .8rem .9rem; }
+.rv-card {
+  display: flex; flex-direction: column; gap: .3rem;
+  padding: .6rem .7rem; border-radius: var(--radius-s);
+  background: var(--bg); border: 1px solid var(--border);
+  color: var(--tx); text-decoration: none; font-size: .84rem;
 }
-.asset-drop-zone {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.45rem;
-  padding: 1.4rem 1rem;
-  border: 2px dashed var(--abx-border, rgba(125, 125, 155, 0.4));
-  border-radius: 1rem;
-  background: transparent;
+a.rv-card:hover { border-color: var(--accent); filter: none; }
+.rv-title { font-weight: 500; }
+.rv-detail { font-size: .74rem; }
+.rv-foot { display: flex; gap: .45rem; align-items: center; justify-content: space-between; }
+.rv-badges { display: flex; gap: .35rem; flex-wrap: wrap; }
+.rv-files {
+  list-style: none; margin: 0; padding: .8rem .9rem;
+  display: flex; flex-direction: column; gap: .5rem;
 }
-.asset-drop-zone input[type='file'] {
-  width: 100%;
-  font-size: 0.85rem;
-}
-.asset-drop-hint { margin: 0; font-size: 0.82rem; text-align: center; }
-.asset-list {
-  display: flex;
-  flex-direction: column;
-  gap: 0.3rem;
-  margin: 0;
-  padding: 0;
+.rv-files li { display: flex; gap: .5rem; align-items: baseline; justify-content: space-between; font-size: .78rem; }
+.rv-path { overflow-wrap: anywhere; }
+
+/* ---------- intake.brief: the document ---------- */
+.doc-section { margin-top: 1.6rem; display: flex; flex-direction: column; gap: .6rem; }
+.doc-section h3 { margin: 0; color: var(--tx); font-size: 1rem; }
+.doc-release { display: flex; flex-direction: column; gap: .15rem; }
+.doc-release-name { font-weight: 600; display: flex; gap: .5rem; align-items: center; }
+.doc-epic { border: 1px solid var(--border); border-radius: var(--radius-s); background: var(--bg-2); }
+.doc-epic summary {
+  cursor: pointer; padding: .6rem .8rem; font-weight: 500; font-size: .9rem;
   list-style: none;
 }
-.asset-row {
-  display: flex;
-  gap: 0.5rem;
-  justify-content: space-between;
-  font-size: 0.85rem;
-  padding: 0.35rem 0.5rem;
-  border-radius: 0.5rem;
-  background: rgba(125, 125, 155, 0.08);
+.doc-epic summary::before { content: '▸ '; color: var(--tx-3); }
+.doc-epic[open] summary::before { content: '▾ '; }
+.doc-epic summary::-webkit-details-marker { display: none; }
+.doc-epic-body { padding: 0 .8rem .7rem; display: flex; flex-direction: column; gap: .6rem; }
+.doc-feature { display: flex; flex-direction: column; gap: .3rem; }
+.doc-stories { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: .3rem; }
+.doc-stories li { display: flex; gap: .5rem; align-items: baseline; font-size: .84rem; }
+.doc-story-text { min-width: 0; flex: 1; }
+
+.inv-table { border-collapse: collapse; width: 100%; font-size: .84rem; }
+.inv-table th {
+  text-align: left; padding: .45rem .6rem;
+  font-family: var(--font-label);
+  font-size: .62rem; font-weight: 500; letter-spacing: .09em; text-transform: uppercase;
+  color: var(--tx-2); border-bottom: 1px solid var(--border);
 }
-.asset-name { font-weight: 550; }
-.intake-upload-summary {
-  cursor: pointer;
-  font-weight: 600;
-  padding: 0.5rem 0;
+.inv-table td { padding: .45rem .6rem; border-bottom: 1px solid var(--border); vertical-align: baseline; }
+.inv-table tr:last-child td { border-bottom: 0; }
+
+/* ---------- intake.moodboard: the gallery ---------- */
+.board { margin-top: 1.6rem; }
+.board-head { display: flex; gap: .6rem; align-items: baseline; flex-wrap: wrap; }
+.board-title { margin: 0; color: var(--tx); font-size: 1.05rem; }
+.board-slice { font-size: .8rem; margin-top: .2rem; }
+.shot-grid {
+  margin-top: .8rem;
+  display: grid; gap: .8rem;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr));
+}
+.shot-card {
+  display: flex; flex-direction: column; gap: .5rem;
+  padding: .6rem; border-radius: var(--radius);
+  background: var(--bg-2); border: 1px solid var(--border);
+  color: var(--tx); text-decoration: none;
+}
+.shot-card:hover { border-color: var(--accent); filter: none; }
+.shot-card img {
+  width: 100%; aspect-ratio: 16 / 10; object-fit: cover; object-position: top;
+  border-radius: var(--radius-s); border: 1px solid var(--border);
+}
+.shot-meta { display: flex; gap: .5rem; align-items: center; justify-content: space-between; font-size: .84rem; }
+.grade { font-size: .72rem; color: var(--tx-2); white-space: nowrap; }
+.shot-full {
+  width: 100%; border-radius: var(--radius);
+  border: 1px solid var(--border); background: var(--bg-2);
+}
+
+/* ---------- the typeform journey: step stage, strip, provenance ---------- */
+/* THE CARD FILLS THE SLOT; THE READING MEASURE BELONGS TO THE CONTENT INSIDE
+   IT. This used to be `max-width: 44rem; margin: 0 auto` on .step-stage —
+   which IS .mp-content, the main panel's card. So the card itself shrank to
+   44rem and floated in the middle of the slot, while the design shell's
+   viewer filled the same slot edge to edge. Two shells, two different main
+   panels, from one property on the wrong element.
+   GRID, not `flex` + `.step-stage > * { max-width }`: a single centred track
+   caps the content without touching the children, so per-child measures
+   survive (.artifact-lede stays 40rem, .display stays 30ch). The `> *` form
+   would have flattened all of them to 44rem — and lost to `.step-foot`'s own
+   rule four lines below on source order at equal specificity.
+   `min(44rem, 100%)` is a definite length: `minmax(0, 44rem)` may size to
+   content, which reads as a pass (the card fills) while the content silently
+   narrows. `align-content: start` because a grid stretches auto rows to fill
+   the card, and this card is `flex: 1 1 auto` (panels.css) — flex column
+   packed rows at the start and the vertical rhythm must not change. */
+.step-stage {
+  display: grid; grid-template-columns: min(44rem, 100%);
+  justify-content: center; align-content: start;
+  gap: 1.1rem; padding: 1.4rem 1.2rem 2rem;
+}
+.step-head { display: flex; gap: .5rem; align-items: center; flex-wrap: wrap; }
+.step-head .chip { margin-left: auto; }
+.step-head .chip + .chip { margin-left: 0; }
+.step-foot { display: flex; gap: .5rem; margin: 0; }
+
+/* the item strip: one dot per item, state-coloured; done items re-open */
+.item-strip { display: flex; gap: .5rem; align-items: center; padding: .2rem 0; }
+.strip-dot {
+  width: .7rem; height: .7rem; border-radius: 50%;
+  background: var(--bg-2); box-shadow: inset 0 0 0 1px var(--border);
+}
+.strip-dot.is-current { background: var(--accent); box-shadow: none; }
+.strip-dot.is-confirmed { background: var(--ok); box-shadow: none; }
+.strip-dot.is-skipped { background: var(--tx-3); box-shadow: none; }
+a.strip-dot:hover { transform: scale(1.25); }
+
+/* the current item's action bar */
+.item-actions { display: flex; gap: .5rem; align-items: center; margin-top: .7rem; }
+.item-actions form { display: inline; }
+/* the global button rule fills accent — the ghost pill must opt out */
+.item-actions .cta-ghost, .step-foot .cta-ghost {
+  background: transparent; color: var(--tx-2);
+  box-shadow: inset 0 0 0 1px var(--border);
+}
+.item-actions .cta-ghost:hover, .step-foot .cta-ghost:hover {
+  color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent);
+}
+
+/* the mode pick: three selectable cards */
+.mode-cards { display: grid; gap: .8rem; grid-template-columns: repeat(3, 1fr); }
+.mode-card {
+  display: flex; flex-direction: column; gap: .35rem; text-align: left;
+  padding: .9rem 1rem; border-radius: var(--radius); cursor: pointer;
+  background: var(--bg-2); border: 1px solid var(--border); color: var(--tx);
+  font: inherit;
+}
+.mode-card:hover { border-color: var(--accent); }
+.mode-name { font-weight: 600; font-size: .92rem; }
+.mode-desc { font-size: .78rem; line-height: 1.45; }
+
+/* the correction form (one text input or one-per-line textareas) */
+.values-form { display: flex; flex-direction: column; gap: .55rem; margin-top: .7rem; }
+.values-form label {
+  display: flex; flex-direction: column; gap: .3rem;
+  font-family: var(--font-label);
+  font-size: .62rem; font-weight: 500; letter-spacing: .09em; text-transform: uppercase;
+  color: var(--tx-2);
+}
+.values-form input[type="text"], .values-form textarea {
+  font: inherit; font-size: .84rem; color: var(--tx);
+  padding: .45rem .7rem; border-radius: var(--radius-s);
+  border: 1px solid var(--border); background: var(--bg);
+}
+.values-form textarea { min-height: 5.5rem; resize: vertical; line-height: 1.5; }
+.values-form input[type="text"]:focus, .values-form textarea:focus { outline: none; border-color: var(--accent); }
+.values-form button { align-self: flex-start; }
+
+/* the step summary (all items confirmed) */
+.step-summary { display: flex; flex-direction: column; gap: .7rem; }
+
+/* personas / direction / surfaces / flows cards */
+.group-card .display, .persona-card .display { max-width: 30ch; }
+.ref-row { display: flex; gap: .5rem; align-items: baseline; flex-wrap: wrap; font-size: .84rem; }
+.ref-list { display: flex; flex-direction: column; gap: .5rem; list-style: none; margin: .3rem 0 0; padding: 0; }
+.surface-row { display: flex; gap: .5rem; align-items: center; flex-wrap: wrap; padding: .45rem 0; border-bottom: 1px solid var(--border); }
+.surface-row:last-child { border-bottom: 0; }
+.surface-label { font-weight: 500; font-size: .86rem; }
+.surface-states { display: inline-flex; gap: .3rem; align-items: center; flex-wrap: wrap; font-size: .72rem; color: var(--tx-3); }
+
+/* the flows edge chain: node → trigger → node */
+.edge-chain { list-style: none; margin: .6rem 0 0; padding: 0; display: flex; flex-direction: column; gap: .55rem; }
+.edge-chain li { display: flex; gap: .5rem; align-items: baseline; flex-wrap: wrap; font-size: .86rem; }
+.edge-chain .edge-id { font-size: .68rem; color: var(--tx-3); }
+.edge-chain .edge-trigger { font-size: .74rem; color: var(--tx-2); }
+.edge-chain svg { color: var(--accent); flex: none; align-self: center; }
+
+/* ---------- rungs ---------- */
+@media (max-width: 839px) {
+  .shot-grid { grid-template-columns: repeat(2, 1fr); }
+  .mode-cards { grid-template-columns: 1fr; }
+}
+@media (max-width: 599px) {
+  .shot-grid { grid-template-columns: 1fr; }
+  .doc-stories li { flex-wrap: wrap; }
+  .inv-table th:nth-child(3), .inv-table td:nth-child(3) { display: none; }
+}
+
+/* ---------- motion: disclose + live-dot pulse (reduced-motion gated) ---------- */
+@media (prefers-reduced-motion: no-preference) {
+  .doc-epic[open] .doc-epic-body { animation: ab-disclose var(--motion-med) var(--motion-ease); }
+  .st-in-progress { animation: ab-pulse var(--motion-slow, 1.6s) var(--motion-ease) infinite; }
 }

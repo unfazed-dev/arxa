@@ -3,7 +3,14 @@ import * as startup from './ui/views/studio_startup_shell/studio_startup/studio_
 import * as splash from './ui/views/studio_startup_shell/splash/studio_splash_viewmodel.js';
 import * as unknown from './ui/views/studio_unknown_shell/studio_unknown/studio_unknown_viewmodel.js';
 import * as auth from './ui/views/studio_auth_shell/studio_auth/studio_auth_viewmodel.js';
-import * as intake from './ui/views/studio_intake_shell/studio_intake/studio_intake_viewmodel.js';
+import * as interview from './ui/views/studio_intake_shell/studio_intake_interview/studio_intake_interview_viewmodel.js';
+import * as personas from './ui/views/studio_intake_shell/studio_intake_personas/studio_intake_personas_viewmodel.js';
+import * as isurfaces from './ui/views/studio_intake_shell/studio_intake_surfaces/studio_intake_surfaces_viewmodel.js';
+import * as iflows from './ui/views/studio_intake_shell/studio_intake_flows/studio_intake_flows_viewmodel.js';
+import * as mapping from './ui/views/studio_intake_shell/studio_intake_mapping/studio_intake_mapping_viewmodel.js';
+import * as direction from './ui/views/studio_intake_shell/studio_intake_direction/studio_intake_direction_viewmodel.js';
+import * as brief from './ui/views/studio_intake_shell/studio_intake_brief/studio_intake_brief_viewmodel.js';
+import * as moodboard from './ui/views/studio_intake_shell/studio_intake_moodboard/studio_intake_moodboard_viewmodel.js';
 import * as design from './ui/views/studio_design_shell/studio_design/studio_design_viewmodel.js';
 import * as preferences from './ui/common/preferences_viewmodel.js';
 import { booted } from './ui/common/boot_guard_viewmodel.js';
@@ -46,10 +53,94 @@ export default [
   // ceremony shells route bare (R4): the auth card never boot-guards
   ['GET', '/auth', auth.view],
   ['POST', '/auth/signin', auth.signin],
-  // working shells are boot-guarded with a validated return-to (R2, R3)
-  ['GET', '/intake', booted(intake.view)],
-  ['POST', '/intake/answer', booted(intake.answer)],
-  ['POST', '/intake/upload', booted(intake.upload)],
+  // working shells are boot-guarded with a validated return-to (R2, R3).
+  // The intake loop is the v1 item-engine route table, ported verbatim
+  // (posted-by comments carried) — see ui/views/studio_intake_shell/shared.tsx.
+  // intake.interview — the journey's first step (shell root IS the interview)
+  ['GET', '/intake', booted(interview.page)],
+  ['GET', '/intake/file', booted(interview.file)],
+  ['GET', '/intake/model/:id', booted(interview.model)],
+  ['GET', '/intake/panel', booted(interview.panel)],
+  ['GET', '/intake/panel/size/:panel/:size', booted(interview.panelSize)],
+  ['POST', '/intake/messages', booted(interview.sendMessage)], // posted-by: composer.tsx composerAction (intake facade)
+  ['POST', '/intake/depth', booted(interview.depth)], // posted-by: interview mode-cards (intake facade)
+  ['POST', '/intake/answer', booted(interview.answer)], // posted-by: shared.tsx QCard answer forms (hx-post)
+  ['POST', '/intake/skip', booted(interview.skip)], // posted-by: shared.tsx QCard skip forms (hx-post)
+  ['GET', '/intake/edit', booted(interview.edit)],
+  // intake.personas — item-engine step
+  ['GET', '/intake/personas', booted(personas.page)],
+  ['GET', '/intake/personas/file', booted(personas.file)],
+  ['GET', '/intake/personas/model/:id', booted(personas.model)],
+  ['GET', '/intake/personas/panel', booted(personas.panel)],
+  ['GET', '/intake/personas/panel/size/:panel/:size', booted(personas.panelSize)],
+  ['POST', '/intake/personas/messages', booted(personas.sendMessage)], // posted-by: composer.tsx composerAction (intake facade)
+  ['POST', '/intake/personas/confirm', booted(personas.confirm)], // posted-by: shared.tsx ItemActions (hx-post)
+  ['POST', '/intake/personas/save', booted(personas.save)], // posted-by: shared.tsx item edit forms (hx-post)
+  ['POST', '/intake/personas/skip', booted(personas.skip)], // posted-by: shared.tsx ItemActions (hx-post)
+  ['GET', '/intake/personas/edit', booted(personas.edit)],
+  ['POST', '/intake/personas/accept-all', booted(personas.acceptAll)], // posted-by: shared.tsx StepFoot (hx-post)
+  // intake.surfaces — item-engine step
+  ['GET', '/intake/surfaces', booted(isurfaces.page)],
+  ['GET', '/intake/surfaces/file', booted(isurfaces.file)],
+  ['GET', '/intake/surfaces/model/:id', booted(isurfaces.model)],
+  ['GET', '/intake/surfaces/panel', booted(isurfaces.panel)],
+  ['GET', '/intake/surfaces/panel/size/:panel/:size', booted(isurfaces.panelSize)],
+  ['POST', '/intake/surfaces/messages', booted(isurfaces.sendMessage)], // posted-by: composer.tsx composerAction (intake facade)
+  ['POST', '/intake/surfaces/confirm', booted(isurfaces.confirm)], // posted-by: shared.tsx ItemActions (hx-post)
+  ['POST', '/intake/surfaces/save', booted(isurfaces.save)], // posted-by: shared.tsx item edit forms (hx-post)
+  ['POST', '/intake/surfaces/skip', booted(isurfaces.skip)], // posted-by: shared.tsx ItemActions (hx-post)
+  ['GET', '/intake/surfaces/edit', booted(isurfaces.edit)],
+  ['POST', '/intake/surfaces/accept-all', booted(isurfaces.acceptAll)], // posted-by: shared.tsx StepFoot (hx-post)
+  // intake.flows — item-engine step
+  ['GET', '/intake/flows', booted(iflows.page)],
+  ['GET', '/intake/flows/file', booted(iflows.file)],
+  ['GET', '/intake/flows/model/:id', booted(iflows.model)],
+  ['GET', '/intake/flows/panel', booted(iflows.panel)],
+  ['GET', '/intake/flows/panel/size/:panel/:size', booted(iflows.panelSize)],
+  ['POST', '/intake/flows/messages', booted(iflows.sendMessage)], // posted-by: composer.tsx composerAction (intake facade)
+  ['POST', '/intake/flows/confirm', booted(iflows.confirm)], // posted-by: shared.tsx ItemActions (hx-post)
+  ['POST', '/intake/flows/save', booted(iflows.save)], // posted-by: shared.tsx item edit forms (hx-post)
+  ['POST', '/intake/flows/skip', booted(iflows.skip)], // posted-by: shared.tsx ItemActions (hx-post)
+  ['GET', '/intake/flows/edit', booted(iflows.edit)],
+  ['POST', '/intake/flows/accept-all', booted(iflows.acceptAll)], // posted-by: shared.tsx StepFoot (hx-post)
+  // intake.direction — item-engine step
+  ['GET', '/intake/direction', booted(direction.page)],
+  ['GET', '/intake/direction/file', booted(direction.file)],
+  ['GET', '/intake/direction/model/:id', booted(direction.model)],
+  ['GET', '/intake/direction/panel', booted(direction.panel)],
+  ['GET', '/intake/direction/panel/size/:panel/:size', booted(direction.panelSize)],
+  ['POST', '/intake/direction/messages', booted(direction.sendMessage)], // posted-by: composer.tsx composerAction (intake facade)
+  ['POST', '/intake/direction/confirm', booted(direction.confirm)], // posted-by: shared.tsx ItemActions (hx-post)
+  ['POST', '/intake/direction/save', booted(direction.save)], // posted-by: shared.tsx item edit forms (hx-post)
+  ['POST', '/intake/direction/skip', booted(direction.skip)], // posted-by: shared.tsx ItemActions (hx-post)
+  ['GET', '/intake/direction/edit', booted(direction.edit)],
+  ['POST', '/intake/direction/accept-all', booted(direction.acceptAll)], // posted-by: shared.tsx StepFoot (hx-post)
+  // intake.mapping — Story Map
+  ['GET', '/intake/map', booted(mapping.page)],
+  ['GET', '/intake/map/artifact/:kind/:id', booted(mapping.artifact)],
+  ['GET', '/intake/map/file', booted(mapping.file)],
+  ['GET', '/intake/map/model/:id', booted(mapping.model)],
+  ['GET', '/intake/map/panel', booted(mapping.panel)],
+  ['GET', '/intake/map/panel/size/:panel/:size', booted(mapping.panelSize)],
+  ['POST', '/intake/map/messages', booted(mapping.sendMessage)], // posted-by: composer.tsx composerAction (intake facade)
+  ['POST', '/intake/map/approve', booted(mapping.approve)], // posted-by: quick-replies r.action (intake facade)
+  // intake.brief — Design Brief (carries the approval gate)
+  ['GET', '/intake/brief', booted(brief.page)],
+  ['GET', '/intake/brief/artifact/:kind/:id', booted(brief.artifact)],
+  ['GET', '/intake/brief/file', booted(brief.file)],
+  ['GET', '/intake/brief/model/:id', booted(brief.model)],
+  ['GET', '/intake/brief/panel', booted(brief.panel)],
+  ['GET', '/intake/brief/panel/size/:panel/:size', booted(brief.panelSize)],
+  ['POST', '/intake/brief/messages', booted(brief.sendMessage)], // posted-by: composer.tsx composerAction (intake facade)
+  ['POST', '/intake/brief/approve', booted(brief.approve)], // posted-by: quick-replies r.action (intake facade)
+  // intake.moodboard — Moodboard
+  ['GET', '/intake/moodboard', booted(moodboard.page)],
+  ['GET', '/intake/moodboard/artifact/:kind/:id', booted(moodboard.artifact)],
+  ['GET', '/intake/moodboard/file', booted(moodboard.file)],
+  ['GET', '/intake/moodboard/model/:id', booted(moodboard.model)],
+  ['GET', '/intake/moodboard/panel', booted(moodboard.panel)],
+  ['GET', '/intake/moodboard/panel/size/:panel/:size', booted(moodboard.panelSize)],
+  ['POST', '/intake/moodboard/messages', booted(moodboard.sendMessage)], // posted-by: composer.tsx composerAction (intake facade)
   ['GET', '/design', booted(design.view)],
   ['POST', '/design/compose', booted(design.compose)],
   // /preferences/accent: no v2 sender has landed (the accent picker is a

@@ -29,23 +29,12 @@ import type { FC, Child } from 'hono/jsx';
 import Base from '../../common/base.tsx';
 import { inspectAttrs } from '../../widgets/common/studio_primitives/widgets.tsx';
 import { FooterPanel } from '../../widgets/studio_application_hub_widgets/widgets.tsx';
+import type { Preferences, Project } from '../../widgets/studio_application_hub_widgets/destinations.tsx';
 import Desktop from './studio_application_hub_view.desktop.tsx';
 import Tablet from './studio_application_hub_view.tablet.tsx';
 import Mobile from './studio_application_hub_view.mobile.tsx';
 
 type TFn = (key: string, vars?: Record<string, unknown>) => unknown;
-
-interface Project {
-  name?: string;
-  savedLabel?: string;
-}
-
-interface Preferences {
-  theme?: string;
-  accent?: string;
-  font?: string;
-  [key: string]: unknown;
-}
 
 // The footer panel's body shape is the hosted shell's business — the hub only
 // frames it (the dashboard passes an <ol class="timeline">, another shell may not).

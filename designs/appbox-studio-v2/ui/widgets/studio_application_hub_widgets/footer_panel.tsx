@@ -2,7 +2,7 @@
 // A thin instantiation of panel (role: footer): a body-only strip. The body
 // (e.g. the timeline <ol>) is the caller's content, passed as children.
 import type { Child } from 'hono/jsx';
-import { Open as PanelOpen } from './panel.tsx';
+import { Open as PanelOpen } from '../../widgets/common/studio_panels/widgets.tsx';
 
 const PID = 'panel-footer';
 
@@ -16,9 +16,9 @@ interface FooterPanelSpec {
   // replaces the derived body id (the timeline's oob target)
   bodyId?: string;
   // raw attributes on the body (aria-label, hx-swap-oob, ...)
-  bodyAttributes?: string;
+  bodyAttrs?: string;
   class?: string;
-  attributes?: string;
+  attrs?: string;
   vt?: string;
   children?: Child;
 }
@@ -31,12 +31,12 @@ export function Open(spec: FooterPanelSpec) {
       id={PID}
       tag={spec.tag ?? 'footer'}
       class={spec.class}
-      attributes={spec.attributes}
+      attrs={spec.attrs}
       vt={spec.vt}
       bodyTag={spec.bodyTag}
       bodyClass={spec.bodyClass}
       bodyId={spec.bodyId}
-      bodyAttributes={spec.bodyAttributes}
+      bodyAttrs={spec.bodyAttrs}
       top={false}
       sideStart={false}
       sideEnd={false}

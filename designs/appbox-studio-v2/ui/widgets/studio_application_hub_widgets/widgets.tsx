@@ -5,4 +5,4 @@ export { Tabbar } from './tabbar.tsx';
 export { destinations, type TFn, type Preferences, type Project, type Destination } from './destinations.tsx';
 export { default as HeaderPanel, Close as HeaderPanelClose } from './header_panel.tsx';
 export { default as FooterPanel, Close as FooterPanelClose } from './footer_panel.tsx';
-export { Panel, Top, Bottom, SideStart, SideEnd, BodyOob, TopOob, BottomOob, SideEndOob, Resize } from './panel.tsx';
+export { Panel, Top, Bottom, SideStart, SideEnd, BodyOob, TopOob, BottomOob, SideEndOob, Resize, Open as PanelOpen } from '../../widgets/common/studio_panels/widgets.tsx';
