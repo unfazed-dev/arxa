@@ -42,7 +42,7 @@ class AppBoxKitFrostedSurface extends StatelessWidget {
     this.platformViewSafe = false,
   });
 
-  /// When true, drops the [BackdropFilter] and renders a near-opaque vibrant
+  /// When true, drops the [BackdropFilter] and renders a FULLY OPAQUE vibrant
   /// fill instead (same tint token, rim, shadow, radius). Required whenever
   /// the subtree may host platform views: a BackdropFilter saveLayer cannot
   /// span the frame slices UiKitViews create, so Flutter content inside it
@@ -93,13 +93,16 @@ class AppBoxKitFrostedSurface extends StatelessWidget {
     final radius = BorderRadius.circular(borderRadius);
 
     if (platformViewSafe) {
-      // Vibrant fill: no saveLayer at all. Alpha rides high because there is
-      // no blur to carry legibility over a busy backdrop.
+      // Vibrant fill: no saveLayer at all. Alpha rides at FULL when no
+      // tint override is given — this branch is what opaqueGlass surfaces
+      // (chips, bar bases) paint, and a sub-1.0 default left dark-mode
+      // chips reading translucent with a light-biased wash (measured
+      // 2026-08-17: left .116 / mid .111 / right .143). A caller wanting
+      // translucency passes its own tint or the blurred branch below.
       return Container(
         decoration: BoxDecoration(
           color: tint ??
-              scheme.surfaceContainerLowest
-                  .withValues(alpha: dark ? 0.92 : 0.96),
+              scheme.surfaceContainerLowest.withValues(alpha: 1.0),
           borderRadius: radius,
           border: Border.all(
             color: Colors.white.withValues(alpha: dark ? 0.16 : 0.45),
