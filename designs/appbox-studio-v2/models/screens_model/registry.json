@@ -1,7 +1,7 @@
 {
  "app": "studio",
  "vocabulary": "shell > view > widgets; the hub is the routed root frame (/) hosting the stage shells (header, tabbar, rail chrome + body outlet); ceremony shells route bare",
- "note": "Derived from Q-v2-1/Q-v2-3. `enabled: false` marks a shell that has not landed yet — Q-v2-5 cuts shells over one at a time behind explicit user validation, so the hub shows the full pipeline but only routes to what exists. The hub is the routed root (/): hosted stage routes are boot-guarded with ?to return-to; ceremony shells route bare (R1-R4, docs/plans/studio-v2-boot-sequence-wiring.md).",
+ "note": "Derived projection of intake/registry.json (the authoring SSOT). Q-v2-5 originally cut shells over one at a time behind explicit user validation; the owner ruling of 2026-08-16 landed every shell enabled in one pass, so every stage routes today. Boot-guarded working stages carry booted() in app.routes.js with ?to return-to (R1-R4, docs/plans/studio-v2-boot-sequence-wiring.md).",
  "stages": [
   {
    "id": "startup",
@@ -18,8 +18,8 @@
    "shell": "studio_auth_shell",
    "consumes": "session",
    "produces": "credentials",
-   "href": "#",
-   "enabled": false
+   "href": "/auth",
+   "enabled": true
   },
   {
    "id": "intake",
@@ -27,8 +27,8 @@
    "shell": "studio_intake_shell",
    "consumes": "brief + brand assets",
    "produces": "intake/registry.json",
-   "href": "#",
-   "enabled": false
+   "href": "/intake",
+   "enabled": true
   },
   {
    "id": "design",
@@ -36,8 +36,8 @@
    "shell": "studio_design_shell",
    "consumes": "intake/registry.json",
    "produces": "design artifact",
-   "href": "#",
-   "enabled": false
+   "href": "/design",
+   "enabled": true
   }
  ],
  "shells": [
@@ -75,7 +75,8 @@
    "id": "studio_startup_shell",
    "kind": "ceremony",
    "views": [
-    "studio_startup_view"
+    "studio_startup_view",
+    "studio_splash_view"
    ],
    "widgets": [
     "boot_checklist",
@@ -88,8 +89,9 @@
    "views": [
     "studio_unknown_view"
    ],
-   "widgets": [],
-   "landed": false
+   "widgets": [
+    "unknown_notice"
+   ]
   },
   {
    "id": "studio_auth_shell",
@@ -97,8 +99,9 @@
    "views": [
     "studio_auth_view"
    ],
-   "widgets": [],
-   "landed": false
+   "widgets": [
+    "credential_form"
+   ]
   },
   {
    "id": "studio_intake_shell",
@@ -109,8 +112,7 @@
    "widgets": [
     "interview_thread",
     "asset_upload_dropzone"
-   ],
-   "landed": false
+   ]
   },
   {
    "id": "studio_design_shell",
@@ -124,8 +126,7 @@
     "composer_slider_panel",
     "needs_you_strip",
     "activity"
-   ],
-   "landed": false
+   ]
   }
  ]
 }

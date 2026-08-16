@@ -97,6 +97,9 @@ const Base: FC<BaseProps> = ({
         <link rel="stylesheet" href="/ui/styles/studio_dashboard_shell/styles.css" />
         <link rel="stylesheet" href="/ui/styles/studio_startup_shell/styles.css" />
         <link rel="stylesheet" href="/ui/styles/studio_unknown_shell/styles.css" />
+        <link rel="stylesheet" href="/ui/styles/studio_auth_shell/styles.css" />
+        <link rel="stylesheet" href="/ui/styles/studio_intake_shell/styles.css" />
+        <link rel="stylesheet" href="/ui/styles/studio_design_shell/styles.css" />
         {headExtra}
       </head>
       <body hx-boost="true" hx-sync="this:replace" {...HTMX_RESPONSE_RULES}>

@@ -1,27 +1,362 @@
 [
   {
-    "id": "projects.home",
-    "label": "Home",
-    "shell": "projects",
-    "comp": "ProjectsHome",
-    "route": "/home",
-    "surface": null,
-    "states": [
-      "loading",
-      "empty"
-    ],
-    "statesProvenance": "inferred"
+    "id": "app.splash",
+    "label": "Splash",
+    "surface": "app_shell_app_splash_view",
+    "shell": "app",
+    "comp": "AppSplash",
+    "labelKey": "screen.label.app.splash",
+    "route": "/splash"
   },
   {
-    "id": "projects.new",
-    "label": "New",
-    "shell": "projects",
-    "comp": "ProjectsNew",
-    "route": "/new",
+    "id": "app.startup",
+    "label": "Startup",
+    "surface": "app_shell_app_startup_view",
+    "shell": "app",
+    "comp": "AppStartup",
+    "labelKey": "screen.label.app.startup",
+    "route": "/startup"
+  },
+  {
+    "id": "app.access",
+    "label": "Access",
+    "surface": "app_shell_app_access_view",
+    "shell": "app",
+    "comp": "AppAccess",
+    "labelKey": "screen.label.app.access",
+    "route": "/auth"
+  },
+  {
+    "id": "app.dashboard",
+    "label": "Dashboard",
+    "surface": "app_shell_app_dashboard_view",
+    "shell": "app",
+    "comp": "AppDashboard",
+    "labelKey": "screen.label.app.dashboard",
+    "route": "/dashboard"
+  },
+  {
+    "id": "app.unknown",
+    "label": "Not Found",
+    "surface": "app_shell_app_unknown_view",
+    "shell": "app",
+    "comp": "AppUnknown",
+    "labelKey": "screen.label.app.unknown",
+    "route": "/unknown"
+  },
+  {
+    "id": "intake.interview",
+    "label": "Interview",
+    "surface": "main_shell_intake_interview_view",
+    "shell": "intake",
+    "comp": "IntakeInterview",
+    "labelKey": "screen.label.intake.interview",
+    "route": "/intake"
+  },
+  {
+    "id": "intake.personas",
+    "label": "Personas",
+    "surface": "main_shell_intake_personas_view",
+    "shell": "intake",
+    "comp": "IntakePersonas",
+    "labelKey": "screen.label.intake.personas",
+    "route": "/intake/personas"
+  },
+  {
+    "id": "intake.surfaces",
+    "label": "Surfaces",
+    "surface": "main_shell_intake_surfaces_view",
+    "shell": "intake",
+    "comp": "IntakeSurfaces",
+    "labelKey": "screen.label.intake.surfaces",
+    "route": "/intake/surfaces"
+  },
+  {
+    "id": "intake.flows",
+    "label": "Flows",
+    "surface": "main_shell_intake_flows_view",
+    "shell": "intake",
+    "comp": "IntakeFlows",
+    "labelKey": "screen.label.intake.flows",
+    "route": "/intake/flows"
+  },
+  {
+    "id": "intake.mapping",
+    "label": "Mapping",
+    "surface": "main_shell_intake_mapping_view",
+    "shell": "intake",
+    "comp": "IntakeMapping",
+    "labelKey": "screen.label.intake.mapping",
+    "route": "/intake/map"
+  },
+  {
+    "id": "intake.direction",
+    "label": "Direction",
+    "surface": "main_shell_intake_direction_view",
+    "shell": "intake",
+    "comp": "IntakeDirection",
+    "labelKey": "screen.label.intake.direction",
+    "route": "/intake/direction"
+  },
+  {
+    "id": "intake.live",
+    "label": "Live Map",
     "surface": null,
-    "states": [
-      "error"
-    ],
-    "statesProvenance": "inferred"
+    "shell": "intake",
+    "comp": "IntakeLive",
+    "labelKey": "screen.label.intake.live",
+    "route": "/intake/live"
+  },
+  {
+    "id": "intake.brief",
+    "label": "Brief",
+    "surface": "main_shell_intake_brief_view",
+    "shell": "intake",
+    "comp": "IntakeBrief",
+    "labelKey": "screen.label.intake.brief",
+    "route": "/intake/brief"
+  },
+  {
+    "id": "intake.moodboard",
+    "label": "Moodboard",
+    "surface": "main_shell_intake_moodboard_view",
+    "shell": "intake",
+    "comp": "IntakeMoodboard",
+    "labelKey": "screen.label.intake.moodboard",
+    "route": "/intake/moodboard"
+  },
+  {
+    "id": "design.prototype",
+    "label": "Prototype",
+    "surface": "main_shell_design_prototype_view",
+    "shell": "design",
+    "comp": "DesignPrototype",
+    "labelKey": "screen.label.design.prototype",
+    "route": "/design"
+  },
+  {
+    "id": "design.chat",
+    "label": "Chat",
+    "surface": "main_shell_design_chat_view",
+    "shell": "design",
+    "comp": "DesignChat",
+    "labelKey": "screen.label.design.chat",
+    "route": "/design/chat"
+  },
+  {
+    "id": "design.freeze",
+    "label": "Freeze",
+    "surface": "main_shell_design_freeze_view",
+    "shell": "design",
+    "comp": "DesignFreeze",
+    "labelKey": "screen.label.design.freeze",
+    "route": "/design/freeze"
+  },
+  {
+    "id": "scaffold.picker",
+    "label": "Kit Picker",
+    "surface": "main_shell_scaffold_picker_view",
+    "shell": "scaffold",
+    "comp": "ScaffoldPicker",
+    "labelKey": "screen.label.scaffold.picker",
+    "route": "/scaffold"
+  },
+  {
+    "id": "scaffold.run",
+    "label": "Scaffold Run",
+    "surface": "main_shell_scaffold_run_view",
+    "shell": "scaffold",
+    "comp": "ScaffoldRun",
+    "labelKey": "screen.label.scaffold.run",
+    "route": "/scaffold/run"
+  },
+  {
+    "id": "chat.chat2",
+    "label": "Chat Stage",
+    "surface": null,
+    "shell": "chat",
+    "comp": "ChatChat2",
+    "labelKey": "screen.label.chat.chat2",
+    "route": "/chat/chat2"
+  },
+  {
+    "id": "shell.composer",
+    "label": "Composer Panel",
+    "surface": null,
+    "shell": "shell",
+    "comp": "ShellComposer",
+    "labelKey": "screen.label.shell.composer",
+    "route": "/shell/composer"
+  },
+  {
+    "id": "shell.footer",
+    "label": "Footer Panel",
+    "surface": null,
+    "shell": "shell",
+    "comp": "ShellFooter",
+    "labelKey": "screen.label.shell.footer",
+    "route": "/shell/footer"
+  },
+  {
+    "id": "build.loop",
+    "label": "Loop",
+    "surface": "main_shell_build_loop_view",
+    "shell": "build",
+    "comp": "BuildLoop",
+    "labelKey": "screen.label.build.loop",
+    "route": "/build"
+  },
+  {
+    "id": "build.gates",
+    "label": "Gates",
+    "surface": null,
+    "shell": "build",
+    "comp": "BuildGates",
+    "labelKey": "screen.label.build.gates",
+    "route": "/build/gates"
+  },
+  {
+    "id": "build.visual",
+    "label": "Visual",
+    "surface": null,
+    "shell": "build",
+    "comp": "BuildVisual",
+    "labelKey": "screen.label.build.visual",
+    "route": "/build/visual"
+  },
+  {
+    "id": "source.git",
+    "label": "Git",
+    "surface": null,
+    "shell": "source",
+    "comp": "SourceGit",
+    "labelKey": "screen.label.source.git",
+    "route": "/source/git"
+  },
+  {
+    "id": "source.files",
+    "label": "Files",
+    "surface": null,
+    "shell": "source",
+    "comp": "SourceFiles",
+    "labelKey": "screen.label.source.files",
+    "route": "/source/files"
+  },
+  {
+    "id": "flows.canvas",
+    "label": "Canvas",
+    "surface": null,
+    "shell": "flows",
+    "comp": "FlowsCanvas",
+    "labelKey": "screen.label.flows.canvas",
+    "route": "/flows/canvas"
+  },
+  {
+    "id": "ship.deploy",
+    "label": "Deploy",
+    "surface": null,
+    "shell": "ship",
+    "comp": "ShipDeploy",
+    "labelKey": "screen.label.ship.deploy",
+    "route": "/ship/deploy"
+  },
+  {
+    "id": "first.showcase",
+    "label": "Showcase",
+    "surface": null,
+    "shell": "first",
+    "comp": "FirstShowcase",
+    "labelKey": "screen.label.first.showcase",
+    "route": "/first/showcase"
+  },
+  {
+    "id": "first.honesty",
+    "label": "Honesty",
+    "surface": null,
+    "shell": "first",
+    "comp": "FirstHonesty",
+    "labelKey": "screen.label.first.honesty",
+    "route": "/first/honesty"
+  },
+  {
+    "id": "workspace.projects2",
+    "label": "Projects",
+    "surface": null,
+    "shell": "workspace",
+    "comp": "WorkspaceProjects2",
+    "labelKey": "screen.label.workspace.projects2",
+    "route": "/workspace/projects2"
+  },
+  {
+    "id": "workspace.settings",
+    "label": "Settings",
+    "surface": "workspace_shell_workspace_settings_view",
+    "shell": "workspace",
+    "comp": "WorkspaceSettings",
+    "labelKey": "screen.label.workspace.settings",
+    "route": "/workspace"
+  },
+  {
+    "id": "workspace.credentials",
+    "label": "Credentials",
+    "surface": "workspace_shell_workspace_credentials_view",
+    "shell": "workspace",
+    "comp": "WorkspaceCredentials",
+    "labelKey": "screen.label.workspace.credentials",
+    "route": "/workspace/credentials"
+  },
+  {
+    "id": "workspace.config",
+    "label": "Config",
+    "surface": "workspace_shell_workspace_config_view",
+    "shell": "workspace",
+    "comp": "WorkspaceConfig",
+    "labelKey": "screen.label.workspace.config",
+    "route": "/workspace/config"
+  },
+  {
+    "id": "workspace.plans",
+    "label": "Plans",
+    "surface": "workspace_shell_workspace_plans_view",
+    "shell": "workspace",
+    "comp": "WorkspacePlans",
+    "labelKey": "screen.label.workspace.plans",
+    "route": "/workspace/plans"
+  },
+  {
+    "id": "website.site",
+    "label": "Site",
+    "surface": null,
+    "shell": "website",
+    "comp": "WebsiteSite",
+    "labelKey": "screen.label.website.site",
+    "route": "/website/site"
+  },
+  {
+    "id": "website.docs",
+    "label": "Docs",
+    "surface": null,
+    "shell": "website",
+    "comp": "WebsiteDocs",
+    "labelKey": "screen.label.website.docs",
+    "route": "/website/docs"
+  },
+  {
+    "id": "website.showcase2",
+    "label": "Showcase",
+    "surface": null,
+    "shell": "website",
+    "comp": "WebsiteShowcase2",
+    "labelKey": "screen.label.website.showcase2",
+    "route": "/website/showcase2"
+  },
+  {
+    "id": "website.download",
+    "label": "Download",
+    "surface": null,
+    "shell": "website",
+    "comp": "WebsiteDownload",
+    "labelKey": "screen.label.website.download",
+    "route": "/website/download"
   }
 ]

@@ -51,6 +51,10 @@ const banner = 'appbox/structure@2';
 // export const surfaceId = 'stage.shell'
 final _surfaceIdRe = RegExp("export\\s+const\\s+surfaceId\\s*=\\s*['\"]([^'\"]+)['\"]");
 
+/// Shell viewmodels (v2 grammar) export shellId only — chrome frames, not
+/// joinable surfaces. The sweep skips them instead of failing the join.
+final _shellIdRe = RegExp("export\\s+const\\s+shellId\\s*=");
+
 // export const shellRoots = { proj: '/', stage: '/' }
 final _shellRootsRe = RegExp("export\\s+const\\s+shellRoots\\s*=\\s*\\{([^}]*)\\}", dotAll: true);
 final _pairRe = RegExp("([A-Za-z_][\\w-]*)\\s*:\\s*['\"]([^'\"]+)['\"]");
@@ -63,7 +67,7 @@ final _depRe = RegExp("from\\s+['\"]([^'\"]*(?:services/facades|services/reposit
 Map<String, dynamic>? buildStructure(String designRoot) {
   final root = Directory(designRoot);
 
-  // ---- registry ----
+  // ---- registry (v1 List of screens, or v2 Map projection) ----
   final regFile = File('${root.path}/models/screens_model/registry.json');
   if (!regFile.existsSync()) {
     stderr.writeln('FAIL: no registry at models/screens_model/registry.json '
@@ -72,7 +76,43 @@ Map<String, dynamic>? buildStructure(String designRoot) {
   }
   List registry;
   try {
-    registry = jsonDecode(regFile.readAsStringSync()) as List;
+    final parsed = jsonDecode(regFile.readAsStringSync());
+    if (parsed is List) {
+      registry = parsed;
+    } else if (parsed is Map<String, dynamic>) {
+      // v2: models/screens_model/registry.json is the DERIVED projection
+      // (stages/shells); the screen-level SSOT is the authoring surface at
+      // intake/registry.json (entries[]). Read it and project to the v1
+      // screen shape: comp is derived PascalCase from the surface name.
+      final ssot = File('${root.path}/intake/registry.json');
+      if (!ssot.existsSync()) {
+        stderr.writeln('FAIL: v2 Map projection but no authoring SSOT at '
+            'intake/registry.json — the projection is derived, not authored');
+        return null;
+      }
+      final authored = jsonDecode(ssot.readAsStringSync());
+      final entries = authored is Map<String, dynamic> ? authored['entries'] : null;
+      if (entries is! List || entries.isEmpty) {
+        stderr.writeln('FAIL: intake/registry.json has no entries[] — nothing to emit');
+        return null;
+      }
+      registry = [
+        for (final e in entries)
+          if (e is Map<String, dynamic>)
+            {
+              ...e,
+              'comp': _compOf(e['surface'] as String?),
+              // v2 names surfaces <app>_<short>_view under ui/views/<shell>/ —
+              // the shell id IS the dir, so no _shell_ slicing applies.
+              '_shellDir': e['shell'],
+            }
+          else
+            e,
+      ];
+    } else {
+      stderr.writeln('FAIL: registry.json is neither a list (v1) nor an object (v2)');
+      return null;
+    }
   } catch (e) {
     stderr.writeln('FAIL: registry.json does not parse as JSON — $e');
     return null;
@@ -94,10 +134,26 @@ Map<String, dynamic>? buildStructure(String designRoot) {
 
   // ---- flows (optional): the triad's flows lens, edges over registry ids ----
   List? flows;
+  // v1 keeps flows beside the registry; v2 keeps them with the authoring
+  // SSOT (intake/flows.json). Both checked — a design may hold either.
   final flowsFile = File('${root.path}/models/screens_model/flows.json');
-  if (flowsFile.existsSync()) {
+  final flowsFileV2 = File('${root.path}/intake/flows.json');
+  if (flowsFile.existsSync() || flowsFileV2.existsSync()) {
+    final source = flowsFile.existsSync() ? flowsFile : flowsFileV2;
     try {
-      flows = jsonDecode(flowsFile.readAsStringSync()) as List;
+      final parsed = jsonDecode(source.readAsStringSync());
+      if (parsed is List) {
+        flows = parsed;
+      } else if (parsed is Map<String, dynamic> && parsed['edges'] is List) {
+        // v2: a flat {edges:[...]} over registry ids — one implicit journey.
+        flows = [
+          {'id': 'studio', 'edges': parsed['edges']},
+        ];
+      } else {
+        stderr.writeln('FAIL: flows.json is neither a journeys list (v1) '
+            'nor a flat edges object (v2)');
+        return null;
+      }
     } catch (e) {
       stderr.writeln('FAIL: flows.json does not parse as JSON — $e');
       return null;
@@ -211,6 +267,12 @@ Map<String, dynamic>? buildStructure(String designRoot) {
       final src = f.readAsStringSync();
       final sidMatch = _surfaceIdRe.firstMatch(src);
       if (sidMatch == null) {
+        if (_shellIdRe.hasMatch(src)) {
+          // v2 shell viewmodels declare shellId only — they are the shell's
+          // chrome frame, not a joinable surface; the surface viewmodels
+          // under them carry the surfaceIds.
+          continue;
+        }
         stderr.writeln('FAIL: $rel exports no surfaceId — the registry join needs one');
         return null;
       }
@@ -241,7 +303,7 @@ Map<String, dynamic>? buildStructure(String designRoot) {
     final entry = e as Map<String, dynamic>;
     final surface = entry['surface'] as String?;
     if (surface != null && surface.isNotEmpty) {
-      final sd = shellDir(surface);
+      final sd = (entry['_shellDir'] as String?) ?? shellDir(surface);
       if (sd == null) {
         stderr.writeln("FAIL: screen '${entry['id']}' has surface '$surface' "
             "with no <shell>_shell_ prefix");
@@ -264,8 +326,14 @@ Map<String, dynamic>? buildStructure(String designRoot) {
   Set<String>? kitDirs; // lazily loaded from config/kit-registry.json
   for (final e in registry) {
     final entry = e as Map<String, dynamic>;
-    final sid = entry['id'] as String?;
+    // v1 joins on the entry id; v2's viewmodels export the SURFACE short
+    // name as surfaceId (studio_startup for studio_startup_view), so the
+    // join key comes from the surface when the entry is v2-sourced.
     final surface = entry['surface'] as String?;
+    final authoringId = entry['id'] as String?;
+    final sid = (entry['_shellDir'] != null && surface != null)
+        ? surface.replaceAll(RegExp(r'_view$'), '')
+        : authoringId;
 
     // ---- optional per-screen kits declaration ----
     List<String>? kits;
@@ -329,14 +397,20 @@ Map<String, dynamic>? buildStructure(String designRoot) {
         return null;
       }
       final screen = <String, dynamic>{
-        'id': sid,
+        // The authoring entry id (v2: studio_startup_shell.startup), NOT the
+        // join key — consumers key screens by id and flows join on ids too.
+        'id': authoringId,
         'shell': entry['shell'],
         'comp': entry['comp'],
-        'shellDir': shellDir(surface),
+        'shellDir': (entry['_shellDir'] as String?) ?? shellDir(surface),
         'surface': surface,
         'viewmodel': vm['path'],
         'deps': vm['deps'],
       };
+      if (entry['_shellDir'] != null) {
+        // v2 marker: the surfaceId the viewmodel exports (the join key).
+        screen['surfaceKey'] = sid;
+      }
       if (kits != null) screen['kits'] = kits;
       if (states != null) screen['states'] = states;
       if (statesProvenance != null) screen['statesProvenance'] = statesProvenance;
@@ -356,7 +430,12 @@ Map<String, dynamic>? buildStructure(String designRoot) {
   }
 
   // ---- orphan viewmodels ----
-  final claimed = screens.where((s) => s['surface'] != null).map((s) => s['id'] as String).toSet();
+  // v1: the screen id IS the surfaceId join key. v2 screens carry an
+  // explicit surfaceKey (the short name their viewmodel exports).
+  final claimed = screens
+      .where((s) => s['surface'] != null)
+      .map((s) => (s['surfaceKey'] ?? s['id']) as String)
+      .toSet();
   final orphans = viewmodels.keys.where((s) => !claimed.contains(s)).toList()..sort();
   if (orphans.isNotEmpty) {
     final one = orphans.first;
@@ -693,6 +772,18 @@ List<String> missingAppShellRoster(List registry) {
     for (final role in [...appShellRoles, if (needsAccess) 'access'])
       if (!filled.contains(role)) role,
   ];
+}
+
+/// Derive the PascalCase component name from a v2 surface name:
+/// studio_splash_view -> StudioSplash (v1 carried `comp` in the registry;
+/// v2's authoring SSOT names only the surface, so comp is derived).
+String? _compOf(String? surface) {
+  if (surface == null || surface.isEmpty) return null;
+  final base = surface.replaceAll(RegExp(r'_view$'), '');
+  return base
+      .split('_')
+      .map((s) => s.isEmpty ? s : '${s[0].toUpperCase()}${s.substring(1)}')
+      .join();
 }
 
 /// Load the valid kit dir names from config/kit-registry.json at the repo root

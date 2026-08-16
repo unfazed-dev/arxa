@@ -509,7 +509,7 @@ Future<void> _run(ProbeContext ctx) async {
   final idRaw = await page.evaluate(
       '(() => { const els = Array.from(document.querySelectorAll("[data-inspect-node]"));'
       ' return JSON.stringify(els.map((e) => ({'
-      ' screen: e.getAttribute("data-inspect-screen"),'
+      ' screen: e.getAttribute("data-inspect-view"),'
       ' surface: e.getAttribute("data-inspect-surface"),'
       ' node: e.getAttribute("data-inspect-node") }))); })()');
   final stamped = idRaw is String

@@ -58,11 +58,14 @@ Future<List<int>> captureGolden(
   String? goldenPath,
   int settleMs = 1500,
   bool fullPage = false,
+  Map<String, String> cookies = const {},
 }) async {
   final client = await CdpClient.launch();
   try {
     final tab = await client.newTab();
     await tab.enable();
+    await tab.seedCookies(
+        Uri.parse(url).replace(path: '/', query: '', fragment: ''), cookies);
     await tab.setViewport(width, height);
     await tab.navigateAndSettle(url, settleMs: settleMs);
     final png = await tab.screenshot(fullPage: fullPage);

@@ -61,7 +61,20 @@ subdirs. So Q-v2-3's `studio_startup_view` is the *surface* view inside
 Factors: the exemplar ships `.desktop` + `.tablet` + `.mobile` for every view;
 Q-v2-3 confirms studio is recipe-conforming with no desktop-only exception.
 
-## VERDICT: BLOCKED — emit not started, zero surfaces written
+## VERDICT: UNBLOCKED — emitted 2026-08-16, all shells landed enabled
+
+The blockers below are RESOLVED. F0 closed when the composer-authored
+`intake/registry.json` was pinned (status line carries the closure); the
+emit landed auth/intake/design (plus the roster-law splash surface) with
+five-file splits, services, seeds and trilingual l10n, and the owner ruling
+of 2026-08-16 amended Q-v2-5 so every shell landed **enabled** in one pass.
+Structure emits through the v2-native chain (`appbox emit structure` reads
+the Map projection via the authoring SSOT), selftest passes 25/26 (the one
+FAIL is git-tracking, which clears at commit), and 12 lens rungs across
+auth/intake/design/hub are green. Findings that still read OPEN below are
+resolved: F2 ratified (scaffolder-owned join points; design medium emits
+only `app.routes.js`), F4 resolved via `kind`/`composedFrom`/`presentation`
+declarations in the pinned registry. The original text follows.
 
 **F0 below is a missing required input, not recoverable inside the design
 stage.** Per the brief's smoke-test discipline ("report it and stop") and the
@@ -243,6 +256,12 @@ F0 clears.
     their author wrote them.
 
 ## Recommended next action (operator)
+
+**(executed 2026-08-16 — kept for the record)** The composer SSOT was pinned
+(1), the Q-v2-5 inspect rename landed with the emit in this same change set
+(2 — `probe_inspect.dart` reads `data-inspect-view`, `app-architecture.md`
+documents the new triple), and the emit ran to green (3): structure emitted,
+selftest 25/26, 12 lens rungs clean. The original recommendations follow.
 
 1. Have a **composer** author + pin `intake/registry.json` (+ `flows.json`) for
    the six-entry roster (hub, startup, unknown, auth, intake, design shells),

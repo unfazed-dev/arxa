@@ -9,12 +9,12 @@
   "factorSelection": "CSS media queries on the Material 3 window size classes; the design runtime has no <factor> resolver.",
   "hub": "studio_application_hub",
   "shells": [
-    "studio_startup_shell"
-  ],
-  "pending": [
+    "studio_startup_shell",
     "studio_unknown_shell",
     "studio_auth_shell",
+    "studio_dashboard_shell",
     "studio_intake_shell",
     "studio_design_shell"
-  ]
+  ],
+  "pending": []
 }

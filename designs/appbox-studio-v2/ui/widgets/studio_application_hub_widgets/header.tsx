@@ -45,6 +45,7 @@ export function Header(props: HeaderProps) {
           </div>
           <div class="drawer-row">
             <form method="post" action="/preferences/theme" hx-post="/preferences/theme" hx-swap="none">
+              <input type="hidden" name="theme" value={themeIsDark ? 'light' : 'dark'} />
               <button type="submit" class="ghost">
                 {themeIsDark ? (translate('hub.theme.light') as string) : (translate('hub.theme.dark') as string)}
               </button>
@@ -96,7 +97,6 @@ export function Header(props: HeaderProps) {
         <div class="overflow-menu" role="menu">
           <a class="overflow-item" href="/intake">{translate('action.newProject') as string}</a>
           <a class="overflow-item" href="/">{translate('action.pairDevice') as string}</a>
-          <a class="overflow-item" href="/workspace">{translate('tab.settings') as string}</a>
         </div>
       </details>
     </Fragment>

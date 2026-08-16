@@ -1,0 +1,93 @@
+/* auth.css — the credentials ceremony, carried from v1 assets/css/auth surface
+   per the VISUAL PARITY LAW (theme tokens via abx* custom properties; classes
+   renamed to the v2 auth-* vocabulary, look unchanged). */
+.auth-frame {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  padding: 1.5rem;
+}
+.auth-frame--mobile {
+  justify-content: flex-start;
+  padding: 1rem;
+}
+.auth-brand {
+  margin: 0;
+  font-size: 0.85rem;
+  letter-spacing: 0.02em;
+}
+.auth-tagline {
+  opacity: 0.7;
+}
+.auth-stage {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+  width: min(100%, 26rem);
+}
+.auth-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+  padding: 1.6rem;
+  border: 1px solid var(--abx-border, rgba(125, 125, 155, 0.25));
+  border-radius: 1.2rem;
+  background: var(--abx-surface, #fff);
+  box-shadow: var(--shadow-2, 0 12px 32px rgba(15, 15, 25, 0.12));
+}
+.auth-stage--mobile .auth-card {
+  border-radius: 0;
+  border-left: 0;
+  border-right: 0;
+  box-shadow: none;
+}
+.auth-lede { margin: 0; }
+.auth-note {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 0;
+  font-size: 0.85rem;
+}
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+.auth-label {
+  font-size: 0.8rem;
+  color: var(--abx-muted, #5a5a6e);
+}
+.auth-form input {
+  padding: 0.55rem 0.7rem;
+  border: 1px solid var(--abx-border, rgba(125, 125, 155, 0.35));
+  border-radius: 0.6rem;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+}
+.auth-form input:focus-visible {
+  outline: 2px solid var(--accent, #0891b2);
+  outline-offset: 1px;
+}
+.auth-submit { margin-top: 0.5rem; }
+.auth-providers {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+.auth-providers--stacked {
+  flex-direction: column;
+  align-items: stretch;
+}
+.auth-or {
+  font-size: 0.8rem;
+}
+.auth-provider {
+  text-decoration: none;
+  color: inherit;
+}

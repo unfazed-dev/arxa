@@ -25,13 +25,13 @@ const String _usage = '''
 Usage: appbox lens <verb> [args]
 
 Web verbs (CDP — each captures at a viewport; console/page errors auto-fail):
-  shot <url> <out.png> [w] [h] [settleMs] [--full]
+  shot <url> <out.png> [w] [h] [settleMs] [--full] [--cookie=n=v]...
                                       Golden capture (--full = whole page)
-  check <url> <out.png> [w] [h] [settle] [--selector=<css>] [--press=<Key>]... [--expect=<js>]
+  check <url> <out.png> [w] [h] [settle] [--selector=<css>] [--press=<Key>]... [--expect=<js>] [--cookie=n=v]...
                                       Navigate + assert selector/press/expect + screenshot
   compare <url> <golden.png> [w] [h] [--mode=byte|pixel|ssim] [--threshold=0.95]
                                       Compare live vs golden; exit 1 on fail
-  shoot <url> [--rungs=compact,medium,expanded] [--out=dir] [--artifact=dir]
+  shoot <url> [--rungs=compact,medium,expanded] [--out=dir] [--artifact=dir] [--cookie=n=v]...
                                       Viewport-ladder golden pass; exit 1 if a
                                       rung has console errors or horizontal overflow
   tokens <url> [w] [h] [--settle=Ms] [--out=path]
@@ -262,6 +262,23 @@ List<int> _hexToRgb(String hex) {
 
 // ── web verbs ──────────────────────────────────────────────────────
 
+/// Parse repeated `--cookie=name=value` flags into a cookie map for
+/// [CdpSession.seedCookies]. Guarded routes (boot ceremonies, sign-in
+/// gates) become capturable by seeding the session cookie the guard
+/// checks — no clicking through the guard in the probe.
+Map<String, String> _cookiesOf(_Args a) {
+  final cookies = <String, String>{};
+  for (final raw in a.all('cookie')) {
+    final eq = raw.indexOf('=');
+    if (eq <= 0) {
+      stderr.writeln('lens: ignoring malformed --cookie=$raw (want name=value)');
+      continue;
+    }
+    cookies[raw.substring(0, eq)] = raw.substring(eq + 1);
+  }
+  return cookies;
+}
+
 Future<int> _shot(_Args a) async {
   if (a.positional.length < 2) {
     return _usageErr('shot <url> <out.png> [w] [h] [settleMs] [--full]');
@@ -272,7 +289,10 @@ Future<int> _shot(_Args a) async {
   final h = a.intAt(3, 800);
   final settle = a.intAt(4, 1500);
   await captureGolden(url, w, h,
-      goldenPath: out, settleMs: settle, fullPage: a.has('full'));
+      goldenPath: out,
+      settleMs: settle,
+      fullPage: a.has('full'),
+      cookies: _cookiesOf(a));
   stdout.writeln(
       'lens shot: $url -> $out (${w}x$h${a.has('full') ? ', full page' : ''})');
   return 0;
@@ -292,6 +312,7 @@ Future<int> _check(_Args a) async {
     selector: a.value('selector'),
     presses: a.all('press'),
     expect: a.value('expect'),
+    cookies: _cookiesOf(a),
   );
 }
 
@@ -306,12 +327,15 @@ Future<int> _lensCheck(
   String? selector,
   List<String> presses = const [],
   String? expect,
+  Map<String, String> cookies = const {},
 }) async {
   final failures = <String>[];
   final client = await CdpClient.launch();
   try {
     final tab = await client.newTab();
     await tab.enable();
+    await tab.seedCookies(
+        Uri.parse(url).replace(path: '/', query: '', fragment: ''), cookies);
     await tab.setViewport(w, h);
     await tab.navigateAndSettle(url, settleMs: settleMs);
 
@@ -388,7 +412,7 @@ Future<int> _dom(_Args a) async {
   final url = a.positional[0];
   final out = a.value('out');
   if (a.has('html')) {
-    final html = await extractOuterHtml(url);
+    final html = await extractOuterHtml(url, cookies: _cookiesOf(a));
     if (out == null) {
       stdout.writeln(html);
     } else {
@@ -397,7 +421,7 @@ Future<int> _dom(_Args a) async {
     stdout.writeln('lens dom: PASS (outerHTML)');
     return 0;
   }
-  final result = await extractDom(url);
+  final result = await extractDom(url, cookies: _cookiesOf(a));
   return _emitJson(result, out, 'dom');
 }
 
@@ -743,11 +767,15 @@ Future<int> _shoot(_Args a) async {
 
   var problems = 0;
   final perRung = <Map<String, dynamic>>[];
+  final cookies = _cookiesOf(a);
+  final cookieOrigin =
+      Uri.parse(url).replace(path: '/', query: '', fragment: '');
   for (final rung in rungs) {
     final client = await CdpClient.launch();
     try {
       final tab = await client.newTab();
       await tab.enable();
+      await tab.seedCookies(cookieOrigin, cookies);
       await tab.setViewport(rung.width, rung.height);
       await tab.navigateAndSettle(url);
       final errors = [...tab.consoleErrors, ...tab.pageErrors];

@@ -141,6 +141,108 @@ void main() {
     expect(emitStructure(g), 1, reason: 'viewmodel with no surfaceId fails');
   });
 
+  test('v2 Map registry (stages/shells) derives screens from the authoring SSOT', () {
+    final a = '${tmp.path}/v2';
+    Directory('$a/models/screens_model').createSync(recursive: true);
+    File('$a/models/screens_model/registry.json').writeAsStringSync(jsonEncode({
+      'app': 'studio',
+      'stages': [
+        {'id': 'startup', 'shell': 'studio_startup_shell', 'href': '/startup', 'enabled': true},
+      ],
+      'shells': [
+        {'id': 'studio_startup_shell', 'kind': 'ceremony', 'views': ['studio_startup_view']},
+      ],
+    }));
+    Directory('$a/intake').createSync(recursive: true);
+    File('$a/intake/registry.json').writeAsStringSync(jsonEncode({
+      'registryVersion': '1.0.0',
+      'app': 'studio',
+      'entries': [
+        {
+          'id': 'studio_startup_shell.startup',
+          'shell': 'studio_startup_shell',
+          'shellKind': 'ceremony',
+          'role': 'startup',
+          'label': 'Startup',
+          'surface': 'studio_startup_view',
+          'route': '/startup',
+          'requiresAuth': false,
+        },
+        {
+          'id': 'studio_startup_shell.splash',
+          'shell': 'studio_startup_shell',
+          'shellKind': 'ceremony',
+          'role': 'splash',
+          'label': 'Splash',
+          'surface': 'studio_splash_view',
+          'route': '/splash',
+          'requiresAuth': false,
+        },
+        {
+          'id': 'studio_unknown_shell.unknown',
+          'shell': 'studio_unknown_shell',
+          'shellKind': 'ceremony',
+          'role': 'unknown',
+          'label': 'Unknown',
+          'surface': 'studio_unknown_view',
+          'route': '/unknown',
+          'requiresAuth': false,
+        },
+        {
+          'id': 'studio_auth_shell.auth',
+          'shell': 'studio_auth_shell',
+          'shellKind': 'ceremony',
+          'role': 'access',
+          'label': 'Auth',
+          'surface': 'studio_auth_view',
+          'route': '/auth',
+          'requiresAuth': false,
+        },
+        {
+          'id': 'studio_intake_shell.intake',
+          'shell': 'studio_intake_shell',
+          'shellKind': 'working',
+          'label': 'Intake',
+          'surface': 'studio_intake_view',
+          'route': '/intake',
+          'requiresAuth': true,
+        },
+      ],
+    }));
+    File('$a/app.routes.js').writeAsStringSync(
+        "export const shellRoots = { studio_startup_shell: '/startup', studio_intake_shell: '/intake' };\n"
+        "export default [['GET','/startup',startup.view],['GET','/intake',intake.view]];\n");
+    for (final vm in [
+      'ui/views/studio_startup_shell/studio_startup/studio_startup_viewmodel.js|studio_startup',
+      'ui/views/studio_startup_shell/splash/studio_splash_viewmodel.js|studio_splash',
+      'ui/views/studio_unknown_shell/studio_unknown/studio_unknown_viewmodel.js|studio_unknown',
+      'ui/views/studio_auth_shell/studio_auth/studio_auth_viewmodel.js|studio_auth',
+    ]) {
+      final parts = vm.split('|');
+      File('$a/${parts[0]}')
+        ..createSync(recursive: true)
+        ..writeAsStringSync("export const surfaceId = '${parts[1]}';\n");
+    }
+    File('$a/ui/views/studio_intake_shell/studio_intake/studio_intake_viewmodel.js')
+      ..createSync(recursive: true)
+      ..writeAsStringSync(
+          "export const surfaceId = 'studio_intake';\nimport {ctx} from '../../../../../services/studio_intake_services/facades/studio_intake_facade_service.js';\n");
+
+    final rc = emitStructure(a);
+    expect(rc, 0, reason: 'v2 Map projection emits via the authoring SSOT');
+
+    final d = jsonDecode(File('$a/structure.json').readAsStringSync()) as Map<String, dynamic>;
+    final screens = d['screens'] as List;
+    expect(screens.length, 5, reason: 'one screen per authoring entry');
+    final startup = screens.firstWhere((s) => (s as Map)['id'] == 'studio_startup_shell.startup') as Map<String, dynamic>;
+    expect(startup['surface'], 'studio_startup_view');
+    expect(startup['viewmodel'], isNotNull, reason: 'joined on surfaceId');
+    expect(startup['comp'], 'StudioStartup', reason: 'comp derived PascalCase from the surface');
+    expect(d['shellRoots']['studio_startup_shell'], '/startup');
+    // flows for a v2 design live at intake/flows.json, not models/screens_model/
+    expect(d['flows'], isNull, reason: 'no flows authored -> key omitted');
+  });
+
   test('failed run writes NO structure.json', () {
     final c = '${tmp.path}/c';
     plant(c, reg, routes, {

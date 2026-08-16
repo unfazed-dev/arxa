@@ -44,7 +44,13 @@ import 'package:appboxd/project.dart';
 
 GateResult intakeGate(GateContext ctx, {String? project}) {
   final repoRoot = ctx.repoRoot;
-  final designRoot = ctx.designRoot;
+  var designRoot = ctx.designRoot;
+  // v2 is the canonical studio design, but a tree that only plants v1
+  // (fixtures, the retained reference) gates against what exists.
+  if (!Directory(designRoot).existsSync() &&
+      Directory('$repoRoot/designs/appbox-studio').existsSync()) {
+    designRoot = '$repoRoot/designs/appbox-studio';
+  }
 
   // ---- resolve inputs (answers → registry → brief) ---------------------------
   // sourceHome is only for messages — it names *which* tree we traced, so a
@@ -296,9 +302,17 @@ String? _resolveAnswers(String repoRoot) {
 }
 
 /// structure.json's "registry" field (default models/screens_model/registry.json),
-/// relative to the design root — the engine's seed path.
+/// relative to the design root — the engine's seed path. A v2 design root
+/// (no models/screens_model dir, structure.json's registry pointing at the
+/// authoring SSOT) resolves to the SSOT via the emitted structure; the
+/// default stays the v1 projection so legacy trees keep working.
 String _resolveRegistry(String designRoot) {
   var rel = 'models/screens_model/registry.json';
+  if (!Directory('$designRoot/models/screens_model').existsSync() &&
+      File('$designRoot/intake/registry.json').existsSync()) {
+    // v2 authoring SSOT with no derived projection planted yet.
+    return '$designRoot/intake/registry.json';
+  }
   final struct = File('$designRoot/structure.json');
   if (struct.existsSync()) {
     try {

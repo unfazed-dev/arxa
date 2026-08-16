@@ -98,7 +98,7 @@ The studio designs a **user project**, not itself. User projects live in `~/.app
 - `build/` — evidence
 - `settings/` — `project.json` (`{name, targets, locales}` — no clock fields)
 
-The studio's own design (chrome, shells, its own registry) stays in the repo under `designs/appbox-studio`; `~/.appbox` holds user projects only.
+The studio's own design (hub, stage shells, its own registry) stays in the repo under `designs/appbox-studio-v2` — the hub-hosted stage-shell design that replaced v1 on 2026-08-16 (v1 remains in-tree as the retained visual-parity reference); `~/.appbox` holds user projects only.
 
 The design server **live-reads** the current project as an overlay on its own artifact scan (`_scanArtifact` in `appboxd/lib/design_server/worker.dart`):
 

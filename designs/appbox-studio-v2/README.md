@@ -59,3 +59,9 @@ Ceremony shells (startup, unknown, auth) first, then intake, then the design
 shell. There is no flip or toggle: probe green is a *precondition*, and a shell
 goes live only on explicit per-shell user validation. v1 is deleted only once
 every shell is validated.
+
+**AMENDED 2026-08-16 (owner ruling):** every shell landed **enabled** in one
+pass — the staged one-at-a-time cutover was waived by the owner, with the
+probe-green precondition satisfied in the same change set (12 lens rungs
+clean, selftest green modulo git-tracking). v1 is retained in-tree as the
+visual-parity reference rather than deleted; archiving is a later pass.

@@ -1390,12 +1390,24 @@ String defaultRegistryOut() {
   final env = Platform.environment['INTAKE_REGISTRY_OUT'];
   if (env != null) return env;
   final root = repoRoot();
-  final designRoot = '$root/designs/appbox-studio';
+  // Same canonical default as GateContext.studioDesignDir (gates.dart) —
+  // deliberately NOT imported from there (see the doc above); keep in step.
+  // v2 design (canonical): intake/registry.json is the single AUTHORING
+  // surface (composers write it; models/screens_model/registry.json is a
+  // derived projection) — the intake emitter is a composer, so its output
+  // lands at the authoring surface, never the projection (the v1 clobber
+  // path). v1 trees keep the legacy models/screens_model behavior.
+  var designRoot = '$root/designs/appbox-studio-v2';
+  var rel = 'intake/registry.json';
+  if (!Directory(designRoot).existsSync()) {
+    // v1 tree (retained reference): registry under models/screens_model.
+    designRoot = '$root/designs/appbox-studio';
+    rel = 'models/screens_model/registry.json';
+  }
   if (!Directory(designRoot).existsSync()) {
     // No design root yet (pre-scaffold) — the legacy fallback.
     return '$root/docs/design/registry.json';
   }
-  var rel = 'models/screens_model/registry.json';
   final struct = File('$designRoot/structure.json');
   if (struct.existsSync()) {
     try {

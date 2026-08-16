@@ -166,7 +166,7 @@ export const GatesSection: FC<GatesSectionProps> = ({ translate, gates, rung }) 
               <Heading name="app-dashboard:gate-name" level={3}>{gate.gate}</Heading>
               <Txt name="app-dashboard:gate-project" class="gate-project">{gate.project}</Txt>
               <Txt name="app-dashboard:gate-summary" class="gate-summary muted">{gate.summary}</Txt>
-              <form class="gate-actions" method="post" action="/dashboard/gates/decide">
+              <form class="gate-actions" method="post" action="/gates/decide">
                 <input type="hidden" name="gate" value={gate.id} {...inspectAttrs('app-dashboard:gate-input', { role: 'input' })} />
                 <button type="submit" name="decision" value="approve" {...inspectAttrs('app-dashboard:gate-approve', { role: 'action' })}>
                   <Icon name="check" size={16} />{translate('action.approve') as string}
@@ -216,7 +216,7 @@ export const ProjectsSection: FC<ProjectsSectionProps> = ({ translate, projects,
               <div class="proj-card-foot">
                 <Label name="app-dashboard:proj-saved" class="proj-saved muted">{project.detail}</Label>
                 {!project.current && (
-                  <form method="post" action="/dashboard/projects/use">
+                  <form method="post" action="/projects/use">
                     <input type="hidden" name="project" value={project.id} {...inspectAttrs('app-dashboard:proj-use-input', { role: 'input' })} />
                     <button type="submit" class="ghost" {...inspectAttrs('app-dashboard:proj-use', { role: 'action' })}>{translate('dash.useProject') as string}</button>
                   </form>
@@ -287,7 +287,7 @@ export const WizardSection: FC<WizardSectionProps> = ({ translate, wizard, rung 
       <Heading name="app-dashboard:wizard-h" level={2} id={headingId}>{translate('action.newProject') as string}</Heading>
       <div class="wizard">
         <Txt name="app-dashboard:wizard-agent" class="wizard-agent">{wizard.prompt}</Txt>
-        <form class="wizard-form" method="post" action="/dashboard/projects">
+        <form class="wizard-form" method="post" action="/projects/create">
           <label class="auth-label" for={nameInputId} {...inspectAttrs('app-dashboard:wizard-name-label', { role: 'label' })}>{translate('wizard.nameLabel') as string}</label>
           <input
             id={nameInputId}

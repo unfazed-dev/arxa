@@ -1,0 +1,29 @@
+{
+  "states": {
+    "default": {
+      "headline": "Sign in to the studio",
+      "lede": "The session is booted; credentials are what hosted stages ask for next.",
+      "providers": [
+        { "id": "github", "label": "GitHub" },
+        { "id": "google", "label": "Google" }
+      ]
+    },
+    "signup": {
+      "headline": "Create your studio account",
+      "lede": "One account fronts every project the pipeline will run for you.",
+      "providers": [
+        { "id": "github", "label": "GitHub" },
+        { "id": "google", "label": "Google" }
+      ]
+    },
+    "expired": {
+      "headline": "Your session expired",
+      "lede": "Sign in again — nothing you had open was lost.",
+      "note": "Credentials older than 30 days ask for a fresh sign-in.",
+      "providers": [
+        { "id": "github", "label": "GitHub" },
+        { "id": "google", "label": "Google" }
+      ]
+    }
+  }
+}

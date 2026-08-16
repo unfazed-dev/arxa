@@ -17,9 +17,10 @@
 ///
 /// History: git log --follow -- ui/common/boot_guard_viewmodel.js
 
-/** Hub-hosted routes the boot guard covers and ?to= may name. Grows as
- *  stage shells land (Q-v2-5); /intake and /design join when they exist. */
-export const hostedRoots = ['/', '/dashboard'];
+/** Hub-hosted routes the boot guard covers and ?to= may name. Every landed
+ *  working shell's root, per the owner ruling of 2026-08-16 (Q-v2-5
+ *  amended: all shells landed enabled in one pass). */
+export const hostedRoots = ['/', '/dashboard', '/intake', '/design'];
 
 const BOOT_COOKIE = 'studio_booted=1';
 

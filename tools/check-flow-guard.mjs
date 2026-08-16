@@ -12,6 +12,12 @@
 // appboxd's own passthrough test.
 //
 //   node tools/check-flow-guard.mjs
+//
+// The imports below are v1 BY DESIGN: this is the Dart↔JS parity suite for
+// the flow-edit services that exist only in the v1 design (v2's studio
+// services are render-context doors, not flow editors). v1 stays in-tree as
+// the retained reference (VISUAL PARITY LAW) — flip these only if the flow
+// services are ported into a v2 design.
 import assert from 'node:assert/strict';
 import { canRemoveFrom } from '../designs/appbox-studio/services/facades/design_facade.js';
 import { patchAnswersFlows } from '../designs/appbox-studio/services/repositories/project_repository.js';

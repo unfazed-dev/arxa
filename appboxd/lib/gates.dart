@@ -29,6 +29,13 @@ class GateContext {
   final bool check;
   final bool selfTest;
 
+  /// The studio's own design, relative to the app/repo root. ONE canonical
+  /// default so emit verbs, gates and the intake output default cannot drift:
+  /// v2 (hub-hosted stage shells, stacked MVVM) replaced v1 as the studio
+  /// design on 2026-08-16; v1 stays in-tree as the retained visual-parity
+  /// reference (VISUAL PARITY LAW, designs/appbox-studio-v2/intake/registry.json).
+  static const studioDesignDir = 'designs/appbox-studio-v2';
+
   /// The `~/.appbox/projects/<name>` shell a gate should read instead of the
   /// studio's own design root. It lives on the context rather than as a named
   /// parameter on each gate so that `gate --all` can carry it: the suite runner
@@ -58,8 +65,8 @@ class GateContext {
 
   /// The design root, derived from appRoot or repoRoot.
   String get designRoot => appRoot != null
-      ? '$appRoot/designs/appbox-studio'
-      : '$repoRoot/designs/appbox-studio';
+      ? '$appRoot/$studioDesignDir'
+      : '$repoRoot/$studioDesignDir';
 
   /// Path to config/appbox.config.json.
   String get configFile => '$repoRoot/config/appbox.config.json';

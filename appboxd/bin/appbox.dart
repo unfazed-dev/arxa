@@ -630,7 +630,9 @@ void _runEmit(List<String> args) {
 
   final repoRoot = _findRepoRoot() ?? Directory.current.path;
   appRoot ??= repoRoot;
-  designDir ??= 'designs/appbox-studio';
+  // The canonical studio design default — keep in step with
+  // GateContext.studioDesignDir (gates.dart). v2 replaced v1 2026-08-16.
+  designDir ??= GateContext.studioDesignDir;
 
   switch (emitter) {
     case 'story-map':

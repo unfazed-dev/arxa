@@ -10,6 +10,7 @@ import '../cdp.dart';
 Future<Map<String, dynamic>> extractDom(
   String url, {
   int settleMs = 1500,
+  Map<String, String> cookies = const {},
   List<String> computedStyles = const [
     'display',
     'position',
@@ -22,6 +23,8 @@ Future<Map<String, dynamic>> extractDom(
   try {
     final tab = await client.newTab();
     await tab.enable();
+    await tab.seedCookies(
+        Uri.parse(url).replace(path: '/', query: '', fragment: ''), cookies);
     await tab.navigateAndSettle(url, settleMs: settleMs);
     final snapshot = await tab.captureDomSnapshot(computedStyles);
     final errors = [...tab.consoleErrors, ...tab.pageErrors];
@@ -37,11 +40,14 @@ Future<Map<String, dynamic>> extractDom(
 }
 
 /// Outer-HTML shortcut (probe-runner's outerHTML path): one evaluate call.
-Future<String> extractOuterHtml(String url, {int settleMs = 1500}) async {
+Future<String> extractOuterHtml(String url,
+    {int settleMs = 1500, Map<String, String> cookies = const {}}) async {
   final client = await CdpClient.launch();
   try {
     final tab = await client.newTab();
     await tab.enable();
+    await tab.seedCookies(
+        Uri.parse(url).replace(path: '/', query: '', fragment: ''), cookies);
     await tab.navigateAndSettle(url, settleMs: settleMs);
     return await tab.evaluate('document.documentElement.outerHTML') as String;
   } finally {

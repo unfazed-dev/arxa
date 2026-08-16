@@ -15,5 +15,9 @@
 
 export const shellId = 'studio_application_hub';
 
+/** The hub is BOTH the root frame and a routed surface (/) — the registry
+ *  joins it as a surface, so it exports surfaceId alongside shellId. */
+export const surfaceId = 'studio_application_hub';
+
 /** @param {(key: string) => string} translate */
 export const hubBrand = (translate) => ({ brand: translate('appTitle') });

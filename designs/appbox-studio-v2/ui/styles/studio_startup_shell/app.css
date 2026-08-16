@@ -45,3 +45,21 @@
   gap: var(--gap-m);
 }
 .ceremony__spacer { flex: 1; }
+
+/* splash-surface — the roster law's splash role (Q-v2-1: a surface, not a
+   shell): the brand wordmark on a quiet ground and nothing else. */
+.splash-surface {
+  min-height: 60dvh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.splash-surface--mobile { min-height: 100dvh; }
+.splash-wordmark {
+  font-family: var(--font-display, 'Lexend Giga', sans-serif);
+  font-size: clamp(1.6rem, 4vw, 2.6rem);
+  font-weight: 400;
+  letter-spacing: 0.04em;
+}
+.splash-wordmark--md { font-size: clamp(1.4rem, 3vw, 2rem); }
+.splash-wordmark--sm { font-size: 1.3rem; }

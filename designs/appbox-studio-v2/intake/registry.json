@@ -1,6 +1,6 @@
 {
  "registryVersion": "1.0.0",
- "status": "DRAFT — retro-fitted 2026-08-08 from the user-validated v2 tree; becomes the pinned authoring surface only on user sign-off (F0 closure)",
+ "status": "PINNED 2026-08-16 — the authoring surface, signed off with the all-shells ruling (Q-v2-5 amended: every shell landed enabled in one pass; F0 closed)",
  "app": "studio",
  "vocabulary": "shell > view > widgets; the hub is the routed root frame (/) hosting the stage shells (header, tabbar, rail chrome + body outlet); ceremony shells route bare",
  "_comment": [
@@ -162,6 +162,7 @@
    "id": "studio_startup_shell.startup",
    "shell": "studio_startup_shell",
    "shellKind": "ceremony",
+   "role": "startup",
    "label": "Startup",
    "labelKey": "stageStartup",
    "surface": "studio_startup_view",
@@ -186,9 +187,26 @@
    }
   },
   {
+   "id": "studio_startup_shell.splash",
+   "shell": "studio_startup_shell",
+   "shellKind": "ceremony",
+   "role": "splash",
+   "label": "Splash",
+   "labelKey": "splashTitle",
+   "surface": "studio_splash_view",
+   "route": "/splash",
+   "requiresAuth": false,
+   "widgets": [],
+   "design": {
+    "visualSource": "designs/appbox-studio/ui/views/app_shell/splash (v1 splash surface)",
+    "instruction": "splashscreen is a SURFACE, not a shell (Q-v2-1): brand wordmark only, mobile-first, no chrome; satisfies the roster law's splash role"
+   }
+  },
+  {
    "id": "studio_unknown_shell.unknown",
    "shell": "studio_unknown_shell",
    "shellKind": "ceremony",
+   "role": "unknown",
    "label": "Unknown",
    "labelKey": "stageUnknown",
    "surface": "studio_unknown_view",
@@ -209,6 +227,7 @@
    "id": "studio_auth_shell.auth",
    "shell": "studio_auth_shell",
    "shellKind": "ceremony",
+   "role": "access",
    "label": "Auth",
    "labelKey": "stageAuth",
    "surface": "studio_auth_view",

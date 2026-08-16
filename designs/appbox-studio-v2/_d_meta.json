@@ -1,0 +1,71 @@
+{
+  "type": "design",
+  "designSystems": [],
+  "primaryDesignSystem": null,
+  "ladder": {
+    "rungs": ["compact", "medium", "expanded"],
+    "note": "All three rungs active per Q-v2-3 (no desktop-only exception despite targets [macos]); the ladder override channel this file provides is now exercised — C5 closed."
+  },
+  "assets": {
+    "studio_application_hub.hub": {
+      "versions": [
+        { "path": "ui/views/studio_application_hub/studio_application_hub_view.tsx", "createdAt": "2026-08-16T00:00:00.000Z", "status": "needs-review" }
+      ]
+    },
+    "studio_dashboard_shell.studio_dashboard": {
+      "versions": [
+        { "path": "ui/views/studio_dashboard_shell/studio_dashboard/studio_dashboard_view.tsx", "createdAt": "2026-08-16T00:00:00.000Z", "status": "needs-review" }
+      ]
+    },
+    "studio_startup_shell.startup": {
+      "versions": [
+        { "path": "ui/views/studio_startup_shell/studio_startup/studio_startup_view.tsx", "createdAt": "2026-08-16T00:00:00.000Z", "status": "needs-review" }
+      ]
+    },
+    "studio_startup_shell.splash": {
+      "versions": [
+        { "path": "ui/views/studio_startup_shell/splash/studio_splash_view.tsx", "createdAt": "2026-08-16T00:00:00.000Z", "status": "needs-review" }
+      ]
+    },
+    "studio_unknown_shell.unknown": {
+      "versions": [
+        { "path": "ui/views/studio_unknown_shell/studio_unknown/studio_unknown_view.tsx", "createdAt": "2026-08-16T00:00:00.000Z", "status": "needs-review" }
+      ]
+    },
+    "studio_auth_shell.auth": {
+      "versions": [
+        { "path": "ui/views/studio_auth_shell/studio_auth/studio_auth_view.tsx", "createdAt": "2026-08-16T00:00:00.000Z", "status": "needs-review" }
+      ]
+    },
+    "studio_intake_shell.intake": {
+      "versions": [
+        { "path": "ui/views/studio_intake_shell/studio_intake/studio_intake_view.tsx", "createdAt": "2026-08-16T00:00:00.000Z", "status": "needs-review" }
+      ]
+    },
+    "studio_design_shell.design": {
+      "versions": [
+        { "path": "ui/views/studio_design_shell/studio_design/studio_design_view.tsx", "createdAt": "2026-08-16T00:00:00.000Z", "status": "needs-review" }
+      ]
+    },
+    "evidence.lens-auth": {
+      "versions": [
+        { "path": "evidence/lens-auth/shoot.json", "createdAt": "2026-08-16T00:00:00.000Z", "status": "needs-review" }
+      ]
+    },
+    "evidence.lens-intake": {
+      "versions": [
+        { "path": "evidence/lens-intake/shoot.json", "createdAt": "2026-08-16T00:00:00.000Z", "status": "needs-review" }
+      ]
+    },
+    "evidence.lens-design": {
+      "versions": [
+        { "path": "evidence/lens-design/shoot.json", "createdAt": "2026-08-16T00:00:00.000Z", "status": "needs-review" }
+      ]
+    },
+    "evidence.lens-hub": {
+      "versions": [
+        { "path": "evidence/lens-hub/shoot.json", "createdAt": "2026-08-16T00:00:00.000Z", "status": "needs-review" }
+      ]
+    }
+  }
+}

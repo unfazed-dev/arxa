@@ -51,7 +51,8 @@ Future<GateResult> lensGate(GateContext ctx, {bool recaptureGoldens = false}) as
 
   // ---- resolve the lens block ----
   final goldensDir = _resolveUnder(
-      ctx.repoRoot, (lens['goldens'] ?? 'designs/appbox-studio/goldens') as String);
+      ctx.repoRoot,
+      (lens['goldens'] ?? '${GateContext.studioDesignDir}/goldens') as String);
   final surfaces = (lens['surfaces'] ?? const <String, dynamic>{}) as Map;
   if (surfaces.isEmpty) {
     return GateResult.fail('lens: no surfaces configured under lens.surfaces');

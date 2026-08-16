@@ -39,7 +39,6 @@ export function Tabbar(props: TabbarProps) {
         <div class="fab-actions" role="menu">
           <a class="fab-action" href="/intake">{translate('action.newProject') as string}</a>
           <a class="fab-action" href="/">{translate('action.pairDevice') as string}</a>
-          <a class="fab-action" href="/workspace">{translate('tab.settings') as string}</a>
         </div>
       </details>
     </Fragment>

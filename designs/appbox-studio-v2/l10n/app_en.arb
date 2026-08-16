@@ -4,11 +4,15 @@
   "@appTitle": {
     "description": "Product name in the shell brand mark and the document title."
   },
+  "index.pageTitle": "Appbox Studio",
+  "@index.pageTitle": {
+    "description": "Browser tab title for the studio index."
+  },
   "startupTagline": "Design once. Ship every width.",
   "@startupTagline": {
     "description": "One-line tagline under the brand on the startup ceremony."
   },
-  "buildIdentity": "studio v2 \u00b7 design medium",
+  "buildIdentity": "studio v2 · design medium",
   "@buildIdentity": {
     "description": "Build identity shown at the edge of the startup ceremony."
   },
@@ -44,6 +48,14 @@
   "@stageDesign": {
     "description": "Hub stage card label for the design shell."
   },
+  "stageDashboard": "Dashboard",
+  "@stageDashboard": {
+    "description": "Hub stage card label for the dashboard shell."
+  },
+  "stageUnknown": "Unknown",
+  "@stageUnknown": {
+    "description": "Registry label for the unknown (404) ceremony shell."
+  },
   "hubTitle": "Studio stages",
   "@hubTitle": {
     "description": "Hub page heading naming the pipeline board."
@@ -72,10 +84,6 @@
   "@startupProceed": {
     "description": "Label on the manual trigger that ends the startup ceremony."
   },
-  "stageUnknown": "Unknown",
-  "@stageUnknown": {
-    "description": "Registry label for the unknown (404) ceremony shell."
-  },
   "unknownPageTitle": "Appbox Studio — Not found",
   "@unknownPageTitle": {
     "description": "Document title on the unknown (404) ceremony."
@@ -95,5 +103,285 @@
   "unknownHome": "Back to the dashboard",
   "@unknownHome": {
     "description": "Label on the unknown notice's return-home link."
+  },
+  "authTitle": "Sign in",
+  "@authTitle": {
+    "description": "Document title and fallback heading on the auth ceremony."
+  },
+  "authEmail": "Email",
+  "@authEmail": {
+    "description": "Label on the credentials form's email field."
+  },
+  "authPassword": "Password",
+  "@authPassword": {
+    "description": "Label on the credentials form's password field."
+  },
+  "authSignin": "Sign in",
+  "@authSignin": {
+    "description": "Label on the credentials form's submit trigger."
+  },
+  "authOr": "or continue with",
+  "@authOr": {
+    "description": "Divider label between the credentials form and the provider row."
+  },
+  "intakeTitle": "The interview",
+  "@intakeTitle": {
+    "description": "Intake surface heading."
+  },
+  "intakeSubtitle": "Answers land in intake/registry.json — the single authoring surface.",
+  "@intakeSubtitle": {
+    "description": "Intake surface lede naming the artifact the interview produces."
+  },
+  "intakeAnswer": "Answer",
+  "@intakeAnswer": {
+    "description": "Label on the interview composer's submit trigger."
+  },
+  "intakeAnswerPlaceholder": "Type the client's answer…",
+  "@intakeAnswerPlaceholder": {
+    "description": "Placeholder in the interview composer's answer input."
+  },
+  "intakeSkip": "Skip",
+  "@intakeSkip": {
+    "description": "Label on the interview composer's skip trigger."
+  },
+  "intakeAssets": "Brand assets",
+  "@intakeAssets": {
+    "description": "Heading on the asset upload dropzone section."
+  },
+  "intakeAssetsHint": "Logos, palettes, briefs — anything the design should carry.",
+  "@intakeAssetsHint": {
+    "description": "Hint line inside the asset dropzone."
+  },
+  "intakeAssetsButton": "Add assets",
+  "@intakeAssetsButton": {
+    "description": "Label on the asset dropzone's submit trigger."
+  },
+  "designTitle": "The canvas",
+  "@designTitle": {
+    "description": "Screen-reader heading on the design surface."
+  },
+  "designCanvas": "Designed app",
+  "@designCanvas": {
+    "description": "Screen-reader heading on the design canvas."
+  },
+  "designInspector": "Inspector",
+  "@designInspector": {
+    "description": "Heading on the inspector panel."
+  },
+  "designComposer": "Composer",
+  "@designComposer": {
+    "description": "Screen-reader heading on the composer sheet."
+  },
+  "designComposerPlaceholder": "Instruct the design stage…",
+  "@designComposerPlaceholder": {
+    "description": "Placeholder in the composer's instruction input."
+  },
+  "designComposerSend": "Send",
+  "@designComposerSend": {
+    "description": "Label on the composer's send trigger."
+  },
+  "designZoom": "Zoom",
+  "@designZoom": {
+    "description": "Label on the canvas zoom slider."
+  },
+  "designGrid": "Grid",
+  "@designGrid": {
+    "description": "Label on the canvas grid-snap slider."
+  },
+  "designNeedsYou": "Needs you",
+  "@designNeedsYou": {
+    "description": "Label on the needs-you chips strip."
+  },
+  "designActivity": "Activity",
+  "@designActivity": {
+    "description": "Heading on the activity rail."
+  },
+  "tab.dashboard": "Dashboard",
+  "@tab.dashboard": {
+    "description": "Hub tab/rail label for the dashboard shell."
+  },
+  "tab.intake": "Intake",
+  "@tab.intake": {
+    "description": "Hub tab/rail label for the intake shell."
+  },
+  "tab.design": "Design",
+  "@tab.design": {
+    "description": "Hub tab/rail label for the design shell."
+  },
+  "dash.pageTitle": "Appbox Studio — Dashboard",
+  "@dash.pageTitle": {
+    "description": "UI string used by a v2 studio surface."
+  },
+  "dash.eyebrow": "studio",
+  "@dash.eyebrow": {
+    "description": "UI string used by a v2 studio surface."
+  },
+  "dash.greeting": "Good to see you, {name}",
+  "@dash.greeting": {
+    "description": "UI string used by a v2 studio surface."
+  },
+  "dash.thisWeek": "this week",
+  "@dash.thisWeek": {
+    "description": "UI string used by a v2 studio surface."
+  },
+  "dash.needsYouH": "Needs you",
+  "@dash.needsYouH": {
+    "description": "UI string used by a v2 studio surface."
+  },
+  "dash.gatesNeedYou": "{count} gates need a decision",
+  "@dash.gatesNeedYou": {
+    "description": "UI string used by a v2 studio surface."
+  },
+  "dash.gatesEmpty": "No gates waiting — the pipeline is quiet.",
+  "@dash.gatesEmpty": {
+    "description": "UI string used by a v2 studio surface."
+  },
+  "dash.projectsH": "Projects",
+  "@dash.projectsH": {
+    "description": "UI string used by a v2 studio surface."
+  },
+  "dash.projectsEmpty": "No projects yet — create the first one.",
+  "@dash.projectsEmpty": {
+    "description": "UI string used by a v2 studio surface."
+  },
+  "dash.projectsTailnet": "live from ~/.appbox/projects",
+  "@dash.projectsTailnet": {
+    "description": "UI string used by a v2 studio surface."
+  },
+  "dash.current": "current",
+  "@dash.current": {
+    "description": "UI string used by a v2 studio surface."
+  },
+  "dash.useProject": "use project",
+  "@dash.useProject": {
+    "description": "UI string used by a v2 studio surface."
+  },
+  "dash.open": "open",
+  "@dash.open": {
+    "description": "UI string used by a v2 studio surface."
+  },
+  "action.approve": "Approve",
+  "@action.approve": {
+    "description": "UI string used by a v2 studio surface."
+  },
+  "action.reject": "Reject",
+  "@action.reject": {
+    "description": "UI string used by a v2 studio surface."
+  },
+  "action.newProject": "New project",
+  "@action.newProject": {
+    "description": "UI string used by a v2 studio surface."
+  },
+  "action.pairDevice": "Pair a device",
+  "@action.pairDevice": {
+    "description": "UI string used by a v2 studio surface."
+  },
+  "wizard.nameLabel": "Project name",
+  "@wizard.nameLabel": {
+    "description": "UI string used by a v2 studio surface."
+  },
+  "wizard.namePlaceholder": "e.g. Foxglove",
+  "@wizard.namePlaceholder": {
+    "description": "UI string used by a v2 studio surface."
+  },
+  "wizard.targets": "Targets",
+  "@wizard.targets": {
+    "description": "UI string used by a v2 studio surface."
+  },
+  "wizard.create": "Create project",
+  "@wizard.create": {
+    "description": "UI string used by a v2 studio surface."
+  },
+  "pair.title": "Pair a device",
+  "@pair.title": {
+    "description": "UI string used by a v2 studio surface."
+  },
+  "pair.lede": "Scan from the companion app to pair this studio.",
+  "@pair.lede": {
+    "description": "UI string used by a v2 studio surface."
+  },
+  "pair.closeLabel": "Close",
+  "@pair.closeLabel": {
+    "description": "UI string used by a v2 studio surface."
+  },
+  "pair.qrAria": "Pairing QR code",
+  "@pair.qrAria": {
+    "description": "UI string used by a v2 studio surface."
+  },
+  "modal.close": "Close",
+  "@modal.close": {
+    "description": "UI string used by a v2 studio surface."
+  },
+  "nav.open": "Open navigation",
+  "@nav.open": {
+    "description": "UI string used by a v2 studio surface."
+  },
+  "nav.more": "More actions",
+  "@nav.more": {
+    "description": "UI string used by a v2 studio surface."
+  },
+  "nav.primary": "Primary",
+  "@nav.primary": {
+    "description": "UI string used by a v2 studio surface."
+  },
+  "nav.quickActions": "Quick actions",
+  "@nav.quickActions": {
+    "description": "UI string used by a v2 studio surface."
+  },
+  "nav.openRailbar": "Open the navigation rail",
+  "@nav.openRailbar": {
+    "description": "UI string used by a v2 studio surface."
+  },
+  "hub.daemonChannel": "daemon channel",
+  "@hub.daemonChannel": {
+    "description": "UI string used by a v2 studio surface."
+  },
+  "hub.daemonLive": "daemon live",
+  "@hub.daemonLive": {
+    "description": "UI string used by a v2 studio surface."
+  },
+  "hub.theme.light": "Light theme",
+  "@hub.theme.light": {
+    "description": "UI string used by a v2 studio surface."
+  },
+  "hub.theme.dark": "Dark theme",
+  "@hub.theme.dark": {
+    "description": "UI string used by a v2 studio surface."
+  },
+  "hub.themeShort.light": "Light",
+  "@hub.themeShort.light": {
+    "description": "UI string used by a v2 studio surface."
+  },
+  "hub.themeShort.dark": "Dark",
+  "@hub.themeShort.dark": {
+    "description": "UI string used by a v2 studio surface."
+  },
+  "hub.projectBack": "Back to the dashboard",
+  "@hub.projectBack": {
+    "description": "UI string used by a v2 studio surface."
+  },
+  "mainPanel.back": "Back",
+  "@mainPanel.back": {
+    "description": "UI string used by a v2 studio surface."
+  },
+  "mainPanel.empty": "Nothing hosted here yet.",
+  "@mainPanel.empty": {
+    "description": "UI string used by a v2 studio surface."
+  },
+  "panel.resize": "Drag to resize",
+  "@panel.resize": {
+    "description": "UI string used by a v2 studio surface."
+  },
+  "panelBar.aria": "Panels",
+  "@panelBar.aria": {
+    "description": "UI string used by a v2 studio surface."
+  },
+  "splashTitle": "Splash",
+  "@splashTitle": {
+    "description": "Registry label for the splash surface (the roster law's splash role)."
+  },
+  "splashWordmark": "appbox studio",
+  "@splashWordmark": {
+    "description": "The brand wordmark the splash surface paints."
   }
 }

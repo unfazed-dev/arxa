@@ -696,6 +696,14 @@ List<String> checkWiringArtifact(String artifactDir, String property) {
         for (final m in urlRe.allMatches(t)) {
           final u = m.group(1)!.split('?')[0].split('#')[0];
           if (u.startsWith('/assets/') || u.startsWith('/_ds/')) continue;
+          // v2 layout: styles and runtime files live under /ui/ and the
+          // design server serves any artifact file — allow them only when
+          // the file actually exists in the artifact (stronger than the
+          // /assets/ blanket, which covers skill-runtime vendor files).
+          if (u.startsWith('/ui/')) {
+            final artifactFile = File(p.join(dir, u.substring(1)));
+            if (artifactFile.existsSync()) continue;
+          }
           if (!routes.any((r) => routeHits(r.$2, u))) {
             problems.add('${rel(f.path)}: "$u" matches no route in the route tables');
           }

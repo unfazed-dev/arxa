@@ -550,6 +550,23 @@ class CdpSession {
     _enabled = true;
   }
 
+  /// Seed cookies into this tab's context before navigation, so guarded
+  /// routes (a boot ceremony, a sign-in gate) are capturable without
+  /// clicking the guard — the seeded cookie IS the session the guard
+  /// checks. [origin] scopes every cookie to the served design's scheme
+  /// and host (Network.setCookie requires a url or domain).
+  Future<void> seedCookies(Uri origin, Map<String, String> cookies) async {
+    if (cookies.isEmpty) return;
+    await send('Network.enable');
+    for (final entry in cookies.entries) {
+      await send('Network.setCookie', {
+        'name': entry.key,
+        'value': entry.value,
+        'url': origin.toString(),
+      });
+    }
+  }
+
   /// Set viewport dimensions (emulates device metrics).
   Future<void> setViewport(
     int width,

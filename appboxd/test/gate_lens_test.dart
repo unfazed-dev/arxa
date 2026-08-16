@@ -156,7 +156,7 @@ void writeConfig(Directory tmp, {required bool lens, String? base}) {
   };
   if (lens && base != null) {
     cfg['lens'] = {
-      'goldens': 'designs/appbox-studio/goldens',
+      'goldens': '${GateContext.studioDesignDir}/goldens',
       'surfaces': {'home': '/'},
       'serve': {'kind': 'url', 'base': base},
       'capture': {'kind': 'same', 'settleMs': 300},

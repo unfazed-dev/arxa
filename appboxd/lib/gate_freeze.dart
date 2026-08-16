@@ -30,6 +30,7 @@ import 'package:appboxd/cdp.dart';
 import 'package:appboxd/crypto_aead.dart' as crypto;
 import 'package:appboxd/gates.dart';
 import 'package:appboxd/design_server.dart';
+import 'package:path/path.dart' as p;
 
 /// A derived viewport: a config name plus its width/height from config.
 class _Vp {
@@ -48,8 +49,17 @@ Future<GateResult> freezeGate(
   List<String>? targets,
   bool approve = false,
 }) async {
-  const designRel = 'designs/appbox-studio';
-  final designRoot = ctx.designRoot;
+  var designRel = GateContext.studioDesignDir;
+  var designRoot = ctx.designRoot;
+  // v2 is canonical, but a tree planting only v1 (fixtures, the retained
+  // reference) freezes against what exists.
+  if (!Directory(designRoot).existsSync()) {
+    final legacy = p.join(p.dirname(designRoot), 'appbox-studio');
+    if (Directory(legacy).existsSync()) {
+      designRoot = legacy;
+      designRel = 'designs/appbox-studio';
+    }
+  }
   final details = <String>[];
   var groupFails = 0;
 

@@ -23,7 +23,7 @@ import 'package:appboxd/emit_structure.dart';
 import 'package:appboxd/gates.dart';
 
 GateResult structureGate(GateContext ctx) {
-  const designRel = 'designs/appbox-studio';
+  const designRel = GateContext.studioDesignDir;
   final designRoot = ctx.designRoot;
   final structurePath = '$designRoot/structure.json';
   final details = <String>[];
@@ -175,11 +175,28 @@ bool _authoredInSync(String designRoot, Map<String, dynamic> structure) {
   final regSurface = <String, dynamic>{};
   try {
     final reg = jsonDecode(registryFile.readAsStringSync());
-    if (reg is! List) return false;
-    for (final e in reg) {
-      if (e is Map && e['id'] is String) {
-        regSurface[e['id'] as String] = e['surface'];
+    if (reg is List) {
+      for (final e in reg) {
+        if (e is Map && e['id'] is String) {
+          regSurface[e['id'] as String] = e['surface'];
+        }
       }
+    } else if (reg is Map<String, dynamic>) {
+      // v2: the projection is derived; the authored screens live in the
+      // SSOT's entries[] (the same source emit_structure reads).
+      final ssot = File('$designRoot/intake/registry.json');
+      if (!ssot.existsSync()) return false;
+      final authored = jsonDecode(ssot.readAsStringSync());
+      final entries =
+          authored is Map<String, dynamic> ? authored['entries'] : null;
+      if (entries is! List) return false;
+      for (final e in entries) {
+        if (e is Map && e['id'] is String) {
+          regSurface[e['id'] as String] = e['surface'];
+        }
+      }
+    } else {
+      return false;
     }
   } catch (_) {
     return false;

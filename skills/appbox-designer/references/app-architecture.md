@@ -177,8 +177,9 @@ export const inspectAttrs = {
 principle as Flutter's `--track-widget-creation`. The triple
 **(screenId, surfaceId, anatomy-node id)** is derived from registry ids and is
 mandatory on **every** emitted surface, shells included. In the DOM the
-triple is spelled `data-inspect-screen` / `data-inspect-surface` /
-`data-inspect-node`, and its presence is mechanically enforced:
+triple is spelled `data-inspect-view` / `data-inspect-surface` /
+`data-inspect-widget` (the Q-v2-5 rename from `-screen`/`-node`, landed 2026-08-16 with the v2 emit — the probe reads the new spelling), and its presence is
+mechanically enforced:
 `appboxd/lib/probes/studio/probe_inspect.dart` (section 18) dual-renders each
 design view `?abxShell=legacy` vs `?abxShell=anatomy` against the running
 server, strips the three attributes before the structural diff (the stamp is

@@ -91,6 +91,7 @@ const _lExclusions = 'no exclusions.json — surface:null is the exclusion';
 const _lSurfaceId = 'every viewmodel declares surfaceId';
 const _lSurfaceJoin = 'every surfaceId joins a registry entry';
 const _lCoverage = 'every buildable registry entry has a surface';
+const _lFiveFile = 'five-file set per declared view (v2)';
 const _lShellRoots = 'app.routes.js exports a non-empty shellRoots';
 const _lRepoImport = 'no viewmodel imports a repository directly';
 const _lFixtures = 'fixtures record their seed provenance';
@@ -260,6 +261,128 @@ Future<Directory> _copyDirToTemp(String src, String prefix) async {
   return tmp;
 }
 
+// ══ registry shapes (v1 List, v2 Map) ════════════════════════════════════
+
+/// The parsed studio registry, accepting BOTH generations:
+/// - v1: a List of {id,label,surface,shell,comp} entries.
+/// - v2: a Map of {app, vocabulary, stages[], shells[]} where shells[].views
+///   names each surface's view file and stages[].enabled gates routing
+///   (models/screens_model/registry.json — the derived projection of the
+///   intake/registry.json authoring SSOT).
+class _StudioRegistry {
+  _StudioRegistry.v1(List<dynamic> list)
+      : rawList = list,
+        rawMap = null,
+        isV2 = false,
+        problem = _validateV1(list);
+  _StudioRegistry.v2(Map<String, dynamic> map)
+      : rawMap = map,
+        rawList = null,
+        isV2 = true,
+        problem = _validateV2(map);
+
+  final List<dynamic>? rawList;
+  final Map<String, dynamic>? rawMap;
+  final bool isV2;
+
+  /// Null when well-formed; the human problem otherwise.
+  final String? problem;
+
+  static String? _validateV1(List<dynamic> r) {
+    if (r.isEmpty) return 'registry is empty';
+    const need = ['id', 'label', 'surface', 'shell', 'comp'];
+    for (final e in r) {
+      for (final k in need) {
+        if (e is! Map || !e.containsKey(k)) return '${(e?['id'] ?? '?')}: missing $k';
+      }
+    }
+    return null;
+  }
+
+  /// v2 shape law: app + stages + shells; the hub law (exactly one hub when
+  /// ≥2 shells); every enabled stage's shell exists; view names end _view.
+  static String? _validateV2(Map<String, dynamic> r) {
+    if (r['app'] is! String) return 'missing app';
+    final stages = r['stages'];
+    if (stages is! List || stages.isEmpty) return 'missing stages';
+    final shells = r['shells'];
+    if (shells is! List || shells.isEmpty) return 'missing shells';
+    final shellIds = <String>{};
+    for (final s in shells) {
+      if (s is! Map || s['id'] is! String) return 'shell without id';
+      shellIds.add(s['id'] as String);
+      final views = s['views'];
+      if (views is! List || views.isEmpty) return '${s['id']}: no views';
+      for (final v in views) {
+        if (v is! String || !v.endsWith('_view')) {
+          return '${s['id']}: view "$v" does not end in _view';
+        }
+      }
+    }
+    // Hub law: ≥2 shells ⇒ exactly one kind == 'hub' (designer canon).
+    if (shells.length >= 2) {
+      final hubs = shells
+          .where((s) => (s as Map)['kind'] == 'hub')
+          .map((s) => (s as Map)['id'])
+          .toList();
+      if (hubs.length != 1) {
+        return 'hub law: ${shells.length} shells declare ${hubs.length} hubs '
+            '(want exactly 1)';
+      }
+    }
+    for (final st in stages) {
+      if (st is! Map || st['id'] is! String) return 'stage without id';
+      final shell = st['shell'];
+      if (shell is! String || !shellIds.contains(shell)) {
+        return 'stage ${st['id']}: shell "$shell" not in shells';
+      }
+      if (st['enabled'] == true && st['href'] is! String) {
+        return 'stage ${st['id']}: enabled but no href';
+      }
+    }
+    return null;
+  }
+
+  /// The surface ids a viewmodel may declare: v1 entry ids, or v2 view names
+  /// with the trailing `_view` stripped.
+  Set<String> get surfaceIds {
+    if (!isV2) {
+      return (rawList!).map((e) => (e as Map)['id'] as String).toSet();
+    }
+    final ids = <String>{};
+    for (final s in rawMap!['shells'] as List) {
+      for (final v in (s as Map)['views'] as List) {
+        ids.add((v as String).replaceFirst(RegExp(r'_view$'), ''));
+      }
+    }
+    return ids;
+  }
+
+  String get summary {
+    if (!isV2) {
+      final buildable = rawList!
+          .where((e) => (e as Map)['surface'] != null)
+          .length;
+      final excluded = rawList!.length - buildable;
+      return '{total: ${rawList!.length}, buildable: $buildable, excluded: $excluded}';
+    }
+    final shells = rawMap!['shells'] as List;
+    final stages = rawMap!['stages'] as List;
+    final enabled = stages.where((s) => (s as Map)['enabled'] == true).length;
+    return '{shells: ${shells.length}, stages: ${stages.length}, enabled: $enabled}';
+  }
+}
+
+/// Parse the derived registry at [art], accepting either generation.
+_StudioRegistry _readStudioRegistry(String art) {
+  final r = jsonDecode(File(
+          p.join(art, 'models', 'screens_model', 'registry.json'))
+      .readAsStringSync());
+  if (r is List) return _StudioRegistry.v1(r);
+  if (r is Map<String, dynamic>) return _StudioRegistry.v2(r);
+  throw const FormatException('registry is neither array (v1) nor object (v2)');
+}
+
 // ══ the 25 checks ═══════════════════════════════════════════════════════
 
 /// Build the check list. [skipRender] is captured by the render check so the
@@ -268,24 +391,12 @@ List<_Check> _buildChecks({required bool skipRender}) {
   return [
     // --- 1. the registry parses and has the required keys -----------------
     _Check(_lRegistry, _Section.structure, (art, skill, src) async {
-      final f = File(p.join(art, 'models', 'screens_model', 'registry.json'));
       try {
-        final r = jsonDecode(f.readAsStringSync());
-        if (r is! List || r.isEmpty) {
-          return const CheckOutcome.fail('registry is not a non-empty array');
+        final reg = _readStudioRegistry(art);
+        if (reg.problem != null) {
+          return CheckOutcome.fail(reg.problem!);
         }
-        const need = ['id', 'label', 'surface', 'shell', 'comp'];
-        final bad = <String>[];
-        for (final e in r) {
-          for (final k in need) {
-            if (e is! Map || !e.containsKey(k)) bad.add('${e?['id'] ?? '?'}: $k');
-          }
-        }
-        if (bad.isNotEmpty) return CheckOutcome.fail(bad.join('; '));
-        final buildable = r.where((e) => (e as Map)['surface'] != null).length;
-        final excluded = r.length - buildable;
-        return CheckOutcome.okWithSummary(
-            '{total: ${r.length}, buildable: $buildable, excluded: $excluded}');
+        return CheckOutcome.okWithSummary(reg.summary);
       } catch (e) {
         return CheckOutcome.fail(e.toString());
       }
@@ -301,8 +412,12 @@ List<_Check> _buildChecks({required bool skipRender}) {
 
     // --- 3. every viewmodel declares a surfaceId ---------------------------
     _Check(_lSurfaceId, _Section.structure, (art, skill, src) async {
+      // Shell viewmodels declare shellId (the shell grammar); surface
+      // viewmodels declare surfaceId. Either satisfies the identity law.
       final missing = _viewModels(art)
-          .where((f) => !f.readAsStringSync().contains('export const surfaceId'))
+          .where((f) =>
+              !f.readAsStringSync().contains('export const surfaceId') &&
+              !f.readAsStringSync().contains('export const shellId'))
           .map((f) => p.relative(f.path, from: art))
           .toList();
       if (missing.isNotEmpty) return CheckOutcome.fail('missing in: ${missing.join(", ")}');
@@ -311,9 +426,7 @@ List<_Check> _buildChecks({required bool skipRender}) {
 
     // --- 4. every declared surfaceId resolves to a registry entry ----------
     _Check(_lSurfaceJoin, _Section.structure, (art, skill, src) async {
-      final reg = jsonDecode(
-          File(p.join(art, 'models', 'screens_model', 'registry.json')).readAsStringSync());
-      final ids = (reg as List).map((e) => (e as Map)['id'] as String).toSet();
+      final ids = _readStudioRegistry(art).surfaceIds;
       final bad = <String>[];
       for (final f in _viewModels(art)) {
         final m = RegExp(r"""export const surfaceId\s*=\s*['"]([^'"]+)""")
@@ -329,19 +442,67 @@ List<_Check> _buildChecks({required bool skipRender}) {
 
     // --- 5. coverage: buildable entries have a viewmodel -------------------
     _Check(_lCoverage, _Section.structure, (art, skill, src) async {
-      final reg = jsonDecode(
-          File(p.join(art, 'models', 'screens_model', 'registry.json')).readAsStringSync());
+      final reg = _readStudioRegistry(art);
       final declared = <String>{};
       for (final f in _viewModels(art)) {
-        final m = RegExp(r"""surfaceId\s*=\s*['"]([^'"]+)""")
-            .firstMatch(f.readAsStringSync());
-        if (m != null) declared.add(m.group(1)!);
+        for (final re in [
+          RegExp(r"""surfaceId\s*=\s*['"]([^'"]+)"""),
+          RegExp(r"""shellId\s*=\s*['"]([^'"]+)"""),
+        ]) {
+          final m = re.firstMatch(f.readAsStringSync());
+          if (m != null) declared.add(m.group(1)!);
+        }
       }
       final bad = <String>[];
-      for (final e in reg as List) {
-        final entry = e as Map;
-        if (entry['surface'] != null && !declared.contains(entry['id'])) {
-          bad.add('registry "${entry['id']}" is buildable but no viewmodel declares it');
+      if (!reg.isV2) {
+        for (final e in reg.rawList!) {
+          final entry = e as Map;
+          if (entry['surface'] != null && !declared.contains(entry['id'])) {
+            bad.add('registry "${entry['id']}" is buildable but no viewmodel declares it');
+          }
+        }
+      } else {
+        for (final s in reg.rawMap!['shells'] as List) {
+          for (final v in (s as Map)['views'] as List) {
+            final surface = (v as String).replaceFirst(RegExp(r'_view$'), '');
+            if (!declared.contains(surface)) {
+              bad.add('shell ${s['id']}: view "$v" has no viewmodel declaring "$surface"');
+            }
+          }
+        }
+      }
+      if (bad.isNotEmpty) return CheckOutcome.fail(bad.join('; '));
+      return const CheckOutcome.ok();
+    }),
+
+    // --- 5b. five-file set per declared view (v2 canon, Q-v2-3) ------------
+    _Check(_lFiveFile, _Section.structure, (art, skill, src) async {
+      final reg = _readStudioRegistry(art);
+      if (!reg.isV2) return const CheckOutcome.skip('v1 registry (List)');
+      final bad = <String>[];
+      for (final s in reg.rawMap!['shells'] as List) {
+        for (final v in (s as Map)['views'] as List) {
+          final name = v as String;
+          // views live under ui/views/<shell>/<surface>/<name>.tsx — the
+          // registry names the file, not the path, so find it by walk.
+          final hits = _walkFiles(Directory(p.join(art, 'ui', 'views')))
+              .where((f) => p.basename(f.path) == '$name.tsx')
+              .toList();
+          if (hits.isEmpty) {
+            bad.add('$name: no view file');
+            continue;
+          }
+          final dir = p.dirname(hits.first.path);
+          for (final factor in const ['desktop', 'tablet', 'mobile']) {
+            if (!File(p.join(dir, '$name.$factor.tsx')).existsSync()) {
+              bad.add('$name: missing $factor factor');
+            }
+          }
+          final vmSibling = File(p.join(
+              dir, '${name.replaceFirst(RegExp(r'_view$'), '')}_viewmodel.js'));
+          if (!vmSibling.existsSync()) {
+            bad.add('$name: missing viewmodel');
+          }
         }
       }
       if (bad.isNotEmpty) return CheckOutcome.fail(bad.join('; '));
@@ -754,8 +915,18 @@ final List<_Mutation> _mutations = [
 
 void _mutateRegistryKey(String art, String skill) {
   final f = File(p.join(art, 'models', 'screens_model', 'registry.json'));
-  final r = jsonDecode(f.readAsStringSync()) as List;
-  (r[0] as Map).remove('label');
+  final r = jsonDecode(f.readAsStringSync());
+  if (r is List) {
+    (r[0] as Map).remove('label');
+  } else if (r is Map<String, dynamic>) {
+    // v2: strip a required stage key — href off the first enabled stage.
+    for (final st in r['stages'] as List) {
+      if ((st as Map)['enabled'] == true) {
+        st.remove('href');
+        break;
+      }
+    }
+  }
   f.writeAsStringSync('${const JsonEncoder.withIndent('  ').convert(r)}\n');
 }
 
@@ -785,8 +956,13 @@ void _mutateOrphanId(String art, String skill) {
 
 void _mutateUncoveredEntry(String art, String skill) {
   final f = File(p.join(art, 'models', 'screens_model', 'registry.json'));
-  final r = jsonDecode(f.readAsStringSync()) as List;
-  r.add({'id': 'zzz.ghost', 'label': 'Ghost', 'surface': 'ghost_view', 'shell': 'main', 'comp': 'Ghost'});
+  final r = jsonDecode(f.readAsStringSync());
+  if (r is List) {
+    r.add({'id': 'zzz.ghost', 'label': 'Ghost', 'surface': 'ghost_view', 'shell': 'main', 'comp': 'Ghost'});
+  } else if (r is Map<String, dynamic>) {
+    // v2: declare a view no viewmodel will ever declare.
+    ((r['shells'] as List).first as Map)['views'].add('zzz_ghost_view');
+  }
   f.writeAsStringSync('${const JsonEncoder.withIndent('  ').convert(r)}\n');
 }
 

@@ -4,7 +4,9 @@
 
 - `~/.appbox` holds **user projects only** (`~/.appbox/projects/<name>/`,
   with `intake/`, `design/`, `build/`, `settings/` shell dirs). The studio's
-  own design stays in the repo (`designs/appbox-studio`).
+  own design stays in the repo (`designs/appbox-studio-v2` — the hub-hosted
+  stage-shell design that replaced v1 on 2026-08-16; v1 remains in-tree as
+  the retained visual-parity reference and the flow-services parity suite).
 - **Never hand-edit generated outputs.** A project's `intake/registry.json`
   and `intake/flows.json`, and the `run.*.json` / `app.*.json` fixtures, are
   generated — edit the seeds/answers (`answers.json`, `*_seed.<locale>.json`,
