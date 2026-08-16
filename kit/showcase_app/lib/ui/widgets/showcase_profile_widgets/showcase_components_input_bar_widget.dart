@@ -18,6 +18,10 @@
 /// animate it). TAP mic to record — the OS microphone-permission prompt
 /// fires through the kit on the first tap — TAP stop to stop and send; the
 /// strip's Cancel aborts, and a stop under a second discards as a fumble.
+/// While the recording runs, the audio controls (level dot, timer, Cancel)
+/// dock in the bar's `above` zone — the SAME anchored pinned-chrome spot
+/// the pending chips use, which is the reusable home for docked rows: one
+/// zone, whatever row the composer state calls for.
 /// A tap-driven model is what makes the native button viable at all: its
 /// UIKit surface claims the touch stream, so Flutter could never see the
 /// hold — but the button's own `onPressed` carries taps natively.
@@ -197,129 +201,118 @@ class _ShowcaseComponentsInputBarWidgetState
     setState(_pending.clear);
   }
 
+  /// The docked audio-control row while a recording runs. Both live
+  /// values bind OUTSIDE the strip and hand VALUES down — the strip stays
+  /// a dumb value widget (no inner subscriptions to churn on the per-tick
+  /// rebuild) and the bar itself never rebuilds per tick; only this
+  /// subtree does.
+  Widget _dockedAudioControls() {
+    return AppBoxKitStreamBuilder<Duration?>(
+      stream: widget.viewModel.recordingElapsed,
+      builder: (context, elapsed) => AppBoxKitStreamBuilder<double>(
+        stream: widget.viewModel.recordingLevel,
+        builder: (context, dbfs) => _RecordingStrip(
+          elapsed: elapsed,
+          level: dbfs,
+          onCancel: widget.viewModel.cancelRecording,
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    // The pending chips dock INSIDE the bar via its `above` slot — the
-    // same anchored pinned-chrome layer as the bar itself. (A Flutter row
-    // floating outside that layer suffers the view-slicer artifact over
-    // the platform-view scrollable below: luminance wash while scrolling.)
+    // ONE docked zone, one row at a time: pending chips while composing,
+    // audio controls while recording. Both dock INSIDE the bar via its
+    // `above` slot — the same anchored pinned-chrome layer as the bar
+    // itself. (A Flutter row floating outside that layer suffers the
+    // view-slicer artifact over the platform-view scrollable below:
+    // luminance wash while scrolling.)
     Widget? pendingRow;
     if (_pending.isNotEmpty) {
-          pendingRow = SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
-              children: [
-                for (final (index, attachment) in _pending.indexed)
-                  Padding(
-                    padding: EdgeInsets.only(left: index == 0 ? 0 : 8),
-                    child: _PendingChip(
-                      icon: switch (attachment.kind) {
-                        ShowcaseComposerAttachmentKind.camera =>
-                          AppBoxKitGlyphs.camera.icon,
-                        ShowcaseComposerAttachmentKind.photo =>
-                          AppBoxKitGlyphs.photo.icon,
-                        ShowcaseComposerAttachmentKind.file =>
-                          AppBoxKitGlyphs.folder.icon,
-                        ShowcaseComposerAttachmentKind.location =>
-                          AppBoxKitGlyphs.locationPin.icon,
-                      },
-                      label: attachment.name,
-                      onRemove: () =>
-                          setState(() => _pending.removeAt(index)),
-                    ),
-                  ),
-              ],
-            ),
+      pendingRow = SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(
+          children: [
+            for (final (index, attachment) in _pending.indexed)
+              Padding(
+                padding: EdgeInsets.only(left: index == 0 ? 0 : 8),
+                child: _PendingChip(
+                  icon: switch (attachment.kind) {
+                    ShowcaseComposerAttachmentKind.camera =>
+                      AppBoxKitGlyphs.camera.icon,
+                    ShowcaseComposerAttachmentKind.photo =>
+                      AppBoxKitGlyphs.photo.icon,
+                    ShowcaseComposerAttachmentKind.file =>
+                      AppBoxKitGlyphs.folder.icon,
+                    ShowcaseComposerAttachmentKind.location =>
+                      AppBoxKitGlyphs.locationPin.icon,
+                  },
+                  label: attachment.name,
+                  onRemove: () => setState(() => _pending.removeAt(index)),
+                ),
+              ),
+          ],
+        ),
       );
     }
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        // The whole bar rebuilds on a phase change so the trailing action
-        // can swap glyphs — the button widget stays at the same tree
-        // position, which is what lets the native tier animate the swap
-        // (SF Symbol replace) instead of recreating the platform view.
-        AppBoxKitStreamBuilder<ShowcaseComposerRecorderPhase>(
-          stream: widget.viewModel.recorderPhase,
-          builder: (context, phase) {
-            final recording = phase == ShowcaseComposerRecorderPhase.recording;
-            return Stack(
-              children: [
-                AppBoxKitNativeInputBar(
-                  above: pendingRow,
-                  // Native composer (default tiers): the field is a real
-                  // multiline Liquid Glass composer on iOS and a growing
-                  // TextFieldM3E on Android. The bar's action taps join
-                  // the input tap group, so the add action keeps the
-                  // keyboard up mid-composition.
-                  controller: _text,
-                  hintText: 'Message',
-                  onChanged: (_) => setState(() {}),
-                  onSubmitted: (_) => _send(),
-                  leading: [
-                    AppBoxKitNativeIconButton(
-                      glyph: AppBoxKitGlyphs.add,
-                      onPressed: _pickAttachment,
-                    ),
-                  ],
-                  trailing: [
-                    // Exactly one trailing action, always at the same slot:
-                    // stop while recording, else send for a live draft, else
-                    // the idle mic. Same widget type + same key at the same
-                    // position = the CN button updates in place and its
-                    // glyph change animates natively.
-                    AppBoxKitNativeIconButton(
-                      key: const ValueKey('composer-record-button'),
-                      glyph: recording
-                          ? AppBoxKitGlyphs.stop
-                          : _hasDraft
-                              ? AppBoxKitGlyphs.send
-                              : AppBoxKitGlyphs.mic,
-                      // Disabled only while the OS permission prompt is up
-                      // (phase == starting) — the prompt claims the screen,
-                      // and a second tap mid-flight must be a no-op.
-                      onPressed: recording
-                          ? _onStopTap
-                          : _hasDraft
-                              ? _send
-                              : phase == ShowcaseComposerRecorderPhase.starting
-                                  ? null
-                                  : _onMicTap,
-                    ),
-                  ],
-                ),
-                if (recording)
-                  Positioned(
-                    // Cover the field area, leave the trailing stop action
-                    // uncovered — the stop tap is the send.
-                    left: 12,
-                    top: 0,
-                    bottom: 0,
-                    right: 60,
-                    child: Center(
-                      // Both live values bind OUTSIDE the strip and hand
-                      // VALUES down — the strip stays a dumb value widget
-                      // (no inner subscriptions to churn on the per-tick
-                      // rebuild) and the bar itself never rebuilds per tick.
-                      child: AppBoxKitStreamBuilder<Duration?>(
-                        stream: widget.viewModel.recordingElapsed,
-                        builder: (context, elapsed) =>
-                            AppBoxKitStreamBuilder<double>(
-                          stream: widget.viewModel.recordingLevel,
-                          builder: (context, dbfs) => _RecordingStrip(
-                            elapsed: elapsed,
-                            level: dbfs,
-                            onCancel: widget.viewModel.cancelRecording,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-              ],
-            );
-          },
-        ),
-      ],
+    // The whole bar rebuilds on a phase change so the trailing action
+    // can swap glyphs — the button widget stays at the same tree
+    // position, which is what lets the native tier animate the swap
+    // (SF Symbol replace) instead of recreating the platform view — and
+    // so the `above` zone can swap its row (chips out, audio controls
+    // in) in the same rebuild.
+    return AppBoxKitStreamBuilder<ShowcaseComposerRecorderPhase>(
+      stream: widget.viewModel.recorderPhase,
+      builder: (context, phase) {
+        final recording = phase == ShowcaseComposerRecorderPhase.recording;
+        return AppBoxKitNativeInputBar(
+          // The zone hosts ONE row at a time: the audio controls own it
+          // while recording (they take over the chips' spot), the chips
+          // return the moment the recorder is idle again.
+          above: recording ? _dockedAudioControls() : pendingRow,
+          // Native composer (default tiers): the field is a real
+          // multiline Liquid Glass composer on iOS and a growing
+          // TextFieldM3E on Android. The bar's action taps join
+          // the input tap group, so the add action keeps the
+          // keyboard up mid-composition.
+          controller: _text,
+          hintText: 'Message',
+          onChanged: (_) => setState(() {}),
+          onSubmitted: (_) => _send(),
+          leading: [
+            AppBoxKitNativeIconButton(
+              glyph: AppBoxKitGlyphs.add,
+              onPressed: _pickAttachment,
+            ),
+          ],
+          trailing: [
+            // Exactly one trailing action, always at the same slot:
+            // stop while recording, else send for a live draft, else
+            // the idle mic. Same widget type + same key at the same
+            // position = the CN button updates in place and its
+            // glyph change animates natively.
+            AppBoxKitNativeIconButton(
+              key: const ValueKey('composer-record-button'),
+              glyph: recording
+                  ? AppBoxKitGlyphs.stop
+                  : _hasDraft
+                      ? AppBoxKitGlyphs.send
+                      : AppBoxKitGlyphs.mic,
+              // Disabled only while the OS permission prompt is up
+              // (phase == starting) — the prompt claims the screen,
+              // and a second tap mid-flight must be a no-op.
+              onPressed: recording
+                  ? _onStopTap
+                  : _hasDraft
+                      ? _send
+                      : phase == ShowcaseComposerRecorderPhase.starting
+                          ? null
+                          : _onMicTap,
+            ),
+          ],
+        );
+      },
     );
   }
 }
@@ -327,8 +320,13 @@ class _ShowcaseComponentsInputBarWidgetState
 /// The recording strip: elapsed time from the recorder, a level dot
 /// breathing with the live amplitude, and the two affordances the
 /// tap-toggle model supports — Cancel here, send on the trailing stop
-/// button. Pure-Flutter frosted surface (no platform view involved): it
-/// overlays the field while the native button owns the record gestures.
+/// button. It DOCKS in the bar's `above` zone (the chips' anchored spot),
+/// painting directly on the bar's own opaque backing — no card chrome of
+/// its own: a nested panel inside the panel would double-draw the base,
+/// and a floating overlay over the platform-view field is exactly the
+/// layering the zone exists to avoid. The native trailing button owns the
+/// record gestures; this row is pure Flutter content in the anchored
+/// layer.
 class _RecordingStrip extends StatelessWidget {
   const _RecordingStrip({
     required this.elapsed,
@@ -352,9 +350,11 @@ class _RecordingStrip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    return AppBoxKitGlassCard(
-      wantNative: false,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+    // No card chrome — the row paints straight onto the bar's opaque
+    // backing (class doc). Light horizontal inset keeps the dot clear of
+    // the leading action's circle above it; the slot adds the bottom gap.
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [

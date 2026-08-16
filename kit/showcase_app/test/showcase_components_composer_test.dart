@@ -50,8 +50,7 @@ void main() {
     if (appBoxKitLocator.isRegistered<AppBoxKitAudioRecorderService>()) {
       appBoxKitLocator.unregister<AppBoxKitAudioRecorderService>();
     }
-    appBoxKitLocator
-        .registerSingleton<AppBoxKitAudioRecorderService>(recorder);
+    appBoxKitLocator.registerSingleton<AppBoxKitAudioRecorderService>(recorder);
 
     // Kit testing rule: the notification fake registered AS the service type,
     // so the widget's permission-denied toast lands where the test reads it.
@@ -100,7 +99,8 @@ void main() {
         (tester) async {
       await pumpView(tester);
 
-      expect(micGlyph, findsOneWidget, reason: 'empty draft shows the mic action');
+      expect(micGlyph, findsOneWidget,
+          reason: 'empty draft shows the mic action');
       await tester.enterText(find.byType(EditableText), 'Shipping the demo');
       await tester.pump();
 
@@ -188,8 +188,8 @@ void main() {
 
       // The remove control is the chromeless (plain) icon button — no glass
       // circle inside the chip. Tapping it removes the pick.
-      final Finder removeButton = find.byWidgetPredicate(
-          (w) => w is AppBoxKitNativeIconButton && w.plain);
+      final Finder removeButton = find
+          .byWidgetPredicate((w) => w is AppBoxKitNativeIconButton && w.plain);
       expect(removeButton, findsOneWidget,
           reason: 'the chip remove action is a plain icon button');
       expect(
@@ -247,6 +247,82 @@ void main() {
     });
 
     testWidgets(
+        'showcase.components-composer — recording docks its audio controls INSIDE the bar, in the chips anchored zone',
+        (tester) async {
+      await pumpView(tester);
+
+      await tester.tap(micGlyph);
+      await tester.pumpAndSettle();
+
+      // The audio controls live in the bar's `above` zone — the same
+      // anchored pinned-chrome spot the pending chips dock in — NOT as a
+      // Flutter overlay floating over the field (a platform-view-adjacent
+      // floating row suffers the view-slicer artifact).
+      expect(
+        find.descendant(
+          of: find.byType(AppBoxKitNativeInputBar),
+          matching: find.text('Cancel'),
+        ),
+        findsOneWidget,
+        reason: 'the recording controls dock in the bar — descendants of '
+            'the bar widget, inside its anchored opaque backing',
+      );
+      expect(
+        find.descendant(
+          of: find.byType(AppBoxKitNativeInputBar),
+          matching: find.text('0:00'),
+        ),
+        findsOneWidget,
+        reason: 'the strip timer docks in the same zone',
+      );
+
+      await tester.tap(find.text('Cancel'));
+      await tester.pumpAndSettle();
+    });
+
+    testWidgets(
+        'showcase.components-composer — recording takes over the chip docked spot; the picks return when idle',
+        (tester) async {
+      await pumpView(tester);
+
+      // Arm the recorder FIRST (with a pending pick the trailing slot
+      // is send, not mic), then attach mid-recording through the
+      // leading action — the one state where chips and audio controls
+      // compete for the zone.
+      await tester.tap(micGlyph);
+      await tester.pumpAndSettle();
+      expect(find.text('Cancel'), findsOneWidget,
+          reason: 'the audio controls hold the docked zone');
+
+      await tester.tap(find.widgetWithIcon(IconButtonM3E, Icons.add));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Photo library'));
+      await tester.pumpAndSettle();
+
+      expect(
+        find.text('gallery-shot.png'),
+        findsNothing,
+        reason: 'while recording, the audio controls own the docked zone — '
+            'the pending pick stays hidden until the recorder is idle',
+      );
+      expect(
+        stopGlyph,
+        findsOneWidget,
+        reason: 'recording keeps the trailing stop despite the draft',
+      );
+
+      recorder.driveElapsed(const Duration(seconds: 2));
+      await tester.pump();
+      await tester.tap(stopGlyph);
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('0:02 · voice note'), findsOneWidget,
+          reason: 'the recording sends');
+      expect(find.text('gallery-shot.png'), findsOneWidget,
+          reason: 'back idle, the still-pending pick re-docks its chip');
+    });
+
+    testWidgets(
         'showcase.components-composer — a stop under one second discards the fumble: no note, idle again',
         (tester) async {
       await pumpView(tester);
@@ -257,7 +333,8 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.textContaining('· voice note'), findsOneWidget,
-          reason: 'only the seeded voice bubble remains — the fumble sent nothing');
+          reason:
+              'only the seeded voice bubble remains — the fumble sent nothing');
       expect(recorder.isRecording, isFalse,
           reason: 'the too-short recording was discarded, not left running');
       expect(micGlyph, findsOneWidget,
