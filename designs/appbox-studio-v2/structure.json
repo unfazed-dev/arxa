@@ -78,28 +78,136 @@
       "surfaceKey": "studio_auth"
     },
     {
-      "id": "studio_intake_shell.intake",
+      "id": "studio_intake_shell.studio_intake_interview",
       "shell": "studio_intake_shell",
-      "comp": "StudioIntake",
+      "comp": "StudioIntakeInterview",
       "shellDir": "studio_intake_shell",
-      "surface": "studio_intake_view",
-      "viewmodel": "ui/views/studio_intake_shell/studio_intake/studio_intake_viewmodel.js",
+      "surface": "studio_intake_interview_view",
+      "viewmodel": "ui/views/studio_intake_shell/studio_intake_interview/studio_intake_interview_viewmodel.js",
       "deps": [
         "services/studio_intake_services/facades/studio_intake_facade_service.js"
       ],
-      "surfaceKey": "studio_intake"
+      "surfaceKey": "studio_intake_interview"
     },
     {
-      "id": "studio_design_shell.design",
+      "id": "studio_intake_shell.studio_intake_personas",
+      "shell": "studio_intake_shell",
+      "comp": "StudioIntakePersonas",
+      "shellDir": "studio_intake_shell",
+      "surface": "studio_intake_personas_view",
+      "viewmodel": "ui/views/studio_intake_shell/studio_intake_personas/studio_intake_personas_viewmodel.js",
+      "deps": [
+        "services/studio_intake_services/facades/studio_intake_facade_service.js"
+      ],
+      "surfaceKey": "studio_intake_personas"
+    },
+    {
+      "id": "studio_intake_shell.studio_intake_surfaces",
+      "shell": "studio_intake_shell",
+      "comp": "StudioIntakeSurfaces",
+      "shellDir": "studio_intake_shell",
+      "surface": "studio_intake_surfaces_view",
+      "viewmodel": "ui/views/studio_intake_shell/studio_intake_surfaces/studio_intake_surfaces_viewmodel.js",
+      "deps": [
+        "services/studio_intake_services/facades/studio_intake_facade_service.js"
+      ],
+      "surfaceKey": "studio_intake_surfaces"
+    },
+    {
+      "id": "studio_intake_shell.studio_intake_flows",
+      "shell": "studio_intake_shell",
+      "comp": "StudioIntakeFlows",
+      "shellDir": "studio_intake_shell",
+      "surface": "studio_intake_flows_view",
+      "viewmodel": "ui/views/studio_intake_shell/studio_intake_flows/studio_intake_flows_viewmodel.js",
+      "deps": [
+        "services/studio_intake_services/facades/studio_intake_facade_service.js"
+      ],
+      "surfaceKey": "studio_intake_flows"
+    },
+    {
+      "id": "studio_intake_shell.studio_intake_mapping",
+      "shell": "studio_intake_shell",
+      "comp": "StudioIntakeMapping",
+      "shellDir": "studio_intake_shell",
+      "surface": "studio_intake_mapping_view",
+      "viewmodel": "ui/views/studio_intake_shell/studio_intake_mapping/studio_intake_mapping_viewmodel.js",
+      "deps": [
+        "services/studio_intake_services/facades/studio_intake_facade_service.js"
+      ],
+      "surfaceKey": "studio_intake_mapping"
+    },
+    {
+      "id": "studio_intake_shell.studio_intake_direction",
+      "shell": "studio_intake_shell",
+      "comp": "StudioIntakeDirection",
+      "shellDir": "studio_intake_shell",
+      "surface": "studio_intake_direction_view",
+      "viewmodel": "ui/views/studio_intake_shell/studio_intake_direction/studio_intake_direction_viewmodel.js",
+      "deps": [
+        "services/studio_intake_services/facades/studio_intake_facade_service.js"
+      ],
+      "surfaceKey": "studio_intake_direction"
+    },
+    {
+      "id": "studio_intake_shell.studio_intake_brief",
+      "shell": "studio_intake_shell",
+      "comp": "StudioIntakeBrief",
+      "shellDir": "studio_intake_shell",
+      "surface": "studio_intake_brief_view",
+      "viewmodel": "ui/views/studio_intake_shell/studio_intake_brief/studio_intake_brief_viewmodel.js",
+      "deps": [
+        "services/studio_intake_services/facades/studio_intake_facade_service.js"
+      ],
+      "surfaceKey": "studio_intake_brief"
+    },
+    {
+      "id": "studio_intake_shell.studio_intake_moodboard",
+      "shell": "studio_intake_shell",
+      "comp": "StudioIntakeMoodboard",
+      "shellDir": "studio_intake_shell",
+      "surface": "studio_intake_moodboard_view",
+      "viewmodel": "ui/views/studio_intake_shell/studio_intake_moodboard/studio_intake_moodboard_viewmodel.js",
+      "deps": [
+        "services/studio_intake_services/facades/studio_intake_facade_service.js"
+      ],
+      "surfaceKey": "studio_intake_moodboard"
+    },
+    {
+      "id": "studio_design_shell.studio_design_prototype",
       "shell": "studio_design_shell",
-      "comp": "StudioDesign",
+      "comp": "StudioDesignPrototype",
       "shellDir": "studio_design_shell",
-      "surface": "studio_design_view",
-      "viewmodel": "ui/views/studio_design_shell/studio_design/studio_design_viewmodel.js",
+      "surface": "studio_design_prototype_view",
+      "viewmodel": "ui/views/studio_design_shell/studio_design_prototype/studio_design_prototype_viewmodel.js",
       "deps": [
         "services/studio_design_services/facades/studio_design_facade_service.js"
       ],
-      "surfaceKey": "studio_design"
+      "surfaceKey": "studio_design_prototype"
+    },
+    {
+      "id": "studio_design_shell.studio_design_chat",
+      "shell": "studio_design_shell",
+      "comp": "StudioDesignChat",
+      "shellDir": "studio_design_shell",
+      "surface": "studio_design_chat_view",
+      "viewmodel": "ui/views/studio_design_shell/studio_design_chat/studio_design_chat_viewmodel.js",
+      "deps": [
+        "services/studio_design_services/facades/studio_design_facade_service.js"
+      ],
+      "surfaceKey": "studio_design_chat"
+    },
+    {
+      "id": "studio_design_shell.studio_design_freeze",
+      "shell": "studio_design_shell",
+      "comp": "StudioDesignFreeze",
+      "shellDir": "studio_design_shell",
+      "surface": "studio_design_freeze_view",
+      "viewmodel": "ui/views/studio_design_shell/studio_design_freeze/studio_design_freeze_viewmodel.js",
+      "deps": [
+        "services/studio_design_services/facades/studio_design_facade_service.js"
+      ],
+      "surfaceKey": "studio_design_freeze"
     }
   ],
   "flows": [
@@ -123,43 +231,63 @@
         },
         {
           "from": "studio_dashboard_shell.studio_dashboard",
-          "to": "studio_startup_shell.startup",
-          "trigger": "stage_card[startup]"
+          "to": "studio_intake_shell.studio_intake_interview",
+          "trigger": "stage_card[intake] / tabbar / rail — the intake stage root IS the interview"
         },
         {
-          "from": "studio_application_hub.hub",
-          "to": "studio_auth_shell.auth",
-          "trigger": "requiresAuth guard on gated stages — pending shell (Q-v2-5), declared as data only"
+          "from": "studio_intake_shell.studio_intake_interview",
+          "to": "studio_intake_shell.studio_intake_personas",
+          "trigger": "step_foot next CTA — the step completes (all items confirmed/skipped)"
+        },
+        {
+          "from": "studio_intake_shell.studio_intake_personas",
+          "to": "studio_intake_shell.studio_intake_surfaces",
+          "trigger": "step_foot next CTA — the step completes (all items confirmed/skipped)"
+        },
+        {
+          "from": "studio_intake_shell.studio_intake_surfaces",
+          "to": "studio_intake_shell.studio_intake_flows",
+          "trigger": "step_foot next CTA — the step completes (all items confirmed/skipped)"
+        },
+        {
+          "from": "studio_intake_shell.studio_intake_flows",
+          "to": "studio_intake_shell.studio_intake_mapping",
+          "trigger": "step_foot next CTA — the step completes (all items confirmed/skipped)"
+        },
+        {
+          "from": "studio_intake_shell.studio_intake_mapping",
+          "to": "studio_intake_shell.studio_intake_direction",
+          "trigger": "step_foot next CTA — the step completes (all items confirmed/skipped)"
+        },
+        {
+          "from": "studio_intake_shell.studio_intake_direction",
+          "to": "studio_intake_shell.studio_intake_brief",
+          "trigger": "step_foot next CTA — the step completes (all items confirmed/skipped)"
+        },
+        {
+          "from": "studio_intake_shell.studio_intake_brief",
+          "to": "studio_intake_shell.studio_intake_moodboard",
+          "trigger": "step_foot next CTA — the step completes (all items confirmed/skipped)"
+        },
+        {
+          "from": "studio_intake_shell.studio_intake_moodboard",
+          "to": "studio_design_shell.studio_design_prototype",
+          "trigger": "step_foot next CTA — the journey hands off to the design stage"
+        },
+        {
+          "from": "studio_design_shell.studio_design_prototype",
+          "to": "studio_design_shell.studio_design_chat",
+          "trigger": "composer context — the chat shares the loop frame"
+        },
+        {
+          "from": "studio_design_shell.studio_design_prototype",
+          "to": "studio_design_shell.studio_design_freeze",
+          "trigger": "freeze entry — the manifest approval gate"
         },
         {
           "from": "studio_dashboard_shell.studio_dashboard",
-          "to": "studio_auth_shell.auth",
-          "trigger": "stage_card[auth] — disabled until shell lands (Q-v2-5)"
-        },
-        {
-          "from": "studio_dashboard_shell.studio_dashboard",
-          "to": "studio_intake_shell.intake",
-          "trigger": "stage_card[intake] — disabled until shell lands (Q-v2-5)"
-        },
-        {
-          "from": "studio_dashboard_shell.studio_dashboard",
-          "to": "studio_design_shell.design",
-          "trigger": "stage_card[design] — disabled until shell lands (Q-v2-5)"
-        },
-        {
-          "from": "studio_auth_shell.auth",
-          "to": "studio_intake_shell.intake",
-          "trigger": "per-shell manual proceed — credentials produced"
-        },
-        {
-          "from": "studio_intake_shell.intake",
-          "to": "studio_design_shell.design",
-          "trigger": "per-shell manual proceed — intake/registry.json pinned"
-        },
-        {
-          "from": "studio_unknown_shell.unknown",
-          "to": "studio_application_hub.hub",
-          "trigger": "cta-link — return to the studio root"
+          "to": "studio_design_shell.studio_design_prototype",
+          "trigger": "stage_card[design] / tabbar / rail"
         }
       ]
     }

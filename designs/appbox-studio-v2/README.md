@@ -2,7 +2,36 @@
 
 The appbox studio, rebuilt fresh per the locked decision log
 (`docs/plans/designer-scaffolder-grill-decisions.md`, Q-v2-1…5). v1
-(`designs/appbox-studio/`) is candidates-only reference and is never copied.
+(`designs/appbox-studio/`) is candidates-only for STRUCTURE and is never
+copied as file layout — but it is the **visual SSOT**: every surface's
+theme, layout and component appearance carries over (the registry's
+VISUAL PARITY LAW; deviations are findings, never silent redesigns).
+
+## The loop-port law (2026-08-16)
+
+The intake and design stages are **ports of the v1 loop**, not new
+compositions: the intake stage is v1's eight-step item-engine (interview,
+personas, surfaces, flows, mapping, direction, brief, moodboard — ~90
+routes) and the design stage is v1's prototype/chat/freeze loop (~46
+routes), each over the shared three-panel loop (composer | main |
+activity + timeline footer). Consequences the structure laws inherit:
+
+- **Loop surfaces render ONCE.** A loop surface's htmx swap targets and
+  islands are id anchors (`#panels`, `#mp-content`,
+  `#panel-activity-body`), so its view mounts a single composition and
+  its five-file trio renders null frames — the ported v1 media queries
+  carry the ladder. Tripling the DOM would tripple every id.
+- **The loop widgets are cross-shell**, living at
+  `ui/widgets/common/studio_panels/` (panel base, main/composer/activity
+  panels, composer card, timeline, mini panel) with an aliased barrel —
+  panel.tsx and activity_panel.tsx both export Top/Bottom, so export-*
+  would silently drop them.
+- **The loop CSS is v1's, wholesale**: `common/panels.css`,
+  `common/widgets.css`, `common/composer.css` and
+  `studio_intake_shell/intake.css` / `studio_design_shell/{design,viewer}.css`
+  are the v1 files. Substring-presence splitting produced false
+  "already-ported" positives (comments, compound selectors) and lost
+  blocks; the files are kept verbatim instead.
 
 ## Recipe → web extension map (Q-v2-4)
 

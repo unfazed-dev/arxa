@@ -107,25 +107,37 @@
    "id": "studio_intake_shell",
    "kind": "working",
    "views": [
-    "studio_intake_view"
+    "studio_intake_interview_view",
+    "studio_intake_personas_view",
+    "studio_intake_surfaces_view",
+    "studio_intake_flows_view",
+    "studio_intake_mapping_view",
+    "studio_intake_direction_view",
+    "studio_intake_brief_view",
+    "studio_intake_moodboard_view"
    ],
    "widgets": [
-    "interview_thread",
-    "asset_upload_dropzone"
+    "composer_panel",
+    "main_panel",
+    "activity_panel",
+    "timeline"
    ]
   },
   {
    "id": "studio_design_shell",
    "kind": "working",
    "views": [
-    "studio_design_view"
+    "studio_design_prototype_view",
+    "studio_design_chat_view",
+    "studio_design_freeze_view"
    ],
    "widgets": [
-    "design_canvas",
-    "inspector_panel",
-    "composer_slider_panel",
-    "needs_you_strip",
-    "activity"
+    "design_viewer",
+    "composer_panel",
+    "main_panel",
+    "activity_panel",
+    "timeline",
+    "inspector_pane"
    ]
   }
  ]

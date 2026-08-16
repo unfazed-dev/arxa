@@ -152,23 +152,23 @@ export default [
   ['GET', '/design/file', booted(prototype.file)],
   ['GET', '/design/screen/:id', booted(prototype.screen)],
   ['POST', '/design/flows/:flow/move/:screen', booted(prototype.flowMove)], // posted-by: design_viewer tile toolbar + drag.js island
-  ['POST', '/design/flows/:flow/add/:screen', booted(prototype.flowAdd)],
-  ['POST', '/design/flows/:flow/remove/:screen', booted(prototype.flowRemove)],
+  ['POST', '/design/flows/:flow/add/:screen', booted(prototype.flowAdd)], // posted-by: design_viewer add-to-flow menu (hx-post)
+  ['POST', '/design/flows/:flow/remove/:screen', booted(prototype.flowRemove)], // posted-by: design_viewer tile toolbar (hx-post, dir)
   ['POST', '/design/panel/size/:panel', booted(prototype.panelSizePx)], // posted-by: drag.js island
-  ['POST', '/design/undo/:stack', booted(prototype.undo)],
-  ['POST', '/design/redo/:stack', booted(prototype.redo)],
+  ['POST', '/design/undo/:stack', booted(prototype.undo)], // posted-by: composer.tsx undoHref (facade-computed hx-post)
+  ['POST', '/design/redo/:stack', booted(prototype.redo)], // posted-by: composer.tsx redoHref (facade-computed hx-post)
   ['GET', '/design/drawer/:screen', booted(prototype.drawer)],
   ['GET', '/design/inspector', booted(prototype.inspector)],
   ['POST', '/design/inspector/select', booted(prototype.inspectorSelect)], // posted-by: inspect.js island
-  ['POST', '/design/inspector/unlock', booted(prototype.inspectorUnlock)],
-  ['POST', '/design/widget/arm', booted(prototype.widgetArm)],
+  ['POST', '/design/inspector/unlock', booted(prototype.inspectorUnlock)], // posted-by: inspector_pane elementCard footer (hx-post={unlockHref})
+  ['POST', '/design/widget/arm', booted(prototype.widgetArm)], // posted-by: design_viewer.tsx toolbar arm chip (hx-post={v.weditArmHref})
   ['POST', '/design/widget/select', booted(prototype.widgetSelect)], // posted-by: canvas.js + drawer Tools strip
-  ['POST', '/design/widget/attr', booted(prototype.widgetAttr)],
-  ['POST', '/design/widget/text', booted(prototype.widgetText)],
-  ['POST', '/design/widget/clear', booted(prototype.widgetClear)],
+  ['POST', '/design/widget/attr', booted(prototype.widgetAttr)], // posted-by: widget_editor.tsx step chips (hx-post)
+  ['POST', '/design/widget/text', booted(prototype.widgetText)], // posted-by: design_viewer.tsx copy form (hx-post, drawer field routes #drawerSwap)
+  ['POST', '/design/widget/clear', booted(prototype.widgetClear)], // posted-by: design_facade clearHref (facade-computed hx-post)
   // design.chat — the one design chat
   ['GET', '/design/chat', booted(dchat.page)],
-  ['POST', '/design/chat/messages', booted(dchat.send)],
+  ['POST', '/design/chat/messages', booted(dchat.send)], // posted-by: composerAction (design_facade)
   ['GET', '/design/chat/context/:id', booted(dchat.context)],
   ['POST', '/design/chat/context/element', booted(dchat.elementContext)], // posted-by: inspect.js island
   ['GET', '/design/chat/context/element/remove', booted(dchat.elementContextRemove)],
@@ -176,7 +176,7 @@ export default [
   ['GET', '/design/chat/model/:id', booted(dchat.model)],
   ['GET', '/design/chat/tray', booted(dchat.tray)],
   ['GET', '/design/chat/screen/:id', booted(dchat.select)],
-  ['POST', '/design/chat/screen/:id/revert/:cp', booted(dchat.revert)],
+  ['POST', '/design/chat/screen/:id/revert/:cp', booted(dchat.revert)], // posted-by: design_shared.tsx checkpoint action (hx-post)
   // design.freeze — freeze & trace + the manifest approval gate
   ['GET', '/design/freeze', booted(freeze.page)],
   ['GET', '/design/freeze/file', booted(freeze.file)],

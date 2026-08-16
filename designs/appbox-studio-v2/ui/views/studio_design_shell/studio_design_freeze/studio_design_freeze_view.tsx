@@ -55,7 +55,11 @@ function ApprovalCard({ context, translate }: { context: FreezeViewProps; transl
           <button type="submit" name="preset" value="approve" class="cta-main" {...inspectAttrs('design-freeze:approve', { role: 'action' })}>{translate('freeze.approveCta') as string}</button>
         </form>
       ) : (
-        <a class="cta-main" href="/scaffold" {...inspectAttrs('design-freeze:continue', { role: 'action' })}>{translate('freeze.continueScaffold') as string} <Icon name="arrow-right" size={14} /></a>
+        // v1 routed this CTA to /scaffold — the scaffold stage is not in
+        // the v2 roster yet (registry: startup/auth/intake/design), so the
+        // handoff lands on the hub's stage roster until it is. Recorded as
+        // a roster deviation, not a redesign.
+        <a class="cta-main" href="/" {...inspectAttrs('design-freeze:continue', { role: 'action' })}>{translate('freeze.continueScaffold') as string} <Icon name="arrow-right" size={14} /></a>
       )}
     </article>
   );

@@ -255,6 +255,20 @@ F0 clears.
     commit stat both say 9.) All 9 files are committed byte-identical to how
     their author wrote them.
 
+## Loop-port amendment (2026-08-16, later same day)
+
+The intake and design entries were re-authored once more: the invented
+single-surface shells ("intake thread + upload", "canvas + inspector
+panels") were **replaced by verbatim ports of the v1 loops** after live
+review rejected them as silent redesigns (the visual parity law exists
+exactly for this). The registry now carries 17 entries: the 8-step intake
+item-engine and the design prototype/chat/freeze trio, each step a
+five-file set with a null-frame trio (loop single-render law — id-anchored
+htmx targets), the loop widgets at ui/widgets/common/studio_panels/, and
+the v1 loop CSS wholesale. One recorded roster deviation: the freeze
+surface's continue CTA routes to the stage roster (/) because the scaffold
+stage is not in the v2 roster yet — v1 routed it to /scaffold.
+
 ## Recommended next action (operator)
 
 **(executed 2026-08-16 — kept for the record)** The composer SSOT was pinned

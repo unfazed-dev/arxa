@@ -724,6 +724,15 @@ List<String> checkWiringArtifact(String artifactDir, String property) {
       final ids = <String>[];
       final idRe = RegExp(r'\sid\s*=\s*"([^"]+)"');
       final specIdRe = RegExp(r"""\bid\s*:\s*'([^'{]+)'""");
+      // The panel BASE derives its ids, so literals that prove existence
+      // come in two more shapes (same doctrine as the spec-id rule above):
+      // 1. pid = id ?? 'panel-<role>' - a literal role prop proves panel-<role>.
+      //    inspectAttrs' role: 'panel' bag key collides harmlessly: it mints
+      //    panel-panel, an id nothing ever targets.
+      // 2. PID consts ('const PID = ...') in the thin panel widgets, whose
+      //    section ids the base derives as <pid>-<section>.
+      final roleRe = RegExp(r"""\srole\s*[:=]\s*["']([a-z-]+)["']""");
+      final pidConstRe = RegExp(r"""PID\s*=\s*["']([a-z-]+)["']""");
       for (final (_, t) in markup) {
         for (final m in idRe.allMatches(t)) {
           ids.add(m.group(1)!);
@@ -731,7 +740,23 @@ List<String> checkWiringArtifact(String artifactDir, String property) {
         for (final m in specIdRe.allMatches(t)) {
           ids.add(m.group(1)!);
         }
+        for (final m in roleRe.allMatches(t)) {
+          ids.add('panel-${m.group(1)}');
+        }
+        for (final m in pidConstRe.allMatches(t)) {
+          ids.add(m.group(1)!);
+        }
       }
+      // A literal panel pid proves its derived section family exists (the
+      // base emits <pid>-body/-top/-bottom unconditionally).
+      ids.addAll([
+        for (final id in ids.where(
+                (i) => i.startsWith('panel-') && !i.contains('{{')).toSet()) ...[
+          '${id}-body',
+          '${id}-top',
+          '${id}-bottom',
+        ],
+      ]);
       bool idHits(String target) => ids.any((id) {
             if (!id.contains('{{')) return id == target;
             final parts = id.split(RegExp(r'\{\{[^}]*\}\}'));

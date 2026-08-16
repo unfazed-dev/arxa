@@ -1,6 +1,6 @@
 {
  "registryVersion": "1.0.0",
- "status": "PINNED 2026-08-16 — the authoring surface, signed off with the all-shells ruling (Q-v2-5 amended: every shell landed enabled in one pass; F0 closed)",
+ "status": "PINNED 2026-08-16 — amended same day: the intake and design stages are the v1 loop ports (8 item-engine steps + prototype/chat/freeze), replacing the invented single-surface shells",
  "app": "studio",
  "vocabulary": "shell > view > widgets; the hub is the routed root frame (/) hosting the stage shells (header, tabbar, rail chrome + body outlet); ceremony shells route bare",
  "_comment": [
@@ -248,75 +248,554 @@
    }
   },
   {
-   "id": "studio_intake_shell.intake",
+   "id": "studio_intake_shell.studio_intake_interview",
    "shell": "studio_intake_shell",
    "shellKind": "working",
-   "label": "Intake",
-   "labelKey": "stageIntake",
-   "surface": "studio_intake_view",
+   "label": "Interview",
+   "labelKey": "intake.interview.pageTitle",
+   "surface": "studio_intake_interview_view",
    "route": "/intake",
    "requiresAuth": true,
    "widgets": [
     {
-     "name": "interview_thread",
+     "name": "composer_panel",
      "composedFrom": [
-      "list-row",
       "form-field"
-     ]
+     ],
+     "note": "the chat rail, always in the current step context (v1 loop port)"
     },
     {
-     "name": "asset_upload_dropzone",
-     "kind": "form-field"
+     "name": "main_panel",
+     "composedFrom": [
+      "tabs"
+     ],
+     "note": "the step stage: one item at a time, the item-strip, the step foot (v1 loop port)"
+    },
+    {
+     "name": "activity_panel",
+     "kind": "panel-activity",
+     "note": "thread / artifacts / files views carousel (v1 loop port)"
+    },
+    {
+     "name": "timeline",
+     "composedFrom": [
+      "list-row"
+     ],
+     "note": "the footer timeline: the whole journey at a glance"
+    },
+    {
+     "name": "mode_cards",
+     "composedFrom": [
+      "card"
+     ],
+     "note": "the depth choice: simple / normal / advanced banks"
     }
    ],
    "design": {
-    "visualSource": "designs/appbox-studio/ui (intake interview + upload views)",
-    "instruction": "v1 interview thread look carries over; produces intake/registry.json"
+    "visualSource": "designs/appbox-studio/ui/views/main_shell/intake/interview (v1 intake loop, ported verbatim)",
+    "instruction": "v1 item-engine step ported verbatim (visual parity law): the three-panel loop (composer | main stage | activity) with the read-only timeline footer; the step surface renders once — its htmx swap targets are id anchors"
    },
    "tab": 2
   },
   {
-   "id": "studio_design_shell.design",
+   "id": "studio_intake_shell.studio_intake_personas",
+   "shell": "studio_intake_shell",
+   "shellKind": "working",
+   "label": "Personas",
+   "labelKey": "intake.personas.pageTitle",
+   "surface": "studio_intake_personas_view",
+   "route": "/intake/personas",
+   "requiresAuth": true,
+   "widgets": [
+    {
+     "name": "composer_panel",
+     "composedFrom": [
+      "form-field"
+     ],
+     "note": "the chat rail, always in the current step context (v1 loop port)"
+    },
+    {
+     "name": "main_panel",
+     "composedFrom": [
+      "tabs"
+     ],
+     "note": "the step stage: one item at a time, the item-strip, the step foot (v1 loop port)"
+    },
+    {
+     "name": "activity_panel",
+     "kind": "panel-activity",
+     "note": "thread / artifacts / files views carousel (v1 loop port)"
+    },
+    {
+     "name": "timeline",
+     "composedFrom": [
+      "list-row"
+     ],
+     "note": "the footer timeline: the whole journey at a glance"
+    },
+    {
+     "name": "item_cards",
+     "composedFrom": [
+      "card"
+     ],
+     "note": "persona prefill cards with provenance chips"
+    }
+   ],
+   "design": {
+    "visualSource": "designs/appbox-studio/ui/views/main_shell/intake/personas (v1 intake loop, ported verbatim)",
+    "instruction": "v1 item-engine step ported verbatim (visual parity law): the three-panel loop (composer | main stage | activity) with the read-only timeline footer; the step surface renders once — its htmx swap targets are id anchors"
+   }
+  },
+  {
+   "id": "studio_intake_shell.studio_intake_surfaces",
+   "shell": "studio_intake_shell",
+   "shellKind": "working",
+   "label": "Surfaces",
+   "labelKey": "intake.surfaces.pageTitle",
+   "surface": "studio_intake_surfaces_view",
+   "route": "/intake/surfaces",
+   "requiresAuth": true,
+   "widgets": [
+    {
+     "name": "composer_panel",
+     "composedFrom": [
+      "form-field"
+     ],
+     "note": "the chat rail, always in the current step context (v1 loop port)"
+    },
+    {
+     "name": "main_panel",
+     "composedFrom": [
+      "tabs"
+     ],
+     "note": "the step stage: one item at a time, the item-strip, the step foot (v1 loop port)"
+    },
+    {
+     "name": "activity_panel",
+     "kind": "panel-activity",
+     "note": "thread / artifacts / files views carousel (v1 loop port)"
+    },
+    {
+     "name": "timeline",
+     "composedFrom": [
+      "list-row"
+     ],
+     "note": "the footer timeline: the whole journey at a glance"
+    },
+    {
+     "name": "item_cards",
+     "composedFrom": [
+      "card"
+     ],
+     "note": "surface-group prefill cards with provenance chips"
+    }
+   ],
+   "design": {
+    "visualSource": "designs/appbox-studio/ui/views/main_shell/intake/surfaces (v1 intake loop, ported verbatim)",
+    "instruction": "v1 item-engine step ported verbatim (visual parity law): the three-panel loop (composer | main stage | activity) with the read-only timeline footer; the step surface renders once — its htmx swap targets are id anchors"
+   }
+  },
+  {
+   "id": "studio_intake_shell.studio_intake_flows",
+   "shell": "studio_intake_shell",
+   "shellKind": "working",
+   "label": "Flows",
+   "labelKey": "intake.flows.pageTitle",
+   "surface": "studio_intake_flows_view",
+   "route": "/intake/flows",
+   "requiresAuth": true,
+   "widgets": [
+    {
+     "name": "composer_panel",
+     "composedFrom": [
+      "form-field"
+     ],
+     "note": "the chat rail, always in the current step context (v1 loop port)"
+    },
+    {
+     "name": "main_panel",
+     "composedFrom": [
+      "tabs"
+     ],
+     "note": "the step stage: one item at a time, the item-strip, the step foot (v1 loop port)"
+    },
+    {
+     "name": "activity_panel",
+     "kind": "panel-activity",
+     "note": "thread / artifacts / files views carousel (v1 loop port)"
+    },
+    {
+     "name": "timeline",
+     "composedFrom": [
+      "list-row"
+     ],
+     "note": "the footer timeline: the whole journey at a glance"
+    },
+    {
+     "name": "item_cards",
+     "composedFrom": [
+      "card"
+     ],
+     "note": "flow prefill cards over the screen registry"
+    }
+   ],
+   "design": {
+    "visualSource": "designs/appbox-studio/ui/views/main_shell/intake/flows (v1 intake loop, ported verbatim)",
+    "instruction": "v1 item-engine step ported verbatim (visual parity law): the three-panel loop (composer | main stage | activity) with the read-only timeline footer; the step surface renders once — its htmx swap targets are id anchors"
+   }
+  },
+  {
+   "id": "studio_intake_shell.studio_intake_mapping",
+   "shell": "studio_intake_shell",
+   "shellKind": "working",
+   "label": "Story Map",
+   "labelKey": "intake.mapping.pageTitle",
+   "surface": "studio_intake_mapping_view",
+   "route": "/intake/map",
+   "requiresAuth": true,
+   "widgets": [
+    {
+     "name": "composer_panel",
+     "composedFrom": [
+      "form-field"
+     ],
+     "note": "the chat rail, always in the current step context (v1 loop port)"
+    },
+    {
+     "name": "main_panel",
+     "composedFrom": [
+      "tabs"
+     ],
+     "note": "the step stage: one item at a time, the item-strip, the step foot (v1 loop port)"
+    },
+    {
+     "name": "activity_panel",
+     "kind": "panel-activity",
+     "note": "thread / artifacts / files views carousel (v1 loop port)"
+    },
+    {
+     "name": "timeline",
+     "composedFrom": [
+      "list-row"
+     ],
+     "note": "the footer timeline: the whole journey at a glance"
+    },
+    {
+     "name": "story_map",
+     "composedFrom": [
+      "card"
+     ],
+     "note": "the Epic-Feature-Story map artifact with approve gate"
+    }
+   ],
+   "design": {
+    "visualSource": "designs/appbox-studio/ui/views/main_shell/intake/mapping (v1 intake loop, ported verbatim)",
+    "instruction": "v1 item-engine step ported verbatim (visual parity law): the three-panel loop (composer | main stage | activity) with the read-only timeline footer; the step surface renders once — its htmx swap targets are id anchors"
+   }
+  },
+  {
+   "id": "studio_intake_shell.studio_intake_direction",
+   "shell": "studio_intake_shell",
+   "shellKind": "working",
+   "label": "Direction",
+   "labelKey": "intake.direction.pageTitle",
+   "surface": "studio_intake_direction_view",
+   "route": "/intake/direction",
+   "requiresAuth": true,
+   "widgets": [
+    {
+     "name": "composer_panel",
+     "composedFrom": [
+      "form-field"
+     ],
+     "note": "the chat rail, always in the current step context (v1 loop port)"
+    },
+    {
+     "name": "main_panel",
+     "composedFrom": [
+      "tabs"
+     ],
+     "note": "the step stage: one item at a time, the item-strip, the step foot (v1 loop port)"
+    },
+    {
+     "name": "activity_panel",
+     "kind": "panel-activity",
+     "note": "thread / artifacts / files views carousel (v1 loop port)"
+    },
+    {
+     "name": "timeline",
+     "composedFrom": [
+      "list-row"
+     ],
+     "note": "the footer timeline: the whole journey at a glance"
+    },
+    {
+     "name": "item_cards",
+     "composedFrom": [
+      "card"
+     ],
+     "note": "adjectives / avoids / references cards"
+    }
+   ],
+   "design": {
+    "visualSource": "designs/appbox-studio/ui/views/main_shell/intake/direction (v1 intake loop, ported verbatim)",
+    "instruction": "v1 item-engine step ported verbatim (visual parity law): the three-panel loop (composer | main stage | activity) with the read-only timeline footer; the step surface renders once — its htmx swap targets are id anchors"
+   }
+  },
+  {
+   "id": "studio_intake_shell.studio_intake_brief",
+   "shell": "studio_intake_shell",
+   "shellKind": "working",
+   "label": "Brief",
+   "labelKey": "intake.brief.pageTitle",
+   "surface": "studio_intake_brief_view",
+   "route": "/intake/brief",
+   "requiresAuth": true,
+   "widgets": [
+    {
+     "name": "composer_panel",
+     "composedFrom": [
+      "form-field"
+     ],
+     "note": "the chat rail, always in the current step context (v1 loop port)"
+    },
+    {
+     "name": "main_panel",
+     "composedFrom": [
+      "tabs"
+     ],
+     "note": "the step stage: one item at a time, the item-strip, the step foot (v1 loop port)"
+    },
+    {
+     "name": "activity_panel",
+     "kind": "panel-activity",
+     "note": "thread / artifacts / files views carousel (v1 loop port)"
+    },
+    {
+     "name": "timeline",
+     "composedFrom": [
+      "list-row"
+     ],
+     "note": "the footer timeline: the whole journey at a glance"
+    },
+    {
+     "name": "brief_artifact",
+     "composedFrom": [
+      "card"
+     ],
+     "note": "the design brief artifact with the approval gate"
+    }
+   ],
+   "design": {
+    "visualSource": "designs/appbox-studio/ui/views/main_shell/intake/brief (v1 intake loop, ported verbatim)",
+    "instruction": "v1 item-engine step ported verbatim (visual parity law): the three-panel loop (composer | main stage | activity) with the read-only timeline footer; the step surface renders once — its htmx swap targets are id anchors"
+   }
+  },
+  {
+   "id": "studio_intake_shell.studio_intake_moodboard",
+   "shell": "studio_intake_shell",
+   "shellKind": "working",
+   "label": "Moodboard",
+   "labelKey": "intake.moodboard.pageTitle",
+   "surface": "studio_intake_moodboard_view",
+   "route": "/intake/moodboard",
+   "requiresAuth": true,
+   "widgets": [
+    {
+     "name": "composer_panel",
+     "composedFrom": [
+      "form-field"
+     ],
+     "note": "the chat rail, always in the current step context (v1 loop port)"
+    },
+    {
+     "name": "main_panel",
+     "composedFrom": [
+      "tabs"
+     ],
+     "note": "the step stage: one item at a time, the item-strip, the step foot (v1 loop port)"
+    },
+    {
+     "name": "activity_panel",
+     "kind": "panel-activity",
+     "note": "thread / artifacts / files views carousel (v1 loop port)"
+    },
+    {
+     "name": "timeline",
+     "composedFrom": [
+      "list-row"
+     ],
+     "note": "the footer timeline: the whole journey at a glance"
+    },
+    {
+     "name": "moodboard",
+     "composedFrom": [
+      "card"
+     ],
+     "note": "reference boards and shots"
+    }
+   ],
+   "design": {
+    "visualSource": "designs/appbox-studio/ui/views/main_shell/intake/moodboard (v1 intake loop, ported verbatim)",
+    "instruction": "v1 item-engine step ported verbatim (visual parity law): the three-panel loop (composer | main stage | activity) with the read-only timeline footer; the step surface renders once — its htmx swap targets are id anchors"
+   }
+  },
+  {
+   "id": "studio_design_shell.studio_design_prototype",
    "shell": "studio_design_shell",
    "shellKind": "working",
-   "label": "Design",
-   "labelKey": "stageDesign",
-   "surface": "studio_design_view",
+   "label": "Prototype",
+   "labelKey": "design.prototype.pageTitle",
+   "surface": "studio_design_prototype_view",
    "route": "/design",
    "requiresAuth": true,
    "widgets": [
     {
-     "name": "design_canvas",
-     "presentation": "canvas island (runtime/vendor canvas.js + inspect.js) — no kit widget realises it",
-     "note": "desktop = full studio; tablet canvas shows tablet+mobile of designed app; mobile canvas shows mobile only; inspect on all devices"
+     "name": "design_viewer",
+     "presentation": "canvas island (runtime/vendor canvas.js + drag.js + reveal.js) — no kit widget realises it",
+     "note": "the project screens as live iframes; flows, tile toolbars, the reveal drawer"
     },
     {
-     "name": "inspector_panel",
+     "name": "composer_panel",
+     "composedFrom": [
+      "form-field"
+     ],
+     "note": "the design chat rail with pinned context chips"
+    },
+    {
+     "name": "main_panel",
+     "composedFrom": [
+      "tabs"
+     ],
+     "note": "the viewer canvas stage (prototype) / the chat thread (chat) / the freeze trace (freeze)"
+    },
+    {
+     "name": "activity_panel",
+     "kind": "panel-activity",
+     "note": "thread / artifacts / files / inspector views"
+    },
+    {
+     "name": "timeline",
+     "composedFrom": [
+      "list-row"
+     ],
+     "note": "the footer timeline"
+    },
+    {
+     "name": "inspector_pane",
      "composedFrom": [
       "tabs",
       "form-field"
-     ]
-    },
-    {
-     "name": "composer_slider_panel",
-     "kind": "bottom-sheet"
-    },
-    {
-     "name": "needs_you_strip",
-     "composedFrom": [
-      "chip"
-     ]
-    },
-    {
-     "name": "activity",
-     "kind": "panel-activity"
+     ],
+     "note": "the element inspector (the activity panel 4th view + the unlock flow)"
     }
    ],
    "design": {
-    "visualSource": "designs/appbox-studio/ui (design canvas + inspector)",
-    "instruction": "designed-app content is Portalo (seed.portalo); v1 canvas/inspector layout restructured, not redesigned"
+    "visualSource": "designs/appbox-studio/ui/views/main_shell/design/prototype (v1 design loop, ported verbatim)",
+    "instruction": "v1 design loop ported verbatim (visual parity law): designed-app content is Portalo (seed.portalo); the surface renders once — islands and htmx targets are id-anchored"
    },
    "tab": 3
+  },
+  {
+   "id": "studio_design_shell.studio_design_chat",
+   "shell": "studio_design_shell",
+   "shellKind": "working",
+   "label": "Chat",
+   "labelKey": "design.chat.pageTitle",
+   "surface": "studio_design_chat_view",
+   "route": "/design/chat",
+   "requiresAuth": true,
+   "widgets": [
+    {
+     "name": "design_viewer",
+     "presentation": "canvas island (runtime/vendor canvas.js + drag.js + reveal.js) — no kit widget realises it",
+     "note": "the project screens as live iframes; flows, tile toolbars, the reveal drawer"
+    },
+    {
+     "name": "composer_panel",
+     "composedFrom": [
+      "form-field"
+     ],
+     "note": "the design chat rail with pinned context chips"
+    },
+    {
+     "name": "main_panel",
+     "composedFrom": [
+      "tabs"
+     ],
+     "note": "the viewer canvas stage (prototype) / the chat thread (chat) / the freeze trace (freeze)"
+    },
+    {
+     "name": "activity_panel",
+     "kind": "panel-activity",
+     "note": "thread / artifacts / files / inspector views"
+    },
+    {
+     "name": "timeline",
+     "composedFrom": [
+      "list-row"
+     ],
+     "note": "the footer timeline"
+    }
+   ],
+   "design": {
+    "visualSource": "designs/appbox-studio/ui/views/main_shell/design/chat (v1 design loop, ported verbatim)",
+    "instruction": "v1 design loop ported verbatim (visual parity law): designed-app content is Portalo (seed.portalo); the surface renders once — islands and htmx targets are id-anchored"
+   }
+  },
+  {
+   "id": "studio_design_shell.studio_design_freeze",
+   "shell": "studio_design_shell",
+   "shellKind": "working",
+   "label": "Freeze",
+   "labelKey": "design.freeze.pageTitle",
+   "surface": "studio_design_freeze_view",
+   "route": "/design/freeze",
+   "requiresAuth": true,
+   "widgets": [
+    {
+     "name": "design_viewer",
+     "presentation": "canvas island (runtime/vendor canvas.js + drag.js + reveal.js) — no kit widget realises it",
+     "note": "the project screens as live iframes; flows, tile toolbars, the reveal drawer"
+    },
+    {
+     "name": "composer_panel",
+     "composedFrom": [
+      "form-field"
+     ],
+     "note": "the design chat rail with pinned context chips"
+    },
+    {
+     "name": "main_panel",
+     "composedFrom": [
+      "tabs"
+     ],
+     "note": "the viewer canvas stage (prototype) / the chat thread (chat) / the freeze trace (freeze)"
+    },
+    {
+     "name": "activity_panel",
+     "kind": "panel-activity",
+     "note": "thread / artifacts / files / inspector views"
+    },
+    {
+     "name": "timeline",
+     "composedFrom": [
+      "list-row"
+     ],
+     "note": "the footer timeline"
+    },
+    {
+     "name": "freeze_trace",
+     "composedFrom": [
+      "card"
+     ],
+     "note": "the frozen manifest trace + recheck + the approval gate"
+    }
+   ],
+   "design": {
+    "visualSource": "designs/appbox-studio/ui/views/main_shell/design/freeze (v1 design loop, ported verbatim)",
+    "instruction": "v1 design loop ported verbatim (visual parity law): designed-app content is Portalo (seed.portalo); the surface renders once — islands and htmx targets are id-anchored"
+   }
   }
  ]
 }
