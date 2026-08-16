@@ -131,14 +131,35 @@ void main() {
 
       expect(find.text('gallery-shot.png'), findsOneWidget,
           reason: 'the fake pick appears as a pending chip');
+      // The CHIP is the opaque surface: content-layer standard material
+      // (frosted tier, opaqueGlass default) — the Liquid Glass tier's
+      // 0.45 tint reads translucent. The strip hosts NO base: opaque
+      // chips float over the thread (messenger idiom) instead of merging
+      // into a same-tint panel.
+      final Finder chipCard = find.ancestor(
+        of: find.text('gallery-shot.png'),
+        matching: find.byType(AppBoxKitGlassCard),
+      );
+      expect(
+        tester.widget<AppBoxKitGlassCard>(chipCard).wantNative,
+        isFalse,
+        reason: 'the chip renders the OPAQUE content-layer surface — '
+            'real Liquid Glass is pinned chrome, and its tint stays '
+            'translucent',
+      );
+      expect(
+        tester.widget<AppBoxKitGlassCard>(chipCard).opaqueGlass,
+        isTrue,
+        reason: 'opaqueGlass is what makes the frosted tier a solid '
+            'alpha-1.0 fill',
+      );
       expect(
         find.ancestor(
           of: find.byType(SingleChildScrollView),
           matching: find.byType(AppBoxKitOpaqueBarBase),
         ),
-        findsOneWidget,
-        reason: 'the pending strip paints the opaque bar base — thread '
-            'content must never show through behind the chips',
+        findsNothing,
+        reason: 'the strip paints no panel — the chips are the surface',
       );
       expect(find.widgetWithIcon(IconButtonM3E, Icons.send), findsOneWidget,
           reason: 'a pending attachment counts as a draft');

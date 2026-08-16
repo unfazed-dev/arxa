@@ -203,37 +203,36 @@ class _ShowcaseComponentsInputBarWidgetState
       mainAxisSize: MainAxisSize.min,
       children: [
         if (_pending.isNotEmpty)
-          // The pending strip paints the SAME opaque base the bar uses —
-          // without it the thread scrolls visibly through the gap between
-          // chips (the row alone paints nothing).
-          AppBoxKitOpaqueBarBase(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-              child: SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: Row(
-                  children: [
-                    for (final (index, attachment) in _pending.indexed)
-                      Padding(
-                        padding: EdgeInsets.only(left: index == 0 ? 0 : 8),
-                        child: _PendingChip(
-                          icon: switch (attachment.kind) {
-                            ShowcaseComposerAttachmentKind.camera =>
-                              AppBoxKitGlyphs.camera.icon,
-                            ShowcaseComposerAttachmentKind.photo =>
-                              AppBoxKitGlyphs.photo.icon,
-                            ShowcaseComposerAttachmentKind.file =>
-                              AppBoxKitGlyphs.folder.icon,
-                            ShowcaseComposerAttachmentKind.location =>
-                              AppBoxKitGlyphs.locationPin.icon,
-                          },
-                          label: attachment.name,
-                          onRemove: () =>
-                              setState(() => _pending.removeAt(index)),
-                        ),
+          // No panel behind the row — each CHIP is the opaque surface,
+          // floating over the thread (the messenger attachment-preview
+          // idiom). A strip base in the same tint token as the chips
+          // would merge them into one blob.
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: [
+                  for (final (index, attachment) in _pending.indexed)
+                    Padding(
+                      padding: EdgeInsets.only(left: index == 0 ? 0 : 8),
+                      child: _PendingChip(
+                        icon: switch (attachment.kind) {
+                          ShowcaseComposerAttachmentKind.camera =>
+                            AppBoxKitGlyphs.camera.icon,
+                          ShowcaseComposerAttachmentKind.photo =>
+                            AppBoxKitGlyphs.photo.icon,
+                          ShowcaseComposerAttachmentKind.file =>
+                            AppBoxKitGlyphs.folder.icon,
+                          ShowcaseComposerAttachmentKind.location =>
+                            AppBoxKitGlyphs.locationPin.icon,
+                        },
+                        label: attachment.name,
+                        onRemove: () =>
+                            setState(() => _pending.removeAt(index)),
                       ),
-                  ],
-                ),
+                    ),
+                ],
               ),
             ),
           ),
@@ -478,6 +477,12 @@ class _PendingChip extends StatelessWidget {
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     return AppBoxKitGlassCard(
+      // OPAQUE by tier: the frosted branch's opaqueGlass default is a
+      // solid alpha-1.0 rounded fill. The native Liquid Glass tier is
+      // pinned chrome — its "opaque" is a 0.45 tint that still reads
+      // translucent, and content-layer glass is out of contract anyway
+      // (ADR 0010; the recording strip does the same).
+      wantNative: false,
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       child: Row(
         mainAxisSize: MainAxisSize.min,
