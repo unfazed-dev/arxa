@@ -47,7 +47,7 @@
     "id": "note-welcome",
     "folder_id": "folder-notes",
     "owner": "user-1",
-    "body": "Welcome to Kit Notes\nThis app is a smoke test for appbox_kit_data.\nEverything you see is seeded fixture data flowing through KitSeedRepository streams.\nCreate, edit, pin, delete, record a voice memo, snap a photo — then restart the app to see snapshot persistence keep your changes.",
+    "body": "Welcome to AppBox Notes\nThis app is a smoke test for appbox_kit_data.\nEverything you see is seeded fixture data flowing through KitSeedRepository streams.\nCreate, edit, pin, delete, record a voice memo, snap a photo — then restart the app to see snapshot persistence keep your changes.",
     "pinned": false,
     "attachments": [],
     "deleted_at": null,

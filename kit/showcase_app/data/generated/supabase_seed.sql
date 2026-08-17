@@ -26,7 +26,7 @@ insert into "notes" ("id", "folder_id", "owner", "body", "pinned", "attachments"
 The Pragmatic Programmer
 A Philosophy of Software Design
 Designing Data-Intensive Applications', false, '[]'::jsonb, NULL, '2026-07-06T21:10:00Z', '2026-07-06T21:30:00Z') on conflict ("id") do update set "folder_id" = excluded."folder_id", "owner" = excluded."owner", "body" = excluded."body", "pinned" = excluded."pinned", "attachments" = excluded."attachments", "deleted_at" = excluded."deleted_at", "created_at" = excluded."created_at", "updated_at" = excluded."updated_at";
-insert into "notes" ("id", "folder_id", "owner", "body", "pinned", "attachments", "deleted_at", "created_at", "updated_at") values ('eb889723-6bab-54ec-abaa-11119cc90d4f', '2a6e1a62-81f1-5fd7-89f2-f4f5fa0185dc', 'abe0e859-19db-5db0-9d91-d45eec9c6d3a', 'Welcome to Kit Notes
+insert into "notes" ("id", "folder_id", "owner", "body", "pinned", "attachments", "deleted_at", "created_at", "updated_at") values ('eb889723-6bab-54ec-abaa-11119cc90d4f', '2a6e1a62-81f1-5fd7-89f2-f4f5fa0185dc', 'abe0e859-19db-5db0-9d91-d45eec9c6d3a', 'Welcome to AppBox Notes
 This app is a smoke test for appbox_kit_data.
 Everything you see is seeded fixture data flowing through KitSeedRepository streams.
 Create, edit, pin, delete, record a voice memo, snap a photo — then restart the app to see snapshot persistence keep your changes.', false, '[]'::jsonb, NULL, '2026-06-20T10:00:00Z', '2026-06-20T10:00:00Z') on conflict ("id") do update set "folder_id" = excluded."folder_id", "owner" = excluded."owner", "body" = excluded."body", "pinned" = excluded."pinned", "attachments" = excluded."attachments", "deleted_at" = excluded."deleted_at", "created_at" = excluded."created_at", "updated_at" = excluded."updated_at";

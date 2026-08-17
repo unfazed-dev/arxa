@@ -1,6 +1,6 @@
 {
-    "name": "appbox_kit_showcase_app",
-    "short_name": "appbox_kit_showcase_app",
+    "name": "AppBox Showcase",
+    "short_name": "AppBox Showcase",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#ffffff",
