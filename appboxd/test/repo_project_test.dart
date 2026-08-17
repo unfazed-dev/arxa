@@ -134,6 +134,43 @@ void main() {
       expect(checkMoodboardRecord(rec()), isEmpty);
     });
 
+    test('PENDING record: scoring validated, selection NOT required', () {
+      final r = rec(boards: [
+        {
+          'id': 'motion',
+          'references': [
+            {
+              'name': 'Stripe',
+              'scores': {'animated-3d': 5, 'premium': 4},
+              'total': 4.75,
+              'selected': false, // scored, not yet picked — honest pending
+            }
+          ],
+        }
+      ])
+        ..['selectionStatus'] = 'pending';
+      expect(checkMoodboardRecord(r), isEmpty);
+    });
+
+    test('PENDING record still refuses an infeasible locked criterion', () {
+      final r = rec(boards: [
+        {
+          'id': 'motion',
+          'references': [
+            {
+              'name': 'Static',
+              'scores': {'animated-3d': 1, 'premium': 5},
+              'total': 2.0,
+              'selected': false,
+            }
+          ],
+        }
+      ])
+        ..['selectionStatus'] = 'pending';
+      expect(checkMoodboardRecord(r),
+          anyElement(contains('re-gather')));
+    });
+
     test('green on a coherent scored+selected record', () {
       final r = rec(boards: [
         {

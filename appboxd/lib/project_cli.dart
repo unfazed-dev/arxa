@@ -85,7 +85,13 @@ int _initRepo(List<String> args) {
   String? name;
   var targets = const <String>[];
   var locales = const <String>[];
-  for (var i = 0; i < args.length; i++) {
+  // A leading positional (before any flag) is the dir: `init --repo landing …`.
+  var start = 0;
+  if (args.isNotEmpty && !args.first.startsWith('-')) {
+    dir = args.first;
+    start = 1;
+  }
+  for (var i = start; i < args.length; i++) {
     switch (args[i]) {
       case '--repo':
         if (i + 1 >= args.length) return _missing('--repo');

@@ -90,6 +90,10 @@ List<String> checkMoodboardRecord(Map<String, dynamic> rec, {double floor = 3.0}
       !['pending', 'approved'].contains(selectionStatus)) {
     failures.add('selectionStatus must be pending|approved, got "$selectionStatus"');
   }
+  // Pipeline position: a PENDING record (scored, not yet selected) validates
+  // scoring only; an APPROVED record additionally validates the selection.
+  // Conflating them would make every honest post-scoring record red.
+  final approved = selectionStatus == 'approved';
 
   for (final b in boards.cast<Map<String, dynamic>>()) {
     final boardId = b['id'] ?? '?';
@@ -126,26 +130,35 @@ List<String> checkMoodboardRecord(Map<String, dynamic> rec, {double floor = 3.0}
         }
       }
     }
-    if ((b['references'] as List? ?? const []).isNotEmpty && selectedCount == 0) {
+    if (approved &&
+        (b['references'] as List? ?? const []).isNotEmpty &&
+        selectedCount == 0) {
       failures.add('$boardId: no selected reference — the designer gets nothing from this board');
     }
   }
 
-  // Locked intake criteria must be FED: at least one selected reference
-  // scoring >= 3 on the locked criterion, anywhere in the record.
+  // Locked intake criteria must be FED. While PENDING, feasibility is enough
+  // (some reference scoring >= 3 exists); once APPROVED, a SELECTED reference
+  // must carry it — an intake-locked requirement is about to be dropped
+  // otherwise.
   for (final id in locked) {
+    var feasible = false;
     var fed = false;
     for (final b in boards.cast<Map<String, dynamic>>()) {
       for (final r in (b['references'] as List? ?? const []).whereType<Map>()) {
         final ref = r.cast<String, dynamic>();
-        if (ref['selected'] == true) {
-          final s = (ref['scores'] as Map? ?? const {})[id];
-          if (s is num && s >= 3) fed = true;
+        final s = (ref['scores'] as Map? ?? const {})[id];
+        if (s is num && s >= 3) {
+          feasible = true;
+          if (ref['selected'] == true) fed = true;
         }
       }
     }
-    if (!fed) {
-      failures.add('locked criterion "$id" has no selected reference scoring >= 3 — '
+    if (!feasible) {
+      failures.add('locked criterion "$id" has NO reference scoring >= 3 anywhere — '
+          're-gather: the board cannot feed an intake-locked requirement');
+    } else if (approved && !fed) {
+      failures.add('locked criterion "$id" has no SELECTED reference scoring >= 3 — '
           'an intake-locked requirement is about to be dropped again');
     }
   }
