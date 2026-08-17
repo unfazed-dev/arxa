@@ -1318,7 +1318,7 @@ void _fileFixtureSections(
     'AppBoxKitNativePopupMenu',
     'AppBoxKitNativeNavigationRail',
     'appBoxKitShowNativeToast',
-    'appBoxKitShowNativeSheet',
+    'appBoxKitShowSheet',
   ]) {
     expect(allSurfaceMsg.contains(kit),
         '4g all-surfaces fixture names $kit (no ban row silently misses)');

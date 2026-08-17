@@ -318,7 +318,7 @@ via the Stacked CLI (see "Building on the kit" above; the step-by-step playbook
 lives in `docs/plans/appbox-kit-showcase-app-port.md` §7). The older
 `packages/appbox_kit_showcase` (pluggable, host-embedded) is superseded as the
 template — read it only for history. The showcase ships the 17 native kit
-surfaces as routed tabs (Home/Search/Profile) plus **Kit Notes** — an
+surfaces as routed tabs (Home/Search/Profile) plus **AppBox Notes** — an
 iOS-Notes-style app smoke-testing every appbox_kit_data capability over
 seeded data (folders, pinned, date groups, search, soft delete/restore,
 photo capture, voice memos, fake-auth sign-in with per-owner isolation).

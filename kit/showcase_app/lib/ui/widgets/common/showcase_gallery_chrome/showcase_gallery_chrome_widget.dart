@@ -2,7 +2,7 @@
 /// widgets out via `build`. It never owns business logic.
 ///
 /// This is the user interface for the chrome every widget-gallery TAB ROOT
-/// shares — the 'Kit Showcase' app bar (search shortcut + overflow menu) and
+/// shares — the 'AppBox Showcase' app bar (search shortcut + overflow menu) and
 /// the compose floating-action-button menu. Chrome is per-surface: each tab
 /// ROOT view puts its own body inside this widget, and the shell above it is a
 /// bare nested router. A route pushed on top of a tab root therefore renders
