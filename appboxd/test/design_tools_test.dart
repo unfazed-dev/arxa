@@ -595,16 +595,20 @@ export default [
       expect(r.stderrLines.join('\n'), contains('integrity mismatch'));
     });
 
-    test('manifest entry shape {file, package, version, integrity}', () {
+    test('manifest entry shape {file, package, version, integrity, category}',
+        () {
       final entry = manifestEntry(
           file: 'htmx.min.js', pkg: 'htmx.org', version: '2.0.10',
           integrity: 'sha384-xxx');
-      expect(entry.keys,
-          unorderedEquals(['file', 'package', 'version', 'integrity']));
+      expect(entry.keys, unorderedEquals(
+          ['file', 'package', 'version', 'integrity', 'category']));
       expect(entry['file'], 'htmx.min.js');
       expect(entry['package'], 'htmx.org');
       expect(entry['version'], '2.0.10');
       expect(entry['integrity'], 'sha384-xxx');
+      // 89e153c2 (ADR-0009 categories) added the key; hypermedia is the
+      // default for the vendored libraries the client-JS lint allows.
+      expect(entry['category'], 'hypermedia');
     });
   });
 

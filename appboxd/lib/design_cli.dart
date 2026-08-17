@@ -164,7 +164,9 @@ Future<int> _selfTest() async {
         'sha384-ywB1P0WjXou1oD1pmsZQBycsMqsO3tFjGotgWkP/W+2AhgcroefMI1i67KE0yCWn';
     if (await sri('abc'.codeUnits) != expected) throw 'sri diverged from openssl';
     // 6. manifest entry shape is closed.
-    if (manifestEntry(file: 'f', pkg: 'p', version: 'v', integrity: 'i').length != 4) {
+    final me = manifestEntry(file: 'f', pkg: 'p', version: 'v', integrity: 'i');
+    if (me.length != 5 ||
+        me['category'] != 'hypermedia') {
       throw 'manifest shape changed';
     }
   } catch (e) {
