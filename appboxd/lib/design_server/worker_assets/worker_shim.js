@@ -278,7 +278,7 @@
     } catch (err) {
       // Hono's onError: a throwing handler answers 500 — it never takes the
       // request path (or the design server) down with it.
-      return JSON.stringify({ status: 500, headers: { 'content-type': 'text/plain; charset=utf-8' }, body: '500 \u2014 handler threw: ' + ((err && err.message) || err), setCookies: [], timers: state.timers || {}, locale: state.locale || 'en' });
+      return JSON.stringify({ status: 500, headers: { 'content-type': 'text/plain; charset=utf-8' }, body: '500 \u2014 handler threw: ' + ((err && err.message) || err) + ' STACK: ' + ((err && err.stack) || ''), setCookies: [], timers: state.timers || {}, locale: state.locale || 'en' });
     }
     const r = c._collect();
     return JSON.stringify(r);
