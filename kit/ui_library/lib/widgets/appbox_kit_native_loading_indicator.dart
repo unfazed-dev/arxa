@@ -39,8 +39,12 @@ class AppBoxKitNativeLoadingIndicator extends StatelessWidget {
     // Else → Material CircularProgressIndicator.
     if (AppBoxKitPlatform.supportsComposeM3E) return _m3e(context);
     if (AppBoxKitPlatform.isIOS) return _cupertino(context);
-    return CircularProgressIndicator(
+    // Material fallback honors [size] with the doc-promised tight clip —
+    // a bare indicator would pin itself to the stock 36px default.
+    final indicator = CircularProgressIndicator(
         color: color ?? Theme.of(context).colorScheme.primary);
+    if (size == null) return indicator;
+    return SizedBox(width: size, height: size, child: indicator);
   }
 
   Widget _m3e(BuildContext context) => LoadingIndicatorM3E(

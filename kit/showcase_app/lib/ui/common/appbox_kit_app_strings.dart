@@ -16,9 +16,6 @@ const String abxStrNotesEmptySubtitle = 'Create your first note to get started';
 const String abxStrNotesCreateAccountTitle = 'Create account';
 const String abxStrNotesCreateAccountSubmit = 'Sign up';
 
-// Startup
-const String abxStrStartupLoading = 'Loading…';
-
 // Startup — brand lockup (the all-caps wordmark IS the copy, not a style)
 const String abxStrStartupAppTitle = 'APPBOX SHOWCASE';
 

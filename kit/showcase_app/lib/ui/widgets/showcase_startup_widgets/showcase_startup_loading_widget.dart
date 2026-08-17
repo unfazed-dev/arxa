@@ -18,11 +18,11 @@
 library;
 
 import 'package:appbox_kit_showcase_app/ui/common/appbox_kit_app_strings.dart'
-    show abxStrStartupAppTitle, abxStrStartupLoading;
+    show abxStrStartupAppTitle;
 import 'package:appbox_kit_showcase_app/ui/common/appbox_kit_assets.dart'
     show abxImgBrandIcon;
 import 'package:appbox_kit_showcase_app/ui/common/appbox_kit_ui_helpers.dart'
-    show appBoxKitHorizontalSpaceSmall, appBoxKitVerticalSpaceMedium;
+    show appBoxKitVerticalSpaceLarge, appBoxKitVerticalSpaceMedium;
 import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart'
     show AppBoxKitNativeLoadingIndicator;
 import 'package:flutter/material.dart';
@@ -32,31 +32,29 @@ class ShowcaseStartupLoadingWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(
+    return Scaffold(
       body: Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Image(
+            const Image(
               image: AssetImage(abxImgBrandIcon),
               width: 80,
               height: 80,
             ),
             appBoxKitVerticalSpaceMedium,
-            Text(
+            const Text(
               abxStrStartupAppTitle,
+              textAlign: TextAlign.center,
               style: TextStyle(fontSize: 40, fontWeight: FontWeight.w900),
             ),
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(abxStrStartupLoading, style: TextStyle(fontSize: 16)),
-                appBoxKitHorizontalSpaceSmall,
-                // Native-first: the kit's adaptive indicator — M3E morphing
-                // loader on Android, Cupertino spinner on iOS (never a stock
-                // Material spinner on an iOS surface).
-                AppBoxKitNativeLoadingIndicator(size: 16),
-              ],
+            appBoxKitVerticalSpaceLarge,
+            // The boot spinner wears the brand accent: colorScheme.primary IS
+            // the accent — appBoxKitLightTheme/appBoxKitDarkTheme map it there
+            // (moss in this app).
+            AppBoxKitNativeLoadingIndicator(
+              size: 40,
+              color: Theme.of(context).colorScheme.primary,
             ),
           ],
         ),

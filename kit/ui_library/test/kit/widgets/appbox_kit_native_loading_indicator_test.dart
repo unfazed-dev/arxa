@@ -51,4 +51,20 @@ void main() {
       reason: 'non-Android / non-iOS default tier renders Material fallback',
     );
   });
+
+  testWidgets(
+      'kit.ui-library.native-loading-indicator — the Material fallback honors '
+      'size: a tight clip, not the stock 36px default extent', (tester) async {
+    await tester.pumpWidget(
+      host(const AppBoxKitNativeLoadingIndicator(size: 40, color: Colors.red)),
+    );
+
+    expect(
+      tester.getSize(find.byType(CircularProgressIndicator)),
+      const Size(40, 40),
+      reason: 'the class contract pins every tier to the requested extent '
+          '(M3E tight constraints, Cupertino radius, Material clip) — a bare '
+          'indicator would cap at the stock 36px default',
+    );
+  });
 }
