@@ -23,13 +23,16 @@ import 'dart:convert';
 import 'dart:io';
 
 int moodboardCheckMain(List<String> args) {
-  if (args.isEmpty) {
+  // The dispatch forwards everything after `moodboard` — strip a leading
+  // `check` verb so both `appbox moodboard check <dir>` and a direct call work.
+  final rest = args.isNotEmpty && args.first == 'check' ? args.sublist(1) : args;
+  if (rest.isEmpty) {
     stderr.writeln('Usage: appbox moodboard check <intake-dir> [--floor 3.0]');
     return 2;
   }
-  final dir = args.first;
+  final dir = rest.first;
   var floor = 3.0;
-  for (var i = 1; i < args.length; i++) {
+  for (var i = 1; i < rest.length; i++) {
     if (args[i] == '--floor' && i + 1 < args.length) {
       floor = double.tryParse(args[++i]) ?? floor;
     } else {
@@ -97,7 +100,6 @@ List<String> checkMoodboardRecord(Map<String, dynamic> rec, {double floor = 3.0}
 
   for (final b in boards.cast<Map<String, dynamic>>()) {
     final boardId = b['id'] ?? '?';
-    var selectedCount = 0;
     for (final r in (b['references'] as List? ?? const []).whereType<Map>()) {
       final ref = r.cast<String, dynamic>();
       final refName = ref['name'] ?? ref['url'] ?? '?';
@@ -123,18 +125,21 @@ List<String> checkMoodboardRecord(Map<String, dynamic> rec, {double floor = 3.0}
       } else {
         failures.add('$boardId/$refName: no recorded total');
       }
-      if (ref['selected'] == true) {
-        selectedCount++;
-        if (total < floor) {
-          failures.add('$boardId/$refName: selected but total ${total.toStringAsFixed(2)} < floor $floor');
-        }
+      if (ref['selected'] == true && total < floor) {
+        failures.add('$boardId/$refName: selected but total ${total.toStringAsFixed(2)} < floor $floor');
       }
     }
-    if (approved &&
-        (b['references'] as List? ?? const []).isNotEmpty &&
-        selectedCount == 0) {
-      failures.add('$boardId: no selected reference — the designer gets nothing from this board');
-    }
+    // Per-board selectedCount is intentionally NOT enforced: selection is a
+    // global human choice, and a board may honestly contribute nothing (its
+    // patterns stay mandated by the board's own pattern list). What IS
+    // enforced: an approved record with zero selections anywhere starves the
+    // designer — checked after the loop.
+  }
+
+  if (approved &&
+      boards.every((b) => (b['references'] as List? ?? const []).isEmpty ||
+          !(b['references'] as List).any((r) => r is Map && r['selected'] == true))) {
+    failures.add('approved selection contains no references at all — the designer gets nothing');
   }
 
   // Locked intake criteria must be FED. While PENDING, feasibility is enough

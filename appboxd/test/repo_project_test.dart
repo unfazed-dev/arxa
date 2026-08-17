@@ -250,8 +250,8 @@ void main() {
       expect(failures, anyElement(contains('locked criterion "animated-3d"')));
     });
 
-    test('a board whose references are all unselected fails', () {
-      final r = rec(boards: [
+    test('approved with ZERO selections anywhere fails; one selected board alone satisfies', () {
+      final none = rec(boards: [
         {
           'id': 'motion',
           'references': [
@@ -264,7 +264,25 @@ void main() {
           ],
         }
       ]);
-      expect(checkMoodboardRecord(r), anyElement(contains('no selected reference')));
+      expect(checkMoodboardRecord(none),
+          anyElement(contains('no references at all')));
+      // a second board carrying the selection makes the record green even
+      // though board 'motion' contributes nothing — the human's global pick
+      final withOther = rec(boards: [
+        ...(none['boards'] as List),
+        {
+          'id': 'other',
+          'references': [
+            {
+              'name': 'Linear',
+              'scores': {'animated-3d': 5, 'premium': 4},
+              'total': 4.75,
+              'selected': true,
+            }
+          ],
+        }
+      ]);
+      expect(checkMoodboardRecord(withOther), isEmpty);
     });
 
     test('out-of-range score fails', () {
