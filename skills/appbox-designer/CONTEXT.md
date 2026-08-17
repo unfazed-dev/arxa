@@ -1,6 +1,6 @@
 # appbox-designer
 
-The design-prototyping context: generates polished design artifacts (mockups, interactive prototypes, decks, mobile views) as server-rendered hypermedia applications — htmx + CSS, no ad-hoc client-side JavaScript (named islands only) — in a genuine MVVM structure. Ported from appbox-designer (the upstream MIT project / Claude Design lineage).
+The design-prototyping context: generates polished design artifacts (mockups, interactive prototypes, decks, mobile views) as server-rendered hypermedia applications — htmx with client JS in the three legal ADR-0009 forms (categorized vendored libraries, first-party islands, artifact app modules) — in a genuine MVVM structure. Ported from appbox-designer (the upstream MIT project / Claude Design lineage).
 
 ## Language
 

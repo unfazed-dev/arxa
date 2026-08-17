@@ -43,7 +43,10 @@ const String _usage = '''
 Usage: appbox design <subcommand> [options]
 
 Subcommands:
-  lint <artifact-dir>                No-ad-hoc-client-JS lint (ADR-0002)
+  lint <artifact-dir>                Client-JS lint (ADR-0002 as amended
+                                     by ADR-0009: vendored libs, first-party
+                                     islands, artifact app modules) + the
+                                     optional client-js.json weight ceiling
                                      + widget/panel gate (W1–W7)
   check-ladder [--config <p>] [--doc <p>]
                                      Ladder config ↔ doctrine drift check

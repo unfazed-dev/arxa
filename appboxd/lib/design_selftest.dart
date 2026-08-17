@@ -905,6 +905,7 @@ final List<_Mutation> _mutations = [
   _Mutation('widget-partials', _lWidgets, false, _mutateWidgetPartials),
   _Mutation('untracked-file', _lGit, false, _mutateUntrackedFile),
   _Mutation('client-js', _lLint, false, _mutateClientJs),
+  _Mutation('app-module', _lLint, false, _mutateAppModule),
   // The inverse row: a commented ban is NOT a violation — the lint must still pass.
   _Mutation('commented-js', _lLint, true, _mutateCommentedJs),
   _Mutation('kit-catalog-row', _lKitCatalogMirror, false, _mutateKitCatalogRow),
@@ -1174,6 +1175,16 @@ void _mutateClientJs(String art, String skill) {
   if (files.isEmpty) return;
   final f = files.first;
   f.writeAsStringSync('${f.readAsStringSync()}\n<div hx-on:click="alert(1)"></div>\n');
+}
+
+/// ADR-0009 form 3 — an app-module script that resolves to nothing must fail
+/// the lint (a 404 at runtime is a finding at design time).
+void _mutateAppModule(String art, String skill) {
+  final files = _htmlFiles(art);
+  if (files.isEmpty) return;
+  final f = files.first;
+  f.writeAsStringSync(
+      '${f.readAsStringSync()}\n<script src="/assets/app/ghost.js"></script>\n');
 }
 
 void _mutateCommentedJs(String art, String skill) {

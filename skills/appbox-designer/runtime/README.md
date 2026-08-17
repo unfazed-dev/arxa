@@ -196,8 +196,10 @@ them with CSS `color`.
 ## Boilerplate head (copy from `examples/hello-hda/ui/common/base.tsx`)
 
 Every artifact's `base.tsx` carries: the vendored htmx 4 script tag (blocking,
-with SRI), the deferred island tags — the named islands of ADR-0002's amendments, loaded from
-/assets/vendor/ as views need them, and the enforcement meta config:
+with SRI), the deferred library/island tags — the categorized vendored set and
+the first-party islands (ADR-0002 as amended by ADR-0009), loaded from
+/assets/vendor/ as views need them, plus artifact app modules from
+/assets/app/ (named, headered, lint-resolved), and the enforcement meta config:
 
 ```tsx
 <meta name="htmx-config" content='{"transitions":true,"implicitInheritance":true,"noSwap":[204,304,"4xx","5xx"]}' />
@@ -287,13 +289,20 @@ to `en`. `appbox design pseudolocalize <artifact-dir>` derives
 accented, ~35% padded — truncation and hardcoded strings become visible);
 re-run the model generator afterwards.
 
-## The no-JS contract (ADR-0002)
+## The client-JS contract (ADR-0002 as amended by ADR-0009)
 
-Allowed: the vendored libraries above, plus the named islands of ADR-0002's
-amendments (first-party data-attribute islands and third-party declarative web
-components, all vendored in runtime/vendor/). Banned anywhere in artifact
+Allowed: the categorized vendored libraries above, the first-party islands
+(data-attribute init modules and third-party declarative web components, all
+vendored in runtime/vendor/), and artifact app modules under
+`assets/app/*.js` (authored wiring — named, why-this-exists header, loaded as
+`/assets/app/<name>.js`, lint-resolved to a real file). A commission may
+declare a weight ceiling via `client-js.json` (`{"ceilingKb": N}`) — the
+lint sums the vendor .js + app modules the HTML actually references.
+Flow state never lives in client JS: if losing it breaks a flow, it belongs
+in the viewmodel, the URL, or the server session. Banned anywhere in artifact
 views:
-`<script>` tags that don't point at `/assets/vendor/`, `hx-on:*`, `js:`-prefixed
+`<script>` tags that resolve to neither `/assets/vendor/` nor `/assets/app/`,
+`hx-on:*`, `js:`-prefixed
 attributes, `[expr]` trigger filters. `appbox design lint` enforces it;
 htmx 4 evaluates no attribute expressions at all (the v2 `allowEval:false`
 switch has no v4 equivalent — see base.tsx's header comment).

@@ -1,21 +1,31 @@
 ---
 name: appbox-designer
-description: "Use when the user asks to design, mock up, prototype, wireframe or visualize an application, product view or user flow that will be scaffolded into a real app — the artifact is a server-rendered htmx + CSS prototype with zero custom client-side JavaScript (named vendored islands only) in a genuine MVVM structure: app shells, views, dashboards, interactive prototypes and wireframes, authored at every viewport in the active ladder. Consumes the versioned intake/registry.json (+ intake/flows.json, the flows SSOT) as the pipeline's only authoring surface and materializes a derived registry.json, an inspectAttrs triple on every surface and a route table the freeze step reads; output is structurally isomorphic to kit/showcase_app/lib so the scaffolder transliterates rather than interprets. Not for slide decks or printable documents."
+description: "Use when the user asks to design, mock up, prototype, wireframe or visualize an application, product view or user flow that will be scaffolded into a real app — the artifact is a server-rendered htmx app in a genuine MVVM structure, enhanced on the client by the three legal ADR-0009 forms (categorized vendored libraries, first-party islands, artifact app modules): app shells, views, dashboards, interactive prototypes and wireframes, authored at every viewport in the active ladder. Consumes the versioned intake/registry.json (+ intake/flows.json, the flows SSOT) as the pipeline's only authoring surface and materializes a derived registry.json, an inspectAttrs triple on every surface and a route table the freeze step reads; output is structurally isomorphic to kit/showcase_app/lib so the scaffolder transliterates rather than interprets. Not for slide decks or printable documents."
 ---
 
 # appbox-designer
 
 > Per-skill playbook (the folded canon for this phase): [`DESIGNER_playbook.mdx`](DESIGNER_playbook.mdx)
 
-The design stage of the appbox pipeline. Every artifact is a Hono + htmx MVVM
-app with **no ad-hoc client-side JavaScript — named islands only**. An
-island is a reusable, vendored script in runtime/vendor/: a third-party
-declarative web component (<model-viewer>, <dotlottie-wc>, <lottie-player>)
-or a first-party data-attribute init module (canvas.js, drag.js, inspect.js,
-dotlottie_island.js, rive_island.js, three_island.js, game_island.js).
-Anything outside that registry is banned and linted — the same structure the
-scaffolder later emits as Flutter, which is why the prototype can carry
-structure rather than pixels.
+The design stage of the appbox pipeline. Every artifact is a Hono + htmx
+MVVM app whose **backbone stays server-rendered** — URL in, HTML out, always
+crawlable and lens-capturable. Client JavaScript is legal in exactly **three
+forms** (ADR-0009): **categorized vendored libraries** (runtime/vendor/:
+htmx, Alpine, GSAP, <model-viewer>, rive, three, leaflet… — SRI-pinned in
+manifest.json, every row carrying a category: hypermedia, state-framework,
+motion-framework, rich-media, data-viz, reactive-primitive); **first-party
+islands** (named, scoped, no-globals data-attribute modules with a
+why-this-exists header: canvas.js, drag.js, inspect.js…); and **artifact app
+modules** (assets/app/*.js — per-artifact authored wiring that connects
+vendored libraries to markup; same island discipline: named, headered,
+lint-resolved). Still banned and linted: inline event handlers, scripts that
+resolve to nothing, flow state living only in client JS — if losing it breaks
+a flow, it belongs in the viewmodel, the URL, or the server. A commission may
+declare a per-artifact JS weight ceiling (client-js.json); the lint enforces
+it over what the HTML actually loads. The MVVM structure is what the
+scaffolder later emits as Flutter — client JS is design simulation, never
+flow state — which is why the prototype can carry structure rather than
+pixels.
 
 **What makes this skill different from a generic design tool:** the prototype
 you produce is a *typed input to a build pipeline*. Structure is authored while

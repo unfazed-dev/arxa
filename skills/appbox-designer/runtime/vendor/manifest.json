@@ -3,120 +3,175 @@
     "file": "htmx.min.js",
     "package": "htmx.org",
     "version": "2.0.10",
-    "integrity": "sha384-H5SrcfygHmAuTDZphMHqBJLc3FhssKjG7w/CeCpFReSfwBWDTKpkzPP8c+cLsK+V"
+    "integrity": "sha384-H5SrcfygHmAuTDZphMHqBJLc3FhssKjG7w/CeCpFReSfwBWDTKpkzPP8c+cLsK+V",
+    "category": "hypermedia"
   },
   {
     "file": "preload.min.js",
     "package": "htmx-ext-preload",
     "version": "2.1.2",
-    "integrity": "sha384-PRIcY6hH1Y5784C76/Y8SqLyTanY9rnI3B8F3+hKZFNED55hsEqMJyqWhp95lgfk"
+    "integrity": "sha384-PRIcY6hH1Y5784C76/Y8SqLyTanY9rnI3B8F3+hKZFNED55hsEqMJyqWhp95lgfk",
+    "category": "hypermedia"
   },
   {
     "file": "head-support.js",
     "package": "htmx-ext-head-support",
     "version": "2.0.5",
-    "integrity": "sha384-cvMqHzjCJsOHgGuyB3sWXaUSv/Krm0BdzjuI1rtkjCbL1l1oHJx+cHyVRJhyuEz0"
+    "integrity": "sha384-cvMqHzjCJsOHgGuyB3sWXaUSv/Krm0BdzjuI1rtkjCbL1l1oHJx+cHyVRJhyuEz0",
+    "category": "hypermedia"
   },
   {
     "file": "sse.js",
     "package": "htmx-ext-sse",
     "version": "2.2.4",
-    "integrity": "sha384-A986SAtodyH8eg8x8irJnYUk7i9inVQqYigD6qZ9evobksGNIXfeFvDwLSHcp31N"
+    "integrity": "sha384-A986SAtodyH8eg8x8irJnYUk7i9inVQqYigD6qZ9evobksGNIXfeFvDwLSHcp31N",
+    "category": "hypermedia"
   },
   {
     "file": "client-side-templates.js",
     "package": "htmx-ext-client-side-templates",
     "version": "2.0.2",
-    "integrity": "sha384-sKX0kzraJJEV0VPe2cmrjHqjTVhEGPVxHhCCa4YCRcYphgn2YTwHZMOeP16FTXPG"
+    "integrity": "sha384-sKX0kzraJJEV0VPe2cmrjHqjTVhEGPVxHhCCa4YCRcYphgn2YTwHZMOeP16FTXPG",
+    "category": "hypermedia"
   },
   {
     "file": "mustache.min.js",
     "package": "mustache",
     "version": "4.2.0",
-    "integrity": "sha384-WASZCYHGuIg0bwkJEH65mhmbKS1x4/VKI2bzElPKmL5B3e0UaH45nIdqOm+BUuRA"
+    "integrity": "sha384-WASZCYHGuIg0bwkJEH65mhmbKS1x4/VKI2bzElPKmL5B3e0UaH45nIdqOm+BUuRA",
+    "category": "hypermedia"
   },
   {
     "file": "lucide/icons/*.svg",
     "package": "lucide-static",
     "version": "1.27.0",
-    "integrity": "sha384-FcKTsoAfrNAQlm72mTH2j0YueLBCmw6bdz42xM+FFTPLs8te/VOKhDMJv9TJa/fQ"
+    "integrity": "sha384-FcKTsoAfrNAQlm72mTH2j0YueLBCmw6bdz42xM+FFTPLs8te/VOKhDMJv9TJa/fQ",
+    "category": "hypermedia"
   },
   {
     "file": "model-viewer.min.js",
     "package": "@google/model-viewer",
     "version": "4.3.1",
-    "integrity": "sha384-cprcVQt7wbUl0xngF3PGP6yBB7n4/t+4AoAMG9biiMCGFiWOdzUH10Ie2COTqFNW"
+    "integrity": "sha384-cprcVQt7wbUl0xngF3PGP6yBB7n4/t+4AoAMG9biiMCGFiWOdzUH10Ie2COTqFNW",
+    "category": "rich-media"
   },
   {
     "file": "dotlottie-wc.js",
     "package": "@lottiefiles/dotlottie-wc",
     "version": "0.9.24",
-    "integrity": "sha384-8NZI8IXJtphV4Ekaf5f60Sw4u248eN1N3aclL5WppacPU4l/dVuMLKuf/tQU4b64"
+    "integrity": "sha384-8NZI8IXJtphV4Ekaf5f60Sw4u248eN1N3aclL5WppacPU4l/dVuMLKuf/tQU4b64",
+    "category": "rich-media"
   },
   {
     "file": "dotlottie-player.wasm",
     "package": "@lottiefiles/dotlottie-web",
     "version": "0.78.2",
-    "integrity": "sha384-i1sY5AOkt8qdlQSoSCP6KWXgFZxMOakcpH1YTb3ZLA2vTRuUL4MVoDjL8IGtBZmk"
+    "integrity": "sha384-i1sY5AOkt8qdlQSoSCP6KWXgFZxMOakcpH1YTb3ZLA2vTRuUL4MVoDjL8IGtBZmk",
+    "category": "rich-media"
   },
   {
     "file": "lottie-player.js",
     "package": "@lottiefiles/lottie-player",
     "version": "2.0.12",
-    "integrity": "sha384-i8zT4p4C0XG4mPhfz0zuffZpppP8NjlttNsP6srEdEBatwZkcYUBoQtAW7sfKEp2"
+    "integrity": "sha384-i8zT4p4C0XG4mPhfz0zuffZpppP8NjlttNsP6srEdEBatwZkcYUBoQtAW7sfKEp2",
+    "category": "rich-media"
   },
   {
     "file": "rive.js",
     "package": "@rive-app/canvas-single",
     "version": "2.39.1",
-    "integrity": "sha384-jRbQsI9QPjjr+DhiZkP5YCdx71KCDHF8fSu7Ue5lptc4UNv/tMWJmgF1gwzkko5g"
+    "integrity": "sha384-jRbQsI9QPjjr+DhiZkP5YCdx71KCDHF8fSu7Ue5lptc4UNv/tMWJmgF1gwzkko5g",
+    "category": "rich-media"
   },
   {
     "file": "three.module.min.js",
     "package": "three",
     "version": "0.185.1",
-    "integrity": "sha384-QHQk1LzjJlJYNdthXjKCmffpDRZL3EqJ7LfqBzyKyvGgjAYM2ZVuYtFGg42NcAJ/"
+    "integrity": "sha384-QHQk1LzjJlJYNdthXjKCmffpDRZL3EqJ7LfqBzyKyvGgjAYM2ZVuYtFGg42NcAJ/",
+    "category": "rich-media"
   },
   {
     "file": "three.core.min.js",
     "package": "three",
     "version": "0.185.1",
-    "integrity": "sha384-rx+KIp/9ptjArhnFAcpVoOc/ynktDsRtRJKIbC7YVKylEvFu8sgmzk9RmQ+CIV48"
+    "integrity": "sha384-rx+KIp/9ptjArhnFAcpVoOc/ynktDsRtRJKIbC7YVKylEvFu8sgmzk9RmQ+CIV48",
+    "category": "rich-media"
   },
   {
     "file": "leaflet/leaflet.js",
     "package": "leaflet",
     "version": "1.9.4",
-    "integrity": "sha384-cxOPjt7s7Iz04uaHJceBmS+qpjv2JkIHNVcuOrM+YHwZOmJGBXI00mdUXEq65HTH"
+    "integrity": "sha384-cxOPjt7s7Iz04uaHJceBmS+qpjv2JkIHNVcuOrM+YHwZOmJGBXI00mdUXEq65HTH",
+    "category": "rich-media"
   },
   {
     "file": "leaflet/leaflet.css",
     "package": "leaflet",
     "version": "1.9.4",
-    "integrity": "sha384-sHL9NAb7lN7rfvG5lfHpm643Xkcjzp4jFvuavGOndn6pjVqS6ny56CAt3nsEVT4H"
+    "integrity": "sha384-sHL9NAb7lN7rfvG5lfHpm643Xkcjzp4jFvuavGOndn6pjVqS6ny56CAt3nsEVT4H",
+    "category": "rich-media"
   },
   {
     "file": "idiomorph-ext.min.js",
     "package": "idiomorph",
     "version": "0.7.4",
-    "integrity": "sha384-SsScJKzATF/w6suEEdLbgYGsYFLzeKfOA6PY+/C5ZPxOSuA+ARquqtz/BZz9JWU8"
+    "integrity": "sha384-SsScJKzATF/w6suEEdLbgYGsYFLzeKfOA6PY+/C5ZPxOSuA+ARquqtz/BZz9JWU8",
+    "category": "hypermedia"
   },
   {
     "file": "htmx4.min.js",
     "package": "htmx.org",
     "version": "4.0.0-beta6",
-    "integrity": "sha384-6lyVbhrs13b9z7mLOpt/N6R76rtkEBWgCjAXRs/DSWyi2AMnQSs10ijWk+PI8n7W"
+    "integrity": "sha384-6lyVbhrs13b9z7mLOpt/N6R76rtkEBWgCjAXRs/DSWyi2AMnQSs10ijWk+PI8n7W",
+    "category": "hypermedia"
   },
   {
     "file": "hx-sse.min.js",
     "package": "htmx.org",
     "version": "4.0.0-beta6",
-    "integrity": "sha384-k3FOGGeM049iTmLw/5TvDh5u+ku311l7JTDjUXhWgD01QiEzDc9Z82c7aNW+R3wK"
+    "integrity": "sha384-k3FOGGeM049iTmLw/5TvDh5u+ku311l7JTDjUXhWgD01QiEzDc9Z82c7aNW+R3wK",
+    "category": "hypermedia"
   },
   {
     "file": "alien-signals.min.js",
     "package": "alien-signals",
     "version": "3.2.1",
-    "integrity": "sha384-JEXjCHkGjEBJBD27oeiXrrFMeKb53WEpVqm7qQ2qz8CXrmtvoYHM1bSyArrNlwcT"
+    "integrity": "sha384-JEXjCHkGjEBJBD27oeiXrrFMeKb53WEpVqm7qQ2qz8CXrmtvoYHM1bSyArrNlwcT",
+    "category": "reactive-primitive"
+  },
+  {
+    "file": "alpine.min.js",
+    "package": "alpinejs",
+    "version": "3.16.1",
+    "integrity": "sha384-75oSay1c6HzSZ8dPUa3pKH8KLR9R2yAq9zTvyhTrR3gy1qI9w3AExggq3/RE57uR",
+    "category": "state-framework"
+  },
+  {
+    "file": "hx-alpine-compat.js",
+    "package": "htmx.org",
+    "version": "4.0.0-beta6",
+    "integrity": "sha384-8Lujltc+yuNRRb8vLl0eLeXEzwGhFXOUkWieQ172LgJye+aU/qd/XyhkX5xWwHM9",
+    "category": "state-framework"
+  },
+  {
+    "file": "gsap.min.js",
+    "package": "gsap",
+    "version": "3.15.0",
+    "integrity": "sha384-XmJ9SoHtVOHoQUcKvFAzVXwdkKo1Ie3bhmSoIAkcdsHGaIrVJIkmozyq0FJeb/Ly",
+    "category": "motion-framework"
+  },
+  {
+    "file": "ScrollTrigger.min.js",
+    "package": "gsap",
+    "version": "3.15.0",
+    "integrity": "sha384-wl5TeDVvOWt30Pbf8aSo2ZrzsOjddu3avOBvHe+p+OhJt9gP6w9YXmDkN5DK2/dF",
+    "category": "motion-framework"
+  },
+  {
+    "file": "SplitText.min.js",
+    "package": "gsap",
+    "version": "3.15.0",
+    "integrity": "sha384-SWJ0lLVRoipvHh59xj0pL7uC7Ih51F+5smaFtrG+2nr+TlDZU5SYJHmxfolbeNTr",
+    "category": "motion-framework"
   }
 ]

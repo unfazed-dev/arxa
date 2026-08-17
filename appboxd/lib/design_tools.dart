@@ -60,13 +60,17 @@ String stripComments(String html) => html
     .replaceAll(RegExp(r'/\*[\s\S]*?\*/'), '')
     .replaceAll(RegExp(r'^\s*//.*$', multiLine: true), '');
 
-/// The four ADR-0002 rules, ported rule-for-rule from lint.mjs. Negative
-/// lookaheads kept identical to the source regex (double-quote-specific vendor
-/// allowlisting — matching the original's byte-for-byte semantics). The
-/// `vendorSrc(` lookahead was added when script tags moved from literal
-/// `src="/assets/vendor/…"` to the vendorSrc() helper for cache-busting.
+/// The ADR-0002 rules, ported rule-for-rule from lint.mjs, widened by
+/// ADR-0009 (client-JS law v2): scripts resolve to the vendored set, the
+/// vendorSrc() helper, an artifact app module (/assets/app/…), or carry
+/// type="application/json" (island config payloads). Negative lookaheads
+/// kept from the source regex (double-quote-specific allowlisting — matching
+/// the original's byte-for-byte semantics). The `vendorSrc(` lookahead was
+/// added when script tags moved from literal `src="/assets/vendor/…"` to
+/// the vendorSrc() helper for cache-busting.
 final _lintRules = <(RegExp, String)>[
   (RegExp(r'<script(?![^>]*src="/assets/vendor/)(?![^>]*vendorSrc\()'
+      r'(?![^>]*src="/assets/app/)'
       r'(?![^>]*type="application/json")[^>]*>',
       caseSensitive: false),
    'non-vendor <script> tag'),
@@ -367,7 +371,18 @@ List<File> _walk(Directory d) => d
     .whereType<File>()
     .toList();
 
-/// Scan every `.html`/`.tsx` template under [artifactDir] for the four rules.
+/// ADR-0009 form 3 — app-module references: `src="/assets/app/<name>.js"`
+/// must resolve to a real file under the artifact's assets/app/ carrying the
+/// island header (a leading /* or // comment — the "why this exists at all"
+/// discipline the first-party islands already follow).
+final _appModuleRe = RegExp(r'src="/assets/app/([A-Za-z0-9_./-]+\.js)"');
+
+/// Vendor references for the weight ceiling: both the literal
+/// src="/assets/vendor/…" form and the vendorSrc('name') helper form.
+final _vendorSrcRe = RegExp(r'src="/assets/vendor/([A-Za-z0-9_./-]+)"');
+final _vendorCallRe = RegExp(r"""vendorSrc\(\s*['"]([^'"]+)['"]""");
+
+/// Scan every `.html`/`.tsx` template under [artifactDir] for the lint rules.
 /// Returns findings in walk order, rule order within each file (mirrors
 /// lint.mjs). [coverageB] drops D7's bar from C to B; [notes] collects the
 /// advisory D9 channel, which never affects the exit code.
@@ -375,6 +390,8 @@ List<LintFinding> lintArtifact(String artifactDir,
     {bool coverageB = false, List<LintFinding>? notes}) {
   final findings = <LintFinding>[];
   final registries = <String, List<dynamic>?>{};
+  final appRefs = <String, String>{}; // module name -> first referencing file
+  final vendorRefs = <String>{};
   for (final f in _walk(Directory(artifactDir))) {
     if (!f.path.endsWith('.html') && !f.path.endsWith('.tsx')) continue;
     final src = stripComments(f.readAsStringSync());
@@ -382,6 +399,15 @@ List<LintFinding> lintArtifact(String artifactDir,
       if (re.hasMatch(src)) {
         findings.add(LintFinding(f.path, msg));
       }
+    }
+    for (final m in _appModuleRe.allMatches(src)) {
+      appRefs.putIfAbsent(m[1]!, () => f.path);
+    }
+    for (final m in _vendorSrcRe.allMatches(src)) {
+      if (m[1]!.endsWith('.js')) vendorRefs.add(m[1]!);
+    }
+    for (final m in _vendorCallRe.allMatches(src)) {
+      if (m[1]!.endsWith('.js')) vendorRefs.add(m[1]!);
     }
     final isSurface = f.path.contains('${p.separator}surfaces${p.separator}');
     final fileNotes = <String>[];
@@ -396,7 +422,84 @@ List<LintFinding> lintArtifact(String artifactDir,
       notes?.add(LintFinding(f.path, msg));
     }
   }
+  // ADR-0009 form 3 — every referenced app module exists and carries the
+  // island header. A src that resolves to nothing is a 404 at runtime and a
+  // lint failure at design time.
+  for (final entry in appRefs.entries) {
+    final mod = File(p.join(artifactDir, 'assets', 'app', entry.key));
+    if (!mod.existsSync()) {
+      findings.add(LintFinding(
+          entry.value, 'app module not found: assets/app/${entry.key}'));
+      continue;
+    }
+    final head = mod.readAsStringSync().trimLeft();
+    if (!head.startsWith('/*') && !head.startsWith('//')) {
+      findings.add(LintFinding(entry.value,
+          'app module missing island header (why-this-exists comment): '
+          'assets/app/${entry.key}'));
+    }
+  }
+  // ADR-0009 §weight — the commission ceiling, when declared, is enforced
+  // over what the artifact's HTML actually loads (referenced vendor .js +
+  // app modules — the same narrowing eject performs).
+  findings.addAll(_clientJsCeilingFindings(artifactDir, appRefs, vendorRefs, notes));
   return findings;
+}
+
+/// The ceiling seam: an optional `client-js.json` at the artifact root
+/// carrying `{"ceilingKb": N}`. The commission names the number; this file
+/// is its machine copy (same pattern as the layout template → registry).
+/// Unresolvable vendor bytes (pub-cache binary, no repo root) degrade to a
+/// note — a ceiling that cannot be measured is reported, never guessed.
+List<LintFinding> _clientJsCeilingFindings(String artifactDir,
+    Map<String, String> appRefs, Set<String> vendorRefs, List<LintFinding>? notes) {
+  final ceilingFile = File(p.join(artifactDir, 'client-js.json'));
+  if (!ceilingFile.existsSync()) return const [];
+  num? ceilingKb;
+  try {
+    final j = jsonDecode(ceilingFile.readAsStringSync());
+    if (j is Map) ceilingKb = num.tryParse('${j['ceilingKb']}');
+  } catch (_) {}
+  if (ceilingKb == null) {
+    return [
+      LintFinding(ceilingFile.path,
+          'client-js.json present but no numeric ceilingKb — fix or remove')
+    ];
+  }
+  final repo = _findRepoRoot();
+  if (repo == null) {
+    notes?.add(LintFinding(ceilingFile.path,
+        'ceilingKb=$ceilingKb declared but vendor dir unresolvable (no repo '
+        'root) — weight not verified'));
+    return const [];
+  }
+  final vendorDir = Directory(p.join(
+      repo, 'skills', 'appbox-designer', 'runtime', 'vendor'));
+  var total = 0;
+  final missing = <String>[];
+  for (final v in vendorRefs) {
+    final f = File(p.join(vendorDir.path, v));
+    if (f.existsSync()) {
+      total += f.lengthSync();
+    } else {
+      missing.add(v);
+    }
+  }
+  for (final name in appRefs.keys) {
+    total += File(p.join(artifactDir, 'assets', 'app', name)).lengthSync();
+  }
+  final kb = total / 1024;
+  if (kb > ceilingKb) {
+    return [
+      LintFinding(ceilingFile.path,
+          'client JS weight ${kb.toStringAsFixed(1)}KB exceeds the declared '
+          'ceiling ${ceilingKb}KB')
+    ];
+  }
+  notes?.add(LintFinding(ceilingFile.path,
+      'client JS weight ${kb.toStringAsFixed(1)}KB within the declared '
+      'ceiling ${ceilingKb}KB'));
+  return const [];
 }
 
 /// `appbox design lint <artifact-dir> [--coverage-b]` — exit 0 clean /
@@ -443,7 +546,7 @@ CmdResult designLint(List<String> args) {
     return CmdResult(1, stdoutLines: noteLines, stderrLines: lines);
   }
   return CmdResult(0, stdoutLines: [
-    'lint clean: no custom client-side JS in $dir',
+    'lint clean: every script resolves (vendor/island/app module), no inline handlers in $dir',
     'widget/panel gate clean: W1–W7 in $dir',
     'style gate clean: S1–S4 in $dir',
     ...noteLines,
@@ -958,8 +1061,14 @@ class _Pkg {
   final String out;
   final bool expect; // htmx: SRI must match the recorded pin
   final String? expectPin; // override the function-level pin (multi-version)
+  // ADR-0009 category tag — the manifest's role column. Open set, closed
+  // vocabulary: hypermedia · state-framework · motion-framework · rich-media ·
+  // data-viz · reactive-primitive. Adding a CATEGORY is an ADR-level decision;
+  // adding a package inside an existing one is a row here.
+  final String category;
   const _Pkg(this.pkg, this.candidates, this.out,
-      {this.version, this.expect = false, this.expectPin});
+      {this.version, this.expect = false, this.expectPin,
+      this.category = 'hypermedia'});
 }
 
 /// Lucide is pinned like htmx/leaflet: @latest drift would silently rewrite
@@ -967,6 +1076,15 @@ class _Pkg {
 /// file), so the loop special-cases it — the marker row keeps the manifest
 /// order stable across re-runs.
 const _lucidePin = '1.27.0';
+
+/// ADR-0009 v2 — the state/motion framework pair. Alpine is the htmx-native
+/// local-state layer; hx-alpine-compat is its official htmx-4 bridge
+/// (settle-phase init, morph state carry, history serialization). GSAP is the
+/// motion framework — every plugin public since the Webflow acquisition
+/// (3.13), so ScrollTrigger + SplitText are plain npm files. All three pinned:
+/// a framework the templates depend on must fail loudly, not drift.
+const _alpinePin = '3.16.1';
+const _gsapPin = '3.15.0';
 
 /// Order pins the manifest row order: re-running vendor-fetch must rewrite
 /// manifest.json + SRI.md byte-identically.
@@ -982,24 +1100,27 @@ const _packages = [
   _Pkg('mustache', ['mustache.min.js', 'mustache.js'], 'mustache.min.js'),
   _Pkg('lucide-static', [], 'lucide/icons/*.svg', version: _lucidePin),
   _Pkg('@google/model-viewer', ['dist/model-viewer.min.js'],
-      'model-viewer.min.js', version: '4.3.1'),
+      'model-viewer.min.js', version: '4.3.1', category: 'rich-media'),
   _Pkg('@lottiefiles/dotlottie-wc', ['dist/dotlottie-wc.js'], 'dotlottie-wc.js',
-      version: '0.9.24'),
+      version: '0.9.24', category: 'rich-media'),
   _Pkg('@lottiefiles/dotlottie-web', ['dist/dotlottie-player.wasm'],
-      'dotlottie-player.wasm', version: '0.78.2'),
+      'dotlottie-player.wasm', version: '0.78.2', category: 'rich-media'),
   _Pkg('@lottiefiles/lottie-player', ['dist/lottie-player.js'],
-      'lottie-player.js', version: '2.0.12'),
-  _Pkg('@rive-app/canvas-single', ['rive.js'], 'rive.js', version: '2.39.1'),
+      'lottie-player.js', version: '2.0.12', category: 'rich-media'),
+  _Pkg('@rive-app/canvas-single', ['rive.js'], 'rive.js', version: '2.39.1',
+      category: 'rich-media'),
   _Pkg('three', ['build/three.module.min.js'], 'three.module.min.js',
-      version: '0.185.1'),
+      version: '0.185.1', category: 'rich-media'),
   _Pkg('three', ['build/three.core.min.js'], 'three.core.min.js',
-      version: '0.185.1'),
+      version: '0.185.1', category: 'rich-media'),
   // Leaflet is pinned like htmx: the runtime vendor copy is hand-checked and
   // the manifest rows must survive a re-fetch unchanged. Its images/ sprites
   // are NOT fetched (they ride along unpinned, same as the lucide SVGs did
   // before the tarball step) — re-adding them means an npm-tarball extract.
-  _Pkg('leaflet', ['dist/leaflet.js'], 'leaflet/leaflet.js', version: '1.9.4'),
-  _Pkg('leaflet', ['dist/leaflet.css'], 'leaflet/leaflet.css', version: '1.9.4'),
+  _Pkg('leaflet', ['dist/leaflet.js'], 'leaflet/leaflet.js', version: '1.9.4',
+      category: 'rich-media'),
+  _Pkg('leaflet', ['dist/leaflet.css'], 'leaflet/leaflet.css', version: '1.9.4',
+      category: 'rich-media'),
   // The htmx `morph` extension ships INSIDE the idiomorph package — there is no
   // `htmx-ext-morph` on npm (registry 404). The previous entry named that
   // non-existent package and was `optional: true`, so every vendor-fetch run
@@ -1018,7 +1139,21 @@ const _packages = [
   // alien-signals: the signals runtime for island-kit.js (Phase 3c). The npm
   // package ships multi-file ESM (index.mjs imports system.mjs), so vendor-fetch
   // bundles it with esbuild into a single self-contained ESM file (~1.9 kB gzip).
-  _Pkg('alien-signals', [], 'alien-signals.min.js', version: _alienSignalsPin),
+  _Pkg('alien-signals', [], 'alien-signals.min.js', version: _alienSignalsPin,
+      category: 'reactive-primitive'),
+  // ADR-0009 v2 — state framework (Alpine + its htmx-4 bridge).
+  _Pkg('alpinejs', ['dist/cdn.min.js'], 'alpine.min.js',
+      version: _alpinePin, category: 'state-framework'),
+  _Pkg('htmx.org', ['dist/ext/hx-alpine-compat.js'], 'hx-alpine-compat.js',
+      version: _htmx4Pin, category: 'state-framework'),
+  // ADR-0009 v2 — motion framework (GSAP core + the two plugins the
+  // choreography layer leans on).
+  _Pkg('gsap', ['dist/gsap.min.js'], 'gsap.min.js',
+      version: _gsapPin, category: 'motion-framework'),
+  _Pkg('gsap', ['dist/ScrollTrigger.min.js'], 'ScrollTrigger.min.js',
+      version: _gsapPin, category: 'motion-framework'),
+  _Pkg('gsap', ['dist/SplitText.min.js'], 'SplitText.min.js',
+      version: _gsapPin, category: 'motion-framework'),
 ];
 
 /// Compute the SRI hash of [buf] via `openssl dgst -sha384 -binary`. macOS
@@ -1036,14 +1171,16 @@ Future<String> sri(List<int> buf) async {
   return 'sha384-${base64.encode(out)}';
 }
 
-/// One row of the vendor manifest. Shape pinned by fetch.mjs:
-/// `{file, package, version, integrity}`.
+/// One row of the vendor manifest. Shape pinned by fetch.mjs, extended by
+/// ADR-0009: `{file, package, version, integrity, category}`.
 Map<String, String> manifestEntry(
     {required String file,
     required String pkg,
     required String version,
-    required String integrity}) =>
-    {'file': file, 'package': pkg, 'version': version, 'integrity': integrity};
+    required String integrity,
+    String category = 'hypermedia'}) =>
+    {'file': file, 'package': pkg, 'version': version, 'integrity': integrity,
+      'category': category};
 
 Future<List<int>?> _httpGet(String url) async {
   final client = HttpClient();
@@ -1131,7 +1268,8 @@ Future<CmdResult> vendorFetch(String vendorDir,
           File(p.join(lucideDir.path, p.basename(name))).writeAsBytesSync(data);
         }
         manifest.add(manifestEntry(
-            file: pkg.out, pkg: pkg.pkg, version: v, integrity: await sri(tgz)));
+            file: pkg.out, pkg: pkg.pkg, version: v,
+            integrity: await sri(tgz), category: pkg.category));
         out.add('✓ ${pkg.out} ← lucide-static@$v (${icons.length} icons)');
       } catch (e) {
         err.add('✗ lucide-static: $e');
@@ -1172,7 +1310,8 @@ Future<CmdResult> vendorFetch(String vendorDir,
                 'integrity mismatch! got $integrity, expected $_alienSignalsIntegrity');
           }
           manifest.add(manifestEntry(
-              file: pkg.out, pkg: pkg.pkg, version: v, integrity: integrity));
+              file: pkg.out, pkg: pkg.pkg, version: v, integrity: integrity,
+              category: pkg.category));
           out.add('✓ ${pkg.out} ← alien-signals@$v (${buf.length} bytes, esbuild bundled)');
         } finally {
           tmpDir.deleteSync(recursive: true);
@@ -1202,7 +1341,8 @@ Future<CmdResult> vendorFetch(String vendorDir,
       outFile.parent.createSync(recursive: true); // leaflet/* lives in a subdir
       outFile.writeAsBytesSync(buf);
       manifest.add(manifestEntry(
-          file: pkg.out, pkg: pkg.pkg, version: v, integrity: integrity));
+          file: pkg.out, pkg: pkg.pkg, version: v, integrity: integrity,
+          category: pkg.category));
       out.add('✓ ${pkg.out} ← ${pkg.pkg}@$v (${buf.length} bytes)');
     } catch (e) {
       // No optional/skip branch by design. The one entry that used it named a
@@ -1219,8 +1359,8 @@ Future<CmdResult> vendorFetch(String vendorDir,
       .writeAsStringSync("${const JsonEncoder.withIndent('  ').convert(manifest)}\n");
   File(p.join(vendorDir, 'SRI.md')).writeAsStringSync(
       '# Vendored client libraries (the `fetch.mjs` updater was archived; re-vendor htmx + extensions via `appbox design vendor-fetch`)\n\n'
-      '| file | package | version | integrity |\n|---|---|---|---|\n'
-      '${manifest.map((m) => '| ${m['file']} | ${m['package']} | ${m['version']} | `${m['integrity']}` |').join('\n')}\n\n'
+      '| file | package | version | category | integrity |\n|---|---|---|---|---|\n'
+      '${manifest.map((m) => '| ${m['file']} | ${m['package']} | ${m['version']} | ${m['category']} | `${m['integrity']}` |').join('\n')}\n\n'
       '`leaflet/images/*.png` (marker + layers control sprites, referenced by\n'
       '`leaflet.css` relative to itself) ride along unpinned — like the lucide SVGs\n'
       'they are never loaded as a subresource with an integrity attribute.\n');
