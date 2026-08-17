@@ -21,7 +21,7 @@ void main() {
           leading: leading,
           drawer: drawer,
           resizeToAvoidBottomInset: resizeToAvoidBottomInset,
-          title: 'Kit Showcase',
+          title: 'AppBox Showcase',
           actions: [const SizedBox(key: Key('action'), width: 44, height: 44)],
           floatingActionButton:
               const SizedBox(key: Key('fab'), width: 56, height: 56),
@@ -54,7 +54,7 @@ void main() {
     final chrome = tester
         .widget<AppBoxKitFloatingChrome>(find.byType(AppBoxKitFloatingChrome));
     expect(chrome.behavior, AppBoxKitFloatingBarBehavior.hide);
-    expect(chrome.title, 'Kit Showcase');
+    expect(chrome.title, 'AppBox Showcase');
     expect(find.byType(AppBoxKitNativeAppBar), findsNothing);
     expect(
       find.descendant(

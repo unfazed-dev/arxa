@@ -138,65 +138,92 @@ class AppBoxKitNativeFloatingBar extends StatelessWidget {
                 const SizedBox(width: abxGap8),
               ],
               if (title != null)
-                AnimatedSlide(
-                  // 2.0× own width clears the 16px edge padding with margin.
-                  // ponytail: with a [leading] present the pill starts one
-                  // control-width further in, so a very short title tucks to
-                  // just shy of the leading edge rather than past it. Widen
-                  // the multiplier only if a device clip shows a sliver.
-                  offset:
-                      tuck._tucksLeading ? const Offset(-2, 0) : Offset.zero,
-                  duration: kAppBoxKitFloatingBarMotionDuration,
-                  curve: kAppBoxKitFloatingBarMotionCurve,
-                  child:
-                      // Flutter-drawn pill, DELIBERATELY not native glass
-                      // (clip 13-53): scrolled native glass buttons crossing a
-                      // native glass capsule stack glass-on-glass — the passing
-                      // button's glass washed to a square ghost for exactly the
-                      // capsule's span, while buttons crossing the pill gaps
-                      // stayed crisp. A platform-view-safe frosted pill leaves
-                      // no native surface in the title region to stack against.
-                      // The vibrant fill is also Apple's own degrade for nested
-                      // glass (§3).
-                      //
-                      // The PLAIN native anchor beneath it exists because Flutter
-                      // ops floating over a platform-view-bearing scrollable have
-                      // no stable home: the engine's view slicer
-                      // (flow/view_slicer.cc) keeps them in an overlay above the
-                      // platform views only while they intersect a platform-view
-                      // rect, and otherwise drops them to a background canvas that
-                      // is difference-clipped by every overlay — on device
-                      // (clip 21-32 + composited-window probe, 2026-08-13) the
-                      // pill's overlay shrank from (16,59,361x78) to the actions'
-                      // bbox during top rubber-band overscroll and the pill
-                      // vanished wholesale. The anchor is a stationary platform
-                      // view exactly under the pill, so the intersection holds
-                      // every frame. `plain` renders NO glass material (clear
-                      // fill, Glass.identity), so 13-53 cannot recur — this is a
-                      // compositing anchor, not a visible surface.
-                      // transition-exempt: the anchor renders NOTHING (plain
-                      // effect, clear fill, Glass.identity) — there is no visible
-                      // glass to leak over a route slide, and gating it would
-                      // re-open the erasure for exactly the frames a transition
-                      // spans.
-                      LiquidGlassContainer(
-                    config: const LiquidGlassConfig(
-                      effect: CNGlassEffect.plain,
-                    ),
-                    child: AppBoxKitFrostedSurface(
-                      platformViewSafe: true,
-                      borderRadius: 22,
-                      child: SizedBox(
-                        height: 44,
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
-                          child: Center(
-                            child: Text(
-                              title!,
-                              style: TextStyle(
-                                color: scheme.onSurface,
-                                fontSize: 17,
-                                fontWeight: FontWeight.w600,
+                // The pill owns the bar's one FLEXIBLE segment: it sizes
+                // intrinsically until leading + actions crowd it, then the
+                // title truncates — native chrome degrades by ellipsis, never
+                // by overflowing the row (the 2026-08-17 'Kit Showcase' →
+                // 'AppBox Showcase' rename overflowed the 358pt gallery bar
+                // by 31px while this segment was rigid). The Align sits
+                // OUTSIDE the tuck's AnimatedSlide so the slide's "2.0× own
+                // width" stays relative to the pill, not the whole segment.
+                Expanded(
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: AnimatedSlide(
+                      // 2.0× own width clears the 16px edge padding with
+                      // margin.
+                      // ponytail: with a [leading] present the pill starts one
+                      // control-width further in, so a very short title tucks
+                      // to just shy of the leading edge rather than past it.
+                      // Widen the multiplier only if a device clip shows a
+                      // sliver.
+                      offset: tuck._tucksLeading
+                          ? const Offset(-2, 0)
+                          : Offset.zero,
+                      duration: kAppBoxKitFloatingBarMotionDuration,
+                      curve: kAppBoxKitFloatingBarMotionCurve,
+                      child:
+                          // Flutter-drawn pill, DELIBERATELY not native glass
+                          // (clip 13-53): scrolled native glass buttons
+                          // crossing a native glass capsule stack
+                          // glass-on-glass — the passing button's glass washed
+                          // to a square ghost for exactly the capsule's span,
+                          // while buttons crossing the pill gaps stayed crisp.
+                          // A platform-view-safe frosted pill leaves no native
+                          // surface in the title region to stack against. The
+                          // vibrant fill is also Apple's own degrade for
+                          // nested glass (§3).
+                          //
+                          // The PLAIN native anchor beneath it exists because
+                          // Flutter ops floating over a platform-view-bearing
+                          // scrollable have no stable home: the engine's view
+                          // slicer (flow/view_slicer.cc) keeps them in an
+                          // overlay above the platform views only while they
+                          // intersect a platform-view rect, and otherwise drops
+                          // them to a background canvas that is
+                          // difference-clipped by every overlay — on device
+                          // (clip 21-32 + composited-window probe, 2026-08-13)
+                          // the pill's overlay shrank from (16,59,361x78) to
+                          // the actions' bbox during top rubber-band
+                          // overscroll and the pill vanished wholesale. The
+                          // anchor is a stationary platform view exactly under
+                          // the pill, so the intersection holds every frame.
+                          // `plain` renders NO glass material (clear fill,
+                          // Glass.identity), so 13-53 cannot recur — this is a
+                          // compositing anchor, not a visible surface.
+                          // transition-exempt: the anchor renders NOTHING
+                          // (plain effect, clear fill, Glass.identity) — there
+                          // is no visible glass to leak over a route slide,
+                          // and gating it would re-open the erasure for
+                          // exactly the frames a transition spans.
+                          LiquidGlassContainer(
+                        config: const LiquidGlassConfig(
+                          effect: CNGlassEffect.plain,
+                        ),
+                        child: AppBoxKitFrostedSurface(
+                          platformViewSafe: true,
+                          borderRadius: 22,
+                          child: SizedBox(
+                            height: 44,
+                            child: Padding(
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: 16),
+                              // widthFactor 1.0: shrink-wrap the title
+                              // horizontally — a plain Center would stretch
+                              // the capsule across the whole flexible
+                              // segment the moment the row bounds it.
+                              child: Center(
+                                widthFactor: 1.0,
+                                child: Text(
+                                  title!,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    color: scheme.onSurface,
+                                    fontSize: 17,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
                               ),
                             ),
                           ),
@@ -204,8 +231,9 @@ class AppBoxKitNativeFloatingBar extends StatelessWidget {
                       ),
                     ),
                   ),
-                ),
-              const Spacer(),
+                )
+              else
+                const Spacer(),
               if (actions != null)
                 AnimatedSlide(
                   // 2.0× own width clears the 16px edge padding with margin;

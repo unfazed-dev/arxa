@@ -17,6 +17,8 @@
 /// History: git log --follow -- kit/showcase_app/lib/ui/widgets/showcase_startup_widgets/showcase_startup_loading_widget.dart
 library;
 
+import 'package:appbox_kit_showcase_app/ui/common/appbox_kit_app_strings.dart'
+    show abxStrStartupAppTitle, abxStrStartupLoading;
 import 'package:appbox_kit_showcase_app/ui/common/appbox_kit_assets.dart'
     show abxImgBrandIcon;
 import 'package:appbox_kit_showcase_app/ui/common/appbox_kit_ui_helpers.dart'
@@ -42,13 +44,13 @@ class ShowcaseStartupLoadingWidget extends StatelessWidget {
             ),
             appBoxKitVerticalSpaceMedium,
             Text(
-              'APPBOX SHOWCASE',
+              abxStrStartupAppTitle,
               style: TextStyle(fontSize: 40, fontWeight: FontWeight.w900),
             ),
             Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text('Loading ...', style: TextStyle(fontSize: 16)),
+                Text(abxStrStartupLoading, style: TextStyle(fontSize: 16)),
                 appBoxKitHorizontalSpaceSmall,
                 // Native-first: the kit's adaptive indicator — M3E morphing
                 // loader on Android, Cupertino spinner on iOS (never a stock

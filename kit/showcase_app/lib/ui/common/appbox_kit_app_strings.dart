@@ -19,5 +19,8 @@ const String abxStrNotesCreateAccountSubmit = 'Sign up';
 // Startup
 const String abxStrStartupLoading = 'Loading…';
 
+// Startup — brand lockup (the all-caps wordmark IS the copy, not a style)
+const String abxStrStartupAppTitle = 'APPBOX SHOWCASE';
+
 // Unknown route
 const String abxStrUnknownRouteTitle = 'Page not found';

@@ -959,7 +959,8 @@ CheckResult checkNoAdhocSpacing(String src, String path) {
 /// Verbatim-portable with review_checklist.sh check 1i's `GLASS_RE`.
 final _glassSurface = RegExp(
     r'AppBoxKitGlassCard|AppBoxKitNativeSearchBar|AppBoxKitNativeSplitButton|AppBoxKitNativeToolbar|AppBoxKitNativeFabMenu|AppBoxKitNativeFab');
-final _scrollEdgeEffect = RegExp(r'AppBoxKitScrollEdgeEffect|scrollEdgeEffect\(');
+final _scrollEdgeEffect = RegExp(
+    r'AppBoxKitScrollEdgeEffect|scrollEdgeEffect\(|AppBoxKitEdgeAwareSliverList|AppBoxKitEdgeAwareListView');
 
 /// 1i: a glass surface inside a CustomScrollView needs the iOS 26 scroll edge
 /// effect, or content blurs under pinned chrome that never hides.
@@ -981,7 +982,8 @@ CheckResult checkScrollEdgeEffect(String src, String path) {
       'scroll_edge_effect',
       false,
       'glass surface inside a CustomScrollView without AppBoxKitScrollEdgeEffect / '
-          '.scrollEdgeEffect() — iOS 26 scroll edge effect: content blurs and '
+          '.scrollEdgeEffect() / an AppBoxKitEdgeAware list — iOS 26 scroll edge '
+          'effect: content blurs and '
           'fades under pinned chrome and the chrome never hides '
           '(review_checklist check 1i).');
 }
@@ -1553,6 +1555,13 @@ void _selfTestPureSections(void Function(bool, String) expect) {
               leaf)
           .ok,
       '9b: AppBoxKitScrollEdgeEffect named only in a comment grants no pass');
+  expect(
+      checkScrollEdgeEffect(
+              'CustomScrollView(slivers: [AppBoxKitEdgeAwareSliverList(itemCount: 1, itemBuilder: b)]);',
+              leaf)
+          .ok,
+      '9b: the edge-aware sliver list treats every item — naming the kit '
+          'wrapper is the effect applied (notes-folder false positive)');
 
   // 9c. 1d — leaf app-bar contract.
   expect(!checkLeafAppBar('Scaffold(appBar: AppBoxKitNativeAppBar());', shell).ok,

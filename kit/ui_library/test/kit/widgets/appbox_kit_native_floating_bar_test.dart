@@ -23,7 +23,7 @@ void main() {
       'capsule and actions land trailing in the 44pt control row',
       (tester) async {
     await tester.pumpWidget(harness(
-      title: 'Kit Showcase',
+      title: 'AppBox Showcase',
       actions: [const SizedBox(key: Key('action'), width: 44, height: 44)],
     ));
 
@@ -36,7 +36,7 @@ void main() {
     final pill = tester.widget<AppBoxKitFrostedSurface>(
       find
           .ancestor(
-            of: find.text('Kit Showcase'),
+            of: find.text('AppBox Showcase'),
             matching: find.byType(AppBoxKitFrostedSurface),
           )
           .first,
@@ -54,7 +54,7 @@ void main() {
     final anchor = tester.widget<LiquidGlassContainer>(
       find
           .ancestor(
-            of: find.text('Kit Showcase'),
+            of: find.text('AppBox Showcase'),
             matching: find.byType(LiquidGlassContainer),
           )
           .first,
@@ -77,13 +77,13 @@ void main() {
     expect(
       tester.getRect(find
           .ancestor(
-            of: find.text('Kit Showcase'),
+            of: find.text('AppBox Showcase'),
             matching: find.byType(LiquidGlassContainer),
           )
           .first),
       tester.getRect(find
           .ancestor(
-            of: find.text('Kit Showcase'),
+            of: find.text('AppBox Showcase'),
             matching: find.byType(AppBoxKitFrostedSurface),
           )
           .first),
@@ -97,8 +97,34 @@ void main() {
     expect(row.height, 44);
 
     // Actions trail the title.
-    expect(
-        row.left, greaterThan(tester.getRect(find.text('Kit Showcase')).right));
+    expect(row.left,
+        greaterThan(tester.getRect(find.text('AppBox Showcase')).right));
+  });
+
+  testWidgets(
+      'kit.ui-library.native-floating-bar — an over-long title truncates '
+      'inside the pill instead of overflowing the control row', (tester) async {
+    // The 358pt configuration the 2026-08-17 'Kit Showcase' →
+    // 'AppBox Showcase' rename overflowed by 31px on the glass tier: the
+    // title pill must yield the way native chrome does — truncate the title —
+    // never push the trailing actions off the bar.
+    tester.view.physicalSize = const Size(1074, 2400); // 358×800 logical
+    tester.view.devicePixelRatio = 3;
+    addTearDown(tester.view.reset);
+
+    await tester.pumpWidget(harness(
+      title: 'AppBox Showcase',
+      actions: const [
+        SizedBox(key: Key('a1'), width: 44, height: 44),
+        SizedBox(key: Key('a2'), width: 44, height: 44),
+      ],
+    ));
+
+    expect(tester.takeException(), isNull,
+        reason: 'the control row must absorb an over-long title, not overflow');
+    expect(tester.getRect(find.text('AppBox Showcase')).right,
+        lessThanOrEqualTo(tester.getRect(find.byKey(const Key('a1'))).left),
+        reason: 'the truncated title never runs under the trailing actions');
   });
 
   testWidgets(
@@ -128,13 +154,13 @@ void main() {
     // A pushed route's back affordance (ratified 2026-08-13). Null leading
     // must leave the old layout untouched: the pill starts at the bar's own
     // 16px inset.
-    await tester.pumpWidget(harness(title: 'Kit Showcase'));
+    await tester.pumpWidget(harness(title: 'AppBox Showcase'));
     final pillLeftWithoutLeading =
         tester.getRect(find.byType(AppBoxKitFrostedSurface).first).left;
 
     await tester.pumpWidget(harness(
       leading: const SizedBox(key: Key('leading'), width: 44, height: 44),
-      title: 'Kit Showcase',
+      title: 'AppBox Showcase',
       actions: [const SizedBox(key: Key('action'), width: 44, height: 44)],
     ));
     final leadingRect = tester.getRect(find.byKey(const Key('leading')));
@@ -166,7 +192,7 @@ void main() {
           body: AppBoxKitFloatingChrome(
             behavior: behavior,
             leading: leading,
-            title: 'Kit Showcase',
+            title: 'AppBox Showcase',
             actions: [
               const SizedBox(key: Key('action'), width: 44, height: 44)
             ],
@@ -204,7 +230,7 @@ void main() {
       .widget<AnimatedSlide>(
         find
             .ancestor(
-                of: find.text('Kit Showcase'),
+                of: find.text('AppBox Showcase'),
                 matching: find.byType(AnimatedSlide))
             .first,
       )
@@ -254,7 +280,7 @@ void main() {
         .widget<AnimatedSlide>(
           find
               .ancestor(
-                  of: find.text('Kit Showcase'),
+                  of: find.text('AppBox Showcase'),
                   matching: find.byType(AnimatedSlide))
               .first,
         )
@@ -424,7 +450,7 @@ void main() {
           body: AppBoxKitFloatingChrome(
             behavior: AppBoxKitFloatingBarBehavior.minimize,
             leading: const SizedBox(key: Key('leading'), width: 44, height: 44),
-            title: 'Kit Showcase',
+            title: 'AppBox Showcase',
             actions: [
               const SizedBox(key: Key('action'), width: 44, height: 44)
             ],
@@ -448,7 +474,7 @@ void main() {
     expect(leadingSlide(tester).dx, lessThan(0));
 
     final clipFinder = find.ancestor(
-      of: find.text('Kit Showcase'),
+      of: find.text('AppBox Showcase'),
       matching: find.byType(ClipRect),
     );
     final viewport = Offset.zero & tester.binding.renderViews.first.size;
@@ -461,7 +487,7 @@ void main() {
 
     var sawCarriedOnScreen = false;
     Future<void> sample() async {
-      final pillRect = tester.getRect(find.text('Kit Showcase'));
+      final pillRect = tester.getRect(find.text('AppBox Showcase'));
       if (pillRect.overlaps(viewport)) sawCarriedOnScreen = true;
       final leadingRect = tester.getRect(find.byKey(const Key('leading')));
       for (final rect in [pillRect, leadingRect]) {
@@ -520,7 +546,7 @@ void main() {
     await tester
         .pumpWidget(chromeHarness(AppBoxKitFloatingBarBehavior.minimize));
     final clipFinder = find.ancestor(
-      of: find.text('Kit Showcase'),
+      of: find.text('AppBox Showcase'),
       matching: find.byType(ClipRect),
     );
     expect(clipFinder, findsOneWidget);
@@ -572,7 +598,7 @@ void main() {
             ),
             child: AppBoxKitFloatingChrome(
               behavior: behavior,
-              title: 'Kit Showcase',
+              title: 'AppBox Showcase',
               actions: [
                 const SizedBox(key: Key('action'), width: 44, height: 44)
               ],
