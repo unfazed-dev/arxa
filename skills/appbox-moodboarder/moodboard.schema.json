@@ -10,6 +10,34 @@
       "type": ["string", "null"],
       "$comment": "FREE-TEXT methodology ('appbox lens captures · every shot verified on disk'), renamed from the seed's top-level `provenance` because that name promised the client|founder|inferred enum and delivered prose. A reader that parsed it as an enum would be wrong on every real moodboard. Real provenance is per-reference and does use the enum."
     },
+    "criteria": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "$comment": "INTAKE-DERIVED rubric id (e.g. 'animated-3d', 'premium'). Derived by appbox-moodboarder from direction adjectives + layoutTemplate, never from taste."
+          },
+          "weight": {
+            "type": "number",
+            "$comment": "Multiplied into every score; locked criteria carry 3."
+          },
+          "locked": {
+            "type": "boolean",
+            "$comment": "TRUE for founder-signed concrete visual requirements (motion, 3D, animation, video). A locked criterion with no SELECTED reference scoring >= 3 fails appbox moodboard check — the energize lesson, made structural."
+          }
+        },
+        "additionalProperties": true
+      },
+      "$comment": "Present whenever boards are scored. The emitter carries the group through verbatim."
+    },
+    "selectionStatus": {
+      "type": "string",
+      "enum": ["pending", "approved"],
+      "$comment": "The human selection gate. 'approved' is written only after the founder picks references; appbox design commission refuses to run on anything else."
+    },
     "boards": {
       "type": "array",
       "items": {
@@ -64,6 +92,19 @@
         "shot": { "$ref": "#/definitions/shot" },
         "steal": { "type": "string" },
         "why": { "type": "string" },
+        "scores": {
+          "type": "object",
+          "additionalProperties": { "type": "integer", "minimum": 0, "maximum": 5 },
+          "$comment": "0-5 per criterion id (the moodboarder subagents' judgment). Keys are criterion ids."
+        },
+        "total": {
+          "type": "number",
+          "$comment": "COMPUTED AT EMIT: Σ(score×weight)/Σweight, 2 decimals. Never trusted from the seed; appbox moodboard check recomputes and compares."
+        },
+        "selected": {
+          "type": "boolean",
+          "$comment": "The recorded human selection. Only selected references reach the designer's commission."
+        },
         "provenance": { "$ref": "#/definitions/provenance" }
       },
       "additionalProperties": true,

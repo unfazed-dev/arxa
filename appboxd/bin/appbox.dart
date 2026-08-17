@@ -60,6 +60,7 @@ import 'package:appboxd/capability_scan.dart';
 import 'package:appboxd/entitlement_cli.dart';
 import 'package:appboxd/gen_playbook.dart';
 import 'package:appboxd/intake_cli.dart';
+import 'package:appboxd/moodboard_check.dart';
 import 'package:appboxd/project_cli.dart';
 import 'package:appboxd/kb_build.dart';
 import 'package:appboxd/kb_check.dart';
@@ -90,6 +91,8 @@ Future<void> main(List<String> args) async {
       exit(intakeMain(rest));
     case 'project':
       exit(projectMain(rest));
+    case 'moodboard':
+      exit(moodboardCheckMain(rest));
     case 'credentials':
       exit(await credentialsMain(
         rest,

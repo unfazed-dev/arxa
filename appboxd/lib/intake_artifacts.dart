@@ -351,8 +351,26 @@ Map<String, dynamic> mergeStoryMap(Map<String, dynamic> emitted, String existing
 ///
 /// `shot.id` and `shot.src` are precomputed here, the job `generate.mjs` does
 /// for the studio fixture, so every reader stays a dumb field selector.
+///
+/// Scoring (the selection seam): the answer group carries `criteria` (the
+/// intake-derived rubric: id, weight, locked) and per-reference `scores`
+/// (0-5 ints, judgment of the moodboarder's subagents) plus `selected`
+/// (the human gate). Totals are COMPUTED here — Σ(score×weight)/Σweight,
+/// 2 decimals — never trusted from the seed, so `appbox moodboard check`
+/// can recompute and compare. `selectionStatus` passes through as
+/// pending|approved.
 Map<String, dynamic> emitMoodboard(Map<String, dynamic> answers) {
   final src = _map(answers['moodboard']);
+  final criteria = <String, double>{};
+  for (final c in _list(src['criteria'])) {
+    if (c is! Map) continue;
+    final criterion = c.cast<String, dynamic>();
+    final id = criterion['id'];
+    if (id is String && id.isNotEmpty) {
+      criteria[id] =
+          criterion['weight'] is num ? (criterion['weight'] as num).toDouble() : 1.0;
+    }
+  }
   var referenceCount = 0;
   var shotCount = 0;
   final boards = <Map<String, dynamic>>[];
@@ -384,6 +402,9 @@ Map<String, dynamic> emitMoodboard(Map<String, dynamic> answers) {
         'shot': ?emittedShot,
         'provenance':
             reference['provenance'] is String ? reference['provenance'] : 'inferred',
+        if (criteria.isNotEmpty && reference['scores'] is Map)
+          'total': _scoredTotal(
+              (reference['scores'] as Map).cast<String, dynamic>(), criteria),
       });
     }
     boards.add(<String, dynamic>{
@@ -394,6 +415,11 @@ Map<String, dynamic> emitMoodboard(Map<String, dynamic> answers) {
   }
   return <String, dynamic>{
     'method': src['provenance'] is String ? src['provenance'] : null,
+    if (criteria.isNotEmpty)
+      'criteria': _list(src['criteria']).whereType<Map>().toList(),
+    if (criteria.isNotEmpty)
+      'selectionStatus':
+          src['selectionStatus'] == 'approved' ? 'approved' : 'pending',
     'boards': boards,
     'counts': <String, dynamic>{
       'boards': boards.length,
@@ -401,6 +427,18 @@ Map<String, dynamic> emitMoodboard(Map<String, dynamic> answers) {
       'shots': shotCount,
     },
   };
+}
+
+double _scoredTotal(Map<String, dynamic> scores, Map<String, double> criteria) {
+  var sum = 0.0;
+  var weights = 0.0;
+  for (final e in criteria.entries) {
+    final s = scores[e.key];
+    sum += ((s is num) ? s.toDouble() : 0.0) * e.value;
+    weights += e.value;
+  }
+  final total = weights == 0 ? 0.0 : sum / weights;
+  return double.parse(total.toStringAsFixed(2));
 }
 
 // ----------------------------------------------------------------- direction

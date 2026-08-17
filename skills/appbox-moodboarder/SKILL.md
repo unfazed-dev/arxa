@@ -105,9 +105,17 @@ shot.
 - A failed capture is recorded as `_(capture failed: reason)_` in the doc —
   never a hotlinked URL silently substituted.
 
+## Where boards live (the appbox law)
+
+Repo-mode project (an `appbox.json` marker above cwd): boards at
+`<app-dir>/moodboard/boards/<slice-slug>.md`, shots at
+`<app-dir>/moodboard/shots/<slice-slug>/…`. Appbox-native project: the same
+`moodboard/` shape under `~/.appbox/projects/<name>/`. The legacy
+`docs/moodboards/` path is pre-law — migrate, do not extend.
+
 ## Assembly format
 
-`docs/moodboards/<slice-slug>.md`:
+`moodboard/boards/<slice-slug>.md`:
 
 ```markdown
 # Moodboard — {{epic}}
@@ -125,18 +133,65 @@ shot.
 ## Verify (runnable)
 
 ```bash
-# every embedded shot resolves
-grep -o 'shots/[^)]*' docs/moodboards/*.md | while read -r p; do
-  [ -f "docs/moodboards/$p" ] || echo "MISSING: $p"
+# every embedded shot resolves (run from the app dir)
+grep -o 'shots/[^)]*' moodboard/boards/*.md | while read -r p; do
+  [ -f "moodboard/$p" ] || echo "MISSING: $p"
 done
 ```
 
 Zero MISSING lines = pass.
 
+## Score (the selection seam — do not skip)
+
+Every reference is scored **0–5 per criterion** against the INTAKE-derived
+rubric. This is where intake feeds moodboarding: the rubric comes from the
+answers, never from taste alone.
+
+Derive the criteria from `intake/answers.json` + `intake/direction.json`:
+
+- each **direction adjective** → a criterion (weight 1); an adjective that
+  names a concrete visual requirement — motion, 3D, animation, video — is
+  **`locked: true`** and weight 3 (founder-signed, non-negotiable downstream);
+- the **layoutTemplate** answer → a criterion (weight 2);
+- each **avoid** → scored inverted (a reference embodying an avoid scores 0
+  on the adjective it cheapens).
+
+Each gathering/scoring subagent scores its slice's references and records
+`scores` + a one-line `why` per reference. Judgment is the subagent's;
+arithmetic and gates are the CLI's (`appbox moodboard check` recomputes
+weighted totals — Σ(score×weight)/Σweight — and refuses lies).
+
+## Record (the step energize taught us)
+
+A moodboard that is not RECORDED is a moodboard the designer never sees.
+After verify + scoring:
+
+1. Write the `moodboard` answer group into `intake/answers.json`:
+   `{provenance: <method line>, criteria: [...], boards: [{id, references:
+   [{name, url, grade, steal, why, scores, shot: {file}}]}],
+   selectionStatus: "pending"}`.
+2. Re-run the intake emitter (`appbox intake emit --project <name>`, or the
+   repo-mode equivalent) — it publishes `intake/moodboard.json` with ids,
+   counts, `shot.src`, and COMPUTED totals.
+3. Run `appbox moodboard check <intake-dir>` — green required. A locked
+   criterion with no reference scoring ≥ 3 fails here, BY DESIGN: that is
+   "intake wants animated 3D and the board cannot feed it" caught at the
+   board, not in the shipped site.
+
+## Selection gate (human, recorded)
+
+Present the ranked references (per board, highest weighted total first) to
+the founder and ask which are selected. Default proposal: every reference
+   at total ≥ 3.5. Record `selected: true` per chosen reference, set
+   `selectionStatus: "approved"`, re-emit, re-check. **The designer consumes
+   ONLY selected references** — via the commission, never the raw boards.
+
 ## Handoff
 
-- `docs/moodboards/` is named in `docs/intake/brief.md`'s world via the
-  `intake.moodboard` surface (story-map dataset) — regeneration keeps it.
-- `appbox-designer`: consult the moodboard slice for the epic you are
-  authoring BEFORE writing surfaces; the "patterns this slice must have"
-  list is the visual bar.
+- The downstream consumer is `appbox design commission <app-dir>`: it
+  compiles `design/commission.md` + `design/commission-prompt.md` from the
+  brief, the direction, and ONLY the selected references with their scores,
+  and REFUSES to run while `selectionStatus` is not `approved`.
+- `appbox-designer`: consume the commission as a binding contract before
+  authoring; the boards' "patterns this slice must have" lists remain the
+  per-epic visual bar behind it.

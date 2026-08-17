@@ -33,6 +33,7 @@
 
 import 'dart:io';
 
+import 'package:appboxd/commission.dart';
 import 'package:appboxd/design_server.dart';
 import 'package:appboxd/design_selftest.dart';
 import 'package:appboxd/design_tools.dart';
@@ -82,6 +83,8 @@ Future<int> designMain(List<String> args) async {
   final cmd = args.first;
   final rest = args.sublist(1);
   switch (cmd) {
+    case 'commission':
+      return commissionMain(rest);
     case 'lint':
       return _emit(designLint(rest));
     case 'check-ladder':

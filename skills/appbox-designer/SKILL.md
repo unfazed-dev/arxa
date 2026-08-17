@@ -26,7 +26,7 @@ designing, never back-filled. See
 
 Stage 2 of `appbox-orchestrator` (Ø, front door) → `appbox-story-mapper / appbox-moodboarder` (0, optional) → `appbox-intake` (1) → `appbox-designer` (2) → `appbox-scaffolder` (3) → `appbox-builder` (4) → `appbox-tester` (5) → `appbox-reviewer` (6) → `appbox-deployer` (9) — cross-cutting: `appbox-lint` (7), `appbox-lens` (8), `appbox-cicd` (10, day-zero frame wrapping all stages). Stage numbers and every stage's input/output artifacts: `docs/research/pipeline-map.md` §1; the visual map: `docs/appbox-system-map.md`; the CLI FSM phases: `appboxd/lib/phases.dart`.
 
-- **Upstream (feeds this skill):** `appbox-intake` — the brief (or a hand-written one) + seeded `intake/registry.json` (the emitted `## Layout template` section is consumed **verbatim**) + `intake/flows.json`, the flows SSOT — with the registry, the pipeline's only authoring surface: intake elicits/derives + confirms the flows, and the design viewer live-reads AND edits that same file (never a copy; DESIGN-ARCHITECTURE "The output triad"). `appbox-moodboarder` moodboards are consulted alongside the brief.
+- **Upstream (feeds this skill):** `appbox-intake` — the brief (or a hand-written one) + seeded `intake/registry.json` (the emitted `## Layout template` section is consumed **verbatim**) + `intake/flows.json`, the flows SSOT — with the registry, the pipeline's only authoring surface: intake elicits/derives + confirms the flows, and the design viewer live-reads AND edits that same file (never a copy; DESIGN-ARCHITECTURE "The output triad"). `appbox-moodboarder` output reaches this skill ONLY through `appbox design commission` — the compiled, selected, scored mandate (§0).
 - **Downstream (consumes this skill's output):** `appbox-scaffolder` — the FROZEN `structure.json` this stage emits is its only input; `appbox-lens` captures the evidence; a stage-6 review REJECT rewinds the FSM back here.
 
 **The triad output.** Every artifact is *three switchable lenses over one
@@ -43,7 +43,35 @@ navigation from the edges. Binding contract:
 
 ## How to use this skill
 
-**0. Load the structure contract and identify your input. Do this first.**
+**0. Consume the commission — it is a binding contract, not inspiration.**
+Run `appbox design commission <app-dir>` (or verify `design/commission.md` +
+`design/commission-prompt.md` already exist and match the current intake).
+The commission compiles the brief + direction + ONLY the selected, scored
+moodboard references; it is the anti-blandness seam. Rules with teeth:
+
+- **Locked requirements are non-deferrable.** If the commission locks
+  `animated-3d`, the hero MOVES in this artifact (CSS/WebGL in the design
+  layer, vendored island in the build) — deferring it to "a build-stage
+  upgrade" is a gate failure, not a style choice. When intake locks motion,
+  your lens verification captures at TWO settle states and the stills must
+  differ.
+- **Selected references are your visual context.** Consult their shots on
+  disk (`moodboard/shots/…`) before choosing any palette, type pairing, or
+  motion pattern; cross-pollinate (layout from one, palette from another,
+  motion from a third) — never clone one reference.
+- **Craft contract** (see this skill's LICENSE for lineage): no default-
+  token design (no Inter/Roboto/Arial as the identity face, no blue-purple
+  gradient heroes, ONE elevation vocabulary); a named type pairing with real
+  contrast; bold direction — pick an extreme of the commission's tone
+  adjectives and give every surface one memorable element; real copy only
+  (concrete claims in the brand voice, never "Empower your team" filler);
+  3 distinct variants for the hero/key surface before committing; serve +
+  screenshot + console-check before presenting anything.
+- A missing or stale commission (moodboard unapproved, locked criterion
+  unfed) means STOP and run the moodboard stage — designing without the
+  mandate is how bland sites happen.
+
+**0b. Load the structure contract and identify your input.**
 Two files govern everything below and win over any prose elsewhere in this
 skill:
 
