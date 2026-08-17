@@ -23,7 +23,7 @@ was retired on 2026-08-05 in favor of the central widgets home:
   cross-surface (`ShowcaseNotesAuthTextFieldWidget`, `ShowcaseNotesFormErrorRowWidget`), surface composites
   (`ShowcaseNotesOtpFormWidget` + `ShowcaseNotesPasswordFormWidget`, `ShowcaseNotesCreateAccountFormWidget`), and the rows/delegates
   extracted from the mobile views (`ShowcaseNotesRowWidget` / `ShowcaseNotesFolderRowWidget`
-  / `ShowcaseNotesAdminFolderRowWidget`, `ShowcaseNotesPinnedSearchBarWidget` /
+  / `ShowcaseNotesAdminFolderRowWidget` /
   `ShowcaseNotesNoteRowWidget`, `ShowcaseNoteEditorBodyWidget` / `ShowcaseNotePhotoStripWidget` /
   `ShowcaseNoteAudioRowWidget` / `ShowcaseNoteEditorBottomToolbarWidget` /
   `ShowcaseNoteRecordingRowWidget`).
