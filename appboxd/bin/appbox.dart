@@ -149,6 +149,12 @@ Commands:
                  pseudolocalize, vendor-fetch, doctor (appbox design --help)
   deploy <sub>   Deploy runtime — doctor, deploy, --self-test (appbox deploy --help)
   intake <sub>   Elicitation engine — emit, seed, validate (appbox intake --help)
+  project <sub>  Projects — init (native ~/.appbox), init --repo <dir> --kind
+                 site|app (the repo law: marker + 8 stage folders), sync,
+                 resolve, use, list (appbox project --help)
+  moodboard <sub> Scored-moodboard gate — check <intake-dir> recomputes
+                 weighted totals, enforces floors + locked criteria
+                 (appbox moodboard check --help)
   credentials <verb>  Unified credential manager — list/check/set/unset over
                  the catalog + OS vault (never prints secrets)
   emit <name>    Run an emitter: structure, htmx, playground, transform_tokens,

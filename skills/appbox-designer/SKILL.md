@@ -159,8 +159,11 @@ the bottom of `system-prompt.md`):
 **7. Ask clarifying questions** (`AskUserQuestion`) for new or ambiguous work —
 context, fidelity, variations (see "Asking questions" in `system-prompt.md`).
 
-**8. Set up the output folder.** Ask **where to save** (default
-`designs/<descriptive-project-name>/`) and **which design system(s) to use**.
+**8. Set up the output folder.** Ask **where to save** and **which design
+system(s) to use**. Repo mode (an `appbox.json` marker above cwd): the default
+is the app dir's `design/` stage folder — `<app-dir>/design/` — never a fresh
+`designs/<name>/` at the repo root (that layout is pre-law). Native mode
+(`~/.appbox` project): default `designs/<descriptive-project-name>/` as before.
 Start every artifact by copying `examples/hello-hda/` and renaming; never
 scatter design files in the repo root. Serve the artifact with the Dart
 design server — `appbox design serve <artifact-dir> [--port N] [--json]`

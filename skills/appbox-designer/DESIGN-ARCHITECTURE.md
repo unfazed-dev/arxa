@@ -100,6 +100,16 @@ The studio designs a **user project**, not itself. User projects live in `~/.app
 
 The studio's own design (hub, stage shells, its own registry) stays in the repo under `designs/appbox-studio-v2` — the hub-hosted stage-shell design that replaced v1 on 2026-08-16 (v1 remains in-tree as the retained visual-parity reference); `~/.appbox` holds user projects only.
 
+**Repo mode (the appbox law, 2026-08-17).** When the product lives in an
+existing client repo, that repo owns ALL pipeline state: the app dir carries
+an `appbox.json` marker (name, `kind: site|app`, targets, locales) plus the
+eight stage folders (`intake moodboard design scaffold build test review
+deploy`), and a same-named `~/.appbox/projects/` entry is a HARD error
+(`appboxd/lib/repo_project.dart`). The `~/.appbox` layout above describes
+NATIVE projects; serve/lint/verify address the repo artifact dir by path
+(`appbox design serve <app-dir>/design`), and the project overlay described
+below applies to native mode only.
+
 The design server **live-reads** the current project as an overlay on its own artifact scan (`_scanArtifact` in `appboxd/lib/design_server/worker.dart`):
 
 | project file | overlaid as |
