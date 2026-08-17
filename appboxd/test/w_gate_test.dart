@@ -1,8 +1,8 @@
-/// Mutation tests for the W-gate (W1–W8).
+/// Mutation tests for the W-gate (W1–W9).
 ///
-/// The shape is one clean synthetic artifact tree that passes all eight rules,
+/// The shape is one clean synthetic artifact tree that passes all nine rules,
 /// then per-rule mutations of that same tree. Each mutation asserts BOTH
-/// directions: the mutated rule fires, and the other seven stay silent. A rule
+/// directions: the mutated rule fires, and the other eight stay silent. A rule
 /// that can only be shown to fire, never to be the *only* thing firing, is not
 /// proven non-vacuous — that is the whole point of the exercise.
 library;
@@ -207,7 +207,7 @@ void main() {
   }
 
   group('clean tree', () {
-    test('passes all eight rules', () {
+    test('passes all nine rules', () {
       final notes = <LintFinding>[];
       final findings = gateDesignWidgets(_tree(tmp, const {}), notes: notes);
       expect(findings, isEmpty, reason: findings.join('\n'));
@@ -1173,6 +1173,63 @@ export function Chip({ text }) {
 ''',
       }));
       expect(graph.keys.any((k) => k.contains('hono')), isFalse);
+    });
+  });
+
+  group('W9 view composition', () {
+    test('the W7-blessed shape — identity + text-bearing role — fails in a view',
+        () {
+      expectsOnly('W9', {
+        'ui/views/main_shell/design/chat/chat_view.tsx':
+            'export default function ChatView() { return <main><p data-el="m" data-inspect-role="text">inline</p></main>; }\n',
+      }, messageContains: 'view templates compose widgets');
+    });
+
+    test('a text-valued expression child fails even with identity', () {
+      expectsOnly('W9', {
+        'ui/views/main_shell/design/chat/chat_view.tsx':
+            'export default function ChatView() { return <main><p data-el="m" data-inspect-role="text">{remaining}</p></main>; }\n',
+      }, messageContains: 'expression text');
+    });
+
+    test('an interactive raw element fails in a view even with identity', () {
+      expectsOnly('W9', {
+        'ui/views/main_shell/design/chat/chat_view.tsx':
+            'export default function ChatView() { return <main><a data-el="m" data-inspect-role="link" href="/x"></a></main>; }\n',
+      }, messageContains: 'bearing interaction');
+    });
+
+    test('media in a view template fails — imagery rides widgets', () {
+      expectsOnly('W9', {
+        'ui/views/main_shell/design/chat/chat_view.tsx':
+            'export default function ChatView() { return <main><img data-el="m" data-inspect-role="image" src="/a.png" alt="a" /></main>; }\n',
+      }, messageContains: 'rendering media');
+    });
+
+    test('the same markup is legal inside a widget file', () {
+      final findings = gateDesignWidgets(_tree(tmp, {
+        'ui/widgets/main_chat_widgets/plate.tsx':
+            'export function Plate({ remaining }) { return <p data-el="plate" data-inspect-role="text">{remaining}</p>; }\n',
+        'ui/views/main_shell/design/chat/chat_view.tsx':
+            'import { Plate } from "../../../../widgets/main_chat_widgets/plate.tsx";\n'
+                'export default function ChatView() { return <main><Plate remaining={3} /></main>; }\n',
+      }));
+      expect(findings, isEmpty, reason: findings.join('\n'));
+    });
+
+    test('slot passes and list maps are composition, not authorship', () {
+      final findings = gateDesignWidgets(_tree(tmp, {
+        'ui/views/main_shell/design/chat/chat_view.tsx':
+            'export default function ChatView({ children, items }) { return <main><div>{children}</div><ul>{items.map((i) => <li key={i}>{i}</li>)}</ul></main>; }\n',
+      }));
+      // The <li> inside the map bears an expression child {i} — a string
+      // flowing into raw markup — so W9 names it; the slot and the map
+      // wrapper themselves stay silent.
+      expect(_rules(findings), {'W9'}, reason: findings.join('\n'));
+      final msg = findings.map((f) => f.message).join('\n');
+      expect(msg, contains('<li>'));
+      expect(msg.contains('<div>'), isFalse);
+      expect(msg.contains('<ul>'), isFalse);
     });
   });
 }

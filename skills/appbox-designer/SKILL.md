@@ -197,7 +197,15 @@ vocabulary — the file list of `starter-partials/widgets/`; a kind outside it i
 a gate failure on both sides, **never improvise a mapping**. Start from
 [`references/ui-recipes.md`](references/ui-recipes.md)
 and the drop-in widgets in `starter-partials/widgets/` — surfaces compose
-only from that library.
+only from that library. **Composition is enforced (W9), not encouraged**:
+in view templates (`ui/views/**`) every piece of presentation — text,
+links, inputs, imagery — renders through a Capitalized widget-library
+invocation. A raw HTML element in a view that bears text, is interactive,
+or renders media fails `design lint` (W9) even when it carries
+`data-el`/`inspectAttrs` identity (W7's floor); that identity is legal
+only INSIDE widget files, where the presentation markup belongs. Slot
+passes (`{children}`) and list maps are composition, not authorship — they
+stay legal.
 
 Design **against the kit as always-available**: colors, spacing, glyphs, fonts,
 constants and strings come from the generated kit mirror, never from a local

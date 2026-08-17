@@ -47,7 +47,7 @@ Subcommands:
                                      by ADR-0009: vendored libs, first-party
                                      islands, artifact app modules) + the
                                      optional client-js.json weight ceiling
-                                     + widget/panel gate (W1–W7)
+                                     + widget/panel gate (W1–W9)
   check-ladder [--config <p>] [--doc <p>]
                                      Ladder config ↔ doctrine drift check
   check-wiring <dir> <property>      Wiring joins (fragments|mutations-posted|

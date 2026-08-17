@@ -27,7 +27,8 @@ import 'package:appboxd/design_tools.dart';
 // it keeps ONE parser for `{% include %}`/`{% import %}` rather than a second
 // that can drift from the gate the same artifacts are linted against.
 import 'package:appboxd/gate_design_widgets.dart'
-    show buildIncludeGraph, isRetiredWidgetPath, isWidget, widgetHomeOf;
+    show buildIncludeGraph, gateDesignWidgets, isRetiredWidgetPath, isWidget,
+        widgetHomeOf;
 import 'package:appboxd/project.dart';
 import 'package:path/path.dart' as p;
 
@@ -692,6 +693,16 @@ List<_Check> _buildChecks({required bool skipRender}) {
 
     // --- 16-17. component library + icons ----------------------------------
     _Check(_lWidgets, _Section.structure, (art, skill, src) async {
+      // The W-gate is this check's teeth: W1–W9 must hold on the same tree
+      // the structural assertions read, so a mutation that trips any
+      // widget-gate rule flips this check even when the two-tier shape is
+      // untouched. The W9 mutation proves the part W7 cannot see — an
+      // identity-carrying raw element in a view template passes W7 and only
+      // the composition rule retires it.
+      final gateFindings = gateDesignWidgets(art);
+      if (gateFindings.isNotEmpty) {
+        return CheckOutcome.fail(gateFindings.map((f) => '$f').join('; '));
+      }
       final homed = _homedWidgets(art);
       final homeless = _homelessWidgets(art);
       final legacy = _legacyFlatWidgets(art);
@@ -903,6 +914,8 @@ final List<_Mutation> _mutations = [
   _Mutation('dangling-target', _lTargetsExist, false, _mutateDanglingTarget),
   _Mutation('emoji-icon', _lIcons, false, _mutateEmojiIcon),
   _Mutation('widget-partials', _lWidgets, false, _mutateWidgetPartials),
+  _Mutation('view-composition', _lWidgets, false, _mutateViewComposition),
+  _Mutation('five-file', _lFiveFile, false, _mutateFiveFile),
   _Mutation('untracked-file', _lGit, false, _mutateUntrackedFile),
   _Mutation('client-js', _lLint, false, _mutateClientJs),
   _Mutation('app-module', _lLint, false, _mutateAppModule),
@@ -1164,6 +1177,31 @@ void _mutateWidgetPartials(String art, String skill) {
   // An artifact with no widget layer at all fails the check outright (the
   // nunjucks macro-library escape hatch is gone), so the file deletions above
   // are the whole mutation.
+}
+
+/// Five-file law — delete one factor variant from a stated view; the
+/// structural check must catch the missing file. (Completes the negative
+/// harness: this check shipped without a mutation row, so the every-check-
+/// is-falsifiable guard aborted negative mode before any mutation ran.)
+void _mutateFiveFile(String art, String skill) {
+  final victims = _htmlFiles(art)
+      .where((f) => p.basename(f.path).endsWith('_view.mobile.tsx'))
+      .toList();
+  if (victims.isEmpty) return;
+  victims.first.deleteSync();
+}
+
+/// W9 — append the exact shape W7 blesses (identity + text-bearing role) to
+/// a view template: only the composition rule catches it, proving the gate
+/// sees what the identity floor lets through.
+void _mutateViewComposition(String art, String skill) {
+  final views = _htmlFiles(art)
+      .where((f) => _relOf(art, f).startsWith('ui/views/'))
+      .toList();
+  if (views.isEmpty) return;
+  final f = views.first;
+  f.writeAsStringSync(
+      '${f.readAsStringSync()}\n<p data-el="mut-w9" data-inspect-role="text">view composition mutation</p>\n');
 }
 
 void _mutateUntrackedFile(String art, String skill) {

@@ -536,7 +536,7 @@ CmdResult designLint(List<String> args) {
       lines.addAll(findings.map((f) => f.toString()));
     }
     if (widgetFindings.isNotEmpty) {
-      lines.add('widget/panel gate failed (W1–W7):');
+      lines.add('widget/panel gate failed (W1–W9):');
       lines.addAll(widgetFindings.map((f) => f.toString()));
     }
     if (styleFindings.isNotEmpty) {
@@ -547,7 +547,7 @@ CmdResult designLint(List<String> args) {
   }
   return CmdResult(0, stdoutLines: [
     'lint clean: every script resolves (vendor/island/app module), no inline handlers in $dir',
-    'widget/panel gate clean: W1–W7 in $dir',
+    'widget/panel gate clean: W1–W9 in $dir',
     'style gate clean: S1–S4 in $dir',
     ...noteLines,
   ]);

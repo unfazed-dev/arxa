@@ -96,6 +96,13 @@ folder — there is no per-surface tier to demote it to. Promotion to
 `common/<group>/` is earned by a second *shell* consumer, proven by the include
 graph in both directions, never by intent.
 
+Placement is only half the law; the other half is **composition (W9)**: view
+templates (`ui/views/**`) render presentation exclusively through Capitalized
+widget-library invocations. A raw HTML element in a view that bears text, is
+interactive, or renders media fails `design lint` even when it carries
+`data-el`/`inspectAttrs` identity — identity markup lives inside widget files,
+where the presentation belongs. Views compose; widgets render.
+
 Both tiers are read off the exemplar, which has
 `ui/widgets/common/showcase_gallery_chrome/` and
 `ui/widgets/common/showcase_tabs_shared/` alongside seven

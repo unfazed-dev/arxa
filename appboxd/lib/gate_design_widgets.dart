@@ -1,7 +1,7 @@
 /// The W-gate: the widget placement law and the panel contract, enforced
 /// against ANY design artifact tree (nothing here is studio-specific).
 ///
-/// Eight hard-fail rules, per docs/plans/widget-panel-vocabulary-reconciliation.md
+/// Nine hard-fail rules, per docs/plans/widget-panel-vocabulary-reconciliation.md
 /// D5. Every failure message begins with its rule id and names the concrete fix,
 /// because the reader of a gate failure is someone who has to move a file:
 ///
@@ -24,6 +24,12 @@
 ///   W8  factor variants — the five-file law's TSX half: a `<stem>_view.tsx`
 ///       with a co-located `<stem>_viewmodel.js` under `ui/views/` carries
 ///       all three factor variants (`.desktop`/`.tablet`/`.mobile`) beside it.
+///   W9  view composition — view templates (`ui/views/**`) compose widgets:
+///       a raw HTML element there that bears text (literal or text-valued
+///       expression child), is interactive, or renders media is a failure —
+///       the only legal form is a Capitalized widget-library invocation.
+///       W7's data-el/inspectAttrs identity is legal INSIDE widget files,
+///       where the presentation markup belongs.
 ///
 /// The import graph is the only authority for W1/W2. No such parser existed in
 /// appboxd before this file — the pre-existing "orphan sweeps" (emit_htmx,
@@ -1087,7 +1093,120 @@ List<LintFinding> _factorVariantFindings(String artifactDir) {
   return findings;
 }
 
-/// Run W1–W8 over the design artifact at [artifactDir].
+// ══ W9 — view templates compose widgets ═════════════════════════════════
+
+/// Media elements that always ride a widget in view templates: an image,
+/// video, or embed is presentation, and presentation lives in the library
+/// (ImageFigure, ImageHero, …) so alt text, loading, and framing are authored
+/// once, at the widget. Custom elements (model-viewer et al.) are outside
+/// [_htmlElements] and stay out of scope — rich media mounts inside widgets.
+const _mediaTags = <String>{
+  'img', 'picture', 'video', 'audio', 'canvas', 'iframe', 'object', 'embed',
+};
+
+/// The first brace-balanced JSX expression child after the opening tag ending
+/// at [tagEnd], or null when the first child is not an expression. A depth
+/// counter walks nested braces ({t(x, {y: 1})}) across newlines.
+String? _firstExpressionChild(String src, int tagEnd) {
+  var i = tagEnd;
+  while (i < src.length &&
+      (src[i] == ' ' || src[i] == '\n' || src[i] == '\r' || src[i] == '\t')) {
+    i++;
+  }
+  if (i >= src.length || src[i] != '{') return null;
+  var depth = 0;
+  for (var j = i; j < src.length; j++) {
+    final c = src[j];
+    if (c == '{') depth++;
+    if (c == '}') {
+      depth--;
+      if (depth == 0) return src.substring(i + 1, j);
+    }
+  }
+  return null; // unbalanced — a template literal or regex false positive; W7 owns identity, not W9
+}
+
+/// Whether a JSX expression child renders TEXT (true → W9 fires) rather than
+/// elements. Structural discriminators, not evaluation: an expression that
+/// maps a list (.map() call) or contains a JSX opening < produces element
+/// children — composition, whose leaves the library owns; whitespace spacer
+/// literals are not presentation. Everything else is a string flowing into
+/// raw markup — the exact thing the library exists to own.
+bool _expressionIsText(String expression) {
+  final t = expression.trim();
+  if (t.isEmpty) return false;
+  if (t == "' '" || t == '""' || t == '\x60\x60') return false;
+  if (t.contains('.map(')) return false;
+  if (RegExp(r'<[A-Za-z{/]').hasMatch(t)) return false;
+  // Slot passes are composition, not authorship: <main>{children}</main>
+  // forwards what an upstream view already composed (widget invocations),
+  // so the shell variant mounting its slot is not presenting markup itself.
+  if (t == 'children' || t == 'props.children') return false;
+  if (t.startsWith('children.') || t.startsWith('props.children.')) {
+    return false;
+  }
+  return true;
+}
+
+/// W9: view templates (ui/views/**, outside widget-library dirs) compose
+/// widgets — they do not author presentation markup. A raw lowercase HTML
+/// element that bears text (literal, or a text-valued expression child like
+/// {t(translate, 'x')}), is interactive, or renders media is a failure
+/// there: the element must become a Capitalized widget-library invocation.
+///
+/// W7's identity floor (data-el/inspectAttrs) stays legal inside widget files
+/// — and ONLY there. The shape W7 blesses is the one W9 retires in views: an
+/// identity-carrying raw element with a text-bearing role passed W7 while the
+/// library never grew the widget. That drift — views accreting inline
+/// presentation with markers — is this rule's reason to exist.
+///
+/// Scoped to ui/views/**: ui/common/base.tsx and other document chrome render
+/// the app shell itself (title, script stack) and are not view templates; W7
+/// continues to cover them tree-wide.
+List<LintFinding> _compositionFindings(String artifactDir) {
+  final findings = <LintFinding>[];
+  for (final rel in _templateFiles(artifactDir)) {
+    if (!rel.startsWith('ui/views/')) continue; // view templates only
+    if (isWidget(rel)) continue;
+    final src = stripComments(File(p.join(artifactDir, rel)).readAsStringSync());
+    for (final m in _openingTagRe.allMatches(src)) {
+      final tag = m.group(1)!;
+      if (!_htmlElements.contains(tag)) continue; // TS generic, not HTML
+      final selfClosing = m.group(3) == '/';
+      final line = _lineNumberAt(src, m.start);
+
+      var why = '';
+      if (_interactiveTags.contains(tag)) {
+        why = 'bearing interaction';
+      } else if (_mediaTags.contains(tag)) {
+        why = 'rendering media';
+      } else if (!selfClosing) {
+        final literal = _directTextSnippet(src, m.end);
+        final expression = literal == null
+            ? _firstExpressionChild(src, m.end)
+            : null;
+        if (literal != null) {
+          why = 'bearing text "${_snippet(literal)}"';
+        } else if (expression != null && _expressionIsText(expression)) {
+          why = 'bearing expression text "${_snippet(expression)}"';
+        } else {
+          continue;
+        }
+      } else {
+        continue;
+      }
+      findings.add(LintFinding(
+          rel,
+          'W9: <$tag> $why at line $line — view templates compose widgets; '
+          'move this markup into a widget under ui/widgets/ and invoke it '
+          'here (data-el/inspectAttrs identity is legal inside widget files '
+          'only)'));
+    }
+  }
+  return findings;
+}
+
+/// Run W1–W9 over the design artifact at [artifactDir].
 ///
 /// Returns the hard-fail findings in rule order. [notes] collects the advisory
 /// skipped-with-note channel (a rule that cannot apply to this tree yet), which
@@ -1108,5 +1227,6 @@ List<LintFinding> gateDesignWidgets(String artifactDir,
     ..._stateNamespaceFindings(artifactDir, notes),
     ..._anonymousElementFindings(artifactDir),
     ..._factorVariantFindings(artifactDir),
+    ..._compositionFindings(artifactDir),
   ];
 }
