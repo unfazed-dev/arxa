@@ -88,8 +88,17 @@ here, and a republisher that drops the author's fields is the bug. Shapes:
 Two artefacts, written by the chain:
 
 1. **Validated answers** — elicited with `appbox intake`, conforming to
-   `intake.schema.json`. Beyond the core fields, intake elicits four optional
-   groups:
+   `intake.schema.json`. The FIRST closed question of every intake is
+   **`product.kind`** — *is this product a **site** (web/landing: htmx +
+   islands, the designer's eject is runnable site code) or an **app**
+   (Flutter targets, scaffold → build → stores)?* It is not the same axis
+   as a target: a Flutter app may target `web` while being kind `app`, and
+   a site is kind `site` regardless of hosting. Record it as
+   `product.kind: site|app` — for repo-mode projects `appbox project sync
+   <app-dir>` pushes it (with targets/locales) into the `appbox.json`
+   marker, and every downstream stage (moodboard gathering prompts,
+   commission stack text, scaffolder, deployer) branches on it. Beyond the
+   core fields, intake elicits four optional groups:
    - **`direction`** — `{adjectives: [...], avoids: [...]}`: the design
      direction (what it should feel like, what it must not).
    - **`contentAnchors`** — real content examples the app must show.

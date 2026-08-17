@@ -39,29 +39,47 @@ REJECT rewinds FSM to design"| p3`).
 **Ø. Orchestration (front door, optional)**
 - Skill: `skills/appbox-orchestrator/SKILL.md`.
 - Position: stage Ø — the operator’s front door, before everything. Interactive
-  start (asks where + name + targets + locales; runs `appbox project init` /
-  `use` verbatim, `appboxd/lib/project_cli.dart`), dispatch to the ONE next
+  start in ONE OF TWO MODES — the **appbox law**
+  (`appboxd/lib/repo_project.dart`): **repo mode** when the product lives in
+  an existing repo (`appbox project init --repo <app-dir> --kind site|app`
+  writes the `appbox.json` marker + the 8 stage folders with CLI-owned,
+  kind-aware READMEs; a same-named `~/.appbox/projects/` shadow is a HARD
+  ERROR — an existing repo owns its pipeline state, full stop), or **native
+  mode** (asks where + name + targets + locales; runs `appbox project init` /
+  `use` verbatim, `appboxd/lib/project_cli.dart`). Then dispatch to the ONE next
   skill by pipeline state (`projectStage()` in `appboxd/lib/project.dart`),
   and the cross-stage where-are-we view. Never owns a stage, never writes
   artifacts, never enforces ordering — the FSM/gates stay the only enforcer.
+  `kind: site|app` (elicited as intake's FIRST closed question, synced into
+  the marker via `appbox project sync`) decides each stage's stack: htmx +
+  islands eject for sites, Flutter targets for apps.
   First call after project creation is `appbox-cicd` day-zero bootstrap.
 
 **0. Story mapping / moodboarding (pre-intake, optional)**
 - Skill: `skills/appbox-story-mapper/SKILL.md`, `skills/appbox-moodboarder/SKILL.md`.
-- Position: "story-mapper → moodboarder → appbox-designer"
-  (`skills/appbox-moodboarder/SKILL.md`, opening ASCII diagram). The
+- Position: "story-mapper → moodboarder → selection gate → commission →
+  appbox-designer" (`skills/appbox-moodboarder/SKILL.md`, opening ASCII
+  diagram + Score/Record/Selection sections). The
   story-mapper is described as "the tail of the intake chain — one chain, one
   brief" (`skills/appbox-story-mapper/SKILL.md`, "Where this sits in the
   appbox pipeline"). Both skills "elicit; do not generate" (architecture §22)
   — they gather and curate, never design.
-- Input: a JSON requirements object (`data.json`) for story-mapper; the
-  client's visual references for moodboarder.
+- Input: a JSON requirements object (`data.json`) for story-mapper; for
+  moodboarder the INTAKE-DERIVED rubric (direction adjectives — motion/3D
+  ones LOCKED at weight 3 — plus layoutTemplate; see its Score section) and
+  the client's visual references.
 - Output: `docs/intake/story_map.html` + `docs/intake/story-map.json` +
   `docs/intake/brief.md` (story-mapper, via `appbox emit story-map --input
   data.json --output ... --data-out ... --brief-out ...`, "Step 3: Generate
-  the artifacts"); `docs/moodboards/*` + `moodboard.json` (moodboarder).
+  the artifacts"); `moodboard/boards/*` + `moodboard/shots/*` + the scored,
+  selected `intake/moodboard.json` (moodboarder — recorded via the answers
+  group + intake re-emit, gated by `appbox moodboard check`).
   When intake answers exist, `--answers <f>` makes the brief the **unified**
   one (intake sections first).
+- Selection seam: scoring is the moodboarder subagents' judgment (0–5 per
+  criterion, weighted totals computed at emit); SELECTION is a human gate
+  recorded as `selected` flags + `selectionStatus: approved`. The designer
+  consumes only selected references, only via the commission.
 
 **1. Intake**
 - Skill: `skills/appbox-intake/SKILL.md`.
@@ -86,7 +104,13 @@ REJECT rewinds FSM to design"| p3`).
   `skills/appbox-designer/system-prompt.md`, binding contract in
   `skills/appbox-designer/DESIGN-ARCHITECTURE.md`, and the pipeline-facing
   layer contract in `skills/appbox-designer/references/app-architecture.md`.
-- Input: the intake brief + registry seed (or a hand-written brief); the
+- Input: **the commission** — `design/commission.md` +
+  `design/commission-prompt.md`, compiled deterministically by
+  `appbox design commission <app-dir>` from the brief + direction + ONLY the
+  selected, scored moodboard references (+ their shot paths). The commission
+  REFUSES to compile while the moodboard selection is unapproved or a locked
+  criterion is unfed (`appboxd/lib/commission.dart`) — the anti-blandness
+  seam. Then the intake brief + registry seed (or a hand-written brief); the
   Layout Template section; the viewport ladder
   (`skills/appbox-designer/references/viewport-ladder.md`).
 - Output — "the triad output": *three switchable lenses over one screen

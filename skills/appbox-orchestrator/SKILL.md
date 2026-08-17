@@ -24,10 +24,30 @@ Stage Ø (before stage 0) of `appbox-orchestrator` (Ø, front door) → `appbox-
 
 ## What you own (three things, nothing else)
 
-1. **Interactive start.** Ask ONE question at a time (recommendation attached):
-   project name (lowercase alnum + dash) → where (which `APPBOX_HOME`; default
-   `~/.appbox`) → targets (default ios, android, macos) → locales (default en, pl).
-   Then run the existing CLI verbatim — never create directories by hand:
+1. **Interactive start — TWO modes, decided by one question first: does this
+   product live in an EXISTING repo?**
+
+   **Repo mode (the appbox law):** when appbox runs inside a client repo, ALL
+   pipeline state lives in that repo — `~/.appbox/projects/` is for
+   appbox-NATIVE projects only, and a project existing in both places is a
+   hard error (`repo_project.dart`). Ask: which app dir (e.g. `landing/`,
+   `studio/`) → kind (**`site`** = web/landing, htmx + islands; **`app`** =
+   Flutter targets — this decides the whole stack downstream) → targets →
+   locales. Then run verbatim:
+   ```sh
+   appbox project init --repo <app-dir> --kind site|app \
+     [--name <n>] --targets web --locales en,fr
+   ```
+   This writes the `appbox.json` marker + the 8 stage folders (intake
+   moodboard design scaffold build test review deploy) with kind-aware,
+   CLI-owned READMEs. `appbox project resolve` from any subdir reports the
+   binding. `appbox project sync <app-dir>` later pushes kind/targets/locales
+   from intake answers into the marker.
+
+   **Native mode:** project name (lowercase alnum + dash) → where (which
+   `APPBOX_HOME`; default `~/.appbox`) → targets (default ios, android, macos)
+   → locales (default en, pl). Then run the existing CLI verbatim — never
+   create directories by hand:
    ```sh
    appbox project init <name> --targets ios,android,macos --locales en,pl
    appbox project use <name>
@@ -49,7 +69,9 @@ Stage Ø (before stage 0) of `appbox-orchestrator` (Ø, front door) → `appbox-
 | CI exists (`ci.yml`, `scripts/check.sh`) | `appbox-cicd` — adopt + PR sweep |
 | no brief; requirements raw | `appbox-story-mapper` (0) or `appbox-intake` (1) — intake optional |
 | brief exists, no visual references | `appbox-moodboarder` (0) |
-| brief (+ moodboard), no authored design | `appbox-designer` (2) |
+| moodboard scored, selection NOT approved | the founder — the human selection gate |
+| selection approved, no `design/commission.md` | run `appbox design commission <app-dir>` |
+| commission exists, no authored design | `appbox-designer` (2) |
 | design frozen (`approval.lock`, `structure.json`) | `appbox-scaffolder` (3) |
 | stub tree emitted | `appbox-builder` (4) |
 | bodies filled | `appbox-tester` (5) |
