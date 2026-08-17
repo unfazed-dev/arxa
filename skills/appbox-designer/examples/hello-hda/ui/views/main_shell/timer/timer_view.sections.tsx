@@ -1,6 +1,7 @@
 // timer_view.sections.tsx — the timer body, defined once and composed by all
-// three factor variants (studio-v2 sections pattern). Includes TimerTick, the
-// htmx poll fragment the viewmodel's #tick handler renders.
+// three factor variants (studio-v2 sections pattern). TimerTick — the htmx
+// poll fragment the viewmodel's #tick handler renders — lives in the widget
+// library (hello_timer_widgets), where the composition law puts presentation.
 //
 // Rung discipline: each rung mounts its own copy of the timer, so the element
 // id is rung-suffixed (timer--desktop, …) and the poll/extend/skip requests
@@ -9,6 +10,7 @@
 // reveal, so only the visible rung polls — zero custom JavaScript.
 import type { FC } from 'hono/jsx';
 import { Heading, Txt, ActionButton } from '../../../widgets/hello_ui_widgets/widgets.tsx';
+import { TimerTick } from '../../../widgets/hello_timer_widgets/widgets.tsx';
 
 type TranslateFn = (key: string, vars?: Record<string, unknown>) => unknown;
 
@@ -18,31 +20,6 @@ export interface TimerBodyProps {
   rung?: string;
 }
 
-export const TimerTick: FC<{ remaining?: number; translate: TranslateFn; rung?: string }> = ({
-  remaining,
-  translate,
-  rung,
-}) => {
-  const id = rung ? `timer--${rung}` : 'timer';
-  if (remaining && remaining > 0) {
-    return (
-      <div
-        id={id}
-        class="timer"
-        hx-get={`/timer/tick?rung=${rung ?? ''}`}
-        hx-trigger="revealed delay:1s"
-        hx-swap="outerHTML"
-      >
-        {remaining}s
-      </div>
-    );
-  }
-  return (
-    <div id={id} class="timer done">
-      {translate('timer.done') as string}
-    </div>
-  );
-};
 
 export const TimerBody: FC<TimerBodyProps> = ({ translate, remaining, rung }) => {
   const target = rung ? `#timer--${rung}` : '#timer';

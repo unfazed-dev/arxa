@@ -309,6 +309,7 @@ a.list-row:hover { background: color-mix(in srgb, currentColor 6%, transparent);
 
 /* ── artifact-local ───────────────────────────────────────────────────────── */
 .swatch { display: inline-block; width: .9em; height: .9em; border-radius: 50%; background: var(--accent); }
+.mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
 .lang-switcher {
   display: flex;
   gap: 4px;

@@ -8,7 +8,7 @@ import MainShell from '../main_shell_view.tsx';
 import Desktop from './timer_view.desktop.tsx';
 import Tablet from './timer_view.tablet.tsx';
 import Mobile from './timer_view.mobile.tsx';
-import { TimerTick } from './timer_view.sections.tsx';
+import { TimerTick } from '../../../widgets/hello_timer_widgets/widgets.tsx';
 
 type TranslateFn = (key: string, vars?: Record<string, unknown>) => unknown;
 

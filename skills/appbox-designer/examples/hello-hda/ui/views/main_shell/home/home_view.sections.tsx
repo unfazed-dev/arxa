@@ -4,7 +4,7 @@
 // Authored entirely through the library widgets: every string and interactive
 // element resolves to its own data-el (W7).
 import type { FC } from 'hono/jsx';
-import { Heading, Txt, ActionButton, CtaLink } from '../../../widgets/hello_ui_widgets/widgets.tsx';
+import { Heading, Txt, Label, ActionButton, CtaLink } from '../../../widgets/hello_ui_widgets/widgets.tsx';
 import { ListRow, FormField, IslandsDemo } from '../../../widgets/hello_home_widgets/widgets.tsx';
 import Icon from '../../../../runtime/icon.tsx';
 
@@ -81,7 +81,8 @@ export const HomeBody: FC<HomeBodyProps> = ({
     </form>
     <Txt name="home:accent-current">
       {translate('accent.current') as string}:{' '}
-      <span class="swatch"></span> <code>{accent}</code>
+      <span class="swatch"></span>{' '}
+      <Label name="home:accent-hex" class="mono">{accent}</Label>
     </Txt>
 
     <IslandsDemo rung={rung} translate={translate} />
