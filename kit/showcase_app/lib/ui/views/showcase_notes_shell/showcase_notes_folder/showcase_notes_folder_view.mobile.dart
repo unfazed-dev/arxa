@@ -6,7 +6,7 @@
 ///
 /// This is the user interface for the notes list inside one scope — All Notes,
 /// a specific folder, or Recently Deleted. The list shows grouped sections with
-/// swipe actions (pin/unpin, trash/restore, permanent delete), a pinned search
+/// swipe actions (pin/unpin, trash/restore, permanent delete), a fixed search
 /// bar (hidden in trash), and a compose FAB.
 ///
 /// Requirements:
@@ -26,7 +26,7 @@
 /// In trash scope, swipe left-to-right permanently deletes; the bar action
 /// empties all.
 /// 8. [Search notes] — search-notes-by-text
-/// The pinned search bar filters the list by text.
+/// The fixed search bar filters the list by text.
 ///
 /// Relationships:
 ///
@@ -110,24 +110,26 @@ class ShowcaseNotesFolderViewMobile
                 // shared spec's stagger ramp (spec-owned tokens; no local
                 // durations).
                 AppBoxKitMotionScope(
-              child: CustomScrollView(
-                slivers: [
-                  // Pinned search — sticks under the bar while the list scrolls.
-                  // Trash view hides it (nothing to search).
-                  // .scrollOcclusion() satisfies pipeline check 1i; it is a no-op
-                  // for a pinned header (never covered ⇒ alpha stays 1) but keeps
-                  // the glass surface safe if this header ever loses `pinned`.
+              child: Column(
+                children: [
+                  // Fixed search chrome — pinned under the app bar OUTSIDE the
+                  // scrollable, so scrolling the list can never move it
+                  // (device report 2026-08-17: the bar visibly shrank/slid on
+                  // first scroll as a pinned sliver with min<max extent, and a
+                  // UiKitView in a scrollable is out of the vendored contract
+                  // anyway). Trash view hides it (nothing to search).
                   if (!viewModel.isTrash)
-                    ShowcaseNotesPinnedSearchBarWidget(
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: abxSize16, vertical: abxSize8),
-                        child: AppBoxKitNativeSearchBar(
-                          hint: 'Search',
-                          onChanged: viewModel.setQuery,
-                        ).scrollOcclusion(),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: abxSize16, vertical: abxSize8),
+                      child: AppBoxKitNativeSearchBar(
+                        hint: 'Search',
+                        onChanged: viewModel.setQuery,
                       ),
                     ),
+                  Expanded(
+                    child: CustomScrollView(
+                slivers: [
                   if (groups.isEmpty)
                     const SliverFillRemaining(
                       hasScrollBody: false,
@@ -140,11 +142,12 @@ class ShowcaseNotesFolderViewMobile
                     )
                   else
                     // iOS 26 scroll edge effects (ADR 0010) are owned by the
-                    // list, not the item: the pinned search header above is
-                    // detected zero-config via getOffsetToReveal (hence
-                    // the default top treatment), and the floating tab bar sits outside the
-                    // scrollable, so its occlusion is explicit. An item added
-                    // here inherits both instead of having to remember them.
+                    // list, not the item: the search bar is fixed chrome above
+                    // this scrollable, so the default top treatment applies at
+                    // the list's own top edge, and the floating tab bar sits
+                    // outside the scrollable, so its occlusion is explicit. An
+                    // item added here inherits both instead of having to
+                    // remember them.
                     AppBoxKitEdgeAwareSliverList(
                       bottomOcclusion: kShowcaseTabBarBlockHeight,
                       padding: EdgeInsets.fromLTRB(
@@ -191,6 +194,9 @@ class ShowcaseNotesFolderViewMobile
                             .wake(order: i);
                       },
                     ),
+                  ],
+                ),
+                  ),
                 ],
               ),
             ),

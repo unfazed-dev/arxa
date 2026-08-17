@@ -16,5 +16,4 @@ export 'package:appbox_kit_showcase_app/ui/widgets/showcase_notes_widgets/showca
 export 'package:appbox_kit_showcase_app/ui/widgets/showcase_notes_widgets/showcase_notes_admin_folder_row_widget.dart';
 export 'package:appbox_kit_showcase_app/ui/widgets/showcase_notes_widgets/showcase_notes_folder_row_widget.dart';
 export 'package:appbox_kit_showcase_app/ui/widgets/showcase_notes_widgets/showcase_notes_note_row_widget.dart';
-export 'package:appbox_kit_showcase_app/ui/widgets/showcase_notes_widgets/showcase_notes_pinned_search_bar_widget.dart';
 export 'package:appbox_kit_showcase_app/ui/widgets/showcase_notes_widgets/showcase_notes_row_widget.dart';

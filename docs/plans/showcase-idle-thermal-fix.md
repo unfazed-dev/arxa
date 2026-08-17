@@ -345,12 +345,21 @@ gate/ladder-only).
 
 ### Census (subagent, 5 HARD + 2 SOFT) → dispositions
 
-- **H1 pinned search bar in the folder CustomScrollView** — lawful chrome
-  (allowlist class 1: pinned sliver headers count as chrome). Not a defect.
+- **H1 pinned search bar in the folder CustomScrollView** — closed as lawful
+  chrome (allowlist class 1: pinned sliver headers count as chrome), then
+  REOPENED on device the same day: the pinned header's `minExtent 56 <
+  maxExtent 72` visibly shrank/slid the bar on first scroll ("when scrolling
+  the search bar moves — it must not"), and a UiKitView in a scrollable stays
+  out of the vendored contract regardless of the chrome classification.
+  FIXED by the originally-named remedy: the bar is hoisted OUT of the
+  CustomScrollView into fixed Column chrome under the app bar
+  (showcase_notes_folder_view.mobile.dart); ShowcaseNotesPinnedSearchBarWidget
+  and its pin are deleted with it. Re-pinned at the behavior level by
+  showcase_notes_folder_search_bar_fixed_test (scroll-invariant geometry).
 - **H2 opaque `Material` slab behind the translucent native search bar**
   (showcase_notes_pinned_search_bar_widget.dart) — the visible "cut" band.
-  FIXED: backing removed; the glass bar floats over the content it samples.
-  Pinned by showcase_notes_pinned_search_bar_widget_test.
+  FIXED: backing removed; superseded by the H1 hoist above (no sliver, no
+  backing question at all).
 - **H3/H4 glass social/auth buttons on the bright scaffold base** (auth +
   create-account panels) — the measured washout class. FIXED GLOBALLY by
   the luminance adaptation (below) — no showcase edits needed.
