@@ -33,6 +33,11 @@
       },
       "$comment": "Present whenever boards are scored. The emitter carries the group through verbatim."
     },
+    "tokenSynthesis": {
+      "type": "object",
+      "additionalProperties": true,
+      "$comment": "The cross-pollinated starting direction (palette/type/radius/elevation/motion strings) authored at selection time. Carried through emitMoodboard verbatim; the commission renders it as the token layer's synthesis. The designer owns the final choice."
+    },
     "selectionStatus": {
       "type": "string",
       "enum": ["pending", "approved"],
@@ -104,6 +109,11 @@
         "selected": {
           "type": "boolean",
           "$comment": "The recorded human selection. Only selected references reach the designer's commission."
+        },
+        "tokens": {
+          "type": "object",
+          "additionalProperties": { "type": "string" },
+          "$comment": "Style tokens EXTRACTED from this reference at selection time: palette (hexes), type (register + pairing), radius, motion (driver). Present on SELECTED references — the fidelity-ladder upgrade over screenshots-as-vibes. Rides the reference spread through the emitter."
         },
         "provenance": { "$ref": "#/definitions/provenance" }
       },

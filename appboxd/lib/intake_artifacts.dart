@@ -417,6 +417,9 @@ Map<String, dynamic> emitMoodboard(Map<String, dynamic> answers) {
     'method': src['provenance'] is String ? src['provenance'] : null,
     if (criteria.isNotEmpty)
       'criteria': _list(src['criteria']).whereType<Map>().toList(),
+    // The token layer the commission renders: per-reference `tokens` ride
+    // the reference spread above; the synthesis is a top-level carry-through.
+    if (src['tokenSynthesis'] is Map) 'tokenSynthesis': src['tokenSynthesis'],
     if (criteria.isNotEmpty)
       'selectionStatus':
           src['selectionStatus'] == 'approved' ? 'approved' : 'pending',

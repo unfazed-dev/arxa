@@ -94,6 +94,9 @@ Map<String, dynamic> _readJson(String path) {
   }
 }
 
+String _tok(Object? v, String label) =>
+    v is String && v.isNotEmpty ? ' — $label: $v' : '';
+
 int _selectedCount(Map<String, dynamic> rec) {
   var n = 0;
   for (final b in (rec['boards'] as List? ?? const []).whereType<Map>()) {
@@ -217,6 +220,39 @@ String _commissionMd(
     buf.writeln();
   }
 
+  // ---- style tokens (extracted from the selected references)
+  buf.writeln('## Style tokens — extracted from the selected references');
+  buf.writeln('Fidelity ladder: tokens beat screenshots beat adjectives. These are');
+  buf.writeln('EXTRACTED from the mandate above (the moodboarder\'s judgment), and the');
+  buf.writeln('synthesis is a starting direction — the designer owns the final choice.');
+  buf.writeln();
+  for (final b in (rec['boards'] as List? ?? const []).whereType<Map>()) {
+    final board = b.cast<String, dynamic>();
+    final boardId = board['id'] ?? '?';
+    for (final r in (board['references'] as List? ?? const []).whereType<Map>()) {
+      final ref = r.cast<String, dynamic>();
+      if (ref['selected'] != true) continue;
+      final tokens = ref['tokens'];
+      if (tokens is! Map || tokens.isEmpty) continue;
+      final t = tokens.cast<String, dynamic>();
+      buf.writeln('- **$boardId/${ref['name'] ?? '?'}**'
+          '${_tok(t['palette'], 'palette')}${_tok(t['type'], 'type')}'
+          '${_tok(t['radius'], 'radius')}${_tok(t['motion'], 'motion')}');
+    }
+  }
+  final synth = rec['tokenSynthesis'];
+  if (synth is Map && synth.isNotEmpty) {
+    final s = synth.cast<String, dynamic>();
+    buf.writeln();
+    buf.writeln('### Synthesis — the cross-pollinated starting direction');
+    for (final key in ['palette', 'type', 'radius', 'elevation', 'motion', 'usage']) {
+      if (s[key] is String && (s[key] as String).isNotEmpty) {
+        buf.writeln('- **$key**: ${s[key]}');
+      }
+    }
+  }
+  buf.writeln();
+
   // ---- context layer
   buf.writeln('## Context');
   final surfaces = (registry['surfaces'] as List? ?? const []).whereType<Map>().toList();
@@ -277,7 +313,14 @@ JimLiu/baoyu-design (MIT) and are non-negotiable.
   in the design artifact itself (CSS/WebGL), degrade poster-first, and be
   provable — lens captures at two settle states must differ.
 - Produce 3 distinct variants for the hero/key surface before committing;
-  vary structure, not just color.
+  vary structure, not just color. Variant exploration lives IN PAGE, not in
+  file forks: expose the variants as a server-side switch (e.g. `?variant=b`)
+  wired to CSS custom properties — zero client JS. File copies (v2) are for
+  accepted revisions, never for exploring.
+- Every major section carries a `data-screen-label` attribute so review can
+  POINT at the element it means (lens shot + label = unambiguous feedback).
+- Craft minimums: interactive targets >= 44px on every rung; body text
+  >= 16px at compact; one type scale per ladder rung.
 - Serve and verify: never present a file:// — serve, capture, check the
   console, fix, then present.
 

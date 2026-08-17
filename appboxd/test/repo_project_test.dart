@@ -335,6 +335,10 @@ void main() {
           {'id': 'premium', 'weight': 1},
         ],
         'selectionStatus': 'approved',
+        'tokenSynthesis': {
+          'palette': 'sand base with lagoon ink and teal accent',
+          'motion': 'time-driven gradient-through-type; poster first',
+        },
         'boards': [
           {
             'id': 'motion',
@@ -346,6 +350,12 @@ void main() {
                 'total': 4.75,
                 'why': 'gradient through letters, poster fallback',
                 'selected': true,
+                'tokens': {
+                  'palette': 'white with ink and blurple accent',
+                  'type': 'grotesk cap/text pairing',
+                  'radius': '8-10px cards and pill CTAs',
+                  'motion': 'dual-H1 gradient-through-letters driven by time',
+                },
                 'shot': {'file': 'stripe__hero.png'},
               }
             ],
@@ -368,7 +378,14 @@ void main() {
       expect(md, contains('**Stripe** — https://stripe.com — total 4.75'));
       expect(md, contains('shot: ../moodboard/shots/motion/stripe__hero.png'));
       expect(md, contains('why: gradient through letters'));
+      expect(md, contains('## Style tokens'));
+      expect(md, contains('palette: white with ink and blurple accent'));
+      expect(md, contains('### Synthesis'));
+      expect(md, contains('**motion**: time-driven gradient-through-type; poster first'));
       final prompt = File('${app.path}/design/commission-prompt.md').readAsStringSync();
+      expect(prompt, contains('?variant=b'));
+      expect(prompt, contains('data-screen-label'));
+      expect(prompt, contains('44px'));
       expect(prompt, contains('Designer entry prompt — site'));
       expect(prompt, contains('NON-DEFERRABLE'));
       expect(prompt, contains('baoyu-design'));

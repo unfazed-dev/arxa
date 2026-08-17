@@ -186,6 +186,14 @@ the founder and ask which are selected. Default proposal: every reference
    `selectionStatus: "approved"`, re-emit, re-check. **The designer consumes
    ONLY selected references** — via the commission, never the raw boards.
 
+After approval, close the fidelity ladder: extract **style tokens** for
+each selected reference into `tokens` (palette hexes, type register,
+radius vocabulary, motion driver — judgment from the board's annotations
+and the reference's public identity) and author one `tokenSynthesis`
+block (the cross-pollinated starting direction: layout from one, palette
+from another, motion from a third). Re-emit; the commission renders both
+as its token layer — tokens beat screenshots beat adjectives.
+
 ## Handoff
 
 - The downstream consumer is `appbox design commission <app-dir>`: it
