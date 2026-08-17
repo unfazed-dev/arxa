@@ -1205,6 +1205,30 @@ List<LintFinding> _compositionFindings(String artifactDir) {
   return findings;
 }
 
+// == W1 - composition files leave the views (the sections law) ==
+
+/// The amended composition law (ruled 2026-08-18): a `*.sections.tsx` file
+/// under `ui/views/` is a widget file living in the wrong home. Section
+/// composition belongs to the widget library - a view reveals its surface
+/// by invoking widgets, never by owning a composition file beside them.
+/// W1 polices placement, and this is a placement failure, not a markup
+/// failure: the file content may be perfectly W9-legal and still be in
+/// the wrong directory.
+List<LintFinding> _sectionsCompositionFindings(String artifactDir) {
+  final findings = <LintFinding>[];
+  final viewsDir = Directory(p.join(artifactDir, 'ui', 'views'));
+  if (!viewsDir.existsSync()) return findings;
+  for (final e in viewsDir.listSync(recursive: true)) {
+    if (e is! File || !e.path.endsWith('.sections.tsx')) continue;
+    final rel = p.split(p.relative(e.path, from: artifactDir)).join('/');
+    findings.add(LintFinding(rel,
+        'W1: composition file in views (${p.basename(e.path)}) — sections '
+        'are widgets: move the composition into the widget library '
+        '(ui/widgets/<group>/) and invoke it from the view'));
+  }
+  return findings;
+}
+
 /// Run W1–W9 over the design artifact at [artifactDir].
 ///
 /// Returns the hard-fail findings in rule order. [notes] collects the advisory
@@ -1220,6 +1244,7 @@ List<LintFinding> gateDesignWidgets(String artifactDir,
   final graph = buildIncludeGraph(artifactDir);
   return <LintFinding>[
     ..._placementFindings(artifactDir, graph),
+    ..._sectionsCompositionFindings(artifactDir),
     ..._panelReimplementationFindings(artifactDir, notes),
     ..._shellCompositionFindings(artifactDir, notes),
     ..._pillRadiusFindings(artifactDir),

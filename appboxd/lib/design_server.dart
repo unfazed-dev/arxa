@@ -554,7 +554,8 @@ class DesignServer {
     final headers = _headerMap(req);
     final prefs = _parsePrefs(_parseCookies(headers)['kdh_prefs']);
     final locale = _resolveLocale(
-        locales, req.uri.queryParameters, prefs, headers['accept-language']);
+        locales, req.uri.queryParameters, prefs, headers['accept-language'],
+        path: req.uri.path);
     final cat = _errorCatalog;
     var message = cat.t(locale, key, fallbackEn, vars);
     if (detail != null) message = '$message — $detail';
@@ -618,7 +619,8 @@ class DesignServer {
     }
     final prefs = _parsePrefs(cookies['kdh_prefs']);
     final locale = _resolveLocale(
-        locales, req.uri.queryParameters, prefs, headers['accept-language']);
+        locales, req.uri.queryParameters, prefs, headers['accept-language'],
+        path: req.uri.path);
     // SERIALIZED PER SESSION (task #55). Everything from reading the session to
     // writing it back is one critical section, because it is a read-modify-write
     // spanning an await and concurrent requests on one session were silently
@@ -1181,11 +1183,19 @@ Set<String> _scanLocales(String artifactDir, {String? projectDir}) {
   return out;
 }
 
-/// Locale resolution: ?lang= → prefs.lang → Accept-Language → 'en'. Port of
-/// lib/l10n.mjs's resolveLocale.
+/// Locale resolution: path prefix → ?lang= → prefs.lang → Accept-Language →
+/// 'en'. The path is checked FIRST (the locale-route convention: /, /fr, /mfe -
+/// the URL itself is the most explicit signal, ahead of every ambient cue),
+/// and only when the leading segment names a declared locale; unknown
+/// segments fall through untouched, so a route that happens to collide
+/// with a locale code never gets hijacked silently.
 String _resolveLocale(Set<String> locales, Map<String, String> query,
-    Map<String, dynamic> prefs, String? acceptLanguage) {
+    Map<String, dynamic> prefs, String? acceptLanguage, {String? path}) {
   if (locales.isEmpty) return 'en';
+  if (path != null && path != '/' && path.length > 1) {
+    final seg = path.substring(1).split('/').first;
+    if (seg.isNotEmpty && locales.contains(seg)) return seg;
+  }
   final q = query['lang'];
   if (q != null && locales.contains(q)) return q;
   final pLang = prefs['lang'];

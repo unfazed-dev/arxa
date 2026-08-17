@@ -235,6 +235,19 @@ export default function AuthView() {
       }, messageContains: 'unearned');
     });
 
+    test('a sections composition file in views fails W1 - the sections law',
+        () {
+      // The amended composition law: composition is a widget, and a
+      // *_view.sections.tsx beside the views is a widget file in the
+      // wrong home - even when its content is perfectly legal.
+      expectsOnly('W1', {
+        'ui/views/x_shell/thing/thing_view.sections.tsx': '''
+export const ThingBody = () => null;
+''',
+      }, messageContains: 'composition file in views');
+    });
+
+
     test('a feature widget imported from a second shell earns promotion', () {
       expectsOnly('W1', {
         'ui/views/app_shell/auth/auth_view.tsx': '''

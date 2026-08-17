@@ -916,6 +916,7 @@ final List<_Mutation> _mutations = [
   _Mutation('emoji-icon', _lIcons, false, _mutateEmojiIcon),
   _Mutation('widget-partials', _lWidgets, false, _mutateWidgetPartials),
   _Mutation('view-composition', _lWidgets, false, _mutateViewComposition),
+  _Mutation('sections-file', _lWidgets, false, _mutateSectionsFile),
   _Mutation('five-file', _lFiveFile, false, _mutateFiveFile),
   _Mutation('untracked-file', _lGit, false, _mutateUntrackedFile),
   _Mutation('client-js', _lLint, false, _mutateClientJs),
@@ -1204,6 +1205,27 @@ void _mutateViewComposition(String art, String skill) {
   final f = views.first;
   f.writeAsStringSync(
       '${f.readAsStringSync()}\n<div data-el="mut-w9" class="rung rung--mut"></div>\n');
+}
+
+/// W1 — the sections law: drop a `*_view.sections.tsx` beside a stated
+/// view. The file's content is perfectly legal; its LOCATION is the breach
+/// (composition files live in the widget library, never in views).
+void _mutateSectionsFile(String art, String skill) {
+  final views = Directory(p.join(art, 'ui', 'views'));
+  if (!views.existsSync()) return;
+  final hosts = views
+      .listSync(recursive: true)
+      .whereType<File>()
+      .map((f) => f.path)
+      .where((path) => path.endsWith('_view.tsx'))
+      .toList();
+  if (hosts.isEmpty) return;
+  final base = p.basename(hosts.first);
+  final sections = p.join(p.dirname(hosts.first),
+      base.replaceFirst('_view.tsx', '_view.sections.tsx'));
+  File(sections).writeAsStringSync(
+      '// mut: the sections-law breach - a composition file beside the views\n'
+      'export const MutSectionsBody = () => null;\n');
 }
 
 void _mutateUntrackedFile(String art, String skill) {

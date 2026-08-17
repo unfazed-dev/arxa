@@ -1,5 +1,5 @@
 // timer_view.sections.tsx — the timer body, defined once and composed by all
-// three factor variants (studio-v2 sections pattern). TimerTick — the htmx
+// per the sections law (ruled 2026-08-18).
 // poll fragment the viewmodel's #tick handler renders — lives in the widget
 // library (hello_timer_widgets), where the composition law puts presentation.
 //
@@ -9,8 +9,9 @@
 // The poll trigger is 'revealed', not 'load': display:none rungs never
 // reveal, so only the visible rung polls — zero custom JavaScript.
 import type { FC } from 'hono/jsx';
-import { Heading, Txt, ActionButton } from '../../../widgets/hello_ui_widgets/widgets.tsx';
-import { TimerTick, ActionRow } from '../../../widgets/hello_timer_widgets/widgets.tsx';
+import { Heading, Txt, ActionButton } from '../hello_ui_widgets/widgets.tsx';
+import { TimerTick } from './timer_tick.tsx';
+import { ActionRow } from './action_row.tsx';
 
 type TranslateFn = (key: string, vars?: Record<string, unknown>) => unknown;
 

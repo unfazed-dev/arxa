@@ -3,8 +3,8 @@
 // Requirements: viewport-ladder.md — every stated view carries all three
 // factor variants; identical composition across rungs is a stated decision.
 import type { FC } from 'hono/jsx';
-import { HomeBody } from './home_view.sections.tsx';
-import type { HomeBodyProps } from './home_view.sections.tsx';
+import { HomeBody } from '../../../widgets/hello_home_widgets/widgets.tsx';
+import type { HomeBodyProps } from '../../../widgets/hello_home_widgets/widgets.tsx';
 
 const HomeTablet: FC<HomeBodyProps> = (props) => (
   <HomeBody {...props} rung="tablet" />

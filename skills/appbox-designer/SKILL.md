@@ -207,7 +207,7 @@ lives in the library. This holds even when the element carries
 `data-el`/`inspectAttrs` identity (W7's floor); that identity is legal
 only INSIDE widget files, where the presentation markup belongs. Slot
 passes (`{children}`), list maps, and grouping ride widgets or fragments
-— composition never authors markup.
+— composition never authors markup. **Composition files are banned in ui/views/ (W1)**: no *_view.sections.tsx - a multi-section body is a composition widget in the library (home_body.tsx), invoked by the view.
 
 Design **against the kit as always-available**: colors, spacing, glyphs, fonts,
 constants and strings come from the generated kit mirror, never from a local

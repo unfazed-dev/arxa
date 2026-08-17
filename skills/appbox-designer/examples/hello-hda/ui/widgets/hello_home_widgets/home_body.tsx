@@ -1,13 +1,16 @@
 // home_view.sections.tsx — the home body, defined once and composed by all
-// three factor variants (studio-v2 sections pattern: sibling file so the
-// variants never import back from the base view — acyclic and colocated).
+// per the sections law (ruled 2026-08-18): composition files never sit
+// in ui/views; the view variants invoke this widget.
 // Authored entirely through the library widgets: every element is a
 // Capitalized invocation (W9) and every string and interactive element
 // resolves to its own data-el (W7).
 import type { FC } from 'hono/jsx';
-import { Heading, Txt, Label, ActionButton, CtaLink } from '../../../widgets/hello_ui_widgets/widgets.tsx';
-import { ListRow, FormField, IslandsDemo, ListSection, ListCard, CtaLine, Swatch, HxForm } from '../../../widgets/hello_home_widgets/widgets.tsx';
-import Icon from '../../../../runtime/icon.tsx';
+import { Heading, Txt, Label, ActionButton, CtaLink } from '../hello_ui_widgets/widgets.tsx';
+import { ListRow } from './list_row.tsx';
+import { FormField } from './form_field.tsx';
+import { IslandsDemo } from './islands_demo.tsx';
+import { ListSection, ListCard, CtaLine, Swatch, HxForm } from './home_blocks.tsx';
+import Icon from '../../../runtime/icon.tsx';
 
 type TranslateFn = (key: string, vars?: Record<string, unknown>) => unknown;
 
