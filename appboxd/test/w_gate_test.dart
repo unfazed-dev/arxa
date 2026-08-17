@@ -960,33 +960,28 @@ export const page = (c, h) => {
   });
 
   group('W7 anonymous text/interactive elements', () {
-    test('a bare <span> with literal text in a surface view fails', () {
+    // Post-W9 jurisdiction: W7 is the identity floor tree-wide (widget files
+    // exempt); W9 is the composition law inside ui/views/**. A raw text
+    // element in a VIEW now violates both rules at once — so the W7-only
+    // proofs live in ui/common/ (a non-view template), and the view-side
+    // counterparts assert the W9 co-fire at the bottom of this group.
+    test('a bare <span> with literal text in a non-view template fails W7 only',
+        () {
       expectsOnly('W7', {
-        'ui/views/main_shell/intake/brief/brief_view.tsx': '''
-import Toolbar from '../../../../widgets/main_shell_widgets/toolbar.tsx';
-import { Chip } from '../../../../widgets/common/chips/chip.tsx';
-import Row from '../../../../widgets/main_brief_widgets/row.tsx';
-export default function BriefView() {
-  return <main><Toolbar /><Chip text="a" /><Row /><span>Raw text</span></main>;
-}
-''',
+        'ui/common/base.tsx':
+            'export function Base() { return <span>Raw text</span>; }\n',
       }, messageContains: 'author via Label/Heading/Txt');
     });
 
-    test('an interactive <button> without identity fails even with no text', () {
+    test('an interactive <button> without identity fails W7 only outside views',
+        () {
       expectsOnly('W7', {
-        'ui/views/main_shell/intake/brief/brief_view.tsx': '''
-import Toolbar from '../../../../widgets/main_shell_widgets/toolbar.tsx';
-import { Chip } from '../../../../widgets/common/chips/chip.tsx';
-import Row from '../../../../widgets/main_brief_widgets/row.tsx';
-export default function BriefView() {
-  return <main><Toolbar /><Chip text="a" /><Row /><button /></main>;
-}
-''',
+        'ui/common/base.tsx': 'export function Base() { return <button />; }\n',
       }, messageContains: 'wrap this <button>');
     });
 
-    test('a library widget invocation (Capitalized tag) bearing text passes', () {
+    test('a library widget invocation (Capitalized tag) bearing text passes',
+        () {
       final findings = gateDesignWidgets(_tree(tmp, {
         'ui/views/main_shell/intake/brief/brief_view.tsx': '''
 import Toolbar from '../../../../widgets/main_shell_widgets/toolbar.tsx';
@@ -1000,37 +995,27 @@ export default function BriefView() {
       expect(findings, isEmpty, reason: findings.join('\n'));
     });
 
-    test('a bare tag with data-el passes', () {
+    test('a bare tag with data-el passes outside views', () {
       final findings = gateDesignWidgets(_tree(tmp, {
-        'ui/views/main_shell/intake/brief/brief_view.tsx': '''
-import Toolbar from '../../../../widgets/main_shell_widgets/toolbar.tsx';
-import { Chip } from '../../../../widgets/common/chips/chip.tsx';
-import Row from '../../../../widgets/main_brief_widgets/row.tsx';
-export default function BriefView() {
-  return <main><Toolbar /><Chip text="a" /><Row /><span data-el="label">text</span></main>;
-}
-''',
+        'ui/common/base.tsx':
+            'export function Base() { return <span data-el="label">text</span>; }\n',
       }));
       expect(findings, isEmpty, reason: findings.join('\n'));
     });
 
-    test('a bare tag with inspectAttrs spread passes', () {
+    test('a bare tag with inspectAttrs spread passes outside views', () {
       final findings = gateDesignWidgets(_tree(tmp, {
-        'ui/views/main_shell/intake/brief/brief_view.tsx': '''
-import Toolbar from '../../../../widgets/main_shell_widgets/toolbar.tsx';
-import { Chip } from '../../../../widgets/common/chips/chip.tsx';
-import Row from '../../../../widgets/main_brief_widgets/row.tsx';
-export default function BriefView() {
-  return <main><Toolbar /><Chip text="a" /><Row /><span {...inspectAttrs('label', { role: 'label' })}>text</span></main>;
-}
-''',
+        'ui/common/base.tsx':
+            "export function Base() { return <span {...inspectAttrs('label', { role: 'label' })}>text</span>; }\n",
       }));
       expect(findings, isEmpty, reason: findings.join('\n'));
     });
 
-    test('widget-library dirs are exempt — raw text in a widget file is legal', () {
-      // The same <span>Raw text</span> that fails in a surface view is legal
-      // inside a widget-library dir: that is where the widgets are DEFINED.
+    test('widget-library dirs are exempt — raw text in a widget file is legal',
+        () {
+      // The same <span>Raw text</span> that fails outside the library is
+      // legal inside a widget-library dir: that is where widgets are DEFINED
+      // — and where W9 sends the presentation markup.
       final findings = gateDesignWidgets(_tree(tmp, {
         'ui/widgets/main_brief_widgets/raw_label.tsx':
             'export default function RawLabel() { return <span>Raw text</span>; }\n',
@@ -1045,71 +1030,70 @@ export default function BriefView() {
 ''',
       }));
       expect(_rules(findings), isNot(contains('W7')));
+      expect(_rules(findings), isNot(contains('W9')));
     });
 
-    test('a bare <main> with only component children passes (no literal text)', () {
+    test('a bare <main> with only component children passes (no literal text)',
+        () {
       // <main> itself is a lowercase HTML element, but it has no literal text
-      // and is not interactive — so W7 does not fire.
+      // and is not interactive — so neither W7 nor W9 fires.
       final findings = gateDesignWidgets(_tree(tmp, const {}));
       expect(_rules(findings), isNot(contains('W7')));
+      expect(_rules(findings), isNot(contains('W9')));
     });
 
-    test('direct text in a non-text-bearing role (card) fails', () {
+    test('direct text in a non-text-bearing role (card) fails W7 outside views',
+        () {
       // A card has identity (data-el) and role "card", which is not a
       // text-bearing role. Text directly inside it is unreachable on inspect.
       expectsOnly('W7', {
-        'ui/views/main_shell/intake/brief/brief_view.tsx': '''
-import Toolbar from '../../../../widgets/main_shell_widgets/toolbar.tsx';
-import { Chip } from '../../../../widgets/common/chips/chip.tsx';
-import Row from '../../../../widgets/main_brief_widgets/row.tsx';
-export default function BriefView() {
-  return <main><Toolbar /><Chip text="a" /><Row /><div data-el="card:X" data-inspect-role="card">hello</div></main>;
-}
-''',
+        'ui/common/base.tsx':
+            'export function Base() { return <div data-el="card:X" data-inspect-role="card">hello</div>; }\n',
       }, messageContains: 'author via Label/Heading/Txt');
     });
 
-    test('text in a container-role card via child span fails (span has no identity)', () {
+    test('text in a container-role card via child span fails W7 outside views',
+        () {
       expectsOnly('W7', {
-        'ui/views/main_shell/intake/brief/brief_view.tsx': '''
-import Toolbar from '../../../../widgets/main_shell_widgets/toolbar.tsx';
-import { Chip } from '../../../../widgets/common/chips/chip.tsx';
-import Row from '../../../../widgets/main_brief_widgets/row.tsx';
-export default function BriefView() {
-  return <main><Toolbar /><Chip text="a" /><Row /><div data-el="card:X" data-inspect-role="card"><span>hello</span></div></main>;
-}
-''',
+        'ui/common/base.tsx':
+            'export function Base() { return <div data-el="card:X" data-inspect-role="card"><span>hello</span></div>; }\n',
       }, messageContains: 'author via Label/Heading/Txt');
     });
 
-    test('data-el with no data-inspect-role and direct text passes (role unknown)', () {
+    test('data-el with no data-inspect-role and direct text passes (role unknown)',
+        () {
       // A bare data-el with no role metadata: the gate cannot determine the
-      // role, so it is lenient — the author put identity on it.
+      // role, so it is lenient — the author put identity on it. (Inside a
+      // view the same shape now fires W9 — see the co-fire test below.)
       final findings = gateDesignWidgets(_tree(tmp, {
-        'ui/views/main_shell/intake/brief/brief_view.tsx': '''
-import Toolbar from '../../../../widgets/main_shell_widgets/toolbar.tsx';
-import { Chip } from '../../../../widgets/common/chips/chip.tsx';
-import Row from '../../../../widgets/main_brief_widgets/row.tsx';
-export default function BriefView() {
-  return <main><Toolbar /><Chip text="a" /><Row /><div data-el="label:X">text</div></main>;
-}
-''',
+        'ui/common/base.tsx':
+            'export function Base() { return <div data-el="label:X">text</div>; }\n',
       }));
       expect(findings, isEmpty, reason: findings.join('\n'));
     });
 
-    test('text in a text-bearing role (button with data-el) passes', () {
+    test('text in a text-bearing role (button with data-el) passes outside views',
+        () {
       final findings = gateDesignWidgets(_tree(tmp, {
-        'ui/views/main_shell/intake/brief/brief_view.tsx': '''
-import Toolbar from '../../../../widgets/main_shell_widgets/toolbar.tsx';
-import { Chip } from '../../../../widgets/common/chips/chip.tsx';
-import Row from '../../../../widgets/main_brief_widgets/row.tsx';
-export default function BriefView() {
-  return <main><Toolbar /><Chip text="a" /><Row /><button data-el="btn:go" data-inspect-role="button">Go</button></main>;
+        'ui/common/base.tsx':
+            'export function Base() { return <button data-el="btn:go" data-inspect-role="button">Go</button>; }\n',
+      }));
+      expect(findings, isEmpty, reason: findings.join('\n'));
+    });
+
+    test('the identity-carrying shapes in a view now co-fire W9 (composition)',
+        () {
+      // The shapes W7 blesses — data-el, inspectAttrs, text-bearing roles —
+      // are exactly what W9 retires inside view templates: the presentation
+      // moves into the library and the view invokes it by name.
+      final findings = gateDesignWidgets(_tree(tmp, {
+        'ui/views/main_shell/design/chat/chat_view.tsx': '''
+export default function ChatView() {
+  return <main><div data-el="card:X" data-inspect-role="card">hello</div><button data-el="btn:go" data-inspect-role="button">Go</button></main>;
 }
 ''',
       }));
-      expect(findings, isEmpty, reason: findings.join('\n'));
+      expect(_rules(findings), {'W7', 'W9'}, reason: findings.join('\n'));
     });
   });
 

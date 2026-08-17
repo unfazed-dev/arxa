@@ -936,11 +936,27 @@ const _textBearingRoles = <String>{
 /// `<` it finds belongs to a component inside that expression, not a sibling
 /// element. Without this guard, every conditional-child wrapper in the studio
 /// would be a false positive.
+/// Text that looks like content vs the closing debris of a JSX expression
+/// child: `))}` after a mapped component, `: undefined}` after a ternary
+/// arm. A snippet made only of expression punctuation (`) } ] , ; :` and
+/// whitespace), opening a ternary (`:`, `?`) or a logical continuation
+/// (`&&`, `||`) is never literal text. Found in practice on the energize
+/// rebuild — every `.map((x) => (<X/>))` wrapper was flagged.
+bool _isExpressionDebris(String snippet) {
+  if (snippet.startsWith('{')) return true;
+  if (snippet.startsWith('&&') || snippet.startsWith('||')) return true;
+  // `: undefined}` / `: null}` — a ternary's empty arm after a self-closing
+  // child (`{err ? <E/> : undefined}`); keyword literals are not copy.
+  final keywordsOut = snippet.replaceAllMapped(
+      RegExp(r'\b(undefined|null|true|false)\b'), (m) => '');
+  return RegExp(r'^[)\]},;:?\s]*$').hasMatch(keywordsOut);
+}
+
 String? _directTextSnippet(String src, int tagEnd) {
   final nextLt = src.indexOf('<', tagEnd);
   final between = src.substring(tagEnd, nextLt < 0 ? src.length : nextLt);
   final trimmed = between.trim();
-  if (trimmed.isNotEmpty && !trimmed.startsWith('{')) return trimmed;
+  if (trimmed.isNotEmpty && !_isExpressionDebris(trimmed)) return trimmed;
   if (nextLt >= tagEnd && nextLt < src.length) {
     final childEnd = src.indexOf('>', nextLt);
     if (childEnd >= 0 && src.substring(nextLt, childEnd + 1).endsWith('/>')) {
@@ -948,7 +964,9 @@ String? _directTextSnippet(String src, int tagEnd) {
       final nextLtSc = src.indexOf('<', afterSc);
       final textSc = src.substring(afterSc, nextLtSc < 0 ? src.length : nextLtSc);
       final trimmedSc = textSc.trim();
-      if (trimmedSc.isNotEmpty && !trimmedSc.startsWith('{')) return trimmedSc;
+      if (trimmedSc.isNotEmpty && !_isExpressionDebris(trimmedSc)) {
+        return trimmedSc;
+      }
     }
   }
   return null;
@@ -1141,7 +1159,10 @@ bool _expressionIsText(String expression) {
   // Slot passes are composition, not authorship: <main>{children}</main>
   // forwards what an upstream view already composed (widget invocations),
   // so the shell variant mounting its slot is not presenting markup itself.
+  // `props.surface` is the application hub's outlet slot — same rule by
+  // contract: the hub fills its one outlet with a hosted shell's surface.
   if (t == 'children' || t == 'props.children') return false;
+  if (t == 'surface' || t == 'props.surface') return false;
   if (t.startsWith('children.') || t.startsWith('props.children.')) {
     return false;
   }
