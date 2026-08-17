@@ -696,9 +696,10 @@ List<_Check> _buildChecks({required bool skipRender}) {
       // The W-gate is this check's teeth: W1–W9 must hold on the same tree
       // the structural assertions read, so a mutation that trips any
       // widget-gate rule flips this check even when the two-tier shape is
-      // untouched. The W9 mutation proves the part W7 cannot see — an
-      // identity-carrying raw element in a view template passes W7 and only
-      // the composition rule retires it.
+      // untouched. The W9 mutation proves the part W7 cannot see — a raw
+      // structural wrapper in a view template (the rung-div shape the first
+      // W9 revision let through) passes W7 and only the composition rule
+      // retires it.
       final gateFindings = gateDesignWidgets(art);
       if (gateFindings.isNotEmpty) {
         return CheckOutcome.fail(gateFindings.map((f) => '$f').join('; '));
@@ -1191,9 +1192,10 @@ void _mutateFiveFile(String art, String skill) {
   victims.first.deleteSync();
 }
 
-/// W9 — append the exact shape W7 blesses (identity + text-bearing role) to
-/// a view template: only the composition rule catches it, proving the gate
-/// sees what the identity floor lets through.
+/// W9 — append a raw STRUCTURAL wrapper (a class-only, rung-style div) to a
+/// view template: the exact shape the first W9 revision let through (no
+/// text, no interaction, no media) and the energize review closed. W7 is
+/// blind to it by design; only the composition rule catches it.
 void _mutateViewComposition(String art, String skill) {
   final views = _htmlFiles(art)
       .where((f) => _relOf(art, f).startsWith('ui/views/'))
@@ -1201,7 +1203,7 @@ void _mutateViewComposition(String art, String skill) {
   if (views.isEmpty) return;
   final f = views.first;
   f.writeAsStringSync(
-      '${f.readAsStringSync()}\n<p data-el="mut-w9" data-inspect-role="text">view composition mutation</p>\n');
+      '${f.readAsStringSync()}\n<div data-el="mut-w9" class="rung rung--mut"></div>\n');
 }
 
 void _mutateUntrackedFile(String art, String skill) {

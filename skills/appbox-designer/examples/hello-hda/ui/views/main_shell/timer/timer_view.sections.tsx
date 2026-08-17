@@ -10,7 +10,7 @@
 // reveal, so only the visible rung polls — zero custom JavaScript.
 import type { FC } from 'hono/jsx';
 import { Heading, Txt, ActionButton } from '../../../widgets/hello_ui_widgets/widgets.tsx';
-import { TimerTick } from '../../../widgets/hello_timer_widgets/widgets.tsx';
+import { TimerTick, ActionRow } from '../../../widgets/hello_timer_widgets/widgets.tsx';
 
 type TranslateFn = (key: string, vars?: Record<string, unknown>) => unknown;
 
@@ -29,7 +29,7 @@ export const TimerBody: FC<TimerBodyProps> = ({ translate, remaining, rung }) =>
       <Heading level={1} name="timer:title">{translate('timer.title') as string}</Heading>
       <Txt name="timer:tagline">{translate('timer.tagline') as string}</Txt>
       <TimerTick remaining={remaining} translate={translate} rung={rung} />
-      <div class="action-row">
+      <ActionRow>
         <ActionButton
           name="timer:extend"
           hxPost={`/timer/extend${suffix}`}
@@ -47,7 +47,7 @@ export const TimerBody: FC<TimerBodyProps> = ({ translate, remaining, rung }) =>
         >
           {translate('timer.skip') as string}
         </ActionButton>
-      </div>
+      </ActionRow>
     </>
   );
 };

@@ -97,11 +97,13 @@ folder — there is no per-surface tier to demote it to. Promotion to
 graph in both directions, never by intent.
 
 Placement is only half the law; the other half is **composition (W9)**: view
-templates (`ui/views/**`) render presentation exclusively through Capitalized
-widget-library invocations. A raw HTML element in a view that bears text, is
-interactive, or renders media fails `design lint` even when it carries
-`data-el`/`inspectAttrs` identity — identity markup lives inside widget files,
-where the presentation belongs. Views compose; widgets render.
+templates (`ui/views/**`) are Capitalized widget-library invocations, and
+nothing else. A raw HTML element of any kind fails `design lint` — bearing
+text, interactive, rendering media, or purely structural (rung mounts,
+section scaffolding, slot outlets): a view that authors markup authors
+presentation. This holds even when the element carries
+`data-el`/`inspectAttrs` identity — identity markup lives inside widget
+files, where the presentation belongs. Views compose; widgets render.
 
 Both tiers are read off the exemplar, which has
 `ui/widgets/common/showcase_gallery_chrome/` and

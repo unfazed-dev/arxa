@@ -1,10 +1,11 @@
 // main_shell_view.tsx — shell layout component (replaces main_shell_view.html).
-// Wraps Base and mounts the three DERIVED factor variants in rung divs — the
-// ladder CSS shows exactly one at a time, so the hosted surface renders three
-// times and only the visible copy is reachable. Per-rung divergence of the
-// shell's frame lands in the variants, not here.
+// Wraps Base and mounts the three DERIVED factor variants through the
+// library's Ladder — the ladder CSS shows exactly one rung at a time, so the
+// hosted surface renders three times and only the visible copy is reachable.
+// Per-rung divergence of the shell's frame lands in the variants, not here.
 import type { FC, Child } from 'hono/jsx';
 import Base from '../../common/base.tsx';
+import { Ladder, ShellFrame } from '../../widgets/hello_shell_widgets/widgets.tsx';
 import Desktop from './main_shell_view.desktop.tsx';
 import Tablet from './main_shell_view.tablet.tsx';
 import Mobile from './main_shell_view.mobile.tsx';
@@ -29,11 +30,9 @@ export interface MainShellProps {
 
 const MainShell: FC<MainShellProps> = (props) => (
   <Base title={props.title} locale={props.locale} accent={props.accent}>
-    <div class="shell">
-      <div class="rung rung--desktop"><Desktop {...props} /></div>
-      <div class="rung rung--tablet"><Tablet {...props} /></div>
-      <div class="rung rung--mobile"><Mobile {...props} /></div>
-    </div>
+    <ShellFrame>
+      <Ladder desktop={<Desktop {...props} />} tablet={<Tablet {...props} />} mobile={<Mobile {...props} />} />
+    </ShellFrame>
   </Base>
 );
 

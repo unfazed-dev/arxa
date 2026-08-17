@@ -7,7 +7,7 @@
 // factor variants; a rung that renders the same composition as its sibling
 // says so explicitly rather than leaving it ambiguous.
 import type { FC } from 'hono/jsx';
-import { NavRail, LangSwitcher, BottomNav } from '../../widgets/hello_shell_widgets/widgets.tsx';
+import { NavRail, LangSwitcher, BottomNav, ShellColumn, ShellMain } from '../../widgets/hello_shell_widgets/widgets.tsx';
 import type { MainShellProps } from './main_shell_view.tsx';
 
 const MainShellDesktop: FC<MainShellProps> = ({
@@ -19,11 +19,11 @@ const MainShellDesktop: FC<MainShellProps> = ({
 }) => (
   <>
     <NavRail rail={rail} />
-    <div class="shell__col">
+    <ShellColumn>
       <LangSwitcher locales={locales} locale={locale ?? 'en'} translate={translate as (key: string) => string} />
-      <main class="shell-main">{children}</main>
+      <ShellMain>{children}</ShellMain>
       <BottomNav rail={rail} />
-    </div>
+    </ShellColumn>
   </>
 );
 

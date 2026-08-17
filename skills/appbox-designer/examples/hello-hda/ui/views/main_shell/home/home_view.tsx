@@ -1,8 +1,10 @@
 // home_view.tsx — home page (replaces home_view.html).
 // Default export HomePage: wraps MainShell and mounts the three DERIVED
-// factor variants in rung divs — the ladder CSS shows exactly one.
+// factor variants through the library's Ladder — the ladder CSS shows
+// exactly one.
 import type { FC } from 'hono/jsx';
 import MainShell from '../main_shell_view.tsx';
+import { Ladder } from '../../../widgets/hello_shell_widgets/widgets.tsx';
 import Desktop from './home_view.desktop.tsx';
 import Tablet from './home_view.tablet.tsx';
 import Mobile from './home_view.mobile.tsx';
@@ -48,15 +50,11 @@ const HomePage: FC<HomePageProps> = ({ translate, locale, locales = [], rail, ro
     translate={translate}
     rail={rail as { brand?: string; drawer?: boolean; items: NavItem[] }}
   >
-    <div class="rung rung--desktop">
-      <Desktop translate={translate} rows={rows} demoCount={demoCount} accent={prefs?.accent} rung="desktop" />
-    </div>
-    <div class="rung rung--tablet">
-      <Tablet translate={translate} rows={rows} demoCount={demoCount} accent={prefs?.accent} rung="tablet" />
-    </div>
-    <div class="rung rung--mobile">
-      <Mobile translate={translate} rows={rows} demoCount={demoCount} accent={prefs?.accent} rung="mobile" />
-    </div>
+    <Ladder
+      desktop={<Desktop translate={translate} rows={rows} demoCount={demoCount} accent={prefs?.accent} rung="desktop" />}
+      tablet={<Tablet translate={translate} rows={rows} demoCount={demoCount} accent={prefs?.accent} rung="tablet" />}
+      mobile={<Mobile translate={translate} rows={rows} demoCount={demoCount} accent={prefs?.accent} rung="mobile" />}
+    />
   </MainShell>
 );
 

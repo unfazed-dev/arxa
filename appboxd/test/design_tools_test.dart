@@ -80,12 +80,13 @@ void main() {
       expect(r.exitCode, 0);
       expect(r.stderrLines, isEmpty);
       // Three gates run under `design lint`, so a clean run says so three
-      // times: the ADR-0002 client-JS lint, the W1–W7 widget/panel gate and
-      // the S1–S4 style-placement gate. A silent gate is indistinguishable
-      // from a gate that never ran.
+      // times: the ADR-0002 client-JS lint (89e153c2: the three legal forms),
+      // the W1–W9 widget/panel gate (13b90126 added W9; the sharpened law
+      // kept the range) and the S1–S4 style-placement gate. A silent gate is
+      // indistinguishable from a gate that never ran.
       expect(r.stdoutLines, [
-        'lint clean: no custom client-side JS in ${d.path}',
-        'widget/panel gate clean: W1–W7 in ${d.path}',
+        'lint clean: every script resolves (vendor/island/app module), no inline handlers in ${d.path}',
+        'widget/panel gate clean: W1–W9 in ${d.path}',
         'style gate clean: S1–S4 in ${d.path}',
       ]);
     });

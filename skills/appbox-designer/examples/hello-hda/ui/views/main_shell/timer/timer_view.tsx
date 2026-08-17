@@ -1,10 +1,11 @@
 // timer_view.tsx — timer page + Tick fragment (replaces timer_view.html).
 // Default export TimerPage: wraps MainShell and mounts the three DERIVED
-// factor variants in rung divs. Named export Tick: the #tick fragment the
-// viewmodel renders for htmx poll/extend/skip swaps (rung comes from the
-// request query so the response replaces the asking rung's element).
+// factor variants through the library's Ladder. Named export Tick: the #tick
+// fragment the viewmodel renders for htmx poll/extend/skip swaps (rung comes
+// from the request query so the response replaces the asking rung's element).
 import type { FC } from 'hono/jsx';
 import MainShell from '../main_shell_view.tsx';
+import { Ladder } from '../../../widgets/hello_shell_widgets/widgets.tsx';
 import Desktop from './timer_view.desktop.tsx';
 import Tablet from './timer_view.tablet.tsx';
 import Mobile from './timer_view.mobile.tsx';
@@ -39,15 +40,11 @@ const TimerPage: FC<TimerPageProps> = ({ translate, locale, locales = [], rail, 
     translate={translate}
     rail={rail as { brand?: string; drawer?: boolean; items: NavItem[] }}
   >
-    <div class="rung rung--desktop">
-      <Desktop translate={translate} remaining={remaining} rung="desktop" />
-    </div>
-    <div class="rung rung--tablet">
-      <Tablet translate={translate} remaining={remaining} rung="tablet" />
-    </div>
-    <div class="rung rung--mobile">
-      <Mobile translate={translate} remaining={remaining} rung="mobile" />
-    </div>
+    <Ladder
+      desktop={<Desktop translate={translate} remaining={remaining} rung="desktop" />}
+      tablet={<Tablet translate={translate} remaining={remaining} rung="tablet" />}
+      mobile={<Mobile translate={translate} remaining={remaining} rung="mobile" />}
+    />
   </MainShell>
 );
 

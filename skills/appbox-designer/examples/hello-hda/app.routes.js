@@ -14,5 +14,5 @@ export default [
   ['GET', '/timer/tick', timer.tick],
   ['POST', '/timer/extend', timer.extend], // posted-by: ActionButton (timer_view.sections.tsx) — hx attrs ride widget props
   ['POST', '/timer/skip', timer.skip], // posted-by: ActionButton (timer_view.sections.tsx) — hx attrs ride widget props
-  ['POST', '/prefs/accent', prefs.setAccent],
+  ['POST', '/prefs/accent', prefs.setAccent], // posted-by: HxForm (home_view.sections.tsx) — hx attrs ride widget props
 ];

@@ -198,14 +198,16 @@ a gate failure on both sides, **never improvise a mapping**. Start from
 [`references/ui-recipes.md`](references/ui-recipes.md)
 and the drop-in widgets in `starter-partials/widgets/` — surfaces compose
 only from that library. **Composition is enforced (W9), not encouraged**:
-in view templates (`ui/views/**`) every piece of presentation — text,
-links, inputs, imagery — renders through a Capitalized widget-library
-invocation. A raw HTML element in a view that bears text, is interactive,
-or renders media fails `design lint` (W9) even when it carries
+in view templates (`ui/views/**`) EVERY element is a Capitalized
+widget-library invocation. A raw HTML element of any kind fails
+`design lint` (W9) — text-bearing, interactive, media, AND the
+structural wrappers (rung mounts, section scaffolding, form elements, slot
+outlets): a view that authors markup authors presentation, and presentation
+lives in the library. This holds even when the element carries
 `data-el`/`inspectAttrs` identity (W7's floor); that identity is legal
 only INSIDE widget files, where the presentation markup belongs. Slot
-passes (`{children}`) and list maps are composition, not authorship — they
-stay legal.
+passes (`{children}`), list maps, and grouping ride widgets or fragments
+— composition never authors markup.
 
 Design **against the kit as always-available**: colors, spacing, glyphs, fonts,
 constants and strings come from the generated kit mirror, never from a local

@@ -1,11 +1,12 @@
 // home_view.sections.tsx — the home body, defined once and composed by all
 // three factor variants (studio-v2 sections pattern: sibling file so the
 // variants never import back from the base view — acyclic and colocated).
-// Authored entirely through the library widgets: every string and interactive
-// element resolves to its own data-el (W7).
+// Authored entirely through the library widgets: every element is a
+// Capitalized invocation (W9) and every string and interactive element
+// resolves to its own data-el (W7).
 import type { FC } from 'hono/jsx';
 import { Heading, Txt, Label, ActionButton, CtaLink } from '../../../widgets/hello_ui_widgets/widgets.tsx';
-import { ListRow, FormField, IslandsDemo } from '../../../widgets/hello_home_widgets/widgets.tsx';
+import { ListRow, FormField, IslandsDemo, ListSection, ListCard, CtaLine, Swatch, HxForm } from '../../../widgets/hello_home_widgets/widgets.tsx';
 import Icon from '../../../../runtime/icon.tsx';
 
 type TranslateFn = (key: string, vars?: Record<string, unknown>) => unknown;
@@ -41,27 +42,27 @@ export const HomeBody: FC<HomeBodyProps> = ({
     <Heading level={1} name="home:title">{translate('home.title') as string}</Heading>
     <Txt name="home:tagline">{translate('home.tagline') as string}</Txt>
 
-    <section class="list-section">
+    <ListSection>
       <Heading level={2} name="home:greetings" class="list-section__header">
         {translate('home.greetingsHeader') as string}
       </Heading>
-      <div class="list-section__card">
+      <ListCard>
         {rows.map((row) => (
           <ListRow key={row.id} row={row}></ListRow>
         ))}
-      </div>
-    </section>
+      </ListCard>
+    </ListSection>
     <Txt name="home:item-count" class="muted">
       {translate('itemCount', { count: demoCount }) as string}
     </Txt>
 
-    <p>
+    <CtaLine>
       <CtaLink href="/timer" name="home:to-timer">
         {translate('home.toTimer') as string} <Icon name="arrow-right" size={16} />
       </CtaLink>
-    </p>
+    </CtaLine>
 
-    <form hx-post="/prefs/accent" hx-swap="none">
+    <HxForm post="/prefs/accent">
       <FormField
         rung={rung}
         field={{
@@ -78,10 +79,10 @@ export const HomeBody: FC<HomeBodyProps> = ({
       <ActionButton type="submit" name="home:accent-apply">
         {translate('accent.apply') as string}
       </ActionButton>
-    </form>
+    </HxForm>
     <Txt name="home:accent-current">
       {translate('accent.current') as string}:{' '}
-      <span class="swatch"></span>{' '}
+      <Swatch></Swatch>{' '}
       <Label name="home:accent-hex" class="mono">{accent}</Label>
     </Txt>
 

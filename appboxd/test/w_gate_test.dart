@@ -78,10 +78,10 @@ import HeaderPanel from '../../widgets/common/panels/header_panel.tsx';
 import MainPanel from '../../widgets/common/panels/main_panel.tsx';
 export default function MainShellView() {
   return (
-    <main>
+    <Screen>
       <HeaderPanel />
       <MainPanel />
-    </main>
+    </Screen>
   );
 }
 ''',
@@ -90,7 +90,7 @@ import Toolbar from '../../../../widgets/main_shell_widgets/toolbar.tsx';
 import { Chip } from '../../../../widgets/common/chips/chip.tsx';
 import Row from '../../../../widgets/main_brief_widgets/row.tsx';
 export default function BriefView() {
-  return <main><Toolbar /><Chip text="a" /><Row /></main>;
+  return <Screen><Toolbar /><Chip text="a" /><Row /></Screen>;
 }
 ''',
   'ui/widgets/main_brief_widgets/row.tsx':
@@ -98,7 +98,7 @@ export default function BriefView() {
   'ui/views/main_shell/design/chat/chat_view.tsx': '''
 import Toolbar from '../../../../widgets/main_shell_widgets/toolbar.tsx';
 export default function ChatView() {
-  return <main><Toolbar /></main>;
+  return <Screen><Toolbar /></Screen>;
 }
 ''',
   'ui/views/main_shell/intake/brief/brief_viewmodel.js': '''
@@ -110,28 +110,28 @@ export const page = (c, h) => {
   // ── brief is a stated view (has a viewmodel), so it carries the three
   //    factor variants (W8).
   'ui/views/main_shell/intake/brief/brief_view.desktop.tsx':
-      'export default function BriefViewDesktop() { return <div class="rung rung--desktop"></div>; }\n',
+      'export default function BriefViewDesktop() { return <Rung variant="desktop" />; }\n',
   'ui/views/main_shell/intake/brief/brief_view.tablet.tsx':
-      'export default function BriefViewTablet() { return <div class="rung rung--tablet"></div>; }\n',
+      'export default function BriefViewTablet() { return <Rung variant="tablet" />; }\n',
   'ui/views/main_shell/intake/brief/brief_view.mobile.tsx':
-      'export default function BriefViewMobile() { return <div class="rung rung--mobile"></div>; }\n',
+      'export default function BriefViewMobile() { return <Rung variant="mobile" />; }\n',
   // ── app_shell: the second consumer of the common widgets.
   'ui/views/app_shell/app_shell_view.tsx': '''
 import HeaderPanel from '../../widgets/common/panels/header_panel.tsx';
 import MainPanel from '../../widgets/common/panels/main_panel.tsx';
 export default function AppShellView() {
   return (
-    <main>
+    <Screen>
       <HeaderPanel />
       <MainPanel />
-    </main>
+    </Screen>
   );
 }
 ''',
   'ui/views/app_shell/auth/auth_view.tsx': '''
 import { Chip } from '../../../widgets/common/chips/chip.tsx';
 export default function AuthView() {
-  return <main><Chip text="b" /></main>;
+  return <Screen><Chip text="b" /></Screen>;
 }
 ''',
   'ui/views/app_shell/auth/auth_viewmodel.js': '''
@@ -140,11 +140,11 @@ export const page = (c, h) => {
 };
 ''',
   'ui/views/app_shell/auth/auth_view.desktop.tsx':
-      'export default function AuthViewDesktop() { return <div class="rung rung--desktop"></div>; }\n',
+      'export default function AuthViewDesktop() { return <Rung variant="desktop" />; }\n',
   'ui/views/app_shell/auth/auth_view.tablet.tsx':
-      'export default function AuthViewTablet() { return <div class="rung rung--tablet"></div>; }\n',
+      'export default function AuthViewTablet() { return <Rung variant="tablet" />; }\n',
   'ui/views/app_shell/auth/auth_view.mobile.tsx':
-      'export default function AuthViewMobile() { return <div class="rung rung--mobile"></div>; }\n',
+      'export default function AuthViewMobile() { return <Rung variant="mobile" />; }\n',
   // ── the one legal home for the pill radius.
   'assets/css/widgets.css': '.chip { border-radius: 999px; }\n',
   'assets/css/app.css': '.card { border-radius: 8px; }\n'
@@ -155,16 +155,16 @@ export const page = (c, h) => {
 /// `*_view.tsx`, so it is a surface — never a hosted-shell namespace.
 const _workspaceShell = <String, String>{
   'ui/views/workspace_shell/settings/settings_view.tsx':
-      'export default function SettingsView() { return <main></main>; }\n',
+      'export default function SettingsView() { return <Screen />; }\n',
   // Factor variants ride along so W6 mutations that hand settings a viewmodel
   // (making it a stated view) do not co-fire W8. Variants without a viewmodel
   // owe nothing — W8 checks one direction only.
   'ui/views/workspace_shell/settings/settings_view.desktop.tsx':
-      'export default function SettingsViewDesktop() { return <div class="rung rung--desktop"></div>; }\n',
+      'export default function SettingsViewDesktop() { return <Rung variant="desktop" />; }\n',
   'ui/views/workspace_shell/settings/settings_view.tablet.tsx':
-      'export default function SettingsViewTablet() { return <div class="rung rung--tablet"></div>; }\n',
+      'export default function SettingsViewTablet() { return <Rung variant="tablet" />; }\n',
   'ui/views/workspace_shell/settings/settings_view.mobile.tsx':
-      'export default function SettingsViewMobile() { return <div class="rung rung--mobile"></div>; }\n',
+      'export default function SettingsViewMobile() { return <Rung variant="mobile" />; }\n',
 };
 
 /// Materialize [files] (plus [mutations], which overwrite or add) under a fresh
@@ -229,7 +229,7 @@ void main() {
       expectsOnly('W1', {
         'ui/views/app_shell/auth/auth_view.tsx': '''
 export default function AuthView() {
-  return <main></main>;
+  return <Screen />;
 }
 ''',
       }, messageContains: 'unearned');
@@ -241,7 +241,7 @@ export default function AuthView() {
 import { Chip } from '../../../widgets/common/chips/chip.tsx';
 import Toolbar from '../../../widgets/main_shell_widgets/toolbar.tsx';
 export default function AuthView() {
-  return <main><Toolbar /><Chip text="b" /></main>;
+  return <Screen><Toolbar /><Chip text="b" /></Screen>;
 }
 ''',
       }, messageContains: 'ui/widgets/common/<group>/toolbar.tsx');
@@ -292,7 +292,7 @@ export default function Toolbar() { return <div class="toolbar"><Leaf /></div>; 
 import Toolbar from '../../../../widgets/main_shell_widgets/toolbar.tsx';
 import Nav from './widgets/nav.tsx';
 export default function ChatView() {
-  return <main><Toolbar /><Nav /></main>;
+  return <Screen><Toolbar /><Nav /></Screen>;
 }
 ''',
       }, messageContains: 'retired widget tier');
@@ -312,7 +312,7 @@ export default function ChatView() {
 import Toolbar from '../../../../widgets/main_shell_widgets/toolbar.tsx';
 import Nav from '../../../../${retired.substring(3)}';
 export default function ChatView() {
-  return <main><Toolbar /><Nav /></main>;
+  return <Screen><Toolbar /><Nav /></Screen>;
 }
 ''',
         });
@@ -333,7 +333,7 @@ export default function ChatView() {
 import Toolbar from '../../../../widgets/main_shell_widgets/toolbar.tsx';
 import Nav from '../../../../widgets/nav.tsx';
 export default function ChatView() {
-  return <main><Toolbar /><Nav /></main>;
+  return <Screen><Toolbar /><Nav /></Screen>;
 }
 ''',
       }, messageContains: 'flat file directly in');
@@ -347,7 +347,7 @@ export default function ChatView() {
 import Toolbar from '../../../../widgets/main_shell_widgets/toolbar.tsx';
 import Nav from '../../../../widgets/common/nav.tsx';
 export default function ChatView() {
-  return <main><Toolbar /><Nav /></main>;
+  return <Screen><Toolbar /><Nav /></Screen>;
 }
 ''',
       }, messageContains: 'grouped, never flat');
@@ -361,7 +361,7 @@ export default function ChatView() {
 import Toolbar from '../../../../widgets/main_shell_widgets/toolbar.tsx';
 import Nav from '../../../../widgets/toolbox/nav.tsx';
 export default function ChatView() {
-  return <main><Toolbar /><Nav /></main>;
+  return <Screen><Toolbar /><Nav /></Screen>;
 }
 ''',
       }, messageContains: 'mouse_transforms');
@@ -391,7 +391,7 @@ export default function ChatView() {
 import Toolbar from '../../../../widgets/main_shell_widgets/toolbar.tsx';
 import { Gadget, GizmoPanel } from '../../../../widgets/main_shell_widgets/widgets.tsx';
 export default function ChatView() {
-  return <main><Toolbar /><Gadget /><GizmoPanel /></main>;
+  return <Screen><Toolbar /><Gadget /><GizmoPanel /></Screen>;
 }
 ''',
       }));
@@ -411,7 +411,7 @@ export default function ChatView() {
 import Toolbar from '../../../../widgets/main_shell_widgets/toolbar.tsx';
 import { Gadget } from '../../../../widgets/main_shell_widgets/widgets.tsx';
 export default function ChatView() {
-  return <main><Toolbar /><Gadget /></main>;
+  return <Screen><Toolbar /><Gadget /></Screen>;
 }
 ''',
       }));
@@ -454,7 +454,7 @@ export default function ChatView() {
 import Toolbar from '../../../../widgets/main_shell_widgets/toolbar.tsx';
 import Util from '../../../../widgets/common/util.tsx';
 export default function ChatView() {
-  return <main><Toolbar /><Util /></main>;
+  return <Screen><Toolbar /><Util /></Screen>;
 }
 ''',
       }, messageContains: 'the one exception');
@@ -550,11 +550,11 @@ import HeaderPanel from '../../widgets/common/panels/header_panel.tsx';
 import MainPanel from '../../widgets/common/panels/main_panel.tsx';
 export default function MainShellView() {
   return (
-    <main>
+    <Screen>
       <HeaderPanel />
       <MainPanel />
       <MainPanel />
-    </main>
+    </Screen>
   );
 }
 ''',
@@ -569,11 +569,11 @@ import HeaderPanel from '../../widgets/common/panels/header_panel.tsx';
 import MainPanel from '../../widgets/common/panels/main_panel.tsx';
 export default function MainShellView() {
   return (
-    <main>
+    <Screen>
       <HeaderPanel />
       <HeaderPanel />
       <MainPanel />
-    </main>
+    </Screen>
   );
 }
 ''',
@@ -590,11 +590,11 @@ import HeaderPanel from '../../widgets/common/panels/header_panel.tsx';
 import { Open as MainOpen } from '../../widgets/common/panels/main_panel.tsx';
 export default function MainShellView() {
   return (
-    <main>
+    <Screen>
       <HeaderPanel />
       <MainOpen></MainOpen>
       <MainOpen></MainOpen>
-    </main>
+    </Screen>
   );
 }
 ''',
@@ -612,13 +612,13 @@ import HeaderPanel from '../../widgets/common/panels/header_panel.tsx';
 import MainPanel, { PanelBar, View as MainView } from '../../widgets/common/panels/main_panel.tsx';
 export default function MainShellView({ panel, f }) {
   return (
-    <main>
+    <Screen>
       <HeaderPanel />
       <MainPanel>
         <PanelBar panel={panel} />
         <MainView f={f} />
       </MainPanel>
-    </main>
+    </Screen>
   );
 }
 ''',
@@ -641,10 +641,10 @@ export function Open({ spec, children }) {
 import { Open as ActivityOpen } from '../../../widgets/main_shell_widgets/activity_panel.tsx';
 export function DesignShared({ spec }) {
   return (
-    <section>
+    <Frame>
       <ActivityOpen spec={spec} />
       <ActivityOpen spec={spec} />
-    </section>
+    </Frame>
   );
 }
 ''',
@@ -706,10 +706,10 @@ export function DesignShared({ spec }) {
 import { Top as ActivityTop, Bottom as ActivityBottom } from '../../../../widgets/main_shell_widgets/activity_panel.tsx';
 export default function PrototypeView({ spec }) {
   return (
-    <section>
+    <Frame>
       <ActivityTop spec={spec} oob={true} />
       <ActivityBottom spec={spec} oob={true} />
-    </section>
+    </Frame>
   );
 }
 ''',
@@ -744,7 +744,7 @@ import HeaderPanel from '../../widgets/common/panels/header_panel.tsx';
 import MainPanel from '../../widgets/common/panels/main_panel.tsx';
 import SidebarPanel from '../../widgets/common/panels/sidebar_panel.tsx';
 export default function MainShellView() {
-  return <main><HeaderPanel /><MainPanel /><SidebarPanel /></main>;
+  return <Screen><HeaderPanel /><MainPanel /><SidebarPanel /></Screen>;
 }
 ''',
         'ui/views/app_shell/app_shell_view.tsx': '''
@@ -752,7 +752,7 @@ import HeaderPanel from '../../widgets/common/panels/header_panel.tsx';
 import MainPanel from '../../widgets/common/panels/main_panel.tsx';
 import SidebarPanel from '../../widgets/common/panels/sidebar_panel.tsx';
 export default function AppShellView() {
-  return <main><HeaderPanel /><MainPanel /><SidebarPanel /></main>;
+  return <Screen><HeaderPanel /><MainPanel /><SidebarPanel /></Screen>;
 }
 ''',
       }, messageContains: 'not one of the five panel roles');
@@ -982,13 +982,16 @@ export const page = (c, h) => {
 
     test('a library widget invocation (Capitalized tag) bearing text passes',
         () {
+      // <Screen> not <main>: under the sharpened W9 even a structural raw
+      // element is illegal in a view, so the pass-proof composes one level
+      // of Capitalized invocations all the way down.
       final findings = gateDesignWidgets(_tree(tmp, {
         'ui/views/main_shell/intake/brief/brief_view.tsx': '''
 import Toolbar from '../../../../widgets/main_shell_widgets/toolbar.tsx';
 import { Chip } from '../../../../widgets/common/chips/chip.tsx';
 import Row from '../../../../widgets/main_brief_widgets/row.tsx';
 export default function BriefView() {
-  return <main><Toolbar /><Chip text="a" /><Row /><Label>Raw text</Label></main>;
+  return <Screen><Toolbar /><Chip text="a" /><Row /><Label>Raw text</Label></Screen>;
 }
 ''',
       }));
@@ -1025,7 +1028,7 @@ import { Chip } from '../../../../widgets/common/chips/chip.tsx';
 import Row from '../../../../widgets/main_brief_widgets/row.tsx';
 import RawLabel from '../../../../widgets/main_brief_widgets/raw_label.tsx';
 export default function BriefView() {
-  return <main><Toolbar /><Chip text="a" /><Row /><RawLabel /></main>;
+  return <Screen><Toolbar /><Chip text="a" /><Row /><RawLabel /></Screen>;
 }
 ''',
       }));
@@ -1033,11 +1036,16 @@ export default function BriefView() {
       expect(_rules(findings), isNot(contains('W9')));
     });
 
-    test('a bare <main> with only component children passes (no literal text)',
+    test('a bare <main> with only component children fires nothing outside views',
         () {
-      // <main> itself is a lowercase HTML element, but it has no literal text
-      // and is not interactive — so neither W7 nor W9 fires.
-      final findings = gateDesignWidgets(_tree(tmp, const {}));
+      // <main> has no literal text and is not interactive, so W7 is silent;
+      // outside ui/views/** W9 has no jurisdiction. Inside a view the same
+      // element now FAILS W9 (see the structural-wrapper test in the W9
+      // group) — that asymmetry is the sharpened law.
+      final findings = gateDesignWidgets(_tree(tmp, {
+        'ui/common/base.tsx':
+            'export function Base() { return <main><Widget /></main>; }\n',
+      }));
       expect(_rules(findings), isNot(contains('W7')));
       expect(_rules(findings), isNot(contains('W9')));
     });
@@ -1124,7 +1132,7 @@ export default function ChatView() {
         () {
       final findings = gateDesignWidgets(_tree(tmp, {
         'ui/views/app_shell/legal/legal_view.tsx':
-            'export default function LegalView() { return <main></main>; }\n',
+            'export default function LegalView() { return <Screen />; }\n',
       }));
       expect(findings, isEmpty, reason: findings.join('\n'));
     });
@@ -1196,24 +1204,47 @@ export function Chip({ text }) {
             'export function Plate({ remaining }) { return <p data-el="plate" data-inspect-role="text">{remaining}</p>; }\n',
         'ui/views/main_shell/design/chat/chat_view.tsx':
             'import { Plate } from "../../../../widgets/main_chat_widgets/plate.tsx";\n'
-                'export default function ChatView() { return <main><Plate remaining={3} /></main>; }\n',
+                'export default function ChatView() { return <Screen><Plate remaining={3} /></Screen>; }\n',
       }));
       expect(findings, isEmpty, reason: findings.join('\n'));
     });
 
-    test('slot passes and list maps are composition, not authorship', () {
+    test('raw structural wrappers in a view fail W9 — the rung-div incident',
+        () {
+      // The shape the first W9 revision let through: a class-only wrapper
+      // with no text, interaction, or media. The energize review closed it —
+      // a view that authors markup authors presentation, structural or not.
+      expectsOnly('W9', {
+        'ui/views/main_shell/home/home_view.tsx':
+            'export default function HomeView() { return <div class="rung rung--desktop"><Body /></div>; }\n',
+      }, messageContains: 'structural markup');
+    });
+
+    test('raw slots and list maps in a view fail W9 — they ride widgets', () {
       final findings = gateDesignWidgets(_tree(tmp, {
         'ui/views/main_shell/design/chat/chat_view.tsx':
             'export default function ChatView({ children, items }) { return <main><div>{children}</div><ul>{items.map((i) => <li key={i}>{i}</li>)}</ul></main>; }\n',
       }));
-      // The <li> inside the map bears an expression child {i} — a string
-      // flowing into raw markup — so W9 names it; the slot and the map
-      // wrapper themselves stay silent.
+      // Every raw element fires now — the slot outlet <div> and the <ul>
+      // map wrapper included: slots and maps are composition, and
+      // composition rides Capitalized invocations.
       expect(_rules(findings), {'W9'}, reason: findings.join('\n'));
       final msg = findings.map((f) => f.message).join('\n');
+      expect(msg, contains('<div>'));
+      expect(msg, contains('<ul>'));
       expect(msg, contains('<li>'));
-      expect(msg.contains('<div>'), isFalse);
-      expect(msg.contains('<ul>'), isFalse);
+    });
+
+    test('slots and list maps through widgets pass — composition, not authorship',
+        () {
+      final findings = gateDesignWidgets(_tree(tmp, {
+        'ui/widgets/main_chat_widgets/split.tsx':
+            'export function Split({ children }) { return <div>{children}</div>; }\n',
+        'ui/views/main_shell/design/chat/chat_view.tsx':
+            'import { Split } from "../../../../widgets/main_chat_widgets/split.tsx";\n'
+                'export default function ChatView({ children, items }) { return <Split>{children}</Split><ChatList items={items} />; }\n',
+      }));
+      expect(findings, isEmpty, reason: findings.join('\n'));
     });
   });
 }

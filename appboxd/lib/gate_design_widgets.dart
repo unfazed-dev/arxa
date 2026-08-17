@@ -25,11 +25,13 @@
 ///       with a co-located `<stem>_viewmodel.js` under `ui/views/` carries
 ///       all three factor variants (`.desktop`/`.tablet`/`.mobile`) beside it.
 ///   W9  view composition — view templates (`ui/views/**`) compose widgets:
-///       a raw HTML element there that bears text (literal or text-valued
-///       expression child), is interactive, or renders media is a failure —
-///       the only legal form is a Capitalized widget-library invocation.
-///       W7's data-el/inspectAttrs identity is legal INSIDE widget files,
-///       where the presentation markup belongs.
+///       EVERY element in them is a Capitalized widget-library invocation.
+///       A raw HTML element of any kind is a failure — text-bearing,
+///       interactive, media, AND the structural wrappers (rung mounts,
+///       section scaffolding, form elements, slot outlets) that the first
+///       revision let pass; a view that authors markup authors presentation,
+///       and presentation lives in the library. W7's data-el/inspectAttrs
+///       identity is legal INSIDE widget files, where it belongs.
 ///
 /// The import graph is the only authority for W1/W2. No such parser existed in
 /// appboxd before this file — the pre-existing "orphan sweeps" (emit_htmx,
@@ -1124,8 +1126,10 @@ const _mediaTags = <String>{
 
 /// The first brace-balanced JSX expression child after the opening tag ending
 /// at [tagEnd], or null when the first child is not an expression. A depth
-/// counter walks nested braces ({t(x, {y: 1})}) across newlines.
-String? _firstExpressionChild(String src, int tagEnd) {
+/// counter walks nested braces ({t(x, {y: 1})}) across newlines. MESSAGE
+/// CONTEXT ONLY: every raw element in a view fails W9 regardless of what its
+/// children are, so this just names the expression in the failure message.
+String? _expressionChildSnippet(String src, int tagEnd) {
   var i = tagEnd;
   while (i < src.length &&
       (src[i] == ' ' || src[i] == '\n' || src[i] == '\r' || src[i] == '\t')) {
@@ -1141,39 +1145,17 @@ String? _firstExpressionChild(String src, int tagEnd) {
       if (depth == 0) return src.substring(i + 1, j);
     }
   }
-  return null; // unbalanced — a template literal or regex false positive; W7 owns identity, not W9
-}
-
-/// Whether a JSX expression child renders TEXT (true → W9 fires) rather than
-/// elements. Structural discriminators, not evaluation: an expression that
-/// maps a list (.map() call) or contains a JSX opening < produces element
-/// children — composition, whose leaves the library owns; whitespace spacer
-/// literals are not presentation. Everything else is a string flowing into
-/// raw markup — the exact thing the library exists to own.
-bool _expressionIsText(String expression) {
-  final t = expression.trim();
-  if (t.isEmpty) return false;
-  if (t == "' '" || t == '""' || t == '\x60\x60') return false;
-  if (t.contains('.map(')) return false;
-  if (RegExp(r'<[A-Za-z{/]').hasMatch(t)) return false;
-  // Slot passes are composition, not authorship: <main>{children}</main>
-  // forwards what an upstream view already composed (widget invocations),
-  // so the shell variant mounting its slot is not presenting markup itself.
-  // `props.surface` is the application hub's outlet slot — same rule by
-  // contract: the hub fills its one outlet with a hosted shell's surface.
-  if (t == 'children' || t == 'props.children') return false;
-  if (t == 'surface' || t == 'props.surface') return false;
-  if (t.startsWith('children.') || t.startsWith('props.children.')) {
-    return false;
-  }
-  return true;
+  return null; // unbalanced — a template literal or regex false positive
 }
 
 /// W9: view templates (ui/views/**, outside widget-library dirs) compose
-/// widgets — they do not author presentation markup. A raw lowercase HTML
-/// element that bears text (literal, or a text-valued expression child like
-/// {t(translate, 'x')}), is interactive, or renders media is a failure
-/// there: the element must become a Capitalized widget-library invocation.
+/// widgets — EVERY element in them is a Capitalized widget-library
+/// invocation. A raw lowercase HTML element of ANY kind is a failure there:
+/// text-bearing, interactive, media, and — the amendment after the energize
+/// review — the structural wrappers (rung mounts, section scaffolding, form
+/// elements, slot outlets) the first revision let pass. A view that authors
+/// markup authors presentation, and presentation lives in the library;
+/// grouping invocations without adding markup is what fragments are for.
 ///
 /// W7's identity floor (data-el/inspectAttrs) stays legal inside widget files
 /// — and ONLY there. The shape W7 blesses is the one W9 retires in views: an
@@ -1196,25 +1178,21 @@ List<LintFinding> _compositionFindings(String artifactDir) {
       final selfClosing = m.group(3) == '/';
       final line = _lineNumberAt(src, m.start);
 
-      var why = '';
+      var why = 'structural markup';
       if (_interactiveTags.contains(tag)) {
         why = 'bearing interaction';
       } else if (_mediaTags.contains(tag)) {
         why = 'rendering media';
       } else if (!selfClosing) {
         final literal = _directTextSnippet(src, m.end);
-        final expression = literal == null
-            ? _firstExpressionChild(src, m.end)
-            : null;
         if (literal != null) {
           why = 'bearing text "${_snippet(literal)}"';
-        } else if (expression != null && _expressionIsText(expression)) {
-          why = 'bearing expression text "${_snippet(expression)}"';
         } else {
-          continue;
+          final expression = _expressionChildSnippet(src, m.end);
+          if (expression != null) {
+            why = 'bearing expression text "${_snippet(expression)}"';
+          }
         }
-      } else {
-        continue;
       }
       findings.add(LintFinding(
           rel,
