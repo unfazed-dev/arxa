@@ -230,9 +230,15 @@ class ShowcaseNoteEditorViewModel extends AppBoxKitViewModel {
   Future<void> togglePlayback(ShowcaseNoteAttachmentModel attachment) =>
       _notes.togglePlayback(attachment);
 
-  /// [11. Playing audio] Where an attachment's file lives.
+  /// [11. Playing audio] Where an attachment's file lives. Memoized per
+  /// attachment id: the photo strip's FutureBuilder re-asks on every rebuild
+  /// (scroll re-entry, parent setState) and the uncached chain re-runs
+  /// getApplicationDocumentsDirectory + Directory.create every time.
   Future<String> resolvePath(ShowcaseNoteAttachmentModel attachment) =>
-      _notes.resolvePath(attachment);
+      _resolvedPathFutures.putIfAbsent(
+          attachment.id, () => _notes.resolvePath(attachment));
+
+  final _resolvedPathFutures = <String, Future<String>>{};
 
   /// [13. Edited label] `Edited <time>` today, `Edited <date>` otherwise.
   String editedLabel(BuildContext context, DateTime updatedAt) {
@@ -268,5 +274,8 @@ class ShowcaseNoteEditorViewModel extends AppBoxKitViewModel {
 
   /// [4. Final save] A waiting save lands here on the way out (flushOnDispose).
   @override
-  void dispose() => super.dispose();
+  void dispose() {
+    _resolvedPathFutures.clear();
+    super.dispose();
+  }
 }

@@ -145,14 +145,22 @@ void main() {
   });
 
   testWidgets(
-      'kit.ui-library.native-icon-button — default style stays glass (regression)',
+      'kit.ui-library.native-icon-button — default style stays glass on a dark base (regression)',
       (tester) async {
     await withAndroidFallback(() async {
-      await tester.pumpWidget(host(const AppBoxKitNativeIconButton(icon: Icons.add)));
+      // Dark theme: no bright opaque base, so the luminance adaptation
+      // (pinned in appbox_kit_glass_luminance_test) stays out and the
+      // default glass capsule passes through.
+      await tester.pumpWidget(MaterialApp(
+        theme: ThemeData.dark(),
+        home: const Scaffold(
+            body: Center(child: AppBoxKitNativeIconButton(icon: Icons.add))),
+      ));
 
       final cn = tester.widget<CNButton>(find.byType(CNButton));
       expect(cn.config.style, CNButtonStyle.glass,
-          reason: 'bar actions keep their Liquid Glass circle unless plain is set');
+          reason: 'bar actions keep their Liquid Glass circle unless plain '
+              'is set or the base is a bright opaque surface');
     });
   });
 }

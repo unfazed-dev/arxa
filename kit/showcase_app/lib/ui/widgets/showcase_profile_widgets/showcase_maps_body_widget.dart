@@ -66,9 +66,15 @@ class ShowcaseMapsBodyWidget extends StatelessWidget {
             ),
           ),
           Expanded(
-            child: AppBoxKitMapView(
-              config: viewModel.config,
-              provider: viewModel.provider,
+            // Third-party platform view: NATIVE_COMPONENTS.md requires any
+            // map/webview/video platform view to mount behind
+            // AppBoxKitNativeChromeGate so route pushes / swipe-backs over it
+            // can't bleed or ghost the native surface.
+            child: AppBoxKitNativeChromeGate(
+              child: AppBoxKitMapView(
+                config: viewModel.config,
+                provider: viewModel.provider,
+              ),
             ),
           ),
         ],

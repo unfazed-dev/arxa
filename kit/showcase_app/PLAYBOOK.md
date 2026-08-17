@@ -171,7 +171,7 @@ stacked create view showcase_startup showcase_shell showcase_<tab>_shell showcas
 Run `stacked generate` after the route tree edit.
 
 ## 7.8 Use native-chrome widgets (`appbox_kit`)
-`AppBoxKitNativeAppBar`, `AppBoxKitNativeFab`, `AppBoxKitNativeFabMenu`, `AppBoxKitNativeSheet`, `AppBoxKitNativeSwitch`, `AppBoxKitNativeSearchBar`, `AppBoxKitNativeNavigationRail`, `AppBoxKitGlassCard`, … — adaptive per platform; gated by `AppBoxKitPlatform` / `AppBoxKitNativeChromeGate`.
+`AppBoxKitNativeAppBar`, `AppBoxKitNativeFab`, `AppBoxKitNativeFabMenu`, `appBoxKitShowSheet()`, `AppBoxKitNativeSwitch`, `AppBoxKitNativeSearchBar`, `AppBoxKitNativeNavigationRail`, `AppBoxKitGlassCard`, … — adaptive per platform; gated by `AppBoxKitPlatform` / `AppBoxKitNativeChromeGate`.
 
 **Reuse mandates (hard — every showcase view, every host view built on the kit):**
 

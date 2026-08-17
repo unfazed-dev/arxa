@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:appbox_kit_motion/appbox_kit_motion.dart';
 import 'package:appbox_kit_motion/appbox_kit_testing.dart';
+import 'package:appbox_kit_core/platform/appbox_kit_platform.dart';
 import 'package:appbox_kit_ui_library/widgets/appbox_kit_drawer.dart';
 import 'package:appbox_kit_ui_library/widgets/appbox_kit_frosted_surface.dart';
 
@@ -194,5 +195,50 @@ void main() {
     expect(fades[1].opacity.value, lessThan(fades[0].opacity.value),
         reason: 'stagger: later slots are less far along mid-flight');
     expect(fades[2].opacity.value, lessThan(fades[1].opacity.value));
+  });
+
+  testWidgets(
+      'kit.ui-library.drawer — on the iOS 26 glass tier the peek skin takes the '
+      'platform-view-safe branch (no BackdropFilter saveLayer over UiKitViews)',
+      (tester) async {
+    AppBoxKitPlatform.override =
+        const AppBoxKitPlatformOverride(isIOS: true, iosMajor: 26);
+    addTearDown(AppBoxKitPlatform.reset);
+    await tester.pumpWidget(host(const AppBoxKitDrawer(child: Text('menu'))));
+    await openDrawer(tester);
+
+    final surface = tester
+        .widget<AppBoxKitFrostedSurface>(find.byType(AppBoxKitFrostedSurface));
+    expect(surface.platformViewSafe, isTrue,
+        reason: 'the host scene behind the peek panel hosts UiKitViews on '
+            'iOS 26 — a BackdropFilter cannot sample them (flutter#175048), '
+            'so the skin takes the vibrant-fill branch like sheet/dialog');
+    expect(
+      find.descendant(
+          of: find.byType(Drawer), matching: find.byType(BackdropFilter)),
+      findsNothing,
+      reason: 'no saveLayer blur may sit over the native glass scene',
+    );
+  });
+
+  testWidgets(
+      'kit.ui-library.drawer — below the glass tier the peek skin keeps its blur '
+      '(no platform views behind the panel; the blur IS the frosted material)',
+      (tester) async {
+    AppBoxKitPlatform.override =
+        const AppBoxKitPlatformOverride(isAndroid: true);
+    addTearDown(AppBoxKitPlatform.reset);
+    await tester.pumpWidget(host(const AppBoxKitDrawer(child: Text('menu'))));
+    await openDrawer(tester);
+
+    final surface = tester
+        .widget<AppBoxKitFrostedSurface>(find.byType(AppBoxKitFrostedSurface));
+    expect(surface.platformViewSafe, isFalse);
+    expect(
+      find.descendant(
+          of: find.byType(Drawer), matching: find.byType(BackdropFilter)),
+      findsOneWidget,
+      reason: 'Flutter tiers keep the blurred frosted read (ADR 0010)',
+    );
   });
 }

@@ -101,7 +101,7 @@ class ShowcaseNotesAuthViewMobile
                       size: abxSize60, color: theme.colorScheme.primary),
                   appBoxKitVerticalSpaceSmall,
                   Text(
-                    'Kit Notes',
+                    'AppBox Notes',
                     textAlign: TextAlign.center,
                     style: theme.textTheme.headlineSmall
                         ?.copyWith(fontWeight: FontWeight.w700),

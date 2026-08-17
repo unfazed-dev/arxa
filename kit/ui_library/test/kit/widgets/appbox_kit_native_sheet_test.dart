@@ -1,5 +1,5 @@
 import 'package:cupertino_native_better/cupertino_native_better.dart'
-    show CNSheetGeometryProbe, CNTabBarRouteObserver;
+    show CNButton, CNButtonStyle, CNSheetGeometryProbe, CNTabBarRouteObserver;
 import 'package:flutter/cupertino.dart'
     show CupertinoSheetTransition, kCupertinoModalBarrierColor;
 import 'package:flutter/foundation.dart' show ValueListenable;
@@ -467,6 +467,48 @@ void main() {
           reason: 'and the route grabber is always off in this path');
     });
   });
+
+  testWidgets(
+      'kit.ui-library.native-sheet — the close button never overlaps sheet '
+      'content: the body reserves its top-right zone', (tester) async {
+    // iOS 18 override: the vendor CNButton falls back to Cupertino headless;
+    // the clearance wiring is unconditional, so the glass tier inherits it.
+    AppBoxKitPlatform.override =
+        const AppBoxKitPlatformOverride(isIOS: true, iosMajor: 18);
+    await tester.pumpWidget(_hostWithOpener());
+    await tester.tap(find.text('open'));
+    await tester.pumpAndSettle();
+
+    final closeButton = tester.widget<CNButton>(find.byType(CNButton));
+    expect(closeButton.config.style, CNButtonStyle.gray,
+        reason: 'the filled-gray sheet-close idiom: contrast independent of '
+            'backdrop luminance (glass labels measured washed out on the '
+            'opaque base, iOS 26.5 simulator 2026-08-16)');
+    final button = tester.getRect(find.byType(CNButton));
+    final content = tester.getRect(find.text('sheet content'));
+    expect(content.top, greaterThanOrEqualTo(button.bottom),
+        reason: 'the glass xmark overlays content by design (HIG sheets keep '
+            'an always-visible dismiss), so the body must make the room — '
+            'anything right-aligned at content top otherwise sits under it');
+  });
+
+  testWidgets(
+      'kit.ui-library.native-sheet — isDismissible: false withholds '
+      'drag-to-dismiss on the Android tier too', (tester) async {
+    AppBoxKitPlatform.override =
+        const AppBoxKitPlatformOverride(isAndroid: true);
+    await tester.pumpWidget(_hostWithOpener(isDismissible: false));
+    await tester.tap(find.text('open'));
+    await tester.pumpAndSettle();
+
+    await tester.drag(find.text('sheet content'), const Offset(0, 500));
+    await tester.pumpAndSettle();
+
+    expect(find.text('sheet content'), findsOneWidget,
+        reason: 'isDismissible must withhold BOTH affordances on every tier '
+            '(iOS forwards enableDrag; Android leaked it — Material default '
+            'enableDrag is true)');
+  });
 }
 
 /// The Cupertino grabber's exact geometry, from Apple's Figma files via
@@ -500,6 +542,7 @@ Widget _hostWithOpener({
   Color? backgroundColor,
   bool showDragHandle = true,
   bool showOverlay = true,
+  bool isDismissible = true,
   ValueListenable<double>? heightFactor,
   void Function(Future<Object?>)? onSheet,
 }) {
@@ -513,6 +556,7 @@ Widget _hostWithOpener({
                 context: context,
                 showDragHandle: showDragHandle,
                 showOverlay: showOverlay,
+                isDismissible: isDismissible,
                 heightFactor: heightFactor,
                 backgroundColor: backgroundColor,
                 builder: sheetBuilder ??

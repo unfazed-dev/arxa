@@ -69,7 +69,8 @@ const platformViewBackedTypes = <String>{
   'CNGlassButtonGroup',
   // NOT `CNLiquidGlassContainer` — no such class exists. The vendor names it
   // `LiquidGlassContainer` (liquid_glass_container.dart:17), and it is what
-  // `AppBoxKitGlassCard` builds on the iOS 26 tier. The old typo'd name
+  // `AppBoxKitGlassCard` builds on the iOS 26 tier OUTSIDE Scrollables
+  // (in-scroll cards demote to the frosted tier — ladder step 1). The old typo'd name
   // matched nothing, so EVERY glass card was invisible to this set and the
   // first run of M2/M5 under-counted platform views to zero. Verified: these
   // 15 names are exactly the vendor files containing a `UiKitView(` call.
@@ -415,9 +416,9 @@ void main() {
       }
     }
     await gesture.up();
-    // NOT pumpAndSettle: the home tab hosts a looping progress/loading
-    // indicator, so the scheduler never goes idle and pumpAndSettle times out.
-    // (That looping animation is itself a finding — see the research doc.)
+    // NOT pumpAndSettle: the home tab's progress/loading demo may still be
+    // inside its bounded 5s TickerMode window during this drag, so the
+    // scheduler may not go idle and pumpAndSettle could time out.
     for (var i = 0; i < 20; i++) {
       await tester.pump(const Duration(milliseconds: 16));
     }
@@ -629,19 +630,25 @@ void main() {
     expect(framesWithFilterLayer, 0,
         reason: 'a filter layer over glass-backed content is unreachable paint '
             'work — if this regresses, the blur tier gate has been lost');
-    // Vacuity control for the zeros above. In-scroll glass is no longer
-    // demoted (docs/liquid-glass-allowlist.md — native liquid glass rides
-    // scrollables; the old slab artifacts are compositional and law-gate
-    // enforced), so the zeros must be earned against real native-tier glass
-    // in the scroll content rather than by its absence: an empty screen, or a
-    // screen that quietly stopped building glass, would pass vacuously.
+    // Vacuity control for the zeros above. After deselect-ladder step 1
+    // (docs/liquid-glass-allowlist.md, 2026-08-27) in-scroll GLASS CARDS
+    // demote to the frosted tier, but ruling 4 keeps every CONTROL native
+    // in scroll — so the zeros must still be earned against real
+    // platform-view widgets in the scroll content rather than by its
+    // absence: an empty screen, or a screen that quietly stopped building
+    // native widgets, would pass vacuously.
     var glassInScroll = 0;
     for (final s in find.byType(Scrollable).evaluate()) {
       void visit(Element e) {
-        if (e.widget.runtimeType.toString() == 'LiquidGlassContainer') {
+        final type = e.widget.runtimeType.toString();
+        if (type == 'LiquidGlassContainer') {
           final demoted =
               ((e.widget as dynamic).preferFlutterTier as bool?) ?? false;
           if (!demoted) glassInScroll++;
+        } else if (type.startsWith('CN')) {
+          // Vendor native controls (CNButton, CNIcon, CNSwitch…) — real
+          // UiKitViews on device, native in scroll per ruling 4.
+          glassInScroll++;
         }
         e.visitChildren(visit);
       }
@@ -649,9 +656,10 @@ void main() {
       s.visitChildren(visit);
     }
     expect(glassInScroll, greaterThan(0),
-        reason: 'control: native-tier glass MUST ride the scrollable, or the '
+        reason: 'control: native platform-view widgets MUST ride the '
+            'scrollable (controls stay native per ruling 4), or the '
             'filter-layer zero above is vacuous — the screen could simply be '
-            'empty or have stopped building glass');
+            'empty or have stopped building native widgets');
     debugDefaultTargetPlatformOverride = null;
   }, timeout: const Timeout(Duration(minutes: 3)));
 

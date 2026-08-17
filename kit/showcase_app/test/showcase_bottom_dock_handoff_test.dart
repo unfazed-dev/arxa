@@ -155,8 +155,8 @@ void main() {
 
     expect(barTitled('Components'), findsOneWidget,
         reason: "the pushed route keeps its own 'Components' bar");
-    expect(barTitled('Kit Showcase'), findsNothing,
-        reason: "the gallery's 'Kit Showcase' bar belongs to the tab ROOT; "
+    expect(barTitled('AppBox Showcase'), findsNothing,
+        reason: "the gallery's 'AppBox Showcase' bar belongs to the tab ROOT; "
             'finding it here is the double-bar stack the ruling removed');
     expect(find.byType(AppBoxKitNativeFabMenu), findsNothing,
         reason: 'the gallery FAB is part of that same tab-root chrome');

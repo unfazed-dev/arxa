@@ -6,6 +6,7 @@ import 'package:cupertino_native_better/cupertino_native_better.dart'
         CNButtonStyle,
         CNSheetGeometryProbe,
         CNSymbol,
+        CNSymbolRenderingMode,
         CNTabBarRouteObserver;
 import 'package:flutter/cupertino.dart'
     show CupertinoColors, CupertinoDynamicColor, kCupertinoModalBarrierColor;
@@ -131,6 +132,11 @@ import 'appbox_kit_native_chrome_gate.dart';
 /// return type is honored end-to-end: both tiers return `Future<T?>`, so a host
 /// that closes the sheet with `Navigator.pop(context, value)` receives `value`
 /// here.
+///
+/// **Scrolling sheet bodies:** platform-view glass inside a scrollable is out
+/// of the vendor contract (`CNButtonConfig.preferFlutterTier`) — a body that
+/// scrolls must use `wantNative: false` controls (the kit sheet never wraps
+/// [builder] in a scroll view; callers self-scroll).
 Future<T?> appBoxKitShowSheet<T>({
   required WidgetBuilder builder,
   required BuildContext context,
@@ -142,14 +148,16 @@ Future<T?> appBoxKitShowSheet<T>({
   bool opaqueGlass = true,
   bool showCloseButton = true,
 }) async {
-  // Bump the shared modal depth for the sheet's lifetime. No navigator in
-  // either app registers `CNTabBarRouteObserver`, so route pushes alone never
-  // move `anyModalDepth` — this manual bracket (same pattern as
-  // `kit_native_overlay.dart`) is what makes every modal-aware native widget
-  // ([AppBoxKitNativeChromeGate], [AppBoxKitScrollOcclusionGate], `CNSearchBar`'s
-  // self-hide) react to kit sheets. Without it, platform views on the
-  // obscured page composite *above* the sheet (ghost chrome over the cart
-  // sheet).
+  // Bump the shared modal depth for the sheet's lifetime. Apps that
+  // register `CNTabBarRouteObserver` (the showcase app does, main.dart) also
+  // get a route-driven bump — this manual bracket (same pattern as
+  // `kit_native_overlay.dart`) is the belt-and-braces floor that keeps every
+  // modal-aware native widget ([AppBoxKitNativeChromeGate],
+  // [AppBoxKitScrollOcclusionGate], `CNSearchBar`'s self-hide) reacting even
+  // when the presenting navigator has no observer attached. The decrements
+  // clamp at zero, so a double bump unwinds cleanly. Without the bump,
+  // platform views on the obscured page composite *above* the sheet (ghost
+  // chrome over the cart sheet).
   CNTabBarRouteObserver.markAnyModalActive();
   try {
     // Android → built-in Material modal sheet (M3 theme drives it; no m3e
@@ -162,6 +170,10 @@ Future<T?> appBoxKitShowSheet<T>({
             : (_) => _SizedSheetBody(
                 heightFactor: heightFactor, child: Builder(builder: builder)),
         isDismissible: isDismissible,
+        // Withhold BOTH affordances on every tier: Material's default
+        // enableDrag is true, which leaked drag-to-dismiss past
+        // isDismissible: false (iOS forwards it at the CNBottomSheet call).
+        enableDrag: isDismissible,
         showDragHandle: showDragHandle,
         backgroundColor: backgroundColor,
         // Material sizes to its child, so an explicit height only survives if
@@ -253,6 +265,13 @@ class _CupertinoSheetBody extends StatelessWidget {
   /// the sized body has to reproduce at its own edge.
   static const double _sheetCornerRadius = 12;
 
+  /// Vertical room reserved above sheet content when [showCloseButton] is on:
+  /// the close button overlays the body's top-right corner (top: 6, and the
+  /// vendor enforces the HIG ≥44px minimum → bottom ≈ 50), so content must
+  /// start below it. HIG sheets keep the dismiss affordance always visible
+  /// over content — making the room is the content side's job.
+  static const double _kCloseButtonClearance = 52;
+
   @override
   Widget build(BuildContext context) {
     final ValueListenable<double>? factor = heightFactor;
@@ -264,7 +283,11 @@ class _CupertinoSheetBody extends StatelessWidget {
       // Bottom: the sheet reaches the screen edge, so the home indicator inset
       // is still ours to respect.
       return _surface(
-        SafeArea(child: _withClose(Builder(builder: builder))),
+        SafeArea(
+          child: _withClose(
+            _clearOfClose(Builder(builder: builder), belowGrabber: false),
+          ),
+        ),
       );
     }
 
@@ -285,7 +308,11 @@ class _CupertinoSheetBody extends StatelessWidget {
               // edge. `top: false` because this edge is mid-screen, not the
               // notch.
               Expanded(
-                child: SafeArea(top: false, child: Builder(builder: builder)),
+                child: SafeArea(
+                  top: false,
+                  child: _clearOfClose(Builder(builder: builder),
+                      belowGrabber: true),
+                ),
               ),
             ],
           ),
@@ -330,6 +357,19 @@ class _CupertinoSheetBody extends StatelessWidget {
     );
   }
 
+  /// Pushes [content] below the close button's zone. The sized path's
+  /// [_SheetGrabber] row already holds the top 20px (5+5+10 — the
+  /// framework's own spacing), so it needs less.
+  Widget _clearOfClose(Widget content, {required bool belowGrabber}) {
+    if (!showCloseButton) return content;
+    // The grabber row only holds the top 20px when it is actually drawn.
+    final double held = belowGrabber && showDragHandle ? 20.0 : 0.0;
+    return Padding(
+      padding: EdgeInsets.only(top: _kCloseButtonClearance - held),
+      child: content,
+    );
+  }
+
   /// Overlays the native close button on [content]'s top-right corner.
   ///
   /// The button pops the enclosing sheet route — `Builder` gives it a context
@@ -344,8 +384,20 @@ class _CupertinoSheetBody extends StatelessWidget {
           right: 12,
           child: Builder(
             builder: (BuildContext context) => CNButton.icon(
-              icon: const CNSymbol('xmark', size: 15),
-              config: const CNButtonConfig(style: CNButtonStyle.glass),
+              icon: CNSymbol(
+                'xmark',
+                size: 15,
+                // Pinned ink: glass button labels were measured washed out on
+                // the sheet's opaque bright base (input_bar_widget.dart:8-11,
+                // iOS 26.5 simulator 2026-08-16). The filled-gray style is the
+                // actual iOS sheet-close idiom and its contrast is independent
+                // of backdrop sampling; monochrome label keeps the glyph legible
+                // on it in both themes.
+                color: CupertinoDynamicColor.resolve(
+                    CupertinoColors.label, context),
+                mode: CNSymbolRenderingMode.monochrome,
+              ),
+              config: const CNButtonConfig(style: CNButtonStyle.gray),
               onPressed: () => Navigator.of(context).maybePop(),
               // Native glass inside the sheet route: the gate exempts content
               // travelling with its own route and only hides under an opaque

@@ -5,6 +5,7 @@ import 'package:m3e_collection/m3e_collection.dart';
 
 import 'package:appbox_kit_core/common/appbox_kit_glyphs.dart';
 import 'package:appbox_kit_core/platform/appbox_kit_platform.dart';
+import 'appbox_kit_glass_luminance.dart';
 import 'appbox_kit_native_chrome_gate.dart';
 
 /// Adaptive icon button. On Android it renders `m3e_collection`'s
@@ -43,6 +44,7 @@ class AppBoxKitNativeIconButton extends StatelessWidget {
     this.color,
     this.size,
     this.plain = false,
+    this.luminanceAdaptive = true,
   })  : _icon = icon,
         _sfSymbol = sfSymbol;
 
@@ -80,6 +82,14 @@ class AppBoxKitNativeIconButton extends StatelessWidget {
   /// chromeless at rest and ignores this flag.
   final bool plain;
 
+  /// The global washout remedy (measured 2026-08-16): on a bright OPAQUE
+  /// surface — declared by an [AppBoxKitGlassLuminance] scope or, absent one,
+  /// the theme's scaffold background — the glass capsule demotes to the
+  /// filled-gray idiom with on-surface monochrome ink. Dark and translucent
+  /// bases keep glass; [plain] is unaffected (nothing to wash out). Set
+  /// false only for glass deliberately floating over bright imagery.
+  final bool luminanceAdaptive;
+
   /// Icon point size. Honored per tier; null falls back to the kit default:
   /// 18pt on the Apple tier (HIG nav-bar/toolbar glyph scale — CNSymbol's own
   /// 24 default reads visibly oversized in bar contexts; mirrors
@@ -94,6 +104,12 @@ class AppBoxKitNativeIconButton extends StatelessWidget {
     if (AppBoxKitPlatform.supportsComposeM3E) return _m3e(context);
     // Alpha-0 hide the native Liquid Glass button during route transitions
     // (+ modal overlays) so it can't leak over a route slide — AppBoxKitNativeChromeGate.
+    // Luminance adaptation: the glass capsule demotes to the filled-gray
+    // idiom on a bright opaque base; plain stays chromeless regardless.
+    final demote = luminanceAdaptive &&
+        !plain &&
+        appBoxKitGlassDemotesOnBrightBase(context);
+    final scheme = Theme.of(context).colorScheme;
     return AppBoxKitNativeChromeGate(
         child: CNButton.icon(
       icon: sfSymbol == null
@@ -101,7 +117,8 @@ class AppBoxKitNativeIconButton extends StatelessWidget {
           : CNSymbol(
               sfSymbol!,
               size: size ?? 18.0,
-              color: color ?? Theme.of(context).colorScheme.primary,
+              color: color ?? (demote ? scheme.onSurface : scheme.primary),
+              mode: demote ? CNSymbolRenderingMode.monochrome : null,
             ),
       // Native-first (mirrors the FAB's guard): CNButton priority is
       // imageAsset > customIcon > icon, so an always-set customIcon would
@@ -111,7 +128,9 @@ class AppBoxKitNativeIconButton extends StatelessWidget {
       onPressed: onPressed,
       tint: color,
       config: CNButtonConfig(
-        style: plain ? CNButtonStyle.plain : CNButtonStyle.glass,
+        style: plain
+            ? CNButtonStyle.plain
+            : (demote ? CNButtonStyle.gray : CNButtonStyle.glass),
         customIconSize: size ?? 18.0,
         // The native tier is a UiKitView (no intrinsic width) → stretches to
         // fill its parent's loose constraints. shrinkWrap makes CNButton measure

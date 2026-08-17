@@ -1,6 +1,8 @@
 import 'package:cupertino_native_better/cupertino_native_better.dart'
     show CNButton, CNButtonConfig, CNButtonStyle;
 import 'package:flutter/cupertino.dart' show CupertinoButton;
+import 'package:flutter/material.dart'
+    show Center, MaterialApp, Scaffold, ThemeData;
 import 'package:flutter/widgets.dart' show SingleChildScrollView;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:m3e_collection/m3e_collection.dart'
@@ -110,12 +112,19 @@ void main() {
       'kit.ui-library.native-button — CN tier (Liquid Glass) passes every kit style through 1:1',
       (tester) async {
     await withAndroidFallback(() async {
+      // Dark theme: keeps the luminance adaptation out of this enum-mirror
+      // pin (bright-base demotion is pinned in appbox_kit_glass_luminance_test).
       for (final style in AppBoxKitButtonStyle.values) {
-        await tester.pumpWidget(host(AppBoxKitNativeButton(
-          label: 'Go',
-          style: style,
-          onPressed: () {},
-        )));
+        await tester.pumpWidget(MaterialApp(
+          theme: ThemeData.dark(),
+          home: Scaffold(
+              body: Center(
+                  child: AppBoxKitNativeButton(
+            label: 'Go',
+            style: style,
+            onPressed: () {},
+          ))),
+        ));
         final cn = tester.widget<CNButton>(find.byType(CNButton));
         expect(
           cn.config.style,
@@ -138,13 +147,21 @@ void main() {
         AppBoxKitButtonStyle.glass,
         AppBoxKitButtonStyle.prominentGlass,
       ]) {
-        await tester.pumpWidget(host(SingleChildScrollView(
-          child: AppBoxKitNativeButton(
-            label: 'Go',
-            style: style,
-            onPressed: () {},
-          ),
-        )));
+        // Dark theme: this pin is about the SCROLL ruling (no in-scroll
+        // remap), not luminance — a bright base legitimately remaps glass
+        // now (appbox_kit_glass_luminance_test).
+        await tester.pumpWidget(MaterialApp(
+          theme: ThemeData.dark(),
+          home: Scaffold(
+              body: Center(
+                  child: SingleChildScrollView(
+            child: AppBoxKitNativeButton(
+              label: 'Go',
+              style: style,
+              onPressed: () {},
+            ),
+          ))),
+        ));
         final cn = tester.widget<CNButton>(find.byType(CNButton));
         expect(
           cn.config.style,
@@ -172,11 +189,16 @@ void main() {
         AppBoxKitButtonStyle.glass,
         AppBoxKitButtonStyle.prominentGlass,
       ]) {
-        await tester.pumpWidget(host(AppBoxKitNativeButton(
-          label: 'Go',
-          style: style,
-          onPressed: () {},
-        )));
+        await tester.pumpWidget(MaterialApp(
+          theme: ThemeData.dark(),
+          home: Scaffold(
+              body: Center(
+                  child: AppBoxKitNativeButton(
+            label: 'Go',
+            style: style,
+            onPressed: () {},
+          ))),
+        ));
         final cn = tester.widget<CNButton>(find.byType(CNButton));
         expect(
           cn.config.style,

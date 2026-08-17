@@ -81,7 +81,7 @@ void main() {
   });
 
   testWidgets(
-      'kit.ui-library.glass-card — inside a scrollable keeps the glass tier on iOS 26',
+      'kit.ui-library.glass-card — inside a scrollable takes the frosted tier on iOS 26 (deselect ladder step 1)',
       (tester) async {
     // withAndroidFallback diverts only the CN-internal render path (the
     // container returns its child unchanged on non-Apple defaultTargetPlatform)
@@ -98,14 +98,35 @@ void main() {
 
       expect(
         find.byType(LiquidGlassContainer),
-        findsOneWidget,
-        reason: 'a Scrollable ancestor must not demote the card — cards keep '
-            'real glass everywhere the iOS 26 tier is available',
+        findsNothing,
+        reason: 'in-scroll native glass is the jitter/flicker mechanism — '
+            'the deselect ladder demotes the widest glass first',
       );
       expect(
         find.byType(AppBoxKitFrostedSurface),
-        findsNothing,
-        reason: 'the glass tier must not double-paint the frosted fallback',
+        findsOneWidget,
+        reason: 'in-scroll cards render the Flutter-drawn frosted tier',
+      );
+    });
+  });
+
+  testWidgets(
+      'kit.ui-library.glass-card — outside a scrollable keeps the glass tier on iOS 26',
+      (tester) async {
+    // The ladder demotes IN-SCROLL glass only: chrome and out-of-scroll
+    // cards keep the native tier (ruling 4 stands for everything else).
+    await withAndroidFallback(() async {
+      AppBoxKitPlatform.override = const AppBoxKitPlatformOverride(
+        isIOS: true,
+        iosMajor: 26,
+      );
+      await tester.pumpWidget(
+          host(const Center(child: AppBoxKitGlassCard(child: Text('card')))));
+
+      expect(
+        find.byType(LiquidGlassContainer),
+        findsOneWidget,
+        reason: 'out-of-scroll cards keep real glass on the iOS 26 tier',
       );
     });
   });

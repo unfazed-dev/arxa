@@ -11,8 +11,7 @@ primitive.
 - Reach for the `AppBoxKitNative*` widget or `appBoxKitShowNative*` function **before** any
   stock Flutter widget — real Liquid Glass on iOS 26, real M3 Expressive on
   Android, a kit-owned fallback elsewhere. The gates enforce every ✅ matrix
-  row (`../skills/kit-designer/scripts/enforce_design.dart` 4f/4g,
-  `../skills/kit-reviewer/scripts/review_checklist.sh` 1c–1y): a stock
+  row (`../../gates/review/review.dart` `_nativeSurfaceBans`): a stock
   `AppBar`, `TextField`, `Switch`, `showModalBottomSheet(`, … in an app
   surface fails the gate.
 - Content surfaces (tile / card / banner / panel) compose on **`AppBoxKitGlassCard`**
@@ -57,7 +56,7 @@ from the expressive theme set once at the app top. Do not hand-build
 ## Adding a native surface
 
 One row in `../core/NATIVE_COMPONENTS.md` **and** one ban row in
-`_nativeSurfaceBans` (`enforce_design.dart`) — matrix and guard stay in
+`_nativeSurfaceBans` (`../../gates/review/review.dart`) — matrix and guard stay in
 lockstep — plus the widget, the `lib/appbox_kit_ui_library.dart` barrel export, and a
 `COMPONENTS.md` row.
 

@@ -338,8 +338,8 @@ with no external usage still exists.
 
 ### `widgets/appbox_kit_native_sheet.dart`
 
-- **`appBoxKitShowNativeSheet<T>()`** — platform-adaptive modal bottom sheet
-  (`showModalBottomSheet` on Android, `CNBottomSheet.show` elsewhere).
+- **`appBoxKitShowSheet<T>()`** — platform-adaptive modal bottom sheet
+  (`showModalBottomSheet` on Android, `CNBottomSheet.showCupertino` elsewhere).
   **No direct external usage** — reached indirectly: both apps register
   stacked's `BottomSheetService` with appbox_kit_ui_library's `AppBoxKitBottomSheetService`,
   which calls it in-package (`services/sheet/appbox_kit_bottom_sheet_service.dart:54,132`).
@@ -417,7 +417,7 @@ with no external usage still exists.
 ### `services/sheet/appbox_kit_bottom_sheet_service.dart`
 
 - **`AppBoxKitBottomSheetService`** — presents stacked sheets via
-  `appBoxKitShowNativeSheet`. Consumed through stacked's `BottomSheetService` type:
+  `appBoxKitShowSheet`. Consumed through stacked's `BottomSheetService` type:
   - p2 lib/ · app: `lib/app/app.dart:88`;
     showcase lib/: `app/app.dart:74`
 
@@ -714,7 +714,8 @@ feature call sites): `AppBoxKitNavigationControllerService`, `AppBoxKitSelectabl
 - **`AppBoxKitBottomNavScaffold` is unused by p2** — the application shell composes
   `AppBoxKitExtendBodyFabLift` + `AppBoxKitAnimatedTabStack` + `AppBoxKitNativeTabBar`
   manually (mirroring the showcase shell).
-- **`appBoxKitShowNativeSheet` has no direct callers** — both apps reach it through
+- **`appBoxKitShowSheet` has both direct callers and service callers** — the
+  showcase demos call it directly; stacked-registered sheets reach it through
   the `BottomSheetService` → `AppBoxKitBottomSheetService` registration.
 - **Other kit packages barely consume the UI tier.** Only `appbox_kit/data`
   does (`AppBoxKitAction.run` in its facade, `appBoxKitLocator`); `appbox_kit/notifications`

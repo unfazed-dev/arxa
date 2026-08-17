@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'package:appbox_kit_core/platform/appbox_kit_platform.dart';
 import 'package:appbox_kit_motion/appbox_kit_motion.dart';
 
 import 'appbox_kit_frosted_surface.dart';
@@ -148,6 +149,12 @@ class AppBoxKitDrawer extends StatelessWidget {
       end: isEnd ? Radius.zero : Radius.circular(cornerRadius),
     ).resolve(Directionality.of(context));
 
+    // iOS 26: the host page behind this panel hosts UiKitViews (native tab
+    // bar, glass controls) and a BackdropFilter cannot sample them
+    // (flutter#175048) — take the vibrant-fill branch, the same recipe as the
+    // sheet/dialog opaqueGlass paths. Below the tier there are no platform
+    // views behind the panel and the blur IS the frosted material (ADR 0010).
+    final glassTier = AppBoxKitPlatform.supportsLiquidGlass;
     return Drawer(
       width: width ?? MediaQuery.widthOf(context) * peekWidthFraction,
       // Transparent, elevation-less Material: the shape clip owns the
@@ -160,7 +167,17 @@ class AppBoxKitDrawer extends StatelessWidget {
       // panel's leading edge sits flush against the screen edge, and
       // self-rounding would leave scrim-colored notches there. The Drawer's
       // shape clip cuts the trailing corner (rim highlight and all).
-      child: AppBoxKitFrostedSurface(borderRadius: 0, child: content),
+      child: AppBoxKitFrostedSurface(
+        borderRadius: 0,
+        platformViewSafe: glassTier,
+        tint: glassTier
+            ? Theme.of(context)
+                .colorScheme
+                .surfaceContainerLowest
+                .withValues(alpha: 1.0)
+            : null,
+        child: content,
+      ),
     );
   }
 }

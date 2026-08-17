@@ -47,10 +47,12 @@ class _PinnedSearchDelegate extends SliverPersistentHeaderDelegate {
   @override
   Widget build(
       BuildContext context, double shrinkOffset, bool overlapsContent) {
-    return Material(
-      color: Theme.of(context).scaffoldBackgroundColor,
-      child: SizedBox(height: _max, child: child),
-    );
+    // No backing panel: the child is the native Liquid Glass search bar (a
+    // pinned sliver header counts as chrome — docs/liquid-glass-allowlist.md
+    // class 1), and iOS 26 floats search chrome OVER the content its glass
+    // samples. An opaque Flutter slab behind it defeated the glass and read
+    // as a hard cut band across the scroll (device-observed seam).
+    return SizedBox(height: _max, child: child);
   }
 
   @override

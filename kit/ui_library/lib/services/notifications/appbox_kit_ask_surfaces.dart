@@ -92,6 +92,15 @@ class _AppBoxKitPromptDialogState extends State<AppBoxKitPromptDialog> {
         child: AppBoxKitFrostedSurface(
           borderRadius: 24,
           padding: const EdgeInsets.fromLTRB(16, 20, 16, 16),
+          // Opaque + saveLayer-free, always: the action column hosts CN
+          // platform-view buttons on the glass tier and a BackdropFilter
+          // cannot sample them (flutter#175048) — the same recipe as the
+          // alert dialog (appbox_kit_native_dialog.dart:215-221) and the
+          // sheet's opaqueGlass branch. The opaque base also pins one
+          // luminance for the glass buttons.
+          platformViewSafe: true,
+          tint:
+              theme.colorScheme.surfaceContainerLowest.withValues(alpha: 1.0),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [

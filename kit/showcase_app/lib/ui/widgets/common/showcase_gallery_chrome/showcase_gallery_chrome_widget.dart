@@ -63,7 +63,7 @@ class ShowcaseGalleryChromeWidget extends StatelessWidget {
     // (2026-08-13). This widget is the dogfood consumer the law's plan
     // names; hand-assembling chrome here again is a law violation.
     return AppBoxKitChromeScaffold(
-      title: 'Kit Showcase',
+      title: 'AppBox Showcase',
       actions: _actions(context),
       behavior: AppBoxKitFloatingBarBehavior.minimize,
       body: child,

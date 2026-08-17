@@ -169,34 +169,49 @@ class _TypingIndicatorBubbleState extends State<_TypingIndicatorBubble>
     final scheme = Theme.of(context).colorScheme;
     return AppBoxKitGlassCard(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-      child: AnimatedBuilder(
-        animation: _controller,
-        builder: (_, __) => Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            for (final dot in const [0, 1, 2])
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 3),
-                child: Opacity(
-                  // Each dot peaks 200ms after the previous one.
-                  opacity:
-                      (_controller.value * 3 - dot).clamp(0.0, 1.0).abs() < 0.5
-                          ? 1.0
-                          : 0.35,
-                  child: Container(
-                    width: 7,
-                    height: 7,
-                    decoration: BoxDecoration(
-                      color: scheme.onSurfaceVariant,
-                      shape: BoxShape.circle,
+      // The dots pulse every frame for as long as the bubble is mounted:
+      // confine the raster invalidation to the bubble so the conversation
+      // list around it never repaints, and hoist the static label out of
+      // the per-frame rebuild.
+      child: RepaintBoundary(
+        child: AnimatedBuilder(
+          animation: _controller,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              appBoxKitHorizontalSpaceXSmall,
+              Text('typing…',
+                  style:
+                      TextStyle(color: scheme.onSurfaceVariant, fontSize: 12)),
+            ],
+          ),
+          builder: (_, label) => Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              for (final dot in const [0, 1, 2])
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 3),
+                  child: Opacity(
+                    // Each dot peaks 200ms after the previous one.
+                    opacity: (_controller.value * 3 - dot)
+                                .clamp(0.0, 1.0)
+                                .abs() <
+                            0.5
+                        ? 1.0
+                        : 0.35,
+                    child: Container(
+                      width: 7,
+                      height: 7,
+                      decoration: BoxDecoration(
+                        color: scheme.onSurfaceVariant,
+                        shape: BoxShape.circle,
+                      ),
                     ),
                   ),
                 ),
-              ),
-            appBoxKitHorizontalSpaceXSmall,
-            Text('typing…',
-                style: TextStyle(color: scheme.onSurfaceVariant, fontSize: 12)),
-          ],
+              label!,
+            ],
+          ),
         ),
       ),
     );

@@ -17,7 +17,11 @@ import 'appbox_kit_native_chrome_gate.dart';
 ///   native UIView via hybrid composition). Gated on
 ///   [AppBoxKitPlatform.supportsLiquidGlass]; below iOS 26 the container degrades to
 ///   a bare child (no card chrome), so the kit falls through to the frosted
-///   tier there — mirrors [AppBoxKitNativeTabBar]'s glass gate.
+///   tier there — mirrors [AppBoxKitNativeTabBar]'s glass gate. **Inside a
+///   Scrollable the card takes the frosted tier even on iOS 26** (deselect
+///   ladder step 1, docs/liquid-glass-allowlist.md): the native tier is a
+///   UiKitView the engine detaches/re-adds at the paint-cull boundary
+///   (re-entry flash) and composites per scroll frame (jitter).
 /// - **Flutter-drawn frosted** — [AppBoxKitFrostedSurface] (BackdropFilter blur +
 ///   saturation + theme tint + rim highlight) everywhere else: Android,
 ///   desktop, web, iOS < 26, and any host that passes `wantNative: false`.
@@ -73,8 +77,18 @@ class AppBoxKitGlassCard extends StatelessWidget {
     final content =
         padding == null ? child : Padding(padding: padding!, child: child);
 
+    // Ruling 4 deselect ladder, step 1 (docs/liquid-glass-allowlist.md):
+    // in-scroll artifacts reappeared (scroll jitter/flicker on device), so the
+    // WIDEST glass re-demotes. The native tier is a UiKitView that the engine
+    // detaches/re-adds at the scrollable's paint-cull boundary (re-entry
+    // flash; only the top boundary has overdraw headroom) and composites
+    // every scroll frame (jitter). The frosted tier scrolls as pure Flutter —
+    // and with opaqueGlass (the default) it is an opaque fill: zero blur,
+    // zero layers, zero platform-view churn. Chrome and out-of-scroll cards
+    // keep the native tier.
+    final inScrollable = Scrollable.maybeOf(context) != null;
     // Tier 1 — iOS 26 Liquid Glass.
-    if (wantNative && AppBoxKitPlatform.supportsLiquidGlass) {
+    if (wantNative && !inScrollable && AppBoxKitPlatform.supportsLiquidGlass) {
       return LiquidGlassContainer(
         // The chrome gate below is the single hiding authority for this card.
         // The vendor's ModalHideMixin destroy path (Issue #53) must stay OFF

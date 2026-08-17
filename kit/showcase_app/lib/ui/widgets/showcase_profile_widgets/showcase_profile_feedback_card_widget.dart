@@ -38,7 +38,7 @@ class ShowcaseProfileFeedbackCardWidget extends StatelessWidget {
               label: 'Show toast',
               glyph: AppBoxKitGlyphs.alertsBadge,
               onPressed: () => appBoxKitLocator<AppBoxKitNotificationService>()
-                  .show('Hello from Kit!',
+                  .show('Hello from AppBox!',
                       kind: AppBoxKitNotificationKind.info, context: context),
             ),
           ),

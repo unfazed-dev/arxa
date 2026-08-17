@@ -80,6 +80,31 @@ void main() {
     }
 
     test(
+        'notes.attach-a-photo-to-a-note — resolvePath memoizes per attachment id: '
+        'rebuild-scale repeats hit the facade once, a new id resolves separately',
+        () async {
+      // given
+      final subject = seededSubject<ShowcaseNoteModel?>(note());
+      when(() => notes.resolvePath(any())).thenAnswer((invocation) async =>
+          '/tmp/${(invocation.positionalArguments[0] as ShowcaseNoteAttachmentModel).fileName}');
+      final vm = await openEditor(subject);
+
+      // when — the photo strip rebuilds (scroll re-entry, parent setState) and
+      // resolves the same attachment id again from a FRESH model instance,
+      // then a second attachment appears
+      final first = await vm.resolvePath(attachment(id: 'a1'));
+      final second = await vm.resolvePath(attachment(id: 'a1'));
+      await vm.resolvePath(attachment(id: 'a2'));
+
+      // then — one facade resolution per attachment id, not per request
+      expect(first, '/tmp/a1.bin');
+      expect(second, first,
+          reason: 'memoized per id: a rebuild must not re-run the path chain '
+              '(getApplicationDocumentsDirectory + Directory.create)');
+      verify(() => notes.resolvePath(any())).called(2);
+    });
+
+    test(
         'notes.note-crud.edit-a-note — body seeds once from the loaded note and later note\$ emits never clobber what the user typed',
         () async {
       // given

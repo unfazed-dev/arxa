@@ -56,6 +56,10 @@ class ShowcaseNotePhotoStripWidget extends StatelessWidget {
           separatorBuilder: (_, __) => appBoxKitHorizontalSpaceSmall,
           itemBuilder: (context, i) {
             final attachment = photos[i];
+            // Decode at display pixels, not the full capture (up to 2048px):
+            // 84pt x dpr bounds the codec request (-> ResizeImage).
+            final thumbPixels =
+                (84 * MediaQuery.devicePixelRatioOf(context)).round();
             return FutureBuilder<String>(
               future: viewModel.resolvePath(attachment),
               builder: (context, snap) {
@@ -79,6 +83,8 @@ class ShowcaseNotePhotoStripWidget extends StatelessWidget {
                       width: 84,
                       height: 84,
                       fit: BoxFit.cover,
+                      cacheWidth: thumbPixels,
+                      cacheHeight: thumbPixels,
                     ),
                   ),
                 );
@@ -88,27 +94,43 @@ class ShowcaseNotePhotoStripWidget extends StatelessWidget {
         ),
       );
 
-  void _openViewer(BuildContext context, File file) => showDialog<void>(
-        context: context,
-        builder: (context) => Dialog(
-          // ponytail: media lightboxes are always black regardless of theme —
-          // a deliberate platform constant, not a theme leak.
-          insetPadding: EdgeInsets.zero,
-          child: Stack(
-            children: [
-              Positioned.fill(
-                child: InteractiveViewer(child: Image.file(file)),
+  void _openViewer(BuildContext context, File file) {
+    // flutter-only: fullscreen media lightbox. No native dialog tier exists
+    // for a zoomable black-screen photo viewer — appBoxKitShowNativeDialog()
+    // covers alert/confirm dialogs, not content lightboxes — so this
+    // hand-rolls a raw showDialog + Dialog.
+    // Present from the ROOT navigator: the tab shells nest a router, and a
+    // modal pushed on the nested navigator renders behind the shared tab bar
+    // (ruling: showcase_profile_feedback_card_widget.dart:51-55). The modal
+    // depth is auto-bracketed by CNTabBarRouteObserver (its _isAnyModal
+    // matches every PopupRoute, this push included); the explicit marks below
+    // are kept as defense-in-depth — balanced by whenComplete and clamped at
+    // zero — for any future presentation path the observer cannot see
+    // (Overlay entries). Pinned by appbox_kit_native_modal_observer_test.
+    CNTabBarRouteObserver.markAnyModalActive();
+    showDialog<void>(
+      context: StackedService.navigatorKey?.currentContext ?? context,
+      useRootNavigator: true,
+      builder: (context) => Dialog(
+        // ponytail: media lightboxes are always black regardless of theme —
+        // a deliberate platform constant, not a theme leak.
+        insetPadding: EdgeInsets.zero,
+        child: Stack(
+          children: [
+            Positioned.fill(
+              child: InteractiveViewer(child: Image.file(file)),
+            ),
+            Positioned(
+              top: abxSize8,
+              right: abxSize8,
+              child: AppBoxKitNativeIconButton(
+                glyph: AppBoxKitGlyphs.close,
+                onPressed: () => Navigator.of(context).pop(),
               ),
-              Positioned(
-                top: abxSize8,
-                right: abxSize8,
-                child: AppBoxKitNativeIconButton(
-                  glyph: AppBoxKitGlyphs.close,
-                  onPressed: () => Navigator.of(context).pop(),
-                ),
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
-      );
+      ),
+    ).whenComplete(CNTabBarRouteObserver.markAnyModalInactive);
+  }
 }

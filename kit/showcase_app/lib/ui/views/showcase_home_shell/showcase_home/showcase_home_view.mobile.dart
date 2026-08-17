@@ -80,7 +80,7 @@ class ShowcaseHomeViewMobile extends ViewModelWidget<ShowcaseHomeViewModel> {
           children: [
             const Center(
               child: Text(
-                'Kit Showcase',
+                'AppBox Showcase',
                 style: TextStyle(
                     fontSize: abxFontXXXLarge, fontWeight: FontWeight.w900),
               ),

@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:appbox_kit_core/appbox_kit_locator.dart';
 import 'package:appbox_kit_core/platform/appbox_kit_platform.dart';
 import 'package:appbox_kit_ui_library/services/notifications/appbox_kit_notification_service.dart';
+import 'package:appbox_kit_ui_library/widgets/appbox_kit_frosted_surface.dart';
 
 /// AppBoxKitNotificationService ask-surface tests (confirm / prompt / alert /
 /// notice) — the kit-rendered verbs that let apps drop stacked dialog/sheet
@@ -71,6 +72,37 @@ void main() {
     await tester.tap(find.text('Cancel'));
     await tester.pumpAndSettle();
     expect(result, isFalse);
+  });
+
+  testWidgets(
+      'kit.ui-library.ask-surfaces — the prompt dialog panel is opaque and '
+      'platform-view-safe: its action buttons are CN platform views on the '
+      'glass tier, so no BackdropFilter saveLayer may sit behind them '
+      '(flutter#175048). Pinned on the iOS 18 tier — Cupertino fallbacks pump '
+      'headless; the wiring is unconditional, so the glass tier inherits it.',
+      (tester) async {
+    AppBoxKitPlatform.override =
+        const AppBoxKitPlatformOverride(isIOS: true, iosMajor: 18);
+    await pumpCaller(tester, (context) async {
+      await service.prompt(title: 'New Folder', context: context);
+    });
+
+    final surface = tester
+        .widget<AppBoxKitFrostedSurface>(find.byType(AppBoxKitFrostedSurface));
+    expect(surface.platformViewSafe, isTrue,
+        reason: 'the saveLayer-free vibrant-fill branch, same as the sheet and '
+            'alert dialog (native_sheet.dart:370-372, native_dialog.dart:218)');
+    expect(surface.tint?.a, 1.0,
+        reason: 'fully opaque base — nothing behind the dialog shows through, '
+            'so the glass buttons read at one luminance');
+    expect(
+      find.descendant(
+          of: find.byType(Dialog), matching: find.byType(BackdropFilter)),
+      findsNothing,
+    );
+
+    await tester.tap(find.text('Cancel'));
+    await tester.pumpAndSettle();
   });
 
   test(

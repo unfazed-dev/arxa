@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import 'package:appbox_kit_core/common/appbox_kit_glyphs.dart';
 import 'package:appbox_kit_core/platform/appbox_kit_platform.dart';
+import 'appbox_kit_glass_luminance.dart';
 import 'appbox_kit_native_chrome_gate.dart';
 
 /// Adaptive CTA button. Delegates to `cupertino_native_better`'s [CNButton],
@@ -39,6 +40,7 @@ class AppBoxKitNativeButton extends StatelessWidget {
     this.style = AppBoxKitButtonStyle.glass,
     this.glassEffectUnionId,
     this.imagePadding = 6.0,
+    this.luminanceAdaptive = true,
   })  : _icon = icon,
         _sfSymbol = sfSymbol;
 
@@ -78,6 +80,15 @@ class AppBoxKitNativeButton extends StatelessWidget {
   final AppBoxKitButtonStyle style;
   final String? glassEffectUnionId;
 
+  /// The global washout remedy (measured 2026-08-16: glass labels illegible
+  /// on an opaque bright base): on a bright OPAQUE surface — declared by an
+  /// [AppBoxKitGlassLuminance] scope or, absent one, the theme's scaffold
+  /// background — the plain [AppBoxKitButtonStyle.glass] style demotes to
+  /// `gray` with on-surface monochrome symbol ink. Dark and translucent
+  /// bases keep glass; `prominentGlass` (the CTA idiom) never demotes. Set
+  /// false only for glass deliberately floating over bright imagery.
+  final bool luminanceAdaptive;
+
   /// Distance between the symbol and the title. UIButton.Configuration's own
   /// imagePadding default is 0 (frames flush, ~3pt optical air from glyph
   /// bearings) — tighter than Apple's typical icon+text buttons and than
@@ -95,6 +106,12 @@ class AppBoxKitNativeButton extends StatelessWidget {
     // CNButton-backed views are exposure-safe; the continuous controls
     // (slider/switch/search bar/text field) stay demoted in scroll. See
     // docs/liquid-glass-allowlist.md §2).
+    // Luminance adaptation: only the plain glass style demotes — every
+    // deliberate style choice (and the prominentGlass CTA) passes through.
+    final demote = luminanceAdaptive &&
+        style == AppBoxKitButtonStyle.glass &&
+        appBoxKitGlassDemotesOnBrightBase(context);
+    final scheme = Theme.of(context).colorScheme;
     return CNButton(
       label: label,
       onPressed: onPressed,
@@ -103,11 +120,14 @@ class AppBoxKitNativeButton extends StatelessWidget {
           : CNSymbol(
               sfSymbol!,
               size: sfSymbolSize,
-              color: sfSymbolColor ?? Theme.of(context).colorScheme.primary,
+              color:
+                  sfSymbolColor ?? (demote ? scheme.onSurface : scheme.primary),
+              mode: demote ? CNSymbolRenderingMode.monochrome : null,
             ),
       config: CNButtonConfig(
         // ponytail: names mirror CNButtonStyle 1:1; byName beats a switch.
-        style: CNButtonStyle.values.byName(style.name),
+        style: CNButtonStyle.values
+            .byName((demote ? AppBoxKitButtonStyle.gray : style).name),
         glassEffectUnionId: glassEffectUnionId,
         imagePadding: imagePadding,
         // The native tier is a UiKitView (no intrinsic width) → stretches to

@@ -2,6 +2,8 @@ import 'dart:ui' show ImageFilter;
 
 import 'package:flutter/material.dart';
 
+import 'appbox_kit_glass_luminance.dart';
+
 /// Flutter-drawn frosted-glass surface — the kit's **content-layer glass
 /// tier** (ADR 0010, part 2: glass tier split).
 ///
@@ -26,6 +28,19 @@ import 'package:flutter/material.dart';
 /// The public surface is **primitives only** ([child], [padding],
 /// [borderRadius], [blur], [saturation], [tint]).
 ///
+/// **The auto-opaque law** (rule 13, codified): a fully opaque fill makes
+/// the backdrop blur invisible anyway, so a fully opaque [tint] takes the
+/// no-saveLayer branch on its own — [platformViewSafe] is then redundant.
+/// This is a discrete mode switch, NOT an interpolation: never animate tint
+/// alpha across 1.0, or the saveLayer appears/disappears mid-animation.
+///
+/// **Luminance publisher.** Both branches wrap their child in an
+/// [AppBoxKitGlassLuminance] scope — the opaque branch declares the bright
+/// base that demotes glass controls (the washout remedy), the blurred branch
+/// declares "translucent — keep your glass" and shadows any outer opaque
+/// scope. Hosts never wire this; it is what makes the luminance adaptation
+/// global.
+///
 /// kimitail: one BackdropFilter = one saveLayer per surface — fine for cards
 /// and sheet bodies; if a long list of frosted cards ever janks, the upgrade
 /// path is liquid_glass_widgets (shader refraction, ADR 0010 research item 3),
@@ -49,9 +64,9 @@ class AppBoxKitFrostedSurface extends StatelessWidget {
   /// intermittently drops on device (flutter#175048;
   /// kit/core/NATIVE_COMPONENTS.md "a BackdropFilter cannot sample or cover
   /// platform-view pixels"). This is also Apple's own degrade: nested glass
-  /// auto-converts to vibrant fill (WWDC25 design lab). The doc claim above
-  /// that this surface is "occlusion-safe by construction" holds only for
-  /// platform-view-free subtrees — this flag is the guard for the rest.
+  /// auto-converts to vibrant fill (WWDC25 design lab). Redundant (but
+  /// harmless) when [tint] is fully opaque — the auto-opaque law takes this
+  /// branch either way.
   final bool platformViewSafe;
 
   /// The surface content.
@@ -76,6 +91,8 @@ class AppBoxKitFrostedSurface extends StatelessWidget {
 
   /// Tint override. `null` (default) = theme-derived:
   /// `ColorScheme.surfaceContainerLowest` at 72% (light) / 55% (dark).
+  /// A fully opaque tint implies the no-saveLayer branch (the auto-opaque
+  /// law in the class doc).
   final Color? tint;
 
   /// Saturation matrix (Rec. 709 luma weights) for [ColorFilter.matrix].
@@ -92,22 +109,57 @@ class AppBoxKitFrostedSurface extends StatelessWidget {
     final dark = scheme.brightness == Brightness.dark;
     final radius = BorderRadius.circular(borderRadius);
 
-    if (platformViewSafe) {
-      // Vibrant fill: no saveLayer at all. Alpha rides at FULL when no
-      // tint override is given — this branch is what opaqueGlass surfaces
-      // (chips, bar bases) paint, and a sub-1.0 default left dark-mode
-      // chips reading translucent with a light-biased wash (measured
-      // 2026-08-17: left .116 / mid .111 / right .143). A caller wanting
-      // translucency passes its own tint or the blurred branch below.
-      return Container(
-        decoration: BoxDecoration(
-          color: tint ??
-              scheme.surfaceContainerLowest.withValues(alpha: 1.0),
-          borderRadius: radius,
-          border: Border.all(
-            color: Colors.white.withValues(alpha: dark ? 0.16 : 0.45),
+    // The auto-opaque law: a fully opaque fill makes the backdrop blur
+    // invisible anyway, so an opaque tint alone selects the no-saveLayer
+    // branch. platformViewSafe stays meaningful for translucent
+    // platform-view-safe fills.
+    final saveLayerFree =
+        platformViewSafe || (tint != null && tint!.a >= 0.999);
+    final resolvedTint = saveLayerFree
+        // Alpha rides at FULL when no tint override is given — this branch
+        // is what opaqueGlass surfaces (chips, bar bases) paint, and a
+        // sub-1.0 default left dark-mode chips reading translucent with a
+        // light-biased wash (measured 2026-08-17: left .116 / mid .111 /
+        // right .143). A caller wanting translucency passes its own tint or
+        // the blurred branch below.
+        ? (tint ?? scheme.surfaceContainerLowest.withValues(alpha: 1.0))
+        : (tint ??
+            scheme.surfaceContainerLowest.withValues(alpha: dark ? 0.55 : 0.72));
+
+    if (saveLayerFree) {
+      return AppBoxKitGlassLuminance(
+        opaque: true,
+        brightness: ThemeData.estimateBrightnessForColor(resolvedTint),
+        child: Container(
+          decoration: BoxDecoration(
+            color: resolvedTint,
+            borderRadius: radius,
+            border: Border.all(
+              color: Colors.white.withValues(alpha: dark ? 0.16 : 0.45),
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: dark ? 0.35 : 0.08),
+                blurRadius: 16,
+                offset: const Offset(0, 4),
+              ),
+            ],
           ),
+          padding: padding,
+          child: child,
+        ),
+      );
+    }
+
+    return AppBoxKitGlassLuminance(
+      opaque: false,
+      brightness: ThemeData.estimateBrightnessForColor(resolvedTint),
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: radius,
           boxShadow: [
+            // Soft ambient lift — part of the standard-materials read, subtle
+            // enough to survive over busy backdrops.
             BoxShadow(
               color: Colors.black.withValues(alpha: dark ? 0.35 : 0.08),
               blurRadius: 16,
@@ -115,47 +167,28 @@ class AppBoxKitFrostedSurface extends StatelessWidget {
             ),
           ],
         ),
-        padding: padding,
-        child: child,
-      );
-    }
-
-    return Container(
-      decoration: BoxDecoration(
-        borderRadius: radius,
-        boxShadow: [
-          // Soft ambient lift — part of the standard-materials read, subtle
-          // enough to survive over busy backdrops.
-          BoxShadow(
-            color: Colors.black.withValues(alpha: dark ? 0.35 : 0.08),
-            blurRadius: 16,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: ClipRRect(
-        borderRadius: radius,
-        child: BackdropFilter(
-          // Saturate the backdrop first, then blur (ImageFilter.compose
-          // applies inner → outer).
-          filter: ImageFilter.compose(
-            outer: ImageFilter.blur(sigmaX: blur, sigmaY: blur),
-            inner: ColorFilter.matrix(_saturationMatrix(saturation)),
-          ),
-          child: Container(
-            decoration: BoxDecoration(
-              color: tint ??
-                  scheme.surfaceContainerLowest
-                      .withValues(alpha: dark ? 0.55 : 0.72),
-              borderRadius: radius,
-              // Rim highlight — the bright hairline that reads as a glass
-              // edge catching light.
-              border: Border.all(
-                color: Colors.white.withValues(alpha: dark ? 0.16 : 0.45),
-              ),
+        child: ClipRRect(
+          borderRadius: radius,
+          child: BackdropFilter(
+            // Saturate the backdrop first, then blur (ImageFilter.compose
+            // applies inner → outer).
+            filter: ImageFilter.compose(
+              outer: ImageFilter.blur(sigmaX: blur, sigmaY: blur),
+              inner: ColorFilter.matrix(_saturationMatrix(saturation)),
             ),
-            padding: padding,
-            child: child,
+            child: Container(
+              decoration: BoxDecoration(
+                color: resolvedTint,
+                borderRadius: radius,
+                // Rim highlight — the bright hairline that reads as a glass
+                // edge catching light.
+                border: Border.all(
+                  color: Colors.white.withValues(alpha: dark ? 0.16 : 0.45),
+                ),
+              ),
+              padding: padding,
+              child: child,
+            ),
           ),
         ),
       ),

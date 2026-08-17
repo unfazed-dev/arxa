@@ -21,6 +21,8 @@ import 'package:appbox_kit_showcase_app/ui/common/appbox_kit_assets.dart'
     show abxImgBrandIcon;
 import 'package:appbox_kit_showcase_app/ui/common/appbox_kit_ui_helpers.dart'
     show appBoxKitHorizontalSpaceSmall, appBoxKitVerticalSpaceMedium;
+import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart'
+    show AppBoxKitNativeLoadingIndicator;
 import 'package:flutter/material.dart';
 
 class ShowcaseStartupLoadingWidget extends StatelessWidget {
@@ -40,7 +42,7 @@ class ShowcaseStartupLoadingWidget extends StatelessWidget {
             ),
             appBoxKitVerticalSpaceMedium,
             Text(
-              'KIT SHOWCASE',
+              'APPBOX SHOWCASE',
               style: TextStyle(fontSize: 40, fontWeight: FontWeight.w900),
             ),
             Row(
@@ -48,11 +50,10 @@ class ShowcaseStartupLoadingWidget extends StatelessWidget {
               children: [
                 Text('Loading ...', style: TextStyle(fontSize: 16)),
                 appBoxKitHorizontalSpaceSmall,
-                SizedBox(
-                  width: 16,
-                  height: 16,
-                  child: CircularProgressIndicator(strokeWidth: 6),
-                ),
+                // Native-first: the kit's adaptive indicator — M3E morphing
+                // loader on Android, Cupertino spinner on iOS (never a stock
+                // Material spinner on an iOS surface).
+                AppBoxKitNativeLoadingIndicator(size: 16),
               ],
             ),
           ],

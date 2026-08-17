@@ -186,8 +186,23 @@ final _nativeSurfaceBans = <_NativeSurfaceBan>[
       'AppBoxKitNativeNavigationRail', 'navigation rail'),
   _NativeSurfaceBan(RegExp(r'\.showSnackBar\s*\(|\bSnackBar(?:\.\w+)?\s*\('),
       'appBoxKitShowNativeToast()', 'toast / snackbar'),
-  _NativeSurfaceBan(RegExp(r'\bshowModalBottomSheet\s*\('), 'appBoxKitShowNativeSheet()',
+  _NativeSurfaceBan(
+      RegExp(r'\bshowModalBottomSheet\s*(?:<[^>]*?>)?\s*\('),
+      'appBoxKitShowSheet()',
       'bottom sheet'),
+  _NativeSurfaceBan(
+      RegExp(r'\bshowDialog\s*(?:<[^>]*?>)?\s*\('),
+      'appBoxKitShowNativeDialog()',
+      'dialog'),
+  _NativeSurfaceBan(
+      RegExp(
+          r'\bshowCupertinoDialog\s*(?:<[^>]*?>)?\s*\(|\bshowCupertinoModalPopup\s*(?:<[^>]*?>)?\s*\('),
+      'appBoxKitShowNativeDialog() / appBoxKitShowSheet()',
+      'cupertino dialog/popup'),
+  // A raw saveLayer blur in app code is the flutter#175048 hazard and the
+  // per-site washout class: the kit's frosted surface owns the material.
+  _NativeSurfaceBan(RegExp(r'\bBackdropFilter\s*\('), 'AppBoxKitFrostedSurface',
+      'backdrop blur'),
 ];
 
 // True iff `path` is a kit-internal widget/palette/glyph file (the source of

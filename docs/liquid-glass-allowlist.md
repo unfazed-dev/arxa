@@ -76,7 +76,18 @@ product choice.
 **Deselect ladder (if artifacts reappear in a scrollable):** re-demote ONE
 type per device run, WIDEST GLASS FIRST — glass card, then toolbar, then
 search bar / text field, then sliders / switch, then segmented, popup menu,
-split button, button last. Never blanket-demote again — attribution first.
+split button, button last
+
+**Ladder log — step 1 FIRED (2026-08-27, pending device confirmation):**
+in-scroll glass jitter/flicker reported on device (scroll of the gallery
+lists: re-entry flash at the un-headroomed trailing cull boundary + per-frame
+UiKitView compositing). The **glass card** re-demotes inside Scrollables:
+`AppBoxKitGlassCard` resolves the native tier only when
+`Scrollable.maybeOf(context) == null` — in-scroll cards take the frosted
+tier (opaque fill under `opaqueGlass`: zero blur, zero platform-view churn).
+Controls, toolbars, search bars, chrome stay native per ruling 4. Pinned by
+`kit/ui_library/test/kit/widgets/appbox_kit_glass_card_test.dart`. If
+artifacts persist on the next device run, the next rung is the toolbar.. Never blanket-demote again — attribution first.
 
 **Sanctioned exception — app fidelity mode (QF-4, 2026-08-14):** the
 scaffolder's per-platform fidelity map (`flutter | mix | native`, chosen in
@@ -91,15 +102,18 @@ remains the only lawful demotion path — the exception covers scaffold-time
 mode selection, never a live app's rollback. Rulings:
 docs/plans/designer-scaffolder-grill-decisions.md QF-1…QF-4.
 
-### 3. Glass surfaces — native in scroll under ruling 4 (2026-08-13)
-Ruling 4 covers surfaces too: AppBoxKitGlassCard and AppBoxKitNativeToolbar
-render native glass inside scrollables (their in-scroll demotion — which had
-never landed beyond an uncommitted working tree — was dropped in the same
-flip). This knowingly deviates from Apple's named anti-pattern ("don't break
-the glass… keep glass out of the scrolling content layer" — WWDC25 design
-lab) and the vendor README's LiquidGlassContainer-in-lists warning, which is
-exactly why these two sit FIRST on the deselect ladder: if any slab returns,
-the glass card is the first re-demote, the toolbar second.
+### 3. Glass surfaces in scroll — card demoted (step 1), toolbar native (updated 2026-08-27)
+Ruling 4 originally covered surfaces too (2026-08-13): AppBoxKitGlassCard and
+AppBoxKitNativeToolbar rendered native glass inside scrollables (their
+in-scroll demotion — which had never landed beyond an uncommitted working
+tree — was dropped in the same flip). That knowingly deviated from Apple's
+named anti-pattern ("don't break the glass… keep glass out of the scrolling
+content layer" — WWDC25 design lab) and the vendor README's
+LiquidGlassContainer-in-lists warning, which is exactly why these two sat
+FIRST on the deselect ladder. The slab returned: ladder step 1 fired
+2026-08-27 (log above) and AppBoxKitGlassCard now takes the frosted tier
+inside Scrollables. AppBoxKitNativeToolbar stays native in scroll — it is the
+first REMAINING rung if a device run shows toolbar artifacts.
 
 **Composition rules (learned on device, 2026-08-12 evening):**
 1. **No saveLayer effect may wrap a subtree that may host platform views** —
@@ -485,6 +499,33 @@ the glass card is the first re-demote, the toolbar second.
     whole-line comments before matching, and the opt-out alone is read from
     raw source. **A rule that can be silenced by writing about it is not
     enforcement.**
+
+13a. **The opaque law lives IN the primitive now, and luminance adapts
+     globally (2026-08-27, sixth pass).** Two of this law's per-site
+     disciplines are codified where they can no longer be missed:
+     (a) `AppBoxKitFrostedSurface` takes its no-saveLayer branch
+     AUTOMATICALLY for any fully opaque tint — the rule-13 rationale ("a
+     fully opaque fill makes a backdrop blur invisible anyway") is now the
+     primitive's own behavior, so a future surface cannot forget
+     `platformViewSafe: true`. Opacity is a discrete mode switch: never
+     animate tint alpha across 1.0. (b) Glass-styled native buttons
+     demote to the filled-gray idiom (on-surface monochrome ink)
+     automatically on a bright OPAQUE base — the 2026-08-16 washout
+     remedy, globalized. The mechanism is `AppBoxKitGlassLuminance`: every
+     frosted surface publishes `opaque` + `brightness` (one publisher, N
+     consumers), and absent a scope the theme's scaffold background — an
+     opaque base by definition — decides. Dark opaque surfaces keep glass
+     (the washout was bright-base only); `prominentGlass` never demotes
+     (the CTA idiom reads on bright); `luminanceAdaptive: false` is the
+     per-widget escape hatch. Pinned by appbox_kit_glass_luminance_test +
+     the frosted-surface scope pins.
+     **Modal depth is auto-bracketed for every route** — same pass:
+     `CNTabBarRouteObserver._isAnyModal` matches every `PopupRoute`, so a
+     raw `showDialog` self-brackets wherever the observer is registered
+     (root + nested tab routers via `inheritNavigatorObservers`). The
+     kit's explicit `markAnyModalActive` calls stay as defense-in-depth
+     for the non-route case (Overlay entries). Pinned by
+     appbox_kit_native_modal_observer_test.
 
 13. **Glass surfaces that CONTAIN content are opaque-based by default — the
     material reads as glass, the base does not see through (2026-08-14,

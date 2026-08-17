@@ -309,9 +309,17 @@ class _KitAnimatedTabStackState extends State<AppBoxKitAnimatedTabStack>
               else if (_animates)
                 Offstage(
                   offstage: i != _currentIndex,
-                  child: KeyedSubtree(
-                    key: _childKeys[i],
-                    child: widget.children[i],
+                  // Hidden tabs stay mounted but must not TICK: Offstage only
+                  // skips paint — a perpetual animator in a covered tab would
+                  // keep scheduling frames nobody sees (the showcase
+                  // idle-warmth class). The exit slot below stays unwrapped
+                  // on purpose: the leaving tab is still on screen mid-run.
+                  child: TickerMode(
+                    enabled: i == _currentIndex,
+                    child: KeyedSubtree(
+                      key: _childKeys[i],
+                      child: widget.children[i],
+                    ),
                   ),
                 )
               else
@@ -373,9 +381,16 @@ class _KitAnimatedTabStackState extends State<AppBoxKitAnimatedTabStack>
                           clipper: i == _currentIndex
                               ? null
                               : const _HiddenTabClipper(),
-                          child: KeyedSubtree(
-                            key: _childKeys[i],
-                            child: widget.children[i],
+                          // Same ticker mute as the Offstage branch: the
+                          // alpha/translate idiom keeps the hidden tab
+                          // PAINTING (platform-view containment) — it must
+                          // not also keep ticking.
+                          child: TickerMode(
+                            enabled: i == _currentIndex,
+                            child: KeyedSubtree(
+                              key: _childKeys[i],
+                              child: widget.children[i],
+                            ),
                           ),
                         ),
                       ),

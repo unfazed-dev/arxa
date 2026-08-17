@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:appbox_kit_ui_library/widgets/appbox_kit_frosted_surface.dart';
+import 'package:appbox_kit_ui_library/widgets/appbox_kit_glass_luminance.dart';
 
 /// AppBoxKitFrostedSurface tests — the ADR 0010 content-layer frosted tier:
 /// BackdropFilter blur + saturation, theme-derived tint, rim highlight.
@@ -76,8 +77,74 @@ void main() {
   testWidgets(
       'kit.ui-library.frosted-surface — tint override wins over the theme-derived default',
       (tester) async {
-    await tester.pumpWidget(host(
-        const AppBoxKitFrostedSurface(tint: Colors.red, child: Text('x'))));
-    expect(surfaceDecoration(tester).color, Colors.red);
+    // Translucent: a fully opaque tint now takes the no-saveLayer branch
+    // (the auto-opaque law below), so the blurred branch's override pin
+    // uses a translucent tint.
+    final tint = Colors.red.withValues(alpha: 0.5);
+    await tester.pumpWidget(
+        host(AppBoxKitFrostedSurface(tint: tint, child: const Text('x'))));
+    expect(surfaceDecoration(tester).color, tint);
+  });
+
+  testWidgets(
+      'kit.ui-library.frosted-surface — a fully opaque tint takes the no-saveLayer branch automatically',
+      (tester) async {
+    // The auto-opaque law: a fully opaque fill makes the backdrop blur
+    // invisible anyway (rule 13), so an opaque tint alone drops the
+    // BackdropFilter — no platformViewSafe flag required. Opacity is a
+    // discrete mode switch, not an interpolation: callers must not
+    // animate tint alpha across 1.0.
+    await tester.pumpWidget(host(const AppBoxKitFrostedSurface(
+      tint: Color(0xFFF5F5F5),
+      child: Text('x'),
+    )));
+
+    expect(find.byType(BackdropFilter), findsNothing,
+        reason: 'blur under a fully opaque fill is invisible work and a '
+            'saveLayer hazard over platform views (flutter#175048)');
+    final container = tester.widget<Container>(find
+        .ancestor(of: find.text('x'), matching: find.byType(Container))
+        .first);
+    expect((container.decoration! as BoxDecoration).color,
+        const Color(0xFFF5F5F5));
+  });
+
+  testWidgets(
+      'kit.ui-library.frosted-surface — the opaque branch publishes an opaque luminance scope',
+      (tester) async {
+    AppBoxKitGlassLuminance? seen;
+    await tester.pumpWidget(host(AppBoxKitFrostedSurface(
+      platformViewSafe: true,
+      child: Builder(builder: (context) {
+        seen = AppBoxKitGlassLuminance.maybeOf(context);
+        return const SizedBox();
+      }),
+    )));
+
+    expect(seen, isNotNull,
+        reason: 'every frosted surface declares its luminance so native '
+            'glass controls adapt automatically');
+    expect(seen!.opaque, isTrue);
+    expect(seen!.brightness, Brightness.light,
+        reason: 'the light-theme card token at full alpha is a bright base');
+    expect(seen!.demotesGlass, isTrue);
+  });
+
+  testWidgets(
+      'kit.ui-library.frosted-surface — the blurred branch publishes a translucent scope (never demotes)',
+      (tester) async {
+    AppBoxKitGlassLuminance? seen;
+    await tester.pumpWidget(host(AppBoxKitFrostedSurface(
+      child: Builder(builder: (context) {
+        seen = AppBoxKitGlassLuminance.maybeOf(context);
+        return const SizedBox();
+      }),
+    )));
+
+    expect(seen, isNotNull);
+    expect(seen!.opaque, isFalse);
+    expect(seen!.demotesGlass, isFalse,
+        reason: 'a blurred glass surface is not the bright opaque base the '
+            'washout remedy targets');
   });
 }
