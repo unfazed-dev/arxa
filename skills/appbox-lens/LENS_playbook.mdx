@@ -11,7 +11,7 @@
 
 ## Table of contents
 
-0. Header & TOC · 1. Overview & role · 2. Inputs · 3. Procedure · 4. Outputs · 5. Rules · 6. References
+0. Header & TOC · 1. Overview & role · 2. Inputs · 3. Procedure · 4. Outputs · 5. Rules · 6. Behavior parity captures · 7. References
 
 </Callout>
 
@@ -34,6 +34,45 @@ Evidence PNGs at `designs/<design>/evidence/<topic>/<surface>-<width>.png` (sema
 ### Rules
 
 Console/page errors always fail, regardless of pixel match — a surface with a runtime bug is red even when it looks right. Evidence claiming "responsive" covers every width in the active ladder. Read the PNG back before declaring done: a green exit with a blank canvas is a fail. Goldens are frozen approvals — re-capture only when the design itself changed, never to make a red check green. Every invocation owns its Chrome, so parallel slices need no port/profile juggling and the user's browser is never touched. A missing verb means extending `lens.dart`/`cdp.dart`, never reviving archived tooling. Two recorded partials (not gaps): `adb_shot` latin1 round-trip and WAAPI-only flipbook recovery, both carrying `kimitail:` upgrade notes.
+
+### Behavior parity captures
+
+Visual section parity certifies what a screenshot can hold and misses everything that crosses sections: input pipelines (wheel/touch/pointer/momentum), boot gating matrices (viewport band × touch × audit-browser × sessionStorage × load type), global chrome (cursor followers, SPA transitions, loader scope), and session flags. A behavior audit therefore ships artifacts the golden pass never produces — the gating matrix itself (a table: viewport band × touch × storage × load type → expected engine state), synthetic-input probes, and source ports for references that are unobservable by design (below). Proven example set: the energize engagement ledgers at `landing/design/energize-landing/evidence/conformance/{cursor,transitions,scroll}/VERIFY.txt`.
+
+**The expect readout protocol.** `--expect=<js>` is evaluated after settle (promises awaited) and `true` is the only pass — anything else fails with `expect not truthy: <expr> (got <value>)` and exit 1. Invert that into the instrument: write the probe to RETURN the measurement object (never `true`), run the check, and the `(got {...})` tail on stderr is the readout. The same expression with `&& true` appended is the gate form.
+
+```sh
+# readout mode — exit 1 + the "(got {...})" tail IS the measurement
+appbox lens check http://localhost:4173/ out.png 1280 800 3500 --expect="(() => {
+  const dot = document.querySelector('#cursor .cursor__circle');
+  return { cls: dot.className, transform: getComputedStyle(dot).transform,
+           label: getComputedStyle(dot, '::before').content }; })()"
+```
+
+**Synthetic wheel/touch — the scroll-engine discriminator.** Events dispatched from JS (`new WheelEvent('wheel', {deltaY: 500})`) never scroll natively — only trusted CDP input does — so the page moves ONLY if a JS scroll engine listens. Dispatch, sample `scrollY` at time slices, do the arithmetic: settled distance == deltaY × wheel factor proves the engine live (a proven run eased 188 → 376 → 400, exactly 500×0.8); flat 0 means no engine — or a boot gate that never armed, which is itself the finding.
+
+```js
+(() => { const y0 = scrollY;
+  dispatchEvent(new WheelEvent('wheel', {deltaY: 500, cancelable: true}));
+  return new Promise(r => setTimeout(() => r({ d80: scrollY - y0,
+    d380: scrollY - y0, settled: scrollY - y0 }), 1000)); })()
+```
+
+Touch asserts by multiplier the same way — a synthetic 50px touchmove eases toward 50×2.5=125 (73px at a 120ms sample is mid-ease, not a bug).
+
+**Hover-state parking.** Drive hover machines with synthetic `mouseenter`/`mouseleave`/`click` on the element, assert the state by classList delta + `getComputedStyle(el, '::before').content` + `transform`, then PARK — leave the state armed and take the golden. Exact follower geometry comes from the animation runtime (`gsap.getProperty(dot, 'x')` equals the parked coordinates), not from pixels; vision positions are approximate.
+
+**SPA transition probes.** Prove no reload with a window flag (set `window.__probe = 1`, click the link, the flag surviving commit = SPA); sample mid-flight choreography inside the animation window (`.transition-container` clip-path at ~250ms of a 0.7s wipe interpolates the inset endpoints — e.g. inset(33.99% 11.33% 5.66% 10.95%) between inset(90% 30% 15% 29%) and 0); assert `pushState` pathname, title swap, wrapper swap (old hero gone), component re-init via the pageReady contract, and the popstate round-trip. The negative assertion matters as much: the curtain NEVER mounts during a transition.
+
+**Boot / curtain t0–t1.** Sample at t0 (curtain mounted, page frozen) and t1 (released) — one promise returning both samples, or two expects against the same load. Scope is the assertion: full-load curtain on ALL pages, no session skip (hard reload clears storage), SPA transitions suppress it; only the header fade carries a session flag. Write the whole gating matrix into the ledger, not just the two timings.
+
+**Live touch-path simulation.** Lens Chrome is desktop (`maxTouchPoints 0`), so touch-gated code never boots. Stub the feature detect (`window.ontouchstart = null` — property presence is what most detects read), then dynamically `import()` the module and call an unguarded export (an init function with no internal touch gate) to run the touch branch live — proven unlocking the touch lerp/multiplier config and the `--vh` boot lock in one page.
+
+**The reference-audit-gating law.** Production sites self-disable under audit browsers — the coffee-tech reference sets `__cftIsAuditBrowser` and its scroll engine is undefined under the lens while the shipped source plainly contains it. The live reference is unobservable BY DESIGN: never conclude "no engine" from a headless observation. Protocol: save the bundle, byte-diff the live copy against the saved one (identical → the saved source IS the live truth), port verbatim, then measure the replica with the probes above.
+
+**`lens anim` crash workaround.** The easing fit in `lens anim` goes non-finite (Infinity) on scroll-driven surfaces and kills the CLI mid-audit. Don't debug it inside the audit loop — substitute `lens record` (video), `lens burst` (frame series), `lens states`, and expect readouts sampling the animated property at time slices.
+
+**Vision asserts on parked captures.** What computed style cannot prove — a label a human would actually see, overall composition — is asserted with the vision tools on the PARKED capture, always by ABSOLUTE path. Parked pixels + runtime readout + source port is the full evidence chain; any one alone is a story.
 
 <!-- kb:begin -->
 ### References

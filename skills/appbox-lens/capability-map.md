@@ -54,6 +54,8 @@ landed; the `tool/lens_*.dart` one-off drivers remain for ad-hoc scripting.
 | `site_merge` | `mergeDesignSystem` (`lens/crawl.dart`); core `_merge.py` | ported |
 | `design_golden` | `runLensGate` (`lens.dart`) | ported |
 
+Behavior-parity probing (expect readouts, synthetic wheel/touch input, hover parking, SPA/boot gates) is composed from these ported web verbs — operator patterns: [`LENS_playbook.mdx`](LENS_playbook.mdx) § Behavior parity captures.
+
 ## Web block — dropped
 
 | probe-runner verb | reason |
