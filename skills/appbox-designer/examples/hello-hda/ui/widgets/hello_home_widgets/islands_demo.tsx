@@ -33,4 +33,4 @@ const IslandsDemo: FC<IslandsDemoProps> = ({ rung, translate }) => {
   );
 };
 
-export default IslandsDemo;
+export { IslandsDemo };

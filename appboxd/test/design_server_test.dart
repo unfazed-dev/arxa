@@ -437,11 +437,11 @@ void main() {
     });
 
     test('12: hot reload picks up an edit (same port)', () async {
-      // `class="muted"` lives in the sections file since the five-file-law
-      // migration (the base view mounts factor variants; the body — and its
-      // literals — are defined once in home_view.sections.tsx).
-      final view = File(p.join(
-          tempDir, 'ui', 'views', 'main_shell', 'home', 'home_view.sections.tsx'));
+      // `class="muted"` lives in the composition widget since W1 (composition
+      // files left the views; the body — and its literals — are defined once
+      // in the widget library's home_body.tsx, invoked by every rung).
+      final view = File(p.join(tempDir, 'ui', 'widgets', 'hello_home_widgets',
+          'home_body.tsx'));
       final original = view.readAsStringSync();
       // Edit a literal that actually reaches the DOM (not l10n text). The
       // Txt widget forwards name/class/id only — an unknown prop would be

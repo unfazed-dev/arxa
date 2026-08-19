@@ -42,4 +42,4 @@ const ListRow: FC<ListRowProps> = ({ row }) => {
   );
 };
 
-export default ListRow;
+export { ListRow };

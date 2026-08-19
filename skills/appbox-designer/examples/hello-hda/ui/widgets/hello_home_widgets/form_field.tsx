@@ -86,4 +86,4 @@ const FormField: FC<FormFieldProps> = ({ field, rung }) => {
   );
 };
 
-export default FormField;
+export { FormField };
