@@ -15,12 +15,14 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:isolate';
 import 'dart:typed_data';
 
 import 'package:appboxd/cdp.dart';
 import 'package:appboxd/crypto_aead.dart' as crypto;
 import 'package:appboxd/design_server/l10n.dart' show parseArb;
-import 'package:appboxd/design_tools.dart' show generateRenderTsx;
+import 'package:appboxd/design_tools.dart'
+    show generateRenderTsx, scriptRepoRoot;
 import 'package:path/path.dart' as p;
 
 /// A localized SEED file: `<...>models/<x>_model/<x>_seed.<locale>.json`,
@@ -286,10 +288,19 @@ List<File> _walk(Directory d) => d
     .where((f) => !f.path.contains(RegExp(r'[/\\](node_modules|\.git)([/\\]|$)')))
     .toList();
 
-/// Walk up from [from] (or CWD) to find `skills/appbox-designer/runtime/node_modules`.
-/// This is where hono/jsx lives — esbuild needs it to bundle the TSX render
-/// module.
+/// Find `skills/appbox-designer/runtime/node_modules` — where hono/jsx
+/// lives; esbuild needs it to bundle the TSX render module.
+///
+/// Anchor 1 is the executing checkout ([scriptRepoRoot]) — cwd-independent
+/// (see [appboxdPackageDir] for why the CWD walk is not enough). Anchor 2 is
+/// the original walk up from [from], kept for in-repo shells.
 String? _findNodeModulesDir([String? from]) {
+  final repo = scriptRepoRoot();
+  if (repo != null) {
+    final c = p.join(
+        repo, 'skills', 'appbox-designer', 'runtime', 'node_modules');
+    if (Directory(c).existsSync()) return c;
+  }
   var dir = Directory(from ?? Directory.current.path);
   for (var i = 0; i < 12; i++) {
     final candidate =
@@ -1226,10 +1237,49 @@ class _ChromeHandle {
   }
 }
 
+/// The appboxd package root (…/app-box/appboxd), resolved through the
+/// RUNNING isolate's package config — the cwd-independent anchor.
+///
+/// Skills invoke `appbox` from wherever the engagement lives: a client
+/// checkout, ~/.appbox, anywhere. The cwd walks in this file only find the
+/// repo when cwd is inside it; from `clients/<name>` the walk goes
+/// client → clients → … → / and never touches app-box, so `design serve`
+/// closed its socket with a StateError before serving anything. The package
+/// config of the script the wrapper execs (`dart run …/appboxd/bin/appbox.dart`)
+/// points at the real checkout from ANY cwd.
+///
+/// Null when the package config cannot resolve (an AOT snapshot with no
+/// package info, say) — callers must fall back to their cwd walk.
+String? appboxdPackageDir() {
+  Uri? uri;
+  try {
+    uri = Isolate.resolvePackageUriSync(Uri.parse(
+        'package:appboxd/design_server/worker_assets/worker_page.html'));
+  } catch (_) {
+    return null;
+  }
+  if (uri == null) return null;
+  // …/appboxd/lib/design_server/worker_assets/worker_page.html → …/appboxd
+  var dir = File.fromUri(uri).parent; // worker_assets
+  for (var i = 0; i < 3; i++) {
+    dir = dir.parent; // design_server → lib → appboxd
+  }
+  return dir.existsSync() ? dir.path : null;
+}
+
 /// Locate the vendored worker assets (worker_page.html + shim),
-/// bundled inside the appboxd package. Walks up from [from] to find
-/// `appboxd/pubspec.yaml`.
+/// bundled inside the appboxd package.
+///
+/// Anchor 1 is the package itself ([appboxdPackageDir]) — cwd-independent.
+/// Anchor 2 is the original walk up from [from] looking for
+/// `appboxd/pubspec.yaml`, kept for shells where no package config exists
+/// but cwd sits inside the repo.
 String? findWorkerAssetsDir([String? from]) {
+  final pkg = appboxdPackageDir();
+  if (pkg != null) {
+    final assets = p.join(pkg, 'lib', 'design_server', 'worker_assets');
+    if (File(p.join(assets, 'worker_page.html')).existsSync()) return assets;
+  }
   var dir = Directory(from ?? Directory.current.path);
   for (var i = 0; i < 12; i++) {
     final candidate = File(p.join(dir.path, 'appboxd', 'pubspec.yaml'));

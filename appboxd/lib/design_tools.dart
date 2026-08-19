@@ -1514,14 +1514,19 @@ DoctorReport doctorCheck({Iterable<DoctorRow>? probes, String? runtimeDir}) {
 /// from-scratch project must not make doctor report the checkout's own
 /// committed runtime as missing).
 String skillRuntimeDir() =>
-    p.join(_findRepoRoot() ?? _scriptRepoRoot() ?? Directory.current.path,
+    p.join(_findRepoRoot() ?? scriptRepoRoot() ?? Directory.current.path,
         'skills', 'appbox-designer', 'runtime');
 
 /// Locates the appbox checkout that is executing, wherever the user's CWD
 /// sits. Two anchors, most-reliable first: this library's own package URI
 /// (resolves under both `dart run` and `dart test`), then the running
 /// script's file. Walk-up stops at the repo marker config/appbox.config.json.
-String? _scriptRepoRoot() {
+///
+/// Public because the design server's resource resolvers (worker assets,
+/// runtime vendor, icons, node_modules) share the same requirement: skills
+/// invoke `appbox` from a client checkout or ~/.appbox, and a CWD walk never
+/// reaches app-box from there.
+String? scriptRepoRoot() {
   for (final anchor in <Uri?>[
     () {
       try {

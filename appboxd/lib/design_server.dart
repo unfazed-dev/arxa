@@ -25,6 +25,7 @@ import 'dart:io';
 
 import 'package:appboxd/design_server/l10n.dart';
 import 'package:appboxd/design_server/worker.dart';
+import 'package:appboxd/design_tools.dart' show scriptRepoRoot;
 import 'package:appboxd/project.dart';
 import 'package:path/path.dart' as p;
 
@@ -1380,6 +1381,16 @@ int serveRegistryFileCount() =>
     serveRegistryDir.existsSync() ? serveRegistryDir.listSync().length : 0;
 
 String? _findRuntimeVendorDir() {
+  // Anchor 1 — the checkout that is executing ([scriptRepoRoot]): the vendored
+  // runtime lives at <repo>/skills/…, found from ANY cwd. A pub-cache
+  // deployment has no repo marker, the derived path won't exist, and the
+  // walk below applies.
+  final repo = scriptRepoRoot();
+  if (repo != null) {
+    final c = p.join(
+        repo, 'skills', 'appbox-designer', 'runtime', 'vendor');
+    if (Directory(c).existsSync()) return c;
+  }
   var dir = Directory.current;
   for (var i = 0; i < 12; i++) {
     final c =

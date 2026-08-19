@@ -10,7 +10,8 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:appboxd/design_server.dart';
-import 'package:appboxd/design_server/worker.dart' show bundleBuildCount;
+import 'package:appboxd/design_server/worker.dart'
+    show bundleBuildCount, findWorkerAssetsDir;
 import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
 
@@ -138,6 +139,28 @@ void main() {
       expect(r, isNotNull);
       expect(r!.tried.where((c) => c.endsWith('appbox-studio')).length,
           greaterThan(2));
+    });
+  });
+
+  // ── serve from any cwd ─────────────────────────────────────────────────
+  // Skills invoke `appbox` from wherever the engagement happens to be — a
+  // client checkout, ~/.appbox — and the cwd-walk resolvers below only ever
+  // find the repo when cwd is INSIDE it. From a client repo the walk goes
+  // client → clients → … → / and never touches app-box, so `design serve`
+  // closed its socket with StateError before serving anything (probes got
+  // connection refused, not a 404). The package config of the RUNNING
+  // script is the one cwd-independent anchor every invocation has.
+  group('resource anchors (serve from any cwd)', () {
+    test('worker assets resolve from a cwd outside the repo', () async {
+      // A temp dir whose ancestor chain provably contains no appboxd/.
+      final foreign = await Directory.systemTemp.createTemp('foreign_cwd_');
+      addTearDown(() => foreign.deleteSync(recursive: true));
+
+      final assets = findWorkerAssetsDir(foreign.path);
+      expect(assets, isNotNull,
+          reason: 'design serve must boot from any cwd (client repos, '
+              '~/.appbox) — the cwd walk alone never reaches app-box');
+      expect(File(p.join(assets!, 'worker_page.html')).existsSync(), isTrue);
     });
   });
 
