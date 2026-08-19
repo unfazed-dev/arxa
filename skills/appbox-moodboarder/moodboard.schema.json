@@ -36,7 +36,43 @@
     "tokenSynthesis": {
       "type": "object",
       "additionalProperties": true,
-      "$comment": "The cross-pollinated starting direction (palette/type/radius/elevation/motion strings) authored at selection time. Carried through emitMoodboard verbatim; the commission renders it as the token layer's synthesis. The designer owns the final choice."
+      "$comment": "The cross-pollinated starting direction (palette/type/radius/elevation/motion strings) authored at selection time. Carried through emitMoodboard verbatim. LEGACY spine: on new-style records (suitors present) the chosen suitor supersedes it as the commission's token layer."
+    },
+    "suitors": {
+      "type": "array",
+      "items": { "$ref": "#/definitions/suitor" },
+      "$comment": "The direction audition (new-style records): exactly three synthesized candidate directions labeled A/B/C, built from the SELECTED references only. Recorded after the selection gate is approved; carried through emitMoodboard verbatim; validated by appbox moodboard check."
+    },
+    "suitorChoice": {
+      "type": "object",
+      "required": ["primary"],
+      "properties": {
+        "primary": {
+          "type": "string",
+          "enum": ["A", "B", "C"],
+          "$comment": "The human pick at the audition gate — one primary suitor."
+        },
+        "remix": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["attribute", "from"],
+            "properties": {
+              "attribute": {
+                "type": "string",
+                "enum": ["palette", "type", "radius", "motion", "layout-register"],
+                "$comment": "The closed remix vocabulary — attribute-scoped amendments only; a clause outside it is a fourth, hidden suitor."
+              },
+              "from": {
+                "type": "string",
+                "enum": ["A", "B", "C"],
+                "$comment": "The sibling suitor the amended attribute comes from — never the primary itself."
+              }
+            }
+          }
+        }
+      },
+      "$comment": "The recorded answer of the second human gate. appbox design commission refuses to compile a new-style record without it, and renders primary + remixes as the mandate's token spine."
     },
     "selectionStatus": {
       "type": "string",
@@ -115,10 +151,66 @@
           "additionalProperties": { "type": "string" },
           "$comment": "Style tokens EXTRACTED from this reference at selection time: palette (hexes), type (register + pairing), radius, motion (driver). Present on SELECTED references — the fidelity-ladder upgrade over screenshots-as-vibes. Rides the reference spread through the emitter."
         },
+        "evidence": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/evidence" },
+          "$comment": "Lens artifacts backing the scores: on new-style records every locked-criterion score >= 3 must cite an entry naming that criterion — capture or measure the behavior, or score <= 2."
+        },
         "provenance": { "$ref": "#/definitions/provenance" }
       },
       "additionalProperties": true,
       "$comment": "OPEN on purpose. appbox-moodboarder owns this document; intake republishes it with ids, src paths and counts added. A closed set would delete a field the owning skill legitimately added — task #29's failure mode."
+    },
+    "suitor": {
+      "type": "object",
+      "required": ["id", "name", "spread", "leads", "tokens", "provenance"],
+      "properties": {
+        "id": { "type": "string", "enum": ["A", "B", "C"] },
+        "name": { "type": "string" },
+        "spread": {
+          "type": "string",
+          "$comment": "The register this direction owns that the other two do not. Three clones is a failed audition surfaced as a finding, not a completed gate."
+        },
+        "leads": {
+          "type": "array",
+          "items": { "type": "string" },
+          "$comment": "'<boardId>/<reference name>' pointers, each resolving to a SELECTED reference — suitors synthesize from the chosen material only."
+        },
+        "tokens": {
+          "type": "object",
+          "additionalProperties": { "type": "string" },
+          "$comment": "The direction's token set (palette/type/radius/motion, at least one) — lens-measured where the reference is publicly reachable."
+        },
+        "provenance": {
+          "type": "string",
+          "enum": ["measured", "judged"],
+          "$comment": "measured = captured (extractTokens) or watched (two settle states / burst), with evidence entries; judged = memory-judgment, graded and visible as such. Measured beats judged beats remembered."
+        },
+        "evidence": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/evidence" }
+        }
+      },
+      "additionalProperties": true
+    },
+    "evidence": {
+      "type": "object",
+      "required": ["kind", "file"],
+      "properties": {
+        "kind": {
+          "type": "string",
+          "$comment": "tokens (extractTokens output) | motion (two settle states / burst frames) | capture (a plain shot backing a claim)."
+        },
+        "file": {
+          "type": "string",
+          "$comment": "Path RELATIVE to <app-dir>/moodboard/ (e.g. 'evidence/polestar__two-settles.png'). The check resolves it on disk; a citation that does not resolve is a lie the gate catches."
+        },
+        "criterion": {
+          "type": "string",
+          "$comment": "The rubric criterion this artifact proves — required for locked-criterion proof on references; suitors' own evidence carries no criterion."
+        }
+      },
+      "additionalProperties": true
     },
     "shot": {
       "type": "object",

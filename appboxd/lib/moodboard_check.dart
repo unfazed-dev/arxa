@@ -16,6 +16,19 @@
 //               least one SELECTED reference scoring >= 3 on it
 //   selection   selectionStatus 'approved' implies >= 1 selected reference
 //               on every board that has references
+//   suitors     NEW-STYLE records only (non-empty 'suitors'): exactly three
+//               directions labeled A/B/C, leads resolving to SELECTED
+//               references, measured suitors carrying evidence that resolves
+//               on disk, suitorChoice ordered after selection approval and
+//               remixing only the closed attribute vocabulary. Records
+//               without suitors — everything recorded before the direction
+//               audition landed, energize included — are validated by the
+//               law of their day: the gate applies from its landing, never
+//               retroactively.
+//   lockedProof NEW-STYLE records only: a score >= 3 on a LOCKED criterion
+//               must cite lens evidence naming that criterion. A reference
+//               you cannot capture or measure scores <= 2 on the lock — the
+//               cap is the proof requirement's shadow, not a second rule.
 // A record with no boards (intake ran before moodboarding) is green-empty —
 // that is a pipeline position, not a corruption.
 
@@ -54,7 +67,14 @@ int moodboardCheckMain(List<String> args) {
     stderr.writeln('appbox moodboard check: cannot read moodboard.json ($e)');
     return 2;
   }
-  final failures = checkMoodboardRecord(rec, floor: floor);
+  // Evidence files live under the moodboard/ stage folder — the sibling of
+  // the intake dir this check was pointed at (<app-dir>/intake ->
+  // <app-dir>/moodboard). Legacy records carry no evidence fields, so a
+  // missing folder harms nothing; a new-style record citing files that do
+  // not resolve is exactly the lie this path exists to catch.
+  final moodboardDir = '${Directory(dir).parent.path}/moodboard';
+  final failures =
+      checkMoodboardRecord(rec, floor: floor, moodboardDir: moodboardDir);
   if (failures.isEmpty) {
     final boards = (rec['boards'] as List? ?? const []).length;
     stdout.writeln('moodboard check: ok ($boards boards, floor $floor)');
@@ -67,7 +87,12 @@ int moodboardCheckMain(List<String> args) {
 }
 
 /// Pure check: list of failure strings (empty = green). Exposed for tests.
-List<String> checkMoodboardRecord(Map<String, dynamic> rec, {double floor = 3.0}) {
+///
+/// [moodboardDir] is the `<app-dir>/moodboard` stage folder evidence
+/// files resolve against; null skips file-resolution checks (shape-only
+/// validation).
+List<String> checkMoodboardRecord(Map<String, dynamic> rec,
+    {double floor = 3.0, String? moodboardDir}) {
   final failures = <String>[];
   final boards = (rec['boards'] as List? ?? const []).whereType<Map>().toList();
   if (boards.isEmpty) return failures; // green-empty (pre-moodboard record)
@@ -165,6 +190,210 @@ List<String> checkMoodboardRecord(Map<String, dynamic> rec, {double floor = 3.0}
     } else if (approved && !fed) {
       failures.add('locked criterion "$id" has no SELECTED reference scoring >= 3 — '
           'an intake-locked requirement is about to be dropped again');
+    }
+  }
+
+  // ---- suitors (the direction audition — new-style records only)
+  final suitors = (rec['suitors'] as List? ?? const []).whereType<Map>().toList();
+  final hasSuitors = suitors.isNotEmpty;
+  final rawChoice = rec['suitorChoice'];
+  if (rawChoice != null && rawChoice is! Map) {
+    failures.add('suitorChoice must be an object {primary, remix}');
+  }
+  final choice = rawChoice is Map ? rawChoice.cast<String, dynamic>() : null;
+  if (choice != null && !hasSuitors) {
+    failures.add('suitorChoice present but no suitors recorded — a choice '
+        'without an audition is the unauditioned synthesis this gate exists '
+        'to prevent');
+  }
+  if (hasSuitors) {
+    failures.addAll(
+        _checkSuitors(suitors, boards: boards, moodboardDir: moodboardDir));
+    if (choice != null) {
+      failures.addAll(
+          _checkSuitorChoice(choice, suitors, selectionApproved: approved));
+    }
+    // The locked-proof law rides the same new-style marker: under the old
+    // record a hallucinated 5 starved nobody, under an audition it parades
+    // as measured direction it never had.
+    failures.addAll(_checkLockedProof(boards, locked, moodboardDir: moodboardDir));
+  }
+  return failures;
+}
+
+/// The closed remix vocabulary — attribute-scoped amendments only. A clause
+/// outside this set is a fourth, hidden suitor wearing an amendment's clothes.
+const suitorRemixAttributes = {
+  'palette',
+  'type',
+  'radius',
+  'motion',
+  'layout-register',
+};
+
+List<String> _checkSuitors(List<Map> suitors,
+    {required List<Map> boards, String? moodboardDir}) {
+  final failures = <String>[];
+  if (suitors.length != 3) {
+    failures.add('suitors: exactly 3 directions are auditioned (A/B/C), got '
+        '${suitors.length} — 2 is a coin flip, 5 is another moodboard');
+  }
+  final ids = suitors.map((s) => s['id']).whereType<String>().toSet();
+  if (ids.length != suitors.length ||
+      !ids.containsAll(const ['A', 'B', 'C'])) {
+    failures
+        .add('suitors: ids must be exactly A, B, C — got {${ids.join(', ')}}');
+  }
+  // Suitors lead only with references the human already selected — the
+  // audition is built from the chosen material, never the boards' leftovers.
+  final selectedRefs = <String>{};
+  for (final b in boards) {
+    final boardId = (b['id'] ?? '?').toString();
+    for (final r in (b['references'] as List? ?? const []).whereType<Map>()) {
+      if (r['selected'] == true) {
+        selectedRefs.add('$boardId/${r['name'] ?? r['url'] ?? '?'}');
+      }
+    }
+  }
+  for (final s in suitors) {
+    final suitor = s.cast<String, dynamic>();
+    final id = suitor['id'] ?? '?';
+    if (suitor['name'] is! String || (suitor['name'] as String).isEmpty) {
+      failures.add('suitor $id: no name');
+    }
+    final spread = suitor['spread'];
+    if (spread is! String || spread.isEmpty) {
+      failures.add('suitor $id: no spread statement — each direction must '
+          'name the register it owns that the others do not (three clones is '
+          'a finding to surface, not an audition)');
+    }
+    final leads = (suitor['leads'] as List? ?? const []).whereType<String>();
+    if (leads.isEmpty) {
+      failures.add('suitor $id: no lead references');
+    }
+    for (final lead in leads) {
+      if (!selectedRefs.contains(lead)) {
+        failures.add('suitor $id: lead "$lead" is not a selected reference '
+            '(format <boardId>/<reference name>; suitors synthesize from the '
+            'SELECTED set only)');
+      }
+    }
+    final tokens = suitor['tokens'];
+    final hasToken = tokens is Map &&
+        const ['palette', 'type', 'radius', 'motion'].any(
+            (k) => tokens[k] is String && (tokens[k] as String).isNotEmpty);
+    if (!hasToken) {
+      failures.add('suitor $id: no tokens — a direction without a token set '
+          '(palette/type/radius/motion, at least one) cannot be auditioned');
+    }
+    failures.addAll(_checkEvidence(suitor['evidence'],
+        owner: 'suitor $id', moodboardDir: moodboardDir));
+    final provenance = suitor['provenance'];
+    if (provenance is! String ||
+        !['measured', 'judged'].contains(provenance)) {
+      failures.add('suitor $id: provenance must be measured|judged — a '
+          'memory-judgment direction must say so, not wear measured clothes');
+    } else if (provenance == 'measured' &&
+        (suitor['evidence'] as List? ?? const []).whereType<Map>().isEmpty) {
+      failures.add('suitor $id: provenance measured but no evidence — '
+          'measured means captured (extractTokens) or watched (two settle '
+          'states / burst frames)');
+    }
+  }
+  return failures;
+}
+
+List<String> _checkSuitorChoice(
+    Map<String, dynamic> choice, List<Map> suitors,
+    {required bool selectionApproved}) {
+  final failures = <String>[];
+  if (!selectionApproved) {
+    failures.add('suitorChoice recorded while selectionStatus is not '
+        'approved — the audition comes AFTER the reference selection gate');
+  }
+  final ids = suitors.map((s) => s['id']).whereType<String>().toSet();
+  final primary = choice['primary'];
+  if (primary is! String || !ids.contains(primary)) {
+    failures.add('suitorChoice.primary "$primary" is not one of the '
+        'auditioned suitors ({${ids.join(', ')}})');
+  }
+  for (final r in (choice['remix'] as List? ?? const []).whereType<Map>()) {
+    final remix = r.cast<String, dynamic>();
+    final attribute = remix['attribute'];
+    if (attribute is! String || !suitorRemixAttributes.contains(attribute)) {
+      failures.add('suitorChoice.remix attribute "$attribute" outside the '
+          'closed vocabulary (${suitorRemixAttributes.join(', ')})');
+    }
+    final from = remix['from'];
+    if (from is! String || !ids.contains(from)) {
+      failures.add('suitorChoice.remix "$attribute" from "$from" — not an '
+          'auditioned suitor');
+    } else if (primary is String && from == primary) {
+      failures.add('suitorChoice.remix "$attribute" from the primary suitor '
+          "itself — a remix clause amends the primary with a sibling's attribute");
+    }
+  }
+  return failures;
+}
+
+/// The locked-proof law: on new-style records a score >= 3 on a LOCKED
+/// criterion must cite lens evidence naming that criterion. A hallucinated
+/// 5 passes the old record's arithmetic — it cannot pass an audition.
+List<String> _checkLockedProof(
+    List<Map> boards, Set<String> locked,
+    {String? moodboardDir}) {
+  final failures = <String>[];
+  if (locked.isEmpty) return failures;
+  for (final b in boards) {
+    final boardId = b['id'] ?? '?';
+    for (final r in (b['references'] as List? ?? const []).whereType<Map>()) {
+      final ref = r.cast<String, dynamic>();
+      final refName = ref['name'] ?? ref['url'] ?? '?';
+      final scores = (ref['scores'] as Map? ?? const {});
+      for (final id in locked) {
+        final s = scores[id];
+        if (s is! num || s < 3) continue;
+        final citing = (ref['evidence'] as List? ?? const [])
+            .whereType<Map>()
+            .where((e) => e['criterion'] == id)
+            .toList();
+        if (citing.isEmpty) {
+          failures.add('$boardId/$refName: scores $id=$s (locked) with no '
+              'lens evidence citing it — capture or measure the behavior, or '
+              'score <= 2');
+        } else if (moodboardDir != null) {
+          for (final e in citing) {
+            final file = e['file'];
+            if (file is String &&
+                !File('$moodboardDir/$file').existsSync()) {
+              failures.add('$boardId/$refName: evidence file "$file" '
+                  '(criterion $id) does not resolve under $moodboardDir');
+            }
+          }
+        }
+      }
+    }
+  }
+  return failures;
+}
+
+List<String> _checkEvidence(Object? raw,
+    {required String owner, String? moodboardDir}) {
+  final failures = <String>[];
+  for (final e in (raw as List? ?? const []).whereType<Map>()) {
+    final entry = e.cast<String, dynamic>();
+    final kind = entry['kind'];
+    if (kind is! String || kind.isEmpty) {
+      failures.add('$owner: evidence entry without a kind '
+          '(tokens|motion|capture)');
+    }
+    final file = entry['file'];
+    if (file is! String || file.isEmpty) {
+      failures.add('$owner: evidence entry without a file');
+    } else if (moodboardDir != null &&
+        !File('$moodboardDir/$file').existsSync()) {
+      failures.add('$owner: evidence file "$file" does not resolve under '
+          '$moodboardDir');
     }
   }
   return failures;

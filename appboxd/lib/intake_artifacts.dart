@@ -358,7 +358,8 @@ Map<String, dynamic> mergeStoryMap(Map<String, dynamic> emitted, String existing
 /// (the human gate). Totals are COMPUTED here — Σ(score×weight)/Σweight,
 /// 2 decimals — never trusted from the seed, so `appbox moodboard check`
 /// can recompute and compare. `selectionStatus` passes through as
-/// pending|approved.
+/// pending|approved. `suitors` and `suitorChoice` (the direction
+/// audition — see moodboard_check.dart) carry through verbatim.
 Map<String, dynamic> emitMoodboard(Map<String, dynamic> answers) {
   final src = _map(answers['moodboard']);
   final criteria = <String, double>{};
@@ -418,8 +419,16 @@ Map<String, dynamic> emitMoodboard(Map<String, dynamic> answers) {
     if (criteria.isNotEmpty)
       'criteria': _list(src['criteria']).whereType<Map>().toList(),
     // The token layer the commission renders: per-reference `tokens` ride
-    // the reference spread above; the synthesis is a top-level carry-through.
+    // the reference spread above; the synthesis is a top-level carry-through
+    // (legacy spine — a recorded suitorChoice supersedes it downstream).
     if (src['tokenSynthesis'] is Map) 'tokenSynthesis': src['tokenSynthesis'],
+    // The direction audition (new-style records): suitors + the human choice
+    // carry through verbatim. The check and the commission gate on these —
+    // an emitter that dropped them would silently rewind the pipeline to
+    // the pre-audition law while the answers file still claimed one.
+    if (src['suitors'] is List && (src['suitors'] as List).isNotEmpty)
+      'suitors': src['suitors'],
+    if (src['suitorChoice'] is Map) 'suitorChoice': src['suitorChoice'],
     if (criteria.isNotEmpty)
       'selectionStatus':
           src['selectionStatus'] == 'approved' ? 'approved' : 'pending',

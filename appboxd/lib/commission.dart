@@ -9,8 +9,12 @@
 //   appbox design commission <app-dir>
 //
 //   · moodboard.json must carry boards + criteria + selectionStatus approved
-//   · every board must hold >= 1 selected reference
+//   · >= 1 selected reference somewhere in the record (per-board emptiness
+//     is legal — a board may honestly contribute patterns only)
 //   · every LOCKED criterion must be fed (a selected ref scoring >= 3)
+//   · NEW-STYLE records (suitors recorded): suitorChoice must be present —
+//     the direction audition ends with a human pick, and the chosen suitor
+//     (+ attribute remixes) becomes the token layer's spine
 //   (same law as moodboard_check — the compiler gates on the record)
 //
 // Output (deterministic, no clocks):
@@ -53,10 +57,18 @@ int commissionMain(List<String> args) {
     return 2;
   }
   // The record gate: the same failures moodboard check names.
-  final failures = checkMoodboardRecord(rec);
+  final failures =
+      checkMoodboardRecord(rec, moodboardDir: '$appDir/moodboard');
   if (rec['selectionStatus'] != 'approved') {
     failures.add('selectionStatus is "${rec['selectionStatus']}" — the human '
         'selection gate has not approved this moodboard');
+  }
+  final hasSuitors = (rec['suitors'] as List? ?? const [])
+      .whereType<Map>()
+      .isNotEmpty;
+  if (hasSuitors && rec['suitorChoice'] is! Map) {
+    failures.add('suitors are recorded but suitorChoice is absent — the '
+        'human suitor gate has not chosen a direction');
   }
   if (failures.isNotEmpty) {
     stderr.writeln('design commission: the mandate is not ready — fix these first:');
@@ -220,6 +232,73 @@ String _commissionMd(
     buf.writeln();
   }
 
+  // ---- the chosen direction (new-style records): the audition's winner
+  // is the token layer's spine; the per-reference tokens below stay context.
+  final suitorsById = <String, Map<String, dynamic>>{};
+  for (final s in (rec['suitors'] as List? ?? const []).whereType<Map>()) {
+    final suitor = s.cast<String, dynamic>();
+    if (suitor['id'] is String) {
+      suitorsById[suitor['id'] as String] = suitor;
+    }
+  }
+  final rawChoice = rec['suitorChoice'];
+  final choice = rawChoice is Map ? rawChoice.cast<String, dynamic>() : null;
+  if (choice != null && suitorsById.isNotEmpty) {
+    final primary =
+        choice['primary'] is String ? choice['primary'] as String : '?';
+    final suitor = suitorsById[primary];
+    if (suitor != null) {
+      buf.writeln(
+          '## The chosen direction — suitor $primary: ${suitor['name'] ?? 'unnamed'}');
+      buf.writeln('Chosen at the direction audition from three synthesized suitors;');
+      buf.writeln('remix clauses amend the primary with named attributes from its');
+      buf.writeln('siblings. This — not the per-reference tokens below — is the spine.');
+      buf.writeln();
+      if (suitor['spread'] is String) {
+        buf.writeln('- spread: ${suitor['spread']}');
+      }
+      final t = (suitor['tokens'] as Map? ?? const {});
+      for (final k in ['palette', 'type', 'radius', 'motion']) {
+        if (t[k] is String && (t[k] as String).isNotEmpty) {
+          buf.writeln('- $k: ${t[k]}');
+        }
+      }
+      final leads = (suitor['leads'] as List? ?? const []).whereType<String>();
+      if (leads.isNotEmpty) {
+        buf.writeln('- leads: ${leads.join(', ')}');
+      }
+      for (final e
+          in (suitor['evidence'] as List? ?? const []).whereType<Map>()) {
+        final file = e['file'];
+        final kind = e['kind'];
+        if (file is String) {
+          buf.writeln('- evidence: ../moodboard/$file'
+              '${kind is String ? ' ($kind)' : ''}');
+        }
+      }
+      for (final r in (choice['remix'] as List? ?? const []).whereType<Map>()) {
+        final from = r['from'] is String ? r['from'] as String : '?';
+        final attribute = r['attribute'];
+        final fromTokens = suitorsById[from]?['tokens'];
+        final value = fromTokens is Map ? fromTokens[attribute] : null;
+        buf.writeln('- remixed $attribute <- suitor $from'
+            '${value is String && value.isNotEmpty ? ' ($value)' : ''}');
+      }
+      final declined = suitorsById.keys.where((k) => k != primary).toList()
+        ..sort();
+      if (declined.isNotEmpty) {
+        buf.writeln();
+        buf.writeln('### Auditioned and declined');
+        for (final k in declined) {
+          final d = suitorsById[k]!;
+          buf.writeln(
+              '- suitor $k — ${d['name'] ?? 'unnamed'}: ${d['spread'] ?? ''}');
+        }
+      }
+      buf.writeln();
+    }
+  }
+
   // ---- style tokens (extracted from the selected references)
   buf.writeln('## Style tokens — extracted from the selected references');
   buf.writeln('Fidelity ladder: tokens beat screenshots beat adjectives. These are');
@@ -240,7 +319,9 @@ String _commissionMd(
           '${_tok(t['radius'], 'radius')}${_tok(t['motion'], 'motion')}');
     }
   }
-  final synth = rec['tokenSynthesis'];
+  // Legacy spine: the recorded synthesis renders only when no suitorChoice
+  // exists — a chosen direction supersedes it.
+  final synth = choice != null ? null : rec['tokenSynthesis'];
   if (synth is Map && synth.isNotEmpty) {
     final s = synth.cast<String, dynamic>();
     buf.writeln();
