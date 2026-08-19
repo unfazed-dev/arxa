@@ -80,8 +80,13 @@ A web deploy is not done when the CLI returns — it is done when the LIVE
 URL has been verified. Before the ledger entry closes, for every web
 target (Pages, Workers, Vercel):
 
-1. **Fetch the deployment URL** — the markup renders and one asset hash
-   matches what you shipped (curl; never open a browser for a static doc).
+1. **Fetch the deployment URL** — assert three things: HTTP 200, a
+   content signature of the markup (the localized `<title>` is enough),
+   and one asset hash matching what you shipped (curl; never open a
+   browser for a static doc). Status AND content — a `text/plain` 500
+   error body is console-clean and byte-stable, so it sails through a
+   naive probe (energize 2026-08-19: every route 500ed for hours while
+   the close-out claimed the site verified).
 2. **`appbox lens check <deployed-url>`** — console-clean plus one
    `--expect` probe against a behavior this deploy claims to change or
    preserve. A deploy whose live probe fails is a rollback decision, not a
@@ -93,9 +98,11 @@ target (Pages, Workers, Vercel):
 4. **Record it** — the ledger note says what was verified live ("verified
    local+live: <probe summary>"), not just that a deploy command ran.
 
-This is the energize discipline made law: all 12 of its ledger entries
-verified live before closing — the rule existed in practice before it
-existed in writing.
+This is the energize discipline made law: every ledger entry verifies
+live before closing. Its 15th entry exists because the 14th's
+"verified" checked asset bytes and console-clean only while every page
+500ed — the rule existed in practice before it existed in writing, and
+the outage is why step 1 now demands status + content.
 
 ## The deploy gate (the strictest human gate)
 Deploy is a **write to the outside world** and the most irreversible act in the
