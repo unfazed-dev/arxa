@@ -74,6 +74,29 @@ caps any offer at the tier recorded in `config/kit-registry.json`, so say
    the ambient environment (set `VERCEL_ORG_ID` / `VERCEL_PROJECT_ID` to link
    non-interactively). Returns a deployment URL.
 
+## Post-deploy live verification (web targets)
+
+A web deploy is not done when the CLI returns — it is done when the LIVE
+URL has been verified. Before the ledger entry closes, for every web
+target (Pages, Workers, Vercel):
+
+1. **Fetch the deployment URL** — the markup renders and one asset hash
+   matches what you shipped (curl; never open a browser for a static doc).
+2. **`appbox lens check <deployed-url>`** — console-clean plus one
+   `--expect` probe against a behavior this deploy claims to change or
+   preserve. A deploy whose live probe fails is a rollback decision, not a
+   ledger note.
+3. **Mind audit-gating on your own site** — pages that detect
+   `navigator.webdriver` self-disable under the lens (LENS_playbook
+   "Capability ceiling"); force the real path via a temporary build edit
+   or assert source-verified behavior, and record which you did.
+4. **Record it** — the ledger note says what was verified live ("verified
+   local+live: <probe summary>"), not just that a deploy command ran.
+
+This is the energize discipline made law: all 12 of its ledger entries
+verified live before closing — the rule existed in practice before it
+existed in writing.
+
 ## The deploy gate (the strictest human gate)
 Deploy is a **write to the outside world** and the most irreversible act in the
 pipeline — an App Store submission cannot be rolled back by re-running a stage.
@@ -98,6 +121,8 @@ still has to assert a value.
 - Every deploy attempt — shipped or halted — is recorded in the deploy ledger
   (`pipeline/state/deploy-ledger.json`, overridable via `APPBOX_DEPLOY_LEDGER`):
   target, version, account, approving person, timestamp, resulting artefact id.
+- Web deploys close their ledger entry only after the post-deploy live
+  verification above — an unverified live URL is an open entry.
 
 ## Output
 - A shipped build (store track), a shorebird patch version, and/or a web

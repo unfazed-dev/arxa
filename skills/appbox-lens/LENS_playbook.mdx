@@ -7,11 +7,11 @@
 
 **Scope of this document:** lets a human OR an LLM run any capture or visual-evidence task without reading the skill source. Folded from `SKILL.md`.
 
-**Pipeline position:** cross-cutting stage 8, not phase-bound — used by `appbox-moodboarder`, the build phase (design-vs-built goldens), `appbox-tester` (visual + smoke) and `appbox-reviewer` (verdict evidence). Full chain, stage numbers, per-stage artifacts: `docs/research/pipeline-map.md` §1.
+**Pipeline position:** cross-cutting stage 8, not phase-bound — used by `appbox-moodboarder` (reference shots, suitor measured tokens, locked-criterion motion proofs), the build phase (design-vs-built goldens), `appbox-tester` (visual + smoke), `appbox-reviewer` (verdict evidence) and `appbox-deployer` (the post-deploy live gate). Full chain, stage numbers, per-stage artifacts: `docs/research/pipeline-map.md` §1.
 
 ## Table of contents
 
-0. Header & TOC · 1. Overview & role · 2. Inputs · 3. Procedure · 4. Outputs · 5. Rules · 6. Behavior parity captures · 7. References
+0. Header & TOC · 1. Overview & role · 2. Inputs · 3. Procedure · 4. Outputs · 5. Rules · 6. Instrumentation map & capability ceiling · 7. Behavior parity captures · 8. References
 
 </Callout>
 
@@ -34,6 +34,56 @@ Evidence PNGs at `designs/<design>/evidence/<topic>/<surface>-<width>.png` (sema
 ### Rules
 
 Console/page errors always fail, regardless of pixel match — a surface with a runtime bug is red even when it looks right. Evidence claiming "responsive" covers every width in the active ladder. Read the PNG back before declaring done: a green exit with a blank canvas is a fail. Goldens are frozen approvals — re-capture only when the design itself changed, never to make a red check green. Every invocation owns its Chrome, so parallel slices need no port/profile juggling and the user's browser is never touched. A missing verb means extending `lens.dart`/`cdp.dart`, never reviving archived tooling. Two recorded partials (not gaps): `adb_shot` latin1 round-trip and WAAPI-only flipbook recovery, both carrying `kimitail:` upgrade notes.
+
+### Instrumentation map & capability ceiling
+
+The lens is an instrument, not a camera — most of its verbs exist to answer
+a specific pipeline judgment. Map the judgment to the verb instead of
+defaulting to a screenshot:
+
+| the judgment | the verb | the consumer |
+|---|---|---|
+| does this reference actually animate the locked criterion? | two settle-state shots that differ / `lens burst` | moodboarder locked-proof law |
+| what are this direction's real palette/type? | `lens tokens` (`extractTokens`) | moodboarder suitor evidence |
+| does the built surface match the design? | `lens compare` (golden, byte/pixel/ssim) | tester visual layer, build goldens |
+| does it boot / render without errors? | `lens check` (console auto-fail) | every stage; deployer post-deploy gate |
+| what does the live DOM/a11y/net say? | `lens dom` / `lens a11y` / `lens net` | reviewer evidence |
+| how does motion actually ease? | `lens anim` / `lens record` / `lens burst` | behavior-parity audits |
+
+**Capability ceiling — stated as law, not discovered by surprise:**
+
+- **No touch or pointer emulation.** `setViewport` is
+  `Emulation.setDeviceMetricsOverride` only. Touch-gated code never boots
+  under the lens as-is — use the stub + dynamic-import escape
+  (§ Behavior parity, "Live touch-path simulation") or a temporary
+  coarse-pointer forced build edit. Headless Chrome cannot be made
+  coarse-pointer by the lens today.
+- **The 30-second CDP wall.** Every CDP command — including the
+  `Runtime.evaluate` behind `--expect` — times out at 30s (`cdp.dart`).
+  Probes must stay under ~25s; a longer sampler is not a hang, it is the
+  wall. Split long measurements into per-step expects.
+- **Audit-gating applies to YOUR OWN deploys, not just references.** Pages
+  that detect `navigator.webdriver` / audit classes self-disable under the
+  lens — verifying your own build headlessly can silently verify a gated
+  shell. The reference law (byte-diff the bundle, port verbatim, measure
+  the replica — § Behavior parity) is the model; for your own site, force
+  the real path (temporary build edit that bypasses the audit gate) or
+  assert against source-verified behavior, and say which you did.
+
+**Probe physics (scar-tissue laws):**
+
+- **Shadow-DOM dispatch needs `composed: true`.** A synthetic
+  `PointerEvent`/`TouchEvent` dispatched without it stops at the first
+  shadow boundary — model-viewer and every vendored custom element never
+  see the event, and the probe reads stale state.
+- **Programmatic `scrollTo` ignores `touch-action: none`.** A JS scroll
+  succeeds where a finger would not — never conclude a touch-gated scroll
+  is "fine" from a programmatic scroll probe; assert the gate's own state.
+- **Two settle states, not one still.** Proving motion (especially a
+  locked intake criterion) means capturing at two settle times and showing
+  the stills DIFFER — one still proves nothing about motion. This is the
+  lens-side statement of the designer-side law; the moodboarder's
+  locked-proof evidence uses exactly this.
 
 ### Behavior parity captures
 

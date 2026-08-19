@@ -36,7 +36,12 @@ Stage 6 of `appbox-orchestrator` (Ø, front door) → `appbox-story-mapper / app
    should hide a bug farm.
 
 ## Verdict
-- **GREEN** — all four pass → release-ready (hand to deployer).
+- **GREEN** — all four pass → release-ready (hand to deployer). A GREEN
+  verdict names its visual evidence and the lens verbs that produced it —
+  tester goldens (`lens compare`), smoke captures (`lens check`), and for
+  locked intake criteria the commission's cited motion proofs (two settle
+  states / burst). A verdict that cannot name its instruments is a claim,
+  not evidence.
 - **RED** — any fail → back to builder with the specific findings. Never green
   a target with `arch_guard` violations.
 

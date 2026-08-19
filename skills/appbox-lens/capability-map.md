@@ -27,7 +27,7 @@ landed; the `tool/lens_*.dart` one-off drivers remain for ad-hoc scripting.
 |---|---|---|
 | `web_open` / `web_launch` | `CdpClient.launch` + `CdpSession.navigateAndSettle` (`cdp.dart`); cores `_nav.py`, `_settle.py` | ported |
 | `web_shot` | `captureGolden` (`lens.dart`), `CdpSession.screenshot` (`cdp.dart`); driver `tool/lens_shot.dart` | ported |
-| `web_emu` | `CdpSession.setViewport(w, h)` (`cdp.dart`) | ported |
+| `web_emu` | `CdpSession.setViewport(w, h)` (`cdp.dart`) — device metrics ONLY: no touch, no coarse-pointer, no hover emulation (see LENS_playbook "Capability ceiling") | ported |
 | `web_scroll` | `CdpSession.screenshot(fullPage: true)` + `evaluate('window.scrollBy')` (`cdp.dart`) | ported |
 | `web_eval` | `CdpSession.evaluate` / `evaluateFunction` (`cdp.dart`); cores `_web.py`, `_web_eval.py` | ported |
 | `web_console` | `consoleErrors` / `pageErrors` auto-fail in `compareGolden` (`cdp.dart`, `lens.dart`) | ported |
