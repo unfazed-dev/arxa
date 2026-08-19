@@ -336,8 +336,12 @@ applications.
   SSOT) generating `<name>_fixtures.<locale>.json`. `appbox design pseudolocalize`
   derives the `qps-ploc` pseudo-locale from English — run it to catch
   truncation and hardcoded strings. Full contract: runtime/README.md "L10n".
-- Keep artifacts self-contained: copy every referenced asset into the artifact
-  folder; client libraries come only from the runtime's vendored, SRI-pinned set
-  (`runtime/vendor/`).
+- Keep artifacts self-contained: **copy** every referenced asset into the
+  artifact folder — never reference an absolute path, the Desktop, Downloads,
+  or any location outside the artifact. Rename the copy to the artifact's
+  convention (original basename kept, extension lowercased:
+  `IMG_1155.JPG` → `assets/images/<owner>/IMG_1155.jpg`) and never move,
+  rename, or delete the original — the copy is what ships. Client libraries
+  come only from the runtime's vendored, SRI-pinned set (`runtime/vendor/`).
 - Licensed MIT — this skill is a fork. See `LICENSE` and the repository's
   `THIRD-PARTY-NOTICES.md`.
