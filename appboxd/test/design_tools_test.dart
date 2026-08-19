@@ -984,12 +984,12 @@ export default [
 
 /// Recursive directory copy for eject tests that must mutate a private
 /// fixture copy (the shared ejectFixture is the repo's own tree — read-only).
-void _copyFixtureTree(Directory src, Directory dst) {
+void copyFixtureTree(Directory src, Directory dst) {
   dst.createSync(recursive: true);
   for (final e in src.listSync()) {
     final target = p.join(dst.path, p.basename(e.path));
     if (e is Directory) {
-      _copyFixtureTree(e, Directory(target));
+      copyFixtureTree(e, Directory(target));
     } else if (e is File) {
       e.copySync(target);
     }
@@ -1191,13 +1191,14 @@ void _copyFixtureTree(Directory src, Directory dst) {
       // (landing/deploy/cloudflare-workers-plan.md "Local patches").
       final d = _tmpDir();
       addTearDown(() => d.deleteSync(recursive: true));
-      _copyFixtureTree(Directory(ejectFixture), Directory(d.path));
+      copyFixtureTree(Directory(ejectFixture), Directory(d.path));
 
       final reader =
           File(p.join(d.path, 'services', 'repositories', 'fixture_reader.js'));
       expect(reader.existsSync(), isTrue,
           reason: 'fixture must carry a fixture_reader to graft onto');
-      reader.writeAsStringSync(reader.readAsStringSync() +
+      reader.writeAsStringSync(
+          '${reader.readAsStringSync()}'
           '\n// artifact-authored pure helper (the anchorInternalHrefs shape)\n'
           'export function probeHelper(x) { return x * 2; }\n');
 

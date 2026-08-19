@@ -855,9 +855,9 @@ List<String> checkWiringArtifact(String artifactDir, String property) {
       ids.addAll([
         for (final id in ids.where(
                 (i) => i.startsWith('panel-') && !i.contains('{{')).toSet()) ...[
-          '${id}-body',
-          '${id}-top',
-          '${id}-bottom',
+          '$id-body',
+          '$id-top',
+          '$id-bottom',
         ],
       ]);
       bool idHits(String target) => ids.any((id) {
