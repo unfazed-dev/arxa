@@ -10,7 +10,6 @@ import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { raw } from 'hono/utils/html';
-import type { FC } from 'hono/jsx';
 
 interface IconProps {
   name: string;
@@ -61,7 +60,9 @@ function loadIcon(name: string): string | null {
   return raw_;
 }
 
-const Icon: FC<IconProps> = ({ name, size = 24, className, label, strokeWidth }) => {
+// Not FC<IconProps>: FC demands a JSXNode return, raw() yields an
+// HtmlEscapedString — the same shape hono's own Fragment returns.
+const Icon = ({ name, size = 24, className, label, strokeWidth }: IconProps): ReturnType<typeof raw> => {
   if (typeof name !== 'string' || !NAME_RE.test(name)) {
     console.warn(`[icon] rejected name ${JSON.stringify(String(name))} (want ${NAME_RE})`);
     return raw(placeholder(size, className));

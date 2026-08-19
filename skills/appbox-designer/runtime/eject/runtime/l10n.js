@@ -10,7 +10,7 @@ import path from 'node:path';
 import { prefsOf } from './state.js';
 
 /**
- * @param {string} s
+ * @param {string} unsafeText
  * @returns {string}
  */
 const esc = (unsafeText) =>

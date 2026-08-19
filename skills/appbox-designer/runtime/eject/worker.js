@@ -26,14 +26,14 @@ const app = await createArtifactApp('.', {
 
 export default {
   // The eject's tsconfig runs checkJs + strict over **/*.js — the handler
-  // needs JSDoc types or tsc fails with three implicit-any errors. ctx is
-  // unused and omitted (the runtime passes it harmlessly).
+  // needs JSDoc types or tsc fails with implicit-any errors.
   /**
    * @param {Request} request
    * @param {{ ASSETS: { fetch(request: Request): Promise<Response> } }} env
-   * @returns {Promise<Response>}
+   * @param {any} ctx pass-through (ExecutionContext) — no workers-types lib in the eject tsconfig
+   * @returns {Response | Promise<Response>}
    */
-  fetch(request, env) {
+  fetch(request, env, ctx) {
     const url = new URL(request.url);
 
     // Locale routes are literal (/fr, /fr/about) — no trailing-slash twins

@@ -19,9 +19,12 @@ export interface SessionData {
   data: Record<string, unknown>;
 }
 
+export type Translate = (key: string, vars?: Record<string, unknown>) => unknown;
+
 export interface L10n {
   catalogs: Record<string, Record<string, string>>;
   locales: string[];
+  createT(opts?: { locale?: string; level?: string }): (key: string, vars?: Record<string, unknown>) => string;
   createTranslator(opts?: { locale?: string; level?: string }): (key: string, vars?: Record<string, unknown>) => string;
 }
 

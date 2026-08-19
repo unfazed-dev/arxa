@@ -16,5 +16,5 @@
     "jsxImportSource": "hono/jsx"
   },
   "include": ["**/*.js", "**/*.tsx", "**/*.ts", "**/*.d.ts"],
-  "exclude": ["node_modules", "assets/islands.js", "assets/island-kit.js", "assets/islands", "runtime/vendor"]
+  "exclude": ["node_modules", "assets/islands.js", "assets/island-kit.js", "assets/islands", "assets/app", "runtime/vendor"]
 }
