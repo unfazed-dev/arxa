@@ -10,7 +10,10 @@
 // Templates, l10n catalogs, and fixtures are pre-bundled into
 // runtime/preload.js at eject time (Workers have no filesystem).
 //
-// One-way eject: this tree is yours. appbox will never re-import it.
+// One-way eject: this tree is yours. appbox will never re-import it — but
+// YOU maintain both trees: the design tree stays the source of truth, and
+// every app/widget/style change is mirrored here identically (see the
+// productionize doc's dual-tree law before editing).
 import { createArtifactApp } from './runtime/router.js';
 import { preload } from './runtime/preload.js';
 import routes from './app.routes.js';

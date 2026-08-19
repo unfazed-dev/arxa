@@ -280,6 +280,15 @@ component — copy
 `examples/hello-hda/ui/views/main_shell/shared/widgets/lang_switcher.tsx`
 into the chrome and render `<LangSwitcher … />`.
 
+**Route-based locales (site kind).** The cookie switcher suits apps; a
+marketing site where each locale must be its own crawlable URL uses
+**locale-in-path routes** instead: one route entry per locale (`/`, `/fr`,
+`/mfe` …) in `app.routes.js`, a per-locale render context resolved from the
+path (not the cookie), and the language switcher as plain anchors between
+routes. Choose at design time — retrofitting routes onto a cookie-switcher
+build rewrites every link. (Shipped pattern: the energize landing, whose
+ejected tree resolves the locale from the pathname prefix.)
+
 **Localized content** follows the data spine per locale: seeds
 `<name>_seed.<locale>.json` (identical IDs/schema across locales) are the SSOT,
 the generator emits `<name>_fixtures.<locale>.json` (never hand-edited,

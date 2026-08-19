@@ -185,7 +185,10 @@ After verify + scoring:
    repo-mode equivalent) — it publishes `intake/moodboard.json` with ids,
    counts, `shot.src`, and COMPUTED totals.
 3. Run `appbox moodboard check <intake-dir>` — green required. A locked
-   criterion with no reference scoring ≥ 3 fails here, BY DESIGN: that is
+   criterion with no reference scoring ≥ 3 fails here, BY DESIGN (the
+   PENDING feasibility phase — once selectionStatus is `approved` the gate
+   tightens: a SELECTED reference must carry it; new-style records
+   additionally require the locked-proof evidence): that is
    "intake wants animated 3D and the board cannot feed it" caught at the
    board, not in the shipped site.
 
@@ -193,7 +196,10 @@ After verify + scoring:
 
 Present the ranked references (per board, highest weighted total first) to
 the founder and ask which are selected. Default proposal: every reference
-   at total ≥ 3.5. Record `selected: true` per chosen reference, set
+   at total ≥ 3.5 — a proposal heuristic, deliberately stricter than the
+   check's enforcement floor (3.0 by default, `--floor` overridable): the
+   floor is law, the proposal is taste. Record `selected: true` per chosen
+   reference, set
    `selectionStatus: "approved"`, re-emit, re-check. **The designer consumes
    ONLY selected references** — via the commission, never the raw boards.
 

@@ -21,7 +21,7 @@ The design stage of the pipeline. Every artifact is a Hono + htmx MVVM app (surf
 
 ### Inputs
 
-A pinned `intake/registry.json` version (full run: every feature) or a frozen run artifact for a registry diff (**delta run**: only the new/changed feature; already-designed features are never regenerated, shared join points are scaffolder-owned and additive-only). The pinned `intake/flows.json` alongside it — with the registry, the only authoring surface: intake elicits/derives + confirms the flows, and the design viewer live-reads AND edits that same file (move/add/remove POST the design server, which rewrites flows.json), never a copy. The design brief when intake produced one — consume its Layout Template verbatim; moodboard slices for visual direction. The viewport ladder from project config — never assumed, never hardcoded; authoring at phone width only is the single most expensive mistake available here.
+A pinned `intake/registry.json` version (full run: every feature) or a frozen run artifact for a registry diff (**delta run**: only the new/changed feature; already-designed features are never regenerated, shared join points are scaffolder-owned and additive-only). The pinned `intake/flows.json` alongside it — with the registry, the only authoring surface: intake elicits/derives + confirms the flows, and the design viewer live-reads AND edits that same file (move/add/remove POST the design server, which rewrites flows.json), never a copy. The design brief when intake produced one — consume its Layout Template verbatim; the compiled commission when a moodboard produced one — SELECTED references and the chosen suitor only, never the raw boards (the boards' "patterns this slice must have" lists remain the per-epic visual bar behind it). The viewport ladder from project config — never assumed, never hardcoded; authoring at phone width only is the single most expensive mistake available here.
 
 ### Procedure
 
@@ -29,7 +29,7 @@ Load contracts first: `references/showcase-anatomy.md` (the structure contract),
 
 ### Outputs
 
-`designs/<name>/` with `ui/views/*` (base view + `.desktop`/`.tablet`/`.mobile` variants + `.sections.tsx`), barreled `ui/widgets/*`, `ui/styles/<owner>/` barrels, the derived `models/screens_model/registry.json` (a projection — regenerated, never edited), the route table the freeze step reads, and the emit-produced artifact-root `tsconfig.json`.
+`designs/<name>/` with `ui/views/*` (base view + `.desktop`/`.tablet`/`.mobile` variants; a multi-section body is a composition widget in the library — `.sections.tsx` files are banned, W1), barreled `ui/widgets/*`, `ui/styles/<owner>/` barrels, the derived `models/screens_model/registry.json` (a projection — regenerated, never edited), the route table the freeze step reads, and the emit-produced artifact-root `tsconfig.json`.
 
 ### Rules
 

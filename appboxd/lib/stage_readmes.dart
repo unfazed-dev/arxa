@@ -55,9 +55,10 @@ becomes the designer's visual mandate. A locked intake criterion (e.g.
 check.''';
 
 const _design = '''
-This stage holds the design artifact: server-rendered htmx + CSS prototype,
-genuine MVVM, zero custom client-side JavaScript, authored at every viewport
-of the active ladder.
+This stage holds the design artifact: server-rendered htmx prototype,
+genuine MVVM, client JS only in the three legal ADR-0009 forms (vendored
+libraries, first-party islands, artifact app modules), authored at every
+viewport of the active ladder.
 
 What starts it: `commission.md` at this stage's root — the compiled mandate
 (brief + intake direction + ONLY the selected, scored moodboard references
@@ -84,8 +85,10 @@ class _KindText {
 const _site = _KindText(
   '''
 This stage IS the site source root. The designer's eject lands here:
-server-rendered htmx + islands, no custom client-side JavaScript in the
-design layer — behavior arrives as named, vendored islands only.
+server-rendered htmx + islands, client JS only in the three legal ADR-0009
+forms — categorized vendored libraries, named first-party islands, and
+artifact app modules (assets/app/*.js) — never inline handlers or orphan
+scripts.
 
 What starts it: a frozen design in `../design/`. The `appbox-scaffolder`
 skill ejects the design artifact into runnable site code at this path;

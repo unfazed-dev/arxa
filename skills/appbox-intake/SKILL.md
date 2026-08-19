@@ -96,8 +96,11 @@ Two artefacts, written by the chain:
    a site is kind `site` regardless of hosting. Record it as
    `product.kind: site|app` — for repo-mode projects `appbox project sync
    <app-dir>` pushes it (with targets/locales) into the `appbox.json`
-   marker, and every downstream stage (moodboard gathering prompts,
-   commission stack text, scaffolder, deployer) branches on it. Beyond the
+   marker. Downstream, kind is consumed where it matters: the commission
+   header carries it, and kind `site` means the artifact's eject IS the
+   build (no Flutter scaffold; see the designer's productionize doc for the
+   site path and its dual-tree law). The scaffolder and deployer branch on
+   TARGETS, not kind. Beyond the
    core fields, intake elicits four optional groups:
    - **`direction`** — `{adjectives: [...], avoids: [...]}`: the design
      direction (what it should feel like, what it must not).

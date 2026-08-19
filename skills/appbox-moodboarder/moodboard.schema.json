@@ -2,7 +2,7 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "$id": "skills/appbox-moodboarder/moodboard.schema.json",
   "title": "appbox moodboard (intake/moodboard.json)",
-  "$comment": "DRAFT, Slice B1. Describes what appboxd/lib/intake_artifacts.dart emitMoodboard WRITES, not what any loader enforces: nothing reads this file at runtime, exactly like skills/appbox-intake/intake.schema.json (see the note at intake.dart:70) — so it can drift invisibly. Change emitMoodboard and you must change this by hand. Do NOT build a loader for it on the strength of its existing.",
+  "$comment": "DRAFT, Slice B1 (suitors/suitorChoice/evidence added in lockstep with emitMoodboard + moodboard_check). Describes what appboxd/lib/intake_artifacts.dart emitMoodboard WRITES, not what any loader enforces: nothing reads this file at runtime, exactly like skills/appbox-intake/intake.schema.json (see the note at intake.dart:70) — so it can drift invisibly. Change emitMoodboard and you must change this by hand. Do NOT build a loader for it on the strength of its existing.",
   "type": "object",
   "required": ["method", "boards", "counts"],
   "properties": {
@@ -26,7 +26,7 @@
           },
           "locked": {
             "type": "boolean",
-            "$comment": "TRUE for founder-signed concrete visual requirements (motion, 3D, animation, video). A locked criterion with no SELECTED reference scoring >= 3 fails appbox moodboard check — the energize lesson, made structural."
+            "$comment": "TRUE for founder-signed concrete visual requirements (motion, 3D, animation, video). Two-phase law in appbox moodboard check: while selectionStatus is PENDING, some reference scoring >= 3 must exist (feasibility); once APPROVED, a SELECTED reference must carry it (fed) — the energize lesson, made structural. On new-style records (suitors present) a locked score >= 3 must also cite evidence naming the criterion."
           }
         },
         "additionalProperties": true
