@@ -123,7 +123,9 @@ export function createL10n(artifactDirOrPreload) {
     };
   };
 
-  return { catalogs, locales, createT };
+  // createTranslator is the declared contract (runtime/types.d.ts) —
+  // helpers.js calls it. createT kept as an alias for direct consumers.
+  return { catalogs, locales, createT, createTranslator: createT };
 }
 
 // `{count, plural, =0{…} one{…} few{…} many{…} other{…}}` → { varName, options }.
@@ -188,6 +190,10 @@ export function parseAcceptLanguage(header) {
 export function resolveLocale(context, l10n) {
   const { locales } = l10n;
   if (!locales.length) return 'en';
+  // Path prefix is the strongest signal (LOCALE_ROUTES: /, /fr, /mfe):
+  // the path names the edition — negotiation never overrides it.
+  const pathSeg = context.req.path.split('/')[1] ?? '';
+  if (pathSeg && locales.includes(pathSeg)) return pathSeg;
   const queryLang = context.req.query('lang');
   if (queryLang && locales.includes(queryLang)) return queryLang;
   const prefsLang = prefsOf(context).lang;

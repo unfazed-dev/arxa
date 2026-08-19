@@ -1859,9 +1859,22 @@ Future<CmdResult> designEject(List<String> args) async {
     // and emit a target-specific fixture_reader.js.
     File(p.join(out, 'runtime', 'preload.js'))
         .writeAsStringSync(_generatePreload(artifact, vendorDir));
-    final cfReader = p.join(out, 'services', 'repositories', 'fixture_reader.js');
-    if (File(cfReader).existsSync()) {
-      File(cfReader).writeAsStringSync(_cfFixtureReader);
+    final cfReader =
+        File(p.join(out, 'services', 'repositories', 'fixture_reader.js'));
+    if (cfReader.existsSync()) {
+      // The replacement swaps ONLY the fs-backed readFixture. Artifacts may
+      // author pure helpers after it (energize's anchorInternalHrefs — the
+      // facades import it; dropping it killed the worker bundle, eject gap 1)
+      // — carry that tail over verbatim.
+      final tail = _fixtureReaderPureTail(cfReader.readAsStringSync());
+      cfReader.writeAsStringSync(_cfFixtureReader + tail);
+    }
+    // Style barrels serve at /ui/styles/<owner>/ (the styles law) but the
+    // [assets] binding root is ./assets — mirror them in and let worker.js
+    // delegate the /ui/styles prefix (energize eject gap 3).
+    final uiStyles = p.join(out, 'ui', 'styles');
+    if (Directory(uiStyles).existsSync()) {
+      _copyTree(uiStyles, p.join(out, 'assets', 'styles'));
     }
   } else {
     // Node/Vercel stub so icon.tsx's './preload.js' import resolves at bundle
@@ -2042,6 +2055,31 @@ export function readFixture(relFromThisFile) {
   return data;
 }
 """;
+
+/// The artifact-authored pure tail of a fixture_reader: everything after
+/// the closing brace of `readFixture` (helpers, consts, comments). The CF
+/// replacement keeps only readFixture semantics; the tail is pure JS with no
+/// node:fs dependency, so it rides along verbatim. Empty when the artifact
+/// authors no helpers (hello-hda) — the common case.
+String _fixtureReaderPureTail(String src) {
+  final start = src.indexOf('export function readFixture');
+  if (start < 0) return '';
+  final open = src.indexOf('{', start);
+  if (open < 0) return '';
+  var depth = 0;
+  for (var i = open; i < src.length; i++) {
+    final c = src[i];
+    if (c == '{') depth++;
+    if (c == '}') {
+      depth--;
+      if (depth == 0) {
+        final tail = src.substring(i + 1).trim();
+        return tail.isEmpty ? '' : '\n\n$tail\n';
+      }
+    }
+  }
+  return '';
+}
 
 /// Generates runtime/preload.js for the cloudflare target — bundles ARB
 /// catalogs, fixture JSON, and Lucide icons into a single ESM module so the

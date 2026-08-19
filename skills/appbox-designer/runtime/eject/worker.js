@@ -27,8 +27,23 @@ const app = await createArtifactApp('.', {
 export default {
   fetch(request, env, ctx) {
     const url = new URL(request.url);
+
+    // Locale routes are literal (/fr, /fr/about) — no trailing-slash twins
+    // in the route table. 308 to the canonical slash-less form.
+    if (url.pathname.length > 1 && url.pathname.endsWith('/')) {
+      url.pathname = url.pathname.replace(/\/+$/, '');
+      return Response.redirect(url.toString(), 308);
+    }
+
     if (url.pathname.startsWith('/assets/')) {
       url.pathname = url.pathname.slice('/assets'.length);
+      return env.ASSETS.fetch(new Request(url, request));
+    }
+
+    // Style barrels serve at /ui/styles/<owner>/ (the artifact styles law) —
+    // mirrored into the [assets] root as assets/styles/ at eject time.
+    if (url.pathname.startsWith('/ui/styles/')) {
+      url.pathname = url.pathname.slice('/ui'.length);
       return env.ASSETS.fetch(new Request(url, request));
     }
     return app.fetch(request, env, ctx);

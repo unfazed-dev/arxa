@@ -170,8 +170,9 @@ RepoProject ensureRepoProject(
 
 /// Sync kind/targets/locales from intake answers into the marker at [dir].
 /// Partial like [updateProjectSettings]: only passed fields are written;
-/// `name` is preserved. Creates nothing (the marker must exist — sync is
-/// not init).
+/// `name` is preserved. The marker must exist — sync is not init — but the
+/// stage READMEs are rewritten every run exactly like init's (tool-owned):
+/// a kind change and every generator improvement reach existing projects.
 void updateRepoProject(
   String dir, {
   String? kind,
@@ -195,6 +196,15 @@ void updateRepoProject(
   };
   const encoder = JsonEncoder.withIndent('  ');
   marker.writeAsStringSync('${encoder.convert(updated)}\n');
+  // Tool-owned READMEs, same contract as ensureRepoProject: rewritten every
+  // sync so kind changes and generator fixes reach existing projects (the
+  // energize repo carried stale pre-ADR-0009 stage text until this landed).
+  final kindNow = updated['kind'] as String;
+  for (final stage in repoStages) {
+    final sd = Directory('$d/$stage')..createSync(recursive: true);
+    File('${sd.path}/README.md')
+        .writeAsStringSync(stageReadme(stage, kindNow, existing.name));
+  }
 }
 
 String _basename(String path) =>

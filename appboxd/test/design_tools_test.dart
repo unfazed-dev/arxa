@@ -982,6 +982,20 @@ export default [
   final String ejectFixture =
       p.absolute('../skills/appbox-designer/examples/hello-hda');
 
+/// Recursive directory copy for eject tests that must mutate a private
+/// fixture copy (the shared ejectFixture is the repo's own tree — read-only).
+void _copyFixtureTree(Directory src, Directory dst) {
+  dst.createSync(recursive: true);
+  for (final e in src.listSync()) {
+    final target = p.join(dst.path, p.basename(e.path));
+    if (e is Directory) {
+      _copyFixtureTree(e, Directory(target));
+    } else if (e is File) {
+      e.copySync(target);
+    }
+  }
+}
+
   group('design eject', () {
     test('missing args → usage, exit 2', () async {
       expect((await designEject([])).exitCode, 2);
@@ -1168,6 +1182,62 @@ export default [
           File(p.join(out.path, 'package.json')).readAsStringSync()) as Map;
       expect((pkg['devDependencies'] as Map).containsKey('wrangler'), isTrue);
       expect((pkg['dependencies'] as Map).containsKey('wrangler'), isFalse);
+    });
+
+    test('cloudflare eject: the energize gaps are healed upstream', () async {
+      // A PRIVATE copy of the fixture: this test grafts an artifact-authored
+      // pure helper into fixture_reader.js and authors a styles-law barrel —
+      // exactly the shapes the energize engagement had to patch by hand
+      // (landing/deploy/cloudflare-workers-plan.md "Local patches").
+      final d = _tmpDir();
+      addTearDown(() => d.deleteSync(recursive: true));
+      _copyFixtureTree(Directory(ejectFixture), Directory(d.path));
+
+      final reader =
+          File(p.join(d.path, 'services', 'repositories', 'fixture_reader.js'));
+      expect(reader.existsSync(), isTrue,
+          reason: 'fixture must carry a fixture_reader to graft onto');
+      reader.writeAsStringSync(reader.readAsStringSync() +
+          '\n// artifact-authored pure helper (the anchorInternalHrefs shape)\n'
+          'export function probeHelper(x) { return x * 2; }\n');
+
+      final barrel = Directory(p.join(d.path, 'ui', 'styles', 'common'))
+        ..createSync(recursive: true);
+      File(p.join(barrel.path, 'styles.css'))
+          .writeAsStringSync('/* styles-law barrel */\n');
+
+      final out = _tmpDir();
+      addTearDown(() => out.deleteSync(recursive: true));
+      final r = await designEject([d.path, out.path, '--target=cloudflare']);
+      expect(r.exitCode, 0, reason: r.stderrLines.join('\n'));
+
+      // Gap 1 — the CF replacement keeps ONLY readFixture semantics but must
+      // carry the artifact's pure tail: the facades import it, and without it
+      // the worker bundle dies at esbuild time.
+      final cfReader = File(
+              p.join(out.path, 'services', 'repositories', 'fixture_reader.js'))
+          .readAsStringSync();
+      expect(cfReader, contains("from '../../runtime/preload.js'"),
+          reason: 'the CF replacement must be in place');
+      expect(cfReader, contains('probeHelper'),
+          reason: 'the pure tail must survive the replacement');
+
+      // Gap 2 — l10n ships createT but types.d.ts + helpers.js call the
+      // declared createTranslator contract; and resolveLocale must honor the
+      // path prefix (route-based locales: /fr IS the fr edition).
+      final l10n =
+          File(p.join(out.path, 'runtime', 'l10n.js')).readAsStringSync();
+      expect(l10n, contains('createTranslator: createT'));
+      expect(l10n, contains('Path prefix is the strongest signal'));
+
+      // Gap 3 — style barrels serve at /ui/styles/<owner>/ while the [assets]
+      // root is ./assets: mirror in, delegate the prefix in worker.js.
+      expect(File(p.join(out.path, 'assets', 'styles', 'common', 'styles.css'))
+          .existsSync(), isTrue);
+      final worker = File(p.join(out.path, 'worker.js')).readAsStringSync();
+      expect(worker, contains("startsWith('/ui/styles/')"));
+      // Literal locale routes have no trailing-slash twins — 308 to canonical.
+      expect(worker, contains('Response.redirect(url.toString(), 308)'));
     });
 
     test('vercel eject: fetch-handler entry + public/ static root', () async {

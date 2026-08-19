@@ -113,6 +113,30 @@ void main() {
       expect(m['locales'], ['en', 'fr']);
     });
 
+    test('sync rewrites the stage READMEs to the synced kind (tool-owned)',
+        () {
+      final tmp = Directory.systemTemp.createTempSync('repo_sync_readmes');
+      addTearDown(() => tmp.deleteSync(recursive: true));
+      final proj =
+          ensureRepoProject('${tmp.path}/landing', name: 'probe', kind: 'app');
+      // App-kind scaffold text: no site-root language yet.
+      expect(File('${tmp.path}/landing/scaffold/README.md').readAsStringSync(),
+          isNot(contains('site source root')));
+
+      updateRepoProject(proj.dir, kind: 'site');
+
+      // The kind change must reach the stage READMEs, not just the marker —
+      // and generator improvements land on existing projects: the energize
+      // repo carried pre-ADR-0009 "zero custom client-side JavaScript" stage
+      // text until sync started rewriting READMEs.
+      expect(File('${tmp.path}/landing/scaffold/README.md').readAsStringSync(),
+          contains('site source root'),
+          reason: 'a kind sync must refresh the per-kind stage READMEs');
+      expect(File('${tmp.path}/landing/design/README.md').readAsStringSync(),
+          contains('ADR-0009'),
+          reason: 'a README-generator fix must reach existing projects');
+    });
+
     test('refuses to sync without a marker', () {
       expect(() => updateRepoProject('${tmp.path}/ghost', kind: 'site'),
           throwsArgumentError);
