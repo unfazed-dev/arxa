@@ -25,6 +25,7 @@
 const fs = require('fs');
 const path = require('path');
 const { spawnSync } = require('child_process');
+const { appboxInvocation } = require('./appbox-bin.js');
 
 const MODE = process.argv[2] || 'posttool';
 
@@ -61,8 +62,12 @@ if (MODE === 'stop') {
     clearMarker();
     process.exit(0); // validator gone → fail open
   }
-  const r = spawnSync('dart', ['run', 'bin/appbox.dart', 'docs', repoRoot], {
-    cwd: appboxd,
+  // Prefer the AOT binary (~10ms) over `dart run` (~1420ms); this fires on
+  // every Stop. Falls back to `dart run` when install.sh has not been run.
+  const inv = appboxInvocation(repoRoot, ['docs', repoRoot]);
+  if (!inv) { clearMarker(); process.exit(0); } // fail open
+  const r = spawnSync(inv.cmd, inv.args, {
+    cwd: inv.cwd,
     encoding: 'utf8',
     timeout: 60000,
   });

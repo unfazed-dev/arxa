@@ -166,11 +166,66 @@ skipped (no API key), recorded per convention.
 - Full appbox→arxa rename pass — gated on harness validation
   (decision 10).
 
+## Amendment 2026-08-21 — H1 built; three assumptions corrected by evidence
+
+H1 is **implemented and tested** (`install.sh`, `tools/portable-core-test.sh`,
+`hooks/appbox-guard.js`, `harness/`). Building it falsified three things this
+plan asserted. Corrections, with the evidence that forced them:
+
+1. **There is no dsh Claude-hooks bridge.** Decision 12's "dsh hook bridge
+   config (official Claude-hooks compatibility path)" is **unbuildable as
+   written**. Verified absent from installed `@deepseek-ai/dsh@0.1.0-rc.7`: no
+   `PreToolUse`/`PostToolUse` events anywhere, and nothing in `@deepseek-ai/*`
+   spawns a user-configured command. `dsh-session/lib/types/known-event-types.js`
+   declares `hook/invoked` + `hook/result`, but that file is generated and
+   nothing emits them — the subsystem exists in DeepSeek's monorepo and is not
+   published in rc.7.
+   **Replacement:** the interception seam is `tools/pre-execute`
+   (`dsh-tools/lib/types/index.d.ts:38`), an async cordis waterfall returning
+   `{kind:'allow'|'deny'|'ask'}`. Implemented as `harness/dsh-external-gate/`.
+   Note `ctx.tools.guard()` is synchronous (cannot await a subprocess) and
+   `permission.defaultPreset` is a declarative 3×2 matrix — neither can host a
+   gate that shells out.
+2. **Version drift.** dsh is `0.1.0-rc.7` (plan said rc.5) — pin exactly, no
+   caret, a caret range on a prerelease moves under you. Pi is
+   `@earendil-works/pi-coding-agent@0.84.2` (plan said 0.80.7); its extension
+   veto is a **return value** — `{block:true, reason}` from `pi.on('tool_call')`
+   — not a throw.
+3. **`AGENTS.md` + `CLAUDE.md` are NOT symlinked.** Decision 12 called for it;
+   doing so would be destructive. `CLAUDE.md` is entirely context-mode MCP
+   routing rules that apply only to Claude Code, while `AGENTS.md` is
+   harness-agnostic repo law. Symlinking either direction either hides the law
+   from Claude Code or feeds dsh/Pi instructions about MCP tools they lack. Both
+   files stay, each cross-referencing the other.
+
+Two further findings that reshape later workstreams:
+
+- **AOT compilation is a functional prerequisite, not a D21 product nicety.**
+  Measured: `dart run` = 1420ms/invocation, AOT = 10ms — 142×. A gate that fires
+  per tool call is unusable at 1.4s. `install.sh` therefore compiles by default,
+  and the binary must live **inside** the checkout or the designer silently
+  loses its runtime assets (`scriptRepoRoot()` walks up from the executable).
+- **No per-tool-call policy verb exists in the engine.** Every `appbox gate`
+  subcommand is a stage-level batch check, so H5's "tool-call interception
+  shelling to the engine for verdicts" had nothing to call. Rather than invent
+  one, the guard enforces an already-ratified rule that genuinely needs
+  per-call granularity — rust-port-closure decision 12, "using-sessions never
+  write into appbox". An engine verdict verb remains **unbuilt**; add it only
+  when a policy needs engine state.
+
+⚠️ **Operational:** `~/.dsh/profiles/web/cordis.patch.yml` holds provider API
+keys in plaintext on 3 lines despite a comment claiming they come from the
+credential store. Not in the repo or its history. Migrate to the
+`appbox credentials` vault; rotate the exposed keys.
+
 ## Workstreams
 
-- **H1 — portable core** (first; days): install.sh + wrapper, AGENTS.md +
-  CLAUDE.md symlink, dsh hook bridge config, Pi gate extension, dsh pin,
-  dsh Anthropic-auth test.
+- **H1 — portable core** — **DONE 2026-08-21.** install.sh + generated PATH
+  wrapper + AOT build; the shared guard and its three harness adapters; dsh
+  pinned to 0.1.0-rc.7; 28-check portable-core suite + 15 harness integration
+  checks. Not done: a booted-session end-to-end check of dsh/Pi dispatch (needs
+  model credits), and dsh Anthropic auth (no Anthropic provider is configured;
+  the machine runs Z.ai/GLM).
 - **H2 — legal**: DONE in this commit (root LICENSE, designer re-scope,
   story-mapper proprietary). Remaining D20 items (free-tier EULA) ride the
   product horizon.

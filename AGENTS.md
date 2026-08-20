@@ -1,5 +1,31 @@
 # app-box — repo instructions
 
+> Harness-agnostic repo law. Claude Code additionally reads `CLAUDE.md`, which
+> carries context-mode MCP routing rules that apply **only** to that harness —
+> the two files are deliberately NOT symlinked to each other. Symlinking would
+> either hide this law from Claude Code or feed dsh/Pi instructions about MCP
+> tools they do not have.
+
+## Install (`./install.sh`)
+
+- `./install.sh` puts `appbox` on PATH from **any** checkout: it derives the
+  repo root from its own location, AOT-compiles the CLI to `.build/appbox`, and
+  writes a PATH wrapper. Re-run it after pulling; it is idempotent.
+- The binary must stay **inside** the checkout — the designer resolves its
+  runtime assets by walking up from the running executable to
+  `config/appbox.config.json`. A binary elsewhere loses those assets silently
+  (`appbox design doctor` then reports MISS).
+- `dart run` costs ~1.4s per invocation; the AOT binary costs ~10ms. Hooks fire
+  per tool call, so always invoke through the wrapper or `.build/appbox`.
+- `./tools/portable-core-test.sh` is the smoke/pressure/stress/portability suite.
+
+## One gate policy, every harness (`harness/`)
+
+- `hooks/appbox-guard.js` is the single per-tool-call policy. Claude Code, dsh,
+  and Pi all route through it — see `harness/README.md`. Add a rule once.
+- Modes: `APPBOX_GUARD_MODE=dev` (default, allow-all) / `using` (the appbox
+  checkout is read-only) / `off`.
+
 ## Projects live outside the repo (`~/.appbox`)
 
 - `~/.appbox` holds **user projects only** (`~/.appbox/projects/<name>/`,

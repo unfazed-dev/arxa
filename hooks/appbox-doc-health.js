@@ -17,6 +17,7 @@
 const fs = require('fs');
 const path = require('path');
 const { spawnSync } = require('child_process');
+const { appboxInvocation } = require('./appbox-bin.js');
 
 if (process.env.APPBOX_DOC_ENFORCE_OFF) process.exit(0);
 
@@ -45,11 +46,13 @@ if (!fs.existsSync(path.join(appboxd, 'bin', 'appbox.dart'))) {
   process.exit(0); // validator gone → fail open
 }
 
-// kimitail: `dart run` JIT-compiles per invocation (~2-4s) — acceptable on
-// doc edits, which are rare; switch to the compiled `appbox` binary when the
-// one-binary build lands (docs/plans/appbox-dart-only-tooling.md).
-const r = spawnSync('dart', ['run', 'bin/appbox.dart', 'docs', repoRoot], {
-  cwd: appboxd,
+// The one-binary build has landed (install.sh), so prefer the AOT binary
+// (~10ms) over `dart run` (~1420ms) and fall back to `dart run` for a checkout
+// that has never been installed.
+const inv = appboxInvocation(repoRoot, ['docs', repoRoot]);
+if (!inv) process.exit(0); // no runnable validator → fail open
+const r = spawnSync(inv.cmd, inv.args, {
+  cwd: inv.cwd,
   encoding: 'utf8',
   timeout: 60000,
 });
