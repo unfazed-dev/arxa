@@ -73,13 +73,50 @@ skipped (no API key), recorded per convention.
 > interchangeable with a `CallId`); its `lib/index.js` is literally
 > `export {};`.
 >
-> **Open, and it gates H3.** The string `DeepSeek` appears in shipped `lib/` code
-> across **24 packages**. Most look functional rather than cosmetic — the
-> `dsh-llm-deepseek` provider, `~/.dsh` home paths, the `DSH_` env-var prefix
-> that `dsh-subprocess` scrubs on. Cosmetic-vs-functional has **not** been
-> separated. That count decides how much user-visible branding can be replaced by
-> composition alone, and it is the one finding that could still justify a fork.
-> **Do this audit before H3 commits to either shape.**
+> **Rebrand surface — audited 2026-08-21, and it does NOT justify a fork.**
+> (An earlier note in this session said "24 packages"; that was a case-sensitive
+> grep and is superseded by the numbers below.)
+>
+> | bucket | count | packages | verdict |
+> |---|---|---|---|
+> | `@deepseek-ai/…` import specifiers | ~4,100 | 193 | functional — invisible |
+> | comments / JSDoc | 1,955 | 186 | invisible |
+> | DeepSeek-the-provider (`api.deepseek.com`, model ids, `deepseek-official`) | ~127 | 6 | functional — it *is* DeepSeek |
+> | **user-visible brand strings** | **47** | **9** | the only real surface |
+>
+> Of those 47, **32 are in `dsh-client-ui-settings-models`** — the DeepSeek
+> *provider onboarding* UI (`DeepSeekModelsEditor`, `DeepSeekOnboardingDialog`,
+> `onboarding-copy`). Those are not branding to strip: keep the provider and the
+> strings are correct; drop it and the plugin simply is not loaded. A
+> plugin-inclusion decision, not a rename.
+>
+> That leaves **15**, and most evaporate on inspection: `dsh/bin.js:77` is the
+> `dsh` CLI's own help (arxa ships its own bin, never loads it),
+> `dsh-skill-badge` is a "powered by dsh" badge plugin (don't load it), the five
+> `dsh-client-connection` hits are demo fixtures (the package describes itself as
+> "fixture api"), and `dsh-cordis-client-runner:3141` is a UI-slot diagnostic.
+>
+> **The genuinely-must-replace set is 4 strings in 2 packages**, and two of them
+> are the important kind — *model-facing*, not chrome:
+> - `dsh-system-prompt/lib/index.js:169` — `"You are an AI agent powered by
+>   DeepSeek Harness."` This ships in the system prompt and shapes how the model
+>   identifies itself. Highest priority of anything in this table.
+> - `dsh-web-app/lib/index.js:56` — tells the model it is in the "DeepSeek
+>   Harness Web GUI".
+> - `dsh-web-app/lib/startup.js:22` and `lib/index.js:98` — CLI help and a
+>   variable description.
+>
+> **Both are swappable without touching source.** `dsh-system-prompt` exports
+> `SystemPrompt extends Service` — a cordis Service, replaceable by
+> registration. And `dsh-app-boot/lib/index.js:324` holds the profile→plugin
+> list as ordinary data (`web: ["@deepseek-ai/dsh-base",
+> "@deepseek-ai/dsh-web-app"]`), so arxa composes its own list rather than
+> editing dsh's.
+>
+> **Conclusion: zero source edits required.** Every user-visible brand string is
+> in a package arxa either replaces with its own plugin or never loads. The
+> depend-don't-fork decision stands, with no residual rebrand debt. H3 is
+> unblocked on this question.
 >
 > Pi is unaffected: it was never forked. It is a dependency, so its updates are
 > an ordinary version bump.
