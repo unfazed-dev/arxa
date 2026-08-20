@@ -11,8 +11,22 @@
 //   appbox credentials check [--module <m>]   missing required keys (exit 1)
 //   appbox credentials set <KEY> [value]      store (stdin when value omitted)
 //   appbox credentials unset <KEY>            remove
+//   appbox credentials exec <KEY>... -- <cmd> run <cmd> with those keys in its
+//                                             environment (never printed)
 //
 // Exit codes: 0 ok · 1 check found missing required keys · 2 usage/unknown key.
+// EXCEPT `exec`, which returns the CHILD's exit code — so 1 and 2 are ambiguous
+// there (they may be the child's, not ours). Every failure `exec` itself owns
+// happens before the child starts, so an exec-owned 2 always comes with a
+// message on stderr and no child output at all.
+//
+// Why `exec` and not `get`: a `get` verb would print a secret to stdout, where
+// it lands in scrollback, shell history, CI logs, and agent transcripts. `exec`
+// passes the value parent→child through the environment only — never argv (argv
+// is world-readable via `ps`), never stdout. That keeps "secret values are never
+// printed" literally true. It is not a defense against the machine's own owner:
+// anyone who can run `exec` can run `exec KEY -- sh -c 'echo $KEY'`. It prevents
+// accidents, which is the threat that actually keeps happening.
 
 import 'dart:convert';
 import 'dart:io';
@@ -31,6 +45,11 @@ Verbs:
   set <KEY> [value]      Store a credential in the vault (reads stdin when
                          the value is omitted)
   unset <KEY>            Remove a credential from the vault
+  exec <KEY>... -- <cmd> [args]
+                         Run <cmd> with each KEY in its environment. The value
+                         is never printed and never passed as an argument.
+                         Returns the child's exit code.
+                         e.g. appbox credentials exec ZAI_API_KEY -- dsh
 ''';
 
 /// One catalog entry — see config/credentials.catalog.json.
@@ -103,13 +122,29 @@ Future<int> credentialsMain(
   final verb = args.first;
   final rest = args.sublist(1);
 
+  // `exec` is a passthrough, so everything after `--` belongs to the CHILD and
+  // must never reach the flag scan below — otherwise a child's own `--module`
+  // (or any future flag we add) gets silently eaten out of its argv.
+  List<String>? childArgv;
+  var scan = rest;
+  if (verb == 'exec') {
+    final sep = rest.indexOf('--');
+    if (sep < 0) {
+      stderr.writeln('appbox credentials exec: missing `--` before the command');
+      stderr.writeln('  usage: appbox credentials exec <KEY>... -- <cmd> [args]');
+      return 2;
+    }
+    scan = rest.sublist(0, sep);
+    childArgv = rest.sublist(sep + 1);
+  }
+
   String? module;
   final positional = <String>[];
-  for (var i = 0; i < rest.length; i++) {
-    if (rest[i] == '--module' && i + 1 < rest.length) {
-      module = rest[++i];
+  for (var i = 0; i < scan.length; i++) {
+    if (scan[i] == '--module' && i + 1 < scan.length) {
+      module = scan[++i];
     } else {
-      positional.add(rest[i]);
+      positional.add(scan[i]);
     }
   }
 
@@ -185,6 +220,51 @@ Future<int> credentialsMain(
       await store.delete(key);
       print('unset $key');
       return 0;
+    case 'exec':
+      if (positional.isEmpty) {
+        stderr.writeln('appbox credentials exec: missing <KEY> before `--`');
+        return 2;
+      }
+      if (childArgv!.isEmpty) {
+        stderr.writeln('appbox credentials exec: missing command after `--`');
+        return 2;
+      }
+      // Same catalog gate as set/unset: an off-catalog name here would silently
+      // inject nothing, and the child would fail somewhere far downstream with
+      // no hint that the key name was the problem.
+      for (final key in positional) {
+        if (!catalog.any((e) => e.key == key)) {
+          stderr.writeln(
+              'appbox credentials exec: "$key" is not in the catalog');
+          return 2;
+        }
+      }
+      final childEnv = Map<String, String>.of(Platform.environment);
+      for (final key in positional) {
+        final value = await store.read(key);
+        if (value == null || value.isEmpty) {
+          // Fail CLOSED. Running the command without the key it asked for makes
+          // the failure surface later, inside the child, as something unrelated.
+          stderr.writeln('appbox credentials exec: "$key" is not set in the '
+              'vault — refusing to run the command');
+          stderr.writeln('  store it with: appbox credentials set $key');
+          return 2;
+        }
+        childEnv[key] = value;
+      }
+      try {
+        final proc = await Process.start(
+          childArgv.first,
+          childArgv.sublist(1),
+          environment: childEnv,
+          mode: ProcessStartMode.inheritStdio,
+        );
+        return await proc.exitCode;
+      } on ProcessException catch (e) {
+        stderr.writeln('appbox credentials exec: cannot run '
+            '"${childArgv.first}": ${e.message}');
+        return 127; // conventional "command not found"
+      }
     default:
       stderr.writeln('appbox credentials: unknown verb "$verb"');
       stderr.write(_usage);

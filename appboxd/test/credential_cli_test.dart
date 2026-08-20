@@ -73,6 +73,94 @@ void main() {
     });
   });
 
+  group('exec', () {
+    // These tests run a real child process, so they are POSIX-shell dependent.
+    final posix = !Platform.isWindows;
+
+    test('injects the vault value into the child environment', () async {
+      final store = await fakeStore();
+      await store.storeApiKey(id: 'KIMI_API_KEY', key: 'vault-value-9');
+      // The child asserts the VALUE, not merely that the name is defined —
+      // "is set" would also pass if it leaked in from the ambient environment.
+      final rc = await credentialsMain(
+        ['exec', 'KIMI_API_KEY', '--', 'sh', '-c',
+         'test "\$KIMI_API_KEY" = vault-value-9'],
+        store: store,
+        catalogPath: catalogPath,
+      );
+      expect(rc, 0);
+    }, skip: posix ? null : 'POSIX shell only');
+
+    test('refuses to run when the key is unset — and does NOT fall back to '
+        'the ambient environment', () async {
+      // THE CONTROL for the test above. With an empty store the command must
+      // never start: exit 2 is ours, not the child's. If this returned 0 the
+      // previous test would prove nothing — the value could have come from the
+      // developer's own shell rather than the vault.
+      final rc = await credentialsMain(
+        ['exec', 'KIMI_API_KEY', '--', 'sh', '-c', 'exit 0'],
+        store: await fakeStore(),
+        catalogPath: catalogPath,
+      );
+      expect(rc, 2);
+    }, skip: posix ? null : 'POSIX shell only');
+
+    test('propagates the child exit code', () async {
+      final store = await fakeStore();
+      await store.storeApiKey(id: 'KIMI_API_KEY', key: 'v');
+      final rc = await credentialsMain(
+        ['exec', 'KIMI_API_KEY', '--', 'sh', '-c', 'exit 42'],
+        store: store,
+        catalogPath: catalogPath,
+      );
+      expect(rc, 42);
+    }, skip: posix ? null : 'POSIX shell only');
+
+    test('does not eat the child\'s own flags after `--`', () async {
+      final store = await fakeStore();
+      await store.storeApiKey(id: 'KIMI_API_KEY', key: 'v');
+      // `--module` is OUR flag; after `--` it belongs to the child verbatim.
+      final rc = await credentialsMain(
+        ['exec', 'KIMI_API_KEY', '--', 'sh', '-c',
+         'test "\$1" = --module && test "\$2" = kit/payments', 'sh',
+         '--module', 'kit/payments'],
+        store: store,
+        catalogPath: catalogPath,
+      );
+      expect(rc, 0);
+    }, skip: posix ? null : 'POSIX shell only');
+
+    test('exit 2 without `--`', () async {
+      expect(
+        await credentialsMain(['exec', 'KIMI_API_KEY', 'sh'],
+            store: await fakeStore(), catalogPath: catalogPath),
+        2,
+      );
+    });
+
+    test('exit 2 on an off-catalog key, before running anything', () async {
+      final store = await fakeStore();
+      await store.storeApiKey(id: 'NOT_A_KEY', key: 'v');
+      expect(
+        await credentialsMain(
+            ['exec', 'NOT_A_KEY', '--', 'sh', '-c', 'exit 0'],
+            store: store, catalogPath: catalogPath),
+        2,
+      );
+    });
+
+    test('exit 127 when the command does not exist', () async {
+      final store = await fakeStore();
+      await store.storeApiKey(id: 'KIMI_API_KEY', key: 'v');
+      expect(
+        await credentialsMain(
+            ['exec', 'KIMI_API_KEY', '--', 'appbox-no-such-binary-xyz'],
+            store: store, catalogPath: catalogPath),
+        127,
+      );
+    });
+  });
+
   group('check', () {
     test('exit 1 when a required key is missing, naming it (never a value)',
         () async {
