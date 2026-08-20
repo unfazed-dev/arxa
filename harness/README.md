@@ -31,6 +31,12 @@ port with little change.
 
 `APPBOX_GUARD_MODE`, else `~/.appbox/guard-mode`, else `dev`:
 
+> **Prefer the env var.** `~/.appbox/guard-mode` is machine-global, but
+> "using-session vs appbox-dev session" is a *per-session* property — with
+> concurrent sessions the last writer wins for all of them. The file is a
+> convenience for a machine dedicated to one mode; anything else should set
+> `APPBOX_GUARD_MODE` per session, which is per-session by construction.
+
 - **`dev`** — appbox-dev session. Everything allowed. *Default*, so installing
   the guard never breaks the operator's own work.
 - **`using`** — using-session. Writes into the appbox checkout's source dirs are
@@ -81,6 +87,23 @@ an insert row is what we want.
 
 Limitation (verified): `tools/pre-execute` deliberately cannot rewrite
 `exec.arguments`. Allow / deny / ask only — a gate may never edit the call.
+
+**Instruction files — exclude `CLAUDE.md` on dsh.** dsh loads agent instructions
+via `@deepseek-ai/dsh-agent-instructions`, whose `instructionFileCandidates`
+defaults to `['AGENTS.md', 'CLAUDE.md']`. Both load in every project directory
+from the project root down; byte-identical siblings dedupe, but genuinely
+distinct ones **both apply**. This repo's `CLAUDE.md` is entirely context-mode
+MCP routing rules for tools dsh does not have, so it should be excluded:
+
+```yaml
+# ~/.dsh/profiles/<name>/cordis.patch.yml
+- id: agent-instructions
+  config:
+    instructionFileCandidates: [AGENTS.md]
+```
+
+The user-global file is always `$DSH_HOME/AGENTS.md` (`~/.dsh/AGENTS.md`) and is
+not affected by that list.
 
 ### Pi — `@earendil-works/pi-coding-agent@0.84.2`
 

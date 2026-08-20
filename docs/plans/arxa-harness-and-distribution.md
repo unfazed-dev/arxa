@@ -197,6 +197,13 @@ plan asserted. Corrections, with the evidence that forced them:
    harness-agnostic repo law. Symlinking either direction either hides the law
    from Claude Code or feeds dsh/Pi instructions about MCP tools they lack. Both
    files stay, each cross-referencing the other.
+   **Follow-on (verified):** dsh reads BOTH by default —
+   `@deepseek-ai/dsh-agent-instructions` sets `instructionFileCandidates` to
+   `['AGENTS.md','CLAUDE.md']`, deduping only byte-identical siblings. So dsh
+   ingests the MCP routing rules regardless of symlinks. Fix is config, not file
+   layout: set `instructionFileCandidates: [AGENTS.md]` in the profile patch
+   (recorded in `harness/README.md`). Pi and dsh both read `AGENTS.md`, so the
+   repo law does reach them.
 
 Two further findings that reshape later workstreams:
 
@@ -212,6 +219,15 @@ Two further findings that reshape later workstreams:
   per-call granularity — rust-port-closure decision 12, "using-sessions never
   write into appbox". An engine verdict verb remains **unbuilt**; add it only
   when a policy needs engine state.
+
+**Assumption to ratify (a widening, stated explicitly rather than left in
+code):** decision 12 says "read-only `appboxd/`". The guard protects eight
+directories — `appboxd kit pipeline gates tools skills config hooks harness` —
+mirroring `appbox-doc-enforce.js`'s existing source set, on the reasoning that a
+using-session editing `skills/` or `gates/` is the same defect as editing
+`appboxd/`. `docs/`, `designs/` and `logs/` stay writable so findings can still
+be recorded. Narrow it in `hooks/appbox-guard.js` (`PROTECTED`) if that is wider
+than intended.
 
 ⚠️ **Operational:** `~/.dsh/profiles/web/cordis.patch.yml` holds provider API
 keys in plaintext on 3 lines despite a comment claiming they come from the
