@@ -48,8 +48,14 @@ function main() {
   const targets = writeTargets(payload);
   if (targets.length === 0) process.exit(ALLOW);
 
+  // Both sides must be symlink-resolved before comparison. repoRoot comes from
+  // realpathSync; a target that reaches the same directory through a symlinked
+  // prefix (macOS /tmp and /var -> /private/..., or a symlinked checkout) would
+  // otherwise compute a `../..` relative path, look "outside the repo", and be
+  // ALLOWED. That is a fail-open in the security path, so it is fixed here
+  // rather than assumed away. Regression-covered in tools/portable-core-test.sh.
   const protectedHit = targets
-    .map((t) => path.resolve(payload.cwd || process.cwd(), t))
+    .map((t) => realish(path.resolve(payload.cwd || process.cwd(), t)))
     .find((abs) => isProtected(abs, repoRoot));
 
   if (!protectedHit) process.exit(ALLOW);
@@ -63,6 +69,26 @@ function main() {
     `  Override for this command: APPBOX_GUARD_MODE=dev\n`
   );
   process.exit(DENY);
+}
+
+/**
+ * realpath() for a path that may not exist yet (a Write creates its target).
+ * Resolves symlinks on the longest existing ancestor, then re-appends the
+ * not-yet-existing tail.
+ */
+function realish(p) {
+  let cur = path.resolve(p);
+  const tail = [];
+  for (;;) {
+    try {
+      return path.join(fs.realpathSync(cur), ...tail);
+    } catch (_) {
+      const parent = path.dirname(cur);
+      if (parent === cur) return path.resolve(p); // hit the root; nothing resolved
+      tail.unshift(path.basename(cur));
+      cur = parent;
+    }
+  }
 }
 
 /** dev | using | off */

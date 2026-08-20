@@ -220,7 +220,12 @@ suite_portability() {
   # Export the committed tree, then overlay any uncommitted install.sh so the
   # test works before the commit lands.
   git -C "$REPO" archive HEAD | tar -x -C "$C" 2>/dev/null
+  # Overlay the WORKING-TREE copies of what we are testing, so the suite checks
+  # the code you just wrote rather than the last commit. Without this, a fix
+  # that is not yet committed looks like a failure and a regression that is not
+  # yet committed looks like a pass.
   cp "$REPO/install.sh" "$C/install.sh"; chmod +x "$C/install.sh"
+  mkdir -p "$C/hooks"; cp "$REPO"/hooks/*.js "$C/hooks/" 2>/dev/null
   [ -f "$C/config/appbox.config.json" ]; yes_ "exported tree looks like a checkout" $?
 
   if ! sh "$C/install.sh" --prefix "$P" >"$TMPD/inst.log" 2>&1; then
@@ -244,6 +249,22 @@ suite_portability() {
   ( cd / && "$P/appbox" design doctor >/dev/null 2>&1 ); local ec=$?
   mv "$TMPD/orig_stash" "$BIN" 2>/dev/null
   is "clone works while the original binary is absent" "$ec" "0"
+
+  # REGRESSION: the guard must deny through a SYMLINKED path prefix. It resolves
+  # its own repo root with realpath; if the target is not resolved the same way,
+  # a symlinked prefix (macOS /tmp, /var -> /private/...) makes the target look
+  # like it lives outside the repo and the write is silently ALLOWED — a
+  # fail-open in the security path. Caught only by installing from an export
+  # under $TMPDIR, so it is pinned here.
+  local logical="$TMPD/clone/appboxd/lib/regress.dart"   # unresolved /var/... form
+  echo "{\"tool_name\":\"Write\",\"tool_input\":{\"file_path\":\"$logical\"}}" \
+    | APPBOX_GUARD_MODE=using node "$C/hooks/appbox-guard.js" >/dev/null 2>&1
+  is "guard denies through a symlinked path prefix (fail-open regression)" "$?" "2"
+
+  # And the physical form must deny too, so the fix did not just move the bug.
+  echo "{\"tool_name\":\"Write\",\"tool_input\":{\"file_path\":\"$C/appboxd/lib/regress.dart\"}}" \
+    | APPBOX_GUARD_MODE=using node "$C/hooks/appbox-guard.js" >/dev/null 2>&1
+  is "guard denies through the physical path" "$?" "2"
 }
 
 for s in "${SUITES[@]}"; do "suite_$s"; done
