@@ -26,6 +26,29 @@ flutter_rust_bridge codegen layer, `dart compile exe` self-contained binaries,
 and the review/deploy gates become in-process calls. FRB stays in the back
 pocket for future app-side native cores, not tooling.
 
+### Addendum 2026-08-21 — verdict challenged and reaffirmed
+
+After the energize and normal-is-boring runs, a Rust+FRB port was proposed
+(slowness, run-to-run variance, too much human babysitting, plus "a Rust
+appbox could emit Rust apps: Dioxus/Leptos/Tauri"). A grill session with
+web research (FRB 2.12 docs, Rust GUI ecosystem surveys, multi-target
+codegen precedent) closed it:
+
+- Every recorded pain is language-independent: fresh-Chrome-per-invocation
+  (`cdp.dart`), page-settle variance (ScrollTrigger, normal-is-boring
+  `replica-findings.md`), gate coverage holes.
+- Emitter language is orthogonal to emission targets (OpenAPI Generator:
+  Java emitting idiomatic Rust/Dart/50+). A Dart appboxd can emit Rust
+  apps if that market ever matures; no port needed.
+- FRB is a Dart↔Rust runtime bridge inside Flutter apps — irrelevant to
+  a build-time CLI and to pure-Rust targets. Back-pocket status unchanged.
+- Rust UI is not client-ready (2025 survey: 94.4% of Rust GUI libraries
+  not production-ready; no flagship consumer mobile app; a11y gaps).
+
+**Port closed, no revisit trigger recorded** (Flutter covers the platform
+ground). The actual fixes are the surgical-lens plan:
+`docs/plans/rust-port-closure-and-surgical-lens.md`.
+
 ## Settled decisions (the grill)
 
 1. **Language** — all tooling consolidates to Dart only. Python, bash, and

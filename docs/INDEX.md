@@ -35,8 +35,8 @@ recorded. If your plan is ambiguous, stop and report — do not choose.
 
 | doc | contents |
 |---|---|
-| [design/brief.md](design/brief.md) | the consolidated design brief — requirements the pipeline consumes |
-| [design/story-map.json](design/story-map.json) · [design/story_map.html](design/story_map.html) | the consolidated app's story map — 8 epics, 17 surfaces, 47 stories. Feeds `appbox-designer` directly |
+| [intake/brief.md](intake/brief.md) | the consolidated design brief — requirements the pipeline consumes |
+| [intake/story-map.json](intake/story-map.json) · [intake/story_map.html](intake/story_map.html) | the consolidated app's story map — 8 epics, 17 surfaces, 47 stories. Feeds `appbox-designer` directly |
 | personas, journeys, flows (archived) | dead context — moved to `archives/design-v2/` in the consolidation (see [plans/consolidate-one-app-plus-daemon.md](plans/consolidate-one-app-plus-daemon.md)) |
 
 ---
@@ -74,7 +74,7 @@ wave.
 | doc | contents |
 |---|---|
 | [plans/consolidate-one-app-plus-daemon.md](plans/consolidate-one-app-plus-daemon.md) | **the shape going forward:** one Stacked app (`appbox-studio/`, web/macOS/iOS/Android) + `appboxd/` daemon; full parity; target detection; provenance-bound approvals; self-host remote (no Totem Cloud); licence-only, pay at first deploy. Supersedes `merge-companion-into-one-flutter-project.md`, amends §17 |
-| [design/story-map.json](design/story-map.json) · [design/brief.md](design/brief.md) · [design/story_map.html](design/story_map.html) | the consolidated app's story map — 8 epics, 17 surfaces, 47 stories, R1 Dogfood / R2 Anywhere / R3 Delight. Feeds `appbox-designer` directly |
+| [intake/story-map.json](intake/story-map.json) · [intake/brief.md](intake/brief.md) · [intake/story_map.html](intake/story_map.html) | the consolidated app's story map — 8 epics, 17 surfaces, 47 stories, R1 Dogfood / R2 Anywhere / R3 Delight. Feeds `appbox-designer` directly |
 | [moodboards/](moodboards/) | design references: `builder-and-pipeline.md`, `ai-builders-and-flows-canvas.md`, `companion-and-macos-polish.md` + `shots/` — produced by `skills/appbox-moodboarder/` (story-mapper → moodboarder → designer; `intake.moodboard` surface) |
 
 ---
@@ -94,7 +94,8 @@ wave.
 
 | doc | contents |
 |---|---|
-| [plans/appbox-dart-only-tooling.md](plans/appbox-dart-only-tooling.md) | **COMPLETE** — Python/bash/Node tooling retired to `archives/tooling-pre-dart/`; one `appbox` Dart binary |
+| [plans/appbox-dart-only-tooling.md](plans/appbox-dart-only-tooling.md) | **COMPLETE** — Python/bash/Node tooling retired to `archives/tooling-pre-dart/`; one `appbox` Dart binary. Rust-port challenge reaffirmed 2026-08-21 (addendum) |
+| [plans/rust-port-closure-and-surgical-lens.md](plans/rust-port-closure-and-surgical-lens.md) | decisions locked 2026-08-21 — Rust port CLOSED; evidence bundle + drill-down compare, capture manifest, bounded auto-loop, abx- dictionary + provenance gate, read-only appbox in using-sessions + `lens eval`, feedback dial + Supabase, a11y toolbox island |
 | [plans/appbox-lens-full-port.md](plans/appbox-lens-full-port.md) | **COMPLETE** (2026-07-31, `4f9c458`) — full probe-runner port onto the appbox lens; skills dartified |
 | [plans/canvas-redesign-contract.md](plans/canvas-redesign-contract.md) | **SUPERSEDED 2026-07-30** — retired rail/mini-rail chrome contract |
 | [plans/design-shell-canvas-redesign.md](plans/design-shell-canvas-redesign.md) | **SUPERSEDED 2026-07-30** — chrome decision record replaced by the panel architecture |
