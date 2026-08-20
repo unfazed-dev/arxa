@@ -22,8 +22,11 @@ skipped (no API key), recorded per convention.
    (`dsh`)** — github.com/deepseek-ai/deepseek-harness, MIT, TypeScript,
    Cordis plugin kernel, "everything is a plugin" (loop, tools, UI,
    compaction all swappable). Fork obligations: MIT notices kept, all
-   DeepSeek branding dropped. dsh is rc-quality (0.1.0-rc.5): **pin to a
-   known-good commit, upgrade deliberately, never track master.**
+   DeepSeek branding dropped. dsh is rc-quality (**0.1.0-rc.7** — verified
+   installed 2026-08-21; this decision originally said rc.5): **pin to a
+   known-good commit, upgrade deliberately, never track master.** Pi is
+   **0.84.2** (originally 0.80.7). Corrected in place rather than only in the
+   amendment below, because H3 executes from this decision text.
 3. **Pi (earendil-works/pi, MIT) contributes its DNA and runs as a
    delegated engine**: (i) design principles ported — sub-1k-token lean
    system prompt discipline, lazy skills (one description line per turn,
@@ -292,10 +295,15 @@ credential store. Not in the repo or its history. Migrate to the
 
 - **H1 — portable core** — **DONE 2026-08-21.** install.sh + generated PATH
   wrapper + AOT build; the shared guard and its three harness adapters; dsh
-  pinned to 0.1.0-rc.7; 28-check portable-core suite + 15 harness integration
-  checks. Not done: a booted-session end-to-end check of dsh/Pi dispatch (needs
-  model credits), and dsh Anthropic auth (no Anthropic provider is configured;
-  the machine runs Z.ai/GLM).
+  pinned to 0.1.0-rc.7; **62 checks green** (47 portable-core + 6 dsh + 9 Pi).
+  Guard scope later inverted to a `docs/designs/logs` allowlist (see RESOLVED
+  note above). Not done: a booted-session end-to-end check of dsh/Pi dispatch
+  (needs model credits), and dsh Anthropic auth (no Anthropic provider is
+  configured; the machine runs Z.ai/GLM).
+  **Note for W1:** H1 already delivered one of W1's five items — "read-only
+  gate on `appboxd/` in using-sessions" is the shared guard, and it landed
+  wider than W1 asked (whole checkout, not just `appboxd/`). W1 inherits it;
+  do not build it twice.
 - **H2 — legal**: DONE in this commit (root LICENSE, designer re-scope,
   story-mapper proprietary). Remaining D20 items (free-tier EULA) ride the
   product horizon.
