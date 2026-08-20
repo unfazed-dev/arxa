@@ -34,7 +34,7 @@ done
 PASS=0; FAIL=0; SKIP=0
 FAILED_NAMES=()
 TMPD="$(mktemp -d)"
-trap 'rm -rf "$TMPD"; restore_source' EXIT
+trap 'rm -rf "$TMPD"; rm -f "$REPO"/hooks/.variant-*.js; restore_source' EXIT
 
 # The stale-detection tests must dirty a source file. Always put it back.
 TOUCHED="$REPO/appboxd/lib/harness.dart"
@@ -52,6 +52,65 @@ head_() { printf '\n\033[1m== %s ==\033[0m\n' "$1"; }
 # assert helpers -------------------------------------------------------------
 is()  { if [ "$2" = "$3" ]; then ok "$1"; else bad "$1" "expected '$3', got '$2'"; fi; }
 yes_() { if [ "$2" -eq 0 ]; then ok "$1"; else bad "$1" "${3:-condition false}"; fi; }
+
+# counter_check — prove a guard assertion is not tautological.
+#
+# WHY THIS EXISTS. Five separate false passes in this project shared one shape:
+# the check's "pass" outcome was also its "did not run" outcome. A missing file
+# made a grep-for-badness pass; an empty timing string became 0ms and cleared
+# every threshold; an unawaited ctx.plugin() left the gate unmounted while
+# allow-shaped assertions passed; a variant guard run from a scratch dir
+# resolved repoRoot outside the checkout so everything looked external and was
+# allowed; a sed whose delimiter collided with `||` wrote an empty file, and
+# node exits 0 on an empty file — which reads as ALLOW.
+#
+# The guard's own contract (0 = allow) means broken, absent, and fine all
+# collapse onto the same exit code. So a differential is only meaningful once
+# the variant has proven it is ALIVE.
+#
+# Two rules encoded here:
+#   1. The mutation is a textual transform of the file ON DISK, never
+#      `git show HEAD~N` — otherwise the next commit silently rots it. The
+#      anchor must match exactly once or this fails loudly.
+#   2. The control payload must exercise the SAME code path as the mutation.
+#      writeTargets() returns early on the WRITE_TOOLS branch, so a Write-shaped
+#      control can never prove a shell-branch mutation is live. The caller passes
+#      the control explicitly; there is deliberately no default to inherit.
+counter_check() { # <desc> <anchor> <repl> <control-json> <target-json> <want-variant> <want-current>
+  local desc="$1" anchor="$2" repl="$3" control="$4" target="$5" wv="$6" wc="$7"
+  local v="$REPO/hooks/.variant-$$-$RANDOM.js" ec
+
+  if ! python3 - "$REPO/hooks/appbox-guard.js" "$v" "$anchor" "$repl" 2>"$TMPD/mut.err" <<'PY'
+import sys, pathlib
+src_p, out_p, anchor, repl = sys.argv[1:5]
+src = pathlib.Path(src_p).read_text()
+n = src.count(anchor)
+if n != 1:
+    sys.exit("anchor matched %dx, expected exactly 1: %r" % (n, anchor[:70]))
+pathlib.Path(out_p).write_text(src.replace(anchor, repl))
+PY
+  then bad "$desc" "mutation failed: $(cat "$TMPD/mut.err")"; return; fi
+
+  # Separate "syntax broken" from "logic did not flip" in the failure message.
+  if ! node --check "$v" 2>"$TMPD/mut.err"; then
+    bad "$desc" "variant is not valid JS: $(head -2 "$TMPD/mut.err" | tr '\n' ' ')"; return
+  fi
+
+  # ALIVENESS — the check whose absence produced the five false passes above.
+  echo "$control" | APPBOX_GUARD_MODE=using node "$v" >/dev/null 2>&1; ec=$?
+  if [ "$ec" != "2" ]; then
+    bad "$desc" "variant is DEAD (control exited $ec, expected 2) — differential means nothing"; return
+  fi
+
+  local got_v got_c
+  echo "$target" | APPBOX_GUARD_MODE=using node "$v" >/dev/null 2>&1; got_v=$?
+  echo "$target" | APPBOX_GUARD_MODE=using node "$REPO/hooks/appbox-guard.js" >/dev/null 2>&1; got_c=$?
+  if [ "$got_v" = "$wv" ] && [ "$got_c" = "$wc" ]; then
+    ok "$desc"
+  else
+    bad "$desc" "variant expected $wv got $got_v; current expected $wc got $got_c"
+  fi
+}
 
 wrapper_path() { command -v appbox 2>/dev/null; }
 
@@ -284,10 +343,10 @@ suite_portability() {
 
   # ── scope is an ALLOWLIST (ratified 2026-08-21) ────────────────────────────
   # Only docs/, designs/, logs/ are writable; everything else in the checkout is
-  # engine. The three ALLOW assertions below are the anchor against an allowlist
-  # that is accidentally too tight; the DENY assertions cover holes the previous
-  # denylist left open (they pass trivially against the old nine-dir list, so
-  # each was confirmed to FAIL against it before being committed).
+  # engine. The ALLOW assertions are the anchor against an allowlist that is
+  # accidentally too tight. The DENY assertions cover holes the previous denylist
+  # left open — and rather than a comment claiming they were checked against the
+  # old code once, the counter_check block below RE-PROVES that on every run.
   guard_ec() { # <json> -> prints exit code
     echo "$1" | APPBOX_GUARD_MODE=using node "$C/hooks/appbox-guard.js" >/dev/null 2>&1
     echo $?
@@ -316,6 +375,42 @@ suite_portability() {
   # outside-the-repo test matched it and waved it through as external. Verified
   # in isolation — restoring that one check flips this back to allow.
   is "guard DENIES a repo-root '..foo' (prefix-match escape)" "$(guard_ec "$(wr ..foo)")" "2"
+
+  # ── counter-checks: each fix must be load-bearing, re-proved every run ──────
+  # Mutate the guard back to its pre-fix behavior and require the outcome to
+  # flip. A variant that is dead (empty, unparseable, or wired to the wrong repo
+  # root) exits 0, which is indistinguishable from a legitimate allow — so
+  # counter_check refuses to report until the control case denies.
+  # Payloads must be rooted at $REPO, not the clone $C: a counter_check variant
+  # lives in $REPO/hooks/, so it derives repoRoot=$REPO and treats any path under
+  # the clone as external — i.e. allows it. Using the wrong root here is what
+  # makes a variant read DEAD, which is how this very block failed on first run.
+  wrR(){ echo "{\"tool_name\":\"Write\",\"tool_input\":{\"file_path\":\"$REPO/$1\"},\"cwd\":\"$REPO\"}"; }
+  sh_R(){ echo "{\"tool_name\":\"Bash\",\"tool_input\":{\"command\":\"$1\"},\"cwd\":\"$REPO\"}"; }
+  local W_CTL S_CTL
+  W_CTL="$(wrR appboxd/lib/ctl.dart)"
+  S_CTL="$(sh_R 'echo x > appboxd/ctl.dart')"
+
+  # 1. allowlist vs denylist. Control may be Write-shaped: the mutation is in
+  #    isProtected(), which every payload reaches.
+  counter_check "counter: denylist WOULD allow appbox-studio/ (allowlist is load-bearing)" \
+    "return !WRITABLE.includes(top); // root files (top === the filename) are engine too" \
+    "return ['appboxd','kit','pipeline','gates','tools','skills','config','hooks','harness'].includes(top);" \
+    "$W_CTL" "$(wrR appbox-studio/lib/a.dart)" 0 2
+
+  # 2. metacharacter filter. Control MUST be shell-shaped — writeTargets()
+  #    returns at the WRITE_TOOLS branch and never reaches the mutated code, so
+  #    a Write control would look alive while proving nothing.
+  counter_check "counter: without the metachar filter, > \"\$OUT\" falsely denies" \
+    '        if (/[$`*?~]/.test(cand)) continue;' \
+    '        /* metachar filter removed by counter_check */' \
+    "$S_CTL" "$(sh_R 'echo x > \\\"$OUT\\\"')" 2 0
+
+  # 3. segment-exact outside-the-repo test vs the old prefix match.
+  counter_check "counter: startsWith('..') WOULD let a root '..foo' escape" \
+    "if (rel === '..' || rel.startsWith('..' + path.sep) || path.isAbsolute(rel)) {" \
+    "if (rel.startsWith('..') || path.isAbsolute(rel)) {" \
+    "$W_CTL" "$(wrR ..foo)" 0 2
 }
 
 for s in "${SUITES[@]}"; do "suite_$s"; done
