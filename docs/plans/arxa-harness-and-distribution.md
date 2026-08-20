@@ -239,14 +239,49 @@ Two further findings that reshape later workstreams:
    machine (`.credentials.yaml` holds ZAI/DEEPSEEK keys only). **Untested** —
    the subscription-OAuth path should be verified before it is planned against.
 
-**Assumption to ratify (a widening, stated explicitly rather than left in
-code):** decision 12 says "read-only `appboxd/`". The guard protects eight
-directories — `appboxd kit pipeline gates tools skills config hooks harness` —
-mirroring `appbox-doc-enforce.js`'s existing source set, on the reasoning that a
-using-session editing `skills/` or `gates/` is the same defect as editing
-`appboxd/`. `docs/`, `designs/` and `logs/` stay writable so findings can still
-be recorded. Narrow it in `hooks/appbox-guard.js` (`PROTECTED`) if that is wider
-than intended.
+**RESOLVED 2026-08-21 — guard scope inverted to an allowlist.** The widening
+raised here was put to the operator and settled by neither ratifying nor
+narrowing it, but by inverting the list.
+
+The original denylist mirrored `appbox-doc-enforce.js`'s source set — nine dirs
+(`appboxd kit pipeline gates tools skills config hooks harness`; this document
+previously said eight, a miscount). Auditing the checkout showed that of its 18
+top-level dirs, the denylist left `appbox-studio/`, `deploy/`, `memory/` and
+`archives/` writable, along with every repo-root file (`install.sh`, `AGENTS.md`,
+`pubspec.yaml`), and would have admitted every future top-level dir writable by
+default. A denylist over engine source drifts open silently.
+
+Inverted, the rule states the actual intent — a using-session records findings,
+it does not touch the engine:
+
+```js
+const WRITABLE = ['docs', 'designs', 'logs'];   // everything else is engine
+```
+
+Three follow-on facts, each pinned by a test in `tools/portable-core-test.sh`:
+
+1. **The two lists are now deliberately independent.** `appbox-doc-enforce.js`
+   answers "which dirs' changes require a doc update" and stays a denylist over
+   source. Re-syncing them re-opens the holes above; the code comment says so.
+2. **The failure direction of shell extraction flipped.** `writeTargets()` is
+   deliberately conservative — under a denylist a bad guess fell through to
+   *allow*; under an allowlist the same guess *denies*. So candidates containing
+   `$ \` * ? ~` are now discarded at extraction: `echo x > "$OUT"` and
+   `mkdir "${TMPDIR}/p"` were never literal paths. Verified: without that filter
+   both become false refusals (exit 2).
+3. **The four new DENY assertions were confirmed non-tautological** by running
+   them against `HEAD`'s guard (allowed, exit 0) — with a sanity assertion that
+   the old guard still denies `appboxd/`, because a first attempt at this proof
+   ran the variant from a scratch dir, where `__filename`-derived `repoRoot`
+   pointed outside the checkout and made *every* target look external.
+
+**Not verified:** that `docs/`, `designs/`, `logs/` is the complete set of places
+a using-session legitimately writes inside the checkout. It comes from the
+previous code comment, not from observing a real client-project session, and no
+evidence-dir path is configured in `config/appbox.config.json` to confirm it
+against. The list was deliberately not widened on speculation; a missing target
+will surface as a refusal, and the documented escape is
+`APPBOX_GUARD_MODE=dev <command>`.
 
 ⚠️ **Operational:** `~/.dsh/profiles/web/cordis.patch.yml` holds provider API
 keys in plaintext on 3 lines despite a comment claiming they come from the

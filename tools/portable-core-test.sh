@@ -281,6 +281,34 @@ suite_portability() {
   echo "{\"tool_name\":\"Write\",\"tool_input\":{\"file_path\":\"$C/appboxd/lib/regress.dart\"}}" \
     | APPBOX_GUARD_MODE=using node "$C/hooks/appbox-guard.js" >/dev/null 2>&1
   is "guard denies through the physical path" "$?" "2"
+
+  # ── scope is an ALLOWLIST (ratified 2026-08-21) ────────────────────────────
+  # Only docs/, designs/, logs/ are writable; everything else in the checkout is
+  # engine. The three ALLOW assertions below are the anchor against an allowlist
+  # that is accidentally too tight; the DENY assertions cover holes the previous
+  # denylist left open (they pass trivially against the old nine-dir list, so
+  # each was confirmed to FAIL against it before being committed).
+  guard_ec() { # <json> -> prints exit code
+    echo "$1" | APPBOX_GUARD_MODE=using node "$C/hooks/appbox-guard.js" >/dev/null 2>&1
+    echo $?
+  }
+  wr() { echo "{\"tool_name\":\"Write\",\"tool_input\":{\"file_path\":\"$C/$1\"},\"cwd\":\"$C\"}"; }
+  sh_() { echo "{\"tool_name\":\"Bash\",\"tool_input\":{\"command\":\"$1\"},\"cwd\":\"$C\"}"; }
+
+  is "guard ALLOWS docs/ (findings stay recordable)"    "$(guard_ec "$(wr docs/finding.md)")"      "0"
+  is "guard ALLOWS designs/"                            "$(guard_ec "$(wr designs/x/spec.json)")"  "0"
+  is "guard ALLOWS logs/"                               "$(guard_ec "$(wr logs/run.log)")"         "0"
+  # Holes the denylist left open — engine dirs it never named.
+  is "guard DENIES appbox-studio/ (denylist hole)"      "$(guard_ec "$(wr appbox-studio/lib/a.dart)")" "2"
+  is "guard DENIES deploy/ (denylist hole)"             "$(guard_ec "$(wr deploy/remote/x.sh)")"   "2"
+  is "guard DENIES a repo-root file (denylist hole)"    "$(guard_ec "$(wr AGENTS.md)")"            "2"
+  # Shell targets — where the inversion actually bites, and previously untested.
+  is "guard ALLOWS shell redirect into logs/"           "$(guard_ec "$(sh_ 'echo x > logs/f.txt')")"          "0"
+  is "guard DENIES shell redirect into appbox-studio/"  "$(guard_ec "$(sh_ 'echo x > appbox-studio/f.txt')")" "2"
+  # Non-literal extraction must not become a false refusal under the allowlist:
+  # writeTargets() drops metacharacter candidates. Without that filter these deny.
+  is "guard ALLOWS an unexpanded \$VAR redirect"        "$(guard_ec "$(sh_ 'echo x > \\\"\$OUT\\\"')")"       "0"
+  is "guard ALLOWS a \${BRACED} mkdir"                  "$(guard_ec "$(sh_ 'mkdir -p \\\"\${TMPDIR}/probe\\\"')")" "0"
 }
 
 for s in "${SUITES[@]}"; do "suite_$s"; done

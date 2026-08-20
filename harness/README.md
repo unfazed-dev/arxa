@@ -52,9 +52,24 @@ port with little change.
 
 - **`dev`** — appbox-dev session. Everything allowed. *Default*, so installing
   the guard never breaks the operator's own work.
-- **`using`** — using-session. Writes into the appbox checkout's source dirs are
-  denied (`appboxd kit pipeline gates tools skills config hooks harness`).
-  `docs/`, `designs/`, `logs/` stay writable so findings can still be recorded.
+- **`using`** — using-session. The appbox checkout is read-only **except**
+  `docs/`, `designs/`, `logs/`, where findings can still be recorded.
+
+  The scope is an **allowlist** (`WRITABLE` in `hooks/appbox-guard.js`), ratified
+  2026-08-21. It replaced a nine-entry denylist of source dirs that left
+  `appbox-studio/`, `deploy/`, `memory/`, `archives/` and every repo-root file
+  writable — and would have admitted each future top-level dir writable by
+  default. Inverted, there are no holes, and adding a fourth write target is a
+  deliberate one-line change.
+
+  Two consequences worth knowing:
+  - This list is **not** the same as `appbox-doc-enforce.js`'s, and must not be
+    re-synced with it. That one answers a different question ("which dirs'
+    changes require a doc update") and is legitimately a denylist.
+  - Because an unrecognized path now *denies*, `writeTargets()` discards shell
+    candidates containing `$ \` * ? ~` — an unexpanded `> "$OUT"` was a guess,
+    not a path, and under an allowlist a guess would become a false refusal.
+  - Escape hatch for a legitimate one-off: `APPBOX_GUARD_MODE=dev <command>`.
 - **`off`** — disabled.
 
 ## Wiring each harness

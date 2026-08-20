@@ -23,7 +23,8 @@
 // MODES (APPBOX_GUARD_MODE, or ~/.appbox/guard-mode, default 'dev'):
 //   dev    — an appbox-dev session. Everything allowed. Default, so installing
 //            the guard never breaks the operator's own work.
-//   using  — a using-session. Writes into the appbox checkout are DENIED.
+//   using  — a using-session. Writes into the appbox checkout are DENIED except
+//            under docs/, designs/, logs/ (see WRITABLE below).
 //   off    — disabled entirely (matches APPBOX_DOC_ENFORCE_OFF's escape hatch).
 //
 // FAILS OPEN on malformed input: a broken guard must never wedge a session.
@@ -64,6 +65,7 @@ function main() {
     `[appbox] guard: this is a USING-session, so the appbox checkout is read-only.\n` +
     `  blocked write: ${protectedHit}\n` +
     `  appbox source may only be edited from an appbox-dev session.\n` +
+    `  Writable here: docs/, designs/, logs/ — record findings there.\n` +
     `  If you need a one-off probe, use the lens eval verb instead of writing a\n` +
     `  tool/tmp_*.dart script (rust-port-closure decision 12).\n` +
     `  Override for this command: APPBOX_GUARD_MODE=dev\n`
@@ -142,22 +144,46 @@ function writeTargets(p) {
     ];
     for (const re of patterns) {
       let m;
-      while ((m = re.exec(cmd)) !== null) if (m[1]) out.push(m[1].replace(/^['"]|['"]$/g, ''));
+      while ((m = re.exec(cmd)) !== null) {
+        if (!m[1]) continue;
+        const cand = m[1].replace(/^['"]|['"]$/g, '');
+        // A candidate carrying shell metacharacters was never a literal path —
+        // the extraction guessed. That matters because isProtected() is an
+        // ALLOWLIST: an unrecognized top segment DENIES. Under the old denylist
+        // a bad guess fell through to allow; now it would become a false
+        // refusal (`echo x > "$OUT"`, `mkdir "${TMPDIR}/p"`, `tee "$(date).log"`).
+        // Discard the guess here so the allowlist only ever judges real paths.
+        if (/[$`*?~]/.test(cand)) continue;
+        out.push(cand);
+      }
     }
   }
   return out;
 }
 
-// The source set mirrors appbox-doc-enforce.js: the dirs whose behavior the
-// docs describe. Everything else in the checkout (docs/, designs/, logs/) stays
-// writable so a using-session can still record findings.
-const PROTECTED = ['appboxd', 'kit', 'pipeline', 'gates', 'tools', 'skills', 'config', 'hooks', 'harness'];
+// ALLOWLIST, not a denylist (ratified 2026-08-21; rust-port-closure decision 12
+// amended). A using-session has exactly three legitimate write targets in this
+// checkout — findings, not source. Everything else is engine.
+//
+// Why inverted: a denylist of source dirs left appbox-studio/, deploy/, memory/
+// and every root file writable, and every future top-level dir would have been
+// writable by default — it drifts open silently. An allowlist has no holes, and
+// admitting a fourth target becomes a deliberate one-line decision.
+//
+// NOT the same list as appbox-doc-enforce.js's, and deliberately so: that one
+// answers "which dirs' changes require a doc update" (a genuine denylist over
+// source). Re-syncing the two would silently re-open the holes above.
+const WRITABLE = ['docs', 'designs', 'logs'];
 
 function isProtected(abs, repoRoot) {
   const rel = path.relative(repoRoot, abs);
-  if (rel.startsWith('..') || path.isAbsolute(rel)) return false; // outside the repo
+  // `rel.startsWith('..')` alone would also match an in-repo root file named
+  // `..foo` and wave it through as "outside". Segment-exact check instead.
+  if (rel === '..' || rel.startsWith('..' + path.sep) || path.isAbsolute(rel)) {
+    return false; // genuinely outside the repo
+  }
   const top = rel.split(path.sep)[0];
-  return PROTECTED.includes(top);
+  return !WRITABLE.includes(top); // root files (top === the filename) are engine too
 }
 
 main();

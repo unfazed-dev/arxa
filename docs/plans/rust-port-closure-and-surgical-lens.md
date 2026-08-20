@@ -88,6 +88,19 @@ per convention, proceeded on primary sources.
     under the project's evidence dir. Recurring evals are promotion
     candidates, promoted to real verbs only in appbox-dev sessions.
 
+> **Amendment 2026-08-21 — scope is the headline, not the example.** This
+> decision's headline ("never write into appbox") and its mechanism clause
+> ("read-only `appboxd/`") disagreed on scope. Ratified in favour of the
+> headline, and implemented as an **allowlist** rather than a wider denylist:
+> in a using-session the whole checkout is read-only except `docs/`,
+> `designs/`, `logs/`, where findings are recorded. `appboxd/` was only ever
+> the example that produced the `tool/tmp_*.dart` litter — a using-session
+> editing `skills/`, `gates/` or `appbox-studio/` is the same defect.
+> Enforced per-tool-call by `hooks/appbox-guard.js` (`WRITABLE`) across all
+> three harnesses; rationale and the holes this closed are in
+> [arxa-harness-and-distribution.md](arxa-harness-and-distribution.md).
+> The `lens eval` gap-filler above is unaffected and still owed by W1.
+
 ## F. Client-facing islands
 
 13. **Feedback dial (the appbox FAB):** first-party island (ADR-0009
