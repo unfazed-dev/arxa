@@ -95,6 +95,22 @@ suite_smoke() {
   local miss; miss=$(cd / && "$BIN" design doctor 2>/dev/null | grep -c "MISS" || true)
   is "designer assets resolve (no MISS lines)" "$miss" "0"
 
+  # Cross-harness skill discovery: dsh scans .dsh/skills + .agents/skills and Pi
+  # scans .pi/skills + .agents/skills; NEITHER scans .claude/skills. Without the
+  # .agents/skills link both harnesses see zero appbox skills — silently, since
+  # nothing errors. Pinned here because it is invisible until someone notices a
+  # stage skill never loading.
+  if [ -L "$REPO/.agents/skills" ] || [ -d "$REPO/.agents/skills" ]; then
+    local n; n=$(ls -1 "$REPO/.agents/skills/" 2>/dev/null | wc -l | tr -d ' ')
+    local direct; direct=$(ls -1 "$REPO/skills/" 2>/dev/null | wc -l | tr -d ' ')
+    is "skills reachable via .agents/skills for dsh+Pi ($n)" "$n" "$direct"
+    [ -f "$REPO/.agents/skills/appbox-designer/SKILL.md" ] \
+      && ok "SKILL.md dir-form resolves through the link" \
+      || bad "SKILL.md dir-form resolves through the link"
+  else
+    bad ".agents/skills exists" "dsh and Pi would see ZERO appbox skills"
+  fi
+
   # Speed is functional, not cosmetic: hooks fire per tool call.
   local ms; ms=$(time_ms "$BIN" --help)
   if [ "$ms" -lt 0 ]; then bad "binary starts fast" "measurement failed"

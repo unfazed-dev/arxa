@@ -101,6 +101,19 @@ if [ "$DO_BUILD" -eq 1 ]; then
   echo "    $BIN ($(du -h "$BIN" | cut -f1))"
 fi
 
+# ── cross-harness skill discovery ────────────────────────────────────────────
+# The 13 skills live in skills/. Claude Code finds them via .claude/skills, but
+# dsh scans <root>/.dsh/skills and <root>/.agents/skills, and Pi scans
+# <root>/.pi/skills and <root>/.agents/skills — none of which is .claude/skills.
+# One relative symlink at .agents/skills therefore serves BOTH dsh and Pi. It is
+# committed, so a fresh clone works with no setup; this heals a checkout that
+# lost it (e.g. a filesystem without symlink support).
+if [ ! -e "$REPO/.agents/skills" ]; then
+  mkdir -p "$REPO/.agents"
+  ln -sfn ../skills "$REPO/.agents/skills"
+  echo "==> linked .agents/skills -> skills (dsh + Pi skill discovery)"
+fi
+
 # ── wrapper ──────────────────────────────────────────────────────────────────
 mkdir -p "$PREFIX"
 cat > "$WRAPPER" <<WRAPPER_EOF

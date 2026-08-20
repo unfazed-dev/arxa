@@ -27,6 +27,19 @@ Every adapter feeds the guard one JSON object on stdin and reads its exit code:
 This is Claude Code's hook contract adopted verbatim, so existing hook scripts
 port with little change.
 
+> ### ⚠️ Exit code 2 means opposite things in the two layers
+>
+> | layer | `0` | `1` | `2` |
+> |---|---|---|---|
+> | **hook protocol** (this dir) | allow | *(caller's choice)* | **DENY** |
+> | **appbox gates** (`gates.dart:19-21`) | pass | fail | **env / not-applicable** |
+>
+> Never wire `appbox gate <name>` directly as a `command:` verdict. A gate that
+> is merely *not applicable* here exits 2, which the hook protocol reads as a
+> hard **deny** — inverting the meaning. `appbox gate lens` exits 2 on this
+> machine right now, so this is live, not theoretical. Always go through
+> `harness/verdict.sh`, which speaks the hook protocol deliberately.
+
 ## Modes
 
 `APPBOX_GUARD_MODE`, else `~/.appbox/guard-mode`, else `dev`:
@@ -87,6 +100,14 @@ an insert row is what we want.
 
 Limitation (verified): `tools/pre-execute` deliberately cannot rewrite
 `exec.arguments`. Allow / deny / ask only — a gate may never edit the call.
+
+**Skills reach dsh via `.agents/skills`, not `.claude/skills`.** dsh's skill
+roots (`dsh-skill-filesystem/lib/index.js:150`, ascending precedence) are
+`<root>/.dsh/skills`, `<root>/.agents/skills`, configured `customSkillDirs`,
+`~/.dsh/skills`, `~/.agents/skills` — it **never scans `.claude/skills`**. Pi
+scans `.pi/skills` and `.agents/skills`. The committed `.agents/skills -> skills`
+symlink therefore serves both; without it dsh and Pi see zero appbox skills.
+Both accept the `<name>/SKILL.md` directory form this repo uses.
 
 **Instruction files — exclude `CLAUDE.md` on dsh.** dsh loads agent instructions
 via `@deepseek-ai/dsh-agent-instructions`, whose `instructionFileCandidates`

@@ -220,6 +220,25 @@ Two further findings that reshape later workstreams:
   write into appbox". An engine verdict verb remains **unbuilt**; add it only
   when a policy needs engine state.
 
+4. **dsh never scans `.claude/skills`** — its roots are `<root>/.dsh/skills`,
+   `<root>/.agents/skills`, `customSkillDirs`, `~/.dsh/skills`,
+   `~/.agents/skills` (`dsh-skill-filesystem/lib/index.js:150`); Pi scans
+   `.pi/skills` + `.agents/skills`. The repo reached Claude Code through
+   `.claude/skills -> ../skills`, so **dsh and Pi were seeing zero appbox
+   skills**. Fixed by a committed `.agents/skills -> skills` symlink, which
+   serves both. Regression-pinned in the portable-core suite.
+5. **dsh CAN drive Anthropic models — H1's open auth item is answered.**
+   `dsh-llm-pi-ai` forwards to `@earendil-works/pi-ai`, whose built-in catalog
+   includes `anthropic` (`pi-ai/dist/models.generated.js:43`, api type
+   `anthropic-messages`). Two auth paths: an API key via `apiKeyEnv`, or —
+   leaving the key blank — pi-ai's built-in Anthropic **OAuth** against a Claude
+   Pro/Max subscription (`pi-ai/dist/auth/oauth/anthropic.js`; authorize
+   `claude.ai/oauth/authorize`, scopes include `user:inference`), the same shape
+   as Claude Code's own OAuth client. There is no `dsh login` command; it is
+   triggered from the Settings UI's ProviderEditor. Not configured on this
+   machine (`.credentials.yaml` holds ZAI/DEEPSEEK keys only). **Untested** —
+   the subscription-OAuth path should be verified before it is planned against.
+
 **Assumption to ratify (a widening, stated explicitly rather than left in
 code):** decision 12 says "read-only `appboxd/`". The guard protects eight
 directories — `appboxd kit pipeline gates tools skills config hooks harness` —
