@@ -1,10 +1,44 @@
-# appbox
+# appbox / arxa
 
 The pipeline that turns client intake into designed, verified, deployed
 Flutter apps — one Dart binary (`appbox`), skills as stage fronts, gates as
-the only enforcer.
+the only enforcer. **arxa** is the product identity; **appbox** is the
+engine underneath.
 
 ## Language
+
+### Product
+
+**Arxa**:
+The product and brand: the harness, the compiled engine, and the paid
+editions together. The engine keeps the appbox name until the gated full
+rename.
+_Avoid_: using arxa and appbox interchangeably
+
+**Arxa harness**:
+The dedicated agent harness forked from DeepSeek Harness (dsh), rebranded,
+grown by plugins. Ships in three flavors: Studio (locked, buyers),
+BYO-harness edition (their CLI, our binary + stub skills), operator build
+(open).
+_Avoid_: the dsh fork, the app
+
+**Engine**:
+The compiled pipeline binary and its verbs — the layer that owns gates,
+entitlement, memory, and artifacts. Harnesses invoke it; it outlives any
+harness.
+_Avoid_: CLI (ambiguous), backend
+
+**Stub skill**:
+A shipped SKILL.md that is only a shell: it fetches its methodology body
+from the engine (`arxa brief <stage>`) after the entitlement check. The
+body never rests on a customer's disk and every delivery is watermarked.
+_Avoid_: encrypted skill (encryption is Studio-only deterrence)
+
+**Clients panel**:
+The harness side panel: Clients → project → pipeline stages, rendered from
+the engine's project registry and gate status. Sessions attach to a
+client + stage, never float free.
+_Avoid_: workspace, session list
 
 ### Seeing (lens)
 
@@ -38,11 +72,19 @@ loaded, frames painted, animations frozen or expired.
 
 ### Making (designer / scaffolder)
 
-**abx dictionary**:
-The controlled vocabulary of appbox semantic terms. Every class, region
-key, and emitted widget identity is drawn from it; growth happens only by
-recorded proposal.
-_Avoid_: class list, naming convention
+**Arxa dictionary**:
+The controlled vocabulary of semantic terms, all prefixed `arxa-`. Every
+class, region key, and emitted widget identity is drawn from it; growth
+happens only by recorded proposal.
+_Avoid_: abx dictionary (superseded 2026-08-21), class list, naming
+convention
+
+**Memory store**:
+The project-scoped record of durable facts — intake decisions, rulings,
+verdicts, fix history, client preferences — owned by the engine and
+written by stages as pipeline output. Harness plugins only inject and
+capture; they never own it.
+_Avoid_: harness memory, chat memory
 
 **Provenance scan**:
 The gate that rejects any semantic token copied from scanned reference

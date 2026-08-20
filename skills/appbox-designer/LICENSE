@@ -1,11 +1,26 @@
+appbox-designer — license scope
+
+This skill contains two layers with different licenses:
+
+1. Upstream-derived portions. The skill was originally forked from
+   `kimi-design`, a Kimi-Code port of https://github.com/JimLiu/baoyu-design
+   (MIT, Copyright (c) 2026 Jim Liu 宝玉), itself an independent community
+   repackaging of a hosted design product's skill. For those derived
+   portions the original MIT notice below is preserved, as its terms
+   require.
+
+2. Everything else. All Totem Labs additions and modifications — including
+   the viewport ladder, the authored-structure contract, the design
+   methodology, ADRs, runtime, references, and every change made since the
+   fork — are proprietary under the repository root LICENSE
+   (Copyright (c) 2026 Totem Labs, all rights reserved) and are NOT offered
+   under the MIT license.
+
+--- Preserved upstream MIT notice (applies to derived portions only) ---
+
 MIT License
 
 Copyright (c) 2026 Jim Liu 宝玉
-
-Port note: `kimi-design` is a Kimi-Code-only port of
-https://github.com/JimLiu/baoyu-design (MIT), itself an independent community
-repackaging of a hosted design product's skill. This port is likewise an
-independent community effort.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal

@@ -71,6 +71,14 @@ per convention, proceeded on primary sources.
     it proposes, the dictionary gains the term + one-line rationale, then
     the gate passes.
 
+> **Amendment 2026-08-21 (same day, later session):** the semantic prefix
+> is **`arxa-`**, not `abx-`, and the vocabulary is the **arxa
+> dictionary** — superseded by the arxa rename in
+> [arxa-harness-and-distribution.md](arxa-harness-and-distribution.md)
+> (decision 11 there). Decisions 9–10 above read with `arxa-` wherever
+> `abx-` appears. Changed before the dictionary or its gates were built
+> (W4 pending), so no artifacts migrate.
+
 ## E. Tooling discipline
 
 12. **Using-sessions never write into appbox.** Gate-enforced read-only
