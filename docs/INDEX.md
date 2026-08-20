@@ -176,6 +176,17 @@ documents. Every claim was measured by running the thing.
    of resolving paths, a drift check guarded on a file htmx does not have —
    every one green.
 
+**Later additions:**
+
+- [research/deterministic-screenshot-capture.md](research/deterministic-screenshot-capture.md)
+  — what actually guarantees a stable screenshot: `document.fonts.ready`'s
+  spec-documented gap, why double-rAF is a heuristic and not a contract, which
+  animation types `getAnimations()` cannot reach (SMIL, GIF/APNG, cross-origin
+  iframes), why CDP virtual time is excluded, and the capture-until-two-match
+  stability loop that backstops all of it. Every claim graded HOT/WARM/COLD
+  against a primary source. Feeds the W1 amendment in
+  [plans/rust-port-closure-and-surgical-lens.md](plans/rust-port-closure-and-surgical-lens.md).
+
 ---
 
 ## 5. Where the source material lives

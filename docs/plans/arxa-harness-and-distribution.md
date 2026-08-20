@@ -43,6 +43,47 @@ skipped (no API key), recorded per convention.
    lineage from dsh, own release cadence; pins a compatible engine
    revision).
 
+> ### Amendment 2026-08-21 — DEPEND, do not fork (supersedes "fork" in 2 and 5)
+>
+> Ratified by the operator. Decisions 2 and 5 assumed a source fork of the dsh
+> monorepo. Inspection of the installed tree says that is the expensive way to
+> get the cheap thing.
+>
+> **Evidence.** dsh ships as **~190 separately published npm packages** under
+> `@deepseek-ai/*` (`dsh-agent`, `dsh-tools`, `dsh-app-boot`, `dsh-client-ui-*`,
+> `dsh-credentials`, …), none marked `private`, each carrying `main` **and**
+> `exports` — verified against `0.1.0-rc.7` in the npx cache. Only the top-level
+> `dsh` CLI wrapper lacks an entrypoint (`main: null`, `exports: null`, `bin:
+> {dsh: lib/bin.js}`), and arxa does not need that one: it ships its own bin.
+>
+> **So arxa is a package that depends on dsh's components**, not a fork of its
+> repo. Upstream tracking becomes:
+>
+> ```
+> arxa update   →  bump the @deepseek-ai/* version range, run the suite
+> ```
+>
+> No merge, no conflict resolution, no divergence debt — ever. A fork would have
+> paid a rebase tax on every upstream release, forever, and that tax compounds
+> precisely with how thoroughly the rebrand is done.
+>
+> **Correction to an earlier claim in this session:** `@deepseek-ai/dsh-brand`
+> is **not** product branding and must not be planned against as a rebrand seam.
+> It is a type-only nominal-typing utility (`Branded<B>`, so a `SessionId` is not
+> interchangeable with a `CallId`); its `lib/index.js` is literally
+> `export {};`.
+>
+> **Open, and it gates H3.** The string `DeepSeek` appears in shipped `lib/` code
+> across **24 packages**. Most look functional rather than cosmetic — the
+> `dsh-llm-deepseek` provider, `~/.dsh` home paths, the `DSH_` env-var prefix
+> that `dsh-subprocess` scrubs on. Cosmetic-vs-functional has **not** been
+> separated. That count decides how much user-visible branding can be replaced by
+> composition alone, and it is the one finding that could still justify a fork.
+> **Do this audit before H3 commits to either shape.**
+>
+> Pi is unaffected: it was never forked. It is a dependency, so its updates are
+> an ordinary version bump.
+
 ## C. Product line and payment gating
 
 6. Three flavors, one codebase:

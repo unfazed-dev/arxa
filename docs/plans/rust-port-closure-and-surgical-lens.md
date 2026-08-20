@@ -170,6 +170,106 @@ per convention, proceeded on primary sources.
   `appboxd/` in using-sessions. Delete the `tool/tmp_*.dart` probes once
   eval lands; promote `lens_click_burst` / `lens_footer_states` into
   verbs or manifest states.
+
+> ### Amendment 2026-08-21 — W1 re-ordered on measured evidence
+>
+> Research (6 parallel agents, official docs + installed source) plus direct
+> measurement against the current lens. **Reordering W1: settle protocol
+> first, warm Chrome second.** The two items were listed as peers; they are
+> not. One is provably broken and provably fixable, the other carries an
+> undocumented risk to the tool's core purpose.
+>
+> **1. Two W1 items are already done.** The `appboxd/` read-only gate shipped
+> as `hooks/appbox-guard.js` in H1 (wider than asked — whole checkout, allowlist
+> of `docs/designs/logs`). The `tool/tmp_*.dart` probes are gone; they were
+> never committed. Remaining probe: `lens_click_burst.dart` (untracked).
+>
+> **2. `lens eval` is nearly free.** `CdpSession.evaluate` already wraps
+> `Runtime.evaluate` (`appboxd/lib/cdp.dart:625-644`). The `eval` verb exists
+> but is bound only to the Flutter VM path (`lens_cli.dart:1020`). Wiring it to
+> the web path is a CLI-surface change, not new capability.
+>
+> **3. The settle defect, measured — `verified`.** `navigateAndSettle`
+> (`cdp.dart:607-623`) is a flat `Future.delayed(settleMs)`, default 1500ms.
+> No fonts signal, no rAF, no network idle. Observed on this machine:
+>
+> | probe | result |
+> |---|---|
+> | static page × 5 captures, fixed settle | **1 distinct hash** — byte-identical |
+> | animated page × 5, fixed settle | **1 distinct hash** — byte-identical |
+> | animated page at 500/1500/2500/4000ms | **4 distinct hashes** |
+> | **variable-load page × 5, fixed 1500ms settle** | **2 distinct hashes** |
+>
+> The mechanism is a fixed timer racing a variable page: animations are live
+> and captured mid-flight, so a constant settle is phase-locked only while load
+> time is constant. The last row varies load time alone (a busy-wait of
+> 100–800ms before render, standing in for network/font/CPU jitter) and
+> reproduces the nondeterminism. This is *not* randomness in Chrome — the first
+> three rows prove the launch path itself is byte-stable.
+>
+> **4. Warm Chrome is the risky half — `unknown`, and no doc will settle it.**
+> No official source (Chromium, CDP, Puppeteer, Playwright) documents whether a
+> reused browser renders identically to a freshly-launched one. Font-shaping,
+> GPU raster, and shader caches all warm up. Since the lens exists to compare
+> pixels, this must be measured before the daemon owns a browser: capture N
+> times in one warm browser and diff against N fresh-launch captures of the
+> same page. Additional constraints the docs *do* name:
+> - `--remote-debugging-pipe` cannot be attached to by a later, unrelated
+>   process (FDs 3/4 belong to the spawning parent). A daemon+CLI split must
+>   use `--remote-debugging-port`, or the daemon proxies.
+> - Chrome ≥136 refuses remote debugging against the default profile, so the
+>   daemon runs **one** `--user-data-dir` for its whole lifetime — one disk
+>   cache, one visited-links table, shared across every capture.
+> - `Target.createBrowserContext` isolates cookies/storage but **not** disk
+>   cache or visited links (Playwright documents visited-links as impossible to
+>   clear). A fresh context is not a fresh render environment.
+> - No CDP event exists for full browser death — only `Target.targetCrashed`
+>   for renderers. Liveness = the WebSocket closed, plus your own reconnect.
+> - Multi-day memory growth has **zero** official guidance. Set a recycle
+>   policy from your own measurements, not from blog posts.
+>
+> **5. The settle sequence to build** (ordered; each step names what it misses).
+> Sources are official docs — full report with per-claim URLs and HOT/WARM/COLD
+> grades at
+> [docs/research/deterministic-screenshot-capture.md](../research/deterministic-screenshot-capture.md).
+> 1. Pre-navigation init script: seed `Math.random`, fix the clock, inject
+>    `!important` zero-duration animation/transition overrides. Must be
+>    pre-navigation — **transitions outrank `!important` in the cascade** once
+>    running, so a last-second override cannot stop one already in flight.
+> 2. Wait for `load` — **not** network-idle (Playwright marks that DISCOURAGED).
+> 3. `await document.fonts.ready`, freshly. Spec: the promise fulfils once and
+>    further fonts may load after it.
+> 4. Freeze what remains in-page: `document.getAnimations()` → `pause()` **and
+>    pin `currentTime`** (pause alone leaves an arbitrary phase); plus
+>    `svg.pauseAnimations()` for SMIL and `video.pause()` — `getAnimations()`
+>    covers CSS animations/transitions/WAAPI only. **GIF/APNG have no pause API
+>    at all** — a genuine hole, same one Playwright has.
+> 5. Resolve lazy images without racing scroll: `captureBeyondViewport`, or
+>    `await img.decode()` per image. No equivalent exists for CSS
+>    `background-image`.
+> 6. Double-rAF (a heuristic — not documented anywhere official), then
+>    `checkVisibility({contentVisibilityAuto:true})`.
+> 7. **Stability loop: capture, wait, capture again until two consecutive
+>    captures match.** This is what Playwright actually does, and it is the only
+>    step that does not depend on getting the signal list right — build it even
+>    if 1–6 are incomplete. Failure mode to accept: a stable-but-wrong state
+>    passes.
+> 8. Pin once per session: `deviceScaleFactor`, `setScrollbarsHidden(true)`,
+>    `overflow-anchor: none`.
+>
+> **Virtual time is excluded**, contrary to the original W1 text: it is
+> Experimental, ships a `maxVirtualTimeTaskStarvationCount` anti-deadlock knob
+> as its own admission of the failure mode, and — decisively — does not touch
+> `requestAnimationFrame` at all, which is exactly the timing that matters here.
+>
+> **6. The designer↔lens gap is a missing artifact, not missing verbs.** The
+> designer writes `structure.json` (screens/routes); the lens writes
+> `shoot.json` (what it captured). Nothing states *what should be captured*.
+> `lens shoot` is the only verb that enumerates anything (a hardcoded 390/744/
+> 1280 ladder, no states); `lens states` needs a hand-typed trigger selector. No
+> designer verb emits a surface list, and no lens verb consumes one. That
+> missing file is W3's capture manifest — W1 does not need to solve it, but
+> should not foreclose it.
 - **W2 — evidence bundle + drill-down compare**, uniform across the four
   media kinds; structured verdict format.
 - **W3 — capture manifest:** designer emit + lens manifest runner +
