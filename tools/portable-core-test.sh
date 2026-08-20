@@ -309,6 +309,13 @@ suite_portability() {
   # writeTargets() drops metacharacter candidates. Without that filter these deny.
   is "guard ALLOWS an unexpanded \$VAR redirect"        "$(guard_ec "$(sh_ 'echo x > \\\"\$OUT\\\"')")"       "0"
   is "guard ALLOWS a \${BRACED} mkdir"                  "$(guard_ec "$(sh_ 'mkdir -p \\\"\${TMPDIR}/probe\\\"')")" "0"
+  # Hidden dirs are engine too — `ls */` does not show them, so they were absent
+  # from the audit that motivated the inversion and are pinned explicitly.
+  is "guard DENIES .claude/ (hidden dir)"               "$(guard_ec "$(wr .claude/settings.json)")" "2"
+  # A repo-root file literally named `..foo`: the old `rel.startsWith('..')`
+  # outside-the-repo test matched it and waved it through as external. Verified
+  # in isolation — restoring that one check flips this back to allow.
+  is "guard DENIES a repo-root '..foo' (prefix-match escape)" "$(guard_ec "$(wr ..foo)")" "2"
 }
 
 for s in "${SUITES[@]}"; do "suite_$s"; done
