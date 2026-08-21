@@ -326,9 +326,33 @@ per convention, proceeded on primary sources.
 > an observation — `lens dom` would report inline styles that are nowhere in the
 > source. Pixels here, data there.
 >
-> **MIGRATION DEBT:** a golden captured under the flat timer on a page with any
-> animation will now differ. Static goldens are unaffected (measured identical
-> under both paths). Recapture via the existing `recaptureGoldens` path.
+> **A fourth correction, this one to the implementation, not the plan.** The
+> first migration pass had all six callers *discard* `converged`. The settle
+> detected non-convergence correctly and then production could not observe it —
+> detection nobody consumes is the same as no detection. This is not
+> hypothetical here: the amendment above already records that **GIF and APNG
+> have no pause API**, so nothing can freeze them; same for a `setInterval`
+> repaint or a buffering video. Those pages burned the timeout, captured an
+> arbitrary frame, and `gate lens` reported PASS on a nondeterministic golden.
+> Fixed in `81bb90f1`: `settleForCapture` warns on stderr *itself* (so a seventh
+> call site cannot forget), `captureGolden` **throws** rather than writing a
+> golden from an unsettled page (`allowUnstable` opts out), `compareGolden`
+> fails with the reason *before* reaching the pixel verdict, both `gate_freeze`
+> renders add it to `errors`, `lens check` adds it to failures, and `lens shoot`
+> records `settled`/`settleMs` per rung in `shoot.json` so which rung was
+> unreproducible survives in the evidence rather than only in the exit code.
+>
+> **MIGRATION DEBT — and it cannot be exercised here.** A golden captured under
+> the flat timer on a page with any animation will now differ; static goldens
+> are unaffected (measured identical under both paths). But this repo has **zero
+> lens goldens**: `appbox gate lens` reports "no `lens` config block — gate
+> skipped", and the single committed golden PNG
+> (`appbox-studio/test/golden/goldens/home_view_default.png`) is a Flutter widget
+> golden, which this change does not touch. So the debt lands entirely in
+> downstream projects. Recapture there via `recaptureGoldens`, and expect the
+> new `LensUnstableCapture` throw to surface any surface that was never
+> reproducible in the first place — that is the debt being *found*, not a
+> regression.
 >
 > **`lens eval` shipped** (`eval <url> <js-expr>`), and immediately earned itself
 > — corrections 1 and 3 above were both diagnosed with it. Deliberately not
