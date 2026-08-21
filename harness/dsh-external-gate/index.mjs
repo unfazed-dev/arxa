@@ -125,11 +125,16 @@ export function apply(ctx, rawConfig) {
 
     // Session workspace root, when a sandbox policy is composed. process.cwd() is
     // the harness process cwd, NOT the session root, so it is not used here.
+    // ctx.get() (not property access): cordis throws on ctx.<service> unless the
+    // service is in `inject`, and sandboxPolicy is optional — the 2026-08-21
+    // booted check crashed here with `cannot get property "sandboxPolicy"
+    // without inject`.
     let cwd
     const session = exec.agent?.session
-    if (session !== undefined && ctx.sandboxPolicy !== undefined) {
+    const sandboxPolicy = typeof ctx.get === 'function' ? ctx.get('sandboxPolicy') : undefined
+    if (session !== undefined && sandboxPolicy !== undefined) {
       try {
-        cwd = (await ctx.sandboxPolicy.resolve({ session }))?.workspaceRoot
+        cwd = (await sandboxPolicy.resolve({ session }))?.workspaceRoot
       } catch {
         cwd = undefined
       }

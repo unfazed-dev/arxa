@@ -421,6 +421,26 @@ empty env.
   gate (harness/README.md:163). Cost: one turn, ~2K tokens on Z.ai. (The
   manual-copy variant via `harness/headless-profile/` stays as the
   arxa-free fallback.)
+  **CLOSED 2026-08-21 — booted DENY observed.** The reply quoted the guard's
+  deny text verbatim (policy hint + override line included), file untouched.
+  The proof-of-life rule earned its keep: the first booted run silently
+  ALLOWED the mutation. Three defects only a booted session could catch,
+  all fixed: (1) the patch row filtered on Claude-cased tool names but dsh
+  registers `write`/`edit`/`str_replace_editor`/`bash` (dsh-tool-fs) — the
+  gate matched nothing; (2) appbox-guard's WRITE_TOOLS regex was anchored so
+  `str_replace_editor` fell outside it; (3) the plugin read
+  `ctx.sandboxPolicy` by property, which cordis refuses without `inject` —
+  crashed the hook once names matched (now `ctx.get('sandboxPolicy')`).
+  Model auth saga en route: coding-CN key dead (401), catalog `zai` route
+  secretly points at the CODING endpoint (pi-ai providers/zai.js:9), coding
+  weekly quota spent till Aug 24 (code 1310, per-subscription so rotation
+  won't reset it), glm-5.3 tier-limited on pay-as-you-go (1302) — the check
+  ran on `zai`/glm-4.6v against wallet balance. `~/.dsh/settings.yaml` now
+  carries: `zai` pinned to the general endpoint, `zai-coding-cn` re-pointed
+  to the international coding endpoint on ZAI_API_KEY with glm-5.3
+  reasoningEfforts declared — flip default back to zai-coding-cn/glm-5.3
+  effort max after the Aug 24 10:04 reset. No `credentials exec` wrapper
+  needed: dsh auths from its own store.
   **Note for W1:** H1 already delivered one of W1's five items — "read-only
   gate on `appboxd/` in using-sessions" is the shared guard, and it landed
   wider than W1 asked (whole checkout, not just `appboxd/`). W1 inherits it;

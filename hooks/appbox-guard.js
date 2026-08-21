@@ -108,7 +108,7 @@ function resolveMode() {
 // Tool names differ per harness — Claude Code uses `Write`/`Edit`/`MultiEdit`
 // and `Bash`; dsh passes its own `exec.name`; Pi uses lowercase `bash`/`edit`.
 // Normalizing here is what lets one policy serve all three.
-const WRITE_TOOLS = /^(write|edit|multiedit|str_replace|create|apply_patch|notebookedit)$/;
+const WRITE_TOOLS = /^(write|edit|multiedit|str_replace(_editor)?|create|apply_patch|notebookedit)$/;
 const SHELL_TOOLS = /^(bash|shell|exec|run|terminal|command)$/;
 
 /** Paths this tool call would write to. Empty ⇒ nothing to police. */
