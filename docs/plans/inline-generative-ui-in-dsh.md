@@ -486,3 +486,111 @@ at the dispatch site, not from doc strings.
 29. Layer B's `store?: H` seat on `register` was not investigated; it is
     page-lifetime, not disk, so it does not change decision 9 — but it may
     simplify sharing one handle across many cards.
+
+## G3. Build log — the design-server SSE and the guard it needed (commit `7c790b7b`)
+
+Answers decision 38's "~50 lines of Dart" estimate. It was ~50 lines of stream
+and ~230 lines of guard, because the stream could not be added honestly
+without the guard: `/__events` is the design server's first deliberately
+cross-origin endpoint, and opening it meant looking at what was already open.
+
+40. **What was already open, proven not asserted.** A worktree at `e7ab16f5`
+    was served on port 4332 and sent the attack any web page in any tab could
+    send — a CORS *simple request* (`Content-Type: text/plain`, so no
+    preflight ever asks the server's permission):
+
+        POST /__project_write   Origin: https://evil.example
+        -> 200 {"ok":true,"path":"PWNED.js"}
+
+    The file landed in `~/.appbox/projects/portalo/` (deleted immediately
+    after; the proof was run against a scratch artifact but `__project_write`
+    is confined to the *project* dir, which is the live one). `GET /__projects`
+    with `Host: evil.example.com` also answered 200 — the DNS-rebinding path.
+    `_handleProjectWrite` decodes JSON regardless of content type, which is
+    what makes the no-preflight form work. The written file is later imported
+    by the worker.
+
+41. **`appboxd/lib/design_server/browser_trust.dart`** — three layers, in the
+    order a request meets them:
+    * **Host allowlist**, every request, `421` on a miss. Loopback names
+      (`localhost`, `127.0.0.0/8`, `::1`, and `*.localhost` per RFC 6761),
+      the bound host, and `--trusted-host`. This is the CVE-2025-66414 defense
+      (MCP TypeScript SDK, Dec 2025, fixed in `@modelcontextprotocol/sdk`
+      1.24.0 — same shape, same server class).
+    * **Fetch-metadata / Origin check**, `403`, on every state-changing method
+      AND every `/__*` path whatever the method (the resource-isolation policy
+      from OWASP's XS-Leaks sheet — `GET /__projects` enumerates ~/.appbox and
+      has no business answering a cross-site page). Artifact files and the
+      design's own GET routes stay unguarded so the panel iframe and a
+      hand-typed `http://127.0.0.1:4319/` need zero configuration.
+    * **CORS echo** of the one matched origin, `Vary: Origin`, never `*`, and
+      `Access-Control-Allow-Credentials` never set at all.
+
+42. **The port is compared for Origin and ignored for Host, deliberately.**
+    Host: a rebinding attacker controls the *name*, never the port — the
+    request already arrived on our socket — and an allowlist that treats
+    `localhost` and `localhost:4319` as different names is mlflow #22095,
+    where valid clients were rejected over a header form and the "fix" people
+    reach for is disabling the check. Origin: `http://localhost:8888` is
+    somebody else's dev server, and treating it as ours would make any local
+    tool that renders untrusted HTML a springboard into this one.
+
+43. **The fail-open is a decision, recorded in the code as one.** A request
+    carrying neither `Sec-Fetch-Site` nor `Origin` is allowed. Both are
+    forbidden header names — page JavaScript cannot set or remove them, and
+    every browser since 2023 sends `Sec-Fetch-Site` — so "neither" means "not
+    a browser", and a browser is the whole threat model on a loopback socket.
+    The callers in that category are the CLI, the probe suite, lens and curl.
+    OWASP says do not fail open on absent fetch metadata; that is written for
+    a public server, where "no browser headers" means a scripted attacker. A
+    token here would break every shipped caller to defend against local code
+    that already has the filesystem.
+
+44. **`GET /__events`**, answered ahead of everything that can touch the
+    worker. It needs no worker, so it must not queue behind the reload gate —
+    which dissolves decision 38's "the panel must retry the 503 inside the
+    3800ms grace": there is no 503 to retry. `retry: 500` in the stream lets
+    EventSource's own reconnect do the work, so no retry loop was written on
+    either side. Frames go out only after `_routeTable` re-registers, so a
+    subscriber that remounts on the signal cannot land in the 404 window that
+    ordering exists to close.
+
+45. **Two things about Dart's `HttpResponse` that a stream lives or dies on.**
+    `bufferOutput = false` is mandatory: the default buffers until the buffer
+    fills or the response closes, neither of which an event stream ever does,
+    so the connection opens, stays open, and delivers nothing. And a dead peer
+    is only surfaced as an error on `done` **by a write** — an idle held-open
+    response never notices the client left. So the heartbeat is also the
+    reaper, and `eventHeartbeat` had to become injectable (20s default, 150ms
+    in the test) or the departed-subscriber test would sit through it. Found
+    by the test failing, not by reading.
+
+46. **Verified.** 68 tests in `design_server_test.dart` (was 59) plus 30 in the
+    new `browser_trust_test.dart`, and the process exits — a live
+    `Timer.periodic` would have kept the VM alive. Live against a real server
+    on 4331: a real file save pushed `event: reload / {"generation":1}` to a
+    real cross-origin subscriber; `Host: evil.example.com` -> 421; the
+    cross-site `__project_write` -> 403 with no file on disk; an
+    un-allowlisted origin -> 403; `GET /`, `GET /__routes` and a cross-site
+    iframe GET all still 200. `appbox design probe all` -> 10/16, and the
+    discriminator is that the serve log recorded **zero** refusals: the six
+    failures are unfinished spike work ("BLOCKED: no emitted tree") and
+    inspector probes expecting a different project fixture, none of them the
+    guard.
+
+47. **The panel half** (`arxa-studio` `c1eae9f`): `arxa-design-panel` opens an
+    EventSource on `<url>/__events` while the dock is open and bumps the
+    iframe key on `reload`. This is cross-origin — the panel is served from
+    `arxa.studio.localhost`, the design server from `127.0.0.1` — so the
+    design server must be started with
+    `--trusted-origin http://arxa.studio.localhost:7891`. Without it the
+    subscription is refused, a dot in the toolbar goes grey with the flag in
+    its tooltip, and ⟳ still works. Deliberately NOT default-allowlisted:
+    hardcoding a product's origin into the engine is the wrong direction, and
+    "any loopback origin" would readmit the springboard of decision 42.
+
+48. **Untested in a browser** — no EventSource has actually run. The wire is
+    proven with a raw `http.request` carrying the same headers a browser
+    sends, which covers the server, but `es.onerror`/`onopen` and the remount
+    have not executed. Open the panel against a server started with the
+    `--trusted-origin` above and save a file.
