@@ -354,6 +354,19 @@ per convention, proceeded on primary sources.
 > reproducible in the first place — that is the debt being *found*, not a
 > regression.
 >
+> **Verified 2026-08-21: the debt has no live target.** Checked both
+> downstream projects directly — `clients/energize` (`landing/appbox.json`,
+> `studio/appbox.json`: zero `lens` blocks) and `clients/normal_is_boring`
+> (no `config/appbox.config.json`; `appbox gate lens` reports it cannot find
+> a repo root). No lens-gate goldens exist anywhere downstream, so there is
+> nothing to recapture today. The goldens that DO exist downstream
+> (normal_is_boring `moodboard/reference/golden/*/…skeleton.json` +
+> `review/replica-check/*.png`) are moodboard/review artifacts, not lens-gate
+> goldens. The debt materializes only when a downstream project first adds a
+> `lens` config block — at which point goldens are captured fresh under the
+> settle-aware path anyway, and `LensUnstableCapture` surfaces any
+> never-reproducible surface at capture time. Nothing to migrate; closed.
+>
 > **`lens eval` shipped** (`eval <url> <js-expr>`), and immediately earned itself
 > — corrections 1 and 3 above were both diagnosed with it. Deliberately not
 > routed through `_emitJson`: that gates the exit code on `certified`, and you
