@@ -598,5 +598,20 @@ empty env.
   frontmatter blocks byte-identical (the description line is the lazy-load
   surface all three harnesses show). Not one normative line rewritten —
   relocation only, per the ratified-engagement-law constraint H5 recorded.
-- **Delegated-Pi tool in arxa sessions (decision 3ii)**: in flight this
-  pass — recorded when closed.
+- **Delegated-Pi tool in arxa sessions (decision 3ii) BUILT + booted** —
+  `arxa-harness/plugins/pi-delegate/` registers `delegate_pi` via
+  `ctx.tools.register(defineTool(...))` (the dsh-tool-fs/-bash seam;
+  registration alone advertises the schema to the model — no separate
+  exposure list). One-shot `pi -p --no-session` in the workspace, default
+  `zai-wallet`/glm-4.6v, provider/model/cwd overridable per call; the child
+  inherits `PI_CODING_AGENT_DIR=~/.arxa/pi`, so delegated runs carry the
+  appbox gate. Booted proof: `arxa --headless` dispatch on `zai`/glm-4.6v —
+  session log shows the `tool/result` event returning Pi's answer verbatim
+  ("delegated"), not a model shortcut. Two seam facts pinned in comments:
+  dsh's schema compiler rejects `required: false` (omit the key on optional
+  params), and dsh-tool-subagent's `ctx.subagents` provider contract was
+  deliberately NOT implemented — decision 3ii needs bounded delegation, not
+  continuable dsh-child machinery. arxa's seeded default stays
+  zai-coding-cn/glm-5.3/max (works after the Aug 24 quota reset; the booted
+  check temporarily ran on the wallet endpoint and the default was
+  restored).
