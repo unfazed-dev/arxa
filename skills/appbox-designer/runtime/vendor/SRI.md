@@ -9,7 +9,7 @@
 | client-side-templates.js | htmx-ext-client-side-templates | 2.0.2 | hypermedia | `sha384-sKX0kzraJJEV0VPe2cmrjHqjTVhEGPVxHhCCa4YCRcYphgn2YTwHZMOeP16FTXPG` |
 | mustache.min.js | mustache | 4.2.0 | hypermedia | `sha384-WASZCYHGuIg0bwkJEH65mhmbKS1x4/VKI2bzElPKmL5B3e0UaH45nIdqOm+BUuRA` |
 | lucide/icons/*.svg | lucide-static | 1.27.0 | hypermedia | `sha384-FcKTsoAfrNAQlm72mTH2j0YueLBCmw6bdz42xM+FFTPLs8te/VOKhDMJv9TJa/fQ` |
-| model-viewer.min.js | @google/model-viewer | 4.3.1 | rich-media | `sha384-34/K+/9GIoNHiaQ2+yOIqoXeJbT/9+9AaadSQETMyL00UPH9afFFJe+HziySmFNz` |
+| model-viewer.min.js | @google/model-viewer | 4.3.1 | rich-media | `sha384-cprcVQt7wbUl0xngF3PGP6yBB7n4/t+4AoAMG9biiMCGFiWOdzUH10Ie2COTqFNW` |
 | dotlottie-wc.js | @lottiefiles/dotlottie-wc | 0.9.24 | rich-media | `sha384-8NZI8IXJtphV4Ekaf5f60Sw4u248eN1N3aclL5WppacPU4l/dVuMLKuf/tQU4b64` |
 | dotlottie-player.wasm | @lottiefiles/dotlottie-web | 0.78.2 | rich-media | `sha384-i1sY5AOkt8qdlQSoSCP6KWXgFZxMOakcpH1YTb3ZLA2vTRuUL4MVoDjL8IGtBZmk` |
 | lottie-player.js | @lottiefiles/lottie-player | 2.0.12 | rich-media | `sha384-i8zT4p4C0XG4mPhfz0zuffZpppP8NjlttNsP6srEdEBatwZkcYUBoQtAW7sfKEp2` |
@@ -31,29 +31,3 @@
 `leaflet/images/*.png` (marker + layers control sprites, referenced by
 `leaflet.css` relative to itself) ride along unpinned — like the lucide SVGs
 they are never loaded as a subresource with an integrity attribute.
-
-## Local patches — files that DIVERGE from the upstream release
-
-Each entry below is re-applied automatically by `appbox design vendor-fetch`, and this section is generated from the `vendorPatches` registry in `design_tools.dart` — so neither the patch nor this note can be lost to a re-run. If an anchor stops matching, the fetch FAILS rather than silently shipping upstream behaviour.
-
-The `integrity` column above is the hash of each file **as patched, on disk**; the upstream hash is recorded per patch below, so the divergence stays visible instead of being flattened into one number.
-
-### model-viewer.min.js — @google/model-viewer 4.3.1
-
-**This patch is verified and the verification says to REVERT it.** Kept only because someone applied it deliberately and may have been looking at a scene the probe cannot construct. Full evidence: `docs/research/model-viewer-far-plane-verification.md`; reproduce with `cd appboxd && dart run tool/model_viewer_farplane_probe.dart`.
-
-Found uncommitted in the working tree on 2026-08-21 and preserved rather than discarded; not authored in that session. The recorded rationale was that upstream's 1× multiplier puts the camera's far clipping plane barely past the model, and that geometry vanishes without a grounded skybox.
-
-That cannot happen. The value is consumed as `far = 2 × max(farRadius(), maximumRadius)`, where `maximumRadius` is the `max-camera-orbit` limit — so with `d ≤ M` enforced by `camera-controls`, the furthest model geometry at `d + r` is always within `2·max(r, M)` for either multiplier. Model geometry is never clipped by this number, under 1× or 60×.
-
-Measured on `boombox.glb` across eight camera regimes: seven differ by 0–7 pixels of 152,100 (depth noise, same picture). The eighth — `max-camera-orbit` held near the bounding radius, the only regime where `farRadius` wins the `max()` — differs by 3,561 pixels, and there the PATCHED arm is the worse one: a dark seam cuts through the boombox's carry handle and the antenna breaks into dashes. Stretching the far plane 60× spends depth precision, and thin geometry pays first.
-
-```js
-// upstream
-farRadius(){return this.boundingSphere.radius*(null!=this.groundedSkybox.parent?10:1)}
-// patched
-farRadius(){return this.boundingSphere.radius*(null!=this.groundedSkybox.parent?10:60)}
-```
-
-- upstream integrity: `sha384-cprcVQt7wbUl0xngF3PGP6yBB7n4/t+4AoAMG9biiMCGFiWOdzUH10Ie2COTqFNW`
-- patched integrity (the `integrity` column above): `sha384-34/K+/9GIoNHiaQ2+yOIqoXeJbT/9+9AaadSQETMyL00UPH9afFFJe+HziySmFNz`

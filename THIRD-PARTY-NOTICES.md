@@ -74,19 +74,15 @@ which also carries the SRI hashes.
 
 ### Modified files
 
-`model-viewer.min.js` **is not the unmodified `@google/model-viewer` 4.3.1
-release.** It carries one local change — the far clipping-plane multiplier in
-`farRadius()`, 1× the model's bounding-sphere radius upstream and 60× here.
-model-viewer is Apache-2.0, whose §4(b) requires modified files to carry
-prominent notice that they were changed; this is that notice.
-
-The change itself, both integrity hashes, and the reasoning live in
-[`runtime/vendor/SRI.md`](skills/appbox-designer/runtime/vendor/SRI.md) under
-"Local patches", generated from the `vendorPatches` registry in
-`appboxd/lib/design_tools.dart`. The manifest row records the on-disk hash as
-`integrity` and the pristine 4.3.1 hash as `upstreamIntegrity`. A test fails if
-a patched file stops being named in this section, so the list above cannot go
-stale silently.
+None. Every vendored file above is the unmodified upstream release at its
+pinned version. (`model-viewer.min.js` carried a local far-plane change from
+2026-08-21 until later the same day, when verification showed it could not do
+what it was applied for — see
+`docs/research/model-viewer-far-plane-verification.md`; the file is back at
+the pristine 4.3.1 bytes.) If a local patch is ever added via the
+`vendorPatches` registry in `appboxd/lib/design_tools.dart`, a test fails
+until the file is named here — Apache-2.0 §4(b) style prominent notice — so
+this section cannot go stale silently.
 
 **Licence terms are those published by each package at the pinned version.** The
 vendored files are minified bundles carrying no licence header, so the terms

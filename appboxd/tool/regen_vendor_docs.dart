@@ -30,6 +30,31 @@ Future<void> main() async {
   final out = <Map<String, String>>[];
   for (final row in rows) {
     if (!patched.contains(row['file'])) {
+      if (row['upstreamIntegrity'] != null) {
+        // The row claims a divergence the registry no longer owns — a patch
+        // was removed. That is only coherent if the file was actually
+        // reverted: require the on-disk bytes to hash to the recorded
+        // upstream, then drop the stale divergence record.
+        final onDisk =
+            await sri(File('$_vendor/${row['file']}').readAsBytesSync());
+        if (onDisk != row['upstreamIntegrity']) {
+          stderr.writeln('!! ${row['file']}: its patch left the registry but '
+              'the on-disk bytes still diverge from the recorded upstream '
+              '($onDisk vs ${row['upstreamIntegrity']}). Either revert the '
+              'file or restore the registry entry — regenerating now would '
+              'erase the only record that this file is not the release.');
+          exit(1);
+        }
+        out.add(manifestEntry(
+            file: row['file']!,
+            pkg: row['package']!,
+            version: row['version']!,
+            integrity: onDisk,
+            category: row['category']!));
+        stdout.writeln('${row['file']}: patch removed, on-disk verified '
+            'pristine ($onDisk)');
+        continue;
+      }
       out.add(row);
       continue;
     }

@@ -52,8 +52,7 @@
     "file": "model-viewer.min.js",
     "package": "@google/model-viewer",
     "version": "4.3.1",
-    "integrity": "sha384-34/K+/9GIoNHiaQ2+yOIqoXeJbT/9+9AaadSQETMyL00UPH9afFFJe+HziySmFNz",
-    "upstreamIntegrity": "sha384-cprcVQt7wbUl0xngF3PGP6yBB7n4/t+4AoAMG9biiMCGFiWOdzUH10Ie2COTqFNW",
+    "integrity": "sha384-cprcVQt7wbUl0xngF3PGP6yBB7n4/t+4AoAMG9biiMCGFiWOdzUH10Ie2COTqFNW",
     "category": "rich-media"
   },
   {

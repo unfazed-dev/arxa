@@ -638,6 +638,20 @@ export default [
   group('vendor patches', () {
     const vendorDir = '../skills/appbox-designer/runtime/vendor';
 
+    // The production registry is EMPTY since the far-plane patch was reverted
+    // (verified: it could not fix clipping and was worse where it acted — see
+    // docs/research/model-viewer-far-plane-verification.md). The machinery
+    // must stay tested anyway, or it rots until the day a real patch needs it
+    // — so the mechanism tests run on this synthetic entry via the `registry:`
+    // parameter, and the registry-shaped tests below stay as vacuous-on-empty
+    // guards over whatever entry is added next.
+    const testPatch = VendorPatch(
+      file: 'model-viewer.min.js',
+      find: 'UPSTREAM_ANCHOR_TEXT',
+      replace: 'LOCALLY_PATCHED_TEXT',
+      why: 'synthetic patch exercising the vendor-patch machinery in tests',
+    );
+
     List<Map<String, String>> committedManifest() =>
         (jsonDecode(File(p.join(vendorDir, 'manifest.json')).readAsStringSync())
                 as List)
@@ -662,42 +676,46 @@ export default [
     });
 
     test('applyVendorPatches rewrites the upstream anchor exactly once', () {
-      for (final patch in vendorPatches) {
-        final upstream = latin1.encode('head;${patch.find};tail');
-        expect(latin1.decode(applyVendorPatches(patch.file, upstream)),
-            'head;${patch.replace};tail');
-      }
+      final upstream = latin1.encode('head;${testPatch.find};tail');
+      expect(
+          latin1.decode(applyVendorPatches(testPatch.file, upstream,
+              registry: [testPatch])),
+          'head;${testPatch.replace};tail');
     });
 
     test('applyVendorPatches is a no-op on an already-patched file', () {
       // Not the same as "anchor missing". Collapsing these two would fail
       // every run after the first, which is how a real check gets disabled.
-      for (final patch in vendorPatches) {
-        final already = latin1.encode('head;${patch.replace};tail');
-        expect(latin1.decode(applyVendorPatches(patch.file, already)),
-            'head;${patch.replace};tail');
-      }
+      final already = latin1.encode('head;${testPatch.replace};tail');
+      expect(
+          latin1.decode(applyVendorPatches(testPatch.file, already,
+              registry: [testPatch])),
+          'head;${testPatch.replace};tail');
     });
 
     test('applyVendorPatches throws when upstream drifts past the anchor', () {
-      for (final patch in vendorPatches) {
-        expect(
-            () =>
-                applyVendorPatches(patch.file, latin1.encode('unrelated bytes')),
-            throwsA(predicate((e) =>
-                '$e'.contains('no longer applies') &&
-                '$e'.contains('do NOT drop'))));
-        // Two anchors is drift too — replaceFirst would silently patch one.
-        expect(
-            () => applyVendorPatches(
-                patch.file, latin1.encode('${patch.find}|${patch.find}')),
-            throwsA(predicate((e) => '$e'.contains('occurs 2 times'))));
-      }
+      expect(
+          () => applyVendorPatches(
+              testPatch.file, latin1.encode('unrelated bytes'),
+              registry: [testPatch]),
+          throwsA(predicate((e) =>
+              '$e'.contains('no longer applies') &&
+              '$e'.contains('do NOT drop'))));
+      // Two anchors is drift too — replaceFirst would silently patch one.
+      expect(
+          () => applyVendorPatches(
+              testPatch.file, latin1.encode('${testPatch.find}|${testPatch.find}'),
+              registry: [testPatch]),
+          throwsA(predicate((e) => '$e'.contains('occurs 2 times'))));
     });
 
     test('files with no registered patch pass through untouched', () {
       final bytes = latin1.encode('htmx bytes');
-      expect(identical(applyVendorPatches('htmx.min.js', bytes), bytes), isTrue);
+      expect(
+          identical(
+              applyVendorPatches('htmx.min.js', bytes, registry: [testPatch]),
+              bytes),
+          isTrue);
     });
 
     test('every committed vendored file still carries its local patch', () {
@@ -749,12 +767,42 @@ export default [
       }
     });
 
+    test('no manifest row claims a divergence the registry does not own', () {
+      // The inverse of the test above, and the one that bites after a REMOVED
+      // patch: `upstreamIntegrity` is the divergence flag, so a row carrying
+      // it with no matching registry entry is a stale claim — either the file
+      // was reverted and the docs were not regenerated, or the registry entry
+      // was dropped while the file still diverges (the lost-patch scenario).
+      final registered = vendorPatches.map((p) => p.file).toSet();
+      for (final row in committedManifest()) {
+        if (row['upstreamIntegrity'] == null) continue;
+        expect(registered, contains(row['file']),
+            reason: '${row['file']} carries upstreamIntegrity but has no '
+                'registered patch — run dart run tool/regen_vendor_docs.dart '
+                '(it verifies the revert before erasing the record)');
+      }
+    });
+
+    test('model-viewer.min.js is byte-identical to the pristine 4.3.1 release',
+        () async {
+      // Pinned to the release hash, not to the manifest, so this cannot drift
+      // into self-consistency: the 60x far-plane edit was reverted after
+      // verification (docs/research/model-viewer-far-plane-verification.md),
+      // and this is what keeps the file reverted.
+      expect(
+          await sri(File(p.join(vendorDir, 'model-viewer.min.js'))
+              .readAsBytesSync()),
+          'sha384-cprcVQt7wbUl0xngF3PGP6yBB7n4/t+4AoAMG9biiMCGFiWOdzUH10Ie2COTqFNW');
+    });
+
     test('vendor-fetch re-applies the local patch to the file it downloads',
         () async {
       // THE caller test. The three above prove applyVendorPatches works; only
       // this one proves vendorFetch actually calls it — which is precisely the
-      // gap that hid the settle-freeze defect in d86d4d37.
-      final patch = vendorPatches.single;
+      // gap that hid the settle-freeze defect in d86d4d37. Runs on the
+      // synthetic patch via `registry:` since the production registry is
+      // empty; the wiring under test is identical.
+      const patch = testPatch;
       final upstreamBody = latin1.encode('/*stub*/${patch.find}//end');
 
       final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
@@ -772,7 +820,8 @@ export default [
       final r = await vendorFetch(out.path,
           baseUrl: '$base/cdn',
           registryBase: '$base/npm',
-          only: {'@google/model-viewer'});
+          only: {'@google/model-viewer'},
+          registry: [patch]);
       expect(r.exitCode, 0, reason: r.stderrLines.join('\n'));
 
       final written =

@@ -4,7 +4,18 @@
 happen. In the one camera regime where the value has any effect at all, 60×
 makes rendering visibly WORSE than upstream's 1×.**
 
+**REVERTED 2026-08-21** — the vendored file is back at the pristine 4.3.1
+bytes (verified against the recorded upstream hash and the originally
+committed blob at `d327c60d`, which agree), the `vendorPatches` registry is
+empty, and a test pins the file to the release hash. The origin investigation
+closed the last open question: the file was vendored PRISTINE at `d327c60d`,
+the 60 appeared later as an uncommitted working-tree edit, no symptom is
+recorded anywhere in the repo, and nothing the repo ships sets
+`camera-orbit`, `max-camera-orbit`, or `skybox-image` — so no reachable scene
+even enters the regime where the value acts.
+
 Reproduce: `cd appboxd && dart run tool/model_viewer_farplane_probe.dart`
+(works from either disk state — it derives the missing arm).
 
 ## What was claimed
 

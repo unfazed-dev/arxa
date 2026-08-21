@@ -1197,43 +1197,21 @@ class VendorPatch {
       required this.why});
 }
 
-const vendorPatches = [
-  VendorPatch(
-    file: 'model-viewer.min.js',
-    find:
-        'farRadius(){return this.boundingSphere.radius*(null!=this.groundedSkybox.parent?10:1)}',
-    replace:
-        'farRadius(){return this.boundingSphere.radius*(null!=this.groundedSkybox.parent?10:60)}',
-    why: '**This patch is verified and the verification says to REVERT it.** '
-        'Kept only because someone applied it deliberately and may have been '
-        'looking at a scene the probe cannot construct. Full evidence: '
-        '`docs/research/model-viewer-far-plane-verification.md`; reproduce '
-        'with `cd appboxd && dart run tool/model_viewer_farplane_probe.dart`.'
-        '\n'
-        '\n'
-        'Found uncommitted in the working tree on 2026-08-21 and preserved '
-        'rather than discarded; not authored in that session. The recorded '
-        "rationale was that upstream's 1× multiplier puts the camera's far "
-        'clipping plane barely past the model, and that geometry vanishes '
-        'without a grounded skybox.\n'
-        '\n'
-        'That cannot happen. The value is consumed as '
-        '`far = 2 × max(farRadius(), maximumRadius)`, where `maximumRadius` is '
-        'the `max-camera-orbit` limit — so with `d ≤ M` enforced by '
-        '`camera-controls`, the furthest model geometry at `d + r` is always '
-        'within `2·max(r, M)` for either multiplier. Model geometry is never '
-        'clipped by this number, under 1× or 60×.\n'
-        '\n'
-        'Measured on `boombox.glb` across eight camera regimes: seven differ '
-        'by 0–7 pixels of 152,100 (depth noise, same picture). The eighth — '
-        '`max-camera-orbit` held near the bounding radius, the only regime '
-        'where `farRadius` wins the `max()` — differs by 3,561 pixels, and '
-        'there the PATCHED arm is the worse one: a dark seam cuts through the '
-        "boombox's carry handle and the antenna breaks into dashes. Stretching "
-        'the far plane 60× spends depth precision, and thin geometry pays '
-        'first.',
-  ),
-];
+/// Empty since 2026-08-21, deliberately — and the machinery stays.
+///
+/// The one patch this registry ever held (model-viewer's far-plane multiplier,
+/// 1×→60×) was investigated to ground: the file was vendored pristine, the 60
+/// appeared as an uncommitted working-tree edit with no symptom recorded
+/// anywhere in the repo, the value mathematically cannot cause or fix model
+/// clipping (`far = 2 × max(farRadius(), maximumRadius)` covers the furthest
+/// geometry under either multiplier), nothing the repo ships sets
+/// `camera-orbit`/`max-camera-orbit`/`skybox-image` so no reachable scene
+/// enters the one regime where the value acts — and measured there, 60× is the
+/// WORSE arm (z-fighting through thin geometry, 3,561 px). Full evidence:
+/// `docs/research/model-viewer-far-plane-verification.md`. The vendored file
+/// is back at the pristine 4.3.1 bytes, verified against the recorded
+/// upstream hash.
+const vendorPatches = <VendorPatch>[];
 
 /// Re-apply every [vendorPatches] entry for [file] to [bytes].
 ///
@@ -1242,8 +1220,10 @@ const vendorPatches = [
 /// Neither → throw. Collapsing the last two into "anchor missing = drift"
 /// would report false drift on a file that is already correct, which is how a
 /// loud check turns into a check people learn to ignore.
-List<int> applyVendorPatches(String file, List<int> bytes) {
-  final patches = vendorPatches.where((p) => p.file == file).toList();
+List<int> applyVendorPatches(String file, List<int> bytes,
+    {List<VendorPatch>? registry}) {
+  final patches =
+      (registry ?? vendorPatches).where((p) => p.file == file).toList();
   if (patches.isEmpty) return bytes;
   // latin1 round-trips arbitrary bytes 1:1 where utf8 would not; the anchors
   // are ASCII, so matching is unaffected and re-encoding cannot corrupt the
@@ -1272,7 +1252,8 @@ List<int> applyVendorPatches(String file, List<int> bytes) {
 /// the committed manifest.json and compares byte-for-byte. That test is what
 /// makes the patch section impossible to lose — a hand-edit to SRI.md, or a
 /// patch that stops being rendered, fails before anyone re-runs the fetch.
-String vendorSriDoc(List<Map<String, String>> manifest) {
+String vendorSriDoc(List<Map<String, String>> manifest,
+    {List<VendorPatch>? registry}) {
   final b = StringBuffer()
     ..write('# Vendored client libraries (the `fetch.mjs` updater was archived;'
         ' re-vendor htmx + extensions via `appbox design vendor-fetch`)\n\n')
@@ -1287,7 +1268,9 @@ String vendorSriDoc(List<Map<String, String>> manifest) {
         'they are never loaded as a subresource with an integrity attribute.\n');
 
   final shipped = manifest.map((m) => m['file']).toSet();
-  final applied = vendorPatches.where((p) => shipped.contains(p.file)).toList();
+  final applied = (registry ?? vendorPatches)
+      .where((p) => shipped.contains(p.file))
+      .toList();
   if (applied.isEmpty) return b.toString();
 
   // Paragraphs are emitted unwrapped, one per line, so the generated section
@@ -1407,7 +1390,8 @@ Future<CmdResult> vendorFetch(String vendorDir,
     {String? baseUrl,
     String? registryBase,
     String? htmxIntegrity,
-    Set<String>? only}) async {
+    Set<String>? only,
+    List<VendorPatch>? registry}) async {
   final cdn = baseUrl ?? 'https://cdn.jsdelivr.net/npm';
   final npm = registryBase ?? 'https://registry.npmjs.org';
   final expectPin = htmxIntegrity ?? _htmxIntegrity;
@@ -1515,7 +1499,7 @@ Future<CmdResult> vendorFetch(String vendorDir,
       }
       // Re-apply local edits before writing. This is the whole reason
       // vendorPatches exists: without it every run silently reverts them.
-      final patched = applyVendorPatches(pkg.out, buf);
+      final patched = applyVendorPatches(pkg.out, buf, registry: registry);
       // `identical` is false when the already-patched branch hands back a
       // re-encoded copy, so compare hashes too: without this, a download that
       // ARRIVES pre-patched would record upstreamIntegrity == integrity — a
@@ -1546,7 +1530,8 @@ Future<CmdResult> vendorFetch(String vendorDir,
 
   File(p.join(vendorDir, 'manifest.json'))
       .writeAsStringSync("${const JsonEncoder.withIndent('  ').convert(manifest)}\n");
-  File(p.join(vendorDir, 'SRI.md')).writeAsStringSync(vendorSriDoc(manifest));
+  File(p.join(vendorDir, 'SRI.md'))
+      .writeAsStringSync(vendorSriDoc(manifest, registry: registry));
   out.add('');
   out.add('${manifest.length} libraries vendored → $vendorDir');
   return CmdResult(0, stdoutLines: out, stderrLines: err);

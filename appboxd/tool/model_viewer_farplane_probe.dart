@@ -173,18 +173,28 @@ Future<Map<String, String>> _run(String variant, String mvJs) async {
 }
 
 Future<void> main() async {
+  // Either disk state works: whichever form is present anchors the swap and
+  // the other arm is derived from it. Refusing both is the only failure —
+  // identical arms would report "no difference" for the wrong reason. (The
+  // committed file is pristine since the 2026-08-21 revert; the probe stays
+  // runnable so the verdict stays reproducible.)
   final onDisk =
       File(p.join(_repoVendor, 'model-viewer.min.js')).readAsStringSync();
-  if (!onDisk.contains(_patched)) {
-    stderr.writeln('the vendored file is not in the patched state — aborting, '
-        'because both arms would then be the same build and the run would '
-        'report "no difference" for the wrong reason.');
+  final String patchedJs, upstreamJs;
+  if (onDisk.contains(_patched)) {
+    patchedJs = onDisk;
+    upstreamJs = onDisk.replaceFirst(_patched, _upstream);
+  } else if (onDisk.contains(_upstream)) {
+    upstreamJs = onDisk;
+    patchedJs = onDisk.replaceFirst(_upstream, _patched);
+  } else {
+    stderr.writeln('neither the upstream nor the patched farRadius anchor is '
+        'present — upstream drifted past this probe; re-derive the anchors.');
     exit(1);
   }
-  final upstreamJs = onDisk.replaceFirst(_patched, _upstream);
 
   stdout.writeln('PATCHED (60x):');
-  final patched = await _run('60x', onDisk);
+  final patched = await _run('60x', patchedJs);
   stdout.writeln('UPSTREAM (1x):');
   final upstream = await _run(' 1x', upstreamJs);
 
