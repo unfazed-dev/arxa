@@ -20,6 +20,7 @@ import 'dart:typed_data';
 
 import 'package:appboxd/cdp.dart';
 import 'package:appboxd/crypto_aead.dart' as crypto;
+import 'package:appboxd/lens/daemon.dart' show LensDaemon;
 import 'package:appboxd/design_server/l10n.dart' show parseArb;
 import 'package:appboxd/design_tools.dart'
     show generateRenderTsx, scriptRepoRoot;
@@ -903,6 +904,25 @@ class JsWorker {
   /// fix rot silently.
   static int get lastLaunchAttempts => _ChromeHandle.lastLaunchAttempts;
 
+  /// Public faces of the sweep's decision half, for tests: `_ChromeHandle` is
+  /// private, and the false-orphan rules (worker vs cdp vs protected daemon)
+  /// deserve direct assertions on synthetic `ps` text — a real sweep with a
+  /// lowered age threshold would SIGKILL every young `open -g` Chrome of every
+  /// concurrently running test file, which is the exact incident the age
+  /// guard's comment records.
+  static (List<int>, Set<String>) classifyChromesForTest(
+    String psOut, {
+    required Set<String> protectedDirs,
+    required int cdpMinAgeSeconds,
+  }) =>
+      _ChromeHandle.classifyChromes(psOut,
+          protectedDirs: protectedDirs, cdpMinAgeSeconds: cdpMinAgeSeconds);
+
+  /// See [_ChromeHandle.protectedProfileDirs]: the dirs the sweep must never
+  /// reap — today, a live lens daemon's browser.
+  static Set<String> protectedProfileDirs() =>
+      _ChromeHandle.protectedProfileDirs();
+
   /// Drop `globalThis.__dispatch`, reproducing the lost-realm state a racing
   /// navigation leaves behind. Test-only seam: the real trigger is a timing
   /// race, and a test that reproduces it by racing would be exactly the kind of
@@ -1024,32 +1044,9 @@ class _ChromeHandle {
       return; // no ps (unlikely) — a leak is better than a crash on boot.
     }
     if (ps.exitCode != 0) return;
-    final live = <String>{}; // user-data-dirs still owned by a running Chrome
-    final orphans = <int>[];
-    final udds = _udds;
-    for (final line in (ps.stdout as String).split('\n')) {
-      var at = -1;
-      for (final u in udds) {
-        at = line.indexOf(u);
-        if (at >= 0) break;
-      }
-      if (at < 0) continue;
-      final dir = line.substring(at + '--user-data-dir='.length).split(' ').first;
-      final f = line.trimLeft().split(RegExp(r'\s+'));
-      if (f.length < 3) continue;
-      final pid = int.tryParse(f[0]);
-      final ppid = int.tryParse(f[1]);
-      final age = etimeSeconds(f[2]);
-      if (pid == null) continue;
-      final isWorker = dir.contains('/$_uddWorker');
-      // Unparseable age counts as young: never kill on a field we failed to read.
-      final oldEnough = age != null && age > _cdpMinAgeSeconds;
-      if (ppid == 1 && (isWorker || oldEnough)) {
-        orphans.add(pid);
-      } else {
-        live.add(dir); // still owned, or too young to call — hands off
-      }
-    }
+    final (orphans, live) = classifyChromes(ps.stdout as String,
+        protectedDirs: protectedProfileDirs(),
+        cdpMinAgeSeconds: _cdpMinAgeSeconds);
     for (final pid in orphans) {
       try {
         Process.killPid(pid, ProcessSignal.sigkill);
@@ -1065,6 +1062,61 @@ class _ChromeHandle {
         d.deleteSync(recursive: true);
       } catch (_) {}
     }
+  }
+
+  /// Profile dirs that must never be treated as orphans, however they look.
+  ///
+  /// Today that is one: the lens daemon's browser, which is a FALSE orphan by
+  /// both of this sweep's signals — `open -g` launches it under launchd, so
+  /// ppid==1 is its normal lifelong state, and it recycles by screenshot
+  /// count, not by age, so being warm past [_cdpMinAgeSeconds] is the daemon
+  /// working as designed. Without this exclusion, the first design-server boot
+  /// after the daemon's first hour kills it.
+  static Set<String> protectedProfileDirs() {
+    final daemon = LensDaemon.read();
+    return (daemon != null && LensDaemon.isAlive(daemon))
+        ? {daemon.profileDir}
+        : const {};
+  }
+
+  /// The decision half of [sweepOrphans], pure so the false-orphan rules are
+  /// testable on synthetic `ps` text without killing anything. Returns the
+  /// pids judged orphaned and the profile dirs judged live (which the
+  /// directory sweep must not delete).
+  static (List<int>, Set<String>) classifyChromes(
+    String psOut, {
+    required Set<String> protectedDirs,
+    required int cdpMinAgeSeconds,
+  }) {
+    final live = <String>{}; // user-data-dirs still owned by a running Chrome
+    final orphans = <int>[];
+    final udds = _udds;
+    for (final line in psOut.split('\n')) {
+      var at = -1;
+      for (final u in udds) {
+        at = line.indexOf(u);
+        if (at >= 0) break;
+      }
+      if (at < 0) continue;
+      final dir = line.substring(at + '--user-data-dir='.length).split(' ').first;
+      final f = line.trimLeft().split(RegExp(r'\s+'));
+      if (f.length < 3) continue;
+      final pid = int.tryParse(f[0]);
+      final ppid = int.tryParse(f[1]);
+      final age = etimeSeconds(f[2]);
+      if (pid == null) continue;
+      final isWorker = dir.contains('/$_uddWorker');
+      // Unparseable age counts as young: never kill on a field we failed to read.
+      final oldEnough = age != null && age > cdpMinAgeSeconds;
+      if (protectedDirs.contains(dir)) {
+        live.add(dir); // see [protectedProfileDirs] — never an orphan
+      } else if (ppid == 1 && (isWorker || oldEnough)) {
+        orphans.add(pid);
+      } else {
+        live.add(dir); // still owned, or too young to call — hands off
+      }
+    }
+    return (orphans, live);
   }
 
   /// Counts boot attempts made by the most recent [launch] call. See
@@ -1195,10 +1247,22 @@ class _ChromeHandle {
         final m = RegExp(r'ws://\S+').firstMatch(line);
         if (m != null && !completer.isCompleted) completer.complete(m.group(0)!);
       },
-      onDone: () {
+      onDone: () async {
         if (!completer.isCompleted) {
-          completer.completeError(StateError(
-              'Chrome exited before printing its DevTools URL${tail.note}'));
+          // stderr closing means the process is gone (or going); the exit code
+          // is the only witness left for WHY a silent boot death happened —
+          // "wrote nothing to stderr" alone has kept finding 16 undiagnosable.
+          // Bounded wait: exitCode normally completes within ms of stderr
+          // closing, and a hung wait here would turn a dead boot into a hang.
+          final code = await proc.exitCode
+              .timeout(const Duration(seconds: 1), onTimeout: () => -1)
+              .catchError((_) => -1);
+          final how = code == -1 ? 'exit code unknown' : 'exit code $code';
+          if (!completer.isCompleted) {
+            completer.completeError(StateError(
+                'Chrome exited before printing its DevTools URL '
+                '($how)${tail.note}'));
+          }
         }
       },
       onError: (e) {

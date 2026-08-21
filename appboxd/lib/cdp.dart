@@ -160,6 +160,18 @@ class CdpClient {
   // ── launch / connect ──────────────────────────────────────────────
 
   /// Launch Chrome headless and connect via CDP.
+  ///
+  /// Two attempts, not one, and every failed attempt cleans up after itself.
+  /// Both are lessons the design worker's launcher (`worker.dart
+  /// _ChromeHandle.launch`) already paid for, and this launcher had neither:
+  ///
+  ///  * Under CPU oversubscription Chrome can take >30s to boot — reproduced
+  ///    on 2026-08-21 (full suite + 12 spinners on 10 cores: DevToolsActivePort
+  ///    never written inside the timeout, test failed in setUp). A transient
+  ///    failure that is never retried is a guaranteed failure.
+  ///  * The failure paths threw with the spawned Chrome alive and the profile
+  ///    dir on disk. A launch that times out while Chrome is still booting is
+  ///    exactly how a green-looking session leaves warm orphans behind.
   static Future<CdpClient> launch({
     String? chromePath,
     List<String> extraArgs = const [],
@@ -168,7 +180,26 @@ class CdpClient {
     if (!await File(chromePath).exists()) {
       throw StateError('Chrome not found at: $chromePath');
     }
+    Object? lastError;
+    for (var attempt = 1; attempt <= 2; attempt++) {
+      try {
+        return await _launchOnce(chromePath, extraArgs);
+      } catch (e) {
+        lastError = e;
+        if (attempt < 2) {
+          stderr.writeln(
+              'cdp: Chrome launch attempt $attempt failed ($e) — retrying');
+          await Future.delayed(Duration(milliseconds: 250 * attempt));
+        }
+      }
+    }
+    throw StateError('Chrome failed to launch after 2 attempts — $lastError');
+  }
 
+  static Future<CdpClient> _launchOnce(
+    String chromePath,
+    List<String> extraArgs,
+  ) async {
     final tmpDir = await Directory.systemTemp.createTemp('appbox-cdp-');
     final args = [
       if (!LensSession.visible) '--headless=new',
@@ -196,32 +227,61 @@ class CdpClient {
     // stderr URL) since a visible window is meant to appear.
     if (Platform.isMacOS && !LensSession.visible) {
       final app = _chromeAppBundle(chromePath);
-      await Process.run('open', ['-g', '-n', '-a', app, '--args', ...args]);
-      final wsUrl =
-          await _waitForDevToolsPortFile('${tmpDir.path}/DevToolsActivePort');
+      try {
+        await Process.run('open', ['-g', '-n', '-a', app, '--args', ...args]);
+        final wsUrl =
+            await _waitForDevToolsPortFile('${tmpDir.path}/DevToolsActivePort');
+        final ws = await WebSocket.connect(wsUrl);
+        final client = CdpClient._(null, ws);
+        client._ownsBrowser = true;
+        client._wsUrl = wsUrl;
+        client._tmpDir = tmpDir;
+        // `open` hands back no Process, so close() had nothing to kill and fell
+        // back to asking Chrome nicely + a pattern kill — which did not always
+        // land: a 6-launch lens storm left 2 Chromes resident. DevToolsActivePort
+        // is already written by here, so the browser certainly exists, and the
+        // profile dir is unique to this launch, so its pid is resolvable now.
+        final owners = _pidsOwningProfile(tmpDir.path, browserOnly: true);
+        if (owners.isNotEmpty) client._chromePid = owners.first;
+        return client;
+      } catch (_) {
+        // `open` returns before Chrome finishes booting, so on a timeout the
+        // browser may be alive — or may come up AFTER this cleanup runs. Kill
+        // whatever owns the profile now and delete the dir; a straggler that
+        // boots later against the deleted dir is sweepOrphans' case.
+        await _reapFailedLaunch(tmpDir);
+        rethrow;
+      }
+    }
+
+    Process? proc;
+    try {
+      proc = await Process.start(chromePath, args);
+      final wsUrl = await _waitForDevToolsUrl(proc);
       final ws = await WebSocket.connect(wsUrl);
-      final client = CdpClient._(null, ws);
+      final client = CdpClient._(proc, ws);
       client._ownsBrowser = true;
       client._wsUrl = wsUrl;
       client._tmpDir = tmpDir;
-      // `open` hands back no Process, so close() had nothing to kill and fell
-      // back to asking Chrome nicely + a pattern kill — which did not always
-      // land: a 6-launch lens storm left 2 Chromes resident. DevToolsActivePort
-      // is already written by here, so the browser certainly exists, and the
-      // profile dir is unique to this launch, so its pid is resolvable now.
-      final owners = _pidsOwningProfile(tmpDir.path, browserOnly: true);
-      if (owners.isNotEmpty) client._chromePid = owners.first;
       return client;
+    } catch (_) {
+      try {
+        proc?.kill(ProcessSignal.sigkill);
+      } catch (_) {}
+      await _reapFailedLaunch(tmpDir);
+      rethrow;
     }
+  }
 
-    final proc = await Process.start(chromePath, args);
-    final wsUrl = await _waitForDevToolsUrl(proc);
-    final ws = await WebSocket.connect(wsUrl);
-    final client = CdpClient._(proc, ws);
-    client._ownsBrowser = true;
-    client._wsUrl = wsUrl;
-    client._tmpDir = tmpDir;
-    return client;
+  /// A failed attempt must not leave a browser or a profile dir behind —
+  /// SIGKILL by scoped ownership, then delete once nothing holds the dir.
+  static Future<void> _reapFailedLaunch(Directory tmpDir) async {
+    try {
+      await awaitProfileReleased(tmpDir.path);
+      if (tmpDir.existsSync()) tmpDir.deleteSync(recursive: true);
+    } catch (_) {
+      // cleanup is best-effort; the launch error is the one worth throwing.
+    }
   }
 
   /// Derive the .app bundle path from the executable path

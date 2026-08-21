@@ -12,6 +12,7 @@
 import 'dart:io';
 
 import 'package:appboxd/cdp.dart';
+import 'package:appboxd/design_server/worker.dart' show JsWorker;
 import 'package:appboxd/lens/daemon.dart';
 import 'package:test/test.dart';
 
@@ -219,6 +220,23 @@ void main() {
       }
     }, timeout: const Timeout(Duration(minutes: 2)));
 
+    test('a live daemon is a protected dir; a stopped one is not', () async {
+      // The integration half of the sweep exclusion: worker.dart's orphan
+      // sweep reads the daemon state through this set. Without it, the first
+      // design-server boot after the daemon's first hour SIGKILLs it — the
+      // daemon's ppid is 1 by construction (`open -g` = launchd child), which
+      // is the sweep's orphan signal for over-age appbox-cdp- Chromes.
+      final s = await LensDaemon.start();
+      try {
+        expect(JsWorker.protectedProfileDirs(), contains(s.profileDir));
+      } finally {
+        await LensDaemon.stop();
+      }
+      expect(JsWorker.protectedProfileDirs(), isEmpty,
+          reason: 'a stopped daemon must not keep protecting its dir — the '
+              'sweep would then never reclaim a genuinely dead one');
+    }, timeout: const Timeout(Duration(minutes: 2)));
+
     test('a stale state file is reaped, and acquire falls back to a launch',
         () async {
       // The case no CDP event can announce: the browser died and nothing said
@@ -244,4 +262,59 @@ void main() {
       skip: _chromeOk
           ? (LensDaemon.supported ? null : 'daemon needs the macOS launch path')
           : 'requires Chrome');
+
+  group('sweep classification (synthetic ps, nothing is killed)', () {
+    // The decision half of worker.dart's sweepOrphans, on fabricated ps rows.
+    // Tested pure because the alternative — a real sweep with a lowered age
+    // threshold — would SIGKILL every young `open -g` Chrome of every test
+    // file running in parallel.
+    final tmp = Directory.systemTemp.path;
+    final workerDir = '$tmp/appbox-design-worker-AAA111';
+    final cdpDir = '$tmp/appbox-cdp-BBB222';
+    String row(int pid, int ppid, String etime, String dir) =>
+        '$pid $ppid $etime /Applications/Chrome --headless=new '
+        '--user-data-dir=$dir --no-first-run';
+
+    (List<int>, Set<String>) classify(String ps,
+            {Set<String> protected = const {}}) =>
+        JsWorker.classifyChromesForTest(ps,
+            protectedDirs: protected, cdpMinAgeSeconds: 3600);
+
+    test('worker prefix: ppid==1 alone is an orphan, any age', () {
+      final (orphans, live) = classify(row(42, 1, '00:05', workerDir));
+      expect(orphans, [42]);
+      expect(live, isNot(contains(workerDir)));
+    });
+
+    test('cdp prefix: ppid==1 young is NOT an orphan — detached is normal', () {
+      final (orphans, live) = classify(row(43, 1, '10:00', cdpDir));
+      expect(orphans, isEmpty);
+      expect(live, contains(cdpDir));
+    });
+
+    test('cdp prefix: ppid==1 past the age threshold is an orphan', () {
+      final (orphans, _) = classify(row(44, 1, '01:10:00', cdpDir));
+      expect(orphans, [44]);
+    });
+
+    test('a protected dir is live even when it matches every orphan signal',
+        () {
+      // THE daemon regression: over-age, ppid==1, cdp prefix — all three
+      // signals say orphan, and the protection must still win, or the sweep
+      // kills a warm lens daemon at the one-hour mark.
+      final (orphans, live) =
+          classify(row(45, 1, '01:10:00', cdpDir), protected: {cdpDir});
+      expect(orphans, isEmpty);
+      expect(live, contains(cdpDir),
+          reason: 'protected dirs must also be exempt from the dir sweep');
+    });
+
+    test('a parented chrome is never an orphan, and unparseable age is young',
+        () {
+      final (o1, _) = classify(row(46, 8431, '05-01:10:00', cdpDir));
+      expect(o1, isEmpty, reason: 'ppid!=1 = still owned, hands off');
+      final (o2, _) = classify(row(47, 1, '??:??', cdpDir));
+      expect(o2, isEmpty, reason: 'never kill on a field we failed to read');
+    });
+  });
 }

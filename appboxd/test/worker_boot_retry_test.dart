@@ -75,6 +75,10 @@ void main() {
         expect(e.message, contains('2 attempts'));
         expect(e.message, contains('DevTools URL'),
             reason: 'the underlying cause must survive the retry wrapper');
+        expect(e.message, contains('exit code 0'),
+            reason: 'HOW Chrome exited is the only witness to a silent boot '
+                'death — the real flake (finding 16) stayed undiagnosable '
+                'for exactly this missing datum');
       }
     });
 
