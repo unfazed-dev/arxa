@@ -111,7 +111,7 @@ Future<GateResult> lensGate(GateContext ctx, {bool recaptureGoldens = false}) as
   var passes = 0;
   try {
     if (recaptureGoldens) {
-      final n = await _recapture(
+      final (written, refused) = await _recapture(
         base: base,
         surfaces: surfaces,
         viewports: viewports,
@@ -119,7 +119,17 @@ Future<GateResult> lensGate(GateContext ctx, {bool recaptureGoldens = false}) as
         settleMs: settleMs,
         details: details,
       );
-      final sum = 'lens: RECAPTURED — $n golden(s) rewritten '
+      if (refused > 0) {
+        // FAIL, not ok-with-a-note. "Recaptured" that quietly skipped a surface
+        // is the same shape as every false pass this project has shipped: the
+        // operator commits the goldens dir believing it is complete.
+        final sum = 'lens: RECAPTURE INCOMPLETE — $written rewritten, '
+            '$refused refused as unreproducible (see above); do NOT commit '
+            'the goldens dir as if it were a full pass';
+        details.add(sum);
+        return GateResult.fail(sum, details);
+      }
+      final sum = 'lens: RECAPTURED — $written golden(s) rewritten '
           '(approve by committing the goldens dir)';
       details.add(sum);
       return GateResult.ok(sum, details);
@@ -184,8 +194,14 @@ Future<_Verdict> _compareSurface({
   required double threshold,
   required int settleMs,
 }) async {
+  // allowUnstable on the EVIDENCE capture, deliberately. Evidence is
+  // diagnostic, not a reference: when a surface never settles you want the
+  // picture of it more than ever. The verdict still comes from compareGolden
+  // below, which fails a non-converged capture with the reason — so an unstable
+  // surface produces a failing gate WITH evidence, instead of an uncaught throw
+  // that exits 255 and writes nothing.
   await captureGolden(url, vp.width, vp.height,
-      goldenPath: evidencePath, settleMs: settleMs);
+      goldenPath: evidencePath, settleMs: settleMs, allowUnstable: true);
   final r = await compareGolden(url, goldenPath, vp.width, vp.height,
       mode: mode, threshold: threshold, settleMs: settleMs);
   final tag = r.similarity != null
@@ -198,7 +214,16 @@ Future<_Verdict> _compareSurface({
   return _Verdict(false, '  ✗ $surface@${vp.width}$tag$below — ${r.note}');
 }
 
-Future<int> _recapture({
+/// Rewrite every golden. Returns (written, refused).
+///
+/// A surface that never settles is SKIPPED, not crashed on and not written.
+/// Letting [LensUnstableCapture] escape would abort the run partway through,
+/// leaving some goldens rewritten and some not with nothing recording which —
+/// and it would exit 255 out of a gate whose contract is 0 pass / 1 fail /
+/// 2 not-applicable. So each surface is caught individually, named in
+/// [details], and the run continues to give the operator the full list of what
+/// is unreproducible rather than only the first one.
+Future<(int written, int refused)> _recapture({
   required String base,
   required Map surfaces,
   required List<_Vp> viewports,
@@ -206,18 +231,25 @@ Future<int> _recapture({
   required int settleMs,
   required List<String> details,
 }) async {
-  var n = 0;
+  var written = 0;
+  var refused = 0;
   for (final name in surfaces.keys) {
     final url = _joinUrl(base, surfaces[name].toString());
     for (final vp in viewports) {
       final goldenPath = '$goldensDir/$name-${vp.width}.png';
-      await captureGolden(url, vp.width, vp.height,
-          goldenPath: goldenPath, settleMs: settleMs);
-      details.add('  ✓ recaptured golden $name@${vp.width} -> $goldenPath');
-      n++;
+      try {
+        await captureGolden(url, vp.width, vp.height,
+            goldenPath: goldenPath, settleMs: settleMs);
+        details.add('  ✓ recaptured golden $name@${vp.width} -> $goldenPath');
+        written++;
+      } on LensUnstableCapture catch (e) {
+        details.add('  ✗ REFUSED $name@${vp.width}: never settled '
+            '(${e.elapsedMs}ms) — the existing golden is left untouched');
+        refused++;
+      }
     }
   }
-  return n;
+  return (written, refused);
 }
 
 // ── native capture (flutter-vm / macos-sck) ────────────────────────────────

@@ -140,6 +140,58 @@ void main() {
     expect(r.passed, isTrue);
     expect(File('${ctx.designRoot}/goldens/home-390.png').existsSync(), isTrue);
   });
+
+  test('(f) recapture REFUSES an unreproducible surface, fails, and leaves the '
+      'existing golden untouched', () async {
+    final (s, base) = await bootNeverSettlesServer();
+    server = s;
+    writeLensConfig(tmp, base);
+    final ctx = GateContext(repoRoot: tmp.path);
+
+    // Seed a golden so the refusal has something to protect. If recapture
+    // overwrote it with a frame of a moving page, every later run would compare
+    // against a reference that was never reproducible.
+    final golden = File('${ctx.designRoot}/goldens/home-390.png');
+    golden.parent.createSync(recursive: true);
+    golden.writeAsBytesSync([1, 2, 3, 4]);
+
+    final r = await lensGate(ctx, recaptureGoldens: true);
+
+    // FAIL, not ok-with-a-note: the operator's next move is `git add goldens/`,
+    // and a green "RECAPTURED" that silently skipped a surface is exactly the
+    // false pass this project keeps shipping.
+    expect(r.passed, isFalse);
+    expect(r.summary, contains('RECAPTURE INCOMPLETE'));
+    expect(r.details.join('\n'), contains('REFUSED'));
+    expect(golden.readAsBytesSync(), [1, 2, 3, 4],
+        reason: 'the pre-existing golden must be byte-untouched');
+
+    // Not an uncaught throw escaping the gate: the gate contract is
+    // 0 pass / 1 fail / 2 not-applicable, and a Dart exception would exit 255.
+    // Reaching this line at all is that assertion.
+  }, timeout: const Timeout(Duration(minutes: 3)));
+}
+
+/// A page nothing can freeze: `setInterval` repainting text is not a WAAPI
+/// animation, so `getAnimations()` cannot see it. Stands in for an animated
+/// GIF/APNG, which have no pause API at all.
+Future<(HttpServer, String)> bootNeverSettlesServer() async {
+  final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
+  final base = 'http://${server.address.address}:${server.port}';
+  server.listen((req) {
+    req.response.headers.contentType = ContentType.html;
+    req.response.headers.set('cache-control', 'no-store');
+    req.response.write('''
+<!DOCTYPE html><html><head><style>
+body { margin:0; background:#fff; width:390px; height:844px; font:40px monospace; }
+</style></head><body><div id="t">0</div>
+<script>var n=0;setInterval(function(){
+  document.getElementById('t').textContent=String(++n);},80);</script>
+</body></html>
+''');
+    req.response.close();
+  });
+  return (server, base);
 }
 
 /// Write config/appbox.config.json into [tmp]. When [lens] is true, carries a

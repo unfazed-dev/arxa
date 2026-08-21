@@ -300,11 +300,19 @@ Future<int> _shot(_Args a) async {
   final w = a.intAt(2, 1280);
   final h = a.intAt(3, 800);
   final settle = a.intAt(4, 1500);
-  await captureGolden(url, w, h,
-      goldenPath: out,
-      settleMs: settle,
-      fullPage: a.has('full'),
-      cookies: _cookiesOf(a));
+  try {
+    await captureGolden(url, w, h,
+        goldenPath: out,
+        settleMs: settle,
+        fullPage: a.has('full'),
+        cookies: _cookiesOf(a));
+  } on LensUnstableCapture catch (e) {
+    // Exit 1, not an uncaught throw. The usage string promises
+    // "0 ok · 1 fail · 2 env/usage"; letting this escape would exit 255 with a
+    // Dart stack trace, which no caller of this CLI is written to read.
+    stderr.writeln('lens shot: FAIL — $e');
+    return 1;
+  }
   stdout.writeln(
       'lens shot: $url -> $out (${w}x$h${a.has('full') ? ', full page' : ''})');
   return 0;
