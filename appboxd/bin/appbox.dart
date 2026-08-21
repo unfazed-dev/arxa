@@ -20,6 +20,7 @@ import 'package:appboxd/config.dart';
 import 'package:appboxd/credential_cli.dart';
 import 'package:appboxd/crud.dart';
 import 'package:appboxd/design_cli.dart';
+import 'package:appboxd/design_tools.dart' show scriptRepoRoot;
 import 'package:appboxd/deploy_cli.dart';
 import 'package:appboxd/docs_lint.dart';
 import 'package:appboxd/emit_htmx.dart';
@@ -99,8 +100,11 @@ Future<void> main(List<String> args) async {
     case 'credentials':
       exit(await credentialsMain(
         rest,
+        // Anchor on the executing checkout, not only the cwd — harness
+        // credential shells (`!appbox credentials exec …` in Pi's models.json)
+        // run from arbitrary directories.
         catalogPath:
-            '${_findRepoRoot() ?? Directory.current.path}/config/credentials.catalog.json',
+            '${_findRepoRoot() ?? scriptRepoRoot() ?? Directory.current.path}/config/credentials.catalog.json',
       ));
     case 'emit':
       _runEmit(rest);

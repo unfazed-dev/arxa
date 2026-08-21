@@ -557,3 +557,35 @@ empty env.
   command from open — the staged dispatch check under H1 is the validation
   this gate names. Even then, execute as its own deliberate pass (live
   design servers run from this checkout; the rename moves their ground).
+
+## Pi plan items — build pass 2026-08-21 (decisions 3, 12, 17)
+
+- **Design exploration on Pi's session DAG (decision 17) BUILT + booted** —
+  `arxa-harness/bin/arxa-explore.mjs`: one Pi session file, one branch per
+  design option (`session.navigateTree` back to the base node, prompt down a
+  fresh branch, label the leaf), optional `--summarize` branch summaries,
+  JSON out with each branch's final assistant text and a
+  `pi --session <file>` resume line. Booted proof on `zai-wallet`/glm-4.6v
+  from `~/.arxa/pi`: two branches, each answering only its own prompt.
+  Two findings the booted run forced:
+  1. **`appbox credentials exec` anchored its catalog on the CWD** —
+     `bin/appbox.dart:103` fell back to `Directory.current` when the cwd walk
+     found no repo marker, so Pi's `!appbox credentials exec …` apiKey shell
+     (models.json) crashed from any directory outside the checkout, and pi
+     swallows that into an empty assistant message (`prompt()` resolves;
+     errors ride the event stream). Fixed with the existing
+     `scriptRepoRoot()` executable anchor — the same 821a5f58 family bug.
+     The driver now subscribes to the event stream and hard-fails on empty
+     branch answers (a silent-empty branch is the PASS-that-did-not-run
+     shape).
+  2. **sdk.md drifts from the shipped build** — docs' `SessionManager
+     .getPath()` is `getBranch()` in dist (`core/session-manager.d.ts:261`);
+     the package exports only an `import` condition so `require.resolve`
+     cannot see it. Both pinned in the driver with comments.
+- **Operator raw-surface gating (decision 12) documented** —
+  `arxa-harness/README.md` now carries the operator's own copy step for
+  gating raw `~/.dsh` (patch row with dsh-native tool names) and raw `~/.pi`
+  (symlink, safe since the gate realpaths), each proven by a booted DENY.
+- **Delegated-Pi tool in arxa sessions (decision 3ii)** and the
+  **lazy-skills refactor of the six >250-line skills (decision 3i)**: in
+  flight this pass — recorded when closed.
