@@ -125,6 +125,30 @@ class CdpClient {
   String? get wsUrl => _wsUrl;
   String? _wsUrl;
 
+  /// Screenshots taken through this client, counted at the single CDP
+  /// chokepoint rather than by any caller. The lens daemon's recycle policy
+  /// reads it — see [CdpSession._screenshotB64].
+  int get screenshotsTaken => _screenshotsTaken;
+  int _screenshotsTaken = 0;
+
+  /// Invoked with [screenshotsTaken] when a GUEST client closes, so the daemon
+  /// can bank the count against the browser it is lending out. Never called
+  /// for a client that owns its browser — that browser is about to die, and
+  /// its tally with it.
+  void Function(int screenshots)? onGuestClose;
+
+  /// Give up ownership so [close] leaves the browser running.
+  ///
+  /// Exactly one caller: the lens daemon's `start`, which launches Chrome and
+  /// then needs its own process to exit while the browser stays up. Without
+  /// this, `close()` would tear down the daemon it just created; skipping the
+  /// `close()` instead would leak the socket and the profile handle.
+  void disownBrowser() {
+    _ownsBrowser = false;
+    _tmpDir = null;
+    _chromePid = null;
+  }
+
   CdpClient._(this._chrome, this._ws) {
     _ws.listen(
       _onData,
@@ -215,6 +239,16 @@ class CdpClient {
   /// helpers (they all carry `--type=`), leaving the single process that owns
   /// the profile — that is the one worth remembering as a pid. At teardown we
   /// want the helpers too, since a live helper still holds files in the dir.
+  /// Public face of [_pidsOwningProfile], for the lens daemon.
+  ///
+  /// The daemon must never reap by the `appbox-cdp-` prefix: every browser
+  /// this repo has ever launched matches it, so one `pkill -f appbox-cdp-`
+  /// from any script kills a daemon that has been warm for hours. Ownership is
+  /// the exact `--user-data-dir=<dir>`, and this is the one implementation of
+  /// that question in the codebase.
+  static List<int> pidsOwningProfile(String dir, {bool browserOnly = false}) =>
+      _pidsOwningProfile(dir, browserOnly: browserOnly);
+
   static List<int> _pidsOwningProfile(String dir, {bool browserOnly = false}) {
     final ProcessResult ps;
     try {
@@ -520,6 +554,11 @@ class CdpClient {
       _closed = true;
       await _ws.close();
       await _browserEvents.close();
+      // Banked after the socket is down, so a throwing listener cannot leave
+      // a half-closed client behind.
+      try {
+        onGuestClose?.call(_screenshotsTaken);
+      } catch (_) {}
       return;
     }
     if (_chrome == null) {
@@ -1065,6 +1104,13 @@ class CdpSession {
     if (fullPage) params['captureBeyondViewport'] = true;
 
     final res = await send('Page.captureScreenshot', params);
+    // Counted HERE and nowhere else: this is the one chokepoint both
+    // `screenshot()` and the settle loop pass through, and the lens daemon's
+    // recycle policy is denominated in screenshots, not captures. A caller
+    // counting its own captures undercounts by 4-6x, because settleForCapture
+    // takes that many per capture depending on the page — the policy would
+    // fire an order of magnitude late.
+    _client._screenshotsTaken++;
     return res['result']['data'] as String;
   }
 

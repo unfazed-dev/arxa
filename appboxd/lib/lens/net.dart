@@ -3,7 +3,7 @@
 // JSON — the lens records, consumers assert.
 library;
 
-import '../cdp.dart';
+import 'daemon.dart';
 
 /// Trace network traffic while navigating to [url]. Network is enabled for
 /// [traceMs] + [settleMs] so the trace spans the full load. Requests are
@@ -11,7 +11,7 @@ import '../cdp.dart';
 /// from responseReceived, failed from loadingFailed.
 Future<Map<String, dynamic>> traceNet(String url,
     {int settleMs = 1500, int traceMs = 3000}) async {
-  final client = await CdpClient.launch();
+  final client = await LensDaemon.acquire();
   try {
     final tab = await client.newTab();
     await tab.enable();

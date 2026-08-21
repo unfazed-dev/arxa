@@ -13,8 +13,8 @@
 
 import 'dart:io';
 
-import 'package:appboxd/cdp.dart';
 import 'package:appboxd/lens/pixels.dart';
+import 'package:appboxd/lens/daemon.dart';
 
 export 'lens/pixels.dart';
 export 'lens/tokens.dart';
@@ -85,7 +85,7 @@ Future<List<int>> captureGolden(
   bool allowUnstable = false,
   Map<String, String> cookies = const {},
 }) async {
-  final client = await CdpClient.launch();
+  final client = await LensDaemon.acquire();
   try {
     final tab = await client.newTab();
     await tab.enable();
@@ -140,7 +140,7 @@ Future<LensResult> compareGolden(
 
   final goldenBytes = goldenFile.readAsBytesSync();
 
-  final client = await CdpClient.launch();
+  final client = await LensDaemon.acquire();
   try {
     final tab = await client.newTab();
     await tab.enable();

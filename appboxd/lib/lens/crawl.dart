@@ -9,8 +9,8 @@ library;
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:appboxd/cdp.dart';
 import 'package:appboxd/lens.dart';
+import 'daemon.dart';
 
 /// Outcome of a crawl: captured route paths, the output dir, and skipped URLs.
 class CrawlResult {
@@ -263,7 +263,7 @@ Future<List<String>> _harvestLinks(
   int height,
   int settleMs,
 ) async {
-  final client = await CdpClient.launch();
+  final client = await LensDaemon.acquire();
   try {
     final tab = await client.newTab();
     await tab.enable();

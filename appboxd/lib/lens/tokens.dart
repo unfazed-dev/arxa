@@ -6,7 +6,7 @@ library;
 import 'dart:convert';
 import 'dart:io';
 
-import '../cdp.dart';
+import 'daemon.dart';
 
 /// The computed-style probe injected into the page. Returns flat samples:
 /// every element's colour, background, font size, padding/margin/radius.
@@ -86,7 +86,7 @@ List<Map<String, dynamic>> clusterScale(Iterable<num> values) {
 /// result and the caller treats non-empty as a failure.
 Future<Map<String, dynamic>> extractTokens(String url, int width, int height,
     {int settleMs = 1500}) async {
-  final client = await CdpClient.launch();
+  final client = await LensDaemon.acquire();
   try {
     final tab = await client.newTab();
     await tab.enable();

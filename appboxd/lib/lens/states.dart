@@ -17,6 +17,7 @@ import 'dart:convert';
 
 import 'package:appboxd/cdp.dart';
 import 'package:appboxd/lens/pixels.dart';
+import 'daemon.dart';
 
 /// One interaction to drive: query [selector], perform [action].
 /// [action] is `'click'`, `'hover'` or `'focus'`.
@@ -41,7 +42,7 @@ Future<Map<String, dynamic>> captureStates(
   int settleMs = 1500,
   int settleAfterMs = 600,
 }) async {
-  final client = await CdpClient.launch();
+  final client = await LensDaemon.acquire();
   try {
     final tab = await client.newTab();
     await tab.enable();

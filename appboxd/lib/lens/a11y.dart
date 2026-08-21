@@ -3,14 +3,14 @@
 // Observation JSON — the lens records, consumers assert.
 library;
 
-import '../cdp.dart';
+import 'daemon.dart';
 
 /// Extract the full accessibility tree at [url], one entry per node,
 /// flattened to `{role, name, ignored, children}`. Children ids are passed
 /// through as-is from the raw node map to preserve structure.
 Future<Map<String, dynamic>> extractA11y(String url,
     {int settleMs = 1500}) async {
-  final client = await CdpClient.launch();
+  final client = await LensDaemon.acquire();
   try {
     final tab = await client.newTab();
     await tab.enable();

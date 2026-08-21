@@ -4,6 +4,7 @@
 library;
 
 import '../cdp.dart';
+import 'daemon.dart';
 
 /// Capture a DOMSnapshot.captureSnapshot envelope at [url]. [computedStyles]
 /// selects which computed-style names are included per node.
@@ -19,7 +20,7 @@ Future<Map<String, dynamic>> extractDom(
     'font-size',
   ],
 }) async {
-  final client = await CdpClient.launch();
+  final client = await LensDaemon.acquire();
   try {
     final tab = await client.newTab();
     await tab.enable();
@@ -60,7 +61,7 @@ Future<({dynamic value, List<String> consoleErrors})> evalInPage(
   int height = 800,
   Map<String, String> cookies = const {},
 }) async {
-  final client = await CdpClient.launch();
+  final client = await LensDaemon.acquire();
   try {
     final tab = await client.newTab();
     await tab.enable();
@@ -81,7 +82,7 @@ Future<({dynamic value, List<String> consoleErrors})> evalInPage(
 /// Outer-HTML shortcut (probe-runner's outerHTML path): one evaluate call.
 Future<String> extractOuterHtml(String url,
     {int settleMs = 1500, Map<String, String> cookies = const {}}) async {
-  final client = await CdpClient.launch();
+  final client = await LensDaemon.acquire();
   try {
     final tab = await client.newTab();
     await tab.enable();

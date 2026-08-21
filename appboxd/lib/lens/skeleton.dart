@@ -12,7 +12,7 @@
 // — the self-diff noise floor observed on lens-skeleton/1 captures.
 library;
 
-import 'package:appboxd/cdp.dart';
+import 'daemon.dart';
 
 /// Capture the structural skeleton of [url] at [width]×[height].
 ///
@@ -26,7 +26,7 @@ Future<Map<String, dynamic>> captureSkeleton(
   int height = 844,
   int settleMs = 1500,
 }) async {
-  final client = await CdpClient.launch();
+  final client = await LensDaemon.acquire();
   try {
     final tab = await client.newTab();
     await tab.enable();

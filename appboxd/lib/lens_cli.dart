@@ -16,6 +16,7 @@ import 'dart:io';
 
 import 'package:appboxd/cdp.dart';
 import 'package:appboxd/lens.dart';
+import 'package:appboxd/lens/daemon.dart';
 import 'package:appboxd/lens/native/adb.dart';
 import 'package:appboxd/lens/native/flutter_vm.dart';
 import 'package:appboxd/lens/native/sck.dart';
@@ -119,6 +120,8 @@ Future<int> runLensCli(List<String> args) async {
   LensSession.windowH = viewportH;
   final a = _Args(rest);
   switch (verb) {
+    case 'daemon':
+      return _daemon(a);
     case 'shot':
       return _shot(a);
     case 'check':
@@ -350,7 +353,7 @@ Future<int> _lensCheck(
   Map<String, String> cookies = const {},
 }) async {
   final failures = <String>[];
-  final client = await CdpClient.launch();
+  final client = await LensDaemon.acquire();
   try {
     final tab = await client.newTab();
     await tab.enable();
@@ -459,6 +462,58 @@ Future<int> _dom(_Args a) async {
 ///
 /// The value is always JSON-encoded, including bare strings (so they carry
 /// their quotes) — the output is meant to pipe into `jq`.
+/// `lens daemon start|status|stop` — hold one warm Chrome across invocations.
+///
+/// Every other verb works with or without it (see `LensDaemon.acquire`), so
+/// this is a performance switch, never a prerequisite. Design and the
+/// constraints behind it: docs/plans/lens-daemon.md.
+Future<int> _daemon(_Args a) async {
+  final sub = a.positional.isEmpty ? 'status' : a.positional.first;
+  switch (sub) {
+    case 'start':
+      if (!LensDaemon.supported) {
+        stderr.writeln('lens daemon: unsupported on ${Platform.operatingSystem}'
+            ' — only the macOS headless launch path detaches. Every verb keeps '
+            'launching its own Chrome, which is the existing behaviour.');
+        return 64;
+      }
+      final s = await LensDaemon.start();
+      stdout.writeln('lens daemon: started pid ${s.browserPid}');
+      stdout.writeln('  profile ${s.profileDir}');
+      stdout.writeln('  state   ${LensDaemon.statePath()}');
+      return 0;
+    case 'stop':
+      final before = LensDaemon.read();
+      await LensDaemon.stop();
+      stdout.writeln(before == null
+          ? 'lens daemon: nothing running'
+          : 'lens daemon: stopped pid ${before.browserPid} '
+              '(${before.shotsServed} screenshots served)');
+      return 0;
+    case 'status':
+      final s = LensDaemon.read();
+      if (s == null) {
+        stdout.writeln('lens daemon: not running');
+        return 0;
+      }
+      // Report liveness re-checked, not as recorded. The state file is a
+      // claim about a process that may already be gone, and no CDP event
+      // would have told anyone.
+      final alive = LensDaemon.isAlive(s);
+      stdout.writeln('lens daemon: ${alive ? "running" : "DEAD (stale state)"}');
+      stdout.writeln('  pid     ${s.browserPid}');
+      stdout.writeln('  since   ${s.startedAt}');
+      stdout.writeln('  shots   ${s.shotsServed} / ${LensDaemon.recycleAfterShots}'
+          ' before recycle');
+      stdout.writeln('  mode    ${s.visible ? "visible" : "headless"}');
+      stdout.writeln('  profile ${s.profileDir}');
+      return alive ? 0 : 1;
+    default:
+      stderr.writeln('usage: appbox lens daemon <start|status|stop>');
+      return 64;
+  }
+}
+
 Future<int> _eval(_Args a) async {
   if (a.positional.length < 2) {
     return _usageErr(
@@ -876,7 +931,7 @@ Future<int> _shoot(_Args a) async {
   final cookieOrigin =
       Uri.parse(url).replace(path: '/', query: '', fragment: '');
   for (final rung in rungs) {
-    final client = await CdpClient.launch();
+    final client = await LensDaemon.acquire();
     try {
       final tab = await client.newTab();
       await tab.enable();

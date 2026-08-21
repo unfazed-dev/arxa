@@ -13,6 +13,7 @@ import 'dart:math' as math;
 
 import 'package:appboxd/cdp.dart';
 import 'package:appboxd/process.dart';
+import 'daemon.dart';
 
 /// Normalized RMS below this certifies a curve fit (probe-runner `_anim_core`).
 const double kEasingRmsCeiling = 0.05;
@@ -100,7 +101,7 @@ Future<List<List<int>>> burstFrames(
   int intervalMs = 100,
   int settleMs = 1500,
 }) async {
-  final client = await CdpClient.launch();
+  final client = await LensDaemon.acquire();
   try {
     final tab = await client.newTab();
     await tab.enable();
@@ -156,7 +157,7 @@ Future<ClickBurst> clickBurstFrames(
   int intervalMs = 250,
   int settleMs = 1500,
 }) async {
-  final client = await CdpClient.launch();
+  final client = await LensDaemon.acquire();
   try {
     final tab = await client.newTab();
     await tab.enable();
@@ -223,7 +224,7 @@ Future<void> recordVideo(
     );
   }
 
-  final client = await CdpClient.launch();
+  final client = await LensDaemon.acquire();
   try {
     final tab = await client.newTab();
     await tab.enable();
@@ -339,7 +340,7 @@ Future<Map<String, dynamic>> captureScrollAnim(
   int steps = 40,
   int settleMs = 1500,
 }) async {
-  final client = await CdpClient.launch();
+  final client = await LensDaemon.acquire();
   try {
     final tab = await client.newTab();
     await tab.enable();
@@ -473,7 +474,7 @@ Future<Map<String, dynamic>> captureFlipbook(
   int watchMs = 2000,
   int settleMs = 1500,
 }) async {
-  final client = await CdpClient.launch();
+  final client = await LensDaemon.acquire();
   try {
     final tab = await client.newTab();
     await tab.enable();
