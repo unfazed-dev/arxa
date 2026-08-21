@@ -616,6 +616,14 @@ cross-origin endpoint, and opening it meant looking at what was already open.
       answers that name.
     * The read happens in `designServe`, not in `BrowserTrust`'s constructor,
       so the 34 pure guard tests never touch the operator's home.
+    * The file is read ONCE, at boot, and that is the right scope for an
+      allowlist — but it means a studio that later comes up on a different
+      port writes a new line that the already-running design servers never
+      see. Symptom: a grey dot with no explanation. Restart the design
+      server; do not make the guard re-read on every request.
+    * A hand-written entry survives arxa's boot without duplicating —
+      verified, since arxa's dedupe compares `line.split('#')[0].trim()` and
+      that is the one place hand-written and code-written state meet.
 
 56. **Restarted and smoke-tested (2026-08-22).** Both long-running servers
     were killed and restarted from their own cwds and argv — suczka-studio
