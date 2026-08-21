@@ -1,0 +1,39 @@
+# The arxa profile patch — materialized by bin/arxa.mjs into
+# $DSH_HOME/profiles/arxa/cordis.patch.yml, applied after the bundle layers.
+#
+# Three patches, each earning its row (arxa-harness-and-distribution.md):
+#
+# 1. Identity. dsh-base's `system-prompt` entry ships
+#    "You are an AI agent powered by DeepSeek Harness." behind
+#    `includeHarnessIdentity` (default true) with an empty persona slot —
+#    so arxa's identity is a CONFIG override, one rung above the plan's
+#    "register a replacement plugin" (the plugin swap stays available if a
+#    future dsh drops the flag). NOTE: a non-insert patch REPLACES the whole
+#    `config` object (applyEntryPatches: target[key] = value), so this block
+#    must stay complete, not minimal.
+- id: system-prompt
+  config:
+    includeHarnessIdentity: false
+    persona: >-
+      You are arxa, the agentic app studio harness by Totem Labs. You drive
+      the appbox engine through its pipeline stages and its gates decide what
+      ships.
+
+# 2. Repo law only. dsh reads BOTH AGENTS.md and CLAUDE.md by default
+#    (dsh-agent-instructions instructionFileCandidates), which feeds it
+#    Claude-Code-only MCP routing rules. Config fix, not file layout
+#    (H1 amendment 3). maxBytes restated because config replaces wholesale.
+- id: agent-instructions
+  config:
+    maxBytes: 65536
+    instructionFileCandidates: [AGENTS.md]
+
+# 3. The appbox gate on every mutating tool call (harness/README.md template;
+#    absolute path because arxa declares no npm dependency on the plugin).
+- insert:
+  - id: appbox-gate
+    name: /Volumes/developer_ssd/Developer/totem_labs/app-box/harness/dsh-external-gate/index.mjs
+    config:
+      command: /Volumes/developer_ssd/Developer/totem_labs/app-box/harness/verdict.sh
+      tools: [Write, Edit, MultiEdit, Bash]
+      timeoutMs: 5000

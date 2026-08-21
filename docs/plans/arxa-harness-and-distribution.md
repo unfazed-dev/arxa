@@ -395,15 +395,20 @@ empty env.
   a one-shot no-browser Agent driver). The gate insert row is templated at
   `harness/headless-profile/cordis.patch.yml` (patch files are
   operator-protected, so the copy is yours):
-  1. `cp harness/headless-profile/cordis.patch.yml ~/.dsh/profiles/headless/`
-  2. `cd <app-box> && APPBOX_GUARD_MODE=using appbox credentials exec
-     ZAI_API_KEY -- node
-     ~/.dsh/profiles/node_modules/@deepseek-ai/dsh/lib/bin.js --profile
-     headless "append a one-line comment to appboxd/lib/cdp.dart"`
+  **Superseded within the hour by H3's bin — now ONE command** (`arxa
+  --headless` materializes its own gate-wired profile at runtime, so no
+  manual patch copy):
+  ```sh
+  cd <app-box> && APPBOX_GUARD_MODE=using appbox credentials exec \
+    ZAI_API_KEY -- node harness/arxa/bin/arxa.mjs --headless \
+    "append a one-line comment to appboxd/lib/cdp.dart"
+  ```
   PASS = the reply quotes the guard's deny reason (using-sessions cannot
-  write into the engine). Only a DENY is proof-of-life — an allow is
-  indistinguishable from an unmounted gate (harness/README.md:163). Cost:
-  one turn, ~2K tokens on Z.ai.
+  write into the engine) — and doubles as H3's booted identity check. Only a
+  DENY is proof-of-life — an allow is indistinguishable from an unmounted
+  gate (harness/README.md:163). Cost: one turn, ~2K tokens on Z.ai. (The
+  manual-copy variant via `harness/headless-profile/` stays as the
+  arxa-free fallback.)
   **Note for W1:** H1 already delivered one of W1's five items — "read-only
   gate on `appboxd/` in using-sessions" is the shared guard, and it landed
   wider than W1 asked (whole checkout, not just `appboxd/`). W1 inherits it;
@@ -413,7 +418,21 @@ empty env.
   product horizon.
 - **(W1 from the previous plan runs here — lens spine, on the new daily
   surface.)**
-- **H3 — harness skeleton.** **REWRITTEN 2026-08-21** — the original text
+- **H3 — harness skeleton.** **BUILT 2026-08-21, config-verified** —
+  `harness/arxa/`: the package (exact-pinned `@deepseek-ai/*` deps, own bin),
+  `bin/arxa.mjs` (materializes the arxa profile into `$DSH_HOME/profiles/arxa`
+  and execs dsh's bin; `--headless` swaps dsh-web-app for dsh-headless), and
+  `profile/cordis.patch.yml` (three patches: identity via
+  `includeHarnessIdentity: false` + arxa persona — a CONFIG override, one rung
+  above the planned plugin swap, since dsh-base's `system-prompt` entry ships
+  the DeepSeek line behind that flag; `instructionFileCandidates: [AGENTS.md]`
+  per amendment 3; the appbox-gate insert row). Verified in a sandbox
+  `DSH_HOME` via `--dump-config`: composed entry list carries the arxa
+  persona, `includeHarnessIdentity: false`, AGENTS.md-only instructions, and
+  the gate row — and zero "powered by DeepSeek" anywhere. Remaining for a
+  FULLY booted validation: the one operator dispatch command below (it also
+  closes H1's open check). Original rewrite rationale follows.
+  **REWRITTEN 2026-08-21** — the original text
   ("fork dsh into `totem_labs/arxa-harness`, rebrand, strip, pin") is void. The
   depend-don't-fork decision above replaced it, and the rebrand-surface audit
   removed its last objection: zero source edits are required, so there is
