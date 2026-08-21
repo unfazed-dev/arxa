@@ -22,6 +22,7 @@
  * mean three different things on three surfaces.
  */
 import { spawn } from "node:child_process";
+import { existsSync, realpathSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -29,7 +30,12 @@ import { fileURLToPath } from "node:url";
 function guardPath(): string {
   if (process.env.APPBOX_GUARD_PATH) return process.env.APPBOX_GUARD_PATH;
   // harness/pi/appbox-gate.ts -> <repo>/hooks/appbox-guard.js
-  const here = dirname(fileURLToPath(import.meta.url));
+  // realpath, NOT the raw URL: the install method is a symlink into
+  // ~/.arxa/pi/extensions (or ~/.pi/agent/extensions), and jiti reports the
+  // symlink's path — the 2026-08-21 booted Pi check silently ALLOWED a
+  // protected write because the guard was sought under the extensions dir,
+  // not found, and the fail-open design swallowed it.
+  const here = dirname(realpathSync(fileURLToPath(import.meta.url)));
   return join(here, "..", "..", "hooks", "appbox-guard.js");
 }
 
@@ -83,6 +89,12 @@ function askGuard(payload: unknown, timeoutMs = 5000): Promise<GuardVerdict> {
 }
 
 export default function (pi: any) {
+  // Fail-open is deliberate (a broken guard must not wedge a session), but it
+  // must never be SILENT — announce an unreachable guard at load time.
+  const gp = guardPath();
+  if (!existsSync(gp)) {
+    console.error(`appbox-gate: guard not found at ${gp} — gate INACTIVE (fail-open)`);
+  }
   pi.on("tool_call", async (event: any) => {
     const verdict = await askGuard({
       tool_name: event.toolName,

@@ -441,6 +441,18 @@ empty env.
   reasoningEfforts declared — flip default back to zai-coding-cn/glm-5.3
   effort max after the Aug 24 10:04 reset. No `credentials exec` wrapper
   needed: dsh auths from its own store.
+  **Pi half CLOSED same day + home discipline (operator correction ×2).**
+  arxa now owns `~/.arxa` outright (`~/.arxa/dsh` = DSH_HOME,
+  `~/.arxa/pi` = PI_CODING_AGENT_DIR) and never writes into `~/.dsh`/`~/.pi`
+  — settings + credentials seeded on first boot (env still wins), Pi
+  models.json + extension symlinks refreshed per launch. The booted Pi check
+  first silently ALLOWED a protected write: jiti reports a symlinked
+  extension's link path, so appbox-gate.ts resolved the guard under the
+  extensions dir, found nothing, and the fail-open swallowed it — fixed with
+  realpathSync + a loud load-time "gate INACTIVE" stderr line. Re-run: both
+  dsh and Pi quote the guard's deny verbatim from the isolated home, file
+  untouched. Pi runs on `zai-wallet` (models.json custom provider, general
+  endpoint, apiKey shelled from the appbox vault at request time).
   **Note for W1:** H1 already delivered one of W1's five items — "read-only
   gate on `appboxd/` in using-sessions" is the shared guard, and it landed
   wider than W1 asked (whole checkout, not just `appboxd/`). W1 inherits it;
