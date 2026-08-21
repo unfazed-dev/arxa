@@ -650,6 +650,12 @@ class CdpSession {
   /// throw away the end state that `animation-fill-mode: forwards` was holding
   /// and snap the element back to its pre-animation style.
   ///
+  /// **This MUTATES the DOM** — it writes inline `!important` declarations onto
+  /// every animated element. That is fine for a screenshot and wrong for an
+  /// observation: `lens dom`, `lens tokens` and `lens a11y` would report
+  /// injected inline styles that are nowhere in the source. Those verbs stay on
+  /// [navigateAndSettle] for exactly this reason. Pixels here, data there.
+  ///
   /// Returns what it actually froze, per kind. A caller that gets
   /// `{finite: 0, infinite: 0}` on a page it believes is animated has learned
   /// something — a silent no-op would not have told it.

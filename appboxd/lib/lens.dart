@@ -67,7 +67,12 @@ Future<List<int>> captureGolden(
     await tab.seedCookies(
         Uri.parse(url).replace(path: '/', query: '', fragment: ''), cookies);
     await tab.setViewport(width, height);
-    await tab.navigateAndSettle(url, settleMs: settleMs);
+    // Capture path: freeze + floor + stability loop, not a flat timer. Measured
+    // on an animated page, 5 fresh-Chrome captures: flat timer 5 distinct
+    // images, this 1. `settleMs` becomes the FLOOR, so this never captures
+    // earlier than the old path did.
+    await tab.navigateAndSettleForCapture(url,
+        settleMs: settleMs, fullPage: fullPage);
     final png = await tab.screenshot(fullPage: fullPage);
 
     if (goldenPath != null) {
@@ -112,7 +117,7 @@ Future<LensResult> compareGolden(
     final tab = await client.newTab();
     await tab.enable();
     await tab.setViewport(width, height);
-    await tab.navigateAndSettle(url, settleMs: settleMs);
+    await tab.navigateAndSettleForCapture(url, settleMs: settleMs);
 
     // Capture console/page errors as quality signals.
     final errors = [...tab.consoleErrors, ...tab.pageErrors];

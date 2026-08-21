@@ -342,7 +342,7 @@ Future<int> _lensCheck(
     await tab.seedCookies(
         Uri.parse(url).replace(path: '/', query: '', fragment: ''), cookies);
     await tab.setViewport(w, h);
-    await tab.navigateAndSettle(url, settleMs: settleMs);
+    await tab.navigateAndSettleForCapture(url, settleMs: settleMs);
 
     if (selector != null) {
       final found = await tab.evaluate('!!document.querySelector(${_js(selector)})');
@@ -824,7 +824,7 @@ Future<int> _shoot(_Args a) async {
       await tab.enable();
       await tab.seedCookies(cookieOrigin, cookies);
       await tab.setViewport(rung.width, rung.height);
-      await tab.navigateAndSettle(url);
+      await tab.navigateAndSettleForCapture(url);
       final errors = [...tab.consoleErrors, ...tab.pageErrors];
       final overflow =
           (await tab.evaluate('document.documentElement.scrollWidth > '

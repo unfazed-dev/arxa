@@ -755,7 +755,9 @@ Future<List<String>> _renderStackedCdp(
         session.clearErrors();
         await session.setViewport(vp.width, vp.height);
         final url = 'http://127.0.0.1:${server.port}/surfaces/$name.html';
-        await session.navigateAndSettle(url);
+        // fullPage: the stability loop must poll the SAME surface the capture
+        // below takes, or it certifies a viewport that the golden doesn't use.
+        await session.navigateAndSettleForCapture(url, fullPage: true);
         for (final e in [...session.consoleErrors, ...session.pageErrors]) {
           errors.add('$name@${vp.name}: $e');
         }
@@ -845,7 +847,7 @@ Future<List<String>> _renderHtmxCdp(
           await session.setViewport(vp.width, vp.height);
           final sep = route.contains('?') ? '&' : '?';
           final url = lang == null ? '$base$route' : '$base$route${sep}lang=$lang';
-          await session.navigateAndSettle(url);
+          await session.navigateAndSettleForCapture(url, fullPage: true);
           final tag = lang == null ? '' : ' ($lang)';
           for (final e in [...session.consoleErrors, ...session.pageErrors]) {
             errors.add('$route@${vp.name}$tag: $e');
