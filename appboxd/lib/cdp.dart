@@ -89,7 +89,25 @@ class CdpClient {
   final _sessions = <String, CdpSession>{};
   final _browserEvents = StreamController<CdpEvent>.broadcast();
   bool _closed = false;
+
+  /// Reentrancy guard for [close], separate from [_closed] because the two
+  /// answer different questions: `_closing` means "teardown has begun",
+  /// `_closed` means "the socket is no longer usable". Collapsing them is what
+  /// made the graceful `Browser.close` unreachable — see [close].
+  bool _closing = false;
   Directory? _tmpDir;
+
+  /// Did THIS client start the browser?
+  ///
+  /// [close] tears the browser down, and until 2026-08-21 it decided that on
+  /// `_chrome == null` — which is true both for the `open -g` launch path AND
+  /// for [connect]. So a client attached to someone else's browser sent
+  /// `Browser.close` on the way out and killed it, while [connect]'s own
+  /// comment claimed "close() won't kill it". Not a latent problem for the
+  /// lens as it stands (nothing shares a browser yet); a hard blocker for the
+  /// daemon, whose entire premise is guests attaching to a browser they must
+  /// leave running. Ownership is now recorded, not inferred.
+  bool _ownsBrowser = false;
 
   /// Pid of the browser on the `open -g` path, where there is no [Process].
   /// Resolved from the profile dir at launch — see [launch].
@@ -101,6 +119,11 @@ class CdpClient {
   /// the process and the profile, rather than that `close()` returned.
   Directory? get userDataDir => _tmpDir;
   int? get chromePid => _chromePid ?? _chrome?.pid;
+
+  /// The DevTools browser endpoint this client is attached to. The daemon
+  /// records it so a later CLI run can [connect] to the same browser.
+  String? get wsUrl => _wsUrl;
+  String? _wsUrl;
 
   CdpClient._(this._chrome, this._ws) {
     _ws.listen(
@@ -154,6 +177,8 @@ class CdpClient {
           await _waitForDevToolsPortFile('${tmpDir.path}/DevToolsActivePort');
       final ws = await WebSocket.connect(wsUrl);
       final client = CdpClient._(null, ws);
+      client._ownsBrowser = true;
+      client._wsUrl = wsUrl;
       client._tmpDir = tmpDir;
       // `open` hands back no Process, so close() had nothing to kill and fell
       // back to asking Chrome nicely + a pattern kill — which did not always
@@ -169,6 +194,8 @@ class CdpClient {
     final wsUrl = await _waitForDevToolsUrl(proc);
     final ws = await WebSocket.connect(wsUrl);
     final client = CdpClient._(proc, ws);
+    client._ownsBrowser = true;
+    client._wsUrl = wsUrl;
     client._tmpDir = tmpDir;
     return client;
   }
@@ -269,11 +296,17 @@ class CdpClient {
     throw StateError('Chrome did not write DevToolsActivePort within 30s');
   }
 
-  /// Connect to an already-running Chrome's DevTools endpoint.
+  /// Connect to an already-running Chrome's DevTools endpoint as a GUEST.
+  ///
+  /// [close] on the returned client closes the socket and nothing else: no
+  /// `Browser.close`, no SIGKILL, no profile-dir delete. That is the whole
+  /// point — the browser belongs to whoever launched it.
   static Future<CdpClient> connect(String wsUrl) async {
     final ws = await WebSocket.connect(wsUrl);
-    // The Process is null — close() won't kill it.
-    return CdpClient._(null, ws);
+    // _ownsBrowser stays false. It used to be inferred from `_chrome == null`,
+    // which is ALSO true on the `open -g` launch path, so a guest's close()
+    // shut the host's browser down.
+    return CdpClient._(null, ws).._wsUrl = wsUrl;
   }
 
   /// Find Chrome at the default platform path.
@@ -475,18 +508,36 @@ class CdpClient {
   // ── teardown ──────────────────────────────────────────────────────
 
   Future<void> close() async {
-    if (_closed) return;
-    _closed = true;
+    if (_closing) return;
+    _closing = true;
     for (final s in _sessions.values) {
       await s._close();
     }
     _sessions.clear();
+    // A guest closes its socket and stops there. Every teardown step below is
+    // destructive to a browser this client may not have started.
+    if (!_ownsBrowser) {
+      _closed = true;
+      await _ws.close();
+      await _browserEvents.close();
+      return;
+    }
     if (_chrome == null) {
       // open-launched (headless, no dock bounce): ask Chrome to exit cleanly.
+      //
+      // This ran for the first time on 2026-08-21. `close()` used to set
+      // `_closed = true` as its second statement, and `send()` throws
+      // StateError when `_closed` — inside a bare `catch (_) {}`. So the
+      // graceful shutdown threw on every single call and was swallowed every
+      // single time, for as long as it had existed. The pattern-kill it was
+      // paired with was the thing that "did not always land" (see [launch]);
+      // the pid SIGKILL added afterwards is what actually ends the browser.
+      // Ordering the send before the flag is what makes the step real.
       try {
         await send('Browser.close');
       } catch (_) {}
     }
+    _closed = true;
     await _ws.close();
     _chrome?.kill(ProcessSignal.sigkill);
     // The open-launched browser now has a pid too, so it dies the same way the

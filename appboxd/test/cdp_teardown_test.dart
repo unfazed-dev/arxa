@@ -72,5 +72,48 @@ void main() {
       expect(Directory(dir).existsSync(), isFalse,
           reason: 'a live process holding the profile is why delete failed');
     });
+
+    test('a guest close() leaves the host browser alive and SERVING', () async {
+      // The daemon's foundation. close() used to decide "do I own this
+      // browser?" from `_chrome == null`, which is true both for the macOS
+      // `open -g` launch path and for connect() — so a guest's close() sent
+      // Browser.close and shut down a browser it never started, while
+      // connect()'s own comment claimed the opposite. Every daemon test would
+      // otherwise have been written on top of that.
+      final host = await CdpClient.launch();
+      final dir = host.userDataDir!.path;
+      try {
+        final guest = await CdpClient.connect(host.wsUrl!);
+        final guestTab = await guest.newTab();
+        await guestTab.enable();
+        await guest.close();
+
+        // The one test in this file that MUST wait, and the first draft of it
+        // did not — it asserted immediately, passed, and went on passing with
+        // the fix mutated back out. The rest of the file is zero-grace because
+        // it asks "did close() finish its job", where waiting would hide a
+        // failure. This asks the opposite: "did something NOT happen". You
+        // cannot assert an absence without giving the thing time to occur.
+        //
+        // Measured, rather than guessed: a guest's Browser.close kills the
+        // host in 163/163/169ms across three trials. 1s is ~6x that.
+        await Future<void>.delayed(const Duration(seconds: 1));
+        expect(pidsOwning(dir), isNotEmpty,
+            reason: 'the guest must not have killed the host browser');
+        final second = await CdpClient.connect(host.wsUrl!);
+        final tab = await second.newTab();
+        await tab.enable();
+        await tab.navigate('about:blank');
+        await second.close();
+        expect(pidsOwning(dir), isNotEmpty,
+            reason: 'still owned after a second guest came and went');
+      } finally {
+        await host.close();
+      }
+      // And the host still owns teardown: once IT closes, everything goes.
+      expect(pidsOwning(dir), isEmpty,
+          reason: 'guest-safety must not have disabled real teardown');
+      expect(Directory(dir).existsSync(), isFalse);
+    });
   }, skip: _chromeOk ? null : 'requires Chrome');
 }
