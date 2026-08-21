@@ -2,50 +2,50 @@
 //
 // Why this exists: under CPU oversubscription (full suite + 12 spinners,
 // 2026-08-21) Chrome took >30s to write DevToolsActivePort; launch() threw
-// from setUp and failed the test — and its failure paths left the spawned
+// from setUp (failing the test), and its failure paths left the spawned
 // Chrome and the profile dir behind. The flake and the "leaked warm Chromes"
 // were the same event. The worker's launcher (_ChromeHandle.launch) had
 // already fixed both for itself; this pins the same behaviour on CdpClient.
 //
-// The stand-in binary is /bin/echo — exits instantly, prints no DevTools URL —
-// via the visible-mode direct-exec path, which is the only launch path that
-// takes an arbitrary executable (open -g needs an app bundle). The cleanup
-// under test (`_reapFailedLaunch`) is shared by both paths.
+// The doomed launch runs in a CHILD process with a private TMPDIR, because
+// the obvious in-process version — diff systemTemp's appbox-cdp- dirs before
+// and after — races every concurrently running test file that launches
+// Chrome, and lost that race on its very first full-suite run. A dir nothing
+// else writes to makes "left nothing behind" assertable at all.
 import 'dart:io';
 
-import 'package:appboxd/cdp.dart';
 import 'package:test/test.dart';
-
-Set<String> _cdpDirs() => Directory.systemTemp
-    .listSync()
-    .whereType<Directory>()
-    .map((d) => d.path)
-    .where((p) => p.contains('/appbox-cdp-'))
-    .toSet();
 
 void main() {
   test('a launch that cannot boot throws after 2 attempts and leaves nothing',
       () async {
-    final before = _cdpDirs();
-    final wasVisible = LensSession.visible;
-    // Visible mode forces the direct-exec path on macOS, where chromePath is
-    // exec'd as-is. /bin/echo ignores the Chrome args and exits at once.
-    LensSession.visible = true;
-    addTearDown(() => LensSession.visible = wasVisible);
+    final tmp = Directory.systemTemp.createTempSync('launch_failure_test_');
+    addTearDown(() => tmp.deleteSync(recursive: true));
 
-    await expectLater(
-        CdpClient.launch(chromePath: '/bin/echo'),
-        throwsA(predicate((e) =>
-            '$e'.contains('after 2 attempts') &&
-            '$e'.contains('DevTools URL'))),
-        reason: 'the failure must name both the retry and the cause — '
-            '"after 2 attempts" is also the proof the retry actually ran');
+    final r = await Process.run(
+      Platform.resolvedExecutable,
+      ['run', 'tool/launch_failure_child.dart'],
+      environment: {...Platform.environment, 'TMPDIR': tmp.path},
+    );
+
+    expect(r.stdout, contains('THREW:'),
+        reason: 'the child must fail its launch, not succeed on /bin/echo');
+    expect(r.stdout, contains('after 2 attempts'),
+        reason: '"after 2 attempts" is also the proof the retry actually ran');
+    expect(r.stdout, contains('DevTools URL'),
+        reason: 'the underlying cause must survive the retry wrapper');
+    expect(r.stderr, contains('attempt 1 failed'),
+        reason: 'a silent retry hides a Chrome that fails every other boot');
 
     // Both attempts' profile dirs must be gone: a retry loop that leaks the
     // half-started attempt manufactures exactly the orphans sweepOrphans
     // exists to reap — one failure becoming N strays.
-    final leaked = _cdpDirs().difference(before);
+    final leaked = tmp
+        .listSync()
+        .map((e) => e.path)
+        .where((p) => p.contains('appbox-cdp-'))
+        .toList();
     expect(leaked, isEmpty,
         reason: 'failed launch attempts left profile dirs behind: $leaked');
-  });
+  }, timeout: const Timeout(Duration(minutes: 2)));
 }

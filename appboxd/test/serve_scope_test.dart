@@ -47,7 +47,12 @@ Future<int?> _statusOf(String url) async {
   final client = HttpClient()..connectionTimeout = const Duration(seconds: 5);
   try {
     final req = await client.getUrl(Uri.parse(url));
-    final res = await req.close();
+    // The response needs its own deadline: connectionTimeout only bounds the
+    // connect. A wedged server that ACCEPTS and never answers — measured
+    // 2026-08-21, a zombie serve process from a killed suite run squatting
+    // 4371 — turns an unbounded req.close() into the test's full 5-minute
+    // ceiling, reported as a mystery timeout instead of "server not healthy".
+    final res = await req.close().timeout(const Duration(seconds: 5));
     await res.drain<void>();
     return res.statusCode;
   } catch (_) {
