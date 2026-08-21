@@ -873,6 +873,25 @@ class CdpSession {
           'NOT reproducible. Likely an animated GIF/APNG, a timer-driven '
           'repaint, or a video.');
     }
+    // Same reasoning as `converged` above, for the same reason it needs saying
+    // twice: `frozenLate` was returned and read by nothing but its own test —
+    // measured, correct, and discarded by every caller. That is the third
+    // shape of "pass outcome == did-not-run outcome" this codebase collects,
+    // and shipping a field nobody reads is worse than shipping none, because
+    // its presence reads as coverage.
+    //
+    // Non-zero is not a failure: loop 2 ran after this pass and converged, so
+    // the capture is sound. It means the two-pass depth was LOAD-BEARING on
+    // this page — a third wave of animations would land after loop 2 with
+    // nothing left to catch it. So it is a warning, not an error, and the page
+    // it names is the first place to look when a capture drifts anyway.
+    final late = (frozenLate['finite'] ?? 0) + (frozenLate['infinite'] ?? 0);
+    if (late > 0) {
+      stderr.writeln('lens: $late animation(s) STARTED during settle and were '
+          'frozen by the second pass (${frozenLate['committed'] ?? 0} elements '
+          'committed). The capture is settled, but this page needed both '
+          'passes — if it ever drifts, start here.');
+    }
     return (
       elapsedMs: elapsed(started),
       converged: converged,

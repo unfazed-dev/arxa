@@ -81,6 +81,44 @@ const _settles = '''
 <style>body{margin:0;background:#204a87}</style><div>stable</div>
 ''';
 
+/// Nothing animated at load; an animation appears 150ms later. This is the
+/// only page here that exercises the SECOND freeze pass doing real work — at
+/// step 1 there is nothing to freeze, so `frozen` is zeros and `frozenLate`
+/// carries the whole story.
+///
+/// `both` fill matters: without it the finished animation drops out of
+/// `getAnimations()` and the second pass finds nothing, which would make this
+/// page indistinguishable from one that never animated at all.
+const _lateAnimation = '''
+<!doctype html><meta charset=utf-8><title>late</title>
+<style>body{margin:0;background:#fff}
+@keyframes slide{from{transform:translateX(-80px)}to{transform:none}}
+.s{width:120px;height:120px;margin:40px;background:#c17d11;
+   animation:slide 200ms linear both}</style>
+<div id=host></div>
+<script>
+  window.addEventListener('load', function () {
+    setTimeout(function () {
+      var d = document.createElement('div');
+      d.className = 's';
+      document.getElementById('host').appendChild(d);
+    }, 150);
+  });
+</script>
+''';
+
+/// Captures `stderr` inside an [IOOverrides] zone. `noSuchMethod` swallows the
+/// rest of the [Stdout] surface — the tests below only ever call `writeln`.
+class _CapturedStderr implements Stdout {
+  final buffer = StringBuffer();
+  @override
+  void writeln([Object? object = '']) => buffer.writeln(object);
+  @override
+  void write(Object? object) => buffer.write(object);
+  @override
+  dynamic noSuchMethod(Invocation invocation) => null;
+}
+
 Future<(HttpServer, String)> _serve(Map<String, String> pages) async {
   final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
   server.listen((req) async {
@@ -139,6 +177,7 @@ void main() {
         '/fill': _fillForwards,
         '/never': _neverSettles,
         '/settles': _settles,
+        '/late': _lateAnimation,
       });
     });
 
@@ -322,6 +361,49 @@ void main() {
       } finally {
         await client.close();
       }
+    }, timeout: const Timeout(Duration(minutes: 2)));
+
+    test('a late-starting animation warns instead of being returned silently',
+        () async {
+      // `frozenLate` was computed correctly and read by NOTHING outside this
+      // file — the third shape of "pass outcome == did-not-run outcome" this
+      // project collects, and the one hardest to see, because the field is
+      // right there in the return type and reads as coverage. The fix is the
+      // same one `converged` got: warn at the source, where no future caller
+      // can forget to look. So the assertion is on the WARNING, not on the
+      // field — asserting the field is what let this sit unread.
+      final captured = _CapturedStderr();
+      await IOOverrides.runZoned(() async {
+        final client = await CdpClient.launch();
+        try {
+          final tab = await client.newTab();
+          await tab.enable();
+          await tab.setViewport(390, 300);
+          final r = await tab.navigateAndSettleForCapture('$base/late',
+              settleMs: 100);
+          // Pass 1 has nothing to freeze; the animation does not exist yet.
+          expect(r.frozen['finite'], 0);
+          expect(r.frozenLate['finite'], 1,
+              reason: 'the animation appeared after the first freeze, so only '
+                  'the second pass can account for it');
+          // Not a failure: loop 2 ran after that freeze and settled.
+          expect(r.converged, isTrue);
+
+          // Control, in the same zone: a page with no late animation must not
+          // produce the warning. Without this the assertion below would pass
+          // just as well if the warning were unconditional.
+          final before = captured.buffer.length;
+          await tab.navigateAndSettleForCapture('$base/settles',
+              settleMs: 100);
+          expect(captured.buffer.length, before,
+              reason: 'a page with nothing to freeze late must stay quiet');
+        } finally {
+          await client.close();
+        }
+      }, stderr: () => captured);
+
+      expect(captured.buffer.toString(),
+          contains('1 animation(s) STARTED during settle'));
     }, timeout: const Timeout(Duration(minutes: 2)));
 
     test('settleForCapture reports its own screenshot cost', () async {

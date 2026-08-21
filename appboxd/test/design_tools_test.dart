@@ -644,33 +644,55 @@ export default [
             .map((e) => (e as Map).cast<String, String>())
             .toList();
 
+    test('every registry entry is a well-formed swap', () {
+      // The class doc asserts find/replace cannot contain each other; that is
+      // a comment where a check belongs, in the change whose whole point is
+      // that a note is not an enforcement. If either contained the other, the
+      // "already patched" branch could not tell the two states apart.
+      for (final patch in vendorPatches) {
+        expect(patch.replace.contains(patch.find), isFalse,
+            reason: '${patch.file}: replace contains find');
+        expect(patch.find.contains(patch.replace), isFalse,
+            reason: '${patch.file}: find contains replace');
+        expect(patch.find, isNot(patch.replace));
+        expect(patch.why.trim(), isNotEmpty,
+            reason: '${patch.file}: `why` is the only surviving record of the '
+                'reasoning — SRI.md is generated from it');
+      }
+    });
+
     test('applyVendorPatches rewrites the upstream anchor exactly once', () {
-      final patch = vendorPatches.single;
-      final upstream = latin1.encode('head;${patch.find};tail');
-      final got = latin1.decode(applyVendorPatches(patch.file, upstream));
-      expect(got, 'head;${patch.replace};tail');
+      for (final patch in vendorPatches) {
+        final upstream = latin1.encode('head;${patch.find};tail');
+        expect(latin1.decode(applyVendorPatches(patch.file, upstream)),
+            'head;${patch.replace};tail');
+      }
     });
 
     test('applyVendorPatches is a no-op on an already-patched file', () {
       // Not the same as "anchor missing". Collapsing these two would fail
       // every run after the first, which is how a real check gets disabled.
-      final patch = vendorPatches.single;
-      final already = latin1.encode('head;${patch.replace};tail');
-      expect(latin1.decode(applyVendorPatches(patch.file, already)),
-          'head;${patch.replace};tail');
+      for (final patch in vendorPatches) {
+        final already = latin1.encode('head;${patch.replace};tail');
+        expect(latin1.decode(applyVendorPatches(patch.file, already)),
+            'head;${patch.replace};tail');
+      }
     });
 
     test('applyVendorPatches throws when upstream drifts past the anchor', () {
-      final patch = vendorPatches.single;
-      expect(
-          () => applyVendorPatches(patch.file, latin1.encode('unrelated bytes')),
-          throwsA(predicate((e) =>
-              '$e'.contains('no longer applies') && '$e'.contains('do NOT drop'))));
-      // Two anchors is drift too — replaceFirst would silently patch one.
-      expect(
-          () => applyVendorPatches(
-              patch.file, latin1.encode('${patch.find}|${patch.find}')),
-          throwsA(predicate((e) => '$e'.contains('occurs 2 times'))));
+      for (final patch in vendorPatches) {
+        expect(
+            () =>
+                applyVendorPatches(patch.file, latin1.encode('unrelated bytes')),
+            throwsA(predicate((e) =>
+                '$e'.contains('no longer applies') &&
+                '$e'.contains('do NOT drop'))));
+        // Two anchors is drift too — replaceFirst would silently patch one.
+        expect(
+            () => applyVendorPatches(
+                patch.file, latin1.encode('${patch.find}|${patch.find}')),
+            throwsA(predicate((e) => '$e'.contains('occurs 2 times'))));
+      }
     });
 
     test('files with no registered patch pass through untouched', () {
@@ -696,7 +718,24 @@ export default [
       // network fetch, and it is the check that would have caught de28917a's
       // hand-written section the moment it was written.
       expect(vendorSriDoc(committedManifest()),
-          File(p.join(vendorDir, 'SRI.md')).readAsStringSync());
+          File(p.join(vendorDir, 'SRI.md')).readAsStringSync(),
+          reason: 'SRI.md is generated, not hand-written. If you edited a '
+              "patch's `why` or added a registry entry, regenerate it: "
+              'cd appboxd && dart run tool/regen_vendor_docs.dart');
+    });
+
+    test('every patched file is named in THIRD-PARTY-NOTICES.md', () {
+      // Apache-2.0 §4(b) wants modified files to carry prominent notice of the
+      // change, and the notices file is the one artifact whose entire job is
+      // provenance — it must not describe a patched bundle as the pristine
+      // upstream release. Checked here so a second patch cannot be added
+      // without the notice following it.
+      final notices = File('../THIRD-PARTY-NOTICES.md').readAsStringSync();
+      for (final patch in vendorPatches) {
+        expect(notices, contains(patch.file),
+            reason: '${patch.file} diverges from upstream but is not named in '
+                'THIRD-PARTY-NOTICES.md');
+      }
     });
 
     test('committed manifest records both hashes for a patched file', () {
