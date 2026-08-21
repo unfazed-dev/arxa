@@ -186,6 +186,18 @@ documents. Every claim was measured by running the thing.
   stability loop that backstops all of it. Every claim graded HOT/WARM/COLD
   against a primary source. Feeds the W1 amendment in
   [plans/rust-port-closure-and-surgical-lens.md](plans/rust-port-closure-and-surgical-lens.md).
+- [research/warm-vs-cold-chrome-determinism.md](research/warm-vs-cold-chrome-determinism.md)
+  — the question no official source answers: does a REUSED Chrome render
+  byte-identically to a freshly-launched one? It gates the daemon-owns-a-browser
+  plan, because a speed win that changes pixels is worthless to a tool that
+  exists to compare them. Measured, not looked up: three page kinds chosen for
+  the caches that warm up (font-shaping, GPU raster/shader, flat control), four
+  arms, negative controls proving the instrument can see a 1-in-1024000-pixel
+  difference, a render-richness floor so a blank page cannot pass by drawing
+  nothing, and a cold-A/cold-B baseline so any warm difference is attributable
+  to warmth. **Result: identical in every arm.** Conditional on Chrome build,
+  viewport, settle, and a warm window only ~26s deep — a daemon runs for hours,
+  which this does not cover.
 
 ---
 

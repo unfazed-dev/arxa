@@ -45,3 +45,13 @@ guarded on a file the htmx producer does not have. Every one was green.
 | [provider-fabric-recheck.md](provider-fabric-recheck.md) | Re-verification (2026-07-30) of the LLM-fabric plan's flagged-unverified facts against current official docs: Gemini prices confirmed, z.ai PAYG Anthropic endpoint conditional, Fugu pricing now official, Kimi CLI headless contract corrected (`-p`, no `--afk`), Anthropic OpenAI shim now exists. |
 | [agent-memory-and-caching.md](agent-memory-and-caching.md) | Memory + self-learning + caching architecture (2026-07-30): skip mem0/Letta/Zep (97.8%-junk audit, Zep CE shutdown), keep Fugu scorecard affinity, add gate-triggered LESSONS.md, cache-first prompt assembly, exact-match response cache; semantic caching skipped. |
 | [monetization-and-licensing.md](monetization-and-licensing.md) | Monetization + licensing research (2026-07-30): charge for the tool never the output, flat annual + JetBrains-style perpetual fallback, Ed25519 offline-signed keys, encrypt the vault not emitted targets, DRM backlash case file (Unity, Adobe CS3, Cursor credits). |
+
+## Measured findings (2026-08-21) — lens capture determinism
+
+Both of these were run, not read. They feed the W1 amendments in
+[../plans/rust-port-closure-and-surgical-lens.md](../plans/rust-port-closure-and-surgical-lens.md).
+
+| doc | what it's for |
+|---|---|
+| [deterministic-screenshot-capture.md](deterministic-screenshot-capture.md) | What actually guarantees a stable screenshot: `document.fonts.ready`'s spec-documented gap, why double-rAF is a heuristic and not a contract, which animation types `getAnimations()` cannot reach (SMIL, GIF/APNG, cross-origin iframes), why CDP virtual time is excluded, and the capture-until-two-match stability loop that backstops all of it. Every claim graded HOT/WARM/COLD against a primary source. |
+| [warm-vs-cold-chrome-determinism.md](warm-vs-cold-chrome-determinism.md) | Does a REUSED Chrome render byte-identically to a freshly-launched one? No official source answers it, and it gates the daemon-owns-a-browser plan — a speed win that changes pixels is worthless to a tool that exists to compare them. Three page kinds × four arms, with negative controls, a render-richness floor, and a cold-A/cold-B baseline. **Identical in every arm**, conditional on Chrome build, viewport, settle, and a warm window only ~26s deep. |

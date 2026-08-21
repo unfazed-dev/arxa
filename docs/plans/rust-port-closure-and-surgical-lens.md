@@ -270,6 +270,98 @@ per convention, proceeded on primary sources.
 > designer verb emits a surface list, and no lens verb consumes one. That
 > missing file is W3's capture manifest — W1 does not need to solve it, but
 > should not foreclose it.
+
+> ### Amendment 2026-08-21 (later) — W1 BUILT. Three plan claims were wrong.
+>
+> Commits `d20ef451`, `e828fb48`, `5aea507d`. Everything below was measured on
+> this machine, 4–5 captures per page, a fresh Chrome for each, with the old
+> path run in the SAME pass as the control.
+>
+> | page | flat 1500ms | loop only | freeze + floor + loop |
+> |---|---|---|---|
+> | static | 1 distinct | 1 distinct, 338ms | 1 distinct, 1863ms |
+> | animated | **5 distinct** | 5 distinct, TIMEOUT ×5 | **1 distinct**, 1862ms |
+> | variable-load | 4 distinct | 2 distinct | **1 distinct**, 2178ms |
+>
+> **Correction 1 — the plan's animated row was wrong.** It recorded "1 distinct
+> hash — byte-identical" and concluded animated pages were phase-locked and
+> therefore fine. They are not: 5 of 5 distinct. This is the *larger* of the two
+> defects and the plan had it filed as a non-issue.
+>
+> **Correction 2 — step 7 alone does not work.** The plan said to build the
+> stability loop first because it "does not depend on getting the signal list
+> right". True, and insufficient: an infinite animation never stops changing, so
+> the loop cannot converge. It burned the full 6s timeout on all 5 runs and then
+> captured an arbitrary frame — worse than the flat timer in both time and
+> determinism. Steps 1/4 are prerequisites, not polish.
+>
+> **Correction 3 — pinning the phase is not enough, and this one is not in any
+> doc.** A page whose animation is provably pinned (`currentTime` 0, computed
+> transform identity, verified every run via the new `lens eval`) still gave 3
+> of 4 distinct, worst case 13,345 pixels (4%). Isolated by differential: flat
+> colour, gradient-only, and *static*-transform pages are all byte-identical;
+> only animation+gradient varies; and dropping the `animation` property on that
+> same page takes it to 4/4 identical. **An element that merely HAS an animation
+> is promoted to its own compositor layer, and that layer rasters differently
+> run to run.** So `freezeAnimations()` commits the frozen computed values
+> inline as `!important` and *then* removes the animation. Committing first is
+> what makes it safe — a bare `animation: none` would discard the end state
+> `animation-fill-mode: forwards` was holding.
+>
+> **What shipped.** `CdpTab.freezeAnimations()`, `settleUntilStable()`,
+> `settleForCapture()` and `navigateAndSettleForCapture()`. Sequence: freeze →
+> floor → loop → freeze again → short loop. The second freeze exists because a
+> transition fired by late-arriving data did not exist at the first. `settleMs`
+> becomes the FLOOR, so the new path never captures earlier than the old one.
+> Cost: ~24% slower, fully deterministic.
+>
+> **Six pixel paths migrated**, and the split is principled rather than
+> alphabetical: `captureGolden`, `compareGolden`, `lens check`, `lens shoot`,
+> both `gate_freeze` renders. The motion verbs (`anim`/`record`/`flipbook`/
+> `burst`/`states`) stay on `navigateAndSettle` — they exist to observe motion
+> and the capture settle destroys it. So do the **data** verbs
+> (`dom`/`tokens`/`a11y`/`net`/`crawl`/`skeleton`), for a reason worth writing
+> down: **`freezeAnimations` mutates the DOM.** It writes inline `!important`
+> declarations onto animated elements. Correct for a screenshot, corrupting for
+> an observation — `lens dom` would report inline styles that are nowhere in the
+> source. Pixels here, data there.
+>
+> **MIGRATION DEBT:** a golden captured under the flat timer on a page with any
+> animation will now differ. Static goldens are unaffected (measured identical
+> under both paths). Recapture via the existing `recaptureGoldens` path.
+>
+> **`lens eval` shipped** (`eval <url> <js-expr>`), and immediately earned itself
+> — corrections 1 and 3 above were both diagnosed with it. Deliberately not
+> routed through `_emitJson`: that gates the exit code on `certified`, and you
+> reach for `eval` precisely when a page is misbehaving.
+>
+> **`lens click-burst` shipped**, promoting `tool/lens_click_burst.dart`. Fills
+> what `burst` cannot see: `burst` frames from page load, so click-triggered
+> motion (transitions, overlays, drawers) is invisible to it. A missed selector
+> is a failure with zero frames written — a silently empty burst reads
+> downstream as "this interaction has no animation".
+> `tool/lens_footer_states.dart` is NOT promoted: it is project-specific
+> (mod-footer, `#smooth-wrapper`), so it belongs to W3's manifest, not to a verb.
+>
+> **Warm Chrome — the `unknown` is now answered, conditionally: YES.** Measured
+> across three page kinds chosen for the caches that warm up (font-shaping, GPU
+> raster/shader, flat control) × four arms (cold-A, warm-same-tab, warm-new-tab,
+> cold-B). **Every warm capture was byte-identical to cold.** The measurement
+> carries its own controls: negative controls proving the instrument can see a
+> 1-pixel/1-channel difference, a render-richness floor so a blank page cannot
+> pass by drawing nothing, and the cold-A/cold-B pair proving the machine itself
+> is reproducible — without which a warm match would prove nothing. Conditions
+> held fixed, not proven invariant: Chrome 151.0.7922.170, one viewport, one
+> settle, and a warm window only ~26s deep. **A daemon holds Chrome for hours;
+> that depth is untested and is the condition it will exceed first.** Full report:
+> [docs/research/warm-vs-cold-chrome-determinism.md](../research/warm-vs-cold-chrome-determinism.md).
+>
+> **Still open in W1:** the daemon itself. The blocking unknown is gone, but the
+> constraints from the earlier amendment stand — `--remote-debugging-port` not
+> `-pipe`, one `--user-data-dir` for the daemon's life, `Target.createBrowserContext`
+> does not give a fresh render environment, no CDP event for browser death.
+> Before shipping it, extend the warm probe's depth until the window matches the
+> intended session length.
 - **W2 — evidence bundle + drill-down compare**, uniform across the four
   media kinds; structured verdict format.
 - **W3 — capture manifest:** designer emit + lens manifest runner +
