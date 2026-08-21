@@ -302,6 +302,102 @@ at the dispatch site, not from doc strings.
 
 ---
 
+## G. Build log — stages 1–3 shipped 2026-08-22
+
+30. **Shipped as `arxa-studio/plugins/gen-ui` (commit `6a753b8`).** One
+    package, both halves. Host registers the `gen_ui` tool and the
+    `/arxa-gen-ui` RPC channel; browser registers `tool.call.toolview` with
+    `key: 'gen_ui'` and the five catalogue renderers. Wired as profile row 9
+    and a `file:` dep in `bin/arxa.mjs`. `plugins/gen-ui/selftest.mjs` — 10
+    assertions, all passing — covers schema compilation, envelope canonicality,
+    catalogue rejection, and the RPC verbs.
+
+31. **Corrections found by building, recorded so they are not re-derived.**
+    - An RPC channel is **one URL path segment** — `/^\/[A-Za-z0-9._~-]+$/`,
+      with `/api` reserved (`dsh-client-connection/lib/index.js:203,331`).
+      `arxa/gen-ui` fails the profile at boot; `/arxa-gen-ui` is correct.
+    - The wire form is `POST {channel}/{endpoint}` with a JSON envelope whose
+      **`method` must equal the endpoint** (`rpcFetchHandler`, `:275-300`).
+      The endpoint is in the path, not the body.
+    - `inputActions` is **not** among a toolview's props. The session standard
+      kit for this scope is exactly `useSession`, `sessionId`, `useProjection`
+      (`dsh-client-runtime/lib/types/client/index.d.ts:64-90`); an earlier note
+      claiming otherwise was wrong. A toolview cannot drive the composer, which
+      is why the `Choice` card records rather than sends.
+    - The durable payload seam is **`output.presentationMeta`**, which lands on
+      `ToolResultNode.meta`. `output.render` feeds the model, not the UI —
+      rendering from `content` would have re-parsed model-facing prose.
+
+32. **Verified against the running server**, not just unit-stubbed: bundle
+    served 200 with the keyed registration and all five renderers; `select`
+    then `state` round-trips over the real channel; an unknown endpoint and
+    bad args return clean errors; and **a forged `Host` header gets 403**, so
+    the loopback fence of decision 24 holds in practice.
+
+33. **Streaming, settled by evidence.** A toolview **cannot** stream arguments:
+    it does not exist until the model has finished emitting the call. So there
+    is no partial-JSON renderer in the thread and none should be added. The
+    running card instead draws from the complete `argsRaw`, which makes the
+    surface appear before `execute` settles. Live *during-run* updates, if ever
+    needed, come from `useProjection` (whole-value, never a delta — fine for
+    coarse progress, wrong for token-level text) or from `subCalls`.
+
+## H. The design panel — answered, and it is a build not a wire-up
+
+34. **Can the design panel host generative UI? Yes, trivially** — it is our own
+    React in `shell.overlay`; the same catalogue renderers drop straight in.
+
+35. **Can it be live-streaming per rung? Not today, and the blocker is in
+    appbox, not arxa.** `appbox design serve` has **no server→browser push
+    channel of any kind** — verified absence, not an unchecked assumption: no
+    `text/event-stream`, no `EventSource`, no `WebSocketTransformer` anywhere
+    in `appboxd/lib` outside `cdp.dart` and `lens/` (which talk to Chrome, not
+    to a client). Reload is server-side only: a file watcher
+    (`design_server.dart:891-906`) debounces 200 ms into `_scheduleReload()`
+    (`:867-875`) and re-imports the artifact modules cache-busted in the same
+    Chrome tab (`worker.dart:799-811`). **The browser is never told.** The
+    panel's "remount on demand" is not a limitation of the panel — it is the
+    only mechanism that exists.
+
+36. **Nor is there per-rung rendering.** One document per route; the client
+    sizes it. Rungs are a client/capture-side concept. And every generator is
+    produce-whole-then-return — there is no incremental emit path.
+
+37. **The cheapest real fix, priced.** Add `GET /__events` to
+    `design_server.dart`: a broadcast `StreamController` fanned to held-open
+    `text/event-stream` responses, firing `reloaded` when
+    `_reloadAndRefreshRoutes()` completes (`:885-889`). ~50 lines of Dart, no
+    existing scaffolding to reuse. The panel then listens and re-navigates each
+    rung iframe. **Mandatory detail:** a remount fired right after a write
+    usually lands inside the 3800 ms reload grace window
+    (`_kReloadGrace`, `:224`) and gets **HTTP 503** with the "reloading" page —
+    so the panel must retry the 503 (~1 s backoff, up to ~4 s) or it will flash
+    an error surface at the user on every save. Generation stays batch; the
+    user perceives "live" because all rungs refresh together.
+
+38. **Seams that already work, to build on rather than around:**
+    `POST /__project_write` (`design_server.dart:381`, impl `:734`) is a
+    working, path-traversal-safe single-file write whose watcher triggers the
+    reload — this is the write half of the awaited `design patch` verb, which
+    is therefore a thin CLI wrapper, not new infrastructure.
+    `GET /__routes` (`:407`) gives the live route table after each reload.
+    The `--json` ready-record (`:1041-1047`) makes spawn-and-wait deterministic.
+    Per-rung view files (`*_view.mobile.tsx` / `.tablet.tsx` / `.desktop.tsx`)
+    already give "generate per rung" an authoring shape.
+    **Hazard:** shutdown stops every instance serving the same artifact
+    (pidfile registry, `:992-996`) — a panel that spawns servers must scope by
+    artifact + port.
+
+39. **`kit/genui_bridge` already implements A2UI v0.9 in Dart** — envelope
+    (`appbox_kit_a2ui_message.dart`, version pinned `v0.9`), a chunk-boundary-safe
+    incremental parser tested down to one byte at a time, and OpenAI/Anthropic
+    SSE adapters. It has **zero dependents**: nothing in `appboxd` imports it,
+    and it lives in the `kit/` layer aimed at *generated Flutter apps rendering
+    gen-UI at runtime*, not at the designer producing a design. Reusing it for
+    the panel is a real port, not a wire-up — but it is why stage 2's payload
+    was pinned to the same `v0.9` envelope: one vocabulary, already spoken on
+    both sides.
+
 ## F. Open questions for ratification
 
 27. Which three components seed the Stage 2 catalogue? (Proposed: viewport
