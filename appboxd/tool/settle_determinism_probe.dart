@@ -132,7 +132,8 @@ Future<({String shot, bool converged, int elapsedMs})> _captureNew(
             return (
               elapsedMs: r.elapsedMs,
               converged: r.converged,
-              frozen: <String, int>{}
+              frozen: <String, int>{},
+              screenshots: r.captures,
             );
           }();
     return (

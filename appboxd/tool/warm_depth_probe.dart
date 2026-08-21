@@ -77,6 +77,7 @@ import 'warm_vs_cold_probe.dart'
         Shot,
         capture,
         kDepthMarker,
+        kSettleMarker,
         kH,
         kPages,
         kSettleMs,
@@ -219,12 +220,18 @@ Future<void> writeSection(String body) async {
   final doc = reportFile();
   await doc.parent.create(recursive: true);
   var head = '';
+  var tail = '';
   if (doc.existsSync()) {
     final existing = await doc.readAsString();
     final at = existing.indexOf(kDepthMarker);
     head = at >= 0 ? existing.substring(0, at) : '$existing\n';
+    // warm_settle_probe.dart owns everything below its own marker, which sits
+    // BELOW this section. Carry it, or rewriting the depth section would
+    // silently delete a measurement this probe does not own.
+    final settleAt = existing.indexOf(kSettleMarker);
+    if (settleAt >= 0) tail = '\n${existing.substring(settleAt)}';
   }
-  await doc.writeAsString('$head$kDepthMarker\n\n$body');
+  await doc.writeAsString('$head$kDepthMarker\n\n$body$tail');
 }
 
 String fmtDur(int sec) =>

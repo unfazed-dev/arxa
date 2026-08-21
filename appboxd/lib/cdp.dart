@@ -816,7 +816,7 @@ class CdpSession {
   ///
   /// Not covered, honestly: GIF/APNG (no pause API exists), cross-origin
   /// iframes, and a page that is stable-but-wrong for longer than [minWaitMs].
-  Future<({int elapsedMs, bool converged, Map<String, int> frozen})>
+  Future<({int elapsedMs, bool converged, Map<String, int> frozen, int screenshots})>
       settleForCapture({
     int minWaitMs = 1500,
     int pollMs = 120,
@@ -861,6 +861,16 @@ class CdpSession {
       elapsedMs: elapsed(started),
       converged: converged,
       frozen: frozen,
+      // The two loops' screenshot counts were computed and thrown away until
+      // 2026-08-21, which made this method's real cost unobservable from
+      // outside. That is not academic: a warm-Chrome memory probe had to
+      // REPLICATE the whole sequence out of public methods just to learn the
+      // rate, because the genuine method would not say. Excludes the caller's
+      // own final screenshot(), which happens after this returns — typically
+      // 4 here, 5 end to end, and ~66 when a loop times out at the default
+      // 8000ms/120ms poll. That spread is why callers should report a
+      // distribution and never a mean.
+      screenshots: first.captures + second.captures,
     );
   }
 
@@ -872,7 +882,7 @@ class CdpSession {
   /// [navigateAndSettle] on every still-image path; the motion verbs
   /// (`anim`, `record`, `flipbook`, `burst`, `states`) must NOT use it — they
   /// exist to observe animation, and this deliberately destroys it.
-  Future<({int elapsedMs, bool converged, Map<String, int> frozen})>
+  Future<({int elapsedMs, bool converged, Map<String, int> frozen, int screenshots})>
       navigateAndSettleForCapture(
     String url, {
     int settleMs = 1500,

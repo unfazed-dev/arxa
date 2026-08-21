@@ -67,6 +67,11 @@ const int kSettleMs = 1500; // identical in EVERY arm — an asymmetric settle
 /// Both probes write one document, so each must preserve the other's half.
 const String kDepthMarker = '<!-- depth-probe-section -->';
 
+/// Everything from here down belongs to `warm_settle_probe.dart`, which sits
+/// BELOW the depth section. Three probes write one document, so each must
+/// preserve the sections it does not own.
+const String kSettleMarker = '<!-- settle-rate-probe-section -->';
+
 const kPages = <String, String>{
   'text': '/text', // font-shaping cache
   'css': '/css', // GPU raster + shader cache

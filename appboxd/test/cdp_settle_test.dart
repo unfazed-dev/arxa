@@ -282,6 +282,37 @@ void main() {
       expect(good.passed, isTrue, reason: good.note);
     }, timeout: const Timeout(Duration(minutes: 4)));
 
+    test('settleForCapture reports its own screenshot cost', () async {
+      // This number is the unit a warm-Chrome recycle policy is denominated
+      // in. It was unobservable until the field existed — a memory probe had
+      // to replicate the whole sequence out of public methods to learn it.
+      final client = await CdpClient.launch();
+      try {
+        final tab = await client.newTab();
+        await tab.enable();
+        await tab.setViewport(390, 300);
+        final settled = await tab.navigateAndSettleForCapture('$base/settles',
+            settleMs: 100);
+        expect(settled.converged, isTrue);
+        // Two loops, each converging on its first agreement = 2 captures each.
+        expect(settled.screenshots, 4,
+            reason: 'a settled page costs two captures per loop; a change here '
+                'changes the recycle policy denominated in screenshots');
+
+        // The control: a page that CANNOT converge must cost dramatically
+        // more, or the number above is a constant rather than a measurement.
+        final stuck = await tab.navigateAndSettleForCapture('$base/never',
+            settleMs: 0, timeoutMs: 1200);
+        expect(stuck.converged, isFalse);
+        expect(stuck.screenshots, greaterThan(settled.screenshots * 2),
+            reason: 'a timed-out settle burns the whole window at the poll '
+                'interval — that spread is exactly why callers must report a '
+                'distribution and never a mean');
+      } finally {
+        await client.close();
+      }
+    }, timeout: const Timeout(Duration(minutes: 2)));
+
     test('settleUntilStable reports non-convergence instead of pretending',
         () async {
       final client = await CdpClient.launch();
