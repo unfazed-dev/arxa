@@ -387,8 +387,34 @@ credential store. Not in the repo or its history. Migrate to the
   product horizon.
 - **(W1 from the previous plan runs here — lens spine, on the new daily
   surface.)**
-- **H3 — harness skeleton**: fork dsh into `totem_labs/arxa-harness`,
-  rebrand, strip, pin; Clients/stages side panel; CLI panel.
+- **H3 — harness skeleton.** **REWRITTEN 2026-08-21** — the original text
+  ("fork dsh into `totem_labs/arxa-harness`, rebrand, strip, pin") is void. The
+  depend-don't-fork decision above replaced it, and the rebrand-surface audit
+  removed its last objection: zero source edits are required, so there is
+  nothing to fork *for*. Left as written, H3 would have executed a decision this
+  plan already overturned. What it is now:
+  1. **A package, not a repo.** `arxa` depends on `@deepseek-ai/*` components at
+     a pinned `0.1.0-rc.7` (exact — a caret on a prerelease moves). No clone, no
+     rebase tax.
+  2. **Compose the plugin list, don't edit it.** `dsh-app-boot/lib/index.js:324`
+     holds profile→plugin as ordinary data, so arxa declares its own list. This
+     is also how the 43 of 47 user-visible brand strings that live in packages
+     arxa never loads simply stop existing.
+  3. **Register two replacement plugins** for the 4 strings that do ship. The
+     model-facing one first: `dsh-system-prompt` exports `SystemPrompt extends
+     Service`, so an arxa Service registered in its place changes what the model
+     is told it is. `dsh-web-app` carries the other.
+  4. **Ship arxa's own `bin`** — the only dsh package with no entrypoint is the
+     top-level CLI wrapper, and arxa does not want it anyway.
+  5. `arxa update` = bump the version range, run the suite. That is the whole
+     upstream story.
+  6. Then the UI work the original bullet ended on: Clients/stages side panel,
+     CLI panel.
+
+  **Verify by running, not by reading:** boot a composed profile and assert the
+  system prompt contains arxa's identity and not DeepSeek's. That check is the
+  one that fails if step 3 silently didn't take — a plugin that fails to
+  register leaves dsh's default in place and everything still boots.
 - **H4 — design panel**: viewer first (iframe + live reload + rungs);
   drag overlay after the engine `design patch` verb exists.
 - **H5 — memory + context**: engine memory verbs + store, dsh plugin + Pi
