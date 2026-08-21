@@ -81,7 +81,9 @@ Future<_Resp> _get(String url, {Map<String, String>? headers}) async {
   final client = HttpClient();
   try {
     final req = await client.getUrl(Uri.parse(url));
-    headers?.forEach((k, v) => req.headers.add(k, v));
+    // `set`, not `add`: the browser-trust tests override Host, which dart:io
+    // has already filled in from the URL.
+    headers?.forEach((k, v) => req.headers.set(k, v));
     final res = await req.close();
     final body = await utf8.decoder.bind(res).join();
     final h = <String, String>{};
@@ -99,7 +101,7 @@ Future<_Resp> _post(String url, String body,
     final req = await client.postUrl(Uri.parse(url));
     req.headers.contentType =
         ContentType.parse('application/x-www-form-urlencoded');
-    headers?.forEach((k, v) => req.headers.add(k, v));
+    headers?.forEach((k, v) => req.headers.set(k, v));
     req.add(utf8.encode(body));
     final res = await req.close();
     final b = await utf8.decoder.bind(res).join();
@@ -1049,6 +1051,184 @@ void main() {
       await tmp.delete(recursive: true);
     });
   });
+
+  // ── the browser-trust guard + the live-reload stream, on the wire ────────
+  // browser_trust_test.dart covers the decision table; this group proves the
+  // decision is actually WIRED — that a refused request never reaches a
+  // handler, and that an allowed one gets its CORS header.
+  group('browser trust + /__events', () {
+    DesignServer? srv;
+    late String tempDir;
+    const panel = 'http://arxa.studio.localhost:7891';
+    String base() => 'http://127.0.0.1:${srv!.port}';
+
+    setUpAll(() async {
+      tempDir =
+          (await Directory.systemTemp.createTemp('design-events-test-')).path;
+      await _copyDir(_fixture, tempDir);
+      srv = await DesignServer.start(
+        artifactDir: tempDir,
+        port: 0,
+        trustedOrigins: const [panel],
+        // The heartbeat is also the reaper (see _eventHeartbeat) — at the
+        // 20s default the departed-subscriber test would sit there waiting.
+        eventHeartbeat: const Duration(milliseconds: 150),
+      );
+    });
+
+    tearDownAll(() async {
+      await srv?.stop();
+      try {
+        await Directory(tempDir).delete(recursive: true);
+      } catch (_) {}
+    });
+
+    test('DNS rebinding: a foreign Host is refused with 421', () async {
+      final r = await _get('${base()}/__projects',
+          headers: {'host': 'evil.example.com'});
+      expect(r.status, 421);
+    });
+
+    test('the same request with an honest Host is served', () async {
+      expect((await _get('${base()}/__projects')).status, 200);
+    });
+
+    test('CSRF: the cross-site POST that used to write files is refused',
+        () async {
+      // Exactly what a malicious page could send before this guard: a CORS
+      // "simple request", so no preflight ever asked our permission.
+      final r = await _post(
+        '${base()}/__project_write',
+        '{"path":"pwned.js","body":"x"}',
+        headers: {
+          'origin': 'https://evil.example',
+          'sec-fetch-site': 'cross-site',
+        },
+      );
+      expect(r.status, 403);
+      expect(File(p.join(tempDir, 'pwned.js')).existsSync(), isFalse);
+    });
+
+    test('a non-browser caller (CLI, probe, lens) is untouched', () async {
+      // No Origin, no Sec-Fetch-* — the documented fail-open path.
+      final r = await _get('${base()}/__routes');
+      expect(r.status, 200);
+      expect(r.body, contains('"routes"'));
+    });
+
+    test('the stream carries the SSE headers a proxy will not eat', () async {
+      final sse = await _openSse('${base()}/__events');
+      addTearDown(sse.close);
+      expect(sse.status, 200);
+      expect(sse.headers['content-type'], contains('text/event-stream'));
+      expect(sse.headers['cache-control'], contains('no-cache'));
+      expect(sse.headers['cache-control'], contains('no-transform'));
+      expect(sse.headers['x-accel-buffering'], 'no');
+      expect(sse.headers['x-content-type-options'], 'nosniff');
+      // Proof that bufferOutput is off: bytes arrive before the response ends.
+      await sse.waitFor('retry: 500');
+    });
+
+    test('an allowlisted origin is echoed back, never a wildcard', () async {
+      final sse = await _openSse('${base()}/__events', headers: {
+        'origin': panel,
+        'sec-fetch-site': 'cross-site',
+      });
+      addTearDown(sse.close);
+      expect(sse.headers['access-control-allow-origin'], panel);
+      expect(sse.headers['vary'], contains('Origin'));
+      // Nothing here is cookie-authenticated, so credentials are never granted.
+      expect(sse.headers.containsKey('access-control-allow-credentials'),
+          isFalse);
+    });
+
+    test('an un-allowlisted origin is refused the stream', () async {
+      final r = await _get('${base()}/__events', headers: {
+        'origin': 'https://evil.example',
+        'sec-fetch-site': 'cross-site',
+      });
+      expect(r.status, 403);
+    });
+
+    test('a reload fires a reload event with a rising generation', () async {
+      final sse = await _openSse('${base()}/__events');
+      addTearDown(sse.close);
+      await sse.waitFor(': subscribed');
+      await srv!.reload();
+      // Fails on timeout — an empty stream must not read as a pass.
+      await sse.waitFor(RegExp(r'event: reload\ndata: \{"generation":1\}'));
+      await srv!.reload();
+      await sse.waitFor(RegExp(r'"generation":2'));
+    });
+
+    test('a departed subscriber is dropped (no leaked socket, no timer)',
+        () async {
+      // A closed socket is noticed asynchronously, so settle first: this
+      // wait is itself the proof that every earlier test's subscriber was
+      // reaped rather than left in the set.
+      Future<void> settle(int want) async {
+        final deadline = DateTime.now().add(const Duration(seconds: 5));
+        while (srv!.eventSubscribersForTest != want &&
+            DateTime.now().isBefore(deadline)) {
+          await Future<void>.delayed(const Duration(milliseconds: 25));
+        }
+        expect(srv!.eventSubscribersForTest, want);
+      }
+
+      await settle(0);
+      final sse = await _openSse('${base()}/__events');
+      await sse.waitFor(': subscribed');
+      expect(srv!.eventSubscribersForTest, 1);
+      await sse.close();
+      await settle(0);
+    });
+  });
+}
+
+/// A live SSE subscription: the response headers plus everything the server
+/// has pushed so far.
+class _Sse {
+  _Sse(this._client, this.status, this.headers, this._buf, this._sub);
+  final HttpClient _client;
+  final int status;
+  final Map<String, String> headers;
+  final StringBuffer _buf;
+  final StreamSubscription<String> _sub;
+
+  String get text => _buf.toString();
+
+  /// Block until [pattern] shows up in the stream, or THROW. A stream test
+  /// that reads an empty buffer and moves on is a test that passes when the
+  /// server never fires.
+  Future<void> waitFor(Pattern pattern,
+      {Duration timeout = const Duration(seconds: 8)}) async {
+    final deadline = DateTime.now().add(timeout);
+    while (DateTime.now().isBefore(deadline)) {
+      if (text.contains(pattern)) return;
+      await Future<void>.delayed(const Duration(milliseconds: 25));
+    }
+    throw StateError('SSE: never saw $pattern. Received:\n$text');
+  }
+
+  Future<void> close() async {
+    await _sub.cancel();
+    _client.close(force: true);
+  }
+}
+
+Future<_Sse> _openSse(String url, {Map<String, String>? headers}) async {
+  final client = HttpClient();
+  final req = await client.getUrl(Uri.parse(url));
+  headers?.forEach((k, v) => req.headers.set(k, v));
+  // Never awaited to completion — an event stream has no end.
+  final res = await req.close();
+  final h = <String, String>{};
+  res.headers.forEach((k, v) => h[k] = v.join(','));
+  final buf = StringBuffer();
+  final sub = utf8.decoder
+      .bind(res)
+      .listen(buf.write, onError: (Object _) {}, cancelOnError: false);
+  return _Sse(client, res.statusCode, h, buf, sub);
 }
 
 Future<String?> _lanIp() async {

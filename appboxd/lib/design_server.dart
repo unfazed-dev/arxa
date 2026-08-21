@@ -23,6 +23,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:appboxd/design_server/browser_trust.dart';
 import 'package:appboxd/design_server/l10n.dart';
 import 'package:appboxd/design_server/worker.dart';
 import 'package:appboxd/design_tools.dart' show scriptRepoRoot;
@@ -156,8 +157,19 @@ class _ServeArgs {
   bool noWatch = false;
   bool worker = false;
   String? project;
+  // Repeatable. Env fallbacks so a long-lived studio server can be configured
+  // once instead of on every relaunch.
+  List<String> trustedHosts = [
+    ..._splitList(Platform.environment['APPBOX_TRUSTED_HOSTS']),
+  ];
+  List<String> trustedOrigins = [
+    ..._splitList(Platform.environment['APPBOX_TRUSTED_ORIGINS']),
+  ];
   String? error;
 }
+
+Iterable<String> _splitList(String? raw) =>
+    (raw ?? '').split(',').map((s) => s.trim()).where((s) => s.isNotEmpty);
 
 _ServeArgs _parseArgs(List<String> args) {
   final a = _ServeArgs();
@@ -189,6 +201,17 @@ _ServeArgs _parseArgs(List<String> args) {
       a.project = args[++i];
     } else if (s.startsWith('--project=')) {
       a.project = s.substring(10);
+    } else if (s == '--trusted-host' || s == '--trusted-origin') {
+      if (i + 1 >= args.length) {
+        a.error = '$s requires a value';
+        return a;
+      }
+      (s == '--trusted-host' ? a.trustedHosts : a.trustedOrigins)
+          .add(args[++i]);
+    } else if (s.startsWith('--trusted-host=')) {
+      a.trustedHosts.addAll(_splitList(s.substring(15)));
+    } else if (s.startsWith('--trusted-origin=')) {
+      a.trustedOrigins.addAll(_splitList(s.substring(17)));
     } else if (s.startsWith('--')) {
       a.error = 'unknown flag: $s';
       return a;
@@ -285,6 +308,10 @@ class DesignServer {
   String _vendorDir = '';
   String _workerAssetsDir = '';
 
+  /// Host/Origin allowlist — see browser_trust.dart for what it defends and
+  /// what it deliberately does not.
+  late final BrowserTrust trust;
+
   String get url {
     final shown = (host == '0.0.0.0' || host == '::') ? 'localhost' : host;
     return 'http://$shown:$port/';
@@ -303,6 +330,9 @@ class DesignServer {
     String? workerAssetsDir,
     String? projectDir,
     Duration reloadGrace = _kReloadGrace,
+    Duration eventHeartbeat = const Duration(seconds: 20),
+    Iterable<String> trustedHosts = const [],
+    Iterable<String> trustedOrigins = const [],
   }) async {
     // Absolutize up front: artifact files are served and re-scanned (worker
     // boot, watcher reload) against the process cwd at USE time, so a relative
@@ -317,12 +347,22 @@ class DesignServer {
       ..host = host
       ..noWatch = noWatch
       .._reloadGrace = reloadGrace
+      .._eventHeartbeat = eventHeartbeat
       ..locales = _scanLocales(artifactDir, projectDir: projectDir)
       .._errorCatalog =
           ErrorCatalog(_l10nDirs(artifactDir, projectDir: projectDir));
     // Let SocketException propagate (EADDRINUSE/EACCES) — designServe maps it
     // via bindExitCode; tests assert the bind path directly.
     srv._http = await HttpServer.bind(_bindAddress(host), port);
+    // After bind, because the allowlist is keyed on the REAL port (`--port 0`
+    // and every test ask the OS for one).
+    srv.trust = BrowserTrust(
+      boundHost: host,
+      port: srv._http.port,
+      trustedHosts: trustedHosts,
+      trustedOrigins: trustedOrigins,
+    );
+    if (srv.trust.wildcardBind) stderr.writeln(BrowserTrust.wildcardWarning);
     // Start serving BEFORE booting the worker: the worker loads its page from
     // this very origin, so the socket must be listening first.
     srv._http.listen(srv._handle);
@@ -357,6 +397,38 @@ class DesignServer {
       final path = req.uri.path;
       final method = req.method;
 
+      // The browser-trust gate, ahead of every route: a request that failed it
+      // must not reach a handler, and Host checking has to cover the static
+      // and artifact paths too (rebinding reads whatever it can get). Plain
+      // text, not the localized error surface — this answer goes to an
+      // attacker's page far more often than to a person.
+      final verdict = trust.check(
+        method: method,
+        path: path,
+        host: req.headers.value(HttpHeaders.hostHeader),
+        origin: req.headers.value('Origin'),
+        secFetchSite: req.headers.value('Sec-Fetch-Site'),
+      );
+      if (!verdict.allowed) {
+        stderr.writeln('[design-server] refused $method $path: '
+            '${verdict.reason}');
+        req.response.statusCode = verdict.status;
+        req.response.headers.contentType =
+            ContentType.parse('text/plain; charset=utf-8');
+        req.response.write(verdict.reason);
+        await req.response.close();
+        return;
+      }
+      if (verdict.corsOrigin != null) {
+        // Echo the one matched origin, never `*`, and no
+        // Access-Control-Allow-Credentials at all — nothing here is
+        // authenticated by cookie, so granting credentialed access would only
+        // widen the blast radius of a mistake in the allowlist.
+        req.response.headers
+          ..set('Access-Control-Allow-Origin', verdict.corsOrigin!)
+          ..add('Vary', 'Origin');
+      }
+
       // Every `return` in this try is `return await` on purpose. `return f();`
       // inside a try hands the future back before it completes, so the catch
       // below never sees its error — it escapes as an unhandled async error and
@@ -372,6 +444,15 @@ class DesignServer {
         return await _serveFile(
             req, p.join(_workerAssetsDir, rel), _contentType(rel),
             root: _workerAssetsDir);
+      }
+      // The live-reload stream. Answered HERE, ahead of everything that can
+      // touch the worker: it needs no worker, so it must not queue behind a
+      // reload — a subscriber that got a 503 during the very reload it was
+      // subscribed to hear about would be the one request in the server that
+      // cannot afford the reload gate.
+      if (method == 'GET' && path == '/__events') {
+        _openEventStream(req);
+        return;
       }
       if ((method == 'GET' || method == 'POST') && path == '/prefs/lang') {
         return await _handlePrefsLang(req);
@@ -886,6 +967,110 @@ class DesignServer {
     await _worker.reload();
     if (_stopped) return;
     _routeTable = await _worker.routes();
+    // Only after the table refreshes: a subscriber that remounts on this
+    // signal must find the NEW routes already registered, or it races the
+    // 404 window this very ordering exists to close.
+    _broadcastReload();
+  }
+
+  // ── the live-reload stream (GET /__events) ───────────────────────────────
+  // Server-Sent Events rather than a WebSocket: the traffic is one-way and
+  // tiny, EventSource reconnects on its own, and it rides the HttpServer this
+  // file already has. The subscriber is the arxa design panel, which cannot
+  // see the artifact's file watcher from another origin — before this it had
+  // only a manual remount button.
+
+  /// Held-open responses, one per subscriber.
+  final _eventClients = <HttpResponse>{};
+
+  /// One timer for all subscribers, alive only while at least one is.
+  Timer? _heartbeat;
+
+  /// How often a comment frame goes out.
+  ///
+  /// It does two jobs, and the second is the load-bearing one. Obviously it
+  /// keeps an idle socket from being reaped. Less obviously it is the ONLY way
+  /// this server learns a subscriber left: dart:io surfaces a dead peer as an
+  /// error on `HttpResponse.done`, and that error is raised by a WRITE — an
+  /// idle held-open response never notices the client vanished. So the
+  /// heartbeat is also the reaper, and a departed subscriber sits in the set
+  /// until the next one or two fire. Injectable because 20s is far too long
+  /// for a test to sit through.
+  late final Duration _eventHeartbeat;
+
+  /// Monotonic per-process counter, so a client that missed a frame can still
+  /// tell that something happened rather than comparing timestamps.
+  int _generation = 0;
+
+  /// Subscribers right now (test-only assertion seam).
+  int get eventSubscribersForTest => _eventClients.length;
+
+  void _openEventStream(HttpRequest req) {
+    final res = req.response;
+    res.statusCode = 200;
+    res.headers
+      ..contentType = ContentType.parse('text/event-stream; charset=utf-8')
+      // no-transform matters as much as no-cache: a proxy that "helpfully"
+      // compresses or rebuffers an event stream holds every frame until it has
+      // enough bytes, which looks exactly like a server that never fires.
+      ..set(HttpHeaders.cacheControlHeader, 'no-cache, no-store, no-transform')
+      // nginx's own buffering, which the Cache-Control hint does not reach.
+      ..set('X-Accel-Buffering', 'no')
+      ..set('X-Content-Type-Options', 'nosniff');
+    // dart:io buffers response bytes by default and flushes when the buffer
+    // fills or the response closes — neither of which an event stream ever
+    // does. Without this the connection opens, stays open, and delivers
+    // nothing.
+    res.bufferOutput = false;
+    // Reconnect fast: this is loopback, and the gap that matters is the one
+    // where the server restarted and the panel is showing a dead frame.
+    _push(res, 'retry: 500\n\n');
+    _push(res, ': subscribed\n\n');
+    _eventClients.add(res);
+    _heartbeat ??= Timer.periodic(_eventHeartbeat, (_) {
+      // A comment frame — legal SSE, ignored by EventSource, and enough to
+      // keep an idle socket from being reaped by the OS or an intermediary.
+      for (final c in _eventClients.toList()) {
+        _push(c, ': keep-alive\n\n');
+      }
+    });
+    // `done` completes with an ERROR when the peer vanishes (a closed panel,
+    // the normal case), so both arms have to drop the subscriber or a dead
+    // socket stays in the set and every later heartbeat throws on it.
+    unawaited(res.done
+        .then<void>((_) {}, onError: (Object _) {})
+        .whenComplete(() => _dropEventClient(res)));
+    // Deliberately not awaited and never closed here: the response IS the
+    // subscription.
+  }
+
+  void _push(HttpResponse res, String frame) {
+    try {
+      res.write(frame);
+    } catch (_) {
+      // Writing to a socket the peer already dropped. `done` will fire too,
+      // but not necessarily before the next frame.
+      _dropEventClient(res);
+    }
+  }
+
+  void _dropEventClient(HttpResponse res) {
+    _eventClients.remove(res);
+    if (_eventClients.isEmpty) {
+      // A live Timer.periodic keeps the Dart VM alive; leaving one running
+      // would stop this server's own test suite from ever exiting.
+      _heartbeat?.cancel();
+      _heartbeat = null;
+    }
+  }
+
+  void _broadcastReload() {
+    if (_eventClients.isEmpty) return;
+    _generation++;
+    final frame = 'event: reload\ndata: {"generation":$_generation}\n\n';
+    for (final c in _eventClients.toList()) {
+      _push(c, frame);
+    }
   }
 
   void _startWatcher(String dir) {
@@ -946,6 +1131,16 @@ class DesignServer {
     _debounce?.cancel();
     await _watcherSub?.cancel();
     await _projectWatcherSub?.cancel();
+    _heartbeat?.cancel();
+    _heartbeat = null;
+    for (final c in _eventClients.toList()) {
+      try {
+        await c.close();
+      } catch (_) {
+        // Peer already gone; `_http.close(force: true)` gets the socket.
+      }
+    }
+    _eventClients.clear();
     await _http.close(force: true);
     await _worker.dispose();
   }
@@ -960,7 +1155,10 @@ Future<int> designServe(List<String> args) async {
   }
   if (a.target == null) {
     stderr.writeln('Usage: appbox design serve <artifact-dir|design-name> '
-        '[--port N] [--host H] [--json] [--no-watch]');
+        '[--port N] [--host H] [--json] [--no-watch]\n'
+        '       [--trusted-host NAME]…   extra Host names to answer to\n'
+        '       [--trusted-origin URL]…  origins allowed to call /__* '
+        'cross-origin (e.g. the arxa design panel)');
     return _exitUsage;
   }
   if (a.port < 0 || a.port > 65535) {
@@ -1016,6 +1214,8 @@ Future<int> designServe(List<String> args) async {
       host: a.host,
       noWatch: a.noWatch || a.worker,
       projectDir: resolvedProject,
+      trustedHosts: a.trustedHosts,
+      trustedOrigins: a.trustedOrigins,
     );
   } on SocketException catch (e) {
     final code = bindExitCode(e);

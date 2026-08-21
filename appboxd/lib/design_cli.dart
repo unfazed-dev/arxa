@@ -24,6 +24,7 @@
 //   appbox design vendor-fetch [--vendor <dir>]
 //   appbox design doctor
 //   appbox design serve <dir|name> [--port N] [--host H] [--json] [--no-watch]
+//                                  [--trusted-host NAME]… [--trusted-origin URL]…
 //   appbox design eject <artifact-dir> <out-dir> [--target=node|cloudflare|vercel] [--kits=a,b]
 //   appbox design ds-check <projectDir> [--verbose]
 //   appbox design record-asset <projectDir> <htmlPath> [flags]
