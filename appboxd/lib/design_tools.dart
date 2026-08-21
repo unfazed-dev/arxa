@@ -1498,8 +1498,14 @@ Future<CmdResult> vendorFetch(String vendorDir,
       // Re-apply local edits before writing. This is the whole reason
       // vendorPatches exists: without it every run silently reverts them.
       final patched = applyVendorPatches(pkg.out, buf);
-      final unpatched = identical(patched, buf);
-      final integrity = unpatched ? upstream : await sri(patched);
+      // `identical` is false when the already-patched branch hands back a
+      // re-encoded copy, so compare hashes too: without this, a download that
+      // ARRIVES pre-patched would record upstreamIntegrity == integrity — a
+      // divergence flag on a file that does not diverge. Unreachable from a
+      // real CDN, reachable from a mirror that serves a patched build.
+      final integrity =
+          identical(patched, buf) ? upstream : await sri(patched);
+      final unpatched = integrity == upstream;
       final outFile = File(p.join(vendorDir, pkg.out));
       outFile.parent.createSync(recursive: true); // leaflet/* lives in a subdir
       outFile.writeAsBytesSync(patched);

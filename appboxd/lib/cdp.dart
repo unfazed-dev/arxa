@@ -711,13 +711,31 @@ class CdpSession {
       committed++;
     } catch (e) { /* cross-origin or detached target */ }
   }
+  // SMIL and video: the ACTION is unconditional (a page can restart a video
+  // between passes, so re-pausing must always happen) but the COUNT is of
+  // elements this call is seeing for the first time.
+  //
+  // Measured 2026-08-21: without the mark, a second call recounts every svg
+  // and video still in the DOM — including static, never-animated ones. That
+  // made `smil`/`videos` element censuses rather than freeze counts, so a
+  // second pass reported the same numbers as the first whether or not
+  // anything new had appeared. Two consequences, both bad: a caller could not
+  // use them to detect late-arriving media, and anything summing them would
+  // fire on every page containing an <svg>. The expando is a JS property, not
+  // an attribute, so it cannot match a selector or change a screenshot.
   var svgs = document.querySelectorAll('svg');
   for (var j = 0; j < svgs.length; j++) {
-    try { svgs[j].pauseAnimations(); smil++; } catch (e) {}
+    try {
+      svgs[j].pauseAnimations();
+      if (!svgs[j].__abxFrozen) { svgs[j].__abxFrozen = true; smil++; }
+    } catch (e) {}
   }
   var vids = document.querySelectorAll('video');
   for (var k = 0; k < vids.length; k++) {
-    try { vids[k].pause(); vids[k].currentTime = 0; videos++; } catch (e) {}
+    try {
+      vids[k].pause(); vids[k].currentTime = 0;
+      if (!vids[k].__abxFrozen) { vids[k].__abxFrozen = true; videos++; }
+    } catch (e) {}
   }
   return {finite: finite, infinite: infinite, smil: smil, videos: videos,
           committed: committed};
@@ -885,12 +903,22 @@ class CdpSession {
     // this page — a third wave of animations would land after loop 2 with
     // nothing left to catch it. So it is a warning, not an error, and the page
     // it names is the first place to look when a capture drifts anyway.
-    final late = (frozenLate['finite'] ?? 0) + (frozenLate['infinite'] ?? 0);
+    // All four categories, not just the CSS pair: a lazy-loaded <video> or an
+    // SVG injected with the content is the canonical "appears after load"
+    // case, and counting only finite+infinite would leave exactly those two
+    // silent. This sum is only meaningful because [freezeAnimations] counts
+    // each element once per page — see the expando there.
+    final late = (frozenLate['finite'] ?? 0) +
+        (frozenLate['infinite'] ?? 0) +
+        (frozenLate['smil'] ?? 0) +
+        (frozenLate['videos'] ?? 0);
     if (late > 0) {
-      stderr.writeln('lens: $late animation(s) STARTED during settle and were '
-          'frozen by the second pass (${frozenLate['committed'] ?? 0} elements '
-          'committed). The capture is settled, but this page needed both '
-          'passes — if it ever drifts, start here.');
+      stderr.writeln('lens: $late animation(s)/media element(s) APPEARED '
+          'during settle and were frozen by the second pass '
+          '(finite ${frozenLate['finite']}, infinite ${frozenLate['infinite']}, '
+          'smil ${frozenLate['smil']}, video ${frozenLate['videos']}). The '
+          'capture is settled, but this page needed both passes — if it ever '
+          'drifts, start here.');
     }
     return (
       elapsedMs: elapsed(started),

@@ -81,20 +81,34 @@ const _settles = '''
 <style>body{margin:0;background:#204a87}</style><div>stable</div>
 ''';
 
-/// Nothing animated at load; an animation appears 150ms later. This is the
-/// only page here that exercises the SECOND freeze pass doing real work — at
-/// step 1 there is nothing to freeze, so `frozen` is zeros and `frozenLate`
-/// carries the whole story.
+/// Nothing animated at load; a CSS animation AND an SMIL svg appear 150ms
+/// later. This is the only page here that exercises the SECOND freeze pass
+/// doing real work — at step 1 there is nothing to freeze, so `frozen` is
+/// zeros and `frozenLate` carries the whole story.
 ///
 /// `both` fill matters: without it the finished animation drops out of
 /// `getAnimations()` and the second pass finds nothing, which would make this
 /// page indistinguishable from one that never animated at all.
+///
+/// The late svg is here because `getAnimations()` cannot see SMIL at all — it
+/// is paused through a separate code path with a separate counter. A fixture
+/// with only the CSS half would pass just as green if the late-warning ignored
+/// the other two categories, which is exactly what it did until this grew.
+///
+/// The STATIC svg is load-bearing too, and less obvious. Without it, a late
+/// svg is counted 1 by the second pass whether or not `freezeAnimations`
+/// marks what it has already frozen — because it did not exist at the first
+/// pass either way. Only an element present at BOTH passes can tell "counted
+/// once" apart from "recounted every time", and recounting is what the code
+/// actually did (measured: a second pass returned the same census as the
+/// first, static never-animated svgs included).
 const _lateAnimation = '''
 <!doctype html><meta charset=utf-8><title>late</title>
 <style>body{margin:0;background:#fff}
 @keyframes slide{from{transform:translateX(-80px)}to{transform:none}}
 .s{width:120px;height:120px;margin:40px;background:#c17d11;
    animation:slide 200ms linear both}</style>
+<svg id=static width=40 height=40><rect width=40 height=40 fill="#4e9a06"/></svg>
 <div id=host></div>
 <script>
   window.addEventListener('load', function () {
@@ -102,6 +116,10 @@ const _lateAnimation = '''
       var d = document.createElement('div');
       d.className = 's';
       document.getElementById('host').appendChild(d);
+      document.getElementById('host').insertAdjacentHTML('beforeend',
+        '<svg width=80 height=80><circle cx=40 cy=40 r=15 fill="#204a87">' +
+        '<animate attributeName="r" from="10" to="30" dur="900ms" ' +
+        'repeatCount="indefinite"/></circle></svg>');
     }, 150);
   });
 </script>
@@ -381,11 +399,19 @@ void main() {
           await tab.setViewport(390, 300);
           final r = await tab.navigateAndSettleForCapture('$base/late',
               settleMs: 100);
-          // Pass 1 has nothing to freeze; the animation does not exist yet.
+          // Pass 1 sees no animation, but it does see the static svg — and
+          // that one must NOT be counted again below.
           expect(r.frozen['finite'], 0);
+          expect(r.frozen['smil'], 1);
           expect(r.frozenLate['finite'], 1,
               reason: 'the animation appeared after the first freeze, so only '
                   'the second pass can account for it');
+          // The non-CSS half. getAnimations() cannot see SMIL, so this is a
+          // genuinely separate path — and the counter only reads as "new"
+          // because freezeAnimations marks what it has already frozen.
+          expect(r.frozenLate['smil'], 1,
+              reason: 'a late svg must be counted by the pass that first saw '
+                  'it, not recounted on every pass');
           // Not a failure: loop 2 ran after that freeze and settled.
           expect(r.converged, isTrue);
 
@@ -402,8 +428,11 @@ void main() {
         }
       }, stderr: () => captured);
 
+      // 2 = the CSS animation plus the SMIL svg. Asserting the total rather
+      // than "warning present" is what keeps a category from being dropped
+      // back out of the sum without a test noticing.
       expect(captured.buffer.toString(),
-          contains('1 animation(s) STARTED during settle'));
+          contains('2 animation(s)/media element(s) APPEARED during settle'));
     }, timeout: const Timeout(Duration(minutes: 2)));
 
     test('settleForCapture reports its own screenshot cost', () async {
