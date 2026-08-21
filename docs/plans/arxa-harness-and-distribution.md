@@ -319,6 +319,18 @@ Two further findings that reshape later workstreams:
    triggered from the Settings UI's ProviderEditor. Not configured on this
    machine (`.credentials.yaml` holds ZAI/DEEPSEEK keys only). **Untested** —
    the subscription-OAuth path should be verified before it is planned against.
+   **Pre-flighted 2026-08-21 (code read, flow not run):** pi-ai's
+   `anthropic.js` (301 lines, npx cache) is authorization-code + **PKCE
+   S256**, local callback server at `http://localhost:53692/callback`, scopes
+   `org:create_api_key user:profile user:inference user:sessions:claude_code
+   user:mcp_servers user:file_upload`, token exchange at
+   `platform.claude.com/v1/oauth/token`, refresh-token grant implemented. A
+   **terminal paste fallback exists** ("paste the authorization code /
+   redirect URL here"), so the check does not strictly need the Settings UI —
+   any pi-ai-driven login can complete from a terminal. Remaining is
+   operator-interactive by nature: authorize in the browser against a
+   Pro/Max subscription, then one inference call proves the token. Nothing
+   further is verifiable without that click.
 
 **RESOLVED 2026-08-21 — guard scope inverted to an allowlist.** The widening
 raised here was put to the operator and settled by neither ratifying nor
@@ -462,11 +474,49 @@ empty env.
   register leaves dsh's default in place and everything still boots.
 - **H4 — design panel**: viewer first (iframe + live reload + rungs);
   drag overlay after the engine `design patch` verb exists.
+  **Viewer BUILT 2026-08-21** (`9f48fa37`): `harness/arxa-design-panel/` —
+  web-UI plugin in the `__ModuleLoader__` factory shape, registered into
+  `shell.overlay` (the additive slot; `details` is occupied and would be
+  replaced), docked iframe over a live `appbox design serve` with the
+  390×844 / 744×1133 / 1280×832 rung ladder, URL field, remount button.
+  Wired into the arxa profile by package name (client discovery needs the
+  package.json `dsh.client` declaration); `arxa` pnpm-installs it on first
+  boot. Composed-config verified in a sandbox DSH_HOME; visual check rides
+  the first operator `arxa` web boot. Drag overlay stays deferred until
+  `design patch` exists.
 - **H5 — memory + context**: engine memory verbs + store, dsh plugin + Pi
   extension adapters, lazy-skills refactor of the 13 skills, compaction
   discipline.
+  **Verbs + adapters BUILT 2026-08-21** (`c891ec15`, `9f48fa37`):
+  `appbox memory add|recall|why` (project-scoped `<project>/memory/facts/`,
+  `{fact, source, ts}` schema shared with the engine's repo memory,
+  provenance mandatory, 200-fact cap refuses — the M1 write-path doctrine at
+  the verb layer; 11 tests). Adapters: `harness/arxa-memory/` (dsh, registers
+  an `arxa:memory` system-prompt section at mount — tested end-to-end against
+  the compiled binary) and `harness/pi/arxa-memory.ts` (Pi, one persistent
+  message on the session's first `before_agent_start`; verified contract).
+  **Lazy-skills refactor SCOPED, deliberately not bulk-executed:** all three
+  harnesses already load skills on demand from the frontmatter description
+  line, and 7 of 13 SKILL.md files are ≤143 lines. The real targets are the
+  six over 250 (scaffolder 543, designer 347, intake 329, story-mapper 304,
+  moodboarder 293, cicd 264 — 2,762 total), and those bodies are ratified
+  engagement law: shrinking them is per-skill editorial work behind the
+  `gate skill` SSOT check, its own pass, not a mechanical sweep.
+  Compaction discipline: gates already sit outside compactable context by
+  architecture (they are hooks); stage-boundary compaction is session
+  practice, nothing buildable until a dsh compaction plugin config exists.
 - **H6 — product builds** (product horizon, reopens D-series): Studio
   bundle (locked harness + compiled engine + embedded/streamed skills),
   BYO edition (stub skills + `arxa brief` + canaries), entitlement wiring.
+  **Status 2026-08-21:** the engine half already exists —
+  `appbox entitlement status|verify|mint --dev` (ed25519, machine-bound JWT,
+  grace handling) and the AOT compile path (`install.sh`). Everything else is
+  operator-provisioned before it can be built: production keypair, Apple
+  Developer ID + notarization, the P1/P2 licence decisions' price point, and
+  the outward name check (decision 10). Blocked on those inputs, not on
+  engineering.
 - **H7 — full rename** (gated on harness validation): binary, skills,
-  repo, docs → arxa in one pass.
+  repo, docs → arxa in one pass. **Gate status 2026-08-21:** one operator
+  command from open — the staged dispatch check under H1 is the validation
+  this gate names. Even then, execute as its own deliberate pass (live
+  design servers run from this checkout; the rename moves their ground).
