@@ -12,7 +12,7 @@
 // this repo take effect next boot — the materialized copy is a build product,
 // not a place to edit.
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
-import { spawn } from 'node:child_process'
+import { spawn, spawnSync } from 'node:child_process'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { homedir } from 'node:os'
@@ -33,14 +33,27 @@ const bundles = headless
   ? ['@deepseek-ai/dsh-base', '@deepseek-ai/dsh-headless']
   : ['@deepseek-ai/dsh-base', '@deepseek-ai/dsh-web-app']
 
+const designPanelDir = resolve(here, '..', '..', 'arxa-design-panel')
 mkdirSync(profileDir, { recursive: true })
 writeFileSync(join(profileDir, 'package.json'), JSON.stringify({
   name: 'dsh-profile-arxa',
   private: true,
-  dependencies: {},
+  dependencies: { 'arxa-design-panel': `file:${designPanelDir}` },
   dsh: { profile: { bundles } },
 }, null, 2) + '\n')
 writeFileSync(join(profileDir, 'cordis.patch.yml'), readFileSync(template))
+
+// The design panel resolves by package name (its browser half is discovered
+// through package.json dsh.client, which a file-path entry never reaches).
+// Install is pnpm's job; do it when missing, or say exactly what to run.
+if (!existsSync(join(profileDir, 'node_modules', 'arxa-design-panel'))) {
+  const r = spawnSync('pnpm', ['install', '--dir', profileDir], { stdio: 'inherit' })
+  if (r.error || r.status !== 0) {
+    console.error('arxa: could not pnpm-install the profile — the design '
+      + 'panel will not mount. Run: dsh plugin --profile arxa add '
+      + `file:${designPanelDir}`)
+  }
+}
 
 // dsh's bin, resolved from arxa's own node_modules when installed, else the
 // operator install this machine already carries.
