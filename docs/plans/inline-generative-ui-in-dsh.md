@@ -594,3 +594,41 @@ cross-origin endpoint, and opening it meant looking at what was already open.
     sends, which covers the server, but `es.onerror`/`onopen` and the remount
     have not executed. Open the panel against a server started with the
     `--trusted-origin` above and save a file.
+
+55. **Amendment to 53 — the flag is no longer per-serve.** 53's clause "the
+    design server must be started with `--trusted-origin …`" is struck; the
+    rest of 53 stands, including the refusal to hardcode arxa's origin into
+    the engine. `appbox design serve` now also reads
+    `~/.appbox/trusted-origins` (one origin per line, `#` comments,
+    `92b869ac`), and `bin/arxa.mjs` registers its own origin there at boot
+    (`arxa-studio` `7ce8562`). The engine still knows nothing about arxa — it
+    reads a file; arxa writes to it. Machine-scoped, because "this laptop's
+    studio may subscribe" is a fact about the laptop, not about whichever
+    client repo the design happens to live in — which is also why it is NOT
+    in `config/appbox.config.json`, the pipeline's SSOT.
+    * A line that does not parse as `scheme://host` is dropped and named on
+      stderr. Left in, it would pass `normalizeOrigin`'s raw fallback, match
+      nothing, and be indistinguishable from "the flag didn't work".
+    * arxa registers only `http://arxa.studio.localhost:PORT`, never the bare
+      `arxa.studio:PORT` its trust args also declare. `.localhost` is reserved
+      to loopback (RFC 6761) so nobody can be served from it; `arxa.studio` is
+      a real public domain, and trusting it would hand `/__*` to whoever
+      answers that name.
+    * The read happens in `designServe`, not in `BrowserTrust`'s constructor,
+      so the 34 pure guard tests never touch the operator's home.
+
+56. **Restarted and smoke-tested (2026-08-22).** Both long-running servers
+    were killed and restarted from their own cwds and argv — suczka-studio
+    :4319 (`clients/normal_is_boring`) and energize-landing :4320
+    (`clients/energize`, `--json`, whose stdout stayed one clean JSON line;
+    the wildcard warning correctly goes to stderr and does not fire on a
+    loopback bind). No orphaned Chromes: the SIGTERM handlers reaped their
+    own trees. 11 checks per server, 22/22 green, **with no `--trusted-origin`
+    on either command line** — which is what proves the file is doing the
+    work: panel subscription 200 with the origin echoed, a real new file
+    pushing `event: reload`, `Host: evil.example.com` -> 421, cross-site
+    `__project_write` -> 403, un-allowlisted origin -> 403, and CLI/iframe
+    paths still 200. Zero stray files.
+    * The reload is triggered by CREATING a file, not `touch`ing one: macOS
+      FSEvents can swallow a bare mtime bump, and a false negative there
+      would read as a broken stream.
