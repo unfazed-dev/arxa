@@ -369,6 +369,57 @@ at the dispatch site, not from doc strings.
     needed, come from `useProjection` (whole-value, never a delta — fine for
     coarse progress, wrong for token-level text) or from `subCalls`.
 
+## G2. Stage 4 shipped 2026-08-22 — arxa is an MCP Apps host
+
+40. **Shipped as `arxa-studio/plugins/mcp-apps` (commit `edd4fe1`),
+    disabled by default.** Host half opens its own read-only MCP connection,
+    discovers tools carrying `_meta.ui.resourceUri`, reads their `ui://`
+    templates, and exposes them plus an audited `tools/call` proxy over
+    `/arxa-mcp-apps`. Browser half renders each template in a sandboxed iframe
+    and speaks JSON-RPC 2.0 over `postMessage`.
+
+41. **Sibling, not a patch — and this forced the shape.** Decision 16 said the
+    gap was small; building it showed it also dictates a **two-row** install.
+    dsh's `dsh-mcp-client` is what registers the server's tools with the model
+    and it drops `_meta` at the boundary, so it can never carry UI. Forking it
+    is barred and load-time patching a React path was already rejected. So
+    `arxa-mcp-apps` connects to the SAME server a second time purely to
+    discover UI. **Both rows are required, and `serverName` must match** —
+    the qualified name dsh builds (`mcp__<serverName>__<rawName>`) IS the slot
+    key the renderer claims, so a mismatch silently renders nothing.
+
+42. **Verified against a real MCP server, not a mock.**
+    `plugins/mcp-apps/testserver.mjs` is a working MCP App server (a counter
+    widget that calls back through `tools/call`), and `selftest.mjs` drives
+    the host half against it over real stdio — 6 assertions, all passing:
+    `_meta` survives, the `ui://` resource reads back, discovery
+    **discriminates** (only the UI-declaring tool is claimed; the plain one is
+    not), the CSP is deny-by-default, and the proxy refuses a tool the server
+    never advertised. Then run live in the studio with both rows enabled:
+    `mcp__arxatest__show_counter` discovered, template HTML served, and a live
+    `tools/call` proxy returning `counter is 7`. The rows were restored to
+    commented-out afterwards so a demo server does not permanently occupy the
+    model's tool list.
+
+43. **Isolation as built.** `sandbox="allow-scripts"` with **no**
+    `allow-same-origin` (verified absent from the served bundle's code), a
+    `srcdoc` opaque origin, and a CSP `<meta>` built **host-side** from the
+    resource's declared metadata and injected into the template — a template
+    cannot widen its own policy, and declaring one domain does not unlock the
+    others. Single iframe, not the double-iframe sandbox proxy: that defends
+    multi-tenant hosts, which this is not (decision 18 stands).
+
+44. **Deliberately not wired: `ui/message` and `ui/update-model-context`.**
+    Only `ui/initialize`, `ui/notifications/size-changed` and `tools/call` are
+    answered; everything else gets a JSON-RPC error. Injecting a synthetic user
+    turn from a widget click is the conflation decision 15 warns about, and it
+    would need a composer seam a toolview does not have (see decision 31).
+
+45. **Also untested in a browser** — same standing caveat as 32c. The
+    postMessage bridge, the size-change clamp (80–720px) and the
+    stream-identity guard have not executed. Enable the two rows and call
+    `show_counter` to exercise them.
+
 ## H. The design panel — answered, and it is a build not a wire-up
 
 34. **Can the design panel host generative UI? Yes, trivially** — it is our own
