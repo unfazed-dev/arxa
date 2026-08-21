@@ -431,6 +431,50 @@ per convention, proceeded on primary sources.
 >    closed and rebuild. Design for that, and log which profile dir it owned so
 >    the orphan is attributable afterwards.
 >
+> ### Warm Chrome — CLOSED 2026-08-21. The daemon is unblocked.
+>
+> Four arms, each closing the previous one's weakest condition. Full report:
+> [docs/research/warm-vs-cold-chrome-determinism.md](../research/warm-vs-cold-chrome-determinism.md).
+>
+> | arm | depth | drift | memory |
+> |---|---|---|---|
+> | warm vs cold, 3 page kinds × 4 arms | 15 captures | identical | — |
+> | depth, one browser | **700 captures / 21m39s** | **0** | flat, −13MB over 530 |
+> | at the real settle rate | 200 captures / ~1000 shots | **0** | flat, max rise 4MB |
+> | **animated pages** | 180 captures / ~900 shots | **0** | flat, max rise 4MB |
+>
+> **The fourth arm is the one that mattered**, and it exists because the probe
+> flagged its own blind spot: `freezeAnimations` had reported
+> `committed: 0` on every capture of the first three arms — *every warm-Chrome
+> result had been measured on pages where the machinery under test does
+> nothing.* The fourth ran an 18-animation infinite page and a 24-animation
+> `fill: both` page. Still zero drift. So the compositor-promotion effect that
+> made animated pages nondeterministic does **not** survive the freeze's
+> de-promotion pass, and reusing a warm browser does not reintroduce it.
+>
+> **Recycle policy: ~900–1000 SCREENSHOTS verified flat**, denominated in
+> screenshots because `settleForCapture` costs ~5 per capture and any workload
+> converts through that. On the capture axis, 700 verified. Neither axis found
+> a ceiling; the binding limit is whichever a real workload reaches first.
+>
+> **Measurement discipline worth reusing.** The growth test is *max sustained
+> rise*, not a fitted slope — least-squares misread three real curve shapes
+> here (warmup, oscillation, step), each time describing the shape rather than
+> a trend. The classifier was validated against a synthetic *growing* curve
+> before its negative result was accepted, so "no growth" came from something
+> able to say otherwise. `summedRSS` is labelled an upper bound because Chrome
+> shares mappings and the double-count grows with process count — the very
+> signal being read.
+>
+> **It also found a real defect in the settle API** (`d86d4d37`).
+> `settleForCapture` returned the SECOND freeze's map; the first pass strips
+> `animation` from every element, so the second reports all zeros on a page it
+> froze perfectly. `frozen` read identically whether the freeze did everything
+> or nothing — this project's oldest failure shape, built into the API meant to
+> avoid it. Now returns the first as `frozen`, the second as `frozenLate`. The
+> existing test asserting `freezeAnimations` counts honestly passed throughout:
+> it exercises the method, and the defect was in the caller. **Test the caller.**
+>
 > **Still open in W1:** the daemon itself. The blocking unknown is gone, but the
 > constraints from the earlier amendment stand — `--remote-debugging-port` not
 > `-pipe`, one `--user-data-dir` for the daemon's life, `Target.createBrowserContext`
