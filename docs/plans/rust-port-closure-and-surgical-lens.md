@@ -408,6 +408,29 @@ per convention, proceeded on primary sources.
 > Trading it for ~2.5 minutes without re-running the determinism table would be
 > exactly the mistake this workstream exists to stop making.
 >
+> **Two daemon constraints found by accident, which is the best way to find
+> them.** While the depth probe was running, its operator killed a stuck run
+> with `pkill -9 -f "appbox-cdp-"` and `rm -rf …/appbox-cdp-*`.
+> 1. **The temp-profile prefix is SHARED.** `cdp.dart:125` creates every
+>    browser's profile with `Directory.systemTemp.createTemp('appbox-cdp-')`,
+>    so that pattern matches *every* Chrome any `CdpClient.launch()` in this
+>    repo has started — not just the one you meant. A daemon holding one Chrome
+>    for hours is a single `pkill -f appbox-cdp-` away from dying, from any
+>    script on the machine. The scoped reap already exists and must be the only
+>    one used: `_pidsOwningProfile(dir, browserOnly: true)` matches the exact
+>    `--user-data-dir=<dir>`, and its own comment records the near-miss —
+>    *"Whole dir, not a prefix: `appbox-cdp-AB` must not claim `…-ABC`'s pid."*
+>    A dir with no owning pid is a true orphan and safe to delete alone.
+> 2. **A SIGKILLed run can never clean up after itself**, so the daemon needs
+>    orphan reaping at startup — and that reap is exactly the scoped-ownership
+>    check above, not a prefix match. This compounds with the already-recorded
+>    constraint that **no CDP event reports full browser death** (only
+>    `Target.targetCrashed`, for renderers): a closed WebSocket is the only
+>    liveness signal, so the daemon cannot distinguish "Chrome was killed by an
+>    unrelated script" from "Chrome crashed" — it can only notice the socket
+>    closed and rebuild. Design for that, and log which profile dir it owned so
+>    the orphan is attributable afterwards.
+>
 > **Still open in W1:** the daemon itself. The blocking unknown is gone, but the
 > constraints from the earlier amendment stand — `--remote-debugging-port` not
 > `-pipe`, one `--user-data-dir` for the daemon's life, `Target.createBrowserContext`

@@ -169,3 +169,154 @@ Reproduce: cd appboxd && dart run tool/warm_vs_cold_probe.dart
   named above. A daemon reusing a warm browser should pin the viewport and
   settle it was measured at, and this file should be regenerated after a Chrome
   upgrade.
+
+<!-- depth-probe-section -->
+
+## Depth: how long can one warm Chrome be reused?
+
+`warm_vs_cold_probe.dart` showed warm == cold, but only across 15
+captures over ~26s. That was the weak condition in its verdict, since a
+daemon holds one browser for hours. This section measures the two things
+that condition leaves open: whether the warm browser ever diverges from
+the cold baseline (and at which capture), and whether its memory grows.
+
+### VERDICT (depth)
+
+IN PROGRESS — depth reached so far: 171 of 700 (05m16s). This section is rewritten every 10 captures; if it still says IN PROGRESS the run did not finish, and nothing is claimed beyond the depth shown.
+
+### Setup
+
+- Probe: `appboxd/tool/warm_depth_probe.dart`
+- Reproduce: `cd appboxd && dart run tool/warm_depth_probe.dart`
+- Source under measurement: `HEAD aeba5dec | lib/cdp.dart clean at HEAD, sha256 f1a94ed732522304`
+- Chrome: `Chrome/151.0.7922.170`
+- Settle: the plain fixed `navigateAndSettle(settleMs: 1500)`.
+  The newer `cdp.dart` helpers (`freezeAnimations`,
+  `settleUntilStable`, `settleForCapture`,
+  `navigateAndSettleForCapture`) exist and were deliberately NOT used,
+  so this run stays comparable to the warm-vs-cold run above — the
+  variable under test is the browser, not the settle. Their absence is
+  a choice, not an oversight.
+- Pages, hashing and the capture function are IMPORTED from
+  `warm_vs_cold_probe.dart` rather than copied, so both probes drive
+  byte-identical pages through a byte-identical capture path. Copying
+  them would have broken the comparison the moment either changed.
+- Arm: WARM-SAME-TAB, one browser, one tab, pages rotated. Same-tab was
+  chosen over new-tab because font-shaping, GPU raster and shader caches
+  live in the browser/GPU process and warm regardless of tab shape,
+  while renderer-local state dies with the tab — so the same tab
+  accumulates strictly more state and is the shape most likely to drift.
+  Depth is the variable under test, so the budget went to one deep arm
+  rather than two shallow ones.
+- Target depth 700 captures, hard stop 30m.
+  **Depth actually reached: 171 in 05m16s.**
+
+### Q1 — drift onset
+
+```
+page    n     match  diverge  suspect  err  first-diverge   classification
+text    57    57     0        0        0    —               no divergence
+css     57    57     0        0        0    —               no divergence
+static  57    57     0        0        0    —               no divergence
+```
+
+Divergence, if any, is classified rather than merely counted, because
+the three shapes imply different fixes: TRANSIENT (diverges then returns
+to baseline) suggests a settle race a retry would absorb; PERSISTENT
+(never returns) is a real cache state change that caps reuse at the
+onset index; WANDERING (several distinct outputs after onset) would kill
+reuse outright.
+
+### In-run negative control
+
+The control is re-asserted every 50 captures, not just at the
+start: a 25-minute run reporting "no drift" would be worthless if the
+capture path had broken at minute 3 and every later hash were of an
+error page. Each check re-renders the two one-RGB-step-apart variants and
+requires them to differ; it also checks their hashes still match the cold
+values, so drift on the control page itself is visible.
+
+```
+i=50 differ
+i=100 differ
+i=150 differ
+```
+
+The control cannot catch everything: it is its own page, so it would keep
+passing even if the real pages began rendering blank. Every capture is
+therefore also size-checked against its baseline PNG (a blank render
+collapses to ~2KB against real pages of 5KB-783KB); anything more than
+50% off is counted in the `suspect` column above and never as a match.
+
+### Q2 — memory curve (WARM-SAME-TAB)
+
+```
+i      elapsed  browserRSS  summedRSS*  ps-procs  cdp-procs
+0      00m02s   218MB       1172MB      9         9
+10     00m19s   300MB       2069MB      15        15
+20     00m37s   300MB       1831MB      13        13
+30     00m55s   300MB       1831MB      13        13
+40     01m13s   320MB       1859MB      13        13
+50     01m34s   320MB       1851MB      13        13
+60     01m52s   320MB       1857MB      13        13
+70     02m10s   317MB       1838MB      13        13
+80     02m28s   313MB       1814MB      13        13
+90     02m46s   313MB       1818MB      13        13
+100    03m07s   271MB       1715MB      13        13
+110    03m25s   264MB       1707MB      13        13
+120    03m43s   264MB       1710MB      13        13
+130    04m01s   264MB       1713MB      13        13
+140    04m19s   264MB       1708MB      13        13
+150    04m40s   265MB       1711MB      13        13
+160    04m58s   268MB       1718MB      13        13
+170    05m16s   268MB       1713MB      13        13
+```
+
+`* summedRSS` sums `ps` RSS across every process holding the profile.
+Chrome processes share large mappings, so that sum double-counts shared
+pages — and the double-count grows with process count, which is the very
+signal being read. It is an UPPER BOUND, not a measurement.
+`browserRSS` (the browser process alone) is the defensible curve.
+Chrome's own `SystemInfo.getProcessInfo` was checked on this build and
+returns `type`, `id` and `cpuTime` only — no memory field — so it
+contributes the process COUNT column and nothing more. That column is
+still worth reading: `cdp-procs` (Chrome's own table) matching
+`ps-procs` (this probe's reconstruction by `--user-data-dir` match) is
+what licenses using `ps` for the memory numbers at all. Where the two
+columns disagree, the `ps` rows are not the process set Chrome thinks
+it has, and the RSS figures on that row should not be trusted.
+
+MEMORY: NET DECLINE in steady state (Chrome releasing memory; not growth)
+  steady range 264MB-320MB (band 56MB, noise threshold 5MB) 
+  warmup   captures 0-40: 218MB -> 320MB (browser + GPU processes coming up; NOT a leak, and excluded from every growth number below)
+  steady   captures 40-170: 320MB -> 268MB (-16.3%), 14 samples
+  steady slope -55.23 MB per 100 captures  <- the number that matters
+  (whole-arm slope -18.52 MB/100 is shown only to make the warmup artefact visible; do not use it)
+  peak browserRSS 320MB
+  labels are decided by TREND (the steady slope), not by the band: LINEAR GROWTH = >=+5MB/100 captures; NET DECLINE = <=-5MB/100; otherwise no sustained growth, reported as FLAT AND STABLE when the band is also inside the noise threshold and as oscillating-without-trend when it is not. A wide band alone is volatility, not growth, and only growth can force a recycle.
+
+### Recycle policy
+
+RECYCLE POLICY: memory does not require one within the measured window. After warmup, browserRSS moved -52MB across 130 captures (steady slope -55.23MB per 100 captures — no sustained upward trend), oscillating within a 56MB band and peaking at 320MB. Chrome both takes and releases memory across a run, so that band is volatility rather than growth, and volatility alone never forces a recycle. so no memory threshold is reachable from this data. Recommend recycling every 171 captures or 5 minutes, whichever comes first — the deepest point actually verified. A larger number would be a claim that going further is safe, which this run cannot support: recycling AT the verified depth is the only recommendation the evidence carries. The honest statement is "no growth was observed through 171 captures / 05m16s", and nothing here licenses a claim past that.
+
+### New-tab churn tail
+
+A short WARM-NEW-TAB run (fresh tab per capture, closed after) follows
+the deep arm to answer the separate question of whether per-capture tab
+churn leaks. It is short on purpose: depth belongs to the arm above.
+
+```
+not run
+```
+
+### What this does NOT establish
+
+- Nothing beyond 171 captures / 05m16s. A daemon
+  running longer than that is outside the measured window.
+- Only this Chrome build, this viewport (1280x800 @ dsf 1), this fixed
+  1500ms settle, and these three page kinds.
+- Every capture re-navigates via `about:blank`, so this measures
+  process- and GPU-level cache reuse, not same-document state carryover.
+- Memory was read from `ps` RSS; Chrome's own per-process memory
+  accounting is not exposed by the CDP commands available on this build.
+
