@@ -142,8 +142,13 @@ that is a separate decision, not a silent one.
 3. ~~Verb integration~~ — `LensDaemon.acquire()`, 19 call sites by rename.
 4. ~~Recycle on `shotsServed`~~ — counted at the CDP chokepoint, 900.
 
-**Next, and it outranks more daemon work:** ship `appbox` as a compiled binary.
-1.45s per invocation, three times the daemon's saving, for a build step.
+~~**Next, and it outranks more daemon work:** ship `appbox` as a compiled
+binary. 1.45s per invocation, three times the daemon's saving, for a build
+step.~~ — DONE in `fea797f0`: `install.sh` compiles to `.build/appbox` and
+installs a `~/.local/bin/appbox` shim that rebuilds when any `.dart` source is
+newer (and under `APPBOX_FAST` fails/warns loudly instead of paying the compile
+or running stale). Measured warm start 0.02s against the 1.45s `dart run`
+floor.
 
 Each phase leaves the CLI working with no daemon present — the fallback is the
 current behaviour, so a broken daemon degrades to today rather than to nothing.

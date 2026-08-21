@@ -1320,15 +1320,36 @@ String? appboxdPackageDir() {
     uri = Isolate.resolvePackageUriSync(Uri.parse(
         'package:appboxd/design_server/worker_assets/worker_page.html'));
   } catch (_) {
-    return null;
+    uri = null;
   }
-  if (uri == null) return null;
-  // …/appboxd/lib/design_server/worker_assets/worker_page.html → …/appboxd
-  var dir = File.fromUri(uri).parent; // worker_assets
-  for (var i = 0; i < 3; i++) {
-    dir = dir.parent; // design_server → lib → appboxd
+  if (uri != null) {
+    // …/appboxd/lib/design_server/worker_assets/worker_page.html → …/appboxd
+    var dir = File.fromUri(uri).parent; // worker_assets
+    for (var i = 0; i < 3; i++) {
+      dir = dir.parent; // design_server → lib → appboxd
+    }
+    if (dir.existsSync()) return dir.path;
   }
-  return dir.existsSync() ? dir.path : null;
+  // AOT exe: no package config at runtime, so the resolver above is null and
+  // a cwd walk from a client repo never reaches app-box. The compiled binary
+  // lives inside the repo (.build/appbox), so the exe path itself is the
+  // anchor — the same Platform.script fallback design_tools' repoRoot uses.
+  return packageDirFromScript(Platform.script);
+}
+
+/// Walk up from [script] (the running exe, or the entry script under JIT)
+/// looking for `appboxd/pubspec.yaml`. Split out so tests can drive the AOT
+/// arm with a synthetic exe path instead of an actual AOT build.
+String? packageDirFromScript(Uri script) {
+  if (script.scheme != 'file') return null;
+  var dir = File.fromUri(script).parent;
+  for (var i = 0; i < 12; i++) {
+    final pkg = p.join(dir.path, 'appboxd');
+    if (File(p.join(pkg, 'pubspec.yaml')).existsSync()) return pkg;
+    if (dir.parent.path == dir.path) break;
+    dir = dir.parent;
+  }
+  return null;
 }
 
 /// Locate the vendored worker assets (worker_page.html + shim),

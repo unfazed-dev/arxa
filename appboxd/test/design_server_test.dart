@@ -11,7 +11,7 @@ import 'dart:io';
 
 import 'package:appboxd/design_server.dart';
 import 'package:appboxd/design_server/worker.dart'
-    show bundleBuildCount, findWorkerAssetsDir;
+    show bundleBuildCount, findWorkerAssetsDir, packageDirFromScript;
 import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
 
@@ -161,6 +161,29 @@ void main() {
           reason: 'design serve must boot from any cwd (client repos, '
               '~/.appbox) — the cwd walk alone never reaches app-box');
       expect(File(p.join(assets!, 'worker_page.html')).existsSync(), isTrue);
+    });
+
+    test('the compiled exe anchors the package walk when the resolver is null',
+        () {
+      // In the AOT binary Isolate.resolvePackageUriSync returns null (no
+      // package config at runtime), which silenced BOTH cwd-independent
+      // anchors and broke `appbox design serve` from any cwd outside the
+      // repo — measured 2026-08-21 against the real .build/appbox. The exe
+      // lives inside the repo, so its own path is the fallback anchor. This
+      // drives that arm with a synthetic exe path instead of an AOT build.
+      final repoRoot = p.dirname(p.absolute('.')); // …/app-box
+      final pkg =
+          packageDirFromScript(Uri.file(p.join(repoRoot, '.build', 'appbox')));
+      expect(pkg, isNotNull,
+          reason: 'walking up from <repo>/.build/appbox must find '
+              'appboxd/pubspec.yaml');
+      expect(File(p.join(pkg!, 'pubspec.yaml')).existsSync(), isTrue);
+
+      // And from a path with no appboxd/ ancestor, the walk reports failure
+      // instead of guessing.
+      final foreignExe = Uri.file(
+          p.join(Directory.systemTemp.path, 'nowhere', 'appbox'));
+      expect(packageDirFromScript(foreignExe), isNull);
     });
   });
 
