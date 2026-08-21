@@ -83,4 +83,50 @@ class MemoryCurator {
       for (final e in decoded as List) Map<String, dynamic>.from(e as Map),
     ];
   }
+
+  /// Every topic with a facts file, alphabetical.
+  List<String> topics() {
+    final dir = Directory('${root.path}/facts');
+    if (!dir.existsSync()) return const [];
+    return [
+      for (final f in dir.listSync().whereType<File>())
+        if (f.path.endsWith('.json'))
+          f.uri.pathSegments.last.replaceFirst(RegExp(r'\.json$'), ''),
+    ]..sort();
+  }
+
+  /// Hard cap per facts topic — same consolidate-don't-grow rule as lessons.
+  static const int factsCap = 200;
+
+  /// Appends a `{fact, source, ts}` entry to `facts/<topic>.json`, creating
+  /// the file on first write.
+  ///
+  /// [source] is mandatory and non-empty: every fact must say which stage or
+  /// event produced it, or `why` has nothing to answer and the store degrades
+  /// into the unconstrained write path the mem0 audit warns about.
+  void addFact(String topic, String fact, {required String source}) {
+    if (source.trim().isEmpty) {
+      throw ArgumentError('refused: a fact needs a non-empty source '
+          '(the stage or event that produced it)');
+    }
+    if (fact.trim().isEmpty) {
+      throw ArgumentError('refused: empty fact');
+    }
+    final file = _factsFile(topic);
+    final entries =
+        file.existsSync() ? readFacts(topic) : <Map<String, dynamic>>[];
+    if (entries.length >= factsCap) {
+      throw StateError('refused: $topic holds $factsCap facts — consolidate '
+          'before adding (cap exists so recall stays readable, not to lose '
+          'the fact)');
+    }
+    entries.add({
+      'fact': fact.trim(),
+      'source': source.trim(),
+      'ts': DateTime.now().toUtc().toIso8601String(),
+    });
+    file.parent.createSync(recursive: true);
+    file.writeAsStringSync(
+        '${const JsonEncoder.withIndent('  ').convert(entries)}\n');
+  }
 }

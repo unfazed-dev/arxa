@@ -60,6 +60,7 @@ import 'package:appboxd/capability_scan.dart';
 import 'package:appboxd/entitlement_cli.dart';
 import 'package:appboxd/gen_playbook.dart';
 import 'package:appboxd/intake_cli.dart';
+import 'package:appboxd/memory_cli.dart';
 import 'package:appboxd/moodboard_check.dart';
 import 'package:appboxd/project_cli.dart';
 import 'package:appboxd/kb_build.dart';
@@ -93,6 +94,8 @@ Future<void> main(List<String> args) async {
       exit(projectMain(rest));
     case 'moodboard':
       exit(moodboardCheckMain(rest));
+    case 'memory':
+      exit(await memoryCli(rest));
     case 'credentials':
       exit(await credentialsMain(
         rest,
@@ -155,6 +158,8 @@ Commands:
   moodboard <sub> Scored-moodboard gate — check <intake-dir> recomputes
                  weighted totals, enforces floors + locked criteria
                  (appbox moodboard check --help)
+  memory <verb>  Project-scoped memory — add/recall/why on
+                 <project>/memory/facts (appbox memory --help)
   credentials <verb>  Unified credential manager — list/check/set/unset over
                  the catalog + OS vault (never prints secrets)
   emit <name>    Run an emitter: structure, htmx, playground, transform_tokens,
