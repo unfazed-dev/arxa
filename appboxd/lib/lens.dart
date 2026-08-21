@@ -47,8 +47,32 @@ class LensResult {
   });
 }
 
+/// Thrown when a capture that would become a GOLDEN did not settle.
+///
+/// Only golden-*writing* raises this. Reading pixels from an unstable page is
+/// merely unreliable; writing them to disk as the reference every future run is
+/// compared against is corrupting, and it corrupts silently — the bad golden
+/// then passes against itself on the next run and fails against everything else.
+class LensUnstableCapture implements Exception {
+  const LensUnstableCapture(this.url, this.goldenPath, this.elapsedMs);
+  final String url;
+  final String goldenPath;
+  final int elapsedMs;
+
+  @override
+  String toString() =>
+      'LensUnstableCapture: $url never stopped changing (${elapsedMs}ms), so '
+      'refusing to write it as the golden at $goldenPath. Freeze the source of '
+      'motion, or pass allowUnstable: true if a nondeterministic golden is '
+      'genuinely what you want.';
+}
+
 /// Capture a screenshot of [url] at [width]×[height] and save as the golden
 /// at [goldenPath]. Creates the golden on first run.
+///
+/// Throws [LensUnstableCapture] if [goldenPath] is set and the page never
+/// settled — see that class for why this one case is fatal rather than a
+/// warning. [allowUnstable] opts out.
 ///
 /// Returns the PNG bytes.
 Future<List<int>> captureGolden(
@@ -58,6 +82,7 @@ Future<List<int>> captureGolden(
   String? goldenPath,
   int settleMs = 1500,
   bool fullPage = false,
+  bool allowUnstable = false,
   Map<String, String> cookies = const {},
 }) async {
   final client = await CdpClient.launch();
@@ -71,11 +96,14 @@ Future<List<int>> captureGolden(
     // on an animated page, 5 fresh-Chrome captures: flat timer 5 distinct
     // images, this 1. `settleMs` becomes the FLOOR, so this never captures
     // earlier than the old path did.
-    await tab.navigateAndSettleForCapture(url,
+    final settle = await tab.navigateAndSettleForCapture(url,
         settleMs: settleMs, fullPage: fullPage);
     final png = await tab.screenshot(fullPage: fullPage);
 
     if (goldenPath != null) {
+      if (!settle.converged && !allowUnstable) {
+        throw LensUnstableCapture(url, goldenPath, settle.elapsedMs);
+      }
       final f = File(goldenPath);
       f.parent.createSync(recursive: true);
       f.writeAsBytesSync(png);
@@ -117,11 +145,25 @@ Future<LensResult> compareGolden(
     final tab = await client.newTab();
     await tab.enable();
     await tab.setViewport(width, height);
-    await tab.navigateAndSettleForCapture(url, settleMs: settleMs);
+    final settle = await tab.navigateAndSettleForCapture(url, settleMs: settleMs);
 
     // Capture console/page errors as quality signals.
     final errors = [...tab.consoleErrors, ...tab.pageErrors];
     final png = await tab.screenshot();
+
+    // A capture that never settled cannot be compared to anything. Checked
+    // BEFORE the byte/pixel verdict below, because that verdict would be an
+    // accident either way: a spurious FAIL if the page moved, and a far worse
+    // spurious PASS if it happened to land on the golden's frame.
+    if (!settle.converged) {
+      return LensResult(
+        surface: url,
+        passed: false,
+        note: 'settle did not converge in ${settle.elapsedMs}ms — the live '
+            'capture is not reproducible, so this comparison is meaningless '
+            '(animated GIF/APNG, timer repaint, or video?)',
+      );
+    }
 
     // Console errors are always a lens failure — the surface has a runtime bug.
     if (errors.isNotEmpty) {

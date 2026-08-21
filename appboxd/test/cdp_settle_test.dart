@@ -15,6 +15,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:appboxd/cdp.dart';
+import 'package:appboxd/lens.dart';
 import 'package:test/test.dart';
 
 /// Infinite CSS animation on a gradient. Two independent sources of variance:
@@ -58,6 +59,26 @@ const _fillForwards = '''
 #s{width:200px;height:200px;background:#204a87;opacity:0;
    animation:reveal 300ms linear both}</style>
 <div id=s></div>
+''';
+
+/// A page nothing can freeze. `setInterval` repainting text is not a WAAPI
+/// animation, not SMIL, and not a video, so `getAnimations()` cannot see it and
+/// `freezeAnimations` cannot stop it. It stands in for the real cases the
+/// settle genuinely cannot handle — an animated GIF or APNG (no pause API
+/// exists at all), a clock widget, a buffering video. The settle MUST report
+/// non-convergence here, and callers must act on it.
+const _neverSettles = '''
+<!doctype html><meta charset=utf-8><title>never</title>
+<style>body{margin:0;font:40px monospace;padding:40px}</style>
+<div id=t>0</div>
+<script>var n=0;setInterval(function(){
+  document.getElementById('t').textContent=String(++n);},80);</script>
+''';
+
+/// The control page for every "did not write / did fail" assertion below.
+const _settles = '''
+<!doctype html><meta charset=utf-8><title>settles</title>
+<style>body{margin:0;background:#204a87}</style><div>stable</div>
 ''';
 
 Future<(HttpServer, String)> _serve(Map<String, String> pages) async {
@@ -116,6 +137,8 @@ void main() {
         '/animated': _animated,
         '/variable': _variableLoad,
         '/fill': _fillForwards,
+        '/never': _neverSettles,
+        '/settles': _settles,
       });
     });
 
@@ -191,6 +214,73 @@ void main() {
         await client.close();
       }
     }, timeout: const Timeout(Duration(minutes: 2)));
+
+    // ── the callers must ACT on non-convergence ────────────────────────────
+    //
+    // The tests above prove the settle DETECTS an unsettled page. That is only
+    // half of it: the six migrated call sites originally took the record and
+    // dropped it on the floor, so a page that never converged still produced a
+    // green golden. Detection nobody consumes is the same as no detection.
+
+    test('captureGolden REFUSES to write a golden from an unsettled page',
+        () async {
+      final dir = Directory.systemTemp.createTempSync('lens-unstable');
+      addTearDown(() => dir.deleteSync(recursive: true));
+      final bad = '${dir.path}/bad.png';
+      final good = '${dir.path}/good.png';
+
+      await expectLater(
+        captureGolden('$base/never', 390, 300, goldenPath: bad, settleMs: 100),
+        throwsA(isA<LensUnstableCapture>()),
+      );
+      expect(File(bad).existsSync(), isFalse,
+          reason: 'a golden written from an unsettled page poisons every future '
+              'comparison — it passes against itself and fails against all else');
+
+      // THE CONTROL. Without it, "no file" would also be the outcome of
+      // captureGolden being broken outright, or of the server 404ing.
+      await captureGolden('$base/settles', 390, 300,
+          goldenPath: good, settleMs: 100);
+      expect(File(good).existsSync(), isTrue,
+          reason: 'the settling page must still produce a golden, or the '
+              'refusal above proves nothing');
+    }, timeout: const Timeout(Duration(minutes: 3)));
+
+    test('captureGolden writes anyway under allowUnstable', () async {
+      final dir = Directory.systemTemp.createTempSync('lens-allow');
+      addTearDown(() => dir.deleteSync(recursive: true));
+      final out = '${dir.path}/forced.png';
+      await captureGolden('$base/never', 390, 300,
+          goldenPath: out, settleMs: 100, allowUnstable: true);
+      expect(File(out).existsSync(), isTrue);
+    }, timeout: const Timeout(Duration(minutes: 3)));
+
+    test('compareGolden fails an unsettled page instead of comparing it',
+        () async {
+      final dir = Directory.systemTemp.createTempSync('lens-cmp');
+      addTearDown(() => dir.deleteSync(recursive: true));
+      final golden = '${dir.path}/g.png';
+      // Seed a golden from the same page so the comparison COULD accidentally
+      // pass on a lucky frame. That is the failure being prevented: a spurious
+      // PASS is worse than a spurious FAIL, because nobody investigates it.
+      await captureGolden('$base/never', 390, 300,
+          goldenPath: golden, settleMs: 100, allowUnstable: true);
+
+      final result =
+          await compareGolden('$base/never', golden, 390, 300, settleMs: 100);
+      expect(result.passed, isFalse);
+      expect(result.note, contains('did not converge'));
+
+      // Control: the same comparison on a settling page passes, so the failure
+      // above is attributable to non-convergence and not to compareGolden
+      // being broken.
+      final ok = '${dir.path}/ok.png';
+      await captureGolden('$base/settles', 390, 300,
+          goldenPath: ok, settleMs: 100);
+      final good =
+          await compareGolden('$base/settles', ok, 390, 300, settleMs: 100);
+      expect(good.passed, isTrue, reason: good.note);
+    }, timeout: const Timeout(Duration(minutes: 4)));
 
     test('settleUntilStable reports non-convergence instead of pretending',
         () async {

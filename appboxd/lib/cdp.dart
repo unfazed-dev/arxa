@@ -839,16 +839,34 @@ class CdpSession {
       minWaitMs: 0,
       fullPage: fullPage,
     );
+    // Either loop failing to converge means the capture is not trustworthy.
+    // Reporting `true` because the *second* one happened to settle would be
+    // the "pass outcome == did-not-run outcome" bug this codebase keeps
+    // getting bitten by.
+    final converged = first.converged && second.converged;
+    // Warn HERE, not at the call sites. Returning the flag and trusting six
+    // callers to check it is how this becomes silent again the first time
+    // someone adds a seventh — and a non-converged settle is exactly the
+    // failure that looks like success. Real cases that land here: an animated
+    // GIF or APNG (no pause API exists, so nothing can freeze them), a widget
+    // repainting on setInterval, a video that keeps buffering.
+    if (!converged) {
+      stderr.writeln('lens: SETTLE DID NOT CONVERGE after ${elapsed(started)}ms '
+          '(loop1 ${first.converged ? "ok" : "timed out"}, '
+          'loop2 ${second.converged ? "ok" : "timed out"}) — this capture is '
+          'NOT reproducible. Likely an animated GIF/APNG, a timer-driven '
+          'repaint, or a video.');
+    }
     return (
-      elapsedMs: DateTime.now().difference(started).inMilliseconds,
-      // Either loop failing to converge means the capture is not trustworthy.
-      // Reporting `true` because the *second* one happened to settle would be
-      // the "pass outcome == did-not-run outcome" bug this codebase keeps
-      // getting bitten by.
-      converged: first.converged && second.converged,
+      elapsedMs: elapsed(started),
+      converged: converged,
       frozen: frozen,
     );
   }
+
+  /// Milliseconds since [from]. Named so the settle code reads as prose.
+  static int elapsed(DateTime from) =>
+      DateTime.now().difference(from).inMilliseconds;
 
   /// Navigate and run the full capture settle. The drop-in replacement for
   /// [navigateAndSettle] on every still-image path; the motion verbs

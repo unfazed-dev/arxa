@@ -757,7 +757,15 @@ Future<List<String>> _renderStackedCdp(
         final url = 'http://127.0.0.1:${server.port}/surfaces/$name.html';
         // fullPage: the stability loop must poll the SAME surface the capture
         // below takes, or it certifies a viewport that the golden doesn't use.
-        await session.navigateAndSettleForCapture(url, fullPage: true);
+        final settle =
+            await session.navigateAndSettleForCapture(url, fullPage: true);
+        // Same channel as console errors: the freeze gate stamps a design as
+        // frozen SSOT material, and a surface that never stops moving is not
+        // freezable. Passing it would stamp a reference nothing can reproduce.
+        if (!settle.converged) {
+          errors.add('$name@${vp.name}: settle did not converge in '
+              '${settle.elapsedMs}ms — surface is not reproducible');
+        }
         for (final e in [...session.consoleErrors, ...session.pageErrors]) {
           errors.add('$name@${vp.name}: $e');
         }
@@ -847,8 +855,13 @@ Future<List<String>> _renderHtmxCdp(
           await session.setViewport(vp.width, vp.height);
           final sep = route.contains('?') ? '&' : '?';
           final url = lang == null ? '$base$route' : '$base$route${sep}lang=$lang';
-          await session.navigateAndSettleForCapture(url, fullPage: true);
+          final settle =
+              await session.navigateAndSettleForCapture(url, fullPage: true);
           final tag = lang == null ? '' : ' ($lang)';
+          if (!settle.converged) {
+            errors.add('$route@${vp.name}$tag: settle did not converge in '
+                '${settle.elapsedMs}ms — surface is not reproducible');
+          }
           for (final e in [...session.consoleErrors, ...session.pageErrors]) {
             errors.add('$route@${vp.name}$tag: $e');
           }

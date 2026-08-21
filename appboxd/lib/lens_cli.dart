@@ -349,7 +349,11 @@ Future<int> _lensCheck(
     await tab.seedCookies(
         Uri.parse(url).replace(path: '/', query: '', fragment: ''), cookies);
     await tab.setViewport(w, h);
-    await tab.navigateAndSettleForCapture(url, settleMs: settleMs);
+    final settle = await tab.navigateAndSettleForCapture(url, settleMs: settleMs);
+    if (!settle.converged) {
+      failures.add('settle did not converge in ${settle.elapsedMs}ms — the PNG '
+          'this writes is not reproducible');
+    }
 
     if (selector != null) {
       final found = await tab.evaluate('!!document.querySelector(${_js(selector)})');
@@ -870,7 +874,7 @@ Future<int> _shoot(_Args a) async {
       await tab.enable();
       await tab.seedCookies(cookieOrigin, cookies);
       await tab.setViewport(rung.width, rung.height);
-      await tab.navigateAndSettleForCapture(url);
+      final settle = await tab.navigateAndSettleForCapture(url);
       final errors = [...tab.consoleErrors, ...tab.pageErrors];
       final overflow =
           (await tab.evaluate('document.documentElement.scrollWidth > '
@@ -879,7 +883,11 @@ Future<int> _shoot(_Args a) async {
       final png = await tab.screenshot();
       final pngPath = '$outDir/${rung.name}_${rung.width}.png';
       File(pngPath).writeAsBytesSync(png);
-      final clean = errors.isEmpty && !overflow;
+      // `settled` joins consoleErrors and overflow as a rung-level verdict, and
+      // is recorded per rung rather than only counted: shoot.json is the
+      // evidence artifact, so "which rung was unreproducible" has to survive in
+      // it, not just in the exit code.
+      final clean = errors.isEmpty && !overflow && settle.converged;
       if (!clean) problems++;
       perRung.add({
         'name': rung.name,
@@ -887,6 +895,8 @@ Future<int> _shoot(_Args a) async {
         'height': rung.height,
         'consoleErrors': errors.length,
         'overflow': overflow,
+        'settled': settle.converged,
+        'settleMs': settle.elapsedMs,
         'clean': clean,
         'png': pngPath,
       });
