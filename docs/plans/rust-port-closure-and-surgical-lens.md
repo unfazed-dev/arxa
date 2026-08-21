@@ -380,6 +380,34 @@ per convention, proceeded on primary sources.
 > that depth is untested and is the condition it will exceed first.** Full report:
 > [docs/research/warm-vs-cold-chrome-determinism.md](../research/warm-vs-cold-chrome-determinism.md).
 >
+> **The throw had to be caught, not just thrown (`85d86723`).** An uncaught Dart
+> exception exits **255 with a stack trace**, but `lens` promises "0 ok / 1 fail
+> / 2 env/usage" and a gate promises "0 pass / 1 fail / 2 not-applicable". A
+> merely-unreproducible surface was crashing both — the exit-code inversion trap
+> from the other direction. `lens shot` now exits 1 with the message and writes
+> no PNG (verified live; the settling-page control still exits 0 and writes).
+> `gate lens` passes `allowUnstable` on the **evidence** capture — evidence is
+> diagnostic, not a reference, and when a surface never settles you want the
+> picture of it more than ever — so the failing verdict comes from
+> `compareGolden` and arrives *with* evidence. `--recapture` catches per surface
+> and continues, so the operator sees every unreproducible surface rather than
+> the first, and the run cannot abort halfway leaving some goldens rewritten and
+> some not; any refusal makes the gate FAIL, because the operator's next move is
+> `git add goldens/` and a green "RECAPTURED" that skipped a surface is the same
+> false pass as ever.
+>
+> **Cost, measured on the real gate:** `appbox gate freeze` PASSES in **5m34s
+> for 150 route/viewport renders** (~2.2s each) against
+> `designs/appbox-studio-v2`. It was minutes before this change and it is
+> minutes after. The dominant term is the 1500ms floor, not the stability loop
+> (which converges in ~340ms on a settled page) and not the `fullPage` polling.
+> **The obvious lever — lower the floor, since the loop now adapts — is
+> deliberately NOT pulled.** The floor exists because the loop's failure mode is
+> converging on the "before" state of a page still doing async work; that is
+> measured (variable-load went 1 → 2 distinct when the floor was 150ms).
+> Trading it for ~2.5 minutes without re-running the determinism table would be
+> exactly the mistake this workstream exists to stop making.
+>
 > **Still open in W1:** the daemon itself. The blocking unknown is gone, but the
 > constraints from the earlier amendment stand — `--remote-debugging-port` not
 > `-pipe`, one `--user-data-dir` for the daemon's life, `Target.createBrowserContext`
