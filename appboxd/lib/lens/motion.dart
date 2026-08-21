@@ -7,6 +7,7 @@
 // path is unit-testable with NO real encode — inject a fake runner.
 
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 import 'dart:math' as math;
 
@@ -111,6 +112,87 @@ Future<List<List<int>>> burstFrames(
       if (i < count - 1) await Future.delayed(Duration(milliseconds: intervalMs));
     }
     return frames;
+  } finally {
+    await client.close();
+  }
+}
+
+/// Result of [clickBurstFrames] — frames plus why they might be worthless.
+class ClickBurst {
+  const ClickBurst({
+    required this.frames,
+    required this.clicked,
+    required this.consoleErrors,
+  });
+
+  final List<List<int>> frames;
+
+  /// False when the selector matched nothing. The frames list is then EMPTY,
+  /// not a series of identical pre-click screenshots — a caller that diffed
+  /// consecutive frames would otherwise read "no animation" from a burst that
+  /// never clicked anything.
+  final bool clicked;
+  final List<String> consoleErrors;
+
+  bool get certified => clicked && consoleErrors.isEmpty;
+}
+
+/// Navigate, settle, CLICK [selector], then burst [count] screenshots.
+///
+/// The gap this fills: [burstFrames] frames from page load, so it can only see
+/// animation that starts by itself. Page transitions, overlays, drawers and
+/// menus start on a click and are invisible to it. The click is dispatched as
+/// real CDP input at the element's centre — a trusted event, so handlers that
+/// check `isTrusted` behave as they would for a person.
+///
+/// Deliberately on [CdpTab.navigateAndSettle], not the capture settle: this is
+/// a motion verb, and the capture settle exists to destroy motion.
+Future<ClickBurst> clickBurstFrames(
+  String url,
+  String selector, {
+  int width = 390,
+  int height = 844,
+  int count = 12,
+  int intervalMs = 250,
+  int settleMs = 1500,
+}) async {
+  final client = await CdpClient.launch();
+  try {
+    final tab = await client.newTab();
+    await tab.enable();
+    await tab.setViewport(width, height);
+    await tab.navigateAndSettle(url, settleMs: settleMs);
+
+    final quoted = jsonEncode(selector);
+    final centre = await tab.evaluate('(function () {'
+        'var el = document.querySelector($quoted);'
+        'if (!el) return null;'
+        'var r = el.getBoundingClientRect();'
+        "return (r.left + r.width / 2) + ',' + (r.top + r.height / 2);"
+        '})()');
+    if (centre is! String) {
+      return ClickBurst(
+        frames: const [],
+        clicked: false,
+        consoleErrors: [...tab.consoleErrors, ...tab.pageErrors],
+      );
+    }
+    final parts = centre.split(',');
+    await tab.click(
+        double.parse(parts[0]).round(), double.parse(parts[1]).round());
+
+    final frames = <List<int>>[];
+    for (var i = 0; i < count; i++) {
+      frames.add(await tab.screenshot());
+      if (i < count - 1) {
+        await Future.delayed(Duration(milliseconds: intervalMs));
+      }
+    }
+    return ClickBurst(
+      frames: frames,
+      clicked: true,
+      consoleErrors: [...tab.consoleErrors, ...tab.pageErrors],
+    );
   } finally {
     await client.close();
   }

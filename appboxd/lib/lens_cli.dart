@@ -49,6 +49,11 @@ Web verbs (CDP — each captures at a viewport; console/page errors auto-fail):
                                       Screencast → mp4 (needs ffmpeg)
   burst <url> <out-dir> [count] [intervalMs] [w] [h]
                                       Rapid screenshot burst → PNG frames
+  click-burst <url> <out-dir> <selector> [count] [intervalMs] [w] [h] [--settle=Ms]
+                                      Click, then burst → click-TRIGGERED
+                                      animation (transitions, overlays) that
+                                      `burst` cannot reach; exit 1 if the
+                                      selector misses or the page errors
   anim <url> [w] [h] [--out=path]     Scroll-scrubbed easing certification
   flipbook <url> --trigger=<css> [w] [h] [--out=path]
                                       WAAPI animation oracle after a click
@@ -138,6 +143,8 @@ Future<int> runLensCli(List<String> args) async {
       return _record(a);
     case 'burst':
       return _burst(a);
+    case 'click-burst':
+      return _clickBurst(a);
     case 'anim':
       return _anim(a);
     case 'flipbook':
@@ -641,6 +648,45 @@ Future<int> _burst(_Args a) async {
   }
   stdout.writeln('lens burst: ${frames.length} frame(s) -> $outDir');
   return 0;
+}
+
+/// `lens click-burst` — promoted from tool/lens_click_burst.dart.
+///
+/// A missed selector is a FAILURE, not an empty success. The old probe wrote
+/// no frames and exited 1; keep that, because a burst that silently produced
+/// zero frames would be read downstream as "this interaction has no animation".
+Future<int> _clickBurst(_Args a) async {
+  if (a.positional.length < 3) {
+    return _usageErr('click-burst <url> <out-dir> <selector> '
+        '[count] [intervalMs] [w] [h] [--settle=Ms]');
+  }
+  final outDir = a.positional[1];
+  final selector = a.positional[2];
+  final result = await clickBurstFrames(
+    a.positional[0],
+    selector,
+    count: a.intAt(3, 12),
+    intervalMs: a.intAt(4, 250),
+    width: a.intAt(5, 390),
+    height: a.intAt(6, 844),
+    settleMs: a.intVal('settle') ?? 1500,
+  );
+  if (!result.clicked) {
+    stderr.writeln('lens click-burst: FAIL — selector matched nothing: $selector');
+    return 1;
+  }
+  Directory(outDir).createSync(recursive: true);
+  final pad = result.frames.length.toString().length;
+  for (var i = 0; i < result.frames.length; i++) {
+    File('$outDir/frame_${i.toString().padLeft(pad, '0')}.png')
+        .writeAsBytesSync(result.frames[i]);
+  }
+  for (final e in result.consoleErrors) {
+    stderr.writeln('lens click-burst: console: $e');
+  }
+  stdout.writeln('lens click-burst: ${result.certified ? 'PASS' : 'FAIL'} — '
+      '${result.frames.length} frame(s) [$selector] -> $outDir');
+  return result.certified ? 0 : 1;
 }
 
 Future<int> _crawl(_Args a) async {
