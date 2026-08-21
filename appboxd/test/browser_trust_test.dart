@@ -7,7 +7,12 @@
 
 library;
 
+import 'dart:io';
+
+import 'package:appboxd/design_server.dart' show readTrustedOriginsFile;
 import 'package:appboxd/design_server/browser_trust.dart';
+import 'package:appboxd/project.dart' show appboxHomeOverride;
+import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
 
 BrowserTrust _loopback({
@@ -134,6 +139,55 @@ void main() {
       expect(BrowserTrust.guardedRequest('GET', '/'), isFalse);
       expect(BrowserTrust.guardedRequest('GET', '/design'), isFalse);
       expect(BrowserTrust.guardedRequest('GET', '/app.routes.js'), isFalse);
+    });
+  });
+
+  group('~/.appbox/trusted-origins — the operator-level allowlist', () {
+    late Directory home;
+
+    setUp(() {
+      home = Directory.systemTemp.createTempSync('appbox-home-');
+      // Never the operator's real ~/.appbox: this test writes here.
+      appboxHomeOverride = home.path;
+    });
+    tearDown(() {
+      appboxHomeOverride = null;
+      home.deleteSync(recursive: true);
+    });
+
+    void write(String body) =>
+        File(p.join(home.path, 'trusted-origins')).writeAsStringSync(body);
+
+    test('no file at all is not an error', () {
+      expect(readTrustedOriginsFile(), isEmpty);
+    });
+
+    test('one origin per line, blanks and # comments ignored', () {
+      write('# written by arxa\n'
+          'http://arxa.studio.localhost:7891\n'
+          '\n'
+          'http://other.localhost:9000  # trailing comment\n');
+      expect(readTrustedOriginsFile(), [
+        'http://arxa.studio.localhost:7891',
+        'http://other.localhost:9000',
+      ]);
+    });
+
+    test('a line with no scheme is dropped, not silently un-matchable', () {
+      // The 2am failure: it would pass normalizeOrigin's raw fallback, match
+      // nothing, and read as "the flag didn't work".
+      write('arxa.studio.localhost:7891\nhttp://good.localhost:1\n');
+      expect(readTrustedOriginsFile(), ['http://good.localhost:1']);
+    });
+
+    test('what the file yields actually admits an origin', () {
+      write('http://arxa.studio.localhost:7891\n');
+      final t = BrowserTrust(
+          boundHost: '127.0.0.1',
+          port: 4319,
+          trustedOrigins: readTrustedOriginsFile());
+      expect(t.originAllowed('http://arxa.studio.localhost:7891'), isTrue);
+      expect(t.originAllowed('https://evil.example'), isFalse);
     });
   });
 

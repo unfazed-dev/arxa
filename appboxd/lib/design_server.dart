@@ -171,6 +171,41 @@ class _ServeArgs {
 Iterable<String> _splitList(String? raw) =>
     (raw ?? '').split(',').map((s) => s.trim()).where((s) => s.isNotEmpty);
 
+/// The name of the machine-wide trusted-origins file under [appboxHome].
+const kTrustedOriginsFile = 'trusted-origins';
+
+/// Origins this machine trusts to call `/__*` cross-origin: one per line in
+/// `~/.appbox/trusted-origins`, `#` starts a comment.
+///
+/// MACHINE-scoped, not repo-scoped, and that is the whole point. "The arxa
+/// studio at :7891 may subscribe to my design servers" is a fact about this
+/// laptop; a design server runs from whichever client repo the design lives
+/// in, and `config/appbox.config.json` is the pipeline's SSOT — an operator
+/// preference has no business in it. ~/.appbox is where appbox already keeps
+/// operator state (projects, the current marker), so it goes there.
+///
+/// A line that is not a parseable `scheme://host` is DROPPED and named on
+/// stderr. Left in, it would fall through normalizeOrigin's raw-string
+/// fallback, match nothing, and look exactly like "the flag didn't work" —
+/// the worst failure shape an allowlist can have.
+List<String> readTrustedOriginsFile() {
+  final f = File(p.join(appboxHome(), kTrustedOriginsFile));
+  if (!f.existsSync()) return const [];
+  final out = <String>[];
+  for (final raw in f.readAsLinesSync()) {
+    final line = raw.split('#').first.trim();
+    if (line.isEmpty) continue;
+    final u = Uri.tryParse(line);
+    if (u == null || u.scheme.isEmpty || u.host.isEmpty) {
+      stderr.writeln('[design-server] ${f.path}: ignoring "$line" — '
+          'not a scheme://host origin');
+      continue;
+    }
+    out.add(line);
+  }
+  return out;
+}
+
 _ServeArgs _parseArgs(List<String> args) {
   final a = _ServeArgs();
   for (var i = 0; i < args.length; i++) {
@@ -1158,7 +1193,9 @@ Future<int> designServe(List<String> args) async {
         '[--port N] [--host H] [--json] [--no-watch]\n'
         '       [--trusted-host NAME]…   extra Host names to answer to\n'
         '       [--trusted-origin URL]…  origins allowed to call /__* '
-        'cross-origin (e.g. the arxa design panel)');
+        'cross-origin (e.g. a studio panel)\n'
+        '       …or list them one per line in '
+        '${p.join(appboxHome(), kTrustedOriginsFile)}');
     return _exitUsage;
   }
   if (a.port < 0 || a.port > 65535) {
@@ -1215,7 +1252,9 @@ Future<int> designServe(List<String> args) async {
       noWatch: a.noWatch || a.worker,
       projectDir: resolvedProject,
       trustedHosts: a.trustedHosts,
-      trustedOrigins: a.trustedOrigins,
+      // Read here, not in _parseArgs: arg parsing stays free of file IO, so
+      // the CLI tests never depend on the operator's home directory.
+      trustedOrigins: [...readTrustedOriginsFile(), ...a.trustedOrigins],
     );
   } on SocketException catch (e) {
     final code = bindExitCode(e);
