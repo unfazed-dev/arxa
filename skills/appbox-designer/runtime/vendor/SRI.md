@@ -31,3 +31,44 @@
 `leaflet/images/*.png` (marker + layers control sprites, referenced by
 `leaflet.css` relative to itself) ride along unpinned — like the lucide SVGs
 they are never loaded as a subresource with an integrity attribute.
+
+## Local patches — files that DIVERGE from the upstream release above
+
+A patched vendored file has two failure modes, and both are silent:
+`appbox design vendor-fetch` re-downloads it and reverts the patch without
+saying so, and its integrity no longer matches the hash recorded above, so
+anyone verifying later sees what looks like tampering. Both are why a patch
+gets an entry here rather than living only in the working tree.
+
+### model-viewer.min.js — far-plane multiplier
+
+Found uncommitted in the working tree 2026-08-21 and preserved rather than
+discarded; not authored in that session, and the 3D rendering effect was NOT
+re-verified there.
+
+One character, line 1008, inside `farRadius()`:
+
+```js
+// upstream 4.3.1
+farRadius(){ return this.boundingSphere.radius * (null != this.groundedSkybox.parent ? 10 : 1) }
+// patched
+farRadius(){ return this.boundingSphere.radius * (null != this.groundedSkybox.parent ? 10 : 60) }
+```
+
+`farRadius` feeds the camera's far clipping plane. Without a grounded skybox
+upstream uses **1×** the model's bounding-sphere radius, which clips geometry
+barely past the model itself; `60×` pushes the plane out. The symptom this
+addresses is model or environment geometry vanishing when no grounded skybox
+is set.
+
+- upstream 4.3.1 integrity: `sha384-cprcVQt7wbUl0xngF3PGP6yBB7n4/t+4AoAMG9biiMCGFiWOdzUH10Ie2COTqFNW`
+- patched file integrity: `sha384-34/K+/9GIoNHiaQ2+yOIqoXeJbT/9+9AaadSQETMyL00UPH9afFFJe+HziySmFNz`
+
+The table above deliberately still records the UPSTREAM hash: that column
+documents what 4.3.1 is, and overwriting it with the patched value would erase
+the fact that this repo diverges at all.
+
+**After any `vendor-fetch` that touches `@google/model-viewer`, re-apply this
+and confirm the patched hash above.** Nothing enforces it — only htmx core's
+SRI is checked in code (`design_tools.dart:1038`), so this file's mismatch has
+no runtime consequence and will not announce itself.
