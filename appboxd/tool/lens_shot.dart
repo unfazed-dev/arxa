@@ -19,8 +19,18 @@ Future<void> main(List<String> argv) async {
   final width = positional.length > 2 ? int.parse(positional[2]) : 1280;
   final height = positional.length > 3 ? int.parse(positional[3]) : 800;
   final settleMs = positional.length > 4 ? int.parse(positional[4]) : 1500;
-  await captureGolden(url, width, height,
-      goldenPath: out, settleMs: settleMs, fullPage: fullPage);
+  try {
+    await captureGolden(url, width, height,
+        goldenPath: out, settleMs: settleMs, fullPage: fullPage);
+  } on LensUnstableCapture catch (e) {
+    // Same catch as `appbox lens shot` in lens_cli.dart. Found by auditing
+    // every captureGolden caller after fixing that one — this driver writes a
+    // golden too, and an uncaught throw here would exit 255 with a Dart stack
+    // trace instead of the 2-is-usage / 1-is-failure convention the rest of
+    // this file already follows.
+    stderr.writeln('lens shot: FAIL — $e');
+    exit(1);
+  }
   stdout.writeln(
       'lens shot: $url -> $out (${width}x$height${fullPage ? ', full page' : ''})');
 }
