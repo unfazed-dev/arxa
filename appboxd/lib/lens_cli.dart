@@ -37,6 +37,9 @@ Web verbs (CDP — each captures at a viewport; console/page errors auto-fail):
   tokens <url> [w] [h] [--settle=Ms] [--out=path]
                                       Design-token scales (palette/type/spacing/radii)
   dom <url> [--out=path] [--html]     DOMSnapshot (or outerHTML with --html)
+  eval <url> <js-expr> [w] [h] [--settle=Ms] [--out=path] [--cookie=n=v]...
+                                      Evaluate JS in the page, print the value
+                                      (promises awaited). Exit 2 on JS throw.
   a11y <url> [--out=path]             Accessibility tree
   net <url> [--traceMs=3000] [--out=path]
                                       Network trace (per-request records)
@@ -123,6 +126,8 @@ Future<int> runLensCli(List<String> args) async {
       return _tokens(a);
     case 'dom':
       return _dom(a);
+    case 'eval':
+      return _eval(a);
     case 'a11y':
       return _a11y(a);
     case 'net':
@@ -423,6 +428,48 @@ Future<int> _dom(_Args a) async {
   }
   final result = await extractDom(url, cookies: _cookiesOf(a));
   return _emitJson(result, out, 'dom');
+}
+
+/// `lens eval` — the general-purpose page read.
+///
+/// Deliberately NOT routed through [_emitJson]: that helper gates the exit code
+/// on `certified`, and eval is a diagnostic verb. You reach for it precisely
+/// when a page is misbehaving, so a console error the expression didn't cause
+/// must not turn a successful read into exit 1. Console errors are reported on
+/// stderr and the read still succeeds. Only a JS throw is a failure.
+///
+/// The value is always JSON-encoded, including bare strings (so they carry
+/// their quotes) — the output is meant to pipe into `jq`.
+Future<int> _eval(_Args a) async {
+  if (a.positional.length < 2) {
+    return _usageErr(
+        'eval <url> <js-expr> [w] [h] [--settle=Ms] [--out=path] [--cookie=n=v]...');
+  }
+  try {
+    final result = await evalInPage(
+      a.positional[0],
+      a.positional[1],
+      width: a.intAt(2, 1280),
+      height: a.intAt(3, 800),
+      settleMs: a.intVal('settle') ?? 1500,
+      cookies: _cookiesOf(a),
+    );
+    final json = const JsonEncoder.withIndent('  ').convert(result.value);
+    final out = a.value('out');
+    if (out == null) {
+      stdout.writeln(json);
+    } else {
+      writeLensJson(out, json);
+      stdout.writeln('lens eval -> $out');
+    }
+    for (final e in result.consoleErrors) {
+      stderr.writeln('lens eval: console: $e');
+    }
+    return 0;
+  } on CdpException catch (e) {
+    stderr.writeln('lens eval: $e');
+    return 2;
+  }
 }
 
 Future<int> _a11y(_Args a) async {

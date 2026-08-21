@@ -39,6 +39,45 @@ Future<Map<String, dynamic>> extractDom(
   }
 }
 
+/// Evaluate [expression] in the page at [url] and return its value.
+///
+/// The general-purpose read: every other verb in this library answers one
+/// fixed question, so anything they don't cover previously needed a throwaway
+/// `tool/tmp_*.dart` probe. This is that probe, as a verb.
+///
+/// [CdpTab.evaluate] awaits promises, so `await`-shaped expressions
+/// (`document.fonts.ready`, `img.decode()`) work unwrapped. A JS exception
+/// surfaces as [CdpException] — the caller decides the exit code.
+///
+/// Console errors are RETURNED, not thrown. Unlike the certifying verbs, eval
+/// is a diagnostic: a page with an unrelated console error is exactly when you
+/// reach for it, and failing the read would defeat the purpose.
+Future<({dynamic value, List<String> consoleErrors})> evalInPage(
+  String url,
+  String expression, {
+  int settleMs = 1500,
+  int width = 1280,
+  int height = 800,
+  Map<String, String> cookies = const {},
+}) async {
+  final client = await CdpClient.launch();
+  try {
+    final tab = await client.newTab();
+    await tab.enable();
+    await tab.setViewport(width, height);
+    await tab.seedCookies(
+        Uri.parse(url).replace(path: '/', query: '', fragment: ''), cookies);
+    await tab.navigateAndSettle(url, settleMs: settleMs);
+    final value = await tab.evaluate(expression);
+    return (
+      value: value,
+      consoleErrors: [...tab.consoleErrors, ...tab.pageErrors],
+    );
+  } finally {
+    await client.close();
+  }
+}
+
 /// Outer-HTML shortcut (probe-runner's outerHTML path): one evaluate call.
 Future<String> extractOuterHtml(String url,
     {int settleMs = 1500, Map<String, String> cookies = const {}}) async {

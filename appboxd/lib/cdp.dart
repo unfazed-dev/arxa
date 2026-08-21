@@ -622,6 +622,250 @@ class CdpSession {
     }
   }
 
+  /// Put every in-page animation into a fixed, reproducible state.
+  ///
+  /// The rule is Playwright's, and it is not "pause everything": pausing alone
+  /// leaves an arbitrary phase on the clock, which is the defect, not the fix.
+  ///
+  ///   * **finite** animation → `finish()`. A golden should show the settled
+  ///     page, not a fade caught mid-flight.
+  ///   * **infinite** animation → `pause()` + `currentTime = 0`. There is no
+  ///     "end" to jump to, so the only stable choice is the first frame.
+  ///     (`cancel()` reaches the same picture but CSS may re-create the
+  ///     animation immediately; pinning survives that.)
+  ///
+  /// `getAnimations()` covers CSS animations, CSS transitions and WAAPI only.
+  /// SMIL and `<video>` are handled separately below. **GIF and APNG have no
+  /// pause API at all** — that hole is real and Playwright has it too.
+  ///
+  /// **Pinning the phase is not enough, and that is the non-obvious part.**
+  /// Measured: a page whose animation is provably pinned (`currentTime` 0,
+  /// computed transform identity, every run) still produced 3 distinct images
+  /// out of 4, worst case 13,345 pixels (4%). An element that merely *has* an
+  /// animation is promoted to its own compositor layer, and that layer rasters
+  /// differently run to run. Removing the `animation` property afterwards took
+  /// the same page to 4/4 byte-identical. So this commits the frozen computed
+  /// values inline and *then* drops the animation, de-promoting the layer.
+  /// Committing first is what makes it safe: a bare `animation: none` would
+  /// throw away the end state that `animation-fill-mode: forwards` was holding
+  /// and snap the element back to its pre-animation style.
+  ///
+  /// Returns what it actually froze, per kind. A caller that gets
+  /// `{finite: 0, infinite: 0}` on a page it believes is animated has learned
+  /// something — a silent no-op would not have told it.
+  Future<Map<String, int>> freezeAnimations() async {
+    final result = await evaluate(r'''
+(function () {
+  var finite = 0, infinite = 0, smil = 0, videos = 0, committed = 0;
+  var SKIP = {offset: 1, computedOffset: 1, easing: 1, composite: 1};
+  var targets = [];
+  var list = document.getAnimations ? document.getAnimations() : [];
+  for (var i = 0; i < list.length; i++) {
+    var a = list[i];
+    try {
+      var timing = a.effect && a.effect.getComputedTiming
+        ? a.effect.getComputedTiming() : null;
+      var end = timing ? timing.endTime : null;
+      if (end == null || !isFinite(end)) {
+        a.pause(); a.currentTime = 0; infinite++;
+      } else {
+        a.finish(); finite++;
+      }
+      // Collect the element + which properties this animation drives, so the
+      // de-promotion pass below knows what to preserve.
+      if (a.effect && a.effect.target && a.effect.getKeyframes) {
+        var props = {};
+        var frames = a.effect.getKeyframes();
+        for (var f = 0; f < frames.length; f++) {
+          for (var key in frames[f]) {
+            if (!SKIP[key]) props[key] = 1;
+          }
+        }
+        targets.push({el: a.effect.target, props: props});
+      }
+    } catch (e) { /* a detached or already-finished animation is fine */ }
+  }
+  // Second pass, after every animation is pinned: read the settled computed
+  // value of each animated property, write it inline as !important, then drop
+  // the animation so the element leaves the compositor.
+  for (var t = 0; t < targets.length; t++) {
+    try {
+      var el = targets[t].el;
+      if (!el.style) continue;
+      var cs = getComputedStyle(el);
+      for (var camel in targets[t].props) {
+        var kebab = camel.replace(/[A-Z]/g, function (m) {
+          return '-' + m.toLowerCase();
+        });
+        var value = cs.getPropertyValue(kebab);
+        if (value) el.style.setProperty(kebab, value, 'important');
+      }
+      el.style.setProperty('animation', 'none', 'important');
+      el.style.setProperty('transition', 'none', 'important');
+      committed++;
+    } catch (e) { /* cross-origin or detached target */ }
+  }
+  var svgs = document.querySelectorAll('svg');
+  for (var j = 0; j < svgs.length; j++) {
+    try { svgs[j].pauseAnimations(); smil++; } catch (e) {}
+  }
+  var vids = document.querySelectorAll('video');
+  for (var k = 0; k < vids.length; k++) {
+    try { vids[k].pause(); vids[k].currentTime = 0; videos++; } catch (e) {}
+  }
+  return {finite: finite, infinite: infinite, smil: smil, videos: videos,
+          committed: committed};
+})()
+''');
+    return (result as Map).map((k, v) => MapEntry('$k', v as int));
+  }
+
+  /// Capture repeatedly until [consecutive] captures in a row are byte-equal,
+  /// or [timeoutMs] elapses. Returns how long it took and whether it converged.
+  ///
+  /// This is the signal-agnostic backstop, and the only settle step that does
+  /// not depend on enumerating the right readiness signals — it is what
+  /// Playwright actually does. A fixed `Future.delayed` is deterministic only
+  /// while page load time is constant; vary the load and the same timer lands
+  /// at a different point in the render, which is the measured defect this
+  /// replaces (variable-load page × 5 at a fixed 1500ms settle → 2 distinct
+  /// images).
+  ///
+  /// [minWaitMs] is a floor before the first capture. Without it a framework
+  /// page that has fired `load` but not yet painted returns two identical
+  /// BLANK frames and "converges" instantly on the wrong picture.
+  ///
+  /// Known and accepted failure mode: a stable-but-wrong state passes. A page
+  /// with a running infinite animation cannot converge at all — it burns the
+  /// full timeout and then captures at an arbitrary phase. Freeze animations
+  /// before calling this, or don't call it (the motion verbs need them live).
+  ///
+  /// Returns `converged: false` on timeout rather than throwing, but the
+  /// caller MUST NOT read that as success — a timed-out settle is precisely
+  /// the "did not run" outcome wearing a "passed" coat.
+  Future<({int elapsedMs, bool converged, int captures})> settleUntilStable({
+    int pollMs = 120,
+    int timeoutMs = 6000,
+    int minWaitMs = 150,
+    int consecutive = 2,
+    bool fullPage = false,
+  }) async {
+    final started = DateTime.now();
+    if (minWaitMs > 0) await Future.delayed(Duration(milliseconds: minWaitMs));
+    String? prev;
+    var matches = 0;
+    var captures = 0;
+    while (DateTime.now().difference(started).inMilliseconds < timeoutMs) {
+      final shot = await _screenshotB64(fullPage: fullPage);
+      captures++;
+      if (prev != null && shot == prev) {
+        // `consecutive` counts CAPTURES that agree, so the first agreement is
+        // already two matching captures — hence the `+ 1`.
+        if (++matches + 1 >= consecutive) {
+          return (
+            elapsedMs: DateTime.now().difference(started).inMilliseconds,
+            converged: true,
+            captures: captures,
+          );
+        }
+      } else {
+        matches = 0;
+      }
+      prev = shot;
+      await Future.delayed(Duration(milliseconds: pollMs));
+    }
+    return (
+      elapsedMs: DateTime.now().difference(started).inMilliseconds,
+      converged: false,
+      captures: captures,
+    );
+  }
+
+  /// The full settle sequence for a *capture*. Call this instead of
+  /// [navigateAndSettle] anywhere the output is a golden, a diff, or a gate.
+  ///
+  /// The order is not arbitrary — every step is here because leaving it out was
+  /// measured to break something (5 captures per page, fresh Chrome each time):
+  ///
+  /// | page          | flat 1500ms | loop only        | this sequence |
+  /// |---------------|-------------|------------------|---------------|
+  /// | static        | 1 distinct  | 1 distinct 339ms | 1 distinct    |
+  /// | animated      | 4 distinct  | 5 distinct, TIMEOUT ×5 | 1 distinct |
+  /// | variable-load | 2 distinct  | 2 distinct       | 1 distinct    |
+  ///
+  /// 1. **Freeze early.** An infinite animation never stops changing, so the
+  ///    loop below can never converge on it — it would burn the whole timeout
+  ///    (measured: 6.1s every time) and then capture an arbitrary frame anyway.
+  /// 2. **Floor ([minWaitMs]).** The loop's failure mode is converging on the
+  ///    "before" state: a page that fetches and renders 300ms after `load`
+  ///    looks perfectly stable at 150ms. The floor defaults to the same 1500ms
+  ///    the old flat settle used, so this is never *earlier* than the old path
+  ///    — only later when the page is genuinely still moving.
+  /// 3. **Loop** until two consecutive captures match.
+  /// 4. **Freeze again.** Anything that started during the floor — a transition
+  ///    fired by late-arriving data — did not exist at step 1. This pass also
+  ///    de-promotes it off the compositor, which is what actually buys the
+  ///    byte-determinism (see [freezeAnimations]).
+  /// 5. **Short loop** to let that de-promotion repaint.
+  ///
+  /// Not covered, honestly: GIF/APNG (no pause API exists), cross-origin
+  /// iframes, and a page that is stable-but-wrong for longer than [minWaitMs].
+  Future<({int elapsedMs, bool converged, Map<String, int> frozen})>
+      settleForCapture({
+    int minWaitMs = 1500,
+    int pollMs = 120,
+    int timeoutMs = 8000,
+    bool fullPage = false,
+  }) async {
+    final started = DateTime.now();
+    await freezeAnimations();
+    if (minWaitMs > 0) await Future.delayed(Duration(milliseconds: minWaitMs));
+    final first = await settleUntilStable(
+      pollMs: pollMs,
+      timeoutMs: timeoutMs,
+      minWaitMs: 0,
+      fullPage: fullPage,
+    );
+    final frozen = await freezeAnimations();
+    final second = await settleUntilStable(
+      pollMs: pollMs,
+      timeoutMs: timeoutMs ~/ 4,
+      minWaitMs: 0,
+      fullPage: fullPage,
+    );
+    return (
+      elapsedMs: DateTime.now().difference(started).inMilliseconds,
+      // Either loop failing to converge means the capture is not trustworthy.
+      // Reporting `true` because the *second* one happened to settle would be
+      // the "pass outcome == did-not-run outcome" bug this codebase keeps
+      // getting bitten by.
+      converged: first.converged && second.converged,
+      frozen: frozen,
+    );
+  }
+
+  /// Navigate and run the full capture settle. The drop-in replacement for
+  /// [navigateAndSettle] on every still-image path; the motion verbs
+  /// (`anim`, `record`, `flipbook`, `burst`, `states`) must NOT use it — they
+  /// exist to observe animation, and this deliberately destroys it.
+  Future<({int elapsedMs, bool converged, Map<String, int> frozen})>
+      navigateAndSettleForCapture(
+    String url, {
+    int settleMs = 1500,
+    int timeoutMs = 8000,
+    bool fullPage = false,
+  }) async {
+    await navigate(url);
+    if (LensSession.visible) await injectLensGlow();
+    final r = await settleForCapture(
+      minWaitMs: settleMs,
+      timeoutMs: timeoutMs,
+      fullPage: fullPage,
+    );
+    if (LensSession.visible) await removeLensGlow();
+    return r;
+  }
+
   /// Evaluate a JavaScript expression in the page.
   /// Returns the result value (deserialised from JSON).
   Future<dynamic> evaluate(String expression, {bool awaitPromise = true}) async {
@@ -658,6 +902,13 @@ class CdpSession {
 
   /// Capture a screenshot as PNG bytes.
   Future<List<int>> screenshot({bool fullPage = false}) async {
+    return base64Decode(await _screenshotB64(fullPage: fullPage));
+  }
+
+  /// The raw base64 payload, before decode. [settleUntilStable] compares
+  /// hundreds of these; decoding each one to bytes only to throw them away
+  /// would triple the cost of the loop for nothing.
+  Future<String> _screenshotB64({bool fullPage = false}) async {
     final params = <String, dynamic>{
       'format': 'png',
       'fromSurface': true,
@@ -665,8 +916,7 @@ class CdpSession {
     if (fullPage) params['captureBeyondViewport'] = true;
 
     final res = await send('Page.captureScreenshot', params);
-    final data = res['result']['data'] as String;
-    return base64Decode(data);
+    return res['result']['data'] as String;
   }
 
   /// Dispatch a key press (down + up) via Input.dispatchKeyEvent.
