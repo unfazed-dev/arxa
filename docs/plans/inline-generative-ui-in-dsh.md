@@ -172,6 +172,36 @@ at the dispatch site, not from doc strings.
     mentions `ui://` or `mcp-app`. So MCP Apps support is a **bridge
     extension**, not a rewrite.
 
+16b. **Two neighbours worth naming, because they split the problem the way
+    this plan does.**
+    - **AG-UI** (https://github.com/ag-ui-protocol/ag-ui, docs at
+      docs.ag-ui.com) — an **event-stream** protocol, no iframe anywhere:
+      typed events drive the host's *own* native components. That is the right
+      model for **first-party** tools, which are not untrusted and do not need
+      containment.
+    - **A2UI** (https://a2ui.org — Google, Apache 2.0, v0.9.1 current, v1.0
+      candidate; verified first-hand) — a **declarative** spec answering
+      "how can agents safely send rich UI across trust boundaries": the agent
+      emits JSON naming components from a **pre-approved catalogue**, the
+      client renders them with its own widgets, MIME
+      `application/a2ui+json`. Explicitly *not* executable code, so there is no
+      sandbox surface at all. Its JSON is deliberately **flat and streaming**
+      so an LLM can build a UI incrementally rather than having to emit perfect
+      JSON in one shot. Reference renderers exist for Angular, Flutter, Lit and
+      Markdown — the Flutter one is of independent interest to appbox.
+
+16c. **The synthesis: one lookup path, two renderers.** These are not
+    competing choices to pick between, they are the two ends of a trust axis,
+    and dsh's keyed toolview can host both:
+    - **first-party arxa tools** → JSON → our own vetted React components,
+      **no iframe** (AG-UI's model, A2UI's payload shape);
+    - **third-party MCP App servers** → HTML → sandboxed iframe (decision 18).
+
+    The constraint this puts on Stage 2 — and it costs nothing to honour now —
+    is that the tool→UI **metadata shape** stays MCP-Apps-compatible, so the
+    second renderer later drops into the *same* lookup rather than arriving as
+    a second protocol bolted alongside the first.
+
 ---
 
 ## D. Isolation — what is proportionate
@@ -224,6 +254,13 @@ at the dispatch site, not from doc strings.
     catalogue at three components, driven by real arxa need — a viewport
     ladder, a choice/confirm row, a structured diff — not a speculative
     framework.
+
+    **Borrow A2UI's payload shape rather than inventing a dialect** (decision
+    16b): components named from a pre-approved catalogue, flat streaming JSON
+    so a half-emitted payload renders progressively instead of waiting on one
+    perfect blob. Keep the tool→UI metadata MCP-Apps-compatible per decision
+    16c. Both are free now, and they are the difference between Stage 4 being
+    an addition and being a rewrite.
 
 24. **Stage 3 — interaction, over an explicit channel.** Host half calls
     `ctx.connection.rpc.handle('arxa/gen-ui', handler, { authority: 'loopback' })`;
