@@ -282,6 +282,48 @@ void main() {
       expect(good.passed, isTrue, reason: good.note);
     }, timeout: const Timeout(Duration(minutes: 4)));
 
+    test('settleForCapture reports the FIRST freeze, not the emptied second',
+        () async {
+      // REGRESSION. This returned the second freeze's map until 2026-08-21.
+      // The first pass strips `animation` from every element, so the second
+      // finds nothing and reports all zeros — on a page it froze perfectly.
+      // `frozen` therefore read identically whether the freeze did everything
+      // or nothing, which is this project's oldest failure shape, built into
+      // the very API meant to avoid it.
+      //
+      // Note where the existing coverage failed: there IS a test above that
+      // exercises freezeAnimations directly and asserts it counts honestly.
+      // It passed throughout. Testing the method never sees a caller that
+      // wires it up backwards — the defect lived in settleForCapture, so the
+      // test has to go THROUGH settleForCapture.
+      final client = await CdpClient.launch();
+      try {
+        final tab = await client.newTab();
+        await tab.enable();
+        await tab.setViewport(390, 300);
+        final r = await tab.navigateAndSettleForCapture('$base/animated',
+            settleMs: 100);
+        expect(r.frozen['infinite'], 1,
+            reason: 'the spin animation must be reported by the pass that '
+                'actually froze it');
+        expect(r.frozen['committed'], 1);
+        // The second pass legitimately finds nothing left — that is the whole
+        // reason it must not be what `frozen` reports. Asserting it keeps the
+        // two from being quietly swapped back.
+        expect(r.frozenLate['committed'], 0);
+
+        // Control: a page with nothing to freeze must report zeros in the
+        // SAME field. Without this, `frozen` could be hardcoded non-zero and
+        // the assertions above would still pass.
+        final plain = await tab.navigateAndSettleForCapture('$base/settles',
+            settleMs: 100);
+        expect(plain.frozen['infinite'], 0);
+        expect(plain.frozen['committed'], 0);
+      } finally {
+        await client.close();
+      }
+    }, timeout: const Timeout(Duration(minutes: 2)));
+
     test('settleForCapture reports its own screenshot cost', () async {
       // This number is the unit a warm-Chrome recycle policy is denominated
       // in. It was unobservable until the field existed — a memory probe had

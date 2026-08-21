@@ -816,7 +816,7 @@ class CdpSession {
   ///
   /// Not covered, honestly: GIF/APNG (no pause API exists), cross-origin
   /// iframes, and a page that is stable-but-wrong for longer than [minWaitMs].
-  Future<({int elapsedMs, bool converged, Map<String, int> frozen, int screenshots})>
+  Future<({int elapsedMs, bool converged, Map<String, int> frozen, int screenshots, Map<String, int> frozenLate})>
       settleForCapture({
     int minWaitMs = 1500,
     int pollMs = 120,
@@ -824,7 +824,18 @@ class CdpSession {
     bool fullPage = false,
   }) async {
     final started = DateTime.now();
-    await freezeAnimations();
+    // The FIRST freeze is the meaningful one and must be the one reported.
+    // This returned the second until 2026-08-21, which inverted the
+    // diagnostic exactly: the first pass writes `animation: none !important`
+    // onto every animated element, so the second finds nothing left and
+    // returns all zeros — on a correctly frozen page. That made `frozen`'s
+    // "it worked" value identical to its "it never ran" value, the precise
+    // failure shape [freezeAnimations] warns about when it says a caller
+    // seeing `{finite: 0, infinite: 0}` on a page it believes is animated
+    // "has learned something". Routed through here, every caller saw that
+    // always. Caught by a warm-Chrome probe that asserted `committed > 0`
+    // and found the assertion fires when the freeze is WORKING.
+    final frozen = await freezeAnimations();
     if (minWaitMs > 0) await Future.delayed(Duration(milliseconds: minWaitMs));
     final first = await settleUntilStable(
       pollMs: pollMs,
@@ -832,7 +843,12 @@ class CdpSession {
       minWaitMs: 0,
       fullPage: fullPage,
     );
-    final frozen = await freezeAnimations();
+    // The second pass catches what STARTED during the floor — a transition
+    // fired by late-arriving data. Non-zero here is the interesting case, and
+    // it is reported separately rather than summed: adding them would hide
+    // which pass did the work, and "18 frozen at load" and "18 that appeared
+    // mid-settle" are different pages with different problems.
+    final frozenLate = await freezeAnimations();
     final second = await settleUntilStable(
       pollMs: pollMs,
       timeoutMs: timeoutMs ~/ 4,
@@ -871,6 +887,7 @@ class CdpSession {
       // 8000ms/120ms poll. That spread is why callers should report a
       // distribution and never a mean.
       screenshots: first.captures + second.captures,
+      frozenLate: frozenLate,
     );
   }
 
@@ -882,7 +899,7 @@ class CdpSession {
   /// [navigateAndSettle] on every still-image path; the motion verbs
   /// (`anim`, `record`, `flipbook`, `burst`, `states`) must NOT use it — they
   /// exist to observe animation, and this deliberately destroys it.
-  Future<({int elapsedMs, bool converged, Map<String, int> frozen, int screenshots})>
+  Future<({int elapsedMs, bool converged, Map<String, int> frozen, int screenshots, Map<String, int> frozenLate})>
       navigateAndSettleForCapture(
     String url, {
     int settleMs = 1500,

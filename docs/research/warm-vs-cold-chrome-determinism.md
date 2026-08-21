@@ -628,3 +628,168 @@ supportable.
   the right precaution — it just turned out not to be needed on these
   particular pages, and it would be needed on any page with animation.
 
+
+<!-- animated-pages-probe-section -->
+
+## Animated pages: the case the settle protocol exists for
+
+Every warm-Chrome result above this section was measured on pages where
+`freezeAnimations()` reported `{finite: 0, infinite: 0, smil: 0,
+videos: 0, committed: 0}` — the machinery under test did nothing. The lens
+exists to capture animated pages, so "a warm Chrome is safe to reuse" was
+proven only in the case where the protocol was not needed. This section
+closes that hole.
+
+There is a measured reason to expect a difference, from `cdp.dart:641-651`:
+an element that merely HAS an animation is promoted to its own compositor
+layer, and that layer rasters differently run to run — a page whose
+animation was provably pinned still gave 3 distinct images of 4, worst case
+13,345 pixels. Compositor promotion is exactly the GPU-side state a warm
+browser might reuse differently, and no earlier arm touched it.
+
+### Setup
+
+- Probe: `appboxd/tool/warm_anim_probe.dart`
+- Reproduce: `cd appboxd && dart run tool/warm_anim_probe.dart`
+- Source: `HEAD d8717759 | lib/cdp.dart clean at HEAD, sha256 2a8cd7c1fb4f88a4`
+- Chrome: `Chrome/151.0.7922.170`
+- Path: the real `navigateAndSettleForCapture`, reading its own
+  `screenshots` field (added in `d8717759`) — the replication harness the
+  settle-rate section needed is gone.
+- Pages: `anim-inf` (18 tiles, INFINITE gradient/transform/opacity
+  animations → freeze pauses and pins `currentTime = 0`); `anim-fin`
+  (24 cards, FINITE animations with `fill: both` holding non-default end
+  states → freeze calls `finish()`, then commits inline and de-promotes);
+  `control` (the animation-free static page, byte-identical to the one used
+  throughout this document).
+- Cold N: 10 per animated page, 5 for the control.
+  Ten rather than five on the animated pages because the prior evidence was
+  3-of-4 distinct; at N=5 an intermittent fault could show 1 distinct by
+  luck, certify cold as stable, and make the warm arm's divergences look
+  like warmth.
+- Warm arm: 180 captures, one browser, one tab, three pages rotated.
+  **Depth reached: 180 in 07m05s.**
+
+The control's freeze-path hash was checked against `5f46dca47862`, the
+hash the static page has produced on the plain-settle path through five
+prior runs in this document: **MATCH** — the apparatus here is consistent with everything above.
+
+### Q1 — does the freeze stay effective across a long warm session?
+
+**`settleForCapture`'s `frozen` map cannot answer this, and using it
+would have produced a false alarm.** The sequence is freeze -> floor ->
+loop -> freeze -> loop, and the record returns the SECOND freeze
+(`cdp.dart:835`). The first freeze has already written
+`animation: none !important` onto every animated element, so the second
+finds nothing left. Measured directly on these pages:
+
+```
+/anim-infinite   getAnimations()=18   1st {infinite:18, committed:18}   2nd all 0
+/anim-finite     getAnimations()=24   1st {finite:24,   committed:24}   2nd all 0
+/static-control  getAnimations()=0    1st all 0                         2nd all 0
+```
+
+So `frozen['committed'] > 0` is FALSE on every correctly-frozen page —
+the assertion would fail exactly when the freeze is working. The field
+reads zero whether the freeze did everything or nothing: its "all fine"
+value equals its "did not run" value, which is the shape this document
+exists to avoid. `freezeAnimations` documents that a caller seeing
+`{finite: 0, infinite: 0}` on a page it believes is animated "has learned
+something"; routed through `settleForCapture` every caller sees that
+always, so the diagnostic is silently destroyed.
+
+Q1 is therefore answered two ways, neither using `frozen`.
+
+**(a) Every capture, on the real path** — after the settle, count live
+animations. The freeze drops the `animation` property, so this must be 0;
+if the freeze ever stops working, live animations remain.
+
+```
+page      n     liveAfter distribution                  freeze-lost
+anim-inf  60    min 0, median 0, max 0, n=60            0
+anim-fin  60    min 0, median 0, max 0, n=60            0
+control   60    min 0, median 0, max 0, n=60            0
+```
+
+**(b) Periodically, by hand** — navigate fresh, count animations BEFORE
+any freeze, then call `freezeAnimations()` directly to read the FIRST
+pass. (a) catches the freeze failing; (b) catches the PAGE failing, which
+(a) would pass trivially since a page that stopped animating also leaves
+zero live animations.
+
+```
+page      preAnims (before freeze)          firstFreezeCommitted
+anim-inf  min 18, median 18, max 18, n=2    min 18, median 18, max 18, n=2
+anim-fin  min 24, median 24, max 24, n=3    min 24, median 24, max 24, n=3
+control   min 0, median 0, max 0, n=3       min 0, median 0, max 0, n=3
+```
+
+**The freeze kept working for the whole arm.** Zero live animations after every settle, and the periodic probe kept finding live animations to freeze and committing them — so the pages never went inert either.
+
+### Q2 — do animated pages stay byte-identical warm vs cold?
+
+```
+page      cold                    n     match  diverge  notConv  shape
+anim-inf  stable (10 passes)      60    60     0        0        no divergence
+anim-fin  stable (10 passes)      60    60     0        0        no divergence
+control   stable (5 passes)       60    60     0        0        no divergence
+```
+
+**No drift.** Every page that could reproduce itself cold also matched
+that cold baseline from a warm browser, for all 180 captures — the
+animated pages included. The compositor-promotion effect quoted above
+does not, on this evidence, survive the freeze's de-promotion pass, and
+reusing a warm browser does not reintroduce it.
+
+### Q3 — memory with the freeze doing real work
+
+```
+i      elapsed  browserRSS  summedRSS*  ps-procs  cdp-procs
+0      00m03s   235MB       1444MB      11        11
+10     00m26s   300MB       2060MB      15        15
+20     00m49s   300MB       1814MB      13        13
+30     01m13s   308MB       1827MB      13        13
+40     01m37s   320MB       1849MB      13        13
+50     02m00s   320MB       1840MB      13        13
+60     02m24s   320MB       1849MB      13        13
+70     02m48s   320MB       1854MB      13        13
+80     03m11s   320MB       1846MB      13        13
+90     03m35s   320MB       1846MB      13        13
+100    03m58s   324MB       1862MB      13        13
+110    04m22s   324MB       1848MB      13        13
+120    04m46s   324MB       1857MB      13        13
+130    05m09s   324MB       1860MB      13        13
+140    05m33s   324MB       1853MB      13        13
+150    05m57s   324MB       1854MB      13        13
+160    06m20s   324MB       1865MB      13        13
+170    06m44s   324MB       1850MB      13        13
+180    07m05s   324MB       1852MB      13        13
+```
+
+`* summedRSS` double-counts shared pages — upper bound, not a measurement.
+
+MEMORY: FLAT AND STABLE at the real screenshot rate (whole steady segment inside a 4MB band vs a 6MB noise threshold)
+  steady range 320MB-324MB (band 4MB, noise threshold 6MB), 15 samples
+  max sustained rise 4MB  <- THE growth number: the largest increase from any earlier sample to any later one, which answers "does it grow" without assuming the curve is a line
+  (fitted slope +7.71 MB per 1000 screenshots — shown for completeness only. DO NOT QUOTE IT as the growth number: in this design the growth test is the max sustained rise above, and a fitted slope has misread every real curve shape encountered here.)
+  peak browserRSS 324MB over ~900 screenshots in 07m05s
+  RECYCLE: memory does not require one. At ~5 screenshots per capture, this arm drove ~900 screenshots and the largest sustained rise anywhere in the steady segment was 4MB — below the 6MB noise threshold, so no growth. The daemon-convertible figure is ~900 SCREENSHOTS verified flat; a workload with a different shots-per-capture converts through it, which is why it is reported in that unit. Do NOT read "180 captures" as a ceiling — that is only how far THIS arm ran. On the capture axis the Depth section above verified 700 captures drift-free and growth-free, which is the stronger capture-axis result. Neither arm found a ceiling: the binding limit is whichever axis a real workload reaches first, and no upper bound was observed on either.
+
+Same max-sustained-rise test and same classifier as the settle-rate
+section, which was validated against both real curves and a synthetic
+growing curve before its negative result was accepted.
+
+Screenshots per capture here: min 5, median 5, max 5, n=180
+(read from `settleForCapture.screenshots`, +1 for the caller's own final
+`screenshot()`).
+
+### Limits
+
+- Depth reached: **180 captures in 07m05s**. Nothing is claimed beyond it.
+- Two animated page kinds, not an exhaustive set. GIF and APNG have no
+  pause API at all — `cdp.dart` says so and Playwright has the same hole —
+  so they are outside both the freeze and this measurement.
+- Cross-origin iframes and `<video>` are likewise untested here.
+- Same fixed conditions as the rest of this document: this Chrome build,
+  1280x800 @ dsf 1, headless=new, machine otherwise quiet.
+
