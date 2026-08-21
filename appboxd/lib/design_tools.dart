@@ -1204,16 +1204,34 @@ const vendorPatches = [
         'farRadius(){return this.boundingSphere.radius*(null!=this.groundedSkybox.parent?10:1)}',
     replace:
         'farRadius(){return this.boundingSphere.radius*(null!=this.groundedSkybox.parent?10:60)}',
-    why: 'Found uncommitted in the working tree on 2026-08-21 and preserved '
-        'rather than discarded. It was not authored in that session and the 3D '
-        'rendering effect was NOT re-verified there — this entry records what '
-        'the change does, not a confirmation that it is the right value.\n'
+    why: '**This patch is verified and the verification says to REVERT it.** '
+        'Kept only because someone applied it deliberately and may have been '
+        'looking at a scene the probe cannot construct. Full evidence: '
+        '`docs/research/model-viewer-far-plane-verification.md`; reproduce '
+        'with `cd appboxd && dart run tool/model_viewer_farplane_probe.dart`.'
         '\n'
-        "`farRadius` feeds the camera's far clipping plane. With no grounded "
-        "skybox upstream uses **1×** the model's bounding-sphere radius, which "
-        'puts the far plane barely past the model itself; `60×` pushes it out. '
-        'The symptom this addresses is model or environment geometry vanishing '
-        'when no grounded skybox is set.',
+        '\n'
+        'Found uncommitted in the working tree on 2026-08-21 and preserved '
+        'rather than discarded; not authored in that session. The recorded '
+        "rationale was that upstream's 1× multiplier puts the camera's far "
+        'clipping plane barely past the model, and that geometry vanishes '
+        'without a grounded skybox.\n'
+        '\n'
+        'That cannot happen. The value is consumed as '
+        '`far = 2 × max(farRadius(), maximumRadius)`, where `maximumRadius` is '
+        'the `max-camera-orbit` limit — so with `d ≤ M` enforced by '
+        '`camera-controls`, the furthest model geometry at `d + r` is always '
+        'within `2·max(r, M)` for either multiplier. Model geometry is never '
+        'clipped by this number, under 1× or 60×.\n'
+        '\n'
+        'Measured on `boombox.glb` across eight camera regimes: seven differ '
+        'by 0–7 pixels of 152,100 (depth noise, same picture). The eighth — '
+        '`max-camera-orbit` held near the bounding radius, the only regime '
+        'where `farRadius` wins the `max()` — differs by 3,561 pixels, and '
+        'there the PATCHED arm is the worse one: a dark seam cuts through the '
+        "boombox's carry handle and the antenna breaks into dashes. Stretching "
+        'the far plane 60× spends depth precision, and thin geometry pays '
+        'first.',
   ),
 ];
 
