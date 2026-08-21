@@ -63,6 +63,10 @@ const int kH = 800;
 const int kSettleMs = 1500; // identical in EVERY arm — an asymmetric settle
 // would manufacture the exact drift under test.
 
+/// Everything from here down in the report belongs to `warm_depth_probe.dart`.
+/// Both probes write one document, so each must preserve the other's half.
+const String kDepthMarker = '<!-- depth-probe-section -->';
+
 const kPages = <String, String>{
   'text': '/text', // font-shaping cache
   'css': '/css', // GPU raster + shader cache
@@ -646,11 +650,24 @@ Future<int> run() async {
     await server.close(force: true);
     final aborted = reportFile();
     await aborted.parent.create(recursive: true);
+    // Carry the depth section here too. Without it, an abort on this path would
+    // overwrite the whole document with a stub and destroy warm_depth_probe's
+    // measurement — which costs 25 minutes to produce and, since this file is
+    // untracked, has no git copy to recover from. A failure in THIS probe must
+    // never delete a different probe's result.
+    var keep = '';
+    if (aborted.existsSync()) {
+      final existing = await aborted.readAsString();
+      final at = existing.indexOf(kDepthMarker);
+      if (at >= 0) keep = '\n${existing.substring(at)}';
+    }
     await aborted.writeAsString('# Warm vs cold Chrome determinism\n\n'
         '## VERDICT\n\nINVALID — the negative controls failed, so the '
         'instrument could not see a difference it was designed to see. '
-        'Nothing about warm vs cold was measured.\n\n```\n'
-        '${_out.toString().trimRight()}\n```\n');
+        'Nothing about warm vs cold was measured. (Any "Depth" section below '
+        'is a SEPARATE measurement by warm_depth_probe.dart and is '
+        'unaffected by this failure.)\n\n```\n'
+        '${_out.toString().trimRight()}\n```\n$keep');
     return 3;
   }
 
@@ -760,15 +777,16 @@ Future<int> run() async {
         'comparison, on the conditions actually held fixed by this run: the '
         'same Chrome build ($chromeVersion), the same viewport (${kW}x$kH @ '
         'dsf 1, headless=new), the same fixed ${kSettleMs}ms settle in every '
-        'capture, and a warm window only as deep as this probe drove it — '
+        'capture, and a warm window only as deep as THIS probe drove it — '
         '${kN * kPages.length} captures over ~${warmSecs}s per warm arm. Those '
-        'four were controlled, not proven invariant. In particular the depth '
-        'condition is the one a daemon will exceed first: a daemon holds Chrome '
-        'for hours across hundreds of pages, and this run does NOT extend to '
-        'that. Pin the build, viewport and settle; re-run this probe on a '
-        'Chrome upgrade; and if the daemon is to be long-lived, extend kN '
-        'until the warm window matches the intended session length before '
-        'trusting reuse at that depth.';
+        'four were controlled, not proven invariant. Pin the build, viewport '
+        'and settle, and re-run this probe on a Chrome upgrade.\n\n'
+        'The depth condition is NOT limited to the ${kN * kPages.length} '
+        'captures above: it was measured separately and much deeper by '
+        '`warm_depth_probe.dart`. See the "Depth" section further down this '
+        'document for the depth actually verified, the drift-onset result, the '
+        'memory curve and the recycle policy — that section, not this '
+        'paragraph, is the authority on how long one warm Chrome may be reused.';
   } else {
     verdict = 'NO — warm output drifts from cold. Drift detail:\n  - '
         '${drifts.join("\n  - ")}';
@@ -781,6 +799,15 @@ Future<int> run() async {
   // ── durable report ─────────────────────────────────────────────────────
   final doc = reportFile();
   await doc.parent.create(recursive: true);
+  // warm_depth_probe.dart owns everything below kDepthMarker in this same
+  // document (one file holds the whole warm-Chrome answer). Preserve it, or a
+  // re-run here would silently delete a 25-minute measurement.
+  var carried = '';
+  if (doc.existsSync()) {
+    final existing = await doc.readAsString();
+    final at = existing.indexOf(kDepthMarker);
+    if (at >= 0) carried = '\n${existing.substring(at)}';
+  }
   await doc.writeAsString('''
 # Warm vs cold Chrome determinism
 
@@ -815,6 +842,13 @@ its own pages from an in-process `HttpServer` on 127.0.0.1 — no network).
 - Viewport: ${kW}x$kH, deviceScaleFactor 1, `--headless=new`
 - Settle: ${kSettleMs}ms, identical in every arm
 - N: $kN samples per page per arm
+- Machine state: no other Chrome work was running. For the deep run in the
+  "Depth" section the team lead deliberately held off launching any captures,
+  so both measurements were taken on an otherwise-quiet machine. This matters:
+  CPU and GPU contention from a second browser is exactly the kind of thing that
+  could manufacture a spurious "drift", and a determinism claim measured under
+  unknown contention would be much weaker than one measured under known-quiet
+  conditions.
 - Page kinds:
   - `text` — 60 blocks across 6 web-safe families x 10 sizes x 6 weights,
     varying letter-spacing (exercises the font-shaping cache)
@@ -862,6 +896,45 @@ play, and "css identical" would prove nothing about it.
 ${_out.toString().trimRight()}
 ```
 
+## Operational hazards for a warm-Chrome daemon
+
+Found the hard way while running these probes, not derived from theory. All
+three bite a daemon specifically, because a daemon holds ONE browser for hours.
+
+**1. The `appbox-cdp-` profile prefix is shared by every launch.**
+`CdpClient.launch()` creates its profile with
+`Directory.systemTemp.createTemp('appbox-cdp-')`, so every Chrome any code in
+this repo starts carries that prefix. A `pkill -f "appbox-cdp-"` therefore kills
+*every* such Chrome on the machine at once — a daemon's long-lived browser
+included, and any colleague's capture along with it. This was done for real
+during this work while reaping a killed probe's orphans, and it could have taken
+out another worker's session.
+
+**2. The correct reap is an ownership check, not a prefix match.**
+`cdp.dart`'s `_pidsOwningProfile(dir, browserOnly: true)` matches on the exact
+`--user-data-dir=<dir>` and guards the boundary explicitly — its comment reads
+"Whole dir, not a prefix: `appbox-cdp-AB` must not claim `…-ABC`'s pid", so
+someone has already been bitten by this class of bug. A daemon reaping orphans
+at startup must ask *who owns this specific dir* and kill only those pids; a
+profile dir with no owning pid is a genuine orphan and its directory can be
+deleted on its own. `CdpClient` exposes `userDataDir` and `chromePid` for
+exactly this purpose.
+
+**3. A SIGKILLed run can never clean up after itself, so something else must.**
+`close()` is what awaits profile release and deletes the dir; a hard kill skips
+it entirely, leaving both a live browser and its profile behind. Orphan reaping
+on daemon startup is therefore not optional — and it must be the scoped kind
+from point 2, or the daemon's own cleanup becomes the thing that kills its
+neighbours.
+
+**4. Nothing tells a daemon its browser died.**
+CDP has no event for full browser death — `Target.targetCrashed` covers
+renderers only. The sole liveness signal is the transport: a closed WebSocket,
+or a `Browser.getVersion` round-trip that throws. A daemon must treat socket
+closure as browser death and relaunch, rather than assuming a browser it has not
+heard from is still there. This probe uses exactly that round-trip as its
+liveness check for the same reason.
+
 ## Notes and limits
 
 - Distinct counts are computed by exact byte equality over the samples, not by
@@ -889,18 +962,24 @@ ${_out.toString().trimRight()}
   GPU-level cache reuse (font shaping, raster, shader), not same-document state
   carryover. A daemon that reuses a live document rather than re-navigating is
   not covered by this result.
-- Warm-window depth is a condition, not a proven invariant. Each warm arm ran
-  ${kN * kPages.length} captures over roughly half a minute. A real daemon holds
-  Chrome for hours across hundreds of distinct pages; nothing here speaks to
-  drift at that depth. Raise `kN` until the warm window matches the intended
-  session length before relying on reuse for a long-lived daemon.
+- Warm-window depth is a condition, not a proven invariant *for this probe*:
+  each warm arm here ran only ${kN * kPages.length} captures over roughly half a
+  minute. Depth is answered by `warm_depth_probe.dart` in the "Depth" section
+  below, which drives one warm browser far deeper and reports drift onset and
+  the memory curve. Read that section for the depth actually verified; do not
+  read a depth limit out of this one.
 - What this probe does NOT cover: other viewports (only ${kW}x$kH), other device
   scale factors (only 1), `--visible` mode, `fullPage` captures, pages that load
   fonts or images over the network, and any Chrome build other than the one
   named above. A daemon reusing a warm browser should pin the viewport and
   settle it was measured at, and this file should be regenerated after a Chrome
   upgrade.
-''');
+- The newer `cdp.dart` settle helpers (`freezeAnimations`, `settleUntilStable`,
+  `settleForCapture`, `navigateAndSettleForCapture`) are deliberately NOT used
+  here. This probe uses the plain fixed `navigateAndSettle(settleMs: $kSettleMs)`
+  so its runs stay comparable to each other; the variable under test is the
+  browser, not the settle. Their absence is a choice, not an oversight.
+$carried''');
   say('Report: ${doc.path}');
   return allHealthy && machineStable && warmEqualsCold ? 0 : 1;
 }
