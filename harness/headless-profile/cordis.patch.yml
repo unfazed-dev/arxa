@@ -1,0 +1,13 @@
+# Template: ~/.dsh/profiles/headless/cordis.patch.yml
+# Wires the appbox external gate into every headless tool call.
+# Install (the harness config is operator-owned, so copy it yourself):
+#   cp harness/headless-profile/cordis.patch.yml ~/.dsh/profiles/headless/
+# The plugin loads by absolute path because the profile declares no npm
+# dependency on it (template: harness/README.md:102-109).
+- insert:
+  - id: appbox-gate
+    name: /Volumes/developer_ssd/Developer/totem_labs/app-box/harness/dsh-external-gate/index.mjs
+    config:
+      command: /Volumes/developer_ssd/Developer/totem_labs/app-box/harness/verdict.sh
+      tools: [Write, Edit, MultiEdit, Bash]
+      timeoutMs: 5000

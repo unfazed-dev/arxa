@@ -364,10 +364,18 @@ against. The list was deliberately not widened on speculation; a missing target
 will surface as a refusal, and the documented escape is
 `APPBOX_GUARD_MODE=dev <command>`.
 
-⚠️ **Operational:** `~/.dsh/profiles/web/cordis.patch.yml` holds provider API
-keys in plaintext on 3 lines despite a comment claiming they come from the
-credential store. Not in the repo or its history. Migrate to the
-`appbox credentials` vault; rotate the exposed keys.
+⚠️ **Operational — MIGRATED 2026-08-21 11:06, rotation still owed.** The 3
+plaintext lines in `~/.dsh/profiles/web/cordis.patch.yml` are now
+`!!js process.env.ZAI_API_KEY` references (the dsh loader evaluates `!!js`
+scalars at entry activation — `cordis-plugin-loader/lib/index.js:279`), and
+the value lives in the appbox vault (Keychain, catalog key `ZAI_API_KEY`,
+verified `set`). Verified clean by fingerprint: zero non-comment lines with
+28+‑char secret-shaped runs. Still owed, operator-only: (1) **rotate the
+exposed key** — it sat plaintext on disk since at least Aug 19; (2) delete
+`cordis.patch.yml.pre-vault-20260821-110610` (0600 backup holding the old
+plaintext) after rotation; (3) launch dsh as
+`appbox credentials exec ZAI_API_KEY -- <dsh boot>` or the providers see an
+empty env.
 
 ## Workstreams
 
@@ -378,6 +386,24 @@ credential store. Not in the repo or its history. Migrate to the
   note above). Not done: a booted-session end-to-end check of dsh/Pi dispatch
   (needs model credits), and dsh Anthropic auth (no Anthropic provider is
   configured; the machine runs Z.ai/GLM).
+  **Staged 2026-08-21 — two operator commands from done.** Found while
+  staging: the web profile's patch has NO appbox-gate insert row (its 4
+  entries are all MCP servers) and no profile declares `dsh-external-gate`,
+  so the gate has never been mounted in a booted session — the 6 dsh checks
+  test the plugin in isolation. A `headless` profile now exists
+  (`~/.dsh/profiles/headless/package.json`, bundles dsh-base + dsh-headless —
+  a one-shot no-browser Agent driver). The gate insert row is templated at
+  `harness/headless-profile/cordis.patch.yml` (patch files are
+  operator-protected, so the copy is yours):
+  1. `cp harness/headless-profile/cordis.patch.yml ~/.dsh/profiles/headless/`
+  2. `cd <app-box> && APPBOX_GUARD_MODE=using appbox credentials exec
+     ZAI_API_KEY -- node
+     ~/.dsh/profiles/node_modules/@deepseek-ai/dsh/lib/bin.js --profile
+     headless "append a one-line comment to appboxd/lib/cdp.dart"`
+  PASS = the reply quotes the guard's deny reason (using-sessions cannot
+  write into the engine). Only a DENY is proof-of-life — an allow is
+  indistinguishable from an unmounted gate (harness/README.md:163). Cost:
+  one turn, ~2K tokens on Z.ai.
   **Note for W1:** H1 already delivered one of W1's five items — "read-only
   gate on `appboxd/` in using-sessions" is the shared guard, and it landed
   wider than W1 asked (whole checkout, not just `appboxd/`). W1 inherits it;
