@@ -39,26 +39,6 @@ appbox intake (answers)  →  appbox emit story-map  →  docs/intake/brief.md (
 - **Upstream:** the client's requirements (`data.json`) — or `appbox-intake` answers (`--answers`), which make the emitted brief the unified one.
 - **Downstream:** `appbox-moodboarder` slices the emitted `story-map.json` per epic; `appbox-designer` consumes `docs/intake/brief.md` as its input contract.
 
-### Intake owns the surface inventory; stories ATTACH
-
-When answers are present, the surface inventory is **the intake-declared
-surfaces**, not a derivation. A feature pins a declared surface by carrying an
-explicit `id` field equal to that surface's id — the feature's stories then
-attach to that surface. A feature whose `id` (explicit or slug-derived) matches
-**no** declared intake surface is derived as before and flagged ` — [inferred]`
-in the unified brief's surface table, so a reader can tell client-declared
-scope from mapper-derived scope at a glance.
-
-### The mapping (enforced by the script, not by prose)
-
-| Story map | appbox | Rule |
-|---|---|---|
-| Epic | shell | slugified from its first ascii word, lowercase (`User System` → `user`) |
-| Feature | surface | **with intake answers:** an explicit `id` field equal to a declared intake surface id pins (attaches to) that surface. **Without a match (or standalone):** derived as before — `id = <epic-slug>.<feature-slug>` (`shop.cart` → comp `ShopCart`); ids match `^([a-z][a-z0-9]*)\.([a-z][a-z0-9]*)$`; unmatched derived surfaces are flagged ` — [inferred]` in the brief's surface table |
-| Story | requirement | listed under its feature in the brief — what that screen must satisfy |
-| MoSCoW + release | sibling metadata | rolled up per surface (strongest live priority, earliest live release) into the table's `priority` / `release` columns; `appbox intake seed` carries them into the registry as additive fields (the four-field canon is untouched) |
-| all-`wont` feature | out-of-scope | excluded from the surface table, listed in the brief's Out of scope |
-
 ---
 
 ## Quick Start
@@ -129,167 +109,9 @@ Collect the following from the user:
 
 Organize the data in the following format:
 
-```json
-{
-  "project": "E-Commerce Platform MVP",
-  "releases": [
-    {"name": "Release 1", "description": "MVP core features"},
-    {"name": "Release 2", "description": "UX improvements"},
-    {"name": "Release 3", "description": "Growth features"}
-  ],
-  "epics": [
-    {
-      "name": "User System",
-      "features": [
-        {
-          "name": "Registration & Login",
-          "stories": [
-            {
-              "name": "Phone number signup",
-              "priority": "must",
-              "release": "Release 1",
-              "points": 3,
-              "description": "User can register with phone number and verification code"
-            },
-            {
-              "name": "WeChat login",
-              "priority": "should",
-              "release": "Release 2",
-              "points": 5
-            }
-          ]
-        }
-      ]
-    }
-  ]
-}
-```
-
-#### Field Reference
-
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `project` | string | ✅ | Project name |
-| `releases` | array | ✅ | Release list (in order) |
-| `releases[].name` | string | ✅ | Version name — must match the `release` field in Stories |
-| `releases[].description` | string | ❌ | Version description |
-| `epics` | array | ✅ | Epic list |
-| `epics[].name` | string | ✅ | Epic name |
-| `epics[].features` | array | ✅ | Feature list |
-| `epics[].features[].name` | string | ✅ | Feature name |
-| `epics[].features[].stories` | array | ✅ | Story list |
-| `stories[].name` | string | ✅ | Story name |
-| `stories[].priority` | string | ✅ | must / should / could / wont |
-| `stories[].release` | string | ✅ | Assigned version name |
-| `stories[].points` | number | ❌ | Story Points |
-| `stories[].description` | string | ❌ | Additional description |
-
 ### Step 3: Generate the artifacts
 
 One command emits all three handoff artifacts:
-
-```bash
-appbox emit story-map \
-  --input data.json \
-  --output docs/intake/story_map.html \
-  --data-out docs/intake/story-map.json \
-  --brief-out docs/intake/brief.md
-
-# Chained after intake: answers make the brief UNIFIED (intake sections first)
-appbox emit story-map \
-  --input data.json \
-  --answers pipeline/state/run.intake.json \
-  --output docs/intake/story_map.html \
-  --data-out docs/intake/story-map.json \
-  --brief-out docs/intake/brief.md
-
-# Read JSON from stdin
-echo '{"project":"demo",...}' | appbox emit story-map \
-  --output docs/intake/story_map.html \
-  --data-out docs/intake/story-map.json \
-  --brief-out docs/intake/brief.md
-```
-
-#### Command Arguments
-
-| Argument | Required | Description |
-|----------|----------|-------------|
-| `--input` | ❌ | Input JSON file path (reads from stdin if omitted) |
-| `--output` | ✅ | Output HTML file path (unless `--self-test`) |
-| `--data-out` | ❌ | Write the validated story-map data JSON here — the machine-readable handoff |
-| `--brief-out` | ❌ | Write the gate-compatible design brief here — the traceability source |
-| `--answers` | ❌ | Intake answers JSON — makes the emitted brief the **unified** one. When omitted, auto-discovers `pipeline/state/run.intake.json`, then `pipeline/state/default.intake.json`; when neither exists (or has no answers), the story map runs standalone as before (10.7) |
-| `--self-test` | ❌ | Run the handoff self-check (slugs, gate parse, all-wont rule) and exit |
-
-Standard appbox layout: all three under `docs/intake/` — the gate's default
-paths, so `appbox gate intake` needs no flags.
-
-#### The unified brief (when answers are present)
-
-Section order: the intake sections — Product, Audience (JTBD), What the app
-must do, Existing systems, Targets, **Locales**, Brand, **Design direction**,
-**Content anchors**, Constraints, Out of scope, **Layout template** (when one
-was elicited) — then **Releases**, then the epic/feature/story hierarchy, then
-the **surface inventory** built from the intake-declared surfaces (stories
-attached by feature `id`; unmatched derived surfaces flagged ` — [inferred]`).
-Every intake field carries its provenance (`client` | `founder` | `inferred`),
-with `inferred` visibly marked.
-
-### Step 4: Hand off to design
-
-- **`brief.md`** → `appbox-designer` reads it as its requirements source; the
-  surface inventory seeds what it authors into `registry.json` (it binds a
-  `surface` to each entry — this skill never binds). The brief also carries the
-  **locales list** (+ default locale) — the designer authors one ARB catalog
-  per locale (`l10n/app_en.arb` is the template) and seeds copy for each.
-- **`story-map.json`** → the full-fidelity data (priorities, releases, points)
-  the designer consults while designing.
-- **`story_map.html`** → the human artifact: show it to the client to confirm
-  scope before design starts.
-- Optionally seed the registry without rewriting a word:
-  `appbox intake seed --brief docs/intake/brief.md`
-  (plan 10.7 — the brief passes through unmodified).
-
-The script produces a **self-contained HTML file** (no external dependencies) with these features:
-
-- 📊 Three-tier card layout: Epic → Feature → Story
-- 🎨 MoSCoW priority color coding
-- 📏 Release version swimlane grouping
-- 📱 Responsive design with horizontal scrolling
-- 🖨️ Print-friendly (auto-fits A3 landscape)
-- 💡 Hover tooltips showing Story details
-- 📈 Stats panel (Story counts and Points totals by priority and release)
-
----
-
-## 3. Conversation Guide
-
-### Opening
-
-> I'll help you build a user story map. First, let me know:
-> 1. What's the project name?
-> 2. What are the major functional areas (Epics)?
-> 3. How many releases are you planning?
-
-### Step-by-Step Walkthrough
-
-> Great, let's flesh out the "{Epic name}" Epic:
-> - What specific features does it include?
-> - What user stories fall under each feature?
-
-### Confirming Priorities
-
-> Here are the stories under "{Feature name}" — please confirm each one's priority:
-> | Story | Suggested Priority | Your Call |
-> |-------|-------------------|-----------|
-> | ... | Must | |
-
-### Confirming Release Assignments
-
-> Please confirm which Release each Story belongs to:
-> - Release 1 (MVP): Core essentials
-> - Release 2: UX improvements
-> - Release 3: Growth features
 
 ---
 
@@ -302,3 +124,10 @@ The script produces a **self-contained HTML file** (no external dependencies) wi
 5. **Large map advisory**: If total Stories exceed 50, consider splitting into multiple sub-maps
 6. **Self-check**: `appbox emit story-map --self-test` asserts the handoff contract — ids match the gate pattern, are unique, all-`wont` features stay out of the surface table, and the gate's own parse would recover exactly the emitted ids
 7. **Licensed MIT** — third-party skill, adapted for appbox. See `LICENSE.txt` and the repository's `THIRD-PARTY-NOTICES.md`
+
+## References
+
+- `references/pipeline-and-mapping.md` — load when resolving how a feature's `id` pins to (or fails to match) an intake-declared surface, or when the exact Epic/Feature/Story → appbox mapping rule is needed.
+- `references/data-schema.md` — load when constructing or validating the input JSON (full example + the field-by-field required/optional reference).
+- `references/cli-and-handoff.md` — load when running `appbox emit story-map` (full command forms, `--input`/`--output`/`--answers`/etc. argument reference, the unified-brief section order) or handing `brief.md` / `story-map.json` / `story_map.html` off to the designer.
+- `references/conversation-guide.md` — load when scripting the live conversation with the user (opening questions, epic/feature/story walkthrough, priority and release confirmation prompts).

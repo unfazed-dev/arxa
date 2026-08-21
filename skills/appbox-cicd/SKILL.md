@@ -80,162 +80,12 @@ Drift found → report + fix-list. Adopt the record too: decisions belong in
 if absent) — an existing `ci-decisions.md`/`ci-setup.md` or similar gets
 moved into `docs/ci/` (references updated) or folded in, never duplicated. Then run the PR sweep (step 7).
 
-### 1. Grill the decisions (ask_user_question / grill, ONE at a time)
-
-Each question carries a recommendation + tradeoff. The decision tree, in
-dependency order — every later answer depends on earlier ones:
-
-1. **Deliverable** — what does this repo ship? (marketing site / app / ops
-   tool / docs-only; determines whether gates are code gates or doc gates)
-2. **Repo shape** — monorepo vs per-deliverable; if monorepo, business-domain
-   top-level dirs (no `apps/` cargo-cult unless the client wants it).
-3. **Stack** — for appbox-built targets: designer artifact (htmx+Dart) vs
-   Flutter; for foreign stacks, whatever they use. The stack picks the gate
-   commands, runner OS, and caching.
-4. **Hosting & visibility** — where, and **private vs public**. Self-hosted
-   runners are ONLY safe on private repos ("a stranger's PR would run
-   arbitrary code on your machine" — the t3ci CI analysis, finding 03; external
-   engagement notes, not a repo path). Public → GitHub-hosted,
-   full stop.
-5. **Runner** — self-hosted Mac (zero minutes, warm caches, real macOS;
-   cost: CI queues when the machine sleeps) vs ubuntu-latest vs hybrid.
-6. **Day-one gates** — lean: analyze + test + commit-convention, behind ONE
-   root command (`scripts/check.sh`). Every job gets `timeout-minutes`
-   and the workflow gets concurrency cancel-in-progress (the two gaps the
-   t3ci analysis found in the app-box workflow). Commit convention REQUIRED
-   from day one when the repo has no legacy commits — advisory only when
-   measured history excuses it.
-7. **Trunk & protection** — rename master→main before first push (free at 0
-   commits); required checks = the real job names; `strict: true`; reviews
-   only when a team exists; forbid force-push/delete.
-8. **Agent letter** — AGENTS.md adapted to THIS repo (mandates = the check
-   script + conventions; blast radius = real production targets);
-   CLAUDE.md as pointer; file-pr/babysit-pr rewritten to this repo's check
-   names; model-routing table EMPTY until the project's own audit fills it.
-9. **CD timing** — defer deploy automation until a deployable artifact +
-   target exist; when wired, the deploy job PREPARES and HALTS at the
-   approval gate (it can never mint the token).
-
-Record every answer in `docs/ci/decisions.md` — inside the organized
-`docs/ci/` folder, created first if the repo has no `docs/` yet. The table
-IS the shared understanding; confirm it before generating anything.
-
-### 2. Generate the check contract
-
-```sh
-scripts/check.sh            # everything — this is what CI runs, verbatim
-scripts/check.sh <area>     # one area (landing, commits, …)
-```
-
-Rules: fvm PATH injection when present; graceful skip when an area has no
-code yet ("green by absence" — never red on an empty repo); conventional-
-commit subject check with explicit bad-subject output. For appbox-built
-targets the area's gates are `dart run appboxd/bin/appbox.dart gate --all` (or the
-project-applicable subset) — the script wraps, never replaces.
-
-### 3. Generate the workflow
-
-Self-hosted shape (private repos):
-
-```yaml
-on:
-  push: { branches: [main] }
-  pull_request:
-concurrency:
-  group: ci-${{ github.ref }}
-  cancel-in-progress: true
-jobs:
-  <area>:                          # ONE job per area — the playbook law
-    runs-on: [self-hosted, macOS, ARM64]   # labels from runner setup
-    timeout-minutes: 15                     # ALWAYS — no job without one
-    steps:
-      - uses: actions/checkout@v4
-      - run: scripts/check.sh <area>
-```
-
-Never one `gates` job running bare `scripts/check.sh` — job-per-area is
-what makes required-check contexts and PR-check granularity work.
-
-Then emit `docs/ci/explainer.html` (same organized folder): copy
-[`references/ci-explainer.html`](references/ci-explainer.html), fill every
-`{{TOKEN}}` from `docs/ci/decisions.md` and the workflow just generated —
-BOTH versions, every time: the plain version is written for someone who
-has never opened a terminal (lead with the human consequence; translate,
-don't transplant config), the technical version keeps full fidelity.
-The plain version is the default view; the toggle is a native checkbox —
-zero JavaScript. docs/ci/decisions.md stays the SSOT — a decision not in the
-record never appears on the page (either version); regenerate the page
-whenever a decision or job changes (adopt mode emits it too, from the
-audited state).
-
-GitHub-hosted shape (public repos, or no always-on machine): same skeleton,
-`runs-on: ubuntu-latest`, plus explicit setup actions + caching for the
-stack's package manager. Commit-convention job uses `fetch-depth: 0` and
-checks `origin/main..HEAD` on PRs, `HEAD` on pushes.
-
-### 4. Runner + protection (run after first green)
-
-Per-repo runner registration (`~/actions-runner-<repo>` — never share one
-registration across repos), `svc.sh` service, labels `macOS,ARM64`. Then:
-
-```sh
-gh api repos/<owner>/<repo>/branches/main/protection --method PUT \
-  -H "Accept: application/vnd.github+json" --input - <<'JSON'
-{
-  "required_status_checks": { "strict": true, "contexts": ["<job names>"] },
-  "enforce_admins": false,
-  "required_pull_request_reviews": null,
-  "restrictions": null,
-  "allow_force_pushes": false,
-  "allow_deletions": false
-}
-JSON
-```
-
 ### 5. Verify, then hand off
 
 Watch the first run go green (`gh run watch`) BEFORE enabling protection.
 Then: agent work on the repo flows through builder → tester → reviewer;
 PRs flow through file-pr → babysit-pr; deploys halt at the deployer's
 approval gate. This skill's output is the pipeline they run inside.
-
-### 6. PR stage tagging (generate in bootstrap; wire in adopt)
-
-Every PR names its stage/agent, in title AND summary:
-
-- **Title:** `[abx-<skill-name>]` prefix — `[abx-designer][abx-scaffolder] home
-  shell`. Multiple tags = the stages touched; the FIRST is the primary stage.
-  Full skill names, no abbreviations: `abx-orchestrator, abx-intake,
-  abx-story-mapper, abx-moodboarder, abx-designer, abx-scaffolder,
-  abx-builder, abx-tester, abx-reviewer, abx-deployer, abx-lens, abx-lint,
-  abx-cicd`.
-- **Summary:** generate `.github/pull_request_template.md` with a
-  `Pipeline stage / agent:` field (the `[abx-…]` tag + the full skill name).
-- **Check:** a `pr-title` area in `check.sh` + the workflow validates the
-  prefix against the tag map. **Warn-not-fail at first** — print the expected
-tag and exit 0; flip to strict once the convention beds in. The flip is a
-recorded decision in `docs/ci/decisions.md`.
-- **One SSOT map** — the identical tag table is emitted into
-  `docs/ci/decisions.md`, the template footer, and the check’s allowlist;
-  never hand-maintain three lists.
-
-### 7. PR sweep (adopt mode; report-only)
-
-`gh pr list --json number,title,state,statusCheckRollup` → per PR: read
-title/body/diff; `gh pr checks`; when a check is RED, reproduce locally
-(`scripts/check.sh <area>`) to split CI-vs-local divergence. One feedback
-report to the operator, per PR:
-
-- **green** → merge-ready (required checks + protection already say so).
-- **red + local green** → CI divergence (flaky runner, cache, env) — never
-  “fix” code to match CI.
-- **red + local red** → real defect; name the owning stage skill (the
-  `[abx-…]` tag or the diff says which) and route it there.
-- **queued / not running** → the runner is asleep; wake it — a queued job
-  is NEVER fixed by changing code (babysit-pr owns this discipline).
-
-The sweep REPORTS; it never comments via bot, never merges, never pushes
-fixes — required checks already surface verdicts, and HUMAN GATES stand.
 
 ## The guardrail, as a test
 
@@ -262,3 +112,11 @@ fixes — required checks already surface verdicts, and HUMAN GATES stand.
   for lax commit subjects.
 - **CD wired before a target exists.** Deploy machinery with nowhere to
   deploy is overbuild; the scope ceiling applies to pipelines too.
+
+## References
+
+- [`references/decision-grill.md`](references/decision-grill.md) — step 1, the 9-question decision tree (deliverable, repo shape, stack, hosting/visibility, runner, day-one gates, trunk/protection, agent letter, CD timing). Load during bootstrap mode, before generating anything.
+- [`references/generation-templates.md`](references/generation-templates.md) — steps 2–4: the check-script rules, the self-hosted/GitHub-hosted workflow YAML + explainer.html emission, and the branch-protection `gh api` call. Load while generating bootstrap artifacts.
+- [`references/pr-process.md`](references/pr-process.md) — steps 6–7: PR stage tagging (`[abx-<skill-name>]` convention, template, SSOT tag map) and the adopt-mode PR sweep (report-only triage of green/CI-divergence/real-defect/runner-asleep). Load when wiring PR conventions or running an adopt-mode sweep.
+- [`references/ci-explainer.html`](references/ci-explainer.html) — the zero-JS dual-reading HTML template filled by step 3. Load when generating or regenerating `docs/ci/explainer.html`.
+- [`CICD_playbook.mdx`](CICD_playbook.mdx) — the folded canon for this phase; consult for deeper background beyond this skill's law.

@@ -586,6 +586,17 @@ empty env.
   `arxa-harness/README.md` now carries the operator's own copy step for
   gating raw `~/.dsh` (patch row with dsh-native tool names) and raw `~/.pi`
   (symlink, safe since the gate realpaths), each proven by a booted DENY.
-- **Delegated-Pi tool in arxa sessions (decision 3ii)** and the
-  **lazy-skills refactor of the six >250-line skills (decision 3i)**: in
-  flight this pass — recorded when closed.
+- **Lazy-skills refactor (decision 3i / H5) DONE** — the six >250-line
+  skills went progressive-disclosure: a lean every-run core in SKILL.md plus
+  verbatim-relocated law under `references/` with a load-when index. Core
+  lines: scaffolder 543→135, designer 347→211, intake 329→165, story-mapper
+  304→133, moodboarder 293→82, cicd 264→122 (2,080→848). Executed as six
+  parallel per-skill passes, each behind a `consult.sh gate skill` SSOT
+  check (all convergent); verified centrally: sorted-diff shows ZERO
+  original lines missing (the only `<` lines are seven disclosed
+  heading-level changes, text intact at the new level) and all six
+  frontmatter blocks byte-identical (the description line is the lazy-load
+  surface all three harnesses show). Not one normative line rewritten —
+  relocation only, per the ratified-engagement-law constraint H5 recorded.
+- **Delegated-Pi tool in arxa sessions (decision 3ii)**: in flight this
+  pass — recorded when closed.
