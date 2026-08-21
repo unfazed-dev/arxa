@@ -611,7 +611,13 @@ empty env.
   dsh's schema compiler rejects `required: false` (omit the key on optional
   params), and dsh-tool-subagent's `ctx.subagents` provider contract was
   deliberately NOT implemented — decision 3ii needs bounded delegation, not
-  continuable dsh-child machinery. arxa's seeded default stays
-  zai-coding-cn/glm-5.3/max (works after the Aug 24 quota reset; the booted
-  check temporarily ran on the wallet endpoint and the default was
-  restored).
+  continuable dsh-child machinery.
+  **Correction same day (operator): glm-5.3 DOES work on the wallet** — the
+  morning's 1302 "tier-limit" was transient, not a tier verdict. Verified
+  booted: Pi wallet glm-5.3 effort max (models.json gained `reasoning` +
+  `thinkingLevelMap`), and dsh default `zai`/glm-5.3/`reasoningEffort: max`.
+  Defaults flipped accordingly: arxa's seeded + live dsh default is now
+  `zai`/glm-5.3/max (wallet, works today); `zai-coding-cn` stays configured
+  to flip back after the Aug 24 10:04 weekly reset if plan quota is
+  preferred; delegate_pi and arxa-explore default to wallet glm-5.3 (explore
+  defaults effort max).
