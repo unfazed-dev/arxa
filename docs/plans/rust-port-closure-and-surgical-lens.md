@@ -475,7 +475,20 @@ per convention, proceeded on primary sources.
 > existing test asserting `freezeAnimations` counts honestly passed throughout:
 > it exercises the method, and the defect was in the caller. **Test the caller.**
 >
-> **Still open in W1:** the daemon itself. The blocking unknown is gone, but the
+> **W1 CLOSED 2026-08-21.** The daemon shipped in `5edba1bd`, on the design in
+> [lens-daemon.md](lens-daemon.md): no daemon process at all — a detached
+> Chrome plus a state file, with CDP-over-WebSocket as the protocol, because
+> `connect()` and the already-detaching `open -g` launch path made a supervisor
+> unnecessary. Its prerequisite (`0d1039df`) found that the graceful
+> `Browser.close` had never once executed: `close()` set `_closed` before
+> calling `send()`, which throws when `_closed`, inside a bare `catch (_) {}`.
+>
+> **And the measurement corrected the premise.** Chrome launch is 0.46s of a
+> `lens shot`; the `dart run` JIT floor is 1.45s — three times larger, never
+> measured before the daemon was scoped. Shipping a compiled `appbox` binary
+> outranks any further daemon work.
+>
+> *(historical)* **Still open in W1:** the daemon itself. The blocking unknown is gone, but the
 > constraints from the earlier amendment stand — `--remote-debugging-port` not
 > `-pipe`, one `--user-data-dir` for the daemon's life, `Target.createBrowserContext`
 > does not give a fresh render environment, no CDP event for browser death.

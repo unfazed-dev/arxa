@@ -1,19 +1,45 @@
 # Lens daemon — hold one warm Chrome across CLI invocations
 
-**Status:** design agreed, `_ownsBrowser` prerequisite landing first.
+**Status:** BUILT and shipped (`0d1039df`, `5edba1bd`). All four phases done;
+the measured result corrected this plan's own premise — see below.
 **Closes:** the last open item in W1 of
 [rust-port-closure-and-surgical-lens.md](rust-port-closure-and-surgical-lens.md).
 
-## Why
+## Why — and the premise was overstated
 
-Every lens verb launches its own Chrome and kills it on exit. Launch is the
-single largest fixed cost in the surgical-lens loop, and the designer/lens
-round-trip pays it on every reproduction attempt.
+Every lens verb launches its own Chrome and kills it on exit. This plan opened
+by calling launch "the single largest fixed cost in the surgical-lens loop".
+**Measured after building it, that is wrong**, and the correction matters more
+than the daemon does.
 
-The blocking unknown — *does a reused browser render identically to a fresh
-one?* — was closed on 2026-08-21 across four arms, including animated pages:
-zero drift, memory flat, at depth up to 700 captures / 21m39s. See
-[warm-vs-cold-chrome-determinism.md](../research/warm-vs-cold-chrome-determinism.md).
+`lens shot https://example.com 390 300`, three runs each, macOS headless:
+
+| path | time | what it isolates |
+|---|---|---|
+| `dart run`, no daemon | 3.97s | how the lens is invoked today |
+| `dart run`, daemon | 3.52s | |
+| `dart run … lens --help` | 1.45s | Dart JIT floor, no Chrome at all |
+| compiled exe, no daemon | 2.48s | |
+| compiled exe, daemon | 2.02s | |
+| compiled exe `--help` | 0.01s | |
+
+So a `dart run` invocation is roughly **1.45s Dart JIT + 0.46s Chrome launch +
+~2.0s capture** — and 1.5s of that last figure is `settleForCapture`'s
+deliberate minimum-wait floor.
+
+The daemon removes the 0.46s, which is real and is what it was built for. But
+**`dart compile exe` removes 1.45s — three times more, for a build step.** The
+JIT floor was never measured before the daemon was scoped, so the largest fixed
+cost in the loop went unnamed while the second-largest got a design document.
+
+Neither replaces the other and they compose: compiled + daemon is 2.02s against
+3.97s today, a 49% cut. The daemon is worth having; shipping a compiled binary
+is worth more and is cheaper. That belongs on the roadmap ahead of any further
+daemon work.
+
+The blocking unknown for the daemon — *does a reused browser render identically
+to a fresh one?* — was closed on 2026-08-21 across four arms including animated
+pages: zero drift, memory flat, at depth up to 700 captures / 21m39s.
 
 ## Shape: there is no daemon process
 
@@ -109,10 +135,15 @@ that is a separate decision, not a silent one.
 
 ## Phases
 
-1. `_ownsBrowser` + guest-close test. *(prerequisite, own commit)*
-2. State file + `lens daemon start|status|stop`, with scoped startup reaping.
-3. Verb integration: connect when a live compatible daemon exists, else launch.
-4. Recycle on `shotsServed`, counted from `settleForCapture.screenshots`.
+1. ~~`_ownsBrowser` + guest-close test~~ — `0d1039df`, and it found the
+   graceful `Browser.close` had never once run.
+2. ~~State file + `lens daemon start|status|stop`, scoped startup reaping~~ —
+   `5edba1bd`.
+3. ~~Verb integration~~ — `LensDaemon.acquire()`, 19 call sites by rename.
+4. ~~Recycle on `shotsServed`~~ — counted at the CDP chokepoint, 900.
+
+**Next, and it outranks more daemon work:** ship `appbox` as a compiled binary.
+1.45s per invocation, three times the daemon's saving, for a build step.
 
 Each phase leaves the CLI working with no daemon present — the fallback is the
 current behaviour, so a broken daemon degrades to today rather than to nothing.
