@@ -1156,6 +1156,145 @@ const _packages = [
       version: _gsapPin, category: 'motion-framework'),
 ];
 
+// ══ local patches on vendored files ════════════════════════════════════
+
+/// A deliberate local edit carried on top of an upstream vendored file.
+///
+/// A patched vendor file has two silent failure modes and this repo hit both
+/// at once in `de28917a`: `vendor-fetch` re-downloads the file and reverts the
+/// edit without a word, and the SRI.md note warning about exactly that is
+/// itself destroyed by the same command — SRI.md is regenerated wholesale at
+/// the end of [vendorFetch], so a hand-written section in it survives until
+/// the next run and no longer. A note that its own subject deletes is not a
+/// safety net.
+///
+/// So the patch lives here as data instead. [vendorFetch] re-applies it on
+/// every run, and [vendorSriDoc] renders it into SRI.md — which makes the
+/// prose a product of this registry rather than something a run can quietly
+/// drop. Adding a patch is one entry here; nothing else needs touching.
+class VendorPatch {
+  /// Manifest `file` name this applies to — matches `_Pkg.out`.
+  final String file;
+
+  /// Exact upstream text to replace. Must occur EXACTLY once in the download:
+  /// 0 or 2+ occurrences is upstream drift and fails the fetch rather than
+  /// guessing which site was meant.
+  final String find;
+
+  /// What [find] becomes. Must not be a substring of [find] or vice versa, or
+  /// the already-applied check below cannot tell the two states apart.
+  final String replace;
+
+  /// Rendered into SRI.md verbatim. This is the ONLY place the reasoning
+  /// lives now, so it carries the full provenance — including what was never
+  /// verified. A generated doc loses whatever this field omits.
+  final String why;
+
+  const VendorPatch(
+      {required this.file,
+      required this.find,
+      required this.replace,
+      required this.why});
+}
+
+const vendorPatches = [
+  VendorPatch(
+    file: 'model-viewer.min.js',
+    find:
+        'farRadius(){return this.boundingSphere.radius*(null!=this.groundedSkybox.parent?10:1)}',
+    replace:
+        'farRadius(){return this.boundingSphere.radius*(null!=this.groundedSkybox.parent?10:60)}',
+    why: 'Found uncommitted in the working tree on 2026-08-21 and preserved '
+        'rather than discarded. It was not authored in that session and the 3D '
+        'rendering effect was NOT re-verified there — this entry records what '
+        'the change does, not a confirmation that it is the right value.\n'
+        '\n'
+        "`farRadius` feeds the camera's far clipping plane. With no grounded "
+        "skybox upstream uses **1×** the model's bounding-sphere radius, which "
+        'puts the far plane barely past the model itself; `60×` pushes it out. '
+        'The symptom this addresses is model or environment geometry vanishing '
+        'when no grounded skybox is set.',
+  ),
+];
+
+/// Re-apply every [vendorPatches] entry for [file] to [bytes].
+///
+/// Three outcomes, not two. `find` present once → patch it. `find` absent but
+/// `replace` already there → already patched, hand the bytes back unchanged.
+/// Neither → throw. Collapsing the last two into "anchor missing = drift"
+/// would report false drift on a file that is already correct, which is how a
+/// loud check turns into a check people learn to ignore.
+List<int> applyVendorPatches(String file, List<int> bytes) {
+  final patches = vendorPatches.where((p) => p.file == file).toList();
+  if (patches.isEmpty) return bytes;
+  // latin1 round-trips arbitrary bytes 1:1 where utf8 would not; the anchors
+  // are ASCII, so matching is unaffected and re-encoding cannot corrupt the
+  // rest of a 1MB minified bundle.
+  var text = latin1.decode(bytes);
+  for (final patch in patches) {
+    final hits = patch.find.allMatches(text).length;
+    if (hits == 1) {
+      text = text.replaceFirst(patch.find, patch.replace);
+      continue;
+    }
+    if (hits == 0 && text.contains(patch.replace)) continue; // already applied
+    throw Exception(
+        'local patch for $file no longer applies: the anchor occurs $hits '
+        'times (expected exactly 1) and the patched form is absent. Upstream '
+        'changed — re-derive the patch in vendorPatches; do NOT drop it. '
+        'Anchor: ${patch.find}');
+  }
+  return latin1.encode(text);
+}
+
+/// Render SRI.md from [manifest] plus [vendorPatches].
+///
+/// Split out of [vendorFetch] so the committed file can be diffed against its
+/// own generator with no network: `design_tools_test.dart` renders this from
+/// the committed manifest.json and compares byte-for-byte. That test is what
+/// makes the patch section impossible to lose — a hand-edit to SRI.md, or a
+/// patch that stops being rendered, fails before anyone re-runs the fetch.
+String vendorSriDoc(List<Map<String, String>> manifest) {
+  final b = StringBuffer()
+    ..write('# Vendored client libraries (the `fetch.mjs` updater was archived;'
+        ' re-vendor htmx + extensions via `appbox design vendor-fetch`)\n\n')
+    ..write('| file | package | version | category | integrity |\n|---|---|---|---|---|\n')
+    ..write(manifest
+        .map((m) => '| ${m['file']} | ${m['package']} | ${m['version']} '
+            '| ${m['category']} | `${m['integrity']}` |')
+        .join('\n'))
+    ..write('\n\n')
+    ..write('`leaflet/images/*.png` (marker + layers control sprites, referenced by\n'
+        '`leaflet.css` relative to itself) ride along unpinned — like the lucide SVGs\n'
+        'they are never loaded as a subresource with an integrity attribute.\n');
+
+  final shipped = manifest.map((m) => m['file']).toSet();
+  final applied = vendorPatches.where((p) => shipped.contains(p.file)).toList();
+  if (applied.isEmpty) return b.toString();
+
+  // Paragraphs are emitted unwrapped, one per line, so the generated section
+  // never depends on where a Dart string literal happened to break.
+  b.write('\n## Local patches — files that DIVERGE from the upstream release\n\n'
+      'Each entry below is re-applied automatically by `appbox design '
+      'vendor-fetch`, and this section is generated from the `vendorPatches` '
+      'registry in `design_tools.dart` — so neither the patch nor this note '
+      'can be lost to a re-run. If an anchor stops matching, the fetch FAILS '
+      'rather than silently shipping upstream behaviour.\n\n'
+      'The `integrity` column above is the hash of each file **as patched, on '
+      'disk**; the upstream hash is recorded per patch below, so the '
+      'divergence stays visible instead of being flattened into one number.\n');
+  for (final patch in applied) {
+    final row = manifest.firstWhere((m) => m['file'] == patch.file);
+    b.write('\n### ${patch.file} — ${row['package']} ${row['version']}\n\n'
+        '${patch.why}\n\n'
+        '```js\n// upstream\n${patch.find}\n// patched\n${patch.replace}\n```\n\n'
+        '- upstream integrity: `${row['upstreamIntegrity'] ?? '(unrecorded)'}`\n'
+        '- patched integrity (the `integrity` column above): '
+        '`${row['integrity']}`\n');
+  }
+  return b.toString();
+}
+
 /// Compute the SRI hash of [buf] via `openssl dgst -sha384 -binary`. macOS
 /// ships openssl as a base tool; appboxd has no sha384 in-tree.
 /// (kimitail: swap for a pure-Dart sha384 if a no-spawn env needs it.)
@@ -1173,13 +1312,20 @@ Future<String> sri(List<int> buf) async {
 
 /// One row of the vendor manifest. Shape pinned by fetch.mjs, extended by
 /// ADR-0009: `{file, package, version, integrity, category}`.
+///
+/// [integrity] always describes the file actually written to disk. When a
+/// [VendorPatch] changed it, [upstreamIntegrity] carries the hash of the
+/// pristine download — its presence IS the "this file diverges" flag, so
+/// there is no separate boolean that can fall out of sync with it.
 Map<String, String> manifestEntry(
     {required String file,
     required String pkg,
     required String version,
     required String integrity,
+    String? upstreamIntegrity,
     String category = 'hypermedia'}) =>
     {'file': file, 'package': pkg, 'version': version, 'integrity': integrity,
+      'upstreamIntegrity': ?upstreamIntegrity,
       'category': category};
 
 Future<List<int>?> _httpGet(String url) async {
@@ -1233,8 +1379,17 @@ List<(String, List<int>)> _untar(List<int> buf) {
 /// CDN root and [registryBase] the npm registry root, so tests can point at a
 /// local `HttpServer`. [htmxIntegrity] overrides the recorded pin (tests pass a
 /// digest computed from the bytes they serve).
+/// [only] narrows the run to the named npm packages. It exists so a test can
+/// drive ONE package end-to-end against a local HttpServer: a full run needs a
+/// valid lucide tarball and a working esbuild, which no fake server can
+/// provide, and without this seam the patch re-application below would be
+/// untested code. Not exposed on the CLI — it rewrites manifest.json and
+/// SRI.md to the narrowed subset, which is only ever right in a temp dir.
 Future<CmdResult> vendorFetch(String vendorDir,
-    {String? baseUrl, String? registryBase, String? htmxIntegrity}) async {
+    {String? baseUrl,
+    String? registryBase,
+    String? htmxIntegrity,
+    Set<String>? only}) async {
   final cdn = baseUrl ?? 'https://cdn.jsdelivr.net/npm';
   final npm = registryBase ?? 'https://registry.npmjs.org';
   final expectPin = htmxIntegrity ?? _htmxIntegrity;
@@ -1244,6 +1399,7 @@ Future<CmdResult> vendorFetch(String vendorDir,
   final manifest = <Map<String, String>>[];
 
   for (final pkg in _packages) {
+    if (only != null && !only.contains(pkg.pkg)) continue;
     // Lucide icon set: every SVG inlined server-side, no per-file SRI; the
     // manifest records the tarball hash instead. Handled inline (not after the
     // loop) so the manifest row order survives a re-run byte-identically.
@@ -1332,18 +1488,27 @@ Future<CmdResult> vendorFetch(String vendorDir,
       if (buf == null) {
         throw Exception('no candidate file found: ${pkg.candidates.join(", ")}');
       }
-      final integrity = await sri(buf);
+      // Pin check runs on the PRISTINE download — a local patch must never be
+      // able to make a tampered upstream file hash correctly.
+      final upstream = await sri(buf);
       final expected = pkg.expectPin ?? expectPin;
-      if (pkg.expect && integrity != expected) {
-        throw Exception('integrity mismatch! got $integrity, expected $expected');
+      if (pkg.expect && upstream != expected) {
+        throw Exception('integrity mismatch! got $upstream, expected $expected');
       }
+      // Re-apply local edits before writing. This is the whole reason
+      // vendorPatches exists: without it every run silently reverts them.
+      final patched = applyVendorPatches(pkg.out, buf);
+      final unpatched = identical(patched, buf);
+      final integrity = unpatched ? upstream : await sri(patched);
       final outFile = File(p.join(vendorDir, pkg.out));
       outFile.parent.createSync(recursive: true); // leaflet/* lives in a subdir
-      outFile.writeAsBytesSync(buf);
+      outFile.writeAsBytesSync(patched);
       manifest.add(manifestEntry(
           file: pkg.out, pkg: pkg.pkg, version: v, integrity: integrity,
+          upstreamIntegrity: unpatched ? null : upstream,
           category: pkg.category));
-      out.add('✓ ${pkg.out} ← ${pkg.pkg}@$v (${buf.length} bytes)');
+      out.add('✓ ${pkg.out} ← ${pkg.pkg}@$v (${patched.length} bytes'
+          '${unpatched ? '' : ', local patch re-applied'})');
     } catch (e) {
       // No optional/skip branch by design. The one entry that used it named a
       // package that does not exist on npm, so every run printed "– skipped"
@@ -1357,13 +1522,7 @@ Future<CmdResult> vendorFetch(String vendorDir,
 
   File(p.join(vendorDir, 'manifest.json'))
       .writeAsStringSync("${const JsonEncoder.withIndent('  ').convert(manifest)}\n");
-  File(p.join(vendorDir, 'SRI.md')).writeAsStringSync(
-      '# Vendored client libraries (the `fetch.mjs` updater was archived; re-vendor htmx + extensions via `appbox design vendor-fetch`)\n\n'
-      '| file | package | version | category | integrity |\n|---|---|---|---|---|\n'
-      '${manifest.map((m) => '| ${m['file']} | ${m['package']} | ${m['version']} | ${m['category']} | `${m['integrity']}` |').join('\n')}\n\n'
-      '`leaflet/images/*.png` (marker + layers control sprites, referenced by\n'
-      '`leaflet.css` relative to itself) ride along unpinned — like the lucide SVGs\n'
-      'they are never loaded as a subresource with an integrity attribute.\n');
+  File(p.join(vendorDir, 'SRI.md')).writeAsStringSync(vendorSriDoc(manifest));
   out.add('');
   out.add('${manifest.length} libraries vendored → $vendorDir');
   return CmdResult(0, stdoutLines: out, stderrLines: err);

@@ -9,7 +9,7 @@
 | client-side-templates.js | htmx-ext-client-side-templates | 2.0.2 | hypermedia | `sha384-sKX0kzraJJEV0VPe2cmrjHqjTVhEGPVxHhCCa4YCRcYphgn2YTwHZMOeP16FTXPG` |
 | mustache.min.js | mustache | 4.2.0 | hypermedia | `sha384-WASZCYHGuIg0bwkJEH65mhmbKS1x4/VKI2bzElPKmL5B3e0UaH45nIdqOm+BUuRA` |
 | lucide/icons/*.svg | lucide-static | 1.27.0 | hypermedia | `sha384-FcKTsoAfrNAQlm72mTH2j0YueLBCmw6bdz42xM+FFTPLs8te/VOKhDMJv9TJa/fQ` |
-| model-viewer.min.js | @google/model-viewer | 4.3.1 | rich-media | `sha384-cprcVQt7wbUl0xngF3PGP6yBB7n4/t+4AoAMG9biiMCGFiWOdzUH10Ie2COTqFNW` |
+| model-viewer.min.js | @google/model-viewer | 4.3.1 | rich-media | `sha384-34/K+/9GIoNHiaQ2+yOIqoXeJbT/9+9AaadSQETMyL00UPH9afFFJe+HziySmFNz` |
 | dotlottie-wc.js | @lottiefiles/dotlottie-wc | 0.9.24 | rich-media | `sha384-8NZI8IXJtphV4Ekaf5f60Sw4u248eN1N3aclL5WppacPU4l/dVuMLKuf/tQU4b64` |
 | dotlottie-player.wasm | @lottiefiles/dotlottie-web | 0.78.2 | rich-media | `sha384-i1sY5AOkt8qdlQSoSCP6KWXgFZxMOakcpH1YTb3ZLA2vTRuUL4MVoDjL8IGtBZmk` |
 | lottie-player.js | @lottiefiles/lottie-player | 2.0.12 | rich-media | `sha384-i8zT4p4C0XG4mPhfz0zuffZpppP8NjlttNsP6srEdEBatwZkcYUBoQtAW7sfKEp2` |
@@ -32,43 +32,24 @@
 `leaflet.css` relative to itself) ride along unpinned — like the lucide SVGs
 they are never loaded as a subresource with an integrity attribute.
 
-## Local patches — files that DIVERGE from the upstream release above
+## Local patches — files that DIVERGE from the upstream release
 
-A patched vendored file has two failure modes, and both are silent:
-`appbox design vendor-fetch` re-downloads it and reverts the patch without
-saying so, and its integrity no longer matches the hash recorded above, so
-anyone verifying later sees what looks like tampering. Both are why a patch
-gets an entry here rather than living only in the working tree.
+Each entry below is re-applied automatically by `appbox design vendor-fetch`, and this section is generated from the `vendorPatches` registry in `design_tools.dart` — so neither the patch nor this note can be lost to a re-run. If an anchor stops matching, the fetch FAILS rather than silently shipping upstream behaviour.
 
-### model-viewer.min.js — far-plane multiplier
+The `integrity` column above is the hash of each file **as patched, on disk**; the upstream hash is recorded per patch below, so the divergence stays visible instead of being flattened into one number.
 
-Found uncommitted in the working tree 2026-08-21 and preserved rather than
-discarded; not authored in that session, and the 3D rendering effect was NOT
-re-verified there.
+### model-viewer.min.js — @google/model-viewer 4.3.1
 
-One character, line 1008, inside `farRadius()`:
+Found uncommitted in the working tree on 2026-08-21 and preserved rather than discarded. It was not authored in that session and the 3D rendering effect was NOT re-verified there — this entry records what the change does, not a confirmation that it is the right value.
+
+`farRadius` feeds the camera's far clipping plane. With no grounded skybox upstream uses **1×** the model's bounding-sphere radius, which puts the far plane barely past the model itself; `60×` pushes it out. The symptom this addresses is model or environment geometry vanishing when no grounded skybox is set.
 
 ```js
-// upstream 4.3.1
-farRadius(){ return this.boundingSphere.radius * (null != this.groundedSkybox.parent ? 10 : 1) }
+// upstream
+farRadius(){return this.boundingSphere.radius*(null!=this.groundedSkybox.parent?10:1)}
 // patched
-farRadius(){ return this.boundingSphere.radius * (null != this.groundedSkybox.parent ? 10 : 60) }
+farRadius(){return this.boundingSphere.radius*(null!=this.groundedSkybox.parent?10:60)}
 ```
 
-`farRadius` feeds the camera's far clipping plane. Without a grounded skybox
-upstream uses **1×** the model's bounding-sphere radius, which clips geometry
-barely past the model itself; `60×` pushes the plane out. The symptom this
-addresses is model or environment geometry vanishing when no grounded skybox
-is set.
-
-- upstream 4.3.1 integrity: `sha384-cprcVQt7wbUl0xngF3PGP6yBB7n4/t+4AoAMG9biiMCGFiWOdzUH10Ie2COTqFNW`
-- patched file integrity: `sha384-34/K+/9GIoNHiaQ2+yOIqoXeJbT/9+9AaadSQETMyL00UPH9afFFJe+HziySmFNz`
-
-The table above deliberately still records the UPSTREAM hash: that column
-documents what 4.3.1 is, and overwriting it with the patched value would erase
-the fact that this repo diverges at all.
-
-**After any `vendor-fetch` that touches `@google/model-viewer`, re-apply this
-and confirm the patched hash above.** Nothing enforces it — only htmx core's
-SRI is checked in code (`design_tools.dart:1038`), so this file's mismatch has
-no runtime consequence and will not announce itself.
+- upstream integrity: `sha384-cprcVQt7wbUl0xngF3PGP6yBB7n4/t+4AoAMG9biiMCGFiWOdzUH10Ie2COTqFNW`
+- patched integrity (the `integrity` column above): `sha384-34/K+/9GIoNHiaQ2+yOIqoXeJbT/9+9AaadSQETMyL00UPH9afFFJe+HziySmFNz`

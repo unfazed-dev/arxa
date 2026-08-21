@@ -610,6 +610,151 @@ export default [
       // default for the vendored libraries the client-JS lint allows.
       expect(entry['category'], 'hypermedia');
     });
+
+    test('manifest entry carries upstreamIntegrity only when patched', () {
+      expect(
+          manifestEntry(
+              file: 'a.js', pkg: 'a', version: '1', integrity: 'sha384-on-disk',
+              upstreamIntegrity: 'sha384-pristine')['upstreamIntegrity'],
+          'sha384-pristine');
+      // Presence IS the divergence flag, so an unpatched row must not carry
+      // the key at all — an empty string would read as "diverges from nothing".
+      expect(
+          manifestEntry(file: 'a.js', pkg: 'a', version: '1', integrity: 'x')
+              .containsKey('upstreamIntegrity'),
+          isFalse);
+    });
+  });
+
+  // ── local patches on vendored files ─────────────────────────────────
+  //
+  // Context for anyone changing these: `de28917a` committed a one-character
+  // local edit to model-viewer.min.js and a hand-written SRI.md section
+  // warning that vendor-fetch would revert it. Both were losable — vendor-fetch
+  // re-downloads the file AND rewrites SRI.md wholesale, so the warning
+  // deleted itself. The patch is now data (`vendorPatches`) and these four
+  // tests are what keep it that way.
+
+  group('vendor patches', () {
+    const vendorDir = '../skills/appbox-designer/runtime/vendor';
+
+    List<Map<String, String>> committedManifest() =>
+        (jsonDecode(File(p.join(vendorDir, 'manifest.json')).readAsStringSync())
+                as List)
+            .map((e) => (e as Map).cast<String, String>())
+            .toList();
+
+    test('applyVendorPatches rewrites the upstream anchor exactly once', () {
+      final patch = vendorPatches.single;
+      final upstream = latin1.encode('head;${patch.find};tail');
+      final got = latin1.decode(applyVendorPatches(patch.file, upstream));
+      expect(got, 'head;${patch.replace};tail');
+    });
+
+    test('applyVendorPatches is a no-op on an already-patched file', () {
+      // Not the same as "anchor missing". Collapsing these two would fail
+      // every run after the first, which is how a real check gets disabled.
+      final patch = vendorPatches.single;
+      final already = latin1.encode('head;${patch.replace};tail');
+      expect(latin1.decode(applyVendorPatches(patch.file, already)),
+          'head;${patch.replace};tail');
+    });
+
+    test('applyVendorPatches throws when upstream drifts past the anchor', () {
+      final patch = vendorPatches.single;
+      expect(
+          () => applyVendorPatches(patch.file, latin1.encode('unrelated bytes')),
+          throwsA(predicate((e) =>
+              '$e'.contains('no longer applies') && '$e'.contains('do NOT drop'))));
+      // Two anchors is drift too — replaceFirst would silently patch one.
+      expect(
+          () => applyVendorPatches(
+              patch.file, latin1.encode('${patch.find}|${patch.find}')),
+          throwsA(predicate((e) => '$e'.contains('occurs 2 times'))));
+    });
+
+    test('files with no registered patch pass through untouched', () {
+      final bytes = latin1.encode('htmx bytes');
+      expect(identical(applyVendorPatches('htmx.min.js', bytes), bytes), isTrue);
+    });
+
+    test('every committed vendored file still carries its local patch', () {
+      // The backstop that does not care HOW the patch was lost — a stray
+      // vendor-fetch, a bad merge, a manual re-download all fail here.
+      for (final patch in vendorPatches) {
+        final text = latin1
+            .decode(File(p.join(vendorDir, patch.file)).readAsBytesSync());
+        expect(text.contains(patch.replace), isTrue,
+            reason: '${patch.file} lost its local patch — re-apply it with '
+                '`appbox design vendor-fetch`, do not update this test.');
+      }
+    });
+
+    test('committed SRI.md is byte-identical to its generator', () {
+      // design_tools.dart:1089 promises re-running vendor-fetch rewrites
+      // manifest.json + SRI.md byte-identically. This asserts it without a
+      // network fetch, and it is the check that would have caught de28917a's
+      // hand-written section the moment it was written.
+      expect(vendorSriDoc(committedManifest()),
+          File(p.join(vendorDir, 'SRI.md')).readAsStringSync());
+    });
+
+    test('committed manifest records both hashes for a patched file', () {
+      for (final patch in vendorPatches) {
+        final row = committedManifest()
+            .firstWhere((m) => m['file'] == patch.file);
+        expect(row['upstreamIntegrity'], isNotNull,
+            reason: '${patch.file} is patched, so the pristine hash must be '
+                'recorded alongside the on-disk one');
+        expect(row['integrity'], isNot(row['upstreamIntegrity']));
+      }
+    });
+
+    test('vendor-fetch re-applies the local patch to the file it downloads',
+        () async {
+      // THE caller test. The three above prove applyVendorPatches works; only
+      // this one proves vendorFetch actually calls it — which is precisely the
+      // gap that hid the settle-freeze defect in d86d4d37.
+      final patch = vendorPatches.single;
+      final upstreamBody = latin1.encode('/*stub*/${patch.find}//end');
+
+      final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
+      addTearDown(() => server.close(force: true));
+      server.listen((req) => req.response
+        ..contentLength = upstreamBody.length
+        ..add(upstreamBody)
+        ..close());
+      final base = 'http://${server.address.host}:${server.port}';
+
+      final out = Directory.systemTemp.createTempSync('vf_patch_');
+      addTearDown(() => out.deleteSync(recursive: true));
+      // `only` narrows to the one package: a full run needs a real lucide
+      // tarball and a working esbuild, neither of which a fake server has.
+      final r = await vendorFetch(out.path,
+          baseUrl: '$base/cdn',
+          registryBase: '$base/npm',
+          only: {'@google/model-viewer'});
+      expect(r.exitCode, 0, reason: r.stderrLines.join('\n'));
+
+      final written =
+          latin1.decode(File(p.join(out.path, patch.file)).readAsBytesSync());
+      expect(written.contains(patch.replace), isTrue,
+          reason: 'vendor-fetch wrote the pristine download — the patch was '
+              'silently reverted, which is the whole defect this guards');
+      expect(written.contains(patch.find), isFalse);
+      expect(r.stdoutLines.join('\n'), contains('local patch re-applied'));
+
+      // …and the provenance travels with it, in both files.
+      final row = (jsonDecode(
+                  File(p.join(out.path, 'manifest.json')).readAsStringSync())
+              as List)
+          .single as Map;
+      expect(row['upstreamIntegrity'], await sri(upstreamBody));
+      expect(row['integrity'], isNot(row['upstreamIntegrity']));
+      final sriMd = File(p.join(out.path, 'SRI.md')).readAsStringSync();
+      expect(sriMd, contains('## Local patches'));
+      expect(sriMd, contains(patch.replace));
+    });
   });
 
   // ── doctor ──────────────────────────────────────────────────────────
