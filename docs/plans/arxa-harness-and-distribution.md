@@ -412,7 +412,7 @@ empty env.
   manual patch copy):
   ```sh
   cd <app-box> && APPBOX_GUARD_MODE=using appbox credentials exec \
-    ZAI_API_KEY -- node harness/arxa/bin/arxa.mjs --headless \
+    ZAI_API_KEY -- node ../arxa-harness/bin/arxa.mjs --headless \
     "append a one-line comment to appboxd/lib/cdp.dart"
   ```
   PASS = the reply quotes the guard's deny reason (using-sessions cannot
@@ -431,7 +431,10 @@ empty env.
 - **(W1 from the previous plan runs here — lens spine, on the new daily
   surface.)**
 - **H3 — harness skeleton.** **BUILT 2026-08-21, config-verified** —
-  `harness/arxa/`: the package (exact-pinned `@deepseek-ai/*` deps, own bin),
+  `totem_labs/arxa-harness/` (decision 5's separate home — it briefly landed
+  in `app-box/harness/` and was moved out the same day; the depend-don't-fork
+  amendment voided the fork lineage, not the address): the package
+  (exact-pinned `@deepseek-ai/*` deps, own bin),
   `bin/arxa.mjs` (materializes the arxa profile into `$DSH_HOME/profiles/arxa`
   and execs dsh's bin; `--headless` swaps dsh-web-app for dsh-headless), and
   `profile/cordis.patch.yml` (three patches: identity via
@@ -474,7 +477,8 @@ empty env.
   register leaves dsh's default in place and everything still boots.
 - **H4 — design panel**: viewer first (iframe + live reload + rungs);
   drag overlay after the engine `design patch` verb exists.
-  **Viewer BUILT 2026-08-21** (`9f48fa37`): `harness/arxa-design-panel/` —
+  **Viewer BUILT 2026-08-21** (`9f48fa37`, now
+  `arxa-harness/plugins/design-panel/`) —
   web-UI plugin in the `__ModuleLoader__` factory shape, registered into
   `shell.overlay` (the additive slot; `details` is occupied and would be
   replaced), docked iframe over a live `appbox design serve` with the
@@ -491,9 +495,10 @@ empty env.
   `appbox memory add|recall|why` (project-scoped `<project>/memory/facts/`,
   `{fact, source, ts}` schema shared with the engine's repo memory,
   provenance mandatory, 200-fact cap refuses — the M1 write-path doctrine at
-  the verb layer; 11 tests). Adapters: `harness/arxa-memory/` (dsh, registers
+  the verb layer; 11 tests). Adapters (in `arxa-harness/`):
+  `plugins/memory/` (dsh, registers
   an `arxa:memory` system-prompt section at mount — tested end-to-end against
-  the compiled binary) and `harness/pi/arxa-memory.ts` (Pi, one persistent
+  the compiled binary) and `pi/arxa-memory.ts` (Pi, one persistent
   message on the session's first `before_agent_start`; verified contract).
   **Lazy-skills refactor SCOPED, deliberately not bulk-executed:** all three
   harnesses already load skills on demand from the frontmatter description
