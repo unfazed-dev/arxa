@@ -331,8 +331,35 @@ at the dispatch site, not from doc strings.
 32. **Verified against the running server**, not just unit-stubbed: bundle
     served 200 with the keyed registration and all five renderers; `select`
     then `state` round-trips over the real channel; an unknown endpoint and
-    bad args return clean errors; and **a forged `Host` header gets 403**, so
-    the loopback fence of decision 24 holds in practice.
+    bad args return clean errors.
+
+    **Decision 24's claim tested at the real origin, not merely read in the
+    source.** `Host: arxa.studio.localhost:7891` → **200**; bare
+    `arxa.studio.localhost`, `localhost:7891` and `127.0.0.1:7891` → 200;
+    `evil.example.com` → **403**. So the widened classifier does carry this
+    channel at the name the browser actually sends, and the fence still
+    refuses everything else.
+
+32b. **The durability chain traced end to end**, because all of stage 2 rests
+    on one hop: `output.presentationMeta` is projected **only when
+    `exec.parent === undefined`** (`dsh-tools/lib/index.js:3417-3424`) → lands
+    as `meta` on the `tool/result` event → `rootResult` reads
+    `meta: match.event.data.meta` into `ToolResultNode.meta`
+    (`dsh-client-ui-conversation/lib/client.js` ~:8349). The sub-call
+    projection (`childResult`, ~:8381) sets **no meta at all** — so the
+    "direct top-level calls" caveat in the type doc is literal. The browser
+    half therefore falls back to rebuilding the surface from
+    `block.call.argsRaw`, which the sub-call projection *does* populate;
+    without that, a `gen_ui` dispatched as a sub-call would render an empty
+    card while its running state looked correct.
+
+32c. **Not verified: the React actually rendering.** Every stage-2 check above
+    is host-side or a read of the served bytes; no component in `client.js`
+    has executed in a browser. Two things to watch on first open:
+    `RendererHost` invokes each renderer as a plain function, so `Choice`'s and
+    `RungLadder`'s hooks attach to `RendererHost`'s fiber — fine while the
+    component type per id is stable, and the running→settled transition
+    (args-derived → meta-derived components) is exactly where it would not be.
 
 33. **Streaming, settled by evidence.** A toolview **cannot** stream arguments:
     it does not exist until the model has finished emitting the call. So there
