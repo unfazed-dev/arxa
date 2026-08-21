@@ -462,3 +462,169 @@ browserRSS change over 100 new-tab captures: +106MB  (raw first-to-last, INCLUDE
 - Memory was read from `ps` RSS; Chrome's own per-process memory
   accounting is not exposed by the CDP commands available on this build.
 
+
+<!-- settle-rate-probe-section -->
+
+## Settle rate: does memory stay flat at the daemon's real screenshot rate?
+
+The depth section above measured 700 captures using the plain fixed
+`navigateAndSettle(1500)` — ONE `Page.captureScreenshot` per capture. That
+was correct for the drift question, and that result stands. It is the wrong
+unit for the memory question: the daemon runs `settleForCapture`, whose two
+stability loops each screenshot repeatedly until two frames match. A recycle
+policy denominated in "captures" is denominated in the wrong unit for the
+workload it governs.
+
+### HEADLINE
+
+NO DRIFT and MEMORY: FLAT AND STABLE at the real screenshot rate (whole steady segment inside a 4MB band vs a 7MB noise threshold)
+
+### Screenshots per capture — measured, not assumed
+
+```
+samples  19 replication checkpoints, every 10 captures
+min      5
+median   5
+max      5
+non-converged checkpoints: 0
+replica != real:           0
+```
+
+Reported as a distribution, never a mean: a converged loop costs ~2-3
+shots, but a TIMED-OUT loop burns the full 8000ms at a 120ms poll —
+roughly 66 shots — so one timeout would drag a mean badly and
+silently. Counts include +1 for the caller's own final `screenshot()`,
+which the settle itself does not take.
+
+### Why the count needs a replication at all
+
+`settleForCapture` (cdp.dart:819-865) computes `first.captures` and
+`second.captures` from its two `settleUntilStable` calls and then DISCARDS
+both — its return record is `(elapsedMs, converged, frozen)`. So the real
+screenshot rate is not observable through `navigateAndSettleForCapture`.
+
+The arm therefore runs the GENUINE method for every capture — the memory
+curve is measured on the real code, not on a copy of it — and every
+10 captures one EXTRA capture runs a replication of that exact
+sequence, built only from public methods, purely to read the counts. Each
+checkpoint also asserts the replication's PNG is byte-identical to the real
+capture of the same page, so fidelity is verified continuously rather than
+once in a cold browser where it is least likely to break.
+
+**Suggested change to `lib/cdp.dart` (NOT made here — this probe does not
+edit `lib/`):** propagate `first.captures + second.captures` in
+`settleForCapture`'s return record. The screenshot rate then becomes
+directly observable and no replication is needed by anyone.
+
+### Drift (free by-product)
+
+```
+page    n     match  diverge  notConv  err  first-diverge
+text    67    67     0        0        0    —
+css     67    67     0        0        0    —
+static  66    66     0        0        0    —
+```
+
+These captures were compared against FRESH cold baselines taken through the
+same freeze path, not against the plain-settle baselines used elsewhere in
+this document. `freezeAnimations` mutates the DOM (inline `!important`,
+stripped `animation`), so a freeze-path capture cannot match a plain-settle
+one; comparing across paths would read as 100% divergence and mean nothing.
+This is a drift result at depth 200, independent of and additional to
+the 700 in the depth section.
+
+A `converged: false` capture is counted in its own `notConv` column and is
+neither a match nor a divergence. `cdp.dart:842-846` is explicit that a
+non-converged settle must not read as success, and a timed-out settle means
+the capture is not reproducible at all.
+
+### Memory vs screenshot rate
+
+```
+i      ~shots   elapsed  browserRSS  summedRSS*  ps-procs  cdp-procs
+0      0        00m02s   233MB       1297MB      11        12
+10     50       00m30s   303MB       1961MB      14        14
+20     100      00m56s   303MB       1828MB      13        13
+30     150      01m23s   323MB       1861MB      13        13
+40     200      01m51s   323MB       1861MB      13        13
+50     250      02m17s   324MB       1855MB      13        13
+60     300      02m44s   324MB       1865MB      13        13
+70     350      03m12s   324MB       1864MB      13        13
+80     400      03m38s   327MB       1862MB      13        13
+90     450      04m05s   327MB       1871MB      13        13
+100    500      04m33s   327MB       1870MB      13        13
+110    550      04m59s   327MB       1867MB      13        13
+120    600      05m26s   328MB       1874MB      13        13
+130    650      05m54s   328MB       1873MB      13        13
+140    700      06m20s   328MB       1867MB      13        13
+150    750      06m47s   328MB       1876MB      13        13
+160    800      07m15s   328MB       1873MB      13        13
+170    850      07m41s   328MB       1871MB      13        13
+180    900      08m07s   328MB       1876MB      13        13
+190    950      08m35s   328MB       1874MB      13        13
+200    1000     08m58s   328MB       1874MB      13        13
+```
+
+`* summedRSS` double-counts shared pages across Chrome processes and is an
+UPPER BOUND, not a measurement; `browserRSS` is the defensible curve.
+
+MEMORY: FLAT AND STABLE at the real screenshot rate (whole steady segment inside a 4MB band vs a 7MB noise threshold)
+  steady range 324MB-328MB (band 4MB, noise threshold 7MB), 16 samples
+  max sustained rise 4MB  <- THE growth number: the largest increase from any earlier sample to any later one, which answers "does it grow" without assuming the curve is a line
+  (fitted slope +5.29 MB per 1000 screenshots — shown for completeness only. DO NOT QUOTE IT as the growth number: in this design the growth test is the max sustained rise above, and a fitted slope has misread every real curve shape encountered here.)
+  peak browserRSS 328MB over ~1000 screenshots in 08m58s
+  RECYCLE: memory does not require one. At ~5 screenshots per capture, this arm drove ~1000 screenshots and the largest sustained rise anywhere in the steady segment was 4MB — below the 7MB noise threshold, so no growth. The daemon-convertible figure is ~1000 SCREENSHOTS verified flat; a workload with a different shots-per-capture converts through it, which is why it is reported in that unit. Do NOT read "200 captures" as a ceiling — that is only how far THIS arm ran. On the capture axis the Depth section above verified 700 captures drift-free and growth-free, which is the stronger capture-axis result. Neither arm found a ceiling: the binding limit is whichever axis a real workload reaches first, and no upper bound was observed on either.
+
+### How the memory classifier was checked
+
+"No growth" is only worth reading if the classifier can say the opposite,
+so it was run against three curves before this result was accepted: the two
+real curves this arm produced (one plateau, one plateau followed by a 72MB
+release) and a synthetic linearly-growing curve. The first two classify as
+NO GROWTH, the third as GROWTH with a sensible extrapolation — so the growth
+branch fires and the negative result is falsifiable rather than decorative.
+
+The growth test is `max sustained rise > noise threshold`, deliberately NOT
+a fitted slope. Across this work a least-squares fit has misread three
+different real curve shapes — startup warmup (reported +665MB/100 captures),
+oscillation, and a step — and each time the fit described the shape rather
+than any trend. The max-rise test makes no assumption about shape. The
+fitted slope is still printed, but labelled not to be quoted when a step is
+present.
+
+Note also that the two runs of this arm produced DIFFERENT memory curves —
+one released ~72MB partway through, the other did not. browserRSS is
+therefore not reproducible run-to-run in its detail. Neither run grew, which
+is the claim being made; a claim about the exact curve would not be
+supportable.
+
+### Limits
+
+- Depth reached: **200 captures (~1000 screenshots) in 08m58s.**
+  Nothing is claimed beyond that.
+- The depth section measured settling running to ~capture 170 on the
+  one-screenshot path. This arm is 200 captures, so its steady segment is
+  short; where it is too short to carry a slope the classifier says
+  INCONCLUSIVE rather than fitting one.
+- Screenshot counts come from 19 checkpoints, not from all
+  200 captures — the real method does not expose them.
+- Same fixed conditions as the rest of this document: this Chrome build,
+  1280x800 @ dsf 1, headless=new, and these three page kinds.
+- **The freeze is a no-op on these pages, so its DOM-mutation cost is NOT
+  covered.** `freezeAnimations()` reported
+  `{finite: 0, infinite: 0, smil: 0, videos: 0, committed: 0}` on every
+  capture — the probe pages are deliberately animation-free, so there was
+  nothing to freeze and no inline `!important` was ever written. What this
+  arm therefore measures is the cost of the higher SCREENSHOT rate, which is
+  the question asked. It does NOT measure the cost of freezing a genuinely
+  animated page, where the freeze walks the DOM and writes inline styles
+  across many elements on every capture. Real daemon pages will have
+  animations. To close that gap, add an animated page kind and re-run — it
+  is a separate question from the one measured here, and it is not answered
+  by this result.
+- A side effect of the same fact: because the freeze mutated nothing, the
+  fresh freeze-path baselines came out byte-identical to the plain-settle
+  baselines used elsewhere in this document. Capturing them fresh was still
+  the right precaution — it just turned out not to be needed on these
+  particular pages, and it would be needed on any page with animation.
+

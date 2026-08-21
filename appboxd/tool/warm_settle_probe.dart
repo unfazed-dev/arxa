@@ -71,6 +71,7 @@ import 'package:appboxd/cdp.dart';
 import 'warm_depth_probe.dart' show MemSample, cdpProcCount, fmtDur, sampleRss;
 import 'warm_vs_cold_probe.dart'
     show
+        kAnimMarker,
         kH,
         kPages,
         kSettleMarker,
@@ -219,12 +220,18 @@ Future<void> writeSection(String body) async {
   final doc = reportFile();
   await doc.parent.create(recursive: true);
   var head = '';
+  var tail = '';
   if (doc.existsSync()) {
     final existing = await doc.readAsString();
     final at = existing.indexOf(kSettleMarker);
     head = at >= 0 ? existing.substring(0, at) : '$existing\n';
+    // warm_anim_probe.dart owns everything below its marker, which sits BELOW
+    // this section. Both this probe's success and abort paths route through
+    // here, so this one carry covers both.
+    final animAt = existing.indexOf(kAnimMarker);
+    if (animAt >= 0) tail = '\n${existing.substring(animAt)}';
   }
-  await doc.writeAsString('$head$kSettleMarker\n\n$body');
+  await doc.writeAsString('$head$kSettleMarker\n\n$body$tail');
 }
 
 // ── main ──────────────────────────────────────────────────────────────────

@@ -72,6 +72,10 @@ const String kDepthMarker = '<!-- depth-probe-section -->';
 /// preserve the sections it does not own.
 const String kSettleMarker = '<!-- settle-rate-probe-section -->';
 
+/// Everything from here down belongs to `warm_anim_probe.dart`, the last
+/// section. Four probes write one document; each preserves what it does not own.
+const String kAnimMarker = '<!-- animated-pages-probe-section -->';
+
 const kPages = <String, String>{
   'text': '/text', // font-shaping cache
   'css': '/css', // GPU raster + shader cache
