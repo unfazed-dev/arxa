@@ -232,3 +232,50 @@ Kimi K3 / … / design`, websocket frames flow (`session/subscribed`,
 2. **"Boots clean" was claimed from a clean log plus HTTP 200s.** Both were true
    and the UI was still dead. Serving assets is not rendering; only a browser
    that reaches the plugin-loaded state proves boot.
+
+## Fault 2 traced end to end, and proven (2026-08-22)
+
+Full data flow for `mcp-zai-vision`:
+
+    dsh config env:{Z_AI_API_KEY, Z_AI_MODE}
+      -> dsh-mcp-client spawns  node ~/.dsh/profiles/web/vision-proxy.mjs
+         (buildChildEnv = {...scrubbedParentEnv(), ...config.env})
+      -> vision-proxy.mjs spawns  npx -y @z_ai/mcp-server@latest
+         with { env: process.env }            (vision-proxy.mjs:153)
+      -> @z_ai/mcp-server is the actual consumer of Z_AI_API_KEY
+
+`vision-proxy.mjs` itself contains **zero** `Z_AI_*` / apiKey / token identifiers
+— it is a stdio MITM that stages local media under `/tmp/vision-stage` and passes
+its whole env through. So the config's env mapping is genuinely required; it is
+not redundant.
+
+Why the value is missing, confirmed by reading both packages:
+- `dsh-credentials-local/lib/index.js` is the only reader of `.credentials.yaml`.
+  It parses `refs:` (named secrets) and `records:` (machine-written tokens) and
+  contains **no `process.env` writes at all**. The credential store is never
+  exported to the environment.
+- `dsh-app-boot/lib/index.js:733` (`loadLayeredEnv`) is the only env-injection
+  site, and it reads `.env` layers from DSH_HOME and cwd — nothing else.
+- No `!js` YAML tag is defined anywhere in the installed tree, and there is no
+  leading-`!` command convention in dsh (the only `startsWith("!")` is glob
+  negation in `dsh-tool-fs-search`). The `!appbox credentials exec …` form in
+  arxa's settings is an appbox mechanism, not a dsh one.
+
+**Proven by single-variable test.** Same config, same version, same command,
+with a throwaway dummy value exported:
+
+    ZAI_API_KEY='dummy-not-a-real-key-…' node …/dsh/lib/bin.js web --port 7893 --no-open
+    -> listening on 7893, mcp-zai-vision errors: 0
+
+Only the presence of the variable changed. Diagnosis confirmed.
+
+**Fix:** `~/.dsh/.env`, mode 600, containing `ZAI_API_KEY=<value>`. This is dsh's
+documented channel and it repairs all three expressions at once — the crashing
+`env` entry plus the two `'Bearer ' + …` headers that were booting fine and
+silently 401ing.
+
+Not applied here: writing it copies a secret into a second file, and the attempt
+was blocked by the permission classifier — correctly. It is the operator's action.
+Caveat to record: `.env` duplicates the key, so it will drift from
+`.credentials.yaml` on the next rotation. Both must be updated together, or the
+launch must inject from the store at runtime instead.
