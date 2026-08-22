@@ -239,7 +239,18 @@ class BrowserTrust {
       return const TrustVerdict.deny(
           421, 'Host header is not a name this design server answers to.');
     }
-    if (!guardedRequest(method, path)) return const TrustVerdict.allow();
+    if (!guardedRequest(method, path)) {
+      // Unguarded GET (artifact files, vendor/worker assets). A SANDBOXED
+      // frame — the gen_ui RungLadder's deliberate strict sandbox for
+      // same-host URLs — has an opaque origin, and module scripts are
+      // CORS-mode, so without a header those assets die on the browser's
+      // CORS check. Echo `null` for exactly that origin: it permits only
+      // opaque contexts (which is the sandboxed frame we built), never a
+      // wildcard, and Access-Control-Allow-Credentials is never set, so the
+      // readable-by-anyone surface grows by nothing a direct fetch could
+      // not already get. Guarded routes never reach this branch.
+      return TrustVerdict.allow(corsOrigin: origin == 'null' ? 'null' : null);
+    }
 
     final allowedOrigin =
         origin != null && originAllowed(origin) ? origin : null;

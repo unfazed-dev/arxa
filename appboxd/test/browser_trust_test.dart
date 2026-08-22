@@ -292,6 +292,32 @@ void main() {
       expect(v.corsOrigin, isNot('*'));
     });
 
+    test('a sandboxed frame gets Origin null echoed on asset GETs only', () {
+      // The gen_ui RungLadder's deliberate strict sandbox (same-host URLs
+      // stay opaque per the cookie threat model): module scripts are
+      // CORS-mode, so unguarded assets must answer with the header…
+      final v = t.check(
+        method: 'GET',
+        path: '/assets/vendor/htmx4.min.js',
+        host: '127.0.0.1:4319',
+        origin: 'null',
+        secFetchSite: 'cross-site',
+      );
+      expect(v.allowed, isTrue);
+      expect(v.corsOrigin, 'null');
+      // …but a guarded route still refuses an unverifiable origin — the
+      // sandboxed frame cannot call /__* or write anything.
+      final g = t.check(
+        method: 'GET',
+        path: '/__events',
+        host: '127.0.0.1:4319',
+        origin: 'null',
+        secFetchSite: 'cross-site',
+      );
+      expect(g.allowed, isFalse);
+      expect(g.status, 403);
+    });
+
     test('an un-allowlisted panel is refused the stream', () {
       final v = t.check(
         method: 'GET',
