@@ -43,7 +43,7 @@ import 'dart:io';
 
 import 'package:path/path.dart' as p;
 
-import 'design_tools.dart' show LintFinding, stripComments;
+import 'design_tools.dart' show LintFinding, stripComments, htmlElementTags;
 
 // ══ vocabulary ══════════════════════════════════════════════════════════
 
@@ -983,26 +983,11 @@ String _snippet(String? text) {
 /// Known HTML element names. Restricting the scan to these eliminates false
 /// positives from TypeScript generics (`Record<string, …>`, `Array<T>`) that
 /// happen to look like `<lowercase>` after comment stripping.
-const _htmlElements = <String>{
-  'a', 'abbr', 'address', 'area', 'article', 'aside', 'audio', 'b', 'base',
-  'bdi', 'bdo', 'blockquote', 'br', 'button', 'canvas', 'caption', 'cite',
-  'code', 'col', 'colgroup', 'data', 'datalist', 'dd', 'del', 'details', 'dfn',
-  'dialog', 'div', 'dl', 'dt', 'em', 'embed', 'fieldset', 'figcaption',
-  'figure', 'footer', 'form', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'head',
-  'header', 'hgroup', 'hr', 'html', 'i', 'iframe', 'img', 'input', 'ins',
-  'kbd', 'label', 'legend', 'li', 'link', 'main', 'map', 'mark', 'menu',
-  'meta', 'meter', 'nav', 'noscript', 'object', 'ol', 'optgroup', 'option',
-  'output', 'p', 'param', 'picture', 'pre', 'progress', 'q', 'rp', 'rt',
-  'ruby', 's', 'samp', 'script', 'section', 'select', 'slot', 'small',
-  'source', 'span', 'strong', 'style', 'sub', 'summary', 'sup', 'table',
-  'tbody', 'td', 'template', 'textarea', 'tfoot', 'th', 'thead', 'time',
-  'title', 'tr', 'track', 'u', 'ul', 'var', 'video', 'wbr',
-};
-
 // kimitail: line-regex scan like the sibling rules, not a JSX parser — upgrade
-// only if false positives appear in practice. The _htmlElements allowlist is
-// the one upgrade applied: TS generics (Record<string, …>) produce <lowercase>
-// matches that a bare regex cannot distinguish from HTML tags.
+// only if false positives appear in practice. The htmlElementTags allowlist
+// (design_tools.dart, shared with the data-arxa-id stamper) is the one upgrade
+// applied: TS generics (Record<string, …>) produce <lowercase> matches that a
+// bare regex cannot distinguish from HTML tags.
 final _openingTagRe = RegExp(r'<([a-z][\w-]*)([^>]*?)(/?)>');
 
 /// W7: in surface/view templates (NOT in widget-library dirs), a rendered HTML
@@ -1027,7 +1012,7 @@ List<LintFinding> _anonymousElementFindings(String artifactDir) {
     final src = stripComments(File(p.join(artifactDir, rel)).readAsStringSync());
     for (final m in _openingTagRe.allMatches(src)) {
       final tag = m.group(1)!;
-      if (!_htmlElements.contains(tag)) continue; // TS generic, not HTML
+      if (!htmlElementTags.contains(tag)) continue; // TS generic, not HTML
       final attrs = m.group(2)!;
       final selfClosing = m.group(3) == '/';
       final hasIdentity =
@@ -1174,7 +1159,7 @@ List<LintFinding> _compositionFindings(String artifactDir) {
     final src = stripComments(File(p.join(artifactDir, rel)).readAsStringSync());
     for (final m in _openingTagRe.allMatches(src)) {
       final tag = m.group(1)!;
-      if (!_htmlElements.contains(tag)) continue; // TS generic, not HTML
+      if (!htmlElementTags.contains(tag)) continue; // TS generic, not HTML
       final selfClosing = m.group(3) == '/';
       final line = _lineNumberAt(src, m.start);
 

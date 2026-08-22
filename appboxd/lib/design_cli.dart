@@ -36,6 +36,7 @@ import 'dart:io';
 
 import 'package:appboxd/commission.dart';
 import 'package:appboxd/design_server.dart';
+import 'package:appboxd/design_stamp.dart';
 import 'package:appboxd/design_selftest.dart';
 import 'package:appboxd/design_tools.dart';
 import 'package:appboxd/probes/probe_cli.dart';
@@ -49,6 +50,9 @@ Subcommands:
                                      islands, artifact app modules) + the
                                      optional client-js.json weight ceiling
                                      + widget/panel gate (W1–W9)
+  stamp <artifact-dir>             Emit data-arxa-id machine identity onto
+                                     every host element (carry-forward: only
+                                     elements lacking an id are stamped)
   check-ladder [--config <p>] [--doc <p>]
                                      Ladder config ↔ doctrine drift check
   check-wiring <dir> <property>      Wiring joins (fragments|mutations-posted|
@@ -91,6 +95,8 @@ Future<int> designMain(List<String> args) async {
       return commissionMain(rest);
     case 'lint':
       return _emit(designLint(rest));
+    case 'stamp':
+      return _emit(stampMain(rest));
     case 'check-ladder':
       return _emit(designCheckLadder(rest));
     case 'check-wiring':

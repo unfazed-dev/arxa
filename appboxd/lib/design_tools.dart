@@ -60,6 +60,26 @@ String stripComments(String html) => html
     .replaceAll(RegExp(r'/\*[\s\S]*?\*/'), '')
     .replaceAll(RegExp(r'^\s*//.*$', multiLine: true), '');
 
+/// The HTML host-element vocabulary, shared by W7's scan (gate_design_widgets)
+/// and the data-arxa-id stamper (design_stamp). A lowercase JSX opening tag is
+/// only treated as markup when its name is in this set — TS generics and
+/// comparisons produce lowercase `<name` shapes that are not elements.
+const htmlElementTags = <String>{
+  'a', 'abbr', 'address', 'area', 'article', 'aside', 'audio', 'b', 'base',
+  'bdi', 'bdo', 'blockquote', 'br', 'button', 'canvas', 'caption', 'cite',
+  'code', 'col', 'colgroup', 'data', 'datalist', 'dd', 'del', 'details', 'dfn',
+  'dialog', 'div', 'dl', 'dt', 'em', 'embed', 'fieldset', 'figcaption',
+  'figure', 'footer', 'form', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'head',
+  'header', 'hgroup', 'hr', 'html', 'i', 'iframe', 'img', 'input', 'ins',
+  'kbd', 'label', 'legend', 'li', 'link', 'main', 'map', 'mark', 'menu',
+  'meta', 'meter', 'nav', 'noscript', 'object', 'ol', 'optgroup', 'option',
+  'output', 'p', 'param', 'picture', 'pre', 'progress', 'q', 'rp', 'rt',
+  'ruby', 's', 'samp', 'script', 'section', 'select', 'slot', 'small',
+  'source', 'span', 'strong', 'style', 'sub', 'summary', 'sup', 'table',
+  'tbody', 'td', 'template', 'textarea', 'tfoot', 'th', 'thead', 'time',
+  'title', 'tr', 'track', 'u', 'ul', 'var', 'video', 'wbr',
+};
+
 /// The ADR-0002 rules, ported rule-for-rule from lint.mjs, widened by
 /// ADR-0009 (client-JS law v2): scripts resolve to the vendored set, the
 /// vendorSrc() helper, an artifact app module (/assets/app/…), or carry
