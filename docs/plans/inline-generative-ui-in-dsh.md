@@ -851,3 +851,53 @@ cross-origin endpoint, and opening it meant looking at what was already open.
     unloaded Image reserves its Slot (mutation: collapse it and the check
     fails), and that a dangling id draws a note. Not a browser: no layout, no
     CSS. But the components execute, which they never had before.
+
+74. **One framed document serves every rung; switching a rung is a resize, not
+    a navigation.** The iframe key carried the rung label (`epoch:url:label`),
+    so every mobile/tablet/desktop click unmounted the element and mounted a
+    new one — a full page load of the framed app, discarding the operator's
+    scroll position to show the SAME document at a different width. `width`
+    and `height` are plain attributes and the fit is a CSS `transform: scale`,
+    none of which require navigation, so the key is now `epoch:url` in both
+    the `gen_ui` RungLadder and the design-panel dock. `epoch` stays because
+    ⟳ and the SSE `reload` frame genuinely do need a remount.
+
+    Per-rung scroll memory was considered and rejected: it needs one mounted
+    iframe per rung, i.e. three live app instances, three SSE subscriptions
+    and three hot-reload storms, to remember a number the browser already
+    keeps for the single document. `selftest.mjs` pins the invariant in both
+    files (mutation-tested: restore the rung to either key and the check
+    fails), because "the key should identify the rung" is exactly the kind of
+    tidy-looking change a future reader makes.
+
+75. **`frame-ancestors` cannot express a bracketed IPv6 literal, so the
+    design server stopped emitting one.** CSP3 §2.3.1 defines
+    `host-char = ALPHA / DIGIT / "-"` and `ancestor-source` admits only
+    `scheme-source`, `host-source` and `'self'` — there is no production a
+    `[::1]` can match. Chrome logged "does not support the source expression"
+    once per document load and dropped the token; the spec's own note adds
+    that only `127.0.0.1` ever matches a URL by address, so the entry had
+    never done anything but generate console noise. `'self'` already covers a
+    document actually served over `[::1]`. Removing it is behaviour
+    preserving by construction: the browser was already discarding it.
+
+    Verified end to end rather than by unit test alone — a throwaway server
+    from the freshly AOT-compiled binary on port 4399 emitted
+    `frame-ancestors 'self' http://127.0.0.1:4399 http://localhost:4399
+    http://arxa.studio.localhost:7891`, confirming both that the token is
+    gone and that `~/.appbox/trusted-origins` still supplies the studio, so a
+    restart cannot silently un-frame the panel.
+
+76. **An operator-supplied IPv6 origin is deliberately NOT filtered out of
+    the header.** Filtering it would trade a loud failure for a silent one:
+    today the browser names the exact offending token in the console, which
+    tells the operator precisely what to fix, whereas dropping it server-side
+    would leave them with framing that simply does not work and nothing that
+    says why. That is the failure shape `readTrustedOriginsFile` already
+    calls the worst an allowlist can have. `browser_trust_test.dart` asserts
+    the pass-through so nobody "hardens" it into silence.
+
+    Note for future debugging: `.build/appbox` is an AOT binary. A Dart change
+    needs a recompile, and the `appbox` wrapper does that automatically only
+    when invoked as `appbox` — relaunching the raw `.build/appbox` path
+    re-execs the old image and the fix appears not to work.
