@@ -56,6 +56,7 @@ final _hasIdentityRe = RegExp(r'\bdata-el\b|\binspectAttrs\b');
 final _ariaRe = RegExp(r'''\baria-label\s*=\s*"([^"]*)"''');
 final _roleAttrRe = RegExp(r'''\brole\s*=\s*"(button|link|tab|switch)"''');
 final _classRe = RegExp(r'''\bclass\s*=\s*"([^"]*)"''');
+final _hrefRe = RegExp(r'''\bhref\s*=\s*"([^"]*)"''');
 
 const _tagRoles = <String, String>{
   'a': 'link', 'button': 'button', 'input': 'form field',
@@ -153,8 +154,16 @@ AnnotateResult annotateSource(String src) {
           (text != null ? 'text' : 'container');
       final aria = _ariaRe.firstMatch(tagText)?.group(1);
       final cls = _classRe.firstMatch(tagText)?.group(1);
+      // Label fallback chain: aria-label, direct text, href (a link's
+      // destination IS its identity — "link:a" from a bare tag fallback is
+      // junk and duplicates across every textless link), first class token,
+      // then the tag.
       final label = _sanitize(
-          aria ?? text ?? (cls?.split(' ').first ?? name), 40);
+          aria ??
+              text ??
+              (name == 'a' ? _hrefRe.firstMatch(tagText)?.group(1) : null) ??
+              (cls?.split(' ').first ?? name),
+          40);
       final style = _sanitize(cls ?? name);
       final fn = _sanitize(aria ??
           (interactive

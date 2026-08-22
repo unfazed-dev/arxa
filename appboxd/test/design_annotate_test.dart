@@ -81,6 +81,13 @@ void main() {
       expect(res.annotated, 0);
     });
 
+    test('textless link labels from its href, never the bare tag', () {
+      final res = annotateSource('<a href="/book" class="w-inline-block"></a>');
+      expect(res.annotated, 1);
+      expect(res.code, contains('data-el="link:/book"'));
+      expect(res.code, isNot(contains('data-el="link:a"')));
+    });
+
     test('double quotes in derived text are neutralized', () {
       final res = annotateSource('<a href="/x">Say "hi" now</a>');
       expect(res.code, isNot(contains('data-el="link:Say "hi"')));
