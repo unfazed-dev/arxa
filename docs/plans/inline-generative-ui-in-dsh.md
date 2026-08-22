@@ -812,3 +812,42 @@ cross-origin endpoint, and opening it meant looking at what was already open.
     remounts the iframe but not the component, so a boolean would latch true
     and the next frame would never glow. 20 s ceiling so a server that dies
     mid-boot does not glow forever.
+
+70. **Decision 23 reversed: the catalogue is nine, not five — and the reason is
+    that provider-independence beat fidelity.** The operator's ruling settled
+    it: "the gen ui streaming feature must work regardless of the LLM." Token-
+    level streaming is a *per-provider* property (measured: prose streams in
+    1045 deltas across 74 coalesced rows, tool arguments in exactly one — see
+    `streaming-generative-ui-research.md`), so building on it would ship a
+    feature that silently degrades when the model changes. Disqualified as the
+    mechanism, whatever a provider test would have shown. Added `Card`,
+    `Button`, `Icon`, `Image`. Not speculative growth: a declared skeleton is
+    not expressible without a container and something to put in it.
+
+71. **The surface is a graph now, and the size signal comes from the author.**
+    `Card.children` names sibling ids — A2UI's own `Map<String, Component>`
+    shape, since the flat list cannot nest. Four ways this goes wrong, all
+    validated host-side before the browser sees it: a dangling id, a card
+    containing itself, a cycle across two cards (every individual reference is
+    valid; only walking the graph finds it, and the renderer would recurse
+    forever), and two cards claiming one child (which would draw it twice and
+    give one componentId two selection records). `claimedChildren` is mirrored
+    in both halves under the existing two-list contract, with one table run
+    against both so they cannot drift.
+
+72. **What actually fills in, and why it is honest on any model.** The wait
+    that remains after the arguments land is in *rendering*, not generation:
+    an `Image` fetching bytes, a `RungLadder` booting a live server. Those
+    slots are reserved at their declared `height` and swapped when ready, so
+    the surface never jumps — the reserved box IS "an outline of that size".
+    Per the skeleton research, the pending dress is withheld for
+    `PENDING_AFTER_MS = 400`: a treatment shown for a 200ms load flashes and
+    reads as a glitch, which is exactly why the first glow was never visible.
+
+73. **Decision 32c's caveat is closed for these paths.** `selftest.mjs` now
+    runs the browser half's component functions for real in Node against a
+    React stub — 19 checks. It proves a Card's children render exactly once
+    (mutation: drop the top-level filter and the child draws twice), that an
+    unloaded Image reserves its Slot (mutation: collapse it and the check
+    fails), and that a dangling id draws a note. Not a browser: no layout, no
+    CSS. But the components execute, which they never had before.
