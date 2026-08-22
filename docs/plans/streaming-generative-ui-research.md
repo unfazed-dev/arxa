@@ -121,6 +121,13 @@ settings file also configures `zai` (`glm-5.3`, 1M context) and
 This costs one prompt. Building the two-phase feature costs about a day. Do
 the measurement first.
 
+**OUTCOME (2026-08-23):** measured in session `e0b1b8ce` — zai/`glm-5.3` at
+effort max emitted **0 `tool-call-chunks` rows** across the pricing-card runs
+(117 text-chunks, 1452 reasoning-chunks, 34 gen_ui dispatches). The provider
+is the ceiling; §8 is the route. Control: the dsh build CAN record
+tool-call-chunks (312 rows in an operator-harness session the same day), so
+the zero is the provider, not the plumbing.
+
 ## 8. If the provider is the ceiling: two-phase declare-then-fill
 
 The shape that delivers the user's description without any streaming at all,
@@ -145,6 +152,16 @@ skeleton expressible — but it is a reversal and should be recorded as one.
 
 Apply §6 when building it: no glow under ~1s, one slot animated at a time
 rather than all four, and a resolved fallback if a fill never arrives.
+
+**§8.2 SHIPPED (2026-08-23), the rest deferred.** The client fold landed in
+arxa-studio (`plugins/gen-ui` — foldCall + ledger): stepwise calls sharing a
+surfaceId — or matching the title+prefix-chain heuristic when the model omits
+it, which glm-5.3 always does — merge into ONE card that grows in place, with
+new children arriving via the entrance animation; folded-away calls render a
+one-line stub. The tool schema gained an optional `surfaceId` and the receipt
+teaches it in-band. §8.1/§8.3 (the `Pending` placeholder + fill-by-id) are NOT
+built: no catalogue growth means plan decision 23 stands unreversed, and the
+fold alone covered the observed failure (N disjoint prefix cards).
 
 ---
 
