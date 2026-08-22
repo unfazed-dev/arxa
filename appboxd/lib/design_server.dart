@@ -859,9 +859,37 @@ class DesignServer {
           '<script type="module" src="/__worker_assets/islands_eager.js">'
           '</script></body>');
     }
+    // Scrollbars are the preview harness showing through, not the design.
+    // Injected ONLY for a framed navigation, so opening the same URL in a tab
+    // is untouched and still scrolls with visible bars.
+    //
+    // This has to happen HERE, in the server: the arxa design panel and the
+    // `gen_ui` RungLadder both frame us cross-origin, so neither can reach
+    // this document's stylesheets. `Sec-Fetch-Dest` is a forbidden header
+    // name — page script cannot set or strip it — and the browser sends
+    // `iframe` only on the frame's own navigation, never on its sub-resources,
+    // so this lands on the document and nothing else.
+    //
+    // Both properties are needed and neither breaks scrolling: `scrollbar-width`
+    // is the standard one, `::-webkit-scrollbar` covers engines that predate it.
+    // `*` rather than `html` because the bars that show up in a scaled preview
+    // come from the design's own inner scrollers (carousels, overflow panes),
+    // not from the root.
+    if (respBody != null &&
+        (resp.headers['content-type'] ?? '').contains('text/html') &&
+        req.headers.value('Sec-Fetch-Dest') == 'iframe' &&
+        respBody.contains('</body>')) {
+      respBody = respBody.replaceFirst('</body>', '$_kFramedCss</body>');
+    }
     if (respBody != null) req.response.add(utf8.encode(respBody));
     await req.response.close();
   }
+
+  /// Hides scrollbars without disabling scrolling, for a framed preview.
+  static const String _kFramedCss = '<style id="__appbox_framed">'
+      '*{scrollbar-width:none!important}'
+      '*::-webkit-scrollbar{width:0!important;height:0!important}'
+      '</style>';
 
   /// POST /__project_write {path, body} — write one file INSIDE the live-read
   /// project. The studio edits the project through this one confined channel

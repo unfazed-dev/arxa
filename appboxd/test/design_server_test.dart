@@ -1103,6 +1103,29 @@ void main() {
       expect(csp, isNot(contains('*')));
     });
 
+    // A scaled-down preview shows the design's own inner scrollers as bars,
+    // which read as harness artifacts. The panel and the RungLadder frame us
+    // cross-origin and cannot reach this document's CSS, so the server hides
+    // them — but ONLY for a framed navigation, or opening the URL in a tab
+    // would silently lose its scrollbars too.
+    test('a framed navigation gets the scrollbar-hiding style', () async {
+      final r = await _get('${base()}/', headers: {'sec-fetch-dest': 'iframe'});
+      expect(r.status, 200);
+      expect(r.body, contains('__appbox_framed'));
+      expect(r.body, contains('scrollbar-width:none'));
+      // Hidden, not disabled: neither property stops the wheel.
+      expect(r.body, isNot(contains('overflow:hidden!important')));
+    });
+
+    test('a normal navigation and a sub-resource do NOT get it', () async {
+      for (final dest in [null, 'document', 'script', 'empty']) {
+        final r = await _get('${base()}/',
+            headers: dest == null ? const {} : {'sec-fetch-dest': dest});
+        expect(r.body, isNot(contains('__appbox_framed')),
+            reason: 'Sec-Fetch-Dest: ${dest ?? "(absent)"}');
+      }
+    });
+
     test('DNS rebinding: a foreign Host is refused with 421', () async {
       final r = await _get('${base()}/__projects',
           headers: {'host': 'evil.example.com'});
