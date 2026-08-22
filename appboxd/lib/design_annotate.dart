@@ -41,7 +41,8 @@ import 'package:path/path.dart' as p;
 import 'design_stamp.dart' show openingTagEnd;
 import 'design_tools.dart'
     show CmdResult, htmlElementTags, interactiveElementRe, svgElementTags;
-import 'gate_design_widgets.dart' show directTextSnippet;
+import 'gate_design_widgets.dart'
+    show directTextSnippet, isExpressionDebris;
 
 /// Outcome of annotating one source text.
 class AnnotateResult {
@@ -146,7 +147,20 @@ AnnotateResult annotateSource(String src) {
         continue;
       }
       final openTag = src.substring(i, end + 1);
-      final text = directTextSnippet(src, end + 1);
+      // The snippet walk can return debris FOLLOWED by a comment ({/* … */})
+      // — pure debris fails its test once comment text is appended. Comments
+      // are not content: strip them, then re-test what remains.
+      final rawText = directTextSnippet(src, end + 1);
+      final text = rawText == null
+          ? null
+          : (() {
+              final stripped = rawText
+                  .replaceAll(RegExp(r'\{?/\*[\s\S]*?\*/\}?'), '')
+                  .trim();
+              return stripped.isEmpty || isExpressionDebris(stripped)
+                  ? null
+                  : stripped;
+            })();
       final interactive = interactiveElementRe.hasMatch(openTag);
       if (!interactive && text == null) {
         i = end + 1; // not inspect-mandatory — leave it bare

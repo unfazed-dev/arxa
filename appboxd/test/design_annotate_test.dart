@@ -76,6 +76,22 @@ void main() {
       expect(second.carried, 2);
     });
 
+    test('debris followed by a comment is not text either', () {
+      // base.tsx shape: self-closing element, then ))} then a JSX comment —
+      // the comment text must not become the element's label.
+      final res = annotateSource(
+          '{items.map((it) => (<link rel="x" href="/y" />))} {/* htmx: blocking */}\n'
+          '<div class="x"></div>');
+      expect(res.annotated, 0);
+    });
+
+    test('real text with an inline comment keeps the text', () {
+      final res = annotateSource(
+          '<p>Hello {/* aside */} world</p>');
+      expect(res.annotated, 1);
+      expect(res.code, contains('data-el="text:Hello world"'));
+    });
+
     test('template-literal markup is never annotated', () {
       final res = annotateSource('{raw(`<button>Save</button>`)}');
       expect(res.annotated, 0);
