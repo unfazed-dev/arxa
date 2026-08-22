@@ -901,3 +901,52 @@ cross-origin endpoint, and opening it meant looking at what was already open.
     needs a recompile, and the `appbox` wrapper does that automatically only
     when invoked as `appbox` — relaunching the raw `.build/appbox` path
     re-execs the old image and the fix appears not to work.
+
+77. **Decision 74 is reversed: every rung gets its own live document.** 74 made
+    one framed document serve all three rungs, which stopped the reload but
+    could never satisfy the original ask — an iframe has exactly ONE scroll
+    offset, so a shared frame can hold at most one rung's place and switching
+    necessarily discards the other two. "Each rung stays where it has been
+    scrolled" is unimplementable without one frame per rung. Both surfaces now
+    mount a stack: a box per rung, only the active one displayed, keyed on a
+    PER-RUNG epoch plus the rung index.
+
+    Mounted lazily and then kept alive. Booting all three up front is a live
+    app instance per viewport nobody has opened — exactly the cost that made
+    the shared frame attractive in 74 — so laziness is what makes this
+    affordable, and `selftest.mjs` pins it by counting iframes on first paint
+    (mutation: drop the guard, three appear, the check fails).
+
+78. **What a real browser established, and what it did not.** Driven through
+    the repo's own CDP harness against the live suczka-studio design:
+
+    - Resizing a live frame DOES propagate: `innerWidth`/`innerHeight` in the
+      child match a frame booted at that rung exactly.
+    - Resize-in-place does NOT corrupt the document. Three mobile↔desktop
+      round trips left the inner scroller identical at `scrollHeight: 11468`.
+      An earlier reading of 22332 looked like corruption and was not: it only
+      appeared after a wheel, so it was the design lazy-loading on scroll.
+      Re-running without the wheel killed that hypothesis.
+    - `display:none` preserves both the live document and its scroll offset: a
+      rung scrolled to 600px, hidden behind another rung and shown again, came
+      back at 600px. This is the mechanic the whole design rests on. Narrow
+      claim: measured on a design with a fixed shell and an inner scroller. A
+      frame driven by an IntersectionObserver or ResizeObserver sees
+      `display:none` as zero-size and may not return identical.
+
+    **The reported "cannot scroll" was NOT reproduced.** The wheel moved the
+    inner scroller in every harness configuration tried. So this change is
+    recorded as delivering the requested architecture, not as a proven fix for
+    that symptom — it needs the operator's eyes on the real panel. The repro
+    file was deleted rather than kept: it exercised resize-in-place, which no
+    longer happens, and a passing test for deleted behaviour is worse than none.
+
+79. **A refresh is scoped to one rung; the others are marked stale and reload
+    on the way back in.** The reload button bumps only the active rung's
+    epoch. An SSE `reload` from the design server bumps the rung on screen and
+    flags the rest — because a hidden rung still showing pre-reload content is
+    a preview that lies, while reloading all three would throw away the scroll
+    position of two rungs the operator is not even looking at. The SSE handler
+    reads the active rung through a ref: it is created once per `(open, url)`
+    and would otherwise close over a stale index. Both halves are pinned in
+    `selftest.mjs` (mutation: bump every rung on reload and the check fails).
