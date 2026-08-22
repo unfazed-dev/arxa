@@ -88,6 +88,21 @@ void main() {
       expect(res.code, isNot(contains('data-el="link:a"')));
     });
 
+    test('expression href with a string literal yields the literal', () {
+      final res = annotateSource(
+          "<a href={pre + '/contact'} class={cls}></a>");
+      expect(res.annotated, 1);
+      expect(res.code, contains('data-el="link:/contact"'));
+    });
+
+    test('fully dynamic mapped link keeps the honest tag fallback', () {
+      final res = annotateSource(
+          '<a key={link.id} href={link.href}>{link.label}</a>');
+      expect(res.annotated, 1);
+      expect(res.code, contains('data-el="link:a"'));
+      expect(res.code, contains('provenance="inferred"'));
+    });
+
     test('double quotes in derived text are neutralized', () {
       final res = annotateSource('<a href="/x">Say "hi" now</a>');
       expect(res.code, isNot(contains('data-el="link:Say "hi"')));

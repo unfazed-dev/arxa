@@ -57,6 +57,9 @@ final _ariaRe = RegExp(r'''\baria-label\s*=\s*"([^"]*)"''');
 final _roleAttrRe = RegExp(r'''\brole\s*=\s*"(button|link|tab|switch)"''');
 final _classRe = RegExp(r'''\bclass\s*=\s*"([^"]*)"''');
 final _hrefRe = RegExp(r'''\bhref\s*=\s*"([^"]*)"''');
+// First string literal inside an expression href: href={pre + '/contact'}
+// still yields /contact; href={link.href} has none and falls through.
+final _hrefExprRe = RegExp(r"""\bhref\s*=\s*\{[^}]*?["']([^"']+)["']""");
 
 const _tagRoles = <String, String>{
   'a': 'link', 'button': 'button', 'input': 'form field',
@@ -161,7 +164,10 @@ AnnotateResult annotateSource(String src) {
       final label = _sanitize(
           aria ??
               text ??
-              (name == 'a' ? _hrefRe.firstMatch(tagText)?.group(1) : null) ??
+              (name == 'a'
+                  ? (_hrefRe.firstMatch(tagText)?.group(1) ??
+                      _hrefExprRe.firstMatch(tagText)?.group(1))
+                  : null) ??
               (cls?.split(' ').first ?? name),
           40);
       final style = _sanitize(cls ?? name);
