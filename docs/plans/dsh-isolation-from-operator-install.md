@@ -306,3 +306,83 @@ Verified in layers, weakest to strongest:
 The two `'Bearer ' + process.env.ZAI_API_KEY` headers (search, reader) are fixed
 by the same change; they were previously sending the literal string
 `"Bearer undefined"` and failing silently at call time rather than at boot.
+
+## Models vanished from the harness: one rejected settings field (2026-08-22)
+
+Symptom: the model picker was empty and `Settings → Models` listed only DeepSeek.
+Headless named it: `NO_ADAPTER: no adapter registered for provider "zai-coding-cn"`.
+
+Root cause, quoted from the harness once it was made to fail loudly:
+
+    llm-pi-ai: provider "zai-coding-cn" model "glm-5.3" sets compat
+    "zaiToolStream", which is not configurable here: pi-ai's installed catalog
+    sets it for the vendors that need it, so name that provider as the route
+
+`compat.zaiToolStream` was documented in `streaming-generative-ui-research.md`
+§3 as an invented, inert key. It was removed from `~/.arxa/dsh/settings.yaml`
+but **not** from `~/.dsh/settings.yaml`. It stopped being inert:
+`dsh-llm-pi-ai@0.1.1-rc.2` added `assertOfferedCompatFields`, which rejects
+catalog-owned compat fields. One rejected field makes the entire `llm-pi-ai`
+section unserviceable, so **every** route disappears — not just the offending
+model.
+
+**Why it was invisible.** Per `dsh-settings-file`'s README: an invalid document
+fails plugin load, but a *stored section that becomes unserviceable through an
+external edit* "keeps the namespace's last good value at the settings seam and
+warns". The last good value was empty, so the harness booted clean, logged
+nothing to stdout, and simply had no providers. Schema validation is not enough
+to catch this either — calling the plugin's exported `Config()` on the section
+**passes**; the rejection happens later, in `resolveRouteModels`.
+
+**The technique that found it.** `dsh --patch <file>` supplies the same section
+as *entry* config, and entry config "still fails plugin load" — loud. Feeding the
+operator's exact section through `--patch` turned a silent drop into a stack
+trace naming the field. Use this whenever a settings section appears ignored.
+
+Progression, each step one variable:
+
+| state | result |
+|---|---|
+| as found | `NO_ADAPTER: no adapter registered for "zai-coding-cn"` |
+| minimal hand-written route via `--patch` | route registers; reasoning-effort error |
+| operator's exact section via `--patch` | **loud**: names `zaiToolStream` |
+| `zaiToolStream` line removed | `AUTH: 401` — route registers, model resolves, real request made |
+| harness restarted | picker lists **GLM-5.3** |
+
+Fix: one line deleted from `~/.dsh/settings.yaml` (backup:
+`settings.yaml.pre-zaitoolstream-fix-20260822`). The remaining `AUTH: 401` is a
+credential matter for the operator and is deliberately not pursued here.
+
+## Sidebar wordmark rendered four stacked labels
+
+`plugins/brand/lib/client.js` painted the wordmark with `[class*="_brand"]`,
+a SUBSTRING match. rc.2 restructured one element into four nested ones —
+`button._brand > span._brandIdentity > (span._brandMark + span._brandName)` —
+so all four received `::before "arxa"` + `::after "studio"`, stacking into
+`arxaarxa arxa...tstlid`. The `> svg` rule died the same way: the mark is
+DIV-wrapped now.
+
+*Rule this establishes:* never target a class token that is a PREFIX of a
+sibling token. `_brand` prefixes `_brandIdentity`, `_brandMark`, `_brandName`.
+
+Fixed by painting only the leaf (`_brandName`) and hiding `_brandMark`. A second
+pass removed `margin-left: 0.32em` from the `::after`: `_brandName` is
+`display:flex` with `gap: 6px`, so the pseudo-elements are flex ITEMS and the
+gap already separates them — the margin stacked on top (6px + 6.72px ≈ 13px) and
+read as a broken word space. rc.7 painted into an inline box where no gap
+applied, which is why the margin was right then and wrong now.
+
+`document.title` had the same shape of failure: rc.2 writes the base title
+*after* client plugins load, so the one-shot assignment was overwritten back to
+"DeepSeek Harness". Re-asserted through a `MutationObserver` on `document.head`,
+mirroring the existing headline swap.
+
+Verified in a browser: exactly **1** element paints the label (was 4),
+`document.title === 'arxa studio'`, and the header reads "arxa studio".
+
+## Version pin is already current
+
+`0.1.1-rc.2` is the newest published build of `dsh`, `dsh-base`, `dsh-headless`
+and `dsh-web-app`. Their `latest` dist-tag points at an OLDER `0.0.1-rc.1`, so
+`npm view <pkg> version` understates it — check the full `versions` list. arxa
+pins and runs `0.1.1-rc.2`; nothing newer exists to move to.
