@@ -621,3 +621,46 @@ empty env.
   to flip back after the Aug 24 10:04 weekly reset if plan quota is
   preferred; delegate_pi and arxa-explore default to wallet glm-5.3 (explore
   defaults effort max).
+
+## `design patch` is blocked on element identity (2026-08-22)
+
+Investigated to build it; stopped before building, because the verb as
+specified cannot exist yet and the version that *could* be built today is the
+one item 15 explicitly bans.
+
+**What already exists.** `POST /__project_write` (`design_server.dart:894`,
+routed at `:513`) is a working, path-traversal-safe write confined to the
+project dir, and the project watcher hot-reloads the worker after it. Decision
+38 of `inline-generative-ui-in-dsh.md` called this "the write half … therefore
+a thin CLI wrapper, not new infrastructure". That is true of the WRITE. It is
+not true of the verb.
+
+**What does not exist.** Item 15 specifies "hit-test regions via their
+`arxa-*` identity" and "every drag applied as a **structured patch** … never
+freeform DOM/CSS writes". There is no `arxa-*` identity in artifacts. Checked
+the live suczka-studio artifact: 129 files under `ui/`, zero `arxa-` anywhere,
+and the only `data-*` attributes present (`data-el`, `data-rung`, `data-text`,
+`data-url`, `data-delay` …) are that design's own, not an engine convention.
+So nothing addressable exists for a patch to target, and the overlay has
+nothing to hit-test against.
+
+**Why the buildable version was rejected.** A `design patch` that takes a file
+path and a body is `/__project_write` with a CLI in front — freeform whole-file
+writes, which item 15 bans in the same sentence that names the verb. It would
+also unblock nothing: the drag overlay still could not hit-test. Shipping it
+would add a third artifact to maintain and buy no capability.
+
+**The actual next piece, and it is a decision not a task:** emit a stable
+per-element identity into generated artifacts. It is load-bearing beyond the
+overlay — the lens keys on it to point at what it measured, codegen has to
+round-trip it without churn, and once artifacts carry it, it is a shape we are
+committed to. Open questions the operator owns: attribute name and whether it
+is stripped in production builds; identity derived from source position
+(cheap, moves on every edit) versus a stable authored id (durable, needs a
+generator that never collides); and whether it lands on every element or only
+on token-bearing ones. `design patch` is a thin wrapper the day that answer
+exists, and not before.
+
+**Unaffected by this:** H4's viewer half is built and now has per-rung live
+documents (see decisions 77–79 in `inline-generative-ui-in-dsh.md`). Only the
+drag overlay is waiting.
