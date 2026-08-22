@@ -279,3 +279,30 @@ was blocked by the permission classifier — correctly. It is the operator's act
 Caveat to record: `.env` duplicates the key, so it will drift from
 `.credentials.yaml` on the next rotation. Both must be updated together, or the
 launch must inject from the store at runtime instead.
+
+### Applied and verified (operator ran the write)
+
+`~/.dsh/.env` now exists, mode 600, 64 bytes, one variable (`ZAI_API_KEY`). The
+value was written by the operator with a command that copies it out of
+`.credentials.yaml` and never prints it; it never entered the session.
+
+Verified in layers, weakest to strongest:
+
+1. `dsh web --port 7894 --no-open` → listening, **0** `mcp-zai-vision` errors,
+   **0** `Error` lines.
+2. Browser (headless, cacheless) → renders `Into the Unknown`, **0** failed
+   requests. Serving is not rendering, so this layer is not optional.
+3. **The downstream server actually authenticated**, which config validation
+   alone would never have shown:
+
+       INFO: MCP Server started successfully
+             [{"mode":"ZAI","name":"zai-mcp-server","version":"0.1.2"}]
+
+   `/tmp/vision-proxy.log` makes the before/after unambiguous — every earlier
+   attempt reads `proxy start` immediately followed by `proxy exit 1`; the run
+   after the fix has a `proxy start` with **no exit line**, and both
+   `vision-proxy.mjs` and `npm exec @z_ai/mcp-server` stayed alive.
+
+The two `'Bearer ' + process.env.ZAI_API_KEY` headers (search, reader) are fixed
+by the same change; they were previously sending the literal string
+`"Bearer undefined"` and failing silently at call time rather than at boot.
