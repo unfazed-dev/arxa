@@ -151,24 +151,40 @@ AnnotateResult annotateSource(String src) {
       // — pure debris fails its test once comment text is appended. Comments
       // are not content: strip them, then re-test what remains.
       final rawText = directTextSnippet(src, end + 1);
-      final text = rawText == null
-          ? null
-          : (() {
-              final stripped = rawText
-                  .replaceAll(RegExp(r'\{?/\*[\s\S]*?\*/\}?'), '')
-                  .trim();
-              return stripped.isEmpty || isExpressionDebris(stripped)
-                  ? null
-                  : stripped;
-            })();
+      // Two questions, kept separate:
+      //   bearsText — does the element carry text content? (qualification)
+      //   labelText — is that text usable as a label? (derivation)
+      // Debris (with or without trailing comments) is not text. Text that
+      // IS present but source-shaped (mixed expressions, code spanning
+      // lines, leading expression punctuation) still qualifies the element
+      // but its label falls back to class/tag — a label must never
+      // contain source.
+      String? bearsText;
+      String? labelText;
+      var textish = false; // reads as copy, not code debris
+      if (rawText != null) {
+        final stripped = rawText
+            .replaceAll(RegExp(r'\{?/\*[\s\S]*?\*/\}?'), '')
+            .trim();
+        if (stripped.isNotEmpty && !isExpressionDebris(stripped)) {
+          bearsText = stripped;
+          textish = !RegExp(r'^[)\]},;:]').hasMatch(stripped);
+          final sourceShaped = stripped.contains('\n') ||
+              stripped.contains('{') ||
+              stripped.contains('}') ||
+              !textish;
+          if (!sourceShaped) labelText = stripped;
+        }
+      }
+      final text = labelText;
       final interactive = interactiveElementRe.hasMatch(openTag);
-      if (!interactive && text == null) {
+      if (!interactive && bearsText == null) {
         i = end + 1; // not inspect-mandatory — leave it bare
         continue;
       }
       final role = _roleAttrRe.firstMatch(tagText)?.group(1) ??
           _tagRoles[name] ??
-          (text != null ? 'text' : 'container');
+          (textish ? 'text' : 'container');
       final aria = _ariaRe.firstMatch(tagText)?.group(1);
       final cls = _classRe.firstMatch(tagText)?.group(1);
       // Label fallback chain: aria-label, direct text, href (a link's

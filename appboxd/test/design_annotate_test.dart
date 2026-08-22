@@ -92,6 +92,27 @@ void main() {
       expect(res.code, contains('data-el="text:Hello world"'));
     });
 
+    test('snippets containing source never leak into labels', () {
+      // The legal_document shape: text between tags is actually code. The
+      // element still qualifies (raw text was detected) but its label must
+      // come from the fallback chain and contain no source.
+      final res = annotateSource(
+          '{segs.map((seg) => (<path d="M0 0" />, seg]));}\nexport const X = 1;');
+      expect(res.annotated, 1);
+      expect(res.code, contains('data-el="container:path"'));
+      // the label carries no source (the fixture itself legitimately
+      // contains 'export' — assert on the attribute, not the file)
+      expect(res.code, isNot(contains('data-inspect-fn="Shows: , seg')));
+    });
+
+    test('text mixed with a JSX expression falls back to class, not source', () {
+      final res = annotateSource(
+          '<blockquote class="quote">“{props.quote.body}”</blockquote>');
+      expect(res.annotated, 1);
+      expect(res.code, contains('data-el="text:quote"'));
+      expect(res.code, contains('data-inspect-fn="Shows: quote"'));
+    });
+
     test('template-literal markup is never annotated', () {
       final res = annotateSource('{raw(`<button>Save</button>`)}');
       expect(res.annotated, 0);
