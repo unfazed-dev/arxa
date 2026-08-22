@@ -102,6 +102,39 @@ void main() {
     });
   });
 
+  group('svg coverage', () {
+    test('svg roots AND their JSX children are stamped (every element)', () {
+      final res = stampSource(
+        '<svg viewBox="0 0 36 36" role="button"><circle cx="18" cy="18" r="18"/>'
+        '<g transform="translate(1 1)"><path d="M0 0L1 1Z"/></g></svg>',
+        'p',
+      );
+      expect(res.stamped, 4);
+      expect(res.code, contains('<svg data-arxa-id="p-e1" viewBox'));
+      expect(res.code, contains('<circle data-arxa-id="p-e2" cx'));
+      expect(res.code, contains('<g data-arxa-id="p-e3" transform'));
+      expect(res.code, contains('<path data-arxa-id="p-e4" d'));
+    });
+
+    test('camelCase svg tags stamp; template-literal markup stays untouched', () {
+      // The PIECES case: generated SVG path data in a template literal is
+      // data for a generator, not authored elements — stamping inside it
+      // would fight the generator. Single-quoted string markup below IS
+      // stamped: quoted strings are not skipped (apostrophes in JSX text
+      // rule), the documented residual risk, pinned here honestly.
+      final res = stampSource(
+        '<svg><clipPath id="c"><rect width="1"/></clipPath></svg>'
+        '{raw(`<path d="M0 0"/>`)}'
+        "{raw('<circle r=\"1\"/>')}",
+        'p',
+      );
+      expect(res.stamped, 4); // svg, clipPath, rect, the quoted circle
+      expect(res.code, contains('<clipPath data-arxa-id="p-e2" id="c">'));
+      expect(res.code, contains('{raw(`<path d="M0 0"/>`)}')); // untouched
+      expect(res.code, contains("raw('<circle data-arxa-id=\""));
+    });
+  });
+
   group('idPrefixFor', () {
     test('artifact-relative path becomes the prefix', () {
       expect(idPrefixFor('surfaces/cart.tsx'), 'surfaces-cart');

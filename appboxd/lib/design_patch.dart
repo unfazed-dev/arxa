@@ -81,6 +81,8 @@ PatchResult patchSource(String src, String id, PatchEdits edits) {
         var j = lt + 1;
         while (j < src.length &&
             ((src.codeUnitAt(j) >= 97 && src.codeUnitAt(j) <= 122) ||
+                (src.codeUnitAt(j) >= 65 &&
+                    src.codeUnitAt(j) <= 90) || // camelCase svg continuation
                 (src.codeUnitAt(j) >= 48 && src.codeUnitAt(j) <= 57) ||
                 src.codeUnitAt(j) == 45)) {
           j++;

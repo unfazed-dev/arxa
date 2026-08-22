@@ -80,6 +80,18 @@ const htmlElementTags = <String>{
   'title', 'tr', 'track', 'u', 'ul', 'var', 'video', 'wbr',
 };
 
+/// The SVG element vocabulary. Kept SEPARATE from [htmlElementTags] because
+/// W7's authoring gate scopes itself to HTML host semantics, while the
+/// data-arxa-id stamper's ratified coverage is EVERY element — an `<svg>` root
+/// is grabbable in the overlay, and an interactive one (role="button", e.g.
+/// an icon close button) is exactly what design patch must address.
+const svgElementTags = <String>{
+  'svg', 'g', 'path', 'rect', 'circle', 'ellipse', 'line', 'polyline',
+  'polygon', 'text', 'tspan', 'defs', 'use', 'symbol', 'marker', 'clipPath',
+  'mask', 'pattern', 'image', 'foreignObject', 'desc', 'title', 'stop',
+  'linearGradient', 'radialGradient',
+};
+
 /// The ADR-0002 rules, ported rule-for-rule from lint.mjs, widened by
 /// ADR-0009 (client-JS law v2): scripts resolve to the vendored set, the
 /// vendorSrc() helper, an artifact app module (/assets/app/…), or carry

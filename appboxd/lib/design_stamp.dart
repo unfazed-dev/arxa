@@ -49,7 +49,12 @@ import 'dart:io';
 
 import 'package:path/path.dart' as p;
 
-import 'design_tools.dart' show CmdResult, htmlElementTags;
+import 'design_tools.dart'
+    show CmdResult, htmlElementTags, svgElementTags;
+
+/// The stamper's full vocabulary — HTML host elements plus SVG, because the
+/// ratified coverage is every element (svgElementTags doc explains the split).
+final _stampableTags = <String>{...htmlElementTags, ...svgElementTags};
 
 /// Outcome of stamping one source text.
 class StampResult {
@@ -79,6 +84,9 @@ String idPrefixFor(String relPath) {
 
 bool _isNameChar(int c) {
   return (c >= 97 && c <= 122) || // a-z
+      (c >= 65 && c <= 90) || // A-Z — continuation only (camelCase svg:
+      // clipPath, linearGradient…); the FIRST char is checked lowercase
+      // at the call site, so Capitalized components stay exempt
       (c >= 48 && c <= 57) || // 0-9
       c == 45; // -
 }
@@ -132,6 +140,26 @@ StampResult stampSource(String src, String prefix) {
   while (i < len - 1) {
     final c = src.codeUnitAt(i);
     final d = src.codeUnitAt(i + 1);
+    // Template literals — skipped, never stamped. This is where multi-line
+    // markup strings live (raw(PIECES)-style generated SVG/HTML), and those
+    // are data, not authored elements — stamping inside them would fight
+    // their generators. Nested templates can theoretically leak a scan
+    // region; the worst case is an id inside a string, visible in the diff
+    // (the same documented residual class as quoted strings).
+    if (c == 96) {
+      // `
+      var k = i + 1;
+      while (k < len) {
+        if (src.codeUnitAt(k) == 92) {
+          k += 2; // escaped char
+          continue;
+        }
+        if (src.codeUnitAt(k) == 96) break;
+        k++;
+      }
+      i = k < len ? k + 1 : len;
+      continue;
+    }
     // Comments — skipped, never stamped.
     if (c == 47 && d == 42) {
       // /* anywhere
@@ -163,7 +191,7 @@ StampResult stampSource(String src, String prefix) {
           j++;
         }
         final name = src.substring(i + 1, j);
-        if (!htmlElementTags.contains(name)) {
+        if (!_stampableTags.contains(name)) {
           i = j; // TS generic or lowercase non-element — not markup
           continue;
         }
