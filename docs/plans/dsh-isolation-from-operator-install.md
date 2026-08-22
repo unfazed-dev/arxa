@@ -127,3 +127,36 @@ arxa owns `~/.arxa/{dsh,pi}` for state **and** owns its own `node_modules` for
 code. Resolving an executable from a path the operator controls is an isolation
 break even when nothing is written there. Reuse of an operator install must be
 opt-in and explicit, never a silent fallback.
+
+## Verified (2026-08-22)
+
+- `arxa-studio/node_modules` installed: **433 packages, 0 links into `_npx`**.
+- Resolved dsh in arxa's tree: **0.1.0-rc.7** (a real directory), matching the pin.
+  Executes standalone: `node node_modules/@deepseek-ai/dsh/lib/bin.js --version`
+  → `0.1.0-rc.7`, exit 0.
+- `bin/arxa.mjs` no longer contains any `~/.dsh` resolution path.
+- `~/.arxa/dsh/profiles/node_modules` (510 npx links) renamed to
+  `node_modules.npx-poisoned-20260822`. Reversible; dsh re-links from arxa's own
+  install on next boot.
+- npm skipped 5 install scripts (`node-pty`, `koffi`, …). Checked rather than
+  assumed: `node-pty` ships a `darwin-arm64` prebuild and `require('node-pty')`
+  loads, and `koffi` is only pulled in by `dsh-sandbox-windows-acl`, which is
+  Windows-only. No rebuild needed on this machine.
+- `bin/isolation-check.mjs` added, 4 checks, **mutation-tested**: re-adding the
+  fallback fails check 1; pointing the scanner at the poisoned backup reports all
+  510 links. Restored, 4/4 pass.
+
+PI needs no change: `piHome` is unconditionally `~/.arxa/pi`, there is no
+fallback to `~/.pi`, and it carries no `node_modules` to share. `arxa.mjs:141`
+does *read* `~/.dsh/.credentials.yaml` once to seed arxa's own store — a
+deliberate one-time read, not a runtime coupling, and it is not a code path.
+
+## Remaining, operator-owned
+
+1. **Restart arxa studio.** PID 40350 has been up since ~12:30, so it loaded
+   modules from the npx slot *before* npx overwrote it at 15:07 and has been
+   serving a mixed rc.7/rc.2 process since. It also cannot survive the profile
+   rename. Restart it to pick up the pinned tree.
+2. **`ZAI_API_KEY` for the operator's own dsh.** It must reach `process.env`;
+   `~/.dsh/.env` (mode 600) is the mechanism `loadLayeredEnv` supports. The value
+   is a secret and was never read, printed, or copied here.
