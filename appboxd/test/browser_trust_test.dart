@@ -173,6 +173,15 @@ void main() {
       expect(BrowserTrust.guardedRequest('GET', '/__projects'), isTrue);
       expect(BrowserTrust.guardedRequest('GET', '/__events'), isTrue);
     });
+    test('worker asset bundles are the unguarded exception', () {
+      // Static engine JS — artifact-file exposure class, not enumeration.
+      expect(BrowserTrust.guardedRequest(
+          'GET', '/__worker_assets/islands_eager.js'), isFalse);
+      // But the worker PAGE stays guarded, and so does any non-GET.
+      expect(BrowserTrust.guardedRequest('GET', '/__worker_page'), isTrue);
+      expect(BrowserTrust.guardedRequest(
+          'POST', '/__worker_assets/islands_eager.js'), isTrue);
+    });
     test('the iframe and a typed URL stay unguarded', () {
       expect(BrowserTrust.guardedRequest('GET', '/'), isFalse);
       expect(BrowserTrust.guardedRequest('GET', '/design'), isFalse);

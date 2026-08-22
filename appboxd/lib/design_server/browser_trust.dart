@@ -223,8 +223,20 @@ class BrowserTrust {
   /// all and blocking costs nothing. Artifact files and the design's own
   /// routes stay unguarded on GET so the panel's iframe and a hand-typed
   /// `http://127.0.0.1:4319/` both keep working with zero configuration.
-  static bool guardedRequest(String method, String path) =>
-      !_safeMethods.contains(method.toUpperCase()) || path.startsWith('/__');
+  static bool guardedRequest(String method, String path) {
+    if (!_safeMethods.contains(method.toUpperCase())) return true;
+    if (!path.startsWith('/__')) return false;
+    // Worker assets are static engine JS bundles — the same exposure class
+    // as artifact files and vendor scripts, which this policy deliberately
+    // leaves unguarded. The /__* guard exists against enumeration of
+    // ~/.appbox and state changes; a fixed module bundle enumerates
+    // nothing, and the gen_ui sandbox loads it as a CORS-mode module.
+    if (method.toUpperCase() == 'GET' &&
+        path.startsWith('/__worker_assets/')) {
+      return false;
+    }
+    return true;
+  }
 
   TrustVerdict check({
     required String method,
