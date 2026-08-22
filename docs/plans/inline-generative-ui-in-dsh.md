@@ -777,3 +777,38 @@ cross-origin endpoint, and opening it meant looking at what was already open.
     * Headless Chrome renders OVERLAY scrollbars, so a screenshot can never
       show this difference either way. Computed `scrollbar-width` inside the
       frame is the machine-independent check.
+
+67. **Streaming, re-measured — and decision 33's stated reason was the second
+    blocker, not the first.** Session `e0b1b8ce` recorded six tool calls. Every
+    one arrived as exactly **one** `tool-call-delta` chunk — 1149, 2875, 275,
+    1466, 1509 and 1503 bytes, each with a **0 ms span**. dsh's accumulator
+    (`argsRaw: base.argsRaw + chunk.argumentsDelta`, ui-conversation
+    `updateChunk`) is correct and simply never receives a second delta: the
+    provider ships the whole tool-call payload atomically. So a partial-JSON
+    renderer would have exactly one state to render. Decision 33 reached the
+    right conclusion; the first-order reason is upstream of the toolview.
+
+68. **Two independent blockers, so "get the provider to stream" is not a fix.**
+    Even given streamed arguments, `hasVisibleContent` returns `false` for
+    `tool-call` blocks (ui-conversation), so a half-built call draws nothing in
+    the thread, and the toolview still mounts from the completed `tool/call`
+    node. Both would have to change together. Neither is worth it against the
+    measured latency: in that session reasoning ran 13.2s→18.4s, the arguments
+    landed at 26.23s, and the card dispatched at 26.267s — **37 ms** after the
+    call. The wait users feel is thinking time; nothing inside gen-ui moves it.
+
+69. **What ships instead: an accent outline glow on a surface still filling in.**
+    Not a placeholder during reasoning — no card exists then (see 68). The
+    window that IS real is the iframe boot: a RungLadder frames a live
+    `appbox design serve`, which takes seconds. The frame box glows until its
+    iframe fires `load`, and the whole card glows until the call settles. The
+    ring is a masked `conic-gradient` swept by an `@property`-registered angle
+    — a plain custom property is a *string* to the animation engine and would
+    jump 0→360 rather than travel, which is a silent visual failure, so the
+    registration is asserted in `selftest.mjs`. Verified in real Chrome: the
+    sweep moved 142.02°→217.02° in 500 ms (=360°/2.4s, matching the
+    declaration) and the ring paints on the border with the interior untouched.
+    Load state is keyed by frame identity, not a boolean — switching rung
+    remounts the iframe but not the component, so a boolean would latch true
+    and the next frame would never glow. 20 s ceiling so a server that dies
+    mid-boot does not glow forever.
