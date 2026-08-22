@@ -664,3 +664,31 @@ exists, and not before.
 **Unaffected by this:** H4's viewer half is built and now has per-rung live
 documents (see decisions 77–79 in `inline-generative-ui-in-dsh.md`). Only the
 drag overlay is waiting.
+
+**RESOLVED 2026-08-22 — element identity decided (operator grilling, four
+answers).** One correction first: the handoff's "the only `data-*` attributes
+present are that design's own, not an engine convention" was wrong — `data-el`
+IS an engine convention with gate teeth (D7/rule C in `design_tools.dart:105`,
+W7 in `gate_design_widgets.dart:1008`, flows join edges to its values). The
+decision is therefore two layers, not one invented from nothing:
+
+1. **Scheme.** `data-el` stays authored, semantic, flow-facing — unchanged.
+   `data-arxa-id` is a new engine-emitted machine layer; the drag overlay,
+   `design patch`, and the lens key on it exclusively.
+2. **Name.** `data-arxa-id` — closes item 15's `arxa-*` loop, valid HTML5
+   custom data, lands in `element.dataset`.
+3. **Values.** Stable ids authored at emit time — NOT source-position (it moves
+   on every edit, which is disqualifying for a patch target). The emitter
+   preserves ids on regeneration: read the current artifact, carry ids forward
+   for matching elements, allocate fresh for new ones. Collision-free by
+   construction — per-surface allocation, one owner of the counter. Persistence
+   lives in the emitter (read-carry-write), not a sidecar file.
+4. **Coverage.** Every element, no classifier — the overlay can grab a
+   decorative container, and "every element has exactly one `data-arxa-id`,
+   stable across regen" is a one-line invariant the selftest can assert.
+5. **Production.** Never stripped. One code path, no mode flag; if H6 ever
+   wants a strip it re-opens as its own decision with a cost attached.
+
+`design patch` is now unblocked and is what this section always said it would
+be the day the answer existed: a thin structured-patch verb over
+`/__project_write`, after emit-time stamping lands in the artifact generator.
