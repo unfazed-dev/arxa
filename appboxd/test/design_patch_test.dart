@@ -87,13 +87,16 @@ void main() {
       expect(res.code, expr);
     });
 
-    test('a < b inside an attribute expression does not mislead the walk-back', () {
+    test('a <b inside an attribute expression does not mislead the walk-back', () {
+      // Unspaced: the <b IS a lowercase-tag-shaped candidate, so this fixture
+      // genuinely guards the walk-back's extent check — accept the first <
+      // and the patch lands on a phantom <b> tag (or bails) instead of the div.
       const tricky =
-          '<div class={a < b ? "x" : "y"} data-arxa-id="t-e1">t</div>';
+          '<div class={a <b ? "x" : "y"} data-arxa-id="t-e1">t</div>';
       final res = patchSource(
           tricky, 't-e1', const PatchEdits(attrs: {'role': 'note'}));
       expect(res.code,
-          '<div role="note" class={a < b ? "x" : "y"} data-arxa-id="t-e1">t</div>');
+          '<div role="note" class={a <b ? "x" : "y"} data-arxa-id="t-e1">t</div>');
     });
   });
 
