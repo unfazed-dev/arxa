@@ -160,3 +160,34 @@ deliberate one-time read, not a runtime coupling, and it is not a code path.
 2. **`ZAI_API_KEY` for the operator's own dsh.** It must reach `process.env`;
    `~/.dsh/.env` (mode 600) is the mechanism `loadLayeredEnv` supports. The value
    is a secret and was never read, printed, or copied here.
+
+## Boot verified in the mode that matters (2026-08-22)
+
+`--version` exiting 0 is **not** evidence the plugin tree loads — it only proves
+the CLI entrypoint imports. Checked properly:
+
+- `arxa --headless "…"` → **fails**: `plugin tree failed to load: 1 entry did not
+  activate — arxa-gen-ui: pending (waiting for service: connection)`.
+  Pre-existing and headless-only, unrelated to this incident:
+  `plugins/gen-ui/lib/index.js:50` declares `inject = ['tools', 'connection']`,
+  and `connection` is provided by `@deepseek-ai/dsh-web-app`, which headless does
+  not load (`arxa.mjs` picks `[dsh-base, dsh-headless]` for `--headless`). If
+  gen-ui should ever boot headless, take the service optionally via `ctx.get()`
+  instead of `inject`. Not done here — out of scope.
+- `arxa --port 7899` (web mode, the mode the studio runs) → **boots clean**, no
+  pending entries, listening. All three plugins serve from the isolated tree:
+  `arxa-gen-ui` 38081 b, `arxa-design-panel` 14344 b, `arxa-brand` 6472 b, all 200.
+- Regenerated `~/.arxa/dsh/profiles/node_modules`: **413 symlinks, 0 into `_npx`**,
+  411 pointing at `arxa-studio/node_modules`. Down from 510/510 npx-linked.
+
+`--port <n>` passes through `arxa.mjs` untouched, so a second instance can be
+booted for testing without disturbing the studio on 7891.
+
+## The other `~/.dsh` edit, so it is not re-investigated
+
+`~/.dsh/settings.yaml.pre-arxa-20260821-023953` proves an earlier session did edit
+the operator's settings. Diffed: the change is **model routing only** — `baseURL`
+moved to `https://api.z.ai/api/{paas,coding}/paas/v4`, plus `reasoning: max`,
+`reasoningEfforts`, and `supportsReasoningEffort: true`. No plugin, profile, or
+MCP entries. Unrelated to this failure. It is still an edit to the operator's
+file, which the isolation rule above should have prevented.
