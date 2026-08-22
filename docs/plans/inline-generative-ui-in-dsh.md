@@ -744,3 +744,36 @@ cross-origin endpoint, and opening it meant looking at what was already open.
       factory). `selftest.mjs` runs ONE 15-row table against both copies, so
       drift fails the suite; verified by mutating the client copy's `hostname`
       back to `origin` and watching it go red.
+
+65. **Scrollbars in a preview are harness, not design — and only the SERVER can
+    remove them.** The bars showing in the ladder's mobile/tablet rungs and in
+    the design panel belong to the framed document's own inner scrollers (the
+    artifact's carousels and overflow panes), which is cross-origin: neither
+    consumer can reach its stylesheets. So `appbox design serve` injects
+    `*{scrollbar-width:none}` + `*::-webkit-scrollbar{width:0;height:0}` into
+    full HTML documents, alongside the islands-eager loader it already injects.
+    Scrolling is untouched; only the bar is hidden.
+    * Gated on `Sec-Fetch-Dest: iframe`, so opening the same URL in a tab keeps
+      its scrollbars. That header is a FORBIDDEN header name — page script
+      cannot set or strip it — and the browser sends `iframe` only for the
+      frame's own navigation, never its sub-resources, so it lands on exactly
+      one response.
+    * The design panel's own dock scroller is a separate, second bar and OURS;
+      it gets `scrollbarWidth: 'none'` in the panel.
+
+66. **A forbidden header cannot be forged, which also defeats the obvious
+    test.** The first verification tried `Network.setExtraHTTPHeaders` with
+    `Sec-Fetch-Dest: iframe` on a direct navigation — Chrome ignores the
+    override (that is precisely why the signal is trustworthy), so the probe
+    reported "not injected" and looked like a bug in the fix. The proof has to
+    be a REAL frame.
+    * It reads only because parent and child are both `127.0.0.1`: same SITE,
+      so the child stays in-process and `evaluateInFrame` reaches it. The live
+      pair (`arxa.studio.localhost` -> `127.0.0.1`) is cross-site, and its child
+      is an OOPIF this session cannot see — see decision 60.
+    * Verified by mutation: pointing the header check at a value nothing sends
+      makes the test fail with "the framed navigation did not receive the
+      style", so the assertion is not vacuous.
+    * Headless Chrome renders OVERLAY scrollbars, so a screenshot can never
+      show this difference either way. Computed `scrollbar-width` inside the
+      frame is the machine-independent check.

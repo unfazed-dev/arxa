@@ -136,6 +136,50 @@ void main() {
               'X-Frame-Options is back, or frame-ancestors omits the parent');
     });
 
+    test('a framed page has its scrollbars hidden, but still scrolls', () async {
+      // Only a real browser can prove this. `Sec-Fetch-Dest` is a forbidden
+      // header name, so it cannot be forged with Network.setExtraHTTPHeaders —
+      // Chrome ignores the override. The frame has to be a real frame.
+      //
+      // Readable here only because parent and child are both 127.0.0.1: same
+      // SITE, so the child stays in-process and evaluateInFrame reaches it. The
+      // live pair (arxa.studio.localhost -> 127.0.0.1) is cross-site and its
+      // child is an OOPIF, invisible to this session.
+      final target = 'http://127.0.0.1:${allowed!.port}/';
+      String? styled;
+      for (var i = 0; i < 40 && styled == null; i++) {
+        await session.navigate('$parentOrigin/?target=$target');
+        try {
+          final frame = await session.frameForSelector('#f');
+          if (frame != null) {
+            final r = await session.evaluateInFrame(frame, """
+              (() => {
+                if (!document.body) return null;
+                const tag = !!document.getElementById('__appbox_framed');
+                const bars = [...document.querySelectorAll('*')]
+                  .filter((e) => /auto|scroll/.test(
+                      getComputedStyle(e).overflowY + getComputedStyle(e).overflowX))
+                  .map((e) => getComputedStyle(e).scrollbarWidth);
+                return JSON.stringify({ tag: tag, widths: [...new Set(bars)] });
+              })()
+            """);
+            if (r is String && r.contains('"tag"')) styled = r;
+          }
+        } catch (_) {/* frame not committed yet */}
+        if (styled == null) {
+          await Future<void>.delayed(const Duration(milliseconds: 200));
+        }
+      }
+      expect(styled, isNotNull,
+          reason: 'never got a readable framed document');
+      expect(styled, contains('"tag":true'),
+          reason: 'the framed navigation did not receive the style');
+      // Every scroller in the frame reports the hidden value — and nothing
+      // sets overflow:hidden, so the wheel still works.
+      expect(styled, isNot(contains('"auto"')));
+      expect(styled, isNot(contains('"thin"')));
+    });
+
     test('an un-allowlisted origin still CANNOT — protection was not deleted',
         () async {
       final target = 'http://127.0.0.1:${refused!.port}/';
