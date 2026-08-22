@@ -460,6 +460,20 @@ This is not a new pattern — it is the same **derive + confirm** shape used thr
 
 The marker also gives an "advanced" coverage toggle (D7) something to filter on — "show only unconfirmed annotations" — without inventing new state to track it.
 
+### The data-* boundary (2026-08-22)
+
+Three layers, and the boundary between them is the whole design:
+
+| layer | attributes | owned by | read by |
+|---|---|---|---|
+| machine identity | `data-arxa-id` | the engine (stamped, every element) | overlay, `design patch`, lens |
+| inspect semantics | `data-el` + `data-inspect-*` | the engine (authored or D9-derived) | inspect island, flow edges |
+| behavior wiring | everything else (`data-delay`, `data-rung`, `data-step`, `data-marquee`, …) | **the design** | the design's own islands |
+
+Design-owned attributes stay out of engine scope on purpose: `data-*` is HTML's private extension point, each island defines its own vocabulary, and no engine consumer exists for them. A registry without a consumer is an invented key that silently does nothing. Do not gate them, do not canonize them, do not migrate them. (`design patch` can still WRITE any attribute on an addressed element — manipulation without ownership.)
+
+The one engine-adjacent exception: **`data-rung`**. Per-rung documents are an engine contract (decisions 77–79 in `inline-generative-ui-in-dsh.md`), and the serve pipeline threads `rung` down to the artifact. The convention: mark the current rung on the shell chrome or document root (`data-rung={rung}`) so islands and per-rung styling can read it. The attribute name stays artifact convention; the pattern is engine-level and should be wired the same way in every artifact.
+
 ## Widget state
 
 All interactive state is server state. The session holds it, namespaced per shell (`sessionData.<shell>` — the intake/design/build precedent: each shell manages its own data, and two shells never read each other's keys); the facade validates it and exposes it in the context bag; templates render it as classes and attributes. The DOM is never a store.
