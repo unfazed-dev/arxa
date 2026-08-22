@@ -177,7 +177,11 @@ AnnotateResult annotateSource(String src) {
         }
       }
       final text = labelText;
-      final interactive = interactiveElementRe.hasMatch(openTag);
+      // W7's _interactiveTags counts EVERY <a> as interactive; rule C's
+      // regex requires an href. An href-less anchor is a JS-wired button
+      // (modal close, etc.) and needs identity just the same.
+      final interactive =
+          interactiveElementRe.hasMatch(openTag) || name == 'a';
       if (!interactive && bearsText == null) {
         i = end + 1; // not inspect-mandatory — leave it bare
         continue;

@@ -113,6 +113,13 @@ void main() {
       expect(res.code, contains('data-inspect-fn="Shows: quote"'));
     });
 
+    test('href-less anchor is interactive (JS-wired button)', () {
+      final res = annotateSource(
+          '<a class="modal__close" hx-boost="false"><span></span></a>');
+      expect(res.annotated, 1);
+      expect(res.code, contains('data-el="link:modal__close"'));
+    });
+
     test('template-literal markup is never annotated', () {
       final res = annotateSource('{raw(`<button>Save</button>`)}');
       expect(res.annotated, 0);
