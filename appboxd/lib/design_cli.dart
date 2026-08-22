@@ -36,6 +36,7 @@ import 'dart:io';
 
 import 'package:appboxd/commission.dart';
 import 'package:appboxd/design_server.dart';
+import 'package:appboxd/design_patch.dart';
 import 'package:appboxd/design_stamp.dart';
 import 'package:appboxd/design_selftest.dart';
 import 'package:appboxd/design_tools.dart';
@@ -53,6 +54,9 @@ Subcommands:
   stamp <artifact-dir>             Emit data-arxa-id machine identity onto
                                      every host element (carry-forward: only
                                      elements lacking an id are stamped)
+  patch <artifact-dir> <id> [edits] Structured patch against one element by
+                                     its data-arxa-id: --set n=v / --rm n /
+                                     --style p=v / --rm-style p
   check-ladder [--config <p>] [--doc <p>]
                                      Ladder config ↔ doctrine drift check
   check-wiring <dir> <property>      Wiring joins (fragments|mutations-posted|
@@ -97,6 +101,8 @@ Future<int> designMain(List<String> args) async {
       return _emit(designLint(rest));
     case 'stamp':
       return _emit(stampMain(rest));
+    case 'patch':
+      return _emit(patchMain(rest));
     case 'check-ladder':
       return _emit(designCheckLadder(rest));
     case 'check-wiring':

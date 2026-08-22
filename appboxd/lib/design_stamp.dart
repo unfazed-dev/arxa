@@ -86,7 +86,8 @@ bool _isNameChar(int c) {
 /// Index of the `>` closing the opening tag whose attrs start at [i],
 /// tracking {} depth and quoted attribute values. -1 when the text gives
 /// out or another `<` opens first (malformed — bail, stamp nothing).
-int _openingTagEnd(String s, int i) {
+/// Public: design_patch locates patch targets with the same walk.
+int openingTagEnd(String s, int i) {
   var depth = 0;
   int? quote;
   while (i < s.length) {
@@ -177,7 +178,7 @@ StampResult stampSource(String src, String prefix) {
           i = j;
           continue;
         }
-        final end = _openingTagEnd(src, j);
+        final end = openingTagEnd(src, j);
         if (end < 0) {
           i = j; // malformed — bail on this tag, keep scanning
           continue;
