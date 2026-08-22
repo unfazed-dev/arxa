@@ -193,15 +193,24 @@ class BrowserTrust {
   ///
   /// The allowlist mirrors [originAllowed] deliberately: one operator lever
   /// (`~/.appbox/trusted-origins` + `--trusted-origin`) governs both who may
-  /// call us and who may frame us. The three loopback spellings are listed
+  /// call us and who may frame us. The loopback spellings are listed
   /// explicitly because a directive cannot express "any `*.localhost` name at
   /// our port" the way [originAllowed] can; `'self'` covers whatever alias the
   /// document was actually loaded under, which is the case that matters.
+  ///
+  /// `http://[::1]:$port` IS DELIBERATELY ABSENT and must not be re-added.
+  /// CSP3 §2.3.1 defines `host-char = ALPHA / DIGIT / "-"`, so a bracketed
+  /// IPv6 literal matches no production a browser can parse: Chrome logged
+  /// "does not support the source expression" once per document load and
+  /// dropped the token. The spec says the same in a note — only `127.0.0.1`
+  /// ever matches a URL by address. Removing it changes nothing a browser
+  /// ever honoured, and `'self'` already covers a document loaded over
+  /// `[::1]`. [originAllowed] still accepts that origin; this is only about
+  /// what a CSP directive can express.
   String get frameAncestors => [
         "'self'",
         'http://127.0.0.1:$port',
         'http://localhost:$port',
-        'http://[::1]:$port',
         ..._extraOrigins,
       ].join(' ');
 

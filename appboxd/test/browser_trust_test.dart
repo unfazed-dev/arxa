@@ -132,7 +132,22 @@ void main() {
       expect(v, startsWith("'self'"));
       expect(v, contains('http://127.0.0.1:4319'));
       expect(v, contains('http://localhost:4319'));
-      expect(v, contains('http://[::1]:4319'));
+    });
+
+    test('never emits a bracketed IPv6 literal — CSP cannot express one', () {
+      // CSP3 §2.3.1: host-char = ALPHA / DIGIT / "-". No brackets and no
+      // colons, so `http://[::1]:4319` parses as no production at all: the
+      // browser drops it and logs "does not support the source expression"
+      // on EVERY document load. This group used to assert that token was
+      // PRESENT, which pinned the noise in place. `'self'` already covers a
+      // document actually served over [::1].
+      expect(_loopback().frameAncestors, isNot(contains('[')));
+      // An operator who puts one in ~/.appbox/trusted-origins is NOT
+      // filtered here, deliberately: the browser then names the exact bad
+      // token in the console, which is a louder failure than us dropping it
+      // silently and leaving them with framing that just does not work.
+      expect(_loopback(origins: ['http://[::1]:7891']).frameAncestors,
+          contains('[::1]'));
     });
 
     test('a trusted origin is admitted — this is the arxa panel', () {
