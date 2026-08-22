@@ -191,3 +191,44 @@ moved to `https://api.z.ai/api/{paas,coding}/paas/v4`, plus `reasoning: max`,
 `reasoningEfforts`, and `supportsReasoningEffort: true`. No plugin, profile, or
 MCP entries. Unrelated to this failure. It is still an edit to the operator's
 file, which the isolation rule above should have prevented.
+
+## The pin was wrong: rc.7's web UI does not work (2026-08-22)
+
+Honouring the rc.7 pin exposed a second, hidden fact: **`@deepseek-ai/dsh@0.1.0-rc.7`
+hangs at "Loading plugins…" and never renders.** The studio only ever appeared to
+work because the npx slot was supplying a newer build. The pin had never been
+exercised, so nobody had discovered rc.7 was unusable here.
+
+Isolated by bisection, each step in a fresh headless Chrome (no cache):
+
+| configuration | result |
+|---|---|
+| studio, all arxa plugins, rc.7 | `Loading plugins…` |
+| studio, `arxa-gen-ui` disabled, rc.7 | `Loading plugins…` (so not gen-ui) |
+| **plain dsh, throwaway DSH_HOME, no arxa plugins, rc.7** | **`Loading plugins…`** |
+| plain dsh, throwaway DSH_HOME, no arxa plugins, 0.1.1-rc.2 | full UI renders |
+
+With zero arxa plugins loaded it still hangs, which clears arxa entirely.
+
+Signature: both websockets (`/api/events.mux`, `/api/events.host`) open and the
+handshakes are accepted, then **zero frames are ever sent**. 0 failed requests,
+0 HTTP ≥ 400, 0 console errors. Nothing fails; the client simply waits.
+
+Fixed by pinning all four packages to `0.1.1-rc.2` in arxa's own tree. Note the
+`latest` dist-tag for `dsh-base` / `dsh-headless` / `dsh-web-app` is `0.0.1-rc.1`,
+which is *older* than what `dsh` resolves — **always pin exact, never `latest`**.
+
+Verified after the bump: UI renders `arxa-studio / PTC mode / Full access /
+Kimi K3 / … / design`, websocket frames flow (`session/subscribed`,
+`host/session-added`), isolation check 4/4, live process holds **0** files under
+`~/.npm/_npx`, profile at 432 links with 0 npx.
+
+### Two measurement traps hit while finding this
+
+1. **`tab.enable()` does not enable the Network domain.** The first probe reported
+   "0 failed requests, 0 websocket events" — all artifacts of a domain that was
+   never on. Only an explicit event-count-by-method check exposed it: there were
+   no `Network.*` events at all. Send `Network.enable` / `Log.enable` explicitly.
+2. **"Boots clean" was claimed from a clean log plus HTTP 200s.** Both were true
+   and the UI was still dead. Serving assets is not rendering; only a browser
+   that reaches the plugin-loaded state proves boot.
