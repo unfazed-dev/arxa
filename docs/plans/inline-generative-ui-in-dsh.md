@@ -640,3 +640,60 @@ cross-origin endpoint, and opening it meant looking at what was already open.
     * The reload is triggered by CREATING a file, not `touch`ing one: macOS
       FSEvents can swallow a bare mtime bump, and a false negative there
       would read as a broken stream.
+
+57. **The iframe never worked, and no test could have caught it.** Every
+    cross-origin iframe of `appbox design serve` was refused — the design panel
+    and the `gen_ui` RungLadder alike, both blank. The header doing it,
+    `X-Frame-Options: SAMEORIGIN`, appears in no source file in this repo:
+    `dart:io` puts it in `HttpServer.defaultResponseHeaders` by its own
+    default. Grep cannot find it and a Dart test asserting response headers
+    would have had to know to look.
+    * The smoke test in decision 56 asserted `iframe GET from panel -> 200`
+      and passed while every real iframe was refused. `X-Frame-Options` is
+      enforced on the frame-embedding path ONLY: a `fetch()` carrying
+      `Sec-Fetch-Dest: iframe` is not an iframe, so the server answers 200 and
+      the header is never evaluated. The check could not fail for the reason
+      that mattered — the same shape as the PASS-means-did-not-run family.
+
+58. **X-Frame-Options is removed, not narrowed, and CSP `frame-ancestors`
+    takes over in the same change.** The header has no allowlist form:
+    `ALLOW-FROM` is obsolete and modern browsers ignore the whole header when
+    they see it (MDN). So the only options are "keep refusing everyone" or
+    "remove it". Removing it ALONE would let any page on the web frame the
+    design server, which is why the CSP is not garnish — it is what preserves
+    the posture. `frame-ancestors` is Baseline since 2018 and header-only
+    (it is ignored in a `<meta>`).
+    * The allowlist mirrors `originAllowed`: one operator lever
+      (`~/.appbox/trusted-origins` + `--trusted-origin`) now governs both who
+      may call us and who may frame us.
+    * Set on `defaultResponseHeaders` at the bind site, not in `_handle`, so a
+      route that returns early cannot ship a document without the policy.
+
+59. **The test is a browser framing a real server, and it is a PAIR.**
+    `design_server_framing_test.dart` drives Chrome over CDP: an allowlisted
+    parent must frame the design server, an un-allowlisted parent must still
+    be refused. Neither half is meaningful alone — the first proves the bug is
+    fixed, the second proves the protection was not simply deleted to make the
+    first pass. Verified failing before the fix (child title came back as
+    `127.0.0.1`, Chrome's error-page title) and passing after.
+
+60. **A cross-SITE iframe is out-of-process and invisible to
+    `Page.getFrameTree`.** Live verification against the real pair first read
+    as "no frame created, no error logged", which looked like a second bug. It
+    was the instrument: `arxa.studio.localhost` and `127.0.0.1` are different
+    sites, so the child became an OOPIF that the parent session's frame tree
+    does not list. A same-origin control iframe in the same page proved the
+    instrument sound, and `Page.captureScreenshot` proved the design renders.
+    The in-repo test does not hit this because both its origins are
+    `127.0.0.1` on different ports — same site, same process.
+    * The negative case is what confirmed the CSP is live: framing from
+      `http://127.0.0.1:7891` (not allowlisted) fails with
+      `ERR_BLOCKED_BY_RESPONSE` and a console entry quoting this exact
+      `frame-ancestors` directive.
+
+61. **pnpm copies `file:` plugins into the profile; it does not symlink
+    them.** `~/.arxa/dsh/profiles/arxa/node_modules/arxa-design-panel` resolves
+    into `.pnpm/…`, a hard copy. Editing `plugins/design-panel/lib/client.js`
+    changes nothing in a running studio until `pnpm install --dir <profile>`
+    re-copies it — and arxa's boot only auto-installs when a plugin directory
+    is MISSING, so an edited-but-present plugin is silently stale.
