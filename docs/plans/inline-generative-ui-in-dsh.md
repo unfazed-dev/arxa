@@ -697,3 +697,50 @@ cross-origin endpoint, and opening it meant looking at what was already open.
     changes nothing in a running studio until `pnpm install --dir <profile>`
     re-copies it — and arxa's boot only auto-installs when a plugin directory
     is MISSING, so an edited-but-present plugin is silently stale.
+
+62. **gen-ui was never broken; its RungLadder's sandbox was.** After the
+    framing fix the design panel worked and the thread still looked dead, which
+    read as a gen-ui failure. Driving the real session under CDP showed the
+    opposite: `GenUiToolView` mounts, the keyed toolview resolves on a SUB-call
+    (`…:code:2`), and the card renders its title, Heading, Text, rung buttons
+    and ⟳. Only the iframe was black.
+    * Code mode is not the defect. The model reaches `gen_ui` through
+      `run_code`, so the visible call is `run_code` and `gen_ui` is a sub-call —
+      but `ToolCallBranch` renders "one root Tool call and its recursive
+      children through the same atomic keyed dispatch", and `childResult` sets
+      `call.argsRaw` from the sub-call's arguments. Both halves already worked.
+      `agent-presets: default: code` was NOT changed.
+
+63. **A sandbox without `allow-same-origin` gives an OPAQUE origin, which no
+    server-rendered page survives.** The RungLadder framed with
+    `sandbox="allow-scripts allow-forms"`, so the design artifact booted with an
+    origin that fails the same-origin policy against itself: its own fetches,
+    cookies and storage all denied. That is the user's second console error —
+    "Unsafe attempt to load URL … Domains, protocols and ports must match" —
+    which is NOT an X-Frame-Options consequence and was still live after
+    decision 58. Proven by an A/B in one page: no sandbox renders, the current
+    sandbox is black, `+ allow-same-origin` renders.
+    * The earlier probe that "cleared" this error framed with a PLAIN iframe, so
+      it never exercised the sandbox and could not have reproduced it. A probe
+      that does not reproduce the reported conditions is not evidence of a fix.
+
+64. **Decision 19 is amended, not reversed: the grant is conditional on the
+    target being a foreign host.** "allow-same-origin would silently mean no
+    sandbox at all" is true only when the frame is same-origin with the embedder
+    — MDN scopes the escape exactly that way. Since `url` arrives in
+    model-supplied tool args, the model could aim it at the studio's own origin
+    and get precisely that escape, so `sandboxFor(url, selfHref)` grants
+    `allow-same-origin` only for an `http(s)` URL on a different **hostname**,
+    and fails closed otherwise.
+    * Hostname, not origin: cookies ignore the port, so
+      `arxa.studio.localhost:9999` is a different origin but could still read
+      the studio's cookies.
+    * Relative URLs are parsed against the page (`/admin` must resolve to US),
+      and `data:`/`javascript:`/`file:` are rejected before any comparison —
+      their origin is the string `"null"`, which a naive difference check would
+      have GRANTED.
+    * The rule lives in `catalog.js` (importable, tested) and is mirrored in
+      `client.js` (which cannot be imported — it is a `__ModuleLoader__`
+      factory). `selftest.mjs` runs ONE 15-row table against both copies, so
+      drift fails the suite; verified by mutating the client copy's `hostname`
+      back to `origin` and watching it go red.
