@@ -398,6 +398,22 @@ class DesignServer {
       trustedOrigins: trustedOrigins,
     );
     if (srv.trust.wildcardBind) stderr.writeln(BrowserTrust.wildcardWarning);
+
+    // `dart:io` puts `X-Frame-Options: SAMEORIGIN` in
+    // `HttpServer.defaultResponseHeaders` on its own — it is in no source file
+    // here, so grepping for it finds nothing while every response carries it.
+    // It refused the arxa design panel and the `gen_ui` RungLadder, which
+    // frame us cross-origin. There is no allowlist form of that header
+    // (`ALLOW-FROM` is obsolete and makes browsers ignore it entirely), so it
+    // goes and CSP `frame-ancestors` takes over in the same breath — dropping
+    // it alone would let ANY page frame this server.
+    //
+    // Set on defaultResponseHeaders rather than in `_handle` so a route that
+    // returns early cannot ship a document without the policy.
+    srv._http.defaultResponseHeaders
+      ..removeAll('x-frame-options')
+      ..set('Content-Security-Policy',
+          'frame-ancestors ${srv.trust.frameAncestors}');
     // Start serving BEFORE booting the worker: the worker loads its page from
     // this very origin, so the socket must be listening first.
     srv._http.listen(srv._handle);

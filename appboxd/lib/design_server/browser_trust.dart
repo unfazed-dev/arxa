@@ -178,6 +178,33 @@ class BrowserTrust {
     return u.hasPort && u.port == port && _isLoopbackName(u.host.toLowerCase());
   }
 
+  /// The `Content-Security-Policy: frame-ancestors` value — who may put this
+  /// server in an `<iframe>`.
+  ///
+  /// This exists because `dart:io` sets `X-Frame-Options: SAMEORIGIN` on every
+  /// response by ITS OWN default (`HttpServer.defaultResponseHeaders`), which
+  /// no grep of this repo will ever find. That default refuses the arxa design
+  /// panel and the `gen_ui` RungLadder outright: both frame us from
+  /// `arxa.studio.localhost`, a different origin. X-Frame-Options has no
+  /// allowlist form — `ALLOW-FROM` is obsolete and modern browsers ignore the
+  /// whole header when they see it (MDN) — so the header must be REMOVED and
+  /// this directive must take over in the same change. Removing it alone would
+  /// let any page on the web frame this server.
+  ///
+  /// The allowlist mirrors [originAllowed] deliberately: one operator lever
+  /// (`~/.appbox/trusted-origins` + `--trusted-origin`) governs both who may
+  /// call us and who may frame us. The three loopback spellings are listed
+  /// explicitly because a directive cannot express "any `*.localhost` name at
+  /// our port" the way [originAllowed] can; `'self'` covers whatever alias the
+  /// document was actually loaded under, which is the case that matters.
+  String get frameAncestors => [
+        "'self'",
+        'http://127.0.0.1:$port',
+        'http://localhost:$port',
+        'http://[::1]:$port',
+        ..._extraOrigins,
+      ].join(' ');
+
   /// True when this request must clear the origin check.
   ///
   /// Every state-changing method, plus every `/__*` endpoint whatever the
@@ -216,15 +243,17 @@ class BrowserTrust {
       if (!ownPage.contains(secFetchSite) && allowedOrigin == null) {
         return const TrustVerdict.deny(
             403,
-            'Cross-site request refused. Start the server with '
-            '--trusted-origin <origin> to allow one.');
+            'Cross-site request refused. Add the origin to '
+            '~/.appbox/trusted-origins (one per line), or pass '
+            '--trusted-origin <origin>.');
       }
     } else if (origin != null && allowedOrigin == null) {
       // Older browser: no fetch metadata, but Origin is still unforgeable.
       return const TrustVerdict.deny(
           403,
-          'Cross-origin request refused. Start the server with '
-          '--trusted-origin <origin> to allow one.');
+          'Cross-origin request refused. Add the origin to '
+          '~/.appbox/trusted-origins (one per line), or pass '
+          '--trusted-origin <origin>.');
     }
     return TrustVerdict.allow(corsOrigin: allowedOrigin);
   }

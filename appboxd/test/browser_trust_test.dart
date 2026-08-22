@@ -126,6 +126,29 @@ void main() {
     });
   });
 
+  group('frameAncestors — who may iframe us', () {
+    test('our own origin under each loopback spelling, at OUR port', () {
+      final v = _loopback().frameAncestors;
+      expect(v, startsWith("'self'"));
+      expect(v, contains('http://127.0.0.1:4319'));
+      expect(v, contains('http://localhost:4319'));
+      expect(v, contains('http://[::1]:4319'));
+    });
+
+    test('a trusted origin is admitted — this is the arxa panel', () {
+      expect(_loopback(origins: ['http://arxa.studio.localhost:7891'])
+          .frameAncestors, contains('http://arxa.studio.localhost:7891'));
+    });
+
+    test('nothing else is, and it is never a wildcard', () {
+      final v = _loopback().frameAncestors;
+      expect(v, isNot(contains('*')));
+      expect(v, isNot(contains('arxa')));
+      // The port matters: another local server is not us.
+      expect(v, isNot(contains('http://localhost:8888')));
+    });
+  });
+
   group('guardedRequest — the resource-isolation surface', () {
     test('every state-changing method, anywhere', () {
       expect(BrowserTrust.guardedRequest('POST', '/prefs/lang'), isTrue);

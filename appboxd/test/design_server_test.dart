@@ -1083,6 +1083,26 @@ void main() {
       } catch (_) {}
     });
 
+    // dart:io ships X-Frame-Options: SAMEORIGIN in defaultResponseHeaders, so
+    // this asserts a header is GONE that no line of this repo ever set. The
+    // browser-level proof that framing actually commits is in
+    // design_server_framing_test.dart — a fetch cannot see X-Frame-Options at
+    // all, which is precisely how this shipped broken.
+    test('the dart:io X-Frame-Options default is gone, CSP replaces it',
+        () async {
+      final r = await _get('${base()}/');
+      expect(r.status, 200);
+      expect(r.headers['x-frame-options'], isNull,
+          reason: 'SAMEORIGIN refuses every cross-origin iframe, and the '
+              'header has no allowlist form (ALLOW-FROM is obsolete)');
+      final csp = r.headers['content-security-policy'];
+      expect(csp, isNotNull);
+      expect(csp, contains('frame-ancestors'));
+      expect(csp, contains(panel), reason: 'the trusted origin must be able '
+          'to frame us, or the panel iframe stays blank');
+      expect(csp, isNot(contains('*')));
+    });
+
     test('DNS rebinding: a foreign Host is refused with 421', () async {
       final r = await _get('${base()}/__projects',
           headers: {'host': 'evil.example.com'});
