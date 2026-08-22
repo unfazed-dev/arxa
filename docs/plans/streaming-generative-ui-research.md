@@ -159,9 +159,15 @@ surfaceId — or matching the title+prefix-chain heuristic when the model omits
 it, which glm-5.3 always does — merge into ONE card that grows in place, with
 new children arriving via the entrance animation; folded-away calls render a
 one-line stub. The tool schema gained an optional `surfaceId` and the receipt
-teaches it in-band. §8.1/§8.3 (the `Pending` placeholder + fill-by-id) are NOT
-built: no catalogue growth means plan decision 23 stands unreversed, and the
-fold alone covered the observed failure (N disjoint prefix cards).
+teaches it in-band. Follow-up (same day): the pending glow never showed on
+component surfaces — glm-5.3 settles each call in milliseconds, so tool
+pending lasts a frame. The glow now hangs off a warmth clock instead: the
+ledger stamps `lastChangeAt` on real growth and the host card glows while
+`!settled || surfaceWarm(...)` (1500ms, ~2x the measured 700ms inter-call
+cadence); replay is cold by construction. §8.1/§8.3 (the `Pending`
+placeholder + fill-by-id) are NOT built: no catalogue growth means plan
+decision 23 stands unreversed, and the fold alone covered the observed
+failure (N disjoint prefix cards).
 
 ---
 
