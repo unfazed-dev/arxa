@@ -147,7 +147,7 @@ const _inspectRequired = ['data-inspect-role', 'data-inspect-style', 'data-inspe
 /// per TAG inside the `_tagRe` loop, so a `<button hx-post>` satisfying two
 /// alternatives still counts once, and a nested match counts once per opening
 /// tag rather than once per enclosing element.
-final _interactiveRe = RegExp(
+final interactiveElementRe = RegExp(
     r"""^<(?:a\s[^>]*\bhref|button|input|select|textarea|summary|label)\b"""
     r"""|\brole\s*=\s*["'](?:button|link|tab|switch)["']"""
     r"""|\btabindex\s*=\s*["']\d"""
@@ -232,7 +232,7 @@ List<String> inspectFindings(String src,
     List<String>? notes}) {
   final out = <String>[];
   final hasEl = RegExp(r'\bdata-el\s*=');
-  final interactive = coverageB ? _interactiveBRe : _interactiveRe;
+  final interactive = coverageB ? _interactiveBRe : interactiveElementRe;
   var unannotated = 0;
   for (final m in _tagRe.allMatches(src)) {
     final tag = m[0]!;

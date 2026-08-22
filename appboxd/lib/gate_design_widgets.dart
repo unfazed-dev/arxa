@@ -944,7 +944,7 @@ const _textBearingRoles = <String>{
 /// whitespace), opening a ternary (`:`, `?`) or a logical continuation
 /// (`&&`, `||`) is never literal text. Found in practice on the energize
 /// rebuild — every `.map((x) => (<X/>))` wrapper was flagged.
-bool _isExpressionDebris(String snippet) {
+bool isExpressionDebris(String snippet) {
   if (snippet.startsWith('{')) return true;
   if (snippet.startsWith('&&') || snippet.startsWith('||')) return true;
   // `: undefined}` / `: null}` — a ternary's empty arm after a self-closing
@@ -954,11 +954,11 @@ bool _isExpressionDebris(String snippet) {
   return RegExp(r'^[)\]},;:?\s]*$').hasMatch(keywordsOut);
 }
 
-String? _directTextSnippet(String src, int tagEnd) {
+String? directTextSnippet(String src, int tagEnd) {
   final nextLt = src.indexOf('<', tagEnd);
   final between = src.substring(tagEnd, nextLt < 0 ? src.length : nextLt);
   final trimmed = between.trim();
-  if (trimmed.isNotEmpty && !_isExpressionDebris(trimmed)) return trimmed;
+  if (trimmed.isNotEmpty && !isExpressionDebris(trimmed)) return trimmed;
   if (nextLt >= tagEnd && nextLt < src.length) {
     final childEnd = src.indexOf('>', nextLt);
     if (childEnd >= 0 && src.substring(nextLt, childEnd + 1).endsWith('/>')) {
@@ -966,7 +966,7 @@ String? _directTextSnippet(String src, int tagEnd) {
       final nextLtSc = src.indexOf('<', afterSc);
       final textSc = src.substring(afterSc, nextLtSc < 0 ? src.length : nextLtSc);
       final trimmedSc = textSc.trim();
-      if (trimmedSc.isNotEmpty && !_isExpressionDebris(trimmedSc)) {
+      if (trimmedSc.isNotEmpty && !isExpressionDebris(trimmedSc)) {
         return trimmedSc;
       }
     }
@@ -1017,7 +1017,7 @@ List<LintFinding> _anonymousElementFindings(String artifactDir) {
       final selfClosing = m.group(3) == '/';
       final hasIdentity =
           attrs.contains('data-el') || attrs.contains('inspectAttrs');
-      final snippet = selfClosing ? null : _directTextSnippet(src, m.end);
+      final snippet = selfClosing ? null : directTextSnippet(src, m.end);
       final line = _lineNumberAt(src, m.start);
 
       if (hasIdentity) {
@@ -1169,7 +1169,7 @@ List<LintFinding> _compositionFindings(String artifactDir) {
       } else if (_mediaTags.contains(tag)) {
         why = 'rendering media';
       } else if (!selfClosing) {
-        final literal = _directTextSnippet(src, m.end);
+        final literal = directTextSnippet(src, m.end);
         if (literal != null) {
           why = 'bearing text "${_snippet(literal)}"';
         } else {

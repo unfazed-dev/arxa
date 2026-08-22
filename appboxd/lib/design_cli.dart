@@ -36,6 +36,7 @@ import 'dart:io';
 
 import 'package:appboxd/commission.dart';
 import 'package:appboxd/design_server.dart';
+import 'package:appboxd/design_annotate.dart';
 import 'package:appboxd/design_patch.dart';
 import 'package:appboxd/design_stamp.dart';
 import 'package:appboxd/design_selftest.dart';
@@ -57,6 +58,10 @@ Subcommands:
   patch <artifact-dir> <id> [edits] Structured patch against one element by
                                      its data-arxa-id: --set n=v / --rm n /
                                      --style p=v / --rm-style p
+  annotate <artifact-dir>          Derive the data-el + inspect-metadata
+                                     semantic layer on interactive/text
+                                     elements lacking one (D9: fn marked
+                                     provenance=inferred)
   check-ladder [--config <p>] [--doc <p>]
                                      Ladder config ↔ doctrine drift check
   check-wiring <dir> <property>      Wiring joins (fragments|mutations-posted|
@@ -103,6 +108,8 @@ Future<int> designMain(List<String> args) async {
       return _emit(stampMain(rest));
     case 'patch':
       return _emit(patchMain(rest));
+    case 'annotate':
+      return _emit(annotateMain(rest));
     case 'check-ladder':
       return _emit(designCheckLadder(rest));
     case 'check-wiring':
