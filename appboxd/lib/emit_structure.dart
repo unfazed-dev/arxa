@@ -729,9 +729,16 @@ List<Map<String, dynamic>>? scanWidgets(String designRoot) {
 }
 
 /// Derive shell dir from surface: "stage_shell_projects_home_view" → "stage_shell".
+/// The application hub is the lawful exception (hub law, locked-laws.md): it
+/// sits FLAT at `ui/views/<app>_application_hub/` with no _shell suffix, so
+/// "studio_application_hub_view" → "studio_application_hub".
 String? shellDir(String surface) {
   final idx = surface.indexOf('_shell_');
-  if (idx < 0) return null;
+  if (idx < 0) {
+    return surface.endsWith('_application_hub_view')
+        ? surface.replaceAll(RegExp('_view\$'), '')
+        : null;
+  }
   return '${surface.substring(0, idx)}_shell';
 }
 
@@ -789,8 +796,26 @@ String? _compOf(String? surface) {
 /// Load the valid kit dir names from config/kit-registry.json at the repo root
 /// (located by the shared config/appbox.config.json walk-up). Returns null on
 /// failure (error printed to stderr).
+///
+/// Repo-mode projects (an appbox.json marker, no config/ of their own) resolve
+/// the registry from the CLI's own checkout instead — the same executable
+/// walk-up the runtime assets use. The kit vocabulary is appbox's, never the
+/// project's.
 Set<String>? _loadKitDirs(String designRoot) {
-  final path = '${findRepoRoot(designRoot)}/config/kit-registry.json';
+  var path = '${findRepoRoot(designRoot)}/config/kit-registry.json';
+  if (!File(path).existsSync()) {
+    var dir = File(Platform.executable).parent.absolute;
+    while (true) {
+      final candidate = '${dir.path}/config/kit-registry.json';
+      if (File(candidate).existsSync()) {
+        path = candidate;
+        break;
+      }
+      final parent = dir.parent;
+      if (parent.path == dir.path) break;
+      dir = parent;
+    }
+  }
   final f = File(path);
   if (!f.existsSync()) {
     stderr.writeln("FAIL: a screen declares 'kits' but no kit registry exists "
