@@ -715,7 +715,12 @@ class DialApi {
     }
     final ops = [
       for (final e in d.patches.entries)
-        if (!e.value.isEmpty) {'id': e.key, ...e.value.toJson()},
+        if (!e.value.isEmpty)
+          // el:-prefixed keys (authored identity wins on divergence) become
+          // --el ops; everything else rides the machine id.
+          elKeyOf(e.key) != null
+              ? {'el': elKeyOf(e.key), ...e.value.toJson()}
+              : {'id': e.key, ...e.value.toJson()},
     ];
     return DialResponse(200, {
       'ok': true,
@@ -723,7 +728,8 @@ class DialApi {
       'artifactDir': artifactDir,
       'tokens': d.tokens,
       'ops': ops,
-      'note': 'apply each op with appbox design patch (--style/--set/--text) '
+      'note': 'apply each op with appbox design patch (id ops: positional '
+          'data-arxa-id; el ops: --el <data-el>; edits: --style/--set/--text) '
           'and the tokens to the token sheet; on success '
           'DELETE /__dial/draft',
     });

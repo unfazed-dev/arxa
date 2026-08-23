@@ -185,7 +185,10 @@ Future<void> main(List<String> args) async {
     await client.close();
     exit(1);
   }
-  final selId = sel['id'] as String;
+  // the idline is "machine-id → el:authored" when the divergence law
+  // rebinds; the draft is keyed by the BINDING
+  final rawIdline = sel['id'] as String;
+  final selId = rawIdline.contains(' → ') ? rawIdline.split(' → ')[1] : rawIdline;
 
   final fac = await jsShadow(tab, '''
     const rows = [...R.querySelectorAll("#pbody .facet")];
@@ -209,7 +212,10 @@ Future<void> main(List<String> args) async {
       inp.dispatchEvent(new Event("input", {bubbles: true}));
     }
     await new Promise(r=>setTimeout(r,1200));
-    const el = document.querySelector('[data-arxa-id="$selId"]');
+    const selAttr = "$selId".indexOf("el:") === 0 ? "data-el" : "data-arxa-id";
+    const selVal = selAttr === "data-el" ? "$selId".slice(3) : "$selId";
+    const cands = [...document.querySelectorAll('[' + selAttr + '="' + selVal + '"]')];
+    const el = cands.find(x => (x.style.outlineColor || "").indexOf("245") !== -1) || cands[0];
     const draft = await (async () => { for (let a = 0; a < 4; a++) { try { return await fetch("/__dial/draft").then(r=>r.json()); } catch (e) { await new Promise(rr=>setTimeout(rr,300)); } } return {}; })();
     const p = (draft.draft && draft.draft.patches) ? draft.draft.patches["$selId"] : null;
     return JSON.stringify({prop: prop, val: val,
@@ -229,7 +235,10 @@ Future<void> main(List<String> args) async {
     content.value = "SMOKE text edit";
     content.dispatchEvent(new Event("input", {bubbles: true}));
     await new Promise(r=>setTimeout(r,1200));
-    const el = document.querySelector('[data-arxa-id="$selId"]');
+    const selAttr = "$selId".indexOf("el:") === 0 ? "data-el" : "data-arxa-id";
+    const selVal = selAttr === "data-el" ? "$selId".slice(3) : "$selId";
+    const cands = [...document.querySelectorAll('[' + selAttr + '="' + selVal + '"]')];
+    const el = cands.find(x => (x.style.outlineColor || "").indexOf("245") !== -1) || cands[0];
     const draft = await (async () => { for (let a = 0; a < 4; a++) { try { return await fetch("/__dial/draft").then(r=>r.json()); } catch (e) { await new Promise(rr=>setTimeout(rr,300)); } } return {}; })();
     const p = (draft.draft && draft.draft.patches) ? draft.draft.patches["$selId"] : null;
     return JSON.stringify({skipped: false, live: el ? el.textContent : null,
@@ -249,7 +258,10 @@ Future<void> main(List<String> args) async {
     css.value = "letter-spacing: 0.5px";
     [...R.querySelectorAll("#pbody .btn")].find(b => b.textContent === "Apply CSS").click();
     await new Promise(r=>setTimeout(r,1200));
-    const el = document.querySelector('[data-arxa-id="$selId"]');
+    const selAttr = "$selId".indexOf("el:") === 0 ? "data-el" : "data-arxa-id";
+    const selVal = selAttr === "data-el" ? "$selId".slice(3) : "$selId";
+    const cands = [...document.querySelectorAll('[' + selAttr + '="' + selVal + '"]')];
+    const el = cands.find(x => (x.style.outlineColor || "").indexOf("245") !== -1) || cands[0];
     const draft = await (async () => { for (let a = 0; a < 4; a++) { try { return await fetch("/__dial/draft").then(r=>r.json()); } catch (e) { await new Promise(rr=>setTimeout(rr,300)); } } return {}; })();
     const p = (draft.draft && draft.draft.patches) ? draft.draft.patches["$selId"] : null;
     return JSON.stringify({live: el ? el.style.getPropertyValue("letter-spacing") : null,
@@ -532,7 +544,10 @@ Future<void> main(List<String> args) async {
     lead.textContent = "SMOKE inline";
     document.dispatchEvent(new KeyboardEvent("keydown", {key: "Enter", bubbles: true}));
     await new Promise(r=>setTimeout(r,1100));
-    const selId = (R.querySelector("#pbody .idline") || {}).textContent;
+    const idlineText = (R.querySelector("#pbody .idline") || {}).textContent;
+    // the idline shows "machine-id → el:authored" when the divergence law
+    // rebinds — the draft is keyed by the BINDING, not the machine id
+    const selId = idlineText && idlineText.indexOf(" → ") !== -1 ? idlineText.split(" → ")[1] : idlineText;
     const draft = await (async () => { for (let a = 0; a < 4; a++) { try { return await fetch("/__dial/draft").then(r=>r.json()); } catch (e) { await new Promise(rr=>setTimeout(rr,300)); } } return {}; })();
     const p = selId && draft.draft && draft.draft.patches ? draft.draft.patches[selId] : null;
     return JSON.stringify({editing: editing,
@@ -549,12 +564,16 @@ Future<void> main(List<String> args) async {
 
   final drg = await jsShadow(tab, '''
     const idline = R.querySelector("#pbody .idline");
-    const selId = idline ? idline.textContent : null;
+    const idlineText = idline ? idline.textContent : null;
+    const selId = idlineText && idlineText.indexOf(" → ") !== -1 ? idlineText.split(" → ")[1] : idlineText;
     // ids are loop-shared — querySelector would return the FIRST instance,
-    // not the SELECTED one. The selection wears the amber outline.
-    const els = selId ? [...document.querySelectorAll('[data-arxa-id="' + selId + '"]')] : [];
+    // not the SELECTED one. The selection wears the amber outline. The
+    // binding decides which attribute the candidate set rides.
+    const selAttr = selId && selId.indexOf("el:") === 0 ? "data-el" : "data-arxa-id";
+    const selVal = selAttr === "data-el" ? selId.slice(3) : selId;
+    const els = selId ? [...document.querySelectorAll('[' + selAttr + '="' + selVal + '"]')] : [];
     const el = els.find(x => (x.style.outlineColor || "").indexOf("245") !== -1) || els[0];
-    if (!el) return JSON.stringify({fatal: "no selection"});
+    if (!el) return JSON.stringify({fatal: "no selection", idline: idlineText});
     const handle = R.querySelector('.hnd[data-d="e"]');
     if (!handle) return JSON.stringify({fatal: "no e handle"});
     const w0 = el.getBoundingClientRect().width;
@@ -577,6 +596,85 @@ Future<void> main(List<String> args) async {
       drg['savedWidth'] != null &&
       drg['liveWidth'] == drg['savedWidth'];
   report('S10b drag-resize', dragOk, jsonEncode(drg), _newErrors(tab));
+  await shadow(tab,
+      'await fetch("/__dial/draft", {method: "DELETE"}); return "ok";');
+  await tab.navigateAndSettle('$_base/', settleMs: 2500);
+  await waitBoot(tab);
+
+  // ── S11 cross-rung live sync (amended 2026-08-24) ────────────────────
+  // An edit in one author document must appear in every OTHER open author
+  // document without a reload — the ladder's rungs are separate documents.
+  final clientSync = await CdpClient.launch();
+  String syncSeen = 'not-run';
+  try {
+    final btab = await clientSync.newTab();
+    await btab.enable();
+    await btab.setViewport(744, 1133); // a different rung, by shape
+    await btab.navigateAndSettle('$_base/', settleMs: 2500);
+    await waitBoot(btab);
+    // edit in the MAIN tab: select the wordmark, type in its content facet
+    await jsShadow(tab, '''
+      R.querySelector('[data-verb="design"]').click();
+      await new Promise(r=>setTimeout(r,300));
+      const lead = document.querySelector('[data-el="wordmark-lead"]');
+      const rc = lead.getBoundingClientRect();
+      document.dispatchEvent(new MouseEvent("click", {clientX: rc.left+rc.width/2, clientY: rc.top+rc.height/2, bubbles: true}));
+      await new Promise(r=>setTimeout(r,400));
+      const ta = [...R.querySelectorAll("#pbody textarea")].find(t => !t.placeholder || t.placeholder.indexOf("prop:") === -1);
+      if (!ta) return JSON.stringify({fatal: "no content facet"});
+      ta.value = "SMOKE SYNC";
+      ta.dispatchEvent(new Event("input", {bubbles: true}));
+      return JSON.stringify({ok: true});
+    ''');
+    await Future<void>.delayed(const Duration(milliseconds: 3000));
+    final seen = await js(btab, '''
+      const el = document.querySelector('[data-el="wordmark-lead"]');
+      return JSON.stringify({text: el ? el.textContent : null});
+    ''');
+    syncSeen = (seen['text'] as String? ?? 'null');
+  } finally {
+    await clientSync.close();
+  }
+  report('S11 cross-rung sync', syncSeen == 'SMOKE SYNC',
+      'second document saw: ' + syncSeen);
+  await shadow(tab,
+      'await fetch("/__dial/draft", {method: "DELETE"}); return "ok";');
+  await tab.navigateAndSettle('$_base/', settleMs: 2500);
+  await waitBoot(tab);
+
+  // ── S12 divergence binding: authored identity wins ───────────────────
+  // intro-copyright shares its machine id with four other slots; editing
+  // its text must bind el:intro-copyright and leave the wordmark alone.
+  final div = await jsShadow(tab, '''
+    R.querySelector('[data-verb="design"]').click();
+    await new Promise(r=>setTimeout(r,300));
+    const target = document.querySelector('[data-el="intro-copyright"]');
+    if (!target) return JSON.stringify({fatal: "no intro-copyright"});
+    const rc = target.getBoundingClientRect();
+    const cx = Math.min(Math.max(rc.left + rc.width/2, 4), window.innerWidth-4);
+    const cy = Math.min(Math.max(rc.top + rc.height/2, 4), window.innerHeight-4);
+    document.dispatchEvent(new MouseEvent("click", {clientX: cx, clientY: cy, bubbles: true}));
+    await new Promise(r=>setTimeout(r,400));
+    const idline = (R.querySelector("#pbody .idline") || {}).textContent || "";
+    const ta = [...R.querySelectorAll("#pbody textarea")].find(t => !t.placeholder || t.placeholder.indexOf("prop:") === -1);
+    if (!ta) return JSON.stringify({fatal: "no content facet", idline: idline});
+    ta.value = "SMOKE ©2099";
+    ta.dispatchEvent(new Event("input", {bubbles: true}));
+    await new Promise(r=>setTimeout(r,1300));
+    const draft = await (async () => { for (let a = 0; a < 4; a++) { try { return await fetch("/__dial/draft").then(r=>r.json()); } catch (e) { await new Promise(rr=>setTimeout(rr,300)); } } return {}; })();
+    const keys = Object.keys((draft.draft && draft.draft.patches) || {});
+    const wm = document.querySelector('[data-el="wordmark-lead"]');
+    return JSON.stringify({idline: idline, keys: keys,
+      wordmarkText: wm ? wm.textContent : null,
+      copyrightText: target.textContent});
+  ''');
+  report(
+      'S12 divergence binding',
+      (div['keys'] as List).contains('el:intro-copyright') &&
+          div['wordmarkText'] == 'SUCZKA' &&
+          div['copyrightText'] == 'SMOKE ©2099',
+      jsonEncode(div),
+      _newErrors(tab));
   await shadow(tab,
       'await fetch("/__dial/draft", {method: "DELETE"}); return "ok";');
   await tab.navigateAndSettle('$_base/', settleMs: 2500);

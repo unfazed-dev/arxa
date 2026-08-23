@@ -618,3 +618,20 @@ request itself is non-destructive). Also fixed: a dead share link
 previously resolved to caller=author on the API; it now 403s on every
 dial route. Publish (decision 5's button, the deployer seam) remains the
 last slice.
+
+**Amended 2026-08-24 (operator's call, grilled with docs): authored identity
+wins on divergence.** When one source element is instantiated with DIFFERENT
+authored meanings — one `data-arxa-id` on instances carrying heterogeneous
+`data-el` (the suczka wordmark partial: five slots, one id) — a dial edit
+binds to the authored identity (`el:<data-el>`), not the machine id. The
+operator's own draft proved the collision: a copyright text edit keyed to the
+shared machine id would have committed over the wordmark, the statement, and
+two more slots at once. True homogeneous loops (same `data-el` rows) keep
+"every row at once" fan-out. Same reason pins anchor on `data-el` (decision
+6): authored identity survives restyles — and now it is what content edits
+ride. Same amendment, same session: **draft edits sync live across every open
+author document** (the viewport ladder's rungs) — the operator's law:
+"everything the designer generates must always be in sync on all platforms it
+designed." The draft SSE frame now re-applies the patch set to the DOM of
+every author context, not only the editing one; guests still see last
+published (decision 5 unchanged).

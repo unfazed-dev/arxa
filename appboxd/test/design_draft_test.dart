@@ -112,6 +112,33 @@ void main() {
       expect(r.html, page); // nothing touched
     });
 
+    test('el:-keyed patches bind the authored identity (amended 2026-08-24)',
+        () {
+      // one machine id (page-e5), two authored meanings — the divergence the
+      // amendment exists for: the el: patch must touch ONLY its own slot.
+      const div = '<div data-arxa-id="page-e5" data-el="wordmark-lead">SUCZKA</div>'
+          '<div data-arxa-id="page-e5" data-el="intro-copyright">SUCZKA TO STUDIO ©2026</div>';
+      final d = DraftOverlay(artifact: 'a', patches: {
+        'el:intro-copyright': DraftPatch(text: 'KORMORAN TO STUDIO ©2026'),
+      });
+      final r = d.apply(div);
+      expect(r.applied, 1);
+      expect(r.html, contains('>KORMORAN TO STUDIO ©2026</div>'));
+      expect(r.html, contains('data-el="wordmark-lead">SUCZKA</div>'));
+    });
+
+    test('a malformed el: key is rejected at parse, not silently id-targeted',
+        () {
+      expect(
+          () => DraftOverlay.fromJson({
+                'patches': {
+                  'el:': {'text': 'x'}
+                  // ignore: avoid_print
+                }
+              }, artifact: 'a'),
+          throwsFormatException);
+    });
+
     test('text on a void element refuses', () {
       final d = DraftOverlay(artifact: 'a', patches: {
         'page-e4': DraftPatch(text: 'alt?'),

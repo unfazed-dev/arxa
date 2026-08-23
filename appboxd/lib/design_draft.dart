@@ -50,6 +50,22 @@ abstract class DraftCaps {
 final _nameRe = RegExp(r'^[a-zA-Z][a-zA-Z0-9:_-]{0,79}$');
 final _tokenRe = RegExp(r'^--[a-zA-Z0-9-]{1,78}$');
 
+/// The authored-semantic layer opens with this prefix: a patch key of
+/// `el:<data-el>` binds to the data-el, everything else to data-arxa-id.
+/// data-el values allow the inspect vocabulary's charset (letters, digits,
+/// colon, dash, underscore — e.g. 'text:®' is NOT one; those are authored
+/// inline, never selected).
+const elKeyPrefix = 'el:';
+final _dataElRe = RegExp(r'^[a-zA-Z0-9][a-zA-Z0-9:_-]{0,99}$');
+
+/// The data-el half of an el:-prefixed patch key, or null for machine-id
+/// keys. Exported for the commit socket's op shaping.
+String? elKeyOf(String patchKey) {
+  if (!patchKey.startsWith(elKeyPrefix)) return null;
+  final v = patchKey.substring(elKeyPrefix.length);
+  return _dataElRe.hasMatch(v) ? v : null;
+}
+
 /// One element's overlay edits — the Draft Overlay's spelling of
 /// [PatchEdits]. A null style/attr value REMOVES, matching the grammar.
 class DraftPatch {
@@ -207,7 +223,11 @@ class DraftOverlay {
             'draft holds over ${DraftCaps.patches} patches');
       }
       for (final e in rawPatches.entries) {
-        patches['${e.key}'] = DraftPatch.fromJson(e.value, '${e.key}');
+        final k = '${e.key}';
+        if (k.startsWith(elKeyPrefix) && elKeyOf(k) == null) {
+          throw FormatException('bad el: patch key "$k"');
+        }
+        patches[k] = DraftPatch.fromJson(e.value, k);
       }
     }
     return DraftOverlay(
@@ -227,7 +247,10 @@ class DraftOverlay {
     return '<style id="arxa-draft-tokens">:root{$decls}</style>';
   }
 
-  /// Overlay the draft onto one served page. Pure.
+  /// Overlay the draft onto one served page. Pure. Patch keys ride machine
+  /// identity by default; an `el:<data-el>` key targets the authored
+  /// identity instead — the binding the dial records when one machine id
+  /// fans out over heterogeneous authored meanings (amended 2026-08-24).
   DraftApplyResult apply(String html) {
     var out = html;
     var applied = 0;
@@ -235,7 +258,9 @@ class DraftOverlay {
     final refused = <String>[];
     for (final e in patches.entries) {
       if (e.value.isEmpty) continue;
-      final r = patchAllRendered(out, e.key, e.value.toPatchEdits());
+      final elKey = elKeyOf(e.key);
+      final r = patchAllRendered(out, elKey ?? e.key, e.value.toPatchEdits(),
+          attr: elKey != null ? 'data-el' : 'data-arxa-id');
       out = r.code;
       applied += r.applied;
       if (r.error != null) {

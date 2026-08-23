@@ -1037,7 +1037,7 @@ _Layer_: Design medium
 
 **Draft Overlay**:
 The author's unsent adjustments, saved automatically as they work — visible on their screen, invisible to clients until Publish.
-The auto-saved patch set layered over an artifact: token, element-style, and text patches recorded while designing, persisted server-side per artifact (one JSON file under `~/.appbox/drafts/`, keyed by the artifact's path — never in Supabase, never in the watched artifact tree), applied to served pages for the Author only, and never written into artifact source until committed. Clients always see the last published state, never the Draft Overlay.
+The auto-saved patch set layered over an artifact: token, element-style, and text patches recorded while designing, persisted server-side per artifact (one JSON file under `~/.appbox/drafts/`, keyed by the artifact's path — never in Supabase, never in the watched artifact tree), applied to served pages for the Author only, and never written into artifact source until committed. Clients always see the last published state, never the Draft Overlay. Patch keys ride machine identity (`data-arxa-id`) by default; when one machine id fans out to instances with DIFFERENT authored meanings (heterogeneous `data-el`), the patch binds to the authored identity instead — the key is `el:<data-el>` (amended 2026-08-24: authored identity wins on divergence; homogeneous loops keep every-row-at-once). Every open Author document applies draft changes live (same amendment: the ladder's rungs stay in sync); only guests wait for Publish.
 _Avoid_: autosave (the mechanism, not the thing), unpublished changes
 _Layer_: Design medium
 

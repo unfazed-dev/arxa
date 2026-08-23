@@ -87,14 +87,19 @@ final _wsRe = RegExp(r'\s');
 
 /// Apply [edits] to the element carrying [id] in [src]. Pure. The SOURCE
 /// applicator: the stamper's uniqueness invariant holds in source, so a
-/// duplicate marker is a loud bail, never a patch-both.
-PatchResult patchSource(String src, String id, PatchEdits edits) {
-  final marker = 'data-arxa-id="$id"';
+/// duplicate marker is a loud bail, never a patch-both. [attr] selects the
+/// identity layer: the default machine identity, or 'data-el' for the
+/// authored-semantic targeting the dial switches to when one machine id
+/// fans out over heterogeneous authored meanings (amended 2026-08-24:
+/// authored identity wins on divergence).
+PatchResult patchSource(String src, String id, PatchEdits edits,
+    {String attr = 'data-arxa-id'}) {
+  final marker = '$attr="$id"';
   final at = src.indexOf(marker);
   if (at < 0) return PatchResult(src, found: false);
   if (src.indexOf(marker, at + 1) >= 0) {
     return PatchResult(src,
-        found: false, error: 'id "$id" appears twice in one source');
+        found: false, error: '$attr "$id" appears twice in one source');
   }
   return _patchAt(src, id, at, edits);
 }
@@ -103,8 +108,9 @@ PatchResult patchSource(String src, String id, PatchEdits edits) {
 /// element's id by design (design_stamp.dart), so EVERY occurrence is
 /// patched — that is what patching the source element means. A refusal stops
 /// the loop and reports how many instances were already patched.
-PatchResult patchAllRendered(String html, String id, PatchEdits edits) {
-  final marker = 'data-arxa-id="$id"';
+PatchResult patchAllRendered(String html, String id, PatchEdits edits,
+    {String attr = 'data-arxa-id'}) {
+  final marker = '$attr="$id"';
   var out = html;
   var applied = 0;
   var from = 0;
@@ -292,6 +298,7 @@ CmdResult patchMain(List<String> args) {
   final attrs = <String, String?>{};
   final style = <String, String?>{};
   String? text;
+  String? elTarget;
   String? usageError;
   for (var i = 0; i < args.length; i++) {
     final a = args[i];
@@ -318,6 +325,10 @@ CmdResult patchMain(List<String> args) {
       final v = take();
       if (v == null) usageError = '--text needs a value';
       if (v != null) text = v;
+    } else if (a == '--el') {
+      final v = take();
+      if (v == null) usageError = '--el needs a data-el value';
+      if (v != null) elTarget = v;
     } else if (a.startsWith('--')) {
       usageError = 'unknown flag $a';
     } else {
@@ -326,13 +337,16 @@ CmdResult patchMain(List<String> args) {
   }
   final edits = PatchEdits(attrs: attrs, style: style, text: text);
   if (usageError != null ||
-      positional.length != 2 ||
+      (elTarget == null && positional.length != 2) ||
+      (elTarget != null && positional.length != 1) ||
       edits.isEmpty) {
     return CmdResult(2, stderrLines: [
       ?usageError,
       'usage: appbox design patch <artifactDir> <data-arxa-id> '
           '[--set name=value]… [--rm name]… [--style prop=value]… '
-          '[--rm-style prop]… [--text value]'
+          '[--rm-style prop]… [--text value]\n'
+          '       appbox design patch <artifactDir> --el <data-el> '
+          '[same flags] — authored-identity targeting (divergence law)'
     ]);
   }
   final dir = Directory(positional[0]);
@@ -340,7 +354,8 @@ CmdResult patchMain(List<String> args) {
     return CmdResult(2,
         stderrLines: ['appbox design patch: no such dir: ${positional[0]}']);
   }
-  final id = positional[1];
+  final id = elTarget ?? positional[1];
+  final attr = elTarget != null ? 'data-el' : 'data-arxa-id';
   final files = dir
       .listSync(recursive: true)
       .whereType<File>()
@@ -349,13 +364,13 @@ CmdResult patchMain(List<String> args) {
   PatchResult? res;
   for (final f in files) {
     final src = f.readAsStringSync();
-    if (!src.contains('data-arxa-id="$id"')) continue;
+    if (!src.contains('$attr="$id"')) continue;
     hits.add(f);
-    res = patchSource(src, id, edits);
+    res = patchSource(src, id, edits, attr: attr);
   }
   if (hits.isEmpty) {
     return CmdResult(3, stderrLines: [
-      'appbox design patch: no element carries data-arxa-id="$id" '
+      'appbox design patch: no element carries $attr="$id" '
           'under ${positional[0]}'
     ]);
   }

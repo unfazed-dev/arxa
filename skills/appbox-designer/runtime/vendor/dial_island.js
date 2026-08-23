@@ -1054,10 +1054,29 @@
     selectEl(t);
   }
 
+  // Which identity a patch binds to (amended 2026-08-24 — authored identity
+  // wins on divergence): when one machine id fans out over instances with
+  // DIFFERENT authored meanings, keying the patch by machine id would commit
+  // the edit over every sibling slot at once (the operator's copyright edit
+  // on the shared wordmark id nearly rewrote the statement text too). A
+  // divergent selection binds to its data-el; homogeneous loops keep the
+  // machine id and its every-row-at-once fan-out.
+  function bindingFor(el, id) {
+    const inst = [...document.querySelectorAll('[data-arxa-id="' + id + '"]')];
+    if (inst.length > 1) {
+      const meanings = new Set(inst.map((x) => x.getAttribute('data-el') || ''));
+      if (meanings.size > 1) {
+        const de = el.getAttribute('data-el');
+        if (de) return 'el:' + de;
+      }
+    }
+    return id;
+  }
+
   function selectEl(t) {
     if (S.inlineEditing != null) inlineEditEnd(true); // commit before switching
     clearSelOutline();
-    S.selected = { id: t.id, el: t.el, label: t.label, group: t.group };
+    S.selected = { id: t.id, key: bindingFor(t.el, t.id), el: t.el, label: t.label, group: t.group };
     S.selOutline = t.el.style.outline;
     t.el.style.outline = '2px solid #f59e0b';
     renderHandles();
@@ -1143,10 +1162,10 @@
     const w0 = r0.width, h0 = r0.height;
     const move = (ev) => {
       const dx = ev.clientX - x0, dy = ev.clientY - y0;
-      if (dir.indexOf('e') !== -1) setStyleProp(sel.id, 'width', Math.max(10, Math.round(w0 + dx)) + 'px');
-      if (dir.indexOf('w') !== -1) setStyleProp(sel.id, 'width', Math.max(10, Math.round(w0 - dx)) + 'px');
-      if (dir.indexOf('s') !== -1) setStyleProp(sel.id, 'height', Math.max(10, Math.round(h0 + dy)) + 'px');
-      if (dir.indexOf('n') !== -1) setStyleProp(sel.id, 'height', Math.max(10, Math.round(h0 - dy)) + 'px');
+      if (dir.indexOf('e') !== -1) setStyleProp(sel.key, 'width', Math.max(10, Math.round(w0 + dx)) + 'px');
+      if (dir.indexOf('w') !== -1) setStyleProp(sel.key, 'width', Math.max(10, Math.round(w0 - dx)) + 'px');
+      if (dir.indexOf('s') !== -1) setStyleProp(sel.key, 'height', Math.max(10, Math.round(h0 + dy)) + 'px');
+      if (dir.indexOf('n') !== -1) setStyleProp(sel.key, 'height', Math.max(10, Math.round(h0 - dy)) + 'px');
       renderHandles();
     };
     const up = () => {
@@ -1206,7 +1225,7 @@
     if (commit) {
       // setTextContent normalizes whatever markup contenteditable produced,
       // patches the draft, and schedules the auto-save.
-      setTextContent(sel.id, el.textContent);
+      setTextContent(sel.key, el.textContent);
     } else {
       el.textContent = original;
     }
@@ -1276,6 +1295,63 @@
     }
   }
 
+  // Apply the CURRENT draft patch set to this document. The serve-time
+  // overlay does this for page loads; this is the live path for frames that
+  // are already open (the other rungs of the ladder, another author tab).
+  function applyPatchesLive() {
+    for (const key of Object.keys(S.draft.patches)) {
+      const p = S.draft.patches[key] || {};
+      for (const el of targetsForKey(key)) {
+        if (p.style) {
+          for (const prop of Object.keys(p.style)) {
+            const v = p.style[prop];
+            if (v == null) el.style.removeProperty(prop);
+            else el.style.setProperty(prop, v);
+          }
+        }
+        // Text lands only on text-editable targets; composite instances are
+        // the serve-time overlay's job (it refuses them loudly, by design).
+        if (p.text != null && isTextEditable(el)) el.textContent = p.text;
+      }
+    }
+  }
+
+  // Another author context saved its draft (a sibling rung of the viewport
+  // ladder, a second tab): pull it and apply — the operator's law is that
+  // every platform the design was authored at shows the same thing LIVE
+  // (amended 2026-08-24). Removals can't be un-applied from a live DOM we
+  // never snapshotted, so a shrinking draft converges by reload — the same
+  // thing the resetting rung itself does.
+  let syncing = false;
+  function patchPropCount(d) {
+    let n = 0;
+    for (const k of Object.keys(d.patches)) {
+      const p = d.patches[k] || {};
+      n += (p.style ? Object.keys(p.style).length : 0) + (p.attrs ? Object.keys(p.attrs).length : 0) + (p.text != null ? 1 : 0);
+    }
+    return n;
+  }
+  async function syncRemoteDraft() {
+    if (syncing || S.mode !== 'author') return;
+    syncing = true;
+    try {
+      const r = await api('GET', '/draft');
+      if (!r || !r.draft) return;
+      const next = { tokens: r.draft.tokens || {}, patches: r.draft.patches || {} };
+      const had = Object.keys(S.draft.patches).length + Object.keys(S.draft.tokens).length;
+      const has = Object.keys(next.patches).length + Object.keys(next.tokens).length;
+      const shrink = has < had || patchPropCount(next) < patchPropCount(S.draft);
+      S.draft.tokens = next.tokens;
+      S.draft.patches = next.patches;
+      applyTokensLive();
+      applyPatchesLive();
+      if (shrink) { location.reload(); return; }
+      if (S.panel === 'design' || S.panel === 'tokens') renderPanelBody();
+    } finally {
+      syncing = false;
+    }
+  }
+
   function renderDraftMeta() {
     const el = root.getElementById('draftmeta');
     if (!el) return;
@@ -1286,18 +1362,31 @@
       : np + ' patches · ' + nt + ' tokens' + (S.draftMeta ? ' · saved' : '');
   }
 
-  function setStyleProp(id, prop, value) {
-    const p = patchFor(id);
+  // Every instance a patch key governs. el:-keys fan out over their data-el
+  // (homogeneous rows share one authored meaning); machine ids fan out over
+  // every instance of the id — live apply must match what the serve-time
+  // overlay will do, or the design changes personality on reload.
+  function targetsForKey(key) {
+    if (key.indexOf('el:') === 0) {
+      return [...document.querySelectorAll('[data-el="' + key.slice(3) + '"]')];
+    }
+    return [...document.querySelectorAll('[data-arxa-id="' + key + '"]')];
+  }
+
+  function setStyleProp(key, prop, value) {
+    const p = patchFor(key);
     p.style[prop] = value || null; // empty clears the property (removal)
-    if (S.selected && S.selected.id === id) {
-      if (value) S.selected.el.style.setProperty(prop, value);
-      else S.selected.el.style.removeProperty(prop);
+    for (const el of targetsForKey(key)) {
+      if (value) el.style.setProperty(prop, value);
+      else el.style.removeProperty(prop);
     }
     scheduleSave();
   }
-  function setTextContent(id, value) {
-    patchFor(id).text = value;
-    if (S.selected && S.selected.id === id) S.selected.el.textContent = value;
+  function setTextContent(key, value) {
+    patchFor(key).text = value;
+    for (const el of targetsForKey(key)) {
+      if (isTextEditable(el)) el.textContent = value;
+    }
     scheduleSave();
   }
 
@@ -1332,10 +1421,10 @@
       else say(r && r.error ? r.error : 'Commit request failed');
     });
     kids.push(commit);
-    if (S.selected && S.draft.patches[S.selected.id]) {
+    if (S.selected && S.draft.patches[S.selected.key]) {
       const resetEl = h('button', { class: 'btn ghost', text: 'Reset element' });
       resetEl.addEventListener('click', async () => {
-        delete S.draft.patches[S.selected.id];
+        delete S.draft.patches[S.selected.key];
         S.draftDirty = true;
         await saveDraft();
         location.reload(); // re-served without this patch — source state
@@ -1362,8 +1451,8 @@
       return;
     }
     pbody.appendChild(h('div', { class: 'sect', text: sel.label }));
-    pbody.appendChild(h('div', { class: 'idline', text: sel.id }));
-    const draft = S.draft.patches[sel.id] || {};
+    pbody.appendChild(h('div', { class: 'idline', text: sel.key === sel.id ? sel.id : sel.id + ' → ' + sel.key }));
+    const draft = S.draft.patches[sel.key] || {};
 
     // Content facet — text-bearing elements with no stamped descendants
     // (see isTextEditable: runtime splitter wrappers are not authored
@@ -1372,7 +1461,7 @@
       pbody.appendChild(h('div', { class: 'sect', text: 'Content' }));
       const ta = h('textarea', { rows: '2' });
       ta.value = draft.text != null ? draft.text : sel.el.textContent;
-      ta.addEventListener('input', () => setTextContent(sel.id, ta.value));
+      ta.addEventListener('input', () => setTextContent(sel.key, ta.value));
       pbody.appendChild(h('div', { class: 'facet' }, [ta]));
     }
 
@@ -1393,13 +1482,13 @@
         input = h('input', { type: 'text', placeholder: cs.getPropertyValue(prop) || 'unset' });
         input.value = cur || '';
       }
-      input.addEventListener('input', () => setStyleProp(sel.id, prop, input.value.trim()));
+      input.addEventListener('input', () => setStyleProp(sel.key, prop, input.value.trim()));
       if (COLOR_PROPS[prop]) {
         const sw = h('input', { type: 'color', title: 'pick ' + prop });
         sw.value = rgbToHex(cur || cs.getPropertyValue(prop)) || '#000000';
         sw.addEventListener('input', () => {
           input.value = sw.value;
-          setStyleProp(sel.id, prop, sw.value);
+          setStyleProp(sel.key, prop, sw.value);
         });
         row.appendChild(sw);
       }
@@ -1420,7 +1509,7 @@
       const parsed = parseCss(css.value);
       const keys = Object.keys(parsed);
       if (!keys.length) { say('No valid declarations parsed'); return; }
-      for (const k of keys) setStyleProp(sel.id, k, parsed[k]);
+      for (const k of keys) setStyleProp(sel.key, k, parsed[k]);
       say(keys.length + (keys.length === 1 ? ' property' : ' properties') + ' applied');
       renderPanelBody();
     });
@@ -1579,8 +1668,9 @@
       let d = null;
       try { d = JSON.parse(ev.data); } catch (_) {}
       if (!d || d.kind === 'pins') return loadPins();
-      // Another author tab saved its draft — refetch, unless it was ours.
-      if (d.kind === 'draft' && Date.now() - S.ownSave > 1500) loadDraft();
+      // Another author context saved its draft — sync it INTO this
+      // document, unless the frame was this document's own save.
+      if (d.kind === 'draft' && Date.now() - S.ownSave > 1500) syncRemoteDraft();
       // 'commit' frames feed the studio agent — the requester already
       // heard its toast, there is nothing for this page to do.
     });

@@ -136,4 +136,64 @@ void main() {
       }
     });
   });
+
+  group('authored-identity targeting (el:, amended 2026-08-24)', () {
+    test('patchSource with attr data-el binds the authored identity', () {
+      final res = patchSource(_src, 'hero:Title',
+          const PatchEdits(style: {'color': 'blue'}), attr: 'data-el');
+      expect(res.found, isTrue);
+      expect(res.code,
+          contains('style="display: flex; color: blue"'));
+      // machine-id siblings untouched
+      expect(res.code, contains('data-arxa-id="surfaces-home-e2"'));
+    });
+
+    test('patchAllRendered with attr data-el patches every same-el row', () {
+      const html = '<li data-el="row" data-arxa-id="w-e1">a</li>'
+          '<li data-el="row" data-arxa-id="w-e1">b</li>'
+          '<li data-el="other" data-arxa-id="w-e1">c</li>';
+      final res = patchAllRendered(
+          html, 'row', const PatchEdits(style: {'color': 'red'}),
+          attr: 'data-el');
+      expect(res.applied, 2);
+      expect(res.code.indexOf('color: red'),
+          isNot(res.code.lastIndexOf('color: red'))); // two applications
+      // the divergent sibling ('other') is NOT patched — that is the law
+      expect(res.code, contains('<li data-el="other" data-arxa-id="w-e1">c</li>'));
+    });
+
+    test('patchAllRendered default stays machine-id fan-out', () {
+      const html = '<b data-arxa-id="w-e9" data-el="x">1</b>'
+          '<i data-arxa-id="w-e9" data-el="y">2</i>';
+      final res = patchAllRendered(
+          html, 'w-e9', const PatchEdits(style: {'color': 'red'}));
+      expect(res.applied, 2);
+    });
+
+    test('patchMain --el targets the authored identity', () {
+      final dir = Directory.systemTemp.createTempSync('patch_test');
+      try {
+        File('${dir.path}/a.tsx').writeAsStringSync(_src);
+        final res = patchMain(
+            [dir.path, '--el', 'hero:Title', '--style', 'color=teal']);
+        expect(res.exitCode, 0);
+        expect(File('${dir.path}/a.tsx').readAsStringSync(),
+            contains('style="display: flex; color: teal"'));
+      } finally {
+        dir.deleteSync(recursive: true);
+      }
+    });
+
+    test('patchMain --el with an unknown data-el exits 3', () {
+      final dir = Directory.systemTemp.createTempSync('patch_test');
+      try {
+        File('${dir.path}/a.tsx').writeAsStringSync(_src);
+        final res =
+            patchMain([dir.path, '--el', 'nope', '--style', 'color=teal']);
+        expect(res.exitCode, 3);
+      } finally {
+        dir.deleteSync(recursive: true);
+      }
+    });
+  });
 }
