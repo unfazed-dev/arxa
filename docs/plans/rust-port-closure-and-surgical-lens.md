@@ -103,7 +103,7 @@ per convention, proceeded on primary sources.
 
 ## F. Client-facing islands
 
-13. **Feedback dial (the appbox FAB):** first-party island (ADR-0009
+13. **Feedback dial (the appbox FAB):** *(amended 2026-08-23 — see "the feedback dial becomes the Design Dial" below: two modes, Share Link access, Draft Overlay + manual Publish)* first-party island (ADR-0009
     form) baked into every design artifact. Default on; operator-only
     toggle; clients cannot hide it (watermark role). Art-dial design:
     radial icon-button options, draggable, animated. Supabase Auth
@@ -116,7 +116,7 @@ per convention, proceeded on primary sources.
     viewport}; `auth.uid()`-keyed RLS; realtime `postgres_changes` for
     the operator moderation view. Chat and per-user features ride the
     same auth later.
-15. **Lock depth — server-verified on deploys:** the Cloudflare Worker
+15. **Lock depth — server-verified on deploys:** *(amended 2026-08-23: clients authenticate via Share Link tokens, not Supabase accounts — the Worker verifies share tokens for comment-level access; the Supabase JWT path below remains the operator path)* the Cloudflare Worker
     serving deployed previews verifies the Supabase JWT before serving
     artifact HTML; the island only owns the sign-in UX. Local
     `appbox design serve` stays open.
@@ -525,3 +525,64 @@ per convention, proceeded on primary sources.
 W1→W3 is the dependency spine; W4 can run parallel after W2's region
 tree exists; W5/W6/W7 are independent of W1–W4 (W7's content pass hooks
 into the intake/story-map stage).
+
+---
+
+## Amendment 2026-08-23 — the feedback dial becomes the Design Dial
+
+Grill session, all answers confirmed; supersedes §F-13 and §F-15 as marked
+inline. The dial is no longer feedback-only: it is the **Design Dial**, one
+first-party island with two modes. Glossary terms (Design Dial, Design Mode,
+Feedback Mode, Draft Overlay, Publish, Pin, Orphaned Pin, Review Shade,
+Share Link, Author) are canonical in docs/VOCABULARY.md.
+
+1. **Two modes, role-split.** Design Mode is Author-only (live visual
+   modification); Feedback Mode is for clients over the Share Link. Only the
+   Author edits; an artifact has exactly one Author.
+2. **Edit mechanism — direct manipulation + studio socket.** The Author
+   selects an element and edits in the dial panel; changes apply live
+   client-side immediately, and a socket to arxa-studio lets the agent commit
+   accepted changes back into artifact source (lint/gates re-run on commit).
+3. **Edit surface — three tiers, structure excluded.** Design tokens
+   (global), element-level style, text content. Add/move/reorder of widgets
+   is never a dial operation — that stays a studio redesign conversation,
+   protecting the W9 composition law.
+4. **Editor granularity — curated facets + escape hatch.** The selected
+   widget's kind (closed 15-kind vocabulary) determines its editable facet
+   set; a raw-CSS escape hatch per element covers the unlisted.
+5. **Draft Overlay + manual Publish.** Auto-save persists edits as a
+   server-side per-artifact patch-set overlay — artifact source is never
+   touched by auto-save. Clients always see the last published state;
+   Publish is a manual dial button → studio socket → appbox-deployer/wrangler
+   → the artifact's ONE stable Workers hostname (links never churn).
+6. **Pin anchoring — element identity + rect snapshot.** Pins bind to W7
+   data-el identity (route + viewport recorded), surviving restyles and live
+   edits; a rect snapshot fallback renders Orphaned Pins at their last known
+   position instead of losing them.
+7. **Client access — Share Link named guest.** Scoped, expiring per-artifact
+   token; first visit asks only for a display name (optional email for reply
+   notifications). No Supabase account for clients. (§F-15's Worker check
+   verifies the share token for comment-level access; operator access still
+   uses the Supabase JWT.)
+8. **Review Shade + per-layer toggles.** Opacity-adjustable shade between
+   design and annotations, plus independent on/off switches for comments,
+   pins, drawings.
+9. **Pin lifecycle — full kanban.** Open / Triaged / In progress / Resolved /
+   Won't do, with threaded replies; realtime in-session delivery, optional
+   email digest.
+10. **Dial form — radial dock + expanding panels.** The locked art-dial
+    (radial icon-buttons, draggable, animated) remains the always-present
+    dock for verbs (mode switch, layer toggles, Publish, history);
+    mode/element selection expands a docked side panel for property editors.
+11. **Shared state — central Supabase stands.** The existing operator-owned
+    project hosts the feedback store; local design server and deployed Worker
+    both read/write it; realtime delivers pins and kanban moves. The Draft
+    Overlay is local-server state only, never in Supabase.
+12. **Universality stands.** Every artifact type gets the dial; decks get
+    Feedback Mode only. Default on, operator-only toggle, clients cannot hide
+    it. The §F-17 a11y-toolbox demo entry stays.
+13. **Build order — Feedback Mode first.** Dial shell + pins + kanban +
+    Supabase + Share Links (this is W5, revised); Design Mode second
+    (selection, facet editors, Draft Overlay, studio commit); the Publish
+    button lands last with the deployer seam. W5's scope above is amended
+    accordingly.

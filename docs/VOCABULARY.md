@@ -1019,6 +1019,63 @@ _Avoid_: downward-only placement (rejected — leaves placement co-managed by
 graph + discretion)
 _Layer_: Design medium
 
+**Design Dial**:
+The floating control baked into every design artifact, so the author can adjust the design live and clients can leave feedback on it — one control, two modes.
+The always-present first-party island generated on every artifact: a radial dock with expanding panels, default on, toggleable by the operator only, never hideable by clients (watermark role). Its two modes are Design Mode and Feedback Mode.
+_Avoid_: feedback dial (superseded — it was the Feedback-Mode-only ancestor), FAB, widget (reserved)
+_Layer_: Design medium
+
+**Design Mode**:
+The author-only side of the Design Dial: select a piece of the design, adjust its look or wording, and see the change live.
+The Design Dial mode available to the Author only, offering selection plus curated per-widget-kind facet editors (with a raw-CSS escape hatch) across three edit tiers — tokens, element style, text. Edits auto-save into the Draft Overlay; structure (add/move/reorder widgets) is never editable here.
+_Layer_: Design medium
+
+**Feedback Mode**:
+The client side of the Design Dial: look at the shared design, drop Pins on it, draw over it, and track what happened to each comment.
+The Design Dial mode available over a Share Link: Pins with threaded replies and a kanban lifecycle (Open / Triaged / In progress / Resolved / Won't do), freehand draw-over, per-layer toggles (comments / pins / drawings) and the Review Shade. Clients never edit the design.
+_Layer_: Design medium
+
+**Draft Overlay**:
+The author's unsent adjustments, saved automatically as they work — visible on their screen, invisible to clients until Publish.
+The auto-saved patch set layered over an artifact: token, element-style, and text patches recorded while designing, persisted server-side per artifact, never written into artifact source until committed. Clients always see the last published state, never the Draft Overlay.
+_Avoid_: autosave (the mechanism, not the thing), unpublished changes
+_Layer_: Design medium
+
+**Publish**:
+The author's manual button that makes the current design — with all committed adjustments — live at the one stable client link.
+The operator-triggered deploy of committed artifact source to the artifact's single stable share URL; never automatic, always from the Design Dial. Draft Overlay content reaches clients only through a commit followed by a Publish.
+_Avoid_: deploy (the pipeline verb this rides), save, push (git)
+_Layer_: Design medium
+
+**Pin**:
+A comment stuck onto an exact spot of the design — it stays attached to that piece even when the design changes, and remembers where it was if that piece is removed.
+A Feedback Mode comment anchored to element identity (route + viewport recorded), with a rect snapshot fallback: if the anchor element disappears, the Pin survives as an Orphaned Pin at its last known position rather than vanishing.
+_Avoid_: annotation (the draw-over marks), marker, note
+_Layer_: Design medium
+
+**Orphaned Pin**:
+A Pin whose piece of the design was removed — shown at its last known spot so the client's words are never silently lost.
+A Pin whose element-identity anchor no longer resolves; rendered at its stored rect snapshot, flagged orphaned, still fully replyable and resolvable.
+_Layer_: Design medium
+
+**Review Shade**:
+The dimmer over the design during review: slide it up to make Pins and drawings stand out, slide it down to see the design clearly.
+The opacity-adjustable overlay layer between the design and the annotation layers in Feedback Mode; independent of the per-layer toggles (comments / pins / drawings), which switch content on and off while the shade only dims.
+_Avoid_: overlay (bare — every artifact layer is an overlay), dimmer (the mechanism)
+_Layer_: Design medium
+
+**Share Link**:
+The one link the author sends a client: opens the live design, asks for a name, and lets them comment — no account, no password.
+The scoped, expiring access token (per artifact, view/comment permission) that identifies a named guest; it is the client-side counterpart of the operator's sign-in and the only access path to Feedback Mode on a published design.
+_Avoid_: magic link (the mechanism), public link (it is scoped, not public)
+_Layer_: Design medium
+
+**Author**:
+The person whose design it is — the only one who can change it. Clients comment; the Author edits and publishes.
+The single editing identity on an artifact's Design Dial: holds Design Mode, resolves Pins, commits the Draft Overlay, and publishes. An artifact has exactly one Author.
+_Avoid_: owner (billing/tenancy), operator (the appbox persona running the pipeline), designer (a role, not the identity)
+_Layer_: Design medium
+
 ---
 
 ## Brand Glossary
