@@ -164,7 +164,17 @@ component surfaces — glm-5.3 settles each call in milliseconds, so tool
 pending lasts a frame. The glow now hangs off a warmth clock instead: the
 ledger stamps `lastChangeAt` on real growth and the host card glows while
 `!settled || surfaceWarm(...)` (1500ms, ~2x the measured 700ms inter-call
-cadence); replay is cold by construction. §8.1/§8.3 (the `Pending`
+cadence); replay is cold by construction. Same follow-up again for the
+ENTRANCE: per-node wrappers already reached every depth but fired in
+unison, so the mechanism is now a batch cascade — the fold ledger stamps
+each component id with the ordinal of the call that joined it
+(`firstSeen`), and a render assigns per-node `animation-delay` steps
+(90ms, 720ms cap) in depth-first reading order within each batch. The JS
+reveal clock, per-card child gating and estimated stand-in slots are
+DELETED: real elements reserve their own height from frame one, growth
+re-renders cannot restart finished animations (old ids keep their delay
+values), and the CSS media query is the whole reduced-motion stand-down.
+§8.1/§8.3 (the `Pending`
 placeholder + fill-by-id) are NOT built: no catalogue growth means plan
 decision 23 stands unreversed, and the fold alone covered the observed
 failure (N disjoint prefix cards).
