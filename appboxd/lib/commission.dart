@@ -241,6 +241,54 @@ String _commissionMd(
   }
   buf.writeln();
 
+  // ---- layout template (founder-signed): the shell grid per rung binds
+  // every surface — same rendering as the brief's, verbatim passthrough.
+  final layout = answers['layoutTemplate'];
+  final layoutValue = layout is Map ? layout['value'] : layout;
+  if (layoutValue is Map) {
+    buf.writeln('## Layout template — founder-signed, binds every surface');
+    buf.writeln();
+    if (layoutValue['category'] is String) {
+      buf.writeln('- category: ${layoutValue['category']}');
+    }
+    if (layoutValue['archetype'] is String) {
+      buf.writeln('- archetype: ${layoutValue['archetype']}');
+    }
+    buf.writeln();
+    final areas = layoutValue['areas'];
+    if (areas is Map) {
+      buf.writeln('Grid template areas per rung (viewport ladder):');
+      buf.writeln();
+      for (final rung in const ['compact', 'medium', 'expanded']) {
+        final rows = areas[rung];
+        if (rows is! List || rows.isEmpty) continue;
+        buf.writeln('$rung:');
+        buf.writeln('```');
+        for (final row in rows) {
+          buf.writeln('"$row"');
+        }
+        buf.writeln('```');
+        buf.writeln();
+      }
+    }
+    final containers = layoutValue['containers'];
+    if (containers is Map && containers.isNotEmpty) {
+      buf.writeln('Named containers:');
+      buf.writeln();
+      for (final e in containers.entries) {
+        final meta = e.value;
+        if (meta is Map) {
+          final hints = meta['hints'] ?? '';
+          buf.writeln('- `${e.key}` — ${meta['type'] ?? ''}'
+              '${hints.toString().isNotEmpty ? ': $hints' : ''}');
+        } else {
+          buf.writeln('- `${e.key}` — $meta');
+        }
+      }
+      buf.writeln();
+    }
+  }
+
   // ---- visual mandate: ONLY selected references, with scores + why + shots
   buf.writeln('## Visual mandate — selected references only');
   buf.writeln('Scored 0-5 per criterion against the intake rubric; selected by the');
@@ -390,19 +438,8 @@ String _commissionMd(
       buf.writeln('    - $c');
     }
   }
-  final layout = answers['layoutTemplate'];
-  final layoutValue = layout is Map ? layout['value'] : layout;
   if (layoutValue is String && layoutValue.isNotEmpty) {
     buf.writeln('- Layout template (founder-signed): $layoutValue');
-  } else if (layoutValue is Map) {
-    // The emitted shape is an object: category + archetype + per-rung areas.
-    final label = {layoutValue['category'], layoutValue['archetype']}
-        .whereType<String>()
-        .where((s) => s.isNotEmpty)
-        .join(' / ');
-    if (label.isNotEmpty) {
-      buf.writeln('- Layout template (founder-signed): $label');
-    }
   }
   buf.writeln();
   buf.writeln('--- compiled deterministically from the intake chain; regenerate with');

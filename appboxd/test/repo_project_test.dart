@@ -438,7 +438,17 @@ void main() {
         'provenance': 'founder',
       };
       answers['layoutTemplate'] = {
-        'value': {'category': 'dashboard', 'archetype': 'dashboard', 'areas': {}},
+        'value': {
+          'category': 'dashboard',
+          'archetype': 'dashboard',
+          'areas': {
+            'compact': ['app-bar', 'card-grid', 'tab-bar'],
+            'medium': ['app-bar app-bar', 'nav-rail toolbar', 'nav-rail card-grid'],
+          },
+          'containers': {
+            'app-bar': {'type': 'chrome', 'hints': 'title, primary actions'},
+          },
+        },
         'provenance': 'founder',
       };
       answersFile.writeAsStringSync(jsonEncode(answers));
@@ -448,7 +458,11 @@ void main() {
       expect(md, contains('- Resort guest — client'));
       expect(md, contains('- Surfaces in the registry: 2'));
       expect(md, contains('- Payslip math uses MRA statutory rates'));
-      expect(md, contains('- Layout template (founder-signed): dashboard'));
+      // The founder-signed template binds: grid areas per rung + containers.
+      expect(md, contains('## Layout template — founder-signed'));
+      expect(md, contains('- category: dashboard'));
+      expect(md, contains('"nav-rail card-grid"'));
+      expect(md, contains('- `app-bar` — chrome: title, primary actions'));
     });
 
     test('REFUSES an unapproved selection — the human gate', () {
