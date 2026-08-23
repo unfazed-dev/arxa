@@ -587,8 +587,12 @@ Share Link, Author) are canonical in docs/VOCABULARY.md.
     button lands last with the deployer seam. W5's scope above is amended
     accordingly.
 14. **Drawings attach to Pins** (grilled 2026-08-23, after the docs check
-    surfaced the gap): there is no standalone drawings table — a drawing
-    persists by attaching to the Pin its author places next (the pub.dev
-    feedback model §F-13 named). Strokes live on the pin row as jsonb
-    (shape/caps enforced app-side), replay when the pin's thread opens, and
-    unpinned strokes die with the session.
+    surfaced the gap): a drawing never exists standalone — it persists by
+    attaching to the Pin its author places next (the pub.dev feedback
+    model §F-13 named). Strokes replay when the pin's thread opens, and
+    unpinned strokes die with the session. *(amended 2026-08-23, storage
+    only: the model stands, but strokes live in their own
+    `design_dial_drawings` table — 1:1, `pin_id` PK/FK with cascade —
+    not as a jsonb column on the pin row. Operator decision after the
+    dashboard review: relational storage keeps per-stroke editing open
+    without another migration. Shape/caps still enforced app-side.)*

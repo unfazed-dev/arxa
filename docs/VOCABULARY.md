@@ -1032,7 +1032,7 @@ _Layer_: Design medium
 
 **Feedback Mode**:
 The client side of the Design Dial: look at the shared design, drop Pins on it, draw over it, and track what happened to each comment.
-The Design Dial mode available over a Share Link: Pins with threaded replies and a kanban lifecycle (Open / Triaged / In progress / Resolved / Won't do), freehand draw-over whose strokes persist by attaching to a Pin (never standalone), per-layer toggles (comments / pins / drawings) and the Review Shade. Clients never edit the design.
+The Design Dial mode available over a Share Link: Pins with threaded replies and a kanban lifecycle (Open / Triaged / In progress / Resolved / Won't do), freehand draw-over whose strokes persist by attaching to a Pin (never standalone; stored as a `design_dial_drawings` row, 1:1 with its Pin), per-layer toggles (comments / pins / drawings) and the Review Shade. Clients never edit the design.
 _Layer_: Design medium
 
 **Draft Overlay**:

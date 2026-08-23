@@ -124,8 +124,10 @@ class DialPin {
   final Map<String, double> rect;
 
   /// The strokes the author drew while placing this pin (locked 2026-08-23:
-  /// drawings attach to pins — the pub.dev feedback model; there is no
-  /// standalone drawings table). Shape: strokes → points → [x, y] page
+  /// drawings attach to pins — the pub.dev feedback model; a drawing
+  /// never exists standalone. MemoryDialStore carries it on the pin;
+  /// SupabaseDialStore persists it as a design_dial_drawings row (1:1,
+  /// storage amendment 2026-08-23). Shape: strokes → points → [x, y] page
   /// coordinates. Null when the pin carries no drawing.
   final List<List<List<double>>>? drawing;
 
@@ -346,7 +348,6 @@ class SupabaseDialStore implements DialStore {
         'viewport_h': p.viewportH,
         'anchor_el': p.anchorEl,
         'rect': p.rect,
-        if (p.drawing != null) 'drawing': p.drawing,
         'status': p.status.wire,
         'author_kind': p.authorKind.name,
         'author_name': p.authorName,
@@ -355,9 +356,18 @@ class SupabaseDialStore implements DialStore {
         'updated_at': p.updatedAt,
       };
 
+  /// The embedded design_dial_drawings row: a one-to-one object when
+  /// PostgREST detects the unique FK, a list when it doesn't, null when the
+  /// pin carries no drawing. Returns the strokes payload for asDrawing.
+  static Object? _embeddedStrokes(Object? v) {
+    if (v is Map) return v['strokes'];
+    if (v is List && v.isNotEmpty) return (v.first as Map)['strokes'];
+    return null;
+  }
+
   static DialPin _pinFromRow(Map<String, dynamic> r, [List<DialReply>? rp]) =>
       DialPin(
-        drawing: asDrawing(r['drawing']),
+        drawing: asDrawing(_embeddedStrokes(r['design_dial_drawings'])),
         id: r['id'] as String,
         artifact: r['artifact'] as String,
         route: r['route'] as String,
@@ -389,7 +399,8 @@ class SupabaseDialStore implements DialStore {
   @override
   Future<List<DialPin>> listPins(String artifact, {String? route}) async {
     var q = 'design_dial_pins?artifact=eq.${Uri.encodeComponent(artifact)}'
-        '&order=created_at.asc&select=*,design_dial_replies(*)';
+        '&order=created_at.asc'
+        '&select=*,design_dial_replies(*),design_dial_drawings(strokes)';
     if (route != null) q += '&route=eq.${Uri.encodeComponent(route)}';
     final res = await _req('GET', q);
     final rows = jsonDecode(await res.transform(utf8.decoder).join()) as List;
@@ -407,6 +418,16 @@ class SupabaseDialStore implements DialStore {
   Future<DialPin> createPin(DialPin pin) async {
     await _req('POST', 'design_dial_pins',
         body: _pinRow(pin), extraHeaders: {'Prefer': 'return=minimal'});
+    final drawing = pin.drawing;
+    if (drawing != null) {
+      final res = await _req('POST', 'design_dial_drawings',
+          body: {'pin_id': pin.id, 'strokes': drawing},
+          extraHeaders: {'Prefer': 'return=minimal'});
+      if (res.statusCode >= 400) {
+        throw StateError(
+            'design_dial_drawings insert failed: HTTP ${res.statusCode}');
+      }
+    }
     return pin;
   }
 
@@ -414,7 +435,9 @@ class SupabaseDialStore implements DialStore {
   Future<DialPin?> setStatus(String id, DialPinStatus status) async {
     final now = DateTime.now().toUtc().toIso8601String();
     final res = await _req(
-        'PATCH', 'design_dial_pins?id=eq.${Uri.encodeComponent(id)}',
+        'PATCH',
+        'design_dial_pins?id=eq.${Uri.encodeComponent(id)}'
+        '&select=*,design_dial_drawings(strokes)',
         body: {'status': status.wire, 'updated_at': now},
         extraHeaders: {'Prefer': 'return=representation'});
     final rows = jsonDecode(await res.transform(utf8.decoder).join()) as List;
