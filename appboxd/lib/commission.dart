@@ -82,8 +82,12 @@ int commissionMain(List<String> args) {
   final marker = _readJson('$appDir/appbox.json');
   final answers = _readJson('$intake/answers.json');
   final direction = _readJson('$intake/direction.json');
-  final personas = _readJson('$intake/personas.json');
-  final registry = _readJson('$intake/registry.json');
+  // personas.json and registry.json are emitted as BARE ARRAYS (v1 registry;
+  // v2 wraps the list in `entries`) — a Map-only reader can never see them.
+  final personas = _recordList(
+      _readJsonRoot('$intake/personas.json'), const ['personas', 'list']);
+  final registry = _recordList(
+      _readJsonRoot('$intake/registry.json'), const ['entries', 'surfaces']);
 
   final md = _commissionMd(appDir, rec, marker, answers, direction, personas, registry);
   final prompt = _promptMd(marker);
@@ -104,6 +108,51 @@ Map<String, dynamic> _readJson(String path) {
   } catch (_) {
     return <String, dynamic>{};
   }
+}
+
+/// Reads a JSON artifact whose root may be a List — [_readJson] is Map-only
+/// and would silently drop personas.json and v1 registry.json entirely.
+Object? _readJsonRoot(String path) {
+  final f = File(path);
+  if (!f.existsSync()) return null;
+  try {
+    return jsonDecode(f.readAsStringSync());
+  } catch (_) {
+    return null;
+  }
+}
+
+/// Normalizes [root] to a record list: a bare array (the emitted shape of
+/// personas.json and v1 registry.json) or an object wrapping it under one of
+/// [wrapKeys] (v2 registry's `entries`).
+List<Map<String, dynamic>> _recordList(Object? root, List<String> wrapKeys) {
+  Object? list = root;
+  if (root is Map) {
+    list = null;
+    for (final k in wrapKeys) {
+      final w = root[k];
+      if (w is List) {
+        list = w;
+        break;
+      }
+    }
+  }
+  if (list is! List) return const [];
+  return [for (final e in list) if (e is Map) e.cast<String, dynamic>()];
+}
+
+/// Answer groups are envelopes — `{value: [...], provenance: ...}` — while
+/// the pre-repo-mode shape was a bare list of `{value}` maps; accept both.
+List<String> _answerStrings(Object? v) {
+  final raw = v is Map ? v['value'] : v;
+  if (raw is! List) return const [];
+  return [
+    for (final e in raw)
+      if (e is String)
+        e
+      else if (e is Map && e['value'] is String)
+        e['value'] as String,
+  ];
 }
 
 String _tok(Object? v, String label) =>
@@ -141,8 +190,8 @@ String _commissionMd(
   Map<String, dynamic> marker,
   Map<String, dynamic> answers,
   Map<String, dynamic> direction,
-  Map<String, dynamic> personas,
-  Map<String, dynamic> registry,
+  List<Map<String, dynamic>> personas,
+  List<Map<String, dynamic>> registry,
 ) {
   final name = marker['name'] ?? 'unnamed';
   final kind = marker['kind'] ?? 'site';
@@ -165,14 +214,11 @@ String _commissionMd(
   }
   buf.writeln('- Tone adjectives (founder-signed): ${_adjectives(direction).join(', ')}');
   buf.writeln('- Avoids (founder-signed): ${_avoids(direction).join(', ')}');
-  final personaList = (personas['personas'] as List? ?? personas['list'] as List? ?? const [])
-      .whereType<Map>()
-      .toList();
-  if (personaList.isNotEmpty) {
+  if (personas.isNotEmpty) {
     buf.writeln('- Personas:');
-    for (final p in personaList) {
+    for (final p in personas) {
       final label = p['name'] ?? p['label'] ?? p['id'] ?? '?';
-      final note = p['summary'] ?? p['value'] ?? '';
+      final note = p['summary'] ?? p['value'] ?? p['role'] ?? '';
       buf.writeln('    - $label${note.toString().isNotEmpty ? ' — $note' : ''}');
     }
   }
@@ -336,20 +382,27 @@ String _commissionMd(
 
   // ---- context layer
   buf.writeln('## Context');
-  final surfaces = (registry['surfaces'] as List? ?? const []).whereType<Map>().toList();
-  buf.writeln('- Surfaces in the registry: ${surfaces.length}');
-  final constraints = answers['constraints'];
-  if (constraints is List && constraints.isNotEmpty) {
+  buf.writeln('- Surfaces in the registry: ${registry.length}');
+  final constraints = _answerStrings(answers['constraints']);
+  if (constraints.isNotEmpty) {
     buf.writeln('- Constraints:');
-    for (final c in constraints.whereType<Map>()) {
-      if (c['value'] is String) buf.writeln('    - ${c['value']}');
+    for (final c in constraints) {
+      buf.writeln('    - $c');
     }
   }
   final layout = answers['layoutTemplate'];
-  if (layout is Map && layout['value'] is String) {
-    buf.writeln('- Layout template (founder-signed): ${layout['value']}');
-  } else if (layout is String) {
-    buf.writeln('- Layout template (founder-signed): $layout');
+  final layoutValue = layout is Map ? layout['value'] : layout;
+  if (layoutValue is String && layoutValue.isNotEmpty) {
+    buf.writeln('- Layout template (founder-signed): $layoutValue');
+  } else if (layoutValue is Map) {
+    // The emitted shape is an object: category + archetype + per-rung areas.
+    final label = {layoutValue['category'], layoutValue['archetype']}
+        .whereType<String>()
+        .where((s) => s.isNotEmpty)
+        .join(' / ');
+    if (label.isNotEmpty) {
+      buf.writeln('- Layout template (founder-signed): $label');
+    }
   }
   buf.writeln();
   buf.writeln('--- compiled deterministically from the intake chain; regenerate with');

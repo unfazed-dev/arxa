@@ -406,6 +406,8 @@ void main() {
       expect(md, contains('palette: white with ink and blurple accent'));
       expect(md, contains('### Synthesis'));
       expect(md, contains('**motion**: time-driven gradient-through-type; poster first'));
+      // The pre-repo-mode constraints shape (bare list of {value} maps) renders.
+      expect(md, contains('- no custom client JS in the design layer'));
       final prompt = File('${app.path}/design/commission-prompt.md').readAsStringSync();
       expect(prompt, contains('?variant=b'));
       expect(prompt, contains('data-screen-label'));
@@ -413,6 +415,40 @@ void main() {
       expect(prompt, contains('Designer entry prompt — site'));
       expect(prompt, contains('NON-DEFERRABLE'));
       expect(prompt, contains('baoyu-design'));
+    });
+
+    test('renders the emitted intake shapes — bare arrays and envelopes', () {
+      final app = seedApp();
+      // The intake engine emits personas.json and v1 registry.json as BARE
+      // arrays, constraints as a {value: [...]} envelope, and layoutTemplate
+      // as a {value: {category, archetype, ...}} envelope. The compiler must
+      // read what the pipeline actually writes (the energize-studio defect:
+      // personas, registry, constraints and layout all silently dropped).
+      File('${app.path}/intake/personas.json').writeAsStringSync(jsonEncode([
+        {'id': 'guest', 'name': 'Resort guest', 'role': 'client', 'provenance': 'founder'},
+      ]));
+      File('${app.path}/intake/registry.json').writeAsStringSync(jsonEncode([
+        {'id': 'home', 'surface': 'client'},
+        {'id': 'tickets', 'surface': 'staff'},
+      ]));
+      final answersFile = File('${app.path}/intake/answers.json');
+      final answers = jsonDecode(answersFile.readAsStringSync()) as Map;
+      answers['constraints'] = {
+        'value': ['Payslip math uses MRA statutory rates'],
+        'provenance': 'founder',
+      };
+      answers['layoutTemplate'] = {
+        'value': {'category': 'dashboard', 'archetype': 'dashboard', 'areas': {}},
+        'provenance': 'founder',
+      };
+      answersFile.writeAsStringSync(jsonEncode(answers));
+      final code = commissionMain([app.path]);
+      expect(code, 0);
+      final md = File('${app.path}/design/commission.md').readAsStringSync();
+      expect(md, contains('- Resort guest — client'));
+      expect(md, contains('- Surfaces in the registry: 2'));
+      expect(md, contains('- Payslip math uses MRA statutory rates'));
+      expect(md, contains('- Layout template (founder-signed): dashboard'));
     });
 
     test('REFUSES an unapproved selection — the human gate', () {
