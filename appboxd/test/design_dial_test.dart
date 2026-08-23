@@ -179,6 +179,62 @@ void main() {
     });
   });
 
+  group('drawings attach to pins (locked 2026-08-23)', () {
+    test('a pin carries its drawing through the store and toJson', () async {
+      final api = DialApi(store: MemoryDialStore(), artifact: 'demo');
+      final b = pinBody();
+      b['drawing'] = [
+        [
+          [1.0, 2.0],
+          [3.5, 4.5],
+        ],
+        [
+          [10.0, 10.0],
+          [20.0, 20.0],
+          [30.0, 25.0],
+        ],
+      ];
+      final created = await api.handle('POST', '/pins', {}, b, null);
+      expect(created.status, 201);
+      final pin = ((created.json as Map)['pin'] as Map).cast<String, dynamic>();
+      expect((pin['drawing'] as List).length, 2);
+
+      final listed = await api.handle('GET', '/pins', {}, null, null);
+      final found = ((listed.json as Map)['pins'] as List).single;
+      expect((found['drawing'] as List)[1][2], [30.0, 25.0]);
+    });
+
+    test('no drawing → key absent (lean rows), malformed drawings → 400', () async {
+      final api = DialApi(store: MemoryDialStore(), artifact: 'demo');
+      final plain = await api.handle('POST', '/pins', {}, pinBody(), null);
+      expect(plain.status, 201);
+      expect(((plain.json as Map)['pin'] as Map).containsKey('drawing'), isFalse);
+
+      Future<int> bad(Object? drawing) async {
+        final b = pinBody();
+        b['drawing'] = drawing;
+        return (await api.handle('POST', '/pins', {}, b, null)).status;
+      }
+
+      expect(await bad('not-an-array'), 400);
+      expect(await bad(List.filled(65, [[1, 2]])), 400); // stroke cap
+      expect(await bad([List.filled(2001, [1, 2])]), 400); // per-stroke cap
+      expect(await bad([[1]]), 400); // point shape
+      expect(await bad([[]]), 400); // empty stroke
+      expect(
+          await bad([
+            [
+              [1, 2],
+              [3, double.nan],
+            ],
+          ]),
+          400); // non-finite
+      expect(
+          await bad(List.filled(5, List.filled(1601, [1, 2]))),
+          400); // 8005 total > 8000
+    });
+  });
+
   group('SupabaseDialStore.fromEnv', () {
     test('null without BOTH vars; the memory fallback is the default', () {
       expect(SupabaseDialStore.fromEnv(const {}), isNull);

@@ -8,7 +8,11 @@
    Orphaned Pins survive removal), the kanban lifecycle (open / triaged /
    in_progress / resolved / wont_do) with threaded replies, the Review Shade
    with its opacity slider, per-layer toggles (pins / comments / drawings),
-   Share Link minting (Author only), and the freehand draw-over.
+   Share Link minting (Author only), and the freehand draw-over. Drawings
+   persist ONLY by attaching to a Pin (locked 2026-08-23: the pub.dev
+   feedback model — sketch, then pin it): strokes pending while draw-over is
+   armed attach to the next pin you place; strokes never pinned die with the
+   session. A pinned drawing replays on the canvas while its thread is open.
 
    ISLAND SHAPE (per ADR-0002): one IIFE, no globals, no framework, no build
    step; configuration arrives in the injected #arxa-dial-config JSON script;
@@ -57,7 +61,8 @@
     layers: { pins: true, comments: true, drawings: true },
     activePin: null, // id whose thread popover is open
     name: '',
-    strokes: [], // draw-over strokes (ephemeral — see header)
+    strokes: [], // PENDING strokes — persist only by attaching to a pin (see header)
+    activeDrawing: null, // strokes of the pin whose thread is open
     dockSide: 'right',
   };
   try {
@@ -98,6 +103,9 @@
     '.pin.wontdo{opacity:.45;text-decoration:line-through}',
     '.pin.orphan{background:#8a8f98;border-style:dashed}',
     '.pin.active{outline:3px solid #f59e0b}',
+    '.pin.drawn::after{content:"✎";position:absolute;bottom:-6px;right:-6px;',
+    '  font-size:9px;background:#f59e0b;color:#0b0b10;border-radius:6px;',
+    '  padding:0 3px;font-weight:800}',
     /* the hover highlight while arming */
     '#hover{position:fixed;border:2px solid #0891b2;border-radius:4px;',
     '  background:rgba(8,145,178,.12);pointer-events:none;display:none}',
@@ -599,6 +607,7 @@
           'pin ' +
           pin.status.replace('_', '') +
           (pt.orphan ? ' orphan' : '') +
+          (pin.drawing ? ' drawn' : '') +
           (S.activePin === pin.id ? ' active' : ''),
         text: String(i + 1),
         title: pin.name + ': ' + pin.body,
@@ -703,6 +712,11 @@
       nameInput = h('input', { type: 'text', placeholder: 'Your name', style: 'margin-top:8px' });
       composer.appendChild(nameInput);
     }
+    if (S.strokes.length) {
+      composer.appendChild(
+        h('div', { class: 'who', style: 'font-size:11px;color:#f59e0b;margin-top:8px', text: '✎ ' + S.strokes.length + ' stroke(s) will attach to this pin' }),
+      );
+    }
     const add = h('button', { class: 'btn', text: 'Add pin' });
     const cancel = h('button', { class: 'btn ghost', text: 'Cancel' });
     composer.appendChild(h('div', { class: 'btnrow' }, [cancel, add]));
@@ -718,16 +732,24 @@
           localStorage.setItem('arxa-dial-name', S.name);
         } catch (_) {}
       }
+      const drawing = S.strokes.length
+        ? S.strokes.map((st) => st.map((pt) => [Math.round(pt[0] * 10) / 10, Math.round(pt[1] * 10) / 10]))
+        : undefined;
       const r = await api('POST', '/pins', {
         route: location.pathname,
         viewport: { w: innerWidth, h: innerHeight },
         anchor: { el: target.el, rect: target.rect },
         body,
         name: S.name || undefined,
+        drawing,
       });
       composer.classList.remove('open');
       if (r && r.pin) {
-        say('Pin added');
+        if (drawing) {
+          S.strokes = [];
+          redrawStrokes();
+        }
+        say(drawing ? 'Pin added with your drawing' : 'Pin added');
         await loadPins();
       } else {
         say((r && r.error) || 'Pin failed');
@@ -741,6 +763,8 @@
 
   function openThread(pin) {
     S.activePin = pin.id;
+    S.activeDrawing = pin.drawing || null;
+    redrawStrokes();
     renderPins();
     const pt = anchorPoint(pin);
     thread.textContent = '';
@@ -798,6 +822,8 @@
   }
   function closeThread() {
     S.activePin = null;
+    S.activeDrawing = null;
+    redrawStrokes();
     thread.classList.remove('open');
     renderPins();
   }
@@ -816,17 +842,23 @@
     ctx.clearRect(0, 0, drawCanvas.width, drawCanvas.height);
     ctx.lineWidth = 2.5 * devicePixelRatio;
     ctx.lineCap = 'round';
-    ctx.strokeStyle = '#f59e0b';
-    S.strokes.forEach((stroke) => {
-      ctx.beginPath();
-      stroke.forEach((pt, i) => {
-        const x = (pt[0] - scrollX) * devicePixelRatio;
-        const y = (pt[1] - scrollY) * devicePixelRatio;
-        if (i === 0) ctx.moveTo(x, y);
-        else ctx.lineTo(x, y);
+    const paint = (strokes, color) => {
+      ctx.strokeStyle = color;
+      strokes.forEach((stroke) => {
+        ctx.beginPath();
+        stroke.forEach((pt, i) => {
+          const x = (pt[0] - scrollX) * devicePixelRatio;
+          const y = (pt[1] - scrollY) * devicePixelRatio;
+          if (i === 0) ctx.moveTo(x, y);
+          else ctx.lineTo(x, y);
+        });
+        ctx.stroke();
       });
-      ctx.stroke();
-    });
+    };
+    // Pending strokes (not yet pinned) are amber; the open pin's attached
+    // drawing replays in the dial's cyan so the two are never confused.
+    paint(S.strokes, '#f59e0b');
+    if (S.activeDrawing) paint(S.activeDrawing, '#38bdf8');
   }
   {
     let current = null;

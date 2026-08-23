@@ -586,3 +586,9 @@ Share Link, Author) are canonical in docs/VOCABULARY.md.
     (selection, facet editors, Draft Overlay, studio commit); the Publish
     button lands last with the deployer seam. W5's scope above is amended
     accordingly.
+14. **Drawings attach to Pins** (grilled 2026-08-23, after the docs check
+    surfaced the gap): there is no standalone drawings table — a drawing
+    persists by attaching to the Pin its author places next (the pub.dev
+    feedback model §F-13 named). Strokes live on the pin row as jsonb
+    (shape/caps enforced app-side), replay when the pin's thread opens, and
+    unpinned strokes die with the session.

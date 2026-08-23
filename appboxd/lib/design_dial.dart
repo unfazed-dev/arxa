@@ -105,6 +105,7 @@ class DialPin {
     required this.body,
     required this.createdAt,
     required this.updatedAt,
+    this.drawing,
     List<DialReply>? replies,
   }) : replies = replies ?? [];
 
@@ -122,6 +123,12 @@ class DialPin {
   /// {x, y, w, h} in page coordinates at pin time.
   final Map<String, double> rect;
 
+  /// The strokes the author drew while placing this pin (locked 2026-08-23:
+  /// drawings attach to pins — the pub.dev feedback model; there is no
+  /// standalone drawings table). Shape: strokes → points → [x, y] page
+  /// coordinates. Null when the pin carries no drawing.
+  final List<List<List<double>>>? drawing;
+
   DialPinStatus status;
   final DialCaller authorKind;
   final String authorName;
@@ -136,6 +143,7 @@ class DialPin {
         'route': route,
         'viewport': {'w': viewportW, 'h': viewportH},
         'anchor': {'el': anchorEl, 'rect': rect},
+        if (drawing != null) 'drawing': drawing,
         'status': status.wire,
         'author': authorKind.name,
         'name': authorName,
@@ -338,6 +346,7 @@ class SupabaseDialStore implements DialStore {
         'viewport_h': p.viewportH,
         'anchor_el': p.anchorEl,
         'rect': p.rect,
+        if (p.drawing != null) 'drawing': p.drawing,
         'status': p.status.wire,
         'author_kind': p.authorKind.name,
         'author_name': p.authorName,
@@ -348,6 +357,7 @@ class SupabaseDialStore implements DialStore {
 
   static DialPin _pinFromRow(Map<String, dynamic> r, [List<DialReply>? rp]) =>
       DialPin(
+        drawing: asDrawing(r['drawing']),
         id: r['id'] as String,
         artifact: r['artifact'] as String,
         route: r['route'] as String,
@@ -487,6 +497,47 @@ class SupabaseDialStore implements DialStore {
   return (url: url, key: key);
 }
 
+/// Validates/converts a drawing payload: strokes → points → [x, y] finite
+/// doubles, page coordinates. Returns null for a null/absent drawing; throws
+/// FormatException for a malformed or oversized one. Caps (64 strokes, 2000
+/// points per stroke, 8000 total) keep a hostile or runaway canvas from
+/// landing a megabyte blob in the row.
+List<List<List<double>>>? asDrawing(Object? v) {
+  if (v == null) return null;
+  if (v is! List) throw const FormatException('drawing must be an array');
+  if (v.length > 64) throw const FormatException('drawing exceeds 64 strokes');
+  var total = 0;
+  final out = <List<List<double>>>[];
+  for (final stroke in v) {
+    if (stroke is! List || stroke.isEmpty) {
+      throw const FormatException('each stroke must be a non-empty array');
+    }
+    if (stroke.length > 2000) {
+      throw const FormatException('a stroke exceeds 2000 points');
+    }
+    total += stroke.length;
+    if (total > 8000) {
+      throw const FormatException('drawing exceeds 8000 points total');
+    }
+    final pts = <List<double>>[];
+    for (final pt in stroke) {
+      if (pt is! List || pt.length != 2) {
+        throw const FormatException('each point must be [x, y]');
+      }
+      final x =
+          pt[0] is num ? (pt[0] as num).toDouble() : double.tryParse('${pt[0]}');
+      final y =
+          pt[1] is num ? (pt[1] as num).toDouble() : double.tryParse('${pt[1]}');
+      if (x == null || y == null || !x.isFinite || !y.isFinite) {
+        throw const FormatException('point coordinates must be finite numbers');
+      }
+      pts.add([x, y]);
+    }
+    out.add(pts);
+  }
+  return out;
+}
+
 // ── the pure request core ────────────────────────────────────────────────
 
 class DialResponse {
@@ -574,6 +625,7 @@ class DialApi {
         m['anchor'] == null ? <String, dynamic>{} : _map(m['anchor'], 'anchor');
     final el = anchor['el'] == null ? null : _str(anchor, 'el', _Caps.el);
     final rect = _rect(_map(anchor['rect'], 'anchor.rect'));
+    final drawing = asDrawing(m['drawing']);
     final text = _str(m, 'body', _Caps.body);
     final name = m['name'] == null
         ? (caller == DialCaller.author ? 'author' : 'guest')
@@ -587,6 +639,7 @@ class DialApi {
       viewportH: h,
       anchorEl: el,
       rect: rect,
+      drawing: drawing,
       status: DialPinStatus.open,
       authorKind: caller,
       authorName: name,

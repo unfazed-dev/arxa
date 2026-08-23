@@ -4,30 +4,42 @@
 // element, verifies the badge, mints a Share Link, opens the guest view,
 // and screenshots each stage to /tmp/dial-frames/.
 //
-// Run with the server live:  dart run tool/dial_probe.dart
+// Run with the server live:  dart run tool/dial_probe.dart [base-url]
+// (defaults to http://127.0.0.1:4321/)
 
 import 'dart:io';
 import 'package:appboxd/cdp.dart';
 
+String _base = 'http://127.0.0.1:4321';
+
 Future<dynamic> shadow(CdpSession tab, String js) => tab.evaluate(
     '(async () => { const R = document.getElementById("arxa-dial-host").shadowRoot; $js })()');
 
-Future<void> main() async {
-  final out = Directory('/tmp/dial-frames')..createSync();
+Future<void> main(List<String> args) async {
+  if (args.isNotEmpty) _base = args[0].replaceAll(RegExp('/\$'), '');
+  Directory('/tmp/dial-frames').createSync(recursive: true);
   final client = await CdpClient.launch();
   final tab = await client.newTab();
   await tab.enable();
   await tab.setViewport(1280, 800);
-  await tab.navigateAndSettle('http://127.0.0.1:4321/', settleMs: 2500);
+  await tab.navigateAndSettle('$_base/', settleMs: 2500);
 
-  // 1. The dial booted in author mode with the memory store badge data.
-  final boot = await tab.evaluate('''(() => {
-    const host = document.getElementById("arxa-dial-host");
-    if (!host) return "NO-HOST";
-    const cfg = JSON.parse(document.getElementById("arxa-dial-config").textContent);
-    return JSON.stringify({mode: cfg.mode, store: cfg.store, artifact: cfg.artifact, shadow: !!host.shadowRoot});
-  })()''');
+  // 1. The dial booted (author mode, store badge data). Bounded retry:
+  // the first evaluate can race the navigation's execution-context swap and
+  // read a stale document — NO-HOST then means "not yet", not "missing".
+  String boot = 'NO-HOST';
+  for (var i = 0; i < 10; i++) {
+    boot = await tab.evaluate('''(() => {
+      const host = document.getElementById("arxa-dial-host");
+      if (!host) return "NO-HOST";
+      const cfg = JSON.parse(document.getElementById("arxa-dial-config").textContent);
+      return JSON.stringify({mode: cfg.mode, store: cfg.store, artifact: cfg.artifact, shadow: !!host.shadowRoot});
+    })()''') as String;
+    if (boot != 'NO-HOST') break;
+    await Future<void>.delayed(const Duration(milliseconds: 400));
+  }
   print('boot: $boot');
+  if (boot == 'NO-HOST') throw StateError('dial never booted');
 
   // 2. Expand the radial fan.
   await shadow(tab, 'R.querySelector("#dockbtn").click(); await new Promise(r=>setTimeout(r,400)); return "ok";');
@@ -61,6 +73,46 @@ Future<void> main() async {
   ''');
   print('added: $added');
   File('/tmp/dial-frames/03-pin-placed.png').writeAsBytesSync(await tab.screenshot());
+
+  // 4b. Draw-over: arm the pen, sketch two strokes, then pin — the strokes
+  // must ATTACH to the pin (locked 2026-08-23: drawings attach to pins).
+  final drew = await shadow(tab, '''
+    R.querySelector('[data-verb="pen"]').click();
+    await new Promise(r=>setTimeout(r,150));
+    const cv = R.querySelector("#draw");
+    function stroke(x0,y0,x1,y1) {
+      cv.dispatchEvent(new PointerEvent("pointerdown", {clientX:x0, clientY:y0, bubbles:true, pointerId:1}));
+      for (let i=1;i<=8;i++) {
+        cv.dispatchEvent(new PointerEvent("pointermove", {clientX:x0+(x1-x0)*i/8, clientY:y0+(y1-y0)*i/8, bubbles:true, pointerId:1}));
+      }
+      cv.dispatchEvent(new PointerEvent("pointerup", {clientX:x1, clientY:y1, bubbles:true, pointerId:1}));
+    }
+    stroke(500, 300, 700, 260);
+    stroke(700, 260, 720, 340);
+    await new Promise(r=>setTimeout(r,150));
+    // now arm pin and click the same element
+    R.querySelector('[data-verb="pin"]').click();
+    await new Promise(r=>setTimeout(r,150));
+    const target = document.querySelector("[data-el]");
+    const r2 = target.getBoundingClientRect();
+    document.dispatchEvent(new MouseEvent("click", {clientX: r2.left+r2.width/2, clientY: r2.top+r2.height/2, bubbles: true}));
+    await new Promise(r=>setTimeout(r,300));
+    const note = R.querySelector("#composer").textContent.includes("stroke(s) will attach");
+    return JSON.stringify({attachNote: note});
+  ''');
+  print('drew: $drew');
+  File('/tmp/dial-frames/03b-draw-attach.png').writeAsBytesSync(await tab.screenshot());
+  final addedDraw = await shadow(tab, '''
+    const area = R.querySelector("#composer textarea");
+    area.value = "Probe pin with drawing — arrows mean widen this";
+    [...R.querySelectorAll("#composer .btn")].find(b => b.textContent === "Add pin").click();
+    await new Promise(r=>setTimeout(r,800));
+    const pins = await fetch("/__dial/pins").then(r=>r.json());
+    const withDrawing = pins.pins.filter(p => p.drawing).length;
+    const drawnBadges = R.querySelectorAll("#pins .pin.drawn").length;
+    return JSON.stringify({withDrawing, drawnBadges, strokes: pins.pins.find(p=>p.drawing)?.drawing?.length});
+  ''');
+  print('added-with-drawing: $addedDraw');
 
   // 5. Open the thread and move the kanban (author power).
   final kanban = await shadow(tab, '''
@@ -96,7 +148,7 @@ Future<void> main() async {
   final guest = await client.newTab();
   await guest.enable();
   await guest.setViewport(1280, 800);
-  await guest.navigateAndSettle('http://127.0.0.1:4321/?dial=$share', settleMs: 2500);
+  await guest.navigateAndSettle('$_base/?dial=$share', settleMs: 2500);
   final gmode = await guest.evaluate('''(() => {
     const cfg = JSON.parse(document.getElementById("arxa-dial-config").textContent);
     return JSON.stringify({mode: cfg.mode, pins: null});
