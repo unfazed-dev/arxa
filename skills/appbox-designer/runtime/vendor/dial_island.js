@@ -68,7 +68,7 @@
     panel: null, // null | 'feedback' | 'layers' | 'shade' | 'share'
     arming: false, // pin-placement armed
     drawing: false, // draw-over armed
-    shade: 0.3, // review shade opacity 0..0.6
+    shade: 0, // review shade opacity 0..0.6 — OFF at boot; the shade is a review aid the user dials up, never a default dim over the design
     layers: { pins: true, comments: true, drawings: true },
     activePin: null, // id whose thread popover is open
     name: '',
@@ -276,12 +276,21 @@
     return '/__dial' + sub + (S.token ? '?dial=' + encodeURIComponent(S.token) : '');
   }
   async function api(method, sub, body) {
-    const res = await fetch(apiUrl(sub), {
-      method,
-      headers: body ? { 'Content-Type': 'application/json' } : undefined,
-      body: body ? JSON.stringify(body) : undefined,
-    });
-    return res.json();
+    // Never throw: a transient network failure must surface as the caller's
+    // error path (toast, composer stays open), not as an unhandled rejection
+    // that leaves the verb silently stuck (smoke S9a: mint died mid-flight
+    // and the button read 'Minting…' forever). Every caller already guards
+    // on the fields it needs, so null degrades cleanly everywhere.
+    try {
+      const res = await fetch(apiUrl(sub), {
+        method,
+        headers: body ? { 'Content-Type': 'application/json' } : undefined,
+        body: body ? JSON.stringify(body) : undefined,
+      });
+      return await res.json();
+    } catch (_) {
+      return null;
+    }
   }
   async function loadPins() {
     const r = await api('GET', '/pins');
@@ -618,7 +627,10 @@
   }
   function applyLayers() {
     pinsLayer.style.display = S.layers.pins ? '' : 'none';
-    panel.style.display = S.layers.comments ? '' : 'none';
+    // 'comments' is the THREAD layer. The panel is the dial's own chrome —
+    // hiding it from applyLayers vanished the very Layers panel the user was
+    // clicking in (smoke S7b).
+    thread.style.display = S.layers.comments ? '' : 'none';
     if (!S.layers.comments) closeThread();
     drawCanvas.style.display = S.layers.drawings ? '' : 'none';
   }
@@ -1338,14 +1350,22 @@
     if (id === 'share') return setPanel('share', 'Share this design');
   }
 
-  // Outside click closes thread/composer; Escape disarms everything.
+  // Outside click closes the thread; Escape disarms everything. "Outside"
+  // means outside THE DIAL, not outside the thread popover: the thread is a
+  // sibling of the panel, so a click on a feedback ROW (which opens the
+  // thread) is never inside it, and shadow retargeting hides every dial
+  // element behind the host for document-level listeners anyway. Guarding on
+  // the composed path's HOST covers both at once (smoke S5a).
   document.addEventListener('click', (e) => {
-    if (!S.arming && S.activePin && !thread.contains(e.target)) closeThread();
+    if (!S.arming && S.activePin && e.composedPath().indexOf(host) === -1) {
+      closeThread();
+    }
   });
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
       if (S.arming) disarm();
       if (S.design) designOff();
+      if (S.drawing) onVerb('pen', verbEls.pen); // Escape must disarm the pen too — an armed canvas swallows every page click (smoke S8b)
       closeThread();
       composer.classList.remove('open');
       S.panel = null;

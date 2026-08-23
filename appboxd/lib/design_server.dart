@@ -526,7 +526,12 @@ class DesignServer {
         secFetchSite: req.headers.value('Sec-Fetch-Site'),
       );
       if (!verdict.allowed) {
-        stderr.writeln('[design-server] refused $method $path: '
+        // Name the caller in the log — a refusal that does not say WHO was
+        // refused cannot be told apart from an attack or a misconfigured
+        // first-party client without packet capture.
+        stderr.writeln('[design-server] refused $method $path '
+            '(origin=${req.headers.value('Origin')}, '
+            'sec-fetch-site=${req.headers.value('Sec-Fetch-Site')}): '
             '${verdict.reason}');
         req.response.statusCode = verdict.status;
         req.response.headers.contentType =
