@@ -2389,13 +2389,28 @@ String generateRenderTsx(String artifactDir, {String? projectDir}) {
     ..writeln("// .tsx view inventory. DO NOT EDIT — re-run eject to regenerate.")
     ..writeln("import type { FC } from 'hono/jsx';");
 
+  // Default-export imports bind the COMPONENT NAME bare — a second view
+  // default-exporting the same name steals both registry entries (the
+  // energize-studio defect: two AccessPage views). Alias on repeat, like
+  // fragments already are; defaultRefs[v] is what the registry references.
+  final usedDefaultNames = <String>{};
+  final defaultRefs = <TsxView, String>{};
   for (final v in views) {
     final prefix = viewAliasPrefix(v.relPath);
+    if (v.defaultName != null) {
+      defaultRefs[v] = usedDefaultNames.add(v.defaultName!)
+          ? v.defaultName!
+          : '$prefix${v.defaultName}';
+    }
     if (v.defaultName != null && v.fragments.isEmpty) {
-      buf.writeln("import ${v.defaultName} from '../${v.relPath}';");
+      buf.writeln(defaultRefs[v] == v.defaultName
+          ? "import ${v.defaultName} from '../${v.relPath}';"
+          : "import ${v.defaultName} as ${defaultRefs[v]} from '../${v.relPath}';");
     } else if (v.defaultName != null) {
       final aliased = v.fragments.map((f) => '$f as $prefix$f').join(', ');
-      buf.writeln("import ${v.defaultName}, { $aliased } from '../${v.relPath}';");
+      buf.writeln(defaultRefs[v] == v.defaultName
+          ? "import ${v.defaultName}, { $aliased } from '../${v.relPath}';"
+          : "import ${v.defaultName} as ${defaultRefs[v]}, { $aliased } from '../${v.relPath}';");
     } else if (v.fragments.isNotEmpty) {
       final aliased = v.fragments.map((f) => '$f as $prefix$f').join(', ');
       buf.writeln("import { $aliased } from '../${v.relPath}';");
@@ -2412,7 +2427,7 @@ String generateRenderTsx(String artifactDir, {String? projectDir}) {
     final prefix = viewAliasPrefix(v.relPath);
     buf.write("  '${v.htmlKey}': {");
     if (v.defaultName != null) {
-      buf.write(' default: ${v.defaultName} as unknown as FC<Record<string, unknown>>,');
+      buf.write(' default: ${defaultRefs[v]} as unknown as FC<Record<String, unknown>>,');
     } else if (v.fragments.isNotEmpty) {
       // Project partials: no default export — first named export acts as default.
       buf.write(' default: $prefix${v.fragments.first} as unknown as FC<Record<string, unknown>>,');

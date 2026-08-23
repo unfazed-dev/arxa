@@ -1633,4 +1633,28 @@ export default [
       expect(envExample, contains('SUPABASE_WEBHOOK_SECRET'));
     });
   });
+
+  group('generateRenderTsx — default-export name collisions', () {
+    // The energize-studio defect: two view files default-exported a component
+    // named AccessPage; the generated render module imported both bare and the
+    // second binding stole both registry entries (one route rendered the
+    // other view). Defaults now alias on repeat, like fragments already did.
+    test('two views sharing a default-export name get distinct bindings', () {
+      final app = _tmpDir();
+      addTearDown(() => app.deleteSync(recursive: true));
+      for (final dir in ['app_shell/access', 'staff_shell/access']) {
+        _write(app, 'ui/views/$dir/${dir.contains('app_shell') ? 'access_view' : 'staff_access_view'}.tsx',
+            "import type { FC } from 'hono/jsx';\n"
+            'const AccessPage: FC = () => null;\n'
+            'export default AccessPage;\n');
+      }
+      final out = generateRenderTsx(app.path);
+      // one bare binding, one aliased — and the registry references BOTH
+      expect(RegExp(r"import AccessPage from ").allMatches(out).length, 1);
+      expect(out, contains('import AccessPage as AccessViewAccessPage'));
+      expect(out, contains("'ui/views/staff_shell/access/staff_access_view.html': { default: AccessPage "));
+      expect(out,
+          contains("'ui/views/app_shell/access/access_view.html': { default: AccessViewAccessPage "));
+    });
+  });
 }
