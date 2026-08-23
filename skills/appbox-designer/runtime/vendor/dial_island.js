@@ -1278,6 +1278,20 @@
     saveTimer = setTimeout(saveDraft, 700);
     renderDraftMeta();
   }
+  // The text patches' current signature — used to tell "this save changed
+  // text" apart from style-only saves, because only text changes need the
+  // reload converge (animator-owned nodes; see syncRemoteDraft).
+  function textSig(d) {
+    const parts = [];
+    for (const k of Object.keys(d.patches).sort()) {
+      const t = (d.patches[k] || {}).text;
+      if (t != null) parts.push(k + '=' + t);
+    }
+    return parts.join('|');
+  }
+  let lastTextSig = null;
+  let textReloadTimer = null;
+
   async function saveDraft() {
     if (!S.draftDirty) return;
     S.draftDirty = false;
@@ -1285,6 +1299,51 @@
     const r = await api('PUT', '/draft', { tokens: S.draft.tokens, patches: S.draft.patches });
     if (r && r.ok) { S.draftMeta = r; renderDraftMeta(); }
     else say(r && r.error ? 'Draft refused: ' + r.error : 'Draft save failed');
+    // A text edit the author just committed will be fought by the artifact's
+    // own animator (it re-renders split text from its boot capture — the
+    // edit looks like it "did nothing" or duplicates). Once typing pauses,
+    // reload so the author sees the animator rendering the NEW text — the
+    // same converge the sibling rungs do. Style-only saves never reload.
+    const sig = textSig(S.draft);
+    if (r && r.ok && lastTextSig != null && sig !== lastTextSig) {
+      lastTextSig = sig;
+      clearTimeout(textReloadTimer);
+      textReloadTimer = setTimeout(resumeReload, 1400);
+    } else {
+      lastTextSig = sig;
+    }
+  }
+
+  // The editing rung's text-converge reload must not cost the author his
+  // place: stash the design session, reload, and resumeAfterReload (boot)
+  // re-arms and re-selects — the reload reads as a flicker, not a reset.
+  function resumeReload() {
+    try {
+      sessionStorage.setItem('arxa-dial-resume', JSON.stringify({
+        design: S.design,
+        key: S.selected ? S.selected.key : null,
+      }));
+    } catch (_) {}
+    location.reload();
+  }
+  function resumeAfterReload() {
+    let r = null;
+    try { r = JSON.parse(sessionStorage.getItem('arxa-dial-resume') || 'null'); } catch (_) {}
+    try { sessionStorage.removeItem('arxa-dial-resume'); } catch (_) {}
+    if (!r || S.mode !== 'author') return;
+    if (r.design) designOn();
+    if (r.key) {
+      const el = targetsForKey(r.key)[0];
+      const id = el && el.getAttribute('data-arxa-id');
+      if (el && id) {
+        const k = kindOf(el);
+        selectEl({
+          id: id, el: el,
+          label: (el.getAttribute('data-el') || el.tagName.toLowerCase()) + ' · ' + k.kind,
+          group: k.group,
+        });
+      }
+    }
   }
   async function loadDraft() {
     if (S.mode !== 'author') return;
@@ -1292,6 +1351,7 @@
     if (r && r.draft) {
       S.draft.tokens = r.draft.tokens || {};
       S.draft.patches = r.draft.patches || {};
+      lastTextSig = textSig(S.draft); // boot truth — only CHANGES reload
     }
   }
 
@@ -1331,6 +1391,12 @@
     }
     return n;
   }
+  function hasTextPatches(d) {
+    for (const k of Object.keys(d.patches)) {
+      if ((d.patches[k] || {}).text != null) return true;
+    }
+    return false;
+  }
   async function syncRemoteDraft() {
     if (syncing || S.mode !== 'author') return;
     syncing = true;
@@ -1341,11 +1407,17 @@
       const had = Object.keys(S.draft.patches).length + Object.keys(S.draft.tokens).length;
       const has = Object.keys(next.patches).length + Object.keys(next.tokens).length;
       const shrink = has < had || patchPropCount(next) < patchPropCount(S.draft);
+      // Text patches converge ONLY by reload: artifact animators own their
+      // text nodes (this one's intro re-splits the wordmark every pass from
+      // its boot capture — a live textContent write is reverted, duplicated,
+      // or collapsed within seconds, worst on wide rungs). A reload re-serves
+      // with the overlay applied and the animator boots on the NEW text.
+      // Style/token patches have no such owner — they stay live.
+      if (shrink || hasTextPatches(next)) { location.reload(); return; }
       S.draft.tokens = next.tokens;
       S.draft.patches = next.patches;
       applyTokensLive();
       applyPatchesLive();
-      if (shrink) { location.reload(); return; }
       if (S.panel === 'design' || S.panel === 'tokens') renderPanelBody();
     } finally {
       syncing = false;
@@ -1695,4 +1767,5 @@
       subscribeEvents();
     }
   });
+  resumeAfterReload(); // no-op unless the last text edit converged by reload
 })();

@@ -31,6 +31,10 @@ String _base = 'http://127.0.0.1:4319';
 final _frames = Directory('/tmp/dial-smoke');
 int _fails = 0;
 int _errMark = 0;
+// The operator's pre-run draft, stashed at boot and restored in cleanup —
+// smoke steps DELETE/replace the draft freely, and a run must never eat a
+// live in-progress design draft (the draft IS the author's work-in-progress).
+Map<String, dynamic>? _draftStash;
 final _createdPinIds = <String>[];
 String? _shareToken;
 
@@ -131,6 +135,14 @@ Future<void> main(List<String> args) async {
   report('S0b shade-off-at-boot', boot['shadeOpacity'] == '0',
       'shade opacity at boot: ' + boot['shadeOpacity']);
   await shot(tab, 's0-boot');
+
+  // Stash any live draft before the steps below mutate it.
+  final d0 = await js(tab, '''
+    const d = await (async () => { for (let a = 0; a < 4; a++) { try { return await fetch("/__dial/draft").then(r=>r.json()); } catch (e) { await new Promise(rr=>setTimeout(rr,300)); } } return {}; })();
+    return JSON.stringify({draft: d.draft || null});
+  ''');
+  _draftStash = d0['draft'] as Map<String, dynamic>?;
+  print('INFO  draft stash: ' + (_draftStash == null ? '(none)' : ((_draftStash!['patches'] as Map).keys.length.toString() + ' patches stashed')));
 
   // ── S1 fan ───────────────────────────────────────────────────────────
   final fan = await jsShadow(tab, '''
@@ -562,6 +574,13 @@ Future<void> main(List<String> args) async {
       inl['live'] == 'SMOKE inline' && inl['saved'] == 'SMOKE inline',
       jsonEncode(inl), _newErrors(tab));
 
+  // S10a's text commit schedules the converge reload ~1.4s after the save
+  // (animator-owned text). Wait it out; the resume stash re-arms Design
+  // Mode and re-selects the wordmark, so the drag below finds its handles.
+  await Future<void>.delayed(const Duration(seconds: 3));
+  await waitBoot(tab);
+  await Future<void>.delayed(const Duration(milliseconds: 800));
+
   final drg = await jsShadow(tab, '''
     const idline = R.querySelector("#pbody .idline");
     const idlineText = idline ? idline.textContent : null;
@@ -626,7 +645,10 @@ Future<void> main(List<String> args) async {
       ta.dispatchEvent(new Event("input", {bubbles: true}));
       return JSON.stringify({ok: true});
     ''');
-    await Future<void>.delayed(const Duration(milliseconds: 3000));
+    // Both documents converge by reload for text patches: B as the remote
+    // sibling, the editing tab via its own post-save timer. Wait both out.
+    await Future<void>.delayed(const Duration(milliseconds: 2200));
+    await waitBoot(btab);
     final seen = await js(btab, '''
       const el = document.querySelector('[data-el="wordmark-lead"]');
       return JSON.stringify({text: el ? el.textContent : null});
@@ -637,6 +659,7 @@ Future<void> main(List<String> args) async {
   }
   report('S11 cross-rung sync', syncSeen == 'SMOKE SYNC',
       'second document saw: ' + syncSeen);
+  await waitBoot(tab); // the editing rung's own converge reload
   await shadow(tab,
       'await fetch("/__dial/draft", {method: "DELETE"}); return "ok";');
   await tab.navigateAndSettle('$_base/', settleMs: 2500);
@@ -674,6 +697,65 @@ Future<void> main(List<String> args) async {
           div['wordmarkText'] == 'SUCZKA' &&
           div['copyrightText'] == 'SMOKE ©2099',
       jsonEncode(div),
+      _newErrors(tab));
+  await shadow(tab,
+      'await fetch("/__dial/draft", {method: "DELETE"}); return "ok";');
+  await tab.navigateAndSettle('$_base/', settleMs: 2500);
+  await waitBoot(tab);
+
+  // ── S13 text patches survive the animator at desktop ─────────────────
+  // The operator's bug: a wordmark text edit synced to mobile/tablet but
+  // reverted on desktop — the intro animator re-splits text from its boot
+  // capture and fights live DOM writes (revert/duplicate/collapse). The
+  // converge law: text patches reload the document so the animator boots
+  // on the NEW text. This drives a REMOTE text edit at 1280 and asserts
+  // the wordmark is exactly the new text, laid out (not collapsed), and
+  // visible, seconds later.
+  {
+    final put = await HttpClient().openUrl('PUT', Uri.parse('$_base/__dial/draft'));
+    put.headers.contentType = ContentType.json;
+    put.write(jsonEncode({
+      'tokens': {},
+      'patches': {
+        'ui-widgets-suczka_site_shell_widgets-chrome_atoms-e3': {'text': 'SMOKE-DESKTOP'}
+      }
+    }));
+    await (await put.close()).drain<void>();
+  }
+  await Future<void>.delayed(const Duration(milliseconds: 1500));
+  await waitBoot(tab); // the remote-draft frame reloads this document
+  // The intro choreography holds the wordmark collapsed until its moment —
+  // poll for layout instead of racing it (condition-based, not a sleep).
+  String? s13raw;
+  for (var i = 0; i < 25; i++) {
+    await Future<void>.delayed(const Duration(milliseconds: 600));
+    s13raw = await tab.evaluate('''
+      const e3 = document.querySelector('[data-arxa-id="ui-widgets-suczka_site_shell_widgets-chrome_atoms-e3"]');
+      const rc = e3 ? e3.getBoundingClientRect() : null;
+      JSON.stringify({w: rc ? Math.round(rc.width) : -1})
+    ''') as String;
+    if (jsonDecode(s13raw)['w'] > 0) break;
+  }
+  final s13 = await js(tab, '''
+    const e3 = document.querySelector('[data-arxa-id="ui-widgets-suczka_site_shell_widgets-chrome_atoms-e3"]');
+    const rc = e3 ? e3.getBoundingClientRect() : null;
+    let visible = null;
+    if (rc && rc.width > 0 && rc.top < window.innerHeight) {
+      const stack = document.elementsFromPoint(rc.left + rc.width/2, Math.min(Math.max(rc.top + rc.height/2, 2), window.innerHeight - 2));
+      const hit = stack.find(x => x.textContent && x.textContent.indexOf("SMOKE") !== -1);
+      visible = hit ? hit.textContent.trim() : null;
+    }
+    return JSON.stringify({text: e3 ? e3.textContent.trim() : null,
+      rect: rc ? {x: Math.round(rc.x), y: Math.round(rc.y), w: Math.round(rc.width)} : null,
+      visible: visible});
+  ''');
+  report(
+      'S13 text survives animator (desktop)',
+      s13['text'] == 'SMOKE-DESKTOP' &&
+          s13['rect'] != null &&
+          (s13['rect'] as Map)['w'] != 0 &&
+          s13['visible'] != null,
+      jsonEncode(s13),
       _newErrors(tab));
   await shadow(tab,
       'await fetch("/__dial/draft", {method: "DELETE"}); return "ok";');
@@ -775,6 +857,25 @@ Future<void> main(List<String> args) async {
 }
 
 Future<void> _cleanup() async {
+  // Restore the operator's pre-run draft FIRST — the Supabase sweep below
+  // says nothing about the draft overlay.
+  try {
+    final req = await HttpClient().openUrl(
+        _draftStash == null ? 'DELETE' : 'PUT',
+        Uri.parse('$_base/__dial/draft'));
+    if (_draftStash != null) {
+      req.headers.contentType = ContentType.json;
+      req.write(jsonEncode({
+        'tokens': _draftStash!['tokens'] ?? {},
+        'patches': _draftStash!['patches'] ?? {},
+      }));
+    }
+    final res = await req.close();
+    await res.drain<void>();
+    print('cleanup draft restore: ' + res.statusCode.toString());
+  } catch (e) {
+    print('cleanup draft restore FAILED: ' + e.toString());
+  }
   final home = Platform.environment['HOME'];
   if (home == null) return;
   final credsFile = File(home + '/.appbox/supabase');
