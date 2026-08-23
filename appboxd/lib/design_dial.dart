@@ -39,6 +39,8 @@ import 'dart:math';
 
 import 'package:crypto/crypto.dart' show sha256;
 
+import 'design_draft.dart';
+
 // ── vocabulary ───────────────────────────────────────────────────────────
 
 /// The pin kanban (locked decision 9): the closed status set, wire names.
@@ -581,12 +583,24 @@ abstract class _Caps {
 /// The /__dial/* API as a pure function: no HttpRequest, no IO — the server
 /// adapter (design_server.dart) reads the body and passes it here.
 class DialApi {
-  DialApi({required this.store, required this.artifact});
+  DialApi(
+      {required this.store,
+      required this.artifact,
+      this.draftStore,
+      this.artifactDir});
 
   final DialStore store;
 
   /// The artifact identity pins and links scope to (artifact dir basename).
   final String artifact;
+
+  /// The Draft Overlay's file store (decisions 5/11: local-server state,
+  /// never Supabase). Null disables the draft/commit routes (503).
+  final DraftFileStore? draftStore;
+
+  /// The artifact's absolute dir — reported by /commit so the studio agent
+  /// knows where to run `appbox design patch`.
+  final String? artifactDir;
 
   /// [grant] non-null means the caller arrived on a Share Link — a guest
   /// scoped to ITS artifact (a link minted for artifact A reads nothing on
@@ -601,6 +615,13 @@ class DialApi {
     final caller = grant == null ? DialCaller.author : DialCaller.guest;
     if (grant != null && grant.artifact != artifact) {
       return const DialResponse(403, {'error': 'share link scopes elsewhere'});
+    }
+    if (grant == null && query['dial'] != null) {
+      // A ?dial= token that resolves to nothing is a DEAD link, not the
+      // Author — the island boots 'invalid' and says so, and the API
+      // refuses. (Before the Design Mode routes this gap let a dead token
+      // move the kanban as 'author'.)
+      return const DialResponse(403, {'error': 'share link is dead'});
     }
     try {
       if (method == 'GET' && sub == '/pins') {
@@ -624,10 +645,88 @@ class DialApi {
         }
         return await _share(body);
       }
+      // The Draft Overlay (Design Mode; decisions 5/11). Author-only: the
+      // draft is the Author's uncommitted WIP — guests are served the last
+      // published state and never see it.
+      if (sub == '/draft') {
+        if (caller != DialCaller.author) {
+          return const DialResponse(403, {'error': 'author only'});
+        }
+        if (method == 'GET') return await _getDraft();
+        if (method == 'PUT') return await _putDraft(body);
+        if (method == 'DELETE') return await _clearDraft();
+      }
+      if (method == 'POST' && sub == '/commit') {
+        if (caller != DialCaller.author) {
+          return const DialResponse(403, {'error': 'author only'});
+        }
+        return await _commitDraft();
+      }
       return DialResponse(404, {'error': 'no such dial route: $sub'});
     } on FormatException catch (e) {
       return DialResponse(400, {'error': e.message});
     }
+  }
+
+  // ── the Draft Overlay (Design Mode; decisions 5/11) ────────────────────
+
+  DialResponse _noDraftStore() => const DialResponse(
+      503, {'error': 'draft overlay is not configured on this server'});
+
+  Future<DialResponse> _getDraft() async {
+    final ds = draftStore;
+    if (ds == null) return _noDraftStore();
+    final d = await ds.load();
+    return DialResponse(200, {'draft': d?.toJson()});
+  }
+
+  Future<DialResponse> _putDraft(Object? body) async {
+    final ds = draftStore;
+    if (ds == null) return _noDraftStore();
+    final d = DraftOverlay.fromJson(body, artifact: artifact);
+    await ds.save(d);
+    return DialResponse(200, {
+      'ok': true,
+      'patches': d.patches.length,
+      'tokens': d.tokens.length,
+      'updatedAt': d.updatedAt,
+    });
+  }
+
+  Future<DialResponse> _clearDraft() async {
+    final ds = draftStore;
+    if (ds == null) return _noDraftStore();
+    await ds.clear();
+    return const DialResponse(200, {'ok': true});
+  }
+
+  /// The studio-socket commit (decision 2): hand the studio agent the draft
+  /// as structured patch ops. The agent applies them to artifact source with
+  /// `appbox design patch` (tokens go to the token sheet's :root), re-runs
+  /// lint/gates, and clears the draft on success. Non-destructive by design:
+  /// only the agent's DELETE says the commit landed.
+  Future<DialResponse> _commitDraft() async {
+    final ds = draftStore;
+    if (ds == null) return _noDraftStore();
+    final d = await ds.load();
+    if (d == null || d.isEmpty) {
+      return const DialResponse(
+          400, {'error': 'draft is empty — nothing to commit'});
+    }
+    final ops = [
+      for (final e in d.patches.entries)
+        if (!e.value.isEmpty) {'id': e.key, ...e.value.toJson()},
+    ];
+    return DialResponse(200, {
+      'ok': true,
+      'artifact': artifact,
+      'artifactDir': artifactDir,
+      'tokens': d.tokens,
+      'ops': ops,
+      'note': 'apply each op with appbox design patch (--style/--set/--text) '
+          'and the tokens to the token sheet; on success '
+          'DELETE /__dial/draft',
+    });
   }
 
   Future<DialResponse> _listPins() async {

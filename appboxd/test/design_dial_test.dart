@@ -2,7 +2,11 @@
 // 1/6/7/9 of the 2026-08-23 amendment). Pure-core tests: no HTTP server, no
 // Chrome — DialApi.handle is a pure function and MemoryDialStore is real.
 
+import 'dart:convert';
+import 'dart:io';
+
 import 'package:appboxd/design_dial.dart';
+import 'package:appboxd/design_draft.dart';
 import 'package:test/test.dart';
 
 Map<String, dynamic> pinBody({
@@ -292,6 +296,109 @@ void main() {
               credentialsFileText:
                   'url=https://x.co\nservice_key=PASTE-SERVICE-ROLE-KEY-HERE'),
           isNull);
+    });
+  });
+
+  group('draft overlay routes (decisions 5/11)', () {
+    late Directory home;
+    late DialApi api;
+    setUp(() {
+      home = Directory.systemTemp.createTempSync('dial-draft-test');
+      api = DialApi(
+        store: MemoryDialStore(),
+        artifact: 'demo',
+        draftStore:
+            DraftFileStore(artifactDir: '/tmp/w/demo', home: home.path),
+        artifactDir: '/tmp/w/demo',
+      );
+    });
+    tearDown(() => home.deleteSync(recursive: true));
+
+    test('author PUT → GET → DELETE roundtrip', () async {
+      final put = await api.handle('PUT', '/draft', {}, {
+        'tokens': {'--brand': '#0af'},
+        'patches': {
+          'e1': {'style': {'color': 'red'}, 'text': 'Hi'}
+        },
+      }, null);
+      expect(put.status, 200, reason: jsonEncode(put.json));
+      expect((put.json as Map)['patches'], 1);
+
+      final get = await api.handle('GET', '/draft', {}, null, null);
+      final draft = (get.json as Map)['draft'] as Map;
+      expect((draft['tokens'] as Map)['--brand'], '#0af');
+      expect(
+          ((draft['patches'] as Map)['e1'] as Map)['text'], 'Hi');
+
+      final del = await api.handle('DELETE', '/draft', {}, null, null);
+      expect(del.status, 200);
+      final after = await api.handle('GET', '/draft', {}, null, null);
+      expect((after.json as Map)['draft'], isNull);
+    });
+
+    test('guests and dead links are refused (dead links everywhere)', () async {
+      final store = MemoryDialStore();
+      final scoped = DialApi(
+          store: store,
+          artifact: 'demo',
+          draftStore:
+              DraftFileStore(artifactDir: '/tmp/w/demo', home: home.path));
+      final token = await scoped.store
+          .mintShareLink('demo', const Duration(days: 1));
+      final grant = await scoped.store.resolveShareLink(token);
+      final guest = await scoped.handle(
+          'GET', '/draft', {'dial': token}, null, grant);
+      expect(guest.status, 403);
+
+      // A token that resolves to nothing is a DEAD link — 403 on every
+      // route, including the ones that predate the guard.
+      final dead = await scoped.handle(
+          'GET', '/pins', {'dial': 'deadbeef'}, null, null);
+      expect(dead.status, 403);
+      final deadKanban = await scoped.handle(
+          'POST', '/pins/status', {'dial': 'deadbeef'},
+          {'id': 'x', 'status': 'resolved'}, null);
+      expect(deadKanban.status, 403);
+    });
+
+    test('a malformed draft is a 400, never a 500', () async {
+      final r = await api.handle('PUT', '/draft', {}, {
+        'patches': {
+          'e1': {'style': {'bad name': 'x'}}
+        }
+      }, null);
+      expect(r.status, 400);
+    });
+
+    test('commit: empty draft 400s; a filled draft hands structured ops',
+        () async {
+      final empty =
+          await api.handle('POST', '/commit', {}, null, null);
+      expect(empty.status, 400);
+
+      await api.handle('PUT', '/draft', {}, {
+        'tokens': {'--brand': '#0af'},
+        'patches': {
+          'e1': {'style': {'color': 'red'}, 'attrs': {'title': 't'}},
+          'e2': {'text': 'New label'},
+        },
+      }, null);
+      final r = await api.handle('POST', '/commit', {}, null, null);
+      expect(r.status, 200);
+      final j = r.json as Map;
+      expect(j['artifact'], 'demo');
+      expect(j['artifactDir'], '/tmp/w/demo');
+      expect((j['tokens'] as Map)['--brand'], '#0af');
+      final ops = j['ops'] as List;
+      expect(ops.length, 2);
+      final e1 = ops.singleWhere((o) => o['id'] == 'e1') as Map;
+      expect((e1['style'] as Map)['color'], 'red');
+      expect((e1['attrs'] as Map)['title'], 't');
+      final e2 = ops.singleWhere((o) => o['id'] == 'e2') as Map;
+      expect(e2['text'], 'New label');
+      // Commit is non-destructive: only the agent's DELETE clears.
+      final still = await api.handle('GET', '/draft', {}, null, null);
+      expect((still.json as Map)['draft'], isNotNull);
     });
   });
 }

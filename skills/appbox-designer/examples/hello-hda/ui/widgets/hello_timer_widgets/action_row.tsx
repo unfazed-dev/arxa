@@ -8,5 +8,5 @@ export interface ActionRowProps {
 }
 
 export const ActionRow: FC<ActionRowProps> = ({ children }) => (
-  <div class="action-row">{children}</div>
+  <div data-arxa-id="ui-widgets-hello_timer_widgets-action_row-e1" class="action-row">{children}</div>
 );

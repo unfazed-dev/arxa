@@ -11,9 +11,9 @@ interface LangSwitcherProps {
 const LangSwitcher: FC<LangSwitcherProps> = ({ locales, locale, translate }) => {
   if (!locales || locales.length <= 1) return null;
   return (
-    <nav class="lang-switcher" aria-label={translate('lang.label') as string}>
+    <nav data-arxa-id="ui-widgets-hello_shell_widgets-lang_switcher-e1" class="lang-switcher" aria-label={translate('lang.label') as string}>
       {locales.map((localeTag) => (
-        <a
+        <a data-arxa-id="ui-widgets-hello_shell_widgets-lang_switcher-e2"
           key={localeTag}
           class="lang-switcher__link"
           href={`/prefs/lang?lang=${localeTag}`}

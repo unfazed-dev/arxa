@@ -39,12 +39,12 @@ const FormField: FC<FormFieldProps> = ({ field, rung }) => {
       : undefined;
 
   return (
-    <div id={idBase} class={`field${field.error ? ' field--invalid' : ''}`}>
-      <label class="field__label" for={`field-input-${field.name}${scope}`}>
+    <div data-arxa-id="ui-widgets-hello_home_widgets-form_field-e1" id={idBase} class={`field${field.error ? ' field--invalid' : ''}`}>
+      <label data-arxa-id="ui-widgets-hello_home_widgets-form_field-e2" class="field__label" for={`field-input-${field.name}${scope}`}>
         {field.label}
       </label>
       {field.options ? (
-        <select
+        <select data-arxa-id="ui-widgets-hello_home_widgets-form_field-e3"
           class="field__input"
           id={`field-input-${field.name}${scope}`}
           name={field.name}
@@ -53,13 +53,13 @@ const FormField: FC<FormFieldProps> = ({ field, rung }) => {
           aria-describedby={describedBy}
         >
           {field.options.map((option) => (
-            <option key={option.value} value={option.value} selected={option.value === field.value}>
+            <option data-arxa-id="ui-widgets-hello_home_widgets-form_field-e4" key={option.value} value={option.value} selected={option.value === field.value}>
               {option.label}
             </option>
           ))}
         </select>
       ) : (
-        <input
+        <input data-arxa-id="ui-widgets-hello_home_widgets-form_field-e5"
           class="field__input"
           id={`field-input-${field.name}${scope}`}
           name={field.name}
@@ -73,12 +73,12 @@ const FormField: FC<FormFieldProps> = ({ field, rung }) => {
         />
       )}
       {field.error ? (
-        <p class="field__error" id={`field-error-${field.name}${scope}`}>
+        <p data-arxa-id="ui-widgets-hello_home_widgets-form_field-e6" class="field__error" id={`field-error-${field.name}${scope}`}>
           <Icon name="circle-alert" size={14} />
-          <span>{field.error}</span>
+          <span data-arxa-id="ui-widgets-hello_home_widgets-form_field-e7">{field.error}</span>
         </p>
       ) : field.hint ? (
-        <p class="field__hint" id={`field-hint-${field.name}${scope}`}>
+        <p data-arxa-id="ui-widgets-hello_home_widgets-form_field-e8" class="field__hint" id={`field-hint-${field.name}${scope}`}>
           {field.hint}
         </p>
       ) : null}

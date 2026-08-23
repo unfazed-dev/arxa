@@ -2403,14 +2403,17 @@ String generateRenderTsx(String artifactDir, {String? projectDir}) {
           : '$prefix${v.defaultName}';
     }
     if (v.defaultName != null && v.fragments.isEmpty) {
+      // A repeated default name aliases via the named-export form:
+      // `import Name as Alias` is not valid JS — default imports cannot be
+      // aliased with `as`; `import { default as Alias }` can.
       buf.writeln(defaultRefs[v] == v.defaultName
           ? "import ${v.defaultName} from '../${v.relPath}';"
-          : "import ${v.defaultName} as ${defaultRefs[v]} from '../${v.relPath}';");
+          : "import { default as ${defaultRefs[v]} } from '../${v.relPath}';");
     } else if (v.defaultName != null) {
       final aliased = v.fragments.map((f) => '$f as $prefix$f').join(', ');
       buf.writeln(defaultRefs[v] == v.defaultName
           ? "import ${v.defaultName}, { $aliased } from '../${v.relPath}';"
-          : "import ${v.defaultName} as ${defaultRefs[v]}, { $aliased } from '../${v.relPath}';");
+          : "import { default as ${defaultRefs[v]}, $aliased } from '../${v.relPath}';");
     } else if (v.fragments.isNotEmpty) {
       final aliased = v.fragments.map((f) => '$f as $prefix$f').join(', ');
       buf.writeln("import { $aliased } from '../${v.relPath}';");

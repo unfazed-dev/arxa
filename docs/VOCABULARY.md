@@ -1037,7 +1037,7 @@ _Layer_: Design medium
 
 **Draft Overlay**:
 The author's unsent adjustments, saved automatically as they work — visible on their screen, invisible to clients until Publish.
-The auto-saved patch set layered over an artifact: token, element-style, and text patches recorded while designing, persisted server-side per artifact, never written into artifact source until committed. Clients always see the last published state, never the Draft Overlay.
+The auto-saved patch set layered over an artifact: token, element-style, and text patches recorded while designing, persisted server-side per artifact (one JSON file under `~/.appbox/drafts/`, keyed by the artifact's path — never in Supabase, never in the watched artifact tree), applied to served pages for the Author only, and never written into artifact source until committed. Clients always see the last published state, never the Draft Overlay.
 _Avoid_: autosave (the mechanism, not the thing), unpublished changes
 _Layer_: Design medium
 

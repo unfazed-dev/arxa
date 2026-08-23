@@ -20,16 +20,16 @@ interface BottomNavProps {
 const BottomNav: FC<BottomNavProps> = ({ rail }) => {
   if (!rail) return null;
   return (
-    <nav id="bottom-nav" class="bottom-nav" aria-label="Primary">
+    <nav data-arxa-id="ui-widgets-hello_shell_widgets-bottom_nav-e1" id="bottom-nav" class="bottom-nav" aria-label="Primary">
       {rail.items.map((item) => (
-        <a
+        <a data-arxa-id="ui-widgets-hello_shell_widgets-bottom_nav-e2"
           key={item.id}
           class={`bottom-nav__link${item.current ? ' is-active' : ''}`}
           href={item.href}
           aria-current={item.current ? 'page' : undefined}
         >
           {item.icon && <Icon name={item.icon} size={22} cls="bottom-nav__icon" />}
-          <span class="bottom-nav__label">{item.label}</span>
+          <span data-arxa-id="ui-widgets-hello_shell_widgets-bottom_nav-e3" class="bottom-nav__label">{item.label}</span>
         </a>
       ))}
     </nav>

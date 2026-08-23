@@ -30,7 +30,7 @@ interface TextProps {
 
 // Label — inline text (chips, values, button captions).
 export const Label: FC<TextProps> = (props) => (
-  <span
+  <span data-arxa-id="ui-widgets-hello_ui_widgets-primitives-e1"
     class={props.class}
     id={props.id}
     {...inspectAttrs(props.name ?? 'label', { role: 'label', style: 'text · label' })}
@@ -55,7 +55,7 @@ export const Heading: FC<TextProps & { level?: 1 | 2 }> = (props) => {
 
 // Txt — a body paragraph.
 export const Txt: FC<TextProps> = (props) => (
-  <p
+  <p data-arxa-id="ui-widgets-hello_ui_widgets-primitives-e2"
     class={props.class}
     id={props.id}
     {...inspectAttrs(props.name ?? 'text', { role: 'text', style: 'text · body' })}
@@ -80,7 +80,7 @@ export interface ActionButtonProps {
 }
 
 export const ActionButton: FC<ActionButtonProps> = (props) => (
-  <button
+  <button data-arxa-id="ui-widgets-hello_ui_widgets-primitives-e3"
     class={props.class ?? 'btn'}
     type={props.type ?? 'button'}
     hx-post={props.hxPost}
@@ -104,7 +104,7 @@ export interface CtaLinkProps {
 }
 
 export const CtaLink: FC<CtaLinkProps> = (props) => (
-  <a
+  <a data-arxa-id="ui-widgets-hello_ui_widgets-primitives-e4"
     class={props.class ?? 'btn'}
     href={props.href}
     {...inspectAttrs(props.name ?? 'cta', { role: 'link', style: 'action · link' })}

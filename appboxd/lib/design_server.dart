@@ -24,6 +24,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:appboxd/design_dial.dart';
+import 'package:appboxd/design_draft.dart';
 import 'package:appboxd/design_server/browser_trust.dart';
 import 'package:appboxd/design_server/l10n.dart';
 import 'package:appboxd/design_server/worker.dart';
@@ -376,6 +377,10 @@ class DesignServer {
   /// The pure request core behind /__dial/* (see design_dial.dart).
   late final DialApi dialApi;
 
+  /// The Design Dial's Draft Overlay store (Design Mode): per-artifact local
+  /// file state, never Supabase (decisions 5/11). Null when the dial is off.
+  DraftFileStore? draftStore;
+
   /// Held-open dial event subscribers (GET /__dial/events) — separate from
   /// the reload stream: different audience, different cadence.
   final _dialEventClients = <HttpResponse>{};
@@ -410,6 +415,7 @@ class DesignServer {
     Iterable<String> trustedOrigins = const [],
     bool dial = true,
     DialStore? dialStore,
+    DraftFileStore? draftStore,
   }) async {
     // Absolutize up front: artifact files are served and re-scanned (worker
     // boot, watcher reload) against the process cwd at USE time, so a relative
@@ -432,9 +438,15 @@ class DesignServer {
       ..dialStore = dialStore ??
           SupabaseDialStore.fromConfig(
               credentialsFileText: readSupabaseCredentialsFile()) ??
-          MemoryDialStore();
-    srv.dialApi =
-        DialApi(store: srv.dialStore, artifact: srv._dialArtifact);
+          MemoryDialStore()
+      ..draftStore = dial
+          ? (draftStore ?? DraftFileStore(artifactDir: artifactDir))
+          : null;
+    srv.dialApi = DialApi(
+        store: srv.dialStore,
+        artifact: srv._dialArtifact,
+        draftStore: srv.draftStore,
+        artifactDir: srv.artifactDir);
     if (dial) {
       stderr.writeln('[design-server] dial store: ${srv.dialStore.kind}'
           '${srv.dialStore.kind == 'memory' ? ' (set APPBOX_SUPABASE_URL + APPBOX_SUPABASE_SERVICE_KEY, or ~/.appbox/supabase, for the shared store)' : ''}');
@@ -932,6 +944,18 @@ class DesignServer {
         final grant = dialToken == null
             ? null
             : await dialStore.resolveShareLink(dialToken);
+        // Design Mode's Draft Overlay (decision 5): the Author's page carries
+        // the uncommitted patch set; any ?dial= path — guest or dead link —
+        // gets the last published state, i.e. source as-is. Stale and
+        // refused patches are reported through GET /__dial/draft consumers,
+        // not per-request stderr.
+        final ds = draftStore;
+        if (dialToken == null && ds != null) {
+          final draft = await ds.load();
+          if (draft != null && !draft.isEmpty) {
+            respBody = draft.apply(respBody).html;
+          }
+        }
         final config = jsonEncode({
           'v': 1,
           'artifact': _dialArtifact,
@@ -1175,6 +1199,12 @@ class DesignServer {
         (sub == '/pins' || sub == '/pins/status' || sub == '/pins/reply')) {
       _broadcastDial();
     }
+    if (r.status < 300 && sub == '/draft' && method != 'GET') {
+      _broadcastDial('draft');
+    }
+    if (r.status < 300 && sub == '/commit') {
+      _broadcastDial('commit', r.json);
+    }
   }
 
   void _openDialEventStream(HttpRequest req) {
@@ -1199,9 +1229,15 @@ class DesignServer {
     // Held open; never closed here — the response IS the subscription.
   }
 
-  void _broadcastDial() {
+  /// [kind] tells subscribers what changed: 'pins' (feedback store), 'draft'
+  /// (the Author's overlay), 'commit' (a commit request — [data] carries the
+  /// ops payload the studio agent consumes).
+  void _broadcastDial([String kind = 'pins', Object? data]) {
     if (_dialEventClients.isEmpty) return;
-    const frame = 'event: dial\ndata: {"kind":"pins"}\n\n';
+    final frame = 'event: dial\ndata: ${jsonEncode({
+      'kind': kind,
+      'data': ?data,
+    })}\n\n';
     for (final c in _dialEventClients.toList()) {
       _push(c, frame);
     }

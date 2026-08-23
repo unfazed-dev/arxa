@@ -15,16 +15,16 @@ interface IslandsDemoProps {
 const IslandsDemo: FC<IslandsDemoProps> = ({ rung, translate }) => {
   const scope = rung ? `--${rung}` : '';
   return (
-    <div hx-island="toggle" hx-island-when="interaction">
-      <button class="btn" data-island-btn="" aria-expanded="false" aria-controls={`island-panel${scope}`} id={`island-btn${scope}`}>
+    <div data-arxa-id="ui-widgets-hello_home_widgets-islands_demo-e1" hx-island="toggle" hx-island-when="interaction">
+      <button data-arxa-id="ui-widgets-hello_home_widgets-islands_demo-e2" class="btn" data-island-btn="" aria-expanded="false" aria-controls={`island-panel${scope}`} id={`island-btn${scope}`}>
         {translate('home.islands.toggle') as string}
       </button>
-      <div data-island-panel="" id={`island-panel${scope}`} hidden={true}>
-        <p class="muted">
+      <div data-arxa-id="ui-widgets-hello_home_widgets-islands_demo-e3" data-island-panel="" id={`island-panel${scope}`} hidden={true}>
+        <p data-arxa-id="ui-widgets-hello_home_widgets-islands_demo-e4" class="muted">
           {translate('home.islands.copy') as string}
         </p>
       </div>
-      <script
+      <script data-arxa-id="ui-widgets-hello_home_widgets-islands_demo-e5"
         type="application/json"
         data-island-state="toggle"
         dangerouslySetInnerHTML={{ __html: '{"open":false}' }}

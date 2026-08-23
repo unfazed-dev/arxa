@@ -12,8 +12,8 @@ export interface LadderProps {
 
 export const Ladder: FC<LadderProps> = ({ desktop, tablet, mobile }) => (
   <>
-    <div class="rung rung--desktop">{desktop}</div>
-    <div class="rung rung--tablet">{tablet}</div>
-    <div class="rung rung--mobile">{mobile}</div>
+    <div data-arxa-id="ui-widgets-hello_shell_widgets-ladder-e1" class="rung rung--desktop">{desktop}</div>
+    <div data-arxa-id="ui-widgets-hello_shell_widgets-ladder-e2" class="rung rung--tablet">{tablet}</div>
+    <div data-arxa-id="ui-widgets-hello_shell_widgets-ladder-e3" class="rung rung--mobile">{mobile}</div>
   </>
 );

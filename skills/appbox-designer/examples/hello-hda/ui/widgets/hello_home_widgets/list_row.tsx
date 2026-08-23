@@ -26,15 +26,15 @@ const ListRow: FC<ListRowProps> = ({ row }) => {
       href={row.href}
     >
       {row.icon && (
-        <span class="list-row__leading">
+        <span data-arxa-id="ui-widgets-hello_home_widgets-list_row-e1" class="list-row__leading">
           <Icon name={row.icon} size={18} />
         </span>
       )}
-      <span class="list-row__text">
-        <span class="list-row__title">{row.title}</span>
-        {row.subtitle && <span class="list-row__subtitle">{row.subtitle}</span>}
+      <span data-arxa-id="ui-widgets-hello_home_widgets-list_row-e2" class="list-row__text">
+        <span data-arxa-id="ui-widgets-hello_home_widgets-list_row-e3" class="list-row__title">{row.title}</span>
+        {row.subtitle && <span data-arxa-id="ui-widgets-hello_home_widgets-list_row-e4" class="list-row__subtitle">{row.subtitle}</span>}
       </span>
-      {row.detail && <span class="list-row__detail">{row.detail}</span>}
+      {row.detail && <span data-arxa-id="ui-widgets-hello_home_widgets-list_row-e5" class="list-row__detail">{row.detail}</span>}
       {(row.href && row.chevron === undefined || row.chevron) && (
         <Icon name="chevron-right" size={18} cls="list-row__chevron" />
       )}

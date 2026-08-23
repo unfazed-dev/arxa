@@ -8,12 +8,23 @@
 ///   --rm name             remove an attribute
 ///   --style prop=value    merge one CSS property into the style attribute
 ///   --rm-style prop       remove one CSS property (empty style attr removed)
+///   --text value          replace the element's whole text content — only a
+///                         pure-text element; nested markup refuses loudly
+///
+/// Two applicators share one transform: [patchSource] for SOURCE (the id's
+/// uniqueness invariant holds there, so a duplicate is a loud bail), and
+/// [patchAllRendered] for RENDERED markup, where loop-rendered instances
+/// SHARE an id by design (design_stamp.dart) and the design-level semantic
+/// of patching the source element is "every row at once". The Draft Overlay
+/// (Design Dial, Design Mode) applies through [patchAllRendered]; the commit
+/// path applies through [patchSource].
 ///
 /// Loud bails, by design: id not found (exit 3), id found in more than one
-/// file (exit 4 — the stamper's uniqueness invariant is broken), style is a
-/// `{...}` expression rather than a quoted string (exit 5 — merging into an
-/// expression needs a JS evaluator, which this deliberately is not), or a
-/// value containing a double quote (exit 2).
+/// file (exit 4 — the stamper's uniqueness invariant is broken), the edit is
+/// refused in place (exit 5): style is a `{...}` expression rather than a
+/// quoted string (merging into an expression needs a JS evaluator, which this
+/// deliberately is not), or --text aims at a void element or one wrapping
+/// nested markup; or a value containing a double quote (exit 2).
 ///
 /// Transport: the engine writes the file directly here — the CLI is local
 /// and the design server's watcher hot-reloads on the write. When the drag
@@ -37,9 +48,14 @@ class PatchEdits {
   /// CSS property → new value; a null value removes the property.
   final Map<String, String?> style;
 
-  const PatchEdits({this.attrs = const {}, this.style = const {}});
+  /// Replacement text content; null leaves the content alone. Refused when
+  /// the element is void or wraps nested markup (loud, never a silent nuke).
+  final String? text;
 
-  bool get isEmpty => attrs.isEmpty && style.isEmpty;
+  const PatchEdits(
+      {this.attrs = const {}, this.style = const {}, this.text});
+
+  bool get isEmpty => attrs.isEmpty && style.isEmpty && text == null;
 }
 
 /// Outcome of patching one source text.
@@ -51,15 +67,27 @@ class PatchResult {
   final bool found;
 
   /// Set when the target was found but an edit could not be applied
-  /// (currently: style held a `{...}` expression).
+  /// (a `{...}` style expression, or a refused text edit).
   final String? error;
 
-  const PatchResult(this.code, {this.found = true, this.error});
+  /// How many occurrences were patched — always 1 from [patchSource] (its
+  /// uniqueness law), N from [patchAllRendered] (loop-shared ids).
+  final int applied;
+
+  /// Scan cursor for the [patchAllRendered] loop: the position just past the
+  /// patched tag's `>` in [code], where the next occurrence search resumes.
+  /// Null when nothing was found or the edit was refused.
+  final int? nextFrom;
+
+  const PatchResult(this.code,
+      {this.found = true, this.error, this.applied = 1, this.nextFrom});
 }
 
 final _wsRe = RegExp(r'\s');
 
-/// Apply [edits] to the element carrying [id] in [src]. Pure.
+/// Apply [edits] to the element carrying [id] in [src]. Pure. The SOURCE
+/// applicator: the stamper's uniqueness invariant holds in source, so a
+/// duplicate marker is a loud bail, never a patch-both.
 PatchResult patchSource(String src, String id, PatchEdits edits) {
   final marker = 'data-arxa-id="$id"';
   final at = src.indexOf(marker);
@@ -68,7 +96,52 @@ PatchResult patchSource(String src, String id, PatchEdits edits) {
     return PatchResult(src,
         found: false, error: 'id "$id" appears twice in one source');
   }
+  return _patchAt(src, id, at, edits);
+}
 
+/// The RENDERED-markup applicator. Loop-rendered instances share one source
+/// element's id by design (design_stamp.dart), so EVERY occurrence is
+/// patched — that is what patching the source element means. A refusal stops
+/// the loop and reports how many instances were already patched.
+PatchResult patchAllRendered(String html, String id, PatchEdits edits) {
+  final marker = 'data-arxa-id="$id"';
+  var out = html;
+  var applied = 0;
+  var from = 0;
+  while (true) {
+    final at = out.indexOf(marker, from);
+    if (at < 0) {
+      return applied == 0
+          ? PatchResult(out, found: false, applied: 0)
+          : PatchResult(out, applied: applied);
+    }
+    final r = _patchAt(out, id, at, edits);
+    if (r.error != null) {
+      return PatchResult(r.code,
+          found: applied > 0, error: r.error, applied: applied);
+    }
+    out = r.code;
+    applied++;
+    from = r.nextFrom!;
+  }
+}
+
+/// Void elements never carry text content — a --text aimed at one refuses.
+const _voidTags = {
+  'area', 'base', 'br', 'col', 'embed', 'hr', 'img',
+  'input', 'link', 'meta', 'source', 'track', 'wbr',
+};
+
+/// Text content crossing the markup boundary: the three markup-significant
+/// characters, ampersand first so the escapes themselves survive.
+String _escapeText(String s) => s
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;');
+
+/// The one-occurrence transform both applicators share: [at] is the index of
+/// the marker `data-arxa-id="$id"` in [src]. Pure.
+PatchResult _patchAt(String src, String id, int at, PatchEdits edits) {
   // Walk back to the `<` that opens the tag holding the marker. Attribute
   // expressions can contain `<` (a < b), so candidates are validated: the
   // right one is a lowercase tag whose extent CONTAINS the marker.
@@ -167,8 +240,49 @@ PatchResult patchSource(String src, String id, PatchEdits edits) {
     }
   }
 
-  return PatchResult(
-      '${src.substring(0, nameEnd)}$tag${src.substring(tagEnd)}');
+  var out = '${src.substring(0, nameEnd)}$tag${src.substring(tagEnd)}';
+  final gt = nameEnd + tag.length; // index of the tag's '>' in out
+
+  // ── text replacement ──
+  if (edits.text != null) {
+    final name = src.substring(lt + 1, nameEnd);
+    if (_voidTags.contains(name) || src.substring(tagEnd - 1, tagEnd) == '/') {
+      return PatchResult(src,
+          error: '--text on "$id": "$name" is a void element — '
+              'it carries no text content');
+    }
+    // Find the matching close tag, tracking same-name nesting; a self-closed
+    // same-name child adds no depth.
+    final closeRe = RegExp('</?$name[\\s>]');
+    var depth = 1;
+    int? closeStart;
+    for (final m in closeRe.allMatches(out, gt + 1)) {
+      if (out.codeUnitAt(m.start + 1) == 47) {
+        depth--;
+        if (depth == 0) {
+          closeStart = m.start;
+          break;
+        }
+      } else {
+        final end = out.indexOf('>', m.start);
+        if (end < 0 || out.codeUnitAt(end - 1) != 47) depth++;
+      }
+    }
+    if (closeStart == null) {
+      return PatchResult(src,
+          error: '--text on "$id": no closing </$name> found');
+    }
+    final inner = out.substring(gt + 1, closeStart);
+    if (RegExp('<[a-zA-Z!]').hasMatch(inner)) {
+      return PatchResult(src,
+          error: '--text refused: "$id" wraps nested markup — '
+              'edit its leaves instead');
+    }
+    out = '${out.substring(0, gt + 1)}${_escapeText(edits.text!)}'
+        '${out.substring(closeStart)}';
+  }
+
+  return PatchResult(out, nextFrom: gt + 1);
 }
 
 /// `appbox design patch <artifactDir> <id> [--set n=v]… [--rm n]…`
@@ -177,6 +291,7 @@ CmdResult patchMain(List<String> args) {
   final positional = <String>[];
   final attrs = <String, String?>{};
   final style = <String, String?>{};
+  String? text;
   String? usageError;
   for (var i = 0; i < args.length; i++) {
     final a = args[i];
@@ -199,13 +314,17 @@ CmdResult patchMain(List<String> args) {
       final v = take();
       if (v == null) usageError = '--rm-style needs a prop';
       if (v != null) style[v] = null;
+    } else if (a == '--text') {
+      final v = take();
+      if (v == null) usageError = '--text needs a value';
+      if (v != null) text = v;
     } else if (a.startsWith('--')) {
       usageError = 'unknown flag $a';
     } else {
       positional.add(a);
     }
   }
-  final edits = PatchEdits(attrs: attrs, style: style);
+  final edits = PatchEdits(attrs: attrs, style: style, text: text);
   if (usageError != null ||
       positional.length != 2 ||
       edits.isEmpty) {
@@ -213,7 +332,7 @@ CmdResult patchMain(List<String> args) {
       ?usageError,
       'usage: appbox design patch <artifactDir> <data-arxa-id> '
           '[--set name=value]… [--rm name]… [--style prop=value]… '
-          '[--rm-style prop]…'
+          '[--rm-style prop]… [--text value]'
     ]);
   }
   final dir = Directory(positional[0]);

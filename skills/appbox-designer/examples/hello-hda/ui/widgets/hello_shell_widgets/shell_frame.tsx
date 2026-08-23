@@ -9,7 +9,7 @@ export interface ShellFrameProps {
 }
 
 export const ShellFrame: FC<ShellFrameProps> = ({ children }) => (
-  <div class="shell">{children}</div>
+  <div data-arxa-id="ui-widgets-hello_shell_widgets-shell_frame-e1" class="shell">{children}</div>
 );
 
 export interface ShellColumnProps {
@@ -17,7 +17,7 @@ export interface ShellColumnProps {
 }
 
 export const ShellColumn: FC<ShellColumnProps> = ({ children }) => (
-  <div class="shell__col">{children}</div>
+  <div data-arxa-id="ui-widgets-hello_shell_widgets-shell_frame-e2" class="shell__col">{children}</div>
 );
 
 export interface ShellMainProps {
@@ -25,5 +25,5 @@ export interface ShellMainProps {
 }
 
 export const ShellMain: FC<ShellMainProps> = ({ children }) => (
-  <main class="shell-main">{children}</main>
+  <main data-arxa-id="ui-widgets-hello_shell_widgets-shell_frame-e3" class="shell-main">{children}</main>
 );

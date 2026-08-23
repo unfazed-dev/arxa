@@ -15,7 +15,7 @@ export const TimerTick: FC<TimerTickProps> = ({ remaining, translate, rung }) =>
   const id = rung ? `timer--${rung}` : 'timer';
   if (remaining && remaining > 0) {
     return (
-      <div
+      <div data-arxa-id="ui-widgets-hello_timer_widgets-timer_tick-e1"
         id={id}
         class="timer"
         hx-get={`/timer/tick?rung=${rung ?? ''}`}
@@ -27,7 +27,7 @@ export const TimerTick: FC<TimerTickProps> = ({ remaining, translate, rung }) =>
     );
   }
   return (
-    <div id={id} class="timer done">
+    <div data-arxa-id="ui-widgets-hello_timer_widgets-timer_tick-e2" id={id} class="timer done">
       {translate('timer.done') as string}
     </div>
   );

@@ -596,3 +596,25 @@ Share Link, Author) are canonical in docs/VOCABULARY.md.
     not as a jsonb column on the pin row. Operator decision after the
     dashboard review: relational storage keeps per-stroke editing open
     without another migration. Shape/caps still enforced app-side.)*
+
+**Landing log** (newest last): Feedback Mode — dial shell, pins, kanban,
+Supabase store, Share Links, drawings (commits `d4a4d5d5`…`e6fdbca8`);
+drawings storage amendment (`e5c3ae1f`). Design Mode — selection rides
+`data-arxa-id` (the hello-hda example is now stamped, the ratified layer
+it predated); curated facet sets keyed on the element's kind (`data-el`
+prefix, else tag) with the raw-CSS escape hatch parsing into structured
+patches; the token tier overrides `:root` custom properties; edits
+auto-save (debounced) into the Draft Overlay — one JSON file per artifact
+under `~/.appbox/drafts/`, never the watched tree (a save must not
+hot-reload the page being edited); the overlay applies at serve time for
+the Author only, so guests always see the last published state (decision
+5, wire-proven). The patch grammar gained `--text` (pure-text elements
+only — nested markup refuses loudly) and `patchAllRendered` (loop-shared
+ids patch every instance — "every row at once"). Commit rides the dial
+event stream: `POST /__dial/commit` hands structured ops to the studio
+agent (the arxa-studio design panel surfaces them; the agent runs
+`appbox design patch`, re-runs gates, then DELETEs the draft — the
+request itself is non-destructive). Also fixed: a dead share link
+previously resolved to caller=author on the API; it now 403s on every
+dial route. Publish (decision 5's button, the deployer seam) remains the
+last slice.

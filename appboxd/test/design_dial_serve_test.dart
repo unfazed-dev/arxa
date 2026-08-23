@@ -15,6 +15,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:appboxd/design_dial.dart';
+import 'package:appboxd/design_draft.dart';
 import 'package:appboxd/design_server.dart';
 import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
@@ -41,12 +42,20 @@ void main() {
   group('design dial over a real server', () {
     late DesignServer srv;
     late DesignServer bare; // dial: false
+    late Directory draftHome;
     late String base;
     late String bareBase;
 
     setUpAll(() async {
+      // A temp-home draft store: the Draft Overlay is real file state, and a
+      // test must never write into the operator's ~/.appbox/drafts.
+      draftHome = Directory.systemTemp.createTempSync('dial-serve-draft');
       srv = await DesignServer.start(
-          artifactDir: _fixture, noWatch: true, dialStore: MemoryDialStore());
+          artifactDir: _fixture,
+          noWatch: true,
+          dialStore: MemoryDialStore(),
+          draftStore:
+              DraftFileStore(artifactDir: _fixture, home: draftHome.path));
       bare = await DesignServer.start(
           artifactDir: _fixture,
           noWatch: true,
@@ -59,6 +68,7 @@ void main() {
     tearDownAll(() async {
       await srv.stop();
       await bare.stop();
+      draftHome.deleteSync(recursive: true);
     });
 
     test('every full page carries the dial; dial:false pages do not', () async {
@@ -144,6 +154,73 @@ void main() {
       final (scode2, _) =
           await _req('POST', '$base/__dial/share?dial=$token', body: {});
       expect(scode2, 403);
+    });
+
+    test('draft overlay: author page carries it, guests never do (decision 5)',
+        () async {
+      // A real rendered id from the served page (the fixture is stamped).
+      final (_, html) = await _req('GET', base);
+      final idm =
+          RegExp('data-arxa-id="([^"]+)"').firstMatch(html);
+      expect(idm, isNotNull,
+          reason: 'the stamped fixture must render data-arxa-id');
+      final id = idm!.group(1)!;
+
+      final (pcode, pbody) = await _req('PUT', '$base/__dial/draft', body: {
+        'tokens': {'--arxa-test-token': '#123456'},
+        'patches': {
+          id: {
+            'style': {'outline': '3px solid rgb(1, 2, 3)'},
+            'attrs': {'data-draft-test': 'yes'},
+          },
+        },
+      });
+      expect(pcode, 200, reason: pbody);
+
+      // Author page: the overlay is applied at the seam.
+      final (_, ahtml) = await _req('GET', base);
+      expect(ahtml, contains('data-draft-test="yes"'));
+      expect(
+          ahtml,
+          contains(
+              '<style id="arxa-draft-tokens">:root{--arxa-test-token: #123456}</style>'));
+
+      // Guest page (Share Link): last published state — no overlay.
+      final (mcode, mbody) =
+          await _req('POST', '$base/__dial/share', body: {'days': 1});
+      expect(mcode, 201);
+      final token = (jsonDecode(mbody) as Map)['token'] as String;
+      final (_, ghtml) = await _req('GET', '$base?dial=$token');
+      expect(ghtml, isNot(contains('data-draft-test')));
+      expect(ghtml, isNot(contains('arxa-draft-tokens')));
+
+      // Guests cannot touch the draft API; dead links are refused outright.
+      final (gcode, _) = await _req(
+          'PUT', '$base/__dial/draft?dial=$token',
+          body: {'patches': {}});
+      expect(gcode, 403);
+      final (dcode, _) =
+          await _req('GET', '$base/__dial/pins?dial=deadbeef');
+      expect(dcode, 403);
+
+      // Commit hands the studio agent structured ops, non-destructively.
+      final (kcode, kbody) =
+          await _req('POST', '$base/__dial/commit', body: {});
+      expect(kcode, 200, reason: kbody);
+      final commit = jsonDecode(kbody) as Map;
+      expect(commit['artifact'], 'hello-hda');
+      final ops = commit['ops'] as List;
+      expect(ops.single['id'], id);
+      expect((ops.single['style'] as Map)['outline'],
+          '3px solid rgb(1, 2, 3)');
+      expect((commit['tokens'] as Map)['--arxa-test-token'], '#123456');
+
+      // Clear: the author page is source-clean again.
+      final (xcode, _) = await _req('DELETE', '$base/__dial/draft');
+      expect(xcode, 200);
+      final (_, chtml) = await _req('GET', base);
+      expect(chtml, isNot(contains('data-draft-test')));
+      expect(chtml, isNot(contains('arxa-draft-tokens')));
     });
 
     test('mutations broadcast on the dial SSE stream', () async {

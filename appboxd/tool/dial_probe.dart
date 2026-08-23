@@ -139,6 +139,88 @@ Future<void> main(List<String> args) async {
   ''');
   File('/tmp/dial-frames/05-shade.png').writeAsBytesSync(await tab.screenshot());
 
+  // 6d. Design Mode: arm, select a real element (data-arxa-id), edit via
+  // the CSS escape hatch + content facet, verify live apply, auto-save into
+  // the Draft Overlay, server-side application on the author page, and the
+  // commit hand-off — then reload and verify the overlay survives.
+  final design = await shadow(tab, '''
+    R.querySelector('[data-verb="design"]').click();
+    await new Promise(r=>setTimeout(r,250));
+    const cand = [...document.querySelectorAll("[data-arxa-id]")].find(e =>
+      e.children.length === 0 && (e.textContent||"").trim() && e.offsetWidth > 0 && e.offsetHeight > 0);
+    if (!cand) return "NO-TARGET";
+    cand.scrollIntoView({block: "center"});
+    await new Promise(r=>setTimeout(r,250));
+    const r0 = cand.getBoundingClientRect();
+    const cx = r0.left + r0.width/2, cy = r0.top + r0.height/2;
+    document.dispatchEvent(new PointerEvent("pointermove", {clientX: cx, clientY: cy, bubbles: true}));
+    document.dispatchEvent(new MouseEvent("click", {clientX: cx, clientY: cy, bubbles: true}));
+    await new Promise(r=>setTimeout(r,350));
+    const id = cand.getAttribute("data-arxa-id");
+    const panelOpen = R.querySelector("#panel").classList.contains("open");
+    const facets = R.querySelectorAll("#pbody .facet").length;
+    const idline = (R.querySelector("#pbody .idline")||{}).textContent || "";
+    // the escape hatch is present on every kind — drive the edit through it
+    const css = [...R.querySelectorAll("#pbody textarea")].find(t => t.placeholder.indexOf("prop: value") === 0);
+    css.value = "outline: 3px solid rgb(255, 0, 0)";
+    [...R.querySelectorAll("#pbody .btn")].find(b => b.textContent === "Apply CSS").click();
+    await new Promise(r=>setTimeout(r,250));
+    const liveOutline = cand.style.outline.indexOf("rgb(255, 0, 0)") !== -1;
+    // content facet (this element is pure text)
+    const content = [...R.querySelectorAll("#pbody textarea")].find(t => t.placeholder.indexOf("prop: value") !== 0);
+    if (content) { content.value = "Edited by probe"; content.dispatchEvent(new Event("input")); }
+    await new Promise(r=>setTimeout(r,1300)); // debounce + PUT
+    const draft = await fetch("/__dial/draft").then(r=>r.json());
+    const p = (draft.draft && draft.draft.patches && draft.draft.patches[id]) || null;
+    return JSON.stringify({id, panelOpen, facets, idlineOk: idline === id,
+      liveOutline, savedOutline: p && p.style && p.style.outline,
+      savedText: p && p.text});
+  ''');
+  print('design-mode: $design');
+  File('/tmp/dial-frames/06a-design-mode.png').writeAsBytesSync(await tab.screenshot());
+
+  // 6e. The token tier: add an override, verify live apply + auto-save.
+  final tokens = await shadow(tab, '''
+    R.querySelector('[data-verb="tokens"]').click();
+    await new Promise(r=>setTimeout(r,250));
+    const inputs = [...R.querySelectorAll("#pbody .facet input[type=text]")];
+    const nameIn = inputs.find(i => i.placeholder === "--token-name");
+    const valIn = inputs.find(i => i.placeholder === "value");
+    nameIn.value = "--probe-token"; valIn.value = "17px";
+    [...R.querySelectorAll("#pbody .btn")].find(b => b.textContent === "Add").click();
+    await new Promise(r=>setTimeout(r,1300));
+    const live = getComputedStyle(document.documentElement).getPropertyValue("--probe-token").trim();
+    const draft = await fetch("/__dial/draft").then(r=>r.json());
+    return JSON.stringify({live, saved: draft.draft && draft.draft.tokens && draft.draft.tokens["--probe-token"]});
+  ''');
+  print('tokens: $tokens');
+  File('/tmp/dial-frames/06b-tokens.png').writeAsBytesSync(await tab.screenshot());
+
+  // 6f. The commit hand-off: structured ops for the studio agent.
+  final commit = await tab.evaluate('''(async () => {
+    const r = await fetch("/__dial/commit", {method: "POST", headers: {"Content-Type": "application/json"}, body: "{}"}).then(r=>r.json());
+    return JSON.stringify({ok: r.ok, ops: (r.ops||[]).length, tokens: r.tokens, artifactDir: !!r.artifactDir});
+  })()''');
+  print('commit: $commit');
+
+  // 6g. Server-side application: a fresh author page carries the overlay.
+  final applied = await tab.evaluate('''(async () => {
+    const html = await fetch("/").then(r=>r.text());
+    return JSON.stringify({
+      outline: html.indexOf("3px solid rgb(255, 0, 0)") !== -1,
+      token: html.indexOf("arxa-draft-tokens") !== -1 && html.indexOf("--probe-token: 17px") !== -1,
+      text: html.indexOf(">Edited by probe<") !== -1});
+  })()''');
+  print('server-applied (author): $applied');
+
+  // 6h. Reload: the overlay re-applies from the server, source untouched.
+  await tab.navigateAndSettle('$_base/', settleMs: 2500);
+  final afterReload = await tab.evaluate('''(() => {
+    const live = document.documentElement.innerHTML.indexOf("3px solid rgb(255, 0, 0)") !== -1;
+    return JSON.stringify({overlayAfterReload: live});
+  })()''');
+  print('after reload: $afterReload');
+
   // 7. Mint a Share Link and open the GUEST view in a second tab.
   final share = await tab.evaluate('''(async () => {
     const r = await fetch("/__dial/share", {method: "POST", headers: {"Content-Type": "application/json"}, body: "{}"}).then(r=>r.json());
@@ -166,6 +248,26 @@ Future<void> main(List<String> args) async {
   ''');
   print('guest thread: $gthread');
   File('/tmp/dial-frames/06-guest-view.png').writeAsBytesSync(await guest.screenshot());
+
+  // 8. The guest page must NOT carry the Draft Overlay (decision 5: clients
+  // see the last published state).
+  final gclean = await guest.evaluate('''(() => {
+    const h = document.documentElement.innerHTML;
+    return JSON.stringify({
+      outline: h.indexOf("3px solid rgb(255, 0, 0)") !== -1,
+      token: h.indexOf("arxa-draft-tokens") !== -1,
+      text: h.indexOf("Edited by probe") !== -1,
+      note: "all three must be false"});
+  })()''');
+  print('guest clean (decision 5): $gclean');
+
+  // 9. Cleanup: clear the draft; the author page is source-clean again.
+  final cleared = await tab.evaluate('''(async () => {
+    await fetch("/__dial/draft", {method: "DELETE"});
+    const html = await fetch("/").then(r=>r.text());
+    return JSON.stringify({clean: html.indexOf("rgb(255, 0, 0)") === -1 && html.indexOf("arxa-draft-tokens") === -1});
+  })()''');
+  print('draft cleared: $cleared');
 
   await client.close();
   print('PROBE-DONE');

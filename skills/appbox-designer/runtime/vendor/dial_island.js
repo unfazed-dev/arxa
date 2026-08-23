@@ -30,9 +30,20 @@
    durable ones.
 
    The radial dock is draggable (pointer capture, click-vs-drag by a 6px
-   threshold) and edge-snaps left/right; verbs fan out in an arc. Design Mode
-   verbs are stubbed off in this slice — the dock is the same dock Design
-   Mode will expand. */
+   threshold) and edge-snaps left/right; verbs fan out in an arc.
+
+   DESIGN MODE (Author only; locked decisions 1-5). The design verb arms
+   selection: hover shows the element under the cursor (data-arxa-id
+   identity), click opens its facet editors in the panel. The selected
+   element's kind (the data-el prefix, else its tag) picks a curated facet
+   set; a raw-CSS escape hatch covers the unlisted; a content facet edits
+   pure-text elements. The tokens verb edits the artifact's design tokens
+   (:root custom properties). Every edit applies LIVE to the page and
+   auto-saves (debounced) into the server-side Draft Overlay — artifact
+   source is never touched by auto-save, and guests always see the last
+   published state. 'Request commit' hands the patch set to the studio
+   agent over the dial event stream; the agent commits to source with
+   `design patch` and clears the draft. */
 (() => {
   if (document._arxaDial) return; // guard against double-include
   document._arxaDial = 1;
@@ -64,6 +75,12 @@
     strokes: [], // PENDING strokes — persist only by attaching to a pin (see header)
     activeDrawing: null, // strokes of the pin whose thread is open
     dockSide: 'right',
+    design: false, // Design Mode armed (author only)
+    selected: null, // { id, el, label, group } — the element being edited
+    selOutline: '', // inline outline the selection highlight borrowed
+    draft: { tokens: {}, patches: {} }, // the Draft Overlay (server-side)
+    draftDirty: false,
+    ownSave: 0, // suppress refetch loops on our own PUT's broadcast
   };
   try {
     S.name = localStorage.getItem('arxa-dial-name') || '';
@@ -218,6 +235,21 @@
     '  background:#0b0b10;color:#FFFCF0;font-size:12.5px;padding:10px 16px;',
     '  border-radius:10px;border:1px solid #0891b2;opacity:0;',
     '  transition:opacity .2s;pointer-events:none;z-index:40}',
+    /* Design Mode: selection hover tint, facet editors, token rows */
+    '#hover.design{border-color:#f59e0b;background:rgba(245,158,11,.12)}',
+    '#hover.design #hovertag{background:#f59e0b;color:#0b0b10}',
+    '.sect{font-size:10.5px;font-weight:700;color:#9aa0ab;padding:10px 10px 4px;',
+    '  text-transform:uppercase;letter-spacing:.05em}',
+    '.idline{font-family:ui-monospace,monospace;font-size:10px;color:#6b7280;',
+    '  padding:2px 10px 8px;word-break:break-all}',
+    '.facet{display:flex;align-items:center;gap:8px;padding:4px 10px}',
+    '.facet label{width:92px;color:#9aa0ab;font-size:11px;flex:none}',
+    '.facet input[type=text]{flex:1;padding:5px 8px;font-size:12px}',
+    '.facet input[type=color]{width:28px;height:26px;padding:0;flex:none;',
+    '  border:1px solid #2a2a35;border-radius:6px;background:#0b0b10}',
+    '.facet select{flex:1;background:#0b0b10;color:#FFFCF0;',
+    '  border:1px solid #2a2a35;border-radius:8px;padding:5px;font-size:12px}',
+    '.draftmeta{font-size:10.5px;color:#6b7280;padding:8px 10px 0}',
   ];
   const style = document.createElement('style');
   style.textContent = CSS.join('\n');
@@ -280,6 +312,8 @@
     layers: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2 2 8l10 6 10-6z"/><path d="m2 14 10 6 10-6"/></svg>',
     pen: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 19l7-7a2.1 2.1 0 0 0-3-3l-7 7-1 4z"/><path d="M18 13l-6-6"/></svg>',
     share: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.6" y1="10.7" x2="15.4" y2="6.3"/><line x1="8.6" y1="13.3" x2="15.4" y2="17.7"/></svg>',
+    design: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4l7 17 2.5-6.5L20 12z"/><path d="M13.5 14.5 19 20"/></svg>',
+    tokens: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 1 0 18"/><circle cx="8.5" cy="9.5" r="1.3" fill="currentColor"/><circle cx="8.5" cy="14.5" r="1.3" fill="currentColor"/><circle cx="12" cy="17.5" r="1.3" fill="currentColor"/></svg>',
   };
   function icon(name) {
     const span = document.createElement('span');
@@ -299,6 +333,8 @@
 
   // Radial verbs: angle fan upward from the dock.
   const VERBS = [
+    { id: 'design', icon: 'design', tip: 'Design Mode — select & edit', modes: ['author'] },
+    { id: 'tokens', icon: 'tokens', tip: 'Design tokens', modes: ['author'] },
     { id: 'pin', icon: 'pin', tip: 'Add a pin', modes: ['author', 'guest'] },
     { id: 'list', icon: 'list', tip: 'Feedback', modes: ['author', 'guest'] },
     { id: 'shade', icon: 'shade', tip: 'Review shade', modes: ['author', 'guest'] },
@@ -328,14 +364,18 @@
   // off-screen. Re-runs on every edge snap.
   function layoutFan() {
     const n = verbOrder.length;
-    // The fan lives ENTIRELY in the inward upper quadrant: right-docked
-    // spans -178°..-93°, left-docked mirrors it — no verb ever lands
-    // right of a right-docked dial (screen-edge clip) or left of a
-    // left-docked one. Arc spacing = R·Δθ = 150·0.297 ≈ 44.5px ≥ the 44px
-    // buttons, so neighbors never overlap.
-    const spacing = 17;
+    // The fan lives ENTIRELY in the inward upper quadrant: no verb ever
+    // lands right of a right-docked dial (screen-edge clip) or left of a
+    // left-docked one, and neighbor chords stay ≥ the 44px buttons so they
+    // never overlap. The author's eight verbs (Design Mode added two) no
+    // longer fit the 6-verb geometry — past -93° a 150px radius clips the
+    // right edge — so a full fan tightens its spacing and widens its arc:
+    // -178°..-83.5° at R=190 keeps every center ≥ 30px off the edge and
+    // chords at 44.7px.
+    const full = n > 7;
+    const spacing = full ? 13.5 : 17;
     const start = S.dockSide === 'right' ? -178 : -2 - (n - 1) * spacing;
-    const R = 150;
+    const R = full ? 190 : 150;
     verbOrder.forEach((el, i) => {
       const rad = ((start + i * spacing) * Math.PI) / 180;
       el.style.left = 50 + (Math.cos(rad) * R * 100) / 56 + '%';
@@ -445,6 +485,10 @@
     });
     phead.appendChild(badgeEl);
     panel.classList.add('open');
+    // An open panel owns the screen corner — an expanded fan would float
+    // over it (eight verbs at R=190 reach the panel's right edge).
+    dock.classList.remove('open');
+    S.open = false;
     renderPanelBody();
   }
 
@@ -454,6 +498,8 @@
     if (S.panel === 'shade') return renderShadeCtl();
     if (S.panel === 'layers') return renderLayersCtl();
     if (S.panel === 'share') return renderShareCtl();
+    if (S.panel === 'design') return renderDesignPanel();
+    if (S.panel === 'tokens') return renderTokensPanel();
   }
 
   function chip(status) {
@@ -681,6 +727,7 @@
   }
 
   function arm() {
+    if (S.design) designOff();
     S.arming = true;
     verbEls.pin.classList.add('on');
     document.addEventListener('pointermove', onArmMove, true);
@@ -878,6 +925,387 @@
   }
   sizeCanvas();
 
+  // ── Design Mode (author only; locked decisions 1-5) ────────────────────
+  // Selection walks data-arxa-id (the machine identity design patch rides),
+  // facet sets are curated per element kind, and every edit applies live,
+  // then auto-saves into the server-side Draft Overlay. Artifact source is
+  // only ever touched by the studio-socket commit — never from this island.
+
+  const FACET_GROUPS = {
+    text: ['color', 'font-size', 'font-weight', 'line-height', 'letter-spacing', 'text-align'],
+    action: ['background', 'color', 'font-size', 'font-weight', 'padding', 'border-radius'],
+    surface: ['background', 'padding', 'gap', 'border-radius', 'border-color'],
+    field: ['background', 'color', 'font-size', 'padding', 'border-color', 'border-radius'],
+    media: ['width', 'height', 'opacity'],
+    generic: ['color', 'background', 'font-size', 'padding', 'margin', 'border-radius'],
+  };
+  // The 15-kind widget vocabulary plus the simple data-el names and tag
+  // kinds real artifacts carry; anything unlisted edits as 'generic'.
+  const KIND_GROUP = {
+    card: 'surface', 'panel-activity': 'surface', modal: 'surface', dialog: 'surface',
+    'bottom-sheet': 'surface', 'empty-state': 'surface', toast: 'surface', panel: 'surface',
+    'list-row': 'surface', frame: 'surface',
+    'cta-link': 'action', chip: 'action', appbar: 'action', tabbar: 'action', tabs: 'action',
+    'nav-rail': 'action', action: 'action', button: 'action', link: 'action',
+    text: 'text', heading: 'text', label: 'text', title: 'text',
+    'form-field': 'field', input: 'field', field: 'field',
+    icon: 'media', image: 'media', media: 'media',
+  };
+  const TAG_KIND = {
+    h1: 'heading', h2: 'heading', h3: 'heading', h4: 'heading', h5: 'heading', h6: 'heading',
+    p: 'text', span: 'text', label: 'label', a: 'link', button: 'button',
+    img: 'image', svg: 'icon', input: 'input', textarea: 'input', select: 'input',
+    nav: 'nav-rail', header: 'appbar', li: 'list-row',
+  };
+  const COLOR_PROPS = { background: 1, color: 1, 'border-color': 1 };
+  const SELECT_OPTS = {
+    'font-weight': ['300', '400', '500', '600', '700', '800'],
+    'text-align': ['left', 'center', 'right', 'start', 'end'],
+  };
+
+  function kindOf(el) {
+    const de = el.getAttribute('data-el');
+    if (de) {
+      const k = de.split(':')[0].toLowerCase();
+      if (KIND_GROUP[k]) return { kind: k, group: KIND_GROUP[k] };
+    }
+    const tag = el.tagName.toLowerCase();
+    const kind = TAG_KIND[tag] || tag;
+    return { kind: kind, group: KIND_GROUP[kind] || 'generic' };
+  }
+
+  // The selection walk: data-arxa-id identity, SVG collapse, island skipped.
+  function designTargetAt(x, y) {
+    const stack = document.elementsFromPoint(x, y);
+    for (const el of stack) {
+      if (host.contains(el) || el === host) continue;
+      let node = el;
+      if (node.namespaceURI && node.namespaceURI.indexOf('svg') !== -1 && node.tagName !== 'svg') {
+        node = node.closest('svg') || node;
+      }
+      const hit = node.closest && node.closest('[data-arxa-id]');
+      if (hit) {
+        const k = kindOf(hit);
+        return {
+          id: hit.getAttribute('data-arxa-id'),
+          el: hit,
+          label: (hit.getAttribute('data-el') || hit.tagName.toLowerCase()) + ' · ' + k.kind,
+          group: k.group,
+          rect: hit.getBoundingClientRect(),
+        };
+      }
+    }
+    return null;
+  }
+
+  function onDesignMove(e) {
+    if (e.composedPath().indexOf(host) !== -1) { hover.style.display = 'none'; return; }
+    const t = designTargetAt(e.clientX, e.clientY);
+    if (!t) { hover.style.display = 'none'; return; }
+    hover.classList.add('design');
+    hover.style.display = 'block';
+    hover.style.left = t.rect.left + 'px';
+    hover.style.top = t.rect.top + 'px';
+    hover.style.width = t.rect.width + 'px';
+    hover.style.height = t.rect.height + 'px';
+    hover.firstChild.textContent = t.label;
+  }
+
+  function onDesignClick(e) {
+    if (e.composedPath().indexOf(host) !== -1) return; // the panel stays usable
+    const t = designTargetAt(e.clientX, e.clientY);
+    if (!t) return; // unstamped spot — let the page have the click
+    e.preventDefault();
+    e.stopPropagation();
+    selectEl(t);
+  }
+
+  function selectEl(t) {
+    clearSelOutline();
+    S.selected = { id: t.id, el: t.el, label: t.label, group: t.group };
+    S.selOutline = t.el.style.outline;
+    t.el.style.outline = '2px solid #f59e0b';
+    if (S.panel === 'design') renderPanelBody();
+    else setPanel('design', 'Design Mode');
+  }
+  function clearSelOutline() {
+    if (S.selected) S.selected.el.style.outline = S.selOutline || '';
+    S.selected = null;
+  }
+
+  function designOn() {
+    if (S.arming) disarm();
+    S.design = true;
+    verbEls.design.classList.add('on');
+    document.addEventListener('pointermove', onDesignMove, true);
+    document.addEventListener('click', onDesignClick, true);
+    if (S.panel !== 'design') setPanel('design', 'Design Mode');
+    say('Design Mode — click an element to edit it');
+  }
+  function designOff() {
+    S.design = false;
+    if (verbEls.design) verbEls.design.classList.remove('on');
+    hover.style.display = 'none';
+    hover.classList.remove('design');
+    clearSelOutline();
+    document.removeEventListener('pointermove', onDesignMove, true);
+    document.removeEventListener('click', onDesignClick, true);
+  }
+
+  // ── the Draft Overlay: live apply + debounced auto-save ────────────────
+  function patchFor(id) {
+    let p = S.draft.patches[id];
+    if (!p) { p = { style: {}, attrs: {} }; S.draft.patches[id] = p; }
+    if (!p.style) p.style = {};
+    if (!p.attrs) p.attrs = {};
+    return p;
+  }
+
+  let saveTimer = null;
+  function scheduleSave() {
+    S.draftDirty = true;
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(saveDraft, 700);
+    renderDraftMeta();
+  }
+  async function saveDraft() {
+    if (!S.draftDirty) return;
+    S.draftDirty = false;
+    S.ownSave = Date.now();
+    const r = await api('PUT', '/draft', { tokens: S.draft.tokens, patches: S.draft.patches });
+    if (r && r.ok) { S.draftMeta = r; renderDraftMeta(); }
+    else say(r && r.error ? 'Draft refused: ' + r.error : 'Draft save failed');
+  }
+  async function loadDraft() {
+    if (S.mode !== 'author') return;
+    const r = await api('GET', '/draft');
+    if (r && r.draft) {
+      S.draft.tokens = r.draft.tokens || {};
+      S.draft.patches = r.draft.patches || {};
+    }
+  }
+
+  function renderDraftMeta() {
+    const el = root.getElementById('draftmeta');
+    if (!el) return;
+    const np = Object.keys(S.draft.patches).length;
+    const nt = Object.keys(S.draft.tokens).length;
+    el.textContent = S.draftDirty
+      ? 'unsaved changes…'
+      : np + ' patches · ' + nt + ' tokens' + (S.draftMeta ? ' · saved' : '');
+  }
+
+  function setStyleProp(id, prop, value) {
+    const p = patchFor(id);
+    p.style[prop] = value || null; // empty clears the property (removal)
+    if (S.selected && S.selected.id === id) {
+      if (value) S.selected.el.style.setProperty(prop, value);
+      else S.selected.el.style.removeProperty(prop);
+    }
+    scheduleSave();
+  }
+  function setTextContent(id, value) {
+    patchFor(id).text = value;
+    if (S.selected && S.selected.id === id) S.selected.el.textContent = value;
+    scheduleSave();
+  }
+
+  function rgbToHex(s) {
+    const m = /rgba?\((\d+),\s*(\d+),\s*(\d+)/.exec(s || '');
+    if (!m) return null;
+    const to = (n) => ('0' + Number(n).toString(16)).slice(-2);
+    return '#' + to(m[1]) + to(m[2]) + to(m[3]);
+  }
+  // The escape hatch parses declarations into STRUCTURED style patches —
+  // the grammar underneath stays the only write path.
+  function parseCss(text) {
+    const out = {};
+    text.split(';').forEach((decl) => {
+      const i = decl.indexOf(':');
+      if (i < 1) return;
+      const k = decl.slice(0, i).trim();
+      const v = decl.slice(i + 1).trim();
+      if (/^[a-zA-Z-]+$/.test(k) && v) out[k] = v;
+    });
+    return out;
+  }
+
+  function draftFooter() {
+    pbody.appendChild(h('div', { class: 'draftmeta', id: 'draftmeta' }));
+    const kids = [];
+    const commit = h('button', { class: 'btn', text: 'Request commit', title: 'Hand the draft to the studio agent — it patches artifact source' });
+    commit.addEventListener('click', async () => {
+      await saveDraft();
+      const r = await api('POST', '/commit', {});
+      if (r && r.ok) say('Commit requested — ' + r.ops.length + ' ops handed to the studio agent');
+      else say(r && r.error ? r.error : 'Commit request failed');
+    });
+    kids.push(commit);
+    if (S.selected && S.draft.patches[S.selected.id]) {
+      const resetEl = h('button', { class: 'btn ghost', text: 'Reset element' });
+      resetEl.addEventListener('click', async () => {
+        delete S.draft.patches[S.selected.id];
+        S.draftDirty = true;
+        await saveDraft();
+        location.reload(); // re-served without this patch — source state
+      });
+      kids.push(resetEl);
+    }
+    const reset = h('button', { class: 'btn ghost', text: 'Reset all' });
+    reset.addEventListener('click', async () => {
+      await api('DELETE', '/draft');
+      S.draft.tokens = {};
+      S.draft.patches = {};
+      location.reload();
+    });
+    kids.push(reset);
+    pbody.appendChild(h('div', { class: 'btnrow' }, kids));
+    renderDraftMeta();
+  }
+
+  function renderDesignPanel() {
+    const sel = S.selected;
+    if (!sel) {
+      pbody.appendChild(h('div', { class: 'ctl', style: 'font-size:12px;color:#9aa0ab', text: 'Click any element in the design — the amber box shows what you will edit. Esc exits Design Mode.' }));
+      draftFooter();
+      return;
+    }
+    pbody.appendChild(h('div', { class: 'sect', text: sel.label }));
+    pbody.appendChild(h('div', { class: 'idline', text: sel.id }));
+    const draft = S.draft.patches[sel.id] || {};
+
+    // Content facet — pure-text elements only (the patch grammar refuses
+    // nested markup, so the editor never offers it).
+    if (sel.el.children.length === 0 && (sel.el.textContent || '').trim()) {
+      pbody.appendChild(h('div', { class: 'sect', text: 'Content' }));
+      const ta = h('textarea', { rows: '2' });
+      ta.value = draft.text != null ? draft.text : sel.el.textContent;
+      ta.addEventListener('input', () => setTextContent(sel.id, ta.value));
+      pbody.appendChild(h('div', { class: 'facet' }, [ta]));
+    }
+
+    pbody.appendChild(h('div', { class: 'sect', text: 'Facets · ' + sel.group }));
+    const cs = getComputedStyle(sel.el);
+    const facets = FACET_GROUPS[sel.group] || FACET_GROUPS.generic;
+    for (const prop of facets) {
+      const has = draft.style && Object.prototype.hasOwnProperty.call(draft.style, prop);
+      const cur = has ? draft.style[prop] : null;
+      const row = h('div', { class: 'facet' }, [h('label', { text: prop })]);
+      let input;
+      if (SELECT_OPTS[prop]) {
+        input = h('select');
+        input.appendChild(h('option', { value: '', text: '—' }));
+        for (const o of SELECT_OPTS[prop]) input.appendChild(h('option', { value: o, text: o }));
+        input.value = cur || '';
+      } else {
+        input = h('input', { type: 'text', placeholder: cs.getPropertyValue(prop) || 'unset' });
+        input.value = cur || '';
+      }
+      input.addEventListener('input', () => setStyleProp(sel.id, prop, input.value.trim()));
+      if (COLOR_PROPS[prop]) {
+        const sw = h('input', { type: 'color', title: 'pick ' + prop });
+        sw.value = rgbToHex(cur || cs.getPropertyValue(prop)) || '#000000';
+        sw.addEventListener('input', () => {
+          input.value = sw.value;
+          setStyleProp(sel.id, prop, sw.value);
+        });
+        row.appendChild(sw);
+      }
+      row.appendChild(input);
+      pbody.appendChild(row);
+    }
+
+    pbody.appendChild(h('div', { class: 'sect', text: 'CSS escape hatch' }));
+    const css = h('textarea', { rows: '3' });
+    css.placeholder = 'prop: value; prop: value;';
+    if (draft.style) {
+      css.value = Object.keys(draft.style)
+        .map((k) => k + ': ' + (draft.style[k] == null ? '' : draft.style[k]))
+        .join('; ');
+    }
+    const applyCss = h('button', { class: 'btn', text: 'Apply CSS' });
+    applyCss.addEventListener('click', () => {
+      const parsed = parseCss(css.value);
+      const keys = Object.keys(parsed);
+      if (!keys.length) { say('No valid declarations parsed'); return; }
+      for (const k of keys) setStyleProp(sel.id, k, parsed[k]);
+      say(keys.length + (keys.length === 1 ? ' property' : ' properties') + ' applied');
+      renderPanelBody();
+    });
+    pbody.appendChild(h('div', { class: 'facet' }, [css]));
+    pbody.appendChild(h('div', { class: 'btnrow' }, [applyCss]));
+    draftFooter();
+  }
+
+  // ── the token tier (global design tokens, decision 3) ──────────────────
+  function pageTokenNames() {
+    const names = [];
+    for (const sheet of document.styleSheets) {
+      let rules;
+      try { rules = sheet.cssRules; } catch (_) { continue; } // cross-origin sheet
+      for (const r of rules) {
+        if (r.selectorText && (r.selectorText === ':root' || r.selectorText === 'html')) {
+          for (const p of r.style) {
+            if (p.indexOf('--') === 0 && names.indexOf(p) === -1) names.push(p);
+          }
+        }
+      }
+    }
+    for (const k of Object.keys(S.draft.tokens)) if (names.indexOf(k) === -1) names.push(k);
+    return names.sort();
+  }
+
+  let tokenStyleEl = null;
+  function applyTokensLive() {
+    if (!tokenStyleEl) {
+      tokenStyleEl = document.createElement('style');
+      tokenStyleEl.id = 'arxa-draft-tokens-live';
+      document.head.appendChild(tokenStyleEl); // page-level: shadow styles cannot reach the design
+    }
+    const decls = Object.keys(S.draft.tokens).map((k) => k + ': ' + S.draft.tokens[k]).join('; ');
+    tokenStyleEl.textContent = ':root{' + decls + '}';
+  }
+
+  function renderTokensPanel() {
+    pbody.appendChild(h('div', { class: 'ctl', style: 'font-size:12px;color:#9aa0ab', text: 'The design tokens this page declares (:root custom properties). Edits override live and auto-save to the Draft Overlay.' }));
+    const rootCs = getComputedStyle(document.documentElement);
+    const names = pageTokenNames();
+    if (!names.length) {
+      pbody.appendChild(h('div', { class: 'ctl', style: 'font-size:12px', text: 'No :root custom properties found — add an override below.' }));
+    }
+    for (const name of names) {
+      const row = h('div', { class: 'facet' }, [h('label', { text: name, title: name })]);
+      const input = h('input', { type: 'text', placeholder: rootCs.getPropertyValue(name).trim() || 'unset' });
+      input.value = S.draft.tokens[name] || '';
+      input.addEventListener('input', () => {
+        const v = input.value.trim();
+        if (v) S.draft.tokens[name] = v;
+        else delete S.draft.tokens[name];
+        applyTokensLive();
+        scheduleSave();
+      });
+      row.appendChild(input);
+      pbody.appendChild(row);
+    }
+    pbody.appendChild(h('div', { class: 'sect', text: 'New token override' }));
+    const nameIn = h('input', { type: 'text', placeholder: '--token-name' });
+    const valIn = h('input', { type: 'text', placeholder: 'value' });
+    const add = h('button', { class: 'btn', text: 'Add' });
+    add.addEventListener('click', () => {
+      const n = nameIn.value.trim();
+      const v = valIn.value.trim();
+      if (!/^--[a-zA-Z0-9-]+$/.test(n) || !v) { say('A token needs a --name and a value'); return; }
+      S.draft.tokens[n] = v;
+      applyTokensLive();
+      scheduleSave();
+      renderPanelBody();
+    });
+    pbody.appendChild(h('div', { class: 'facet' }, [nameIn]));
+    pbody.appendChild(h('div', { class: 'facet' }, [valIn]));
+    pbody.appendChild(h('div', { class: 'btnrow' }, [add]));
+    draftFooter();
+  }
+
   // ── verbs ──────────────────────────────────────────────────────────────
   function onVerb(id, el) {
     if (id === 'pin') {
@@ -901,6 +1329,12 @@
       say(S.drawing ? 'Draw-over armed — drag to sketch' : 'Draw-over off');
       return;
     }
+    if (id === 'design') {
+      if (S.design) designOff();
+      else designOn();
+      return;
+    }
+    if (id === 'tokens') return setPanel('tokens', 'Design tokens');
     if (id === 'share') return setPanel('share', 'Share this design');
   }
 
@@ -911,6 +1345,7 @@
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
       if (S.arming) disarm();
+      if (S.design) designOff();
       closeThread();
       composer.classList.remove('open');
       S.panel = null;
@@ -921,7 +1356,15 @@
   // ── realtime: the server's own writes arrive over SSE ─────────────────
   try {
     const es = new EventSource(apiUrl('/events'));
-    es.addEventListener('dial', () => loadPins());
+    es.addEventListener('dial', (ev) => {
+      let d = null;
+      try { d = JSON.parse(ev.data); } catch (_) {}
+      if (!d || d.kind === 'pins') return loadPins();
+      // Another author tab saved its draft — refetch, unless it was ours.
+      if (d.kind === 'draft' && Date.now() - S.ownSave > 1500) loadDraft();
+      // 'commit' frames feed the studio agent — the requester already
+      // heard its toast, there is nothing for this page to do.
+    });
   } catch (_) {}
 
   // ── boot ───────────────────────────────────────────────────────────────
@@ -931,5 +1374,6 @@
   document.body.appendChild(host);
   applyShade();
   applyLayers();
+  loadDraft(); // author-only; the server already overlaid it on this page
   loadPins();
 })();
