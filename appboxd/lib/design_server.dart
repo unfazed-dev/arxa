@@ -176,6 +176,22 @@ Iterable<String> _splitList(String? raw) =>
 /// The name of the machine-wide trusted-origins file under [appboxHome].
 const kTrustedOriginsFile = 'trusted-origins';
 
+/// The Design Dial's central-store credentials: `url=` + `service_key=`
+/// lines in `~/.appbox/supabase`, `#` starts a comment. Read at boot only;
+/// the env vars (APPBOX_SUPABASE_URL / APPBOX_SUPABASE_SERVICE_KEY) win when
+/// set. Same machine-scoped argument as trusted origins: the operator's
+/// Supabase project is a fact about this laptop, not about any client repo.
+/// Missing file = no Supabase = the dial runs its honest memory store.
+String? readSupabaseCredentialsFile() {
+  final f = File(p.join(appboxHome(), 'supabase'));
+  if (!f.existsSync()) return null;
+  try {
+    return f.readAsStringSync();
+  } catch (_) {
+    return null; // unreadable credentials must not break the server boot
+  }
+}
+
 /// Origins this machine trusts to call `/__*` cross-origin: one per line in
 /// `~/.appbox/trusted-origins`, `#` starts a comment.
 ///
@@ -413,10 +429,16 @@ class DesignServer {
       .._errorCatalog =
           ErrorCatalog(_l10nDirs(artifactDir, projectDir: projectDir))
       ..dialEnabled = dial
-      ..dialStore =
-          dialStore ?? SupabaseDialStore.fromEnv() ?? MemoryDialStore();
+      ..dialStore = dialStore ??
+          SupabaseDialStore.fromConfig(
+              credentialsFileText: readSupabaseCredentialsFile()) ??
+          MemoryDialStore();
     srv.dialApi =
         DialApi(store: srv.dialStore, artifact: srv._dialArtifact);
+    if (dial) {
+      stderr.writeln('[design-server] dial store: ${srv.dialStore.kind}'
+          '${srv.dialStore.kind == 'memory' ? ' (set APPBOX_SUPABASE_URL + APPBOX_SUPABASE_SERVICE_KEY, or ~/.appbox/supabase, for the shared store)' : ''}');
+    }
     // Let SocketException propagate (EADDRINUSE/EACCES) — designServe maps it
     // via bindExitCode; tests assert the bind path directly.
     srv._http = await HttpServer.bind(_bindAddress(host), port);

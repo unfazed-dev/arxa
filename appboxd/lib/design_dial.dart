@@ -286,14 +286,35 @@ class SupabaseDialStore implements DialStore {
   @override
   String get kind => 'supabase';
 
-  /// Builds one from env, or null when unconfigured (caller falls back to
-  /// MemoryDialStore). The service key is server-side only — never log it.
-  static SupabaseDialStore? fromEnv([Map<String, String>? env]) {
+  /// Builds one from configuration, or null when unconfigured (caller falls
+  /// back to MemoryDialStore). The service key is server-side only — never
+  /// log it.
+  ///
+  /// Precedence (env wins, so a one-shot override never edits a file):
+  ///   1. APPBOX_SUPABASE_URL + APPBOX_SUPABASE_SERVICE_KEY in the process env
+  ///   2. the machine-scoped file ~/.appbox/supabase — key=value lines
+  ///      (url= / service_key=), '#' comments, same convention as
+  ///      ~/.appbox/trusted-origins: an operator fact about THIS machine,
+  ///      never repo state, never the artifact's config.
+  static SupabaseDialStore? fromConfig(
+      {Map<String, String>? env, String? credentialsFileText}) {
     final e = env ?? Platform.environment;
-    final url = e['APPBOX_SUPABASE_URL'];
-    final key = e['APPBOX_SUPABASE_SERVICE_KEY'];
+    var url = e['APPBOX_SUPABASE_URL'];
+    var key = e['APPBOX_SUPABASE_SERVICE_KEY'];
+    if ((url == null || url.isEmpty || key == null || key.isEmpty) &&
+        credentialsFileText != null) {
+      final file = parseSupabaseCredentials(credentialsFileText);
+      url ??= file.url;
+      key ??= file.key;
+    }
     if (url == null || url.isEmpty || key == null || key.isEmpty) return null;
     return SupabaseDialStore(url: url, serviceKey: key);
+  }
+
+  /// Builds one from env, or null when unconfigured. Prefer [fromConfig] —
+  /// this remains for callers that deliberately want env only.
+  static SupabaseDialStore? fromEnv([Map<String, String>? env]) {
+    return fromConfig(env: env);
   }
 
   Future<HttpClientResponse> _req(String method, String path,
@@ -442,6 +463,28 @@ class SupabaseDialStore implements DialStore {
     );
     return grant.expired ? null : grant;
   }
+}
+
+/// The ~/.appbox/supabase file, parsed. A line that is not key=value is
+/// dropped, not fatal — a half-written credentials file must degrade to the
+/// memory store, not crash the server boot.
+({String? url, String? key}) parseSupabaseCredentials(String text) {
+  String? url;
+  String? key;
+  for (final raw in text.split('\n')) {
+    final line = raw.split('#').first.trim();
+    if (line.isEmpty) continue;
+    final eq = line.indexOf('=');
+    if (eq < 1) continue;
+    final k = line.substring(0, eq).trim();
+    final v = line.substring(eq + 1).trim();
+    if (k == 'url') url = v;
+    // The shipped file carries a placeholder until the operator pastes the
+    // service_role key — treat it as absent so the dial degrades to the
+    // memory store instead of booting a store whose every call 401s.
+    if (k == 'service_key' && !v.startsWith('PASTE-')) key = v;
+  }
+  return (url: url, key: key);
 }
 
 // ── the pure request core ────────────────────────────────────────────────

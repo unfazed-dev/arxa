@@ -194,4 +194,48 @@ void main() {
       expect(s!.kind, 'supabase');
     });
   });
+
+  group('the ~/.appbox/supabase credentials file', () {
+    test('parses key=value lines, tolerates comments and junk', () {
+      final c = parseSupabaseCredentials(
+          '# operator project\nurl=https://x.supabase.co\n\n'
+          'service_key=abc123 # trailing comment\njunk line\n=nope\n');
+      expect(c.url, 'https://x.supabase.co');
+      expect(c.key, 'abc123');
+      expect(parseSupabaseCredentials('').url, isNull);
+      expect(parseSupabaseCredentials('url=x').key, isNull);
+    });
+
+    test('env wins over the file; the file fills what env lacks', () {
+      final both = SupabaseDialStore.fromConfig(
+        env: const {
+          'APPBOX_SUPABASE_URL': 'https://env.supabase.co',
+          'APPBOX_SUPABASE_SERVICE_KEY': 'envkey',
+        },
+        credentialsFileText: 'url=https://file.supabase.co\nservice_key=filekey',
+      );
+      expect(both!.url, 'https://env.supabase.co');
+      expect(both.serviceKey, 'envkey');
+
+      final fileOnly = SupabaseDialStore.fromConfig(
+        env: const {},
+        credentialsFileText: 'url=https://file.supabase.co\nservice_key=filekey',
+      );
+      expect(fileOnly!.url, 'https://file.supabase.co');
+
+      // A half-written file degrades to null (→ memory store), never a crash.
+      expect(
+          SupabaseDialStore.fromConfig(
+              env: const {}, credentialsFileText: 'url=https://x.co'),
+          isNull);
+
+      // The shipped placeholder is 'absent', not a key.
+      expect(
+          SupabaseDialStore.fromConfig(
+              env: const {},
+              credentialsFileText:
+                  'url=https://x.co\nservice_key=PASTE-SERVICE-ROLE-KEY-HERE'),
+          isNull);
+    });
+  });
 }
