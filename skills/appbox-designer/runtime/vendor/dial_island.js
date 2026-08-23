@@ -81,6 +81,7 @@
     draft: { tokens: {}, patches: {} }, // the Draft Overlay (server-side)
     draftDirty: false,
     ownSave: 0, // suppress refetch loops on our own PUT's broadcast
+    inlineEditing: null, // original text of the element being edited on-canvas
   };
   try {
     S.name = localStorage.getItem('arxa-dial-name') || '';
@@ -250,6 +251,20 @@
     '.facet select{flex:1;background:#0b0b10;color:#FFFCF0;',
     '  border:1px solid #2a2a35;border-radius:8px;padding:5px;font-size:12px}',
     '.draftmeta{font-size:10.5px;color:#6b7280;padding:8px 10px 0}',
+    /* Design Mode direct manipulation: resize handles on the selection and
+       the inline text-editing cue (locked decision 2). Handles live in the
+       shadow root so the design can never restyle them and the selection
+       walk never picks them (host children are skipped). */
+    '#handles{position:fixed;inset:0;pointer-events:none;z-index:15}',
+    '.hnd{position:absolute;width:10px;height:10px;background:#f59e0b;',
+    '  border:2px solid #0b0b10;border-radius:2px;pointer-events:auto;',
+    '  transform:translate(-50%,-50%);box-shadow:0 1px 4px rgba(0,0,0,.4)}',
+    '.hnd[data-d=n]{cursor:n-resize}.hnd[data-d=s]{cursor:s-resize}',
+    '.hnd[data-d=e]{cursor:e-resize}.hnd[data-d=w]{cursor:w-resize}',
+    '.hnd[data-d=ne]{cursor:ne-resize}.hnd[data-d=sw]{cursor:sw-resize}',
+    '.hnd[data-d=nw]{cursor:nw-resize}.hnd[data-d=se]{cursor:se-resize}',
+    '[data-arxa-inline-editing]{outline:2px dashed #f59e0b !important;',
+    '  cursor:text;caret-color:#f59e0b}',
   ];
   const style = document.createElement('style');
   style.textContent = CSS.join('\n');
@@ -688,6 +703,7 @@
       rafPending = false;
       renderPins();
       redrawStrokes();
+      renderHandles();
     });
   }
   addEventListener('scroll', scheduleRepin, { passive: true, capture: true });
@@ -946,10 +962,10 @@
   const FACET_GROUPS = {
     text: ['color', 'font-size', 'font-weight', 'line-height', 'letter-spacing', 'text-align'],
     action: ['background', 'color', 'font-size', 'font-weight', 'padding', 'border-radius'],
-    surface: ['background', 'padding', 'gap', 'border-radius', 'border-color'],
+    surface: ['background', 'padding', 'gap', 'width', 'height', 'border-radius', 'border-color'],
     field: ['background', 'color', 'font-size', 'padding', 'border-color', 'border-radius'],
     media: ['width', 'height', 'opacity'],
-    generic: ['color', 'background', 'font-size', 'padding', 'margin', 'border-radius'],
+    generic: ['color', 'background', 'font-size', 'width', 'height', 'padding', 'margin', 'border-radius'],
   };
   // The 15-kind widget vocabulary plus the simple data-el names and tag
   // kinds real artifacts carry; anything unlisted edits as 'generic'.
@@ -1025,6 +1041,12 @@
 
   function onDesignClick(e) {
     if (e.composedPath().indexOf(host) !== -1) return; // the panel stays usable
+    // While editing text on-canvas, clicks INSIDE the edited element are
+    // cursor placement — the page keeps them. A click anywhere else commits.
+    if (S.inlineEditing != null && S.selected) {
+      if (S.selected.el.contains(e.target)) return;
+      inlineEditEnd(true);
+    }
     const t = designTargetAt(e.clientX, e.clientY);
     if (!t) return; // unstamped spot — let the page have the click
     e.preventDefault();
@@ -1033,16 +1055,171 @@
   }
 
   function selectEl(t) {
+    if (S.inlineEditing != null) inlineEditEnd(true); // commit before switching
     clearSelOutline();
     S.selected = { id: t.id, el: t.el, label: t.label, group: t.group };
     S.selOutline = t.el.style.outline;
     t.el.style.outline = '2px solid #f59e0b';
+    renderHandles();
+    trackHandles();
     if (S.panel === 'design') renderPanelBody();
     else setPanel('design', 'Design Mode');
   }
   function clearSelOutline() {
+    if (S.inlineEditing != null) inlineEditEnd(true);
     if (S.selected) S.selected.el.style.outline = S.selOutline || '';
     S.selected = null;
+    handlesLayer.textContent = '';
+  }
+
+  // ── direct manipulation: resize handles + on-canvas text editing ─────
+  // Locked decision 2 ("direct manipulation + studio socket") read literally:
+  // the Author drags the selection's amber handles to resize it and
+  // double-clicks pure-text elements to type in place. Every change still
+  // flows through the SAME patch functions (setStyleProp / setTextContent),
+  // so live-apply, Draft Overlay auto-save, and the commit socket are
+  // identical to panel edits — the handles are a gesture, not a write path.
+  const handlesLayer = h('div', { id: 'handles' });
+  root.appendChild(handlesLayer);
+  const DIRS = ['nw', 'n', 'ne', 'e', 'se', 's', 'sw', 'w'];
+  function renderHandles() {
+    handlesLayer.textContent = '';
+    if (!S.selected || !S.design) return;
+    if (!document.contains(S.selected.el)) return; // hot-reload swapped the DOM
+    const r = S.selected.el.getBoundingClientRect();
+    if (r.width < 4 || r.height < 4) return;
+    const pts = {
+      nw: [r.left, r.top], n: [r.left + r.width / 2, r.top], ne: [r.right, r.top],
+      e: [r.right, r.top + r.height / 2], se: [r.right, r.bottom],
+      s: [r.left + r.width / 2, r.bottom], sw: [r.left, r.bottom],
+      w: [r.left, r.top + r.height / 2],
+    };
+    for (const d of DIRS) {
+      const hd = h('div', { class: 'hnd', 'data-d': d });
+      hd.style.left = pts[d][0] + 'px';
+      hd.style.top = pts[d][1] + 'px';
+      hd.addEventListener('pointerdown', (e) => startHandleDrag(e, d));
+      handlesLayer.appendChild(hd);
+    }
+  }
+  // Handles must TRACK the selection, not snapshot it: artifacts animate
+  // their own elements (this one's intro flies the wordmark in), and a
+  // render-at-click-time handle set freezes where the element WAS. A rAF
+  // loop repositions the existing handles every frame while a selection is
+  // live; it parks itself when the selection clears.
+  let handleRaf = 0;
+  function positionHandles() {
+    const kids = handlesLayer.children;
+    if (!S.selected || kids.length !== 8) return;
+    if (!document.contains(S.selected.el)) return;
+    const r = S.selected.el.getBoundingClientRect();
+    const pts = {
+      nw: [r.left, r.top], n: [r.left + r.width / 2, r.top], ne: [r.right, r.top],
+      e: [r.right, r.top + r.height / 2], se: [r.right, r.bottom],
+      s: [r.left + r.width / 2, r.bottom], sw: [r.left, r.bottom],
+      w: [r.left, r.top + r.height / 2],
+    };
+    for (let i = 0; i < DIRS.length; i++) {
+      kids[i].style.left = pts[DIRS[i]][0] + 'px';
+      kids[i].style.top = pts[DIRS[i]][1] + 'px';
+    }
+  }
+  function trackHandles() {
+    cancelAnimationFrame(handleRaf);
+    const tick = () => {
+      if (!S.selected || !S.design) return;
+      positionHandles();
+      handleRaf = requestAnimationFrame(tick);
+    };
+    handleRaf = requestAnimationFrame(tick);
+  }
+  function startHandleDrag(e, dir) {
+    e.preventDefault();
+    e.stopPropagation();
+    const sel = S.selected;
+    if (!sel) return;
+    const r0 = sel.el.getBoundingClientRect();
+    const x0 = e.clientX, y0 = e.clientY;
+    const w0 = r0.width, h0 = r0.height;
+    const move = (ev) => {
+      const dx = ev.clientX - x0, dy = ev.clientY - y0;
+      if (dir.indexOf('e') !== -1) setStyleProp(sel.id, 'width', Math.max(10, Math.round(w0 + dx)) + 'px');
+      if (dir.indexOf('w') !== -1) setStyleProp(sel.id, 'width', Math.max(10, Math.round(w0 - dx)) + 'px');
+      if (dir.indexOf('s') !== -1) setStyleProp(sel.id, 'height', Math.max(10, Math.round(h0 + dy)) + 'px');
+      if (dir.indexOf('n') !== -1) setStyleProp(sel.id, 'height', Math.max(10, Math.round(h0 - dy)) + 'px');
+      renderHandles();
+    };
+    const up = () => {
+      document.removeEventListener('pointermove', move, true);
+      document.removeEventListener('pointerup', up, true);
+      renderPanelBody(); // the facet inputs catch up with the dragged values
+    };
+    document.addEventListener('pointermove', move, true);
+    document.addEventListener('pointerup', up, true);
+  }
+
+  // Text-editable means: no STAMPED descendant. Runtime line/word splitters
+  // (the artifact's own intro animator wraps "SUCZKA" in unstamped .line
+  // divs) nest markup the source never had — the text is still one authored
+  // string, the patch applies to source, and the animator re-splits the new
+  // text on next serve. Genuine composites carry stamped children and stay
+  // refused, the same refusal the patch grammar enforces on --text.
+  function isTextEditable(el) {
+    return (el.textContent || '').trim().length > 0 &&
+      !el.querySelector('[data-arxa-id], [data-el]');
+  }
+  function inlineEditStart() {
+    const sel = S.selected;
+    if (!sel || S.inlineEditing != null) return;
+    if (!isTextEditable(sel.el)) {
+      say('Composite element — edit its parts, not its text');
+      return;
+    }
+    S.inlineEditing = sel.el.textContent;
+    sel.el.setAttribute('contenteditable', 'true');
+    sel.el.setAttribute('data-arxa-inline-editing', '1');
+    sel.el.focus();
+    const range = document.createRange();
+    range.selectNodeContents(sel.el);
+    const s = getSelection();
+    s.removeAllRanges();
+    s.addRange(range);
+    sel.el.addEventListener('focusout', onInlineFocusOut);
+  }
+  function onInlineFocusOut(e) {
+    // relatedTarget null means focus left the DOCUMENT (OS focus change,
+    // DevTools, headless quirk) — not the author clicking the design. Page
+    // clicks already commit via onDesignClick; a blur-to-nowhere must not
+    // slam the editor shut the moment it opens.
+    if (e && e.relatedTarget == null) return;
+    if (S.inlineEditing != null) inlineEditEnd(true);
+  }
+  function inlineEditEnd(commit) {
+    const sel = S.selected;
+    if (!sel || S.inlineEditing == null) return;
+    const original = S.inlineEditing;
+    S.inlineEditing = null;
+    const el = sel.el;
+    el.removeEventListener('focusout', onInlineFocusOut);
+    el.removeAttribute('contenteditable');
+    el.removeAttribute('data-arxa-inline-editing');
+    if (commit) {
+      // setTextContent normalizes whatever markup contenteditable produced,
+      // patches the draft, and schedules the auto-save.
+      setTextContent(sel.id, el.textContent);
+    } else {
+      el.textContent = original;
+    }
+    if (S.panel === 'design') renderPanelBody();
+  }
+  function onDesignDblClick(e) {
+    if (e.composedPath().indexOf(host) !== -1) return;
+    const t = designTargetAt(e.clientX, e.clientY);
+    if (!t) return;
+    e.preventDefault();
+    e.stopPropagation();
+    if (!S.selected || S.selected.el !== t.el) selectEl(t);
+    inlineEditStart();
   }
 
   function designOn() {
@@ -1051,8 +1228,9 @@
     verbEls.design.classList.add('on');
     document.addEventListener('pointermove', onDesignMove, true);
     document.addEventListener('click', onDesignClick, true);
+    document.addEventListener('dblclick', onDesignDblClick, true);
     if (S.panel !== 'design') setPanel('design', 'Design Mode');
-    say('Design Mode — click an element to edit it');
+    say('Design Mode — click to select, double-click text to edit, drag the handles');
   }
   function designOff() {
     S.design = false;
@@ -1062,6 +1240,7 @@
     clearSelOutline();
     document.removeEventListener('pointermove', onDesignMove, true);
     document.removeEventListener('click', onDesignClick, true);
+    document.removeEventListener('dblclick', onDesignDblClick, true);
   }
 
   // ── the Draft Overlay: live apply + debounced auto-save ────────────────
@@ -1178,7 +1357,7 @@
   function renderDesignPanel() {
     const sel = S.selected;
     if (!sel) {
-      pbody.appendChild(h('div', { class: 'ctl', style: 'font-size:12px;color:#9aa0ab', text: 'Click any element in the design — the amber box shows what you will edit. Esc exits Design Mode.' }));
+      pbody.appendChild(h('div', { class: 'ctl', style: 'font-size:12px;color:#9aa0ab', text: 'Click any element to edit it here. Double-click text to type in place; drag the amber handles to resize. Esc exits Design Mode.' }));
       draftFooter();
       return;
     }
@@ -1186,9 +1365,10 @@
     pbody.appendChild(h('div', { class: 'idline', text: sel.id }));
     const draft = S.draft.patches[sel.id] || {};
 
-    // Content facet — pure-text elements only (the patch grammar refuses
-    // nested markup, so the editor never offers it).
-    if (sel.el.children.length === 0 && (sel.el.textContent || '').trim()) {
+    // Content facet — text-bearing elements with no stamped descendants
+    // (see isTextEditable: runtime splitter wrappers are not authored
+    // structure; genuine composites are refused like the grammar's --text).
+    if (isTextEditable(sel.el)) {
       pbody.appendChild(h('div', { class: 'sect', text: 'Content' }));
       const ta = h('textarea', { rows: '2' });
       ta.value = draft.text != null ? draft.text : sel.el.textContent;
@@ -1362,6 +1542,19 @@
     }
   });
   document.addEventListener('keydown', (e) => {
+    // On-canvas text editing owns Enter (commit — a newline would inject
+    // markup the --text grammar refuses) and Escape (revert, keep editing
+    // mode armed).
+    if (S.inlineEditing != null) {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        inlineEditEnd(true);
+      } else if (e.key === 'Escape') {
+        e.preventDefault();
+        inlineEditEnd(false);
+      }
+      return;
+    }
     if (e.key === 'Escape') {
       if (S.arming) disarm();
       if (S.design) designOff();
@@ -1374,8 +1567,14 @@
   });
 
   // ── realtime: the server's own writes arrive over SSE ─────────────────
-  try {
-    const es = new EventSource(apiUrl('/events'));
+  // Subscribe only after a pins read SUCCEEDED. Inside a sandboxed frame
+  // (opaque origin — a gen_ui RungLadder pointing at this server) every
+  // guarded /__dial/* call is refused by design, and a bare EventSource
+  // would retry the 403 forever: a refusal storm per frame, forever. No
+  // pins answer → this frame cannot use the dial API at all → stay quiet.
+  function subscribeEvents() {
+    try {
+      const es = new EventSource(apiUrl('/events'));
     es.addEventListener('dial', (ev) => {
       let d = null;
       try { d = JSON.parse(ev.data); } catch (_) {}
@@ -1385,7 +1584,8 @@
       // 'commit' frames feed the studio agent — the requester already
       // heard its toast, there is nothing for this page to do.
     });
-  } catch (_) {}
+    } catch (_) {}
+  }
 
   // ── boot ───────────────────────────────────────────────────────────────
   if (S.mode === 'invalid') {
@@ -1395,5 +1595,14 @@
   applyShade();
   applyLayers();
   loadDraft(); // author-only; the server already overlaid it on this page
-  loadPins();
+  // The first read doubles as the capability probe: a refused answer (an
+  // opaque-origin frame) means no SSE either — subscribeEvents stays off.
+  api('GET', '/pins').then((r) => {
+    if (r && r.pins) {
+      S.pins = r.pins;
+      renderPins();
+      updateBadge();
+      subscribeEvents();
+    }
+  });
 })();

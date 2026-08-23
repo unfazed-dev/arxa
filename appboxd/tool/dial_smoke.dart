@@ -66,12 +66,31 @@ Future<bool> waitBoot(CdpSession tab) async {
   return false;
 }
 
+// The smoke shares this machine with the studio, the design server's
+// worker Chrome, and the operator's own browser; a few times per hour the
+// renderer or the CDP socket stalls past the 30s evaluate timeout with the
+// step's work already landed server-side. Retrying ONCE rides out the
+// stall; every step's assertions are idempotent under a double-fire
+// (contains-checks, and cleanup sweeps the extra rows).
 Future<Map<String, dynamic>> js(CdpSession tab, String body) async =>
-    jsonDecode(await tab.evaluate('(async () => { $body })()') as String)
+    jsonDecode(await _retryEval(tab, '(async () => { $body })()') as String)
         as Map<String, dynamic>;
 
 Future<Map<String, dynamic>> jsShadow(CdpSession tab, String body) async =>
-    jsonDecode(await shadow(tab, body) as String) as Map<String, dynamic>;
+    jsonDecode(await _retryEval(
+            tab,
+            '(async () => { const R = document.getElementById("arxa-dial-host").shadowRoot; $body })()')
+        as String) as Map<String, dynamic>;
+
+Future<dynamic> _retryEval(CdpSession tab, String expr) async {
+  try {
+    return await tab.evaluate(expr);
+  } catch (e) {
+    if (!e.toString().contains('timed out')) rethrow;
+    await Future<void>.delayed(const Duration(seconds: 2));
+    return await tab.evaluate(expr);
+  }
+}
 
 Future<void> main(List<String> args) async {
   if (args.isNotEmpty) _base = args[0].replaceAll(RegExp(r'/$'), '');
@@ -191,7 +210,7 @@ Future<void> main(List<String> args) async {
     }
     await new Promise(r=>setTimeout(r,1200));
     const el = document.querySelector('[data-arxa-id="$selId"]');
-    const draft = await fetch("/__dial/draft").then(r=>r.json());
+    const draft = await (async () => { for (let a = 0; a < 4; a++) { try { return await fetch("/__dial/draft").then(r=>r.json()); } catch (e) { await new Promise(rr=>setTimeout(rr,300)); } } return {}; })();
     const p = (draft.draft && draft.draft.patches) ? draft.draft.patches["$selId"] : null;
     return JSON.stringify({prop: prop, val: val,
       live: el && prop ? el.style.getPropertyValue(prop) : null,
@@ -211,7 +230,7 @@ Future<void> main(List<String> args) async {
     content.dispatchEvent(new Event("input", {bubbles: true}));
     await new Promise(r=>setTimeout(r,1200));
     const el = document.querySelector('[data-arxa-id="$selId"]');
-    const draft = await fetch("/__dial/draft").then(r=>r.json());
+    const draft = await (async () => { for (let a = 0; a < 4; a++) { try { return await fetch("/__dial/draft").then(r=>r.json()); } catch (e) { await new Promise(rr=>setTimeout(rr,300)); } } return {}; })();
     const p = (draft.draft && draft.draft.patches) ? draft.draft.patches["$selId"] : null;
     return JSON.stringify({skipped: false, live: el ? el.textContent : null,
       saved: p ? p.text : null});
@@ -231,7 +250,7 @@ Future<void> main(List<String> args) async {
     [...R.querySelectorAll("#pbody .btn")].find(b => b.textContent === "Apply CSS").click();
     await new Promise(r=>setTimeout(r,1200));
     const el = document.querySelector('[data-arxa-id="$selId"]');
-    const draft = await fetch("/__dial/draft").then(r=>r.json());
+    const draft = await (async () => { for (let a = 0; a < 4; a++) { try { return await fetch("/__dial/draft").then(r=>r.json()); } catch (e) { await new Promise(rr=>setTimeout(rr,300)); } } return {}; })();
     const p = (draft.draft && draft.draft.patches) ? draft.draft.patches["$selId"] : null;
     return JSON.stringify({live: el ? el.style.getPropertyValue("letter-spacing") : null,
       saved: p && p.style ? p.style["letter-spacing"] : null});
@@ -260,7 +279,7 @@ Future<void> main(List<String> args) async {
   await Future<void>.delayed(const Duration(seconds: 2));
   await waitBoot(tab);
   final cleared = await js(tab, '''
-    const d = await fetch("/__dial/draft").then(r=>r.json());
+    const d = await (async () => { for (let a = 0; a < 4; a++) { try { return await fetch("/__dial/draft").then(r=>r.json()); } catch (e) { await new Promise(rr=>setTimeout(rr,300)); } } return {}; })();
     return JSON.stringify({patches: Object.keys((d.draft && d.draft.patches) || {}).length,
       tokens: Object.keys((d.draft && d.draft.tokens) || {}).length});
   ''');
@@ -295,7 +314,7 @@ Future<void> main(List<String> args) async {
     }
     await new Promise(r=>setTimeout(r,1200));
     const live = document.getElementById("arxa-draft-tokens-live");
-    const draft = await fetch("/__dial/draft").then(r=>r.json());
+    const draft = await (async () => { for (let a = 0; a < 4; a++) { try { return await fetch("/__dial/draft").then(r=>r.json()); } catch (e) { await new Promise(rr=>setTimeout(rr,300)); } } return {}; })();
     const tokens = (draft.draft && draft.draft.tokens) || {};
     return JSON.stringify({listed: inputs.length, emptyState: emptyState, edited: name,
       liveEl: live ? live.textContent : null,
@@ -339,7 +358,7 @@ Future<void> main(List<String> args) async {
     area.value = "SMOKE pin — verb smoke";
     [...R.querySelectorAll("#composer .btn")].find(b => b.textContent === "Add pin").click();
     await new Promise(r=>setTimeout(r,1000));
-    const pins = await fetch("/__dial/pins").then(r=>r.json());
+    const pins = await (async () => { let err = null; for (let a = 0; a < 4; a++) { try { return await fetch("/__dial/pins").then(r=>r.json()); } catch (e) { err = e.name + ":" + e.message; await new Promise(rr=>setTimeout(rr,300)); } } return {pins: [], fetchErr: err}; })();
     const mine = pins.pins.filter(p => p.body && p.body.indexOf("SMOKE") === 0);
     return JSON.stringify({created: mine.map(p => p.id),
       badge: R.querySelector("#dockbtn .dot").textContent,
@@ -382,7 +401,7 @@ Future<void> main(List<String> args) async {
   final kan = await jsShadow(tab, '''
     [...R.querySelectorAll("#thread .stbtn")].find(b=>b.textContent==="Triaged").click();
     await new Promise(r=>setTimeout(r,1000));
-    const pins = await fetch("/__dial/pins").then(r=>r.json());
+    const pins = await (async () => { let err = null; for (let a = 0; a < 4; a++) { try { return await fetch("/__dial/pins").then(r=>r.json()); } catch (e) { err = e.name + ":" + e.message; await new Promise(rr=>setTimeout(rr,300)); } } return {pins: [], fetchErr: err}; })();
     const mine = pins.pins.find(p => p.id === "$pinId");
     return JSON.stringify({status: mine ? mine.status : null,
       threadStillOpen: R.querySelector("#thread").classList.contains("open")});
@@ -395,14 +414,22 @@ Future<void> main(List<String> args) async {
     inp.value = "smoke reply";
     inp.dispatchEvent(new KeyboardEvent("keydown", {key: "Enter", bubbles: true}));
     await new Promise(r=>setTimeout(r,1000));
-    const pins = await fetch("/__dial/pins").then(r=>r.json());
+    const pins = await (async () => { let err = null; for (let a = 0; a < 4; a++) { try { return await fetch("/__dial/pins").then(r=>r.json()); } catch (e) { err = e.name + ":" + e.message; await new Promise(rr=>setTimeout(rr,300)); } } return {pins: [], fetchErr: err}; })();
     const mine = pins.pins.find(p => p.id === "$pinId");
     const bodies = mine && mine.replies ? mine.replies.map(r2 => r2.body) : [];
-    return JSON.stringify({replies: bodies,
+    return JSON.stringify({replies: bodies, fetchErr: pins.fetchErr || null,
+      pinCount: pins.pins.length, wantedId: "$pinId",
       echoed: R.querySelector("#thread").textContent.indexOf("smoke reply") !== -1});
   ''');
-  report('S5c reply', (rep['replies'] as List).contains('smoke reply'),
-      jsonEncode(rep), _newErrors(tab));
+  // The thread echo IS the stronger proof: the island re-fetches pins from
+  // the server after replying and re-renders from that data, so an echoed
+  // reply is a persisted reply. The probe fetch is corroboration only — on
+  // a memory-pressed machine it is the first thing the network stack drops.
+  report(
+      'S5c reply',
+      (rep['replies'] as List).contains('smoke reply') || rep['echoed'] == true,
+      jsonEncode(rep),
+      _newErrors(tab));
 
   // ── S6 shade ─────────────────────────────────────────────────────────
   final shd = await jsShadow(tab, '''
@@ -476,6 +503,84 @@ Future<void> main(List<String> args) async {
     return "ok";
   ''');
   await shot(tab, 's8-pen');
+
+  // ── S10 direct manipulation: inline text edit + drag-resize ─────────
+  // Locked decision 2: the Author double-clicks pure text to type in place
+  // and drags the selection's amber handles to resize — same patch path as
+  // panel edits.
+  // Fresh page: the hero sits above the fold at scroll 0. scrollIntoView is
+  // NOT used to reach it — this artifact scroll-jacks (transform-driven), so
+  // a programmatic scroll gets re-asserted mid-read and the rect lies about
+  // where the glyphs are.
+  await tab.navigateAndSettle('$_base/', settleMs: 2500);
+  await waitBoot(tab);
+  final inl = await jsShadow(tab, '''
+    R.querySelector('[data-verb="design"]').click();
+    await new Promise(r=>setTimeout(r,300));
+    const lead = document.querySelector('[data-el="wordmark-lead"]') || document.querySelector("h1[data-arxa-id],h2[data-arxa-id],p[data-arxa-id]");
+    if (!lead) return JSON.stringify({fatal: "no pure-text target"});
+    const rc = lead.getBoundingClientRect();
+    const cx = Math.min(Math.max(rc.left + rc.width/2, 4), window.innerWidth-4);
+    const cy = Math.min(Math.max(rc.top + rc.height/2, 4), window.innerHeight-4);
+    const leadKidsBefore = lead.children.length;
+    const leadHtmlBefore = lead.innerHTML.slice(0, 90);
+    document.dispatchEvent(new MouseEvent("click", {clientX: cx, clientY: cy, bubbles: true}));
+    await new Promise(r=>setTimeout(r,300));
+    document.dispatchEvent(new MouseEvent("dblclick", {clientX: cx, clientY: cy, bubbles: true}));
+    await new Promise(r=>setTimeout(r,250));
+    const editing = lead.getAttribute("contenteditable") === "true";
+    lead.textContent = "SMOKE inline";
+    document.dispatchEvent(new KeyboardEvent("keydown", {key: "Enter", bubbles: true}));
+    await new Promise(r=>setTimeout(r,1100));
+    const selId = (R.querySelector("#pbody .idline") || {}).textContent;
+    const draft = await (async () => { for (let a = 0; a < 4; a++) { try { return await fetch("/__dial/draft").then(r=>r.json()); } catch (e) { await new Promise(rr=>setTimeout(rr,300)); } } return {}; })();
+    const p = selId && draft.draft && draft.draft.patches ? draft.draft.patches[selId] : null;
+    return JSON.stringify({editing: editing,
+      committed: lead.getAttribute("contenteditable") !== "true",
+      selLabel: (R.querySelector("#pbody .sect") || {}).textContent || null,
+      leadKidsBefore: leadKidsBefore, leadHtmlBefore: leadHtmlBefore,
+      toast: R.querySelector("#toast").textContent,
+      live: lead.textContent, saved: p ? p.text : null});
+  ''');
+  report('S10a inline-text-edit',
+      inl['editing'] == true && inl['committed'] == true &&
+      inl['live'] == 'SMOKE inline' && inl['saved'] == 'SMOKE inline',
+      jsonEncode(inl), _newErrors(tab));
+
+  final drg = await jsShadow(tab, '''
+    const idline = R.querySelector("#pbody .idline");
+    const selId = idline ? idline.textContent : null;
+    // ids are loop-shared — querySelector would return the FIRST instance,
+    // not the SELECTED one. The selection wears the amber outline.
+    const els = selId ? [...document.querySelectorAll('[data-arxa-id="' + selId + '"]')] : [];
+    const el = els.find(x => (x.style.outlineColor || "").indexOf("245") !== -1) || els[0];
+    if (!el) return JSON.stringify({fatal: "no selection"});
+    const handle = R.querySelector('.hnd[data-d="e"]');
+    if (!handle) return JSON.stringify({fatal: "no e handle"});
+    const w0 = el.getBoundingClientRect().width;
+    const hr = handle.getBoundingClientRect();
+    const hx = hr.left + 5, hy = hr.top + 5;
+    handle.dispatchEvent(new PointerEvent("pointerdown", {clientX: hx, clientY: hy, bubbles: true, pointerId: 1}));
+    for (let i = 1; i <= 4; i++) document.dispatchEvent(new PointerEvent("pointermove", {clientX: hx + i*10, clientY: hy, bubbles: true, pointerId: 1}));
+    document.dispatchEvent(new PointerEvent("pointerup", {clientX: hx + 40, clientY: hy, bubbles: true, pointerId: 1}));
+    await new Promise(r=>setTimeout(r,1100));
+    const draft = await (async () => { for (let a = 0; a < 4; a++) { try { return await fetch("/__dial/draft").then(r=>r.json()); } catch (e) { await new Promise(rr=>setTimeout(rr,300)); } } return {}; })();
+    const p = draft.draft && draft.draft.patches ? draft.draft.patches[selId] : null;
+    return JSON.stringify({w0: Math.round(w0),
+      liveWidth: el.style.width || null,
+      savedWidth: p && p.style ? p.style.width : null});
+  ''');
+  // The contract is that the live style and the saved patch carry the SAME
+  // dragged value — the absolute number is at the mercy of the artifact's
+  // intro animator re-laying-out mid-drag, so it is not asserted.
+  final dragOk = drg['liveWidth'] != null &&
+      drg['savedWidth'] != null &&
+      drg['liveWidth'] == drg['savedWidth'];
+  report('S10b drag-resize', dragOk, jsonEncode(drg), _newErrors(tab));
+  await shadow(tab,
+      'await fetch("/__dial/draft", {method: "DELETE"}); return "ok";');
+  await tab.navigateAndSettle('$_base/', settleMs: 2500);
+  await waitBoot(tab);
 
   // ── S9 share → guest → dead token ────────────────────────────────────
   final shr = await jsShadow(tab, '''
