@@ -23,6 +23,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:appboxd/design_dial.dart';
 import 'package:appboxd/design_server/browser_trust.dart';
 import 'package:appboxd/design_server/l10n.dart';
 import 'package:appboxd/design_server/worker.dart';
@@ -156,6 +157,7 @@ class _ServeArgs {
   bool asJson = false;
   bool noWatch = false;
   bool worker = false;
+  bool dial = true;
   String? project;
   // Repeatable. Env fallbacks so a long-lived studio server can be configured
   // once instead of on every relaunch.
@@ -226,6 +228,8 @@ _ServeArgs _parseArgs(List<String> args) {
       a.asJson = true;
     } else if (s == '--no-watch') {
       a.noWatch = true;
+    } else if (s == '--no-dial') {
+      a.dial = false;
     } else if (s == '--worker') {
       a.worker = true; // accepted for compat; no-op (Chrome is the worker)
     } else if (s == '--project') {
@@ -343,6 +347,26 @@ class DesignServer {
   String _vendorDir = '';
   String _workerAssetsDir = '';
 
+  /// The Design Dial (locked amendment 2026-08-23): baked into every served
+  /// artifact page by default; the operator turns it off with --no-dial.
+  /// Clients cannot hide it (watermark role) — there is no per-page switch.
+  bool dialEnabled = true;
+
+  /// The dial's store: Supabase when APPBOX_SUPABASE_URL +
+  /// APPBOX_SUPABASE_SERVICE_KEY are set, else the honest per-process memory
+  /// store (the island badges that mode 'local').
+  late final DialStore dialStore;
+
+  /// The pure request core behind /__dial/* (see design_dial.dart).
+  late final DialApi dialApi;
+
+  /// Held-open dial event subscribers (GET /__dial/events) — separate from
+  /// the reload stream: different audience, different cadence.
+  final _dialEventClients = <HttpResponse>{};
+
+  /// Artifact identity the dial scopes pins/links to (dir basename).
+  String get _dialArtifact => p.basename(artifactDir);
+
   /// Host/Origin allowlist — see browser_trust.dart for what it defends and
   /// what it deliberately does not.
   late final BrowserTrust trust;
@@ -368,6 +392,8 @@ class DesignServer {
     Duration eventHeartbeat = const Duration(seconds: 20),
     Iterable<String> trustedHosts = const [],
     Iterable<String> trustedOrigins = const [],
+    bool dial = true,
+    DialStore? dialStore,
   }) async {
     // Absolutize up front: artifact files are served and re-scanned (worker
     // boot, watcher reload) against the process cwd at USE time, so a relative
@@ -385,7 +411,12 @@ class DesignServer {
       .._eventHeartbeat = eventHeartbeat
       ..locales = _scanLocales(artifactDir, projectDir: projectDir)
       .._errorCatalog =
-          ErrorCatalog(_l10nDirs(artifactDir, projectDir: projectDir));
+          ErrorCatalog(_l10nDirs(artifactDir, projectDir: projectDir))
+      ..dialEnabled = dial
+      ..dialStore =
+          dialStore ?? SupabaseDialStore.fromEnv() ?? MemoryDialStore();
+    srv.dialApi =
+        DialApi(store: srv.dialStore, artifact: srv._dialArtifact);
     // Let SocketException propagate (EADDRINUSE/EACCES) — designServe maps it
     // via bindExitCode; tests assert the bind path directly.
     srv._http = await HttpServer.bind(_bindAddress(host), port);
@@ -512,6 +543,16 @@ class DesignServer {
       // worker POSTs {path, body}; the write is confined to the project dir.
       if (method == 'POST' && path == '/__project_write') {
         return await _handleProjectWrite(req);
+      }
+      // The Design Dial API + event stream (design_dial.dart). The stream is
+      // answered ahead of the API for the same reason /__events is: a
+      // subscriber must never queue behind work it is waiting to hear about.
+      if (dialEnabled && path.startsWith('/__dial')) {
+        if (method == 'GET' && path == '/__dial/events') {
+          _openDialEventStream(req);
+          return;
+        }
+        return await _handleDial(req, method, path);
       }
       // The dashboard's live project grid: every project in ~/.appbox with
       // its derived stage + honest output counts.
@@ -858,6 +899,32 @@ class DesignServer {
           '</body>',
           '<script type="module" src="/__worker_assets/islands_eager.js">'
           '</script></body>');
+      // The Design Dial (locked amendment 2026-08-23): baked into every full
+      // page of every artifact — never fragments (no shell), never the ejected
+      // app (its own runtime injects). A valid ?dial= token flips the island
+      // into guest mode (the Share Link preview); an INVALID token still
+      // boots guest mode but flagged, so the island can say 'this link is
+      // dead' instead of silently being the author. Full documents only.
+      if (dialEnabled) {
+        final dialToken = req.uri.queryParameters['dial'];
+        final grant = dialToken == null
+            ? null
+            : await dialStore.resolveShareLink(dialToken);
+        final config = jsonEncode({
+          'v': 1,
+          'artifact': _dialArtifact,
+          'store': dialStore.kind,
+          'mode': dialToken == null
+              ? 'author'
+              : (grant == null ? 'invalid' : 'guest'),
+          if (grant != null) 'token': dialToken,
+        });
+        respBody = respBody.replaceFirst(
+            '</body>',
+            '<script type="application/json" id="arxa-dial-config">'
+            '$config</script>'
+            '<script src="/assets/vendor/dial_island.js"></script></body>');
+      }
     }
     // Scrollbars are the preview harness showing through, not the design.
     // Injected ONLY for a framed navigation, so opening the same URL in a tab
@@ -1052,6 +1119,72 @@ class DesignServer {
     _broadcastReload();
   }
 
+  // ── the Design Dial (GET/POST /__dial/*, GET /__dial/events) ────────────
+  // The adapter between the wire and DialApi's pure core: read the body,
+  // resolve the caller (a valid ?dial= token makes a guest; anything else on
+  // loopback is the Author — see browser_trust.dart), call, answer JSON.
+  // Every mutation broadcasts on the dial stream so open dials repaint.
+
+  Future<void> _handleDial(HttpRequest req, String method, String path) async {
+    final sub = path.substring('/__dial'.length); // includes leading /
+    Map<String, dynamic>? body;
+    if (method == 'POST' || method == 'PUT' || method == 'PATCH') {
+      final raw = await utf8.decoder.bind(req).join();
+      if (raw.isNotEmpty) {
+        try {
+          final decoded = jsonDecode(raw);
+          body = decoded is Map ? Map<String, dynamic>.from(decoded) : null;
+        } catch (_) {
+          body = null; // malformed JSON → DialApi's 400 via _map
+        }
+      }
+    }
+    final token = req.uri.queryParameters['dial'];
+    final grant = token == null ? null : await dialStore.resolveShareLink(token);
+    final r =
+        await dialApi.handle(method, sub, req.uri.queryParameters, body, grant);
+    req.response.statusCode = r.status;
+    req.response.headers.contentType =
+        ContentType.parse('application/json; charset=utf-8');
+    req.response.write(jsonEncode(r.json));
+    await req.response.close();
+    // Broadcast AFTER the answer so the writer's own repaint races nothing.
+    if (r.status < 300 &&
+        (sub == '/pins' || sub == '/pins/status' || sub == '/pins/reply')) {
+      _broadcastDial();
+    }
+  }
+
+  void _openDialEventStream(HttpRequest req) {
+    final res = req.response;
+    res.statusCode = 200;
+    res.headers
+      ..contentType = ContentType.parse('text/event-stream; charset=utf-8')
+      ..set(HttpHeaders.cacheControlHeader, 'no-cache, no-store, no-transform')
+      ..set('X-Accel-Buffering', 'no')
+      ..set('X-Content-Type-Options', 'nosniff');
+    res.bufferOutput = false;
+    _push(res, 'retry: 500\n\n');
+    _push(res, ': dial subscribed\n\n');
+    _dialEventClients.add(res);
+    unawaited(res.done
+        .then<void>((_) {}, onError: (Object _) {})
+        .whenComplete(() {
+      _dialEventClients.remove(res);
+      _maybeStopEventHeartbeat();
+    }));
+    _ensureEventHeartbeat();
+    // Held open; never closed here — the response IS the subscription.
+  }
+
+  void _broadcastDial() {
+    if (_dialEventClients.isEmpty) return;
+    const frame = 'event: dial\ndata: {"kind":"pins"}\n\n';
+    for (final c in _dialEventClients.toList()) {
+      _push(c, frame);
+    }
+  }
+
   // ── the live-reload stream (GET /__events) ───────────────────────────────
   // Server-Sent Events rather than a WebSocket: the traffic is one-way and
   // tiny, EventSource reconnects on its own, and it rides the HttpServer this
@@ -1106,13 +1239,7 @@ class DesignServer {
     _push(res, 'retry: 500\n\n');
     _push(res, ': subscribed\n\n');
     _eventClients.add(res);
-    _heartbeat ??= Timer.periodic(_eventHeartbeat, (_) {
-      // A comment frame — legal SSE, ignored by EventSource, and enough to
-      // keep an idle socket from being reaped by the OS or an intermediary.
-      for (final c in _eventClients.toList()) {
-        _push(c, ': keep-alive\n\n');
-      }
-    });
+    _ensureEventHeartbeat();
     // `done` completes with an ERROR when the peer vanishes (a closed panel,
     // the normal case), so both arms have to drop the subscriber or a dead
     // socket stays in the set and every later heartbeat throws on it.
@@ -1133,9 +1260,28 @@ class DesignServer {
     }
   }
 
+  /// The one heartbeat for BOTH event streams (reload + dial). Its writes
+  /// keep idle sockets from being reaped and — load-bearing — are the only
+  /// way a departed subscriber surfaces: the write throws, the set reaps.
+  void _ensureEventHeartbeat() {
+    _heartbeat ??= Timer.periodic(_eventHeartbeat, (_) {
+      // A comment frame — legal SSE, ignored by EventSource.
+      for (final c in _eventClients.toList()) {
+        _push(c, ': keep-alive\n\n');
+      }
+      for (final c in _dialEventClients.toList()) {
+        _push(c, ': keep-alive\n\n');
+      }
+    });
+  }
+
   void _dropEventClient(HttpResponse res) {
     _eventClients.remove(res);
-    if (_eventClients.isEmpty) {
+    _maybeStopEventHeartbeat();
+  }
+
+  void _maybeStopEventHeartbeat() {
+    if (_eventClients.isEmpty && _dialEventClients.isEmpty) {
       // A live Timer.periodic keeps the Dart VM alive; leaving one running
       // would stop this server's own test suite from ever exiting.
       _heartbeat?.cancel();
@@ -1220,6 +1366,12 @@ class DesignServer {
       }
     }
     _eventClients.clear();
+    for (final c in _dialEventClients.toList()) {
+      try {
+        await c.close();
+      } catch (_) {}
+    }
+    _dialEventClients.clear();
     await _http.close(force: true);
     await _worker.dispose();
   }
@@ -1234,7 +1386,7 @@ Future<int> designServe(List<String> args) async {
   }
   if (a.target == null) {
     stderr.writeln('Usage: appbox design serve <artifact-dir|design-name> '
-        '[--port N] [--host H] [--json] [--no-watch]\n'
+        '[--port N] [--host H] [--json] [--no-watch] [--no-dial]\n'
         '       [--trusted-host NAME]…   extra Host names to answer to\n'
         '       [--trusted-origin URL]…  origins allowed to call /__* '
         'cross-origin (e.g. a studio panel)\n'
@@ -1299,6 +1451,7 @@ Future<int> designServe(List<String> args) async {
       // Read here, not in _parseArgs: arg parsing stays free of file IO, so
       // the CLI tests never depend on the operator's home directory.
       trustedOrigins: [...readTrustedOriginsFile(), ...a.trustedOrigins],
+      dial: a.dial,
     );
   } on SocketException catch (e) {
     final code = bindExitCode(e);

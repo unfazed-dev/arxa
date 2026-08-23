@@ -1,0 +1,177 @@
+// design_dial_serve_test.dart — the Design Dial's SERVER half, end to end:
+// a real DesignServer (hello-hda fixture, real worker) proving that
+//   - every full HTML page carries the dial (config + island script),
+//   - --no-dial / dial:false pages do NOT,
+//   - the /__dial/* API round-trips through the wire (not just the pure
+//     core — the adapter, the grant resolution, the JSON),
+//   - a guest token flips the caller (kanban 403), a dead token is 'invalid',
+//   - mutations broadcast on /__dial/events (SSE frame observed).
+//
+// The island's pixels are NOT asserted here — that is the lens's job
+// (appbox lens shoot), which the verification step of this slice performs.
+
+import 'dart:async';
+import 'dart:convert';
+import 'dart:io';
+
+import 'package:appboxd/design_dial.dart';
+import 'package:appboxd/design_server.dart';
+import 'package:path/path.dart' as p;
+import 'package:test/test.dart';
+
+final String _fixture = p.absolute('../skills/appbox-designer/examples/hello-hda');
+
+Future<(int, String)> _req(String method, String url,
+    {Object? body, Map<String, String>? headers}) async {
+  final http = HttpClient();
+  final req = await http.openUrl(method, Uri.parse(url));
+  headers?.forEach((k, v) => req.headers.set(k, v));
+  if (body != null) {
+    req.headers.contentType = ContentType.json;
+    req.write(jsonEncode(body));
+  }
+  final res = await req.close();
+  final text = await res.transform(utf8.decoder).join();
+  http.close();
+  return (res.statusCode, text);
+}
+
+@Timeout(Duration(minutes: 3))
+void main() {
+  group('design dial over a real server', () {
+    late DesignServer srv;
+    late DesignServer bare; // dial: false
+    late String base;
+    late String bareBase;
+
+    setUpAll(() async {
+      srv = await DesignServer.start(
+          artifactDir: _fixture, noWatch: true, dialStore: MemoryDialStore());
+      bare = await DesignServer.start(
+          artifactDir: _fixture,
+          noWatch: true,
+          dial: false,
+          dialStore: MemoryDialStore());
+      base = 'http://127.0.0.1:${srv.port}';
+      bareBase = 'http://127.0.0.1:${bare.port}';
+    });
+
+    tearDownAll(() async {
+      await srv.stop();
+      await bare.stop();
+    });
+
+    test('every full page carries the dial; dial:false pages do not', () async {
+      final (code, html) = await _req('GET', base);
+      expect(code, 200);
+      expect(html, contains('id="arxa-dial-config"'));
+      expect(html, contains('/assets/vendor/dial_island.js'));
+      expect(html, contains('"mode":"author"'));
+
+      final (bcode, bhtml) = await _req('GET', bareBase);
+      expect(bcode, 200);
+      expect(bhtml, isNot(contains('arxa-dial')));
+    });
+
+    test('the island script is served from /assets/vendor/', () async {
+      final (code, js) = await _req('GET', '$base/assets/vendor/dial_island.js');
+      expect(code, 200);
+      expect(js, contains('Design Dial'));
+    });
+
+    test('pin roundtrip + kanban + reply through the wire', () async {
+      final (ccode, cbody) = await _req('POST', '$base/__dial/pins', body: {
+        'route': '/',
+        'viewport': {'w': 1280, 'h': 800},
+        'anchor': {
+          'el': null,
+          'rect': {'x': 5, 'y': 6, 'w': 70, 'h': 30},
+        },
+        'body': 'wire test pin',
+      });
+      expect(ccode, 201, reason: cbody);
+      final pin = (jsonDecode(cbody) as Map)['pin'] as Map;
+
+      final (scode, _) = await _req('POST', '$base/__dial/pins/status',
+          body: {'id': pin['id'], 'status': 'in_progress'});
+      expect(scode, 200);
+
+      final (rcode, _) = await _req('POST', '$base/__dial/pins/reply',
+          body: {'id': pin['id'], 'body': 'ack'});
+      expect(rcode, 201);
+
+      final (lcode, lbody) = await _req('GET', '$base/__dial/pins');
+      expect(lcode, 200);
+      final pins = (jsonDecode(lbody) as Map)['pins'] as List;
+      final found = pins.singleWhere((x) => x['id'] == pin['id']);
+      expect(found['status'], 'in_progress');
+      expect((found['replies'] as List).single['body'], 'ack');
+    });
+
+    test('share link: mint → guest can pin, cannot move kanban; dead token',
+        () async {
+      final (mcode, mbody) = await _req('POST', '$base/__dial/share',
+          body: {'days': 7});
+      expect(mcode, 201);
+      final token = (jsonDecode(mbody) as Map)['token'] as String;
+
+      // The served page with the token boots in guest mode.
+      final (_, ghtml) = await _req('GET', '$base?dial=$token');
+      expect(ghtml, contains('"mode":"guest"'));
+      final (_, ihtml) = await _req('GET', '$base?dial=deadbeef');
+      expect(ihtml, contains('"mode":"invalid"'));
+
+      // Guest pin: allowed. Guest kanban: 403. Guest mint: 403.
+      final (gcode, gbody) = await _req('POST', '$base/__dial/pins?dial=$token',
+          body: {
+            'route': '/',
+            'viewport': {'w': 390, 'h': 844},
+            'anchor': {
+              'el': null,
+              'rect': {'x': 1, 'y': 2, 'w': 3, 'h': 4},
+            },
+            'body': 'guest was here',
+            'name': 'Client Claire',
+          });
+      expect(gcode, 201, reason: gbody);
+      final gpin = (jsonDecode(gbody) as Map)['pin'] as Map;
+      expect(gpin['author'], 'guest');
+
+      final (kcode, _) = await _req(
+          'POST', '$base/__dial/pins/status?dial=$token',
+          body: {'id': gpin['id'], 'status': 'resolved'});
+      expect(kcode, 403);
+      final (scode2, _) =
+          await _req('POST', '$base/__dial/share?dial=$token', body: {});
+      expect(scode2, 403);
+    });
+
+    test('mutations broadcast on the dial SSE stream', () async {
+      final http = HttpClient();
+      final req =
+          await http.getUrl(Uri.parse('$base/__dial/events'));
+      final res = await req.close();
+      expect(res.headers.contentType?.mimeType, 'text/event-stream');
+      final frames = StreamController<String>();
+      res.transform(utf8.decoder).listen(frames.add);
+      // Let the subscription register, then mutate.
+      await Future<void>.delayed(const Duration(milliseconds: 150));
+      await _req('POST', '$base/__dial/pins', body: {
+        'route': '/',
+        'viewport': {'w': 1280, 'h': 800},
+        'anchor': {
+          'el': null,
+          'rect': {'x': 0, 'y': 0, 'w': 1, 'h': 1},
+        },
+        'body': 'sse trigger',
+      });
+      final seen = await frames.stream
+          .firstWhere((f) => f.contains('event: dial'),
+              orElse: () => '')
+          .timeout(const Duration(seconds: 5));
+      expect(seen, contains('event: dial'));
+      await res.detachSocket().then((s) => s.destroy());
+      http.close();
+    });
+  });
+}
