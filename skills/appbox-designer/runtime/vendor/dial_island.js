@@ -428,60 +428,14 @@
     badge.style.display = open ? 'flex' : 'none';
   }
 
-  // Dock drag: pointer capture, 6px click threshold, edge snap. The fan
-  // toggle lives on 'click', not pointerup: a keyboard or synthetic click
-  // (no pointer events at all) must open the dial too.
+  // The dial is NOT draggable (operator law, 2026-08-24): it lives in the
+  // bottom-right corner, period. The fan toggles on 'click' - a keyboard or
+  // synthetic click (no pointer events at all) must still open it.
   {
-    let dragStart = null;
-    let suppressClick = false;
     dockBtn.addEventListener('click', () => {
-      if (suppressClick) {
-        suppressClick = false;
-        return;
-      }
       S.open = !S.open;
       dock.classList.toggle('open', S.open);
       dialPanelChanged(); // fan open: freeze hiding; fan closed: re-arm 30s
-    });
-    // DRAG ROUTES THROUGH WINDOW-LEVEL POINTER EVENTS. The old pattern -
-    // setPointerCapture + handlers on the button - silently died: Blink
-    // releases mouse capture on the first move outside the element in this
-    // composition (lens diag: got:1 then lost:1, button saw zero moves),
-    // and window always sees every event (diag2: window 6, button 0).
-    dockBtn.addEventListener('pointerdown', (e) => {
-      dragStart = { x: e.clientX, y: e.clientY, moved: false };
-    });
-    addEventListener('pointermove', (e) => {
-      if (!dragStart) return;
-      const dx = e.clientX - dragStart.x;
-      const dy = e.clientY - dragStart.y;
-      if (!dragStart.moved && Math.hypot(dx, dy) > 6) dragStart.moved = true;
-      if (dragStart.moved) {
-        dock.style.right = 'auto';
-        dock.style.left = e.clientX - 28 + 'px';
-        dock.style.bottom = 'auto';
-        dock.style.top = e.clientY - 28 + 'px';
-      }
-    }, { passive: true });
-    addEventListener('pointerup', (e) => {
-      if (!dragStart) return;
-      if (dragStart.moved) {
-        // Edge snap: nearest horizontal edge, clamped inside the viewport.
-        const r = dock.getBoundingClientRect();
-        const side = r.left + r.width / 2 < innerWidth / 2 ? 'left' : 'right';
-        S.dockSide = side;
-        dock.classList.toggle('left', side === 'left');
-        layoutFan();
-        dock.style.left = side === 'left' ? '24px' : 'auto';
-        dock.style.right = side === 'right' ? '24px' : 'auto';
-        dock.style.top =
-          Math.min(Math.max(r.top, 24), innerHeight - 80) + 'px';
-        dock.style.bottom = 'auto';
-        panel.classList.toggle('left', side === 'left');
-        // Persist nothing — dock position is session state, not design state.
-        suppressClick = true; // the trailing click is the drag's tail, not a toggle
-      }
-      dragStart = null;
     });
   }
 

@@ -112,6 +112,10 @@ void main() {
       final (code, js) = await _req('GET', '$base/assets/vendor/dial_island.js');
       expect(code, 200);
       expect(js, contains('Design Dial'));
+      // Operator law (2026-08-24): the dial is NOT draggable. The dock FAB
+      // toggles the fan on click and nothing else - no drag machinery may
+      // ship in the island.
+      expect(js, isNot(contains('dragStart')), reason: 'drag code removed');
     });
 
     test('pin roundtrip + kanban + reply through the wire', () async {
