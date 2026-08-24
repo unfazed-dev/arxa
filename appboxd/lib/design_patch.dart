@@ -291,6 +291,100 @@ PatchResult _patchAt(String src, String id, int at, PatchEdits edits) {
   return PatchResult(out, nextFrom: gt + 1);
 }
 
+/// The inner content of the element carrying [attr]="[id]" in [src], or
+/// null when the element cannot be located. Raw - may be a JSX expression.
+String? _innerOf(String src, String id, String attr) {
+  final at = src.indexOf('$attr="$id"');
+  if (at < 0) return null;
+  final seg = src.substring(0, at + 1);
+  var lt = seg.lastIndexOf('<');
+  while (lt >= 0) {
+    final m = RegExp(r'<([a-zA-Z][a-zA-Z0-9-]*)').firstMatch(seg.substring(lt));
+    if (m != null && !seg.substring(lt, at + 1).contains('>')) {
+      final name = m.group(1)!;
+      final close = src.indexOf('</' + name + '>', at);
+      if (close < 0) return null;
+      return src.substring(src.indexOf('>', lt) + 1, close);
+    }
+    lt = seg.lastIndexOf('<', lt - 1);
+  }
+  return null;
+}
+
+/// Routes a --text op whose target element is t()-backed into the l10n ARB
+/// files - THE SSOT for every localized string. Returns null when [f] does
+/// not carry the marker (caller tries other files).
+CmdResult? routeTextToArbForFile(
+    File f, Directory dir, String id, String attr, String text) {
+  final src = f.readAsStringSync();
+  final at = src.indexOf('$attr="$id"');
+  if (at < 0) return null;
+  final inner = _innerOf(src, id, attr);
+  if (inner == null) return null;
+  final trimmed = inner.trim();
+  if (!trimmed.startsWith('{') || !trimmed.endsWith('}')) return null;
+  final body = trimmed.substring(1, trimmed.length - 1).trim();
+  // {t('key')} | {t("key")} - optionally a trailing comma inside the call.
+  // Manual scan: a regex here would need quote-class juggling this file
+  // is better off without.
+  String? key;
+  if (body.startsWith('t(') && body.endsWith(')')) {
+    var args = body.substring(2, body.length - 1).trim();
+    if (args.endsWith(',')) args = args.substring(0, args.length - 1).trim();
+    if (args.length >= 2) {
+      final q = args[0];
+      if ((q == "'" || q == '"') && args.endsWith(q)) {
+        final cand = args.substring(1, args.length - 1);
+        if (!cand.contains(q) &&
+            RegExp(r'^[A-Za-z0-9_.:-]+$').hasMatch(cand)) {
+          key = cand;
+        }
+      }
+    }
+  }
+  if (key == null) {
+    // Brace-wrapped but not a recognized t() call: a data-binding the
+    // grammar must not overwrite with one locale's literal.
+    return CmdResult(5, stderrLines: [
+      'appbox design patch: --text refused: "$id" is expression-backed '
+          '("$trimmed") - its text lives in a data source (l10n ARB, seed '
+          'fixtures), not as a literal here'
+    ]);
+  }
+  final arbDir = Directory(p.join(dir.path, 'l10n'));
+  if (!arbDir.existsSync()) {
+    return CmdResult(5, stderrLines: [
+      'appbox design patch: "$id" reads t($key) but no l10n/ directory '
+          'exists under ' + dir.path
+    ]);
+  }
+  final valueRe = RegExp('"' + RegExp.escape(key) + '"[\\s]*:[\\s]*"(?:[^"\\\\]|\\\\.)*"');
+  final newValue = '"' + key + '": "' + text.replaceAll('"', r'\"') + '"';
+  var updated = 0;
+  final missing = <String>[];
+  for (final arb in arbDir.listSync().whereType<File>()) {
+    if (!arb.path.endsWith('.arb')) continue;
+    final arbSrc = arb.readAsStringSync();
+    if (!valueRe.hasMatch(arbSrc)) {
+      missing.add(p.basename(arb.path));
+      continue;
+    }
+    arb.writeAsStringSync(arbSrc.replaceFirst(valueRe, newValue));
+    updated++;
+  }
+  if (missing.isNotEmpty) {
+    return CmdResult(5, stderrLines: [
+      'appbox design patch: key "$key" missing in: ' + missing.join(', ') +
+          ' - add it there and retry'
+    ]);
+  }
+  final rel = p.split(p.relative(f.path, from: dir.path)).join('/');
+  return CmdResult(0, stdoutLines: [
+    'routed $id -> l10n key "$key" ($updated locale(s) updated); '
+        '$rel left untouched (t()-binding preserved)'
+  ]);
+}
+
 /// `appbox design patch <artifactDir> <id> [--set n=v]… [--rm n]…`
 /// `[--style p=v]… [--rm-style p]…`
 CmdResult patchMain(List<String> args) {
@@ -361,12 +455,10 @@ CmdResult patchMain(List<String> args) {
       .whereType<File>()
       .where((f) => f.path.endsWith('.tsx'));
   final hits = <File>[];
-  PatchResult? res;
   for (final f in files) {
     final src = f.readAsStringSync();
     if (!src.contains('$attr="$id"')) continue;
     hits.add(f);
-    res = patchSource(src, id, edits, attr: attr);
   }
   if (hits.isEmpty) {
     return CmdResult(3, stderrLines: [
@@ -380,7 +472,19 @@ CmdResult patchMain(List<String> args) {
           '(stamper invariant broken): ${hits.map((f) => f.path).join(', ')}'
     ]);
   }
-  if (res!.error != null) {
+  // SSOT ROUTING (2026-08-24): a --text aimed at an element whose content
+  // is {t('key')} must land in the l10n ARB files - the key IS the SSOT.
+  // Rewriting the expression with one locale's literal would silently
+  // destroy the i18n binding; refusing would block every rebrand.
+  if (edits.text != null) {
+    for (final f in hits) {
+      final routed = routeTextToArbForFile(f, dir, id, attr, edits.text!);
+      if (routed != null) return routed;
+    }
+  }
+  final res = patchSource(
+      hits.single.readAsStringSync(), id, edits, attr: attr);
+  if (res.error != null) {
     return CmdResult(5, stderrLines: ['appbox design patch: ${res.error}']);
   }
   hits.single.writeAsStringSync(res.code);

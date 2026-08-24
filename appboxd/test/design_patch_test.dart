@@ -196,4 +196,44 @@ void main() {
       }
     });
   });
+  group('SSOT routing: --text on t()-backed elements (2026-08-24)', () {
+    test('routes to every l10n ARB and preserves the tsx binding', () {
+      final dir = Directory.systemTemp.createTempSync('patch_test_arb');
+      try {
+        Directory('${dir.path}/l10n').createSync();
+        const tsx = "<p data-arxa-id=\"home-e6\">{t('brand.copyright')}</p>";
+        File('${dir.path}/a.tsx').writeAsStringSync(tsx);
+        File('${dir.path}/l10n/app_en.arb').writeAsStringSync(
+            '{\n  "brand.copyright": "OLD EN",\n  "other": "x"\n}');
+        File('${dir.path}/l10n/app_pl.arb')
+            .writeAsStringSync('{"brand.copyright": "OLD PL"}');
+        final res = patchMain(
+            [dir.path, 'home-e6', '--text', 'DOMKA TO STUDIO \u00a92026']);
+        expect(res.exitCode, 0, reason: res.stderrLines.join('; '));
+        expect(res.stdoutLines.first, contains('l10n key "brand.copyright"'));
+        expect(File('${dir.path}/l10n/app_en.arb').readAsStringSync(),
+            contains('"brand.copyright": "DOMKA TO STUDIO \u00a92026"'));
+        expect(File('${dir.path}/l10n/app_pl.arb').readAsStringSync(),
+            contains('"brand.copyright": "DOMKA TO STUDIO \u00a92026"'));
+        expect(File('${dir.path}/a.tsx').readAsStringSync(), tsx);
+      } finally {
+        dir.deleteSync(recursive: true);
+      }
+    });
+
+    test('--text refuses expression-backed (non-t) elements loudly', () {
+      final dir = Directory.systemTemp.createTempSync('patch_test_expr');
+      try {
+        File('${dir.path}/a.tsx').writeAsStringSync(
+            '<p data-arxa-id="home-e7">{computeCopyright()}</p>');
+        final res = patchMain([dir.path, 'home-e7', '--text', 'X']);
+        expect(res.exitCode, 5);
+        expect(res.stderrLines.join(), contains('expression-backed'));
+        expect(File('${dir.path}/a.tsx').readAsStringSync(),
+            contains('{computeCopyright()}'));
+      } finally {
+        dir.deleteSync(recursive: true);
+      }
+    });
+  });
 }

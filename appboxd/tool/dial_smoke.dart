@@ -679,6 +679,7 @@ Future<void> main(List<String> args) async {
     document.dispatchEvent(new MouseEvent("click", {clientX: cx, clientY: cy, bubbles: true}));
     await new Promise(r=>setTimeout(r,400));
     const idline = (R.querySelector("#pbody .idline") || {}).textContent || "";
+    const wmBefore = (document.querySelector('[data-el="wordmark-lead"]') || {}).textContent || null;
     const ta = [...R.querySelectorAll("#pbody textarea")].find(t => !t.placeholder || t.placeholder.indexOf("prop:") === -1);
     if (!ta) return JSON.stringify({fatal: "no content facet", idline: idline});
     ta.value = "SMOKE ©2099";
@@ -688,13 +689,14 @@ Future<void> main(List<String> args) async {
     const keys = Object.keys((draft.draft && draft.draft.patches) || {});
     const wm = document.querySelector('[data-el="wordmark-lead"]');
     return JSON.stringify({idline: idline, keys: keys,
+      wordmarkBefore: wmBefore,
       wordmarkText: wm ? wm.textContent : null,
       copyrightText: target.textContent});
   ''');
   report(
       'S12 divergence binding',
       (div['keys'] as List).contains('el:intro-copyright') &&
-          div['wordmarkText'] == 'SUCZKA' &&
+          div['wordmarkText'] == div['wordmarkBefore'] &&
           div['copyrightText'] == 'SMOKE ©2099',
       jsonEncode(div),
       _newErrors(tab));
