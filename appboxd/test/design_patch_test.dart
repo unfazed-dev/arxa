@@ -196,6 +196,59 @@ void main() {
         dir.deleteSync(recursive: true);
       }
     });
+
+    test('write-through onto a real widget invocation (name= anchor, no id)',
+        () {
+      // The suczka shape: PascalCase component, name= anchor, class only —
+      // data-arxa-id lives in RENDERED markup, never in source widgets.
+      // rest() in primitives.tsx forwards unknown props (style=) to the DOM,
+      // so an inline style committed here renders and overrides the class.
+      final dir = Directory.systemTemp.createTempSync('patch_test');
+      try {
+        File('${dir.path}/widgets.tsx').writeAsStringSync(
+            'export const IntroWordMark = () => (\n'
+            '  <Box name="intro-wordmark" class="mod-scroll__intro__logo logo c-black">\n'
+            '    <span>suczka</span>\n'
+            '  </Box>\n'
+            ');\n');
+        final res = patchMain([
+          dir.path,
+          '--el',
+          'intro-wordmark',
+          '--style',
+          'font-size=12rem'
+        ]);
+        expect(res.exitCode, 0, reason: res.stderrLines.join('; '));
+        final out = File('${dir.path}/widgets.tsx').readAsStringSync();
+        expect(out, contains('name="intro-wordmark"'));
+        expect(out, contains('style="font-size: 12rem"'));
+        expect(out,
+            contains('class="mod-scroll__intro__logo logo c-black"'));
+      } finally {
+        dir.deleteSync(recursive: true);
+      }
+    });
+
+    test('media swap: --set src= rewrites the asset path in place', () {
+      final dir = Directory.systemTemp.createTempSync('patch_test');
+      try {
+        File('${dir.path}/media.tsx').writeAsStringSync(
+            '<Img name="hero-shot" class="cover" src="assets/images/old.jpg" />');
+        final res = patchMain([
+          dir.path,
+          '--el',
+          'hero-shot',
+          '--set',
+          'src=assets/images/unsplash/abc123.jpg'
+        ]);
+        expect(res.exitCode, 0, reason: res.stderrLines.join('; '));
+        final out = File('${dir.path}/media.tsx').readAsStringSync();
+        expect(out, contains('src="assets/images/unsplash/abc123.jpg"'));
+        expect(out, isNot(contains('old.jpg')));
+      } finally {
+        dir.deleteSync(recursive: true);
+      }
+    });
   });
   group('SSOT routing: --text on t()-backed elements (2026-08-24)', () {
     test('routes to every l10n ARB and preserves the tsx binding', () {
