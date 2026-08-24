@@ -1949,8 +1949,14 @@
     addEventListener('pointermove', (ev) => {
       const want = inCorner(ev.clientX, ev.clientY) || overDock(ev);
       dialLastWant = want;
-      if (want && sp.target !== 1) dialShow();
-      else if (!want && !overDock(ev) && sp.target !== 0) dialHide();
+      // Leaving does NOT hide - the 30s timer owns the tuck-away (proved
+      // unreachable otherwise: lens probe showed instant-leave-hide starved
+      // it, and holding the corner re-armed it forever).
+      if (sp.target !== 1) {
+        if (want) dialShow();
+      } else if (want) {
+        dialArmAutoHide(); // active use refreshes the visibility window
+      }
     }, { passive: true });
     // touch has no hover: a tap in the zone reveals too
     addEventListener('pointerdown', (ev) => {
