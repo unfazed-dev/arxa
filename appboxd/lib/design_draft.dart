@@ -44,6 +44,7 @@ abstract class DraftCaps {
   static const name = 80;
   static const value = 300;
   static const text = 4000;
+  static const page = 200;
 }
 
 /// Attribute/property names: dashed css, data-*, aria-*, namespaced svg.
@@ -60,6 +61,7 @@ final _dataElRe = RegExp(r'^[a-zA-Z0-9][a-zA-Z0-9:_-]{0,99}$');
 
 /// The data-el half of an el:-prefixed patch key, or null for machine-id
 /// keys. Exported for the commit socket's op shaping.
+final _pageRe = RegExp(r'^[/A-Za-z0-9._~%-]*$');
 String? elKeyOf(String patchKey) {
   if (!patchKey.startsWith(elKeyPrefix)) return null;
   final v = patchKey.substring(elKeyPrefix.length);
@@ -73,8 +75,24 @@ class DraftPatch {
   final Map<String, String?> attrs;
   final String? text;
 
+  /// Seed-route provenance (2026-08-24), captured by the dial on the FIRST
+  /// text edit of a key: [was] is the edited instance's pre-edit rendered
+  /// text — the value anchor resolved against the seed SSOT at commit; [nth]
+  /// the 0-based index among the page's instances of this key, recorded only
+  /// when those instances' texts diverge (data-backed rows; homogeneous
+  /// repeats keep every-row semantics); [page] the editing page's pathname
+  /// for slug/href correlation. Style/attr edits never carry them.
+  final String? was;
+  final int? nth;
+  final String? page;
+
   const DraftPatch(
-      {this.style = const {}, this.attrs = const {}, this.text});
+      {this.style = const {},
+      this.attrs = const {},
+      this.text,
+      this.was,
+      this.nth,
+      this.page});
 
   bool get isEmpty => style.isEmpty && attrs.isEmpty && text == null;
 
@@ -85,6 +103,9 @@ class DraftPatch {
         if (style.isNotEmpty) 'style': style,
         if (attrs.isNotEmpty) 'attrs': attrs,
         if (text != null) 'text': text,
+        if (was != null) 'was': was,
+        if (nth != null) 'nth': nth,
+        if (page != null) 'page': page,
       };
 
   static Map<String, String?> _edits(Object? raw, String id, String what) {
@@ -129,10 +150,31 @@ class DraftPatch {
       throw FormatException(
           'patch "$id".text over ${DraftCaps.text} chars');
     }
+    var was = raw['was'] == null ? null : '${raw['was']}';
+    if (was != null && was.length > DraftCaps.text) {
+      throw FormatException(
+          'patch "$id".was over ${DraftCaps.text} chars');
+    }
+    int? nth;
+    if (raw['nth'] != null) {
+      final n = raw['nth'];
+      if (n is! int || n < 0 || n > 9999) {
+        throw FormatException('patch "$id".nth must be a 0..9999 index');
+      }
+      nth = n;
+    }
+    var page = raw['page'] == null ? null : '${raw['page']}';
+    if (page != null &&
+        (page.length > DraftCaps.page || !_pageRe.hasMatch(page))) {
+      throw FormatException('patch "$id".page is not a plain pathname');
+    }
     return DraftPatch(
       style: _edits(raw['style'], id, 'style'),
       attrs: _edits(raw['attrs'], id, 'attrs'),
       text: text,
+      was: was,
+      nth: nth,
+      page: page,
     );
   }
 }
@@ -259,8 +301,37 @@ class DraftOverlay {
     for (final e in patches.entries) {
       if (e.value.isEmpty) continue;
       final elKey = elKeyOf(e.key);
-      final r = patchAllRendered(out, elKey ?? e.key, e.value.toPatchEdits(),
-          attr: elKey != null ? 'data-el' : 'data-arxa-id');
+      final attr = elKey != null ? 'data-el' : 'data-arxa-id';
+      final target = elKey ?? e.key;
+      // Instance-scoped text (2026-08-24): an nth-carrying text edit touches
+      // ONLY that occurrence — exactly what its seed commit will do. The
+      // style/attr facets of the same key stay every-row.
+      if (e.value.text != null && e.value.nth != null) {
+        final rText = patchAllRendered(
+            out, target, PatchEdits(text: e.value.text),
+            attr: attr, onlyNth: e.value.nth);
+        out = rText.code;
+        applied += rText.applied;
+        final rest = PatchEdits(attrs: e.value.attrs, style: e.value.style);
+        if (!rest.isEmpty) {
+          final rRest = patchAllRendered(out, target, rest, attr: attr);
+          out = rRest.code;
+          applied += rRest.applied;
+          if (rRest.error != null) {
+            refused.add('${e.key}: ${rRest.error}');
+          } else if (!rRest.found) {
+            stale.add(e.key);
+          }
+        }
+        if (rText.error != null) {
+          refused.add('${e.key}: ${rText.error}');
+        } else if (!rText.found) {
+          stale.add(e.key);
+        }
+        continue;
+      }
+      final r = patchAllRendered(out, target, e.value.toPatchEdits(),
+          attr: attr);
       out = r.code;
       applied += r.applied;
       if (r.error != null) {

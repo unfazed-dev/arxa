@@ -1236,7 +1236,7 @@
     if (commit) {
       // setTextContent normalizes whatever markup contenteditable produced,
       // patches the draft, and schedules the auto-save.
-      setTextContent(sel.key, el.textContent);
+      setTextContent(sel.key, el.textContent, el);
     } else {
       el.textContent = original;
     }
@@ -1472,9 +1472,26 @@
     }
     scheduleSave();
   }
-  function setTextContent(key, value) {
-    patchFor(key).text = value;
-    for (const el of targetsForKey(key)) {
+  function setTextContent(key, value, origin) {
+    const p = patchFor(key);
+    const insts = targetsForKey(key);
+    if (p.text == null && insts.length) {
+      // First text edit captures seed-route provenance: was = this
+      // instance's pre-edit text (the commit-time value anchor); nth =
+      // its occurrence index, recorded ONLY when instances diverge —
+      // data-backed rows get per-instance commits and per-instance live
+      // apply, homogeneous repeats keep every-row semantics; page rides
+      // for slug correlation.
+      const o = origin && insts.indexOf(origin) >= 0 ? origin : insts[0];
+      p.was = o.textContent;
+      if (origin && insts.some((el) => el.textContent !== insts[0].textContent)) {
+        p.nth = Math.max(0, insts.indexOf(origin));
+      }
+      p.page = location.pathname;
+    }
+    p.text = value;
+    const scoped = p.nth != null && insts[p.nth] ? [insts[p.nth]] : insts;
+    for (const el of scoped) {
       if (isTextEditable(el)) el.textContent = value;
     }
     scheduleSave();
@@ -1551,7 +1568,7 @@
       pbody.appendChild(h('div', { class: 'sect', text: 'Content' }));
       const ta = h('textarea', { rows: '2' });
       ta.value = draft.text != null ? draft.text : sel.el.textContent;
-      ta.addEventListener('input', () => setTextContent(sel.key, ta.value));
+      ta.addEventListener('input', () => setTextContent(sel.key, ta.value, sel.el));
       pbody.appendChild(h('div', { class: 'facet' }, [ta]));
     }
 

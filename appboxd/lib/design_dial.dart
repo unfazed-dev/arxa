@@ -729,7 +729,9 @@ class DialApi {
       'tokens': d.tokens,
       'ops': ops,
       'note': 'apply each op with appbox design patch (id ops: positional '
-          'data-arxa-id; el ops: --el <data-el>; edits: --style/--set/--text) '
+          'data-arxa-id; el ops: --el <data-el>; edits: --style/--set/--text; '
+          'seed-backed text ops also carry --was/--nth/--page from the op '
+          'json) '
           'and the tokens to the token sheet; on success '
           'DELETE /__dial/draft',
     });

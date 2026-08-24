@@ -6,6 +6,7 @@ library;
 import 'dart:io';
 
 import 'package:appboxd/design_patch.dart';
+import 'package:appboxd/design_draft.dart';
 import 'package:test/test.dart';
 
 const _src = '''
@@ -270,6 +271,166 @@ void main() {
       } finally {
         dir.deleteSync(recursive: true);
       }
+    });
+  });
+
+
+  group('seed SSOT routing (2026-08-24)', () {
+    late Directory dir;
+    late String seedEnBefore;
+    late String seedPlBefore;
+    setUp(() {
+      dir = Directory.systemTemp.createTempSync('patch_test_seed');
+      Directory('${dir.path}/models/project_model').createSync(recursive: true);
+      const projectEnA = '{"slug": "saska-kepa", "href": "/projects/saska-kepa",'
+          ' "role": "Architecture", "name": "Saska Kepa",'
+          ' "tagline": "Light near the river"}';
+      const projectEnB = '{"slug": "oliwa-wzgorze", "href": "",'
+          ' "role": "Architecture", "name": "Oliwa Wzgorze",'
+          ' "tagline": "Under the birches"}';
+      const projectPlA = '{"slug": "saska-kepa", "href": "/pl/projects/saska-kepa",'
+          ' "role": "Architektura", "name": "Saska Kepa",'
+          ' "tagline": "Swiatlo nad rzeka"}';
+      const projectPlB = '{"slug": "oliwa-wzgorze", "href": "",'
+          ' "role": "Architektura", "name": "Oliwa Wzgorze",'
+          ' "tagline": "Pod brzozami"}';
+      seedEnBefore = '[\n  $projectEnA,\n  $projectEnB\n]';
+      seedPlBefore = '[\n  $projectPlA,\n  $projectPlB\n]';
+      File('${dir.path}/models/project_model/project_seed.en.json')
+          .writeAsStringSync(seedEnBefore);
+      File('${dir.path}/models/project_model/project_seed.pl.json')
+          .writeAsStringSync(seedPlBefore);
+      File('${dir.path}/models/project_model/project_fixtures.en.json')
+          .writeAsStringSync('{"projects": [\n  $projectEnA,\n  $projectEnB\n]}');
+      File('${dir.path}/models/project_model/project_fixtures.pl.json')
+          .writeAsStringSync('{"projects": [\n  $projectPlA,\n  $projectPlB\n]}');
+      File('${dir.path}/cards.tsx').writeAsStringSync(
+          '<div data-arxa-id="cards-e1">'
+          '<h3 data-arxa-id="cards-e2">{project.name}</h3>'
+          '<p data-arxa-id="cards-e3">{project.tagline}</p>'
+          '<span data-arxa-id="cards-e4">{project.role}</span>'
+          '</div>');
+    });
+    tearDown(() => dir.deleteSync(recursive: true));
+
+    test('unique resolve writes both locale seeds AND fixtures; tsx untouched',
+        () {
+      final res = patchMain([
+        dir.path, 'cards-e3', '--text', 'DAYLIGHT BY THE RIVER',
+        '--was', 'Light near the river',
+      ]);
+      expect(res.exitCode, 0, reason: res.stderrLines.join('; '));
+      expect(res.stdoutLines.first, contains('project_seed.0.tagline'));
+      final en = File('${dir.path}/models/project_model/project_seed.en.json')
+          .readAsStringSync();
+      expect(en, contains('"tagline": "DAYLIGHT BY THE RIVER"'));
+      expect(en, contains('"tagline": "Under the birches"')); // sibling intact
+      expect(
+          File('${dir.path}/models/project_model/project_seed.pl.json')
+              .readAsStringSync(),
+          contains('"tagline": "DAYLIGHT BY THE RIVER"'));
+      // fixtures kept in sync with their seeds
+      expect(
+          File('${dir.path}/models/project_model/project_fixtures.en.json')
+              .readAsStringSync(),
+          contains('"tagline": "DAYLIGHT BY THE RIVER"'));
+      expect(
+          File('${dir.path}/models/project_model/project_fixtures.pl.json')
+              .readAsStringSync(),
+          contains('"tagline": "DAYLIGHT BY THE RIVER"'));
+      expect(File('${dir.path}/cards.tsx').readAsStringSync(),
+          contains('{project.tagline}')); // binding preserved
+      // surgical: seed.en is exactly the original with one value swapped
+      expect(en,
+          seedEnBefore.replaceAll('Light near the river', 'DAYLIGHT BY THE RIVER'));
+    });
+
+    test('ambiguous same-value paths narrow by --page slug correlation', () {
+      final res = patchMain([
+        dir.path, 'cards-e4', '--text', 'Interiors & structures',
+        '--was', 'Architecture', '--page', '/projects/saska-kepa',
+      ]);
+      expect(res.exitCode, 0, reason: res.stderrLines.join('; '));
+      expect(res.stdoutLines.first, contains('project_seed.0.role'));
+      final en = File('${dir.path}/models/project_model/project_seed.en.json')
+          .readAsStringSync();
+      expect(en, contains('"role": "Interiors & structures"'));
+      expect(
+          File('${dir.path}/models/project_model/project_seed.pl.json')
+              .readAsStringSync(),
+          contains('"role": "Architektura"')); // pl untouched
+      expect(en, contains('"role": "Architecture"')); // project B untouched
+    });
+
+    test('ambiguous paths narrow by --nth ordinal under a shared parent', () {
+      final res = patchMain([
+        dir.path, 'cards-e4', '--text', 'Coming soon', '--was', 'Architecture',
+        '--nth', '1',
+      ]);
+      expect(res.exitCode, 0, reason: res.stderrLines.join('; '));
+      expect(res.stdoutLines.first, contains('project_seed.1.role'));
+      final en = File('${dir.path}/models/project_model/project_seed.en.json')
+          .readAsStringSync();
+      expect(en, contains('"role": "Architecture"')); // project A untouched
+      expect(en, contains('"role": "Coming soon"'));
+    });
+
+    test('stale anchor refuses loudly and changes nothing', () {
+      final res = patchMain([
+        dir.path, 'cards-e3', '--text', 'X', '--was', 'DRIFTED TEXT',
+      ]);
+      expect(res.exitCode, 5);
+      expect(res.stderrLines.join(), contains('no seed path matched'));
+      expect(File('${dir.path}/models/project_model/project_seed.en.json')
+          .readAsStringSync(), seedEnBefore);
+    });
+
+    test('no anchor at all refuses with guidance instead of guessing', () {
+      final res = patchMain([dir.path, 'cards-e4', '--text', 'X']);
+      expect(res.exitCode, 5);
+      expect(res.stderrLines.join(), contains('--was <previous text>'));
+    });
+  });
+
+  group('draft provenance fields (2026-08-24)', () {
+    test('DraftPatch round-trips was/nth/page through json', () {
+      final d = DraftOverlay.fromJson(const {
+        'patches': {
+          'x-e1': {'text': 'NEW', 'was': 'OLD', 'nth': 1, 'page': '/pl/projects'}
+        }
+      }, artifact: 'a');
+      final p = d.patches['x-e1']!;
+      expect(p.text, 'NEW');
+      expect(p.was, 'OLD');
+      expect(p.nth, 1);
+      expect(p.page, '/pl/projects');
+      expect(d.toJson()['patches'], {
+        'x-e1': {'text': 'NEW', 'was': 'OLD', 'nth': 1, 'page': '/pl/projects'}
+      });
+    });
+
+    test('bad nth is a FormatException, not a silent accept', () {
+      expect(
+          () => DraftOverlay.fromJson(const {
+                'patches': {
+                  'x-e1': {'text': 'N', 'nth': -2}
+                }
+              }, artifact: 'a'),
+          throwsFormatException);
+    });
+
+    test('apply() patches ONLY the nth instance when nth rides along', () {
+      final d = DraftOverlay.fromJson(const {
+        'patches': {
+          'row-e9': {'text': 'PICKED', 'nth': 1}
+        }
+      }, artifact: 'a');
+      const html = '<p data-arxa-id="row-e9">one</p>'
+          '<div>x</div><p data-arxa-id="row-e9">two</p>';
+      final r = d.apply(html);
+      expect(r.applied, 1);
+      expect(r.html, contains('>one<'));
+      expect(r.html, contains('PICKED'));
     });
   });
 }
