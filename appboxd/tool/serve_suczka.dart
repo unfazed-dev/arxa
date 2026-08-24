@@ -6,7 +6,6 @@
 //   dart run tool/serve_suczka.dart
 import 'dart:io';
 
-import 'package:appboxd/design_dial.dart';
 import 'package:appboxd/design_draft.dart';
 import 'package:appboxd/design_server.dart';
 
@@ -20,7 +19,11 @@ Future<void> main() async {
       artifactDir:
           '/Volumes/developer_ssd/Developer/totem_labs/clients/architect-gallore/design/suczka-studio',
     ),
-    dialStore: MemoryDialStore(),
+    // Dial store: NOT pinned here (was MemoryDialStore until 2026-08-25 —
+    // the Supabase rewire). DesignServer.start resolves
+    // SupabaseDialStore.fromConfig(~/.appbox/supabase) first and falls back
+    // to memory only when unconfigured, so clients and the operator share
+    // the central store (project nqvzhxcldntyayilykfy).
     // The panel iframes this server from arxa.studio.localhost:7891 - cross
     // origin - so the machine-wide allowlist (~/.appbox/trusted-origins,
     // which arxa studio registers itself into) must ride along. The CLI
