@@ -1357,13 +1357,18 @@
     }
   }
   async function loadDraft() {
-    if (S.mode !== 'author') return;
+    if (S.mode !== 'author') return false;
     const r = await api('GET', '/draft');
-    if (r && r.draft) {
+    // Capability, not content: {"draft":null} is a REAL author answer (no
+    // draft saved yet) and must boot the dock. Only the server's quiet
+    // mirror marker or a dead network means this context has no dial.
+    if (r == null || r.mirror === true) return false;
+    if (r.draft) {
       S.draft.tokens = r.draft.tokens || {};
       S.draft.patches = r.draft.patches || {};
       lastTextSig = textSig(S.draft); // boot truth — only CHANGES reload
     }
+    return true;
   }
 
   // Apply the CURRENT draft patch set to this document. The serve-time
@@ -1773,36 +1778,51 @@
   }
 
   // ── boot ───────────────────────────────────────────────────────────────
-  // An OPAQUE origin ('null') means a sandboxed embedder — the gen-ui
-  // RungLadder's strict sandbox for same-host urls. There every /__dial/*
-  // call is CORS-refused BY DESIGN (opaque origins are never trusted), and
-  // even the two refused boot probes log alarming console errors while
-  // arming a dock that can never work. Such a frame is a view-only MIRROR:
-  // stay quiet and stay out — the embedder keeps it fresh by remounting on
-  // server pushes, subscribed from the studio's trusted origin. Detected
-  // directly; the old capability probe cost a sacrificial refused request.
-  if (String(window.location.origin) === 'null') {
+  // CAPABILITY-GATED BOOT. Sandboxed mirror frames must stay out of the
+  // DOM, but origin-string heuristics cannot detect them: Brave reports a
+  // REAL location.origin inside frames whose network requests are still
+  // refused as null-origin (measured 2026-08-24; Chromium says 'null',
+  // Brave doesn't). So ask the API instead: an author page proves itself
+  // with the draft read (file-backed — no pins store needed), a guest with
+  // the pins read. Any context where the proof cannot come back —
+  // sandboxed mirror, hard refusal, server down — stays a silent
+  // view-only mirror; the server answers those reads with a quiet
+  // CORS-clean 200 so not even a console line escapes.
+  function mirrorNote() {
     try {
-      console.info('[arxa dial] sandboxed mirror (opaque origin) — dial disabled');
+      console.info('[arxa dial] unavailable in this context — view-only mirror');
     } catch (_) {}
-    return;
+  }
+  function finishBoot() {
+    document.body.appendChild(host);
+    applyShade();
+    applyLayers();
+    resumeAfterReload(); // no-op unless the last text edit converged by reload
   }
   if (S.mode === 'invalid') {
+    document.body.appendChild(host);
+    applyShade();
+    applyLayers();
     say('This share link is expired or invalid');
+    return;
   }
-  document.body.appendChild(host);
-  applyShade();
-  applyLayers();
-  loadDraft(); // author-only; the server already overlaid it on this page
-  // The first read doubles as the capability probe: a refused answer (an
-  // opaque-origin frame) means no SSE either — subscribeEvents stays off.
-  api('GET', '/pins').then((r) => {
-    if (r && r.pins) {
+  if (S.mode === 'guest') {
+    api('GET', '/pins').then((r) => {
+      if (!(r && r.pins)) { mirrorNote(); return; }
       S.pins = r.pins;
+      finishBoot();
       renderPins();
       updateBadge();
       subscribeEvents();
-    }
+    });
+    return;
+  }
+  loadDraft().then((ok) => {
+    if (!ok) { mirrorNote(); return; }
+    finishBoot();
+    api('GET', '/pins').then((r) => {
+      if (r && r.pins) { S.pins = r.pins; renderPins(); updateBadge(); }
+      subscribeEvents();
+    });
   });
-  resumeAfterReload(); // no-op unless the last text edit converged by reload
 })();

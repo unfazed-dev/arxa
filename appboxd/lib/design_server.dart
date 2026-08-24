@@ -537,19 +537,19 @@ class DesignServer {
             '${verdict.reason}');
         // Opaque-origin READS (origin literally "null" — a sandboxed mirror
         // frame whose island predates its quiet-mirror boot, or any stray
-        // viewer) get a CORS-CLEAN empty answer instead of the bare 403:
-        // without ACAO the browser logs a scary cross-origin error for every
-        // probe, which read as "sync is broken" even though the frame was
-        // inert by design. The body carries nothing; writes and every named
-        // origin keep the full refusal.
+        // viewer) get a CORS-CLEAN empty 200 instead of an error status:
+        // Chrome logs every non-2xx fetch as a console line no JS can
+        // suppress, which read as "sync is broken" even though the frame
+        // was inert by design. The body carries nothing; writes and every
+        // named origin keep the full refusal.
         final originHeader = req.headers.value('Origin');
         if (method == 'GET' &&
             (originHeader == null || originHeader == 'null')) {
-          req.response.statusCode = 403;
+          req.response.statusCode = 200;
           req.response.headers
             ..contentType = ContentType.parse('application/json; charset=utf-8')
             ..set('Access-Control-Allow-Origin', '*');
-          req.response.write('{}');
+          req.response.write('{"mirror":true}');
           await req.response.close();
           return;
         }
