@@ -636,7 +636,7 @@ void main() {
           dir.path, 'tern-e1', '--text', 'Y', '--was', 'Shut',
         ]);
         expect(res2.exitCode, 5);
-        expect(res2.stderrLines.join(), contains('no branch literal'));
+        expect(res2.stderrLines.join(), contains('no branch matching'));
         expect(File('${dir.path}/a.tsx').readAsStringSync(),
             contains("{open ? 'OPEN 24/7' : 'Closed'}"));
       } finally {
@@ -724,4 +724,89 @@ void main() {
       }
     });
   });
+
+  group('conditional t() branches + name-site scan (2026-08-24)', () {
+    late Directory cdir;
+    setUp(() => cdir = Directory.systemTemp.createTempSync('condt'));
+    tearDown(() => cdir.deleteSync(recursive: true));
+
+    test('a pure-t conditional writes the matched key; infers locale', () {
+      Directory('${cdir.path}/l10n').createSync(recursive: true);
+      File('${cdir.path}/l10n/app_en.arb').writeAsStringSync(
+          '{\n "state.a": "Open now",\n "state.b": "Shut"\n}');
+      File('${cdir.path}/l10n/app_pl.arb').writeAsStringSync(
+          '{\n "state.a": "Otwarte",\n "state.b": "Zamkniete"\n}');
+      File('${cdir.path}/w.tsx').writeAsStringSync("<p data-arxa-id=\"ternt-e1\">"
+          "{open ? t('state.a') : t('state.b')}</p>");
+      final res = patchMain([
+        cdir.path, 'ternt-e1', '--text', 'OPEN 24/7', '--was', 'Open now',
+      ]);
+      expect(res.exitCode, 0, reason: res.stderrLines.join('; '));
+      expect(res.stdoutLines.join(), contains('l10n key "state.a"'));
+      expect(res.stdoutLines.join(), contains('conditional branch'));
+      expect(File('${cdir.path}/l10n/app_en.arb').readAsStringSync(),
+          contains('OPEN 24/7'));
+      expect(File('${cdir.path}/l10n/app_pl.arb').readAsStringSync(),
+          contains('"state.a": "Otwarte"')); // pl untouched by inference
+      expect(File('${cdir.path}/w.tsx').readAsStringSync(),
+          contains("t('state.a')")); // expression structure preserved
+    });
+
+    test('a mixed literal/t conditional routes whichever branch matches', () {
+      Directory('${cdir.path}/l10n').createSync(recursive: true);
+      File('${cdir.path}/l10n/app_en.arb').writeAsStringSync(
+          '{\n "state.closed": "Closed"\n}');
+      File('${cdir.path}/w.tsx').writeAsStringSync(
+          "<p data-arxa-id=\"mixt-e1\">{live ? 'Open now' : t('state.closed')}</p>");
+      final res = patchMain([
+        cdir.path, 'mixt-e1', '--text', 'SHUT FOREVER', '--was', 'Closed',
+      ]);
+      expect(res.exitCode, 0, reason: res.stderrLines.join('; '));
+      expect(res.stdoutLines.join(), contains('"state.closed"'));
+      final out = File('${cdir.path}/w.tsx').readAsStringSync();
+      expect(out, contains("'Open now'")); // literal branch untouched
+      expect(out, contains("t('state.closed')"));
+    });
+
+    test('cross-kind ambiguity refuses enumerating both candidate kinds', () {
+      Directory('${cdir.path}/l10n').createSync(recursive: true);
+      File('${cdir.path}/l10n/app_en.arb').writeAsStringSync(
+          '{\n "state.a": "Open now"\n}');
+      File('${cdir.path}/w.tsx').writeAsStringSync(
+          "<p data-arxa-id=\"amb-e1\">{open ? 'Open now' : t('state.a')}</p>");
+      final res = patchMain([
+        cdir.path, 'amb-e1', '--text', 'X', '--was', 'Open now',
+      ]);
+      expect(res.exitCode, 5);
+      expect(res.stderrLines.join(), contains('branch literal'));
+      expect(res.stderrLines.join(), contains('l10n key'));
+    });
+
+    test('a t()-bearing conditional with no match refuses loudly', () {
+      Directory('${cdir.path}/l10n').createSync(recursive: true);
+      File('${cdir.path}/l10n/app_en.arb').writeAsStringSync(
+          '{\n "state.a": "Open now"\n}');
+      File('${cdir.path}/w.tsx').writeAsStringSync(
+          "<p data-arxa-id=\"zero-e1\">{open ? t('state.a') : t('state.b')}</p>");
+      final res = patchMain([
+        cdir.path, 'zero-e1', '--text', 'X', '--was', 'Nope',
+      ]);
+      expect(res.exitCode, 5);
+      expect(res.stderrLines.join(), contains('no branch matching --was'));
+    });
+
+    test('nameSiteLocations counts and locates authored anchors', () {
+      File('${cdir.path}/a.tsx').writeAsStringSync(
+          '<Box name="dup-el2">x</Box>\n<Label name="uni-el9">y</Label>\n');
+      File('${cdir.path}/b.tsx').writeAsStringSync(
+          '<Box name="dup-el2">z</Box>\n');
+      final dup = nameSiteLocations(cdir, 'dup-el2');
+      expect(dup.length, 2);
+      expect(dup.map((s) => s.$1), contains(endsWith('b.tsx')));
+      expect(dup.first.$3, greaterThanOrEqualTo(1)); // line numbers sane
+      expect(nameSiteLocations(cdir, 'uni-el9'), hasLength(1));
+      expect(nameSiteLocations(cdir, 'ghost-el'), isEmpty);
+    });
+  });
+
 }

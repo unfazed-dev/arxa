@@ -79,6 +79,7 @@
     selected: null, // { id, el, label, group } — the element being edited
     selOutline: '', // inline outline the selection highlight borrowed
     draft: { tokens: {}, patches: {} }, // the Draft Overlay (server-side)
+    draftWarnings: [], // preview-commit parity: el: keys whose name= is not exactly one source site
     draftDirty: false,
     ownSave: 0, // suppress refetch loops on our own PUT's broadcast
     inlineEditing: null, // original text of the element being edited on-canvas
@@ -1308,7 +1309,11 @@
     S.draftDirty = false;
     S.ownSave = Date.now();
     const r = await api('PUT', '/draft', { tokens: S.draft.tokens, patches: S.draft.patches });
-    if (r && r.ok) { S.draftMeta = r; renderDraftMeta(); }
+    if (r && r.ok) {
+      S.draftMeta = r;
+      S.draftWarnings = r.warnings || [];
+      renderDraftMeta();
+    }
     else say(r && r.error ? 'Draft refused: ' + r.error : 'Draft save failed');
     // A text edit the author just committed will be fought by the artifact's
     // own animator (it re-renders split text from its boot capture — the
@@ -1363,6 +1368,7 @@
     // draft saved yet) and must boot the dock. Only the server's quiet
     // mirror marker or a dead network means this context has no dial.
     if (r == null || r.mirror === true) return false;
+    S.draftWarnings = r.warnings || []; // parity: computed server-side on every draft read
     if (r.draft) {
       S.draft.tokens = r.draft.tokens || {};
       S.draft.patches = r.draft.patches || {};
@@ -1447,9 +1453,21 @@
     if (!el) return;
     const np = Object.keys(S.draft.patches).length;
     const nt = Object.keys(S.draft.tokens).length;
-    el.textContent = S.draftDirty
+    const nw = (S.draftWarnings || []).filter(w =>
+      Object.keys(S.draft.patches).indexOf('el:' + w.el) >= 0).length;
+    let txt = S.draftDirty
       ? 'unsaved changes…'
       : np + ' patches · ' + nt + ' tokens' + (S.draftMeta ? ' · saved' : '');
+    if (nw > 0) {
+      const detail = S.draftWarnings
+        .map(w => w.el + ': ' + w.sites + ' name= sites (' + w.problem + ')')
+        .join('; ');
+      txt += ' · ⚠ ' + nw + ' uncommittable';
+      el.title = 'These el: edits cannot commit - ' + detail;
+    } else {
+      el.removeAttribute('title');
+    }
+    el.textContent = txt;
   }
 
   // Every instance a patch key governs. el:-keys fan out over their data-el

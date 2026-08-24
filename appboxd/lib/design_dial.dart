@@ -40,6 +40,7 @@ import 'dart:math';
 import 'package:crypto/crypto.dart' show sha256;
 
 import 'design_draft.dart';
+import 'design_patch.dart' show nameSiteLocations;
 
 // ── vocabulary ───────────────────────────────────────────────────────────
 
@@ -673,11 +674,40 @@ class DialApi {
   DialResponse _noDraftStore() => const DialResponse(
       503, {'error': 'draft overlay is not configured on this server'});
 
+  /// Preview-commit parity (2026-08-24): an el: patch whose authored name=
+  /// anchor does not resolve to exactly ONE source site previews fine but
+  /// is refused at commit - surface that as a warning so the dock can
+  /// badge it before the edit hardens. Machine-id patches are stamped by
+  /// the stamper and cannot collide, so they never warn.
+  List<Map<String, dynamic>>? _parityWarnings(DraftOverlay d) {
+    final base = artifactDir;
+    if (base == null) return null; // no source tree to scan - stay quiet
+    final warnings = <Map<String, dynamic>>[];
+    for (final e in d.patches.entries) {
+      final el = elKeyOf(e.key);
+      if (el == null) continue;
+      final sites = nameSiteLocations(Directory(base), el).length;
+      if (sites != 1) {
+        warnings.add({
+          'el': el,
+          'sites': sites,
+          'problem': sites == 0 ? 'missing' : 'ambiguous',
+        });
+      }
+    }
+    return warnings.isEmpty ? null : warnings;
+  }
+
   Future<DialResponse> _getDraft() async {
     final ds = draftStore;
     if (ds == null) return _noDraftStore();
     final d = await ds.load();
-    return DialResponse(200, {'draft': d?.toJson()});
+    if (d == null) return const DialResponse(200, {'draft': null});
+    final warn = _parityWarnings(d);
+    return DialResponse(200, {
+      'draft': d.toJson(),
+      if (warn != null) 'warnings': warn,
+    });
   }
 
   Future<DialResponse> _putDraft(Object? body) async {
@@ -685,11 +715,13 @@ class DialApi {
     if (ds == null) return _noDraftStore();
     final d = DraftOverlay.fromJson(body, artifact: artifact);
     await ds.save(d);
+    final warn = _parityWarnings(d);
     return DialResponse(200, {
       'ok': true,
       'patches': d.patches.length,
       'tokens': d.tokens.length,
       'updatedAt': d.updatedAt,
+      if (warn != null) 'warnings': warn,
     });
   }
 

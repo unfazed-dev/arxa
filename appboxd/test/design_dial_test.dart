@@ -401,4 +401,67 @@ void main() {
       expect((still.json as Map)['draft'], isNotNull);
     });
   });
+
+group('parity warnings on the draft surface (2026-08-24)', () {
+  late Directory phome;
+  late Directory part;
+  late DialApi papi;
+  setUp(() {
+    phome = Directory.systemTemp.createTempSync('parity-home');
+    part = Directory.systemTemp.createTempSync('parity-art');
+    File('${part.path}/w.tsx').writeAsStringSync(
+        '<Box name="solo-el">one</Box>\n<Box name="dup-el2">two</Box>\n');
+    File('${part.path}/v.tsx').writeAsStringSync(
+        '<Box name="dup-el2">three</Box>\n');
+    papi = DialApi(
+      store: MemoryDialStore(),
+      artifact: 'demo',
+      draftStore: DraftFileStore(artifactDir: part.path, home: phome.path),
+      artifactDir: part.path,
+    );
+  });
+  tearDown(() {
+    phome.deleteSync(recursive: true);
+    part.deleteSync(recursive: true);
+  });
+
+  test('single site: no warnings key anywhere', () async {
+    final put = await papi.handle('PUT', '/draft', {}, {
+      'patches': {'el:solo-el': {'style': {'color': 'red'}}},
+    }, null);
+    expect(put.status, 200, reason: jsonEncode(put.json));
+    expect((put.json as Map)['warnings'], isNull);
+    final get = await papi.handle('GET', '/draft', {}, null, null);
+    expect((get.json as Map)['warnings'], isNull);
+  });
+
+  test('ambiguous site count warns on load', () async {
+    await papi.handle('PUT', '/draft', {}, {
+      'patches': {'el:dup-el2': {'style': {'color': 'red'}}},
+    }, null);
+    final get = await papi.handle('GET', '/draft', {}, null, null);
+    final w = ((get.json as Map)['warnings'] as List).first as Map;
+    expect(w['sites'], 2);
+    expect(w['problem'], 'ambiguous');
+  });
+
+  test('missing anchor warns as missing with zero sites', () async {
+    await papi.handle('PUT', '/draft', {}, {
+      'patches': {'el:nope-el': {'style': {'color': 'red'}}},
+    }, null);
+    final get = await papi.handle('GET', '/draft', {}, null, null);
+    final w = ((get.json as Map)['warnings'] as List).first as Map;
+    expect(w['sites'], 0);
+    expect(w['problem'], 'missing');
+  });
+
+  test('machine-id patches never warn', () async {
+    await papi.handle('PUT', '/draft', {}, {
+      'patches': {'some-stamp-e1': {'style': {'color': 'red'}}},
+    }, null);
+    final get = await papi.handle('GET', '/draft', {}, null, null);
+    expect((get.json as Map)['warnings'], isNull);
+  });
+});
+
 }

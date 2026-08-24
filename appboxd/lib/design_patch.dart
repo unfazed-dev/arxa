@@ -153,6 +153,30 @@ PatchResult patchAllRendered(String html, String id, PatchEdits edits,
   }
 }
 
+/// Source sites carrying the authored name= anchor [el] under [dir], as
+/// (absolutePath, byteOffset, lineNumber). The single scanner behind
+/// patchMain's authored-identity resolution AND the draft surface's parity
+/// warnings - preview must never promise what commit will refuse.
+List<(String, int, int)> nameSiteLocations(Directory dir, String el) {
+  if (!dir.existsSync()) return const [];
+  final quoteAlt = String.fromCharCode(34) + String.fromCharCode(39);
+  final nameRe = RegExp(r'name\s*=\s*([' + quoteAlt + r'])' +
+      RegExp.escape(el) + r'\1');
+  final out = <(String, int, int)>[];
+  for (final f in dir
+      .listSync(recursive: true)
+      .whereType<File>()
+      .where((f) => f.path.endsWith('.tsx'))) {
+    final src = f.readAsStringSync();
+    for (final m in nameRe.allMatches(src)) {
+      final line =
+          '\n'.allMatches(src.substring(0, m.start)).length + 1;
+      out.add((f.path, m.start, line));
+    }
+  }
+  return out;
+}
+
 /// Void elements never carry text content — a --text aimed at one refuses.
 const _voidTags = {
   'area', 'base', 'br', 'col', 'embed', 'hr', 'img',
@@ -349,6 +373,39 @@ String? _innerOfAt(String src, int at) {
 /// (2026-08-24); without it a resolvable edit updates every locale, as
 /// before. Returns null when the element is not brace-wrapped or not a t()
 /// call (caller tries other routes); resolvable-shape failures exit 5.
+/// One ARB file's surgical single-key write: only the value's byte span
+/// is rebuilt, everything outside stays verbatim. False when the key is
+/// absent (the caller decides whether that is fatal).
+bool _writeOneArbKey(File arb, String key, String newText) {
+  final src2 = arb.readAsStringSync();
+  final valueRe = RegExp('"' + RegExp.escape(key) +
+      '"[\\s]*:[\\s]*"(?:[^"\\\\]|\\\\.)*"');
+  final newValue =
+      '"' + key + '": "' + newText.replaceAll('"', r'\"') + '"';
+  if (!valueRe.hasMatch(src2)) return false;
+  arb.writeAsStringSync(src2.replaceFirst(valueRe, newValue));
+  return true;
+}
+
+/// Locale inference mirrors the seed route: when [was] equals key [k]'s
+/// value in exactly ONE locale file, that locale alone is written - an
+/// edit of Polish copy must not stamp Polish text over the English SSOT.
+List<File> _inferArbTargets(List<File> arbs, List<File> fallback, String k,
+    String? locale, String? was) {
+  if (locale != null || was == null || was.isEmpty) return fallback;
+  final holding = <File>[];
+  for (final arb in arbs) {
+    if (!arb.path.endsWith('.arb')) continue;
+    final doc = jsonDecode(arb.readAsStringSync());
+    if (doc is Map &&
+        doc[k] is String &&
+        _normText(doc[k] as String) == _normText(was)) {
+      holding.add(arb);
+    }
+  }
+  return holding.length == 1 ? holding : fallback;
+}
+
 final _arbLocaleRe = RegExp(r'(?:^|[_])([a-z]{2})\.arb$');
 
 String? _arbLocaleOf(String basename) =>
@@ -416,41 +473,13 @@ CmdResult? routeTextToArbForFile(
     targets = named;
   }
 
-  // Locale inference mirrors the seed route: when --was equals the key's
-  // value in exactly ONE locale file, that locale alone is written - an
-  // edit of Polish copy must not stamp Polish text over the English SSOT.
-  List<File> inferTargets(String k) {
-    if (locale != null || was == null || was.isEmpty) return targets;
-    final holding = <File>[];
-    for (final arb in arbs) {
-      if (!arb.path.endsWith('.arb')) continue;
-      final doc = jsonDecode(arb.readAsStringSync());
-      if (doc is Map &&
-          doc[k] is String &&
-          _normText(doc[k] as String) == _normText(was)) {
-        holding.add(arb);
-      }
-    }
-    return holding.length == 1 ? holding : targets;
-  }
-
-  // Surgical single-value replace of one key in one file.
-  bool writeKey(File arb, String k) {
-    final src2 = arb.readAsStringSync();
-    final valueRe = RegExp('"' + RegExp.escape(k) +
-        '"[\\s]*:[\\s]*"(?:[^"\\\\]|\\\\.)*"');
-    final newValue =
-        '"' + k + '": "' + text.replaceAll('"', r'\"') + '"';
-    if (!valueRe.hasMatch(src2)) return false;
-    arb.writeAsStringSync(src2.replaceFirst(valueRe, newValue));
-    return true;
-  }
-
   if (key != null) {
-    final wts = inferTargets(key);
+    final wts = _inferArbTargets(arbs, targets, key, locale, was);
     final missing = <String>[];
     for (final arb in wts) {
-      if (!writeKey(arb, key)) missing.add(p.basename(arb.path));
+      if (!_writeOneArbKey(arb, key, text)) {
+        missing.add(p.basename(arb.path));
+      }
     }
     if (missing.isNotEmpty) {
       return CmdResult(5, stderrLines: [
@@ -512,10 +541,10 @@ CmdResult? routeTextToArbForFile(
     ]);
   }
   final k = matchedKeys.single;
-  final wts = inferTargets(k);
+  final wts = _inferArbTargets(arbs, targets, k, locale, was);
   final missing = <String>[];
   for (final arb in wts) {
-    if (!writeKey(arb, k)) missing.add(p.basename(arb.path));
+    if (!_writeOneArbKey(arb, k, text)) missing.add(p.basename(arb.path));
   }
   if (missing.isNotEmpty) {
     return CmdResult(5, stderrLines: [
@@ -538,13 +567,15 @@ CmdResult _arbRouted(
   ]);
 }
 
-/// Fallback for brace expressions the routers decline - conditionals like
-/// {open ? 'Open now' : 'Closed'}. When [was] equals EXACTLY ONE quoted
-/// literal inside the element own expression, that branch alone is
-/// spliced (quote-aware; the sibling branch untouched); zero or several
-/// matches refuse loudly. Returns null when the element is not a
-/// conditional-shaped expression (caller emits the generic refusal).
-CmdResult? _spliceTernaryLiteral(File hit, Directory dir, int at, String id,
+/// Fallback for brace expressions the routers decline - CONDITIONALS.
+/// Candidates are BOTH quoted literals and t('key') references inside the
+/// element own expression; --was matches a literal verbatim or a key
+/// through its ARB value in ANY locale. Exactly one candidate acts: the
+/// literal branch splices in place, the t() branch writes its l10n entry
+/// (locale-inferred like every route). Zero or several refuse loudly with
+/// per-candidate detail. Returns null when the element is not a
+/// conditional-shaped expression (the caller emits the generic refusal).
+CmdResult? _routeConditional(File hit, Directory dir, int at, String id,
     String was, String text) {
   final src = hit.readAsStringSync();
   final span = _elementInnerSpan(src, at);
@@ -556,12 +587,7 @@ CmdResult? _spliceTernaryLiteral(File hit, Directory dir, int at, String id,
       !trimmed.contains('?')) {
     return null;
   }
-  if (was.isEmpty) {
-    return CmdResult(5, stderrLines: [
-      'appbox design patch: --text refused: "$id" is a conditional '
-          'expression - pass --was <branch text> to pick the branch'
-    ]);
-  }
+  // Quoted literals.
   final bs = String.fromCharCode(92);
   final lits = <(int, int, String)>[];
   var k2 = 0;
@@ -584,42 +610,131 @@ CmdResult? _spliceTernaryLiteral(File hit, Directory dir, int at, String id,
       .replaceAll(bs + bs, bs)
       .replaceAll(bs + "'", "'")
       .replaceAll(bs + '"', '"');
-  final matched = lits
-      .where((l) =>
-          _normText(l.$3) == _normText(was) ||
-          _normText(unq(l.$3)) == _normText(was))
-      .toList();
-  if (matched.isEmpty) {
-    final clip = trimmed.length > 72
-        ? trimmed.substring(0, 72) + '...'
-        : trimmed;
+  final normWas = _normText(was);
+  final litHits = was.isEmpty
+      ? <(int, int, String)>[]
+      : lits
+          .where((l) =>
+              _normText(l.$3) == normWas ||
+              _normText(unq(l.$3)) == normWas)
+          .toList();
+  // t() references inside the expression. Manual scan: 't(' also ends
+  // words like format(), so the preceding char must not be an identifier
+  // or member character.
+  final keyRefs = <String>[];
+  var pos = 0;
+  while (true) {
+    final at3 = trimmed.indexOf('t(', pos);
+    if (at3 < 0) break;
+    final prev = at3 == 0 ? ' ' : trimmed[at3 - 1];
+    if (!RegExp(r'[A-Za-z0-9_$.]').hasMatch(prev)) {
+      var j = at3 + 2;
+      while (j < trimmed.length && trimmed[j] == ' ') {
+        j++;
+      }
+      if (j < trimmed.length && (trimmed[j] == "'" || trimmed[j] == '"')) {
+        final q3 = trimmed[j];
+        final e3 = trimmed.indexOf(q3, j + 1);
+        if (e3 > j + 1) {
+          final cand = trimmed.substring(j + 1, e3);
+          if (RegExp(r'^[A-Za-z0-9_.:-]+$').hasMatch(cand)) {
+            keyRefs.add(cand);
+            pos = e3 + 1;
+            continue;
+          }
+        }
+      }
+    }
+    pos = at3 + 2;
+  }
+  // Which referenced keys hold the --was value in ANY locale?
+  var keyHits = <String>[];
+  if (keyRefs.isNotEmpty && was.isNotEmpty) {
+    final arbDir = Directory(p.join(dir.path, 'l10n'));
+    if (arbDir.existsSync()) {
+      // Any-locale semantics: a key matches when ANY locale holds the
+      // --was value - first-locale-wins would miss the edited language.
+      final vals = <String, Set<String>>{};
+      for (final arb in arbDir.listSync().whereType<File>()) {
+        if (!arb.path.endsWith('.arb')) continue;
+        final doc = jsonDecode(arb.readAsStringSync());
+        if (doc is! Map) continue;
+        doc.forEach((k, v) {
+          if (k is String && v is String && keyRefs.contains(k)) {
+            (vals[k] ??= <String>{}).add(v);
+          }
+        });
+      }
+      keyHits = keyRefs
+          .where((k) =>
+              vals.containsKey(k) &&
+              vals[k]!.any((v) => _normText(v) == normWas))
+          .toList();
+    }
+  }
+  final total = litHits.length + keyHits.length;
+  if (total == 0) {
+    if (was.isEmpty) {
+      return CmdResult(5, stderrLines: [
+        'appbox design patch: --text refused: "$id" is a conditional '
+            'expression - pass --was <branch text> to pick the branch'
+      ]);
+    }
+    final clip =
+        trimmed.length > 72 ? trimmed.substring(0, 72) + '...' : trimmed;
     return CmdResult(5, stderrLines: [
       'appbox design patch: --text refused: the conditional on "$id" has '
-          'no branch literal equal to --was ("$clip")'
+          'no branch matching --was ("$clip")'
     ]);
   }
-  if (matched.length > 1) {
+  if (total > 1) {
+    final parts = <String>[
+      for (final l in litHits) 'branch literal "${unq(l.$3)}"',
+      for (final k in keyHits) 'l10n key "$k"',
+    ];
     return CmdResult(5, stderrLines: [
-      'appbox design patch: --text ambiguous for "$id": ${matched.length} '
-          'branch literals equal --was - edit the widget source directly'
+      'appbox design patch: --text ambiguous for "$id": $total branches '
+          'match --was:',
+      ...parts,
     ]);
   }
-  final m = matched.single;
-  final q = inner[m.$1];
-  final escaped = text
-      .replaceAll(bs, bs + bs)
-      .split(q)
-      .join(bs + q);
-  final out = src.substring(0, span.$1 + m.$1) +
-      q + escaped + q +
-      src.substring(span.$1 + m.$2 + 1);
-  hit.writeAsStringSync(out);
-  final rel = p.split(p.relative(hit.path, from: dir.path)).join('/');
-  final line =
-      '\n'.allMatches(src.substring(0, span.$1 + m.$1)).length + 1;
+  if (litHits.isNotEmpty) {
+    final m = litHits.single;
+    final q = inner[m.$1];
+    final escaped = text.replaceAll(bs, bs + bs).split(q).join(bs + q);
+    final out = src.substring(0, span.$1 + m.$1) +
+        q + escaped + q +
+        src.substring(span.$1 + m.$2 + 1);
+    hit.writeAsStringSync(out);
+    final rel = p.split(p.relative(hit.path, from: dir.path)).join('/');
+    final line =
+        '\n'.allMatches(src.substring(0, span.$1 + m.$1)).length + 1;
+    return CmdResult(0, stdoutLines: [
+      'routed $id -> $rel:$line conditional branch - expression structure '
+          'preserved'
+    ]);
+  }
+  // Single t() branch: the ARB SSOT write, locale-inferred like every
+  // other route.
+  final k = keyHits.single;
+  final arbDir = Directory(p.join(dir.path, 'l10n'));
+  final arbs = arbDir.listSync().whereType<File>().toList()
+    ..sort((a, b) => p.basename(a.path).compareTo(p.basename(b.path)));
+  final targets = arbs.where((a) => a.path.endsWith('.arb')).toList();
+  final wts = _inferArbTargets(arbs, targets, k, null, was);
+  final missing = <String>[];
+  for (final arb in wts) {
+    if (!_writeOneArbKey(arb, k, text)) missing.add(p.basename(arb.path));
+  }
+  if (missing.isNotEmpty) {
+    return CmdResult(5, stderrLines: [
+      'appbox design patch: key "$k" missing in: ' +
+          missing.join(', ') + ' - add it there and retry'
+    ]);
+  }
   return CmdResult(0, stdoutLines: [
-    'routed $id -> $rel:$line conditional branch - expression structure '
-        'preserved'
+    'routed $id -> l10n key "$k" (conditional branch; ${wts.length} '
+        'locale(s) updated) - expression structure preserved'
   ]);
 }
 
@@ -1206,17 +1321,10 @@ CmdResult patchMain(List<String> args) {
       ]);
     }
   } else if (elTarget != null) {
-    final quoteAlt =
-        String.fromCharCode(34) + String.fromCharCode(39);
-    final nameRe = RegExp(r'name\s*=\s*([' + quoteAlt + r'])' +
-        RegExp.escape(elTarget!) + r'\1');
-    final sites = <(File, int)>[];
-    for (final f in files) {
-      final src = f.readAsStringSync();
-      for (final m in nameRe.allMatches(src)) {
-        sites.add((f, m.start));
-      }
-    }
+    final sites = <(File, int, int)>[
+      for (final s2 in nameSiteLocations(dir, elTarget!))
+        (File(s2.$1), s2.$2, s2.$3),
+    ];
     if (sites.isEmpty) {
       return CmdResult(3, stderrLines: [
         'appbox design patch: no element carries data-el="$id" and no '
@@ -1226,10 +1334,7 @@ CmdResult patchMain(List<String> args) {
     if (sites.length > 1) {
       final locs = <String>[];
       for (final s2 in sites) {
-        final line =
-            '\n'.allMatches(s2.$1.readAsStringSync().substring(0, s2.$2))
-                .length + 1;
-        locs.add('  ' + p.relative(s2.$1.path, from: dir.path) + ':$line');
+        locs.add('  ' + p.relative(s2.$1.path, from: dir.path) + ':${s2.$3}');
       }
       return CmdResult(4, stderrLines: [
         'appbox design patch: authored identity "$id" resolves to '
@@ -1261,9 +1366,9 @@ CmdResult patchMain(List<String> args) {
       final routed = routeTextToArbForFile(hit, dir, at, id, edits.text!,
           was: was, locale: locale);
       if (routed != null) return routed;
-      if (innerTrim.contains('?') && !innerTrim.contains('t(')) {
-        final branched = _spliceTernaryLiteral(
-            hit, dir, at, id, was ?? '', edits.text!);
+      if (innerTrim.contains('?')) {
+        final branched =
+            _routeConditional(hit, dir, at, id, was ?? '', edits.text!);
         if (branched != null) return branched;
       }
       return CmdResult(5, stderrLines: [
@@ -1271,8 +1376,8 @@ CmdResult patchMain(List<String> args) {
             '("$innerTrim") - its text lives in a data source (l10n ARB, '
             'seed fixtures), not as a literal here',
         if (innerTrim.contains('?'))
-          'conditionals route with --was equal to one branch literal; '
-              'dynamic t() templates route through their l10n keys',
+          'conditionals route by --was: a branch literal splices in place; '
+              "a branch t('key') writes that l10n entry",
       ]);
     }
   }

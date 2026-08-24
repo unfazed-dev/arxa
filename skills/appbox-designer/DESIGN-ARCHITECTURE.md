@@ -77,6 +77,18 @@ trio through to the flags.
   Subscript bindings (`{row['t']}`) normalize to dotted hints and ride
   the seed ladder. Ternary branches (`{open ? 'Open' : 'Closed'}`) splice
   exactly the branch whose literal equals `--was`.
+- **Conditional t() branches** (`{open ? t('a') : t('b')}`, mixed
+    literal/t forms) resolve by --was against BOTH branch literals and the
+    referenced keys' ARB values in any locale; exactly one candidate acts
+    (branch splice or l10n write, locale-inferred), zero/several refuse
+    listing per-candidate detail.
+- **Preview-commit parity.** `GET /__dial/draft` computes, per `el:`
+    patch, how many authored name= sites its anchor resolves to and warns
+    when that is not exactly one - the dock badges the meta line so an
+    uncommittable edit is visible before it hardens. One el: overlay patch
+    converges every page carrying the anchor (overlay application is
+    page-agnostic), so cross-page component truth is previewed, not just
+    committed.
 - **Name-anchored source routing.** An `--el` op with no stamp anywhere
   falls back to the authored anchor — the primitives `name=` attribute
   that renders as `data-el`. Exactly one site in the artifact sources is

@@ -205,4 +205,21 @@ void main() {
       expect(await s.load(), isNull);
     });
   });
+
+group('overlay parity across pages (2026-08-24)', () {
+  const pageA = '<div data-el="badge">A</div>';
+  const pageB = '<section><span data-el="badge">B</span></section>';
+  test('one el: patch converges every page carrying the anchor', () {
+    final d = DraftOverlay(artifact: 'a', patches: {
+      'el:badge': DraftPatch(style: {'color': 'red'}),
+    });
+    final ra = d.apply(pageA);
+    final rb = d.apply(pageB);
+    expect(ra.html, contains('style="color: red"'));
+    expect(rb.html, contains('style="color: red"'));
+    expect(ra.applied, 1);
+    expect(rb.applied, 1);
+  });
+});
+
 }
