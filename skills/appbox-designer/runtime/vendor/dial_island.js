@@ -1402,12 +1402,6 @@
     }
     return n;
   }
-  function hasTextPatches(d) {
-    for (const k of Object.keys(d.patches)) {
-      if ((d.patches[k] || {}).text != null) return true;
-    }
-    return false;
-  }
   async function syncRemoteDraft() {
     if (syncing || S.mode !== 'author') return;
     syncing = true;
@@ -1424,7 +1418,15 @@
       // or collapsed within seconds, worst on wide rungs). A reload re-serves
       // with the overlay applied and the animator boots on the NEW text.
       // Style/token patches have no such owner — they stay live.
-      if (shrink || hasTextPatches(next)) { location.reload(); return; }
+      //
+      // Reload only when the incoming TEXT SIGNATURE differs from the one
+      // this document rendered with (lastTextSig — set at boot and after own
+      // saves). The earlier "any text patch exists" test reloaded every rung
+      // on every frame — duplicate frames and style-only saves included —
+      // yet could still leave a rung that had MISSED frames stale forever,
+      // because nothing re-checked divergence. The signature check both
+      // spares the pointless reloads and catches the missed-frame rung.
+      if (shrink || textSig(next) !== lastTextSig) { location.reload(); return; }
       S.draft.tokens = next.tokens;
       S.draft.patches = next.patches;
       applyTokensLive();
@@ -1747,6 +1749,16 @@
   function subscribeEvents() {
     try {
       const es = new EventSource(apiUrl('/events'));
+    // A RECONNECT is the certain sign frames were missed (socket-pool
+    // starvation, a server restart, laptop sleep) — resync instead of
+    // trusting the stream. The first open is boot truth: loadDraft already
+    // read it, and the signature check makes a no-divergence resync a
+    // no-op, so a flapping connection never reload-loops.
+    let esOpened = false;
+    es.addEventListener('open', () => {
+      if (esOpened) syncRemoteDraft();
+      esOpened = true;
+    });
     es.addEventListener('dial', (ev) => {
       let d = null;
       try { d = JSON.parse(ev.data); } catch (_) {}
