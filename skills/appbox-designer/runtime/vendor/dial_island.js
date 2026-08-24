@@ -441,6 +441,7 @@
       }
       S.open = !S.open;
       dock.classList.toggle('open', S.open);
+      dialPanelChanged(); // fan open: freeze hiding; fan closed: re-arm 30s
     });
     dockBtn.addEventListener('pointerdown', (e) => {
       dragStart = { x: e.clientX, y: e.clientY, moved: false };
@@ -1911,11 +1912,14 @@
     dialSpringTo(1, 0.5, 0.86);
     dialArmAutoHide();
   }
+  // Open mode = a panel OR the expanded dock fan is on screen. The dial
+  // cannot hide at all in either state - not by timer, not by anything.
+  function dialOpenMode() {
+    return !!(S.panel || S.open);
+  }
   function dialHide() {
     clearTimeout(dialHideAt);
-    // OPEN MODE LAW (operator, 2026-08-24): a panel is on screen - the dial
-    // cannot hide at all. Not by pointer-leave, not by the timer.
-    if (S.panel) return;
+    if (dialOpenMode()) return; // open mode law
     dialSpringTo(0, 0.34, 1.0);
   }
   // Thirty seconds of visibility ends in a tuck-away - unless a panel is
@@ -1925,12 +1929,12 @@
     clearTimeout(dialHideAt);
     if (!(sp && sp.target === 1)) return;
     dialHideAt = setTimeout(() => {
-      if (S.panel || dialLastWant) dialArmAutoHide();
+      if (dialOpenMode() || dialLastWant) dialArmAutoHide();
       else dialHide();
     }, 30000);
   }
   function dialPanelChanged() {
-    if (S.panel) { clearTimeout(dialHideAt); return; }
+    if (dialOpenMode()) { clearTimeout(dialHideAt); return; }
     dialArmAutoHide();
   }
   function mountHost() {
