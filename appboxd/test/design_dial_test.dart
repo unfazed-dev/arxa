@@ -41,10 +41,15 @@ void main() {
       expect((listed.json as Map)['store'], 'memory');
       expect(((listed.json as Map)['pins'] as List).length, 1);
 
+      // Rework 2026-08-24: exactly open/resolved/wont_do on the wire; the
+      // legacy names fold to open (read-side migration lives in parse).
       final moved = await api.handle(
-          'POST', '/pins/status', {}, {'id': pin['id'], 'status': 'triaged'}, null);
+          'POST', '/pins/status', {}, {'id': pin['id'], 'status': 'wont_do'}, null);
       expect(moved.status, 200);
-      expect(((moved.json as Map)['pin'] as Map)['status'], 'triaged');
+      expect(((moved.json as Map)['pin'] as Map)['status'], 'wont_do');
+      expect(DialPinStatus.parse('triaged'), DialPinStatus.open);
+      expect(DialPinStatus.parse('in_progress'), DialPinStatus.open);
+      expect(DialPinStatus.parse('bogus'), isNull);
 
       final replied = await api.handle('POST', '/pins/reply', {},
           {'id': pin['id'], 'body': 'on it'}, null);

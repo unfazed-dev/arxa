@@ -44,11 +44,13 @@ import 'design_patch.dart' show nameSiteLocations;
 
 // ── vocabulary ───────────────────────────────────────────────────────────
 
-/// The pin kanban (locked decision 9): the closed status set, wire names.
+/// The pin lifecycle (rework 2026-08-24, operator): design review needs
+/// exactly live / settled / refused. triaged and in_progress were
+/// project-management states, not review states — they die here, and old
+/// rows fold to open on read (a pin that was triaged or in progress but
+/// never resolved IS still open).
 enum DialPinStatus {
   open('open'),
-  triaged('triaged'),
-  inProgress('in_progress'),
   resolved('resolved'),
   wontDo('wont_do');
 
@@ -56,6 +58,7 @@ enum DialPinStatus {
   final String wire;
 
   static DialPinStatus? parse(String? s) {
+    if (s == 'triaged' || s == 'in_progress') return DialPinStatus.open;
     for (final v in values) {
       if (v.wire == s) return v;
     }

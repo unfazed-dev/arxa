@@ -118,6 +118,37 @@ void main() {
       expect(js, isNot(contains('dragStart')), reason: 'drag code removed');
     });
 
+    test('rework 2026-08-24: 3-trigger fan, tray + card, dead verbs gone',
+        () async {
+      final (code, js) = await _req('GET', '$base/assets/vendor/dial_island.js');
+      expect(code, 200);
+      // The fan carries exactly the three triggers.
+      expect(js, contains("id: 'edit'"));
+      expect(js, contains("id: 'comment'"));
+      expect(js, contains("id: 'studio'"));
+      // The tray and the floating card ship.
+      expect(js, contains('function openTray('));
+      expect(js, contains('function openCard('));
+      expect(js, contains('scroll-snap-type:x mandatory'));
+      expect(js, contains('backdrop-filter'));
+      // The tray swap law and the never-hide law are wired.
+      expect(js, contains('function dialPark('));
+      expect(js, contains('function dialUnpark('));
+      // The six displaced verbs are deleted outright (operator decision):
+      // pen/shade/layers/share/tokens/design-as-verb + their machinery.
+      expect(js, isNot(contains('drawCanvas')));
+      expect(js, isNot(contains('redrawStrokes')));
+      expect(js, isNot(contains('applyShade')));
+      expect(js, isNot(contains('renderLayersCtl')));
+      expect(js, isNot(contains("id: 'renderShareCtl'")));
+      expect(js, isNot(contains('renderTokensPanel')));
+      expect(js, isNot(contains('renderDesignPanel')));
+      expect(js, isNot(contains('setPanel')));
+      // Kanban is the closed 3-state set.
+      expect(js, isNot(contains("'triaged'")));
+      expect(js, isNot(contains("'in_progress'")));
+    });
+
     test('pin roundtrip + kanban + reply through the wire', () async {
       final (ccode, cbody) = await _req('POST', '$base/__dial/pins', body: {
         'route': '/',
@@ -131,8 +162,15 @@ void main() {
       expect(ccode, 201, reason: cbody);
       final pin = (jsonDecode(cbody) as Map)['pin'] as Map;
 
-      final (scode, _) = await _req('POST', '$base/__dial/pins/status',
+      // Rework 2026-08-24: triaged/in_progress died; a legacy wire name
+      // folds to open instead of 400ing old clients.
+      final (fcode, fbody) = await _req('POST', '$base/__dial/pins/status',
           body: {'id': pin['id'], 'status': 'in_progress'});
+      expect(fcode, 200);
+      expect(((jsonDecode(fbody) as Map)['pin'] as Map)['status'], 'open');
+
+      final (scode, _) = await _req('POST', '$base/__dial/pins/status',
+          body: {'id': pin['id'], 'status': 'resolved'});
       expect(scode, 200);
 
       final (rcode, _) = await _req('POST', '$base/__dial/pins/reply',
@@ -143,7 +181,7 @@ void main() {
       expect(lcode, 200);
       final pins = (jsonDecode(lbody) as Map)['pins'] as List;
       final found = pins.singleWhere((x) => x['id'] == pin['id']);
-      expect(found['status'], 'in_progress');
+      expect(found['status'], 'resolved');
       expect((found['replies'] as List).single['body'], 'ack');
     });
 

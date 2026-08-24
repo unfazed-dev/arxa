@@ -3,16 +3,21 @@
 
    WHY THIS EXISTS. Every appbox artifact carries one floating control so the
    Author can adjust the design live and clients can leave feedback on the
-   shared design — one control, two modes. This file is the Feedback Mode
-   slice: Pins anchored to W7 data-el identity (rect-snapshot fallback,
-   Orphaned Pins survive removal), the kanban lifecycle (open / triaged /
-   in_progress / resolved / wont_do) with threaded replies, the Review Shade
-   with its opacity slider, per-layer toggles (pins / comments / drawings),
-   Share Link minting (Author only), and the freehand draw-over. Drawings
-   persist ONLY by attaching to a Pin (locked 2026-08-23: the pub.dev
-   feedback model — sketch, then pin it): strokes pending while draw-over is
-   armed attach to the next pin you place; strokes never pinned die with the
-   session. A pinned drawing replays on the canvas while its thread is open.
+   shared design. REWORK LOCKED 2026-08-24 (19 decisions, grilled): the dial
+   does exactly three things — a 3-trigger radial fan (Edit / Comment /
+   Studio); per-element editing happens in a floating smart CARD anchored to
+   the clicked element (dropdown-style flip/clamp, capability matrix per
+   element kind, live apply, draft auto-save); Studio opens the TRAY, a
+   glass bottom sheet (translucent, blurred, moss accent glow, close button
+   top-right, drag grabber + hairline divider + top bar with a contextual
+   CTA) holding a native scroll-snap carousel of five slides: Edit (element
+   outline + draft ledger, CTA Commit), Comments (pin board across routes,
+   3-state lifecycle, CTA Share), Settings (environment & session), Tweak
+   (theme tokens, motion, surface), Ship (branch/PR/gates autopilot, CTA
+   Deploy — lands with slice 5/6). Pins keep W7 data-el identity, rect
+   snapshots, orphan survival, threaded replies. The 6 displaced verbs
+   (pen/shade/layers/share-as-verb/tokens/design-as-verb) are DELETED —
+   their capabilities moved into the tray or died by operator decision.
 
    ISLAND SHAPE (per ADR-0002): one IIFE, no globals, no framework, no build
    step; configuration arrives in the injected #arxa-dial-config JSON script;
@@ -23,27 +28,30 @@
    innerHTML.
 
    MODES. 'author' (no token on the URL — the loopback designer): full
-   powers, including kanban moves and Share Link minting. 'guest' (a valid
-   ?dial= token): pins + replies only. 'invalid' (a dead token): the dock
-   boots to say so, nothing else. The store badge reads 'local' when the
-   server runs its memory store, so nobody mistakes process-local pins for
-   durable ones.
+   powers. 'guest' (a valid ?dial= token): comments only — the Comment
+   trigger and a Comments-only tray; no Edit, no Studio slides beyond
+   Comments. 'invalid' (a dead token): the dock boots to say so, nothing
+   else. The store badge reads 'local' when the server runs its memory
+   store, so nobody mistakes process-local pins for durable ones.
 
-   The radial dock is draggable (pointer capture, click-vs-drag by a 6px
-   threshold) and edge-snaps left/right; verbs fan out in an arc.
+   VISIBILITY LAW (operator, 2026-08-24). The dial is corner-pinned bottom-
+   right and NOT draggable. Hidden until the cursor enters a 50px hot
+   corner; Apple-physics spring reveal; pointer-leave NEVER hides; the 30s
+   timer is the ONLY tuck-away; never-hide while the fan is open, a mode is
+   armed (Edit select / Comment pin-drop), the card is up, or inline text
+   editing is active. THE TRAY SWAPS THE DIAL OUT: tray open → dial parks
+   (spring) and the timer suspends; tray close → dial springs back in and
+   the 30s timer re-arms fresh.
 
-   DESIGN MODE (Author only; locked decisions 1-5). The design verb arms
-   selection: hover shows the element under the cursor (data-arxa-id
-   identity), click opens its facet editors in the panel. The selected
-   element's kind (the data-el prefix, else its tag) picks a curated facet
-   set; a raw-CSS escape hatch covers the unlisted; a content facet edits
-   pure-text elements. The tokens verb edits the artifact's design tokens
-   (:root custom properties). Every edit applies LIVE to the page and
-   auto-saves (debounced) into the server-side Draft Overlay — artifact
-   source is never touched by auto-save, and guests always see the last
-   published state. 'Request commit' hands the patch set to the studio
-   agent over the dial event stream; the agent commits to source with
-   `design patch` and clears the draft. */
+   EDIT MODE (Author only). The Edit trigger arms selection: hover outlines
+   the element under the cursor (data-arxa-id identity), click selects it
+   and opens the floating smart card — the capability matrix per kind
+   (content, curated facets, color swatches, CSS escape hatch), every edit
+   applied LIVE and auto-saved (debounced) into the server-side Draft
+   Overlay. Source is never touched by auto-save; guests always see the
+   last published state. Commit (tray Edit slide CTA) hands the patch set
+   to the studio agent over the dial event stream; the agent commits to
+   source with `design patch` and clears the draft. */
 (() => {
   if (document._arxaDial) return; // guard against double-include
   document._arxaDial = 1;
@@ -65,17 +73,12 @@
     token: cfg.token || null,
     pins: [],
     open: false, // radial fan expanded
-    panel: null, // null | 'feedback' | 'layers' | 'shade' | 'share'
+    tray: null, // null | 'edit' | 'comments' | 'settings' | 'tweak' | 'ship'
     arming: false, // pin-placement armed
-    drawing: false, // draw-over armed
-    shade: 0, // review shade opacity 0..0.6 — OFF at boot; the shade is a review aid the user dials up, never a default dim over the design
-    layers: { pins: true, comments: true, drawings: true },
     activePin: null, // id whose thread popover is open
     name: '',
-    strokes: [], // PENDING strokes — persist only by attaching to a pin (see header)
-    activeDrawing: null, // strokes of the pin whose thread is open
     dockSide: 'right',
-    design: false, // Design Mode armed (author only)
+    design: false, // Edit Mode armed (author only)
     selected: null, // { id, el, label, group } — the element being edited
     selOutline: '', // inline outline the selection highlight borrowed
     draft: { tokens: {}, patches: {} }, // the Draft Overlay (server-side)
@@ -90,8 +93,6 @@
 
   const KANBAN = [
     ['open', 'Open'],
-    ['triaged', 'Triaged'],
-    ['in_progress', 'In progress'],
     ['resolved', 'Resolved'],
     ['wont_do', "Won't do"],
   ];
@@ -108,9 +109,6 @@
     '*{box-sizing:border-box;margin:0;padding:0;font:inherit}',
     '.pe{pointer-events:auto}',
     'button{cursor:pointer;border:0;background:none;color:inherit}',
-    /* the review shade */
-    '#shade{position:fixed;inset:0;background:#0b0b10;pointer-events:none;',
-    '  opacity:0;transition:opacity .18s ease}',
     /* pin badges */
     '#pins{position:fixed;inset:0;pointer-events:none}',
     '.pin{position:absolute;width:26px;height:26px;border-radius:50%;',
@@ -163,19 +161,72 @@
     '#dock.left .verb .tip{right:auto;left:52px}',
     '@media (prefers-reduced-motion:reduce){.verb{transition:none!important}',
     '  #dock.open .verb{transition-delay:0s!important}}',
-    /* the panel */
-    '#panel{position:fixed;bottom:92px;right:24px;width:320px;max-height:',
-    '  min(520px,70vh);background:#14141c;color:#FFFCF0;border-radius:12px;',
-    '  border:1px solid #2a2a35;box-shadow:0 12px 40px rgba(0,0,0,.5);',
-    '  display:none;flex-direction:column;overflow:hidden;pointer-events:auto}',
-    '#panel.open{display:flex}',
-    '#panel.left{right:auto;left:24px}',
-    '#phead{display:flex;align-items:center;gap:8px;padding:10px 12px;',
-    '  border-bottom:1px solid #2a2a35;font-size:13px;font-weight:700}',
-    '#phead .badge{margin-left:auto;font-size:10px;font-weight:600;',
-    '  background:#2a2a35;padding:2px 8px;border-radius:8px;color:#9aa0ab}',
-    '#phead .badge.local{background:#7c2d12;color:#ffd9c2}',
-    '#pbody{overflow-y:auto;flex:1;padding:8px}',
+    '.nomotion *{transition:none!important;animation:none!important}',
+    /* the tray (glass bottom sheet — 19-decision rework 2026-08-24) */
+    '#tray{position:fixed;left:0;right:0;bottom:0;z-index:25;display:none;',
+    '  flex-direction:column;pointer-events:auto;color:#FFFCF0;',
+    '  background:rgba(20,20,28,var(--tint,.82));',
+    '  backdrop-filter:blur(var(--tblur,16px)) saturate(1.4);',
+    '  -webkit-backdrop-filter:blur(var(--tblur,16px)) saturate(1.4);',
+    '  border:1px solid rgba(110,136,76,.45);',
+    '  border-radius:var(--trayrad,16px) var(--trayrad,16px) 0 0;',
+    '  box-shadow:0 -1px 0 rgba(110,136,76,.55),',
+    '    0 -14px 56px rgba(110,136,76,var(--glow,.22)),',
+    '    0 -24px 64px rgba(0,0,0,.5);max-height:70vh}',
+    '#tray.open{display:flex}',
+    '#grabber{display:flex;justify-content:center;padding:8px 0 4px;',
+    '  cursor:grab;touch-action:none}',
+    '#grabber .gbar{width:40px;height:4px;border-radius:2px;',
+    '  background:#3a3a46}',
+    '#tbar{display:flex;align-items:center;gap:10px;padding:6px 14px 10px;',
+    '  border-bottom:1px solid rgba(110,136,76,.28);flex:none}',
+    '#ttitle{font-size:13px;font-weight:700}',
+    '#dots{display:flex;gap:6px;margin:0 auto}',
+    '.dotbtn{width:8px;height:8px;border-radius:5px;background:#9aa0ab;',
+    '  opacity:.4;padding:0;transition:all .18s}',
+    '.dotbtn.cur{opacity:1;width:20px;background:#8fb35a}',
+    '#cta{background:#6e884c;color:#0b0b10;font-weight:700;font-size:12px;',
+    '  padding:6px 12px;border-radius:8px}',
+    '#cta:disabled{opacity:.4;cursor:not-allowed}',
+    '#cta.off{display:none}',
+    '#tclose{width:28px;height:28px;border-radius:50%;background:#2a2a35;',
+    '  color:#FFFCF0;font-size:14px;line-height:1;display:flex;',
+    '  align-items:center;justify-content:center}',
+    '#track{display:flex;overflow-x:auto;overflow-y:hidden;',
+    '  scroll-snap-type:x mandatory;scrollbar-width:none;',
+    '  overscroll-behavior-x:contain}',
+    '#track::-webkit-scrollbar{display:none}',
+    '.slide{flex:0 0 100%;scroll-snap-align:center;overflow-y:auto;',
+    '  overscroll-behavior:contain;padding:10px 14px 16px;min-height:200px}',
+    '@media (min-width:640px){#tray{left:24px;right:24px;margin:0 auto;',
+    '  max-width:720px;border-radius:var(--trayrad,16px);',
+    '  max-height:65vh;bottom:20px}}',
+    '@media (min-width:1024px){#tray{max-width:880px;max-height:60vh}',
+    '  .slide{flex-basis:calc(100% - 96px)}}',
+    '@media (prefers-reduced-transparency:reduce){#tray,#card{',
+    '  background:#14141c;backdrop-filter:none;-webkit-backdrop-filter:none}}',
+    '@media (prefers-reduced-motion:reduce){#track{scroll-behavior:auto}}',
+    /* the floating smart card */
+    '#card{position:fixed;width:300px;z-index:26;display:none;',
+    '  flex-direction:column;pointer-events:auto;color:#FFFCF0;',
+    '  background:rgba(20,20,28,var(--tint,.82));',
+    '  backdrop-filter:blur(var(--tblur,16px)) saturate(1.4);',
+    '  -webkit-backdrop-filter:blur(var(--tblur,16px)) saturate(1.4);',
+    '  border:1px solid rgba(110,136,76,.45);border-radius:12px;',
+    '  box-shadow:0 12px 40px rgba(0,0,0,.5),',
+    '    0 0 32px rgba(110,136,76,var(--glow,.22));',
+    '  max-height:min(440px,62vh)}',
+    '#card.open{display:flex}',
+    '#chead{display:flex;align-items:center;gap:8px;padding:10px 12px;',
+    '  border-bottom:1px solid rgba(110,136,76,.28);flex:none;',
+    '  font-size:12.5px;font-weight:700}',
+    '#chead .kchip{font-size:9.5px;font-weight:700;text-transform:uppercase;',
+    '  letter-spacing:.04em;background:#2a2a35;color:#9aa0ab;',
+    '  padding:2px 7px;border-radius:8px}',
+    '#chead .cclose{margin-left:auto;background:#2a2a35;color:#FFFCF0;',
+    '  width:22px;height:22px;border-radius:50%;font-size:12px;',
+    '  line-height:1;display:flex;align-items:center;justify-content:center}',
+    '.cbody{overflow-y:auto;overscroll-behavior:contain;flex:1}',
     '.row{padding:8px 10px;border-radius:8px;cursor:pointer;',
     '  border:1px solid transparent;margin-bottom:4px}',
     '.row:hover{background:#1d1d27}',
@@ -186,8 +237,6 @@
     '.chip{font-size:10px;font-weight:700;padding:2px 7px;border-radius:8px;',
     '  text-transform:uppercase;letter-spacing:.03em}',
     '.chip.open{background:#7c2d12;color:#ffd9c2}',
-    '.chip.triaged{background:#713f12;color:#fde68a}',
-    '.chip.inprogress{background:#1e3a5f;color:#bfdbfe}',
     '.chip.resolved{background:#14532d;color:#bbf7d0}',
     '.chip.wontdo{background:#3f3f46;color:#d4d4d8}',
     '.orphan-tag{color:#f59e0b;font-weight:700}',
@@ -221,10 +270,7 @@
     '  box-shadow:0 12px 40px rgba(0,0,0,.55);display:none;',
     '  pointer-events:auto;z-index:30}',
     '#composer.open{display:block}',
-    /* draw-over canvas */
-    '#draw{position:fixed;inset:0;pointer-events:none;z-index:5}',
-    '#draw.armed{pointer-events:auto;cursor:crosshair}',
-    /* shade + layer panels */
+    /* control rows (tray slides + card) */
     '.ctl{display:flex;align-items:center;gap:10px;padding:10px 12px;',
     '  font-size:12.5px}',
     '.ctl input[type=range]{flex:1;accent-color:#0891b2}',
@@ -324,7 +370,7 @@
       if (r && r.pins) {
         S.pins = r.pins;
         renderPins();
-        if (S.panel === 'feedback') renderPanelBody();
+        if (S.tray === 'comments') renderTraySlide('comments');
         updateBadge();
       }
     } finally {
@@ -333,12 +379,8 @@
   }
 
   // ── layer hosts ────────────────────────────────────────────────────────
-  const shade = h('div', { id: 'shade' });
   const pinsLayer = h('div', { id: 'pins' });
-  const drawCanvas = h('canvas', { id: 'draw' });
   const hover = h('div', { id: 'hover' }, [h('span', { id: 'hovertag' })]);
-  root.appendChild(shade);
-  root.appendChild(drawCanvas);
   root.appendChild(pinsLayer);
   root.appendChild(hover);
 
@@ -347,12 +389,10 @@
     dial: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3" fill="currentColor"/><line x1="12" y1="3" x2="12" y2="7"/><line x1="12" y1="17" x2="12" y2="21"/><line x1="3" y1="12" x2="7" y2="12"/><line x1="17" y1="12" x2="21" y2="12"/></svg>',
     pin: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21s-7-6.1-7-11a7 7 0 0 1 14 0c0 4.9-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>',
     list: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><circle cx="4" cy="6" r="1.4" fill="currentColor"/><circle cx="4" cy="12" r="1.4" fill="currentColor"/><circle cx="4" cy="18" r="1.4" fill="currentColor"/></svg>',
-    shade: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 1 0 18z" fill="currentColor"/></svg>',
-    layers: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2 2 8l10 6 10-6z"/><path d="m2 14 10 6 10-6"/></svg>',
-    pen: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 19l7-7a2.1 2.1 0 0 0-3-3l-7 7-1 4z"/><path d="M18 13l-6-6"/></svg>',
     share: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.6" y1="10.7" x2="15.4" y2="6.3"/><line x1="8.6" y1="13.3" x2="15.4" y2="17.7"/></svg>',
     design: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4l7 17 2.5-6.5L20 12z"/><path d="M13.5 14.5 19 20"/></svg>',
-    tokens: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 1 0 18"/><circle cx="8.5" cy="9.5" r="1.3" fill="currentColor"/><circle cx="8.5" cy="14.5" r="1.3" fill="currentColor"/><circle cx="12" cy="17.5" r="1.3" fill="currentColor"/></svg>',
+    comment: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>',
+    studio: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg>',
   };
   function icon(name) {
     const span = document.createElement('span');
@@ -370,16 +410,13 @@
   dock.appendChild(dockBtn);
   root.appendChild(dock);
 
-  // Radial verbs: angle fan upward from the dock.
+  // Radial triggers (rework 2026-08-24): exactly three — Edit arms
+  // selection, Comment arms pin-drop, Studio opens the tray. Guests get
+  // Comment + Studio(Comments-only tray); Edit is author-only.
   const VERBS = [
-    { id: 'design', icon: 'design', tip: 'Design Mode — select & edit', modes: ['author'] },
-    { id: 'tokens', icon: 'tokens', tip: 'Design tokens', modes: ['author'] },
-    { id: 'pin', icon: 'pin', tip: 'Add a pin', modes: ['author', 'guest'] },
-    { id: 'list', icon: 'list', tip: 'Feedback', modes: ['author', 'guest'] },
-    { id: 'shade', icon: 'shade', tip: 'Review shade', modes: ['author', 'guest'] },
-    { id: 'layers', icon: 'layers', tip: 'Layers', modes: ['author', 'guest'] },
-    { id: 'pen', icon: 'pen', tip: 'Draw over', modes: ['author', 'guest'] },
-    { id: 'share', icon: 'share', tip: 'Share link', modes: ['author'] },
+    { id: 'edit', icon: 'design', tip: 'Edit — select & adjust elements', modes: ['author'] },
+    { id: 'comment', icon: 'comment', tip: 'Comment — drop a pin', modes: ['author', 'guest'] },
+    { id: 'studio', icon: 'studio', tip: 'Studio — open the tray', modes: ['author', 'guest'] },
   ];
   const verbEls = {};
   const verbOrder = [];
@@ -411,14 +448,12 @@
     // right edge — so a full fan tightens its spacing and widens its arc:
     // -178°..-83.5° at R=190 keeps every center ≥ 30px off the edge and
     // chords at 44.7px.
+    // THREE TRIGGERS (rework 2026-08-24): with ≤3 verbs the fan widens its
+    // spacing so neighbor chords always clear the 44px buttons — at R=75 a
+    // 34° gap gives 44px chords exactly; no overlap ever again.
     const full = n > 7;
-    const spacing = full ? 13.5 : 17;
+    const spacing = n <= 3 ? 34 : full ? 13.5 : 17;
     const start = S.dockSide === 'right' ? -178 : -2 - (n - 1) * spacing;
-    // HALF RADIUS (operator, 2026-08-24): 190 -> 95, 150 -> 75. Honest
-    // trade-off flagged for the look-over: neighbor chords halve too
-    // (~22px at 13.5deg) while buttons stay 44px, so verbs overlap at this
-    // radius. No-overlap variants if wanted: smaller verbs, dual-radius
-    // rings, or a column fan.
     const R = full ? 95 : 75;
     verbOrder.forEach((el, i) => {
       const rad = ((start + i * spacing) * Math.PI) / 180;
@@ -434,9 +469,7 @@
   layoutFan();
 
   function updateBadge() {
-    const open = S.pins.filter(
-      (p) => p.status === 'open' || p.status === 'in_progress',
-    ).length;
+    const open = S.pins.filter((p) => p.status === 'open').length;
     badge.textContent = String(open);
     badge.style.display = open ? 'flex' : 'none';
   }
@@ -465,53 +498,7 @@
     }, 2600);
   }
 
-  // ── the panel ──────────────────────────────────────────────────────────
-  const panel = h('div', { id: 'panel' });
-  const phead = h('div', { id: 'phead' });
-  const pbody = h('div', { id: 'pbody' });
-  panel.appendChild(phead);
-  panel.appendChild(pbody);
-  root.appendChild(panel);
-
-  function setPanel(which, title) {
-    if (S.panel === which) {
-      S.panel = null;
-      panel.classList.remove('open');
-      dialPanelChanged(); // closing re-arms the 30s tuck-away
-      return;
-    }
-    S.panel = which;
-    phead.textContent = '';
-    phead.appendChild(h('span', { text: title }));
-    const badgeEl = h('span', {
-      class: 'badge' + (S.store === 'memory' ? ' local' : ''),
-      text:
-        S.store === 'memory'
-          ? 'local — pins die with this server'
-          : S.mode === 'guest'
-            ? 'shared'
-            : 'live',
-    });
-    phead.appendChild(badgeEl);
-    panel.classList.add('open');
-    // An open panel owns the screen corner — an expanded fan would float
-    // over it (eight verbs at R=190 reach the panel's right edge).
-    dock.classList.remove('open');
-    S.open = false;
-    renderPanelBody();
-    dialPanelChanged(); // open mode: cancel any pending hide outright
-  }
-
-  function renderPanelBody() {
-    pbody.textContent = '';
-    if (S.panel === 'feedback') return renderFeedbackList();
-    if (S.panel === 'shade') return renderShadeCtl();
-    if (S.panel === 'layers') return renderLayersCtl();
-    if (S.panel === 'share') return renderShareCtl();
-    if (S.panel === 'design') return renderDesignPanel();
-    if (S.panel === 'tokens') return renderTokensPanel();
-  }
-
+  // ── comments board (tray slide body) ───────────────────────────────────
   function chip(status) {
     return h('span', {
       class: 'chip ' + status.replace('_', ''),
@@ -519,20 +506,20 @@
     });
   }
 
-  function renderFeedbackList() {
+  function renderCommentsBody(body) {
     const route = location.pathname;
     const here = S.pins.filter((p) => p.route === route);
     const elsewhere = S.pins.filter((p) => p.route !== route);
     if (!S.pins.length) {
-      pbody.appendChild(
-        h('div', { class: 'ctl', text: 'No pins yet — arm the pin verb and click the design.' }),
+      body.appendChild(
+        h('div', { class: 'ctl', text: 'No pins yet — tap the Comment trigger and click the design.' }),
       );
       return;
     }
     const section = (title, list) => {
       if (!list.length) return;
       if (title) {
-        pbody.appendChild(
+        body.appendChild(
           h('div', {
             class: 'ctl',
             text: title,
@@ -540,100 +527,59 @@
           }),
         );
       }
-      list.forEach((p, i) => {
+      list.forEach((p) => {
         const row = h('div', { class: 'row' + (S.activePin === p.id ? ' active' : '') });
         const txt = h('span', { class: 'txt', text: p.body });
         const meta = h('div', { class: 'meta' }, [
           chip(p.status),
-          h('span', { text: p.name + ' · #' + (S.pins.indexOf(p) + 1) }),
+          h('span', { text: p.name + ' · ' + p.route }),
         ]);
         if (!p.anchor.el) meta.appendChild(h('span', { class: 'orphan-tag', text: 'surface' }));
         else if (!resolveAnchor(p)) meta.appendChild(h('span', { class: 'orphan-tag', text: 'orphaned' }));
         row.appendChild(txt);
         row.appendChild(meta);
-        row.addEventListener('click', () => openThread(p));
-        pbody.appendChild(row);
+        // Navigate-to-pin: a pin on another route is one tap away — jump
+        // there and flash its thread open on arrival.
+        row.addEventListener('click', () => {
+          if (p.route === route) return openThread(p);
+          try { sessionStorage.setItem('arxa-dial-open-pin', p.id); } catch (_) {}
+          location.assign(p.route);
+        });
+        body.appendChild(row);
       });
     };
     section(null, here);
     section('Other routes', elsewhere);
   }
-
-  function renderShadeCtl() {
-    const row = h('div', { class: 'ctl' });
-    row.appendChild(h('span', { text: 'Review shade' }));
-    const slider = h('input', { type: 'range', min: '0', max: '60', value: String(S.shade * 100) });
-    slider.addEventListener('input', () => {
-      S.shade = slider.value / 100;
-      applyShade();
-    });
-    row.appendChild(slider);
-    pbody.appendChild(row);
-    pbody.appendChild(
-      h('div', { class: 'ctl', style: 'color:#9aa0ab;font-size:11px', text: 'Dims the design so pins and drawings stand out. 0 is off.' }),
-    );
+  // Boot continuation: a board navigation asks to open a specific pin.
+  function openPinnedOnArrival() {
+    let id = null;
+    try { id = sessionStorage.getItem('arxa-dial-open-pin'); } catch (_) {}
+    if (!id) return;
+    try { sessionStorage.removeItem('arxa-dial-open-pin'); } catch (_) {}
+    const pin = S.pins.find((p) => p.id === id);
+    if (pin) setTimeout(() => openThread(pin), 350); // let the page settle first
   }
 
-  function renderLayersCtl() {
-    for (const layer of ['pins', 'comments', 'drawings']) {
-      const row = h('div', { class: 'ctl' });
-      row.appendChild(h('span', { text: layer[0].toUpperCase() + layer.slice(1) }));
-      const sw = h('button', {
-        class: 'switch' + (S.layers[layer] ? ' on' : ''),
-        'aria-label': 'toggle ' + layer,
+  // ── share minting (Comments slide CTA) ────────────────────────────────
+  async function mintShareLink(container) {
+    const r = await api('POST', '/share', {});
+    if (r && r.token) {
+      const url = location.origin + location.pathname + '?dial=' + r.token;
+      container.appendChild(h('div', { class: 'linkbox', text: url }));
+      const copy = h('button', { class: 'btn ghost', text: 'Copy link' });
+      copy.addEventListener('click', async () => {
+        try {
+          await navigator.clipboard.writeText(url);
+          say('Link copied');
+        } catch (_) {
+          say('Copy failed — select the link manually');
+        }
       });
-      sw.addEventListener('click', () => {
-        S.layers[layer] = !S.layers[layer];
-        sw.classList.toggle('on', S.layers[layer]);
-        applyLayers();
-      });
-      row.appendChild(sw);
-      pbody.appendChild(row);
+      container.appendChild(h('div', { class: 'btnrow' }, [copy]));
+    } else {
+      say('Could not mint a link');
     }
-  }
-
-  function renderShareCtl() {
-    pbody.appendChild(
-      h('div', { class: 'ctl', style: 'font-size:12px;color:#9aa0ab', text: 'Mint a link your client opens to pin comments on this design. View + comment only; 30 days.' }),
-    );
-    const btn = h('button', { class: 'btn', text: 'Mint share link' });
-    btn.addEventListener('click', async () => {
-      btn.textContent = 'Minting…';
-      const r = await api('POST', '/share', {});
-      if (r && r.token) {
-        const url = location.origin + location.pathname + '?dial=' + r.token;
-        const box = h('div', { class: 'linkbox', text: url });
-        const copy = h('button', { class: 'btn ghost', text: 'Copy' });
-        copy.addEventListener('click', async () => {
-          try {
-            await navigator.clipboard.writeText(url);
-            say('Link copied');
-          } catch (_) {
-            say('Copy failed — select the link manually');
-          }
-        });
-        pbody.appendChild(box);
-        pbody.appendChild(h('div', { class: 'btnrow' }, [copy]));
-      } else {
-        say('Could not mint a link');
-      }
-      btn.textContent = 'Mint share link';
-    });
-    pbody.appendChild(h('div', { class: 'ctl' }, [btn]));
-  }
-
-  // ── shade + layers application ─────────────────────────────────────────
-  function applyShade() {
-    shade.style.opacity = String(S.shade);
-  }
-  function applyLayers() {
-    pinsLayer.style.display = S.layers.pins ? '' : 'none';
-    // 'comments' is the THREAD layer. The panel is the dial's own chrome —
-    // hiding it from applyLayers vanished the very Layers panel the user was
-    // clicking in (smoke S7b).
-    thread.style.display = S.layers.comments ? '' : 'none';
-    if (!S.layers.comments) closeThread();
-    drawCanvas.style.display = S.layers.drawings ? '' : 'none';
   }
 
   // ── pin anchoring: data-el identity + rect snapshot (decision 6) ──────
@@ -666,8 +612,7 @@
           'pin ' +
           pin.status.replace('_', '') +
           (pt.orphan ? ' orphan' : '') +
-          (pin.drawing ? ' drawn' : '') +
-          (S.activePin === pin.id ? ' active' : ''),
+            (S.activePin === pin.id ? ' active' : ''),
         text: String(i + 1),
         title: pin.name + ': ' + pin.body,
       });
@@ -688,7 +633,6 @@
     requestAnimationFrame(() => {
       rafPending = false;
       renderPins();
-      redrawStrokes();
       renderHandles();
     });
   }
@@ -773,11 +717,6 @@
       nameInput = h('input', { type: 'text', placeholder: 'Your name', style: 'margin-top:8px' });
       composer.appendChild(nameInput);
     }
-    if (S.strokes.length) {
-      composer.appendChild(
-        h('div', { class: 'who', style: 'font-size:11px;color:#f59e0b;margin-top:8px', text: '✎ ' + S.strokes.length + ' stroke(s) will attach to this pin' }),
-      );
-    }
     const add = h('button', { class: 'btn', text: 'Add pin' });
     const cancel = h('button', { class: 'btn ghost', text: 'Cancel' });
     composer.appendChild(h('div', { class: 'btnrow' }, [cancel, add]));
@@ -793,24 +732,16 @@
           localStorage.setItem('arxa-dial-name', S.name);
         } catch (_) {}
       }
-      const drawing = S.strokes.length
-        ? S.strokes.map((st) => st.map((pt) => [Math.round(pt[0] * 10) / 10, Math.round(pt[1] * 10) / 10]))
-        : undefined;
       const r = await api('POST', '/pins', {
         route: location.pathname,
         viewport: { w: innerWidth, h: innerHeight },
         anchor: { el: target.el, rect: target.rect },
         body,
         name: S.name || undefined,
-        drawing,
       });
       composer.classList.remove('open');
       if (r && r.pin) {
-        if (drawing) {
-          S.strokes = [];
-          redrawStrokes();
-        }
-        say(drawing ? 'Pin added with your drawing' : 'Pin added');
+        say('Pin added');
         await loadPins();
       } else {
         say((r && r.error) || 'Pin failed');
@@ -824,8 +755,6 @@
 
   function openThread(pin) {
     S.activePin = pin.id;
-    S.activeDrawing = pin.drawing || null;
-    redrawStrokes();
     renderPins();
     const pt = anchorPoint(pin);
     thread.textContent = '';
@@ -883,61 +812,9 @@
   }
   function closeThread() {
     S.activePin = null;
-    S.activeDrawing = null;
-    redrawStrokes();
     thread.classList.remove('open');
     renderPins();
   }
-
-  // ── the draw-over (ephemeral by design — see header) ──────────────────
-  const ctx = drawCanvas.getContext('2d');
-  function sizeCanvas() {
-    drawCanvas.width = innerWidth * devicePixelRatio;
-    drawCanvas.height = innerHeight * devicePixelRatio;
-    drawCanvas.style.width = innerWidth + 'px';
-    drawCanvas.style.height = innerHeight + 'px';
-    redrawStrokes();
-  }
-  function redrawStrokes() {
-    if (!ctx) return;
-    ctx.clearRect(0, 0, drawCanvas.width, drawCanvas.height);
-    ctx.lineWidth = 2.5 * devicePixelRatio;
-    ctx.lineCap = 'round';
-    const paint = (strokes, color) => {
-      ctx.strokeStyle = color;
-      strokes.forEach((stroke) => {
-        ctx.beginPath();
-        stroke.forEach((pt, i) => {
-          const x = (pt[0] - scrollX) * devicePixelRatio;
-          const y = (pt[1] - scrollY) * devicePixelRatio;
-          if (i === 0) ctx.moveTo(x, y);
-          else ctx.lineTo(x, y);
-        });
-        ctx.stroke();
-      });
-    };
-    // Pending strokes (not yet pinned) are amber; the open pin's attached
-    // drawing replays in the dial's cyan so the two are never confused.
-    paint(S.strokes, '#f59e0b');
-    if (S.activeDrawing) paint(S.activeDrawing, '#38bdf8');
-  }
-  {
-    let current = null;
-    drawCanvas.addEventListener('pointerdown', (e) => {
-      current = [[e.clientX + scrollX, e.clientY + scrollY]];
-      S.strokes.push(current);
-      drawCanvas.setPointerCapture(e.pointerId);
-    });
-    drawCanvas.addEventListener('pointermove', (e) => {
-      if (!current) return;
-      current.push([e.clientX + scrollX, e.clientY + scrollY]);
-      redrawStrokes();
-    });
-    drawCanvas.addEventListener('pointerup', () => {
-      current = null;
-    });
-  }
-  sizeCanvas();
 
   // ── Design Mode (author only; locked decisions 1-5) ────────────────────
   // Selection walks data-arxa-id (the machine identity design patch rides),
@@ -1067,8 +944,7 @@
     t.el.style.outline = '2px solid #f59e0b';
     renderHandles();
     trackHandles();
-    if (S.panel === 'design') renderPanelBody();
-    else setPanel('design', 'Design Mode');
+    openCard();
   }
   function clearSelOutline() {
     if (S.inlineEditing != null) inlineEditEnd(true);
@@ -1157,7 +1033,7 @@
     const up = () => {
       document.removeEventListener('pointermove', move, true);
       document.removeEventListener('pointerup', up, true);
-      renderPanelBody(); // the facet inputs catch up with the dragged values
+      renderCardAgain(); // the facet inputs catch up with the dragged values
     };
     document.addEventListener('pointermove', move, true);
     document.addEventListener('pointerup', up, true);
@@ -1215,7 +1091,7 @@
     } else {
       el.textContent = original;
     }
-    if (S.panel === 'design') renderPanelBody();
+    renderCardAgain();
   }
   function onDesignDblClick(e) {
     if (e.composedPath().indexOf(host) !== -1) return;
@@ -1230,16 +1106,16 @@
   function designOn() {
     if (S.arming) disarm();
     S.design = true;
-    verbEls.design.classList.add('on');
+    verbEls.edit.classList.add('on');
     document.addEventListener('pointermove', onDesignMove, true);
     document.addEventListener('click', onDesignClick, true);
     document.addEventListener('dblclick', onDesignDblClick, true);
-    if (S.panel !== 'design') setPanel('design', 'Design Mode');
-    say('Design Mode — click to select, double-click text to edit, drag the handles');
+    say('Edit Mode — click any element to open its card; double-click text to type in place');
   }
   function designOff() {
     S.design = false;
-    if (verbEls.design) verbEls.design.classList.remove('on');
+    closeCard();
+    if (verbEls.edit) verbEls.edit.classList.remove('on');
     hover.style.display = 'none';
     hover.classList.remove('design');
     clearSelOutline();
@@ -1416,15 +1292,17 @@
       S.draft.patches = next.patches;
       applyTokensLive();
       applyPatchesLive();
-      if (S.panel === 'design' || S.panel === 'tokens') renderPanelBody();
+      renderCardAgain();
+      if (S.tray === 'edit') renderTraySlide('edit');
+      if (S.tray === 'tweak') renderTraySlide('tweak');
     } finally {
       syncing = false;
     }
   }
 
   function renderDraftMeta() {
-    const el = root.getElementById('draftmeta');
-    if (!el) return;
+    const els = root.querySelectorAll('.draftmeta');
+    if (!els.length) return;
     const np = Object.keys(S.draft.patches).length;
     const nt = Object.keys(S.draft.tokens).length;
     const nw = (S.draftWarnings || []).filter(w =>
@@ -1432,16 +1310,19 @@
     let txt = S.draftDirty
       ? 'unsaved changes…'
       : np + ' patches · ' + nt + ' tokens' + (S.draftMeta ? ' · saved' : '');
+    let detail = '';
     if (nw > 0) {
-      const detail = S.draftWarnings
+      detail = S.draftWarnings
         .map(w => w.el + ': ' + w.sites + ' name= sites (' + w.problem + ')')
         .join('; ');
       txt += ' · ⚠ ' + nw + ' uncommittable';
-      el.title = 'These el: edits cannot commit - ' + detail;
-    } else {
-      el.removeAttribute('title');
     }
-    el.textContent = txt;
+    els.forEach((el) => {
+      el.textContent = txt;
+      if (detail) el.title = 'These el: edits cannot commit - ' + detail;
+      else el.removeAttribute('title');
+    });
+    updateTrayCta();
   }
 
   // Every instance a patch key governs. el:-keys fan out over their data-el
@@ -1518,27 +1399,55 @@
     return out;
   }
 
-  function draftFooter() {
-    pbody.appendChild(h('div', { class: 'draftmeta', id: 'draftmeta' }));
-    const kids = [];
-    const commit = h('button', { class: 'btn', text: 'Request commit', title: 'Hand the draft to the studio agent — it patches artifact source' });
-    commit.addEventListener('click', async () => {
+  function requestCommit() {
+    return (async () => {
       await saveDraft();
       const r = await api('POST', '/commit', {});
       if (r && r.ok) say('Commit requested — ' + r.ops.length + ' ops handed to the studio agent');
       else say(r && r.error ? r.error : 'Commit request failed');
-    });
-    kids.push(commit);
-    if (S.selected && S.draft.patches[S.selected.key]) {
-      const resetEl = h('button', { class: 'btn ghost', text: 'Reset element' });
-      resetEl.addEventListener('click', async () => {
-        delete S.draft.patches[S.selected.key];
+    })();
+  }
+  // The Edit slide's ledger: one row per draft key with per-key revert, the
+  // parity line, and reset-all (the tray CTA reuses requestCommit — one
+  // action, one home, promoted to the bar).
+  function renderLedger(body) {
+    body.appendChild(h('div', { class: 'sect', text: 'Draft ledger' }));
+    body.appendChild(h('div', { class: 'draftmeta' }));
+    const keys = Object.keys(S.draft.patches);
+    if (!keys.length && !Object.keys(S.draft.tokens).length) {
+      body.appendChild(h('div', { class: 'ctl', style: 'font-size:12px;color:#9aa0ab', text: 'No pending edits — every change you make in a card lands here first.' }));
+    }
+    keys.forEach((key) => {
+      const d = S.draft.patches[key];
+      const n = patchPropCount(d);
+      const row = h('div', { class: 'row' });
+      const txt = h('span', { class: 'txt', text: key });
+      const meta = h('div', { class: 'meta' }, [
+        h('span', { text: (d.text != null ? 'text + ' : '') + n + ' style props' }),
+      ]);
+      const x = h('button', { class: 'stbtn', text: 'revert', title: 'Drop this element pending edits' });
+      x.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        delete S.draft.patches[key];
         S.draftDirty = true;
         await saveDraft();
         location.reload(); // re-served without this patch — source state
       });
-      kids.push(resetEl);
-    }
+      meta.appendChild(x);
+      row.appendChild(txt);
+      row.appendChild(meta);
+      row.addEventListener('click', () => {
+        const el = targetsForKey(key)[0];
+        if (!el) return;
+        const id = el.getAttribute('data-arxa-id');
+        if (!id) return;
+        if (!S.design) designOn();
+        const k = kindOf(el);
+        selectEl({ id: id, el: el, label: (el.getAttribute('data-el') || el.tagName.toLowerCase()) + ' · ' + k.kind, group: k.group });
+        el.scrollIntoView({ block: 'center', behavior: 'smooth' });
+      });
+      body.appendChild(row);
+    });
     const reset = h('button', { class: 'btn ghost', text: 'Reset all' });
     reset.addEventListener('click', async () => {
       await api('DELETE', '/draft');
@@ -1546,34 +1455,28 @@
       S.draft.patches = {};
       location.reload();
     });
-    kids.push(reset);
-    pbody.appendChild(h('div', { class: 'btnrow' }, kids));
+    body.appendChild(h('div', { class: 'btnrow' }, [reset]));
     renderDraftMeta();
   }
 
-  function renderDesignPanel() {
+  function renderCardBody(body) {
     const sel = S.selected;
-    if (!sel) {
-      pbody.appendChild(h('div', { class: 'ctl', style: 'font-size:12px;color:#9aa0ab', text: 'Click any element to edit it here. Double-click text to type in place; drag the amber handles to resize. Esc exits Design Mode.' }));
-      draftFooter();
-      return;
-    }
-    pbody.appendChild(h('div', { class: 'sect', text: sel.label }));
-    pbody.appendChild(h('div', { class: 'idline', text: sel.key === sel.id ? sel.id : sel.id + ' → ' + sel.key }));
+    if (!sel) return;
+    body.appendChild(h('div', { class: 'idline', text: sel.key === sel.id ? sel.id : sel.id + ' → ' + sel.key }));
     const draft = S.draft.patches[sel.key] || {};
 
     // Content facet — text-bearing elements with no stamped descendants
     // (see isTextEditable: runtime splitter wrappers are not authored
     // structure; genuine composites are refused like the grammar's --text).
     if (isTextEditable(sel.el)) {
-      pbody.appendChild(h('div', { class: 'sect', text: 'Content' }));
+      body.appendChild(h('div', { class: 'sect', text: 'Content' }));
       const ta = h('textarea', { rows: '2' });
       ta.value = draft.text != null ? draft.text : sel.el.textContent;
       ta.addEventListener('input', () => setTextContent(sel.key, ta.value, sel.el));
-      pbody.appendChild(h('div', { class: 'facet' }, [ta]));
+      body.appendChild(h('div', { class: 'facet' }, [ta]));
     }
 
-    pbody.appendChild(h('div', { class: 'sect', text: 'Facets · ' + sel.group }));
+    body.appendChild(h('div', { class: 'sect', text: 'Facets · ' + sel.group }));
     const cs = getComputedStyle(sel.el);
     const facets = FACET_GROUPS[sel.group] || FACET_GROUPS.generic;
     for (const prop of facets) {
@@ -1601,10 +1504,10 @@
         row.appendChild(sw);
       }
       row.appendChild(input);
-      pbody.appendChild(row);
+      body.appendChild(row);
     }
 
-    pbody.appendChild(h('div', { class: 'sect', text: 'CSS escape hatch' }));
+    body.appendChild(h('div', { class: 'sect', text: 'CSS escape hatch' }));
     const css = h('textarea', { rows: '3' });
     css.placeholder = 'prop: value; prop: value;';
     if (draft.style) {
@@ -1619,11 +1522,10 @@
       if (!keys.length) { say('No valid declarations parsed'); return; }
       for (const k of keys) setStyleProp(sel.key, k, parsed[k]);
       say(keys.length + (keys.length === 1 ? ' property' : ' properties') + ' applied');
-      renderPanelBody();
+      renderCardAgain();
     });
-    pbody.appendChild(h('div', { class: 'facet' }, [css]));
-    pbody.appendChild(h('div', { class: 'btnrow' }, [applyCss]));
-    draftFooter();
+    body.appendChild(h('div', { class: 'facet' }, [css]));
+    body.appendChild(h('div', { class: 'btnrow' }, [applyCss]));
   }
 
   // ── the token tier (global design tokens, decision 3) ──────────────────
@@ -1655,12 +1557,12 @@
     tokenStyleEl.textContent = ':root{' + decls + '}';
   }
 
-  function renderTokensPanel() {
-    pbody.appendChild(h('div', { class: 'ctl', style: 'font-size:12px;color:#9aa0ab', text: 'The design tokens this page declares (:root custom properties). Edits override live and auto-save to the Draft Overlay.' }));
+  function renderTokensBody(body) {
+    body.appendChild(h('div', { class: 'ctl', style: 'font-size:12px;color:#9aa0ab', text: 'The design tokens this page declares (:root custom properties). Edits override live and auto-save to the Draft Overlay.' }));
     const rootCs = getComputedStyle(document.documentElement);
     const names = pageTokenNames();
     if (!names.length) {
-      pbody.appendChild(h('div', { class: 'ctl', style: 'font-size:12px', text: 'No :root custom properties found — add an override below.' }));
+      body.appendChild(h('div', { class: 'ctl', style: 'font-size:12px', text: 'No :root custom properties found — add an override below.' }));
     }
     for (const name of names) {
       const row = h('div', { class: 'facet' }, [h('label', { text: name, title: name })]);
@@ -1674,9 +1576,9 @@
         scheduleSave();
       });
       row.appendChild(input);
-      pbody.appendChild(row);
+      body.appendChild(row);
     }
-    pbody.appendChild(h('div', { class: 'sect', text: 'New token override' }));
+    body.appendChild(h('div', { class: 'sect', text: 'New token override' }));
     const nameIn = h('input', { type: 'text', placeholder: '--token-name' });
     const valIn = h('input', { type: 'text', placeholder: 'value' });
     const add = h('button', { class: 'btn', text: 'Add' });
@@ -1687,17 +1589,369 @@
       S.draft.tokens[n] = v;
       applyTokensLive();
       scheduleSave();
-      renderPanelBody();
+      renderTraySlide('tweak');
     });
-    pbody.appendChild(h('div', { class: 'facet' }, [nameIn]));
-    pbody.appendChild(h('div', { class: 'facet' }, [valIn]));
-    pbody.appendChild(h('div', { class: 'btnrow' }, [add]));
-    draftFooter();
+    body.appendChild(h('div', { class: 'facet' }, [nameIn]));
+    body.appendChild(h('div', { class: 'facet' }, [valIn]));
+    body.appendChild(h('div', { class: 'btnrow' }, [add]));
   }
 
+
+  // ── the floating smart card (Edit Mode's inspector) ───────────────────
+  // Dropdown-style smart anchor: prefer the element's right, flip left on
+  // clip, clamp on both axes, vertical flip when the bottom would clip.
+  const card = h('div', { id: 'card' });
+  const chead = h('div', { id: 'chead' });
+  const cbodyEl = h('div', { class: 'cbody' });
+  card.appendChild(chead);
+  card.appendChild(cbodyEl);
+  root.appendChild(card);
+
+  function positionCard() {
+    if (!S.selected) return;
+    const r = S.selected.el.getBoundingClientRect();
+    const W = 300, GAP = 12;
+    let x = r.right + GAP;
+    if (x + W > innerWidth - 8) x = r.left - W - GAP;
+    if (x < 8) x = Math.min(Math.max(8, r.left), Math.max(8, innerWidth - W - 8));
+    const ch = card.offsetHeight || 240;
+    let y = r.top;
+    if (y + ch > innerHeight - 8) y = r.top + r.height - ch;
+    y = Math.min(Math.max(8, y), Math.max(8, innerHeight - ch - 8));
+    card.style.left = x + 'px';
+    card.style.top = y + 'px';
+  }
+  function renderCardAgain() {
+    if (!S.card) return;
+    cbodyEl.textContent = '';
+    renderCardBody(cbodyEl);
+    positionCard();
+  }
+  function openCard() {
+    if (!S.selected) return;
+    S.card = S.selected.key;
+    chead.textContent = '';
+    chead.appendChild(h('span', { text: S.selected.label.split(' · ')[0] }));
+    chead.appendChild(h('span', { class: 'kchip', text: S.selected.group }));
+    const x = h('button', { class: 'cclose', title: 'Close card', 'aria-label': 'Close card', text: '×' });
+    x.addEventListener('click', (e) => { e.stopPropagation(); closeCard(); });
+    chead.appendChild(x);
+    card.classList.add('open');
+    cbodyEl.textContent = '';
+    renderCardBody(cbodyEl);
+    positionCard();
+    dialPanelChanged();
+  }
+  function closeCard() {
+    S.card = null;
+    card.classList.remove('open');
+    dialPanelChanged();
+  }
+  addEventListener('resize', () => { if (S.card) positionCard(); });
+
+  // ── tweaks (Tweak slide prefs; persisted per browser) ─────────────────
+  const TWEAK = {
+    motion: true, dur: 0.5, zeta: 0.86,
+    tint: 0.82, blur: 16, glow: 0.22, rad: 16, always: false,
+  };
+  function loadTweakPrefs() {
+    try {
+      const j = JSON.parse(localStorage.getItem('arxa-dial-tweak') || 'null');
+      if (j) for (const k of Object.keys(TWEAK)) if (j[k] !== undefined) TWEAK[k] = j[k];
+    } catch (_) {}
+  }
+  function saveTweakPrefs() {
+    try { localStorage.setItem('arxa-dial-tweak', JSON.stringify(TWEAK)); } catch (_) {}
+  }
+  function applyTweakPrefs() {
+    loadTweakPrefs();
+    REVEAL.dur = TWEAK.dur;
+    REVEAL.zeta = TWEAK.zeta;
+    host.style.setProperty('--tint', String(TWEAK.tint));
+    host.style.setProperty('--tblur', TWEAK.blur + 'px');
+    host.style.setProperty('--glow', String(TWEAK.glow));
+    host.style.setProperty('--trayrad', TWEAK.rad + 'px');
+    root.classList.toggle('nomotion', !TWEAK.motion);
+  }
+
+  // ── the tray (Studio): glass bottom sheet, 5-slide snap carousel ──────
+  const SLIDES = [
+    ['edit', 'Edit'], ['comments', 'Comments'], ['settings', 'Settings'],
+    ['tweak', 'Tweak'], ['ship', 'Ship'],
+  ];
+  function traySlideList() {
+    return S.mode === 'guest' ? SLIDES.filter((s) => s[0] === 'comments') : SLIDES;
+  }
+  const tray = h('div', { id: 'tray' });
+  const grabber = h('div', { id: 'grabber' }, [h('div', { class: 'gbar' })]);
+  const tbar = h('div', { id: 'tbar' });
+  const ttitle = h('span', { id: 'ttitle', text: 'Studio' });
+  const dots = h('div', { id: 'dots' });
+  const ctaBtn = h('button', { id: 'cta' });
+  const closeBtn = h('button', { id: 'tclose', title: 'Close tray', 'aria-label': 'Close tray', text: '×' });
+  const track = h('div', { id: 'track' });
+  tbar.appendChild(ttitle);
+  tbar.appendChild(dots);
+  tbar.appendChild(ctaBtn);
+  tbar.appendChild(closeBtn);
+  tray.appendChild(grabber);
+  tray.appendChild(tbar);
+  tray.appendChild(track);
+  root.appendChild(tray);
+  const slideBodies = {};
+  let trayBuiltFor = null;
+
+  closeBtn.addEventListener('click', () => closeTray());
+  grabber.addEventListener('click', () => closeTray());
+
+  function buildTraySlides() {
+    const list = traySlideList();
+    const key = list.map((s) => s[0]).join('|');
+    if (trayBuiltFor === key) return;
+    trayBuiltFor = key;
+    track.textContent = '';
+    dots.textContent = '';
+    slideBodies.bodies = {};
+    list.forEach(([id, label], i) => {
+      const body = h('div', { class: 'slidebody' });
+      const slide = h('div', { class: 'slide', 'data-slide': id }, [body]);
+      slideBodies[id] = body;
+      track.appendChild(slide);
+      const d = h('button', { class: 'dotbtn', 'data-i': String(i), 'aria-label': label });
+      d.addEventListener('click', () => {
+        const w = track.clientWidth;
+        track.scrollTo({ left: i * w, behavior: TWEAK.motion ? 'smooth' : 'auto' });
+      });
+      dots.appendChild(d);
+    });
+  }
+  function trayIndex() {
+    // Nearest-slide, not width math: desktop slides are calc(100% - 96px)
+    // (the edge peek), so scrollLeft/clientWidth lies there. offsetLeft of
+    // each slide is the truth the snap points actually use.
+    const kids = [...track.children];
+    let best = 0, bd = Infinity;
+    kids.forEach((s, i) => {
+      const d = Math.abs(s.offsetLeft - track.scrollLeft);
+      if (d < bd) { bd = d; best = i; }
+    });
+    return best;
+  }
+  function currentSlideId() {
+    const list = traySlideList();
+    return list.length ? list[trayIndex()][0] : null;
+  }
+  function syncTrayChrome() {
+    const list = traySlideList();
+    const i = trayIndex();
+    ttitle.textContent = list[i] ? list[i][1] : 'Studio';
+    dots.querySelectorAll('.dotbtn').forEach((d, j) => {
+      d.classList.toggle('cur', j === i);
+    });
+    updateTrayCta();
+  }
+  function updateTrayCta() {
+    if (!S.tray) return;
+    const id = currentSlideId();
+    ctaBtn.className = '';
+    ctaBtn.disabled = false;
+    ctaBtn.title = '';
+    if (id === 'edit') {
+      const n = Object.keys(S.draft.patches).length + Object.keys(S.draft.tokens).length;
+      ctaBtn.textContent = 'Commit · ' + n;
+      ctaBtn.disabled = n === 0;
+      ctaBtn.title = n === 0 ? 'Nothing to commit yet' : 'Hand the draft to the studio agent';
+    } else if (id === 'comments') {
+      ctaBtn.textContent = 'Share';
+      ctaBtn.title = 'Mint a client link (view + comment, 30 days)';
+    } else if (id === 'ship') {
+      ctaBtn.textContent = 'Deploy';
+      ctaBtn.disabled = true;
+      ctaBtn.title = 'Lands with the Ship slice — wrangler to Cloudflare';
+    } else {
+      ctaBtn.className = 'off';
+    }
+  }
+  ctaBtn.addEventListener('click', () => {
+    const id = currentSlideId();
+    if (id === 'edit') return requestCommit();
+    if (id === 'comments') {
+      const body = slideBodies.comments;
+      if (body && !body.querySelector('.linkbox')) mintShareLink(body);
+      return;
+    }
+    if (id === 'ship') { /* slice 6 */ }
+  });
+  track.addEventListener('scroll', () => {
+    if (!S.tray) return;
+    S.tray = currentSlideId();
+    syncTrayChrome();
+  }, { passive: true });
+
+  function renderTraySlide(id) {
+    const body = slideBodies[id];
+    if (!body) return;
+    body.textContent = '';
+    if (id === 'edit') return renderEditBody(body);
+    if (id === 'comments') return renderCommentsBody(body);
+    if (id === 'settings') return renderSettingsBody(body);
+    if (id === 'tweak') return renderTweakBody(body);
+    if (id === 'ship') return renderShipBody(body);
+  }
+  function openTray(id) {
+    buildTraySlides();
+    const list = traySlideList();
+    const want = list.find((s) => s[0] === id);
+    S.tray = want ? want[0] : list[0][0];
+    tray.classList.add('open');
+    // Tray swap law: park the dial outright; the timer suspends.
+    dock.classList.remove('open');
+    S.open = false;
+    dialPark();
+    list.forEach(([sid]) => renderTraySlide(sid));
+    const idx = list.findIndex((s) => s[0] === S.tray);
+    requestAnimationFrame(() => {
+      track.scrollLeft = idx * track.clientWidth;
+      syncTrayChrome();
+    });
+  }
+  function closeTray() {
+    S.tray = null;
+    tray.classList.remove('open');
+    dialUnpark(); // spring back in + re-arm the 30s tuck-away fresh
+  }
+
+  // Edit slide: the locked outline (navigation only) + the draft ledger.
+  function renderEditBody(body) {
+    body.appendChild(h('div', { class: 'sect', text: 'Outline' }));
+    body.appendChild(h('div', { class: 'ctl', style: 'font-size:11px;color:#9aa0ab', text: 'The locked structure, navigable. Tap an entry to select it and open its card.' }));
+    const els = document.querySelectorAll('[data-el]');
+    els.forEach((el) => {
+      let depth = 0, p = el.parentElement;
+      while (p) { if (p.getAttribute && p.getAttribute('data-el')) depth++; p = p.parentElement; }
+      const name = el.getAttribute('data-el');
+      const row = h('div', { class: 'row', style: 'margin-left:' + Math.min(depth, 6) * 14 + 'px' });
+      row.appendChild(h('span', { class: 'txt', text: name }));
+      const k = kindOf(el);
+      row.appendChild(h('div', { class: 'meta' }, [h('span', { text: k.kind })]));
+      row.addEventListener('click', () => {
+        const id = el.getAttribute('data-arxa-id');
+        if (!id) { say('This element has no patch identity (data-arxa-id)'); return; }
+        if (!S.design) designOn();
+        selectEl({ id: id, el: el, label: name + ' · ' + k.kind, group: k.group });
+        el.scrollIntoView({ block: 'center', behavior: TWEAK.motion ? 'smooth' : 'auto' });
+      });
+      body.appendChild(row);
+    });
+    if (!els.length) {
+      body.appendChild(h('div', { class: 'ctl', style: 'font-size:12px', text: 'No data-el identity on this page.' }));
+    }
+    renderLedger(body);
+  }
+
+  // Settings slide: environment & session — describes, writes nothing.
+  function renderSettingsBody(body) {
+    body.appendChild(h('div', { class: 'sect', text: 'Session' }));
+    const row = h('div', { class: 'facet' }, [h('label', { text: 'Name' })]);
+    const nameIn = h('input', { type: 'text', placeholder: 'your name' });
+    nameIn.value = S.name;
+    nameIn.addEventListener('input', () => {
+      S.name = nameIn.value.trim();
+      try { localStorage.setItem('arxa-dial-name', S.name); } catch (_) {}
+    });
+    row.appendChild(nameIn);
+    body.appendChild(row);
+    body.appendChild(h('div', { class: 'sect', text: 'Environment' }));
+    const fact = (k, v) => body.appendChild(h('div', { class: 'facet' }, [
+      h('label', { text: k }), h('span', { style: 'font-size:11.5px;color:#c8ccd4;word-break:break-all', text: v }),
+    ]));
+    fact('Mode', S.mode === 'author' ? 'author (this browser)' : S.mode);
+    fact('Store', S.store === 'memory' ? 'local — pins die with this server' : S.store);
+    fact('Artifact', String(cfg.artifact || '—'));
+    fact('Server', location.origin);
+    fact('Route', location.pathname);
+    fact('Open pins', String(S.pins.filter((p) => p.status === 'open').length));
+    const reset = h('button', { class: 'btn ghost', text: 'Reset tweaks' });
+    reset.addEventListener('click', () => {
+      try { localStorage.removeItem('arxa-dial-tweak'); } catch (_) {}
+      applyTweakPrefs();
+      renderTraySlide('settings');
+      say('Tweaks reset');
+    });
+    body.appendChild(h('div', { class: 'btnrow' }, [reset]));
+  }
+
+  // Tweak slide: Theme (token channel) · Motion · Surface — all live-write.
+  function renderTweakBody(body) {
+    body.appendChild(h('div', { class: 'sect', text: 'Theme' }));
+    renderTokensBody(body);
+    body.appendChild(h('div', { class: 'sect', text: 'Motion' }));
+    const swRow = h('div', { class: 'ctl' });
+    swRow.appendChild(h('span', { text: 'Animations' }));
+    const sw = h('button', { class: 'switch' + (TWEAK.motion ? ' on' : ''), 'aria-label': 'toggle animations' });
+    sw.addEventListener('click', () => {
+      TWEAK.motion = !TWEAK.motion;
+      sw.classList.toggle('on', TWEAK.motion);
+      root.classList.toggle('nomotion', !TWEAK.motion);
+      saveTweakPrefs();
+    });
+    swRow.appendChild(sw);
+    body.appendChild(swRow);
+    const slider = (label, min, max, step, val, oninput, fmt) => {
+      const row = h('div', { class: 'ctl' });
+      row.appendChild(h('span', { style: 'flex:none;width:110px;font-size:11.5px', text: label }));
+      const s = h('input', { type: 'range', min: String(min), max: String(max), step: String(step) });
+      s.value = String(val);
+      const out = h('span', { style: 'flex:none;width:44px;font-size:11px;color:#9aa0ab;text-align:right', text: fmt(val) });
+      s.addEventListener('input', () => {
+        oninput(parseFloat(s.value));
+        out.textContent = fmt(parseFloat(s.value));
+      });
+      row.appendChild(s);
+      row.appendChild(out);
+      body.appendChild(row);
+    };
+    slider('Dial reveal · s', 0.2, 0.8, 0.02, TWEAK.dur, (v) => { TWEAK.dur = v; REVEAL.dur = v; saveTweakPrefs(); }, (v) => v.toFixed(2));
+    slider('Dial damping · ζ', 0.5, 1.1, 0.02, TWEAK.zeta, (v) => { TWEAK.zeta = v; REVEAL.zeta = v; saveTweakPrefs(); }, (v) => v.toFixed(2));
+    body.appendChild(h('div', { class: 'sect', text: 'Surface' }));
+    slider('Tint', 0.6, 1, 0.02, TWEAK.tint, (v) => { TWEAK.tint = v; host.style.setProperty('--tint', String(v)); saveTweakPrefs(); }, (v) => v.toFixed(2));
+    slider('Blur · px', 0, 24, 1, TWEAK.blur, (v) => { TWEAK.blur = v; host.style.setProperty('--tblur', v + 'px'); saveTweakPrefs(); }, (v) => String(v));
+    slider('Glow', 0, 0.5, 0.02, TWEAK.glow, (v) => { TWEAK.glow = v; host.style.setProperty('--glow', String(v)); saveTweakPrefs(); }, (v) => v.toFixed(2));
+    slider('Radius · px', 0, 24, 1, TWEAK.rad, (v) => { TWEAK.rad = v; host.style.setProperty('--trayrad', v + 'px'); saveTweakPrefs(); }, (v) => String(v));
+    const alRow = h('div', { class: 'ctl' });
+    alRow.appendChild(h('span', { text: 'Dial always on' }));
+    const al = h('button', { class: 'switch' + (TWEAK.always ? ' on' : ''), 'aria-label': 'toggle dial always on' });
+    al.addEventListener('click', () => {
+      TWEAK.always = !TWEAK.always;
+      al.classList.toggle('on', TWEAK.always);
+      saveTweakPrefs();
+      if (TWEAK.always) dialShow();
+    });
+    alRow.appendChild(al);
+    body.appendChild(alRow);
+  }
+
+  // Ship slide: the pipeline surface. Slices 5-6 wire branch → PR → gates →
+  // one-tap pull/merge/close + the Deploy CTA; this round states that
+  // honestly instead of faking controls.
+  function renderShipBody(body) {
+    body.appendChild(h('div', { class: 'sect', text: 'Ship' }));
+    body.appendChild(h('div', { class: 'ctl', style: 'font-size:12.5px;line-height:1.5;color:#c8ccd4', text: 'The pipeline surface lands with the Ship slice: branch and PR open automatically, gates are watched live, and pull / rebase, merge, and close wait as one-tap verbs — automation up to the button, your finger on every irreversible edge.' }));
+    body.appendChild(h('div', { class: 'ctl', style: 'font-size:12.5px;line-height:1.5;color:#c8ccd4', text: 'Deploy will run wrangler to Cloudflare from the design server, enabled only when the pipeline allows it.' }));
+  }
   // ── verbs ──────────────────────────────────────────────────────────────
   function onVerb(id, el) {
-    if (id === 'pin') {
+    // A trigger tap closes the fan first — the mode or the tray takes the
+    // screen (rework law: the fan is a launcher, never a staying surface).
+    dock.classList.remove('open');
+    S.open = false;
+    dialPanelChanged();
+    if (id === 'edit') {
+      if (S.design) designOff();
+      else designOn();
+      return;
+    }
+    if (id === 'comment') {
       if (S.arming) disarm();
       else {
         arm();
@@ -1705,26 +1959,7 @@
       }
       return;
     }
-    if (id === 'list') return setPanel('feedback', 'Feedback');
-    if (id === 'shade') {
-      applyShade();
-      return setPanel('shade', 'Review shade');
-    }
-    if (id === 'layers') return setPanel('layers', 'Layers');
-    if (id === 'pen') {
-      S.drawing = !S.drawing;
-      el.classList.toggle('on', S.drawing);
-      drawCanvas.classList.toggle('armed', S.drawing);
-      say(S.drawing ? 'Draw-over armed — drag to sketch' : 'Draw-over off');
-      return;
-    }
-    if (id === 'design') {
-      if (S.design) designOff();
-      else designOn();
-      return;
-    }
-    if (id === 'tokens') return setPanel('tokens', 'Design tokens');
-    if (id === 'share') return setPanel('share', 'Share this design');
+    if (id === 'studio') return openTray(S.tray || (S.mode === 'guest' ? 'comments' : 'edit'));
   }
 
   // Outside click closes the thread; Escape disarms everything. "Outside"
@@ -1754,12 +1989,11 @@
     }
     if (e.key === 'Escape') {
       if (S.arming) disarm();
+      if (S.card) { closeCard(); return; }
+      if (S.tray) { closeTray(); return; }
       if (S.design) designOff();
-      if (S.drawing) onVerb('pen', verbEls.pen); // Escape must disarm the pen too — an armed canvas swallows every page click (smoke S8b)
       closeThread();
       composer.classList.remove('open');
-      S.panel = null;
-      panel.classList.remove('open');
     }
   });
 
@@ -1879,17 +2113,33 @@
     };
     sp.raf = requestAnimationFrame(tick);
   }
+  const REVEAL = { dur: 0.5, zeta: 0.86 }; // Tweak > Motion owns these live
   function dialShow() {
-    dialSpringTo(1, 0.5, 0.86);
+    dialSpringTo(1, REVEAL.dur, REVEAL.zeta);
+    dialArmAutoHide();
+  }
+  // TRAY SWAP LAW (operator, 2026-08-24): tray open parks the dial outright
+  // (the timer suspends — nothing to time); tray close springs it back in
+  // and re-arms the 30s tuck-away fresh.
+  function dialPark() {
+    clearTimeout(dialHideAt);
+    dialSpringTo(0, 0.34, 1.0);
+  }
+  function dialUnpark() {
+    dialSpringTo(1, REVEAL.dur, REVEAL.zeta);
     dialArmAutoHide();
   }
   // Open mode = a panel OR the expanded dock fan is on screen. The dial
   // cannot hide at all in either state - not by timer, not by anything.
   function dialOpenMode() {
-    return !!(S.panel || S.open);
+    // Never-hide law (operator 2026-08-24): fan open, Edit Mode armed,
+    // pin-drop armed, the smart card up, or inline text editing active.
+    // The TRAY is deliberately absent — it swaps the dial out entirely.
+    return !!(S.open || S.design || S.arming || S.card || S.inlineEditing != null);
   }
   function dialHide() {
     clearTimeout(dialHideAt);
+    if (TWEAK.always) return; // Tweak > Surface: dial always on
     if (dialOpenMode()) return; // open mode law
     dialSpringTo(0, 0.34, 1.0);
   }
@@ -1940,14 +2190,14 @@
   }
   function finishBoot() {
     mountHost();
-    applyShade();
-    applyLayers();
+    applyTweakPrefs();
+    openPinnedOnArrival();
     resumeAfterReload(); // no-op unless the last text edit converged by reload
   }
   if (S.mode === 'invalid') {
     mountHost();
-    applyShade();
-    applyLayers();
+    applyTweakPrefs();
+    openPinnedOnArrival();
     say('This share link is expired or invalid');
     return;
   }
