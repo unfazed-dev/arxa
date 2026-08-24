@@ -199,7 +199,18 @@
     '  overscroll-behavior-x:contain}',
     '#track::-webkit-scrollbar{display:none}',
     '.slide{flex:0 0 100%;scroll-snap-align:center;overflow-y:auto;',
-    '  overscroll-behavior:contain;padding:10px 14px 16px;min-height:200px}',
+    '  overscroll-behavior:contain;padding:10px 14px 16px;min-height:200px;',
+    '  scrollbar-width:thin;scrollbar-color:rgba(110,136,76,.5) transparent}',
+    /* Sheet scrollbars in phase with the sheet (operator, 2026-08-25):
+       the track is NOTHING (the glass shows through); the thumb carries
+       the sheet's own accent — moss at half opacity over the dark glass,
+       solid moss on hover. Scoped to the tray so the page's own
+       scrollbars are untouched. */
+    '#tray ::-webkit-scrollbar{width:6px;height:6px}',
+    '#tray ::-webkit-scrollbar-track{background:transparent}',
+    '#tray ::-webkit-scrollbar-thumb{background:rgba(110,136,76,.5);',
+    '  border-radius:3px}',
+    '#tray ::-webkit-scrollbar-thumb:hover{background:rgba(110,136,76,.8)}',
     '@media (min-width:640px){#tray{left:24px;right:24px;margin:0 auto;',
     '  max-width:720px;border-radius:var(--trayrad,16px);',
     '  max-height:65vh;bottom:20px}}',
@@ -689,13 +700,13 @@
   function arm() {
     if (S.design) designOff();
     S.arming = true;
-    verbEls.pin.classList.add('on');
+    verbEls.comment.classList.add('on');
     document.addEventListener('pointermove', onArmMove, true);
     document.addEventListener('click', onArmClick, true);
   }
   function disarm() {
     S.arming = false;
-    verbEls.pin.classList.remove('on');
+    verbEls.comment.classList.remove('on');
     hover.style.display = 'none';
     document.removeEventListener('pointermove', onArmMove, true);
     document.removeEventListener('click', onArmClick, true);
