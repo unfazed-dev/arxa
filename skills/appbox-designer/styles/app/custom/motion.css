@@ -1,0 +1,21 @@
+/* styles/app/custom — motion.css (TL-12 motion overlay)
+   Interaction-recipe constants (component-craft.md §recipe, custom column) —
+   the studio motion-fast / motion-med curves. */
+
+:root {
+  /* PRESS — 150ms cubic-bezier(0.2, 0.6, 0.2, 1) */
+  --press-ms: 150ms;
+  --press-ease: cubic-bezier(0.2, 0.6, 0.2, 1);
+  /* MOVE — 250ms same */
+  --move-ms: 250ms;
+  --move-ease: cubic-bezier(0.2, 0.6, 0.2, 1);
+  /* EFFECTS — 180ms linear */
+  --effects-ms: 180ms;
+  --effects-ease: linear;
+  /* DISCLOSURE — EFFECTS class: ease only */
+  --disclose-ms: 250ms;
+  --disclose-ease: cubic-bezier(0.2, 0.6, 0.2, 1);
+  --press-scale-ctl: 0.94;
+  --press-scale-item: 0.96;
+  --press-scale-row: 0.98;
+}

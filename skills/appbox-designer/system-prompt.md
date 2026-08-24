@@ -166,6 +166,35 @@ When a .napkin file is attached, read its thumbnail at `scraps/.{filename}.thumb
 Fixed-size content — an exact-dimension artboard, a device-pixel mock — is authored on a fixed-size canvas (default 1920×1080, 16:9) and fitted to any viewport with CSS only — `zoom` (or a `transform: scale()` fallback) on the canvas inside a full-viewport letterboxed stage. No resize handlers, no recompute: the browser does the fitting.
 
 
+## Style modules + component craft (app-kind artifacts)
+
+App-kind artifacts are styled by the **style modules** at
+[`styles/app/`](styles/app/README.md) — four styles: `liquid-glass`
+(**the default**), `m3-expressive`, `shadcn`, `custom`. This is binding
+craft, not inspiration:
+
+- **Read the selected style's SPEC.md before authoring any widget** — tokens,
+  per-family truths, the eight dropdown laws, field indicator exclusivity,
+  motion constants, gate contract. The artifact still switches styles via
+  `?style=` (all four, artifact-side); dark variants are token-level under
+  `:root[data-theme="dark"]` with a tri-state control; theme swaps are
+  INSTANT (never a transition).
+- **The family class contract**: widgets emit the canonical family classes
+  (`.btn`, `.menu .mi`, `.input`, `.select`, `.seg`, `.sw`, …).
+  The overlays key on those classes; renaming one de-styles in three styles
+  at once. The 26-family inventory and the five interaction classes are in
+  each SPEC; behavior is the interaction recipe — same constants, no
+  approximations.
+- **Coverage law (TL-19)**: the widget library covers every family the
+  artifact's registry touches. A style without full family coverage is an
+  incomplete style; a component without recipe behavior is an approximation.
+- **Specimen route + gates**: every app artifact carries a dev-only
+  `/specimens` route exposing every touched family (open states live).
+  Verification = `appbox design lint` + `styles/app/gates/sweep.sh`
+  (geometry / icons / audit / interact × four styles; the runner takes
+  `BASE_URL` + `SPECIMEN`). Gate scar doctrine: rm outputs first, never
+  silence stderr, zero-assertion runs fail.
+
 ## Starter Partials
 Ready-made HTML/CSS partials live in the `starter-partials/` directory next to this file — use them instead of hand-drawing device frames or motion primitives. To use one, copy it into your artifact (`cp starter-partials/<file> designs/<project>/…`) or read it and adapt; each file carries its own usage notes at the top.
 

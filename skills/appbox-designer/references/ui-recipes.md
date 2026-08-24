@@ -7,6 +7,16 @@ object; `t` is a prop, used as `{translate('home.title') as string}`), the CSS i
 flex/grid with `gap` (never inline-flow spacing), tokens are CSS custom
 properties, naming is BEM-ish (`.block__el--mod`, matching `frames.css`).
 
+**The family class contract (style modules).** For app-kind artifacts the
+widget library ALSO implements the 26 component families with the canonical
+classes the style overlays key on — buttons `.btn`, menus `.menu .mi`,
+fields `.fieldwrap .input`, selects `.select-wrap .select`, switches
+`.sw`, segmented `.seg`, accordions `.acc-item`, and so on. The law per
+family per style lives in [`styles/app/<style>/SPEC.md`](../styles/app/README.md)
+(read the selected style FIRST); behavior is the interaction recipe there —
+five classes, exact constants. Eight dropdown laws and field indicator
+exclusivity apply to every style.
+
 **How to use this catalog — widgets-first.** Before composing any surface,
 inventory the design's repeated patterns and define them as components in
 `ui/common/` + `ui/widgets/` (dialogs/bottomsheets under their own folders) —

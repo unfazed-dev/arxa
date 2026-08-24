@@ -1,0 +1,22 @@
+/* styles/app/m3-expressive — motion.css (TL-12 motion overlay)
+   Interaction-recipe constants (component-craft.md §recipe, m3 column).
+   Sources: ExpressiveMotionTokens.kt — SpatialFast/SpatialDefault. */
+
+:root {
+  /* PRESS — Expressive SpatialFast: stiffness 800, ζ 0.6 → k=800, c=33.9 */
+  --press-spring-k: 800;
+  --press-spring-c: 33.9;
+  /* MOVE — SpatialDefault: 380 / ζ 0.8 → k=380, c=24.7 */
+  --move-spring-k: 380;
+  --move-spring-c: 24.7;
+  /* EFFECTS — 180ms linear (ζ=1.0 by platform law) */
+  --effects-ms: 180ms;
+  --effects-ease: linear;
+  /* DISCLOSURE — EFFECTS class (ease only, never springs).
+     m3: the segmented class-toggle runs 150ms linear. */
+  --disclose-ms: 150ms;
+  --disclose-ease: linear;
+  --press-scale-ctl: 0.94;
+  --press-scale-item: 0.96;
+  --press-scale-row: 0.98;
+}

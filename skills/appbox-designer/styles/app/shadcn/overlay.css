@@ -1,0 +1,240 @@
+/* styles/app/shadcn — overlay.css (designer style module, TL-12)
+   Provenance: the ez-lab gallery overlay, gate-proven (geometry/icons/audit/interact
+   × light/dark, sweep 16/16 as of R9p 2026-08-24). SPEC.md beside this file is the
+   LAW; conflicts are bugs. Artifact use: link after base widgets.css; ?style=shadcn.
+/* style-craft overlay: shadcn (R7) - spec-grounded: ui.shadcn.com/docs/theming + v4 registry
+   component source (card.tsx: "rounded-xl border bg-card shadow-sm"; button.tsx: "rounded-md
+   bg-primary ... hover:bg-primary/90"; outline: "border bg-background shadow-xs").
+   Laws applied:
+   - TOKEN-ONLY model: zinc neutrals, 1px borders, shadow-sm on cards only, no materials
+   - radius scale from --radius 0.625rem: xl=12 cards, md=6 controls
+   - hover = opacity blends (primary/90), not darker shades
+   - primary = teal-700 (white text 5.03:1 - the color-craft gate holds) */
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400..700&display=swap");
+:root {
+  --field: #FFFFFF;            /* background */
+  --field-alt: #F4F4F5;        /* muted (zinc-100) */
+  --surface: #FFFFFF;          /* card */
+  --ink: #09090B;              /* foreground (zinc-950) */
+  --ink-soft: #71717A;         /* muted-foreground (zinc-500) */
+  --hairline: #E4E4E7;         /* border (zinc-200) */
+  --accent: #0F766E;           /* primary (teal-700) */
+  --accent-ink: #FFFFFF;
+  --accent-text: #0F766E;
+  --accent-hover: #107F75;     /* primary/90 blend nudged one step darker: 4.87:1 white, holds the 4.5 composited gate */
+  --accent-soft: #F0FAF9;
+  --r-card: 12px; --r-ctl: 6px; --r-pill: 9999px;
+  --shadow-1: 0 1px 3px rgb(0 0 0 / 0.10), 0 1px 2px -1px rgb(0 0 0 / 0.10); /* shadow-sm */
+  --font-display: Inter, ui-sans-serif, system-ui, sans-serif; /* shadcn templates default to Inter */
+  --font-body: Inter, ui-sans-serif, system-ui, sans-serif;
+}
+/* the registry truth: cards = rounded-xl + border + shadow-sm; everything else flat */
+.hub-card, .panel, .q-lane, .q-card { border: 1px solid var(--hairline); }
+.hub-card, .panel, .q-lane { box-shadow: var(--shadow-1); }
+.q-card { box-shadow: none; }
+.q-card.sel { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+.hub-rail, .q-top, .q-hintbar { box-shadow: none; }
+.c-palette { border: 1px solid var(--hairline); border-radius: 12px; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.10), 0 2px 4px -2px rgb(0 0 0 / 0.10); } /* popover: shadow-md */
+.btn { background: var(--accent); color: var(--accent-ink); border-radius: 6px; box-shadow: 0 1px 2px rgb(0 0 0 / 0.05); }
+.btn:not(.btn--ghost):hover { background: var(--accent-hover); }
+.btn:not(.btn--ghost):active { background: var(--accent-hover); box-shadow: none; }
+.btn--ghost:hover { background: var(--field-alt); }  /* shadcn outline hover: bg-accent (zinc-100), foreground text stays */
+.btn--ghost { background: transparent; color: var(--ink); border-radius: 6px; } /* shadcn outline variant: no fill, foreground text */
+.chip { border-radius: 6px; border: 1px solid var(--hairline); background: transparent; }
+.chip--accent { border: 0; background: var(--accent-soft); color: var(--accent-text); }
+.chip--ghost { box-shadow: none; }
+.chip--amber { border: 0; }
+.kbd { background: var(--field-alt); color: var(--ink); }
+.hub-rail a.on { background: var(--field-alt); border-radius: 6px; }
+.hub-rail a { border-radius: 6px; }
+.hub-rail a:not(.on):hover { background: var(--field-alt); } /* sidebar-menu-button hover = bg-sidebar-accent */
+.hub-rail .rail-sec { text-transform: none; letter-spacing: 0; font-size: 12px; font-weight: 500; } /* SidebarGroupLabel: text-xs font-medium muted, sentence-case */
+.c-item.sel { background: var(--field-alt); }
+h1, h2 { font-weight: 600; letter-spacing: -0.02em; } /* shadcn typography truth: font-semibold tracking-tight */
+
+/* DARK variant (shadcn .dark truth): zinc inverts - background zinc-950, borders/muted zinc-800,
+   foreground zinc-50. Brand primary LIGHTENS (dark-mode convention: light primary, dark text). */
+:root[data-theme="dark"] {
+  --field: #09090B;            /* background dark (zinc-950) */
+  --field-alt: #27272A;        /* muted / hover accent (zinc-800) */
+  --surface: #09090B;          /* card dark */
+  --ink: #FAFAFA;              /* foreground dark (zinc-50) */
+  --ink-soft: #A1A1AA;         /* muted-foreground dark (zinc-400) */
+  --hairline: #27272A;         /* border dark (zinc-800) */
+  --accent: #2DD4BF;           /* primary dark: lightened teal - 8:1 with dark text */
+  --accent-ink: #042F2E;       /* primary-foreground dark */
+  --accent-text: #5EEAD4;      /* 13:1 on background */
+  --accent-hover: #26B9A6;     /* 6.0:1 with dark text */
+  --accent-soft: #134E4A;      /* teal-900 - chip--accent ground, 6.5:1 with accent-text */
+  --shadow-1: 0 1px 3px rgb(0 0 0 / 0.5), 0 1px 2px -1px rgb(0 0 0 / 0.5);
+}
+
+/* ═══ component-craft (R9): the 22 families in shadcn (v4 registry truth) ═══
+   Laws: token-flat (1px borders, shadow-sm on card/popover class only, no materials);
+   radius from --radius 0.625rem (controls 6px, cards/popovers 12px, smalls 4-6px);
+   hovers = bg-accent washes or primary/90 — never new hues.
+   Sources: ui.shadcn.com/docs/components + registry source idiom
+   (button.tsx "rounded-md bg-primary hover:bg-primary/90", card.tsx "rounded-xl border
+   bg-card shadow-sm", calendar.tsx react-day-picker, tabs.tsx lifted-trigger). */
+/* variant repair: plain .btn above clobbered base variants */
+.btn--danger { background: #DC2626; color: #FFFFFF; box-shadow: 0 1px 2px rgb(0 0 0 / 0.05); border-radius: 6px; } /* destructive red-600 */
+.btn--danger:hover { background: #B91C1C; }
+.btn--text { background: transparent; color: var(--accent-text); box-shadow: none; }
+.btn--text:hover { background: var(--field-alt); color: var(--ink); }
+.ibtn { border-radius: 6px; }
+.ibtn:hover { background: var(--field-alt); }
+.ibtn.on { background: var(--field-alt); color: var(--accent-text); box-shadow: inset 0 0 0 1px var(--hairline); }
+.ibtn.danger { color: #DC2626; } .ibtn.danger:hover { background: var(--field-alt); }
+.fab { border-radius: 12px; background: var(--accent); color: var(--accent-ink); box-shadow: var(--shadow-1); width: 48px; height: 48px; }
+.fab:hover { background: var(--accent-hover); }
+/* tabs.tsx truth: list = muted p-1 rounded-lg; active trigger = bg-background + shadow-sm */
+.seg, .tabset { background: var(--field-alt); border: 0; border-radius: 8px; padding: 4px; gap: 2px; }
+.seg button, .tabset a { border-radius: 6px; font-weight: 500; padding: 5px 14px; border-bottom: 0; margin: 0; }
+.seg button.on, .tabset a.on { background: var(--surface); color: var(--ink); box-shadow: 0 1px 2px rgb(0 0 0 / 0.06); font-weight: 500; }
+.toggle { border-radius: 6px; }
+.toggle.on { background: var(--field-alt); color: var(--ink); border-color: var(--hairline); }
+/* checkbox.tsx: 4px box, checked = bg-primary + check in primary-foreground; radio: dot */
+.cb { border-radius: 4px; border-color: var(--hairline); }
+.cb.on { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.rd { border-color: var(--hairline); }
+.rd.on { border: 1.5px solid var(--accent); position: relative; }
+.rd.on::after { content: ""; position: absolute; inset: 4px; border-radius: 50%; background: var(--accent); }
+/* switch.tsx: track input/primary, thumb bg-background + shadow */
+.sw { width: 44px; height: 24px; border: 0; background: var(--field-alt); padding: 2px; }
+.sw .th { width: 20px; height: 20px; background: #FFFFFF; box-shadow: 0 1px 2px rgb(0 0 0 / 0.15); }
+.sw.on { background: var(--accent); } .sw.on .th { transform: translateX(20px); }
+/* slider.tsx: track 4px muted, thumb white w/ primary ring + shadow */
+.slider .track { height: 4px; background: var(--field-alt); }
+.slider .thumb { width: 18px; height: 18px; background: #FFFFFF; border: 2px solid var(--accent); box-shadow: 0 1px 2px rgb(0 0 0 / 0.1); }
+.prog { height: 6px; background: var(--field-alt); }
+.spin { border-color: var(--field-alt); border-top-color: var(--accent); }
+/* input.tsx: border bg-background 6px; select.tsx same; error = destructive ring */
+.input, .textarea { border: 1px solid var(--hairline); background: var(--surface); border-radius: 6px; }
+.fieldwrap.err .input { border-color: #DC2626; }
+.emsg { color: #DC2626; }
+.search { background: var(--surface); border: 1px solid var(--hairline); border-radius: 6px; }
+.otp span { border: 1px solid var(--hairline); background: var(--surface); border-radius: 6px; }
+.otp span.on { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+.select { border: 1px solid var(--hairline); background: var(--surface); border-radius: 6px; box-shadow: 0 1px 2px rgb(0 0 0 / 0.05); }
+/* dropdown-menu.tsx / popover.tsx / hover-card.tsx: bg-popover border shadow-md rounded-md */
+.menu { background: var(--surface); border: 1px solid var(--hairline); border-radius: 6px; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.10), 0 2px 4px -2px rgb(0 0 0 / 0.10); padding: 4px; }
+.menu .mi { border-radius: 4px; padding: 6px 10px; }
+.menu .mi:hover, .menu .mi.hl { background: var(--field-alt); }
+.menu .mi.sel { font-weight: 400; background: transparent; }
+.menu .mi.danger { color: #DC2626; }
+.menu .mi.danger:hover { background: var(--field-alt); }
+.menubar span.on { background: var(--field-alt); border-radius: 4px; font-weight: 500; }
+.pop, .hcard { background: var(--surface); border: 1px solid var(--hairline); border-radius: 12px; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.10), 0 2px 4px -2px rgb(0 0 0 / 0.10); }
+/* tooltip.tsx: bg-primary text-primary-foreground, 6px, no arrow (v4) */
+.tip { background: var(--accent); color: var(--accent-ink); border-radius: 6px; font-weight: 500; }
+/* calendar.tsx (react-day-picker): size-9 rounded-md cells; selected = primary; today = accent fill */
+.cal { border: 1px solid var(--hairline); border-radius: 12px; box-shadow: var(--shadow-1); background: var(--surface); }
+.cal-head b { font-weight: 500; }
+.day { border-radius: 6px; font-weight: 400; }
+.day:hover { background: var(--field-alt); }
+.day.today { box-shadow: none; background: var(--field-alt); color: var(--ink); font-weight: 600; }
+.day.sel, .day.sel-end, .day.range.sel-end { background: var(--accent); color: var(--accent-ink); font-weight: 400; border-radius: 6px; }
+.day.range { background: var(--field-alt); border-radius: 0; }
+.day.sel { border-radius: 6px 0 0 6px; } .day.range.sel-end, .day.sel-end { border-radius: 0 6px 6px 0; }
+.datepick { border: 1px solid var(--hairline); background: var(--surface); border-radius: 6px; }
+.tp { background: var(--surface); border: 1px solid var(--hairline); border-radius: 6px; }
+.tp.on { background: var(--field-alt); box-shadow: inset 0 0 0 1px var(--hairline); color: var(--ink); }
+/* dialog.tsx: rounded-lg border shadow-lg; sheet.tsx: edge slide, border, shadow-lg — no glass */
+.dlg { background: var(--surface); border: 1px solid var(--hairline); border-radius: 12px; box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.10), 0 4px 6px -4px rgb(0 0 0 / 0.10); }
+.dlg h3 { font-weight: 600; letter-spacing: -0.02em; }
+.sheet { background: var(--surface); border-top: 1px solid var(--hairline); border-radius: 12px 12px 0 0; box-shadow: 0 -10px 15px -3px rgb(0 0 0 / 0.10); }
+.sheet .mi.sel { background: var(--field-alt); font-weight: 500; }
+.drawer { background: var(--surface); border-right: 1px solid var(--hairline); box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.10); }
+/* toast (sonner idiom): inverted fg/bg chip, rounded-md, shadow-lg */
+.toast { background: var(--ink); color: var(--field); border-radius: 6px; box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.10); }
+.toast a { color: var(--accent-soft); }
+/* alert.tsx: border + transparent bg; destructive = destructive border + text, NO fill */
+.banner { border-left: 0; border: 1px solid var(--hairline); background: transparent; border-radius: 8px; color: var(--ink); }
+.banner--warn { border-color: var(--amber-text); color: var(--amber-text); background: transparent; }
+.banner--bad { border-color: #DC2626; color: #DC2626; background: transparent; }
+/* pagination.tsx: active page = outline variant */
+.pg { border-radius: 6px; }
+.pg.on { background: transparent; box-shadow: inset 0 0 0 1px var(--hairline); color: var(--ink); font-weight: 500; }
+.tbl th { border-bottom: 1px solid var(--hairline); }
+.tbl tr.sel td { background: var(--field-alt); }
+.acc { box-shadow: none; border: 0; background: transparent; }
+.acc-item { border-top: 0; border-bottom: 1px solid var(--hairline); }
+.acc-head { font-weight: 500; }
+.avatar { background: var(--field-alt); color: var(--ink); }
+.badge { background: #DC2626; }
+.empty { border: 1px dashed var(--hairline); box-shadow: none; background: transparent; }
+
+/* DARK (zinc inversion already in tokens): destructive lightens to red-500 text idiom */
+:root[data-theme="dark"] .btn--danger { background: #7F1D1D; color: #FECACA; }
+:root[data-theme="dark"] .btn--danger:hover { background: #991B1B; }
+:root[data-theme="dark"] .ibtn.danger { color: #F87171; }
+:root[data-theme="dark"] .fieldwrap.err .input { border-color: #F87171; }
+:root[data-theme="dark"] .emsg { color: #F87171; }
+:root[data-theme="dark"] .menu .mi.danger { color: #F87171; }
+:root[data-theme="dark"] .banner--bad { border-color: #F87171; color: #F87171; }
+:root[data-theme="dark"] .sw .th { background: #FAFAFA; }
+:root[data-theme="dark"] .slider .thumb { background: #FAFAFA; }
+:root[data-theme="dark"] .toast a { color: var(--accent-text); }
+:root[data-theme="dark"] .badge { background: #F87171; color: #2A0F0C; }
+
+/* gate fixes: inactive tabs = foreground (tabs.tsx truth, muted was 4.4:1); dark toast action
+   rides the inverted ground (light teal); dark tooltip keeps bg-primary over the base themed rule */
+.seg button, .tabset a { color: var(--ink); }
+:root[data-theme="dark"] .toast a { color: #0F766E; }
+:root[data-theme="dark"] .tip { background: var(--accent); color: var(--accent-ink); }
+
+/* ═══ live engine (R9): lifted-pill thumb for seg + tabs (tabs.tsx active-trigger truth),
+   CSS-eased (no springs in this system); solo day cells keep the 6px registry radius. ═══ */
+.seg .thumb, .tabset .thumb { position: absolute; z-index: 0; background: var(--surface); border-radius: 6px;
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.06); pointer-events: none; }
+.seg.seg--live button.on, .tabset.tabset--live a.on { background: transparent; box-shadow: none; }
+.seg button, .tabset a { user-select: none; -webkit-user-select: none; }
+.day.sel.solo, .day.sel-end.solo { border-radius: 6px; }
+
+/* ═══ R9a geometry compliance — shadcn registry new-york-v4 ═══ */
+.sw { width: 32px; height: 18.4px; padding: 1.2px; }   /* h-[1.15rem] w-8 */
+.sw .th { width: 16px; height: 16px; }                 /* size-4 */
+.sw.on .th { transform: translateX(13.6px); }          /* 32 - 16 - 2*1.2 */
+.cb { width: 16px; height: 16px; border-radius: 4px; } /* size-4 rounded-[4px] */
+.rd { width: 16px; height: 16px; }                     /* size-4 */
+.rd.on::after { inset: 4px; }                          /* indicator size-2 = 8 */
+.input { height: 36px; min-height: 36px; padding-top: 0; padding-bottom: 0; box-sizing: border-box; } /* h-9 exact */
+.tabset { height: 36px; align-items: stretch; box-sizing: border-box; }  /* h-9 rounded-lg */
+.tabset a { display: flex; align-items: center; }
+.cal .day { width: 32px; height: 32px; }               /* --cell-size: --spacing(8) */
+.pg { width: 36px; height: 36px; }                     /* size-9 */
+.appbar { height: 56px; border-radius: 12px 12px 0 0; }
+.navbar { height: 64px; }
+.nb.on .ind { background: var(--field-alt); border-radius: 6px; padding: 3px 12px; }
+.navrail { width: 72px; }
+.nr.on .ind { background: var(--field-alt); border-radius: 6px; padding: 4px 10px; }
+.sidebar { width: 256px; }                             /* SIDEBAR_WIDTH 16rem */
+.sidebar.icon { width: 48px; }                         /* SIDEBAR_WIDTH_ICON 3rem */
+.sb-i { border-radius: 6px; }
+
+/* shadcn icon sizes are literal Tailwind classes: `size-4` = 16 on most
+   controls, breadcrumb `size-3.5` = 14, and a 2px stroke throughout. */
+.ic { --ic: 16px; }
+.csep { --ic: 14px; }
+.cb .ic { --ic: 12px; stroke-width: 3.2; }
+.car { --ic: 16px; }
+.nb .ic, .nr .ic, .sb-i .ic { --ic: 16px; }
+
+/* shadcn ships NO time picker: the registry's 65 UI files contain zero matches
+   for "time", and examples/ has only date demos. Its documented answer is a
+   native <input type="time"> carrying the Input classes — h-9, rounded-md,
+   1px border, px-3. Showing an invented shadcn dial here would be fabricating
+   a component that does not exist, so the dial is hidden in this style. */
+.tpick { display: none; }
+.tp-native { display: block; height: 36px; border-radius: 6px; border: 1px solid var(--hairline);
+             background: transparent; padding: 0 12px; font-size: 14px; color: var(--ink);
+             width: 180px; box-sizing: border-box; }
+
+/* calendar container — shadcn calendar.tsx: root `p-3` = 12, `w-fit`;
+   nav + month_caption rows are `h-(--cell-size)` = 32; `week` carries `mt-2`
+   = 8 between rows; weekday label `text-[0.8rem]` = 12.8.
+   The container itself has NO border or radius — calendar.tsx puts none on
+   root/months/month; any frame comes from the consumer's PopoverContent. */
+.cal { width: fit-content; padding: 12px; border: 0; border-radius: 0; box-sizing: border-box; }
+.cal-head { height: 32px; }
+.cal .wd, .cal-grid > b { font-size: 12.8px; }

@@ -1,0 +1,395 @@
+/* styles/app/liquid-glass — overlay.css (designer style module, TL-12)
+   Provenance: the ez-lab gallery overlay, gate-proven (geometry/icons/audit/interact
+   × light/dark, sweep 16/16 as of R9p 2026-08-24). The SPEC.md beside this file is
+   the LAW; where this CSS and SPEC.md disagree, fix one of them before shipping.
+   Artifact use: link after the artifact's base widgets.css; ?style=liquid-glass.
+   style-craft overlay: liquid-glass (R7) - iOS 26, spec-grounded.
+   Sources: HIG materials (via hig-doctor mirror), conorluddy/LiquidGlassReference, Wikipedia.
+   Laws applied:
+   - glass is the NAVIGATION layer only; content never wears glass (HIG: "Don't use Liquid
+     Glass in the content layer", "use sparingly")
+   - bars FLOAT as capsules above content (iOS 26: no more edge-to-edge separators);
+     content scrolls beneath
+   - specular edge: bright top rim + soft adaptive shadow - the lensing cue CSS can express
+   - container-concentric, continuous-feeling corners; capsule is the default control shape
+   - type: SF-class platform stack; nav titles semibold (platform owns type conventions)
+   - brand constant: the teal accent, via color-craft roles */
+:root {
+  --field: #F2F2F7;            /* systemGroupedBackground */
+  --field-alt: #E9E9EE;        /* tertiarySystemGroupedBackground */
+  --surface: #FFFFFF;          /* secondarySystemGroupedBackground */
+  --ink: #1C1C1E;              /* label */
+  --ink-soft: #6C6C70;         /* secondaryLabel */
+  --ink-soft2: #C5C5C7;        /* tertiaryLabel (60,60,67 @30% on white) — accessory chevrons */
+  --hairline: rgb(60 60 67 / 0.12);
+  --accent: #0FA3A3;
+  --accent-ink: #1C1C1E;
+  --accent-text: #006F6F;
+  --accent-hover: #0C8C8C;
+  --accent-soft: #D9F0F0;
+  --r-card: 16px; --r-ctl: 10px;
+  --shadow-1: none;            /* iOS content cards carry no drop shadow */
+  --font-display: -apple-system, "SF Pro Display", system-ui, sans-serif;
+  --font-body: -apple-system, "SF Pro Text", system-ui, sans-serif;
+  --glass-regular: rgb(250 250 252 / 0.62);   /* .regular variant approximation */
+  --glass-thick: rgb(252 252 253 / 0.78);     /* thicker material for the sheet */
+  --specular: inset 0 1px 0 rgb(255 255 255 / 0.55), inset 0 -0.5px 0 rgb(0 0 0 / 0.05);
+  --knob: #FFFFFF;             /* switch thumb face + track glyph: white in BOTH themes (iOS) */
+}
+/* glass bars FLOAT as capsules; content passes beneath */
+.q-top, .q-hintbar {
+  background: var(--glass-regular);
+  -webkit-backdrop-filter: blur(24px) saturate(1.8);
+  backdrop-filter: blur(24px) saturate(1.8);
+  border: 0; border-radius: 999px;
+  box-shadow: var(--specular), 0 8px 24px rgb(0 0 0 / 0.10);
+  margin: 10px 14px; padding-left: 20px; padding-right: 20px;
+}
+.q-top { position: sticky; top: 10px; z-index: 5; }
+.q-hintbar { position: sticky; bottom: 10px; z-index: 5; }
+/* sidebar = regular material column (visionOS law: regular separates a sidebar) */
+.hub-rail {
+  background: rgb(246 246 248 / 0.72);
+  -webkit-backdrop-filter: blur(22px) saturate(1.7);
+  backdrop-filter: blur(22px) saturate(1.7);
+  border-right: 0;
+}
+/* the command palette is a sheet: thicker glass, concentric corners, floating */
+.c-palette {
+  background: var(--glass-thick);
+  -webkit-backdrop-filter: blur(30px) saturate(1.6);
+  backdrop-filter: blur(30px) saturate(1.6);
+  border-radius: 24px;
+  box-shadow: var(--specular), 0 16px 48px rgb(0 0 0 / 0.16);
+}
+/* content: solid, quiet, shadow-free */
+.hub-card, .panel, .q-lane, .q-card { background: var(--surface); box-shadow: none; }
+.q-card { border-color: transparent; }
+.q-card.sel { border-color: var(--accent-text); box-shadow: 0 0 0 1px var(--accent-text); }
+/* controls: tinted material, capsule */
+.btn {
+  background: rgb(15 163 163 / 0.15); color: var(--accent-text); border-radius: 999px;
+  box-shadow: var(--specular);
+}
+.btn:hover { background: rgb(15 163 163 / 0.20); color: #005A5A; }  /* deeper tint needs a darker label step: 6.0:1 composited */
+.btn:active { background: rgb(15 163 163 / 0.26); color: #005A5A; box-shadow: inset 0 1px 3px rgb(0 111 111 / 0.18); } /* 5.7:1 composited */
+.btn--ghost { box-shadow: inset 0 0 0 1px rgb(60 60 67 / 0.18); }
+.chip { background: rgb(120 120 128 / 0.12); }  /* iOS fill-material chip */
+.chip--accent { background: rgb(15 163 163 / 0.14); color: var(--accent-text); }
+.chip--ghost { background: transparent; box-shadow: inset 0 0 0 1px rgb(60 60 67 / 0.16); }
+.kbd { background: rgb(120 120 128 / 0.12); border: 0; color: var(--ink); }
+.hub-rail a { border-radius: 10px; } /* iOS sidebar row: continuous ~10px */
+.hub-rail a.on { background: rgb(120 120 128 / 0.16); } /* HIG sidebar selection = gray systemFill, never a tint; label color stays */
+.hub-rail .rail-sec { text-transform: none; letter-spacing: 0; font-size: 12px; font-weight: 600; } /* HIG group labels: sentence-case gray, no tracking */
+.c-item.sel { background: rgb(15 163 163 / 0.12); }
+h1, h2 { font-weight: 700; } /* platform convention: SF titles are bold - style owns type weight */
+h1, h2, .hub-rail h1, .q-top h1 { letter-spacing: -0.015em; } /* approximates SF's tighter display tracking */
+
+/* DARK variant (iOS dark): same style, token-level variant - never a restyle.
+   systemGroupedBackground goes true black; dark tints LIGHTEN (HIG); fills double their alpha.
+   Every text pairing asserted >= 4.5:1 composited (see /tmp/hover-audit.js). */
+:root[data-theme="dark"] {
+  --field: #000000;            /* systemGroupedBackground dark */
+  --field-alt: #2C2C2E;        /* tertiarySystemGroupedBackground dark - one step LIGHTER than surface (the present card must read on it) */
+  --surface: #1C1C1E;          /* secondarySystemGroupedBackground dark */
+  --ink: #FFFFFF;              /* label dark */
+  --ink-soft: #98989E;         /* secondaryLabel dark: 235,235,245 @ 60% */
+  --hairline: rgb(255 255 255 / 0.12);
+  --accent: #30BDBD;
+  --accent-ink: #06201F;
+  --accent-text: #3EC9C9;      /* 6.2:1 on the tinted button, 8:1+ on surfaces */
+  --accent-hover: #28A5A5;
+  --accent-soft: #0C3534;
+  --glass-regular: rgb(28 28 30 / 0.62);
+  --glass-thick: rgb(32 32 34 / 0.78);
+  --specular: inset 0 1px 0 rgb(255 255 255 / 0.14), inset 0 -0.5px 0 rgb(0 0 0 / 0.4);
+}
+:root[data-theme="dark"] .hub-rail { background: rgb(22 22 24 / 0.72); }
+:root[data-theme="dark"] .btn { background: rgb(62 201 201 / 0.16); color: #3EC9C9; }
+:root[data-theme="dark"] .btn:hover { background: rgb(62 201 201 / 0.22); color: #7ADEDE; } /* 7.1:1 composited */
+:root[data-theme="dark"] .btn:active { background: rgb(62 201 201 / 0.28); color: #7ADEDE; box-shadow: inset 0 1px 3px rgb(0 0 0 / 0.35); } /* 5.9:1 */
+:root[data-theme="dark"] .btn--ghost { box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.22); }
+:root[data-theme="dark"] .chip { background: rgb(120 120 128 / 0.24); } /* iOS dark fill doubles alpha */
+:root[data-theme="dark"] .chip--accent { background: rgb(62 201 201 / 0.16); color: #3EC9C9; }
+:root[data-theme="dark"] .chip--ghost { box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.20); }
+:root[data-theme="dark"] .kbd { background: rgb(120 120 128 / 0.24); }
+:root[data-theme="dark"] .hub-rail a.on { background: rgb(120 120 128 / 0.24); } /* dark fill doubles alpha (HIG) */
+:root[data-theme="dark"] .c-item.sel { background: rgb(62 201 201 / 0.14); }
+
+/* ═══ component-craft (R9): the 22 families in liquid-glass ═══
+   Laws: glass = navigation/overlay layer ONLY (menus, popovers, dialogs, sheets, toasts float
+   as material); content surfaces (calendar, table, accordion, cards, forms) stay SOLID and
+   shadow-free. Capsule default shape; 14px menus/dialogs; specular rim + adaptive shadow on
+   material. Sources: developer.apple.com/design/human-interface-guidelines (menus, pickers,
+   sheets, alerts, toggles), HIG materials. */
+.ibtn:hover { background: rgb(120 120 128 / 0.16); }
+.ibtn.on { background: rgb(15 163 163 / 0.14); color: var(--accent-text); }
+.ibtn.danger { color: #FF3B30; } .ibtn.danger:hover { background: rgb(255 59 48 / 0.12); }
+.fab { background: var(--accent); color: #FFFFFF; box-shadow: var(--specular), 0 6px 16px rgb(0 0 0 / 0.18); }
+/* segmented control: iOS 26 GLASS idiom (HIG toggles page, real Recents specimens —
+   developer.apple.com/design/human-interface-guidelines/toggles): the track is the
+   floating glass capsule (surface + specular + soft shadow); the SELECTED segment is
+   a flat systemFill pill. The stylized intro image's gray-track/white-thumb is the
+   OLD idiom. Labels keep IDENTICAL typography on/off (R9c law). */
+.seg { background: var(--surface); box-shadow: var(--specular), 0 1px 4px rgb(0 0 0 / 0.10); border-radius: 999px; padding: 2px; }
+.seg button { border-radius: 999px; font-weight: 400; padding: 5px 14px; }
+.seg button.on { background: rgb(120 120 128 / 0.16); }
+/* HIG has no underlined tabs: tabset renders as the same segmented idiom */
+.tabset { border-bottom: 0; gap: 2px; background: var(--surface); box-shadow: var(--specular), 0 1px 4px rgb(0 0 0 / 0.10); border-radius: 999px; padding: 2px; }
+.tabset a { border-bottom: 0; margin: 0; padding: 5px 14px; border-radius: 999px; font-weight: 400; }
+.tabset a.on { background: rgb(120 120 128 / 0.16); }
+/* toggle buttons: hairline ring off, tint on */
+.toggle { border-radius: 999px; border: 0; box-shadow: inset 0 0 0 1px rgb(60 60 67 / 0.18); background: transparent; }
+.toggle.on { background: rgb(15 163 163 / 0.14); color: var(--accent-text); box-shadow: none; }
+.toggle-grp .toggle { margin-left: 6px; border-radius: 999px; }
+/* HIG checkmark idiom: round check circle, not a box */
+.cb { border-radius: 50%; width: 22px; height: 22px; }
+.cb.on { background: var(--accent); border-color: var(--accent); color: #FFFFFF; }
+.rd.on { border-width: 6px; border-color: var(--accent); }
+/* iOS 26 toggle: CLEAN capsule — no inner glyphs. Source: the real specimens on
+   developer.apple.com/design/human-interface-guidelines/toggles
+   (toggles-ios-default-color / toggles-ios-custom-color): white knob, gray fill
+   when off, tint when on, nothing else. The intro art's bar/circle glyphs are
+   schematic decoration — second time stylized art misled; real figures rule.
+   Knob face is white in BOTH themes (invariant --knob); travel engine-measured. */
+/* REAL SIZE 52x32pt — the native SwiftUI Liquid Glass control default
+   (liquid_glass_native LiquidGlassSwitch: width 52, height 32; UIKit lineage
+   51x31). The HIG docs figure is horizontally stretched for legibility — its
+   2.29 aspect is NOT real (Evan, 2026-08-24); its SHAPE ratios hold:
+   stadium knob 61% of track width, 86% of track height -> 32x28 knob. */
+.sw { width: 52px; height: 32px; border: 0; background: rgb(120 120 128 / 0.24); padding: 2px; }
+/* stadium knob in both states, 2px inset -> 32x28; travel = 52-32-4 = 16px;
+   translation rides the MOVE spring, re-measured on reseat. */
+.sw .th { width: 32px; height: 28px; border-radius: 999px; background: var(--knob);
+  box-shadow: 0 2px 6px rgb(0 0 0 / 0.2), 0 0 1px rgb(0 0 0 / 0.1); }
+.sw.on { background: var(--accent); } .sw.on .th { transform: translateX(16px); }
+/* iOS slider: thin tinted track, white thumb with soft shadow, no border */
+.slider .track { height: 4px; background: rgb(120 120 128 / 0.24); }
+.slider .thumb { width: 26px; height: 26px; border: 0; background: var(--knob);
+  box-shadow: 0 2px 8px rgb(0 0 0 / 0.18), 0 0 1px rgb(0 0 0 / 0.1); } /* same invariant white knob as the switch — never var(--surface), which goes near-black in dark (R9k) */
+.prog { height: 4px; background: rgb(120 120 128 / 0.24); }
+/* iOS activity indicator: 12 fading blades, NOT a border ring. HIG
+   progress-indicators: an indeterminate indicator "uses an animated image";
+   the iOS form is the 12-blade UIActivityIndicator / SwiftUI
+   ProgressView(.circular). Medium control = 20pt. Blades follow the label
+   stack: gray in light, light in dark; leading blade bright, trailing fades. */
+/* Activity indicator per Evan's reference spec card (R9l): 8 radial CAPSULE
+   blades, 45deg pitch, hub hole 38% of diameter, blade width ~5% of diameter
+   (~3:1 capsule), brightest blade at 12 o'clock, QUANTIZED clockwise fade
+   1.0 / .7 / .4 / .2 / .1 / .05 / .02 / 0 (blade 8 invisible). Built as:
+   conic alpha ladder x angular pitch mask (16deg blade per 45deg) x radial
+   hub mask, composed with mask-composite. Medium control = 20pt. Blades
+   follow the label stack: gray in light, light in dark. */
+.spin { width: 20px; height: 20px; border: 0; animation: gz-spin 0.8s linear infinite;
+  background: conic-gradient(rgb(60 60 67) 0deg 45deg, rgb(60 60 67 / 0.7) 45deg 90deg,
+    rgb(60 60 67 / 0.4) 90deg 135deg, rgb(60 60 67 / 0.2) 135deg 180deg,
+    rgb(60 60 67 / 0.1) 180deg 225deg, rgb(60 60 67 / 0.05) 225deg 270deg,
+    rgb(60 60 67 / 0.02) 270deg 315deg, transparent 315deg 360deg);
+  -webkit-mask-image: radial-gradient(closest-side, transparent 38%, #000 50%, #000 88%, transparent 100%),
+    repeating-conic-gradient(from -8deg, #000 0deg 16deg, transparent 16deg 45deg);
+  -webkit-mask-composite: source-in;
+          mask-image: radial-gradient(closest-side, transparent 38%, #000 50%, #000 88%, transparent 100%),
+    repeating-conic-gradient(from -8deg, #000 0deg 16deg, transparent 16deg 45deg);
+          mask-composite: intersect; }
+/* select = gray fill capsule (HIG picker button) */
+.select { border: 0; background: rgb(120 120 128 / 0.12); border-radius: 8px; }
+/* text inputs: systemFill fields, 10px, no border (content layer = solid, quiet) */
+.input, .textarea { border: 0; background: rgb(120 120 128 / 0.12); border-radius: 10px; }
+.fieldwrap.err .input { box-shadow: inset 0 0 0 1.5px #FF3B30; }
+.emsg { color: #D70015; }
+.search { background: rgb(120 120 128 / 0.12); border-radius: 999px; } /* iOS search field is a capsule (R9a) */
+.otp span { border: 0; background: rgb(120 120 128 / 0.12); border-radius: 10px; }
+.otp span.on { box-shadow: inset 0 0 0 1.5px var(--accent-text); }
+/* menus/popovers/cards-on-scrim = thick glass material */
+.menu { background: var(--glass-thick); -webkit-backdrop-filter: blur(30px) saturate(1.6); backdrop-filter: blur(30px) saturate(1.6);
+  border: 0; border-radius: 14px; box-shadow: var(--specular), 0 10px 34px rgb(0 0 0 / 0.16); padding: 6px; }
+.menu .mi { border-radius: 8px; }
+.menu .mi:hover, .menu .mi.hl { background: rgb(120 120 128 / 0.16); }
+.menu .mi.sel { background: transparent; } /* checkmark marks selection, never a wash — and never weight: bold widens the selected row */
+.menu .mi.danger { color: #FF3B30; }
+.menu .mi.danger:hover { background: rgb(255 59 48 / 0.10); }
+.menubar span.on { background: rgb(120 120 128 / 0.16); font-weight: 600; }
+.pop, .hcard { background: var(--glass-thick); -webkit-backdrop-filter: blur(30px) saturate(1.6); backdrop-filter: blur(30px) saturate(1.6);
+  border: 0; border-radius: 14px; box-shadow: var(--specular), 0 10px 34px rgb(0 0 0 / 0.16); }
+.tip { background: var(--glass-thick); -webkit-backdrop-filter: blur(20px) saturate(1.6); backdrop-filter: blur(20px) saturate(1.6);
+  color: var(--ink); border-radius: 8px; box-shadow: var(--specular), 0 4px 14px rgb(0 0 0 / 0.14); }
+/* calendar = content: solid surface card, NO shadow */
+.cal { border: 0; box-shadow: none; }
+.cal-head b { font-weight: 600; letter-spacing: -0.01em; }
+.day.today { box-shadow: inset 0 0 0 1.5px var(--accent-text); background: transparent; }
+.day.sel, .day.sel-end { background: var(--accent); color: #FFFFFF; }
+.day.range { background: rgb(15 163 163 / 0.14); }
+.datepick { border: 0; background: rgb(120 120 128 / 0.12); border-radius: 10px; }
+.tp { background: rgb(120 120 128 / 0.12); }
+.tp.on { background: rgb(15 163 163 / 0.14); }
+/* dialogs + sheets: thick glass, iOS alert geometry */
+.dlg { background: var(--glass-thick); -webkit-backdrop-filter: blur(30px) saturate(1.6); backdrop-filter: blur(30px) saturate(1.6);
+  border-radius: 14px; box-shadow: var(--specular), 0 16px 48px rgb(0 0 0 / 0.22); padding: 20px 20px 14px; }
+.dlg h3 { font-weight: 600; letter-spacing: -0.01em; }
+.dlg-acts { border-top: 1px solid var(--hairline); margin: 16px -20px -14px; padding: 10px 16px; }
+.dlg .btn { min-height: 34px; }
+.sheet { background: var(--glass-thick); -webkit-backdrop-filter: blur(30px) saturate(1.6); backdrop-filter: blur(30px) saturate(1.6);
+  border-radius: 24px 24px 0 0; box-shadow: var(--specular), 0 -8px 30px rgb(0 0 0 / 0.18); }
+.sheet .mi.sel { background: transparent; font-weight: 600; } /* checkmark, no wash */
+.drawer { background: rgb(246 246 248 / 0.72); -webkit-backdrop-filter: blur(22px) saturate(1.7); backdrop-filter: blur(22px) saturate(1.7); box-shadow: none; }
+/* toast: thick glass capsule with ink text (not the base solid-ink pill) */
+.toast { background: var(--glass-thick); -webkit-backdrop-filter: blur(30px) saturate(1.6); backdrop-filter: blur(30px) saturate(1.6);
+  color: var(--ink); box-shadow: var(--specular), 0 8px 24px rgb(0 0 0 / 0.16); }
+.toast a { color: var(--accent-text); }
+/* banner: grouped-row idiom, no left strip */
+.banner { border-left: 0; border-radius: 10px; background: rgb(15 163 163 / 0.10); }
+.banner--warn { background: rgb(255 159 10 / 0.12); }
+.banner--bad { background: rgb(255 59 48 / 0.10); }
+.pg.on { background: var(--accent); color: #FFFFFF; border-radius: 50%; }
+.tbl { box-shadow: none; }
+.tbl tr.sel td { background: rgb(120 120 128 / 0.12); } /* list selection = gray systemFill */
+/* accordion = inset-grouped list row. Sources: HIG disclosure-controls ("points
+   inward from the leading edge when its content is hidden and down when its
+   content is visible"; iOS -> SwiftUI DisclosureGroup), UIKit
+   UICellAccessoryOutlineDisclosure ("a rotating chevron ... on the trailing
+   edge"), row height = the real control default (UIKit rowHeight / SwiftUI
+   defaultMinListRowHeight = 44), separators inset to the text lead (inset-
+   grouped specimen: Settings), title weight REGULAR (inset-grouped rows are
+   body weight). Press = cell highlight fill, never a scale — rows are not
+   freestanding controls. */
+.acc { box-shadow: none; }
+.acc-item { border-top: 0; position: relative; }
+.acc-item + .acc-item::after { content: ""; position: absolute; top: 0; left: 18px; right: 0; height: 1px; background: var(--hairline); }
+.acc-head { font-weight: 400; min-height: 44px; padding: 0 18px; transition: background-color 150ms linear; }
+/* collapsed = pointing right (inward), expanded = rotated 90deg to down; the
+   glyph itself is swapped to i-chevron-right by interact.js (engine owns it) */
+.acc-head .car { color: var(--ink-soft2); }
+.acc-item.open .acc-head .car { transform: rotate(90deg); }
+.acc-head.hl { background: rgb(120 120 128 / 0.10); } /* cell highlight */
+.badge { background: #FF3B30; border-color: var(--field); } /* HIG badges are system red */
+.avatar { background: rgb(120 120 128 / 0.16); color: var(--ink); }
+.empty { box-shadow: none; }
+
+/* DARK: fills double alpha (HIG); danger/badge flip to dark system red; seg thumb lifts */
+:root[data-theme="dark"] .ibtn:hover { background: rgb(120 120 128 / 0.24); }
+:root[data-theme="dark"] .ibtn.on { background: rgb(62 201 201 / 0.16); color: #3EC9C9; }
+:root[data-theme="dark"] .ibtn.danger { color: #FF453A; } :root[data-theme="dark"] .ibtn.danger:hover { background: rgb(255 69 58 / 0.16); }
+:root[data-theme="dark"] .fab { color: #06201F; }
+:root[data-theme="dark"] .seg, :root[data-theme="dark"] .tabset { background: rgb(120 120 128 / 0.24); }
+:root[data-theme="dark"] .seg button.on, :root[data-theme="dark"] .tabset a.on { background: #3A3A3C; }
+:root[data-theme="dark"] .toggle { box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.22); }
+:root[data-theme="dark"] .toggle.on { background: rgb(62 201 201 / 0.16); color: #3EC9C9; }
+:root[data-theme="dark"] .cb.on { color: #06201F; }
+:root[data-theme="dark"] .sw { background: rgb(120 120 128 / 0.32); }
+:root[data-theme="dark"] .sw.on { background: var(--accent); } /* (0,3,1) beats the track override — ON keeps its tint in dark */
+:root[data-theme="dark"] .select, :root[data-theme="dark"] .input, :root[data-theme="dark"] .textarea,
+:root[data-theme="dark"] .search, :root[data-theme="dark"] .otp span, :root[data-theme="dark"] .datepick, :root[data-theme="dark"] .tp { background: rgb(120 120 128 / 0.24); }
+:root[data-theme="dark"] .fieldwrap.err .input { box-shadow: inset 0 0 0 1.5px #FF453A; }
+:root[data-theme="dark"] .emsg { color: #FF6961; }
+:root[data-theme="dark"] .menu .mi:hover, :root[data-theme="dark"] .menu .mi.hl { background: rgb(120 120 128 / 0.24); }
+:root[data-theme="dark"] .menu .mi.danger { color: #FF453A; }
+:root[data-theme="dark"] .menu .mi.danger:hover { background: rgb(255 69 58 / 0.14); }
+:root[data-theme="dark"] .menubar span.on { background: rgb(120 120 128 / 0.24); }
+:root[data-theme="dark"] .day.sel, :root[data-theme="dark"] .day.sel-end { color: #06201F; }
+:root[data-theme="dark"] .day.range { background: rgb(62 201 201 / 0.16); }
+:root[data-theme="dark"] .tp.on { background: rgb(62 201 201 / 0.16); }
+:root[data-theme="dark"] .drawer { background: rgb(22 22 24 / 0.72); }
+:root[data-theme="dark"] .banner { background: rgb(62 201 201 / 0.12); }
+:root[data-theme="dark"] .banner--warn { background: rgb(255 159 10 / 0.14); }
+:root[data-theme="dark"] .banner--bad { background: rgb(255 69 58 / 0.12); }
+:root[data-theme="dark"] .pg.on { color: #06201F; }
+:root[data-theme="dark"] .tbl tr.sel td { background: rgb(120 120 128 / 0.24); }
+:root[data-theme="dark"] .acc-head .car { color: rgb(235 235 245 / 0.32); } /* tertiaryLabel dark */
+:root[data-theme="dark"] .spin { background: conic-gradient(rgb(235 235 245) 0deg 45deg, rgb(235 235 245 / 0.7) 45deg 90deg,
+  rgb(235 235 245 / 0.4) 90deg 135deg, rgb(235 235 245 / 0.2) 135deg 180deg,
+  rgb(235 235 245 / 0.1) 180deg 225deg, rgb(235 235 245 / 0.05) 225deg 270deg,
+  rgb(235 235 245 / 0.02) 270deg 315deg, transparent 315deg 360deg); }
+:root[data-theme="dark"] .acc-head.hl { background: rgb(120 120 128 / 0.20); } /* dark fill doubles alpha */
+:root[data-theme="dark"] .badge { background: #FF453A; color: #1C0605; }
+:root[data-theme="dark"] .avatar { background: rgb(120 120 128 / 0.24); color: var(--ink); }
+/* range-end keeps the solid cap (specificity beats .day.range regardless of order) */
+.day.range.sel-end { background: var(--accent); color: #FFFFFF; }
+:root[data-theme="dark"] .day.range.sel-end { color: #06201F; }
+
+/* variant repair: the plain .btn rule above clobbered base variants (equal specificity, later
+   sheet wins) — restate danger/text in this overlay, AFTER the .btn rule */
+.btn--danger { background: rgb(255 59 48 / 0.13); color: #D70015; box-shadow: var(--specular); }
+.btn--danger:hover { background: rgb(255 59 48 / 0.18); color: #B3000E; }
+.btn--danger:active { background: rgb(255 59 48 / 0.22); color: #B3000E; box-shadow: inset 0 1px 3px rgb(179 0 14 / 0.18); }
+.btn--text { background: transparent; color: var(--accent-text); box-shadow: none; }
+.btn--text:hover { background: rgb(15 163 163 / 0.10); }
+:root[data-theme="dark"] .btn--danger { background: rgb(255 69 58 / 0.16); color: #FF6961; }
+:root[data-theme="dark"] .btn--danger:hover { background: rgb(255 69 58 / 0.22); color: #FF8A80; }
+:root[data-theme="dark"] .btn--text { background: transparent; color: #3EC9C9; }
+:root[data-theme="dark"] .btn--text:hover { background: rgb(62 201 201 / 0.10); }
+
+/* ═══ gate fixes (2026-08-24, gallery-audit round 1) ═══
+   Specificity trap: base lab.css themed rules (:root[data-theme="dark"] .toast/.tip) outrank
+   unthemed overlay rules — restate themed. Solid accent fills take DARK text (#06201F, 6.4:1)
+   in light — the hue holds, the gate holds. */
+.seg button, .tabset a { color: var(--ink); }              /* iOS segmented: all labels full label color */
+.seg button.on, .tabset a.on { color: var(--ink); }
+.btn--danger { color: #B3000E; }                            /* 5.9:1 over the 13% red tint */
+.btn--danger:hover { color: #8F000B; }
+.fab { color: #06201F; }
+.fab:hover { background: var(--accent-hover); color: #06201F; }
+.cb.on { color: #06201F; }
+.menu .mi.danger { color: #D70015; }                        /* #FF3B30 is 4.0:1 on white — the gate floor needs the darker step */
+.day.sel, .day.sel-end, .day.range.sel-end { color: #06201F; }
+.pg.on { color: #06201F; }
+.badge { background: #D70015; color: #FFFFFF; }             /* white on #FF3B30 = 3.5:1; darker red holds 5.3:1 */
+:root[data-theme="dark"] .toast, :root[data-theme="dark"] .tip { background: var(--glass-thick); color: var(--ink); }
+:root[data-theme="dark"] .badge { background: #FF453A; color: #1C0605; }
+:root[data-theme="dark"] .toast a { color: #3EC9C9; } /* glass toast does NOT invert — dark glass ground, light teal action (beats base themed rule by later order) */
+
+/* ═══ live engine (R9): iOS 26 glass idiom — the sliding pill is the systemFill
+   selection (flat), riding the MOVE spring between items; the track is the glass
+   capsule. Themed live overrides come LAST: base live rules (0,3,1) would tie the
+   dark .on fills (0,3,1) and lose on file order. ═══ */
+.seg .thumb, .tabset .thumb { position: absolute; z-index: 0; background: rgb(120 120 128 / 0.16); border-radius: 999px;
+  pointer-events: none; }
+.seg.seg--live button.on, .tabset.tabset--live a.on { background: transparent; box-shadow: none; }
+:root[data-theme="dark"] .seg button.on, :root[data-theme="dark"] .tabset a.on { background: rgb(120 120 128 / 0.32); box-shadow: none; }
+.seg button, .tabset a { user-select: none; -webkit-user-select: none; }
+:root[data-theme="dark"] .seg .thumb, :root[data-theme="dark"] .tabset .thumb { background: rgb(120 120 128 / 0.32); }
+:root[data-theme="dark"] .seg.seg--live button.on, :root[data-theme="dark"] .tabset.tabset--live a.on { background: transparent; box-shadow: none; }
+
+/* ═══ R9a geometry compliance — see docs/technique-layer/component-specs.md ═══
+   HIG publishes no per-component px, so glass is gated on RELATIONSHIPS:
+   capsule where the idiom is a capsule, concentric radii inside bars. */
+.appbar { height: 50px; background: var(--glass-thick); backdrop-filter: blur(20px) saturate(180%); }
+.navbar { height: 56px; background: var(--glass-thick); backdrop-filter: blur(20px) saturate(180%); }
+.navrail { width: 76px; background: var(--glass-thick); backdrop-filter: blur(20px) saturate(180%); }
+/* R9b — de-Materialised. A filled capsule behind the selected item is the
+   Material 3 "active indicator"; it appears NOWHERE in Apple's guidelines.
+   Negative test across 9 HIG pages: "capsule" 0 hits, "active indicator" 0
+   hits, "pill" 2 hits (both the word *pillarboxed*, in layout). The tab-bar
+   anatomy figure lists exactly two parts — "the tab bar icon and tab label".
+   Apple states the positive form: "Symbols and text that appear on Liquid
+   Glass can have color, like in a selected tab bar item." (color#Liquid-Glass-color)
+   — and reserves BACKGROUND colour for prominent buttons, warning against
+   spreading it. So: selection is tint on the glyph and label; the bar's own
+   glass is the only background.
+   The one filled-tab treatment Apple documents is tvOS, not iOS. */
+.nb .ind, .nr .ind { background: none; padding: 0; border-radius: 0; }
+.nb, .nr { color: var(--ink-soft); }
+.nb.on, .nr.on { color: var(--accent-text); }
+.nb.on .ind, .nr.on .ind { background: none; padding: 0; }
+.sidebar { width: 260px; background: var(--glass-thick); backdrop-filter: blur(20px) saturate(180%); }
+/* Apple publishes no sidebar selected-row shape, fill, radius or inset —
+   not in prose, not in any figure caption on the Sidebars page. The filled
+   drawer row was Material's. Tint the row instead; radius stays concentric
+   with the sidebar's own corner (inner = outer - gap), the one hard rule
+   Apple does publish (toolbars changelog, 2025-12-16). */
+.sb-i { border-radius: 10px; }
+.sb-i.on { background: none; color: var(--accent-text); font-weight: 600; }
+.sb-i.on .ic { color: var(--accent-text); }
+.sidebar.icon { width: 60px; }
+
+/* nav containers inherit dark from var(--glass-thick) - no enumeration needed.
+   The original bug here was hardcoding the light literal instead of the token. */
+
+/* Apple publishes no time-picker geometry, and iOS does not use a Material
+   dial — the platform control is a wheel (UIDatePicker) or a compact tap-out
+   field. Rather than invent pixel values Apple never published, glass shows
+   the compact field pair only: capsule-adjacent 8px fields, no dial. */
+.tp-dial, .tp-acts, .tp-head { display: none; }
+.tpick { width: auto; padding: 0; background: none; box-shadow: none; gap: 8px; }
+.tp-f { width: 64px; height: 52px; font-size: 34px; line-height: 40px; border-radius: 10px; }
+.tp-colon { font-size: 34px; line-height: 40px; }
+.tp-ap { width: 48px; height: 52px; border-radius: 10px; }

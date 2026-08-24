@@ -1,0 +1,26 @@
+/* styles/app/liquid-glass — motion.css (TL-12 motion overlay)
+   The interaction recipe's glass constants, as consumable custom props + the
+   curve tokens. The engine (spring integrator or CSS transition) reads these;
+   SPEC.md §motion is the law, this file is the runtime expression.
+   Sources: SwiftUI spring response/damping converted to k/c
+   (k = 4π²·m/T²… see component-craft.md §interaction recipe). */
+
+:root {
+  /* PRESS — SwiftUI spring response 0.35 / damping 0.75 → k=322, c=26.9 */
+  --press-spring-k: 322;
+  --press-spring-c: 26.9;
+  /* MOVE (spatial) — Apple default spring 0.50 / 0.825 → k=158, c=20.7 */
+  --move-spring-k: 158;
+  --move-spring-c: 20.7;
+  /* EFFECTS (opacity/color) — 180ms linear, critically damped, never a spring */
+  --effects-ms: 180ms;
+  --effects-ease: linear;
+  /* DISCLOSURE — EFFECTS class: ease only, never springs.
+     UIKit's documented default: 300ms cubic-bezier(0.42, 0, 0.58, 1) */
+  --disclose-ms: 300ms;
+  --disclose-ease: cubic-bezier(0.42, 0, 0.58, 1);
+  /* press scales (five-class recipe): 0.94 controls / 0.96 list items / 0.98 rows */
+  --press-scale-ctl: 0.94;
+  --press-scale-item: 0.96;
+  --press-scale-row: 0.98;
+}

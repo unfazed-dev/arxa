@@ -1,0 +1,310 @@
+/* styles/app/m3-expressive — overlay.css (designer style module, TL-12)
+   Provenance: the ez-lab gallery overlay, gate-proven (geometry/icons/audit/interact
+   × light/dark, sweep 16/16 as of R9p 2026-08-24). SPEC.md beside this file is the
+   LAW; conflicts are bugs. Artifact use: link after base widgets.css; ?style=m3-expressive.
+/* style-craft overlay: m3-expressive (R7) - Material 3 Expressive, spec-grounded.
+   Sources: m3.material.io (via kit DESIGN_REFERENCES.md), androidx ExpressiveMotionTokens.kt.
+   Laws applied:
+   - TONAL elevation only: the surfaceContainer ladder separates layers; NO shadows, NO blur
+   - seed-derived scheme (Material You): teal primary tone 40, teal-tinted neutrals
+   - shape: stadium controls (M3E buttons are full-round), generous 20px card corners,
+     chips stay 8px (M3 shape.corner.small)
+   - state layers: hover = 8% on-primary over primary, not a new color
+   - type: Roboto-class; M3 headlines sit at 400-500 - style owns type conventions */
+@import url("https://fonts.googleapis.com/css2?family=Roboto+Flex:wght@400..700&display=swap");
+:root {
+  --field: #F4FAF9;            /* surface */
+  --field-alt: #E4EEED;        /* surfaceContainer */
+  --surface: #FFFFFF;          /* surfaceContainerLowest */
+  --ink: #191D1D;              /* onSurface */
+  --ink-soft: #3F4948;         /* onSurfaceVariant */
+  --hairline: #BFC9C8;         /* outlineVariant */
+  --accent: #006A6A;           /* primary (tone 40) */
+  --accent-ink: #FFFFFF;       /* onPrimary */
+  --accent-text: #006A6A;
+  --accent-hover: #147879;     /* primary + 8% onPrimary state layer */
+  --accent-soft: #9CF1F0;      /* primaryContainer */
+  --r-card: 20px; --r-ctl: 8px;
+  --shadow-1: none;
+  --font-display: "Roboto Flex", Roboto, "Google Sans", system-ui, sans-serif; /* webfont-loaded: platform-true */
+  --font-body: "Roboto Flex", Roboto, system-ui, sans-serif;
+}
+/* tonal layering: lanes a container step up, cards lowest (white), bars flat surface */
+.hub-card, .panel, .q-lane, .c-palette { background: #EAF3F2; box-shadow: none; border: 0; }
+.q-card { background: var(--surface); box-shadow: none; border-color: transparent; }
+.q-card.sel { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+.hub-rail { background: var(--field); border-right: 0; }
+.q-top, .q-hintbar { background: var(--field); border: 0; }
+.c-palette { background: #E4EEED; } /* surfaceContainer - the palette floats tonally */
+.btn { background: var(--accent); color: var(--accent-ink); border-radius: 999px; } /* M3E stadium */
+.btn:not(.btn--ghost):hover { background: var(--accent-hover); }
+.btn:not(.btn--ghost):active { background: var(--accent-hover); box-shadow: none; }
+.btn--ghost:hover { background: rgb(0 106 106 / 0.08); }  /* M3 state layer: primary at 8% over the outlined label */
+.btn--ghost:active { background: rgb(0 106 106 / 0.12); }
+.btn--ghost { background: transparent; box-shadow: inset 0 0 0 1px var(--hairline); color: var(--accent-text); } /* M3 outlined button: no fill */
+.chip { background: transparent; box-shadow: inset 0 0 0 1px var(--hairline); border-radius: 8px; }
+.chip--accent { background: var(--accent-soft); color: #06201F; box-shadow: none; }
+.chip--ghost { box-shadow: inset 0 0 0 1px var(--hairline); }
+.chip--amber { box-shadow: none; }
+.kbd { background: var(--field-alt); border: 0; color: var(--ink); }
+.hub-rail a.on { background: #D8E8E7; border-radius: 999px; } /* M3 nav indicator pill */
+.hub-rail a { border-radius: 999px; }
+.hub-rail a:not(.on):hover { background: color-mix(in srgb, var(--ink-soft) 8%, transparent); } /* M3 hover state layer (content color @ 8%) */
+.hub-rail .rail-sec { text-transform: none; letter-spacing: 0; font-size: 12px; font-weight: 500; } /* M3 drawer headline: sentence-case label, no tracking */
+.c-item.sel { background: #D8E8E7; }
+h1, h2, .hub-card h3 { font-weight: 500; } /* M3 headlines are not bold */
+
+/* DARK variant (M3 dark scheme): tonal ladder INVERTS (lowest containers go darkest);
+   primary lightens to tone-80 and filled buttons take DARK onPrimary text; state layers
+   ride the dark primary. Contrast asserted per pairing. */
+:root[data-theme="dark"] {
+  --field: #0F1616;            /* surface dark */
+  --field-alt: #222D2C;        /* surfaceContainer dark */
+  --surface: #171E1E;          /* surfaceContainerLowest dark - cards sit darkest */
+  --ink: #DFE5E4;              /* onSurface dark */
+  --ink-soft: #A9B4B2;         /* onSurfaceVariant dark */
+  --hairline: #394543;         /* outlineVariant dark */
+  --accent: #4FC9C8;           /* primary dark (tone 80) - 6.6:1 with onPrimary */
+  --accent-ink: #003737;       /* onPrimary dark: DARK text on the light primary */
+  --accent-text: #6FD3D2;      /* 9:1 on dark surfaces */
+  --accent-hover: #45B8B7;     /* primary + 8% onPrimary state layer (dark) - 5.5:1 */
+  --accent-soft: #004F4F;      /* primaryContainer dark */
+}
+:root[data-theme="dark"] .hub-card, :root[data-theme="dark"] .panel, :root[data-theme="dark"] .q-lane, :root[data-theme="dark"] .c-palette { background: #1B2423; }
+:root[data-theme="dark"] .c-palette { background: #222D2C; }
+:root[data-theme="dark"] .chip--accent { color: #A8EBEA; }  /* onPrimaryContainer dark - 7.1:1 */
+:root[data-theme="dark"] .hub-rail a.on { background: #2A3B3A; }
+:root[data-theme="dark"] .c-item.sel { background: #2A3B3A; }
+:root[data-theme="dark"] .btn--ghost:hover { background: rgb(111 211 210 / 0.10); }
+:root[data-theme="dark"] .btn--ghost:active { background: rgb(111 211 210 / 0.14); }
+
+/* ═══ component-craft (R9): the 22 families in m3-expressive ═══
+   Laws: TONAL elevation only (container ladder separates layers; no shadows, no blur);
+   overlays sit one container step up. Shapes: stadium controls, 20px cards, 8px chips,
+   4px menus, 28px dialogs/sheets, 16px FAB. Hovers = 8% state layers of the CONTENT color.
+   Sources: m3.material.io/components (menus, date picker, dialogs, bottom sheets, snackbar,
+   switch, tabs, segmented button, FAB, tooltip). */
+.ibtn { border-radius: 50%; color: var(--ink-soft); }
+.ibtn:hover { background: color-mix(in srgb, var(--ink-soft) 8%, transparent); }
+.ibtn.on { background: #D8E8E7; color: var(--accent-text); } /* secondaryContainer */
+.ibtn.danger { color: #B3261E; } .ibtn.danger:hover { background: rgb(179 38 30 / 0.08); }
+/* FAB: primaryContainer fill, onPrimaryContainer icon, 16px rounded square */
+.fab { border-radius: 16px; background: var(--accent-soft); color: #06201F; box-shadow: none; }
+.fab:hover { background: color-mix(in srgb, #06201F 8%, var(--accent-soft)); }
+/* segmented = M3 SegmentedButton: OUTLINED, selected = secondaryContainer wash */
+.seg { background: transparent; border: 1px solid var(--hairline); border-radius: 999px; padding: 0; overflow: hidden; }
+.seg button { border-radius: 0; padding: 9px 16px; font-weight: 500; }
+.seg button.on { background: #D8E8E7; box-shadow: none; color: var(--ink); font-weight: 500; }
+.seg button.on .seg-check { display: inline-block; --ic: 18px; margin-right: 6px; }
+/* M3 primary tabs: indicator bar + primary label, inactive onSurfaceVariant */
+.tabset { border-bottom: 1px solid var(--hairline); gap: 0; }
+.tabset a { padding: 10px 16px 9px; border-bottom: 0; position: relative; font-weight: 500; }
+.tabset a.on { color: var(--accent-text); border-bottom: 0; }
+.tabset a.on::after { content: ""; position: absolute; left: 12px; right: 12px; bottom: 0; height: 3px; border-radius: 3px 3px 0 0; background: var(--accent-text); }
+/* toggle buttons: outlined, on = secondaryContainer */
+.toggle { border-radius: 999px; border-color: var(--hairline); background: transparent; }
+.toggle.on { background: #D8E8E7; color: var(--ink); border-color: transparent; }
+.toggle-grp .toggle { margin-left: -1px; border-radius: 0; }
+.toggle-grp .toggle:first-child { border-radius: 999px 0 0 999px; margin-left: 0; }
+.toggle-grp .toggle:last-child { border-radius: 0 999px 999px 0; }
+/* M3 keeps real boxes: 18px checkbox 2px corners, 20px radio */
+.cb { border-radius: 2px; width: 18px; height: 18px; border-color: var(--ink-soft); }
+.cb.on { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.rd { border-color: var(--ink-soft); }
+.rd.on { border: 2px solid var(--accent); position: relative; }
+.rd.on::after { content: ""; position: absolute; inset: 3px; border-radius: 50%; background: var(--accent); }
+/* M3 switch: 52x32, off = outline track + small thumb, on = primary track + big thumb */
+.sw { width: 52px; height: 32px; border: 2px solid var(--ink-soft); background: transparent; padding: 0; }
+.sw .th { width: 16px; height: 16px; margin: 6px; background: var(--ink-soft); box-shadow: none; }
+.sw.on { background: var(--accent); border-color: var(--accent); }
+/* travel 20, not the 18 inherited from the base skin: M3 centres both handles
+   16 from their near track end (unselected 8+16/2=16; selected 4+20+24/2=36,
+   i.e. 52-16). At 18 the grown 24px handle stopped 4px short of the end. */
+.sw.on .th { width: 24px; height: 24px; margin: 2px; background: var(--accent-ink); transform: translateX(20px); }
+/* M3 slider/progress: 4px tracks, handle-less look (stop-dot fake), primary fill */
+.slider .track { height: 4px; background: var(--field-alt); }
+.slider .thumb { width: 20px; height: 20px; border: 0; background: var(--accent); box-shadow: none; }
+.prog { height: 4px; }
+.spin { border-color: var(--field-alt); border-top-color: var(--accent); }
+/* text fields: M3 filled text field — container fill, bottom indicator, 4px top corners */
+.input, .textarea { border: 0; border-bottom: 1px solid var(--ink-soft); border-radius: 4px 4px 0 0; background: var(--field-alt); }
+.input:focus, .textarea:focus { outline: 0; border-bottom: 2px solid var(--accent-text); }
+.fieldwrap.err .input { border-bottom: 2px solid #B3261E; }
+.emsg { color: #B3261E; }
+.search { border-radius: 999px; border-bottom: 0; background: var(--field-alt); } /* M3 SearchBar = full round */
+.otp span { border: 0; border-bottom: 1px solid var(--ink-soft); border-radius: 4px 4px 0 0; background: var(--field-alt); }
+.otp span.on { border-bottom: 2px solid var(--accent-text); box-shadow: none; }
+/* select = outlined text field idiom (ExposedDropdownMenu) */
+.select { border: 1px solid var(--ink-soft); background: transparent; border-radius: 4px; }
+/* menus: surfaceContainer step up, 4px corners, tonal, 48px rows */
+.menu { background: var(--field-alt); border: 0; border-radius: 4px; box-shadow: none; padding: 8px 0; }
+.menu .mi { border-radius: 0; padding: 12px 16px; }
+.menu .mi:hover, .menu .mi.hl { background: color-mix(in srgb, var(--ink-soft) 8%, transparent); }
+.menu .mi.sel { background: #D8E8E7; } /* wash only — weight widens the selected row (R9o) */
+.menu .mi.danger { color: #B3261E; }
+.menu .mi.danger:hover { background: rgb(179 38 30 / 0.08); }
+.menu .msep { margin: 8px 0; }
+.menubar span.on { background: #D8E8E7; border-radius: 999px; }
+/* popover/hover card: tonal container, 12px, no shadow */
+.pop, .hcard { background: var(--field-alt); border: 0; border-radius: 12px; box-shadow: none; }
+.tip { background: #191D1D; color: #DFE5E4; border-radius: 4px; font-weight: 500; } /* inverseSurface */
+/* calendar: primary circle selection w/ onPrimary, today = outline ring */
+.cal { border: 0; box-shadow: none; background: var(--surface); }
+.cal-head b { font-weight: 500; }
+.day { font-weight: 400; }
+.day:hover { background: color-mix(in srgb, var(--ink-soft) 8%, transparent); }
+.day.today { box-shadow: inset 0 0 0 1px var(--accent-text); color: var(--accent-text); font-weight: 500; }
+.day.sel, .day.sel-end, .day.range.sel-end { background: var(--accent); color: var(--accent-ink); font-weight: 500; }
+.day.range { background: #D8E8E7; }
+.datepick { border: 1px solid var(--ink-soft); background: transparent; border-radius: 4px; }
+.tp { background: var(--field-alt); border-radius: 8px; }
+.tp.on { background: #D8E8E7; box-shadow: none; color: var(--ink); }
+/* dialogs: 28px corners, container-high ground, headline 400, text buttons in primary */
+.dlg { background: var(--field-alt); border-radius: 28px; box-shadow: none; padding: 24px; }
+.dlg h3 { font-weight: 400; font-size: 22px; }
+.dlg-acts { margin-top: 20px; }
+.dlg .btn--text { color: var(--accent-text); }
+.dlg .btn--text:hover { background: rgb(0 106 106 / 0.08); }
+/* bottom sheet: 28px top corners, drag handle 32x4, tonal */
+.sheet { background: var(--field-alt); border-radius: 28px 28px 0 0; box-shadow: none; }
+.sheet .grab { background: var(--ink-soft); opacity: 0.4; }
+.sheet .mi.sel { background: #D8E8E7; }
+.drawer { background: var(--field-alt); box-shadow: none; border-radius: 0 16px 16px 0; }
+/* snackbar: inverse surface, 4px, action in primary-inverse */
+.toast { background: #191D1D; color: #DFE5E4; border-radius: 4px; box-shadow: none; }
+.toast a { color: #6FD3D2; }
+/* banners: M3 has no banner — container fill, no border strip */
+.banner { border-left: 0; border-radius: 12px; background: var(--field-alt); }
+.banner--warn { background: var(--amber-soft); }
+.banner--bad { background: var(--bad-soft); }
+.pg.on { background: transparent; box-shadow: inset 0 0 0 1px var(--hairline); color: var(--ink); font-weight: 500; border-radius: 50%; }
+.tbl { box-shadow: none; }
+.tbl tr.sel td { background: #D8E8E7; }
+.acc { box-shadow: none; background: var(--surface); }
+.acc-head { font-weight: 500; }
+.badge { background: #B3261E; }
+.avatar { background: #D8E8E7; color: var(--ink); }
+.empty { box-shadow: none; background: var(--surface); }
+.g-card, .hub-card { border-radius: 20px; }
+
+/* DARK: the ladder inverts (existing tokens encode it); state layers ride content color;
+   inverse-surface snackbar flips light; selection containers use the dark secondaryContainer */
+:root[data-theme="dark"] .ibtn.on { background: #2A3B3A; color: #6FD3D2; }
+:root[data-theme="dark"] .ibtn.danger { color: #F2B8B5; } :root[data-theme="dark"] .ibtn.danger:hover { background: rgb(242 184 181 / 0.10); }
+:root[data-theme="dark"] .fab { background: var(--accent-soft); color: #A8EBEA; }
+:root[data-theme="dark"] .fab:hover { background: color-mix(in srgb, #A8EBEA 10%, var(--accent-soft)); }
+:root[data-theme="dark"] .seg { border-color: var(--hairline); }
+:root[data-theme="dark"] .seg button.on { background: #2A3B3A; }
+:root[data-theme="dark"] .toggle.on { background: #2A3B3A; }
+:root[data-theme="dark"] .cb.on { color: var(--accent-ink); }
+:root[data-theme="dark"] .sw .th { background: var(--ink-soft); }
+:root[data-theme="dark"] .sw.on .th { background: var(--accent-ink); }
+:root[data-theme="dark"] .fieldwrap.err .input { border-bottom-color: #F2B8B5; }
+:root[data-theme="dark"] .emsg { color: #F2B8B5; }
+:root[data-theme="dark"] .menu .mi.sel { background: #2A3B3A; }
+:root[data-theme="dark"] .menu .mi.danger { color: #F2B8B5; }
+:root[data-theme="dark"] .menu .mi.danger:hover { background: rgb(242 184 181 / 0.10); }
+:root[data-theme="dark"] .menubar span.on { background: #2A3B3A; }
+:root[data-theme="dark"] .tip { background: #DFE5E4; color: #191D1D; }
+:root[data-theme="dark"] .day.range { background: #2A3B3A; }
+:root[data-theme="dark"] .tp.on { background: #2A3B3A; }
+:root[data-theme="dark"] .dlg .btn--text { color: #6FD3D2; }
+:root[data-theme="dark"] .dlg .btn--text:hover { background: rgb(111 211 210 / 0.10); }
+:root[data-theme="dark"] .sheet .mi.sel { background: #2A3B3A; }
+:root[data-theme="dark"] .toast { background: #DFE5E4; color: #191D1D; }
+:root[data-theme="dark"] .toast a { color: #006A6A; }
+:root[data-theme="dark"] .tbl tr.sel td { background: #2A3B3A; }
+:root[data-theme="dark"] .badge { background: #F2B8B5; color: #2A0F0C; }
+:root[data-theme="dark"] .avatar { background: #2A3B3A; color: #6FD3D2; }
+
+/* variant repair: the plain .btn rule above clobbered base variants — restate danger/text.
+   M3 has no destructive button: error-fill is the idiom (error #B3261E / dark #F2B8B5). */
+.btn--danger { background: #B3261E; color: #FFFFFF; }
+.btn--danger:hover { background: #8C1D18; }
+.btn--danger:active { background: #8C1D18; box-shadow: none; }
+.btn--text { background: transparent; color: var(--accent-text); box-shadow: none; }
+.btn--text:hover { background: rgb(0 106 106 / 0.08); }
+.btn--text:active { background: rgb(0 106 106 / 0.12); }
+:root[data-theme="dark"] .btn--danger { background: #F2B8B5; color: #601410; }
+:root[data-theme="dark"] .btn--danger:hover { background: #E0938E; }
+:root[data-theme="dark"] .btn--text { background: transparent; color: #6FD3D2; }
+:root[data-theme="dark"] .btn--text:hover { background: rgb(111 211 210 / 0.10); }
+
+/* ═══ live engine (R9): SegmentedButton = class toggle (wash + check swap, 150ms linear effects —
+   M3 has no sliding thumb here); primary tabs ride a 3px ink bar that springs between items;
+   switch position springs (JS) while the size morph rides CSS effects. ═══ */
+.seg button { transition: background-color 150ms linear; user-select: none; -webkit-user-select: none; }
+.tabset a { user-select: none; -webkit-user-select: none; }
+.tabset .inkbar { position: absolute; z-index: 0; border-radius: 3px 3px 0 0; background: var(--accent-text); pointer-events: none; }
+.tabset.tabset--live a.on::after { display: none; }
+.sw.sw--live .th { transition: width 150ms linear, margin 150ms linear, background-color 150ms linear; }
+
+/* ═══ R9a geometry compliance — material-web tokens v0.192 ═══ */
+.sw .th { width: 16px; height: 16px; }            /* unselected-handle 16 */
+.sw.on .th { width: 24px; height: 24px; }         /* selected-handle 24 — it grows */
+.cal .day { width: 40px; height: 40px; }          /* day circle 40 (row 48) */
+.row { min-height: 56px; }                        /* list-item-one-line-container-height */
+.tabset { height: 48px; align-items: stretch; }   /* primary-navigation-tab container-height */
+.tabset a { display: flex; align-items: center; }
+.appbar { height: 64px; }                         /* top-app-bar-small container-height */
+.navbar { height: 80px; }                         /* navigation-bar container-height */
+.nb .ind { width: 64px; height: 32px; border-radius: 999px; }   /* active-indicator 64x32 corner-full */
+.nb.on .ind { background: var(--accent-soft); }
+.navrail { width: 80px; }                         /* navigation-rail container-width */
+.nr .ind { width: 56px; height: 32px; border-radius: 999px; }   /* active-indicator 56x32 */
+.nr.on .ind { background: var(--accent-soft); }
+.sidebar { width: 360px; }                        /* navigation-drawer container-width */
+.sb-i { height: 56px; display: flex; align-items: center; border-radius: 999px; }  /* indicator 336x56 corner-full */
+.sidebar.icon { width: 88px; }
+
+/* M3 filled text field anatomy: the label lives INSIDE the container, floated.
+   This is the shape difference the token radius alone never captured — every
+   other style keeps the label above the field. Container 56dp, 4px top corners,
+   1px active indicator at the bottom edge. */
+.fieldwrap { position: relative; }
+/* float the label ONLY where a filled container exists to hold it. An OTP group
+   has no container — its label stays above, or it lands on top of the digits. */
+.fieldwrap:has(> .input) > label,
+.fieldwrap:has(> .textarea) > label { position: absolute; top: 7px; left: 16px; margin: 0;
+  font-size: 12px; line-height: 1; color: var(--accent-text); z-index: 1; pointer-events: none; }
+.fieldwrap .input { height: 56px; min-height: 56px; box-sizing: border-box;
+  padding: 24px 16px 8px; border-bottom: 1px solid var(--ink-soft); }
+.fieldwrap .textarea { padding: 26px 16px 10px; border-bottom: 1px solid var(--ink-soft); }
+/* focus active-indicator re-stated at (0,3,0): the filled-field block above
+   is the same specificity as .input:focus and later in the file, so it had
+   silently killed the focus indicator. Error fields keep their red: the err
+   rule below is later still and recolors this same 2px. */
+.fieldwrap .input:focus, .fieldwrap .textarea:focus { border-bottom: 2px solid var(--accent-text); }
+.fieldwrap .hint { padding-left: 16px; }
+.fieldwrap.err .input { border-bottom-color: var(--bad); }
+.fieldwrap.err > label { color: var(--bad-text); }
+
+/* M3 icon size is 24 across nav, list and text fields (material-web
+   `*-icon-size` tokens); the affordance icons stay smaller by intent. */
+.ic { --ic: 24px; }
+.csep, .pg-ell { --ic: 18px; }
+.cb .ic { --ic: 14px; }
+.car { --ic: 24px; }
+.nb .ic, .nr .ic, .sb-i .ic { --ic: 24px; }
+
+/* time picker — M3 owns this spec; base geometry already matches. Only the
+   tonal roles differ: container surface-container-high, fields
+   surface-container-highest / primary-container, AM-PM tertiary-container. */
+/* tokens, NOT literals: #E4EEED / #EAF3F2 / #9CF1F0 are light-theme values and
+   would paint a near-white dial on a black page in dark — the identical bug
+   already fixed once in the glass nav. The token is the single source. */
+.tpick { background: var(--field-alt); box-shadow: none; }
+.tp-f { background: var(--field); }
+.tp-f.on { background: var(--accent-soft); color: var(--ink); }
+.tp-a.on { background: var(--accent-soft); color: var(--ink); }
+.tp-dial { background: var(--field); }
+
+/* calendar container — M3 date picker (docked). Sourced: md-comp-date-picker
+   `container-width/height` 360x456, `container-shape` corner-large = 16;
+   Flutter date_picker.dart `_subHeaderHeight` 52 (the month/year nav row),
+   `_monthNavButtonsWidth` 108, `_monthPickerHorizontalPaddingPortraitM3` 12.
+   Corrects an earlier claim in this repo that no container spec existed — that
+   was true only of shadcn's border/radius, and was wrongly generalised to M3. */
+.cal { width: 360px; border-radius: 16px; padding: 0 0 12px; box-sizing: border-box; }
+.cal-head { height: 52px; padding: 0 12px; box-sizing: border-box; }
+.cal-grid { padding: 0 12px; box-sizing: border-box; }

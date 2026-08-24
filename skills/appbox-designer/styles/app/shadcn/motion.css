@@ -1,0 +1,21 @@
+/* styles/app/shadcn — motion.css (TL-12 motion overlay)
+   Interaction-recipe constants (component-craft.md §recipe, shadcn column).
+   NO springs exist in this system — durations + ease-out-expo only. */
+
+:root {
+  /* PRESS — 150ms cubic-bezier(0.16, 1, 0.3, 1) */
+  --press-ms: 150ms;
+  --press-ease: cubic-bezier(0.16, 1, 0.3, 1);
+  /* MOVE — 200ms same ease-out-expo */
+  --move-ms: 200ms;
+  --move-ease: cubic-bezier(0.16, 1, 0.3, 1);
+  /* EFFECTS — 180ms linear */
+  --effects-ms: 180ms;
+  --effects-ease: linear;
+  /* DISCLOSURE — EFFECTS class: ease only */
+  --disclose-ms: 200ms;
+  --disclose-ease: cubic-bezier(0.16, 1, 0.3, 1);
+  --press-scale-ctl: 0.94;
+  --press-scale-item: 0.96;
+  --press-scale-row: 0.98;
+}
