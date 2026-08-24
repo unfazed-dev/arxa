@@ -78,6 +78,8 @@
     activePin: null, // id whose thread popover is open
     name: '',
     dockSide: 'right',
+    deployReady: false, // /ship/deploy/ready answer
+    deployBlockers: [],
     design: false, // Edit Mode armed (author only)
     selected: null, // { id, el, label, group } — the element being edited
     selOutline: '', // inline outline the selection highlight borrowed
@@ -1844,8 +1846,14 @@
       ctaBtn.title = 'Mint a client link (view + comment, 30 days)';
     } else if (id === 'ship') {
       ctaBtn.textContent = 'Deploy';
-      ctaBtn.disabled = true; // slice 6 (wrangler) wires the verb itself
-      ctaBtn.title = 'Deploy (wrangler → Cloudflare) lands with slice 6';
+      // Enabled only when the pipeline allows AND the server's deploy
+      // gates are satisfied (wrangler present, CF env, eject dir). The
+      // blockers render in the Ship slide.
+      const allowed = !shipSt?.pr && shipSt?.branch === 'main' && shipSt?.dirty === 0;
+      ctaBtn.disabled = !(allowed && S.deployReady);
+      ctaBtn.title = ctaBtn.disabled
+        ? 'Enabled when the tree is clean on main with no open PR and the deploy gates pass (see Ship slide)'
+        : 'wrangler → Cloudflare Pages — your tap is the approval';
     } else {
       ctaBtn.className = 'off';
     }
@@ -1858,7 +1866,7 @@
       if (body && !body.querySelector('.linkbox')) mintShareLink(body);
       return;
     }
-    if (id === 'ship') { /* slice 6 */ }
+    if (id === 'ship') return shipVerb('/ship/deploy');
   });
   track.addEventListener('scroll', () => {
     if (!S.tray) return;
@@ -2018,6 +2026,7 @@
   // automated prefix; Merge / Close / Pull & rebase are the one-tap
   // irreversible verbs — the server re-enforces green before any merge.
   let shipBusy = false;
+  let shipSt = null; // last /ship/status answer (drives the Deploy CTA)
   async function shipVerb(sub, body) {
     if (shipBusy) return;
     shipBusy = true;
@@ -2036,6 +2045,10 @@
     const body = slideBodies.ship;
     if (!body || !S.tray) return;
     const r = await api('GET', '/ship/status');
+    shipSt = r;
+    const rd = await api('GET', '/ship/deploy/ready');
+    S.deployReady = !!(rd && rd.blockers && rd.blockers.length === 0);
+    S.deployBlockers = (rd && rd.blockers) || ['deploy gates unreadable'];
     renderShipBody(body, r);
     updateTrayCta();
   }
@@ -2096,6 +2109,12 @@
       canMerge ? 'green + mergeable — your tap merges' : 'enabled when checks are green and the PR is mergeable'));
     row.appendChild(mk('Close PR', !!pr, () => shipVerb('/ship/close'), true));
     body.appendChild(row);
+    if (S.deployBlockers && S.deployBlockers.length) {
+      body.appendChild(h('div', { class: 'sect', text: 'Deploy gates' }));
+      S.deployBlockers.forEach((b) => {
+        body.appendChild(h('div', { class: 'ctl', style: 'font-size:11px;color:#f59e0b;padding:4px 10px', text: '• ' + b }));
+      });
+    }
     body.appendChild(h('div', { class: 'ctl', style: 'font-size:11px;color:#9aa0ab', text: 'Automation up to the button: branch, PR and gate-watching are automatic; merge, close and deploy wait for your finger. Conflicts are never auto-resolved.' }));
   }
   // ── verbs ──────────────────────────────────────────────────────────────

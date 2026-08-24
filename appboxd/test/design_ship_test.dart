@@ -5,6 +5,8 @@
 // cleanly, guests 403, non-repo 503.
 library;
 
+import 'dart:io';
+
 import 'package:appboxd/design_dial.dart';
 import 'package:appboxd/design_ship.dart';
 import 'package:test/test.dart';
@@ -150,6 +152,85 @@ void main() {
         expect(e.message, contains('conflicts'));
       }
       expect(calls.any((c) => c.contains('rebase --abort')), isTrue);
+    });
+  });
+
+  group('deploy gates (slice 6)', () {
+    test('blockers name every missing prerequisite', () async {
+      final ship = DialShip(
+        repoDir: '/repo',
+        env: const {},
+        run: (cmd, args) async => const ShipProc(1, '', 'not found'),
+      );
+      final blockers = await ship.deployBlockers('/art');
+      expect(blockers, hasLength(4));
+      expect(blockers.join(' '), contains('design eject'));
+      expect(blockers.join(' '), contains('CLOUDFLARE_API_TOKEN'));
+      expect(blockers.join(' '), contains('ARXA_PAGES_PROJECT'));
+      expect(blockers.join(' '), contains('wrangler'));
+    });
+
+    test('deploy happy path runs pages deploy with dir + project', () async {
+      final calls = <String>[];
+      final tmp = Directory.systemTemp.createTempSync('deploy_test');
+      addTearDown(() => tmp.deleteSync(recursive: true));
+      Directory('${tmp.path}/eject').createSync();
+      final ship = DialShip(
+        repoDir: '/repo',
+        env: {
+          'CLOUDFLARE_API_TOKEN': 'x',
+          'CLOUDFLARE_ACCOUNT_ID': 'a',
+          'ARXA_PAGES_PROJECT': 'domka-design',
+        },
+        run: (cmd, args) async {
+          calls.add('$cmd ${args.join(' ')}');
+          if (cmd == 'wrangler' && args.contains('--version')) {
+            return const ShipProc(0, '4.x');
+          }
+          if (cmd == 'gh' && args.contains('view')) return const ShipProc(1, 'no PR');
+          if (args.contains('abbrev-ref')) return const ShipProc(0, 'main');
+          if (args.contains('porcelain')) return const ShipProc(0, '');
+          if (cmd == 'wrangler') {
+            return const ShipProc(0, '✨ Deployment complete https://domka-design.pages.dev');
+          }
+          return const ShipProc(0, '');
+        },
+      );
+      final r = await ship.deploy(artifactDir: tmp.path, statusFn: () async => {
+            'branch': 'main', 'dirty': 0, 'pr': null,
+          });
+      expect(r['deployed'], 'https://domka-design.pages.dev');
+      expect(
+          calls.any((c) =>
+              c.contains('pages deploy ${tmp.path}/eject --commit-dirty') &&
+              c.contains('--project-name domka-design')),
+          isTrue);
+      expect(calls.any((c) => c.contains('--force')), isFalse);
+    });
+
+    test('deploy refuses on an open PR or dirty tree even with gates green',
+        () async {
+      final tmp = Directory.systemTemp.createTempSync('deploy_test');
+      addTearDown(() => tmp.deleteSync(recursive: true));
+      Directory('${tmp.path}/eject').createSync();
+      final mk = (st) => DialShip(
+            repoDir: '/repo',
+            env: const {
+              'CLOUDFLARE_API_TOKEN': 'x',
+              'CLOUDFLARE_ACCOUNT_ID': 'a',
+              'ARXA_PAGES_PROJECT': 'p',
+            },
+            run: (cmd, args) async =>
+                const ShipProc(0, 'wrangler 4.0.0'),
+          );
+      try {
+        await mk(null).deploy(artifactDir: tmp.path, statusFn: () async => {
+              'branch': 'main', 'dirty': 3, 'pr': null,
+            });
+        fail('dirty refused');
+      } on ShipRefusal catch (e) {
+        expect(e.message, contains('dirty'));
+      }
     });
   });
 

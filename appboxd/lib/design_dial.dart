@@ -725,6 +725,22 @@ class DialApi {
         if (method == 'POST' && sub == '/ship/sync') {
           return await _shipVerb(s.sync);
         }
+        if (method == 'GET' && sub == '/ship/deploy/ready') {
+          final dir = artifactDir;
+          if (dir == null) {
+            return const DialResponse(503, {'error': 'no artifact dir'});
+          }
+          return DialResponse(
+              200, {'blockers': await s.deployBlockers(dir)});
+        }
+        if (method == 'POST' && sub == '/ship/deploy') {
+          final dir = artifactDir;
+          if (dir == null) {
+            return const DialResponse(503, {'error': 'no artifact dir'});
+          }
+          return await _shipVerb(() => s.deploy(
+              artifactDir: dir, statusFn: () async => await s.status()));
+        }
       }
       return DialResponse(404, {'error': 'no such dial route: $sub'});
     } on FormatException catch (e) {

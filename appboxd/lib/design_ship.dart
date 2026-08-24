@@ -25,8 +25,14 @@ typedef ShipRunner = Future<ShipProc> Function(
 /// Production: run in [repoDir] with the server's own environment (HOME
 /// included, so the gh keyring resolves).
 ShipRunner ioRunner(String repoDir) => (cmd, args) async {
-      final r = await Process.run(cmd, args, workingDirectory: repoDir);
-      return ShipProc(r.exitCode, r.stdout.toString(), r.stderr.toString());
+      try {
+        final r = await Process.run(cmd, args, workingDirectory: repoDir);
+        return ShipProc(r.exitCode, r.stdout.toString(), r.stderr.toString());
+      } on ProcessException {
+        // A missing binary (wrangler before install) is a failed command,
+        // never a crashed route — the gates read it as a blocker.
+        return const ShipProc(127, '', 'command not found');
+      }
     };
 
 class ShipRefusal implements Exception {
@@ -37,11 +43,15 @@ class ShipRefusal implements Exception {
 }
 
 class DialShip {
-  DialShip({required this.repoDir, required this.run});
+  DialShip({required this.repoDir, required this.run, Map<String, String>? env})
+      : env = env ?? Platform.environment;
 
   /// The git repo root (the client project).
   final String repoDir;
   final ShipRunner run;
+
+  /// The environment deploy gates read (injectable for tests).
+  final Map<String, String> env;
 
   /// The operator-owned branch prefix — design dial PRs are identifiable
   /// and never collide with feature branches.
@@ -208,6 +218,77 @@ class DialShip {
       throw ShipRefusal('close failed: ${c.err.trim()}');
     }
     return {'closed': n};
+  }
+
+  // ── deploy (slice 6): wrangler → Cloudflare Pages, operator-tapped ──
+  //
+  // HUMAN GATE 3 lives here: the CTA tap IS the approval the cicd/deployer
+  // canon refuses to mint in code. Every prerequisite is a NAMED gate:
+  //   - the deployable dir (env ARXA_DEPLOY_DIR, else <artifactDir>/eject)
+  //     must exist — produced by `appbox design eject`
+  //   - CLOUDFLARE_API_TOKEN + CLOUDFLARE_ACCOUNT_ID must be ambient
+  //     (server-side secrets; the browser never sees them)
+  //   - ARXA_PAGES_PROJECT names the operator-owned Pages project
+  //   - wrangler must be on PATH
+  // The pipeline gate (no open PR, on main, clean) is enforced by the
+  // caller combining status() with deployReady() — both re-checked here.
+
+  Future<List<String>> deployBlockers(String artifactDir) async {
+    final blockers = <String>[];
+    final dir = _deployDir(artifactDir);
+    if (dir == null || !Directory(dir).existsSync()) {
+      blockers.add('no deployable dir — run `appbox design eject` first '
+          '(or set ARXA_DEPLOY_DIR)');
+    }
+    if (env['CLOUDFLARE_API_TOKEN'] == null ||
+        env['CLOUDFLARE_ACCOUNT_ID'] == null) {
+      blockers.add('CLOUDFLARE_API_TOKEN + CLOUDFLARE_ACCOUNT_ID not set '
+          'in the design server environment');
+    }
+    if (env['ARXA_PAGES_PROJECT'] == null) {
+      blockers.add('ARXA_PAGES_PROJECT not set (the operator-owned Pages '
+          'project name)');
+    }
+    final w = await run('wrangler', ['--version']);
+    if (w.exit != 0) {
+      blockers.add('wrangler not found on the design server PATH');
+    }
+    return blockers;
+  }
+
+  String? _deployDir(String artifactDir) =>
+      env['ARXA_DEPLOY_DIR'] ?? '$artifactDir/eject';
+
+  Future<Map<String, dynamic>> deploy({
+    required String artifactDir,
+    required Future<Map<String, dynamic>> Function() statusFn,
+  }) async {
+    final blockers = await deployBlockers(artifactDir);
+    if (blockers.isNotEmpty) {
+      throw ShipRefusal(blockers.join('; '));
+    }
+    final st = await statusFn();
+    final pr = st['pr'] as Map<String, dynamic>?;
+    if (pr != null && pr['state'] == 'OPEN') {
+      throw const ShipRefusal('an open PR is waiting — merge or close it first');
+    }
+    if (st['branch'] != 'main') {
+      throw ShipRefusal('on ${st['branch']} — sync to main first');
+    }
+    if ((st['dirty'] as num) != 0) {
+      throw const ShipRefusal('dirty tree — Branch+PR the edits first');
+    }
+    final dir = _deployDir(artifactDir)!;
+    final r = await run('wrangler', [
+      'pages', 'deploy', dir, '--commit-dirty',
+      '--project-name', env['ARXA_PAGES_PROJECT']!,
+    ]);
+    if (r.exit != 0) {
+      throw ShipRefusal('wrangler failed: ${r.err.trim()}');
+    }
+    final url = RegExp(r'https://[^\s]+').firstMatch(r.out)?.group(0) ??
+        r.out.trim();
+    return {'deployed': url};
   }
 
   /// Back to main, updated. A rebase that hits conflicts refuses loudly
