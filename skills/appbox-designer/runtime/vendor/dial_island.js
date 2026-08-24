@@ -443,11 +443,15 @@
       dock.classList.toggle('open', S.open);
       dialPanelChanged(); // fan open: freeze hiding; fan closed: re-arm 30s
     });
+    // DRAG ROUTES THROUGH WINDOW-LEVEL POINTER EVENTS. The old pattern -
+    // setPointerCapture + handlers on the button - silently died: Blink
+    // releases mouse capture on the first move outside the element in this
+    // composition (lens diag: got:1 then lost:1, button saw zero moves),
+    // and window always sees every event (diag2: window 6, button 0).
     dockBtn.addEventListener('pointerdown', (e) => {
       dragStart = { x: e.clientX, y: e.clientY, moved: false };
-      dockBtn.setPointerCapture(e.pointerId);
     });
-    dockBtn.addEventListener('pointermove', (e) => {
+    addEventListener('pointermove', (e) => {
       if (!dragStart) return;
       const dx = e.clientX - dragStart.x;
       const dy = e.clientY - dragStart.y;
@@ -458,8 +462,8 @@
         dock.style.bottom = 'auto';
         dock.style.top = e.clientY - 28 + 'px';
       }
-    });
-    dockBtn.addEventListener('pointerup', (e) => {
+    }, { passive: true });
+    addEventListener('pointerup', (e) => {
       if (!dragStart) return;
       if (dragStart.moved) {
         // Edge snap: nearest horizontal edge, clamped inside the viewport.
