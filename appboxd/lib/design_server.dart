@@ -1016,8 +1016,11 @@ class DesignServer {
     if (respBody != null &&
         (resp.headers['content-type'] ?? '').contains('text/html') &&
         req.headers.value('Sec-Fetch-Dest') == 'iframe' &&
-        respBody.contains('</body>')) {
-      respBody = respBody.replaceFirst('</body>', '$_kFramedCss</body>');
+        respBody.contains('</head>')) {
+      // HEAD, not body: these pages run hx-boost, whose swap replaces body
+      // innerHTML - a body-mounted style dies on the first in-site
+      // navigation and the preview scrollbars come back mid-session.
+      respBody = respBody.replaceFirst('</head>', '$_kFramedCss</head>');
     }
     if (respBody != null) req.response.add(utf8.encode(respBody));
     await req.response.close();

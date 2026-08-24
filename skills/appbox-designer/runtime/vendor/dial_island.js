@@ -1856,13 +1856,13 @@
     return attempt();
   }
   function finishBoot() {
-    document.body.appendChild(host);
+    document.documentElement.appendChild(host); // off-body: hx-boost swaps wipe body children
     applyShade();
     applyLayers();
     resumeAfterReload(); // no-op unless the last text edit converged by reload
   }
   if (S.mode === 'invalid') {
-    document.body.appendChild(host);
+    document.documentElement.appendChild(host); // off-body: hx-boost swaps wipe body children
     applyShade();
     applyLayers();
     say('This share link is expired or invalid');

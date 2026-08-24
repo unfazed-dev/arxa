@@ -83,6 +83,31 @@ void main() {
       expect(bhtml, isNot(contains('arxa-dial')));
     });
 
+    test('framed CSS lands in HEAD so an hx-boost swap keeps it', () async {
+      // The artifact pages carry hx-boost="true": every in-site navigation
+      // swaps BODY INNERHTML. Anything injected before </body> - scrollbar
+      // suppression included - dies on the first tap of the home button.
+      // Head is untouched by boosts, so that is where this style lives.
+      final (code, html) =
+          await _req('GET', base, headers: {'sec-fetch-dest': 'iframe'});
+      expect(code, 200);
+      expect(html, contains('__appbox_framed'));
+      final headEnd = html.indexOf('</head>');
+      expect(headEnd, greaterThan(0));
+      expect(html.indexOf('__appbox_framed'), lessThan(headEnd),
+          reason: 'a body-mounted style is swapped away by hx-boost');
+    });
+
+    test('the dial host mounts OFF the body so boosts cannot remove it',
+        () async {
+      final (code, js) = await _req('GET', '$base/assets/vendor/dial_island.js');
+      expect(code, 200);
+      expect(js, contains('documentElement.appendChild(host)'),
+          reason: 'hx-boost swaps body innerHTML - a body-mounted host is '
+              'gone after the first in-site navigation');
+      expect(js, isNot(contains('document.body.appendChild(host)')));
+    });
+
     test('the island script is served from /assets/vendor/', () async {
       final (code, js) = await _req('GET', '$base/assets/vendor/dial_island.js');
       expect(code, 200);
