@@ -505,6 +505,7 @@
     if (S.panel === which) {
       S.panel = null;
       panel.classList.remove('open');
+      dialPanelChanged(); // closing re-arms the 30s tuck-away
       return;
     }
     S.panel = which;
@@ -526,6 +527,7 @@
     dock.classList.remove('open');
     S.open = false;
     renderPanelBody();
+    dialPanelChanged(); // open mode: cancel any pending hide outright
   }
 
   function renderPanelBody() {
@@ -1868,9 +1870,11 @@
   // critically damped. Integrated every frame so re-triggering mid-flight
   // keeps velocity - the interruptible quality native animation has that
   // CSS curves cannot give.
-  const HOT_CORNER = 100;   // px square in the bottom-right corner
+  const HOT_CORNER = 50;    // px square in the bottom-right corner
   const PARK_PX = 168;      // how far off-screen the parked dial sits
   let sp = null;            // spring state { p, v, raf, target }
+  let dialLastWant = false; // cursor's latest inside-zone-or-dock verdict
+  let dialHideAt = 0;       // 30s auto-hide backstop timer
   function dialApplyPose() {
     const e = Math.max(-0.18, Math.min(1.14, sp.p)); // room for overshoot
     const off = (1 - e) * PARK_PX;
@@ -1903,8 +1907,32 @@
     };
     sp.raf = requestAnimationFrame(tick);
   }
-  function dialShow() { dialSpringTo(1, 0.5, 0.86); }
-  function dialHide() { dialSpringTo(0, 0.34, 1.0); }
+  function dialShow() {
+    dialSpringTo(1, 0.5, 0.86);
+    dialArmAutoHide();
+  }
+  function dialHide() {
+    clearTimeout(dialHideAt);
+    // OPEN MODE LAW (operator, 2026-08-24): a panel is on screen - the dial
+    // cannot hide at all. Not by pointer-leave, not by the timer.
+    if (S.panel) return;
+    dialSpringTo(0, 0.34, 1.0);
+  }
+  // Thirty seconds of visibility ends in a tuck-away - unless a panel is
+  // open (never hides) or the cursor still sits in the zone or on the dock
+  // (that is intent: re-arm instead of fighting the hand).
+  function dialArmAutoHide() {
+    clearTimeout(dialHideAt);
+    if (!(sp && sp.target === 1)) return;
+    dialHideAt = setTimeout(() => {
+      if (S.panel || dialLastWant) dialArmAutoHide();
+      else dialHide();
+    }, 30000);
+  }
+  function dialPanelChanged() {
+    if (S.panel) { clearTimeout(dialHideAt); return; }
+    dialArmAutoHide();
+  }
   function mountHost() {
     if (!sp) sp = { p: 0, v: 0, raf: 0, target: 0 };
     dialApplyPose();                            // parked BEFORE first paint
@@ -1920,6 +1948,7 @@
     const overDock = (ev) => ev.composedPath().includes(host);
     addEventListener('pointermove', (ev) => {
       const want = inCorner(ev.clientX, ev.clientY) || overDock(ev);
+      dialLastWant = want;
       if (want && sp.target !== 1) dialShow();
       else if (!want && !overDock(ev) && sp.target !== 0) dialHide();
     }, { passive: true });
