@@ -62,6 +62,10 @@ final _dataElRe = RegExp(r'^[a-zA-Z0-9][a-zA-Z0-9:_-]{0,99}$');
 /// The data-el half of an el:-prefixed patch key, or null for machine-id
 /// keys. Exported for the commit socket's op shaping.
 final _pageRe = RegExp(r'^[/A-Za-z0-9._~%-]*$');
+
+/// Locale targeting: exactly one ISO-639-1 short code, captured by the dial
+/// from `<html lang>` or the leading pathname segment.
+final _localeRe = RegExp(r'^[a-z]{2}$');
 String? elKeyOf(String patchKey) {
   if (!patchKey.startsWith(elKeyPrefix)) return null;
   final v = patchKey.substring(elKeyPrefix.length);
@@ -81,10 +85,14 @@ class DraftPatch {
   /// the 0-based index among the page's instances of this key, recorded only
   /// when those instances' texts diverge (data-backed rows; homogeneous
   /// repeats keep every-row semantics); [page] the editing page's pathname
-  /// for slug/href correlation. Style/attr edits never carry them.
+  /// for slug/href correlation; [locale] the locale being edited
+  /// (`<html lang>`, else the leading `/xx/` pathname segment) so the commit writes
+  /// ONLY that locale's SSOT slice instead of stamping one language's text
+  /// over every locale. Style/attr edits never carry any of them.
   final String? was;
   final int? nth;
   final String? page;
+  final String? locale;
 
   const DraftPatch(
       {this.style = const {},
@@ -92,7 +100,8 @@ class DraftPatch {
       this.text,
       this.was,
       this.nth,
-      this.page});
+      this.page,
+      this.locale});
 
   bool get isEmpty => style.isEmpty && attrs.isEmpty && text == null;
 
@@ -106,6 +115,7 @@ class DraftPatch {
         if (was != null) 'was': was,
         if (nth != null) 'nth': nth,
         if (page != null) 'page': page,
+        if (locale != null) 'locale': locale,
       };
 
   static Map<String, String?> _edits(Object? raw, String id, String what) {
@@ -168,6 +178,11 @@ class DraftPatch {
         (page.length > DraftCaps.page || !_pageRe.hasMatch(page))) {
       throw FormatException('patch "$id".page is not a plain pathname');
     }
+    var locale = raw['locale'] == null ? null : '${raw['locale']}';
+    if (locale != null && !_localeRe.hasMatch(locale)) {
+      throw FormatException(
+          'patch "$id".locale must be a two-letter code');
+    }
     return DraftPatch(
       style: _edits(raw['style'], id, 'style'),
       attrs: _edits(raw['attrs'], id, 'attrs'),
@@ -175,6 +190,7 @@ class DraftPatch {
       was: was,
       nth: nth,
       page: page,
+      locale: locale,
     );
   }
 }

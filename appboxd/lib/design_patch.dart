@@ -16,6 +16,10 @@
 ///                         among loop-rendered instances of the id
 ///   --page pathname       seed-route provenance: the page being edited
 ///                         (slug/href correlation)
+///   --locale xx           SSOT provenance: write ONLY this locale slice
+///                         (seed pair / ARB file). Default: inferred from
+///                         --was when exactly one locale holds that value,
+///                         else every locale (pre-2026-08-24 law).
 ///
 /// Two applicators share one transform: [patchSource] for SOURCE (the id's
 /// uniqueness invariant holds there, so a duplicate is a loud bail), and
@@ -173,7 +177,9 @@ PatchResult _patchAt(String src, String id, int at, PatchEdits edits) {
   while (lt >= 0) {
     if (lt + 1 < src.length) {
       final c = src.codeUnitAt(lt + 1);
-      if (c >= 97 && c <= 122) {
+      // PascalCase components (Box, GlassPanel) host name= anchors -
+      // rendered identity is case-blind, so the walk is too.
+      if ((c >= 97 && c <= 122) || (c >= 65 && c <= 90)) {
         var j = lt + 1;
         while (j < src.length &&
             ((src.codeUnitAt(j) >= 97 && src.codeUnitAt(j) <= 122) ||
@@ -191,6 +197,7 @@ PatchResult _patchAt(String src, String id, int at, PatchEdits edits) {
         }
       }
     }
+    if (lt <= 0) break;
     lt = src.lastIndexOf('<', lt - 1);
   }
   if (tagEnd < 0) {
@@ -308,11 +315,10 @@ PatchResult _patchAt(String src, String id, int at, PatchEdits edits) {
   return PatchResult(out, nextFrom: gt + 1);
 }
 
-/// The inner content of the element carrying [attr]="[id]" in [src], or
-/// null when the element cannot be located. Raw - may be a JSX expression.
-String? _innerOf(String src, String id, String attr) {
-  final at = src.indexOf('$attr="$id"');
-  if (at < 0) return null;
+/// (contentStart, closeStart) of the element whose OPENING TAG contains
+/// position [at] - an identity marker or a name= attribute, both of which
+/// sit inside the tag. Null when no enclosing host element closes.
+(int, int)? _elementInnerSpan(String src, int at) {
   final seg = src.substring(0, at + 1);
   var lt = seg.lastIndexOf('<');
   while (lt >= 0) {
@@ -321,30 +327,48 @@ String? _innerOf(String src, String id, String attr) {
       final name = m.group(1)!;
       final close = src.indexOf('</' + name + '>', at);
       if (close < 0) return null;
-      return src.substring(src.indexOf('>', lt) + 1, close);
+      return (src.indexOf('>', lt) + 1, close);
     }
     lt = seg.lastIndexOf('<', lt - 1);
   }
   return null;
 }
 
+/// The inner content of the element whose opening tag contains [at]. Raw -
+/// may be a JSX expression.
+String? _innerOfAt(String src, int at) {
+  final s = _elementInnerSpan(src, at);
+  return s == null ? null : src.substring(s.$1, s.$2);
+}
+
 /// Routes a --text op whose target element is t()-backed into the l10n ARB
-/// files - THE SSOT for every localized string. Returns null when [f] does
-/// not carry the marker (caller tries other files).
+/// files - THE SSOT for every localized string. Handles both the literal
+/// form {t('key')} and dynamic templates like {t(`...place`)} - the latter
+/// resolved by CONTENT: --was must equal exactly one ARB value, narrowed by
+/// the template static tail. [locale] targets one locale .arb only
+/// (2026-08-24); without it a resolvable edit updates every locale, as
+/// before. Returns null when the element is not brace-wrapped or not a t()
+/// call (caller tries other routes); resolvable-shape failures exit 5.
+final _arbLocaleRe = RegExp(r'(?:^|[_])([a-z]{2})\.arb$');
+
+String? _arbLocaleOf(String basename) =>
+    _arbLocaleRe.firstMatch(basename)?.group(1);
+
 CmdResult? routeTextToArbForFile(
-    File f, Directory dir, String id, String attr, String text) {
+    File f, Directory dir, int at, String id, String text,
+    {String? was, String? locale}) {
   final src = f.readAsStringSync();
-  final at = src.indexOf('$attr="$id"');
-  if (at < 0) return null;
-  final inner = _innerOf(src, id, attr);
+  final inner = _innerOfAt(src, at);
   if (inner == null) return null;
   final trimmed = inner.trim();
   if (!trimmed.startsWith('{') || !trimmed.endsWith('}')) return null;
   final body = trimmed.substring(1, trimmed.length - 1).trim();
+
   // {t('key')} | {t("key")} - optionally a trailing comma inside the call.
   // Manual scan: a regex here would need quote-class juggling this file
   // is better off without.
   String? key;
+  String? tail;
   if (body.startsWith('t(') && body.endsWith(')')) {
     var args = body.substring(2, body.length - 1).trim();
     if (args.endsWith(',')) args = args.substring(0, args.length - 1).trim();
@@ -356,49 +380,246 @@ CmdResult? routeTextToArbForFile(
             RegExp(r'^[A-Za-z0-9_.:-]+$').hasMatch(cand)) {
           key = cand;
         }
+      } else if (q == '`' && args.endsWith('`')) {
+        // Dynamic template: interpolations are unknowable statically, so
+        // the static tail (e.g. '.place' in a key-shaped template) narrows
+        // a content match instead of carrying it.
+        tail = args
+            .substring(1, args.length - 1)
+            .split(RegExp(r'\$\{[^{}]*\}'))
+            .last;
       }
     }
   }
-  if (key == null) {
-    // Brace-wrapped but not a recognized t() call: a data-binding the
-    // grammar must not overwrite with one locale's literal.
-    return CmdResult(5, stderrLines: [
-      'appbox design patch: --text refused: "$id" is expression-backed '
-          '("$trimmed") - its text lives in a data source (l10n ARB, seed '
-          'fixtures), not as a literal here'
-    ]);
-  }
+  if (key == null && tail == null) return null;
+
   final arbDir = Directory(p.join(dir.path, 'l10n'));
   if (!arbDir.existsSync()) {
     return CmdResult(5, stderrLines: [
-      'appbox design patch: "$id" reads t($key) but no l10n/ directory '
-          'exists under ' + dir.path
+      'appbox design patch: "$id" reads t()-backed copy but no l10n/ '
+          'directory exists under ' + dir.path
     ]);
   }
-  final valueRe = RegExp('"' + RegExp.escape(key) + '"[\\s]*:[\\s]*"(?:[^"\\\\]|\\\\.)*"');
-  final newValue = '"' + key + '": "' + text.replaceAll('"', r'\"') + '"';
-  var updated = 0;
-  final missing = <String>[];
-  for (final arb in arbDir.listSync().whereType<File>()) {
-    if (!arb.path.endsWith('.arb')) continue;
-    final arbSrc = arb.readAsStringSync();
-    if (!valueRe.hasMatch(arbSrc)) {
-      missing.add(p.basename(arb.path));
-      continue;
+  final arbs = arbDir.listSync().whereType<File>().toList()
+    ..sort((a, b) => p.basename(a.path).compareTo(p.basename(b.path)));
+  var targets = arbs.where((a) => a.path.endsWith('.arb')).toList();
+  if (locale != null) {
+    final named = targets
+        .where((a) => _arbLocaleOf(p.basename(a.path)) == locale)
+        .toList();
+    if (named.isEmpty) {
+      return CmdResult(5, stderrLines: [
+        'appbox design patch: no l10n/*.arb file for locale "$locale" '
+            '(found: ' + targets.map((a) => p.basename(a.path)).join(', ') + ')'
+      ]);
     }
-    arb.writeAsStringSync(arbSrc.replaceFirst(valueRe, newValue));
-    updated++;
+    targets = named;
+  }
+
+  // Locale inference mirrors the seed route: when --was equals the key's
+  // value in exactly ONE locale file, that locale alone is written - an
+  // edit of Polish copy must not stamp Polish text over the English SSOT.
+  List<File> inferTargets(String k) {
+    if (locale != null || was == null || was.isEmpty) return targets;
+    final holding = <File>[];
+    for (final arb in arbs) {
+      if (!arb.path.endsWith('.arb')) continue;
+      final doc = jsonDecode(arb.readAsStringSync());
+      if (doc is Map &&
+          doc[k] is String &&
+          _normText(doc[k] as String) == _normText(was)) {
+        holding.add(arb);
+      }
+    }
+    return holding.length == 1 ? holding : targets;
+  }
+
+  // Surgical single-value replace of one key in one file.
+  bool writeKey(File arb, String k) {
+    final src2 = arb.readAsStringSync();
+    final valueRe = RegExp('"' + RegExp.escape(k) +
+        '"[\\s]*:[\\s]*"(?:[^"\\\\]|\\\\.)*"');
+    final newValue =
+        '"' + k + '": "' + text.replaceAll('"', r'\"') + '"';
+    if (!valueRe.hasMatch(src2)) return false;
+    arb.writeAsStringSync(src2.replaceFirst(valueRe, newValue));
+    return true;
+  }
+
+  if (key != null) {
+    final wts = inferTargets(key);
+    final missing = <String>[];
+    for (final arb in wts) {
+      if (!writeKey(arb, key)) missing.add(p.basename(arb.path));
+    }
+    if (missing.isNotEmpty) {
+      return CmdResult(5, stderrLines: [
+        'appbox design patch: key "$key" missing in: ' +
+            missing.join(', ') + ' - add it there and retry'
+      ]);
+    }
+    return _arbRouted(id, key, wts.length, f, dir, 'literal');
+  }
+
+  // Template path: content anchors. Candidates come from EVERY locale flat
+  // string entries (@-metadata excluded); the edited locale is then
+  // inferred exactly like the seed route infers it.
+  if (was == null || was.isEmpty) {
+    return CmdResult(5, stderrLines: [
+      'appbox design patch: --text refused: "$id" reads a dynamic t() '
+          'template ("$trimmed") - pass --was <previous text> to anchor '
+          'which key it feeds'
+    ]);
+  }
+  final normWas = _normText(was);
+  // Key universe from EVERY locale; a key is a candidate when ANY locale
+  // holds the --was value (the edited language may be any of them).
+  final sample = <String, String>{};
+  final hitKeys = <String>{};
+  for (final arb in arbs) {
+    if (!arb.path.endsWith('.arb')) continue;
+    final doc = jsonDecode(arb.readAsStringSync());
+    if (doc is! Map) continue;
+    doc.forEach((k, v) {
+      if (k is String && v is String && !k.startsWith('@')) {
+        sample.putIfAbsent(k, () => v);
+        if (_normText(v) == normWas) hitKeys.add(k);
+      }
+    });
+  }
+  final loose = hitKeys.toList();
+  var matchedKeys = loose.toList();
+  final t = tail!;
+  if (matchedKeys.length > 1 && t.isNotEmpty) {
+    // Tail narrows; an empty result means every value match disagrees with
+    // the binding shape -> stale anchor, refuse below.
+    matchedKeys =
+        matchedKeys.where((k) => k.endsWith(t)).toList();
+  }
+  matchedKeys.sort();
+  if (matchedKeys.isEmpty) {
+    return CmdResult(5, stderrLines: [
+      'appbox design patch: --text refused: no ARB key matches --was for '
+          '"$id"${loose.isEmpty ? ' (stale anchor? draft and l10n have diverged)' : ' ending in "$tail"'}'
+    ]);
+  }
+  if (matchedKeys.length > 1) {
+    return CmdResult(5, stderrLines: [
+      'appbox design patch: --text ambiguous for "$id" - '
+          '${matchedKeys.length} ARB keys hold that value:',
+      ...matchedKeys.take(8).map((k) => '  $k :: ${sample[k]}'),
+      'disambiguate with a longer --was (the full rendered sentence)',
+    ]);
+  }
+  final k = matchedKeys.single;
+  final wts = inferTargets(k);
+  final missing = <String>[];
+  for (final arb in wts) {
+    if (!writeKey(arb, k)) missing.add(p.basename(arb.path));
   }
   if (missing.isNotEmpty) {
     return CmdResult(5, stderrLines: [
-      'appbox design patch: key "$key" missing in: ' + missing.join(', ') +
-          ' - add it there and retry'
+      'appbox design patch: key "$k" missing in: ' +
+          missing.join(', ') + ' - add it there and retry'
     ]);
   }
+  final how = t.isEmpty
+      ? 'value match'
+      : 'template tail "$t" + value match';
+  return _arbRouted(id, k, wts.length, f, dir, how);
+}
+
+CmdResult _arbRouted(
+    String id, String key, int updated, File f, Directory dir, String how) {
   final rel = p.split(p.relative(f.path, from: dir.path)).join('/');
   return CmdResult(0, stdoutLines: [
-    'routed $id -> l10n key "$key" ($updated locale(s) updated); '
-        '$rel left untouched (t()-binding preserved)'
+    'routed $id -> l10n key "$key" ($how; $updated locale(s) updated); '
+        '$rel left untouched (binding preserved)'
+  ]);
+}
+
+/// Fallback for brace expressions the routers decline - conditionals like
+/// {open ? 'Open now' : 'Closed'}. When [was] equals EXACTLY ONE quoted
+/// literal inside the element own expression, that branch alone is
+/// spliced (quote-aware; the sibling branch untouched); zero or several
+/// matches refuse loudly. Returns null when the element is not a
+/// conditional-shaped expression (caller emits the generic refusal).
+CmdResult? _spliceTernaryLiteral(File hit, Directory dir, int at, String id,
+    String was, String text) {
+  final src = hit.readAsStringSync();
+  final span = _elementInnerSpan(src, at);
+  if (span == null) return null;
+  final inner = src.substring(span.$1, span.$2);
+  final trimmed = inner.trim();
+  if (!trimmed.startsWith('{') ||
+      !trimmed.endsWith('}') ||
+      !trimmed.contains('?')) {
+    return null;
+  }
+  if (was.isEmpty) {
+    return CmdResult(5, stderrLines: [
+      'appbox design patch: --text refused: "$id" is a conditional '
+          'expression - pass --was <branch text> to pick the branch'
+    ]);
+  }
+  final bs = String.fromCharCode(92);
+  final lits = <(int, int, String)>[];
+  var k2 = 0;
+  while (k2 < inner.length) {
+    final q = inner[k2];
+    if (q != "'" && q != '"') {
+      k2++;
+      continue;
+    }
+    var e = k2 + 1;
+    while (e < inner.length && inner[e] != q) {
+      if (inner[e] == bs) e++;
+      e++;
+    }
+    if (e >= inner.length) break; // unterminated - stop scanning
+    if (e > k2 + 1) lits.add((k2, e, inner.substring(k2 + 1, e)));
+    k2 = e + 1;
+  }
+  String unq(String raw) => raw
+      .replaceAll(bs + bs, bs)
+      .replaceAll(bs + "'", "'")
+      .replaceAll(bs + '"', '"');
+  final matched = lits
+      .where((l) =>
+          _normText(l.$3) == _normText(was) ||
+          _normText(unq(l.$3)) == _normText(was))
+      .toList();
+  if (matched.isEmpty) {
+    final clip = trimmed.length > 72
+        ? trimmed.substring(0, 72) + '...'
+        : trimmed;
+    return CmdResult(5, stderrLines: [
+      'appbox design patch: --text refused: the conditional on "$id" has '
+          'no branch literal equal to --was ("$clip")'
+    ]);
+  }
+  if (matched.length > 1) {
+    return CmdResult(5, stderrLines: [
+      'appbox design patch: --text ambiguous for "$id": ${matched.length} '
+          'branch literals equal --was - edit the widget source directly'
+    ]);
+  }
+  final m = matched.single;
+  final q = inner[m.$1];
+  final escaped = text
+      .replaceAll(bs, bs + bs)
+      .split(q)
+      .join(bs + q);
+  final out = src.substring(0, span.$1 + m.$1) +
+      q + escaped + q +
+      src.substring(span.$1 + m.$2 + 1);
+  hit.writeAsStringSync(out);
+  final rel = p.split(p.relative(hit.path, from: dir.path)).join('/');
+  final line =
+      '\n'.allMatches(src.substring(0, span.$1 + m.$1)).length + 1;
+  return CmdResult(0, stdoutLines: [
+    'routed $id -> $rel:$line conditional branch - expression structure '
+        'preserved'
   ]);
 }
 
@@ -408,9 +629,11 @@ CmdResult? routeTextToArbForFile(
 // binding ({project.name}) must land in the model spine's SEED files — the
 // SSOT the fixtures are generated from — never as a tsx literal (destroying
 // the binding) and never in a fixture alone (derived cache; the repository
-// header's own law: edit the seed, keep the fixtures in sync). Every locale
-// seed AND its fixture are updated with one surgical byte-span replacement
-// each, so the diff stays minimal and the binding stays intact.
+// header's own law: edit the seed, keep the fixtures in sync). The edited
+// locale's seed AND fixture are updated with one surgical byte-span
+// replacement each, so the diff stays minimal and the binding stays intact.
+// Locale targeting (2026-08-24): an explicit or inferred locale writes ONLY
+// that locale pair; an unknowable locale keeps the every-locale law.
 //
 // Resolution is anchored, never guessed:
 //   hint — the binding's last identifier ('name') must equal the JSON key
@@ -453,14 +676,20 @@ List<_SeedPair> _discoverSeedPairs(Directory dir) {
   return out;
 }
 
-/// The routable shape of an expression-backed inner: '{project.name}' →
-/// 'name'. Ternaries, calls, templates and subscripts are NOT safely
-/// routable — null sends the op down the legacy expression-refusal path.
+/// The routable shape of an expression-backed inner: '{project.name}' ->
+/// 'name'; subscript spellings normalize first ({row['t']} -> row.t,
+/// amended 2026-08-24). Ternaries, calls and templates stay unroutable
+/// here - null sends the op to the later routes (template lookup, branch
+/// splice, loud refusal).
+final _subscriptRe =
+    RegExp(r"\[\s*'([^']*)'\s*\]|" r'\[\s*"([^"]*)"\s*\]');
+
 String? _seedHintOf(String trimmedInner) {
   if (!trimmedInner.startsWith('{') || !trimmedInner.endsWith('}')) {
     return null;
   }
-  final body = trimmedInner.substring(1, trimmedInner.length - 1).trim();
+  var body = trimmedInner.substring(1, trimmedInner.length - 1).trim();
+  body = body.replaceAllMapped(_subscriptRe, (m) => '.' + (m[1] ?? m[2])!);
   final m = RegExp(r'^[A-Za-z_$][A-Za-z0-9_$]*'
           r'(?:\.[A-Za-z_$][A-Za-z0-9_$]*)*$')
       .firstMatch(body);
@@ -600,13 +829,12 @@ String _jsonEscape(String s) {
 CmdResult? routeTextToSeed(
     Directory dir,
     File hit,
+    int at,
     String id,
-    String attr,
     String text,
-    {String? was, int? nth, String? page}) {
+    {String? was, int? nth, String? page, String? locale}) {
   final src = hit.readAsStringSync();
-  if (!src.contains('$attr="$id"')) return null;
-  final hint = _seedHintOf(_innerOf(src, id, attr)?.trim() ?? '');
+  final hint = _seedHintOf(_innerOfAt(src, at)?.trim() ?? '');
   if (hint == null) return null;
   final pairs = _discoverSeedPairs(dir);
   if (pairs.isEmpty) return null;
@@ -615,6 +843,7 @@ CmdResult? routeTextToSeed(
   for (final sp in pairs) {
     byStem.putIfAbsent(sp.stem, () => {})[sp.locale] = sp;
   }
+  final stemValues = <String, Map<String, Map<String, String>>>{};
 
   // Survivors: (stem, seed path segments).
   final resolved = <(String, List<String>)>[];
@@ -633,6 +862,8 @@ CmdResult? routeTextToSeed(
       final ks = vals.keys.toSet();
       common = common == null ? ks : common.intersection(ks).toSet();
     }
+    stemValues[stem] = values;
+
     var keep = <List<String>>[];
     for (final path in (common ?? const <String>{})) {
       final segs = path.split('.');
@@ -727,8 +958,30 @@ CmdResult? routeTextToSeed(
 
   final (stem, segs) = resolved.single;
   final locs = byStem[stem]!;
+  final allLocales = locs.keys.toList()..sort();
+  var writeLocales = allLocales.toList();
+  if (locale != null) {
+    if (!locs.containsKey(locale)) {
+      return CmdResult(5, stderrLines: [
+        'appbox design patch: locale "$locale" has no slice in the '
+            '"$stem" seed spine (' + allLocales.join(', ') + ')'
+      ]);
+    }
+    writeLocales = [locale];
+  } else if (was != null && was.isNotEmpty) {
+    // Locale inference (2026-08-24): the pre-edit text matching exactly ONE
+    // locale stored value names the language being edited - editing Polish
+    // copy no longer stamps that Polish text over every other locale SSOT.
+    // Unresolvable (0 or 2+ matches) keeps the older every-locale law.
+    final vals = stemValues[stem]!;
+    final matching = allLocales
+        .where((l) => _normText(vals[l]![segs.join('.')] ?? '') ==
+            _normText(was))
+        .toList();
+    if (matching.length == 1) writeLocales = matching;
+  }
   final touched = <String>[];
-  for (final loc in locs.keys.toList()..sort()) {
+  for (final loc in writeLocales) {
     final sp = locs[loc]!;
     final seedDoc = jsonDecode(sp.seed.readAsStringSync());
     final fixDoc = jsonDecode(sp.fixtures.readAsStringSync());
@@ -754,14 +1007,16 @@ CmdResult? routeTextToSeed(
       touched.add(p.relative(file.path, from: dir.path));
     }
   }
-  final locNames = locs.keys.toList()..sort();
+  final others =
+      allLocales.where((l) => !writeLocales.contains(l)).toList();
+  final scope = writeLocales.join(', ') +
+      (others.isEmpty ? '' : '; also in spine: ' + others.join(', '));
   return CmdResult(0, stdoutLines: [
     'routed $id -> ' + stem + '_seed.' + segs.join('.') +
-        ' (' + locNames.join(', ') + ') — ' +
+        ' (' + scope + ') - ' +
         touched.length.toString() + ' file(s), tsx binding untouched',
   ]);
 }
-
 
 /// `appbox design patch <artifactDir> <id> [--set n=v]… [--rm n]…`
 /// `[--style p=v]… [--rm-style p]…`
@@ -773,6 +1028,7 @@ CmdResult patchMain(List<String> args) {
   String? was;
   int? nth;
   String? page;
+  String? locale;
   String? elTarget;
   String? usageError;
   final tokens = <String, String?>{};
@@ -827,14 +1083,21 @@ CmdResult patchMain(List<String> args) {
       final v = take();
       if (v == null) usageError = '--page needs a pathname';
       if (v != null) page = v;
+    } else if (a == '--locale') {
+      final v = take();
+      if (v == null || !RegExp(r'^[a-z]{2}$').hasMatch(v)) {
+        usageError = '--locale needs a two-letter code';
+      }
+      if (v != null && RegExp(r'^[a-z]{2}$').hasMatch(v)) locale = v;
     } else if (a.startsWith('--')) {
       usageError = 'unknown flag $a';
     } else {
       positional.add(a);
     }
   }
-  if (text == null && (was != null || nth != null || page != null)) {
-    usageError ??= '--was/--nth/--page ride --text';
+  if (text == null &&
+      (was != null || nth != null || page != null || locale != null)) {
+    usageError ??= '--was/--nth/--page/--locale ride --text';
   }
   final edits = PatchEdits(attrs: attrs, style: style, text: text);
   final tokenOnly = tokens.isNotEmpty &&
@@ -848,7 +1111,7 @@ CmdResult patchMain(List<String> args) {
       'usage: appbox design patch <artifactDir> <data-arxa-id> '
           '[--set name=value]… [--rm name]… [--style prop=value]… '
           '[--rm-style prop]… [--text value] [--was prev] [--nth i] '
-          '[--page pathname]\n'
+          '[--page pathname] [--locale xx]\n'
           '       appbox design patch <artifactDir> --el <data-el> '
           '[same flags] — authored-identity targeting (divergence law)'
     ]);
@@ -911,48 +1174,115 @@ CmdResult patchMain(List<String> args) {
       .listSync(recursive: true)
       .whereType<File>()
       .where((f) => f.path.endsWith('.tsx'));
-  final hits = <File>[];
+
+  // -- Target resolution: the stamp marker first; a --el op with no stamp
+  // anywhere falls back to the AUTHORED anchor - the primitives name=
+  // attribute that renders as data-el (2026-08-24). Render-time identity
+  // becomes source-findable: exactly one name= site is the law; zero or
+  // several refuse loudly with locations.
+  File? hit;
+  var at = -1;
+  var nameAnchored = false;
+  final stampHits = <File>[];
   for (final f in files) {
-    final src = f.readAsStringSync();
-    if (!src.contains('$attr="$id"')) continue;
-    hits.add(f);
+    if (f.readAsStringSync().contains('$attr="$id"')) stampHits.add(f);
   }
-  if (hits.isEmpty) {
+  if (stampHits.length > 1) {
+    return CmdResult(4, stderrLines: [
+      'appbox design patch: id "$id" found in ${stampHits.length} files '
+          '(stamper invariant broken): '
+          '${stampHits.map((f) => f.path).join(', ')}'
+    ]);
+  }
+  if (stampHits.length == 1) {
+    hit = stampHits.single;
+    final src = hit.readAsStringSync();
+    at = src.indexOf('$attr="$id"');
+    if (src.indexOf('$attr="$id"', at + 1) >= 0) {
+      return CmdResult(4, stderrLines: [
+        'appbox design patch: $attr="$id" appears twice in '
+            '${p.relative(hit.path, from: dir.path)} (stamper invariant '
+            'broken)'
+      ]);
+    }
+  } else if (elTarget != null) {
+    final quoteAlt =
+        String.fromCharCode(34) + String.fromCharCode(39);
+    final nameRe = RegExp(r'name\s*=\s*([' + quoteAlt + r'])' +
+        RegExp.escape(elTarget!) + r'\1');
+    final sites = <(File, int)>[];
+    for (final f in files) {
+      final src = f.readAsStringSync();
+      for (final m in nameRe.allMatches(src)) {
+        sites.add((f, m.start));
+      }
+    }
+    if (sites.isEmpty) {
+      return CmdResult(3, stderrLines: [
+        'appbox design patch: no element carries data-el="$id" and no '
+            'source carries name="$id" under ${positional[0]}'
+      ]);
+    }
+    if (sites.length > 1) {
+      final locs = <String>[];
+      for (final s2 in sites) {
+        final line =
+            '\n'.allMatches(s2.$1.readAsStringSync().substring(0, s2.$2))
+                .length + 1;
+        locs.add('  ' + p.relative(s2.$1.path, from: dir.path) + ':$line');
+      }
+      return CmdResult(4, stderrLines: [
+        'appbox design patch: authored identity "$id" resolves to '
+            '${sites.length} name= sites - refusing to guess:',
+        ...locs,
+      ]);
+    }
+    hit = sites.single.$1;
+    at = sites.single.$2;
+    nameAnchored = true;
+  } else {
     return CmdResult(3, stderrLines: [
       'appbox design patch: no element carries $attr="$id" '
           'under ${positional[0]}'
     ]);
   }
-  if (hits.length > 1) {
-    return CmdResult(4, stderrLines: [
-      'appbox design patch: id "$id" found in ${hits.length} files '
-          '(stamper invariant broken): ${hits.map((f) => f.path).join(', ')}'
-    ]);
-  }
-  // SSOT ROUTING (2026-08-24): a --text aimed at an element whose content
-  // is {t('key')} must land in the l10n ARB files - the key IS the SSOT.
-  // Rewriting the expression with one locale's literal would silently
-  // destroy the i18n binding; refusing would block every rebrand.
+
+  // -- TEXT ROUTES (locale-targeted, 2026-08-24): brace-backed content
+  // never becomes a literal. Order: seed spine (dotted/subscript
+  // bindings) -> l10n ARB (t() literals and templates) -> conditional-
+  // branch splice -> the loud expression refusal. Plain-literal elements
+  // fall through to the structured patch below.
   if (edits.text != null) {
-    // Seed SSOT route runs FIRST (2026-08-24): a dotted data binding lands
-    // in the model spine's seed files — every locale's seed AND its
-    // generated fixture. Null = no seed spine here or the binding is not
-    // routable; the ARB router and the legacy expression refusal keep
-    // covering t()-backed and unsupported shapes.
-    final seeded = routeTextToSeed(dir, hits.single, id, attr, edits.text!,
-        was: was, nth: nth, page: page);
-    if (seeded != null) return seeded;
-    for (final f in hits) {
-      final routed = routeTextToArbForFile(f, dir, id, attr, edits.text!);
+    final innerTrim = (_innerOfAt(hit.readAsStringSync(), at) ?? '').trim();
+    if (innerTrim.startsWith('{') && innerTrim.endsWith('}')) {
+      final seeded = routeTextToSeed(dir, hit, at, id, edits.text!,
+          was: was, nth: nth, page: page, locale: locale);
+      if (seeded != null) return seeded;
+      final routed = routeTextToArbForFile(hit, dir, at, id, edits.text!,
+          was: was, locale: locale);
       if (routed != null) return routed;
+      if (innerTrim.contains('?') && !innerTrim.contains('t(')) {
+        final branched = _spliceTernaryLiteral(
+            hit, dir, at, id, was ?? '', edits.text!);
+        if (branched != null) return branched;
+      }
+      return CmdResult(5, stderrLines: [
+        'appbox design patch: --text refused: "$id" is expression-backed '
+            '("$innerTrim") - its text lives in a data source (l10n ARB, '
+            'seed fixtures), not as a literal here',
+        if (innerTrim.contains('?'))
+          'conditionals route with --was equal to one branch literal; '
+              'dynamic t() templates route through their l10n keys',
+      ]);
     }
   }
-  final res = patchSource(
-      hits.single.readAsStringSync(), id, edits, attr: attr);
+  final res = _patchAt(hit.readAsStringSync(), id, at, edits);
   if (res.error != null) {
     return CmdResult(5, stderrLines: ['appbox design patch: ${res.error}']);
   }
-  hits.single.writeAsStringSync(res.code);
-  final rel = p.split(p.relative(hits.single.path, from: dir.path)).join('/');
-  return CmdResult(0, stdoutLines: ['patched $id in $rel']);
+  hit.writeAsStringSync(res.code);
+  final rel = p.split(p.relative(hit.path, from: dir.path)).join('/');
+  return CmdResult(0, stdoutLines: [
+    'patched $id${nameAnchored ? ' (name-anchored)' : ''} in $rel'
+  ]);
 }

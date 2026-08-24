@@ -1488,6 +1488,15 @@
         p.nth = Math.max(0, insts.indexOf(origin));
       }
       p.page = location.pathname;
+      // Locale targeting (2026-08-24): the commit writes ONLY the locale
+      // being edited — <html lang> first, else the leading /xx/ pathname
+      // segment. Absent both, the commit updates every locale (old law).
+      const hl = (document.documentElement.lang || '').toLowerCase().slice(0, 2);
+      if (/^[a-z]{2}$/.test(hl)) p.locale = hl;
+      else {
+        const seg = location.pathname.split('/')[1] || '';
+        if (/^[a-z]{2}$/.test(seg)) p.locale = seg;
+      }
     }
     p.text = value;
     const scoped = p.nth != null && insts[p.nth] ? [insts[p.nth]] : insts;

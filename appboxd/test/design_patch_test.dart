@@ -313,7 +313,7 @@ void main() {
     });
     tearDown(() => dir.deleteSync(recursive: true));
 
-    test('unique resolve writes both locale seeds AND fixtures; tsx untouched',
+    test('unique resolve infers the locale; writes its seed AND fixture',
         () {
       final res = patchMain([
         dir.path, 'cards-e3', '--text', 'DAYLIGHT BY THE RIVER',
@@ -325,11 +325,14 @@ void main() {
           .readAsStringSync();
       expect(en, contains('"tagline": "DAYLIGHT BY THE RIVER"'));
       expect(en, contains('"tagline": "Under the birches"')); // sibling intact
-      expect(
-          File('${dir.path}/models/project_model/project_seed.pl.json')
-              .readAsStringSync(),
-          contains('"tagline": "DAYLIGHT BY THE RIVER"'));
-      // fixtures kept in sync with their seeds
+      // Locale inference: --was matches ONLY the en value -> the en pair
+      // alone is written; pl keeps its own language untouched.
+      final plSeed = File(
+              '${dir.path}/models/project_model/project_seed.pl.json')
+          .readAsStringSync();
+      expect(plSeed, contains('"tagline": "Swiatlo nad rzeka"'));
+      expect(plSeed, isNot(contains('DAYLIGHT')));
+      // fixtures kept in sync with their seeds, per locale
       expect(
           File('${dir.path}/models/project_model/project_fixtures.en.json')
               .readAsStringSync(),
@@ -337,7 +340,8 @@ void main() {
       expect(
           File('${dir.path}/models/project_model/project_fixtures.pl.json')
               .readAsStringSync(),
-          contains('"tagline": "DAYLIGHT BY THE RIVER"'));
+          contains('"tagline": "Swiatlo nad rzeka"'));
+      expect(res.stdoutLines.first, contains('(en; also in spine: pl)'));
       expect(File('${dir.path}/cards.tsx').readAsStringSync(),
           contains('{project.tagline}')); // binding preserved
       // surgical: seed.en is exactly the original with one value swapped
@@ -431,6 +435,293 @@ void main() {
       expect(r.applied, 1);
       expect(r.html, contains('>one<'));
       expect(r.html, contains('PICKED'));
+    });
+  });
+
+
+  group('locale targeting (2026-08-24 caveat fixes)', () {
+    late Directory dir;
+    setUp(() {
+      dir = Directory.systemTemp.createTempSync('patch_test_locale');
+      Directory('${dir.path}/models/project_model').createSync(recursive: true);
+      const enA = '{"slug": "saska-kepa", "name": "Saska Kepa",'
+          ' "tagline": "Light near the river"}';
+      const plA = '{"slug": "saska-kepa", "name": "Saska Kepa",'
+          ' "tagline": "Swiatlo nad rzeka"}';
+      File('${dir.path}/models/project_model/project_seed.en.json')
+          .writeAsStringSync('[\n  $enA\n]');
+      File('${dir.path}/models/project_model/project_seed.pl.json')
+          .writeAsStringSync('[\n  $plA\n]');
+      File('${dir.path}/models/project_model/project_fixtures.en.json')
+          .writeAsStringSync('{"projects": [\n  $enA\n]}');
+      File('${dir.path}/models/project_model/project_fixtures.pl.json')
+          .writeAsStringSync('{"projects": [\n  $plA\n]}');
+      File('${dir.path}/cards.tsx').writeAsStringSync(
+          '<div data-arxa-id="cards-e1">'
+          '<h3 data-arxa-id="cards-e2">{project.name}</h3>'
+          '<p data-arxa-id="cards-e3">{project.tagline}</p>'
+          '</div>');
+    });
+    tearDown(() => dir.deleteSync(recursive: true));
+
+    test('--locale writes ONLY that locale pair', () {
+      final res = patchMain([
+        dir.path, 'cards-e3', '--text', 'NAD RZEKA',
+        '--was', 'Swiatlo nad rzeka', '--locale', 'pl',
+      ]);
+      expect(res.exitCode, 0, reason: res.stderrLines.join('; '));
+      final en = File('${dir.path}/models/project_model/project_seed.en.json')
+          .readAsStringSync();
+      expect(en, contains('"tagline": "Light near the river"'));
+      expect(en, isNot(contains('NAD RZEKA')));
+      final pl = File('${dir.path}/models/project_model/project_seed.pl.json')
+          .readAsStringSync();
+      expect(pl, contains('"tagline": "NAD RZEKA"'));
+      expect(File('${dir.path}/models/project_model/project_fixtures.pl.json')
+          .readAsStringSync(), contains('NAD RZEKA'));
+      expect(res.stdoutLines.first, contains('(pl; also in spine: en)'));
+    });
+
+    test('the edited locale is inferred from --was alone', () {
+      final res = patchMain([
+        dir.path, 'cards-e3', '--text', 'NAD RZEKA',
+        '--was', 'Swiatlo nad rzeka',
+      ]);
+      expect(res.exitCode, 0, reason: res.stderrLines.join('; '));
+      final en = File('${dir.path}/models/project_model/project_seed.en.json')
+          .readAsStringSync();
+      expect(en, contains('"tagline": "Light near the river"'));
+      expect(en, isNot(contains('NAD RZEKA')));
+      expect(File('${dir.path}/models/project_model/project_fixtures.pl.json')
+          .readAsStringSync(), contains('"tagline": "NAD RZEKA"'));
+      expect(res.stdoutLines.first, contains('(pl; also in spine: en)'));
+    });
+
+    test('identical cross-locale values keep the every-locale law', () {
+      final res = patchMain([
+        dir.path, 'cards-e2', '--text', 'ONE STUDIO',
+        '--was', 'Saska Kepa',
+      ]);
+      expect(res.exitCode, 0, reason: res.stderrLines.join('; '));
+      expect(File('${dir.path}/models/project_model/project_seed.en.json')
+          .readAsStringSync(), contains('"name": "ONE STUDIO"'));
+      expect(File('${dir.path}/models/project_model/project_seed.pl.json')
+          .readAsStringSync(), contains('"name": "ONE STUDIO"'));
+      expect(File('${dir.path}/models/project_model/project_fixtures.en.json')
+          .readAsStringSync(), contains('ONE STUDIO'));
+      expect(res.stdoutLines.first, contains('(en, pl)'));
+    });
+
+    test('an unknown locale slice refuses loudly', () {
+      final res = patchMain([
+        dir.path, 'cards-e3', '--text', 'X',
+        '--was', 'Light near the river', '--locale', 'zz',
+      ]);
+      expect(res.exitCode, 5);
+      expect(res.stderrLines.join(), contains('no slice'));
+    });
+
+    test('DraftPatch locale rides json; bad codes throw', () {
+      final d = DraftOverlay.fromJson(const {
+        'patches': {
+          'k-e1': {'text': 'X', 'locale': 'pl'}
+        }
+      }, artifact: 'a');
+      expect(d.patches['k-e1']!.locale, 'pl');
+      expect(d.toJson()['patches'], {
+        'k-e1': {'text': 'X', 'locale': 'pl'}
+      });
+      expect(
+          () => DraftOverlay.fromJson(const {
+                'patches': {
+                  'k-e1': {'locale': 'polish'}
+                }
+              }, artifact: 'a'),
+          throwsFormatException);
+    });
+  });
+
+  group('expression routes: templates, subscripts, ternaries (2026-08-24)', () {
+    test('dynamic t() template resolves by --was; infers the locale', () {
+      final dir = Directory.systemTemp.createTempSync('patch_test_tpl');
+      try {
+        Directory('${dir.path}/l10n').createSync();
+        File('${dir.path}/l10n/app_en.arb').writeAsStringSync(
+            '{"saska.place": "By the river",'
+            ' "oliwa.place": "Under birches"}');
+        File('${dir.path}/l10n/app_pl.arb').writeAsStringSync(
+            '{"saska.place": "Nad rzeka",'
+            ' "oliwa.place": "Pod brzozami"}');
+        File('${dir.path}/a.tsx').writeAsStringSync(r'<p data-arxa-id="place-e1">{t(`${project.key}.place`)}</p>');
+        final res = patchMain([
+          dir.path, 'place-e1', '--text', 'PRZY RZECE', '--was', 'Nad rzeka',
+        ]);
+        expect(res.exitCode, 0, reason: res.stderrLines.join('; '));
+        final en = File('${dir.path}/l10n/app_en.arb').readAsStringSync();
+        expect(en, contains('"saska.place": "By the river"'));
+        expect(en, isNot(contains('PRZY RZECE')));
+        final pl = File('${dir.path}/l10n/app_pl.arb').readAsStringSync();
+        expect(pl, contains('"saska.place": "PRZY RZECE"'));
+        expect(res.stdoutLines.first, contains('key "saska.place"'));
+        expect(res.stdoutLines.first, contains('template tail'));
+      } finally {
+        dir.deleteSync(recursive: true);
+      }
+    });
+
+    test('ambiguous template values refuse listing candidate keys', () {
+      final dir = Directory.systemTemp.createTempSync('patch_test_tpl2');
+      try {
+        Directory('${dir.path}/l10n').createSync();
+        File('${dir.path}/l10n/app_en.arb').writeAsStringSync(
+            '{"a.place": "Same spot", "b.place": "Same spot"}');
+        File('${dir.path}/a.tsx').writeAsStringSync(r'<p data-arxa-id="place-e2">{t(`${project.key}.place`)}</p>');
+        final res = patchMain([
+          dir.path, 'place-e2', '--text', 'MOVED', '--was', 'Same spot',
+        ]);
+        expect(res.exitCode, 5);
+        final err = res.stderrLines.join();
+        expect(err, contains('ARB keys hold that value'));
+        expect(err, contains('a.place'));
+        expect(err, contains('b.place'));
+      } finally {
+        dir.deleteSync(recursive: true);
+      }
+    });
+
+    test('subscript bindings ride the seed ladder', () {
+      final dir = Directory.systemTemp.createTempSync('patch_test_sub');
+      try {
+        Directory('${dir.path}/models/m_model').createSync(recursive: true);
+        const enRow = '{"t": "Pier old"}';
+        const plRow = '{"t": "Pier stary"}';
+        File('${dir.path}/models/m_model/m_seed.en.json')
+            .writeAsStringSync('[\n  $enRow\n]');
+        File('${dir.path}/models/m_model/m_seed.pl.json')
+            .writeAsStringSync('[\n  $plRow\n]');
+        File('${dir.path}/models/m_model/m_fixtures.en.json')
+            .writeAsStringSync('{"rows": [\n  $enRow\n]}');
+        File('${dir.path}/models/m_model/m_fixtures.pl.json')
+            .writeAsStringSync('{"rows": [\n  $plRow\n]}');
+        File('${dir.path}/a.tsx').writeAsStringSync(
+            "<li data-arxa-id=\"sub-e1\">{row['t']}</li>");
+        final res = patchMain([
+          dir.path, 'sub-e1', '--text', 'PIER NEW', '--was', 'Pier old',
+        ]);
+        expect(res.exitCode, 0, reason: res.stderrLines.join('; '));
+        expect(res.stdoutLines.first, contains('_seed.0.t'));
+        expect(File('${dir.path}/models/m_model/m_seed.en.json')
+            .readAsStringSync(), contains('PIER NEW'));
+        expect(File('${dir.path}/models/m_model/m_seed.pl.json')
+            .readAsStringSync(), contains('"t": "Pier stary"'));
+      } finally {
+        dir.deleteSync(recursive: true);
+      }
+    });
+
+    test('conditional branches splice exactly the --was literal', () {
+      final dir = Directory.systemTemp.createTempSync('patch_test_tern');
+      try {
+        File('${dir.path}/a.tsx').writeAsStringSync(
+            "<p data-arxa-id=\"tern-e1\">{open ? 'Open now' : 'Closed'}</p>");
+        final res = patchMain([
+          dir.path, 'tern-e1', '--text', 'OPEN 24/7', '--was', 'Open now',
+        ]);
+        expect(res.exitCode, 0, reason: res.stderrLines.join('; '));
+        final out = File('${dir.path}/a.tsx').readAsStringSync();
+        expect(out, contains("{open ? 'OPEN 24/7' : 'Closed'}"));
+        expect(res.stdoutLines.first, contains('conditional branch'));
+        // a stale anchor refuses without touching either branch
+        final res2 = patchMain([
+          dir.path, 'tern-e1', '--text', 'Y', '--was', 'Shut',
+        ]);
+        expect(res2.exitCode, 5);
+        expect(res2.stderrLines.join(), contains('no branch literal'));
+        expect(File('${dir.path}/a.tsx').readAsStringSync(),
+            contains("{open ? 'OPEN 24/7' : 'Closed'}"));
+      } finally {
+        dir.deleteSync(recursive: true);
+      }
+    });
+  });
+
+  group('name-anchored source routing (2026-08-24)', () {
+    test('--el falls back to a single name= site (literal splice)', () {
+      final dir = Directory.systemTemp.createTempSync('patch_test_name');
+      try {
+        File('${dir.path}/w.tsx').writeAsStringSync(
+            '<Box name="card-note">Studio note</Box>');
+        final res = patchMain(
+            [dir.path, '--el', 'card-note', '--text', 'NOTE TWO']);
+        expect(res.exitCode, 0, reason: res.stderrLines.join('; '));
+        expect(res.stdoutLines.first, contains('name-anchored'));
+        final out = File('${dir.path}/w.tsx').readAsStringSync();
+        expect(out, contains('>NOTE TWO<'));
+        expect(out, contains('name="card-note"'));
+      } finally {
+        dir.deleteSync(recursive: true);
+      }
+    });
+
+    test('--el onto a binding routes through the seed spine', () {
+      final dir = Directory.systemTemp.createTempSync('patch_test_namex');
+      try {
+        Directory('${dir.path}/models/p_model').createSync(recursive: true);
+        const enA = '{"tagline": "River light"}';
+        const plA = '{"tagline": "Rzeka swiatlo"}';
+        File('${dir.path}/models/p_model/p_seed.en.json')
+            .writeAsStringSync('[\n  $enA\n]');
+        File('${dir.path}/models/p_model/p_seed.pl.json')
+            .writeAsStringSync('[\n  $plA\n]');
+        File('${dir.path}/models/p_model/p_fixtures.en.json')
+            .writeAsStringSync('{"projects": [\n  $enA\n]}');
+        File('${dir.path}/models/p_model/p_fixtures.pl.json')
+            .writeAsStringSync('{"projects": [\n  $plA\n]}');
+        File('${dir.path}/w.tsx').writeAsStringSync(
+            '<Box name="card-title">{project.tagline}</Box>');
+        final res = patchMain([
+          dir.path, '--el', 'card-title', '--text', 'RIVER LIT',
+          '--was', 'River light',
+        ]);
+        expect(res.exitCode, 0, reason: res.stderrLines.join('; '));
+        expect(res.stdoutLines.first, contains('_seed.0.tagline'));
+        expect(File('${dir.path}/w.tsx').readAsStringSync(),
+            contains('{project.tagline}'));
+      } finally {
+        dir.deleteSync(recursive: true);
+      }
+    });
+
+    test('two name= sites refuse loudly with locations', () {
+      final dir = Directory.systemTemp.createTempSync('patch_test_namedup');
+      try {
+        File('${dir.path}/a.tsx')
+            .writeAsStringSync('<Box name="dup-el">one</Box>');
+        File('${dir.path}/b.tsx')
+            .writeAsStringSync('<Box name="dup-el">two</Box>');
+        final res =
+            patchMain([dir.path, '--el', 'dup-el', '--text', 'Y']);
+        expect(res.exitCode, 4);
+        final err = res.stderrLines.join();
+        expect(err, contains('refusing to guess'));
+        expect(err, contains('a.tsx'));
+        expect(err, contains('b.tsx'));
+      } finally {
+        dir.deleteSync(recursive: true);
+      }
+    });
+
+    test('zero stamp and zero name= sites exits 3 mentioning name=', () {
+      final dir = Directory.systemTemp.createTempSync('patch_test_namenope');
+      try {
+        File('${dir.path}/empty.tsx').writeAsStringSync('');
+        final res = patchMain(
+            [dir.path, '--el', 'ghost', '--style', 'color=red']);
+        expect(res.exitCode, 3);
+        expect(res.stderrLines.join(), contains('name="ghost"'));
+      } finally {
+        dir.deleteSync(recursive: true);
+      }
     });
   });
 }

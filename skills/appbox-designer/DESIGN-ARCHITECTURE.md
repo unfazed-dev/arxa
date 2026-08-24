@@ -60,9 +60,31 @@ data corruption. The dial captures `was`/`nth`/`page` automatically on first
 text edit (`nth` only when sibling instances' texts diverge — data-backed
 rows get per-instance commits and per-instance live preview; homogeneous
 repeats keep every-row semantics). The commit socket's op json carries the
-trio through to the flags. One caveat, same as the ARB route: the edit lands
-one string in every locale — per-locale polish is an edit on that locale's
-rung or a direct seed touch.
+trio through to the flags.
+
+**Caveat-closing amendments (2026-08-24, same day):**
+
+- **Locale targeting.** The dial also captures `locale` (`<html lang>`,
+  else the leading pathname segment); the CLI takes `--locale`. Write
+  scope resolves flag → op field → inferred from `--was` (the pre-edit
+  text matching exactly ONE locale's stored value names that locale) →
+  unknown keeps the every-locale law. Seed route writes only that
+  locale's seed+fixture pair; ARB route only that `.arb`. Editing Polish
+  copy no longer stamps Polish text over English.
+- **Dynamic t() templates** (`t(`${project.key}.place`)`) resolve by
+  CONTENT: `--was` must match exactly one ARB value across all locales,
+  narrowed by the template's static tail; ambiguous lists candidate keys.
+  Subscript bindings (`{row['t']}`) normalize to dotted hints and ride
+  the seed ladder. Ternary branches (`{open ? 'Open' : 'Closed'}`) splice
+  exactly the branch whose literal equals `--was`.
+- **Name-anchored source routing.** An `--el` op with no stamp anywhere
+  falls back to the authored anchor — the primitives `name=` attribute
+  that renders as `data-el`. Exactly one site in the artifact sources is
+  the law (zero/several refuse loudly with locations); the hit then runs
+  the SAME ladder (binding→seed, t()→ARB, conditional→branch splice,
+  literal/style→surgical patch). Component truth: the commit edits the
+  widget definition, so sibling usages on other pages change too —
+  identical to hand-editing any shared component.
 
 ## Naming laws (locked)
 
