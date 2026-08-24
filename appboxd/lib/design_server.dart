@@ -531,8 +531,28 @@ class DesignServer {
         // first-party client without packet capture.
         stderr.writeln('[design-server] refused $method $path '
             '(origin=${req.headers.value('Origin')}, '
-            'sec-fetch-site=${req.headers.value('Sec-Fetch-Site')}): '
+            'sec-fetch-site=${req.headers.value('Sec-Fetch-Site')}, '
+            'dest=${req.headers.value('Sec-Fetch-Dest')}, '
+            'referer=${req.headers.value('Referer')}): '
             '${verdict.reason}');
+        // Opaque-origin READS (origin literally "null" — a sandboxed mirror
+        // frame whose island predates its quiet-mirror boot, or any stray
+        // viewer) get a CORS-CLEAN empty answer instead of the bare 403:
+        // without ACAO the browser logs a scary cross-origin error for every
+        // probe, which read as "sync is broken" even though the frame was
+        // inert by design. The body carries nothing; writes and every named
+        // origin keep the full refusal.
+        final originHeader = req.headers.value('Origin');
+        if (method == 'GET' &&
+            (originHeader == null || originHeader == 'null')) {
+          req.response.statusCode = 403;
+          req.response.headers
+            ..contentType = ContentType.parse('application/json; charset=utf-8')
+            ..set('Access-Control-Allow-Origin', '*');
+          req.response.write('{}');
+          await req.response.close();
+          return;
+        }
         req.response.statusCode = verdict.status;
         req.response.headers.contentType =
             ContentType.parse('text/plain; charset=utf-8');
