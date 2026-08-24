@@ -1773,6 +1773,20 @@
   }
 
   // ── boot ───────────────────────────────────────────────────────────────
+  // An OPAQUE origin ('null') means a sandboxed embedder — the gen-ui
+  // RungLadder's strict sandbox for same-host urls. There every /__dial/*
+  // call is CORS-refused BY DESIGN (opaque origins are never trusted), and
+  // even the two refused boot probes log alarming console errors while
+  // arming a dock that can never work. Such a frame is a view-only MIRROR:
+  // stay quiet and stay out — the embedder keeps it fresh by remounting on
+  // server pushes, subscribed from the studio's trusted origin. Detected
+  // directly; the old capability probe cost a sacrificial refused request.
+  if (String(window.location.origin) === 'null') {
+    try {
+      console.info('[arxa dial] sandboxed mirror (opaque origin) — dial disabled');
+    } catch (_) {}
+    return;
+  }
   if (S.mode === 'invalid') {
     say('This share link is expired or invalid');
   }
