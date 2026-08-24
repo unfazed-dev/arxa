@@ -5,7 +5,10 @@
      "pass" by silently testing the base custom skin four times (short-name URL bug). */
   const stName = new URLSearchParams(location.search).get("style") || "liquid-glass";
   if (stName !== "custom") {
-    const link = [...document.querySelectorAll('link[rel="stylesheet"]')].find((l) => l.href.includes("styles/"));
+    /* the overlay link is matched by STYLE NAME: the lab serves styles/<name>.css,
+       artifacts serve /ui/styles/common/overlay-<name>.css — a generic "styles/"
+       match grabs an artifact's 9-line barrel and false-fails. */
+    const link = [...document.querySelectorAll('link[rel="stylesheet"]')].find((l) => decodeURIComponent(l.href).includes(stName));
     const n = (() => { try { return link && link.sheet ? link.sheet.cssRules.length : 0; } catch (e) { return 0; } })();
     if (!n || n < 50) throw new Error("style overlay NOT loaded for style=" + stName + " (rules=" + n + ") — gate would be vacuous");
   }

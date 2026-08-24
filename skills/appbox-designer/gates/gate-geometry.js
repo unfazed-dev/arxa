@@ -18,7 +18,10 @@
   // guard: a named style MUST have loaded its overlay. A 404 here once made the
   // contrast gate "pass" by testing the base skin four times.
   if (style !== "custom") {
-    const link = [...document.querySelectorAll('link[rel="stylesheet"]')].find((l) => l.href.includes("styles/"));
+    /* overlay link matched by STYLE NAME: lab styles/<name>.css, artifact
+       overlay-<name>.css — a generic "styles/" match grabs an artifact's
+       9-line barrel and false-fails. */
+    const link = [...document.querySelectorAll('link[rel="stylesheet"]')].find((l) => decodeURIComponent(l.href).includes(style));
     let n = 0; try { n = link && link.sheet ? link.sheet.cssRules.length : 0; } catch (e) { n = 0; }
     if (!n || n < 50) throw new Error("style overlay NOT loaded for " + style + " (rules=" + n + ") - gate would be vacuous");
   }
