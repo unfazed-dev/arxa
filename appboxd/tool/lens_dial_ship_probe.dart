@@ -27,7 +27,7 @@ Future<void> main() async {
   ''');
   final s = (st as Map).cast<String, dynamic>();
   check(s['error'] == null, 'status answers without error');
-  check(s['repo'] == 'unfazed-dev/normal_is_boring', 'repo slug (${s['repo']})');
+  check(s['repo'] == 'unfazed-dev/architect-gallore', 'repo slug (${s['repo']})');
   check(s['branch'] == 'main', 'branch main (${s['branch']})');
   check(s['pr'] == null, 'no open PR');
 
@@ -97,7 +97,7 @@ Future<void> main() async {
       const merge = btns.find(b => b.textContent.includes('Merge'));
       const cta = $SR.querySelector('#cta');
       return {
-        facts: txt.includes('unfazed-dev/normal_is_boring') && txt.includes('main'),
+        facts: txt.includes('unfazed-dev/architect-gallore') && txt.includes('main'),
         prDisabled: pr ? pr.disabled : null,
         mergeDisabled: merge ? merge.disabled : null,
         saysGreen: txt.includes('Automation up to the button'),

@@ -13,12 +13,12 @@ import 'package:appboxd/design_server.dart';
 Future<void> main() async {
   final srv = await DesignServer.start(
     artifactDir:
-        '/Volumes/developer_ssd/Developer/totem_labs/clients/normal_is_boring/design/suczka-studio',
+        '/Volumes/developer_ssd/Developer/totem_labs/clients/architect-gallore/design/suczka-studio',
     port: 4319,
     dial: true,
     draftStore: DraftFileStore(
       artifactDir:
-          '/Volumes/developer_ssd/Developer/totem_labs/clients/normal_is_boring/design/suczka-studio',
+          '/Volumes/developer_ssd/Developer/totem_labs/clients/architect-gallore/design/suczka-studio',
     ),
     dialStore: MemoryDialStore(),
     // The panel iframes this server from arxa.studio.localhost:7891 - cross

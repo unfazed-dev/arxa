@@ -51,7 +51,7 @@ Future<void> main() async {
   final c = (copy as Map).cast<String, dynamic>();
   check(c['path'] != null && (c['path'] as String).startsWith('assets/images/'),
       'copy returned artifact path (${c['path']})');
-  final abs = '/Volumes/developer_ssd/Developer/totem_labs/clients/normal_is_boring/design/suczka-studio/' + (c['path'] as String? ?? 'x');
+  final abs = '/Volumes/developer_ssd/Developer/totem_labs/clients/architect-gallore/design/suczka-studio/' + (c['path'] as String? ?? 'x');
   check(File(abs).existsSync(), 'file exists on disk');
 
   // 3. assets lists it
@@ -156,10 +156,10 @@ Future<void> main() async {
   if (f.existsSync()) f.deleteSync();
   // Prune credit rows whose file no longer exists; drop the ledger when
   // empty. (The original condition was inverted and kept probe litter.)
-  final credits = File('/Volumes/developer_ssd/Developer/totem_labs/clients/normal_is_boring/design/suczka-studio/assets/credits.json');
+  final credits = File('/Volumes/developer_ssd/Developer/totem_labs/clients/architect-gallore/design/suczka-studio/assets/credits.json');
   if (credits.existsSync()) {
     final j = jsonDecode(credits.readAsStringSync()) as Map;
-    final media = (j['media'] as List? ?? []).where((e) => File('/Volumes/developer_ssd/Developer/totem_labs/clients/normal_is_boring/design/suczka-studio/' + (e as Map)['file']).existsSync()).toList();
+    final media = (j['media'] as List? ?? []).where((e) => File('/Volumes/developer_ssd/Developer/totem_labs/clients/architect-gallore/design/suczka-studio/' + (e as Map)['file']).existsSync()).toList();
     if (media.isEmpty) { credits.deleteSync(); }
     else { credits.writeAsStringSync(const JsonEncoder.withIndent('  ').convert({...j, 'media': media})); }
   }
