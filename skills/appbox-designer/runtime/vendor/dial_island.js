@@ -1855,14 +1855,87 @@
     };
     return attempt();
   }
-  function finishBoot() {
+  // ── corner reveal (operator request, 2026-08-24) ─────────────────────
+  // The dial is ALWAYS mounted but parked off-screen; moving the cursor
+  // into a 100x100px square in the bottom-right corner springs it in.
+  //
+  // Physics contract from Apple's own documentation (UIViewPropertyAnimator
+  // init(duration:dampingRatio:animations:), developer.apple.com): the
+  // animated value accelerates toward its target and oscillates to rest;
+  // dampingRatio 1 decelerates smoothly with no oscillation, values nearer
+  // 0 oscillate more. Reveal is underdamped (a small overshoot that
+  // settles, the macOS sheet/sidebar feel); hide is shorter and
+  // critically damped. Integrated every frame so re-triggering mid-flight
+  // keeps velocity - the interruptible quality native animation has that
+  // CSS curves cannot give.
+  const HOT_CORNER = 100;   // px square in the bottom-right corner
+  const PARK_PX = 168;      // how far off-screen the parked dial sits
+  let sp = null;            // spring state { p, v, raf, target }
+  function dialApplyPose() {
+    const e = Math.max(-0.18, Math.min(1.14, sp.p)); // room for overshoot
+    const off = (1 - e) * PARK_PX;
+    host.style.transform =
+      'translate3d(' + off.toFixed(1) + 'px,' + off.toFixed(1) + 'px,0)';
+    host.style.opacity = Math.max(0, Math.min(1, e * 1.25)).toFixed(3);
+    const parked = sp.p <= 0.001 && Math.abs(sp.v) < 0.02;
+    host.style.visibility = parked ? 'hidden' : 'visible';
+  }
+  function dialSpringTo(target, durationSec, dampingRatio) {
+    if (!sp) sp = { p: 0, v: 0, raf: 0, target };
+    sp.target = target;
+    if (matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      cancelAnimationFrame(sp.raf);
+      sp.p = target; sp.v = 0; dialApplyPose(); return;
+    }
+    const wn = 4.6 / (dampingRatio * durationSec); // ~1% envelope at duration
+    const c = 2 * dampingRatio * wn, k = wn * wn;
+    cancelAnimationFrame(sp.raf);
+    let last = performance.now();
+    const tick = (now) => {
+      const dt = Math.min((now - last) / 1000, 1 / 30); last = now;
+      const a = k * (target - sp.p) - c * sp.v;
+      sp.v += a * dt; sp.p += sp.v * dt;
+      dialApplyPose();
+      if (Math.abs(sp.v) < 0.004 && Math.abs(target - sp.p) < 0.004) {
+        sp.p = target; sp.v = 0; dialApplyPose(); sp.raf = 0; return;
+      }
+      sp.raf = requestAnimationFrame(tick);
+    };
+    sp.raf = requestAnimationFrame(tick);
+  }
+  function dialShow() { dialSpringTo(1, 0.5, 0.86); }
+  function dialHide() { dialSpringTo(0, 0.34, 1.0); }
+  function mountHost() {
+    if (!sp) sp = { p: 0, v: 0, raf: 0, target: 0 };
+    dialApplyPose();                            // parked BEFORE first paint
     document.documentElement.appendChild(host); // off-body: hx-boost swaps wipe body children
+    dialInstallCornerReveal();
+  }
+  let dialCornerArmed = false;
+  function dialInstallCornerReveal() {
+    if (dialCornerArmed) return;
+    dialCornerArmed = true;
+    const inCorner = (x, y) =>
+      x >= innerWidth - HOT_CORNER && y >= innerHeight - HOT_CORNER;
+    const overDock = (ev) => ev.composedPath().includes(host);
+    addEventListener('pointermove', (ev) => {
+      const want = inCorner(ev.clientX, ev.clientY) || overDock(ev);
+      if (want && sp.target !== 1) dialShow();
+      else if (!want && !overDock(ev) && sp.target !== 0) dialHide();
+    }, { passive: true });
+    // touch has no hover: a tap in the zone reveals too
+    addEventListener('pointerdown', (ev) => {
+      if (inCorner(ev.clientX, ev.clientY) && sp.target !== 1) dialShow();
+    }, { passive: true });
+  }
+  function finishBoot() {
+    mountHost();
     applyShade();
     applyLayers();
     resumeAfterReload(); // no-op unless the last text edit converged by reload
   }
   if (S.mode === 'invalid') {
-    document.documentElement.appendChild(host); // off-body: hx-boost swaps wipe body children
+    mountHost();
     applyShade();
     applyLayers();
     say('This share link is expired or invalid');
