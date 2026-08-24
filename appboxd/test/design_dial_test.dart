@@ -59,6 +59,46 @@ void main() {
       expect((pins.first['replies'] as List).single['body'], 'on it');
     });
 
+    test('selection handoff: register → organized read → expire-safe ids',
+        () async {
+      final api = DialApi(store: MemoryDialStore(), artifact: 'demo');
+      final reg = await api.handle('POST', '/selection', {}, {
+        'key': 'ui-widgets-x-e11',
+        'label': 'hero · text',
+        'kind': 'h1',
+        'group': 'text',
+        'route': '/projects',
+        'text': 'DOMKA TO STUDIO',
+        'styles': {'font-size': '12rem'},
+        'png': 'data:image/png;base64,iVBORw0KGgo=',
+      }, null);
+      expect(reg.status, 201);
+      final id = (reg.json as Map)['id'] as String;
+      expect(id, startsWith('s'));
+
+      final read = await api.handle('GET', '/selection/' + id, {}, null, null);
+      expect(read.status, 200);
+      final j = (read.json as Map).cast<String, dynamic>();
+      expect(j['key'], 'ui-widgets-x-e11');
+      expect(j['law'], contains('LOCKED'));
+      expect(j['fetch'], '/__dial/selection/' + id);
+      expect((j['styles'] as Map)['font-size'], '12rem');
+      expect(j['png'], startsWith('data:image/png'));
+
+      // Guest cannot register; a bogus id shape 400s.
+      final guest = await api.handle('POST', '/selection', {}, {'key': 'k', 'label': 'l'},
+          ShareLinkGrant(artifact: 'demo', expiresAt: '2099-01-01T00:00:00Z'));
+      expect(guest.status, 403);
+      final bad = await api.handle('GET', '/selection/../../etc', {}, null, null);
+      expect(bad.status, 400);
+
+      // Oversize png refuses.
+      final big = await api.handle('POST', '/selection', {}, {
+        'key': 'k', 'label': 'l', 'png': 'data:image/png;base64,' + 'x' * 500000,
+      }, null);
+      expect(big.status, 400);
+    });
+
     test('unknown ids are 404, never silent', () async {
       final api = DialApi(store: MemoryDialStore(), artifact: 'demo');
       final s = await api.handle(

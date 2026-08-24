@@ -619,6 +619,11 @@ class DialApi {
   /// null (not a git repo) disables the routes (503).
   final DialShip? ship;
 
+  /// Selection handoff registry (slice 7, 2026-08-24): the card's "Ask
+  /// arxa" registers an organized selection context here; the studio agent
+  /// fetches it by pointer id. Bounded: capped, TTL'd, author-only writes.
+  final Map<String, (DateTime, Map<String, dynamic>)> _selections = {};
+
   /// [grant] non-null means the caller arrived on a Share Link — a guest
   /// scoped to ITS artifact (a link minted for artifact A reads nothing on
   /// artifact B). Null grant = the loopback Author.
@@ -741,6 +746,17 @@ class DialApi {
           return await _shipVerb(() => s.deploy(
               artifactDir: dir, statusFn: () async => await s.status()));
         }
+      }
+      // The selection handoff (slice 7): author registers, anyone with the
+      // pointer id reads — the id is capability enough for the GET.
+      if (method == 'POST' && sub == '/selection') {
+        if (caller != DialCaller.author) {
+          return const DialResponse(403, {'error': 'author only'});
+        }
+        return _registerSelection(body);
+      }
+      if (method == 'GET' && sub.startsWith('/selection/')) {
+        return _readSelection(sub.substring('/selection/'.length));
       }
       return DialResponse(404, {'error': 'no such dial route: $sub'});
     } on FormatException catch (e) {
@@ -940,6 +956,71 @@ class DialApi {
     } on ShipRefusal catch (ex) {
       return DialResponse(409, {'error': ex.message});
     }
+  }
+
+  static const _selectionTtl = Duration(minutes: 20);
+  static const _selectionCap = 20;
+
+  Future<DialResponse> _registerSelection(Object? body) async {
+    final m = _map(body, '/selection');
+    final key = m['key'] is String ? _str(m, 'key', 200) : null;
+    final label = m['label'] is String ? _str(m, 'label', 120) : null;
+    if (key == null || label == null) {
+      return const DialResponse(400, {'error': 'key and label are required'});
+    }
+    final text = m['text'] is String ? (m['text'] as String) : null;
+    if (text != null && text.length > 600) {
+      return const DialResponse(400, {'error': 'text over 600 chars'});
+    }
+    final png = m['png'] is String ? (m['png'] as String) : null;
+    if (png != null &&
+        (!png.startsWith('data:image/') || png.length > 400_000)) {
+      return const DialResponse(400,
+          {'error': 'png must be a data URL under 400 KB'});
+    }
+    final styles = m['styles'] is Map
+        ? Map<String, dynamic>.from(m['styles'] as Map)
+        : <String, dynamic>{};
+    final id = 's${DateTime.now().millisecondsSinceEpoch.toRadixString(36)}'
+        '${(label.hashCode & 0xffff).toRadixString(36)}';
+    final entry = <String, dynamic>{
+      'id': id,
+      'key': key,
+      'label': label,
+      'kind': m['kind'] is String ? _str(m, 'kind', 40) : 'element',
+      'group': m['group'] is String ? _str(m, 'group', 40) : 'generic',
+      'route': m['route'] is String ? _str(m, 'route', 200) : '/',
+      'artifact': artifact,
+      if (text != null) 'text': text,
+      if (png != null) 'png': png,
+      if (styles.isNotEmpty) 'styles': styles,
+      'law':
+          'The design structure is LOCKED. Edit ONLY this element via the '
+          'appbox design patch contract (data-arxa-id / data-el identity); '
+          'never add or remove elements, never change widget kinds.',
+      'fetch': '/__dial/selection/$id',
+    };
+    // TTL sweep then cap.
+    final now = DateTime.now();
+    _selections.removeWhere((_, v) => now.difference(v.$1) > _selectionTtl);
+    while (_selections.length >= _selectionCap) {
+      _selections.remove(_selections.keys.first);
+    }
+    _selections[id] = (now, entry);
+    return DialResponse(201, {'id': id, 'fetch': entry['fetch']});
+  }
+
+  Future<DialResponse> _readSelection(String id) async {
+    if (!RegExp(r'^s[0-9a-z]{3,20}$').hasMatch(id)) {
+      return const DialResponse(400, {'error': 'bad selection id'});
+    }
+    final hit = _selections[id];
+    if (hit == null || DateTime.now().difference(hit.$1) > _selectionTtl) {
+      _selections.remove(id);
+      return const DialResponse(
+          404, {'error': 'selection expired — ask again from the card'});
+    }
+    return DialResponse(200, hit.$2);
   }
 
   Future<DialResponse> _listPins() async {

@@ -1677,6 +1677,95 @@
   }
 
 
+  // ── element capture (Ask arxa, slice 7): best-effort PNG of the
+  // selection for the composer's image rail. foreignObject rasterization
+  // with computed styles inlined and <img> swapped to same-origin data
+  // URLs; ANY failure returns null — the handoff proceeds without the
+  // image (the server context still carries text + styles).
+  async function captureElement(el) {
+    try {
+      const r = el.getBoundingClientRect();
+      const w = Math.min(480, Math.max(2, Math.round(r.width)));
+      const h = Math.max(2, Math.round(r.height * (w / r.width)));
+      const clone = el.cloneNode(true);
+      const cs = getComputedStyle(el);
+      const pick = ['font', 'color', 'background', 'padding', 'margin',
+        'display', 'flex-direction', 'gap', 'align-items', 'justify-content',
+        'border', 'border-radius', 'width', 'height', 'overflow'];
+      // Computed font families arrive double-quoted ("Inter") — inside the
+      // double-quoted style="..." XML attribute they would break the SVG
+      // parse and the raster load dies with onerror (measured). Single-
+      // quote them; CSS treats both as identical.
+      const decls = pick
+        .filter((p) => cs.getPropertyValue(p))
+        .map((p) => p + ':' + cs.getPropertyValue(p))
+        .join(';')
+        .replace(/"/g, "'");
+      // Same-origin imgs → data URLs or drop them (a tainted canvas would
+      // kill the whole export).
+      const imgs = [...clone.querySelectorAll('img')];
+      imgs.forEach((im) => {
+        try {
+          const c = document.createElement('canvas');
+          c.width = im.naturalWidth || 100; c.height = im.naturalHeight || 100;
+          c.getContext('2d').drawImage(im, 0, 0);
+          if (c.width && c.height) im.src = c.toDataURL('image/png');
+        } catch (_) { im.remove(); }
+      });
+      const svg = '<svg xmlns="http://www.w3.org/2000/svg" width="' + w + '" height="' + h + '">' +
+        '<foreignObject width="100%" height="100%">' +
+        '<div xmlns="http://www.w3.org/1999/xhtml" style="' + decls + '">' +
+        new XMLSerializer().serializeToString(clone) + '</div></foreignObject></svg>';
+      const url = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+      const img = new Image();
+      img.src = url;
+      // SVG data URLs decode asynchronously — drawing before load yields
+      // a blank raster. Wait it out; a decode failure is a null capture.
+      await new Promise((res, rej) => {
+        img.onload = res;
+        img.onerror = rej;
+        setTimeout(rej, 2500);
+      });
+      const canvas = document.createElement('canvas');
+      canvas.width = w; canvas.height = h;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0);
+      return canvas.toDataURL('image/png');
+    } catch (_) {
+      return null;
+    }
+  }
+
+  async function askArxa() {
+    const sel = S.selected;
+    if (!sel) return;
+    const cs = getComputedStyle(sel.el);
+    const digest = {};
+    ['font-size', 'font-weight', 'line-height', 'color', 'background-color',
+      'padding', 'gap', 'border-radius'].forEach((p) => {
+      const v = cs.getPropertyValue(p);
+      if (v) digest[p] = v.trim();
+    });
+    say('Capturing selection…');
+    const png = await captureElement(sel.el);
+    const r = await api('POST', '/selection', {
+      key: sel.key,
+      label: sel.label,
+      kind: sel.el.tagName.toLowerCase(),
+      group: sel.group,
+      route: location.pathname,
+      text: sel.el.textContent.trim().slice(0, 400) || undefined,
+      styles: digest,
+      png: png || undefined,
+    });
+    if (r && r.id) {
+      say('Sent to arxa studio — design selection ' + r.id +
+        '. Focus the composer; the pointer line is one click away.');
+    } else {
+      say((r && r.error) || 'handoff failed');
+    }
+  }
+
   // ── the floating smart card (Edit Mode's inspector) ───────────────────
   // Dropdown-style smart anchor: prefer the element's right, flip left on
   // clip, clamp on both axes, vertical flip when the bottom would clip.
@@ -1713,6 +1802,9 @@
     chead.textContent = '';
     chead.appendChild(h('span', { text: S.selected.label.split(' · ')[0] }));
     chead.appendChild(h('span', { class: 'kchip', text: S.selected.group }));
+    const ask = h('button', { class: 'stbtn', title: 'Send this element to the arxa studio composer (LLM edits only this element)', text: '✨ arxa' });
+    ask.addEventListener('click', (e) => { e.stopPropagation(); askArxa(); });
+    chead.appendChild(ask);
     const x = h('button', { class: 'cclose', title: 'Close card', 'aria-label': 'Close card', text: '×' });
     x.addEventListener('click', (e) => { e.stopPropagation(); closeCard(); });
     chead.appendChild(x);

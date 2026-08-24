@@ -1258,6 +1258,11 @@ class DesignServer {
     if (r.status < 300 && sub == '/commit') {
       _broadcastDial('commit', r.json);
     }
+    // Selection handoff (slice 7): the studio plugin listens for these and
+    // writes the pointer line into the composer draft.
+    if (r.status < 300 && sub == '/selection' && method == 'POST') {
+      _broadcastDial('selection', r.json);
+    }
   }
 
   void _openDialEventStream(HttpRequest req) {
