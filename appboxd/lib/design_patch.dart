@@ -394,6 +394,7 @@ CmdResult patchMain(List<String> args) {
   String? text;
   String? elTarget;
   String? usageError;
+  final tokens = <String, String?>{};
   for (var i = 0; i < args.length; i++) {
     final a = args[i];
     String? take() => ++i < args.length ? args[i] : null;
@@ -423,6 +424,15 @@ CmdResult patchMain(List<String> args) {
       final v = take();
       if (v == null) usageError = '--el needs a data-el value';
       if (v != null) elTarget = v;
+    } else if (a == '--token') {
+      final v = take();
+      final eq = v?.indexOf('=') ?? -1;
+      if (eq < 1) usageError = '--token needs name=value';
+      if (eq >= 1) tokens[v!.substring(0, eq)] = v.substring(eq + 1);
+    } else if (a == '--rm-token') {
+      final v = take();
+      if (v == null) usageError = '--rm-token needs a name';
+      if (v != null) tokens[v] = null;
     } else if (a.startsWith('--')) {
       usageError = 'unknown flag $a';
     } else {
@@ -430,10 +440,12 @@ CmdResult patchMain(List<String> args) {
     }
   }
   final edits = PatchEdits(attrs: attrs, style: style, text: text);
+  final tokenOnly = tokens.isNotEmpty &&
+      attrs.isEmpty && style.isEmpty && text == null && elTarget == null;
   if (usageError != null ||
-      (elTarget == null && positional.length != 2) ||
+      (elTarget == null && !tokenOnly && positional.length != 2) ||
       (elTarget != null && positional.length != 1) ||
-      edits.isEmpty) {
+      (edits.isEmpty && !tokenOnly)) {
     return CmdResult(2, stderrLines: [
       ?usageError,
       'usage: appbox design patch <artifactDir> <data-arxa-id> '
@@ -447,6 +459,53 @@ CmdResult patchMain(List<String> args) {
   if (!dir.existsSync()) {
     return CmdResult(2,
         stderrLines: ['appbox design patch: no such dir: ${positional[0]}']);
+  }
+  // ── TOKEN SSOT (2026-08-24): token ops land in the base :root of
+  // ui/styles/common/tokens.css — media-query redefinitions stay alone.
+  // Works with or without an element target: tokens are document-level.
+  if (tokens.isNotEmpty) {
+    final candidates = [
+      p.join(dir.path, 'ui', 'styles', 'common', 'tokens.css'),
+    ];
+    File? css;
+    for (final c in candidates) {
+      if (File(c).existsSync()) { css = File(c); break; }
+    }
+    css ??= dir
+        .listSync(recursive: true)
+        .whereType<File>()
+        .firstWhere((f) => f.path.endsWith('.css') &&
+            f.readAsStringSync().contains(':root'), orElse: () => null as File);
+    if (css == null) {
+      return CmdResult(5, stderrLines: [
+        'appbox design patch: no tokens.css / :root stylesheet found under '
+            '${dir.path}'
+      ]);
+    }
+    var cssSrc = css.readAsStringSync();
+    final rootAt = cssSrc.indexOf(':root');
+    final braceAt = cssSrc.indexOf('{', rootAt);
+    final closeAt = cssSrc.indexOf('}', braceAt);
+    var block = cssSrc.substring(braceAt + 1, closeAt);
+    var touched = 0;
+    for (final t in tokens.entries) {
+      final name = t.key.startsWith('--') ? t.key : '--' + t.key;
+      final lineRe = RegExp('$name\\s*:[^;]*;');
+      if (t.value == null) {
+        block = block.replaceFirstMapped(lineRe, (_) => '');
+      } else if (lineRe.hasMatch(block)) {
+        block = block.replaceFirst(lineRe, '$name: ${t.value};');
+      } else {
+        block = '\n  $name: ${t.value};' + block;
+      }
+      touched++;
+    }
+    css.writeAsStringSync(
+        cssSrc.substring(0, braceAt + 1) + block + cssSrc.substring(closeAt));
+    final rel = p.split(p.relative(css.path, from: dir.path)).join('/');
+    return CmdResult(0, stdoutLines: [
+      'routed $touched token op(s) -> $rel (base :root)'
+    ]);
   }
   final id = elTarget ?? positional[1];
   final attr = elTarget != null ? 'data-el' : 'data-arxa-id';

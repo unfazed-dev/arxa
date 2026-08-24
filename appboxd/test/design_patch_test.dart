@@ -236,4 +236,40 @@ void main() {
       }
     });
   });
+  group('token SSOT routing (2026-08-24)', () {
+    test('--token rewrites the base :root only; media blocks untouched', () {
+      final dir = Directory.systemTemp.createTempSync('patch_test_tok');
+      try {
+        Directory('${dir.path}/ui/styles/common').createSync(recursive: true);
+        const css = ':root {\n  --red: #DB5C59;\n  --beige: #ECE4DA;\n}\n'
+            ' @media (max-width: 1024px) { :root { --red: #FF0000; } }';
+        File('${dir.path}/ui/styles/common/tokens.css').writeAsStringSync(css);
+        final res = patchMain(
+            [dir.path, '--token', '--red=#00FF00', '--rm-token', '--beige']);
+        expect(res.exitCode, 0, reason: res.stderrLines.join('; '));
+        final out = File('${dir.path}/ui/styles/common/tokens.css')
+            .readAsStringSync();
+        expect(out, contains('--red: #00FF00;'));
+        expect(out, isNot(contains('--beige')));
+        expect(out, contains('--red: #FF0000;')); // media block untouched
+      } finally {
+        dir.deleteSync(recursive: true);
+      }
+    });
+
+    test('--token inserts a brand-new custom property', () {
+      final dir = Directory.systemTemp.createTempSync('patch_test_tok2');
+      try {
+        Directory('${dir.path}/ui/styles/common').createSync(recursive: true);
+        File('${dir.path}/ui/styles/common/tokens.css')
+            .writeAsStringSync(':root {\n  --red: #DB5C59;\n}');
+        final res = patchMain([dir.path, '--token', '--accent=#123456']);
+        expect(res.exitCode, 0);
+        expect(File('${dir.path}/ui/styles/common/tokens.css')
+            .readAsStringSync(), contains('--accent: #123456;'));
+      } finally {
+        dir.deleteSync(recursive: true);
+      }
+    });
+  });
 }
