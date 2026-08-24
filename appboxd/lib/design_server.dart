@@ -1200,7 +1200,13 @@ class DesignServer {
     req.response.write(jsonEncode(r.json));
     await req.response.close();
     // Broadcast AFTER the answer so the writer's own repaint races nothing.
+    // MUTATIONS ONLY: a GET /pins broadcast made every subscriber refetch,
+    // and that refetch broadcast again — a self-sustaining storm (measured
+    // 2026-08-24: 6 pins GETs per rung within seconds of boot) that held the
+    // browser's per-host socket pool busy enough to starve real edits and
+    // leave sibling rungs stale.
     if (r.status < 300 &&
+        method != 'GET' &&
         (sub == '/pins' || sub == '/pins/status' || sub == '/pins/reply')) {
       _broadcastDial();
     }

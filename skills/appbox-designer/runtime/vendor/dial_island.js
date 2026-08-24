@@ -307,13 +307,24 @@
       return null;
     }
   }
+  // One read in flight at a time: pins SSE frames can land while a previous
+  // read is still out, and stacked reads multiply connection pressure for no
+  // newer truth (the server broadcasts on mutations only — a read loop here
+  // once kept every rung's socket pool busy enough to starve edits).
+  let pinsLoading = false;
   async function loadPins() {
-    const r = await api('GET', '/pins');
-    if (r && r.pins) {
-      S.pins = r.pins;
-      renderPins();
-      if (S.panel === 'feedback') renderPanelBody();
-      updateBadge();
+    if (pinsLoading) return;
+    pinsLoading = true;
+    try {
+      const r = await api('GET', '/pins');
+      if (r && r.pins) {
+        S.pins = r.pins;
+        renderPins();
+        if (S.panel === 'feedback') renderPanelBody();
+        updateBadge();
+      }
+    } finally {
+      pinsLoading = false;
     }
   }
 

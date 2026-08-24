@@ -250,5 +250,26 @@ void main() {
       await res.detachSocket().then((s) => s.destroy());
       http.close();
     });
+
+    test('reads do NOT broadcast (a GET /pins frame storm starved the pool)', () async {
+      final http = HttpClient();
+      final req = await http.getUrl(Uri.parse('$base/__dial/events'));
+      final res = await req.close();
+      final chunks = <String>[];
+      res.transform(utf8.decoder).listen(chunks.add);
+      // Let the subscription register, then READ repeatedly — the 2026-08-24
+      // storm: GET /pins broadcast a 'pins' frame, every island refetched,
+      // each refetch broadcast again.
+      await Future<void>.delayed(const Duration(milliseconds: 150));
+      for (var i = 0; i < 3; i++) {
+        final (status, _) = await _req('GET', '$base/__dial/pins');
+        expect(status, 200);
+      }
+      await Future<void>.delayed(const Duration(milliseconds: 700));
+      expect(chunks.join().contains('event: dial'), isFalse,
+          reason: 'GET /pins must stay silent — only mutations broadcast');
+      await res.detachSocket().then((s) => s.destroy());
+      http.close();
+    });
   });
 }
