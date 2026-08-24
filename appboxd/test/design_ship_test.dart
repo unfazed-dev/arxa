@@ -156,18 +156,77 @@ void main() {
   });
 
   group('deploy gates (slice 6)', () {
-    test('blockers name every missing prerequisite', () async {
+    test('blockers name missing prerequisites; wrangler resolves via npx',
+        () async {
+      // PATH wrangler fails, npx answers — the npx-resolution integration
+      // (operator, 2026-08-24) means a missing global is NOT a blocker.
       final ship = DialShip(
         repoDir: '/repo',
         env: const {},
-        run: (cmd, args) async => const ShipProc(1, '', 'not found'),
+        run: (cmd, args) async {
+          if (cmd == 'wrangler') return const ShipProc(1, '', 'not found');
+          if (cmd == 'npx') return const ShipProc(0, '4.125.0', '');
+          return const ShipProc(1, '', '');
+        },
       );
       final blockers = await ship.deployBlockers('/art');
-      expect(blockers, hasLength(4));
+      expect(blockers, hasLength(3));
       expect(blockers.join(' '), contains('design eject'));
       expect(blockers.join(' '), contains('CLOUDFLARE_API_TOKEN'));
       expect(blockers.join(' '), contains('ARXA_PAGES_PROJECT'));
-      expect(blockers.join(' '), contains('wrangler'));
+      expect(blockers.join(' '), isNot(contains('wrangler')));
+    });
+
+    test('wrangler unresolvable at all is a named blocker', () async {
+      final ship = DialShip(
+        repoDir: '/repo',
+        env: const {
+          'CLOUDFLARE_API_TOKEN': 'x',
+          'CLOUDFLARE_ACCOUNT_ID': 'a',
+          'ARXA_PAGES_PROJECT': 'p',
+        },
+        run: (cmd, args) async => const ShipProc(1, '', 'not found'),
+      );
+      final tmp = Directory.systemTemp.createTempSync('dz');
+      addTearDown(() => tmp.deleteSync(recursive: true));
+      Directory('${tmp.path}/eject').createSync();
+      final blockers = await ship.deployBlockers(tmp.path);
+      expect(blockers.join(' '), contains('unresolvable'));
+    });
+
+    test('deploy happy path rides the npx resolution chain', () async {
+      final calls = <String>[];
+      final tmp = Directory.systemTemp.createTempSync('deploy_npx');
+      addTearDown(() => tmp.deleteSync(recursive: true));
+      Directory('${tmp.path}/eject').createSync();
+      final ship = DialShip(
+        repoDir: '/repo',
+        env: const {
+          'CLOUDFLARE_API_TOKEN': 'x',
+          'CLOUDFLARE_ACCOUNT_ID': 'a',
+          'ARXA_PAGES_PROJECT': 'domka-design',
+        },
+        run: (cmd, args) async {
+          calls.add('$cmd ${args.join(' ')}');
+          if (cmd == 'wrangler') return const ShipProc(1, '', 'not found');
+          if (cmd == 'npx' && args.contains('--version')) {
+            return const ShipProc(0, '4.125.0', '');
+          }
+          if (cmd == 'npx') {
+            return const ShipProc(
+                0, '✨ https://domka-design.pages.dev', '');
+          }
+          return const ShipProc(0, '');
+        },
+      );
+      final r = await ship.deploy(artifactDir: tmp.path, statusFn: () async => {
+            'branch': 'main', 'dirty': 0, 'pr': null,
+          });
+      expect(r['deployed'], 'https://domka-design.pages.dev');
+      expect(calls.any((c) =>
+          c.startsWith('npx --yes wrangler pages deploy') &&
+          c.contains('--project-name domka-design')), isTrue);
+      expect(calls.any((c) => c.contains('--force')), isFalse);
     });
 
     test('deploy happy path runs pages deploy with dir + project', () async {

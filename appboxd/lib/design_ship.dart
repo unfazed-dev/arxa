@@ -229,9 +229,30 @@ class DialShip {
   //   - CLOUDFLARE_API_TOKEN + CLOUDFLARE_ACCOUNT_ID must be ambient
   //     (server-side secrets; the browser never sees them)
   //   - ARXA_PAGES_PROJECT names the operator-owned Pages project
-  //   - wrangler must be on PATH
+  //   - wrangler resolves — PATH first, then `npx --yes wrangler` (the
+  //     operator's chosen integration, 2026-08-24: no global install
+  //     anywhere; the resolution chain IS the integration)
   // The pipeline gate (no open PR, on main, clean) is enforced by the
   // caller combining status() with deployReady() — both re-checked here.
+
+  /// Resolved wrangler invocation: ('wrangler', args) when a wrangler
+  /// sits on PATH, else ('npx', ['--yes', 'wrangler', ...args]). Probed
+  /// once per instance; null when neither path works.
+  String? _wranglerMode;
+  Future<(String, List<String>)?> _wr(List<String> args) async {
+    if (_wranglerMode == null) {
+      final direct = await run('wrangler', ['--version']);
+      _wranglerMode = direct.exit == 0 ? 'path' : 'npx';
+      if (_wranglerMode == 'npx') {
+        // npx must itself resolve (node present) or the gate blocks.
+        final viaNpx = await run('npx', ['--yes', 'wrangler', '--version']);
+        if (viaNpx.exit != 0) return null;
+      }
+    }
+    return _wranglerMode == 'path'
+        ? ('wrangler', args)
+        : ('npx', ['--yes', 'wrangler', ...args]);
+  }
 
   Future<List<String>> deployBlockers(String artifactDir) async {
     final blockers = <String>[];
@@ -249,9 +270,9 @@ class DialShip {
       blockers.add('ARXA_PAGES_PROJECT not set (the operator-owned Pages '
           'project name)');
     }
-    final w = await run('wrangler', ['--version']);
-    if (w.exit != 0) {
-      blockers.add('wrangler not found on the design server PATH');
+    if (await _wr(['--version']) == null) {
+      blockers.add('wrangler unresolvable — neither on PATH nor via npx '
+          '(is node installed for the design server?)');
     }
     return blockers;
   }
@@ -279,10 +300,14 @@ class DialShip {
       throw const ShipRefusal('dirty tree — Branch+PR the edits first');
     }
     final dir = _deployDir(artifactDir)!;
-    final r = await run('wrangler', [
+    final wr = await _wr([
       'pages', 'deploy', dir, '--commit-dirty',
       '--project-name', env['ARXA_PAGES_PROJECT']!,
     ]);
+    if (wr == null) {
+      throw const ShipRefusal('wrangler unresolvable at deploy time');
+    }
+    final r = await run(wr.$1, wr.$2);
     if (r.exit != 0) {
       throw ShipRefusal('wrangler failed: ${r.err.trim()}');
     }

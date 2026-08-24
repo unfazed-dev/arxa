@@ -163,7 +163,7 @@
     '#dock.left .verb .tip{right:auto;left:52px}',
     '@media (prefers-reduced-motion:reduce){.verb{transition:none!important}',
     '  #dock.open .verb{transition-delay:0s!important}}',
-    '.nomotion *{transition:none!important;animation:none!important}',
+    ':host(.nomotion) *{transition:none!important;animation:none!important}',
     /* the tray (glass bottom sheet — 19-decision rework 2026-08-24) */
     '#tray{position:fixed;left:0;right:0;bottom:0;z-index:25;display:none;',
     '  flex-direction:column;pointer-events:auto;color:#FFFCF0;',
@@ -1843,7 +1843,7 @@
     host.style.setProperty('--tblur', TWEAK.blur + 'px');
     host.style.setProperty('--glow', String(TWEAK.glow));
     host.style.setProperty('--trayrad', TWEAK.rad + 'px');
-    root.classList.toggle('nomotion', !TWEAK.motion);
+    host.classList.toggle('nomotion', !TWEAK.motion);
   }
 
   // ── the tray (Studio): glass bottom sheet, 5-slide snap carousel ──────
@@ -2074,7 +2074,7 @@
     sw.addEventListener('click', () => {
       TWEAK.motion = !TWEAK.motion;
       sw.classList.toggle('on', TWEAK.motion);
-      root.classList.toggle('nomotion', !TWEAK.motion);
+      host.classList.toggle('nomotion', !TWEAK.motion);
       saveTweakPrefs();
     });
     swRow.appendChild(sw);
