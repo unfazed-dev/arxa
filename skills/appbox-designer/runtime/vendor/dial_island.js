@@ -1358,7 +1358,7 @@
   }
   async function loadDraft() {
     if (S.mode !== 'author') return false;
-    const r = await api('GET', '/draft');
+    const r = await probeCapable('/draft');
     // Capability, not content: {"draft":null} is a REAL author answer (no
     // draft saved yet) and must boot the dock. Only the server's quiet
     // mirror marker or a dead network means this context has no dial.
@@ -1793,6 +1793,24 @@
       console.info('[arxa dial] unavailable in this context — view-only mirror');
     } catch (_) {}
   }
+  // A boot can collide with a design-server restart or a stalled renderer,
+  // and one failed probe used to mute the rung FOREVER while the server sat
+  // perfectly healthy ("unavailable although available"). Retry with
+  // backoff across ~25s before concluding mirror; the server answers
+  // refused reads instantly, so genuine mirrors just burn a few quiet GETs.
+  const CAP_RETRY_WAITS = [250, 500, 1000, 2000, 4000, 8000, 8000];
+  function probeCapable(sub) {
+    let step = -1;
+    const attempt = () => {
+      step++;
+      return api('GET', sub).then((r) => {
+        if ((r != null && r.mirror !== true) || step >= CAP_RETRY_WAITS.length) return r;
+        return new Promise((res) => setTimeout(res, CAP_RETRY_WAITS[step]))
+            .then(attempt);
+      });
+    };
+    return attempt();
+  }
   function finishBoot() {
     document.body.appendChild(host);
     applyShade();
@@ -1807,7 +1825,7 @@
     return;
   }
   if (S.mode === 'guest') {
-    api('GET', '/pins').then((r) => {
+    probeCapable('/pins').then((r) => {
       if (!(r && r.pins)) { mirrorNote(); return; }
       S.pins = r.pins;
       finishBoot();
