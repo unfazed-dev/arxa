@@ -153,13 +153,16 @@
     '  transition:transform .22s cubic-bezier(.34,1.56,.64,1),opacity .18s}',
     '.verb svg{width:20px;height:20px}',
     '.verb.on{background:#0891b2}',
-    '#dock.open .verb{transform:translate(-50%,-50%) scale(1);opacity:1}',
+    '#dock.open .verb{transform:translate(-50%,-50%) scale(1);opacity:1;',
+    '  transition-delay:calc(var(--i,0)*40ms)}',
     '.verb .tip{position:absolute;right:52px;top:50%;',
     '  transform:translateY(-50%);background:#0b0b10;color:#FFFCF0;',
     '  font-size:11px;padding:3px 8px;border-radius:4px;white-space:nowrap;',
     '  opacity:0;pointer-events:none;transition:opacity .15s}',
     '.verb:hover .tip{opacity:1}',
     '#dock.left .verb .tip{right:auto;left:52px}',
+    '@media (prefers-reduced-motion:reduce){.verb{transition:none!important}',
+    '  #dock.open .verb{transition-delay:0s!important}}',
     /* the panel */
     '#panel{position:fixed;bottom:92px;right:24px;width:320px;max-height:',
     '  min(520px,70vh);background:#14141c;color:#FFFCF0;border-radius:12px;',
@@ -411,11 +414,21 @@
     const full = n > 7;
     const spacing = full ? 13.5 : 17;
     const start = S.dockSide === 'right' ? -178 : -2 - (n - 1) * spacing;
-    const R = full ? 190 : 150;
+    // HALF RADIUS (operator, 2026-08-24): 190 -> 95, 150 -> 75. Honest
+    // trade-off flagged for the look-over: neighbor chords halve too
+    // (~22px at 13.5deg) while buttons stay 44px, so verbs overlap at this
+    // radius. No-overlap variants if wanted: smaller verbs, dual-radius
+    // rings, or a column fan.
+    const R = full ? 95 : 75;
     verbOrder.forEach((el, i) => {
       const rad = ((start + i * spacing) * Math.PI) / 180;
       el.style.left = 50 + (Math.cos(rad) * R * 100) / 56 + '%';
       el.style.top = 50 + (Math.sin(rad) * R * 100) / 56 + '%';
+      // Stagger index: the OPEN state delays each verb by --i * 40ms
+      // (MDN transition-delay: the wait between a value change and the
+      // transition start). The closed state keeps the base 0s delay so
+      // the fan collapses as one, not in sequence.
+      el.style.setProperty('--i', String(i));
     });
   }
   layoutFan();
