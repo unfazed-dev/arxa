@@ -32,6 +32,8 @@
 /// that lands with the Publish slice.
 library;
 
+import 'design_media.dart';
+
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
@@ -591,7 +593,8 @@ class DialApi {
       {required this.store,
       required this.artifact,
       this.draftStore,
-      this.artifactDir});
+      this.artifactDir,
+      this.media});
 
   final DialStore store;
 
@@ -605,6 +608,10 @@ class DialApi {
   /// The artifact's absolute dir — reported by /commit so the studio agent
   /// knows where to run `appbox design patch`.
   final String? artifactDir;
+
+  /// The media proxy (slice 4, 2026-08-24): server-side Unsplash/Pexels
+  /// search + copy-into-artifact. Null disables the routes (503).
+  final DialMediaProxy? media;
 
   /// [grant] non-null means the caller arrived on a Share Link — a guest
   /// scoped to ITS artifact (a link minted for artifact A reads nothing on
@@ -665,6 +672,26 @@ class DialApi {
           return const DialResponse(403, {'error': 'author only'});
         }
         return await _commitDraft();
+      }
+      // The media proxy (slice 4): author-only — provider keys are
+      // server-held secrets and the artifact tree is the author's.
+      if (sub == '/media/search' && method == 'POST') {
+        if (caller != DialCaller.author) {
+          return const DialResponse(403, {'error': 'author only'});
+        }
+        return await _mediaSearch(body);
+      }
+      if (sub == '/media/copy' && method == 'POST') {
+        if (caller != DialCaller.author) {
+          return const DialResponse(403, {'error': 'author only'});
+        }
+        return await _mediaCopy(body);
+      }
+      if (sub == '/media/assets' && method == 'GET') {
+        if (caller != DialCaller.author) {
+          return const DialResponse(403, {'error': 'author only'});
+        }
+        return await _mediaAssets();
       }
       return DialResponse(404, {'error': 'no such dial route: $sub'});
     } on FormatException catch (e) {
@@ -770,6 +797,71 @@ class DialApi {
           'and the tokens to the token sheet; on success '
           'DELETE /__dial/draft',
     });
+  }
+
+  Future<DialResponse> _mediaSearch(Object? body) async {
+    final m = _map(body, '/media/search');
+    final proxy = media;
+    if (proxy == null || !proxy.enabled) {
+      return const DialResponse(503, {
+        'error': 'media proxy off — set UNSPLASH_ACCESS_KEY / PEXELS_API_KEY '
+            'in the design server environment'
+      });
+    }
+    if (m['q'] is! String || (m['q'] as String).trim().isEmpty) {
+      return const DialResponse(400, {'error': 'q is required'});
+    }
+    final q = _str(m, 'q', DialMediaProxy.maxQuery);
+    final kind = m['kind'] == 'video' ? 'video' : 'photo';
+    final hits = await proxy.search(q, kind);
+    return DialResponse(200, {
+      'results': [for (final h in hits) h.toJson()],
+    });
+  }
+
+  Future<DialResponse> _mediaCopy(Object? body) async {
+    final m = _map(body, '/media/copy');
+    final proxy = media;
+    if (proxy == null || !proxy.enabled) {
+      return const DialResponse(503, {'error': 'media proxy off'});
+    }
+    final dir = artifactDir;
+    if (dir == null) {
+      return const DialResponse(503, {'error': 'no artifact dir'});
+    }
+    if (m['url'] is! String || m['name'] is! String) {
+      return const DialResponse(400,
+          {'error': 'url and name are required'});
+    }
+    final url = _str(m, 'url', 2048);
+    final name = _str(m, 'name', 120);
+    final credit = m['credit'] is String ? _str(m, 'credit', 120) : 'unknown';
+    final provider =
+        m['provider'] is String ? _str(m, 'provider', 24) : 'unsplash';
+    try {
+      final path = await proxy.copyInto(
+        url: url,
+        nameHint: name,
+        credit: credit,
+        provider: provider,
+        artifactDir: dir,
+      );
+      return DialResponse(201, {'path': path});
+    } on MediaRefusal catch (e) {
+      return DialResponse(400, {'error': e.message});
+    }
+  }
+
+  Future<DialResponse> _mediaAssets() async {
+    final proxy = media;
+    if (proxy == null) {
+      return const DialResponse(503, {'error': 'media proxy off'});
+    }
+    final dir = artifactDir;
+    if (dir == null) {
+      return const DialResponse(503, {'error': 'no artifact dir'});
+    }
+    return DialResponse(200, {'assets': proxy.listAssets(dir)});
   }
 
   Future<DialResponse> _listPins() async {

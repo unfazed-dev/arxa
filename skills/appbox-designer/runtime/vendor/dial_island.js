@@ -1244,6 +1244,13 @@
         // Text lands only on text-editable targets; composite instances are
         // the serve-time overlay's job (it refuses them loudly, by design).
         if (p.text != null && isTextEditable(el)) el.textContent = p.text;
+        if (p.attrs) {
+          for (const name of Object.keys(p.attrs)) {
+            const v = p.attrs[name];
+            if (v == null) el.removeAttribute(name);
+            else el.setAttribute(name, v);
+          }
+        }
       }
     }
   }
@@ -1336,6 +1343,15 @@
     return [...document.querySelectorAll('[data-arxa-id="' + key + '"]')];
   }
 
+  function setAttrProp(key, name, value) {
+    const p = patchFor(key);
+    p.attrs[name] = value || null; // empty clears the attribute
+    for (const el of targetsForKey(key)) {
+      if (value) el.setAttribute(name, value);
+      else el.removeAttribute(name);
+    }
+    scheduleSave();
+  }
   function setStyleProp(key, prop, value) {
     const p = patchFor(key);
     p.style[prop] = value || null; // empty clears the property (removal)
@@ -1507,6 +1523,68 @@
       body.appendChild(row);
     }
 
+    // Media section (slice 4): img/video elements search Unsplash/Pexels
+    // server-side (keys never reach the browser) and pick swaps the src
+    // live — the committed op is an attrs src write through patchFor.
+    if (sel.group === 'media' || sel.el.tagName === 'IMG' || sel.el.tagName === 'VIDEO') {
+      body.appendChild(h('div', { class: 'sect', text: 'Media' }));
+      const isVideo = sel.el.tagName === 'VIDEO';
+      const mrow = h('div', { class: 'facet' });
+      const q = h('input', { type: 'text', placeholder: isVideo ? 'search Pexels video…' : 'search Unsplash + Pexels…' });
+      const go = h('button', { class: 'btn', text: 'Find' });
+      mrow.appendChild(q);
+      mrow.appendChild(go);
+      body.appendChild(mrow);
+      const grid = h('div', { style: 'display:flex;flex-wrap:wrap;gap:6px;padding:6px 10px' });
+      body.appendChild(grid);
+      const creditLine = h('div', { class: 'idline' });
+      body.appendChild(creditLine);
+      go.addEventListener('click', async () => {
+        grid.textContent = '';
+        creditLine.textContent = 'searching…';
+        const r = await api('POST', '/media/search', { q: q.value.trim(), kind: isVideo ? 'video' : 'photo' });
+        grid.textContent = '';
+        if (!r || !r.results) { creditLine.textContent = (r && r.error) || 'search failed'; return; }
+        if (!r.results.length) { creditLine.textContent = 'no results'; return; }
+        r.results.forEach((hit) => {
+          const b = h('button', {
+            title: hit.credit + ' · ' + hit.provider,
+            style: 'width:64px;height:64px;border-radius:8px;overflow:hidden;padding:0;border:1px solid #2a2a35;flex:none',
+          });
+          const im = h('img', { src: hit.thumb, alt: hit.credit, style: 'width:100%;height:100%;object-fit:cover;display:block' });
+          b.appendChild(im);
+          b.addEventListener('click', async () => {
+            creditLine.textContent = 'copying…';
+            const c = await api('POST', '/media/copy', {
+              url: hit.full, name: hit.provider + '-' + hit.id + (isVideo ? '.mp4' : '.jpg'),
+              credit: hit.credit, provider: hit.provider,
+            });
+            if (!c || !c.path) { creditLine.textContent = (c && c.error) || 'copy failed'; return; }
+            setAttrProp(sel.key, 'src', c.path);
+            if (isVideo && hit.poster) setAttrProp(sel.key, 'poster', hit.poster);
+            creditLine.textContent = '✓ ' + c.path + ' — ' + hit.credit;
+          });
+          grid.appendChild(b);
+        });
+        creditLine.textContent = r.results.length + ' results — tap to swap in';
+      });
+      // From assets: what the artifact already holds, one tap to reuse.
+      const assetsRow = h('div', { class: 'facet' });
+      const loadAssets = h('button', { class: 'btn ghost', text: 'From assets' });
+      loadAssets.addEventListener('click', async () => {
+        const r = await api('GET', '/media/assets');
+        grid.textContent = '';
+        if (!r || !r.assets) { creditLine.textContent = (r && r.error) || 'asset list failed'; return; }
+        if (!r.assets.length) { creditLine.textContent = 'no local assets yet'; return; }
+        r.assets.forEach((path) => {
+          const b = h('button', { title: path, text: path.split('/').pop(), style: 'font-size:10px;padding:4px 6px;border-radius:6px;border:1px solid #2a2a35;flex:none' });
+          b.addEventListener('click', () => { setAttrProp(sel.key, 'src', path); creditLine.textContent = '✓ ' + path; });
+          grid.appendChild(b);
+        });
+      });
+      assetsRow.appendChild(loadAssets);
+      body.appendChild(assetsRow);
+    }
     body.appendChild(h('div', { class: 'sect', text: 'CSS escape hatch' }));
     const css = h('textarea', { rows: '3' });
     css.placeholder = 'prop: value; prop: value;';

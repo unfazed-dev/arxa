@@ -24,6 +24,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:appboxd/design_dial.dart';
+import 'package:appboxd/design_media.dart';
 import 'package:appboxd/design_draft.dart';
 import 'package:appboxd/design_server/browser_trust.dart';
 import 'package:appboxd/design_server/l10n.dart';
@@ -446,7 +447,11 @@ class DesignServer {
         store: srv.dialStore,
         artifact: srv._dialArtifact,
         draftStore: srv.draftStore,
-        artifactDir: srv.artifactDir);
+        artifactDir: srv.artifactDir,
+        media: DialMediaProxy(
+          unsplashKey: Platform.environment['UNSPLASH_ACCESS_KEY'] ?? '',
+          pexelsKey: Platform.environment['PEXELS_API_KEY'] ?? '',
+        ));
     if (dial) {
       stderr.writeln('[design-server] dial store: ${srv.dialStore.kind}'
           '${srv.dialStore.kind == 'memory' ? ' (set APPBOX_SUPABASE_URL + APPBOX_SUPABASE_SERVICE_KEY, or ~/.appbox/supabase, for the shared store)' : ''}');
