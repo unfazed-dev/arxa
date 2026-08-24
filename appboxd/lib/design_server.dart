@@ -25,6 +25,7 @@ import 'dart:io';
 
 import 'package:appboxd/design_dial.dart';
 import 'package:appboxd/design_media.dart';
+import 'package:appboxd/design_ship.dart';
 import 'package:appboxd/design_draft.dart';
 import 'package:appboxd/design_server/browser_trust.dart';
 import 'package:appboxd/design_server/l10n.dart';
@@ -443,6 +444,16 @@ class DesignServer {
       ..draftStore = dial
           ? (draftStore ?? DraftFileStore(artifactDir: artifactDir))
           : null;
+    // The Ship channel (slice 5): the repo root behind the artifact, when
+    // one exists — a non-repo artifact simply ships 503 on /ship/*.
+    String? shipRepoDir;
+    {
+      final toplevel = Process.runSync(
+          'git', ['-C', artifactDir, 'rev-parse', '--show-toplevel']);
+      if (toplevel.exitCode == 0) {
+        shipRepoDir = (toplevel.stdout as String).trim();
+      }
+    }
     srv.dialApi = DialApi(
         store: srv.dialStore,
         artifact: srv._dialArtifact,
@@ -451,7 +462,10 @@ class DesignServer {
         media: DialMediaProxy(
           unsplashKey: Platform.environment['UNSPLASH_ACCESS_KEY'] ?? '',
           pexelsKey: Platform.environment['PEXELS_API_KEY'] ?? '',
-        ));
+        ),
+        ship: shipRepoDir == null
+            ? null
+            : DialShip(repoDir: shipRepoDir, run: ioRunner(shipRepoDir)));
     if (dial) {
       stderr.writeln('[design-server] dial store: ${srv.dialStore.kind}'
           '${srv.dialStore.kind == 'memory' ? ' (set APPBOX_SUPABASE_URL + APPBOX_SUPABASE_SERVICE_KEY, or ~/.appbox/supabase, for the shared store)' : ''}');

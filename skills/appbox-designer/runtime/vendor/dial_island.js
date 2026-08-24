@@ -1844,8 +1844,8 @@
       ctaBtn.title = 'Mint a client link (view + comment, 30 days)';
     } else if (id === 'ship') {
       ctaBtn.textContent = 'Deploy';
-      ctaBtn.disabled = true;
-      ctaBtn.title = 'Lands with the Ship slice — wrangler to Cloudflare';
+      ctaBtn.disabled = true; // slice 6 (wrangler) wires the verb itself
+      ctaBtn.title = 'Deploy (wrangler → Cloudflare) lands with slice 6';
     } else {
       ctaBtn.className = 'off';
     }
@@ -1864,6 +1864,9 @@
     if (!S.tray) return;
     S.tray = currentSlideId();
     syncTrayChrome();
+    // Landing on Ship by swipe/dot needs the live pipeline read too —
+    // only openTray's direct-open path covered it before.
+    if (S.tray === 'ship') refreshShip();
   }, { passive: true });
 
   function renderTraySlide(id) {
@@ -1887,6 +1890,7 @@
     S.open = false;
     dialPark();
     list.forEach(([sid]) => renderTraySlide(sid));
+    if (S.tray === 'ship') refreshShip();
     const idx = list.findIndex((s) => s[0] === S.tray);
     requestAnimationFrame(() => {
       track.scrollLeft = idx * track.clientWidth;
@@ -2009,13 +2013,90 @@
     body.appendChild(alRow);
   }
 
-  // Ship slide: the pipeline surface. Slices 5-6 wire branch → PR → gates →
-  // one-tap pull/merge/close + the Deploy CTA; this round states that
-  // honestly instead of faking controls.
-  function renderShipBody(body) {
-    body.appendChild(h('div', { class: 'sect', text: 'Ship' }));
-    body.appendChild(h('div', { class: 'ctl', style: 'font-size:12.5px;line-height:1.5;color:#c8ccd4', text: 'The pipeline surface lands with the Ship slice: branch and PR open automatically, gates are watched live, and pull / rebase, merge, and close wait as one-tap verbs — automation up to the button, your finger on every irreversible edge.' }));
-    body.appendChild(h('div', { class: 'ctl', style: 'font-size:12.5px;line-height:1.5;color:#c8ccd4', text: 'Deploy will run wrangler to Cloudflare from the design server, enabled only when the pipeline allows it.' }));
+  // Ship slide (slice 5, 2026-08-24): automation up to the button. The
+  // status is live from the confined git+gh channel; Branch+PR is the
+  // automated prefix; Merge / Close / Pull & rebase are the one-tap
+  // irreversible verbs — the server re-enforces green before any merge.
+  let shipBusy = false;
+  async function shipVerb(sub, body) {
+    if (shipBusy) return;
+    shipBusy = true;
+    say('Ship: ' + sub + '…');
+    const r = await api('POST', sub, body || {});
+    shipBusy = false;
+    if (r && (r.error === undefined)) {
+      say(sub.replace('/ship/', '') + ' ✓');
+    } else {
+      say((r && r.error) || (sub + ' failed'));
+    }
+    await refreshShip();
+    return r;
+  }
+  async function refreshShip() {
+    const body = slideBodies.ship;
+    if (!body || !S.tray) return;
+    const r = await api('GET', '/ship/status');
+    renderShipBody(body, r);
+    updateTrayCta();
+  }
+  function renderShipBody(body, st) {
+    body.textContent = '';
+    if (!st) {
+      body.appendChild(h('div', { class: 'ctl', text: 'reading pipeline state…' }));
+      return;
+    }
+    if (st.error) {
+      body.appendChild(h('div', { class: 'ctl', style: 'color:#f59e0b', text: st.error }));
+      return;
+    }
+    body.appendChild(h('div', { class: 'sect', text: 'Pipeline' }));
+    const fact = (k, v) => body.appendChild(h('div', { class: 'facet' }, [
+      h('label', { text: k }),
+      h('span', { style: 'font-size:11.5px;color:#c8ccd4;word-break:break-all', text: String(v == null ? '—' : v) }),
+    ]));
+    fact('Repo', st.repo);
+    fact('Branch', st.branch);
+    fact('Dirty paths', st.dirty);
+    (st.log || []).slice(0, 3).forEach((l, i) => fact(i === 0 ? 'Latest' : ' ', l));
+    const pr = st.pr;
+    if (pr) {
+      body.appendChild(h('div', { class: 'sect', text: 'PR #' + pr.number + ' · ' + String(pr.state).toUpperCase() }));
+      fact('Title', pr.title);
+      fact('Branch', pr.head);
+      const checksTxt = !((pr.checks || []).length)
+        ? 'no checks reported'
+        : (pr.failing ? pr.failing + ' failing · ' : '') +
+          (pr.pending ? pr.pending + ' pending · ' : '') +
+          ((pr.checks || []).length - (pr.failing || 0) - (pr.pending || 0)) + ' passed';
+      fact('Checks', checksTxt);
+      const link = h('button', { class: 'stbtn', text: 'open on github ↗', title: pr.url });
+      link.addEventListener('click', () => { try { window.open(pr.url, '_blank'); } catch (_) {} });
+      body.appendChild(h('div', { class: 'facet' }, [link]));
+    }
+    const onMain = st.branch === 'main';
+    const canPr = onMain && !pr && st.dirty > 0;
+    const canMerge = !!(pr && pr.state === 'OPEN' && pr.mergeable && pr.green);
+    const canSync = !onMain || true; // sync also fast-forwards main after a merge
+    const mk = (label, enabled, fn, ghost, title) => {
+      const b = h('button', { class: 'btn' + (ghost ? ' ghost' : ''), text: label, title: title || '' });
+      if (!enabled) b.disabled = true;
+      else b.addEventListener('click', fn);
+      return b;
+    };
+    const row = h('div', { class: 'btnrow', style: 'flex-wrap:wrap;gap:6px' });
+    row.appendChild(mk(canPr ? 'Branch + PR (' + st.dirty + ' dirty)' : 'Branch + PR', canPr, async () => {
+      const title = 'design(dial): live edit batch';
+      const bodyTxt = 'Committed from the Design Dial (Ship slide). ' +
+        Object.keys(S.draft.patches).length + ' element patch keys pending in the draft overlay; ' +
+        'run the commit ops via the Edit slide CTA first if the draft is still uncommitted.';
+      await shipVerb('/ship/pr', { title, body: bodyTxt });
+    }, false, canPr ? '' : onMain ? (pr ? 'a PR is already open' : 'nothing dirty to ship') : 'not on main — merge or close first'));
+    row.appendChild(mk('Pull & rebase', canSync, () => shipVerb('/ship/sync'), true));
+    row.appendChild(mk('Merge · squash', canMerge, () => shipVerb('/ship/merge'), false,
+      canMerge ? 'green + mergeable — your tap merges' : 'enabled when checks are green and the PR is mergeable'));
+    row.appendChild(mk('Close PR', !!pr, () => shipVerb('/ship/close'), true));
+    body.appendChild(row);
+    body.appendChild(h('div', { class: 'ctl', style: 'font-size:11px;color:#9aa0ab', text: 'Automation up to the button: branch, PR and gate-watching are automatic; merge, close and deploy wait for your finger. Conflicts are never auto-resolved.' }));
   }
   // ── verbs ──────────────────────────────────────────────────────────────
   function onVerb(id, el) {

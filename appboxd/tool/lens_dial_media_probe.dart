@@ -1,6 +1,7 @@
 // Media probe (slice 4): the /media routes against the LIVE server with
 // REAL provider keys, plus the card's Media section rendering for a real
 // image element. Cleans up its own artifact writes.
+import 'dart:convert';
 import 'dart:io';
 import 'package:appboxd/cdp.dart';
 Future<dynamic> js(CdpSession tab, String e) => tab.evaluate(e);
@@ -153,10 +154,14 @@ Future<void> main() async {
   check(tab.consoleErrors.isEmpty, 'console clean (${tab.consoleErrors.length})');
   final f = File(abs);
   if (f.existsSync()) f.deleteSync();
+  // Prune credit rows whose file no longer exists; drop the ledger when
+  // empty. (The original condition was inverted and kept probe litter.)
   final credits = File('/Volumes/developer_ssd/Developer/totem_labs/clients/normal_is_boring/design/suczka-studio/assets/credits.json');
   if (credits.existsSync()) {
-    final txt = credits.readAsStringSync();
-    if (!txt.contains('lens-probe-')) credits.deleteSync(); // ours was the first entry set
+    final j = jsonDecode(credits.readAsStringSync()) as Map;
+    final media = (j['media'] as List? ?? []).where((e) => File('/Volumes/developer_ssd/Developer/totem_labs/clients/normal_is_boring/design/suczka-studio/' + (e as Map)['file']).existsSync()).toList();
+    if (media.isEmpty) { credits.deleteSync(); }
+    else { credits.writeAsStringSync(const JsonEncoder.withIndent('  ').convert({...j, 'media': media})); }
   }
   stdout.writeln(fails == 0 ? 'ALL PROBES PASS' : '$fails PROBES FAILED');
   await client.close();

@@ -33,6 +33,7 @@
 library;
 
 import 'design_media.dart';
+import 'design_ship.dart';
 
 import 'dart:async';
 import 'dart:convert';
@@ -594,7 +595,8 @@ class DialApi {
       required this.artifact,
       this.draftStore,
       this.artifactDir,
-      this.media});
+      this.media,
+      this.ship});
 
   final DialStore store;
 
@@ -612,6 +614,10 @@ class DialApi {
   /// The media proxy (slice 4, 2026-08-24): server-side Unsplash/Pexels
   /// search + copy-into-artifact. Null disables the routes (503).
   final DialMediaProxy? media;
+
+  /// The Ship channel (slice 5, 2026-08-24): confined git+gh. Author-only;
+  /// null (not a git repo) disables the routes (503).
+  final DialShip? ship;
 
   /// [grant] non-null means the caller arrived on a Share Link — a guest
   /// scoped to ITS artifact (a link minted for artifact A reads nothing on
@@ -692,6 +698,33 @@ class DialApi {
           return const DialResponse(403, {'error': 'author only'});
         }
         return await _mediaAssets();
+      }
+      // The Ship channel (slice 5): automation up to the button. Author
+      // only — guests never see pipeline state.
+      if (sub.startsWith('/ship/')) {
+        if (caller != DialCaller.author) {
+          return const DialResponse(403, {'error': 'author only'});
+        }
+        final s = ship;
+        if (s == null) {
+          return const DialResponse(
+              503, {'error': 'ship off — artifact is not inside a git repo'});
+        }
+        if (method == 'GET' && sub == '/ship/status') {
+          return DialResponse(200, await s.status());
+        }
+        if (method == 'POST' && sub == '/ship/pr') {
+          return await _shipPr(body, s);
+        }
+        if (method == 'POST' && sub == '/ship/merge') {
+          return await _shipVerb(s.merge);
+        }
+        if (method == 'POST' && sub == '/ship/close') {
+          return await _shipVerb(s.close);
+        }
+        if (method == 'POST' && sub == '/ship/sync') {
+          return await _shipVerb(s.sync);
+        }
       }
       return DialResponse(404, {'error': 'no such dial route: $sub'});
     } on FormatException catch (e) {
@@ -862,6 +895,35 @@ class DialApi {
       return const DialResponse(503, {'error': 'no artifact dir'});
     }
     return DialResponse(200, {'assets': proxy.listAssets(dir)});
+  }
+
+  Future<DialResponse> _shipPr(Object? body, DialShip s) async {
+    final m = _map(body, '/ship/pr');
+    if (m['title'] is! String || (m['title'] as String).trim().isEmpty) {
+      return const DialResponse(400, {'error': 'title is required'});
+    }
+    final dir = artifactDir;
+    if (dir == null) {
+      return const DialResponse(503, {'error': 'no artifact dir'});
+    }
+    final title = _str(m, 'title', 120);
+    final bodyText = m['body'] is String ? _str(m, 'body', 8000) : '';
+    try {
+      final r = await s.commitAndPr(
+          artifactDir: dir, title: title, body: bodyText);
+      return DialResponse(201, r);
+    } on ShipRefusal catch (ex) {
+      return DialResponse(409, {'error': ex.message});
+    }
+  }
+
+  Future<DialResponse> _shipVerb(
+      Future<Map<String, dynamic>> Function() verb) async {
+    try {
+      return DialResponse(200, await verb());
+    } on ShipRefusal catch (ex) {
+      return DialResponse(409, {'error': ex.message});
+    }
   }
 
   Future<DialResponse> _listPins() async {
