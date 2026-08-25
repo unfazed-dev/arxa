@@ -333,9 +333,18 @@
     '#chead .kchip{font-size:9.5px;font-weight:700;text-transform:uppercase;',
     '  letter-spacing:.04em;background:#2a2a35;color:#9aa0ab;',
     '  padding:2px 7px;border-radius:8px}',
-    '#chead .cclose{margin-left:auto;background:#2a2a35;color:#FFFCF0;',
+    '#chead .cclose{background:#2a2a35;color:#FFFCF0;',
     '  width:22px;height:22px;border-radius:50%;font-size:12px;',
     '  line-height:1;display:flex;align-items:center;justify-content:center}',
+    /* the track-back button (operator, 2026-08-26): one tap returns
+       the author to the selected element — scrolled away on this page
+       or stranded by a boosted navigation to another route. It takes
+       the right-push; the close button sits beside it. */
+    '#chead .cgo{margin-left:auto;background:transparent;',
+    '  color:rgba(243,246,238,.72);width:22px;height:22px;border-radius:50%;',
+    '  display:flex;align-items:center;justify-content:center;padding:0}',
+    '#chead .cgo svg{width:13px;height:13px}',
+    '#chead .cgo:hover{background:rgba(243,246,238,.16);color:rgb(243,246,238)}',
     '.cbody{overflow-y:auto;overscroll-behavior:contain;flex:1;',
     '  scrollbar-width:thin;scrollbar-color:rgba(43,54,29,.55) transparent}',
     '.row{padding:8px 10px;border-radius:8px;cursor:pointer;',
@@ -1327,7 +1336,22 @@
     if (S.inlineEditing != null) inlineEditEnd(true); // commit before switching
     clearSelOutline();
     hover.style.display = 'none'; // the hunt-freeze law starts clean: no stale box under the new selection
-    S.selected = { id: t.id, key: bindingFor(t.el, t.id), el: t.el, label: t.label, group: t.group };
+    const key = bindingFor(t.el, t.id);
+    const insts = targetsForKey(key);
+    S.selected = { id: t.id, key: key, el: t.el, label: t.label, group: t.group,
+      // track-back provenance (2026-08-26): the route the element
+      // lives on and WHICH instance it is — the button's cross-page
+      // tier restores by exactly this pair.
+      route: location.pathname, nth: Math.max(0, insts.indexOf(t.el)) };
+    // the track-back stash is the LIVE selection (2026-08-26): whoever
+    // navigates away and comes back to this route lands on the element
+    // again — restored once, then the intent is spent until the next
+    // selection rewrites it.
+    try {
+      sessionStorage.setItem('arxa-dial-trackback', JSON.stringify({
+        key: key, nth: S.selected.nth, route: S.selected.route,
+      }));
+    } catch (_) {}
     S.selOutline = t.el.style.outline;
     t.el.style.outline = '2px solid #f59e0b';
     renderHandles();
@@ -1601,6 +1625,35 @@
       }
     }
   }
+  // The track-back button's cross-page half. Two triggers: a fresh
+  // boot AND an htmx afterSwap — boosted navigation swaps the body
+  // without ever re-running this script, so the swap moment is the
+  // "boot" the restore rides. The stash is KEPT while the route
+  // doesn't match (the author roams other pages; nothing chases him)
+  // and SPENT the moment his own page restores the selection — once,
+  // never insisting again until a new selection rewrites it.
+  function maybeRestoreTrackback() {
+    let t = null;
+    try { t = JSON.parse(sessionStorage.getItem('arxa-dial-trackback') || 'null'); } catch (_) {}
+    if (!t || !t.key || !t.route || t.route !== location.pathname) return;
+    if (S.mode !== 'author') return;
+    if (S.selected && S.selected.key === t.key && S.card) return; // already there
+    const insts = targetsForKey(t.key);
+    if (!insts.length) return;
+    const el = insts[Math.min(t.nth || 0, insts.length - 1)];
+    if (!el || !el.isConnected) return;
+    if (!S.design) designOn();
+    centerElement(el);
+    const k = kindOf(el);
+    selectEl({
+      id: el.getAttribute('data-arxa-id'), el: el,
+      label: (el.getAttribute('data-el') || el.tagName.toLowerCase()) + ' · ' + k.kind,
+      group: k.group,
+    });
+    try { sessionStorage.removeItem('arxa-dial-trackback'); } catch (_) {}
+  }
+  document.body.addEventListener('htmx:afterSwap', () => maybeRestoreTrackback());
+
   async function loadDraft() {
     if (S.mode !== 'author') return false;
     const r = await probeCapable('/draft');
@@ -2522,6 +2575,13 @@
       tb.addEventListener('click', (e) => { e.stopPropagation(); setCardTab(tid); });
       chead.appendChild(tb);
     }
+    const go = h('button', {
+      class: 'cgo', title: 'Track back to the selected element',
+      'aria-label': 'Track back to the selected element',
+    });
+    go.innerHTML = ICONS.dial; // the crosshair
+    go.addEventListener('click', (e) => { e.stopPropagation(); trackBack(); });
+    chead.appendChild(go);
     const x = h('button', { class: 'cclose', title: 'Close card', 'aria-label': 'Close card', text: '×' });
     x.addEventListener('click', (e) => { e.stopPropagation(); closeCard(); });
     chead.appendChild(x);
@@ -2551,6 +2611,59 @@
     cardPin = null;
     card.classList.remove('open');
     dialPanelChanged();
+  }
+  // TRACK-BACK (operator, 2026-08-26): "i want to get back to the
+  // selected element from the floating card ... even if scrolled or
+  // navigated between pages". Three tiers, one button: the element is
+  // still in this document → center it (BOTH axes — this design
+  // scrolls horizontally); a same-page swap killed the node but the
+  // identity lives here → rebind and center; the element lived on
+  // ANOTHER route (hx-boost wipes body children while the island,
+  // off-body, floats on) → stash {key, nth, route} and navigate home;
+  // the fresh boot's restoreTrackback rebuilds the selection centered.
+  // SMOOTH-SCROLL LAW: this artifact owns the wheel (a Lenis-style
+  // lerp on the GSAP ticker — window.NIBSmoothScroll). It resyncs on
+  // scrolls it did not drive, so scrollIntoView survives, but the
+  // page's own scrollTo is the first-class path: element at top +
+  // offset centers it, animated at the site's own easing.
+  function centerElement(el) {
+    try {
+      const lib = window.NIBSmoothScroll;
+      if (lib && typeof lib.scrollTo === 'function') {
+        const r = el.getBoundingClientRect();
+        lib.scrollTo(el, {
+          offset: -Math.max(0, (window.innerHeight - r.height) / 2),
+        });
+        return;
+      }
+    } catch (_) {}
+    el.scrollIntoView({ block: 'center', inline: 'center' });
+  }
+  function trackBack() {
+    if (!S.selected) return;
+    const sel = S.selected;
+    if (sel.el && sel.el.isConnected) {
+      centerElement(sel.el);
+      return;
+    }
+    const insts = targetsForKey(sel.key).filter((x) => x.isConnected);
+    if (insts.length && sel.route === location.pathname) {
+      const el = insts[Math.min(sel.nth || 0, insts.length - 1)];
+      const k = kindOf(el);
+      selectEl({
+        id: el.getAttribute('data-arxa-id'), el: el,
+        label: (el.getAttribute('data-el') || el.tagName.toLowerCase()) + ' · ' + k.kind,
+        group: k.group,
+      });
+      centerElement(el);
+      return;
+    }
+    try {
+      sessionStorage.setItem('arxa-dial-trackback', JSON.stringify({
+        key: sel.key, nth: sel.nth || 0, route: sel.route || '/',
+      }));
+    } catch (_) {}
+    location.assign(sel.route || '/');
   }
   // FLOAT TRACKING (improvement 2, floating-ui autoUpdate practice,
   // 2026-08-25): an anchored panel re-derives its position on every
@@ -3500,6 +3613,7 @@
     applyTweakPrefs();
     openPinnedOnArrival();
     resumeAfterReload(); // no-op unless the last text edit converged by reload
+  maybeRestoreTrackback(); // no-op unless the last selection lived on this route
   }
   if (S.mode === 'invalid') {
     mountHost();

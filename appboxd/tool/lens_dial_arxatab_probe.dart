@@ -834,6 +834,168 @@ Future<void> main() async {
         parts2.length > 1 && parts2[1].trim().isNotEmpty,
         'deselected + re-armed: hunting resumes (hover labels the swept element, got ' + st2 + ')');
   }
+
+  // 7j. The track-back law (operator, 2026-08-26): "i need a icon
+  //     button in the floating card top bar to track back to the
+  //     selected element even if scrolled or navigated between
+  //     pages". Two beats: (a) same page — the element is scrolled
+  //     out of view, the button brings it back (both axes: this
+  //     design scrolls horizontally); (b) cross-page — a boosted
+  //     link swap (hx-boost wipes body children; the island is
+  //     off-body and survives) kills the selected ELEMENT while the
+  //     card floats on — the button navigates back to the element's
+  //     route and restores the selection, centered.
+  final CGO = SR + ".querySelector('#chead .cgo')";
+  // ORACLE LAW (learned the hard way): the inline amber outline is
+  // CLOBBERED by the hero animator (node styles churn continuously),
+  // so beats read the island's own truth — the card's idline KEY —
+  // and resolve the element through targetsForKey semantics.
+  if (sweep != null) {
+    await clickAt(tab, sweep!['x'] as num, sweep!['y'] as num);
+    await Future.delayed(const Duration(milliseconds: 800));
+  }
+  final keyRaw2 = await js(tab, '''
+    (() => (((''' + SR + '''.querySelector('#cidrow .idline') ||
+      {textContent:''}).textContent || '').split(' → ').pop()) || null)()
+  ''');
+  final skey = ((keyRaw2 as String?) ?? '').trim();
+  final keyJs = jsonEncode(skey);
+  final cardSel = await poll(tab, '''
+    (() => { const c = ''' + SR + '''.getElementById('card');
+      const t = ((c && c.classList.contains('open')
+        ? ''' + SR + '''.querySelector('#cidrow .idline') : null) || {textContent:''}).textContent || '';
+      return !!(c && c.classList.contains('open') && t && ''' + CGO + '''); })()
+  ''', const Duration(seconds: 6));
+  check(cardSel,
+      'element selected by a real click; the card carries the track-back button (.cgo) [key ' + skey + ']');
+  if (cardSel && skey.isNotEmpty) {
+    // (a) same page: scroll the element off-screen — through the
+    // PAGE'S OWN SCROLLER (a Lenis-style lerp owns the wheel here and
+    // fights bare scrollTop writes; real wheel events are its native
+    // path). Then the button must bring the element back.
+    for (var wi = 0; wi < 8; wi++) {
+      await tab.send('Input.dispatchMouseEvent', {
+        'type': 'mouseWheel', 'x': 640, 'y': 400,
+        'deltaX': 0, 'deltaY': 2500});
+      await Future.delayed(const Duration(milliseconds: 220));
+    }
+    final awayState = await js(tab, '''
+      (() => { const k = ''' + keyJs + ''';
+        const insts = k.indexOf('el:') === 0
+          ? document.querySelectorAll('[data-el="' + k.slice(3) + '"]')
+          : document.querySelectorAll('[data-arxa-id="' + k + '"]');
+        const el = insts[0]; if (!el) return JSON.stringify({ err: 'no-el' });
+        const r = el.getBoundingClientRect();
+        // the visibility band: the element overlaps the middle 60% of
+        // the viewport (a strict midpoint == center loses to layout
+        // drift of a few px)
+        const vis = r.top <= innerHeight * 0.7 && r.bottom >= innerHeight * 0.3;
+        return JSON.stringify({ off: !vis, top: Math.round(r.top),
+          st: Math.round((document.scrollingElement || {}).scrollTop || 0) }); })()
+    ''') as String?;
+    Map? away;
+    try { away = awayState != null ? jsonDecode(awayState) as Map : null; } catch (_) {}
+    check(away != null && away!['off'] == true,
+        'same page: the selected element is scrolled OUT of view');
+    if (away != null && away!['off'] != true) {
+      stdout.writeln('NOTE  away diag: ' + awayState.toString());
+    }
+    if (away != null && away!['off'] == true) {
+      await js(tab, CGO + ".click()");
+      final backIn = await poll(tab, '''
+        (() => { const k = ''' + keyJs + ''';
+          const insts = k.indexOf('el:') === 0
+            ? document.querySelectorAll('[data-el="' + k.slice(3) + '"]')
+            : document.querySelectorAll('[data-arxa-id="' + k + '"]');
+          const el = insts[0]; if (!el) return false;
+          const r = el.getBoundingClientRect();
+          return r.top <= innerHeight * 0.7 && r.bottom >= innerHeight * 0.3; })()
+      ''', const Duration(seconds: 10));
+      check(backIn, 'track-back (same page): the button returns the element to view');
+    }
+    // (b) cross-page, the REAL operator flow: Edit Mode's capture-phase
+    // click handler EATS link clicks while armed (a link click selects
+    // the link) — so navigation means DISARM first (the card closes;
+    // the live stash keeps the selection), roam to /about, then come
+    // BACK: boot or htmx afterSwap restores the selection, centered.
+    await js(tab, SR + ".querySelector('#dockbtn').click()");
+    await Future.delayed(const Duration(milliseconds: 400));
+    await js(tab, SR + ".querySelector('[data-verb=edit]').click()"); // disarm
+    await Future.delayed(const Duration(milliseconds: 400));
+    await js(tab, '''
+      (() => { const link = document.querySelector('a[href="/about"]');
+        if (link) link.click(); return !!link; })()
+    ''');
+    final onAbout = await poll(tab, "location.pathname === '/about'",
+        const Duration(seconds: 10));
+    check(onAbout, 'cross-page: disarmed and navigated to /about (the disarm closed the card)');
+    if (onAbout) {
+      // the stash must NOT have restored anything on the wrong route
+      final quiet = await js(tab, '''
+        (() => { const c = ''' + SR + '''.getElementById('card');
+          return !!(c && !c.classList.contains('open')); })()
+      ''');
+      check(quiet == true, 'on the other route nothing chases the author (card stays closed)');
+      // the only a[href="/"] on /about is display:none (hover-reveal
+      // menu) — navigate home deterministically; the full load rides
+      // the BOOT restore path (afterSwap covers the swap path)
+      await js(tab, "location.assign('/')");
+      // staged poll: names the failing condition instead of a bare
+      // false (poll's try/catch once masked a ReferenceError here —
+      // hostEl vs host — for a whole debugging round)
+      var restored = false;
+      var lastStage = 'never';
+      {
+        final deadline = DateTime.now().add(const Duration(seconds: 14));
+        while (DateTime.now().isBefore(deadline)) {
+          final stage = await js(tab, '''
+            (() => { if (location.pathname !== '/') return 'path';
+              const hostEl = document.getElementById('arxa-dial-host');
+              if (!hostEl || !hostEl.shadowRoot) return 'host';
+              const c = hostEl.shadowRoot.getElementById('card');
+              if (!c || !c.classList.contains('open')) return 'card';
+              const t = ((hostEl.shadowRoot.querySelector('#cidrow .idline') ||
+                {textContent:''}).textContent || '').split(' → ').pop();
+              if (t !== ''' + keyJs + ''') return 'key:' + t;
+              const insts = t.indexOf('el:') === 0
+                ? document.querySelectorAll('[data-el="' + t.slice(3) + '"]')
+                : document.querySelectorAll('[data-arxa-id="' + t + '"]');
+              const el = insts[0]; if (!el) return 'el';
+              const r = el.getBoundingClientRect();
+              if (!(r.top <= innerHeight * 0.7 && r.bottom >= innerHeight * 0.3))
+                return 'band:' + Math.round(r.top) + '/' + Math.round(r.bottom);
+              return true; })()
+          ''');
+          if (stage == true) { restored = true; break; }
+          lastStage = (stage ?? 'null').toString();
+          await Future.delayed(const Duration(milliseconds: 250));
+        }
+      }
+      if (!restored) stdout.writeln('NOTE  restore poll stuck at: ' + lastStage);
+      check(restored,
+          'track-back (cross-page): back home the selection is restored and centered');
+      if (!restored) {
+        final rdiag = await js(tab, '''
+          (() => { const hostEl = document.getElementById('arxa-dial-host');
+            const sr = hostEl ? hostEl.shadowRoot : null;
+            const card = sr ? sr.getElementById('card') : null;
+            const idl = sr ? ((sr.querySelector('#cidrow .idline') ||
+              {textContent:''}).textContent || '') : '';
+            const k = ''' + keyJs + ''';
+            const insts = k.indexOf('el:') === 0
+              ? document.querySelectorAll('[data-el="' + k.slice(3) + '"]')
+              : document.querySelectorAll('[data-arxa-id="' + k + '"]');
+            const r = insts[0] ? insts[0].getBoundingClientRect() : null;
+            return JSON.stringify({ path: location.pathname,
+              stash: sessionStorage.getItem('arxa-dial-trackback'),
+              cardOpen: !!(card && card.classList.contains('open')),
+              idline: idl.slice(0, 60), n: insts.length,
+              rect: r ? { top: Math.round(r.top), h: Math.round(r.height) } : null }); })()
+        ''');
+        stdout.writeln('NOTE  restore diag: ' + (rdiag ?? 'n/a'));
+      }
+    }
+  }
   // cleanup the reactivity beats' patches (probe hygiene law). A
   // shrinking draft converges the live page by RELOAD (the island's
   // law) — wait it out and re-arm the dial for the media beat.
