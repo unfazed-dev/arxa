@@ -187,6 +187,9 @@
     '.dotbtn{width:8px;height:8px;border-radius:5px;background:#9aa0ab;',
     '  opacity:.4;padding:0;transition:all .18s}',
     '.dotbtn.cur{opacity:1;width:20px;background:#8fb35a}',
+    '.dotbtn:focus-visible{outline:2px solid #8fb35a;outline-offset:2px}',
+    '#track:focus-visible{outline:1px solid rgba(143,179,90,.7);',
+    '  outline-offset:-1px}',
     '#cta{background:#6e884c;color:#0b0b10;font-weight:700;font-size:12px;',
     '  padding:6px 12px;border-radius:8px}',
     '#cta:disabled{opacity:.4;cursor:not-allowed}',
@@ -260,6 +263,11 @@
     '  pointer-events:auto;z-index:20}',
     '#thread.open{display:block}',
     '#thread .body{font-size:13px;line-height:1.45;margin:6px 0 10px}',
+    '#thread .ctx,#composer .ctx{margin:-4px 0 10px;padding:6px 10px;font-size:11px;',
+    '  line-height:1.45;font-style:italic;color:#b9c2cf;',
+    '  border-left:2px solid #8fb35a;background:rgba(255,255,255,.04);',
+    '  border-radius:0 6px 6px 0;max-height:72px;overflow-y:auto;',
+    '  white-space:pre-wrap;word-break:break-word}',
     '#thread .who{font-size:11px;color:#9aa0ab}',
     '#thread .replies{max-height:140px;overflow-y:auto;margin:8px 0;',
     '  border-top:1px solid #2a2a35;padding-top:8px}',
@@ -542,6 +550,7 @@
       }
       list.forEach((p) => {
         const row = h('div', { class: 'row' + (S.activePin === p.id ? ' active' : '') });
+        if (p.anchor && p.anchor.text) row.title = 'Anchored text: ' + p.anchor.text.slice(0, 200);
         const txt = h('span', { class: 'txt', text: p.body });
         const meta = h('div', { class: 'meta' }, [
           chip(p.status),
@@ -664,10 +673,16 @@
       const hit = node.closest && node.closest('[data-el]');
       if (hit) {
         const r = hit.getBoundingClientRect();
+        // The text snapshot rides the pin (Figma design-context practice:
+        // a comment bound to content survives copy edits and orphaning).
+        // Whitespace-collapsed and capped client-side; the server re-
+        // validates the cap.
+        const text = (hit.textContent || '').replace(/\s+/g, ' ').trim().slice(0, 600);
         return {
           el: hit.getAttribute('data-el'),
           rect: { x: r.left + scrollX, y: r.top + scrollY, w: r.width, h: r.height },
           screenRect: r,
+          text: text || null,
         };
       }
     }
@@ -723,6 +738,12 @@
     composer.appendChild(
       h('div', { class: 'who', style: 'font-size:11px;color:#9aa0ab', text: 'Pin on: ' + (target.el || 'whole surface') }),
     );
+    // The anchor's own words ride along (improvement 4): reviewers see
+    // WHAT was commented even after the copy changes underneath.
+    if (target.text) {
+      const t = target.text.length > 120 ? target.text.slice(0, 120) + '…' : target.text;
+      composer.appendChild(h('div', { class: 'ctx', text: '“' + t + '”' }));
+    }
     const area = h('textarea', { rows: '3', placeholder: 'What should change?' });
     composer.appendChild(area);
     let nameInput = null;
@@ -748,7 +769,7 @@
       const r = await api('POST', '/pins', {
         route: location.pathname,
         viewport: { w: innerWidth, h: innerHeight },
-        anchor: { el: target.el, rect: target.rect },
+        anchor: { el: target.el, rect: target.rect, text: target.text || undefined },
         body,
         name: S.name || undefined,
       });
@@ -766,14 +787,29 @@
   const thread = h('div', { id: 'thread' });
   root.appendChild(thread);
 
+  // The open thread's pin — set while the popover is open so the float
+  // tracker (below, with the card) can re-derive its anchor point.
+  let threadPin = null;
+  function positionThread() {
+    if (!threadPin) return;
+    const pt = anchorPoint(threadPin);
+    const sx = pt.p.x - scrollX;
+    const sy = pt.p.y - scrollY;
+    thread.style.left = Math.min(Math.max(sx + 18, 8), innerWidth - 316) + 'px';
+    thread.style.top = Math.min(Math.max(sy + 18, 8), innerHeight - 320) + 'px';
+  }
+
   function openThread(pin) {
     S.activePin = pin.id;
     renderPins();
-    const pt = anchorPoint(pin);
     thread.textContent = '';
     const head = h('div', { class: 'who', text: pin.name + ' · ' + pin.route });
     thread.appendChild(head);
     thread.appendChild(h('div', { class: 'body', text: pin.body }));
+    const ctx = pin.anchor && pin.anchor.text;
+    if (ctx) {
+      thread.appendChild(h('div', { class: 'ctx', title: 'Anchored text at pin time', text: '“' + ctx + '”' }));
+    }
     const replies = h('div', { class: 'replies' });
     (pin.replies || []).forEach((r) => {
       replies.appendChild(
@@ -818,13 +854,12 @@
     thread.appendChild(input);
     thread.classList.add('open');
     // Position near the pin, clamped into the viewport.
-    const sx = pt.p.x - scrollX;
-    const sy = pt.p.y - scrollY;
-    thread.style.left = Math.min(Math.max(sx + 18, 8), innerWidth - 316) + 'px';
-    thread.style.top = Math.min(Math.max(sy + 18, 8), innerHeight - 320) + 'px';
+    threadPin = pin;
+    positionThread();
   }
   function closeThread() {
     S.activePin = null;
+    threadPin = null;
     thread.classList.remove('open');
     renderPins();
   }
@@ -1830,7 +1865,25 @@
     card.classList.remove('open');
     dialPanelChanged();
   }
-  addEventListener('resize', () => { if (S.card) positionCard(); });
+  // FLOAT TRACKING (improvement 2, floating-ui autoUpdate practice,
+  // 2026-08-25): an anchored panel re-derives its position on every
+  // frame-worthy signal — capture-phase scroll (scroll does not bubble,
+  // capture still sees nested scroll containers), window resize, and one
+  // rAF to coalesce bursts so a fast wheel never thrashes layout reads.
+  // Before this the card clamped ONCE at open and then sat still while
+  // its anchor scrolled out from under it.
+  let floatTrackRaf = false;
+  function trackFloats() {
+    if (floatTrackRaf) return;
+    floatTrackRaf = true;
+    requestAnimationFrame(() => {
+      floatTrackRaf = false;
+      if (S.card) positionCard();
+      if (threadPin) positionThread();
+    });
+  }
+  addEventListener('scroll', trackFloats, { passive: true, capture: true });
+  addEventListener('resize', trackFloats);
 
   // ── tweaks (Tweak slide prefs; persisted per browser) ─────────────────
   const TWEAK = {
@@ -1872,7 +1925,14 @@
   const dots = h('div', { id: 'dots' });
   const ctaBtn = h('button', { id: 'cta' });
   const closeBtn = h('button', { id: 'tclose', title: 'Close tray', 'aria-label': 'Close tray', text: '×' });
-  const track = h('div', { id: 'track' });
+  // tabindex=0 is the keyboard escape hatch (WAI carousel practice): the
+  // snap track has no visible scrollbar and its slides hold focusable
+  // controls only sometimes — a focusable, labelled region makes the
+  // arrows below reachable at all.
+  const track = h('div', {
+    id: 'track', tabindex: '0', role: 'region',
+    'aria-label': 'Studio slides — arrow keys move between slides',
+  });
   tbar.appendChild(ttitle);
   tbar.appendChild(dots);
   tbar.appendChild(ctaBtn);
@@ -1897,17 +1957,60 @@
     slideBodies.bodies = {};
     list.forEach(([id, label], i) => {
       const body = h('div', { class: 'slidebody' });
-      const slide = h('div', { class: 'slide', 'data-slide': id }, [body]);
+      const slide = h('div', {
+        class: 'slide', 'data-slide': id,
+        role: 'group', 'aria-roledescription': 'slide',
+        'aria-label': (i + 1) + ' of ' + list.length + ': ' + label,
+      }, [body]);
       slideBodies[id] = body;
       track.appendChild(slide);
-      const d = h('button', { class: 'dotbtn', 'data-i': String(i), 'aria-label': label });
-      d.addEventListener('click', () => {
-        const w = track.clientWidth;
-        track.scrollTo({ left: i * w, behavior: TWEAK.motion ? 'smooth' : 'auto' });
+      const d = h('button', {
+        class: 'dotbtn', 'data-i': String(i),
+        'aria-label': 'Go to ' + label + ' slide', 'aria-controls': 'track',
       });
+      d.addEventListener('click', () => goToSlide(i));
       dots.appendChild(d);
     });
   }
+  // Deterministic slide navigation (improvement 3): offsetLeft, NOT
+  // index*width — desktop slides are calc(100% - 96px) with the edge
+  // peek, so width math lands between snap points (trayIndex's comment
+  // documents the same trap).
+  function goToSlide(i) {
+    const kids = [...track.children];
+    if (!kids.length) return;
+    i = Math.max(0, Math.min(kids.length - 1, i));
+    track.scrollTo({ left: kids[i].offsetLeft, behavior: TWEAK.motion ? 'smooth' : 'auto' });
+  }
+  // Dots: roving arrows (WAI carousel) — Arrow/Home/End move focus AND
+  // the slide together; Tab still leaves the group.
+  dots.addEventListener('keydown', (e) => {
+    const btns = [...dots.querySelectorAll('.dotbtn')];
+    if (!btns.length) return;
+    let i = trayIndex();
+    if (e.key === 'ArrowRight') i++;
+    else if (e.key === 'ArrowLeft') i--;
+    else if (e.key === 'Home') i = 0;
+    else if (e.key === 'End') i = btns.length - 1;
+    else return;
+    e.preventDefault();
+    i = Math.max(0, Math.min(btns.length - 1, i));
+    btns[i].focus();
+    goToSlide(i);
+  });
+  // Track: arrows on the focused region itself. e.target guard — arrows
+  // from controls INSIDE a slide (text inputs, selects) must keep their
+  // native meaning and never bubble into a slide flip.
+  track.addEventListener('keydown', (e) => {
+    if (e.target !== track) return;
+    const n = track.children.length;
+    if (!n) return;
+    const i = trayIndex();
+    if (e.key === 'ArrowRight' || e.key === 'PageDown') { e.preventDefault(); goToSlide(i + 1); }
+    else if (e.key === 'ArrowLeft' || e.key === 'PageUp') { e.preventDefault(); goToSlide(i - 1); }
+    else if (e.key === 'Home') { e.preventDefault(); goToSlide(0); }
+    else if (e.key === 'End') { e.preventDefault(); goToSlide(n - 1); }
+  });
   function trayIndex() {
     // Nearest-slide, not width math: desktop slides are calc(100% - 96px)
     // (the edge peek), so scrollLeft/clientWidth lies there. offsetLeft of
@@ -1930,6 +2033,11 @@
     ttitle.textContent = list[i] ? list[i][1] : 'Studio';
     dots.querySelectorAll('.dotbtn').forEach((d, j) => {
       d.classList.toggle('cur', j === i);
+      // Roving tabindex (WAI carousel): one tab stop for the whole dot
+      // group; arrows (handler above) move within it.
+      d.tabIndex = j === i ? 0 : -1;
+      if (j === i) d.setAttribute('aria-current', 'true');
+      else d.removeAttribute('aria-current');
     });
     updateTrayCta();
   }
@@ -2294,7 +2402,11 @@
     // no-op, so a flapping connection never reload-loops.
     let esOpened = false;
     es.addEventListener('open', () => {
-      if (esOpened) syncRemoteDraft();
+      // A reconnect also refetches pins: the server replays what it logged
+      // (Last-Event-ID), but a restart's log is empty — without this the
+      // board stays stale until someone else acts. loadPins is a read;
+      // reads never broadcast, so this cannot loop.
+      if (esOpened) { syncRemoteDraft(); loadPins(); }
       esOpened = true;
     });
     es.addEventListener('dial', (ev) => {

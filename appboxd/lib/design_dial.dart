@@ -115,6 +115,7 @@ class DialPin {
     required this.createdAt,
     required this.updatedAt,
     this.drawing,
+    this.contextText,
     List<DialReply>? replies,
   }) : replies = replies ?? [];
 
@@ -140,6 +141,12 @@ class DialPin {
   /// coordinates. Null when the pin carries no drawing.
   final List<List<List<double>>>? drawing;
 
+  /// The anchored element's text snapshot at pin time (≤600 chars;
+  /// research slice 2026-08-25 — Figma design-context practice: a comment
+  /// bound to CONTENT survives copy edits and orphaning, not just to a
+  /// rect). Null for surface pins and pre-column pins.
+  final String? contextText;
+
   DialPinStatus status;
   final DialCaller authorKind;
   final String authorName;
@@ -153,7 +160,11 @@ class DialPin {
         'artifact': artifact,
         'route': route,
         'viewport': {'w': viewportW, 'h': viewportH},
-        'anchor': {'el': anchorEl, 'rect': rect},
+        'anchor': {
+          'el': anchorEl,
+          'rect': rect,
+          if (contextText != null) 'text': contextText,
+        },
         if (drawing != null) 'drawing': drawing,
         'status': status.wire,
         'author': authorKind.name,
@@ -357,6 +368,7 @@ class SupabaseDialStore implements DialStore {
         'viewport_h': p.viewportH,
         'anchor_el': p.anchorEl,
         'rect': p.rect,
+        'context_text': p.contextText,
         'status': p.status.wire,
         'author_kind': p.authorKind.name,
         'author_name': p.authorName,
@@ -383,6 +395,7 @@ class SupabaseDialStore implements DialStore {
         viewportW: r['viewport_w'] as int,
         viewportH: r['viewport_h'] as int,
         anchorEl: r['anchor_el'] as String?,
+        contextText: r['context_text'] as String?,
         rect: (r['rect'] as Map)
             .map((k, v) => MapEntry(k as String, (v as num).toDouble())),
         status: DialPinStatus.parse(r['status'] as String)!,
@@ -585,6 +598,7 @@ abstract class _Caps {
   static const name = 80;
   static const route = 200;
   static const el = 200;
+  static const context = 600;
 }
 
 /// The /__dial/* API as a pure function: no HttpRequest, no IO — the server
@@ -1040,6 +1054,13 @@ class DialApi {
     final anchor =
         m['anchor'] == null ? <String, dynamic>{} : _map(m['anchor'], 'anchor');
     final el = anchor['el'] == null ? null : _str(anchor, 'el', _Caps.el);
+    // The anchor's text snapshot (research slice 2026-08-25): optional,
+    // empty means absent (an ancient island sending text:'' must not 400),
+    // over-cap is rejected like every other string here.
+    final anchorText = anchor['text'];
+    final contextText = anchorText is String && anchorText.trim().isNotEmpty
+        ? _str(anchor, 'text', _Caps.context)
+        : null;
     final rect = _rect(_map(anchor['rect'], 'anchor.rect'));
     final drawing = asDrawing(m['drawing']);
     final text = _str(m, 'body', _Caps.body);
@@ -1055,6 +1076,7 @@ class DialApi {
       viewportH: h,
       anchorEl: el,
       rect: rect,
+      contextText: contextText,
       drawing: drawing,
       status: DialPinStatus.open,
       authorKind: caller,

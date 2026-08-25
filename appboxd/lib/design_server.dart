@@ -387,6 +387,16 @@ class DesignServer {
   /// the reload stream: different audience, different cadence.
   final _dialEventClients = <HttpResponse>{};
 
+  /// SSE resume (research slice 2026-08-25, the MDN Last-Event-ID pattern):
+  /// every broadcast stamps an `id:` and lands in this bounded log; a
+  /// reconnecting EventSource (the browser echoes Last-Event-ID on its own)
+  /// gets the missed frames replayed in order before rejoining the live
+  /// set. A process restart empties the log — the resync frame sent on
+  /// reconnect covers that case.
+  static const _dialEventLogCap = 250;
+  int _dialEventSeq = 0;
+  final _dialEventLog = <MapEntry<int, String>>[];
+
   /// Artifact identity the dial scopes pins/links to (dir basename).
   String get _dialArtifact => p.basename(artifactDir);
 
@@ -1275,6 +1285,24 @@ class DesignServer {
       ..set('X-Content-Type-Options', 'nosniff');
     res.bufferOutput = false;
     _push(res, 'retry: 500\n\n');
+    // A Last-Event-ID header means RECONNECT (the browser sends it
+    // automatically after a drop). Replay what this process logged past
+    // that id, then one resync frame — kind 'pins' makes every island
+    // refetch, which also converges the restart case where the log is
+    // empty and the sequence restarted. Reads never broadcast (mutations
+    // only — see _handleDial), so this cannot restart the storm that
+    // rule exists to kill.
+    final lastId =
+        int.tryParse(req.headers.value('last-event-id') ?? '');
+    if (lastId != null) {
+      for (final entry in _dialEventLog) {
+        if (entry.key > lastId) {
+          _push(res, 'id: ${entry.key}\nevent: dial\ndata: ${entry.value}\n\n');
+        }
+      }
+      _push(res,
+          'event: dial\ndata: ${jsonEncode({'kind': 'pins', 'resumed': true})}\n\n');
+    }
     _push(res, ': dial subscribed\n\n');
     _dialEventClients.add(res);
     unawaited(res.done
@@ -1291,11 +1319,19 @@ class DesignServer {
   /// (the Author's overlay), 'commit' (a commit request — [data] carries the
   /// ops payload the studio agent consumes).
   void _broadcastDial([String kind = 'pins', Object? data]) {
-    if (_dialEventClients.isEmpty) return;
-    final frame = 'event: dial\ndata: ${jsonEncode({
+    final payload = jsonEncode({
       'kind': kind,
       'data': ?data,
-    })}\n\n';
+    });
+    // `id:` FIRST — SSE grammar — and echoed back by the browser as
+    // Last-Event-ID on reconnect, which is the entire resume key.
+    final id = ++_dialEventSeq;
+    _dialEventLog.add(MapEntry(id, payload));
+    if (_dialEventLog.length > _dialEventLogCap) {
+      _dialEventLog.removeRange(0, _dialEventLog.length - _dialEventLogCap);
+    }
+    if (_dialEventClients.isEmpty) return;
+    final frame = 'id: $id\nevent: dial\ndata: $payload\n\n';
     for (final c in _dialEventClients.toList()) {
       _push(c, frame);
     }
