@@ -116,6 +116,32 @@ identity (never a basename — two clients both shipping `design/` must
 not collide) behind the pins' stale-while-revalidate discipline, with an
 honest per-process memory fallback. `--no-dial` kills axes with the dial.
 
+### The identity plane: personal guest links (2026-08-26)
+
+Client review links are **personal bearer tokens, never anonymous**. The
+author registers the reviewer's email BEFORE the link exists (Comments
+slide, *Client access*): POST /__dial/guests upserts a design_dial_guests
+row on (design, email), mints the token, and stores only its sha256 beside
+the guest id. The URL is the credential — anyone holding it acts as that
+guest, which is exactly why attribution is **by construction**: pins and
+replies arriving on a personal link carry the guest's id + email (the
+server stamps them; a typed name cannot forge either), while the friendly
+label shown on the board is the display name or the email's local part.
+Guests never see a name prompt on a personal link; the composer says who
+they are. GET /__dial/guests rosters the reviewers with their live-link
+counts (author-only), and POST /__dial/guests/revoke is the PII path:
+their links die with the row, their feedback SURVIVES de-related and
+email-scrubbed (guest_id set-null, guest_email nulled) — closing an
+engagement deletes exactly that engagement's PII and nothing else. The
+tables key on the registered design id (project/artifact identity, shared
+with the axes plane), not the artifact basename; legacy anonymous links
+keep resolving until they expire. The dial store needs the marker's
+project for any of this — without it, guest routes answer 503 rather than
+guess. (One law discovered the hard way: this PostgREST does NOT infer
+the (project, artifact) unique constraint for upsert conflict resolution
+— both merge- and ignore-duplicates 409 on an existing row — so design
+registration is INSERT, and on 409, a deterministic read-back.)
+
 ## Naming laws (locked)
 
 **No invented single-letter identifiers in generated code.** Every name the

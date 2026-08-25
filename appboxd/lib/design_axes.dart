@@ -263,15 +263,43 @@ class SupabaseAxesStore implements AxesStore {
   Future<String> _ensureDesignId() async {
     final known = _designId;
     if (known != null) return known;
+    // INSERT, and on the natural-key conflict read the row back. This
+    // PostgREST does NOT infer the (project, artifact) unique constraint
+    // for upsert conflict resolution - measured live 2026-08-26:
+    // merge-duplicates AND ignore-duplicates both answer 23505 on an
+    // existing row, so the upsert is a plain 409 here. The fallback GET
+    // is deterministic (the row provably exists - that is why we got
+    // the 409); the only race is two first-boots inserting at once, and
+    // the loser lands in the GET.
     final response = await _request('POST', 'design_dial_designs', body: {
       'project': project,
       'artifact': artifact,
       if (author != null) 'author_email': author!.email,
       if (author != null) 'author_name': author!.name,
     }, extraHeaders: {
-      'Prefer': 'resolution=merge-duplicates,return=representation'
+      'Prefer': 'return=representation'
     });
     final text = await utf8.decoder.bind(response).join();
+    if (response.statusCode == 409) {
+      final get = await _request(
+          'GET',
+          'design_dial_designs?project=eq.${Uri.encodeComponent(project)}'
+              '&artifact=eq.${Uri.encodeComponent(artifact)}'
+              '&select=id');
+      final getText = await utf8.decoder.bind(get).join();
+      if (get.statusCode >= 300) {
+        throw StateError('design lookup failed (${get.statusCode}): $getText');
+      }
+      final found = jsonDecode(getText);
+      if (found is List && found.isNotEmpty && found.first is Map) {
+        final existing = (found.first as Map)['id'];
+        if (existing is String) {
+          _designId = existing;
+          return existing;
+        }
+      }
+      throw StateError('design 409 but no row reads back: $getText');
+    }
     if (response.statusCode >= 300) {
       throw StateError(
           'design registration failed (${response.statusCode}): $text');

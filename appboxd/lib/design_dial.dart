@@ -83,6 +83,8 @@ class DialReply {
     required this.authorName,
     required this.body,
     required this.createdAt,
+    this.guestId,
+    this.guestEmail,
   });
 
   final String id;
@@ -90,10 +92,13 @@ class DialReply {
   final String authorName;
   final String body;
   final String createdAt;
+  String? guestId;
+  String? guestEmail;
 
   Map<String, dynamic> toJson() => {
         'id': id,
         'author': authorKind.name,
+        if (guestEmail != null) 'guestEmail': guestEmail,
         'name': authorName,
         'body': body,
         'createdAt': createdAt,
@@ -117,6 +122,8 @@ class DialPin {
     required this.updatedAt,
     this.drawing,
     this.contextText,
+    this.guestId,
+    this.guestEmail,
     List<DialReply>? replies,
   }) : replies = replies ?? [];
 
@@ -148,6 +155,13 @@ class DialPin {
   /// rect). Null for surface pins and pre-column pins.
   final String? contextText;
 
+  /// Arc 2 attribution: set by construction when the pin arrived on a
+  /// personal link (guest_id relation + the queryable email copy the PII
+  /// scrub erases). Null on author pins and anonymous-link pins. Mutable:
+  /// the PII scrub de-relates and scrubs in place.
+  String? guestId;
+  String? guestEmail;
+
   DialPinStatus status;
   final DialCaller authorKind;
   final String authorName;
@@ -159,6 +173,7 @@ class DialPin {
   Map<String, dynamic> toJson() => {
         'id': id,
         'artifact': artifact,
+        if (guestEmail != null) 'guestEmail': guestEmail,
         'route': route,
         'viewport': {'w': viewportW, 'h': viewportH},
         'anchor': {
@@ -178,11 +193,18 @@ class DialPin {
 }
 
 /// A resolved Share Link grant (locked decision 7): scoped to one artifact,
-/// expiring, comment-level permission only.
+/// expiring, comment-level permission only. Arc 2 (2026-08-26): a link minted
+/// through /guests is PERSONAL — it carries the registered guest whose link
+/// it is, so every pin and reply that arrives on it is attributed by
+/// construction. Legacy anonymous links resolve with all three guest fields
+/// null and keep working until they expire.
 class ShareLinkGrant {
   const ShareLinkGrant({
     required this.artifact,
     required this.expiresAt,
+    this.guestId,
+    this.guestEmail,
+    this.guestName,
   });
 
   final String artifact;
@@ -190,11 +212,78 @@ class ShareLinkGrant {
   /// ISO-8601; null never expires (operator choice, not the default).
   final String? expiresAt;
 
+  /// The registered guest this personal link belongs to; null = anonymous.
+  final String? guestId;
+  final String? guestEmail;
+  final String? guestName;
+
   bool get expired {
     if (expiresAt == null) return false;
     final at = DateTime.tryParse(expiresAt!);
     return at == null || DateTime.now().toUtc().isAfter(at);
   }
+}
+
+/// A registered reviewer of one design (arc 2): the author registers the
+/// guest BEFORE the link is sent, keyed by email. unique(design, email) —
+/// the same person reviewing two designs is two rows, so closing one
+/// engagement deletes exactly that engagement's PII.
+class DialGuest {
+  DialGuest({
+    required this.id,
+    required this.email,
+    required this.displayName,
+    required this.createdAt,
+    required this.linksAlive,
+  });
+
+  final String id;
+  final String email;
+  final String displayName;
+  final String createdAt;
+
+  /// Unexpired personal links this guest holds.
+  final int linksAlive;
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'email': email,
+        'name': displayName,
+        'createdAt': createdAt,
+        'linksAlive': linksAlive,
+      };
+}
+
+/// What minting a personal link returns: the raw token (shown once, stored
+/// hashed) and the guest row it now belongs to.
+class GuestLink {
+  const GuestLink({required this.token, required this.guest});
+  final String token;
+  final DialGuest guest;
+}
+
+/// The email law for guest registration: trimmed, lowercased, one @, a dot
+/// in the domain, ≤254 (RFC max). Throws FormatException — the API answers
+/// 400 through the same path as every other validation.
+String dialGuestEmail(Object? v) {
+  if (v is! String) throw const FormatException('email must be a string');
+  final email = v.trim().toLowerCase();
+  if (email.isEmpty ||
+      email.length > 254 ||
+      !RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(email)) {
+    throw const FormatException('email must be a valid address');
+  }
+  return email;
+}
+
+/// The friendly label a guest's pins carry: the display name when the author
+/// gave one, else the email's local part — never the full email, which lives
+/// only in the attribution columns the PII scrub can erase.
+String dialGuestLabel(String? name, String email) {
+  final n = name?.trim() ?? '';
+  if (n.isNotEmpty) return n;
+  final at = email.indexOf('@');
+  return at <= 0 ? email : email.substring(0, at);
 }
 
 // ── store seam ───────────────────────────────────────────────────────────
@@ -208,12 +297,30 @@ abstract class DialStore {
 
   /// Returns null when the id is unknown.
   Future<DialPin?> setStatus(String id, DialPinStatus status);
-  Future<DialReply?> addReply(
-      String pinId, DialCaller kind, String name, String body);
+  /// [guestId]/[guestEmail] carry arc 2 attribution when the reply arrived
+  /// on a personal link; both null for the author and anonymous links.
+  Future<DialReply?> addReply(String pinId, DialCaller kind, String name,
+      String body,
+      {String? guestId, String? guestEmail});
 
   /// Mints a Share Link: returns the RAW token (shown once, stored hashed).
   Future<String> mintShareLink(String artifact, Duration ttl);
   Future<ShareLinkGrant?> resolveShareLink(String token);
+
+  // ── the identity plane (arc 2, 2026-08-26) ─────────────────────────────
+  // Personal bearer links replace anonymous tokens for client review: the
+  // author registers the guest's email at mint, the link carries the guest,
+  // and attribution on pins/replies is by construction. May throw on a
+  // store failure — the API answers 502 honestly.
+
+  Future<GuestLink> mintGuestLink(
+      String artifact, Duration ttl, String email, String? displayName);
+  Future<List<DialGuest>> listGuests(String artifact);
+
+  /// The PII path: deletes the guest (their links cascade), keeps their
+  /// feedback (guest_id set-null), and scrubs the email copy off it.
+  /// Returns the deleted guest, or null when no such email is registered.
+  Future<DialGuest?> deleteGuest(String artifact, String email);
 }
 
 String dialNewId() {
@@ -240,6 +347,12 @@ class MemoryDialStore implements DialStore {
 
   /// sha256(token) → grant.
   final _links = <String, ShareLinkGrant>{};
+
+  /// (artifact, email) → guest. The memory identity plane: session-scoped,
+  /// like every other memory row — the island's 'local' badge covers it.
+  final _guests = <String, DialGuest>{};
+
+  String _guestKey(String artifact, String email) => '$artifact|$email';
 
   @override
   String get kind => 'memory';
@@ -270,8 +383,10 @@ class MemoryDialStore implements DialStore {
   }
 
   @override
-  Future<DialReply?> addReply(
-      String pinId, DialCaller kind, String name, String body) async {
+  Future<DialReply?> addReply(String pinId, DialCaller kind, String name,
+      String body,
+      {String? guestId,
+      String? guestEmail}) async {
     final pin = _pins[pinId];
     if (pin == null) return null;
     final reply = DialReply(
@@ -280,6 +395,8 @@ class MemoryDialStore implements DialStore {
       authorName: name,
       body: body,
       createdAt: DateTime.now().toUtc().toIso8601String(),
+      guestId: guestId,
+      guestEmail: guestEmail,
     );
     pin.replies.add(reply);
     pin.updatedAt = reply.createdAt;
@@ -302,16 +419,124 @@ class MemoryDialStore implements DialStore {
     if (grant == null || grant.expired) return null;
     return grant;
   }
+
+  @override
+  Future<GuestLink> mintGuestLink(
+      String artifact, Duration ttl, String email, String? displayName) async {
+    final key = _guestKey(artifact, email);
+    final existing = _guests[key];
+    // Latest mint wins the display name (the same law as the Supabase
+    // upsert: the newest registration refreshes the row); identity, email,
+    // and created_at never move.
+    final guest = existing != null
+        ? DialGuest(
+            id: existing.id,
+            email: existing.email,
+            displayName: displayName?.trim() ?? '',
+            createdAt: existing.createdAt,
+            linksAlive: existing.linksAlive,
+          )
+        : DialGuest(
+            id: dialNewId(),
+            email: email,
+            displayName: displayName?.trim() ?? '',
+            createdAt: DateTime.now().toUtc().toIso8601String(),
+            linksAlive: 0,
+          );
+    final raw = _mintToken();
+    _links[_hashToken(raw)] = ShareLinkGrant(
+      artifact: artifact,
+      expiresAt: DateTime.now().toUtc().add(ttl).toIso8601String(),
+      guestId: guest.id,
+      guestEmail: guest.email,
+      guestName: guest.displayName,
+    );
+    final counted = _links.values.where((g) =>
+        g.guestId == guest.id && !g.expired).length;
+    _guests[key] = DialGuest(
+      id: guest.id,
+      email: guest.email,
+      displayName: guest.displayName,
+      createdAt: guest.createdAt,
+      linksAlive: counted,
+    );
+    return GuestLink(token: raw, guest: _guests[key]!);
+  }
+
+  @override
+  Future<List<DialGuest>> listGuests(String artifact) async {
+    final prefix = _guestKey(artifact, '');
+    final out = [
+      for (final e in _guests.entries)
+        if (e.key.startsWith(prefix)) _withLiveCount(e.value)
+    ]..sort((a, b) => a.createdAt.compareTo(b.createdAt));
+    return out;
+  }
+
+  DialGuest _withLiveCount(DialGuest g) {
+    final alive =
+        _links.values.where((l) => l.guestId == g.id && !l.expired).length;
+    if (alive == g.linksAlive) return g;
+    return DialGuest(
+      id: g.id,
+      email: g.email,
+      displayName: g.displayName,
+      createdAt: g.createdAt,
+      linksAlive: alive,
+    );
+  }
+
+  @override
+  Future<DialGuest?> deleteGuest(String artifact, String email) async {
+    final key = _guestKey(artifact, email);
+    final guest = _guests.remove(key);
+    if (guest == null) return null;
+    // Their links die with them (the SQL path rides on delete cascade);
+    // their feedback survives, de-related and email-scrubbed.
+    _links.removeWhere((_, l) => l.guestId == guest.id);
+    for (final pin in _pins.values) {
+      if (pin.guestId == guest.id) {
+        pin.guestEmail = null;
+        pin.guestId = null;
+      }
+      for (final reply in pin.replies) {
+        if (reply.guestId == guest.id) {
+          reply.guestEmail = null;
+          reply.guestId = null;
+        }
+      }
+    }
+    return guest;
+  }
 }
 
 /// PostgREST against the operator-owned central project. Table shapes are
 /// the migration in supabase/migrations/20260823_design_dial.sql — keep them
 /// in lockstep. One HttpClient per store; no pooling beyond dart:io's own.
 class SupabaseDialStore implements DialStore {
-  SupabaseDialStore({required this.url, required this.serviceKey});
+  SupabaseDialStore({
+    required this.url,
+    required this.serviceKey,
+    this.project,
+    this.author,
+  });
 
   final String url;
   final String serviceKey;
+
+  /// Arc 2 identity plane: the pipeline project from the artifact's
+  /// appbox.json marker + the author from ~/.appbox/identity.json. When
+  /// either is absent the store degrades to basename keys (legacy rows) and
+  /// mintGuestLink answers 503 through the API — guest registration is a
+  /// registered-design capability, never a guess.
+  final String? project;
+
+  /// Kept for parity with SupabaseAxesStore.fromConfig; the dial store does
+  /// not write author fields itself (the axes store's registration owns
+  /// them), it only reads the design row.
+  final AuthorIdentity? author;
+
+  String? _designId;
 
   // The dial's network hop must never hang a browser socket. Without an
   // idle cap, dart:io pools connections that Supabase's edge silently drops
@@ -357,7 +582,11 @@ class SupabaseDialStore implements DialStore {
   ///      ~/.appbox/trusted-origins: an operator fact about THIS machine,
   ///      never repo state, never the artifact's config.
   static SupabaseDialStore? fromConfig(
-      {Map<String, String>? env, String? credentialsFileText}) {
+      {Map<String, String>? env,
+      String? credentialsFileText,
+      String? project,
+      String? artifact,
+      AuthorIdentity? author}) {
     final e = env ?? Platform.environment;
     var url = e['APPBOX_SUPABASE_URL'];
     var key = e['APPBOX_SUPABASE_SERVICE_KEY'];
@@ -368,7 +597,9 @@ class SupabaseDialStore implements DialStore {
       key ??= file.key;
     }
     if (url == null || url.isEmpty || key == null || key.isEmpty) return null;
-    return SupabaseDialStore(url: url, serviceKey: key);
+    return SupabaseDialStore(
+        url: url, serviceKey: key, project: project, author: author)
+      .._boundArtifact = artifact;
   }
 
   /// Builds one from env, or null when unconfigured. Prefer [fromConfig] —
@@ -400,9 +631,12 @@ class SupabaseDialStore implements DialStore {
     }
   }
 
-  static Map<String, dynamic> _pinRow(DialPin p) => {
+  Map<String, dynamic> _pinRow(DialPin p) => {
         'id': p.id,
         'artifact': p.artifact,
+        if (p.guestId != null) 'guest_id': p.guestId,
+        if (p.guestEmail != null) 'guest_email': p.guestEmail,
+        if (_designId != null) 'design_id': _designId,
         'route': p.route,
         'viewport_w': p.viewportW,
         'viewport_h': p.viewportH,
@@ -431,6 +665,8 @@ class SupabaseDialStore implements DialStore {
         drawing: asDrawing(_embeddedStrokes(r['design_dial_drawings'])),
         id: r['id'] as String,
         artifact: r['artifact'] as String,
+        guestId: r['guest_id'] as String?,
+        guestEmail: r['guest_email'] as String?,
         route: r['route'] as String,
         viewportW: r['viewport_w'] as int,
         viewportH: r['viewport_h'] as int,
@@ -453,6 +689,8 @@ class SupabaseDialStore implements DialStore {
         authorKind: rr['author_kind'] == 'guest'
             ? DialCaller.guest
             : DialCaller.author,
+        guestId: rr['guest_id'] as String?,
+        guestEmail: rr['guest_email'] as String?,
         authorName: rr['author_name'] as String,
         body: rr['body'] as String,
         createdAt: rr['created_at'] as String,
@@ -546,14 +784,18 @@ class SupabaseDialStore implements DialStore {
   }
 
   @override
-  Future<DialReply?> addReply(
-      String pinId, DialCaller kind, String name, String body) async {
+  Future<DialReply?> addReply(String pinId, DialCaller kind, String name,
+      String body,
+      {String? guestId,
+      String? guestEmail}) async {
     final reply = DialReply(
       id: dialNewId(),
       authorKind: kind,
       authorName: name,
       body: body,
       createdAt: DateTime.now().toUtc().toIso8601String(),
+      guestId: guestId,
+      guestEmail: guestEmail,
     );
     final res = await _req('POST', 'design_dial_replies',
         body: {
@@ -563,6 +805,9 @@ class SupabaseDialStore implements DialStore {
           'author_name': name,
           'body': body,
           'created_at': reply.createdAt,
+          'guest_id': ?guestId,
+          'guest_email': ?guestEmail,
+          if (_designId != null) 'design_id': _designId,
         },
         extraHeaders: {'Prefer': 'return=minimal'});
     if (res.statusCode >= 400) return null;
@@ -588,14 +833,213 @@ class SupabaseDialStore implements DialStore {
     final res = await _req(
         'GET',
         'design_dial_share_links?token_hash=eq.${_hashToken(token)}'
-            '&select=artifact,expires_at');
+            '&select=artifact,expires_at,guest_id,'
+            'design_dial_guests(email,display_name)');
     final rows = jsonDecode(await res.transform(utf8.decoder).join()) as List;
     if (rows.isEmpty) return null;
+    final row = rows.first as Map<String, dynamic>;
+    final guest = row['design_dial_guests'];
+    final guestMap = guest is Map ? guest as Map<String, dynamic> : null;
     final grant = ShareLinkGrant(
-      artifact: rows.first['artifact'] as String,
-      expiresAt: rows.first['expires_at'] as String?,
+      artifact: row['artifact'] as String,
+      expiresAt: row['expires_at'] as String?,
+      guestId: row['guest_id'] as String?,
+      guestEmail: guestMap?['email'] as String?,
+      guestName: guestMap?['display_name'] as String?,
     );
     return grant.expired ? null : grant;
+  }
+
+  // ── the identity plane (arc 2) ──────────────────────────────────────────
+
+  /// The design's registered id — same upsert the axes store performs (the
+  /// axes registration owns the row; both converge on merge-duplicates).
+  /// Throws when no marker named a project: guest identity is a
+  /// registered-design capability, never a guessed key.
+  Future<String> _ensureDesignId() async {
+    final known = _designId;
+    if (known != null) return known;
+    final p = project;
+    if (p == null || p.isEmpty) {
+      throw StateError('guest registration needs an appbox.json project');
+    }
+    // INSERT, and on the natural-key conflict read the row back. This
+    // PostgREST does NOT infer the (project, artifact) unique constraint
+    // for upsert conflict resolution - measured live 2026-08-26:
+    // merge-duplicates AND ignore-duplicates both answer 23505 on an
+    // existing row, so the upsert is a plain 409 here. The fallback GET
+    // is deterministic (the row provably exists - that is why we got
+    // the 409); the only race is two first-boots inserting at once, and
+    // the loser lands in the GET.
+    final response = await _req('POST', 'design_dial_designs', body: {
+      'project': p,
+      'artifact': _artifactName,
+      if (author != null) 'author_email': author!.email,
+      if (author != null) 'author_name': author!.name,
+    }, extraHeaders: {
+      'Prefer': 'return=representation'
+    });
+    final text = await utf8.decoder.bind(response).join();
+    if (response.statusCode == 409) {
+      final get = await _req(
+          'GET',
+          'design_dial_designs?project=eq.${Uri.encodeComponent(p)}'
+              '&artifact=eq.${Uri.encodeComponent(_artifactName)}'
+              '&select=id');
+      final getText = await utf8.decoder.bind(get).join();
+      if (get.statusCode >= 300) {
+        throw StateError('design lookup failed (${get.statusCode}): $getText');
+      }
+      final found = jsonDecode(getText);
+      if (found is List && found.isNotEmpty && found.first is Map) {
+        final existing = (found.first as Map)['id'];
+        if (existing is String) {
+          _designId = existing;
+          return existing;
+        }
+      }
+      throw StateError('design 409 but no row reads back: $getText');
+    }
+    if (response.statusCode >= 300) {
+      throw StateError(
+          'design registration failed (${response.statusCode}): $text');
+    }
+    final rows = jsonDecode(text);
+    if (rows is! List || rows.isEmpty || rows.first is! Map) {
+      throw StateError('design registration returned no row: $text');
+    }
+    final id = (rows.first as Map)['id'];
+    if (id is! String) {
+      throw StateError('design registration returned no id: $text');
+    }
+    _designId = id;
+    return id;
+  }
+
+  /// The artifact this store serves, bound at construction (fromConfig) or
+  /// on first use (bind) — the name the designs table registers under.
+  String get _artifactName => _boundArtifact ?? '';
+
+  String? _boundArtifact;
+
+  /// Binds the artifact identity used for design registration. The dial API
+  /// knows its artifact; the store learns it once at boot.
+  void bind(String artifact) => _boundArtifact ??= artifact;
+
+  static DialGuest _guestFromRow(Map<String, dynamic> r, int linksAlive) =>
+      DialGuest(
+        id: r['id'] as String,
+        email: r['email'] as String,
+        displayName: (r['display_name'] as String?) ?? '',
+        createdAt: (r['created_at'] as String?) ?? '',
+        linksAlive: linksAlive,
+      );
+
+  @override
+  Future<GuestLink> mintGuestLink(
+      String artifact, Duration ttl, String email, String? displayName) async {
+    bind(artifact);
+    final designId = await _ensureDesignId();
+    final name = displayName?.trim() ?? '';
+    // Upsert on (design_id, email): re-minting for the same person converges
+    // on their existing row instead of forking identity.
+    final res = await _req('POST', 'design_dial_guests', body: {
+      'id': dialNewId(),
+      'design_id': designId,
+      'email': email,
+      'display_name': name,
+    }, extraHeaders: {
+      'Prefer': 'resolution=merge-duplicates,return=representation'
+    });
+    final text = await utf8.decoder.bind(res).join();
+    if (res.statusCode >= 300) {
+      throw StateError('guest registration failed (${res.statusCode}): $text');
+    }
+    final rows = jsonDecode(text);
+    if (rows is! List || rows.isEmpty || rows.first is! Map) {
+      throw StateError('guest registration returned no row: $text');
+    }
+    final guestRow = rows.first as Map<String, dynamic>;
+    final guest = _guestFromRow(guestRow, 1);
+    final raw = _mintToken();
+    await _req('POST', 'design_dial_share_links',
+        body: {
+          'token_hash': _hashToken(raw),
+          'artifact': artifact,
+          'expires_at': DateTime.now().toUtc().add(ttl).toIso8601String(),
+          'guest_id': guest.id,
+          'design_id': designId,
+        },
+        extraHeaders: {'Prefer': 'return=minimal'});
+    return GuestLink(token: raw, guest: guest);
+  }
+
+  @override
+  Future<List<DialGuest>> listGuests(String artifact) async {
+    bind(artifact);
+    final designId = await _ensureDesignId();
+    final res = await _req('GET',
+        'design_dial_guests?design_id=eq.$designId&select=*,'
+        'design_dial_share_links(token_hash,expires_at)&order=created_at.asc');
+    final text = await utf8.decoder.bind(res).join();
+    if (res.statusCode >= 300) {
+      throw StateError('guest list failed (${res.statusCode}): $text');
+    }
+    final rows = jsonDecode(text);
+    if (rows is! List) return const [];
+    return [
+      for (final row in rows)
+        if (row is Map<String, dynamic>)
+          _guestFromRow(
+              row,
+              _liveLinks(row['design_dial_share_links'])),
+    ];
+  }
+
+  static int _liveLinks(Object? v) {
+    if (v is! List) return 0;
+    final now = DateTime.now().toUtc();
+    var alive = 0;
+    for (final link in v) {
+      if (link is! Map) continue;
+      final exp = link['expires_at'] as String?;
+      if (exp == null) {
+        alive++;
+        continue;
+      }
+      final at = DateTime.tryParse(exp);
+      if (at == null || now.isAfter(at) == false) alive++;
+    }
+    return alive;
+  }
+
+  @override
+  Future<DialGuest?> deleteGuest(String artifact, String email) async {
+    bind(artifact);
+    final designId = await _ensureDesignId();
+    final find = await _req('GET',
+        'design_dial_guests?design_id=eq.$designId&email=eq.${Uri.encodeComponent(email)}'
+            '&select=*');
+    final findText = await utf8.decoder.bind(find).join();
+    if (find.statusCode >= 300) {
+      throw StateError('guest lookup failed (${find.statusCode}): $findText');
+    }
+    final found = jsonDecode(findText);
+    if (found is! List || found.isEmpty || found.first is! Map) return null;
+    final guest = _guestFromRow(found.first as Map<String, dynamic>, 0);
+    // The PII path, in order: scrub the email copy off surviving feedback,
+    // then delete the row (links cascade, pins/replies keep guest_id=null).
+    await _req('PATCH', 'design_dial_pins?guest_id=eq.${guest.id}',
+        body: {'guest_email': null},
+        extraHeaders: {'Prefer': 'return=minimal'});
+    await _req('PATCH', 'design_dial_replies?guest_id=eq.${guest.id}',
+        body: {'guest_email': null},
+        extraHeaders: {'Prefer': 'return=minimal'});
+    _invalidatePins();
+    await _req('DELETE',
+        'design_dial_guests?id=eq.${guest.id}',
+        extraHeaders: {'Prefer': 'return=minimal'});
+    return guest;
   }
 }
 
@@ -774,7 +1218,7 @@ class DialApi {
         return await _listPins();
       }
       if (method == 'POST' && sub == '/pins') {
-        return await _createPin(body, caller);
+        return await _createPin(body, caller, grant);
       }
       if (method == 'POST' && sub == '/pins/status') {
         if (caller != DialCaller.author) {
@@ -783,13 +1227,34 @@ class DialApi {
         return await _setStatus(body);
       }
       if (method == 'POST' && sub == '/pins/reply') {
-        return await _reply(body, caller);
+        return await _reply(body, caller, grant);
       }
       if (method == 'POST' && sub == '/share') {
         if (caller != DialCaller.author) {
           return const DialResponse(403, {'error': 'author only'});
         }
         return await _share(body);
+      }
+      // The identity plane (arc 2, 2026-08-26): register the guest, mint
+      // their PERSONAL bearer link, roster the reviewers, revoke + scrub.
+      // Author-only — who may review the design is the author's call alone.
+      if (sub == '/guests' && method == 'GET') {
+        if (caller != DialCaller.author) {
+          return const DialResponse(403, {'error': 'author only'});
+        }
+        return await _listGuests();
+      }
+      if (sub == '/guests' && method == 'POST') {
+        if (caller != DialCaller.author) {
+          return const DialResponse(403, {'error': 'author only'});
+        }
+        return await _mintGuest(body);
+      }
+      if (sub == '/guests/revoke' && method == 'POST') {
+        if (caller != DialCaller.author) {
+          return const DialResponse(403, {'error': 'author only'});
+        }
+        return await _revokeGuest(body);
       }
       // The Draft Overlay (Design Mode; decisions 5/11). Author-only: the
       // draft is the Author's uncommitted WIP — guests are served the last
@@ -963,7 +1428,7 @@ class DialApi {
     final warn = _parityWarnings(d);
     return DialResponse(200, {
       'draft': d.toJson(),
-      if (warn != null) 'warnings': warn,
+      'warnings': ?warn,
     });
   }
 
@@ -978,7 +1443,7 @@ class DialApi {
       'patches': d.patches.length,
       'tokens': d.tokens.length,
       'updatedAt': d.updatedAt,
-      if (warn != null) 'warnings': warn,
+      'warnings': ?warn,
     });
   }
 
@@ -1153,8 +1618,8 @@ class DialApi {
       'group': m['group'] is String ? _str(m, 'group', 40) : 'generic',
       'route': m['route'] is String ? _str(m, 'route', 200) : '/',
       'artifact': artifact,
-      if (text != null) 'text': text,
-      if (png != null) 'png': png,
+      'text': ?text,
+      'png': ?png,
       if (styles.isNotEmpty) 'styles': styles,
       'law':
           'The design structure is LOCKED. Edit ONLY this element via the '
@@ -1226,7 +1691,8 @@ class DialApi {
     });
   }
 
-  Future<DialResponse> _createPin(Object? body, DialCaller caller) async {
+  Future<DialResponse> _createPin(
+      Object? body, DialCaller caller, ShareLinkGrant? grant) async {
     final m = _map(body);
     final route = _str(m, 'route', _Caps.route);
     final viewport = _map(m['viewport'], 'viewport');
@@ -1245,13 +1711,23 @@ class DialApi {
     final rect = _rect(_map(anchor['rect'], 'anchor.rect'));
     final drawing = asDrawing(m['drawing']);
     final text = _str(m, 'body', _Caps.body);
-    final name = m['name'] == null
-        ? (caller == DialCaller.author ? 'author' : 'guest')
-        : _str(m, 'name', _Caps.name);
+    // Attribution (arc 2): a personal link answers WHO the guest is — the
+    // author_name carries only the friendly label, the email lives in the
+    // attribution column. A body name from a bearer guest is ignored: the
+    // registry is the truth, never a typed string.
+    final bearerEmail = grant?.guestEmail;
+    final bearerId = grant?.guestId;
+    final name = bearerEmail != null
+        ? dialGuestLabel(grant?.guestName, bearerEmail)
+        : (m['name'] == null
+            ? (caller == DialCaller.author ? 'author' : 'guest')
+            : _str(m, 'name', _Caps.name));
     final now = DateTime.now().toUtc().toIso8601String();
     final pin = DialPin(
       id: dialNewId(),
       artifact: artifact,
+      guestId: bearerId,
+      guestEmail: bearerEmail,
       route: route,
       viewportW: w,
       viewportH: h,
@@ -1283,14 +1759,19 @@ class DialApi {
     return DialResponse(200, {'pin': pin.toJson()});
   }
 
-  Future<DialResponse> _reply(Object? body, DialCaller caller) async {
+  Future<DialResponse> _reply(
+      Object? body, DialCaller caller, ShareLinkGrant? grant) async {
     final m = _map(body);
     final id = _str(m, 'id', 64);
     final text = _str(m, 'body', _Caps.body);
-    final name = m['name'] == null
-        ? (caller == DialCaller.author ? 'author' : 'guest')
-        : _str(m, 'name', _Caps.name);
-    final reply = await store.addReply(id, caller, name, text);
+    final bearerEmail = grant?.guestEmail;
+    final name = bearerEmail != null
+        ? dialGuestLabel(grant?.guestName, bearerEmail)
+        : (m['name'] == null
+            ? (caller == DialCaller.author ? 'author' : 'guest')
+            : _str(m, 'name', _Caps.name));
+    final reply = await store.addReply(id, caller, name, text,
+        guestId: grant?.guestId, guestEmail: bearerEmail);
     if (reply == null) return const DialResponse(404, {'error': 'no such pin'});
     return DialResponse(201, {'reply': reply.toJson()});
   }
@@ -1308,6 +1789,66 @@ class DialApi {
       // Workers hostname once the Publish slice lands).
       'query': '?dial=$token',
     });
+  }
+
+  Future<DialResponse> _listGuests() async {
+    try {
+      final guests = await store.listGuests(artifact);
+      return DialResponse(200, {
+        'store': store.kind,
+        'guests': [for (final g in guests) g.toJson()],
+      });
+    } on StateError catch (e) {
+      return DialResponse(503, {'error': e.message});
+    } catch (error) {
+      return DialResponse(502, {'error': 'guest list failed: $error'});
+    }
+  }
+
+  Future<DialResponse> _mintGuest(Object? body) async {
+    final m = _map(body, '/guests');
+    final email = dialGuestEmail(m['email']);
+    final name = m['name'] is String ? _str(m, 'name', 80) : null;
+    final days = m['days'] is int ? m['days'] as int : 30;
+    if (days < 1 || days > 365) {
+      throw const FormatException('days must be 1..365');
+    }
+    try {
+      final link = await store.mintGuestLink(
+          artifact, Duration(days: days), email, name);
+      return DialResponse(201, {
+        'token': link.token,
+        'query': '?dial=${link.token}',
+        'email': link.guest.email,
+        'name': link.guest.displayName,
+      });
+    } on StateError catch (e) {
+      return DialResponse(503, {'error': e.message});
+    } catch (error) {
+      return DialResponse(502, {'error': 'guest link mint failed: $error'});
+    }
+  }
+
+  Future<DialResponse> _revokeGuest(Object? body) async {
+    final m = _map(body, '/guests/revoke');
+    final email = dialGuestEmail(m['email']);
+    try {
+      final gone = await store.deleteGuest(artifact, email);
+      if (gone == null) {
+        return DialResponse(
+            404, {'error': 'no such guest on this design'});
+      }
+      return DialResponse(200, {
+        'ok': true,
+        'revoked': gone.email,
+        // The PII contract, said out loud so the UI never has to guess.
+        'scrubbed': 'links deleted; feedback kept, de-attributed',
+      });
+    } on StateError catch (e) {
+      return DialResponse(503, {'error': e.message});
+    } catch (error) {
+      return DialResponse(502, {'error': 'guest revoke failed: $error'});
+    }
   }
 
   // ── validation primitives: every failure is a FormatException → 400 ──

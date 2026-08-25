@@ -509,4 +509,107 @@ group('parity warnings on the draft surface (2026-08-24)', () {
   });
 });
 
+group('the identity plane (arc 2)', () {
+  test('mint → attribute → roster → revoke: the personal-link lifecycle',
+      () async {
+    final store = MemoryDialStore();
+    final api = DialApi(store: store, artifact: 'demo');
+
+    // The author registers the guest BEFORE the link exists; the email is
+    // normalized (lowercase) on the way in.
+    final minted = await api.handle('POST', '/guests', {},
+        {'email': 'Jane@Client.com', 'name': 'Jane'}, null);
+    expect(minted.status, 201, reason: jsonEncode(minted.json));
+    final mj = minted.json as Map;
+    expect(mj['email'], 'jane@client.com');
+    expect(mj['token'] as String, isNotEmpty);
+
+    // The link resolves to a grant that CARRIES the identity.
+    final grant = await store.resolveShareLink(mj['token'] as String);
+    expect(grant, isNotNull);
+    expect(grant!.guestEmail, 'jane@client.com');
+    expect(grant.guestName, 'Jane');
+
+    // A pin on the personal link attributes by construction — and a typed
+    // name cannot forge it: the registry label wins.
+    final pinned = await api.handle(
+        'POST', '/pins', {}, pinBody(name: 'IMPOSTOR'), grant);
+    expect(pinned.status, 201);
+    final pj = (pinned.json as Map)['pin'] as Map;
+    expect(pj['author'], 'guest');
+    expect(pj['name'], 'Jane');
+    expect(pj['guestEmail'], 'jane@client.com');
+
+    // Replies attribute identically.
+    final replied = await api.handle('POST', '/pins/reply', {},
+        {'id': pj['id'], 'body': 'also the spacing'}, grant);
+    expect(replied.status, 201);
+    expect(((replied.json as Map)['reply'] as Map)['guestEmail'],
+        'jane@client.com');
+
+    // The roster answers who holds live links.
+    final roster = await api.handle('GET', '/guests', {}, null, null);
+    final gs = (roster.json as Map)['guests'] as List;
+    expect(gs.single['email'], 'jane@client.com');
+    expect(gs.single['linksAlive'], 1);
+
+    // Guests touch none of it.
+    expect(
+        (await api.handle(
+                'POST', '/guests', {}, {'email': 'x@y.co'}, grant))
+            .status,
+        403);
+    expect((await api.handle('GET', '/guests', {}, null, grant)).status, 403);
+    expect(
+        (await api.handle('POST', '/guests/revoke', {},
+            {'email': 'jane@client.com'}, grant))
+            .status,
+        403);
+
+    // The email law.
+    for (final bad in ['not-an-email', '', 'a@b', 'a b@c.d']) {
+      expect(
+          (await api.handle('POST', '/guests', {}, {'email': bad}, null))
+              .status,
+          400,
+          reason: 'email must 400');
+    }
+
+    // Revoke is the PII path: links die, feedback survives de-attributed.
+    final revoked = await api.handle('POST', '/guests/revoke', {},
+        {'email': 'JANE@client.com'}, null);
+    expect(revoked.status, 200);
+    expect(await store.resolveShareLink(mj['token'] as String), isNull);
+
+    final after = await api.handle('GET', '/pins', {}, null, null);
+    final pins = (after.json as Map)['pins'] as List;
+    expect(pins.first['guestEmail'], isNull,
+        reason: 'the email copy must be scrubbed');
+    expect(pins.first['name'], 'Jane',
+        reason: 'the friendly label survives; the identity does not');
+    expect((pins.first['replies'] as List).single['guestEmail'], isNull);
+
+    final roster2 = await api.handle('GET', '/guests', {}, null, null);
+    expect((roster2.json as Map)['guests'] as List, isEmpty);
+    expect(
+        (await api.handle('POST', '/guests/revoke', {},
+            {'email': 'jane@client.com'}, null))
+            .status,
+        404);
+  });
+
+  test('re-minting converges on one guest, links stack', () async {
+    final store = MemoryDialStore();
+    final api = DialApi(store: store, artifact: 'demo');
+    await api.handle('POST', '/guests', {}, {'email': 'a@b.co'}, null);
+    await api.handle(
+        'POST', '/guests', {}, {'email': 'A@B.CO', 'name': 'A'}, null);
+    final roster = await api.handle('GET', '/guests', {}, null, null);
+    final gs = (roster.json as Map)['guests'] as List;
+    expect(gs.length, 1, reason: 'upsert on (design, email), never a fork');
+    expect(gs.single['linksAlive'], 2);
+    expect(gs.single['name'], 'A');
+  });
+});
+
 }

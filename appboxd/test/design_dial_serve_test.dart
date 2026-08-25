@@ -417,4 +417,114 @@ void main() {
       http.close();
     });
   });
+
+  // The identity plane (arc 2, 2026-08-26) over the wire: the author
+  // registers a guest and mints their PERSONAL link; the page carries the
+  // guest identity; pins attribute by construction; revoke kills the link
+  // and scrubs the email while the feedback survives.
+  group('guest identity over a real server', () {
+    late DesignServer gstSrv;
+    late String gstBase;
+
+    setUpAll(() async {
+      gstSrv = await DesignServer.start(
+          artifactDir: _fixture,
+          noWatch: true,
+          dialStore: MemoryDialStore(),
+          marker: const ArtifactMarker(project: 'test-fixture', kind: 'app'),
+          axesStore: MemoryAxesStore());
+      gstBase = 'http://127.0.0.1:${gstSrv.port}';
+    });
+
+    tearDownAll(() async {
+      await gstSrv.stop();
+    });
+
+    test('mint → guest page → attributed pin → roster', () async {
+      final (mcode, mbody) =
+          await _req('POST', '$gstBase/__dial/guests',
+          body: {'email': 'Client@Energize.mu', 'name': 'Mira'});
+      expect(mcode, 201, reason: mbody);
+      final mj = jsonDecode(mbody) as Map;
+      expect(mj['email'], 'client@energize.mu');
+      final token = mj['token'] as String;
+
+      // The guest's page boots with the identity, not a name prompt.
+      final (pcode, html) = await _req('GET', '$gstBase/?dial=$token');
+      expect(pcode, 200);
+      expect(html, contains('"mode":"guest"'));
+      expect(html, contains('"guest":{"email":"client@energize.mu"'));
+
+      // Their pin carries attribution the link proved — not the typed name.
+      final (pinCode, pinBodyText) =
+          await _req('POST', '$gstBase/__dial/pins?dial=$token',
+          body: {
+            'route': '/',
+            'body': 'the CTA is too quiet',
+            'name': 'whatever they type',
+            'viewport': {'w': 1280, 'h': 800},
+            'anchor': {'el': null, 'rect': {'x': 0, 'y': 0, 'w': 1, 'h': 1}},
+          });
+      expect(pinCode, 201, reason: pinBodyText);
+      final pj = (jsonDecode(pinBodyText) as Map)['pin'] as Map;
+      expect(pj['guestEmail'], 'client@energize.mu');
+      expect(pj['name'], 'Mira');
+
+      // The roster is author-only truth.
+      final (rcode, rbody) = await _req('GET', '$gstBase/__dial/guests');
+      expect(rcode, 200, reason: rbody);
+      expect((jsonDecode(rbody) as Map)['guests'], isNotEmpty);
+      final (gcode, _) =
+          await _req('GET', '$gstBase/__dial/guests?dial=$token');
+      expect(gcode, 403);
+    });
+
+    test('revoke: the link dies, the feedback survives scrubbed', () async {
+      final (_, mbody) = await _req('POST', '$gstBase/__dial/guests',
+          body: {'email': 'gone@energize.mu'});
+      final token = (jsonDecode(mbody) as Map)['token'] as String;
+      await _req('POST', '$gstBase/__dial/pins?dial=$token', body: {
+        'route': '/',
+        'body': 'please keep this note',
+        'viewport': {'w': 1280, 'h': 800},
+        'anchor': {'el': null, 'rect': {'x': 0, 'y': 0, 'w': 1, 'h': 1}},
+      });
+
+      final (vcode, vbody) =
+          await _req('POST', '$gstBase/__dial/guests/revoke',
+          body: {'email': 'gone@energize.mu'});
+      expect(vcode, 200, reason: vbody);
+
+      final (dcode, dhtml) = await _req('GET', '$gstBase/?dial=$token');
+      expect(dcode, 200);
+      expect(dhtml, contains('"mode":"invalid"'),
+          reason: 'a revoked link is a dead link');
+
+      final (lcode, lbody) = await _req('GET', '$gstBase/__dial/pins');
+      expect(lcode, 200);
+      final pins = (jsonDecode(lbody) as Map)['pins'] as List;
+      final kept = pins.where(
+          (row) => (row as Map)['body'] == 'please keep this note');
+      expect(kept, isNotEmpty);
+      expect((kept.first as Map).containsKey('guestEmail'), isFalse);
+    });
+
+    test('a mint broadcasts one thin guests frame', () async {
+      final http = HttpClient();
+      final req =
+          await http.getUrl(Uri.parse('$gstBase/__dial/events'));
+      final res = await req.close();
+      final frames = StreamController<String>();
+      res.transform(utf8.decoder).listen(frames.add);
+      await Future<void>.delayed(const Duration(milliseconds: 150));
+      await _req('POST', '$gstBase/__dial/guests',
+          body: {'email': 'sse@energize.mu'});
+      final seen = await frames.stream
+          .firstWhere((f) => f.contains('"kind":"guests"'), orElse: () => '')
+          .timeout(const Duration(seconds: 5));
+      expect(seen, contains('event: dial'));
+      await res.detachSocket().then((s) => s.destroy());
+      http.close();
+    });
+  });
 }

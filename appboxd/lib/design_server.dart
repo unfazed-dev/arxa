@@ -447,6 +447,14 @@ class DesignServer {
     // caller's cwd is not the long-lived server's. Resolve it once, here,
     // while the caller's cwd is still the right base.
     artifactDir = p.normalize(p.absolute(artifactDir));
+    // The marker resolves BEFORE any store builds: it is the identity every
+    // Supabase plane keys on (project + artifact, never a bare basename —
+    // two clients both shipping a design/ dir must not collide). The axes
+    // plane (arc 1) additionally kind-gates on it: apps get style/theme
+    // control, sites never do. The identity plane (arc 2) does NOT kind-gate
+    // — guests review sites too.
+    final resolvedMarker = marker ?? resolveArtifactMarker(artifactDir);
+    var authorIdentity = dial ? loadAuthorIdentity() : null;
     final srv = DesignServer._()
       ..artifactDir = artifactDir
       ..projectRoot = projectDir
@@ -458,23 +466,19 @@ class DesignServer {
       ..locales = _scanLocales(artifactDir, projectDir: projectDir)
       .._errorCatalog =
           ErrorCatalog(_l10nDirs(artifactDir, projectDir: projectDir))
+      ..artifactMarker = resolvedMarker
       ..dialEnabled = dial
       ..dialStore = dialStore ??
           SupabaseDialStore.fromConfig(
-              credentialsFileText: readSupabaseCredentialsFile()) ??
+              credentialsFileText: readSupabaseCredentialsFile(),
+              project: resolvedMarker?.project,
+              artifact: p.basename(artifactDir),
+              author: authorIdentity) ??
           MemoryDialStore()
       ..draftStore = dial
           ? (draftStore ?? DraftFileStore(artifactDir: artifactDir))
           : null;
-    // The axes plane (arc 1, 2026-08-25): kind-gated on the nearest
-    // appbox.json marker — apps get the dial's style/theme control, sites
-    // never do. The marker doubles as the store's identity: project +
-    // artifact, never a bare basename (two clients both shipping a
-    // design/ dir must not collide).
-    final resolvedMarker = marker ?? resolveArtifactMarker(artifactDir);
-    srv.artifactMarker = resolvedMarker;
     if (dial && resolvedMarker != null && resolvedMarker.kind == 'app') {
-      var authorIdentity = loadAuthorIdentity();
       if (authorIdentity == null) {
         stderr.writeln('[design-server] dial axes: ~/.appbox/identity.json '
             'missing — the design registers unattributed; add {"name", '
@@ -1087,6 +1091,11 @@ class DesignServer {
               : (grant == null ? 'invalid' : 'guest'),
           if (grant != null) 'token': dialToken,
           if (servedAxes != null) 'axes': servedAxes.config,
+          // Arc 2: a personal link tells the island WHO the guest is, so
+          // the composer attributes by construction and never asks for a
+          // name the registry already knows.
+          if (grant?.guestEmail != null)
+            'guest': {'email': grant!.guestEmail, 'name': grant.guestName},
         });
         respBody = respBody.replaceFirst(
             '</body>',
@@ -1351,6 +1360,13 @@ class DesignServer {
       if (payload is Map && payload['axes'] is Map) {
         _broadcastDial('axes', payload['axes']);
       }
+    }
+    // The identity plane: roster changes are thin frames — authors holding
+    // the comments slide refetch the guest list; nothing else cares.
+    if (r.status < 300 &&
+        (sub == '/guests' || sub == '/guests/revoke') &&
+        method == 'POST') {
+      _broadcastDial('guests');
     }
     // Selection handoff (slice 7): the studio plugin listens for these and
     // writes the pointer line into the composer draft.

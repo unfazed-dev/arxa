@@ -28,7 +28,11 @@
    innerHTML.
 
    MODES. 'author' (no token on the URL — the loopback designer): full
-   powers. 'guest' (a valid ?dial= token): comments only — the Comment
+   powers. 'guest' (a valid ?dial= token): comments only — the Comment.
+   Arc 2: a PERSONAL ?dial= token additionally carries the registered
+   guest identity (email) — attribution comes from the link, never a
+   typed name, and revoking the guest deletes their email but keeps
+   their feedback, de-attributed
    trigger and a Comments-only tray; no Edit, no Studio slides beyond
    Comments. 'invalid' (a dead token): the dock boots to say so, nothing
    else. The store badge reads 'local' when the server runs its memory
@@ -88,6 +92,8 @@
         }
       : null,
     token: cfg.token || null,
+    guest: cfg.guest || null, // arc 2: personal-link identity {email, name} — attribution by construction
+    guests: null, // arc 2: author's roster cache (null = not loaded)
     pins: [],
     open: false, // radial fan expanded
     tray: null, // null | 'edit' | 'comments' | 'settings' | 'tweak' | 'ship'
@@ -113,6 +119,10 @@
   try {
     S.name = localStorage.getItem('arxa-dial-name') || '';
   } catch (_) {}
+  // A personal link IS the identity: the registry knows who this is, so
+  // the guest is never asked for a name and their pins attribute by
+  // construction (the server stamps it; a typed name cannot forge it).
+  if (S.guest) S.name = S.guest.name || (S.guest.email.split('@')[0] || 'guest');
 
   const KANBAN = [
     ['open', 'Open'],
@@ -700,6 +710,7 @@
 
   function renderCommentsBody(body) {
     const route = location.pathname;
+    if (S.mode === 'author') ensureGuestShareUI(body, false);
     const here = S.pins.filter((p) => p.route === route);
     const elsewhere = S.pins.filter((p) => p.route !== route);
     if (!S.pins.length) {
@@ -725,7 +736,11 @@
         const txt = h('span', { class: 'txt', text: p.body });
         const meta = h('div', { class: 'meta' }, [
           chip(p.status),
-          h('span', { text: p.name + ' · ' + p.route }),
+          h('span', {
+            text: p.name
+              + (p.guestEmail && S.mode === 'author' ? ' · ' + p.guestEmail : '')
+              + ' · ' + p.route,
+          }),
         ]);
         if (!p.anchor.el) meta.appendChild(h('span', { class: 'orphan-tag', text: 'surface' }));
         else if (!resolveAnchor(p)) meta.appendChild(h('span', { class: 'orphan-tag', text: 'orphaned' }));
@@ -754,25 +769,148 @@
     if (pin) setTimeout(() => openThread(pin), 350); // let the page settle first
   }
 
-  // ── share minting (Comments slide CTA) ────────────────────────────────
-  async function mintShareLink(container) {
-    const r = await api('POST', '/share', {});
-    if (r && r.token) {
-      const url = location.origin + location.pathname + '?dial=' + r.token;
-      container.appendChild(h('div', { class: 'linkbox', text: url }));
-      const copy = h('button', { class: 'btn ghost', text: 'Copy link' });
-      copy.addEventListener('click', async () => {
-        try {
-          await navigator.clipboard.writeText(url);
-          say('Link copied');
-        } catch (_) {
-          say('Copy failed — select the link manually');
+  // ── the identity plane: personal client links (arc 2, Comments slide) ──
+  // Anonymous tokens are gone from the UI: every minted link belongs to a
+  // REGISTERED guest (email keyed), their pins/replies attribute by
+  // construction, and revoke deletes the PII while keeping the feedback.
+  function guestLabel(g) {
+    return (g.name && g.name.trim()) || g.email.split('@')[0];
+  }
+
+  async function loadGuests(force) {
+    if (S.guests && !force) return S.guests;
+    const r = await api('GET', '/guests');
+    S.guests = (r && r.guests) || [];
+    return S.guests;
+  }
+
+  function renderGuestRoster(panel) {
+    const list = panel.querySelector('.gstlist');
+    if (!list) return;
+    list.textContent = '';
+    const gs = S.guests || [];
+    if (!gs.length) {
+      list.appendChild(h('div', {
+        class: 'ctl',
+        style: 'font-size:11px;color:#9aa0ab',
+        text: 'No guests yet — mint a personal link below.',
+      }));
+      return;
+    }
+    gs.forEach((g) => {
+      const row = h('div', { class: 'row', style: 'cursor:default' });
+      row.appendChild(h('span', {
+        class: 'txt',
+        text: guestLabel(g) + ' · ' + g.email,
+        title: g.linksAlive + ' live link(s) · added ' + (g.createdAt || ''),
+      }));
+      const revoke = h('button', { class: 'btn ghost', text: 'Revoke' });
+      revoke.title = 'Delete their links + email; keep the feedback, de-attributed';
+      revoke.addEventListener('click', async () => {
+        revoke.disabled = true;
+        const r = await api('POST', '/guests/revoke', { email: g.email });
+        if (r && r.ok) {
+          say('Revoked ' + g.email + ' — feedback kept, email scrubbed');
+          await loadGuests(true);
+          renderGuestRoster(panel);
+        } else {
+          revoke.disabled = false;
+          say((r && r.error) || 'Revoke failed');
         }
       });
-      container.appendChild(h('div', { class: 'btnrow' }, [copy]));
-    } else {
-      say('Could not mint a link');
+      const meta = h('div', { class: 'meta' }, [
+        h('span', { text: g.linksAlive + ' link' + (g.linksAlive === 1 ? '' : 's') }),
+        revoke,
+      ]);
+      row.appendChild(meta);
+      list.appendChild(row);
+    });
+  }
+
+  function ensureGuestShareUI(body, focusEmail) {
+    let panel = body.querySelector('.gstpanel');
+    if (panel) {
+      if (focusEmail) {
+        const em = panel.querySelector('.gstemail');
+        if (em) em.focus();
+      }
+      return panel;
     }
+    panel = h('div', { class: 'gstpanel' });
+    panel.appendChild(h('div', {
+      class: 'sect',
+      text: 'Client access — personal links',
+    }));
+    panel.appendChild(h('div', {
+      class: 'ctl',
+      style: 'font-size:11px;color:#9aa0ab',
+      text: 'Each link belongs to one registered email: their pins attribute to them, and revoke deletes their email while keeping every comment.',
+    }));
+    const list = h('div', { class: 'gstlist' });
+    panel.appendChild(list);
+    const email = h('input', {
+      type: 'email',
+      class: 'gstemail',
+      placeholder: 'client@company.com',
+      style: 'margin-top:8px',
+    });
+    const name = h('input', {
+      type: 'text',
+      placeholder: 'Display name (optional)',
+      style: 'margin-top:6px',
+    });
+    const mint = h('button', { class: 'btn', text: 'Mint personal link' });
+    const out = h('div');
+    mint.addEventListener('click', async () => {
+      const em = email.value.trim();
+      if (!em || em.indexOf('@') < 1) {
+        say('Enter the client email first');
+        email.focus();
+        return;
+      }
+      mint.disabled = true;
+      mint.textContent = 'Minting…';
+      const r = await api('POST', '/guests', {
+        email: em,
+        name: name.value.trim() || undefined,
+      });
+      mint.disabled = false;
+      mint.textContent = 'Mint personal link';
+      if (r && r.token) {
+        const url = location.origin + location.pathname + '?dial=' + r.token;
+        out.textContent = '';
+        out.appendChild(h('div', {
+          class: 'linkbox',
+          text: url,
+          title: 'Personal link for ' + r.email,
+        }));
+        const copy = h('button', { class: 'btn ghost', text: 'Copy link' });
+        copy.addEventListener('click', async () => {
+          try {
+            await navigator.clipboard.writeText(url);
+            say('Link copied — send it to ' + r.email);
+          } catch (_) {
+            say('Copy failed — select the link manually');
+          }
+        });
+        out.appendChild(h('div', { class: 'btnrow' }, [copy]));
+        email.value = '';
+        name.value = '';
+        say('Personal link minted for ' + r.email);
+        await loadGuests(true);
+        renderGuestRoster(panel);
+      } else {
+        say((r && r.error) || 'Could not mint a link');
+      }
+    });
+    panel.appendChild(email);
+    panel.appendChild(name);
+    panel.appendChild(h('div', { class: 'btnrow', style: 'margin-top:8px' }, [mint]));
+    panel.appendChild(out);
+    body.insertBefore(panel, body.firstChild);
+    loadGuests(true).then(() => renderGuestRoster(panel));
+    if (focusEmail) email.focus();
+    return panel;
   }
 
   // ── pin anchoring: data-el identity + rect snapshot (decision 6) ──────
@@ -928,7 +1066,14 @@
     const area = h('textarea', { rows: '3', placeholder: 'What should change?' });
     composer.appendChild(area);
     let nameInput = null;
-    if (S.mode === 'guest' && !S.name) {
+    if (S.guest) {
+      composer.appendChild(h('div', {
+        class: 'who',
+        style: 'font-size:11px;color:#8fa98f;margin-top:6px',
+        text: 'Commenting as ' + S.name + ' (' + S.guest.email + ')',
+      }));
+    }
+    if (S.mode === 'guest' && !S.name && !S.guest) {
       nameInput = h('input', { type: 'text', placeholder: 'Your name', style: 'margin-top:8px' });
       composer.appendChild(nameInput);
     }
@@ -984,7 +1129,12 @@
     S.activePin = pin.id;
     renderPins();
     thread.textContent = '';
-    const head = h('div', { class: 'who', text: pin.name + ' · ' + pin.route });
+    const head = h('div', {
+      class: 'who',
+      text: pin.name
+        + (pin.guestEmail && S.mode === 'author' ? ' · ' + pin.guestEmail : '')
+        + ' · ' + pin.route,
+    });
     thread.appendChild(head);
     thread.appendChild(h('div', { class: 'body', text: pin.body }));
     const ctx = pin.anchor && pin.anchor.text;
@@ -1464,7 +1614,8 @@
   function applyPatchesLive() {
     for (const key of Object.keys(S.draft.patches)) {
       const p = S.draft.patches[key] || {};
-      for (const el of targetsForKey(key)) {
+      const insts = targetsForKey(key);
+      for (const el of insts) {
         if (p.style) {
           for (const prop of Object.keys(p.style)) {
             const v = p.style[prop];
@@ -1478,6 +1629,15 @@
         if (p.attrs) {
           for (const name of Object.keys(p.attrs)) {
             const v = p.attrs[name];
+            // instance-scoped attrs (see setAttrProp) touch ONLY their
+            // occurrence — the live twin of the overlay's onlyNth path.
+            if (p.attrsNth && Object.prototype.hasOwnProperty.call(p.attrsNth, name)) {
+              if (el === insts[p.attrsNth[name]]) {
+                if (v == null) el.removeAttribute(name);
+                else el.setAttribute(name, v);
+              }
+              continue;
+            }
             if (v == null) el.removeAttribute(name);
             else el.setAttribute(name, v);
           }
@@ -1539,7 +1699,7 @@
       S.draft.patches = next.patches;
       applyTokensLive();
       applyPatchesLive();
-      renderCardAgain();
+      refreshOpenCard();
       if (S.tray === 'edit') renderTraySlide('edit');
       if (S.tray === 'tweak') renderTraySlide('tweak');
     } finally {
@@ -1583,10 +1743,35 @@
     return [...document.querySelectorAll('[data-arxa-id="' + key + '"]')];
   }
 
-  function setAttrProp(key, name, value) {
+  // Attr edits carry the text law's instance provenance (2026-08-26):
+  // an anchor whose instances DIVERGE on the edited attr is not a
+  // homogeneous row — every image sharing data-el="media-source" has its
+  // OWN src, and an every-row apply rewrote all 22 at once (live report:
+  // "changed the image of one element and it changed most of the
+  // images"). Divergent instances get per-instance scoping: nth is
+  // recorded on the patch (attrsNth[name]) and both live apply and the
+  // serve-time overlay touch ONLY that occurrence. Homogeneous repeats
+  // (same value everywhere) keep every-row semantics, exactly as text
+  // does. [origin] is the tapped instance the edit is about.
+  function setAttrProp(key, name, value, origin) {
     const p = patchFor(key);
     p.attrs[name] = value || null; // empty clears the attribute
-    for (const el of targetsForKey(key)) {
+    const insts = targetsForKey(key);
+    let targets = insts;
+    const vals = new Set(insts.map((el) => el.getAttribute(name)));
+    if (insts.length > 1 && vals.size > 1) {
+      // instances disagree on this attr — scope to the edited one
+      const idx = origin && insts.indexOf(origin) >= 0
+        ? insts.indexOf(origin) : 0;
+      p.attrsNth = p.attrsNth || {};
+      p.attrsNth[name] = idx;
+      targets = [insts[idx]];
+    } else if (p.attrsNth && Object.prototype.hasOwnProperty.call(p.attrsNth, name)) {
+      // the instances became homogeneous again — drop the scoping
+      delete p.attrsNth[name];
+      if (!Object.keys(p.attrsNth).length) delete p.attrsNth;
+    }
+    for (const el of targets) {
       if (value) el.setAttribute(name, value);
       else el.removeAttribute(name);
     }
@@ -1799,8 +1984,8 @@
               credit: hit.credit, provider: hit.provider,
             });
             if (!c || !c.path) { creditLine.textContent = (c && c.error) || 'copy failed'; return; }
-            setAttrProp(sel.key, 'src', c.path);
-            if (isVideo && hit.poster) setAttrProp(sel.key, 'poster', hit.poster);
+            setAttrProp(sel.key, 'src', c.path, sel.el);
+            if (isVideo && hit.poster) setAttrProp(sel.key, 'poster', hit.poster, sel.el);
             creditLine.textContent = '✓ ' + c.path + ' — ' + hit.credit;
           });
           grid.appendChild(b);
@@ -1817,7 +2002,7 @@
         if (!r.assets.length) { creditLine.textContent = 'no local assets yet'; return; }
         r.assets.forEach((path) => {
           const b = h('button', { title: path, text: path.split('/').pop(), style: 'font-size:10px;padding:4px 6px;border-radius:6px;border:1px solid #2a2a35;flex:none' });
-          b.addEventListener('click', () => { setAttrProp(sel.key, 'src', path); creditLine.textContent = '✓ ' + path; });
+          b.addEventListener('click', () => { setAttrProp(sel.key, 'src', path, sel.el); creditLine.textContent = '✓ ' + path; });
           grid.appendChild(b);
         });
       });
@@ -2243,6 +2428,29 @@
     renderCardBody(paneCustomise);
     positionCard();
   }
+  // Reactivity law (operator, 2026-08-26): an OPEN card documents its
+  // element LIVE — every external restyle (a draft sync, an axes
+  // publish or preview pick) re-renders the facets so the swatch never
+  // lies about the page. Two guards: while the author is mid-edit
+  // inside the card a re-render would drop their cursor, so that beat
+  // is skipped (the next one catches up); and the CSS escape hatch is
+  // deferred-until-Apply by design, so its unapplied text survives
+  // every re-render instead of silently disappearing.
+  function refreshOpenCard() {
+    if (!S.card || !S.selected) return;
+    // Shadow-retargeting law: document.activeElement returns the HOST
+    // when the focused element lives inside this shadow root, so the
+    // guard must ask the ROOT (ShadowRoot.activeElement is not
+    // retargeted) or every mid-edit frame would slip past the skip and
+    // re-render under the author's cursor.
+    const a = (root.activeElement || document.activeElement);
+    if (a && card.contains(a) &&
+        (a.tagName === 'INPUT' || a.tagName === 'TEXTAREA' ||
+         a.tagName === 'SELECT')) return;
+    const unapplied = cssEscapeEl ? cssEscapeEl.value : '';
+    renderCardAgain();
+    if (cssEscapeEl && unapplied.trim()) cssEscapeEl.value = unapplied;
+  }
   function openCard() {
     if (!S.selected) return;
     S.card = S.selected.key;
@@ -2354,6 +2562,10 @@
     S.axes.current = { style: style, theme: theme || 'system' };
     syncAxesUrl();
     updatePreviewMark();
+    // An axes flip restyles every element at stylesheet level — an
+    // open card's facets must follow or its swatches go stale against
+    // the page (the reactivity law above; same guard applies).
+    refreshOpenCard();
     if (S.tray === 'style') renderTraySlide('style');
   }
   function syncAxesUrl() {
@@ -2594,7 +2806,7 @@
       ctaBtn.title = n === 0 ? 'Nothing to commit yet' : 'Hand the draft to the studio agent';
     } else if (id === 'comments') {
       ctaBtn.textContent = 'Share';
-      ctaBtn.title = 'Mint a client link (view + comment, 30 days)';
+      ctaBtn.title = 'Mint a personal client link (view + comment, 30 days)';
     } else if (id === 'ship') {
       ctaBtn.textContent = 'Deploy';
       // Enabled only when the pipeline allows AND the server's deploy
@@ -2614,7 +2826,7 @@
     if (id === 'edit') return requestCommit();
     if (id === 'comments') {
       const body = slideBodies.comments;
-      if (body && !body.querySelector('.linkbox')) mintShareLink(body);
+      if (body) ensureGuestShareUI(body, true);
       return;
     }
     if (id === 'ship') return shipVerb('/ship/deploy');
@@ -2987,6 +3199,15 @@
       if (d.kind === 'axes' && d.data && S.axes) {
         S.axes.published = { style: d.data.style, theme: d.data.theme };
         applyAxes(d.data.style, d.data.theme);
+      }
+      // The identity plane: someone minted or revoked — an author holding
+      // the comments slide refetches the roster (read; reads never
+      // broadcast, so no loop).
+      if (d.kind === 'guests' && S.mode === 'author' && slideBodies.comments) {
+        loadGuests(true).then(() => {
+          const panel = slideBodies.comments.querySelector('.gstpanel');
+          if (panel) renderGuestRoster(panel);
+        });
       }
       // 'commit' frames feed the studio agent — the requester already
       // heard its toast, there is nothing for this page to do.
