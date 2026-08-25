@@ -177,9 +177,23 @@ Future<void> main() async {
   check((st['headCursor'] as String).contains('grab'),
       'header is a grab handle: cursor=' + (st['headCursor'] as String));
   final before = await cardst(tab);
-  // grab the label end of the header, far from its buttons
-  final gx = (before['headX'] as num) + 26;
-  final gy = (before['headY'] as num) + (before['headH'] as num) / 2;
+  // The header is a TAB BAR now (2026-08-26): buttons never start a
+  // drag, so the grab point is the free space BETWEEN the tab pair and
+  // the × button — computed live, never a magic offset.
+  final grabPt = await js(tab, '''
+    (() => {
+      const root = ''' + SR + ''';
+      const arxa = root.querySelector('#chead .tab[data-tab=arxa]');
+      const close = root.querySelector('#chead .cclose');
+      const head = root.getElementById('chead').getBoundingClientRect();
+      const tabR = arxa ? arxa.getBoundingClientRect().right : head.x + 26;
+      const closeL = close ? close.getBoundingClientRect().left : head.right - 30;
+      return JSON.stringify({x: Math.round((tabR + closeL) / 2),
+        y: Math.round(head.y + head.height / 2)});
+    })()
+  ''');
+  final gp = jsonDecode(grabPt as String) as Map;
+  final gx = (gp['x'] as num), gy = (gp['y'] as num);
   // choose a direction with room so clamping never eats the delta
   final dx = (before['left'] as num) + 140 + (before['w'] as num) + 8 <= 1280 ? 140 : -140;
   final dy = (before['top'] as num) + 90 + (before['h'] as num) + 8 <= 800 ? 90 : -90;

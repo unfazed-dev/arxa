@@ -97,6 +97,10 @@
     draftDirty: false,
     ownSave: 0, // suppress refetch loops on our own PUT's broadcast
     inlineEditing: null, // original text of the element being edited on-canvas
+    cardTab: 'customise', // the floating card's active tab
+    cardTabs: {}, // per-element tab memory (key -> 'customise' | 'arxa')
+    arxa: {}, // per-element handoff state (key -> {id, fetch, label, route,
+    //   kind, group, png, text, status}) — survives card close in-session
   };
   try {
     S.name = localStorage.getItem('arxa-dial-name') || '';
@@ -271,12 +275,40 @@
     '    0 0 32px rgba(110,136,76,var(--glow,.22));',
     '  max-height:min(440px,62vh)}',
     '#card.open{display:flex}',
-    '#chead{display:flex;align-items:center;gap:8px;padding:10px 12px;',
+    '#chead{display:flex;align-items:center;gap:6px;padding:8px 10px;',
     '  border-bottom:1px solid rgba(43,54,29,.35);flex:none;',
-    '  font-size:12.5px;font-weight:700;cursor:grab;',
-    '  user-select:none;-webkit-user-select:none;touch-action:none}',
+    '  cursor:grab;user-select:none;-webkit-user-select:none;touch-action:none}',
     '#chead:active{cursor:grabbing}',
     '#chead button{cursor:pointer}',
+    /* the tab pair (operator, 2026-08-26): Customise + Arxa left, ×
+       right; the whole bar stays the drag handle and buttons never
+       start a drag (the closest('button') guard in the pointerdown). */
+    '#chead .tab{font-size:11.5px;font-weight:700;padding:5px 10px;',
+    '  border-radius:8px;background:transparent;color:rgba(243,246,238,.72);',
+    '  border:1px solid transparent}',
+    '#chead .tab.on{background:rgba(243,246,238,.16);color:rgb(243,246,238);',
+    '  border-color:rgba(227,238,222,.35)}',
+    /* the identity row: element label + kind chip + idline, shared by
+       both tabs, fixed above the scrolling body (the header is tabs). */
+    '#cidrow{display:flex;align-items:center;gap:8px;padding:9px 12px 0;',
+    '  flex:none;font-size:12.5px;font-weight:700;flex-wrap:wrap}',
+    '#cidrow .kchip{font-size:9.5px;font-weight:700;text-transform:uppercase;',
+    '  letter-spacing:.04em;background:rgba(243,246,238,.16);',
+    '  color:rgba(243,246,238,.85);padding:2px 7px;border-radius:8px}',
+    '#cidrow .idline{flex-basis:100%;margin-top:-2px}',
+    /* the bottom CTA bar (operator, 2026-08-26): fixed like the top
+       bar, per-tab actions; the body alone scrolls. */
+    '#cfoot{display:flex;gap:8px;align-items:center;padding:10px 12px;',
+    '  border-top:1px solid rgba(43,54,29,.35);flex:none}',
+    '#cfoot .btn{flex:none}',
+    '.tabpane{display:none}',
+    '.tabpane.on{display:block}',
+    '.arxaid{font-size:11px;font-weight:700;color:rgba(243,246,238,.85)}',
+    '.arxaline{font-size:10.5px;color:rgba(243,246,238,.78);',
+    '  padding:2px 10px;line-height:1.45}',
+    '.arxastatus{font-size:11px;font-weight:700;padding:6px 10px;',
+    '  border-radius:8px;background:rgba(243,246,238,.12);margin:6px 10px}',
+    '.arxastatus.ok{background:rgba(43,54,29,.45)}',
     '#chead .kchip{font-size:9.5px;font-weight:700;text-transform:uppercase;',
     '  letter-spacing:.04em;background:#2a2a35;color:#9aa0ab;',
     '  padding:2px 7px;border-radius:8px}',
@@ -1665,7 +1697,6 @@
   function renderCardBody(body) {
     const sel = S.selected;
     if (!sel) return;
-    body.appendChild(h('div', { class: 'idline', text: sel.key === sel.id ? sel.id : sel.id + ' → ' + sel.key }));
     const draft = S.draft.patches[sel.key] || {};
 
     // Content facet — text-bearing elements with no stamped descendants
@@ -1780,17 +1811,190 @@
         .map((k) => k + ': ' + (draft.style[k] == null ? '' : draft.style[k]))
         .join('; ');
     }
-    const applyCss = h('button', { class: 'btn', text: 'Apply CSS' });
-    applyCss.addEventListener('click', () => {
-      const parsed = parseCss(css.value);
-      const keys = Object.keys(parsed);
-      if (!keys.length) { say('No valid declarations parsed'); return; }
-      for (const k of keys) setStyleProp(sel.key, k, parsed[k]);
-      say(keys.length + (keys.length === 1 ? ' property' : ' properties') + ' applied');
-      renderCardAgain();
-    });
+    cssEscapeEl = css; // the footer's Apply CSS reads this live
     body.appendChild(h('div', { class: 'facet' }, [css]));
-    body.appendChild(h('div', { class: 'btnrow' }, [applyCss]));
+  }
+  // the live CSS-escape textarea (owned by the body, read by the
+  // footer's Apply CSS button — the CTA bar is per-tab, not per-body)
+  let cssEscapeEl = null;
+
+  // ── the floating card's bottom CTA bar (operator, 2026-08-26) ────────
+  function renderCardFooter() {
+    cfoot.textContent = '';
+    if (!S.card || !S.selected) return;
+    if (S.cardTab === 'customise') {
+      const apply = h('button', { class: 'btn', text: 'Apply CSS' });
+      apply.addEventListener('click', () => {
+        if (!cssEscapeEl || !S.selected) return;
+        const parsed = parseCss(cssEscapeEl.value);
+        const keys = Object.keys(parsed);
+        if (!keys.length) { say('No valid declarations parsed'); return; }
+        for (const k of keys) setStyleProp(S.selected.key, k, parsed[k]);
+        say(keys.length + (keys.length === 1 ? ' property' : ' properties') + ' applied');
+        renderCardAgain();
+      });
+      cfoot.appendChild(apply);
+      return;
+    }
+    const a = S.arxa[S.selected.key];
+    if (!a || !a.id) {
+      const send = h('button', { class: 'btn', text: 'Send to arxa studio' });
+      send.addEventListener('click', () => sendArxa());
+      cfoot.appendChild(send);
+      return;
+    }
+    const comp = h('button', { class: 'btn', text: '→ composer' });
+    comp.addEventListener('click', () => composeArxa());
+    cfoot.appendChild(comp);
+    const copy = h('button', { class: 'btn ghost', text: 'copy line' });
+    copy.addEventListener('click', () => copyPointerLine());
+    cfoot.appendChild(copy);
+    const again = h('button', { class: 'btn ghost', text: 'send again' });
+    again.addEventListener('click', () => sendArxa());
+    cfoot.appendChild(again);
+  }
+
+  // ── the Arxa tab (operator, 2026-08-26): the studio handoff lives in
+  //    the floating card now — the panel's green card retired. The pane
+  //    shows everything the old card showed; the CTAs live in the
+  //    footer. No auto-send: viewing the tab sends nothing.
+  function renderArxaPane() {
+    paneArxa.textContent = '';
+    if (!S.selected) return;
+    const sel = S.selected;
+    const a = S.arxa[sel.key];
+    if (!a || !a.id) {
+      paneArxa.appendChild(h('div', { class: 'sect', text: 'arxa studio' }));
+      paneArxa.appendChild(h('div', { class: 'arxaline',
+        text: 'Send this element to the arxa studio composer. The agent receives an organized context — identity, computed styles, a snapshot — and edits ONLY this element via the design patch contract.' }));
+      return;
+    }
+    paneArxa.appendChild(h('div', { class: 'sect', text: 'arxa studio' }));
+    paneArxa.appendChild(h('div', { class: 'arxaid', text: '✨ design selection ' + a.id }));
+    const chips = h('div', { style: 'display:flex;gap:4px;flex-wrap:wrap;padding:4px 10px' });
+    chips.appendChild(h('span', { class: 'kchip', text: a.label || 'element' }));
+    chips.appendChild(h('span', { class: 'kchip', text: (a.kind || '') + ' · ' + (a.group || '') }));
+    chips.appendChild(h('span', { class: 'kchip', text: a.route || '/' }));
+    paneArxa.appendChild(chips);
+    if (a.png) paneArxa.appendChild(h('div', { class: 'arxaline',
+      text: '📸 snapshot captured — “→ composer” attaches it to the draft' }));
+    if (a.text) paneArxa.appendChild(h('div', { class: 'arxaline',
+      style: 'white-space:nowrap;overflow:hidden;text-overflow:ellipsis',
+      text: '“' + a.text.slice(0, 90) + '”' }));
+    paneArxa.appendChild(h('div', { class: 'arxaline',
+      text: 'the agent fetches the organized context (styles · law · screenshot) from the design server and edits ONLY this element' }));
+    if (a.status) {
+      const st = h('div', { class: 'arxastatus' + (a.statusOk ? ' ok' : ''), text: a.status });
+      paneArxa.appendChild(st);
+    }
+  }
+
+  // sendArxa = the old askArxa, relocated into the tab flow: capture +
+  // POST, then remember the handoff per element (in-session) so the
+  // pane keeps its sent state through card close/reopen.
+  async function sendArxa() {
+    const sel = S.selected;
+    if (!sel) return;
+    const a = S.arxa[sel.key] || (S.arxa[sel.key] = {});
+    a.status = 'capturing…'; a.statusOk = false;
+    renderArxaPane(); renderCardFooter();
+    const cs = getComputedStyle(sel.el);
+    const digest = {};
+    ['font-size', 'font-weight', 'line-height', 'color', 'background-color',
+      'padding', 'gap', 'border-radius'].forEach((p) => {
+      const v = cs.getPropertyValue(p);
+      if (v) digest[p] = v.trim();
+    });
+    say('Capturing selection…');
+    const png = await captureElement(sel.el);
+    const r = await api('POST', '/selection', {
+      key: sel.key,
+      label: sel.label,
+      kind: sel.el.tagName.toLowerCase(),
+      group: sel.group,
+      route: location.pathname,
+      text: sel.el.textContent.trim().slice(0, 400) || undefined,
+      styles: digest,
+      png: png || undefined,
+    });
+    if (r && r.id) {
+      a.id = r.id;
+      a.fetch = r.fetch;
+      a.label = sel.label.split(' · ')[0];
+      a.kind = sel.el.tagName.toLowerCase();
+      a.group = sel.group;
+      a.route = location.pathname;
+      a.png = !!png;
+      a.text = sel.el.textContent.trim().slice(0, 90);
+      a.status = ''; a.statusOk = false;
+      say('Sent to arxa studio — design selection ' + r.id);
+    } else {
+      a.status = (r && r.error) || 'send failed'; a.statusOk = false;
+      say((r && r.error) || 'handoff failed');
+    }
+    renderArxaPane(); renderCardFooter();
+  }
+
+  // → composer: POST /compose; the panel (always-on SSE) inserts the
+  // pointer line + snapshot into the composer and acks; the ack rides
+  // the same dial event stream back here. The button never fakes a ✓ —
+  // the status line waits for the REAL ack (4s budget).
+  let composeWaiter = null;
+  async function composeArxa() {
+    const sel = S.selected;
+    const a = sel && S.arxa[sel.key];
+    if (!a || !a.id) return;
+    a.status = 'sending to composer…'; a.statusOk = false;
+    renderArxaPane(); renderCardFooter();
+    // api() never throws and returns the parsed body — an error body
+    // carries {error}, a success carries {id}.
+    const r = await api('POST', '/compose', { id: a.id });
+    if (!r || !r.id) {
+      a.status = (r && r.error) || 'compose failed'; a.statusOk = false;
+      renderArxaPane(); renderCardFooter();
+      return;
+    }
+    if (composeWaiter) clearTimeout(composeWaiter);
+    composeWaiter = setTimeout(() => {
+      composeWaiter = null;
+      const cur = S.selected && S.arxa[S.selected.key];
+      if (cur && cur.id === a.id && cur.status === 'sending to composer…') {
+        cur.status = 'no studio answered — is arxa studio open?';
+        cur.statusOk = false;
+        if (S.card) { renderArxaPane(); }
+      }
+    }, 4000);
+  }
+
+  function pointerLineFor(a) {
+    return 'design selection #' + (a.id || '') + ' · ' + (a.label || 'element') +
+      ' · ' + (a.route || '/') +
+      ' · fetch ' + location.origin + (a.fetch || '/__dial/selection/' + (a.id || '')) +
+      ' — edit ONLY this element via the design patch contract; structure is locked.';
+  }
+  async function copyPointerLine() {
+    const sel = S.selected;
+    const a = sel && S.arxa[sel.key];
+    if (!a || !a.id) return;
+    const line = pointerLineFor(a);
+    try {
+      await navigator.clipboard.writeText(line);
+      say('Pointer line copied');
+      return;
+    } catch (_) {}
+    // clipboard API refused (iframe without clipboard-write, insecure
+    // context): deprecated-but-universal fallback, then honest failure.
+    try {
+      const ta = h('textarea', { style: 'position:fixed;left:-9999px' });
+      ta.value = line;
+      root.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      ta.remove();
+      say('Pointer line copied');
+    } catch (_) {
+      say('Copy blocked — line: ' + line);
+    }
   }
 
   // ── the token tier (global design tokens, decision 3) ──────────────────
@@ -1921,45 +2125,26 @@
     }
   }
 
-  async function askArxa() {
-    const sel = S.selected;
-    if (!sel) return;
-    const cs = getComputedStyle(sel.el);
-    const digest = {};
-    ['font-size', 'font-weight', 'line-height', 'color', 'background-color',
-      'padding', 'gap', 'border-radius'].forEach((p) => {
-      const v = cs.getPropertyValue(p);
-      if (v) digest[p] = v.trim();
-    });
-    say('Capturing selection…');
-    const png = await captureElement(sel.el);
-    const r = await api('POST', '/selection', {
-      key: sel.key,
-      label: sel.label,
-      kind: sel.el.tagName.toLowerCase(),
-      group: sel.group,
-      route: location.pathname,
-      text: sel.el.textContent.trim().slice(0, 400) || undefined,
-      styles: digest,
-      png: png || undefined,
-    });
-    if (r && r.id) {
-      say('Sent to arxa studio — design selection ' + r.id +
-        '. Focus the composer; the pointer line is one click away.');
-    } else {
-      say((r && r.error) || 'handoff failed');
-    }
-  }
-
   // ── the floating smart card (Edit Mode's inspector) ───────────────────
   // Dropdown-style smart anchor: prefer the element's right, flip left on
   // clip, clamp on both axes, vertical flip when the bottom would clip.
   const card = h('div', { id: 'card' });
   const chead = h('div', { id: 'chead' });
+  const cidrow = h('div', { id: 'cidrow' });
   const cbodyEl = h('div', { class: 'cbody' });
+  const cfoot = h('div', { id: 'cfoot' });
   card.appendChild(chead);
+  card.appendChild(cidrow);
   card.appendChild(cbodyEl);
+  card.appendChild(cfoot);
   root.appendChild(card);
+  // the two tab panes live inside the scrolling body; the identity row
+  // and both bars stay fixed. Toggling is display-only — a switch never
+  // re-renders inputs, so facet values and focus survive.
+  const paneCustomise = h('div', { class: 'tabpane' });
+  const paneArxa = h('div', { class: 'tabpane' });
+  cbodyEl.appendChild(paneCustomise);
+  cbodyEl.appendChild(paneArxa);
 
   // CARD DRAG (operator, 2026-08-26): the card is anchored by default
   // (dropdown anchor + float tracking) but the header is a grab handle —
@@ -2023,28 +2208,47 @@
   }
   function renderCardAgain() {
     if (!S.card) return;
-    cbodyEl.textContent = '';
-    renderCardBody(cbodyEl);
+    paneCustomise.textContent = '';
+    renderCardBody(paneCustomise);
     positionCard();
   }
   function openCard() {
     if (!S.selected) return;
     S.card = S.selected.key;
     cardPin = null; // a fresh open re-anchors (drag law above)
+    // TAB LAW (operator, 2026-08-26): Customise is the default; a
+    // different element never inherits the last tab; the SAME element
+    // restores the tab it had when the card closed.
+    S.cardTab = S.cardTabs[S.selected.key] === 'arxa' ? 'arxa' : 'customise';
     chead.textContent = '';
-    chead.appendChild(h('span', { text: S.selected.label.split(' · ')[0] }));
-    chead.appendChild(h('span', { class: 'kchip', text: S.selected.group }));
-    const ask = h('button', { class: 'stbtn', title: 'Send this element to the arxa studio composer (LLM edits only this element)', text: '✨ arxa' });
-    ask.addEventListener('click', (e) => { e.stopPropagation(); askArxa(); });
-    chead.appendChild(ask);
+    for (const [tid, tlabel] of [['customise', 'Customise'], ['arxa', 'Arxa']]) {
+      const tb = h('button', { class: 'tab', 'data-tab': tid, text: tlabel });
+      tb.addEventListener('click', (e) => { e.stopPropagation(); setCardTab(tid); });
+      chead.appendChild(tb);
+    }
     const x = h('button', { class: 'cclose', title: 'Close card', 'aria-label': 'Close card', text: '×' });
     x.addEventListener('click', (e) => { e.stopPropagation(); closeCard(); });
     chead.appendChild(x);
+    cidrow.textContent = '';
+    cidrow.appendChild(h('span', { text: S.selected.label.split(' · ')[0] }));
+    cidrow.appendChild(h('span', { class: 'kchip', text: S.selected.group }));
+    cidrow.appendChild(h('div', { class: 'idline', text: S.selected.key === S.selected.id ? S.selected.id : S.selected.id + ' → ' + S.selected.key }));
     card.classList.add('open');
-    cbodyEl.textContent = '';
-    renderCardBody(cbodyEl);
+    paneCustomise.textContent = '';
+    renderCardBody(paneCustomise);
+    renderArxaPane();
+    setCardTab(S.cardTab);
     positionCard();
     dialPanelChanged();
+  }
+  function setCardTab(t) {
+    S.cardTab = t;
+    if (S.selected) S.cardTabs[S.selected.key] = t;
+    paneCustomise.classList.toggle('on', t === 'customise');
+    paneArxa.classList.toggle('on', t === 'arxa');
+    [...chead.querySelectorAll('.tab')].forEach((b) =>
+      b.classList.toggle('on', b.getAttribute('data-tab') === t));
+    renderCardFooter();
   }
   function closeCard() {
     S.card = null;
@@ -2630,6 +2834,19 @@
       if (d.kind === 'draft' && Date.now() - S.ownSave > 1500) syncRemoteDraft();
       // 'commit' frames feed the studio agent — the requester already
       // heard its toast, there is nothing for this page to do.
+      // 'compose-ack' (2026-08-26): the studio panel inserted the
+      // pointer line + snapshot and acked. The Arxa tab's status line
+      // shows a VERIFIED ✓ only from here — the button never fakes it.
+      if (d.kind === 'compose-ack' && d.data && d.data.id) {
+        if (composeWaiter) { clearTimeout(composeWaiter); composeWaiter = null; }
+        for (const k of Object.keys(S.arxa)) {
+          const a = S.arxa[k];
+          if (a.id === d.data.id) {
+            a.status = '✓ inserted into the composer'; a.statusOk = true;
+          }
+        }
+        if (S.card && S.cardTab === 'arxa') renderArxaPane();
+      }
     });
     } catch (_) {}
   }

@@ -850,6 +850,29 @@ class DialApi {
       if (method == 'GET' && sub.startsWith('/selection/')) {
         return _readSelection(sub.substring('/selection/'.length));
       }
+      // Compose request (2026-08-26): the floating card's Arxa tab asks
+      // the studio panel to insert the pointer line + snapshot into the
+      // composer. Validates the selection server-side (TTL honored) and
+      // answers a THIN pointer — label/route for the pointer line, but
+      // never the PNG: images stay out of the event log (operator
+      // decision 2026-08-25, fetch-on-arrival).
+      if (method == 'POST' && sub == '/compose') {
+        if (caller != DialCaller.author) {
+          return const DialResponse(403, {'error': 'author only'});
+        }
+        return _composeSelection(body);
+      }
+      // Compose ack: the panel (a trusted cross-origin caller) confirms
+      // the insert LANDED, so the card can show a verified ✓ instead of
+      // a hopeful one. Relayed to everyone; the island matches by id.
+      if (method == 'POST' && sub == '/compose-ack') {
+        final m = _map(body, '/compose-ack');
+        final id = m['id'] is String ? _str(m, 'id', 40) : null;
+        if (id == null) {
+          return const DialResponse(400, {'error': 'id is required'});
+        }
+        return DialResponse(200, {'id': id, 'ack': true});
+      }
       return DialResponse(404, {'error': 'no such dial route: $sub'});
     } on FormatException catch (e) {
       return DialResponse(400, {'error': e.message});
@@ -1100,6 +1123,30 @@ class DialApi {
     }
     _selections[id] = (now, entry);
     return DialResponse(201, {'id': id, 'fetch': entry['fetch']});
+  }
+
+  Future<DialResponse> _composeSelection(Object? body) async {
+    final m = _map(body, '/compose');
+    final id = m['id'] is String ? _str(m, 'id', 40) : null;
+    if (id == null) {
+      return const DialResponse(400, {'error': 'id is required'});
+    }
+    if (!RegExp(r'^s[0-9a-z]{3,20}$').hasMatch(id)) {
+      return const DialResponse(400, {'error': 'bad selection id'});
+    }
+    final hit = _selections[id];
+    if (hit == null || DateTime.now().difference(hit.$1) > _selectionTtl) {
+      _selections.remove(id);
+      return const DialResponse(
+          404, {'error': 'selection expired — send again from the card'});
+    }
+    final e = hit.$2;
+    return DialResponse(200, {
+      'id': id,
+      'fetch': e['fetch'],
+      'label': e['label'],
+      'route': e['route'],
+    });
   }
 
   Future<DialResponse> _readSelection(String id) async {

@@ -1,17 +1,19 @@
-// Snapshot-to-composer verification probe (2026-08-25 night).
+// Snapshot-to-composer verification probe (2026-08-25 night; reworked
+// 2026-08-26 for the Arxa tab: the green studio card retired, the send
+// lives in the floating card's Arxa tab, and → composer runs ISLAND-SIDE
+// — the always-on panel listener inserts, flashes the destination chip,
+// and acks back over the same dial event stream).
 //
-// Operator report: expected the dial's Ask-arxa to put a SNAPSHOT into the
-// composer; observed only text arriving from the floating card.
-//
-// Verified chain (investigation + the wired fix, same probe):
+// Verified chain:
 //   1. the island's captureElement produces a real PNG on suczka (the
 //      selection entry server-side carries it)
 //   2. the SSE 'selection' broadcast is a thin pointer {id, fetch}
-//   3. the studio card fetches the context on arrival - chips show the
-//      REAL label, not the fallbacks
-//   4. clicking "→ composer" writes the pointer line AND attaches the
-//      snapshot into the composer's draft image rail (synthetic paste with
-//      a DataTransfer File - the composer's own onPaste validation path)
+//   3. the floating card's Arxa tab shows the sent state (the retired
+//      studio card's content now lives here)
+//   4. the Arxa footer's "→ composer" writes the pointer line AND
+//      attaches the snapshot into the composer's draft image rail —
+//      with the panel dock CLOSED (always-on listener law), the chip
+//      flashing at the destination, and the ack ✓ back in the card
 // Evidence screenshot lands under the client repo evidence dir (tracked).
 // Console/page errors on either tab fail the probe. Nothing is sent.
 import 'dart:convert';
@@ -55,16 +57,15 @@ Future<String?> httpGet(String path) async {
 Future<void> main() async {
   final browser = await CdpClient.launch();
 
-  // ---- tab B: the studio, subscribed BEFORE the tap.
+  // ---- tab B: the studio, subscribed BEFORE the tap. The panel dock
+  // stays CLOSED — the dial listener is always-on now (the Arxa tab
+  // drives the composer from the design iframe, dock state aside).
   final gui = await browser.newTab();
   await gui.setViewport(1280, 800);
   await gui.navigateAndSettleForCapture(guiUrl, settleMs: 4000);
   check(await js(gui,
-          "(() => { const b = document.querySelector(\"button[title='arxa design panel']\"); if (!b) return false; b.click(); return true; })()") ==
-      true, 'design panel opened (tab B)');
-  await poll(gui,
-      "!![...document.querySelectorAll('button')].some(b => /(mobile|tablet|desktop)/.test(b.textContent||''))",
-      const Duration(seconds: 10));
+          "!!document.querySelector(\"button[title='arxa design panel']\")") == true,
+      'studio panel plugin mounted (dock closed, tab B)');
 
   // ---- tab A: the real dial interaction.
   final dial = await browser.newTab();
@@ -116,15 +117,23 @@ Future<void> main() async {
   await Future.delayed(const Duration(milliseconds: 500));
   check(await js(dial, SR + ".querySelector('#card').classList.contains('open')") == true,
       'card opens on a real element (tab A)');
+  // The Arxa tab flow: open the tab, then the footer Send button.
+  await js(dial, SR + ".querySelector('#chead .tab[data-tab=arxa]').click()");
+  await Future.delayed(const Duration(milliseconds: 300));
   check(await js(dial, '''
     (() => {
-      const ask = ''' + SR + '''.querySelector('#chead button[title*=arxa]');
-      if (!ask) return false;
-      ask.click();
+      const b = [...''' + SR + '''.querySelectorAll('#cfoot button')]
+        .find((x) => (x.textContent || '').trim() === 'Send to arxa studio');
+      if (!b) return false;
+      b.click();
       return true;
     })()
-  ''') == true, 'Ask-arxa tapped (tab A)');
+  ''') == true, 'Arxa tab Send tapped (tab A)');
   await Future.delayed(const Duration(milliseconds: 4000));
+  check(await js(dial, '''
+    (() => { const m = (''' + SR + '''.querySelector('.tabpane.on .arxaid') || {}).textContent || '';
+      return m.indexOf('design selection s') >= 0; })()
+  ''') == true, 'Arxa tab shows the sent state (tab A)');
 
   // ---- 1+2: the frame content, verbatim.
   final frames = await js(dial,
@@ -159,40 +168,28 @@ Future<void> main() async {
   }
   check(pngLen > 100, 'island captureElement produced a real PNG on suczka');
 
-  // ---- 3: card enrichment - fetch-on-arrival fills the chips.
-  final cardUp = await poll(gui,
-      "document.body.textContent.includes('design selection')",
-      const Duration(seconds: 20));
-  check(cardUp, 'rail-twin card rendered (tab B)');
-  final cardText = await js(gui, '''
-    (() => {
-      const divs = [...document.querySelectorAll('div')];
-      const cards = divs.filter((d) =>
-        (d.textContent || '').includes('design selection') &&
-        (d.textContent || '').length < 500);
-      return cards.length ? cards[0].textContent.replace(/\s+/g, ' ').trim().slice(0, 240) : '';
-    })()
+  // ---- 3: the card shows the sent state — the retired studio card's
+  // content lives in the floating card's Arxa tab now.
+  final sentBody = await js(dial, '''
+    (() => { const p = ''' + SR + '''.querySelector('.tabpane.on');
+      return p ? (p.textContent || '').replace(/\\s+/g, ' ').slice(0, 240) : ''; })()
   ''');
-  stdout.writeln('card renders: ' + (cardText ?? '').toString());
+  stdout.writeln('arxa pane: ' + (sentBody ?? '').toString());
   final safeLabel = label.replaceAll("'", '');
-  final showsRealLabel = await poll(gui,
-      "[...document.querySelectorAll('span')].some((c) => (c.textContent || '').indexOf('" +
-          safeLabel + "') >= 0)",
-      const Duration(seconds: 10));
-  check(showsRealLabel || label.isEmpty,
-      'card shows the real element label from the fetched context');
+  check(label.isEmpty || (sentBody as String).contains(safeLabel.split(' · ')[0].trim()),
+      'arxa tab shows the real element label from the sent handoff');
 
-  // ---- 4: the real button - pointer text AND snapshot thumbnail.
-  check(await js(gui, '''
+  // ---- 4: the card's OWN footer button - pointer text AND snapshot.
+  check(await js(dial, '''
     (() => {
-      const b = [...document.querySelectorAll('button')]
+      const b = [...''' + SR + '''.querySelectorAll('#cfoot button')]
         .find((x) => (x.textContent || '').trim() === '\u2192 composer');
       if (!b) return false;
       b.click();
       return true;
     })()
-  ''') == true, 'composer button clicked (tab B)');
-  await Future.delayed(const Duration(milliseconds: 1500));
+  ''') == true, '→ composer tapped in the card footer (tab A)');
+  await Future.delayed(const Duration(milliseconds: 2500));
   final line = await js(gui,
       "(() => { const tas = [...document.querySelectorAll('textarea')]; const ta = tas[tas.length - 1]; return ta ? (ta.value || '') : ''; })()");
   check((line as String? ?? '').contains('design selection'),
@@ -208,6 +205,14 @@ Future<void> main() async {
   stdout.writeln('composer image rail: ' + (rail ?? '').toString());
   check((rail is Map ? (rail['fresh'] as num? ?? 0) : 0) >= 1,
       'SNAPSHOT attached in the composer draft image rail');
+  // the destination chip flashed (tab B) and the ack verified back in
+  // the card (tab A) — both confirmations (operator, 2026-08-26).
+  check(await js(gui, "!!document.getElementById('arxa-compose-chip')") == true,
+      'destination confirmation chip flashed (tab B)');
+  check(await poll(dial, '''
+    (() => { const s = (''' + SR + '''.querySelector('.tabpane.on .arxastatus') || {}).textContent || '';
+      return s.indexOf('inserted into the composer') >= 0; })()
+  ''', const Duration(seconds: 6)), 'ack ✓ verified in the card (tab A)');
 
   // Evidence: the GUI with line + thumbnail.
   final shot = await gui.screenshot();

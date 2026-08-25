@@ -599,6 +599,22 @@ class DesignServer {
           ..add('Vary', 'Origin');
       }
 
+      // CORS PREFLIGHT for the dial API (2026-08-26): a cross-origin
+      // JSON POST (the studio panel's compose-ack) sends OPTIONS first,
+      // and a preflight nothing answers 2xx is a request that never
+      // leaves the browser. The trust verdict above already gated it —
+      // same-origin islands never preflight, so this answer exists for
+      // exactly the trusted-origin panel case.
+      if (method == 'OPTIONS' && path.startsWith('/__dial/')) {
+        req.response.statusCode = 204;
+        req.response.headers
+          ..set('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
+          ..set('Access-Control-Allow-Headers', 'Content-Type')
+          ..set('Access-Control-Max-Age', '600');
+        await req.response.close();
+        return;
+      }
+
       // Every `return` in this try is `return await` on purpose. `return f();`
       // inside a try hands the future back before it completes, so the catch
       // below never sees its error — it escapes as an unhandled async error and
@@ -1272,6 +1288,15 @@ class DesignServer {
     // writes the pointer line into the composer draft.
     if (r.status < 300 && sub == '/selection' && method == 'POST') {
       _broadcastDial('selection', r.json);
+    }
+    // Compose loop (2026-08-26): the floating card's Arxa tab asks, the
+    // panel inserts + acks. Both frames are thin — no PNG ever rides the
+    // event log (fetch-on-arrival, operator 2026-08-25).
+    if (r.status < 300 && sub == '/compose' && method == 'POST') {
+      _broadcastDial('compose', r.json);
+    }
+    if (r.status < 300 && sub == '/compose-ack' && method == 'POST') {
+      _broadcastDial('compose-ack', r.json);
     }
   }
 
