@@ -41,7 +41,9 @@
    armed (Edit select / Comment pin-drop), the card is up, or inline text
    editing is active. THE TRAY SWAPS THE DIAL OUT: tray open → dial parks
    (spring) and the timer suspends; tray close → dial springs back in and
-   the 30s timer re-arms fresh.
+   the 30s timer re-arms fresh. The park pose is scoped to #dock only, and
+   while the tray is open the corner reveal stays suspended (2026-08-26:
+   a host-wide pose hid the open sheet with the dial).
 
    EDIT MODE (Author only). The Edit trigger arms selection: hover outlines
    the element under the cursor (data-arxa-id identity), click selects it
@@ -2474,14 +2476,19 @@
   let sp = null;            // spring state { p, v, raf, target }
   let dialLastWant = false; // cursor's latest inside-zone-or-dock verdict
   let dialHideAt = 0;       // 30s auto-hide backstop timer
+  // 2026-08-26 scope fix: the park pose belongs to the DIAL (#dock),
+  // never the host. The host also carries the tray, card, thread, composer
+  // and pins - a host-wide visibility:hidden took the just-opened sheet
+  // with it (the "dial and sheet both vanish" report), and every 30s
+  // tuck-away used to blink out the pins too. lens_dial_tray_park_probe.
   function dialApplyPose() {
     const e = Math.max(-0.18, Math.min(1.14, sp.p)); // room for overshoot
     const off = (1 - e) * PARK_PX;
-    host.style.transform =
+    dock.style.transform =
       'translate3d(' + off.toFixed(1) + 'px,' + off.toFixed(1) + 'px,0)';
-    host.style.opacity = Math.max(0, Math.min(1, e * 1.25)).toFixed(3);
+    dock.style.opacity = Math.max(0, Math.min(1, e * 1.25)).toFixed(3);
     const parked = sp.p <= 0.001 && Math.abs(sp.v) < 0.02;
-    host.style.visibility = parked ? 'hidden' : 'visible';
+    dock.style.visibility = parked ? 'hidden' : 'visible';
   }
   function dialSpringTo(target, durationSec, dampingRatio) {
     if (!sp) sp = { p: 0, v: 0, raf: 0, target };
@@ -2565,6 +2572,10 @@
       x >= innerWidth - HOT_CORNER && y >= innerHeight - HOT_CORNER;
     const overDock = (ev) => ev.composedPath().includes(host);
     addEventListener('pointermove', (ev) => {
+      // Tray open: the swap law keeps the dial parked. Hover inside the
+      // sheet counts as overDock (same host) and must NOT spring the dial
+      // back in over the open sheet.
+      if (S.tray) { dialLastWant = false; return; }
       const want = inCorner(ev.clientX, ev.clientY) || overDock(ev);
       dialLastWant = want;
       // Leaving does NOT hide - the 30s timer owns the tuck-away (proved
@@ -2578,6 +2589,7 @@
     }, { passive: true });
     // touch has no hover: a tap in the zone reveals too
     addEventListener('pointerdown', (ev) => {
+      if (S.tray) return; // the sheet is the surface; the dial returns on close
       if (inCorner(ev.clientX, ev.clientY) && sp.target !== 1) dialShow();
     }, { passive: true });
   }
