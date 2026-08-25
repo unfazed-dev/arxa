@@ -732,12 +732,9 @@ class DialApi {
     if (store == null) {
       return const DialResponse(503, {'error': 'axes unavailable'});
     }
-    final parsed = _map(body, '/axes');
-    if (parsed == null) {
-      return const DialResponse(
-          400, {'error': 'object body with style and theme required'});
-    }
-    final pick = AxesPick.fromJson(parsed);
+    // _map throws FormatException on a non-object body — the handle's
+    // catch answers the 400 for every route uniformly.
+    final pick = AxesPick.fromJson(_map(body, '/axes'));
     if (pick == null) {
       return const DialResponse(400, {
         'error': 'style and theme required (lowercase a-z0-9-, max 40)'

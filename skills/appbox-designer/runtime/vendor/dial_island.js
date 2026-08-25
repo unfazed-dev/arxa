@@ -79,6 +79,14 @@
     mode: cfg.mode, // 'author' | 'guest' | 'invalid'
     artifact: cfg.artifact,
     store: cfg.store, // 'memory' | 'supabase'
+    axes: cfg.axes // the style/theme plane (arc 1): null = undeclared or kind-gated off
+      ? {
+          styles: cfg.axes.styles,
+          themes: cfg.axes.themes || [],
+          published: cfg.axes.published,
+          current: cfg.axes.active,
+        }
+      : null,
     token: cfg.token || null,
     pins: [],
     open: false, // radial fan expanded
@@ -387,6 +395,13 @@
     '  box-shadow:0 12px 40px rgba(0,0,0,.55);display:none;',
     '  pointer-events:auto;z-index:30}',
     '#composer.open{display:block}',
+    /* the axes plane: segmented pickers + the persistent preview badge */
+    '.seg{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0 4px}',
+    '.seg button{padding:6px 14px;border-radius:999px;border:1px solid rgba(255,255,255,.16);background:rgba(255,255,255,.06);color:#e8ebf0;font:600 12px inherit;cursor:pointer}',
+    '.seg button.on{background:rgba(110,136,76,.85);border-color:rgba(110,136,76,.9);color:#f4f7ee}',
+    '.pvnote{display:flex;align-items:center;gap:10px;margin-top:12px;padding:8px 12px;border-radius:10px;background:rgba(243,180,76,.12);border:1px solid rgba(243,180,76,.4);color:#e8c98a;font-size:12px}',
+    '.pvnote button{margin-left:auto;padding:4px 10px;border-radius:8px;border:1px solid rgba(243,180,76,.5);background:transparent;color:#e8c98a;cursor:pointer;white-space:nowrap}',
+    '#dock.previewing #dockbtn{outline:2px solid rgba(243,180,76,.9);outline-offset:2px;border-radius:14px}',
     /* control rows (tray slides + card) */
     '.ctl{display:flex;align-items:center;gap:10px;padding:10px 12px;',
     '  font-size:12.5px}',
@@ -573,6 +588,9 @@
     dock.appendChild(el);
   });
 
+  // Boot truth: a URL override already rendered by the server lights the
+  // preview badge immediately — no flip needed.
+  if (S.axes) updatePreviewMark();
   // The fan biases AWAY from the docked edge: right-docked fans up-left
   // (-175°..-85°), left-docked fans up-right (-95°..-5°) — verbs never clip
   // off-screen. Re-runs on every edge snap.
@@ -2314,13 +2332,131 @@
     host.classList.toggle('nomotion', !TWEAK.motion);
   }
 
+  // ── the axes plane (arc 1, 2026-08-25): style/theme, dial-owned ────────
+  // The server already rendered the active pick into the page; these flip
+  // it live in THIS document (link.disabled + the html data-theme attr) and
+  // keep the URL honest — the URL is the receipt (the Storybook-globals
+  // pattern). Authors publish via POST /__dial/axes; guests only ride the
+  // URL, and a persistent badge marks on-screen ≠ published.
+  function axesPreviewing() {
+    return !!S.axes && (S.axes.current.style !== S.axes.published.style ||
+      S.axes.current.theme !== S.axes.published.theme);
+  }
+  function applyAxes(style, theme) {
+    document.querySelectorAll('link[data-axes-style]').forEach((link) => {
+      link.disabled = link.getAttribute('data-axes-style') !== style;
+    });
+    if (!theme || theme === 'system') {
+      document.documentElement.removeAttribute('data-theme');
+    } else {
+      document.documentElement.setAttribute('data-theme', theme);
+    }
+    S.axes.current = { style: style, theme: theme || 'system' };
+    syncAxesUrl();
+    updatePreviewMark();
+    if (S.tray === 'style') renderTraySlide('style');
+  }
+  function syncAxesUrl() {
+    try {
+      const url = new URL(location.href);
+      const current = S.axes.current, published = S.axes.published;
+      if (current.style === published.style &&
+          current.theme === published.theme) {
+        url.searchParams.delete('style');
+        url.searchParams.delete('theme');
+      } else {
+        url.searchParams.set('style', current.style);
+        url.searchParams.set('theme', current.theme);
+      }
+      history.replaceState(null, '', url);
+    } catch (_) { /* an unwritable URL just keeps its params */ }
+  }
+  function updatePreviewMark() {
+    dock.classList.toggle('previewing', axesPreviewing());
+    dockBtn.title = axesPreviewing()
+      ? 'Design Dial — previewing unpublished style/theme'
+      : 'Design Dial — arxa';
+  }
+  async function flipAxes(patch) {
+    if (!S.axes) return;
+    const next = {
+      style: patch.style || S.axes.current.style,
+      theme: patch.theme || S.axes.current.theme,
+    };
+    applyAxes(next.style, next.theme);
+    if (S.mode !== 'author') return; // guests ride the URL, never the store
+    const res = await api('POST', '/axes', next);
+    if (res && res.ok && res.axes) {
+      S.axes.published = { style: res.axes.style, theme: res.axes.theme };
+      syncAxesUrl();
+      updatePreviewMark();
+    } else {
+      say('Could not publish — the axes store refused');
+    }
+  }
+  function renderStyleBody(body) {
+    if (!S.axes) return;
+    body.appendChild(h('div', { class: 'sect', text: 'Style' }));
+    const seg = h('div', { class: 'seg' });
+    S.axes.styles.forEach((id) => {
+      const btn = h('button', {
+        class: S.axes.current.style === id ? 'on' : '',
+        text: id,
+      });
+      btn.addEventListener('click', () => flipAxes({ style: id }));
+      seg.appendChild(btn);
+    });
+    body.appendChild(seg);
+    if (S.axes.themes.length) {
+      body.appendChild(h('div', { class: 'sect', text: 'Theme' }));
+      const themeSeg = h('div', { class: 'seg' });
+      S.axes.themes.forEach((id) => {
+        const btn = h('button', {
+          class: S.axes.current.theme === id ? 'on' : '',
+          text: id,
+        });
+        btn.addEventListener('click', () => flipAxes({ theme: id }));
+        themeSeg.appendChild(btn);
+      });
+      body.appendChild(themeSeg);
+    }
+    body.appendChild(h('div', {
+      class: 'ctl', style: 'font-size:11px;color:#9aa0ab',
+      text: S.mode === 'author'
+        ? 'Your pick publishes for everyone viewing this design.'
+        : 'Preview applies to your view only — the URL carries it.',
+    }));
+    if (S.store === 'memory') {
+      body.appendChild(h('div', {
+        class: 'ctl', style: 'font-size:11px;color:#9aa0ab',
+        text: 'local process store — picks reset when the server restarts',
+      }));
+    }
+    if (axesPreviewing()) {
+      const note = h('div', { class: 'pvnote' }, [
+        h('span', { text: 'Previewing — not the published look' }),
+      ]);
+      const reset = h('button', { text: 'Reset to published' });
+      reset.addEventListener('click', () => {
+        applyAxes(S.axes.published.style, S.axes.published.theme);
+      });
+      note.appendChild(reset);
+      body.appendChild(note);
+    }
+  }
+
   // ── the tray (Studio): glass bottom sheet, 5-slide snap carousel ──────
   const SLIDES = [
     ['edit', 'Edit'], ['comments', 'Comments'], ['settings', 'Settings'],
-    ['tweak', 'Tweak'], ['ship', 'Ship'],
+    ['tweak', 'Tweak'], ['style', 'Style'], ['ship', 'Ship'],
   ];
   function traySlideList() {
-    return S.mode === 'guest' ? SLIDES.filter((s) => s[0] === 'comments') : SLIDES;
+    // Style rides the axes plane (arc 1): present only when the server
+    // declared axes for this artifact — and for guests too, whose flips
+    // ride the URL override and never touch the store.
+    return SLIDES.filter(([id]) =>
+      (id !== 'style' || !!S.axes) &&
+      (S.mode !== 'guest' || id === 'comments' || id === 'style'));
   }
   const tray = h('div', { id: 'tray' });
   const grabber = h('div', { id: 'grabber' }, [h('div', { class: 'gbar' })]);
@@ -2500,6 +2636,7 @@
     if (id === 'comments') return renderCommentsBody(body);
     if (id === 'settings') return renderSettingsBody(body);
     if (id === 'tweak') return renderTweakBody(body);
+    if (id === 'style') return renderStyleBody(body);
     if (id === 'ship') return renderShipBody(body);
   }
   function openTray(id) {
@@ -2845,6 +2982,12 @@
       // Another author context saved its draft — sync it INTO this
       // document, unless the frame was this document's own save.
       if (d.kind === 'draft' && Date.now() - S.ownSave > 1500) syncRemoteDraft();
+      // The published axes changed (our own POST echoes here too — applying
+      // the same pick is idempotent and settles the URL to published).
+      if (d.kind === 'axes' && d.data && S.axes) {
+        S.axes.published = { style: d.data.style, theme: d.data.theme };
+        applyAxes(d.data.style, d.data.theme);
+      }
       // 'commit' frames feed the studio agent — the requester already
       // heard its toast, there is nothing for this page to do.
       // 'compose-ack' (2026-08-26): the studio panel inserted the

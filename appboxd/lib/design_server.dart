@@ -23,6 +23,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:appboxd/design_axes.dart';
 import 'package:appboxd/design_dial.dart';
 import 'package:appboxd/design_media.dart';
 import 'package:appboxd/design_ship.dart';
@@ -383,6 +384,15 @@ class DesignServer {
   /// file state, never Supabase (decisions 5/11). Null when the dial is off.
   DraftFileStore? draftStore;
 
+  /// The axes plane (arc 1, 2026-08-25): the dial's style/theme store —
+  /// non-null only when the dial is on AND the nearest appbox.json marker
+  /// says kind: app. Sites and markerless artifacts never see axes.
+  AxesStore? axesStore;
+
+  /// The artifact's pipeline marker (resolved at boot, also reported to
+  /// tests); null when no appbox.json sits above the artifact dir.
+  ArtifactMarker? artifactMarker;
+
   /// Held-open dial event subscribers (GET /__dial/events) — separate from
   /// the reload stream: different audience, different cadence.
   final _dialEventClients = <HttpResponse>{};
@@ -428,6 +438,8 @@ class DesignServer {
     bool dial = true,
     DialStore? dialStore,
     DraftFileStore? draftStore,
+    ArtifactMarker? marker,
+    AxesStore? axesStore,
   }) async {
     // Absolutize up front: artifact files are served and re-scanned (worker
     // boot, watcher reload) against the process cwd at USE time, so a relative
@@ -454,6 +466,30 @@ class DesignServer {
       ..draftStore = dial
           ? (draftStore ?? DraftFileStore(artifactDir: artifactDir))
           : null;
+    // The axes plane (arc 1, 2026-08-25): kind-gated on the nearest
+    // appbox.json marker — apps get the dial's style/theme control, sites
+    // never do. The marker doubles as the store's identity: project +
+    // artifact, never a bare basename (two clients both shipping a
+    // design/ dir must not collide).
+    final resolvedMarker = marker ?? resolveArtifactMarker(artifactDir);
+    srv.artifactMarker = resolvedMarker;
+    if (dial && resolvedMarker != null && resolvedMarker.kind == 'app') {
+      var authorIdentity = loadAuthorIdentity();
+      if (authorIdentity == null) {
+        stderr.writeln('[design-server] dial axes: ~/.appbox/identity.json '
+            'missing — the design registers unattributed; add {"name", '
+            '"email"} to attribute it to you.');
+      }
+      srv.axesStore = axesStore ??
+          SupabaseAxesStore.fromConfig(
+              credentialsFileText: readSupabaseCredentialsFile(),
+              project: resolvedMarker.project,
+              artifact: p.basename(artifactDir),
+              author: authorIdentity) ??
+          MemoryAxesStore();
+    } else {
+      srv.axesStore = null;
+    }
     // The Ship channel (slice 5): the repo root behind the artifact, when
     // one exists — a non-repo artifact simply ships 503 on /ship/*.
     String? shipRepoDir;
@@ -475,10 +511,14 @@ class DesignServer {
         ),
         ship: shipRepoDir == null
             ? null
-            : DialShip(repoDir: shipRepoDir, run: ioRunner(shipRepoDir)));
+            : DialShip(repoDir: shipRepoDir, run: ioRunner(shipRepoDir)),
+        axes: srv.axesStore);
     if (dial) {
       stderr.writeln('[design-server] dial store: ${srv.dialStore.kind}'
           '${srv.dialStore.kind == 'memory' ? ' (set APPBOX_SUPABASE_URL + APPBOX_SUPABASE_SERVICE_KEY, or ~/.appbox/supabase, for the shared store)' : ''}');
+      final axStore = srv.axesStore;
+      stderr.writeln('[design-server] dial axes: ${axStore?.kind ?? 'off'}'
+          '${axStore == null ? ' (kind: ${srv.artifactMarker?.kind ?? 'no marker'} — style/theme is a kind: app capability)' : ''}');
     }
     // Let SocketException propagate (EADDRINUSE/EACCES) — designServe maps it
     // via bindExitCode; tests assert the bind path directly.
@@ -1026,6 +1066,18 @@ class DesignServer {
             respBody = draft.apply(respBody).html;
           }
         }
+        // The axes plane: apply the resolved pick (override > published >
+        // shipped default) to the served head, and hand the island the
+        // declaration + both picks for the Style slide and the preview
+        // badge. A page that declares nothing passes through untouched.
+        ServedAxes? servedAxes;
+        final axStore = axesStore;
+        if (axStore != null) {
+          servedAxes = applyAxesToServedHtml(respBody,
+              query: req.uri.queryParameters,
+              stored: await axStore.load());
+          if (servedAxes != null) respBody = servedAxes.html;
+        }
         final config = jsonEncode({
           'v': 1,
           'artifact': _dialArtifact,
@@ -1034,6 +1086,7 @@ class DesignServer {
               ? 'author'
               : (grant == null ? 'invalid' : 'guest'),
           if (grant != null) 'token': dialToken,
+          if (servedAxes != null) 'axes': servedAxes.config,
         });
         respBody = respBody.replaceFirst(
             '</body>',
@@ -1267,6 +1320,13 @@ class DesignServer {
         ContentType.parse('application/json; charset=utf-8');
     req.response.write(jsonEncode(r.json));
     await req.response.close();
+    // DIAGNOSTIC trace (2026-08-26 compose investigation): state-changing
+    // dial calls are rare, so naming them — with the caller's origin —
+    // turns any future "nothing happens" into a one-glance boundary map.
+    if (method != 'GET') {
+      stderr.writeln('[dial-trace] $method $sub -> ${r.status} '
+          '(origin=${req.headers.value('Origin') ?? '-'})');
+    }
     // Broadcast AFTER the answer so the writer's own repaint races nothing.
     // MUTATIONS ONLY: a GET /pins broadcast made every subscriber refetch,
     // and that refetch broadcast again — a self-sustaining storm (measured
@@ -1283,6 +1343,14 @@ class DesignServer {
     }
     if (r.status < 300 && sub == '/commit') {
       _broadcastDial('commit', r.json);
+    }
+    // The axes plane: one thin frame — the published pick — so open
+    // islands (and the writer's own tabs) repaint without a refetch.
+    if (r.status < 300 && sub == '/axes' && method == 'POST') {
+      final payload = r.json;
+      if (payload is Map && payload['axes'] is Map) {
+        _broadcastDial('axes', payload['axes']);
+      }
     }
     // Selection handoff (slice 7): the studio plugin listens for these and
     // writes the pointer line into the composer draft.
@@ -1310,6 +1378,9 @@ class DesignServer {
       ..set('X-Content-Type-Options', 'nosniff');
     res.bufferOutput = false;
     _push(res, 'retry: 500\n\n');
+    // DIAGNOSTIC trace (2026-08-26): who is listening, from where.
+    stderr.writeln('[dial-trace] SSE open /__dial/events '
+        '(origin=${req.headers.value('Origin') ?? '-'})');
     // A Last-Event-ID header means RECONNECT (the browser sends it
     // automatically after a drop). Replay what this process logged past
     // that id, then one resync frame — kind 'pins' makes every island
@@ -1355,6 +1426,10 @@ class DesignServer {
     if (_dialEventLog.length > _dialEventLogCap) {
       _dialEventLog.removeRange(0, _dialEventLog.length - _dialEventLogCap);
     }
+    // DIAGNOSTIC trace (2026-08-26): a broadcast nobody hears is the
+    // silent half of every "nothing happens" report.
+    stderr.writeln('[dial-trace] broadcast $kind -> '
+        '${_dialEventClients.length} dial subscriber(s)');
     if (_dialEventClients.isEmpty) return;
     final frame = 'id: $id\nevent: dial\ndata: $payload\n\n';
     for (final c in _dialEventClients.toList()) {

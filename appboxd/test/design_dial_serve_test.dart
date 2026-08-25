@@ -14,6 +14,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:appboxd/design_axes.dart';
 import 'package:appboxd/design_dial.dart';
 import 'package:appboxd/design_draft.dart';
 import 'package:appboxd/design_server.dart';
@@ -335,6 +336,83 @@ void main() {
       await Future<void>.delayed(const Duration(milliseconds: 700));
       expect(chunks.join().contains('event: dial'), isFalse,
           reason: 'GET /pins must stay silent — only mutations broadcast');
+      await res.detachSocket().then((s) => s.destroy());
+      http.close();
+    });
+  });
+
+  // The axes plane (arc 1, 2026-08-25) over the wire: author-only publish,
+  // guest/dead refusal, the declaration gate (a page that declares no
+  // styles serves no axes block), and the thin broadcast frame.
+  group('design axes over a real server', () {
+    late DesignServer axesSrv;
+    late String axesBase;
+
+    setUpAll(() async {
+      axesSrv = await DesignServer.start(
+          artifactDir: _fixture,
+          noWatch: true,
+          dialStore: MemoryDialStore(),
+          marker: const ArtifactMarker(project: 'test-fixture', kind: 'app'),
+          axesStore: MemoryAxesStore());
+      axesBase = 'http://127.0.0.1:${axesSrv.port}';
+    });
+
+    tearDownAll(() async {
+      await axesSrv.stop();
+    });
+
+    test('author publishes; guests, dead links, and garbage are refused',
+        () async {
+      final (code, body) = await _req('POST', '$axesBase/__dial/axes',
+          body: {'style': 'glass', 'theme': 'dark'});
+      expect(code, 200, reason: body);
+      expect((jsonDecode(body) as Map)['axes'],
+          {'style': 'glass', 'theme': 'dark'});
+
+      final (mcode, mbody) =
+          await _req('POST', '$axesBase/__dial/share', body: {});
+      expect(mcode, 201, reason: mbody);
+      final token = (jsonDecode(mbody) as Map)['token'] as String;
+
+      final (gcode, _) = await _req(
+          'POST', '$axesBase/__dial/axes?dial=$token',
+          body: {'style': 'glass', 'theme': 'light'});
+      expect(gcode, 403, reason: 'guests ride the URL, never the store');
+
+      final (dcode, _) = await _req(
+          'POST', '$axesBase/__dial/axes?dial=deadbeef',
+          body: {'style': 'glass', 'theme': 'light'});
+      expect(dcode, 403);
+
+      final (bcode, _) = await _req('POST', '$axesBase/__dial/axes',
+          body: {'style': 'NOT A STYLE', 'theme': 'dark'});
+      expect(bcode, 400);
+    });
+
+    test('a page that declares no axes serves no axes config', () async {
+      // hello-hda declares nothing — the control is capability-by-
+      // declaration, so the config carries no axes block even though the
+      // store is live and holds a pick.
+      final (code, html) = await _req('GET', axesBase);
+      expect(code, 200);
+      expect(html, contains('id="arxa-dial-config"'));
+      expect(html, isNot(contains('"axes"')));
+    });
+
+    test('an axes publish broadcasts one thin frame', () async {
+      final http = HttpClient();
+      final req = await http.getUrl(Uri.parse('$axesBase/__dial/events'));
+      final res = await req.close();
+      final frames = StreamController<String>();
+      res.transform(utf8.decoder).listen(frames.add);
+      await Future<void>.delayed(const Duration(milliseconds: 150));
+      await _req('POST', '$axesBase/__dial/axes',
+          body: {'style': 'm3e', 'theme': 'system'});
+      final seen = await frames.stream
+          .firstWhere((f) => f.contains('"kind":"axes"'), orElse: () => '')
+          .timeout(const Duration(seconds: 5));
+      expect(seen, contains('"style":"m3e"'));
       await res.detachSocket().then((s) => s.destroy());
       http.close();
     });

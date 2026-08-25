@@ -98,6 +98,24 @@ trio through to the flags.
   widget definition, so sibling usages on other pages change too —
   identical to hand-editing any shared component.
 
+### The axes plane: the dial owns style + theme (2026-08-25)
+
+Style and theme are **dial-owned design axes**, never artifact features.
+An artifact that wants them DECLARES its inventory in the served head —
+one `<link data-axes-style="…">` per style with exactly the shipped
+default enabled, plus `<html data-axes-themes="…">` — and only when the
+nearest `appbox.json` marker says `kind: app` (sites never see the
+control; an undeclared page serves no axes block at all). The design
+server applies the active pick per request: `?style=`/`?theme=` override
+once (probes, guest previewing) > the published store pick > the shipped
+default. Authors publish via `POST /__dial/axes` (author-only); guest
+flips ride the URL override with a persistent previewing-not-published
+badge and never touch the store — the URL is the receipt. Storage is the
+`designs` + `design_dial_axes` Supabase tables keyed by project/artifact
+identity (never a basename — two clients both shipping `design/` must
+not collide) behind the pins' stale-while-revalidate discipline, with an
+honest per-process memory fallback. `--no-dial` kills axes with the dial.
+
 ## Naming laws (locked)
 
 **No invented single-letter identifiers in generated code.** Every name the
