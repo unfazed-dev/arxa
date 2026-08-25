@@ -766,6 +766,74 @@ Future<void> main() async {
     ''');
     stdout.writeln('NOTE  picker-persist FAIL diagnostics: ' + (d7h ?? 'n/a'));
   }
+  // 7i. The hunt-freeze law (operator, 2026-08-25): in Edit Mode, the
+  //     cursor's selection hunting STOPS once an element is selected —
+  //     focus belongs to the selected element (amber outline + card);
+  //     a second highlight chasing the cursor is noise. Deselected →
+  //     hunting resumes. (MDN pointer-events: hover feedback is the
+  //     app's own overlay on its own pointermove listener — nothing
+  //     platform-side forces it.)
+  final HOVER = SR + ".querySelector('#hover')";
+  Future<String?> hoverState() async {
+    return await js(tab, '''
+      (() => { const hv = ''' + HOVER + ''';
+        if (!hv) return 'no-el';
+        const cs = getComputedStyle(hv);
+        return cs.display + '|' + ((hv.firstChild || {}).textContent || ''); })()
+    ''') as String?;
+  }
+  // a DIFFERENT visible stamped element to sweep the cursor over
+  final sweepPt = await js(tab, '''
+    (() => { const selKey = ''' + kJs + ''';
+      const els = [...document.querySelectorAll('[data-arxa-id]')];
+      for (const el of els) {
+        const id = el.getAttribute('data-arxa-id');
+        const me = selKey.indexOf('el:') === 0
+          ? el.getAttribute('data-el') === selKey.slice(3)
+          : id === selKey;
+        if (me) continue;
+        const r = el.getBoundingClientRect();
+        if (r.width > 40 && r.height > 20 && r.top > 10 &&
+            r.bottom < innerHeight - 10 && r.left > 10 && r.right < innerWidth - 10) {
+          const cx = Math.round(r.left + r.width / 2), cy = Math.round(r.top + r.height / 2);
+          const top = document.elementsFromPoint(cx, cy)[0];
+          if (top && (top === el || el.contains(top))) {
+            return JSON.stringify({ x: cx, y: cy }); } } }
+      return null; })()
+  ''');
+  Map? sweep;
+  try { sweep = sweepPt is String ? jsonDecode(sweepPt as String) as Map : null; } catch (_) {}
+  check(sweep != null, 'a second stamped element is visible for the hunt-freeze sweep');
+  if (sweep != null) {
+    await js(tab, "document.dispatchEvent(new KeyboardEvent('keydown', {key:'Escape'}))"); // card closed, selection STAYS
+    await Future.delayed(const Duration(milliseconds: 400));
+    await tab.send('Input.dispatchMouseEvent',
+        {'type': 'mouseMoved', 'x': sweep!['x'] as num, 'y': sweep!['y'] as num});
+    await Future.delayed(const Duration(milliseconds: 300));
+    final st = (await hoverState()) ?? '?';
+    check(st.split('|')[0] == 'none',
+        'selected (card closed): cursor sweep does NOT hunt — hover stays hidden (got ' + st + ')');
+    // deselect fully: second Escape disarms Edit Mode; re-arm it fresh
+    await js(tab, "document.dispatchEvent(new KeyboardEvent('keydown', {key:'Escape'}))");
+    await Future.delayed(const Duration(milliseconds: 400));
+    for (var i = 0; i < 5; i++) {
+      await tab.send('Input.dispatchMouseEvent',
+          {'type': 'mouseMoved', 'x': 1276 - i, 'y': 796 - i});
+      await Future.delayed(const Duration(milliseconds: 80));
+    }
+    await js(tab, SR + ".querySelector('#dockbtn').click()");
+    await Future.delayed(const Duration(milliseconds: 400));
+    await js(tab, SR + ".querySelector('[data-verb=edit]').click()");
+    await Future.delayed(const Duration(milliseconds: 400));
+    await tab.send('Input.dispatchMouseEvent',
+        {'type': 'mouseMoved', 'x': sweep!['x'] as num, 'y': sweep!['y'] as num});
+    await Future.delayed(const Duration(milliseconds: 300));
+    final st2 = (await hoverState()) ?? '?';
+    final parts2 = st2.split('|');
+    check(parts2[0] == 'block' &&
+        parts2.length > 1 && parts2[1].trim().isNotEmpty,
+        'deselected + re-armed: hunting resumes (hover labels the swept element, got ' + st2 + ')');
+  }
   // cleanup the reactivity beats' patches (probe hygiene law). A
   // shrinking draft converges the live page by RELOAD (the island's
   // law) — wait it out and re-arm the dial for the media beat.

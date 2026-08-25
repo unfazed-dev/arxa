@@ -1270,6 +1270,14 @@
 
   function onDesignMove(e) {
     if (e.composedPath().indexOf(host) !== -1) { hover.style.display = 'none'; return; }
+    // Hunt-freeze law (operator, 2026-08-25): once an element is
+    // selected the cursor's hunting STOPS — focus belongs to the
+    // selected element (amber outline + handles + card); a second
+    // highlight chasing the cursor is noise. Hunting is a DISCOVERY
+    // affordance, and there is nothing left to discover mid-selection.
+    // Deselected (outline cleared / mode re-armed) it resumes by
+    // itself — this guard reads S.selected live.
+    if (S.selected) { hover.style.display = 'none'; return; }
     const t = designTargetAt(e.clientX, e.clientY);
     if (!t) { hover.style.display = 'none'; return; }
     hover.classList.add('design');
@@ -1318,6 +1326,7 @@
   function selectEl(t) {
     if (S.inlineEditing != null) inlineEditEnd(true); // commit before switching
     clearSelOutline();
+    hover.style.display = 'none'; // the hunt-freeze law starts clean: no stale box under the new selection
     S.selected = { id: t.id, key: bindingFor(t.el, t.id), el: t.el, label: t.label, group: t.group };
     S.selOutline = t.el.style.outline;
     t.el.style.outline = '2px solid #f59e0b';
