@@ -340,17 +340,34 @@ Future<void> main() async {
 
   // 7. → composer: island asks, studio inserts (panel dock CLOSED),
   //    chip flashes at the destination, the ack flips the status.
+  // DECoy law (2026-08-26 live failure): the operator's studio page
+  // carries textareas ABOVE the composer (commit banner in the dock,
+  // gen-ui cards) and the insert used to land in the FIRST one — the
+  // card said ✓ while the composer stayed empty. A visible decoy,
+  // first in DOM order, replicates that page exactly; the insert must
+  // land in the real composer (the data-phase SessionInput), never in
+  // the decoy.
+  await js(gui, '''
+    (() => { const d = document.createElement('textarea');
+      d.id = 'decoy-ta'; d.placeholder = 'decoy';
+      d.style.cssText = 'position:fixed;top:8px;left:8px;width:140px;' +
+        'height:32px;z-index:2147483000';
+      document.body.prepend(d); return true; })()
+  ''');
   await js(tab, '''
     (() => { const b = [...''' + SR + '''.querySelectorAll('#cfoot button')]
       .find((x) => (x.textContent || '').trim() === '→ composer');
       if (b) b.click(); return !!b; })()
   ''');
   final lineOk = await poll(gui, '''
-    (() => { const tas = [...document.querySelectorAll('textarea')];
-      const ta = tas[tas.length - 1];
-      return !!(ta && (ta.value || '').indexOf('design selection') >= 0); })()
+    (() => { const ta = [...document.querySelectorAll('textarea')]
+        .find((t) => t.hasAttribute('data-phase'));
+      const decoy = document.getElementById('decoy-ta');
+      const decoyClean = !decoy || (decoy.value || '').indexOf('design selection') < 0;
+      return !!(ta && (ta.value || '').indexOf('design selection') >= 0 && decoyClean); })()
   ''', const Duration(seconds: 12));
-  check(lineOk, 'pointer line inserted in the studio composer (dock closed)');
+  check(lineOk,
+      'pointer line inserted in the REAL composer (data-phase), decoy untouched');
   final rail = await js(gui, '''
     (() => {
       const fresh = [...document.querySelectorAll('img')]
@@ -437,9 +454,11 @@ Future<void> main() async {
       'legacy selection registered (no v marker)');
   final lid = legacyId is String ? legacyId as String : 'zzz';
   final legacyLine = await poll(gui, '''
-    (() => { const tas = [...document.querySelectorAll('textarea')];
-      const ta = tas[tas.length - 1];
-      return !!(ta && (ta.value || '').indexOf('LID') >= 0); })()
+    (() => { const ta = [...document.querySelectorAll('textarea')]
+        .find((t) => t.hasAttribute('data-phase'));
+      const decoy = document.getElementById('decoy-ta');
+      const decoyClean = !decoy || (decoy.value || '').indexOf('LID') < 0;
+      return !!(ta && (ta.value || '').indexOf('LID') >= 0 && decoyClean); })()
   '''.replaceAll('LID', lid), const Duration(seconds: 8));
   check(legacyLine,
       'legacy (v-less) selection still lands in the studio composer');
