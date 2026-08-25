@@ -253,30 +253,38 @@
     '  max-height:65vh;bottom:20px}}',
     '@media (min-width:1024px){#tray{max-width:880px;max-height:60vh}',
     '  .slide{flex-basis:calc(100% - 96px)}}',
-    '@media (prefers-reduced-transparency:reduce){#tray,#card{',
-    '  background:#14141c;backdrop-filter:none;-webkit-backdrop-filter:none}}',
+    '@media (prefers-reduced-transparency:reduce){#tray{',
+    '  background:#14141c;backdrop-filter:none;-webkit-backdrop-filter:none}',
+    '  #card{background:rgb(106,133,74)}}',
     '@media (prefers-reduced-motion:reduce){#track{scroll-behavior:auto}}',
-    /* the floating smart card */
+    /* the floating smart card — a card of the studio now (operator,
+       2026-08-26): the same arxa moss gradient the dock card won, the
+       off-white brand text, and a header that doubles as a grab handle
+       (drag law below). No more glass: the gradient is opaque, so the
+       blur/tint glass retired with the old background. */
     '#card{position:fixed;width:300px;z-index:26;display:none;',
-    '  flex-direction:column;pointer-events:auto;color:#FFFCF0;',
-    '  background:rgba(20,20,28,var(--tint,.82));',
-    '  backdrop-filter:blur(var(--tblur,16px)) saturate(1.4);',
-    '  -webkit-backdrop-filter:blur(var(--tblur,16px)) saturate(1.4);',
-    '  border:1px solid rgba(110,136,76,.45);border-radius:12px;',
+    '  flex-direction:column;pointer-events:auto;color:rgb(243,246,238);',
+    '  background:linear-gradient(135deg,rgb(139,165,101) 0%,',
+    '  rgb(106,133,74) 55%,rgb(64,80,44) 100%);',
+    '  border:1px solid rgba(227,238,222,.4);border-radius:12px;',
     '  box-shadow:0 12px 40px rgba(0,0,0,.5),',
     '    0 0 32px rgba(110,136,76,var(--glow,.22));',
     '  max-height:min(440px,62vh)}',
     '#card.open{display:flex}',
     '#chead{display:flex;align-items:center;gap:8px;padding:10px 12px;',
-    '  border-bottom:1px solid rgba(110,136,76,.28);flex:none;',
-    '  font-size:12.5px;font-weight:700}',
+    '  border-bottom:1px solid rgba(43,54,29,.35);flex:none;',
+    '  font-size:12.5px;font-weight:700;cursor:grab;',
+    '  user-select:none;-webkit-user-select:none;touch-action:none}',
+    '#chead:active{cursor:grabbing}',
+    '#chead button{cursor:pointer}',
     '#chead .kchip{font-size:9.5px;font-weight:700;text-transform:uppercase;',
     '  letter-spacing:.04em;background:#2a2a35;color:#9aa0ab;',
     '  padding:2px 7px;border-radius:8px}',
     '#chead .cclose{margin-left:auto;background:#2a2a35;color:#FFFCF0;',
     '  width:22px;height:22px;border-radius:50%;font-size:12px;',
     '  line-height:1;display:flex;align-items:center;justify-content:center}',
-    '.cbody{overflow-y:auto;overscroll-behavior:contain;flex:1}',
+    '.cbody{overflow-y:auto;overscroll-behavior:contain;flex:1;',
+    '  scrollbar-width:thin;scrollbar-color:rgba(43,54,29,.55) transparent}',
     '.row{padding:8px 10px;border-radius:8px;cursor:pointer;',
     '  border:1px solid transparent;margin-bottom:4px}',
     '.row:hover{background:#1d1d27}',
@@ -284,6 +292,25 @@
     '.row .txt{font-size:12.5px;line-height:1.35;display:block}',
     '.row .meta{display:flex;gap:6px;align-items:center;margin-top:5px;',
     '  font-size:10.5px;color:#9aa0ab}',
+    /* on the moss card, chrome must read against green (operator,
+       2026-08-26): the dark-panel greys (#9aa0ab, #1d1d27, cyan) belong
+       to #thread/#composer — the card re-skins its rows and secondary
+       text in translucent off-whites so nothing goes grey-on-moss. */
+    '#card .row:hover{background:rgba(243,246,238,.14)}',
+    '#card .row.active{border-color:rgba(243,246,238,.75);',
+    '  background:rgba(243,246,238,.1)}',
+    '#card .row .meta,#card .sect,#card .facet label,',
+    '  #card .draftmeta{color:rgba(243,246,238,.78)}',
+    '#card .idline{color:rgba(243,246,238,.6)}',
+    /* card scrollbars in phase with the moss card (operator, 2026-08-26):
+       the track is NOTHING (the gradient shows through); the thumb is
+       DEEP moss — moss-on-moss, never grey-on-moss — darkening on
+       hover. The tray keeps its own glass-phase law above. */
+    '#card ::-webkit-scrollbar{width:6px;height:6px}',
+    '#card ::-webkit-scrollbar-track{background:transparent}',
+    '#card ::-webkit-scrollbar-thumb{background:rgba(43,54,29,.55);',
+    '  border-radius:3px}',
+    '#card ::-webkit-scrollbar-thumb:hover{background:rgba(43,54,29,.8)}',
     '.chip{font-size:10px;font-weight:700;padding:2px 7px;border-radius:8px;',
     '  text-transform:uppercase;letter-spacing:.03em}',
     '.chip.open{background:#7c2d12;color:#ffd9c2}',
@@ -1934,10 +1961,56 @@
   card.appendChild(cbodyEl);
   root.appendChild(card);
 
+  // CARD DRAG (operator, 2026-08-26): the card is anchored by default
+  // (dropdown anchor + float tracking) but the header is a grab handle —
+  // a manual drag OVERRIDES the anchor law. The drop point becomes a
+  // pin: positionCard honors it (clamped to the viewport) instead of
+  // re-deriving from the element, so a dragged card stays where it was
+  // dropped through scrolls and resizes. Opening the card again on a
+  // fresh selection clears the pin and re-anchors.
+  let cardPin = null;
+  chead.addEventListener('pointerdown', (e) => {
+    if (e.pointerType === 'mouse' && e.button !== 0) return;
+    if (e.target.closest('button')) return;
+    const grab = card.getBoundingClientRect();
+    const ox = e.clientX - grab.left, oy = e.clientY - grab.top;
+    const place = (cx, cy) => {
+      const x = Math.min(Math.max(8, cx - ox),
+        Math.max(8, innerWidth - grab.width - 8));
+      const y = Math.min(Math.max(8, cy - oy),
+        Math.max(8, innerHeight - grab.height - 8));
+      card.style.left = x + 'px';
+      card.style.top = y + 'px';
+      cardPin = { x, y };
+    };
+    const move = (ev) => place(ev.clientX, ev.clientY);
+    const done = () => {
+      chead.removeEventListener('pointermove', move);
+      chead.removeEventListener('pointerup', done);
+      chead.removeEventListener('pointercancel', done);
+    };
+    // Pointer capture keeps the drag alive when the cursor leaves the
+    // card and makes the post-drag click land on the header (never on
+    // a row the card happens to pass over).
+    try { chead.setPointerCapture(e.pointerId); } catch (_) {}
+    chead.addEventListener('pointermove', move);
+    chead.addEventListener('pointerup', done);
+    chead.addEventListener('pointercancel', done);
+    e.preventDefault();
+  });
+
   function positionCard() {
     if (!S.selected) return;
-    const r = S.selected.el.getBoundingClientRect();
     const W = 300, GAP = 12;
+    if (cardPin) { // manual drop wins over the anchor law
+      const ch = card.offsetHeight || 240;
+      const x = Math.min(Math.max(8, cardPin.x), Math.max(8, innerWidth - W - 8));
+      const y = Math.min(Math.max(8, cardPin.y), Math.max(8, innerHeight - ch - 8));
+      card.style.left = x + 'px';
+      card.style.top = y + 'px';
+      return;
+    }
+    const r = S.selected.el.getBoundingClientRect();
     let x = r.right + GAP;
     if (x + W > innerWidth - 8) x = r.left - W - GAP;
     if (x < 8) x = Math.min(Math.max(8, r.left), Math.max(8, innerWidth - W - 8));
@@ -1957,6 +2030,7 @@
   function openCard() {
     if (!S.selected) return;
     S.card = S.selected.key;
+    cardPin = null; // a fresh open re-anchors (drag law above)
     chead.textContent = '';
     chead.appendChild(h('span', { text: S.selected.label.split(' · ')[0] }));
     chead.appendChild(h('span', { class: 'kchip', text: S.selected.group }));
@@ -1974,6 +2048,7 @@
   }
   function closeCard() {
     S.card = null;
+    cardPin = null;
     card.classList.remove('open');
     dialPanelChanged();
   }
