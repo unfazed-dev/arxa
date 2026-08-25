@@ -272,16 +272,59 @@ Future<void> main() async {
   if (elB == null) {
     stdout.writeln('NOTE  no disjoint second element; re-anchor check skipped');
   } else {
-    await clickAt(tab, elB['x'], elB['y']);
-    await Future.delayed(const Duration(milliseconds: 500));
-    final reopened = await cardst(tab);
-    final exp = anchorExpect(elB, (reopened['h'] as num) + 2, 1280, 800);
-    final okX = ((reopened['left'] as num) - exp['x']).abs() <= 3;
-    final okY = ((reopened['top'] as num) - exp['y']).abs() <= 3;
-    check(okX && okY,
-        'reopening on a fresh selection re-anchors: pos=(' +
-            reopened['left'].toString() + ',' + reopened['top'].toString() +
-            ') want=(' + exp['x'].toString() + ',' + exp['y'].toString() + ')');
+    // one-focus law (2026-08-26): elA still holds the focus — a direct
+    // click on elB is absorbed. Walk the law's door: deselect fully
+    // (Esc closes the card and keeps the selection; a second Esc
+    // disarms and clears it), re-arm, then make the fresh selection.
+    await js(tab,
+        "document.dispatchEvent(new KeyboardEvent('keydown', {key:'Escape'}))");
+    await Future.delayed(const Duration(milliseconds: 300));
+    await js(tab,
+        "document.dispatchEvent(new KeyboardEvent('keydown', {key:'Escape'}))");
+    await Future.delayed(const Duration(milliseconds: 300));
+    for (var i = 0; i < 5; i++) {
+      await tab.send('Input.dispatchMouseEvent',
+          {'type': 'mouseMoved', 'x': 1276 - i, 'y': 796 - i});
+      await Future.delayed(const Duration(milliseconds: 80));
+    }
+    await poll(tab,
+        "getComputedStyle(" + SR + ".getElementById('dockbtn')).visibility === 'visible'",
+        const Duration(seconds: 6));
+    await js(tab, SR + ".querySelector('#dockbtn').click()");
+    await Future.delayed(const Duration(milliseconds: 400));
+    await js(tab, SR + ".querySelector('[data-verb=edit]').click()");
+    await Future.delayed(const Duration(milliseconds: 400));
+    // ALWAYS re-query (7j law): the door added ~2s between the rect
+    // capture and this click, and the hero animator translates
+    // elements while it runs — the card anchors where the element is
+    // AT CLICK TIME, so the expectation must read the LIVE rect.
+    final elBRaw = await js(tab, '''
+      (() => { const el = document.querySelector('[data-arxa-id="''' +
+        (elB!['id'] as String) + '''"]');
+        if (!el) return 'null';
+        const r = el.getBoundingClientRect();
+        const cx = r.x + r.width / 2, cy = r.y + r.height / 2;
+        const top = document.elementsFromPoint(cx, cy)
+          .find((e) => e.hasAttribute && e.hasAttribute('data-arxa-id'));
+        if (top !== el) return 'null';
+        return JSON.stringify({x: Math.round(cx), y: Math.round(cy),
+          l: r.x, t: r.y, rt: r.right, b: r.bottom, w: r.width, h: r.height}); })()
+    ''');
+    if (elBRaw == 'null') {
+      stdout.writeln('NOTE  elB moved under the animator; re-anchor check skipped');
+    } else {
+      elB = jsonDecode(elBRaw as String) as Map;
+      await clickAt(tab, elB['x'], elB['y']);
+      await Future.delayed(const Duration(milliseconds: 500));
+      final reopened = await cardst(tab);
+      final exp = anchorExpect(elB, (reopened['h'] as num) + 2, 1280, 800);
+      final okX = ((reopened['left'] as num) - exp['x']).abs() <= 3;
+      final okY = ((reopened['top'] as num) - exp['y']).abs() <= 3;
+      check(okX && okY,
+          'reopening on a fresh selection re-anchors: pos=(' +
+              reopened['left'].toString() + ',' + reopened['top'].toString() +
+              ') want=(' + exp['x'].toString() + ',' + exp['y'].toString() + ')');
+    }
   }
 
   // 6. scrollbar law: no track, moss thumb (computed + sheet).

@@ -30,7 +30,12 @@
 //      the STUDIO composer (tab B, panel dock CLOSED — the always-on
 //      listener law), flashes the destination chip, and the island's
 //      ack status flips to a VERIFIED ✓
-//   8. zero console AND page errors on BOTH tabs
+//   8. one-focus law: while an element is selected NO other element
+//      can be selected — clicks/double-clicks on other elements are
+//      absorbed; only a full deselect (or the element dying in a swap)
+//      re-opens selection; re-clicking the SAME element re-opens the
+//      card
+//   9. zero console AND page errors on BOTH tabs
 import 'dart:convert';
 import 'dart:io';
 
@@ -127,6 +132,51 @@ Future<void> clickAt(CdpSession tab, num x, num y) async {
       {'type': 'mousePressed', 'x': x, 'y': y, 'button': 'left', 'clickCount': 1});
   await tab.send('Input.dispatchMouseEvent',
       {'type': 'mouseReleased', 'x': x, 'y': y, 'button': 'left', 'clickCount': 1});
+}
+
+// A real double-click: press/release clickCount 1 then press/release
+// clickCount 2 — Chrome synthesizes the dblclick event from the
+// clickCount:2 pair (a hand-built MouseEvent('dblclick') carries
+// clientX/Y 0,0 and the island's point picker would read the page
+// corner instead of the element).
+Future<void> dblClickAt(CdpSession tab, num x, num y) async {
+  await tab.send('Input.dispatchMouseEvent',
+      {'type': 'mouseMoved', 'x': x, 'y': y});
+  await tab.send('Input.dispatchMouseEvent',
+      {'type': 'mousePressed', 'x': x, 'y': y, 'button': 'left', 'clickCount': 1});
+  await tab.send('Input.dispatchMouseEvent',
+      {'type': 'mouseReleased', 'x': x, 'y': y, 'button': 'left', 'clickCount': 1});
+  await tab.send('Input.dispatchMouseEvent',
+      {'type': 'mousePressed', 'x': x, 'y': y, 'button': 'left', 'clickCount': 2});
+  await tab.send('Input.dispatchMouseEvent',
+      {'type': 'mouseReleased', 'x': x, 'y': y, 'button': 'left', 'clickCount': 2});
+}
+
+// The one-focus protocol (operator law, 2026-08-26): while an element
+// holds the focus NO other element can be selected — the law's only
+// door to a new selection is a full deselect (Esc closes the card and
+// keeps the selection; a second Esc disarms Edit Mode and clears it),
+// then a fresh re-arm. Every beat that legitimately moves the
+// selection from one element to another walks this door.
+Future<void> deselectAndRearm(CdpSession tab) async {
+  await js(tab,
+      "document.dispatchEvent(new KeyboardEvent('keydown', {key:'Escape'}))");
+  await Future.delayed(const Duration(milliseconds: 300));
+  await js(tab,
+      "document.dispatchEvent(new KeyboardEvent('keydown', {key:'Escape'}))");
+  await Future.delayed(const Duration(milliseconds: 300));
+  for (var i = 0; i < 5; i++) {
+    await tab.send('Input.dispatchMouseEvent',
+        {'type': 'mouseMoved', 'x': 1276 - i, 'y': 796 - i});
+    await Future.delayed(const Duration(milliseconds: 80));
+  }
+  await poll(tab,
+      "getComputedStyle(" + SR + ".getElementById('dockbtn')).visibility === 'visible'",
+      const Duration(seconds: 6));
+  await js(tab, SR + ".querySelector('#dockbtn').click()");
+  await Future.delayed(const Duration(milliseconds: 400));
+  await js(tab, SR + ".querySelector('[data-verb=edit]').click()");
+  await Future.delayed(const Duration(milliseconds: 400));
 }
 
 // Clean hit-test pick (block 41 law): the topmost arxa element at the
@@ -322,6 +372,10 @@ Future<void> main() async {
   final elB = await pickLeaf(tab, 0, elA['id'] as String);
   if (elB != null) {
     stdout.writeln('element B: ' + (elB['id'] as String) + ' @' + elB['x'].toString() + ',' + elB['y'].toString());
+    // one-focus law (2026-08-26): A still holds the focus — a direct
+    // click on B is absorbed. The beat walks the law's door instead:
+    // deselect fully, re-arm, then pick.
+    await deselectAndRearm(tab);
     await clickAt(tab, elB['x'], elB['y']);
     await Future.delayed(const Duration(milliseconds: 500));
     st = await cardst(tab);
@@ -353,6 +407,9 @@ Future<void> main() async {
   if (back == null) {
     check(false, 'element A re-hit for the compose flow');
   } else {
+    // one-focus law (2026-08-26): B holds the focus here — deselect,
+    // re-arm, then return to A through the same door.
+    await deselectAndRearm(tab);
     await clickAt(tab, back['x'], back['y']);
   }
   await Future.delayed(const Duration(milliseconds: 500));
@@ -994,6 +1051,164 @@ Future<void> main() async {
         ''');
         stdout.writeln('NOTE  restore diag: ' + (rdiag ?? 'n/a'));
       }
+    }
+  }
+
+  // 7k. The one-focus law (operator, 2026-08-26): "when selected an
+  //     element in edit mode no other element can be selected". The
+  //     hunt-freeze law (7i) stopped the cursor's HIGHLIGHT; this
+  //     closes the bigger hole the operator still felt — a click (or
+  //     double-click) on a different element SWITCHED the selection
+  //     outright. While an element holds the focus, gestures on other
+  //     elements are absorbed; the only doors to a new selection are a
+  //     full deselect (Esc ×2 / tray close) or the element dying in a
+  //     swap. Re-clicking the SAME element stays legal — the recovery
+  //     path that re-opens a ×-closed card (selection kept, 7i's law).
+  {
+    // The SELECTED instance's truth is the handles layer: it tracks
+    // S.selected.el every frame, and sibling instances share ids, so
+    // rects-by-id cannot tell the selected element from its twins (the
+    // outline itself is clobbered by the hero animator — 7j's oracle
+    // law). The handles' bounding box marks exactly the selected one.
+    Future<Map?> handlesCtr() async {
+      final raw = await js(tab, '''
+        (() => { const hs = [...''' + SR + '''.querySelectorAll('#handles .hnd')];
+          if (hs.length < 8) return null;
+          const xs = hs.map((x) => parseFloat(x.style.left) || 0);
+          const ys = hs.map((y) => parseFloat(y.style.top) || 0);
+          return JSON.stringify({
+            x: Math.round((Math.min.apply(null, xs) + Math.max.apply(null, xs)) / 2),
+            y: Math.round((Math.min.apply(null, ys) + Math.max.apply(null, ys)) / 2) }); })()
+      ''');
+      if (raw is! String) return null;
+      try {
+        return jsonDecode(raw) as Map;
+      } catch (_) {
+        return null;
+      }
+    }
+    Future<String?> curKey() async => ((await js(tab,
+            "(((" + SR + ".querySelector('#cidrow .idline') || {textContent:''}).textContent || '').split(' → ').pop() || '').trim() || null"))
+        as String?);
+    Future<bool> cardOpen() async => await js(tab,
+            "!!(" + SR + ".getElementById('card') || {classList:{contains:function(){return false;}}}).classList.contains('open')") ==
+        true;
+
+    final aidRaw = await js(tab, '''
+      (() => { const k = ''' + keyJs + ''';
+        const insts = k.indexOf('el:') === 0
+          ? document.querySelectorAll('[data-el="' + k.slice(3) + '"]')
+          : document.querySelectorAll('[data-arxa-id="' + k + '"]');
+        const el = [...insts].find((x) => x.isConnected);
+        return el ? (el.getAttribute('data-arxa-id') || '') : ''; })()
+    ''');
+    final aid = (aidRaw as String?) ?? '';
+    final lockB = aid.isNotEmpty ? await pickLeaf(tab, 0, aid) : null;
+    final actr = await handlesCtr();
+    if (lockB == null || actr == null) {
+      stdout.writeln('NOTE  one-focus preconditions (B=' +
+          (lockB != null).toString() + ', handles=' + (actr != null).toString() +
+          '); beats skipped');
+    } else {
+      final bId = lockB!['id'] as String;
+      stdout.writeln('one-focus: A=' + skey + '  B=' + bId);
+
+      // (1) absorbed switch: A holds the focus, a real click lands on B.
+      await clickAt(tab, lockB!['x'] as num, lockB!['y'] as num);
+      await Future.delayed(const Duration(milliseconds: 600));
+      final k1 = await curKey();
+      final open1 = await cardOpen();
+      final path1 = await js(tab, 'location.pathname');
+      check(k1 == skey && open1 && path1 == '/',
+          'one-focus: a click on another element does NOT steal the selection (idline: ' +
+              (k1 ?? 'none') + ', card open=' + open1.toString() + ')');
+
+      // (2) a real double-click on B is absorbed the same way — and
+      // must NOT start on-canvas typing inside the unselected element.
+      await dblClickAt(tab, lockB!['x'] as num, lockB!['y'] as num);
+      await Future.delayed(const Duration(milliseconds: 600));
+      final k2 = await curKey();
+      final bEditing = await js(tab, '''
+        (() => { const els = document.querySelectorAll('[data-arxa-id="''' + bId + '''"]');
+          for (var i = 0; i < els.length; i++) {
+            if (els[i].getAttribute('contenteditable')) return true; }
+          return false; })()
+      ''');
+      check(k2 == skey && bEditing != true,
+          'one-focus: a double-click on another element is absorbed — no reselect, no inline typing (idline: ' +
+              (k2 ?? 'none') + ', B editable=' + bEditing.toString() + ')');
+
+      // (3) the SAME element stays clickable: × keeps the selection;
+      // re-clicking the element is the card's way back.
+      final stillOpen3 = await cardOpen();
+      if (stillOpen3) {
+        await js(tab, SR + ".querySelector('#chead .cclose').click()");
+        await Future.delayed(const Duration(milliseconds: 400));
+      }
+      final handles3 = await js(tab,
+          "(() => " + SR + ".querySelectorAll('#handles .hnd').length)()");
+      check(handles3 == 8,
+          'card closed by ×: the selection (and its 8 handles) STAY');
+      final hctr = await handlesCtr();
+      if (hctr == null) {
+        check(false, 'handles re-readable for the same-element re-click');
+      } else {
+        await clickAt(tab, hctr!['x'] as num, hctr!['y'] as num);
+        await Future.delayed(const Duration(milliseconds: 600));
+        final k3 = await curKey();
+        final open3 = await cardOpen();
+        check(open3 && k3 == skey,
+            'one-focus: re-clicking the SAME element re-opens its card (idline: ' +
+                (k3 ?? 'none') + ')');
+      }
+
+      // (4) the door: full deselect releases the lock — B selects.
+      await deselectAndRearm(tab);
+      await clickAt(tab, lockB!['x'] as num, lockB!['y'] as num);
+      await Future.delayed(const Duration(milliseconds: 600));
+      final k4 = await curKey();
+      final open4 = await cardOpen();
+      check(open4 && k4 != null && k4 != skey,
+          'deselected first: B selects freely through the law\'s door (idline: ' +
+              (k4 ?? 'none') + ')');
+
+      // hygiene (holds in GREEN and RED worlds alike): end any inline
+      // edit, close any card, disarm, and clear the track-back stash —
+      // B's selection rewrote it, and a leftover stash would auto-
+      // restore on the cleanup reload and break the media beat's
+      // fresh-page assumption.
+      Map? hst;
+      for (var hi = 0; hi < 4; hi++) {
+        final st = await js(tab, '''
+          (() => { const sr = ''' + SR + ''';
+            const editing = !!document.querySelector('[data-arxa-id][contenteditable]');
+            const card = sr.getElementById('card');
+            const open = !!(card && card.classList.contains('open'));
+            const verb = sr.querySelector('[data-verb=edit]');
+            const armed = !!(verb && verb.classList.contains('on'));
+            return JSON.stringify({ editing: editing, open: open, armed: armed }); })()
+        ''');
+        try {
+          hst = st is String ? jsonDecode(st) as Map : null;
+        } catch (_) {
+          hst = null;
+        }
+        if (hst == null) break;
+        if (hst!['editing'] == true || hst!['open'] == true || hst!['armed'] == true) {
+          await js(tab,
+              "document.dispatchEvent(new KeyboardEvent('keydown', {key:'Escape'}))");
+          await Future.delayed(const Duration(milliseconds: 300));
+          continue;
+        }
+        break;
+      }
+      await js(tab,
+          "try { sessionStorage.removeItem('arxa-dial-trackback'); } catch (e) {} true");
+      final stashGone = await js(tab,
+          "sessionStorage.getItem('arxa-dial-trackback') === null");
+      check(hst != null && hst!['armed'] != true && hst!['open'] != true &&
+          hst!['editing'] != true && stashGone == true,
+          'one-focus hygiene: disarmed, card closed, stash cleared');
     }
   }
   // cleanup the reactivity beats' patches (probe hygiene law). A

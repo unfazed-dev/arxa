@@ -1332,7 +1332,37 @@
     return id;
   }
 
+  // ONE-FOCUS LAW (operator, 2026-08-26): "when selected an element in
+  // edit mode no other element can be selected." The hunt-freeze law
+  // (2026-08-25) stopped the cursor's highlight; this choke closes the
+  // bigger hole — a click (or double-click, or a tray jump) on a
+  // DIFFERENT element used to switch the selection outright. While an
+  // element holds the focus, every such request is absorbed here at the
+  // single source; the only doors to a new selection are a full
+  // deselect (Esc ×2 / tray close — both clear S.selected) or the
+  // element dying in a swap (a stranded selection locks nothing — the
+  // handles renderer and trackBack tier-2 already treat it as gone).
+  // Re-selecting the SAME element stays legal — the recovery path that
+  // re-opens a ×-closed card (the 2026-08-25 law kept the selection on
+  // close) — and a request resolving INSIDE the selection's subtree is
+  // the SAME element too: stamped children are parts of their wrapper,
+  // and a wrapper's visible area is covered by them (intro-line-3's em
+  // owns every pixel of its line). Returns whether the selection ended
+  // up on the selection's element (requests for others are refused).
   function selectEl(t) {
+    if (S.selected && S.selected.el && S.selected.el.isConnected &&
+        S.selected.el !== t.el) {
+      if (S.selected.el.contains(t.el)) {
+        // inside the selection: re-target to the SELECTION itself —
+        // the card re-opens on it, the child never takes the focus.
+        t = { id: S.selected.id, el: S.selected.el, label: S.selected.label, group: S.selected.group };
+      } else {
+        // outside (or an ancestor wrapper): absorbed. Ancestors are NOT
+        // the selection — their padding is a different element's ground.
+        say('Focus locked on the selected element — Esc to pick another');
+        return false;
+      }
+    }
     if (S.inlineEditing != null) inlineEditEnd(true); // commit before switching
     clearSelOutline();
     hover.style.display = 'none'; // the hunt-freeze law starts clean: no stale box under the new selection
@@ -1357,6 +1387,7 @@
     renderHandles();
     trackHandles();
     openCard();
+    return true;
   }
   function clearSelOutline() {
     if (S.inlineEditing != null) inlineEditEnd(true);
@@ -1512,6 +1543,11 @@
     e.preventDefault();
     e.stopPropagation();
     if (!S.selected || S.selected.el !== t.el) selectEl(t);
+    // one-focus law: on-canvas typing belongs to the SELECTED element —
+    // a double-click on another element is absorbed whole (the choke
+    // refused the reselect; starting an edit anyway would hand the
+    // keyboard to an element the card is not even open on).
+    if (!S.selected || S.selected.el !== t.el) return;
     inlineEditStart();
   }
 
@@ -1963,7 +1999,10 @@
         if (!id) return;
         if (!S.design) designOn();
         const k = kindOf(el);
-        selectEl({ id: id, el: el, label: (el.getAttribute('data-el') || el.tagName.toLowerCase()) + ' · ' + k.kind, group: k.group });
+        // one-focus law: the jump is a selection request like any other
+        // — absorbed while another element holds the focus (the toast
+        // says why); the scroll rides WITH a selection, never alone.
+        if (!selectEl({ id: id, el: el, label: (el.getAttribute('data-el') || el.tagName.toLowerCase()) + ' · ' + k.kind, group: k.group })) return;
         el.scrollIntoView({ block: 'center', behavior: 'smooth' });
       });
       body.appendChild(row);
