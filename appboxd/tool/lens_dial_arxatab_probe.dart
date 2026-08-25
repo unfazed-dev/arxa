@@ -69,6 +69,27 @@ Future<String?> httpGet(String path) async {
   }
 }
 
+// The agent's patch path: read the draft, hand it back mutated. UTF-8
+// body — artifact text carries non-Latin-1 characters and a plain
+// write() Latin-1-encodes them into a crash.
+Future<Map?> httpCall(String method, String path, Map? body) async {
+  final client = HttpClient();
+  try {
+    final req =
+        await client.openUrl(method, Uri.parse('http://127.0.0.1:4319' + path));
+    if (body != null) {
+      req.headers.contentType =
+          ContentType.parse('application/json; charset=utf-8');
+      req.add(utf8.encode(jsonEncode(body)));
+    }
+    final res = await req.close();
+    final txt = await res.transform(utf8.decoder).join();
+    return txt.isEmpty ? null : jsonDecode(txt) as Map;
+  } finally {
+    client.close();
+  }
+}
+
 // The floating card, tab-law view.
 const CARDST = '''
   JSON.stringify((() => {
@@ -491,6 +512,308 @@ Future<void> main() async {
   check(term,
       'the card reaches an honest terminal state (✓ if another studio '
       'page took it, no-composer truth otherwise)');
+
+  // 7e. Reactivity law (operator, 2026-08-26): everything in an OPEN
+  //     card tracks the page. An external draft patch (the agent's
+  //     path) re-syncs the facets live; an external frame while the
+  //     author is mid-edit in the CSS escape hatch may NOT wipe their
+  //     unapplied text or steal focus (skip that beat); the next frame
+  //     after blur catches the card up.
+  await js(tab, SR + ".querySelector('#chead .tab[data-tab=customise]').click()");
+  await Future.delayed(const Duration(milliseconds: 300));
+  Future<String?> swatchOf() async {
+    return await js(tab, '''
+      (() => { const row = [...''' + SR + '''.querySelectorAll('#card .facet')]
+          .find((r) => (r.querySelector('label') || {textContent:''}).textContent === 'background');
+        const sw = row && row.querySelector('input[type="color"]');
+        return sw ? sw.value : null; })()
+    ''') as String?;
+  }
+  final keyRaw = await js(tab,
+      "(((" + SR + ".querySelector('#cidrow .idline') || {textContent:''}).textContent || '').split(' → ').pop())");
+  final dkey = (keyRaw as String).trim();
+  Map? draftDoc;
+  Future<bool> patchBackground(String cssColor) async {
+    draftDoc = await httpCall('GET', '/__dial/draft', null);
+    final draft = ((draftDoc?['draft']) as Map?) ?? {};
+    final patches = Map<String, dynamic>.from((draft['patches'] as Map?) ?? {});
+    final p = Map<String, dynamic>.from((patches[dkey] as Map?) ?? {});
+    final style = Map<String, dynamic>.from((p['style'] as Map?) ?? {});
+    style['background'] = cssColor;
+    p['style'] = style;
+    patches[dkey] = p;
+    final put = await httpCall('PUT', '/__dial/draft', {
+      'tokens': (draft['tokens'] as Map?) ?? {},
+      'patches': patches,
+    });
+    return put != null && put['ok'] == true;
+  }
+  check(await patchBackground('rgb(192, 57, 43)'),
+      'external draft patch accepted (agent path)');
+  // diagnostics for the beat: did the pane re-render at all?
+  await js(tab, '''
+    (() => { window.__rc = 1; window.__rerenders = 0;
+      const mo = new MutationObserver(() => { window.__rerenders++; });
+      mo.observe(''' + SR + '''.querySelector('.cbody'), { childList: true, subtree: true });
+      return true; })()
+  ''');
+  var sw = await poll(tab, '''
+    (() => { const row = [...''' + SR + '''.querySelectorAll('#card .facet')]
+        .find((r) => (r.querySelector('label') || {textContent:''}).textContent === 'background');
+        const sw = row && row.querySelector('input[type="color"]');
+        return !!(sw && sw.value === '#c0392b'); })()
+  ''', const Duration(seconds: 8));
+  check(sw, 'external restyle: the background swatch re-syncs live');
+  if (!sw) {
+    final diagInfo = await js(tab, '''
+      (() => { const row = [...''' + SR + '''.querySelectorAll('#card .facet')]
+          .find((r) => (r.querySelector('label') || {textContent:''}).textContent === 'background');
+        const swx = row && row.querySelector('input[type="color"]');
+        return JSON.stringify({ canary: window.__rc === 1 ? 'no-reload' : 'RELOADED',
+          rerenders: window.__rerenders, swatch: swx ? swx.value : 'no-row',
+          cardOpen: ''' + SR + '''.getElementById('card').classList.contains('open') }); })()
+    ''');
+    stdout.writeln('NOTE  swatch FAIL diagnostics: ' + (diagInfo ?? 'n/a'));
+  }
+
+  // mid-edit beat: focus the CSS ESCAPE HATCH (the textarea whose
+  // placeholder starts 'prop:') with UNAPPLIED text. NEVER the first
+  // textarea in the card — that one is the CONTENT editor and its
+  // input listener live-writes the element's text into the draft
+  // (a probe typing there corrupts the design's text signature).
+  final CSSTA = "[..." + SR + ".querySelectorAll('#card textarea')]" +
+      ".find((t) => (t.placeholder || '').indexOf('prop:') === 0)";
+  await js(tab, '''
+    (() => { const t = ''' + CSSTA + ''';
+      t.focus(); t.value = 'opacity: .9;'; return !!t; })()
+  ''');
+  check(await patchBackground('rgb(41, 128, 185)'),
+      'second external patch accepted while editing');
+  await Future.delayed(const Duration(milliseconds: 1200));
+  final guard = await js(tab, '''
+    (() => { const t = ''' + CSSTA + ''';
+      const ae = document.getElementById('arxa-dial-host').shadowRoot.activeElement;
+      return !!(t && (t.value || '').indexOf('opacity: .9;') >= 0 &&
+        ae && ae === t); })()
+  ''');
+  check(guard == true,
+      'mid-edit: unapplied CSS text AND focus survive the external frame');
+  if (guard != true) {
+    final gdiag = await js(tab, '''
+      (() => { const t = ''' + CSSTA + ''';
+        const ae = document.getElementById('arxa-dial-host').shadowRoot.activeElement;
+        return JSON.stringify({ text: t ? t.value : null,
+          aeTag: ae ? ae.tagName : null }); })()
+    ''');
+    stdout.writeln('NOTE  guard FAIL diagnostics: ' + (gdiag ?? 'n/a'));
+  }
+
+  // catch-up beat: blur, one more external frame, the card follows
+  await js(tab, "document.activeElement && document.activeElement.blur()");
+  check(await patchBackground('rgb(39, 174, 96)'),
+      'third external patch accepted after blur');
+  sw = await poll(tab, '''
+    (() => { const row = [...''' + SR + '''.querySelectorAll('#card .facet')]
+        .find((r) => (r.querySelector('label') || {textContent:''}).textContent === 'background');
+        const sw = row && row.querySelector('input[type="color"]');
+        return !!(sw && sw.value === '#27ae60'); })()
+  ''', const Duration(seconds: 8));
+  check(sw, 'after blur the next frame catches the card up');
+  // cleanup the reactivity beats' patches (probe hygiene law). A
+  // shrinking draft converges the live page by RELOAD (the island's
+  // law) — wait it out and re-arm the dial for the media beat.
+  await httpCall('GET', '/__dial/draft', null).then((doc) async {
+    final draft = ((doc?['draft']) as Map?) ?? {};
+    final patches = Map<String, dynamic>.from((draft['patches'] as Map?) ?? {});
+    if (patches.remove(dkey) != null) {
+      await httpCall('PUT', '/__dial/draft', {
+        'tokens': (draft['tokens'] as Map?) ?? {},
+        'patches': patches,
+      });
+    }
+  });
+  await Future.delayed(const Duration(milliseconds: 2500));
+  // re-arm on a possibly-RELOADED page: the island boots async, and the
+  // dock button only REVEALS on pointer proximity — wiggle the corner
+  // exactly like boot, then wait for it, then click (a click on a null
+  // selector arms nothing and the media tap lands on a dead surface).
+  for (var i = 0; i < 5; i++) {
+    await tab.send('Input.dispatchMouseEvent',
+        {'type': 'mouseMoved', 'x': 1276 - i, 'y': 796 - i});
+    await Future.delayed(const Duration(milliseconds: 80));
+  }
+  final dockReady = await poll(tab,
+      "getComputedStyle(" + SR + ".getElementById('dockbtn')).visibility === 'visible'",
+      const Duration(seconds: 10));
+  check(dockReady, 'dial re-armed after the cleanup reload');
+  await js(tab, SR + ".querySelector('#dockbtn').click()");
+  await Future.delayed(const Duration(milliseconds: 400));
+  await js(tab, SR + ".querySelector('[data-verb=edit]').click()");
+  await Future.delayed(const Duration(milliseconds: 2000)); // split-text settle
+  var mediaPick;
+
+  // 7f. One-pick law (operator, 2026-08-26): changing ONE image via the
+  //     Media section rewrites exactly THAT image — an anchor whose
+  //     instances diverge on src (22 distinct data-el="media-source"
+  //     images) is not a homogeneous row. The patch records the picked
+  //     instance (attrsNth.src), live apply touches one image, and the
+  //     serve-time overlay reproduces the same ONE image after reload.
+  await js(tab, '''
+    (() => {
+      const cands = [...document.querySelectorAll('img[data-el="media-source"]')]
+        .filter((m) => { const r = m.getBoundingClientRect();
+          return r.width > 30 && r.height > 30; });
+      if (!cands.length) return 'none';
+      // bring the first candidate fully into view, then hit-test it
+      // this design is a HORIZONTAL scroll layout — center on BOTH axes
+      cands[0].scrollIntoView({ block: 'center', inline: 'center' });
+      return 'scrolled'; })()
+  ''');
+  await Future.delayed(const Duration(milliseconds: 2200));
+  // Pick the click point with the DISPATCH-TARGET law: a synthetic
+  // MouseEvent carries clientX/Y 0,0 and the island's picker would
+  // select whatever sits at the page corner — the point must hit-test
+  // to the IMG itself. A real CDP click at that point does the rest.
+  final mediaHit = await js(tab, '''
+    (() => { const cands = [...document.querySelectorAll('img[data-el="media-source"]')]
+        .filter((m) => { const r = m.getBoundingClientRect();
+          return r.width > 30 && r.height > 30 && r.bottom > 60 && r.top < innerHeight - 60; });
+      const inVp = (x, y) => x > 10 && x < innerWidth - 10 && y > 10 && y < innerHeight - 10;
+      for (const m of cands) {
+        const r = m.getBoundingClientRect();
+        // sample a GRID across the rect clamped into the viewport —
+        // this layout is a horizontal track whose elements straddle the
+        // right edge, so the center is often off-screen while the left
+        // part is fully visible.
+        const xs = [r.x + r.width * 0.25, r.x + r.width * 0.5, r.x + r.width * 0.75];
+        const ys = [r.top + r.height * 0.25, r.top + r.height * 0.5, Math.max(r.top, 0) + 60];
+        for (const sx of xs) for (const sy of ys) {
+          const cx = Math.round(sx), cy = Math.round(sy);
+          if (!inVp(cx, cy)) continue;
+          if (cx < r.x + 5 || cx > r.right - 5 || cy < r.top + 5 || cy > r.bottom - 5) continue;
+          const stack = document.elementsFromPoint(cx, cy);
+          const top = stack && stack[0];
+          if (top && (top === m || m.contains(top) ||
+              (top.closest && top.closest('[data-arxa-id]') === m))) {
+            const all = [...document.querySelectorAll('[data-el="media-source"]')];
+            return JSON.stringify({ x: cx, y: cy, idx: all.indexOf(m),
+              src: m.getAttribute('src') || '' }); } } }
+      if (window.__mediaTopDebug === undefined) {
+        window.__mediaTopDebug = {
+          iw: innerWidth, ih: innerHeight,
+          cands: cands.slice(0, 4).map((m) => {
+            const r = m.getBoundingClientRect();
+            const cx = Math.round(r.x + r.width / 2);
+            const cy = Math.round(Math.max(Math.min(r.top + (r.bottom - r.top) * 0.5, innerHeight - 20), 20));
+            return { rect: [Math.round(r.x), Math.round(r.y), Math.round(r.width), Math.round(r.height)],
+              pt: [cx, cy],
+              stack: document.elementsFromPoint(cx, cy).slice(0, 3).map((el) =>
+                el.tagName + '[' + (el.getAttribute('data-el') || '') + ']') };
+          }) };
+      }
+      return 'none'; })()
+  ''');
+  Map? mhit;
+  try { mhit = mediaHit is String ? jsonDecode(mediaHit as String) as Map : null; } catch (_) {}
+  if (mhit == null) {
+    final stackInfo = await js(tab, 'JSON.stringify(window.__mediaTopDebug || [])');
+    stdout.writeln('NOTE  media stack tops: ' + (stackInfo ?? 'n/a'));
+    check(false, 'a visible media-source image was tapped for the one-pick law');
+  } else {
+    await clickAt(tab, mhit!['x'] as num, mhit!['y'] as num);
+    mediaPick = jsonEncode({'idx': mhit!['idx'], 'src': mhit!['src']});
+  }
+  await Future.delayed(const Duration(milliseconds: 800));
+  Map? mpick;
+  try { mpick = jsonDecode(mediaPick as String) as Map; } catch (_) {}
+  if (mpick == null) {
+    check(false, 'a visible media-source image was tapped for the one-pick law');
+  } else {
+    final midx = mpick!['idx'] as int;
+    // card should be open on the media element; From assets → first
+    // asset whose path differs from this image's current src
+    await js(tab, '''
+      (() => { const b = [...''' + SR + '''.querySelectorAll('#card button')]
+          .find((x) => (x.textContent || '').trim() === 'From assets');
+        if (b) b.click(); return !!b; })()
+    ''');
+    final assetsReady = await poll(tab, '''
+      (() => [...''' + SR + '''.querySelectorAll('#card button')]
+          .some((b) => (b.title || '').indexOf('assets/') === 0))()
+    ''', const Duration(seconds: 6));
+    check(assetsReady, 'From assets listed the artifact assets');
+    if (!assetsReady) {
+      final mediaDiag = await js(tab, '''
+        (() => { const d = ''' + SR + ''';
+          const card = d.getElementById('card');
+          const btns = [...d.querySelectorAll('#card button')]
+            .map((b) => (b.textContent || '').trim()).slice(0, 10);
+          return JSON.stringify({ cardOpen: card.classList.contains('open'),
+            idline: ((card.querySelector('#cidrow .idline') || {textContent:''}).textContent || '').slice(0, 60),
+            kchip: ((card.querySelector('#cidrow .kchip') || {textContent:''}).textContent || '').trim(),
+            buttons: btns,
+            credit: ((card.querySelector('.idline:not(#cidrow .idline)') || {textContent:''}).textContent || '').slice(0, 60) }); })()
+      ''');
+      stdout.writeln('NOTE  media section diagnostics: ' + (mediaDiag ?? 'n/a'));
+    }
+    final pickedPath = await js(tab, '''
+      (() => { const btns = [...''' + SR + '''.querySelectorAll('#card button')]
+          .filter((b) => (b.title || '').indexOf('assets/') === 0);
+        const cur = document.querySelectorAll('[data-el="media-source"]')[''' +
+        midx.toString() + '''].getAttribute('src');
+        const b = btns.find((x) => x.title !== cur) || btns[0];
+        if (b) b.click(); return b ? b.title : null; })()
+    ''');
+    check(pickedPath is String && (pickedPath as String).isNotEmpty,
+        'an asset was picked for one image');
+    await Future.delayed(const Duration(milliseconds: 900));
+    final wantJs = "const want = '" + (pickedPath is String ? pickedPath as String : 'zz') + "';";
+    final counts = await js(tab, '''
+      (() => { const all = [...document.querySelectorAll('[data-el="media-source"]')];
+        ''' + wantJs + '''
+        return JSON.stringify({ withNew: all.filter((m) => m.getAttribute('src') === want).length,
+          total: all.length }); })()
+    ''').then((raw) => raw is String ? jsonDecode(raw) as Map : null);
+    if (counts == null) {
+      check(false, 'one-pick counts readable');
+    } else {
+      check(counts!['withNew'] == 1,
+          'ONE image changed (got ' + counts!['withNew'].toString() + ' of ' +
+          counts!['total'].toString() + ')');
+    }
+    // draft carries the instance scoping
+    final ddoc = await httpCall('GET', '/__dial/draft', null);
+    final patch = (((ddoc?['draft']) as Map?)?['patches'] as Map?)?['el:media-source'];
+    Map? attrsNthMap;
+    if (patch is Map) {
+      final rawNth = (patch as Map)['attrsNth'];
+      if (rawNth is Map) attrsNthMap = rawNth;
+    }
+    final nth = attrsNthMap?['src'];
+    check(nth == midx,
+        'the patch records the picked instance (attrsNth.src=' +
+        nth.toString() + ', want ' + midx.toString() + ')');
+    // reload parity: the overlay must reproduce the SAME one image
+    await tab.navigateAndSettleForCapture(dialUrl, settleMs: 3000);
+    final counts2 = await js(tab, '''
+      (() => { const all = [...document.querySelectorAll('[data-el="media-source"]')];
+        ''' + wantJs + '''
+        return all.filter((m) => m.getAttribute('src') === want).length; })()
+    ''');
+    check(counts2 == 1,
+        'after reload the overlay still changes exactly ONE image (got ' +
+        counts2.toString() + ')');
+    // cleanup: the probe never leaves media patches behind
+    final ddoc2 = await httpCall('GET', '/__dial/draft', null);
+    final draft2 = ((ddoc2?['draft']) as Map?) ?? {};
+    final patches2 = Map<String, dynamic>.from((draft2['patches'] as Map?) ?? {});
+    if (patches2.remove('el:media-source') != null) {
+      await httpCall('PUT', '/__dial/draft', {
+        'tokens': (draft2['tokens'] as Map?) ?? {},
+        'patches': patches2,
+      });
+    }
+  }
 
   // 8. both error channels clean, both tabs.
   check(tab.pageErrors.isEmpty && tab.consoleErrors.isEmpty &&

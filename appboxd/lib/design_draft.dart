@@ -88,11 +88,19 @@ class DraftPatch {
   /// for slug/href correlation; [locale] the locale being edited
   /// (`<html lang>`, else the leading `/xx/` pathname segment) so the commit writes
   /// ONLY that locale's SSOT slice instead of stamping one language's text
-  /// over every locale. Style/attr edits never carry any of them.
+  /// over every locale. Style edits never carry any of them.
   final String? was;
   final int? nth;
   final String? page;
   final String? locale;
+
+  /// Instance-scoped ATTR edits (2026-08-26): attr name -> 0-based index
+  /// among the page's instances of this key, recorded by the dial when
+  /// those instances DIVERGE on that attr (every data-el="media-source"
+  /// image has its own src — an every-row apply rewrote all of them on
+  /// one pick). The overlay touches ONLY that occurrence — the attr twin
+  /// of [nth]. Attrs absent from this map stay every-row.
+  final Map<String, int>? attrsNth;
 
   const DraftPatch(
       {this.style = const {},
@@ -101,7 +109,8 @@ class DraftPatch {
       this.was,
       this.nth,
       this.page,
-      this.locale});
+      this.locale,
+      this.attrsNth});
 
   bool get isEmpty => style.isEmpty && attrs.isEmpty && text == null;
 
@@ -116,6 +125,7 @@ class DraftPatch {
         if (nth != null) 'nth': nth,
         if (page != null) 'page': page,
         if (locale != null) 'locale': locale,
+        if (attrsNth != null && attrsNth!.isNotEmpty) 'attrsNth': attrsNth,
       };
 
   static Map<String, String?> _edits(Object? raw, String id, String what) {
@@ -183,6 +193,27 @@ class DraftPatch {
       throw FormatException(
           'patch "$id".locale must be a two-letter code');
     }
+    Map<String, int>? attrsNth;
+    if (raw['attrsNth'] != null) {
+      final rawNth = raw['attrsNth'];
+      if (rawNth is! Map) {
+        throw FormatException('patch "$id".attrsNth must be an object');
+      }
+      final out = <String, int>{};
+      for (final e in rawNth.entries) {
+        final k = '${e.key}';
+        if (!_nameRe.hasMatch(k)) {
+          throw FormatException('patch "$id".attrsNth: bad name "$k"');
+        }
+        final n = e.value;
+        if (n is! int || n < 0 || n > 9999) {
+          throw FormatException(
+              'patch "$id".attrsNth."$k" must be a 0..9999 index');
+        }
+        out[k] = n;
+      }
+      attrsNth = out.isEmpty ? null : out;
+    }
     return DraftPatch(
       style: _edits(raw['style'], id, 'style'),
       attrs: _edits(raw['attrs'], id, 'attrs'),
@@ -191,6 +222,7 @@ class DraftPatch {
       nth: nth,
       page: page,
       locale: locale,
+      attrsNth: attrsNth,
     );
   }
 }
@@ -321,7 +353,8 @@ class DraftOverlay {
       final target = elKey ?? e.key;
       // Instance-scoped text (2026-08-24): an nth-carrying text edit touches
       // ONLY that occurrence — exactly what its seed commit will do. The
-      // style/attr facets of the same key stay every-row.
+      // style facets of the same key stay every-row; attrs scoped by
+      // attrsNth (below) are per-occurrence too.
       if (e.value.text != null && e.value.nth != null) {
         final rText = patchAllRendered(
             out, target, PatchEdits(text: e.value.text),
@@ -343,6 +376,42 @@ class DraftOverlay {
           refused.add('${e.key}: ${rText.error}');
         } else if (!rText.found) {
           stale.add(e.key);
+        }
+        continue;
+      }
+      // Instance-scoped attrs (2026-08-26): each attrsNth attr touches
+      // ONLY its occurrence — one attr per call, because onlyNth is
+      // per-call. The rest of the patch (style, every-row attrs) rides
+      // one every-row pass after them.
+      final scoped = e.value.attrsNth ?? const <String, int>{};
+      if (scoped.isNotEmpty) {
+        final everyRow = Map<String, String?>.from(e.value.attrs)
+          ..removeWhere((k, _) => scoped.containsKey(k));
+        for (final ent in scoped.entries) {
+          final oneAttr = <String, String?>{ent.key: e.value.attrs[ent.key]};
+          final rN = patchAllRendered(
+              out, target, PatchEdits(attrs: oneAttr),
+              attr: attr, onlyNth: ent.value);
+          out = rN.code;
+          applied += rN.applied;
+          if (rN.error != null) {
+            refused.add('${e.key}: ${rN.error}');
+          } else if (!rN.found) {
+            stale.add(e.key);
+          }
+        }
+        if (everyRow.isNotEmpty || e.value.style.isNotEmpty) {
+          final rRest = patchAllRendered(
+              out, target,
+              PatchEdits(attrs: everyRow, style: e.value.style),
+              attr: attr);
+          out = rRest.code;
+          applied += rRest.applied;
+          if (rRest.error != null) {
+            refused.add('${e.key}: ${rRest.error}');
+          } else if (!rRest.found) {
+            stale.add(e.key);
+          }
         }
         continue;
       }
