@@ -690,6 +690,82 @@ Future<void> main() async {
   ''', const Duration(seconds: 8));
   check(caughtUp,
       'after blur the SKIPPED frame catches the chip up (#8e44ad)');
+
+  // 7h. The picker-persistence law (operator, 2026-08-25 23:21
+  //     screenshots: red picked in the NATIVE picker — chip red while
+  //     the picker is open, page red — "as soon as the color picker
+  //     disappears the swatch becomes black again"). The picker writes
+  //     a HEX string into the patch; closing it blurs the chip, the
+  //     focusout catch-up re-renders, and the re-render MUST still
+  //     show the picked color. (Pixel-evidence: chip (255,0,17) open
+  //     → (0,0,0) closed.) The input[type=color] contract (MDN): an
+  //     invalid or empty value renders as #000000 — so feeding it an
+  //     unparsed value is indistinguishable from black.
+  await js(tab, '''
+    (() => { const row = ''' + BGROW + ''';
+      const sw = row && row.querySelector('input[type="color"]');
+      if (!sw) return false;
+      sw.focus(); sw.value = '#ff0000';
+      sw.dispatchEvent(new Event('input', { bubbles: true }));
+      return true; })()
+  ''');
+  var pickLive = await poll(tab, '''
+    (() => { const row = ''' + BGROW + ''';
+      const sw = row && row.querySelector('input[type="color"]');
+      const f = row && row.querySelector('input[type="text"]');
+      const k = ''' + kJs + ''';
+      const el = k.indexOf('el:') === 0
+        ? document.querySelector('[data-el="' + k.slice(3) + '"]')
+        : document.querySelector('[data-arxa-id="' + k + '"]');
+      return !!(sw && sw.value === '#ff0000' && f && f.value === '#ff0000' &&
+        el && getComputedStyle(el).backgroundColor === 'rgb(255, 0, 0)'); })()
+  ''', const Duration(seconds: 8));
+  check(pickLive,
+      'picker pick: chip + field + page all red while the pick is live');
+  // the picker close, REAL path: closing the picker ends the edit,
+  // the 700ms save debounce PUTs the draft, the SSE echo is swallowed
+  // by the own-save window and its DEFERRED recheck runs syncRemoteDraft
+  // ~1.6s later → refreshOpenCard re-renders the facets. THAT re-render
+  // is where the operator's chip went black — bare blur alone re-renders
+  // nothing (no pending beat), so the beat must ride the save echo.
+  await js(tab, '''
+    (() => { const row = ''' + BGROW + ''';
+      const sw = row && row.querySelector('input[type="color"]');
+      if (sw) sw.blur(); return true; })()
+  ''');
+  var storeHex = false;
+  {
+    final deadline = DateTime.now().add(const Duration(seconds: 8));
+    while (DateTime.now().isBefore(deadline)) {
+      final doc = await httpCall('GET', '/__dial/draft', null);
+      final v = ((((doc?['draft']) as Map?)?['patches'] as Map?)?[dkey]
+          as Map?)?['style'];
+      if (v is Map && v['background'] == '#ff0000') { storeHex = true; break; }
+      await Future.delayed(const Duration(milliseconds: 300));
+    }
+  }
+  check(storeHex,
+      'the picked HEX reached the draft store (the echo path is armed)');
+  // let the deferred recheck fire and re-render; the chip must STILL
+  // be the picked red afterwards
+  await Future.delayed(const Duration(milliseconds: 3500));
+  final pickStays = await poll(tab, '''
+    (() => { const row = ''' + BGROW + ''';
+      const sw = row && row.querySelector('input[type="color"]');
+      return !!(sw && sw.value === '#ff0000'); })()
+  ''', const Duration(seconds: 6));
+  check(pickStays,
+      'picker closed: the chip KEEPS the picked color through the save-echo re-render');
+  if (!pickStays) {
+    final d7h = await js(tab, '''
+      (() => { const row = ''' + BGROW + ''';
+        const sw = row && row.querySelector('input[type="color"]');
+        const f = row && row.querySelector('input[type="text"]');
+        return JSON.stringify({ chip: sw ? sw.value : null,
+          field: f ? f.value : null }); })()
+    ''');
+    stdout.writeln('NOTE  picker-persist FAIL diagnostics: ' + (d7h ?? 'n/a'));
+  }
   // cleanup the reactivity beats' patches (probe hygiene law). A
   // shrinking draft converges the live page by RELOAD (the island's
   // law) — wait it out and re-arm the dial for the media beat.

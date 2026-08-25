@@ -1820,11 +1820,28 @@
     scheduleSave();
   }
 
-  function rgbToHex(s) {
-    const m = /rgba?\((\d+),\s*(\d+),\s*(\d+)/.exec(s || '');
-    if (!m) return null;
-    const to = (n) => ('0' + Number(n).toString(16)).slice(-2);
-    return '#' + to(m[1]) + to(m[2]) + to(m[3]);
+  // Normalize-on-write (input[type=color] contract, MDN): the color
+  // input only accepts a simple lowercase #rrggbb and renders ANY
+  // other value as #000000 — its documented invalid-value default.
+  // So the chip is a display and this function is the translator:
+  // whatever the model holds (picked hex, typed 3/6-digit hex,
+  // computed rgb()/rgba() in comma OR space syntax, even buried in a
+  // computed shorthand) becomes canonical 7-char hex or null. Feeding
+  // the chip anything else is indistinguishable from black (the
+  // 2026-08-25 23:21 bug: a picked #ff0000 re-rendered through
+  // rgb-only parsing → black chip, red field).
+  function toHex6(v) {
+    const s = String(v == null ? '' : v).trim().toLowerCase();
+    let m = /^#([0-9a-f]{6})$/.exec(s);
+    if (m) return '#' + m[1];
+    m = /^#([0-9a-f]{3})$/.exec(s);
+    if (m) return '#' + m[1].split('').map((c) => c + c).join('');
+    m = /rgba?\(\s*(\d+)\s*[, ]\s*(\d+)\s*[, ]\s*(\d+)/.exec(s);
+    if (m) {
+      const to = (n) => ('0' + Math.min(255, Number(n)).toString(16)).slice(-2);
+      return '#' + to(m[1]) + to(m[2]) + to(m[3]);
+    }
+    return null;
   }
   // The escape hatch parses declarations into STRUCTURED style patches —
   // the grammar underneath stays the only write path.
@@ -1936,7 +1953,7 @@
       input.addEventListener('input', () => setStyleProp(sel.key, prop, input.value.trim()));
       if (COLOR_PROPS[prop]) {
         const sw = h('input', { type: 'color', title: 'pick ' + prop });
-        sw.value = rgbToHex(cur || cs.getPropertyValue(prop)) || '#000000';
+        sw.value = toHex6(cur) || toHex6(cs.getPropertyValue(prop)) || '#000000';
         sw.addEventListener('input', () => {
           input.value = sw.value;
           setStyleProp(sel.key, prop, sw.value);
@@ -1948,11 +1965,7 @@
         // open-time value (report: green typed, page turned green, the
         // chip stayed black through every later frame).
         input.addEventListener('input', () => {
-          const v = input.value.trim();
-          const m3 = /^#([0-9a-fA-F]{3})$/.exec(v);
-          const hex = /^#[0-9a-fA-F]{6}$/.test(v) ? v.toLowerCase()
-            : m3 ? '#' + m3[1].split('').map((c) => c + c).join('')
-            : rgbToHex(v);
+          const hex = toHex6(input.value.trim());
           if (hex) sw.value = hex;
         });
       }
