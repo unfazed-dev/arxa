@@ -2024,7 +2024,12 @@ Future<CmdResult> designEject(List<String> args) async {
         ]);
       }
       final src = baseTsx.readAsStringSync();
-      if (!src.contains('<div id="toasts"')) {
+      // Attribute-order robust (2026-08-26): the W7 data-el pass prefixes
+      // shell elements with data-arxa-id, so the anchor is no longer
+      // literally '<div id="toasts"' — match the div that CARRIES the id,
+      // whichever order the attributes landed in.
+      final anchor = RegExp(r'<div\b[^>]*\bid="toasts"');
+      if (!anchor.hasMatch(src)) {
         return CmdResult(1, stderrLines: const [
           'island-manifest injection anchor <div id="toasts" not found in '
               'ui/common/base.tsx — add it to the shell or drop the islands',
@@ -2037,7 +2042,7 @@ Future<CmdResult> designEject(List<String> args) async {
           '<script type="module" src="/assets/islands.js"></script>\n';
       final injection = '{raw(`$scriptContent`)}\n        ';
       baseTsx.writeAsStringSync(
-          src.replaceFirst('<div id="toasts"', '$injection<div id="toasts"'));
+          src.replaceFirstMapped(anchor, (m) => '$injection${m[0]}'));
     }
   }
 

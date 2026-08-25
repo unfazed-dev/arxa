@@ -1651,7 +1651,10 @@ export default [
       final out = generateRenderTsx(app.path);
       // one bare binding, one aliased — and the registry references BOTH
       expect(RegExp(r"import AccessPage from ").allMatches(out).length, 1);
-      expect(out, contains('import AccessPage as AccessViewAccessPage'));
+      // 34082c57 aliased via { default as X } — `import X as Y` is not
+      // valid ESM; this expectation tracks the real (valid) emit.
+      expect(out,
+          contains("import { default as AccessViewAccessPage } from"));
       expect(out, contains("'ui/views/staff_shell/access/staff_access_view.html': { default: AccessPage "));
       expect(out,
           contains("'ui/views/app_shell/access/access_view.html': { default: AccessViewAccessPage "));
