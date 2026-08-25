@@ -34,8 +34,13 @@
    else. The store badge reads 'local' when the server runs its memory
    store, so nobody mistakes process-local pins for durable ones.
 
-   VISIBILITY LAW (operator, 2026-08-24). The dial is corner-pinned bottom-
-   right and NOT draggable. Hidden until the cursor enters a 50px hot
+   VISIBILITY LAW (operator, 2026-08-24; card amendment 2026-08-26). The
+   dial is corner-pinned bottom-right, NOT draggable, and renders as a
+   SQUARE ARXA CARD: the studio's moss gradient, an 'A' mark + wordmark at
+   rest, flipping (animated) to the armed mode's face — Edit's icon while
+   Edit Mode is armed, Comment's while pin-drop is armed; Studio has no
+   face because the sheet swaps the dial out entirely. Hidden until the
+   cursor enters a 50px hot
    corner; Apple-physics spring reveal; pointer-leave NEVER hides; the 30s
    timer is the ONLY tuck-away; never-hide while the fan is open, a mode is
    armed (Edit select / Comment pin-drop), the card is up, or inline text
@@ -135,15 +140,35 @@
     '#hovertag{position:absolute;top:-22px;left:-2px;background:#0891b2;',
     '  color:#FFFCF0;font-size:11px;padding:2px 7px;border-radius:3px;',
     '  white-space:nowrap;font-weight:600}',
-    /* the dock */
-    '#dock{position:fixed;bottom:24px;right:24px;width:56px;height:56px;',
+    /* the dock: a square ARXA CARD (operator, 2026-08-26) — the arxa
+       studio moss gradient, an 'A' mark + wordmark at rest, and the armed
+       mode's icon while Edit or Comment is active. Studio needs no face:
+       the sheet swaps the dial out entirely. Brand ramp ground-truthed
+       from arxa-studio plugins/brand + gen-ui: rgb(139,165,101) accent,
+       rgb(106,133,74) the favicon field, off-white rgb(243,246,238). */
+    '#dock{position:fixed;bottom:20px;right:20px;width:64px;height:64px;',
     '  pointer-events:auto;touch-action:none;z-index:10}',
-    '#dockbtn{width:56px;height:56px;border-radius:50%;background:#0b0b10;',
-    '  color:#FFFCF0;display:flex;align-items:center;justify-content:center;',
-    '  box-shadow:0 4px 18px rgba(0,0,0,.4);border:2px solid #0891b2;',
-    '  transition:transform .15s ease}',
-    '#dockbtn:hover{transform:scale(1.06)}',
-    '#dockbtn svg{width:26px;height:26px}',
+    '#dockbtn{position:relative;width:64px;height:64px;border-radius:14px;',
+    '  background:linear-gradient(135deg,rgb(139,165,101) 0%,',
+    '  rgb(106,133,74) 55%,rgb(64,80,44) 100%);color:rgb(243,246,238);',
+    '  box-shadow:0 6px 20px rgba(0,0,0,.42);',
+    '  border:1px solid rgba(227,238,222,.4);',
+    '  transition:transform .15s ease,box-shadow .25s ease}',
+    '#dockbtn:hover{transform:scale(1.05)}',
+    '#dockbtn[data-mode]{box-shadow:0 6px 20px rgba(0,0,0,.42),',
+    '  0 0 18px -5px rgb(122,149,87)}',
+    '#dockbtn .face{position:absolute;inset:0;display:flex;flex-direction:column;',
+    '  align-items:center;justify-content:center;gap:1px;',
+    '  transition:opacity .2s ease,transform .3s cubic-bezier(.34,1.56,.64,1)}',
+    '#dockbtn .face .mark{font-size:22px;font-weight:800;line-height:1}',
+    '#dockbtn .face .word{font-size:9.5px;font-weight:700;letter-spacing:.12em}',
+    '#dockbtn .face svg{width:20px;height:20px}',
+    '#dockbtn .face .mlabel{font-size:9px;font-weight:700;letter-spacing:.06em}',
+    '#dockbtn .face.mode{opacity:0;transform:translateY(9px) scale(.7);',
+    '  pointer-events:none}',
+    '#dockbtn[data-mode="edit"] .face.edit{opacity:1;transform:none}',
+    '#dockbtn[data-mode="comment"] .face.comment{opacity:1;transform:none}',
+    '#dockbtn[data-mode] .face.rest{opacity:0;transform:translateY(-9px) scale(.7)}',
     '#dockbtn .dot{position:absolute;top:-3px;right:-3px;min-width:20px;',
     '  height:20px;border-radius:10px;background:#f59e0b;color:#0b0b10;',
     '  font-size:11px;font-weight:800;display:flex;align-items:center;',
@@ -426,14 +451,35 @@
   }
 
   const dock = h('div', { id: 'dock' });
-  const dockBtn = h('button', { id: 'dockbtn', title: 'Design Dial' }, [
-    icon('dial'),
+  // The card's faces (operator, 2026-08-26): rest = the arxa mark +
+  // wordmark; a mode face per armed trigger (Edit / Comment). Arming
+  // flips the card through data-mode; disarming returns the brand face.
+  const restFace = h('div', { class: 'face rest' }, [
+    h('span', { class: 'mark', text: 'A' }),
+    h('span', { class: 'word', text: 'arxa' }),
   ]);
+  const editFace = h('div', { class: 'face mode edit' }, [
+    icon('design'),
+    h('span', { class: 'mlabel', text: 'Edit' }),
+  ]);
+  const commentFace = h('div', { class: 'face mode comment' }, [
+    icon('comment'),
+    h('span', { class: 'mlabel', text: 'Comment' }),
+  ]);
+  const dockBtn = h(
+    'button',
+    { id: 'dockbtn', title: 'Design Dial', 'aria-label': 'Design Dial — arxa' },
+    [restFace, editFace, commentFace],
+  );
   const badge = h('span', { class: 'dot', text: '0' });
   badge.style.display = 'none';
   dockBtn.appendChild(badge);
   dock.appendChild(dockBtn);
   root.appendChild(dock);
+  function setDockMode(m) {
+    if (m) dockBtn.setAttribute('data-mode', m);
+    else dockBtn.removeAttribute('data-mode');
+  }
 
   // Radial triggers (rework 2026-08-24): exactly three — Edit arms
   // selection, Comment arms pin-drop, Studio opens the tray. Guests get
@@ -699,6 +745,9 @@
   }
 
   function onArmMove(e) {
+    // Host moves never highlight (same law as onDesignClick): the card
+    // and its fan stay usable while the mode is armed.
+    if (e.composedPath().indexOf(host) !== -1) { hover.style.display = 'none'; return; }
     const t = targetAt(e.clientX, e.clientY);
     hover.style.display = 'block';
     hover.style.left = t.screenRect.left + 'px';
@@ -709,6 +758,11 @@
   }
 
   function onArmClick(e) {
+    // Clicks inside the dial host belong to the card/fan — the panel
+    // stays usable while the mode is armed (the exact guard onDesignClick
+    // has always had; without it, tapping the armed card dropped a pin on
+    // whatever sat under the corner and the fan could never reopen).
+    if (e.composedPath().indexOf(host) !== -1) return;
     e.preventDefault();
     e.stopPropagation();
     const t = targetAt(e.clientX, e.clientY);
@@ -719,12 +773,14 @@
   function arm() {
     if (S.design) designOff();
     S.arming = true;
+    setDockMode('comment'); // the card flips to the comment face
     verbEls.comment.classList.add('on');
     document.addEventListener('pointermove', onArmMove, true);
     document.addEventListener('click', onArmClick, true);
   }
   function disarm() {
     S.arming = false;
+    setDockMode(''); // the card returns to the arxa face
     verbEls.comment.classList.remove('on');
     hover.style.display = 'none';
     document.removeEventListener('pointermove', onArmMove, true);
@@ -1158,6 +1214,7 @@
   function designOn() {
     if (S.arming) disarm();
     S.design = true;
+    setDockMode('edit'); // the card flips to the edit face
     verbEls.edit.classList.add('on');
     document.addEventListener('pointermove', onDesignMove, true);
     document.addEventListener('click', onDesignClick, true);
@@ -1166,6 +1223,7 @@
   }
   function designOff() {
     S.design = false;
+    setDockMode(''); // the card returns to the arxa face
     closeCard();
     if (verbEls.edit) verbEls.edit.classList.remove('on');
     hover.style.display = 'none';
