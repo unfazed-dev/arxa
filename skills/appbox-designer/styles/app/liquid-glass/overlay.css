@@ -36,7 +36,7 @@
   background: var(--glass-regular);
   -webkit-backdrop-filter: blur(24px) saturate(1.8);
   backdrop-filter: blur(24px) saturate(1.8);
-  border: 0; border-radius: 999px;
+  border: 0; border-radius: 999px; /* w5:not-a-chip - capsule control (glass) */
   box-shadow: var(--specular), 0 8px 24px rgb(0 0 0 / 0.10);
   margin: 10px 14px; padding-left: 20px; padding-right: 20px;
 }
@@ -63,7 +63,7 @@
 .q-card.sel { border-color: var(--accent-text); box-shadow: 0 0 0 1px var(--accent-text); }
 /* controls: tinted material, capsule */
 .btn {
-  background: rgb(15 163 163 / 0.15); color: var(--accent-text); border-radius: 999px;
+  background: rgb(15 163 163 / 0.15); color: var(--accent-text); border-radius: 999px; /* w5:not-a-chip - capsule control (glass) */
   box-shadow: var(--specular);
 }
 .btn:hover { background: rgb(15 163 163 / 0.20); color: #005A5A; }  /* deeper tint needs a darker label step: 6.0:1 composited */
@@ -126,17 +126,17 @@ h1, h2, .hub-rail h1, .q-top h1 { letter-spacing: -0.015em; } /* approximates SF
    floating glass capsule (surface + specular + soft shadow); the SELECTED segment is
    a flat systemFill pill. The stylized intro image's gray-track/white-thumb is the
    OLD idiom. Labels keep IDENTICAL typography on/off (R9c law). */
-.seg { background: var(--surface); box-shadow: var(--specular), 0 1px 4px rgb(0 0 0 / 0.10); border-radius: 999px; padding: 2px; }
-.seg button { border-radius: 999px; font-weight: 400; padding: 5px 14px; }
+.seg { background: var(--surface); box-shadow: var(--specular), 0 1px 4px rgb(0 0 0 / 0.10); border-radius: 999px; padding: 2px; } /* w5:not-a-chip - capsule control (glass) */
+.seg button { border-radius: 999px; font-weight: 400; padding: 5px 14px; } /* w5:not-a-chip - capsule control (glass) */
 .seg button.on { background: rgb(120 120 128 / 0.16); }
 /* HIG has no underlined tabs: tabset renders as the same segmented idiom */
-.tabset { border-bottom: 0; gap: 2px; background: var(--surface); box-shadow: var(--specular), 0 1px 4px rgb(0 0 0 / 0.10); border-radius: 999px; padding: 2px; }
-.tabset a { border-bottom: 0; margin: 0; padding: 5px 14px; border-radius: 999px; font-weight: 400; }
+.tabset { border-bottom: 0; gap: 2px; background: var(--surface); box-shadow: var(--specular), 0 1px 4px rgb(0 0 0 / 0.10); border-radius: 999px; padding: 2px; } /* w5:not-a-chip - capsule control (glass) */
+.tabset a { border-bottom: 0; margin: 0; padding: 5px 14px; border-radius: 999px; font-weight: 400; } /* w5:not-a-chip - capsule control (glass) */
 .tabset a.on { background: rgb(120 120 128 / 0.16); }
 /* toggle buttons: hairline ring off, tint on */
-.toggle { border-radius: 999px; border: 0; box-shadow: inset 0 0 0 1px rgb(60 60 67 / 0.18); background: transparent; }
+.toggle { border-radius: 999px; border: 0; box-shadow: inset 0 0 0 1px rgb(60 60 67 / 0.18); background: transparent; } /* w5:not-a-chip - capsule control (glass) */
 .toggle.on { background: rgb(15 163 163 / 0.14); color: var(--accent-text); box-shadow: none; }
-.toggle-grp .toggle { margin-left: 6px; border-radius: 999px; }
+.toggle-grp .toggle { margin-left: 6px; border-radius: 999px; } /* w5:not-a-chip - capsule control (glass) */
 /* HIG checkmark idiom: round check circle, not a box */
 .cb { border-radius: 50%; width: 22px; height: 22px; }
 .cb.on { background: var(--accent); border-color: var(--accent); color: #FFFFFF; }
@@ -155,7 +155,7 @@ h1, h2, .hub-rail h1, .q-top h1 { letter-spacing: -0.015em; } /* approximates SF
 .sw { width: 52px; height: 32px; border: 0; background: rgb(120 120 128 / 0.24); padding: 2px; }
 /* stadium knob in both states, 2px inset -> 32x28; travel = 52-32-4 = 16px;
    translation rides the MOVE spring, re-measured on reseat. */
-.sw .th { width: 32px; height: 28px; border-radius: 999px; background: var(--knob);
+.sw .th { width: 32px; height: 28px; border-radius: 999px; background: var(--knob); /* w5:not-a-chip - capsule control (glass) */
   box-shadow: 0 2px 6px rgb(0 0 0 / 0.2), 0 0 1px rgb(0 0 0 / 0.1); }
 .sw.on { background: var(--accent); } .sw.on .th { transform: translateX(16px); }
 /* iOS slider: thin tinted track, white thumb with soft shadow, no border */
@@ -192,7 +192,7 @@ h1, h2, .hub-rail h1, .q-top h1 { letter-spacing: -0.015em; } /* approximates SF
 .input, .textarea { border: 0; background: rgb(120 120 128 / 0.12); border-radius: 10px; }
 .fieldwrap.err .input { box-shadow: inset 0 0 0 1.5px #FF3B30; }
 .emsg { color: #D70015; }
-.search { background: rgb(120 120 128 / 0.12); border-radius: 999px; } /* iOS search field is a capsule (R9a) */
+.search { background: rgb(120 120 128 / 0.12); border-radius: 999px; } /* iOS search field is a capsule (R9a) */ /* w5:not-a-chip - capsule control (glass) */
 .otp span { border: 0; background: rgb(120 120 128 / 0.12); border-radius: 10px; }
 .otp span.on { box-shadow: inset 0 0 0 1.5px var(--accent-text); }
 /* menus/popovers/cards-on-scrim = thick glass material */
@@ -336,7 +336,7 @@ h1, h2, .hub-rail h1, .q-top h1 { letter-spacing: -0.015em; } /* approximates SF
    selection (flat), riding the MOVE spring between items; the track is the glass
    capsule. Themed live overrides come LAST: base live rules (0,3,1) would tie the
    dark .on fills (0,3,1) and lose on file order. ═══ */
-.seg .thumb, .tabset .thumb { position: absolute; z-index: 0; background: rgb(120 120 128 / 0.16); border-radius: 999px;
+.seg .thumb, .tabset .thumb { position: absolute; z-index: 0; background: rgb(120 120 128 / 0.16); border-radius: 999px; /* w5:not-a-chip - capsule control (glass) */
   pointer-events: none; }
 .seg.seg--live button.on, .tabset.tabset--live a.on { background: transparent; box-shadow: none; }
 :root[data-theme="dark"] .seg button.on, :root[data-theme="dark"] .tabset a.on { background: rgb(120 120 128 / 0.32); box-shadow: none; }
