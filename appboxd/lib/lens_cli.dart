@@ -386,6 +386,7 @@ Future<int> _lensCheck(
       failures.add('${errors.length} console/page error(s): ${errors.first}');
     }
     final png = await tab.screenshot();
+    _warnIfUniform(png, 'lens check: $url');
     final f = File(out);
     f.parent.createSync(recursive: true);
     f.writeAsBytesSync(png);
@@ -398,6 +399,31 @@ Future<int> _lensCheck(
   }
   stdout.writeln('lens check ok: $url -> $out (${w}x$h)');
   return 0;
+}
+
+/// Dominant-color share of a capture, or null when it is not a decodable
+/// PNG (never the capture pipeline's problem to report here).
+({double pct, List<int> color})? _uniformityOf(List<int> png) {
+  try {
+    return uniformity(decodePng(png));
+  } on LensPixelException {
+    return null;
+  }
+}
+
+/// A capture that is (nearly) one flat color is the signature of a page
+/// caught mid-intro. [CdpSession.settleForCapture] converges on the plateau
+/// because the plateau is genuinely stable — measured on suczka-studio
+/// (2026-08-25): settle converged at 3119ms while the JS-driven intro did
+/// not paint until ~5s; the evidence PNG was 99.4% white. The lens cannot
+/// know an intro's length, so it does the next honest thing: says so,
+/// loudly, instead of writing white evidence silently.
+void _warnIfUniform(List<int> png, String where) {
+  final u = _uniformityOf(png);
+  if (u != null && u.pct >= 98.0) {
+    stderr.writeln('$where capture is ${u.pct.toStringAsFixed(1)}% '
+        'uniform rgb(${u.color.join(',')}) — still mid-intro? raise settleMs');
+  }
 }
 
 String _js(String s) => "'${s.replaceAll('\\', '\\\\').replaceAll("'", "\\'")}'";
@@ -946,6 +972,12 @@ Future<int> _shoot(_Args a) async {
       final png = await tab.screenshot();
       final pngPath = '$outDir/${rung.name}_${rung.width}.png';
       File(pngPath).writeAsBytesSync(png);
+      final u = _uniformityOf(png);
+      if (u != null && u.pct >= 98.0) {
+        stderr.writeln('lens shoot ${rung.name}: capture is '
+            '${u.pct.toStringAsFixed(1)}% uniform rgb(${u.color.join(',')}) '
+            '— still mid-intro? raise settleMs');
+      }
       // `settled` joins consoleErrors and overflow as a rung-level verdict, and
       // is recorded per rung rather than only counted: shoot.json is the
       // evidence artifact, so "which rung was unreproducible" has to survive in
@@ -962,6 +994,8 @@ Future<int> _shoot(_Args a) async {
         'settleMs': settle.elapsedMs,
         'clean': clean,
         'png': pngPath,
+        'uniformPct': u?.pct.toStringAsFixed(1),
+        'uniformColor': u?.color,
       });
       stdout.writeln(
           'lens shoot ${rung.name} (${rung.width}px): ${clean ? 'ok' : 'PROBLEMS'} -> $pngPath');

@@ -252,3 +252,34 @@ double deltaE2000Lab(num l1, num a1, num b1, num l2, num a2, num b2) {
       math.pow(dHP / sh, 2) +
       rt * (dCp / sc) * (dHP / sh));
 }
+
+/// Dominant exact-color share of a frame: pct in 0..100, color the rgb
+/// triple that owns it.
+///
+/// Born 2026-08-25 out of the "washed white captures" investigation: a
+/// capture that is ~99% one flat color is the signature of a page caught
+/// mid-intro — the settle loop converges on the plateau because the plateau
+/// is genuinely stable (measured on suczka-studio: converged at 3119ms while
+/// the JS-driven intro did not paint until ~5s, evidence 99.4% white). The
+/// capture verbs use this to WARN instead of writing white evidence
+/// silently; it never fails a capture, because a deliberately minimal page
+/// is allowed to be uniform.
+({double pct, List<int> color}) uniformity(img.Image image) {
+  final counts = <int, int>{};
+  final reps = <int, List<int>>{};
+  final n = image.width * image.height;
+  for (final p in image) {
+    final r = p.r.toInt(), g = p.g.toInt(), b = p.b.toInt();
+    final k = (r << 16) | (g << 8) | b;
+    counts[k] = (counts[k] ?? 0) + 1;
+    reps[k] ??= [r, g, b];
+  }
+  var bestK = 0, bestN = 0;
+  counts.forEach((k, c) {
+    if (c > bestN) {
+      bestN = c;
+      bestK = k;
+    }
+  });
+  return (pct: 100.0 * bestN / n, color: reps[bestK]!);
+}
