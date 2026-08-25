@@ -43,6 +43,13 @@ Map<String, dynamic>? ghPr() {
   return jsonDecode(r.stdout as String) as Map<String, dynamic>;
 }
 
+/// Clean tree per git itself — the server's dirty count includes
+/// untracked files, so this is the gate for the refusal POST below.
+bool gitClean() {
+  final r = Process.runSync('git', ['-C', clientDir, 'status', '--porcelain']);
+  return (r.stdout as String).trim().isEmpty;
+}
+
 /// Same resolution chain the server's deploy gate uses (_wr in
 /// design_ship.dart): PATH wrangler, else npx. Two-sided blocker check.
 bool wranglerResolvable() {
@@ -84,18 +91,28 @@ Future<void> main() async {
         'status agrees: PR #${truthPr['number']} ${truthPr['state']}');
   }
 
-  // 2. safe refusal: clean artifact -> 409 nothing to ship
-  final refuse = await js(tab, '''
-    (async () => {
-      const r = await fetch('/__dial/ship/pr', {method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({title: 'probe'})});
-      return {status: r.status, error: (await r.json()).error};
-    })()
-  ''');
-  final rf = (refuse as Map).cast<String, dynamic>();
-  check(rf['status'] == 409 && (rf['error'] as String? ?? '').contains('nothing to ship'),
-      'clean repo refuses PR safely (${rf['status']}: ${rf['error']})');
+  // 2. safe refusal: clean artifact -> 409 nothing to ship. ONLY on a
+  // provably clean tree: on a dirty one this POST creates a REAL branch +
+  // PR (measured 2026-08-25 — an untracked evidence file turned the
+  // expected 409 into a 201 and opened PR #2 on the operator's repo before
+  // anyone noticed). Opening PRs is an operator tap; the probe never does
+  // it, so on a dirty tree the check is SKIPPED loudly instead of run.
+  if (gitClean()) {
+    final refuse = await js(tab, '''
+      (async () => {
+        const r = await fetch('/__dial/ship/pr', {method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({title: 'probe'})});
+        return {status: r.status, error: (await r.json()).error};
+      })()
+    ''');
+    final rf = (refuse as Map).cast<String, dynamic>();
+    check(rf['status'] == 409 && (rf['error'] as String? ?? '').contains('nothing to ship'),
+        'clean repo refuses PR safely (${rf['status']}: ${rf['error']})');
+  } else {
+    stdout.writeln('SKIP clean-repo refusal: tree is dirty — the POST '
+        'would open a REAL PR (operator tap, never probed)');
+  }
 
   // 3. guest 403
   final guest = await js(tab, '''
@@ -141,14 +158,20 @@ Future<void> main() async {
       'deploy tap refuses with exactly the blockers (${dp['status']})');
 
   // 4. the slide renders pipeline facts + honest disabled states.
-  // Expected states are DERIVED from the same status the island renders.
-  final onMain = s['branch'] == 'main';
-  final dirty = (s['dirty'] as num?)?.toInt() ?? 0;
-  final prOpenGreen = spr != null &&
-      spr['state'] == 'OPEN' &&
-      spr['mergeable'] == true &&
-      spr['green'] == true;
-  final expectPrDisabled = !(onMain && spr == null && dirty > 0);
+  // Expected states derive from a FRESH status fetch: the island renders
+  // its own fetch at slide-open time, and repo state can move between the
+  // top-of-probe fetch and now (it did — see the 201 incident above).
+  final stFresh = ((await js(tab, '''
+    (async () => await (await fetch('/__dial/ship/status')).json())()
+  ''')) as Map).cast<String, dynamic>();
+  final fpr = stFresh['pr'] as Map<String, dynamic>?;
+  final onMain = stFresh['branch'] == 'main';
+  final dirty = (stFresh['dirty'] as num?)?.toInt() ?? 0;
+  final prOpenGreen = fpr != null &&
+      fpr['state'] == 'OPEN' &&
+      fpr['mergeable'] == true &&
+      fpr['green'] == true;
+  final expectPrDisabled = !(onMain && fpr == null && dirty > 0);
   final expectMergeDisabled = !prOpenGreen;
   for (var i = 0; i < 5; i++) {
     await tab.send('Input.dispatchMouseEvent', {'type': 'mouseMoved', 'x': 1276 - i, 'y': 796 - i});
@@ -183,7 +206,7 @@ Future<void> main() async {
       const merge = btns.find(b => b.textContent.includes('Merge'));
       const cta = $SR.querySelector('#cta');
       return {
-        facts: txt.includes('${s['repo']}') && txt.includes('${s['branch']}'),
+        facts: txt.includes('${stFresh['repo']}') && txt.includes('${stFresh['branch']}'),
         prDisabled: pr ? pr.disabled : null,
         mergeDisabled: merge ? merge.disabled : null,
         saysGreen: txt.includes('Automation up to the button'),
@@ -193,7 +216,7 @@ Future<void> main() async {
     })()
   ''');
   final sl = (slide as Map).cast<String, dynamic>();
-  check(sl['facts'] == true, 'slide shows repo + branch facts (live branch ${s['branch']})');
+  check(sl['facts'] == true, 'slide shows repo + branch facts (live branch ${stFresh['branch']})');
   check(sl['prDisabled'] == expectPrDisabled,
       'Branch+PR disabled iff not (main, no PR, dirty) (${sl['prDisabled']}, expected $expectPrDisabled)');
   check(sl['mergeDisabled'] == expectMergeDisabled,
