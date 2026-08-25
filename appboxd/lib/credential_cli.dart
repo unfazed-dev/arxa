@@ -32,6 +32,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:appboxd/credentials.dart';
+import 'package:appboxd/design_dial.dart' show parseSupabaseCredentials;
 import 'package:appboxd/secure_store.dart';
 import 'package:appboxd/vault.dart';
 import 'package:path/path.dart' as p;
@@ -90,6 +91,46 @@ List<CatalogEntry> loadCredentialCatalog(String path) {
         simulatorNote: e['simulator_note'] as String?,
       ),
   ];
+}
+
+/// Which supabase catalog keys the design dial's machine-scoped store
+/// satisfies, mapped to a provenance note for `list`.
+///
+/// There are TWO sources of truth for Supabase, and reporting only the vault
+/// made `list` show SUPABASE_URL/SUPABASE_SERVICE_ROLE_KEY as `unset` while
+/// the dial was happily connected through `~/.appbox/supabase` — the
+/// stale-looking output recorded as the `credentials list` bug (2026-08-25;
+/// the vault-internal path was re-verified consistent that day: full catalog
+/// matrix + set/unset cycle + 20 tests, zero disagreements). The file's
+/// `service_key` IS the credential the catalog calls
+/// SUPABASE_SERVICE_ROLE_KEY (Supabase's own name for it) — the name mismatch
+/// is half the confusion this note exists to end.
+///
+/// Display-only by design: `check` gates emit-time injection, which reads the
+/// vault, and `exec` refuses keys the vault does not hold. `list` is the one
+/// human status surface, so it is the one that must not lie by omission.
+Map<String, String> supabaseMachineSatisfied(
+    Map<String, String> env, String appboxHome) {
+  var url = env['APPBOX_SUPABASE_URL'];
+  var key = env['APPBOX_SUPABASE_SERVICE_KEY'];
+  var urlVia = 'env APPBOX_SUPABASE_URL';
+  var keyVia = 'env APPBOX_SUPABASE_SERVICE_KEY';
+  final file = File(p.join(appboxHome, 'supabase'));
+  if (file.existsSync()) {
+    final parsed = parseSupabaseCredentials(file.readAsStringSync());
+    if ((url == null || url.isEmpty) && parsed.url != null) {
+      url = parsed.url;
+      urlVia = '~/.appbox/supabase';
+    }
+    if ((key == null || key.isEmpty) && parsed.key != null) {
+      key = parsed.key;
+      keyVia = '~/.appbox/supabase';
+    }
+  }
+  return {
+    if (url != null && url.isNotEmpty) 'SUPABASE_URL': urlVia,
+    if (key != null && key.isNotEmpty) 'SUPABASE_SERVICE_ROLE_KEY': keyVia,
+  };
 }
 
 /// The store the CLI uses when no test double is injected: the OS vault, with
@@ -158,15 +199,28 @@ Future<int> credentialsMain(
   switch (verb) {
     case 'list':
       final setIds = store.credentials.map((c) => c.id).toSet();
+      final machineStore = supabaseMachineSatisfied(
+          Platform.environment, p.join(_homeDir(), '.appbox'));
+      var notedMachineStore = false;
       String? lastModule;
       for (final e in catalog.where(matches)) {
         if (e.module != lastModule) {
           print(e.module);
           lastModule = e.module;
         }
-        final status = setIds.contains(e.key) ? 'set' : 'unset';
+        final fromVault = setIds.contains(e.key);
+        final fromMachine = fromVault ? null : machineStore[e.key];
+        notedMachineStore = notedMachineStore || fromMachine != null;
+        final status = fromVault
+            ? 'set'
+            : (fromMachine != null ? 'set (machine store)' : 'unset');
         final req = e.required ? 'required' : 'optional';
         print('  ${e.key}  [${e.kind} · $req · $status]  ${e.provider}');
+      }
+      if (notedMachineStore) {
+        print('(machine store = env APPBOX_SUPABASE_URL/APPBOX_SUPABASE_SERVICE_KEY '
+            'or ~/.appbox/supabase, which the design dial reads directly; '
+            'check/exec still read the vault)');
       }
       return 0;
     case 'check':

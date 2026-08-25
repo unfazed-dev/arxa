@@ -73,6 +73,39 @@ void main() {
     });
   });
 
+  group('supabaseMachineSatisfied (list provenance)', () {
+    test('env wins; file backfills the rest', () {
+      final home = Directory.systemTemp.createTempSync('cred_machine');
+      addTearDown(() => home.deleteSync(recursive: true));
+      File('${home.path}/supabase').writeAsStringSync(
+          'url=https://file.example\nservice_key=file-key');
+      final viaEnv = supabaseMachineSatisfied({
+        'APPBOX_SUPABASE_URL': 'https://env.example',
+      }, home.path);
+      expect(viaEnv['SUPABASE_URL'], 'env APPBOX_SUPABASE_URL');
+      expect(viaEnv['SUPABASE_SERVICE_ROLE_KEY'], '~/.appbox/supabase');
+
+      final viaFile = supabaseMachineSatisfied(const {}, home.path);
+      expect(viaFile['SUPABASE_URL'], '~/.appbox/supabase');
+      expect(viaFile['SUPABASE_SERVICE_ROLE_KEY'], '~/.appbox/supabase');
+    });
+
+    test('PASTE- placeholder service_key counts as absent', () {
+      final home = Directory.systemTemp.createTempSync('cred_machine');
+      addTearDown(() => home.deleteSync(recursive: true));
+      File('${home.path}/supabase').writeAsStringSync(
+          'url=https://file.example\nservice_key=PASTE-THE-KEY-HERE');
+      final m = supabaseMachineSatisfied(const {}, home.path);
+      expect(m.containsKey('SUPABASE_URL'), isTrue);
+      expect(m.containsKey('SUPABASE_SERVICE_ROLE_KEY'), isFalse);
+    });
+
+    test('nothing present → nothing claimed', () {
+      expect(supabaseMachineSatisfied(const {}, '/nonexistent-home-xyz'),
+          isEmpty);
+    });
+  });
+
   group('exec', () {
     // These tests run a real child process, so they are POSIX-shell dependent.
     final posix = !Platform.isWindows;
