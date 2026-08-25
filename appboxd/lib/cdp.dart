@@ -87,6 +87,13 @@ class CdpClient {
   int _nextId = 1;
   final _pending = <int, Completer<Map<String, dynamic>>>{};
   final _sessions = <String, CdpSession>{};
+
+  /// iframe-child sessions discovered by [attachIframeSession], by their
+  /// CDP session id — the client-level registry its poll matches against.
+  final _iframeChildren = <String, CdpSession>{};
+
+  /// Page sessions whose Target.auto-attach watcher is already armed.
+  final _iframeWatched = <CdpSession>{};
   final _browserEvents = StreamController<CdpEvent>.broadcast();
   bool _closed = false;
 
@@ -597,6 +604,77 @@ class CdpClient {
     final session = CdpSession._(this, sessionId, targetId);
     _sessions[sessionId] = session;
     return session;
+  }
+
+  /// Attach a session to the out-of-process (OOPIF) target of an `<iframe>`
+  /// embedded in [page], so a probe can evaluate inside a CROSS-ORIGIN frame.
+  /// [CdpSession.evaluateInFrame] cannot reach those: the frame's execution
+  /// context lives in a target the page session was never attached to (see
+  /// its own doc on that failure).
+  ///
+  /// Matching: a child target of type `iframe` whose frame URL starts with
+  /// [urlPrefix]; when the page embeds several frames of the same URL at
+  /// different sizes — the studio design panel's rung ladder is exactly that
+  /// — [wantInnerWidth] picks the one whose own `window.innerWidth` matches,
+  /// which is unique per rung. Returns null when no match attaches within
+  /// [timeout] (frame not mounted yet, or same-process and reachable through
+  /// [CdpSession.evaluateInFrame] without a session of its own).
+  Future<CdpSession?> attachIframeSession(
+    CdpSession page, {
+    required String urlPrefix,
+    int? wantInnerWidth,
+    Duration timeout = const Duration(seconds: 12),
+  }) async {
+    // The watcher is armed ONCE per page session and never canceled while
+    // the client lives: re-issuing Target.setAutoAttach does NOT re-fire
+    // attachedToTarget for children Chrome already attached (learned the
+    // hard way: the second call of this method on the same page — the
+    // studio panel's next rung — timed out with the frame long loaded).
+    if (_iframeWatched.add(page)) {
+      page.events.listen((ev) {
+        if (ev.method != 'Target.attachedToTarget') return;
+        final params = (ev.params as Map?)?.cast<String, dynamic>() ?? {};
+        final info =
+            (params['targetInfo'] as Map?)?.cast<String, dynamic>() ?? {};
+        if (info['type'] != 'iframe') return;
+        final childSid = params['sessionId'] as String?;
+        if (childSid == null || _sessions.containsKey(childSid)) return;
+        final child =
+            CdpSession._(this, childSid, info['targetId'] as String? ?? '');
+        _sessions[childSid] = child;
+        _iframeChildren[childSid] = child;
+      });
+      await page.send('Target.setAutoAttach', {
+        'autoAttach': true,
+        'waitForDebuggerOnStart': false,
+        'flatten': true,
+      });
+    }
+    // Auto-attach fires for already-existing child targets as they come up;
+    // frames mounted later attach as they appear. Matching happens here, in
+    // a poll, so a child that is briefly unaskable (about:blank mid-commit,
+    // a crashed frame) is retried instead of dropped: leave it attached —
+    // close() tears down every session the client owns, matched or not.
+    final deadline = DateTime.now().add(timeout);
+    while (DateTime.now().isBefore(deadline)) {
+      for (final child in _iframeChildren.values.toList()) {
+        try {
+          final state = await child.evaluate(
+              'JSON.stringify({url: location.href, iw: window.innerWidth})');
+          final m = state is String ? jsonDecode(state) as Map : null;
+          final url = m?['url'] as String? ?? '';
+          final iw = m?['iw'] as int?;
+          if (url.startsWith(urlPrefix) &&
+              (wantInnerWidth == null || iw == wantInnerWidth)) {
+            return child;
+          }
+        } catch (_) {
+          // Not askable yet — the next poll retries.
+        }
+      }
+      await Future.delayed(const Duration(milliseconds: 100));
+    }
+    return null;
   }
 
   // ── teardown ──────────────────────────────────────────────────────
