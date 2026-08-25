@@ -1,9 +1,4 @@
-/* styles/app/liquid-glass — overlay.css (designer style module, TL-12)
-   Provenance: the ez-lab gallery overlay, gate-proven (geometry/icons/audit/interact
-   × light/dark, sweep 16/16 as of R9p 2026-08-24). The SPEC.md beside this file is
-   the LAW; where this CSS and SPEC.md disagree, fix one of them before shipping.
-   Artifact use: link after the artifact's base widgets.css; ?style=liquid-glass.
-   style-craft overlay: liquid-glass (R7) - iOS 26, spec-grounded.
+/* style-craft overlay: liquid-glass (R7) - iOS 26, spec-grounded.
    Sources: HIG materials (via hig-doctor mirror), conorluddy/LiquidGlassReference, Wikipedia.
    Laws applied:
    - glass is the NAVIGATION layer only; content never wears glass (HIG: "Don't use Liquid
@@ -101,7 +96,7 @@ h1, h2, .hub-rail h1, .q-top h1 { letter-spacing: -0.015em; } /* approximates SF
   --accent-hover: #28A5A5;
   --accent-soft: #0C3534;
   --glass-regular: rgb(28 28 30 / 0.62);
-  --glass-thick: rgb(32 32 34 / 0.78);
+  --glass-thick: rgb(48 48 50 / 0.92);   /* dark lift (R10b): over the 0.5 scrim the old 32/0.78 composited to ~30 vs scrimmed ground 22 (sheet +8) and the drawer to exactly the ground (DELTA ZERO — camouflaged). 48/0.92 composites ~46: +24 separation; thick = the legibility material. Danger text steps to #FF6961 to hold 4.5:1 on the lighter ground. */
   --specular: inset 0 1px 0 rgb(255 255 255 / 0.14), inset 0 -0.5px 0 rgb(0 0 0 / 0.4);
 }
 :root[data-theme="dark"] .hub-rail { background: rgb(22 22 24 / 0.72); }
@@ -282,13 +277,13 @@ h1, h2, .hub-rail h1, .q-top h1 { letter-spacing: -0.015em; } /* approximates SF
 :root[data-theme="dark"] .fieldwrap.err .input { box-shadow: inset 0 0 0 1.5px #FF453A; }
 :root[data-theme="dark"] .emsg { color: #FF6961; }
 :root[data-theme="dark"] .menu .mi:hover, :root[data-theme="dark"] .menu .mi.hl { background: rgb(120 120 128 / 0.24); }
-:root[data-theme="dark"] .menu .mi.danger { color: #FF453A; }
+:root[data-theme="dark"] .menu .mi.danger { color: #FF6961; } /* lighter dark-red: the R10b lifted glass ground (48/0.92) puts #FF453A at 4.26:1; #FF6961 holds 5.4:1 */
 :root[data-theme="dark"] .menu .mi.danger:hover { background: rgb(255 69 58 / 0.14); }
 :root[data-theme="dark"] .menubar span.on { background: rgb(120 120 128 / 0.24); }
 :root[data-theme="dark"] .day.sel, :root[data-theme="dark"] .day.sel-end { color: #06201F; }
 :root[data-theme="dark"] .day.range { background: rgb(62 201 201 / 0.16); }
 :root[data-theme="dark"] .tp.on { background: rgb(62 201 201 / 0.16); }
-:root[data-theme="dark"] .drawer { background: rgb(22 22 24 / 0.72); }
+:root[data-theme="dark"] .drawer { background: rgb(44 44 46 / 0.92); box-shadow: 12px 0 40px rgb(0 0 0 / 0.5); } /* R10b: 22/0.72 composited EXACTLY to the scrimmed ground — invisible; join the thick lift + elevation shadow */
 :root[data-theme="dark"] .banner { background: rgb(62 201 201 / 0.12); }
 :root[data-theme="dark"] .banner--warn { background: rgb(255 159 10 / 0.14); }
 :root[data-theme="dark"] .banner--bad { background: rgb(255 69 58 / 0.12); }

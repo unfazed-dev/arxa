@@ -38,7 +38,7 @@
 | `--accent` family | #0FA3A3 / #006F6F text / #0C8C8C hover / #D9F0F0 soft | brand teal via color-craft roles |
 | `--r-card` / `--r-ctl` | 16px / 10px | card / control radius |
 | `--glass-regular` | rgb(250 250 252 / 0.62) | nav bars |
-| `--glass-thick` | rgb(252 252 253 / 0.78) | menus, dialogs, sheets, popovers, toasts |
+| `--glass-thick` | rgb(252 252 253 / 0.78) light · **rgb(48 48 50 / 0.92) dark (R10b lift)** | menus, dialogs, sheets, popovers, toasts — the legibility material; in dark it must composite ≥ +20 above the scrimmed ground (the old 32/0.78 gave +8, and the drawer delta ZERO — camouflaged); dark danger text steps to #FF6961 to hold 4.5:1 on the lifted ground |
 | `--specular` | inset 0 1px 0 rgb(255 255 255 / 0.55), inset 0 -0.5px 0 rgb(0 0 0 / 0.05) | lensing cue |
 | `--knob` | #FFFFFF | switch/slider thumb face — WHITE in BOTH themes (invariant, never `--surface`) |
 | `--shadow-1` | none | iOS content cards carry no drop shadow |
@@ -115,7 +115,10 @@ Full inventory + behavior laws: component-craft.md §inventory and
   as a hairline-separated bottom row (cancel regular / default bold).
 - **sheets + drawers** — sheet 24px top corners, grabber, thick glass;
   drawer = regular material column (visionOS law: regular separates a
-  sidebar).
+  sidebar). **Dark separation law (R10b):** a floating surface over a scrim
+  must composite ≥ +20 above the scrimmed ground — dark drawer joins the
+  thick lift (44/0.92) + an elevation shadow; a surface whose composite
+  equals its ground is invisible, however correct its tokens look.
 - **feedback** — toast: thick glass capsule, bottom rack, NO action buttons
   (HIG: alerts/sheets own actions); banner = grouped-row idiom, tinted fill,
   no left strip.
