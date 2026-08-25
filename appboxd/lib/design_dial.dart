@@ -327,6 +327,21 @@ class SupabaseDialStore implements DialStore {
     ..connectionTimeout = const Duration(seconds: 5)
     ..idleTimeout = const Duration(seconds: 30);
 
+  // Pins reads are the hot path: EVERY served page's dial island boots with
+  // one, and the handler holds the browser's fetch socket for the full
+  // Supabase latency. During an edge brownout (measured 2026-08-25: 1–5s
+  // spikes, minutes apart) rapid page loads stacked those slow reads until
+  // the browser's 6-socket per-origin pool saturated and the NEXT navigation
+  // queued behind them — the app froze and landed on the user's last click
+  // when the brownout eased. Reads therefore answer from a short-TTL cache
+  // (stale-while-revalidate): the panel gets sub-millisecond answers, the
+  // remote refreshes in the background, and mutations invalidate so every
+  // author sees fresh truth immediately after acting.
+  static const Duration _pinsTtl = Duration(seconds: 5);
+  final _pinsCache = <String, List<DialPin>>{};
+  final _pinsCacheAt = <String, DateTime>{};
+  final _pinsRefreshing = <String>{};
+
   @override
   String get kind => 'supabase';
 
@@ -442,14 +457,8 @@ class SupabaseDialStore implements DialStore {
         createdAt: rr['created_at'] as String,
       );
 
-  @override
-  Future<List<DialPin>> listPins(String artifact, {String? route}) async {
-    var q = 'design_dial_pins?artifact=eq.${Uri.encodeComponent(artifact)}'
-        '&order=created_at.asc'
-        '&select=*,design_dial_replies(*),design_dial_drawings(strokes)';
-    if (route != null) q += '&route=eq.${Uri.encodeComponent(route)}';
-    final res = await _req('GET', q);
-    final rows = jsonDecode(await res.transform(utf8.decoder).join()) as List;
+  List<DialPin> _pinsFromResponse(Object body) {
+    final rows = body as List;
     return [
       for (final r in rows)
         _pinFromRow(r as Map<String, dynamic>, [
@@ -458,6 +467,48 @@ class SupabaseDialStore implements DialStore {
             _replyFromRow(rr as Map<String, dynamic>),
         ]),
     ];
+  }
+
+  Future<List<DialPin>> _fetchPins(String key, String q) async {
+    final res = await _req('GET', q);
+    return _pinsFromResponse(
+        jsonDecode(await res.transform(utf8.decoder).join()));
+  }
+
+  @override
+  Future<List<DialPin>> listPins(String artifact, {String? route}) async {
+    var q = 'design_dial_pins?artifact=eq.${Uri.encodeComponent(artifact)}'
+        '&order=created_at.asc'
+        '&select=*,design_dial_replies(*),design_dial_drawings(strokes)';
+    if (route != null) q += '&route=eq.${Uri.encodeComponent(route)}';
+    final key = '$artifact|${route ?? ''}';
+    final at = _pinsCacheAt[key];
+    final fresh = at != null && DateTime.now().difference(at) < _pinsTtl;
+    final cached = _pinsCache[key];
+    if (fresh && cached != null) return cached;
+    // Stale-while-revalidate: answer from cache NOW, refresh in the
+    // background — the browser socket is released in microseconds either
+    // way. Only a truly cold cache pays the network on the caller's socket.
+    if (cached != null) {
+      if (_pinsRefreshing.add(key)) {
+        _fetchPins(key, q)
+            .then((v) {
+              _pinsCache[key] = v;
+              _pinsCacheAt[key] = DateTime.now();
+            })
+            .whenComplete(() => _pinsRefreshing.remove(key));
+      }
+      return cached;
+    }
+    final v = await _fetchPins(key, q);
+    _pinsCache[key] = v;
+    _pinsCacheAt[key] = DateTime.now();
+    return v;
+  }
+
+  void _invalidatePins() {
+    _pinsCache.clear();
+    _pinsCacheAt.clear();
   }
 
   @override
@@ -474,6 +525,7 @@ class SupabaseDialStore implements DialStore {
             'design_dial_drawings insert failed: HTTP ${res.statusCode}');
       }
     }
+    _invalidatePins();
     return pin;
   }
 
@@ -488,6 +540,7 @@ class SupabaseDialStore implements DialStore {
         extraHeaders: {'Prefer': 'return=representation'});
     final rows = jsonDecode(await res.transform(utf8.decoder).join()) as List;
     if (rows.isEmpty) return null;
+    _invalidatePins();
     return _pinFromRow(rows.first as Map<String, dynamic>);
   }
 
@@ -512,6 +565,7 @@ class SupabaseDialStore implements DialStore {
         },
         extraHeaders: {'Prefer': 'return=minimal'});
     if (res.statusCode >= 400) return null;
+    _invalidatePins();
     return reply;
   }
 
