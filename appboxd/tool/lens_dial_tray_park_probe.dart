@@ -1,26 +1,33 @@
-// Tray-park visibility probe (2026-08-26).
+// Tray-park + sheet-children probe (2026-08-26).
 //
-// Operator report: "when tapping for the first time the dial and opening
+// Operator report 1: "when tapping for the first time the dial and opening
 // the sheet - they both straight away get hidden until move the cursor to
-// show the dial then the sheet reappear and stays."
+// show the dial then the sheet reappear and stays." -> park pose scoped to
+// #dock (fixed same day; assertions 1-3 below).
 //
-// Root cause this probe pins (see dial_island.js dialApplyPose): the park
-// pose - transform + opacity + visibility:hidden - was written onto the
-// SHARED host (#arxa-dial-host) that carries the dock AND the tray AND the
-// card/thread/composer/pins. openTray() -> dialPark() -> spring settles ->
-// host.style.visibility='hidden' ~340ms after the sheet opens, so the
-// just-opened sheet vanished with the dial. Only the 50px hot corner could
-// spring it back (dialShow), which is exactly the operator's workaround.
+// Operator report 2 (law): "when the sheet is closed any open card must
+// close as well - all the sheet children must close with the sheet - by
+// children i mean floating cards and anything else." The sheet SPAWNS
+// floating children: the Edit-outline rows arm Edit Mode and open the
+// floating smart card; the Comments slide opens the pin thread popover
+// over the page; the comment composer can float under the sheet too.
+// closeTray() must close ALL of them - the island returns to its resting
+// state: dial in, nothing else floating.
 //
-// Assertions (all must hold on FIXED code):
+// Assertions:
 //   1. the tray stays rendered the entire sampling window
 //   2. the host never goes visibility:hidden while the tray is up
-//   3. swap law still honored: the DIAL parks - scoped pose on #dock
-//      (dock visibility:hidden + transform ~168px off-screen)
-//   4. reveal guard: pointer over the open tray must NOT spring the dial
-//      back in (tray open => dial stays parked until close)
-//   5. close tray (#tclose) springs the dial back in
-// Console/page errors fail the probe. Evidence PNG lands in the client repo.
+//   3. swap law: the DIAL parks (pose scoped to #dock, ~168px off-screen)
+//   4. reveal guard: pointer over the open sheet must NOT un-park the dial
+//   5. close springs the dial back in
+//   6. CHILD LAW: outline row -> card + Edit Mode + amber outline spawn
+//   7. CHILD LAW: sheet close closes the card, disarms Edit Mode, clears
+//      the selection outline + handles
+//   8. CHILD LAW: the comment composer closes with the sheet
+//   9. CHILD LAW: the thread popover (Comments slide, real pin) closes
+//  10. no card resurrection after the second close
+// Console/page errors fail the probe. Evidence PNG lands in the client
+// repo. No writes: pins are only READ (the operator's real pin data).
 import 'dart:convert';
 import 'dart:io';
 
@@ -99,6 +106,18 @@ Future<void> main() async {
   await Future.delayed(const Duration(milliseconds: 250));
   check(await js(tab, SR + ".getElementById('tray').classList.contains('open')") == true,
       'tray (sheet) opens via the Studio verb');
+  // Slide render regression: a draft edit used to kill every slide after
+  // Edit (renderLedger passed a patch to the draft-shaped counter).
+  await Future.delayed(const Duration(milliseconds: 250));
+  check(await js(tab, '''
+    (() => {
+      const track = ''' + SR + '''.getElementById('track');
+      const slides = [...track.children];
+      return slides.length === 5 && slides.every((s) =>
+        s.querySelector('.slidebody') &&
+        s.querySelector('.slidebody').children.length > 0);
+    })()
+  ''') == true, 'all five slides render bodies (ledger TypeError regression)');
 
   // Sample through the park spring (~340ms) plus settle margin.
   final samples = <Map>[];
@@ -112,7 +131,6 @@ Future<void> main() async {
   final dialParked = samples.any(
       (s) => s['dockVis'] == 'hidden' && (s['dockT'] as String).contains('168'));
   stdout.writeln('samples[0]  ' + jsonEncode(samples.first));
-  stdout.writeln('samples[12] ' + jsonEncode(samples[12]));
   stdout.writeln('samples[24] ' + jsonEncode(samples.last));
   stdout.writeln('host went hidden during window: ' + hostHidden.toString());
 
@@ -128,7 +146,7 @@ Future<void> main() async {
   File(evDir + '/dial-tray-open-1280.png').writeAsBytesSync(shot);
   stdout.writeln('evidence: ' + evDir + '/dial-tray-open-1280.png');
 
-  // Reveal guard: pointer over the open tray must NOT spring the dial in.
+  // Reveal guard: pointer over the open sheet must NOT spring the dial in.
   await tab.send('Input.dispatchMouseEvent',
       {'type': 'mouseMoved', 'x': 640, 'y': 690});
   await Future.delayed(const Duration(milliseconds: 700));
@@ -136,7 +154,27 @@ Future<void> main() async {
   check(afterHover['dockVis'] == 'hidden',
       'pointer over the sheet does NOT un-park the dial (swap law guard)');
 
-  // Close: the dial springs back in.
+  // ---- CHILD LAW, part 1: the Edit-outline row spawns floating children.
+  check(await js(tab, '''
+    (() => {
+      const row = ''' + SR + '''.querySelector('[data-slide=edit] .row');
+      if (!row) return false;
+      row.click();
+      return true;
+    })()
+  ''') == true, 'outline row tapped inside the open sheet');
+  await Future.delayed(const Duration(milliseconds: 500));
+  check(await js(tab, SR + ".getElementById('card').classList.contains('open')") == true,
+      'sheet child spawned: the floating card opens from the outline');
+  check(await js(tab, SR + ".querySelector('[data-verb=edit]').classList.contains('on')") == true,
+      'Edit Mode armed from the sheet outline');
+  // CSSOM serializes #f59e0b as rgb(245, 158, 11) - match the readback.
+  check(await js(tab, '''
+    [...document.querySelectorAll('[data-arxa-id]')].some((e) =>
+      (e.style.outline || '').includes('rgb(245, 158, 11)'))
+  ''') == true, 'amber selection outline on the canvas');
+
+  // Close #1: children must close WITH the sheet.
   await js(tab, SR + ".getElementById('tclose').click()");
   final backIn = await poll(
       tab,
@@ -145,9 +183,118 @@ Future<void> main() async {
   check(backIn, 'tray close springs the dial back in');
   final closed = await sample(tab);
   check(closed['trayOpen'] == false, 'tray closed cleanly');
+  check(await js(tab, "!" + SR + ".getElementById('card').classList.contains('open')") == true,
+      'CHILD LAW: the floating card closes with the sheet');
+  check(await js(tab, "!" + SR + ".querySelector('[data-verb=edit]').classList.contains('on')") == true,
+      'CHILD LAW: Edit Mode disarms with the sheet');
+  check(await js(tab, '''
+    ![...document.querySelectorAll('[data-arxa-id]')].some((e) =>
+      (e.style.outline || '').includes('rgb(245, 158, 11)'))
+  ''') == true, 'CHILD LAW: the amber selection outline leaves the canvas');
+  check(await js(tab, SR + ".getElementById('handles').children.length === 0") == true,
+      'CHILD LAW: selection handles cleared');
 
-  stdout.writeln('console errors: ' + tab.consoleErrors.length.toString());
-  if (tab.consoleErrors.isNotEmpty) fails++;
+  // ---- CHILD LAW, part 2: the comment composer. Real flow: fan ->
+  // Comment verb -> click the design (composer opens; no server write).
+  await js(tab, SR + ".querySelector('#dockbtn').click()");
+  await Future.delayed(const Duration(milliseconds: 350));
+  await js(tab, SR + ".querySelector('[data-verb=comment]').click()");
+  await Future.delayed(const Duration(milliseconds: 250));
+  final pt2 = await js(tab, '''
+    (() => {
+      const els = [...document.querySelectorAll('[data-arxa-id]')];
+      for (const el of els) {
+        const t = (el.textContent || '').trim();
+        if (!t || t.length < 3 || el.querySelector('[data-arxa-id]')) continue;
+        const r = el.getBoundingClientRect();
+        if (r.width > 40 && r.height > 12 && r.x >= 0 && r.y >= 0 &&
+            r.x + r.width <= innerWidth && r.y + r.height <= innerHeight) {
+          return {x: Math.round(r.x + r.width / 2), y: Math.round(r.y + r.height / 2)};
+        }
+      }
+      return null;
+    })()
+  ''');
+  if (pt2 is Map) {
+    final cx = (pt2['x'] as num).toInt(), cy = (pt2['y'] as num).toInt();
+    await tab.send('Input.dispatchMouseEvent', {'type': 'mouseMoved', 'x': cx, 'y': cy});
+    await tab.send('Input.dispatchMouseEvent',
+        {'type': 'mousePressed', 'x': cx, 'y': cy, 'button': 'left', 'clickCount': 1});
+    await tab.send('Input.dispatchMouseEvent',
+        {'type': 'mouseReleased', 'x': cx, 'y': cy, 'button': 'left', 'clickCount': 1});
+    await Future.delayed(const Duration(milliseconds: 400));
+    check(await js(tab, SR + ".getElementById('composer').classList.contains('open')") == true,
+        'sheet child spawned: the comment composer opens on the design');
+
+    // Sheet #2 opens OVER the floating composer.
+    await js(tab, SR + ".querySelector('#dockbtn').click()");
+    await Future.delayed(const Duration(milliseconds: 350));
+    await js(tab, SR + ".querySelector('[data-verb=studio]').click()");
+    await Future.delayed(const Duration(milliseconds: 400));
+    check(await js(tab, SR + ".getElementById('tray').classList.contains('open')") == true,
+        'sheet reopens over the floating composer');
+
+    // ---- CHILD LAW, part 3: the thread popover from the Comments slide
+    // (reads the operator's real pin data; writes nothing).
+    var threadChild = false;
+    final dotTapped = await js(tab, '''
+      (() => {
+        const dot = [...''' + SR + '''.querySelectorAll('.dotbtn')]
+          .find((d) => /comments/i.test(d.getAttribute('aria-label') || ''));
+        if (!dot) return false;
+        dot.click();
+        return true;
+      })()
+    ''') == true;
+    if (dotTapped) {
+      await Future.delayed(const Duration(milliseconds: 600));
+      final rowTapped = await js(tab, '''
+        (() => {
+          const slide = ''' + SR + '''.querySelector('[data-slide=comments]');
+          if (!slide) return false;
+          const row = slide.querySelector('.row');
+          if (!row) return false;
+          row.click();
+          return true;
+        })()
+      ''') == true;
+      if (rowTapped) {
+        await Future.delayed(const Duration(milliseconds: 400));
+        threadChild = await js(tab,
+                SR + ".getElementById('thread').classList.contains('open')") ==
+            true;
+        check(threadChild,
+            'sheet child spawned: thread popover opens from the Comments slide');
+      }
+    }
+    if (!threadChild) {
+      stdout.writeln('SKIP thread-child (no same-route pin rows this run)');
+    }
+
+    // Close #2: EVERY child gone.
+    await js(tab, SR + ".getElementById('tclose').click()");
+    await Future.delayed(const Duration(milliseconds: 600));
+    check(await js(tab, "!" + SR + ".getElementById('composer').classList.contains('open')") == true,
+        'CHILD LAW: the comment composer closes with the sheet');
+    if (threadChild) {
+      check(await js(tab, "!" + SR + ".getElementById('thread').classList.contains('open')") == true,
+          'CHILD LAW: the thread popover closes with the sheet');
+    }
+    check(await js(tab, "!" + SR + ".getElementById('card').classList.contains('open')") == true,
+        'CHILD LAW: no card resurrection after the second close');
+  } else {
+    check(false, 'selectable element for the composer flow');
+  }
+
+  // BOTH channels: console.error AND uncaught page exceptions. The lens
+  // files them separately (consoleErrors / pageErrors); asserting only the
+  // first is how the 2026-08-26 ledger TypeError stayed invisible while
+  // four tray slides rendered blank.
+  stdout.writeln('console errors: ' + tab.consoleErrors.length.toString() +
+      '; page errors: ' + tab.pageErrors.length.toString());
+  tab.consoleErrors.forEach((e) => stdout.writeln('  console: ' + e));
+  tab.pageErrors.forEach((e) => stdout.writeln('  page: ' + e));
+  if (tab.consoleErrors.isNotEmpty || tab.pageErrors.isNotEmpty) fails++;
   await browser.close();
   stdout.writeln(fails == 0 ? '\nPROBE VERDICT: PASS' : '\nPROBE VERDICT: FAIL');
   exit(fails == 0 ? 0 : 1);

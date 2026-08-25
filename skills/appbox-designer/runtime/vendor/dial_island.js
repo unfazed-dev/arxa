@@ -43,7 +43,9 @@
    (spring) and the timer suspends; tray close → dial springs back in and
    the 30s timer re-arms fresh. The park pose is scoped to #dock only, and
    while the tray is open the corner reveal stays suspended (2026-08-26:
-   a host-wide pose hid the open sheet with the dial).
+   a host-wide pose hid the open sheet with the dial). Sheet close closes
+   its children — card + selection, thread popover, composer (2026-08-26):
+   nothing floats on after the sheet.
 
    EDIT MODE (Author only). The Edit trigger arms selection: hover outlines
    the element under the cursor (data-arxa-id identity), click selects it
@@ -1312,11 +1314,20 @@
   // never snapshotted, so a shrinking draft converges by reload — the same
   // thing the resetting rung itself does.
   let syncing = false;
+  // Per-PATCH prop count. renderLedger counts ONE patch entry; the
+  // 2026-08-26 sheet bug passed a patch to patchPropCount — which wants a
+  // whole draft — and Object.keys(undefined) threw, killing the render of
+  // every slide after Edit (Comments/Settings/Tweak/Ship stayed blank
+  // whenever a draft edit existed).
+  function patchProps(p) {
+    p = p || {};
+    return (p.style ? Object.keys(p.style).length : 0) +
+      (p.attrs ? Object.keys(p.attrs).length : 0) + (p.text != null ? 1 : 0);
+  }
   function patchPropCount(d) {
     let n = 0;
-    for (const k of Object.keys(d.patches)) {
-      const p = d.patches[k] || {};
-      n += (p.style ? Object.keys(p.style).length : 0) + (p.attrs ? Object.keys(p.attrs).length : 0) + (p.text != null ? 1 : 0);
+    for (const k of Object.keys((d && d.patches) || {})) {
+      n += patchProps(d.patches[k]);
     }
     return n;
   }
@@ -1485,7 +1496,7 @@
     }
     keys.forEach((key) => {
       const d = S.draft.patches[key];
-      const n = patchPropCount(d);
+      const n = patchProps(d);
       const row = h('div', { class: 'row' });
       const txt = h('span', { class: 'txt', text: key });
       const meta = h('div', { class: 'meta' }, [
@@ -2121,6 +2132,16 @@
   function closeTray() {
     S.tray = null;
     tray.classList.remove('open');
+    // SHEET-CHILDREN LAW (operator, 2026-08-26): whatever the sheet held
+    // open closes WITH it — the floating smart card (plus its selection:
+    // outline, handles, and the Edit Mode arming its outline rows imply),
+    // the pin thread popover, and the comment composer. The island returns
+    // to its resting state: dial in, nothing else floating.
+    if (S.arming) disarm();
+    if (S.design) designOff(); // closes the card, clears the selection
+    else if (S.card || S.selected) { closeCard(); clearSelOutline(); }
+    if (S.activePin) closeThread();
+    composer.classList.remove('open');
     dialUnpark(); // spring back in + re-arm the 30s tuck-away fresh
   }
 
