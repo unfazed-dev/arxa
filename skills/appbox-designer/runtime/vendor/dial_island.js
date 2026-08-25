@@ -518,23 +518,31 @@
     const n = verbOrder.length;
     // The fan lives ENTIRELY in the inward upper quadrant: no verb ever
     // lands right of a right-docked dial (screen-edge clip) or left of a
-    // left-docked one, and neighbor chords stay ≥ the 44px buttons so they
-    // never overlap. The author's eight verbs (Design Mode added two) no
-    // longer fit the 6-verb geometry — past -93° a 150px radius clips the
-    // right edge — so a full fan tightens its spacing and widens its arc:
-    // -178°..-83.5° at R=190 keeps every center ≥ 30px off the edge and
-    // chords at 44.7px.
-    // THREE TRIGGERS (rework 2026-08-24): with ≤3 verbs the fan widens its
-    // spacing so neighbor chords always clear the 44px buttons — at R=75 a
-    // 34° gap gives 44px chords exactly; no overlap ever again.
+    // left-docked one, and neighbor chords keep real clearance.
+    //
+    // SQUARE-ERA RECALCULATION (operator, 2026-08-26: "recalculate the
+    // radius of the expanded verbs"). Two stale laws retired:
+    //   1. Positions were PERCENT of the dock box (R*100/56 %) — the /56
+    //      hardcoded the round 56px dock, so the 64px card silently
+    //      stretched the intended R=75 to ~86px, and ANY future dock size
+    //      change would stretch it again. Offsets are now PIXEL-exact
+    //      calc(50% ± Npx) — geometry is dock-size-independent.
+    //   2. The chord rule was tuned for ROUND buttons ("44px chords
+    //      exactly" = circles just touching). SQUARE verbs need center
+    //      chords >= button + clearance for their corners; the radius is
+    //      DERIVED from that law instead of being a magic number:
+    //      R = (BTN + GAP) / (2·sin(spacing/2)).
+    const BTN = 44; // square verb side (keep in phase with .verb CSS)
+    const GAP = 8; // visual clearance between neighbor squares
     const full = n > 7;
     const spacing = n <= 3 ? 34 : full ? 13.5 : 17;
     const start = S.dockSide === 'right' ? -178 : -2 - (n - 1) * spacing;
-    const R = full ? 95 : 75;
+    var R = (BTN + GAP) / (2 * Math.sin(((spacing * Math.PI) / 180) / 2));
+    if (full) R = Math.max(R, 95); // the 8-verb fan keeps its reach
     verbOrder.forEach((el, i) => {
       const rad = ((start + i * spacing) * Math.PI) / 180;
-      el.style.left = 50 + (Math.cos(rad) * R * 100) / 56 + '%';
-      el.style.top = 50 + (Math.sin(rad) * R * 100) / 56 + '%';
+      el.style.left = 'calc(50% + ' + (Math.cos(rad) * R).toFixed(1) + 'px)';
+      el.style.top = 'calc(50% + ' + (Math.sin(rad) * R).toFixed(1) + 'px)';
       // Stagger index: the OPEN state delays each verb by --i * 40ms
       // (MDN transition-delay: the wait between a value change and the
       // transition start). The closed state keeps the base 0s delay so

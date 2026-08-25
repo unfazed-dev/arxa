@@ -124,24 +124,46 @@ Future<void> main() async {
   // card radius, the arxa moss gradient (operator, 2026-08-26).
   final verbsRaw = await js(tab, '''
     (() => {
-      const vs = [...''' + SR + '''.querySelectorAll('.verb')];
-      return JSON.stringify(vs.map((v) => {
+      const sr = ''' + SR + ''';
+      const dr = sr.getElementById('dock').getBoundingClientRect();
+      const dc = { x: dr.left + dr.width / 2, y: dr.top + dr.height / 2 };
+      const vs = [...sr.querySelectorAll('.verb')];
+      const geo = vs.map((v) => {
         const cs = getComputedStyle(v);
+        const r = v.getBoundingClientRect();
+        const cx = r.left + r.width / 2, cy = r.top + r.height / 2;
         return {
           w: Math.round(parseFloat(cs.width)),
           h: Math.round(parseFloat(cs.height)),
           radius: cs.borderTopLeftRadius,
-          grad: (cs.backgroundImage || '').replace(/\s+/g, ' ')
+          grad: (cs.backgroundImage || '').replace(/\s+/g, ' '),
+          // legacy = pure percent ("-83.847%"); square-era = calc(50% + Npx)
+          unit: /^-?[\d.]+%\$/.test(v.style.left.trim()) ? 'pct' : 'px',
+          dist: Math.round(Math.hypot(cx - dc.x, cy - dc.y)),
+          ang: Math.round(Math.atan2(-(cy - dc.y), cx - dc.x) * 180 / Math.PI),
+          cx: Math.round(cx), cy: Math.round(cy)
         };
-      }));
+      });
+      // chord = distance between consecutive verb centers along the arc
+      const chords = [];
+      for (let i = 0; i + 1 < geo.length; i++) {
+        chords.push(Math.round(Math.hypot(geo[i].cx - geo[i+1].cx, geo[i].cy - geo[i+1].cy)));
+      }
+      return JSON.stringify({ geo: geo, chords: chords });
     })()
   ''');
   var verbsOk = 0;
   var verbsTotal = 0;
+  var allPx = true;
+  var dists = <int>[];
+  var chordsOk = true;
+  const kBtn = 44, kGap = 8;
   if (verbsRaw is String && verbsRaw.length > 4) {
-    final vs = jsonDecode(verbsRaw) as List;
+    final parsed = jsonDecode(verbsRaw) as Map;
+    final vs = (parsed['geo'] as List).cast<Map>();
+    final chords = (parsed['chords'] as List).cast<num>().map((c) => c.toInt()).toList();
     verbsTotal = vs.length;
-    for (final v in vs.cast<Map>()) {
+    for (final v in vs) {
       final rad = (v['radius'] as String).trim();
       final okShape = v['w'] == v['h'] &&
           !rad.contains('%') &&
@@ -150,12 +172,27 @@ Future<void> main() async {
       final okGrad = g.contains('linear-gradient') &&
           (g.contains('139, 165, 101') || g.contains('106, 133, 74'));
       if (okShape && okGrad) verbsOk++;
+      if (v['unit'] != 'px') allPx = false;
+      dists.add((v['dist'] as num).toInt());
     }
+    // square-era chord law: consecutive centers >= button + gap (squares
+    // need corner clearance, circles only needed edge-touching)
+    for (final c in chords) {
+      if (c < kBtn + kGap) chordsOk = false;
+    }
+    stdout.writeln('fan geometry: dists=' + dists.toString() +
+        ' chords=' + chords.toString() + ' unit=' + (allPx ? 'px' : 'pct(legacy)'));
   }
-  stdout.writeln('verbs: ' + verbsOk.toString() + '/' + verbsTotal.toString() +
-      ' square+gradient ' + (verbsRaw ?? '').toString());
   check(verbsTotal >= 2 && verbsOk == verbsTotal,
       'fan items are square with the arxa gradient (same treatment as the card)');
+  // recalculated radius (operator, 2026-08-26): pixel-exact fan law
+  // R = (44+8) / (2 sin(17deg)) = 88.9 - uniform, not %-stretched.
+  final uniform = dists.isNotEmpty &&
+      dists.every((d) => (d - dists.first).abs() <= 2);
+  check(allPx, 'verb positions are pixel-exact (no %-of-dock coupling)');
+  check(uniform && dists.isNotEmpty && (dists.first - 89).abs() <= 3,
+      'fan radius recalculated for squares: uniform ~89px (was 86 %-stretched)');
+  check(chordsOk, 'neighbor chords >= 52px (44px squares + 8px clearance)');
 
   // Evidence: the open fan with the treated verbs.
   final evFan = '/Volumes/developer_ssd/Developer/totem_labs/'
