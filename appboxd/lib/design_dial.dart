@@ -42,6 +42,7 @@ import 'dart:math';
 
 import 'package:crypto/crypto.dart' show sha256;
 
+import 'design_axes.dart';
 import 'design_draft.dart';
 import 'design_patch.dart' show nameSiteLocations;
 
@@ -688,7 +689,8 @@ class DialApi {
       this.draftStore,
       this.artifactDir,
       this.media,
-      this.ship});
+      this.ship,
+      this.axes});
 
   final DialStore store;
 
@@ -711,10 +713,43 @@ class DialApi {
   /// null (not a git repo) disables the routes (503).
   final DialShip? ship;
 
+  /// The axes plane (arc 1, 2026-08-25): the published style/theme pick.
+  /// Author-only writes; guests preview via ?style/?theme URL overrides
+  /// and never reach this store. Null (no marker / kind not app / dial
+  /// off) disables the route (503).
+  final AxesStore? axes;
+
   /// Selection handoff registry (slice 7, 2026-08-24): the card's "Ask
   /// arxa" registers an organized selection context here; the studio agent
   /// fetches it by pointer id. Bounded: capped, TTL'd, author-only writes.
   final Map<String, (DateTime, Map<String, dynamic>)> _selections = {};
+
+  /// POST /__dial/axes — publish {style, theme}. Both required and both
+  /// axis-lawful: the island always sends the full pair it rendered, so a
+  /// flip can never half-apply.
+  Future<DialResponse> _setAxes(Object? body) async {
+    final store = axes;
+    if (store == null) {
+      return const DialResponse(503, {'error': 'axes unavailable'});
+    }
+    final parsed = _map(body, '/axes');
+    if (parsed == null) {
+      return const DialResponse(
+          400, {'error': 'object body with style and theme required'});
+    }
+    final pick = AxesPick.fromJson(parsed);
+    if (pick == null) {
+      return const DialResponse(400, {
+        'error': 'style and theme required (lowercase a-z0-9-, max 40)'
+      });
+    }
+    try {
+      await store.save(pick);
+    } catch (error) {
+      return DialResponse(502, {'error': 'axes store write failed: $error'});
+    }
+    return DialResponse(200, {'ok': true, 'axes': pick.toJson()});
+  }
 
   /// [grant] non-null means the caller arrived on a Share Link — a guest
   /// scoped to ITS artifact (a link minted for artifact A reads nothing on
@@ -775,6 +810,15 @@ class DialApi {
           return const DialResponse(403, {'error': 'author only'});
         }
         return await _commitDraft();
+      }
+      // The axes plane (arc 1, 2026-08-25): publish the style/theme pick.
+      // Author-only — a guest's flip rides the URL override, never the
+      // store; the serve seam applies both identically.
+      if (method == 'POST' && sub == '/axes') {
+        if (caller != DialCaller.author) {
+          return const DialResponse(403, {'error': 'author only'});
+        }
+        return await _setAxes(body);
       }
       // The media proxy (slice 4): author-only — provider keys are
       // server-held secrets and the artifact tree is the author's.
@@ -865,13 +909,19 @@ class DialApi {
       // Compose ack: the panel (a trusted cross-origin caller) confirms
       // the insert LANDED, so the card can show a verified ✓ instead of
       // a hopeful one. Relayed to everyone; the island matches by id.
+      // inserted:false (studio had no open composer) is echoed so the
+      // card tells THAT truth instead of faking the ✓ (2026-08-26).
       if (method == 'POST' && sub == '/compose-ack') {
         final m = _map(body, '/compose-ack');
         final id = m['id'] is String ? _str(m, 'id', 40) : null;
         if (id == null) {
           return const DialResponse(400, {'error': 'id is required'});
         }
-        return DialResponse(200, {'id': id, 'ack': true});
+        return DialResponse(200, {
+          'id': id,
+          'ack': true,
+          if (m['inserted'] is bool) 'inserted': m['inserted'],
+        });
       }
       return DialResponse(404, {'error': 'no such dial route: $sub'});
     } on FormatException catch (e) {
@@ -1122,7 +1172,16 @@ class DialApi {
       _selections.remove(_selections.keys.first);
     }
     _selections[id] = (now, entry);
-    return DialResponse(201, {'id': id, 'fetch': entry['fetch']});
+    // Protocol marker echo (2026-08-26): the tabbed card sends v:2 so a
+    // v2-aware panel can tell its store-only Send apart from a stale
+    // pre-tabs island's ask (which WAS the whole flow). The response IS
+    // the broadcast frame, so the marker must ride it — and ONLY when
+    // the caller sent it, or every legacy island would look v2.
+    return DialResponse(201, {
+      'id': id,
+      'fetch': entry['fetch'],
+      if (m['v'] == 2) 'v': 2,
+    });
   }
 
   Future<DialResponse> _composeSelection(Object? body) async {

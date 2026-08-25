@@ -273,7 +273,10 @@
     '  border:1px solid rgba(227,238,222,.4);border-radius:12px;',
     '  box-shadow:0 12px 40px rgba(0,0,0,.5),',
     '    0 0 32px rgba(110,136,76,var(--glow,.22));',
-    '  max-height:min(440px,62vh)}',
+    /* fixed dimensions law (operator, 2026-08-26): the card is one
+       constant size — it never grows or shrinks between tabs, states,
+       or content; the body alone scrolls inside the fixed frame. */
+    '  height:min(440px,62vh)}',
     '#card.open{display:flex}',
     '#chead{display:flex;align-items:center;gap:6px;padding:8px 10px;',
     '  border-bottom:1px solid rgba(43,54,29,.35);flex:none;',
@@ -1908,6 +1911,12 @@
     say('Capturing selection…');
     const png = await captureElement(sel.el);
     const r = await api('POST', '/selection', {
+      // Protocol v2 (2026-08-26): the tabbed card's Send STORES the
+      // selection; only → composer inserts it (no auto-send law). The
+      // marker rides the broadcast frame so a v2-aware panel can tell
+      // this apart from a stale pre-tabs island whose ask WAS the whole
+      // flow — v-less frames still deliver straight to the composer.
+      v: 2,
       key: sel.key,
       label: sel.label,
       kind: sel.el.tagName.toLowerCase(),
@@ -1944,7 +1953,7 @@
     const sel = S.selected;
     const a = sel && S.arxa[sel.key];
     if (!a || !a.id) return;
-    a.status = 'sending to composer…'; a.statusOk = false;
+    a.status = 'sending to composer…'; a.statusOk = false; a.ackFalse = false;
     renderArxaPane(); renderCardFooter();
     // api() never throws and returns the parsed body — an error body
     // carries {error}, a success carries {id}.
@@ -1959,7 +1968,11 @@
       composeWaiter = null;
       const cur = S.selected && S.arxa[S.selected.key];
       if (cur && cur.id === a.id && cur.status === 'sending to composer…') {
-        cur.status = 'no studio answered — is arxa studio open?';
+        cur.status = cur.ackFalse
+          ? 'studio found no open composer — click into a session, '
+            + 'then → composer again'
+          : 'no studio answered — is arxa studio open AND reloaded?';
+        cur.ackFalse = false;
         cur.statusOk = false;
         if (S.card) { renderArxaPane(); }
       }
@@ -2838,14 +2851,25 @@
       // pointer line + snapshot and acked. The Arxa tab's status line
       // shows a VERIFIED ✓ only from here — the button never fakes it.
       if (d.kind === 'compose-ack' && d.data && d.data.id) {
-        if (composeWaiter) { clearTimeout(composeWaiter); composeWaiter = null; }
+        // Multi-page ack truth (2026-08-26): EVERY connected studio page
+        // acks its own result. The ✓ means AT LEAST ONE page took the
+        // insert — a true ack wins at once; a false ack (that page had
+        // no open composer) is noted and the window runs out, so a true
+        // ack from another page can still arrive. Only an all-false or
+        // silent window becomes the honest failure (timeout branch).
         for (const k of Object.keys(S.arxa)) {
           const a = S.arxa[k];
-          if (a.id === d.data.id) {
-            a.status = '✓ inserted into the composer'; a.statusOk = true;
+          if (a.id === d.data.id && a.status === 'sending to composer…') {
+            if (d.data.inserted === false) {
+              a.ackFalse = true;
+            } else {
+              if (composeWaiter) { clearTimeout(composeWaiter); composeWaiter = null; }
+              a.ackFalse = false;
+              a.status = '✓ inserted into the composer'; a.statusOk = true;
+              if (S.card && S.cardTab === 'arxa') renderArxaPane();
+            }
           }
         }
-        if (S.card && S.cardTab === 'arxa') renderArxaPane();
       }
     });
     } catch (_) {}

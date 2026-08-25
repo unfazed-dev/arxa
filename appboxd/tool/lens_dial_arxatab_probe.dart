@@ -367,6 +367,32 @@ Future<void> main() async {
   ''', const Duration(seconds: 6));
   check(ackOk, 'the ack loop flips the Arxa tab to a VERIFIED ✓');
 
+  // 7b. Fixed dimensions law (operator, 2026-08-26): the card is a
+  //     CONSTANT size — min(440px, 62vh) tall — no matter which tab or
+  //     how much content; the body alone scrolls inside it.
+  Future<Map> cardDims() async {
+    final raw = await js(tab, '''
+      (() => { const c = ''' + SR + '''.getElementById('card');
+        const b = c.querySelector('.cbody');
+        return JSON.stringify({ h: Math.round(c.getBoundingClientRect().height),
+          expect: Math.min(440, Math.round(window.innerHeight * 0.62)),
+          scrolls: b.scrollHeight > b.clientHeight + 4 }); })()
+    ''');
+    return jsonDecode(raw as String) as Map;
+  }
+  final dmA = await cardDims();
+  check(dmA['h'] == dmA['expect'],
+      'card height is FIXED at min(440px,62vh) on the Arxa tab (got ' +
+          dmA['h'].toString() + ', want ' + dmA['expect'].toString() + ')');
+  await js(tab, SR + ".querySelector('#chead .tab[data-tab=customise]').click()");
+  await Future.delayed(const Duration(milliseconds: 300));
+  final dmC = await cardDims();
+  check(dmC['h'] == dmA['h'], 'card height is constant across tabs');
+  check(dmC['scrolls'] == true,
+      'the card body scrolls (Customise content exceeds the fixed body)');
+  await js(tab, SR + ".querySelector('#chead .tab[data-tab=arxa]').click()");
+  await Future.delayed(const Duration(milliseconds: 300));
+
   // Evidence: the Arxa tab sent state at 2x, plus the studio composer.
   Future<List<int>> clipCard() async {
     final rect = await js(tab, '''
@@ -392,6 +418,60 @@ Future<void> main() async {
   File(evDir + '/arxa-tab-sent-2x.png').writeAsBytesSync(await clipCard());
   File(evDir + '/arxa-tab-studio-insert-1280.png').writeAsBytesSync(await gui.screenshot());
   stdout.writeln('evidence: ' + evDir);
+
+  // 7c. Legacy bridge (version-skew law): an island bundle older than
+  //     the tabbed card — a stale design tab — asks by POSTing
+  //     /selection WITHOUT the v:2 marker. The new panel must still
+  //     deliver line + snapshot to the composer directly (the green
+  //     card that used to confirm it is retired).
+  final legacyId = await js(tab, '''
+    (async () => {
+      const r = await fetch('/__dial/selection', { method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ key: 'el:legacy-probe',
+          label: 'legacy probe element', route: '/',
+          png: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==' }) });
+      const j = await r.json(); return j.id || null; })()
+  ''');
+  check(legacyId is String && (legacyId as String).isNotEmpty,
+      'legacy selection registered (no v marker)');
+  final lid = legacyId is String ? legacyId as String : 'zzz';
+  final legacyLine = await poll(gui, '''
+    (() => { const tas = [...document.querySelectorAll('textarea')];
+      const ta = tas[tas.length - 1];
+      return !!(ta && (ta.value || '').indexOf('LID') >= 0); })()
+  '''.replaceAll('LID', lid), const Duration(seconds: 8));
+  check(legacyLine,
+      'legacy (v-less) selection still lands in the studio composer');
+
+  // 7d. Honest failure: with NO composer mounted in the studio page,
+  //     that page's ack carries inserted:false and its chip SAYS so.
+  //     Multi-page truth law: every connected studio page acks its own
+  //     result — if another open page DID take the insert, the card's
+  //     ✓ is true. The strict assertion is therefore on THIS page's
+  //     chip (never a fake ✓ from the page that inserted nothing) plus
+  //     the card reaching SOME honest terminal state.
+  await js(gui, "(() => { [...document.querySelectorAll('textarea')]" +
+      '.forEach((t) => t.remove()); return true; })()');
+  await js(tab, '''
+    (() => { const b = [...''' + SR + '''.querySelectorAll('#cfoot button')]
+      .find((x) => (x.textContent || '').trim() === '→ composer');
+      if (b) b.click(); return !!b; })()
+  ''');
+  final chipWarn = await poll(gui, '''
+    (() => { const c = document.getElementById('arxa-compose-chip');
+      return !!(c && (c.textContent || '').indexOf('no studio composer') >= 0); })()
+  ''', const Duration(seconds: 8));
+  check(chipWarn,
+      'no composer in that studio page → the HONEST warning chip, never a fake ✓ chip');
+  final term = await poll(tab, '''
+    (() => { const s = (''' + SR + '''.querySelector('.tabpane.on .arxastatus') || {}).textContent || '';
+      return s.indexOf('inserted into the composer') >= 0 ||
+        s.indexOf('no open composer') >= 0; })()
+  ''', const Duration(seconds: 10));
+  check(term,
+      'the card reaches an honest terminal state (✓ if another studio '
+      'page took it, no-composer truth otherwise)');
 
   // 8. both error channels clean, both tabs.
   check(tab.pageErrors.isEmpty && tab.consoleErrors.isEmpty &&
