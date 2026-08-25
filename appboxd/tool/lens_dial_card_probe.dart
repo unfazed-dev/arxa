@@ -119,6 +119,49 @@ Future<void> main() async {
   // 4. arm Edit through the real fan.
   await js(tab, SR + ".querySelector('#dockbtn').click()");
   await Future.delayed(const Duration(milliseconds: 350));
+
+  // 4a. the fan's expanded items share the card treatment: square,
+  // card radius, the arxa moss gradient (operator, 2026-08-26).
+  final verbsRaw = await js(tab, '''
+    (() => {
+      const vs = [...''' + SR + '''.querySelectorAll('.verb')];
+      return JSON.stringify(vs.map((v) => {
+        const cs = getComputedStyle(v);
+        return {
+          w: Math.round(parseFloat(cs.width)),
+          h: Math.round(parseFloat(cs.height)),
+          radius: cs.borderTopLeftRadius,
+          grad: (cs.backgroundImage || '').replace(/\s+/g, ' ')
+        };
+      }));
+    })()
+  ''');
+  var verbsOk = 0;
+  var verbsTotal = 0;
+  if (verbsRaw is String && verbsRaw.length > 4) {
+    final vs = jsonDecode(verbsRaw) as List;
+    verbsTotal = vs.length;
+    for (final v in vs.cast<Map>()) {
+      final rad = (v['radius'] as String).trim();
+      final okShape = v['w'] == v['h'] &&
+          !rad.contains('%') &&
+          (double.tryParse(rad.replaceAll('px', '')) ?? 99) < 20;
+      final g = v['grad'] as String;
+      final okGrad = g.contains('linear-gradient') &&
+          (g.contains('139, 165, 101') || g.contains('106, 133, 74'));
+      if (okShape && okGrad) verbsOk++;
+    }
+  }
+  stdout.writeln('verbs: ' + verbsOk.toString() + '/' + verbsTotal.toString() +
+      ' square+gradient ' + (verbsRaw ?? '').toString());
+  check(verbsTotal >= 2 && verbsOk == verbsTotal,
+      'fan items are square with the arxa gradient (same treatment as the card)');
+
+  // Evidence: the open fan with the treated verbs.
+  final evFan = '/Volumes/developer_ssd/Developer/totem_labs/'
+      'clients/architect-gallore/design/suczka-studio/evidence/dial-card';
+  File(evFan + '/arxa-fan-open-1280.png').writeAsBytesSync(await tab.screenshot());
+
   await js(tab, SR + ".querySelector('[data-verb=edit]').click()");
   await Future.delayed(const Duration(milliseconds: 450));
   c = await card(tab);

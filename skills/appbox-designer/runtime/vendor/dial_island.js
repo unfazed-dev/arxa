@@ -173,15 +173,20 @@
     '  height:20px;border-radius:10px;background:#f59e0b;color:#0b0b10;',
     '  font-size:11px;font-weight:800;display:flex;align-items:center;',
     '  justify-content:center;padding:0 5px}',
-    /* the radial fan */
+    /* the radial fan — same treatment as the card (operator, 2026-08-26):
+       square, card radius, the arxa moss gradient. The armed verb keeps
+       the gradient and lights up (glow + brighter border) instead of the
+       old solid teal. */
     '.verb{position:absolute;left:50%;top:50%;width:44px;height:44px;',
-    '  border-radius:50%;background:#14141c;color:#FFFCF0;',
-    '  border:1.5px solid #0891b2;display:flex;align-items:center;',
+    '  border-radius:10px;background:linear-gradient(135deg,rgb(139,165,101),',
+    '  rgb(106,133,74) 60%,rgb(64,80,44));color:rgb(243,246,238);',
+    '  border:1px solid rgba(227,238,222,.4);display:flex;align-items:center;',
     '  justify-content:center;box-shadow:0 2px 10px rgba(0,0,0,.4);',
     '  transform:translate(-50%,-50%) scale(0);opacity:0;',
     '  transition:transform .22s cubic-bezier(.34,1.56,.64,1),opacity .18s}',
     '.verb svg{width:20px;height:20px}',
-    '.verb.on{background:#0891b2}',
+    '.verb.on{border-color:rgba(243,246,238,.8);',
+    '  box-shadow:0 2px 10px rgba(0,0,0,.4),0 0 14px -3px rgb(122,149,87)}',
     '#dock.open .verb{transform:translate(-50%,-50%) scale(1);opacity:1;',
     '  transition-delay:calc(var(--i,0)*40ms)}',
     '.verb .tip{position:absolute;right:52px;top:50%;',
@@ -2473,9 +2478,24 @@
   // guarded /__dial/* call is refused by design, and a bare EventSource
   // would retry the 403 forever: a refusal storm per frame, forever. No
   // pins answer → this frame cannot use the dial API at all → stay quiet.
+  // SOCKET-POOL LAW (2026-08-25 — the "loads for no reason" tab freeze):
+  // HTTP/1.1 caps one origin at 6 browser sockets, and this stream is held
+  // open by design — so N live tabs hold N sockets hostage from every
+  // navigation's budget; at 6 the next request queues for seconds to
+  // minutes while the tab spinner spins over a dead page (proved live: a
+  // frozen fetch completed within 20ms of closing ONE background tab). A
+  // hidden tab has no audience for realtime — never open (a tab may boot
+  // already hidden; visibilitychange will not fire for it), close on hide,
+  // reopen and resync on show. A fresh EventSource sends no Last-Event-ID,
+  // so the resync READS (not replay) carry the truth across the gap; both
+  // are reads, and reads never broadcast.
+  let liveEs = null;
+  let eventsAllowed = false; // capability proven at boot; mirrors never subscribe
   function subscribeEvents() {
+    if (liveEs || !eventsAllowed || document.hidden) return;
     try {
       const es = new EventSource(apiUrl('/events'));
+      liveEs = es;
     // A RECONNECT is the certain sign frames were missed (socket-pool
     // starvation, a server restart, laptop sleep) — resync instead of
     // trusting the stream. The first open is boot truth: loadDraft already
@@ -2502,6 +2522,18 @@
     });
     } catch (_) {}
   }
+  // The visibility half of the socket-pool law: release this tab's socket
+  // the moment it hides, take it back (and catch up) the moment it shows.
+  document.addEventListener('visibilitychange', () => {
+    if (!eventsAllowed) return;
+    if (document.hidden) {
+      if (liveEs) { liveEs.close(); liveEs = null; }
+    } else {
+      syncRemoteDraft();
+      loadPins();
+      subscribeEvents();
+    }
+  });
 
   // ── boot ───────────────────────────────────────────────────────────────
   // CAPABILITY-GATED BOOT. Sandboxed mirror frames must stay out of the
@@ -2692,6 +2724,7 @@
       finishBoot();
       renderPins();
       updateBadge();
+      eventsAllowed = true;
       subscribeEvents();
     });
     return;
@@ -2701,6 +2734,7 @@
     finishBoot();
     api('GET', '/pins').then((r) => {
       if (r && r.pins) { S.pins = r.pins; renderPins(); updateBadge(); }
+      eventsAllowed = true;
       subscribeEvents();
     });
   });
