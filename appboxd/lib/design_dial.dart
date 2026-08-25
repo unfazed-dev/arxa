@@ -311,7 +311,21 @@ class SupabaseDialStore implements DialStore {
 
   final String url;
   final String serviceKey;
-  final HttpClient _http = HttpClient();
+
+  // The dial's network hop must never hang a browser socket. Without an
+  // idle cap, dart:io pools connections that Supabase's edge silently drops
+  // (NAT/idle timeout), and the next request on the corpse waits out TCP
+  // retransmit backoff — seconds to minutes. Measured 2026-08-25 as the
+  // frozen-app session: the panel's pins polls each hung on a dead pooled
+  // connection and held the browser's 6-socket per-origin pool (one more
+  // seat taken by the dial SSE) until every navigation queued behind them;
+  // the app went unresponsive and landed on the user's LAST click only when
+  // TCP gave up. Fresh connections (curl, lens Chrome) never saw it — only
+  // the pooled panel path did. The timeouts convert that hang into a fast
+  // 5xx; the idle cap retires connections before the edge drops them.
+  final HttpClient _http = HttpClient()
+    ..connectionTimeout = const Duration(seconds: 5)
+    ..idleTimeout = const Duration(seconds: 30);
 
   @override
   String get kind => 'supabase';
@@ -349,7 +363,9 @@ class SupabaseDialStore implements DialStore {
 
   Future<HttpClientResponse> _req(String method, String path,
       {Object? body, Map<String, String>? extraHeaders}) async {
-    final req = await _http.openUrl(method, Uri.parse('$url/rest/v1/$path'));
+    final req = await _http
+        .openUrl(method, Uri.parse('$url/rest/v1/$path'))
+        .timeout(const Duration(seconds: 8));
     req.headers.set('apikey', serviceKey);
     req.headers.set('Authorization', 'Bearer $serviceKey');
     extraHeaders?.forEach(req.headers.set);
@@ -357,7 +373,15 @@ class SupabaseDialStore implements DialStore {
       req.headers.contentType = ContentType.json;
       req.write(jsonEncode(body));
     }
-    return req.close();
+    try {
+      return await req.close().timeout(const Duration(seconds: 10));
+    } on TimeoutException {
+      // Abort frees the socket AND discards the pooled connection — a
+      // timed-out dial call must answer fast, never hold a browser socket
+      // hostage while TCP retries a corpse.
+      req.abort();
+      rethrow;
+    }
   }
 
   static Map<String, dynamic> _pinRow(DialPin p) => {
