@@ -619,9 +619,83 @@ Future<void> main() async {
         return !!(sw && sw.value === '#27ae60'); })()
   ''', const Duration(seconds: 8));
   check(sw, 'after blur the next frame catches the card up');
+
+  // 7g. The chip-follows-field law (operator, 2026-08-25 report:
+  //     "i changed the background color to green, it changed in the
+  //     design but in the floating card background color swatch does
+  //     not react and is not in sync"). A color TYPED into the hex
+  //     field is the same edit as one picked in the chip: the page
+  //     turns green, the field carries the hex — and the CHIP must
+  //     follow it, not freeze at its open-time value. Plus the
+  //     catch-up half of the reactivity law: a frame skipped because
+  //     the author is focused in the card is made up when focus
+  //     LEAVES — a suppressed beat may not be dropped forever.
+  final BGROW = "[..." + SR + ".querySelectorAll('#card .facet')]" +
+      ".find((r) => (r.querySelector('label') || {textContent:''}).textContent === 'background')";
+  await js(tab, '''
+    (() => { const row = ''' + BGROW + ''';
+      const f = row && row.querySelector('input[type="text"]');
+      if (!f) return false;
+      f.focus(); f.value = '#18cd45';
+      f.dispatchEvent(new Event('input', { bubbles: true }));
+      return true; })()
+  ''');
+  final kJs = jsonEncode(dkey);
+  var chipSync = await poll(tab, '''
+    (() => { const row = ''' + BGROW + ''';
+      const sw = row && row.querySelector('input[type="color"]');
+      const f = row && row.querySelector('input[type="text"]');
+      const k = ''' + kJs + ''';
+      const el = k.indexOf('el:') === 0
+        ? document.querySelector('[data-el="' + k.slice(3) + '"]')
+        : document.querySelector('[data-arxa-id="' + k + '"]');
+      const live = el && getComputedStyle(el).backgroundColor === 'rgb(24, 205, 69)';
+      const ae = document.getElementById('arxa-dial-host').shadowRoot.activeElement;
+      return !!(live && f && f.value === '#18cd45' && sw && sw.value === '#18cd45'
+        && ae === f); })()
+  ''', const Duration(seconds: 8));
+  check(chipSync,
+      'typed green: page turns, field keeps the hex AND focus, the CHIP follows');
+  if (!chipSync) {
+    final d7g = await js(tab, '''
+      (() => { const row = ''' + BGROW + ''';
+        const sw = row && row.querySelector('input[type="color"]');
+        const f = row && row.querySelector('input[type="text"]');
+        const ae = document.getElementById('arxa-dial-host').shadowRoot.activeElement;
+        return JSON.stringify({ field: f ? f.value : null,
+          chip: sw ? sw.value : null, focus: ae ? ae.type : null }); })()
+    ''');
+    stdout.writeln('NOTE  chip-sync FAIL diagnostics: ' + (d7g ?? 'n/a'));
+  }
+
+  // catch-up half: an external frame arriving while the author is in
+  // the hex field is skipped (the guard); BLUR must make it up.
+  await patchBackground('rgb(142, 68, 173)');
+  await Future.delayed(const Duration(milliseconds: 1200));
+  final guardField = await js(tab, '''
+    (() => { const row = ''' + BGROW + ''';
+      const f = row && row.querySelector('input[type="text"]');
+      return !!(f && f.value === '#18cd45'); })()
+  ''');
+  check(guardField == true,
+      'mid-edit in the hex field: the external frame does not wipe it');
+  await js(tab, '''
+    (() => { const s = document.getElementById('arxa-dial-host').shadowRoot;
+      if (s.activeElement) s.activeElement.blur(); return true; })()
+  ''');
+  final caughtUp = await poll(tab, '''
+    (() => { const row = ''' + BGROW + ''';
+      const sw = row && row.querySelector('input[type="color"]');
+      return !!(sw && sw.value === '#8e44ad'); })()
+  ''', const Duration(seconds: 8));
+  check(caughtUp,
+      'after blur the SKIPPED frame catches the chip up (#8e44ad)');
   // cleanup the reactivity beats' patches (probe hygiene law). A
   // shrinking draft converges the live page by RELOAD (the island's
   // law) — wait it out and re-arm the dial for the media beat.
+  // __preCleanup canary: survives iff the page NEVER reloaded (the
+  // media beat's dock/verb clicks assume a FRESH disarmed page).
+  await js(tab, "window.__preCleanup = 1; true");
   await httpCall('GET', '/__dial/draft', null).then((doc) async {
     final draft = ((doc?['draft']) as Map?) ?? {};
     final patches = Map<String, dynamic>.from((draft['patches'] as Map?) ?? {});
@@ -748,11 +822,14 @@ Future<void> main() async {
           const card = d.getElementById('card');
           const btns = [...d.querySelectorAll('#card button')]
             .map((b) => (b.textContent || '').trim()).slice(0, 10);
+          const dockBtn = d.getElementById('dockbtn');
           return JSON.stringify({ cardOpen: card.classList.contains('open'),
             idline: ((card.querySelector('#cidrow .idline') || {textContent:''}).textContent || '').slice(0, 60),
             kchip: ((card.querySelector('#cidrow .kchip') || {textContent:''}).textContent || '').trim(),
             buttons: btns,
-            credit: ((card.querySelector('.idline:not(#cidrow .idline)') || {textContent:''}).textContent || '').slice(0, 60) }); })()
+            credit: ((card.querySelector('.idline:not(#cidrow .idline)') || {textContent:''}).textContent || '').slice(0, 60),
+            dockMode: dockBtn ? (dockBtn.getAttribute('data-mode') || '') : 'no-dockbtn',
+            page: window.__preCleanup === 1 ? 'same-page' : 'reloaded' }); })()
       ''');
       stdout.writeln('NOTE  media section diagnostics: ' + (mediaDiag ?? 'n/a'));
     }

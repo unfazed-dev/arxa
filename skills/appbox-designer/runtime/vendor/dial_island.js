@@ -1942,6 +1942,19 @@
           setStyleProp(sel.key, prop, sw.value);
         });
         row.appendChild(sw);
+        // Chip-follows-field law (operator, 2026-08-25): a color TYPED
+        // in the hex field is the same edit as one picked in the chip —
+        // the chip must follow the field live, not freeze at its
+        // open-time value (report: green typed, page turned green, the
+        // chip stayed black through every later frame).
+        input.addEventListener('input', () => {
+          const v = input.value.trim();
+          const m3 = /^#([0-9a-fA-F]{3})$/.exec(v);
+          const hex = /^#[0-9a-fA-F]{6}$/.test(v) ? v.toLowerCase()
+            : m3 ? '#' + m3[1].split('').map((c) => c + c).join('')
+            : rgbToHex(v);
+          if (hex) sw.value = hex;
+        });
       }
       row.appendChild(input);
       body.appendChild(row);
@@ -2436,6 +2449,7 @@
   // is skipped (the next one catches up); and the CSS escape hatch is
   // deferred-until-Apply by design, so its unapplied text survives
   // every re-render instead of silently disappearing.
+  let cardRefreshPending = false;
   function refreshOpenCard() {
     if (!S.card || !S.selected) return;
     // Shadow-retargeting law: document.activeElement returns the HOST
@@ -2446,11 +2460,32 @@
     const a = (root.activeElement || document.activeElement);
     if (a && card.contains(a) &&
         (a.tagName === 'INPUT' || a.tagName === 'TEXTAREA' ||
-         a.tagName === 'SELECT')) return;
+         a.tagName === 'SELECT')) {
+      // The beat is DEFERRED, not dropped: when focus later leaves the
+      // card the deferred refresh runs (the focusout hook below). A
+      // dropped beat left the card stale forever — the report's chip
+      // stayed black through every frame after one guard fired.
+      cardRefreshPending = true;
+      return;
+    }
     const unapplied = cssEscapeEl ? cssEscapeEl.value : '';
     renderCardAgain();
     if (cssEscapeEl && unapplied.trim()) cssEscapeEl.value = unapplied;
+    cardRefreshPending = false;
   }
+  // Catch-up half of the reactivity law: focusout bubbles out of every
+  // card field; a tick later (focus has settled) a deferred refresh
+  // runs — unless focus moved to ANOTHER field inside the card (that
+  // field's own guard re-defers on its frames, and re-rendering under
+  // a fresh cursor is exactly what the guard exists to prevent).
+  card.addEventListener('focusout', () => {
+    setTimeout(() => {
+      if (!cardRefreshPending || !S.card) return;
+      const a = (root.activeElement || document.activeElement);
+      if (a && card.contains(a)) return;
+      refreshOpenCard();
+    }, 0);
+  });
   function openCard() {
     if (!S.selected) return;
     S.card = S.selected.key;
@@ -3167,6 +3202,7 @@
   // so the resync READS (not replay) carry the truth across the gap; both
   // are reads, and reads never broadcast.
   let liveEs = null;
+  let swallowTimer = null; // a frame held back by the own-save window, re-checked once it closes
   let eventsAllowed = false; // capability proven at boot; mirrors never subscribe
   function subscribeEvents() {
     if (liveEs || !eventsAllowed || document.hidden) return;
@@ -3192,8 +3228,25 @@
       try { d = JSON.parse(ev.data); } catch (_) {}
       if (!d || d.kind === 'pins') return loadPins();
       // Another author context saved its draft — sync it INTO this
-      // document, unless the frame was this document's own save.
-      if (d.kind === 'draft' && Date.now() - S.ownSave > 1500) syncRemoteDraft();
+      // document, unless the frame was this document's own save. The
+      // own-save suppression is DEFERRED, never dropped (the reactivity
+      // law's sibling, 2026-08-25): a frame landing inside the 1500ms
+      // window is re-checked once the window closes. Before this, an
+      // external change arriving ~1s after our own save vanished from
+      // this page until some later frame — and a shrinking external
+      // cleanup never converged by reload (probe-proved: the next beat
+      // armed a dead surface on a page that silently skipped its
+      // reload). Our own echo re-checks too, but the resync is a read:
+      // store == S.draft after our save, so it no-ops (no refetch
+      // loop). Coalesced — a burst inside the window arms ONE recheck.
+      if (d.kind === 'draft') {
+        const since = Date.now() - S.ownSave;
+        if (since > 1500) syncRemoteDraft();
+        else {
+          clearTimeout(swallowTimer);
+          swallowTimer = setTimeout(syncRemoteDraft, 1600 - since);
+        }
+      }
       // The published axes changed (our own POST echoes here too — applying
       // the same pick is idempotent and settles the URL to published).
       if (d.kind === 'axes' && d.data && S.axes) {
