@@ -144,12 +144,20 @@ Future<void> main() async {
           cx: Math.round(cx), cy: Math.round(cy)
         };
       });
-      // chord = distance between consecutive verb centers along the arc
-      const chords = [];
+      // chord = center distance; rectGap = VISIBLE gap between the
+      // square bounding boxes (the operator-visible criterion)
+      const chords = [], rectGaps = [];
       for (let i = 0; i + 1 < geo.length; i++) {
         chords.push(Math.round(Math.hypot(geo[i].cx - geo[i+1].cx, geo[i].cy - geo[i+1].cy)));
+        const hw = geo[i].w / 2, hh = geo[i].h / 2;
+        const dx = Math.max((geo[i].cx - hw) - (geo[i+1].cx + hw),
+                            (geo[i+1].cx - hw) - (geo[i].cx + hw));
+        const dy = Math.max((geo[i].cy - hh) - (geo[i+1].cy + hh),
+                            (geo[i+1].cy - hh) - (geo[i].cy + hh));
+        rectGaps.push({ pair: i + '-' + (i+1),
+          gap: Math.round(Math.hypot(Math.max(dx, 0), Math.max(dy, 0))) });
       }
-      return JSON.stringify({ geo: geo, chords: chords });
+      return JSON.stringify({ geo: geo, chords: chords, rectGaps: rectGaps });
     })()
   ''');
   var verbsOk = 0;
@@ -157,6 +165,7 @@ Future<void> main() async {
   var allPx = true;
   var dists = <int>[];
   var chordsOk = true;
+  var gapsOk = true;
   const kBtn = 44, kGap = 8;
   if (verbsRaw is String && verbsRaw.length > 4) {
     final parsed = jsonDecode(verbsRaw) as Map;
@@ -180,19 +189,28 @@ Future<void> main() async {
     for (final c in chords) {
       if (c < kBtn + kGap) chordsOk = false;
     }
+    final rectGaps = (parsed['rectGaps'] as List).cast<Map>();
+    final gapLine = StringBuffer();
+    for (final g in rectGaps) {
+      gapLine.write(g['pair'] + ':' + g['gap'].toString() + 'px ');
+      if ((g['gap'] as num).toInt() < 8) gapsOk = false;
+    }
     stdout.writeln('fan geometry: dists=' + dists.toString() +
-        ' chords=' + chords.toString() + ' unit=' + (allPx ? 'px' : 'pct(legacy)'));
+        ' chords=' + chords.toString() + ' rectGaps=[' + gapLine.toString().trim() +
+        '] unit=' + (allPx ? 'px' : 'pct(legacy)'));
   }
   check(verbsTotal >= 2 && verbsOk == verbsTotal,
       'fan items are square with the arxa gradient (same treatment as the card)');
-  // recalculated radius (operator, 2026-08-26): pixel-exact fan law
-  // R = (44+8) / (2 sin(17deg)) = 88.9 - uniform, not %-stretched.
+  // recalculated radius (operator, 2026-08-26 rounds 2+3): spacing 38deg,
+  // R solved so every neighbor RECT gap >= 8px (squares clear, corners
+  // included) - uniform ~94px, not %-stretched.
   final uniform = dists.isNotEmpty &&
       dists.every((d) => (d - dists.first).abs() <= 2);
   check(allPx, 'verb positions are pixel-exact (no %-of-dock coupling)');
-  check(uniform && dists.isNotEmpty && (dists.first - 89).abs() <= 3,
-      'fan radius recalculated for squares: uniform ~89px (was 86 %-stretched)');
+  check(uniform && dists.isNotEmpty && (dists.first - 94).abs() <= 3,
+      'fan radius: uniform ~94px at 38deg spacing');
   check(chordsOk, 'neighbor chords >= 52px (44px squares + 8px clearance)');
+  check(gapsOk, 'neighbor RECT gaps >= 8px - squares visibly separated');
 
   // Evidence: the open fan with the treated verbs.
   final evFan = '/Volumes/developer_ssd/Developer/totem_labs/'

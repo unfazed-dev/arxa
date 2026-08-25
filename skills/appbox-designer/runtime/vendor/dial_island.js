@@ -516,28 +516,56 @@
   // off-screen. Re-runs on every edge snap.
   function layoutFan() {
     const n = verbOrder.length;
-    // The fan lives ENTIRELY in the inward upper quadrant: no verb ever
-    // lands right of a right-docked dial (screen-edge clip) or left of a
-    // left-docked one, and neighbor chords keep real clearance.
-    //
-    // SQUARE-ERA RECALCULATION (operator, 2026-08-26: "recalculate the
-    // radius of the expanded verbs"). Two stale laws retired:
-    //   1. Positions were PERCENT of the dock box (R*100/56 %) — the /56
-    //      hardcoded the round 56px dock, so the 64px card silently
-    //      stretched the intended R=75 to ~86px, and ANY future dock size
-    //      change would stretch it again. Offsets are now PIXEL-exact
-    //      calc(50% ± Npx) — geometry is dock-size-independent.
-    //   2. The chord rule was tuned for ROUND buttons ("44px chords
-    //      exactly" = circles just touching). SQUARE verbs need center
-    //      chords >= button + clearance for their corners; the radius is
-    //      DERIVED from that law instead of being a magic number:
-    //      R = (BTN + GAP) / (2·sin(spacing/2)).
+    // SQUARE-ERA GEOMETRY (operator, 2026-08-26, three rounds):
+    //   R1 "recalculate the radius": positions were PERCENT of the dock
+    //      box (R*100/56 % — /56 hardcoded the round 56px dock; the 64px
+    //      card silently stretched R=75 to 86). Offsets are now
+    //      PIXEL-exact calc(50% ± Npx) — dock-size-independent.
+    //   R2: the chord law ("44px chords exactly") was a CIRCLE law.
+    //      R = (BTN+GAP)/(2·sin(spacing/2)) guaranteed center distance,
+    //      but squares approach CORNER-TO-CORNER diagonally: at 34° the
+    //      Comment↔Studio rect gap measured 0px — touching, the
+    //      operator's "studio and comments are too close" report.
+    //   R3 (this): the law is now the operator-visible one — the VISIBLE
+    //      gap between neighbor bounding boxes must be >= GAP — and R is
+    //      SOLVED for it (binary search; no closed form exists for the
+    //      piecewise rect distance). Spacing widens 34° -> 38° so the
+    //      arc spreads instead of the radius ballooning: solver says
+    //      R≈94 gives 8.5px+ gaps for 3 verbs. Kept honest by
+    //      lens_dial_card_probe (asserts dists AND rect gaps).
     const BTN = 44; // square verb side (keep in phase with .verb CSS)
-    const GAP = 8; // visual clearance between neighbor squares
+    const GAP = 8; // visible clearance required between neighbor squares
     const full = n > 7;
-    const spacing = n <= 3 ? 34 : full ? 13.5 : 17;
+    const spacing = n <= 3 ? 38 : full ? 13.5 : 17;
     const start = S.dockSide === 'right' ? -178 : -2 - (n - 1) * spacing;
-    var R = (BTN + GAP) / (2 * Math.sin(((spacing * Math.PI) / 180) / 2));
+    // rect gap between two BTN-square verbs at angles a1,a2 on radius r
+    const rectGap = (r, a1, a2) => {
+      const x1 = r * Math.cos(a1), y1 = r * Math.sin(a1);
+      const x2 = r * Math.cos(a2), y2 = r * Math.sin(a2);
+      const dx = Math.max(x1 - BTN / 2 - (x2 + BTN / 2), x2 - BTN / 2 - (x1 + BTN / 2));
+      const dy = Math.max(y1 - BTN / 2 - (y2 + BTN / 2), y2 - BTN / 2 - (y1 + BTN / 2));
+      return Math.hypot(Math.max(dx, 0), Math.max(dy, 0));
+    };
+    const worstGap = (r) => {
+      let m = Infinity;
+      for (let i = 0; i + 1 < n; i++) {
+        const a1 = ((start + i * spacing) * Math.PI) / 180;
+        const a2 = ((start + (i + 1) * spacing) * Math.PI) / 180;
+        m = Math.min(m, rectGap(r, a1, a2));
+      }
+      return m; // Infinity when n < 2
+    };
+    var R = 75;
+    if (n > 1) {
+      let lo = 75, hi = 190; // reach budget: verbs stay near the card
+      if (worstGap(lo) < GAP) {
+        for (let k = 0; k < 24; k++) { // binary search the minimal R
+          const mid = (lo + hi) / 2;
+          if (worstGap(mid) < GAP) lo = mid; else hi = mid;
+        }
+        R = hi;
+      }
+    }
     if (full) R = Math.max(R, 95); // the 8-verb fan keeps its reach
     verbOrder.forEach((el, i) => {
       const rad = ((start + i * spacing) * Math.PI) / 180;
