@@ -67,9 +67,9 @@
 //         …) — `abxAction`/`ArxaKitActionHub` already own it. Declarations
 //         only, so unrelated Flutter constants (`kDebugMode`, `kToolbarHeight`)
 //         used (not declared) in app code are untouched.
-//       - no lowercase-b casing typo (`Arxa` immediately followed by `Kit`)
+//       - no lowercase-k casing typo (`Arxa` immediately followed by lowercase `kit`)
 //         anywhere an identifier is declared or referenced — canonical
-//         casing is `ArxaKit` (capital B).
+//         casing is `ArxaKit` (capital K).
 //       - no rival `Abx*` PascalCase type (`class`/`mixin`) — the sanctioned
 //         type family is `ArxaKit*`; `abx*` stays lowerCamel constants only.
 
@@ -149,12 +149,12 @@ bool _isGeneratedFile(String rel) {
 final _g14KPrefixActionRe = RegExp(
     r'\b(?:static\s+)?(?:const|final)\s+(?:late\s+)?(?:[\w<>.?]+\s+)??(k[A-Z]\w*(?:Action|Hub)\w*)\s*=');
 
-// G14: the lowercase-b casing typo — canonical casing is `ArxaKit`
-// (capital B). Lookahead keeps the pattern source from spelling the typo
+// G14: the lowercase-k casing typo — canonical casing is `ArxaKit`
+// (capital K). Lookahead keeps the pattern source from spelling the typo
 // contiguously (this file is itself scanned, so a literal contiguous match
 // would self-flag); it matches identically to a plain substring search,
 // including mid-identifier (the `dispose…Actions` form).
-final _g14KitCasingRe = RegExp(r'Arxa(?=Kit)');
+final _g14KitCasingRe = RegExp(r'Arxa(?=kit)');
 
 // G14: a rival PascalCase `Abx*` type declaration — the sanctioned type
 // family is `ArxaKit*`; `abx*` stays lowerCamel constants/identifiers only.
@@ -704,7 +704,7 @@ ArchGuardResult archGuard(String targetDir) {
       }
       if (_g14KitCasingRe.hasMatch(src)) {
         violations.add(ArchGuardFinding('G14', rel,
-            "lowercase-b casing typo ('Arxa' immediately followed by 'Kit') — canonical casing is 'ArxaKit' (capital B)"));
+            "lowercase-k casing typo ('Arxa' immediately followed by 'kit') — canonical casing is 'ArxaKit' (capital K)"));
       }
       for (final m in _g14RivalAbxTypeRe.allMatches(src)) {
         violations.add(ArchGuardFinding('G14', rel,

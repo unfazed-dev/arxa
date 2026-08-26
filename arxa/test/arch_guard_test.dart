@@ -1008,9 +1008,9 @@ void main() {
       expect(r.violations.where((v) => v.rule == 'G14'), isEmpty);
     });
 
-    test('the lowercase-b casing typo is a violation', () {
+    test('the lowercase-k casing typo is a violation', () {
       _file(tmp, 'lib/ui/kit_action/typo.dart',
-          'void disposeArxaKitActions() {}\n');
+          'void disposeArxakitActions() {}\n');
       final r = archGuard(tmp.path);
       expect(r.passed, isFalse);
       expect(
