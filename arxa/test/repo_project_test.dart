@@ -490,4 +490,32 @@ void main() {
       expect(File('${app.path}/design/commission.md').existsSync(), isFalse);
     });
   });
+
+  group('legacy appbox.json marker (H7 rename back-compat)', () {
+    test('names a dir carrying only the pre-rename marker', () {
+      final app = Directory('${tmp.path}/legacy')..createSync();
+      File('${app.path}/$legacyMarkerFile').writeAsStringSync('{"name":"x"}');
+      expect(findLegacyMarkerDir(app.path), app.path);
+    });
+
+    test('walks up to it from a subdirectory', () {
+      final app = Directory('${tmp.path}/legacy2')..createSync();
+      File('${app.path}/$legacyMarkerFile').writeAsStringSync('{"name":"x"}');
+      final deep = Directory('${app.path}/intake/notes')
+        ..createSync(recursive: true);
+      expect(findLegacyMarkerDir(deep.path), app.path);
+    });
+
+    test('stays quiet once the marker has been renamed', () {
+      final app = Directory('${tmp.path}/migrated')..createSync();
+      File('${app.path}/$legacyMarkerFile').writeAsStringSync('{"name":"x"}');
+      File('${app.path}/$repoMarkerFile').writeAsStringSync('{"name":"x"}');
+      expect(findLegacyMarkerDir(app.path), isNull);
+    });
+
+    test('null when no marker of either name exists', () {
+      final plain = Directory('${tmp.path}/plain')..createSync();
+      expect(findLegacyMarkerDir(plain.path), isNull);
+    });
+  });
 }

@@ -26,6 +26,12 @@ import 'package:arxa/stage_readmes.dart' show stageReadme;
 /// The marker file name every app dir carries at its root.
 const repoMarkerFile = 'arxa.json';
 
+/// The pre-rename marker name (H7, `app-box` → `arxa`). Nothing reads it any
+/// more, and that is the problem: a repo still carrying only this resolves to
+/// null, so the pipeline binding goes dead and the dial's axes plane disables
+/// itself — both WITHOUT an error. The walk-up names it instead of shrugging.
+const legacyMarkerFile = 'appbox.json';
+
 /// The stage folders a repo-mode app gets, in canonical order — the whole
 /// pipeline, visible on day one, empty-but-promised (README explains what
 /// starts each stage).
@@ -69,9 +75,42 @@ RepoProject? findRepoProject([String? from]) {
       if (p != null) return p;
     }
     final parent = Directory(dir).parent.path;
-    if (parent == dir) return null; // filesystem root
+    if (parent == dir) {
+      _warnLegacyMarker(from); // resolved to nothing — say why, if we can
+      return null; // filesystem root
+    }
     dir = parent;
   }
+}
+
+/// The nearest dir at or above [from] holding a [legacyMarkerFile] with no
+/// [repoMarkerFile] beside it. Null when none — the normal case.
+String? findLegacyMarkerDir([String? from]) {
+  var dir = Directory(from ?? Directory.current.path).absolute.path;
+  while (true) {
+    if (File('$dir/$legacyMarkerFile').existsSync() &&
+        !File('$dir/$repoMarkerFile').existsSync()) {
+      return dir;
+    }
+    final parent = Directory(dir).parent.path;
+    if (parent == dir) return null;
+    dir = parent;
+  }
+}
+
+/// Dirs already named this process — the walk-up runs per command, and one
+/// stale marker should not produce one line per call.
+final _legacyWarned = <String>{};
+
+void _warnLegacyMarker(String? from) {
+  final dir = findLegacyMarkerDir(from);
+  if (dir == null || !_legacyWarned.add(dir)) return;
+  stderr.writeln(
+    'arxa: $dir carries a pre-rename $legacyMarkerFile and no '
+    '$repoMarkerFile, so it is NOT bound — pipeline state falls back to '
+    '~/.arxa and the dial offers no axes. Rename it:\n'
+    '  mv $dir/$legacyMarkerFile $dir/$repoMarkerFile',
+  );
 }
 
 /// The law's teeth: resolve the repo-mode project for [from] and REFUSE to
