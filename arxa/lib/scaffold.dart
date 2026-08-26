@@ -689,6 +689,39 @@ Map<String, dynamic> buildManifest(
 
 void _fail(String msg) => stderr.writeln('FAIL: $msg');
 
+/// Banner prefixes `$schema` carried before the H7 rename: `app-box/` ->
+/// `appbox/` -> `arxa/`. Nothing has ever READ this field, which is precisely
+/// how it drifted across three names unnoticed — and a live design still
+/// carries `appbox/structure@2` today.
+///
+/// This names the drift; it does NOT reject the document. The banner is
+/// provenance, not a compatibility gate, and turning it into one would change
+/// which documents the scaffolder accepts. Same shape as warnLegacyMarker in
+/// repo_project.dart, for the same reason.
+const _legacyBanners = ['app-box/', 'appbox/'];
+
+final _bannerWarned = <String>{};
+
+/// The stale banner in [schema], or null when it is current (or absent).
+/// Pure, so the rule is testable without capturing stderr.
+String? legacyBanner(Object? schema) {
+  if (schema is! String) return null;
+  return _legacyBanners.any((p) => schema.startsWith(p)) ? schema : null;
+}
+
+/// The current banner [schema] should be rewritten to.
+String renamedBanner(String schema) => 'arxa/${schema.split('/').last}';
+
+void _warnLegacyBanner(String path, Object? schema) {
+  final stale = legacyBanner(schema);
+  if (stale == null || !_bannerWarned.add(path)) return;
+  stderr.writeln(
+    'arxa: $path carries a pre-rename \$schema "$stale" — the banner drifted '
+    'with the H7 rename and nothing validates it. Rewrite it as '
+    '"${renamedBanner(stale)}".',
+  );
+}
+
 /// Read + sanity-check the frozen structure.json. Returns (data, null) on
 /// success or (null, error) on failure.
 ({Map<String, dynamic>? data, String? error}) loadStructure(String designRoot) {
@@ -715,6 +748,7 @@ void _fail(String msg) => stderr.writeln('FAIL: $msg');
       error: "structure.json 'screens' is not a list — not a structure.json",
     );
   }
+  _warnLegacyBanner(path, data[r'$schema']);
   return (data: data, error: null);
 }
 
