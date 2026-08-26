@@ -14,7 +14,8 @@
         "title": "Arxa Studio",
         "width": 1280,
         "height": 800,
-        "resizable": true
+        "resizable": true,
+        "userAgent": "Mozilla/5.0 (Macintosh) ArxaShell/0.1"
       }
     ],
     "security": {
