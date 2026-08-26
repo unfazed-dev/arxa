@@ -3281,7 +3281,7 @@
     };
     const row = h('div', { class: 'btnrow', style: 'flex-wrap:wrap;gap:6px' });
     row.appendChild(mk(canPr ? 'Branch + PR (' + st.dirty + ' dirty)' : 'Branch + PR', canPr, async () => {
-      const title = 'design(dial): live edit batch';
+      const title = 'arxa(dial): live edit batch';
       const bodyTxt = 'Committed from the Arxa Dial (Ship slide). ' +
         Object.keys(S.draft.patches).length + ' element patch keys pending in the draft overlay; ' +
         'run the commit ops via the Edit slide CTA first if the draft is still uncommitted.';

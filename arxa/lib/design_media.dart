@@ -62,7 +62,7 @@ typedef MediaFetch = Future<(int, List<int>?)> Function(
 /// The production fetcher over dart:io HttpClient.
 Future<(int, List<int>?)> ioFetcher(
     String url, Map<String, String> headers) async {
-  final c = HttpClient()..userAgent = 'arxa-design-dial';
+  final c = HttpClient()..userAgent = 'arxa-dial';
   try {
     final req = await c.getUrl(Uri.parse(url));
     headers.forEach(req.headers.set);

@@ -7,7 +7,7 @@
 // 2026-08-25 rework — TRUTH-DERIVED EXPECTATIONS. The probe used to
 // hardcode a parked-on-main world (branch main, no PR, a 'wrangler'
 // blocker). Three of its checks then FAILED on real, legitimate state:
-// the repo sat on design/dial-* with PR #1 open, and wrangler resolved
+// the repo sat on arxa/dial-* with PR #1 open, and wrangler resolved
 // via npx (the blocker correctly vanished). The probe now derives every
 // expectation from ground truth (git + gh on the real repo, the eject
 // dir on disk, npx resolution) and asserts the SERVER AGREES with it.

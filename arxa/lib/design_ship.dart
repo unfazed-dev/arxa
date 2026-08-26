@@ -55,7 +55,7 @@ class DialShip {
 
   /// The operator-owned branch prefix — arxa dial PRs are identifiable
   /// and never collide with feature branches.
-  static const branchPrefix = 'design/dial';
+  static const branchPrefix = 'arxa/dial';
 
   Future<ShipProc> _git(List<String> args) => run('git', ['-C', repoDir, ...args]);
   Future<ShipProc> _gh(List<String> args) => run('gh', args);

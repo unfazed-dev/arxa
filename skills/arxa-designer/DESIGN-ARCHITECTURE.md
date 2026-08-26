@@ -44,7 +44,7 @@ Two channels, both locale-aware, neither hardcoded:
 
 ### Dial edits route to the spine SSOT (2026-08-24)
 
-A Design-Dial `--text` whose target element's source content is a dotted data
+A Arxa-Dial `--text` whose target element's source content is a dotted data
 binding (`{project.tagline}`) is routed by `arxa design patch` into the seed
 spine — never into the tsx as a literal (that would kill the binding) and
 never into a fixture alone (derived cache). Every locale's seed AND its

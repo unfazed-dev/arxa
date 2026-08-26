@@ -38,7 +38,7 @@ void main() {
 
       final ship = DialShip(repoDir: '/repo', run: run);
       final r = await ship.commitAndPr(
-          artifactDir: '/art', title: 'design(dial): batch', body: 'ops');
+          artifactDir: '/art', title: 'arxa(dial): batch', body: 'ops');
       expect(r['url'], contains('pull/1'));
       final flat = calls.map((c) => '${c.$1} ${c.$2.join(' ')}').toList();
       // The exact prefix sequence
@@ -48,7 +48,7 @@ void main() {
           flat
               .where((c) => c.contains('checkout'))
               .first,
-          contains('checkout -b design/dial-'));
+          contains('checkout -b arxa/dial-'));
       expect(flat, contains('git -C /repo add -- /art'));
       expect(flat.any((c) => c.contains(' push -u origin ')), isTrue);
       expect(flat.any((c) => c.contains('pr create') && c.contains('--base main')),
@@ -71,14 +71,14 @@ void main() {
     test('not on main refuses — one design PR at a time', () async {
       final ship = DialShip(repoDir: '/repo', run: (cmd, args) async {
         if (args.contains('--porcelain')) return const ShipProc(0, 'M x');
-        if (args.contains('rev-parse')) return const ShipProc(0, 'design/dial-1');
+        if (args.contains('rev-parse')) return const ShipProc(0, 'arxa/dial-1');
         return const ShipProc(0, '');
       });
       try {
         await ship.commitAndPr(artifactDir: '/art', title: 't', body: 'b');
         fail('refused');
       } on ShipRefusal catch (e) {
-        expect(e.message, contains('design/dial-1'));
+        expect(e.message, contains('arxa/dial-1'));
       }
     });
 
