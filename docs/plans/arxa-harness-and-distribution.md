@@ -412,7 +412,7 @@ empty env.
   manual patch copy):
   ```sh
   cd <arxa> && ARXA_GUARD_MODE=using arxa credentials exec \
-    ZAI_API_KEY -- node ../arxa-harness/bin/arxa.mjs --headless \
+    ZAI_API_KEY -- node ../arxa-harness/bin/arxa-studio.mjs --headless \
     "append a one-line comment to arxa/lib/cdp.dart"
   ```
   PASS = the reply quotes the guard's deny reason (using-sessions cannot
@@ -467,7 +467,7 @@ empty env.
   in `arxa/harness/` and was moved out the same day; the depend-don't-fork
   amendment voided the fork lineage, not the address): the package
   (exact-pinned `@deepseek-ai/*` deps, own bin),
-  `bin/arxa.mjs` (materializes the arxa profile into `$DSH_HOME/profiles/arxa`
+  `bin/arxa-studio.mjs` (materializes the arxa profile into `$DSH_HOME/profiles/arxa`
   and execs dsh's bin; `--headless` swaps dsh-web-app for dsh-headless), and
   `profile/cordis.patch.yml` (three patches: identity via
   `includeHarnessIdentity: false` + arxa persona — a CONFIG override, one rung

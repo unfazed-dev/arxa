@@ -10,7 +10,7 @@ shared state.
 
 ### Fault 1 — arxa executes the operator's dsh binary (the isolation break)
 
-`arxa-studio/bin/arxa.mjs:189-193` resolved the dsh entrypoint from two
+`arxa-studio/bin/arxa-studio.mjs:189-193` resolved the dsh entrypoint from two
 candidates:
 
     1. arxa-studio/node_modules/@deepseek-ai/dsh/lib/bin.js
@@ -134,7 +134,7 @@ opt-in and explicit, never a silent fallback.
 - Resolved dsh in arxa's tree: **0.1.0-rc.7** (a real directory), matching the pin.
   Executes standalone: `node node_modules/@deepseek-ai/dsh/lib/bin.js --version`
   → `0.1.0-rc.7`, exit 0.
-- `bin/arxa.mjs` no longer contains any `~/.dsh` resolution path.
+- `bin/arxa-studio.mjs` no longer contains any `~/.dsh` resolution path.
 - `~/.arxa/dsh/profiles/node_modules` (510 npx links) renamed to
   `node_modules.npx-poisoned-20260822`. Reversible; dsh re-links from arxa's own
   install on next boot.

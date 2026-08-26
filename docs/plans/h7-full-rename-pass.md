@@ -41,7 +41,7 @@ per convention.
 | `appboxd` (package + dir) | `arxa` | engine package takes the bare name; dir `appboxd/` → `arxa/` |
 | `appboxd.dart` (daemon bin) | `arxad.dart` | daemon keeps the -d |
 | CLI `appbox` (bin/appbox.dart) | `arxa` | engine owns the `arxa` command |
-| studio `bin/arxa.mjs` command | `arxa-studio` | studio cedes `arxa`; clean split, no cross-language wrapper |
+| studio `bin/arxa-studio.mjs` command | `arxa-studio` | studio cedes `arxa`; clean split, no cross-language wrapper |
 | `APPBOX_*` (env: GUARD_MODE, APP) | `ARXA_*` | both repos, same pass, no shim |
 | `appbox credentials` (vault verb) | `arxa credentials` | both repos, same pass |
 | `app-box` (dir/repo/paths) | `arxa` | local dir + GitHub repo (`unfazed-dev/arxa`, old URL redirects) |
@@ -74,7 +74,7 @@ per convention.
 - **Q1: engine takes `arxa`** — package/CLI `arxa`, daemon `arxad.dart`,
   dir `appboxd/` → `arxa/`. Rejected: `arxad`-as-package, `arxa-engine`,
   keeping `appboxd`.
-- **Q1b: studio CLI cedes the name** — `bin/arxa.mjs` → `bin/arxa-studio.mjs`,
+- **Q1b: studio CLI cedes the name** — `bin/arxa-studio.mjs` → `bin/arxa-studio.mjs`,
   command `arxa-studio`. Rejected: subcommand wrapper, path-only invocation.
 - **Q2: repo is `arxa`** — local `totem_labs/arxa`, remote
   `unfazed-dev/arxa` (GitHub redirects old URL). Family:

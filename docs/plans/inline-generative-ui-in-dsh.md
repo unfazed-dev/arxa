@@ -308,7 +308,7 @@ at the dispatch site, not from doc strings.
     package, both halves. Host registers the `gen_ui` tool and the
     `/arxa-gen-ui` RPC channel; browser registers `tool.call.toolview` with
     `key: 'gen_ui'` and the five catalogue renderers. Wired as profile row 9
-    and a `file:` dep in `bin/arxa.mjs`. `plugins/gen-ui/selftest.mjs` — 10
+    and a `file:` dep in `bin/arxa-studio.mjs`. `plugins/gen-ui/selftest.mjs` — 10
     assertions, all passing — covers schema compilation, envelope canonicality,
     catalogue rejection, and the RPC verbs.
 
@@ -600,7 +600,7 @@ cross-origin endpoint, and opening it meant looking at what was already open.
     rest of 53 stands, including the refusal to hardcode arxa's origin into
     the engine. `arxa design serve` now also reads
     `~/.arxa/trusted-origins` (one origin per line, `#` comments,
-    `92b869ac`), and `bin/arxa.mjs` registers its own origin there at boot
+    `92b869ac`), and `bin/arxa-studio.mjs` registers its own origin there at boot
     (`arxa-studio` `7ce8562`). The engine still knows nothing about arxa — it
     reads a file; arxa writes to it. Machine-scoped, because "this laptop's
     studio may subscribe" is a fact about the laptop, not about whichever
