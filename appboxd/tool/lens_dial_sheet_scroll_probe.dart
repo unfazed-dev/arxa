@@ -12,7 +12,7 @@ import 'package:appboxd/lens/pixels.dart';
 import 'package:image/image.dart' as img;
 
 Future<dynamic> js(CdpSession tab, String e) => tab.evaluate(e);
-const SR = "document.getElementById('arxa-dial-host').shadowRoot";
+const sr = "document.getElementById('arxa-dial-host').shadowRoot";
 const evidenceDir = '/Volumes/developer_ssd/Developer/totem_labs/'
     'clients/architect-gallore/design/suczka-studio/evidence/sheet-scrollbar';
 int fails = 0;
@@ -34,7 +34,7 @@ Future<void> main() async {
       'route': '/',
       'viewport': {'w': 1280, 'h': 800},
       'anchor': {'el': null, 'rect': {'x': 10.0 + i, 'y': 10.0, 'w': 100.0, 'h': 20.0}},
-      'body': 'scroll evidence pin ' + i.toString(),
+      'body': 'scroll evidence pin $i',
     }));
     await req.close();
   }
@@ -51,14 +51,14 @@ Future<void> main() async {
     await Future.delayed(const Duration(milliseconds: 80));
   }
   await Future.delayed(const Duration(milliseconds: 900));
-  await js(tab, SR + ".querySelector('#dockbtn').click()");
+  await js(tab, "$sr.querySelector('#dockbtn').click()");
   await Future.delayed(const Duration(milliseconds: 400));
-  await js(tab, SR + ".querySelector('[data-verb=studio]').click()");
+  await js(tab, "$sr.querySelector('[data-verb=studio]').click()");
   await Future.delayed(const Duration(milliseconds: 800));
 
   // land on the comments slide
   final moved = await js(tab, '''(() => {
-    const track = ''' + SR + '''.querySelector('#track');
+    const track = $sr.querySelector('#track');
     const slides = [...track.querySelectorAll('.slide')];
     const target = track.querySelector('.slide[data-slide=comments]') || slides[1];
     track.scrollTo({left: target.offsetLeft, behavior: 'instant'});
@@ -67,7 +67,7 @@ Future<void> main() async {
   await Future.delayed(const Duration(milliseconds: 700));
 
   final facts = await js(tab, '''(() => {
-    const track = ''' + SR + '''.querySelector('#track');
+    const track = $sr.querySelector('#track');
     const slides = [...track.querySelectorAll('.slide')];
     const target = track.querySelector('.slide[data-slide=comments]') || slides[1];
     const cs = getComputedStyle(target);
@@ -78,57 +78,53 @@ Future<void> main() async {
       clientHeight: target.clientHeight,
       scrollbarColor: cs.scrollbarColor,
       scrollbarWidth: cs.scrollbarWidth,
-      thumbRule: [...''' + SR + '''.querySelectorAll('style')].some(st => st.textContent.includes('#tray ::-webkit-scrollbar-thumb')),
+      thumbRule: [...$sr.querySelectorAll('style')].some(st => st.textContent.includes('#tray ::-webkit-scrollbar-thumb')),
       rect: {x: Math.round(r.x), y: Math.round(r.y), w: Math.round(r.width), h: Math.round(r.height)}
     };
   })()''');
   final m = (facts as Map).cast<String, dynamic>();
   check(m['overflows'] == true,
-      'comments slide overflows (scrolls) ' +
-          (m['scrollHeight'].toString()) + '>' + (m['clientHeight'].toString()));
+      'comments slide overflows (scrolls) ${m['scrollHeight']}>${m['clientHeight']}');
   final sc = (m['scrollbarColor'] as String? ?? '');
   check(sc.contains('110, 136, 76'),
-      'scrollbar-color is moss (' + sc + ')');
+      'scrollbar-color is moss ($sc)');
   check(m['scrollbarWidth'] == 'thin', 'scrollbar-width thin');
   check(m['thumbRule'] == true, 'webkit thumb rule present in sheet CSS');
 
   final bytes = await tab.screenshot();
   final pngBytes = Uint8List.fromList(bytes);
-  File(evidenceDir + '/sheet-scrollbar-390.png').writeAsBytesSync(pngBytes);
-  stdout.writeln('     evidence: ' + evidenceDir + '/sheet-scrollbar-390.png');
+  File('$evidenceDir/sheet-scrollbar-390.png').writeAsBytesSync(pngBytes);
+  stdout.writeln('     evidence: $evidenceDir/sheet-scrollbar-390.png');
 
   // Pixel proof: the 6px thumb strip at the slide's right edge reads MOSS
   // over glass — measurably greener than the slide content beside it.
   final r = (m['rect'] as Map).cast<String, dynamic>();
-  stdout.writeln('     slide rect: ' + r.toString());
+  stdout.writeln('     slide rect: $r');
   final trayRect = await js(tab, '''(() => {
-    const t = ''' + SR + '''.querySelector('#tray');
+    const t = $sr.querySelector('#tray');
     const b = t.getBoundingClientRect();
     const cs = getComputedStyle(t);
     return {x: Math.round(b.x), y: Math.round(b.y), w: Math.round(b.width), h: Math.round(b.height), open: cs.display};
   })()''');
-  stdout.writeln('     tray: ' + trayRect.toString());
+  stdout.writeln('     tray: $trayRect');
   final im = img.decodeImage(pngBytes)!;
   final tc = im.getPixel(((trayRect as Map)['x'] as num).toInt() + 20, ((trayRect as Map)['y'] as num).toInt() + 20);
-  stdout.writeln('     tray-corner px: ' + tc.r.toInt().toString() + ',' + tc.g.toInt().toString() + ',' + tc.b.toInt().toString());
+  stdout.writeln('     tray-corner px: ${tc.r.toInt()},${tc.g.toInt()},${tc.b.toInt()}');
   final sx = ((r['x'] as num) + (r['w'] as num) - 4).toInt();
   final cy = ((r['y'] as num) + (r['h'] as num) / 2).toInt();
   final strip = regionMeanLab(im, sx, cy - 60, 3, 120);
   final content = regionMeanLab(im, sx - 26, cy - 60, 18, 120);
-  stdout.writeln('     thumb Lab ' +
-      strip.map((v) => v.toStringAsFixed(1)).toList().toString() +
-      ' vs content ' +
-      content.map((v) => v.toStringAsFixed(1)).toList().toString());
+  stdout.writeln('     thumb Lab ${strip.map((v) => v.toStringAsFixed(1)).toList()} vs content ${content.map((v) => v.toStringAsFixed(1)).toList()}');
   final de = deltaE2000Lab(strip[0], strip[1], strip[2], content[0],
       content[1], content[2]);
   final greener = (content[1] - strip[1]) > 1.0 &&
       (content[2] - strip[2]) > 1.0;
   check(greener && de > 3,
-      'thumb strip reads moss over glass (dE ' + de.toStringAsFixed(1) + ')');
+      'thumb strip reads moss over glass (dE ${de.toStringAsFixed(1)})');
   check(tab.pageErrors.isEmpty && tab.consoleErrors.isEmpty, 'no errors');
 
   stdout.writeln(
-      fails == 0 ? 'ALL PROBES PASS' : fails.toString() + ' PROBES FAILED');
+      fails == 0 ? 'ALL PROBES PASS' : '$fails PROBES FAILED');
   await c.close();
   exit(fails == 0 ? 0 : 1);
 }

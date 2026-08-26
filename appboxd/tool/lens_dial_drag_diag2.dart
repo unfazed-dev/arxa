@@ -33,12 +33,12 @@ Future<void> main() async {
   }
   await mouse(tab, 'mouseReleased', 868, 568, extra: {'button': 'left'});
   await Future.delayed(Duration(milliseconds: 250));
-  stdout.writeln('window moves: ' + await js(tab, 'String(window.__win)'));
-  stdout.writeln('button moves: ' + await js(tab, 'String(window.__btn)'));
-  stdout.writeln('dock left/top: ' + await js(tab,
-      '(() => { const d = document.getElementById("arxa-dial-host").shadowRoot.querySelector("#dock"); return d.style.left + " | " + d.style.top; })()'));
+  stdout.writeln('window moves: ${await js(tab, 'String(window.__win)')}');
+  stdout.writeln('button moves: ${await js(tab, 'String(window.__btn)')}');
+  stdout.writeln('dock left/top: ${await js(tab,
+      '(() => { const d = document.getElementById("arxa-dial-host").shadowRoot.querySelector("#dock"); return d.style.left + " | " + d.style.top; })()')}');
   final r = await js(tab,
       '(() => { const b = document.getElementById("arxa-dial-host").shadowRoot.querySelector("#dockbtn").getBoundingClientRect(); return b.x.toFixed(0) + "," + b.y.toFixed(0); })()');
-  stdout.writeln('fab rect now: ' + r);
+  stdout.writeln('fab rect now: $r');
   await client.close();
 }

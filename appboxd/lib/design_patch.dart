@@ -349,7 +349,7 @@ PatchResult _patchAt(String src, String id, int at, PatchEdits edits) {
     final m = RegExp(r'<([a-zA-Z][a-zA-Z0-9-]*)').firstMatch(seg.substring(lt));
     if (m != null && !seg.substring(lt, at + 1).contains('>')) {
       final name = m.group(1)!;
-      final close = src.indexOf('</' + name + '>', at);
+      final close = src.indexOf('</$name>', at);
       if (close < 0) return null;
       return (src.indexOf('>', lt) + 1, close);
     }
@@ -378,10 +378,9 @@ String? _innerOfAt(String src, int at) {
 /// absent (the caller decides whether that is fatal).
 bool _writeOneArbKey(File arb, String key, String newText) {
   final src2 = arb.readAsStringSync();
-  final valueRe = RegExp('"' + RegExp.escape(key) +
-      '"[\\s]*:[\\s]*"(?:[^"\\\\]|\\\\.)*"');
+  final valueRe = RegExp('"${RegExp.escape(key)}"[\\s]*:[\\s]*"(?:[^"\\\\]|\\\\.)*"');
   final newValue =
-      '"' + key + '": "' + newText.replaceAll('"', r'\"') + '"';
+      '"$key": "${newText.replaceAll('"', r'\"')}"';
   if (!valueRe.hasMatch(src2)) return false;
   arb.writeAsStringSync(src2.replaceFirst(valueRe, newValue));
   return true;
@@ -453,8 +452,7 @@ CmdResult? routeTextToArbForFile(
   final arbDir = Directory(p.join(dir.path, 'l10n'));
   if (!arbDir.existsSync()) {
     return CmdResult(5, stderrLines: [
-      'appbox design patch: "$id" reads t()-backed copy but no l10n/ '
-          'directory exists under ' + dir.path
+      'appbox design patch: "$id" reads t()-backed copy but no l10n/ directory exists under ${dir.path}'
     ]);
   }
   final arbs = arbDir.listSync().whereType<File>().toList()
@@ -466,8 +464,7 @@ CmdResult? routeTextToArbForFile(
         .toList();
     if (named.isEmpty) {
       return CmdResult(5, stderrLines: [
-        'appbox design patch: no l10n/*.arb file for locale "$locale" '
-            '(found: ' + targets.map((a) => p.basename(a.path)).join(', ') + ')'
+        'appbox design patch: no l10n/*.arb file for locale "$locale" (found: ${targets.map((a) => p.basename(a.path)).join(', ')})'
       ]);
     }
     targets = named;
@@ -483,8 +480,7 @@ CmdResult? routeTextToArbForFile(
     }
     if (missing.isNotEmpty) {
       return CmdResult(5, stderrLines: [
-        'appbox design patch: key "$key" missing in: ' +
-            missing.join(', ') + ' - add it there and retry'
+        'appbox design patch: key "$key" missing in: ${missing.join(', ')} - add it there and retry'
       ]);
     }
     return _arbRouted(id, key, wts.length, f, dir, 'literal');
@@ -548,8 +544,7 @@ CmdResult? routeTextToArbForFile(
   }
   if (missing.isNotEmpty) {
     return CmdResult(5, stderrLines: [
-      'appbox design patch: key "$k" missing in: ' +
-          missing.join(', ') + ' - add it there and retry'
+      'appbox design patch: key "$k" missing in: ${missing.join(', ')} - add it there and retry'
     ]);
   }
   final how = t.isEmpty
@@ -608,8 +603,8 @@ CmdResult? _routeConditional(File hit, Directory dir, int at, String id,
   }
   String unq(String raw) => raw
       .replaceAll(bs + bs, bs)
-      .replaceAll(bs + "'", "'")
-      .replaceAll(bs + '"', '"');
+      .replaceAll("$bs'", "'")
+      .replaceAll('$bs"', '"');
   final normWas = _normText(was);
   final litHits = was.isEmpty
       ? <(int, int, String)>[]
@@ -681,7 +676,7 @@ CmdResult? _routeConditional(File hit, Directory dir, int at, String id,
       ]);
     }
     final clip =
-        trimmed.length > 72 ? trimmed.substring(0, 72) + '...' : trimmed;
+        trimmed.length > 72 ? '${trimmed.substring(0, 72)}...' : trimmed;
     return CmdResult(5, stderrLines: [
       'appbox design patch: --text refused: the conditional on "$id" has '
           'no branch matching --was ("$clip")'
@@ -728,8 +723,7 @@ CmdResult? _routeConditional(File hit, Directory dir, int at, String id,
   }
   if (missing.isNotEmpty) {
     return CmdResult(5, stderrLines: [
-      'appbox design patch: key "$k" missing in: ' +
-          missing.join(', ') + ' - add it there and retry'
+      'appbox design patch: key "$k" missing in: ${missing.join(', ')} - add it there and retry'
     ]);
   }
   return CmdResult(0, stdoutLines: [
@@ -774,7 +768,7 @@ class _SeedPair {
 
 final _seedNameRe = RegExp('^([A-Za-z0-9_-]+)_seed\\.([a-z]{2})\\.json');
 
-/// Discover every `<stem>_seed.<locale>.json` under <dir>/models that has
+/// Discover every `<stem>_seed.<locale>.json` under `<dir>/models` that has
 /// its generated fixtures sibling.
 List<_SeedPair> _discoverSeedPairs(Directory dir) {
   final models = Directory(p.join(dir.path, 'models'));
@@ -784,7 +778,7 @@ List<_SeedPair> _discoverSeedPairs(Directory dir) {
     final m = _seedNameRe.firstMatch(p.basename(f.path));
     if (m == null) continue;
     final fx = File(p.join(
-        f.parent.path, m.group(1)! + '_fixtures.' + m.group(2)! + '.json'));
+        f.parent.path, '${m.group(1)!}_fixtures.${m.group(2)!}.json'));
     if (!fx.existsSync()) continue;
     out.add(_SeedPair(m.group(1)!, m.group(2)!, f, fx));
   }
@@ -804,7 +798,7 @@ String? _seedHintOf(String trimmedInner) {
     return null;
   }
   var body = trimmedInner.substring(1, trimmedInner.length - 1).trim();
-  body = body.replaceAllMapped(_subscriptRe, (m) => '.' + (m[1] ?? m[2])!);
+  body = body.replaceAllMapped(_subscriptRe, (m) => '.${(m[1] ?? m[2])!}');
   final m = RegExp(r'^[A-Za-z_$][A-Za-z0-9_$]*'
           r'(?:\.[A-Za-z_$][A-Za-z0-9_$]*)*$')
       .firstMatch(body);
@@ -931,7 +925,7 @@ String _jsonEscape(String s) {
     else if (c == 10) { b.write(r'\n'); }
     else if (c == 13) { b.write(r'\r'); }
     else if (c == 9) { b.write(r'\t'); }
-    else if (c < 32) { b.write('\\u' + c.toRadixString(16).padLeft(4, '0')); }
+    else if (c < 32) { b.write('\\u${c.toRadixString(16).padLeft(4, '0')}'); }
     else { b.writeCharCode(c); }
   }
   return b.toString();
@@ -1046,26 +1040,23 @@ CmdResult? routeTextToSeed(
       resolved.add((stem, s));
       if (seen.length < 8) {
         var en = values[locales.first]![s.join('.')] ?? '';
-        if (en.length > 48) en = en.substring(0, 48) + '…';
-        seen.add(stem + '_seed ' + s.join('.') + ' :: ' + en);
+        if (en.length > 48) en = '${en.substring(0, 48)}…';
+        seen.add('${stem}_seed ${s.join('.')} :: $en');
       }
     }
   }
 
   if (resolved.isEmpty) {
     return CmdResult(5, stderrLines: [
-      'appbox design patch: --text refused: "$id" reads seed data ' +
-          '(binding ends in "$hint") but no seed path matched' +
-          (was == null || was.isEmpty
+      'appbox design patch: --text refused: "$id" reads seed data (binding ends in "$hint") but no seed path matched${was == null || was.isEmpty
               ? ' — pass --was <previous text> to anchor the value'
-              : ' (stale anchor?)'),
+              : ' (stale anchor?)'}',
       ...seen.isEmpty ? const ['  no candidates — draft and seed have diverged'] : seen,
     ]);
   }
   if (resolved.length > 1) {
     return CmdResult(5, stderrLines: [
-      'appbox design patch: --text ambiguous for "$id" — ' +
-          resolved.length.toString() + ' seed paths match:',
+      'appbox design patch: --text ambiguous for "$id" — ${resolved.length} seed paths match:',
       ...seen,
       'disambiguate with --page <pathname> and/or --nth <instance index>',
     ]);
@@ -1078,8 +1069,7 @@ CmdResult? routeTextToSeed(
   if (locale != null) {
     if (!locs.containsKey(locale)) {
       return CmdResult(5, stderrLines: [
-        'appbox design patch: locale "$locale" has no slice in the '
-            '"$stem" seed spine (' + allLocales.join(', ') + ')'
+        'appbox design patch: locale "$locale" has no slice in the "$stem" seed spine (${allLocales.join(', ')})'
       ]);
     }
     writeLocales = [locale];
@@ -1111,8 +1101,7 @@ CmdResult? routeTextToSeed(
       final span = _findJsonStringSpan(before, pathSegs);
       if (span == null) {
         return CmdResult(5, stderrLines: [
-          'appbox design patch: seed path "${segs.join(".")}" missing or not a ' +
-              'string in ${p.relative(file.path, from: dir.path)}'
+          'appbox design patch: seed path "${segs.join(".")}" missing or not a ' 'string in ${p.relative(file.path, from: dir.path)}'
         ]);
       }
       final after = before.substring(0, span.$1) +
@@ -1125,11 +1114,9 @@ CmdResult? routeTextToSeed(
   final others =
       allLocales.where((l) => !writeLocales.contains(l)).toList();
   final scope = writeLocales.join(', ') +
-      (others.isEmpty ? '' : '; also in spine: ' + others.join(', '));
+      (others.isEmpty ? '' : '; also in spine: ${others.join(', ')}');
   return CmdResult(0, stdoutLines: [
-    'routed $id -> ' + stem + '_seed.' + segs.join('.') +
-        ' (' + scope + ') - ' +
-        touched.length.toString() + ' file(s), tsx binding untouched',
+    'routed $id -> ${stem}_seed.${segs.join('.')} ($scope) - ${touched.length} file(s), tsx binding untouched',
   ]);
 }
 
@@ -1265,14 +1252,14 @@ CmdResult patchMain(List<String> args) {
     var block = cssSrc.substring(braceAt + 1, closeAt);
     var touched = 0;
     for (final t in tokens.entries) {
-      final name = t.key.startsWith('--') ? t.key : '--' + t.key;
+      final name = t.key.startsWith('--') ? t.key : '--${t.key}';
       final lineRe = RegExp('$name\\s*:[^;]*;');
       if (t.value == null) {
         block = block.replaceFirstMapped(lineRe, (_) => '');
       } else if (lineRe.hasMatch(block)) {
         block = block.replaceFirst(lineRe, '$name: ${t.value};');
       } else {
-        block = '\n  $name: ${t.value};' + block;
+        block = '\n  $name: ${t.value};$block';
       }
       touched++;
     }
@@ -1334,7 +1321,7 @@ CmdResult patchMain(List<String> args) {
     if (sites.length > 1) {
       final locs = <String>[];
       for (final s2 in sites) {
-        locs.add('  ' + p.relative(s2.$1.path, from: dir.path) + ':${s2.$3}');
+        locs.add('  ${p.relative(s2.$1.path, from: dir.path)}:${s2.$3}');
       }
       return CmdResult(4, stderrLines: [
         'appbox design patch: authored identity "$id" resolves to '

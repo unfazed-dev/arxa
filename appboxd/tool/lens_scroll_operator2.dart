@@ -63,7 +63,9 @@ Future<void> main() async {
     for (var i = 0; i < 40; i++) {
       if (await tab.evaluate(
               "(() => { const b = Array.from(document.querySelectorAll('button')).find(x => (x.textContent || '').trim() === 'design'); if (b) { b.click(); return true; } return false; })()") ==
-          true) break;
+          true) {
+        break;
+      }
       await Future.delayed(const Duration(milliseconds: 500));
     }
     await Future.delayed(const Duration(milliseconds: 600));
@@ -73,7 +75,7 @@ Future<void> main() async {
     const widths = [390, 744, 1280];
     for (var i = 0; i < labels.length; i++) {
       await tab.evaluate(
-          "(() => { const b = Array.from(document.querySelectorAll('button')).find(x => (x.textContent || '').trim().indexOf('" + labels[i] + "') === 0); if (b) b.click(); return true; })()");
+          "(() => { const b = Array.from(document.querySelectorAll('button')).find(x => (x.textContent || '').trim().indexOf('${labels[i]}') === 0); if (b) b.click(); return true; })()");
       await Future.delayed(const Duration(milliseconds: 700));
     }
     await tab.evaluate(
@@ -85,7 +87,7 @@ Future<void> main() async {
       if (c != null) {
         await c.evaluate(frameSampler);
         kids[widths[i]] = c;
-        stdout.writeln('rung ' + widths[i].toString() + ': instrumented');
+        stdout.writeln('rung ${widths[i]}: instrumented');
       }
     }
     await Future.delayed(const Duration(milliseconds: 7000));
@@ -106,7 +108,7 @@ Future<void> main() async {
               "JSON.stringify({neg: __fw.filter(function(w){return w.dy < 0}).length})");
           final m = r is String ? jsonDecode(r) as Map : null;
           if (m != null && (m['neg'] as num? ?? 0) > 0) {
-            stdout.writeln('NEGATIVE WHEELS CAPTURED at rung ' + e.key.toString());
+            stdout.writeln('NEGATIVE WHEELS CAPTURED at rung ${e.key}');
             detected = true;
           }
         } catch (_) {}
@@ -123,25 +125,17 @@ Future<void> main() async {
     if (pw is String) {
       for (final w in (jsonDecode(pw) as List)) {
         final m = w as Map;
-        stdout.writeln('  t=' + m['t'].toString() + ' dy=' + m['dy'].toString()
-            + ' trusted=' + m['tr'].toString()
-            + ' client=' + m['cx'].toString() + ',' + m['cy'].toString()
-            + ' screen=' + m['sx'].toString() + ',' + m['sy'].toString()
-            + ' on=' + m['on'].toString());
+        stdout.writeln('  t=${m['t']} dy=${m['dy']} trusted=${m['tr']} client=${m['cx']},${m['cy']} screen=${m['sx']},${m['sy']} on=${m['on']}');
       }
     }
     for (final e in kids.entries) {
       try {
         final fw = await e.value.evaluate('JSON.stringify(__fw.slice(-160))');
-        stdout.writeln('RUNG ' + e.key.toString() + ' wheels (last 160):');
+        stdout.writeln('RUNG ${e.key} wheels (last 160):');
         if (fw is String) {
           for (final w in (jsonDecode(fw) as List)) {
             final m = w as Map;
-            stdout.writeln('  t=' + m['t'].toString() + ' dy=' + m['dy'].toString()
-                + ' trusted=' + m['tr'].toString()
-                + ' client=' + m['cx'].toString() + ',' + m['cy'].toString()
-                + ' screen=' + m['sx'].toString() + ',' + m['sy'].toString()
-                + ' pd=' + m['pd'].toString());
+            stdout.writeln('  t=${m['t']} dy=${m['dy']} trusted=${m['tr']} client=${m['cx']},${m['cy']} screen=${m['sx']},${m['sy']} pd=${m['pd']}');
           }
         }
         final ft = await e.value.evaluate('JSON.stringify(__ft.slice(-400))');
@@ -157,12 +151,10 @@ Future<void> main() async {
               wi = i;
             }
           }
-          stdout.writeln('RUNG ' + e.key.toString() + ' position: worst drop '
-              + worst.toStringAsFixed(0) + 'px at sample #' + wi.toString()
-              + ' end=' + (s.isEmpty ? '-' : s.last.toString()));
+          stdout.writeln('RUNG ${e.key} position: worst drop ${worst.toStringAsFixed(0)}px at sample #$wi end=${s.isEmpty ? '-' : s.last.toString()}');
         }
       } catch (_) {
-        stdout.writeln('RUNG ' + e.key.toString() + ': session gone');
+        stdout.writeln('RUNG ${e.key}: session gone');
       }
     }
     stdout.writeln(detected ? '\nVERDICT: NEGATIVE INPUT CAPTURED' : '\nVERDICT: none captured this run');

@@ -39,7 +39,7 @@ String? newestSessionLog() {
   var bestM = DateTime.fromMillisecondsSinceEpoch(0);
   for (final e in dir.listSync()) {
     if (e is! Directory) continue;
-    final f = File(e.path + '/session.jsonl.zstd');
+    final f = File('${e.path}/session.jsonl.zstd');
     if (!f.existsSync()) continue;
     final m = f.lastModifiedSync();
     if (m.isAfter(bestM)) { bestM = m; best = f.path; }
@@ -68,23 +68,15 @@ Future<void> main() async {
   await tab.navigateAndSettle('http://127.0.0.1:7891/', settleMs: 3500);
   print('navigated');
 
-  print('ledger: ' + (await tab.evaluate(ledgerJs)).toString());
+  print('ledger: ${await tab.evaluate(ledgerJs)}');
 
-  final filled = await tab.evaluate('(() => {'
-      ' const e = document.querySelector("textarea");'
-      ' if (!e) return "no-textarea";'
-      ' const setter = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, "value").set;'
-      ' setter.call(e, ' + jsonEncode(prompt) + ');'
-      ' e.dispatchEvent(new Event("input", {bubbles: true}));'
-      ' e.focus();'
-      ' return "filled:" + e.value.length.toString();'
-      '})()');
-  print('composer: ' + filled.toString());
+  final filled = await tab.evaluate('(() => { const e = document.querySelector("textarea"); if (!e) return "no-textarea"; const setter = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, "value").set; setter.call(e, ${jsonEncode(prompt)}); e.dispatchEvent(new Event("input", {bubbles: true})); e.focus(); return "filled:" + e.value.length.toString();})()');
+  print('composer: $filled');
 
   await tab.key('Enter');
   await Future.delayed(const Duration(seconds: 3));
   final log = newestSessionLog();
-  print('watching log: ' + log.toString());
+  print('watching log: $log');
   if (log == null) { print('FATAL: no session log found'); await client.close(); return; }
 
   var lastLen = -1;
@@ -103,12 +95,12 @@ Future<void> main() async {
     final n = (m['n'] as num).toInt();
     if (n == lastLen) { quiet += 3; } else { quiet = 0; lastLen = n; }
     final ended = await turnEnded(log);
-    print('poll ' + polls.toString() + ' t=' + sw.elapsed.inSeconds.toString() + 's events=' + n.toString() + ' quiet=' + quiet.toString() + 's surfaces=' + m['surfaces'].toString() + ' cta=' + m['cta'].toString() + ' turnEnd=' + ended.toString());
+    print('poll $polls t=${sw.elapsed.inSeconds}s events=$n quiet=${quiet}s surfaces=${m['surfaces']} cta=${m['cta']} turnEnd=$ended');
     final png = await tab.screenshot();
-    File('/tmp/ring-frames/f' + polls.toString().padLeft(3, '0') + '.png').writeAsBytesSync(png);
+    File('/tmp/ring-frames/f${polls.toString().padLeft(3, '0')}.png').writeAsBytesSync(png);
     if (ended && quiet >= 20) break;
   }
-  print('done after ' + sw.elapsed.inSeconds.toString() + 's, events=' + lastLen.toString());
+  print('done after ${sw.elapsed.inSeconds}s, events=$lastLen');
 
   final ledger = await tab.evaluate('JSON.stringify(window.__ledger)');
   File('/tmp/ring-ledger.json').writeAsStringSync(ledger as String);

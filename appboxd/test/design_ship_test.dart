@@ -272,7 +272,7 @@ void main() {
       final tmp = Directory.systemTemp.createTempSync('deploy_test');
       addTearDown(() => tmp.deleteSync(recursive: true));
       Directory('${tmp.path}/eject').createSync();
-      final mk = (st) => DialShip(
+      DialShip mk(st) => DialShip(
             repoDir: '/repo',
             env: const {
               'CLOUDFLARE_API_TOKEN': 'x',

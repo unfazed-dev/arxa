@@ -8,7 +8,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:appboxd/cdp.dart';
 Future<dynamic> js(CdpSession tab, String e) => tab.evaluate(e);
-const SR = "document.getElementById('arxa-dial-host').shadowRoot";
+const sr = "document.getElementById('arxa-dial-host').shadowRoot";
 int fails = 0;
 void check(bool ok, String label) {
   stdout.writeln((ok ? 'PASS ' : 'FAIL ') + label);
@@ -36,9 +36,9 @@ Future<void> main() async {
     await Future.delayed(const Duration(milliseconds: 80));
   }
   await Future.delayed(const Duration(milliseconds: 900));
-  await js(tab, '$SR.querySelector("#dockbtn").click()');
+  await js(tab, '$sr.querySelector("#dockbtn").click()');
   await Future.delayed(const Duration(milliseconds: 400));
-  await js(tab, "$SR.querySelector('[data-verb=edit]').click()");
+  await js(tab, "$sr.querySelector('[data-verb=edit]').click()");
   await Future.delayed(const Duration(milliseconds: 300));
   final pt = await js(tab, '''
     (() => {
@@ -61,13 +61,13 @@ Future<void> main() async {
   await tab.send('Input.dispatchMouseEvent', {'type': 'mousePressed', 'x': x, 'y': y, 'button': 'left', 'clickCount': 1});
   await tab.send('Input.dispatchMouseEvent', {'type': 'mouseReleased', 'x': x, 'y': y, 'button': 'left', 'clickCount': 1});
   await Future.delayed(const Duration(milliseconds: 500));
-  final cardOpen = await js(tab, '$SR.querySelector("#card").classList.contains("open")');
+  final cardOpen = await js(tab, '$sr.querySelector("#card").classList.contains("open")');
   check(cardOpen == true, 'card opens on a real text element');
 
   // Tap ✨ arxa.
   final tapped = await js(tab, '''
     (() => {
-      const ask = $SR.querySelector('#chead button[title*=arxa]');
+      const ask = $sr.querySelector('#chead button[title*=arxa]');
       if (!ask) return false;
       ask.click();
       return true;
@@ -96,7 +96,7 @@ Future<void> main() async {
   check(body['styles'] is Map && (body['styles'] as Map).isNotEmpty,
       'style digest present (${(body['styles'] as Map).keys.toList().take(3).join(',')})');
   final png = body['png'] as String?;
-  stdout.writeln('png captured: ${png == null ? "null (best-effort path)" : png.length.toString() + " chars"}');
+  stdout.writeln('png captured: ${png == null ? "null (best-effort path)" : "${png.length} chars"}');
   check(tab.consoleErrors.isEmpty, 'console clean (${tab.consoleErrors.length})');
 
   stdout.writeln(fails == 0 ? 'ALL PROBES PASS' : '$fails PROBES FAILED');

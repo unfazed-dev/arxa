@@ -34,9 +34,9 @@ Future<void> main() async {
       window.__hostT = document.getElementById('arxa-dial-host').style.transform;
     })()
   ''');
-  stdout.writeln('elementFromPoint@FAB: ' + await js(tab, 'window.__elAt'));
-  stdout.writeln('dock pointer-events : ' + await js(tab, 'window.__dockPE'));
-  stdout.writeln('host transform      : ' + await js(tab, 'window.__hostT'));
+  stdout.writeln('elementFromPoint@FAB: ${await js(tab, 'window.__elAt')}');
+  stdout.writeln('dock pointer-events : ${await js(tab, 'window.__dockPE')}');
+  stdout.writeln('host transform      : ${await js(tab, 'window.__hostT')}');
   await mouse(tab, 'mousePressed', 1228, 748, extra: {'button': 'left', 'buttons': 1, 'clickCount': 1});
   for (var i = 1; i <= 5; i++) {
     await mouse(tab, 'mouseMoved', 1228 - i * 40, 748 - i * 20, extra: {'buttons': 1});
@@ -44,9 +44,9 @@ Future<void> main() async {
   }
   await mouse(tab, 'mouseReleased', 1028, 648, extra: {'button': 'left'});
   await Future.delayed(Duration(milliseconds: 200));
-  stdout.writeln('events: ' + await js(tab, 'JSON.stringify(window.__ev)'));
-  stdout.writeln('dock inline left/top: ' + await js(tab,
-      '(() => { const sr = document.getElementById("arxa-dial-host").shadowRoot; const d = sr.querySelector("#dock"); return d.style.left + " | " + d.style.top; })()'));
+  stdout.writeln('events: ${await js(tab, 'JSON.stringify(window.__ev)')}');
+  stdout.writeln('dock inline left/top: ${await js(tab,
+      '(() => { const sr = document.getElementById("arxa-dial-host").shadowRoot; const d = sr.querySelector("#dock"); return d.style.left + " | " + d.style.top; })()')}');
   stdout.writeln('console errors: ${tab.consoleErrors.length}');
   await client.close();
 }

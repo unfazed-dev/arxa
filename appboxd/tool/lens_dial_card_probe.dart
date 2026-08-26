@@ -32,7 +32,7 @@ import 'dart:io';
 import 'package:appboxd/cdp.dart';
 
 Future<dynamic> js(CdpSession tab, String e) => tab.evaluate(e);
-const SR = "document.getElementById('arxa-dial-host').shadowRoot";
+const sr = "document.getElementById('arxa-dial-host').shadowRoot";
 const dialUrl = 'http://127.0.0.1:4319/';
 
 int fails = 0;
@@ -52,9 +52,8 @@ Future<bool> poll(CdpSession tab, String expr, Duration limit) async {
   return false;
 }
 
-const CARD = '''
-  JSON.stringify((() => {
-    const b = ''' + SR + '''.getElementById('dockbtn');
+const cardJs = '''  JSON.stringify((() => {
+    const b = $sr.getElementById('dockbtn');
     const cs = getComputedStyle(b);
     const faces = [...b.querySelectorAll('.face')];
     const vis = (f) => f && getComputedStyle(f).opacity === '1';
@@ -62,9 +61,9 @@ const CARD = '''
       w: Math.round(parseFloat(cs.width)),
       h: Math.round(parseFloat(cs.height)),
       radius: cs.borderTopLeftRadius,
-      grad: (cs.backgroundImage || '').replace(/\s+/g, ' '),
+      grad: (cs.backgroundImage || '').replace(/s+/g, ' '),
       mode: b.getAttribute('data-mode') || '',
-      text: (b.textContent || '').replace(/\s+/g, ' ').trim(),
+      text: (b.textContent || '').replace(/s+/g, ' ').trim(),
       restVis: vis(faces.find((f) => f.classList.contains('rest'))),
       editVis: vis(faces.find((f) => f.classList.contains('edit'))),
       commentVis: vis(faces.find((f) => f.classList.contains('comment'))),
@@ -76,7 +75,7 @@ const CARD = '''
 ''';
 
 Future<Map> card(CdpSession tab) async =>
-    jsonDecode((await js(tab, CARD)) as String) as Map;
+    jsonDecode((await js(tab, cardJs)) as String) as Map;
 
 Future<void> main() async {
   final browser = await CdpClient.launch();
@@ -91,17 +90,17 @@ Future<void> main() async {
     await Future.delayed(const Duration(milliseconds: 80));
   }
   await poll(tab,
-      "getComputedStyle(" + SR + ".getElementById('dockbtn')).visibility === 'visible'",
+      "getComputedStyle($sr.getElementById('dockbtn')).visibility === 'visible'",
       const Duration(seconds: 4));
 
   // 1. square card, card radius (not a 50% circle).
   var c = await card(tab);
-  stdout.writeln('card: ' + jsonEncode(c));
+  stdout.writeln('card: ${jsonEncode(c)}');
   check(c['w'] == c['h'] && (c['w'] as num) >= 60,
-      'square card (>=60px): ' + c['w'].toString() + 'x' + c['h'].toString());
+      'square card (>=60px): ${c['w']}x${c['h']}');
   final radius = (c['radius'] as String).trim();
   check(!radius.contains('%') && (double.tryParse(radius.replaceAll('px', '')) ?? 99) < 20,
-      'card radius (square, not circle): ' + radius);
+      'card radius (square, not circle): $radius');
 
   // 2. arxa-studio gradient (moss ramp).
   final grad = c['grad'] as String;
@@ -113,18 +112,17 @@ Future<void> main() async {
   // 3. rest face.
   check(c['mode'] == '' && c['restVis'] == true, 'rest face visible (no mode armed)');
   check(((c['text'] as String).toLowerCase().contains('arxa')),
-      'card displays the arxa wordmark: "' + (c['text'] as String) + '"');
+      'card displays the arxa wordmark: "${c['text'] as String}"');
   check(c['badge'] == true, 'pins badge lives on the card');
 
   // 4. arm Edit through the real fan.
-  await js(tab, SR + ".querySelector('#dockbtn').click()");
+  await js(tab, "$sr.querySelector('#dockbtn').click()");
   await Future.delayed(const Duration(milliseconds: 350));
 
   // 4a. the fan's expanded items share the card treatment: square,
   // card radius, the arxa moss gradient (operator, 2026-08-26).
-  final verbsRaw = await js(tab, '''
-    (() => {
-      const sr = ''' + SR + ''';
+  final verbsRaw = await js(tab, '''    (() => {
+      const sr = $sr;
       const dr = sr.getElementById('dock').getBoundingClientRect();
       const dc = { x: dr.left + dr.width / 2, y: dr.top + dr.height / 2 };
       const vs = [...sr.querySelectorAll('.verb')];
@@ -136,9 +134,9 @@ Future<void> main() async {
           w: Math.round(parseFloat(cs.width)),
           h: Math.round(parseFloat(cs.height)),
           radius: cs.borderTopLeftRadius,
-          grad: (cs.backgroundImage || '').replace(/\s+/g, ' '),
+          grad: (cs.backgroundImage || '').replace(/s+/g, ' '),
           // legacy = pure percent ("-83.847%"); square-era = calc(50% + Npx)
-          unit: /^-?[\d.]+%\$/.test(v.style.left.trim()) ? 'pct' : 'px',
+          unit: /^-?[d.]+%\$/.test(v.style.left.trim()) ? 'pct' : 'px',
           dist: Math.round(Math.hypot(cx - dc.x, cy - dc.y)),
           ang: Math.round(Math.atan2(-(cy - dc.y), cx - dc.x) * 180 / Math.PI),
           cx: Math.round(cx), cy: Math.round(cy)
@@ -192,12 +190,10 @@ Future<void> main() async {
     final rectGaps = (parsed['rectGaps'] as List).cast<Map>();
     final gapLine = StringBuffer();
     for (final g in rectGaps) {
-      gapLine.write(g['pair'] + ':' + g['gap'].toString() + 'px ');
+      gapLine.write('${g['pair']}:${g['gap']}px ');
       if ((g['gap'] as num).toInt() < 8) gapsOk = false;
     }
-    stdout.writeln('fan geometry: dists=' + dists.toString() +
-        ' chords=' + chords.toString() + ' rectGaps=[' + gapLine.toString().trim() +
-        '] unit=' + (allPx ? 'px' : 'pct(legacy)'));
+    stdout.writeln('fan geometry: dists=$dists chords=$chords rectGaps=[${gapLine.toString().trim()}] unit=${allPx ? 'px' : 'pct(legacy)'}');
   }
   check(verbsTotal >= 2 && verbsOk == verbsTotal,
       'fan items are square with the arxa gradient (same treatment as the card)');
@@ -215,38 +211,38 @@ Future<void> main() async {
   // Evidence: the open fan with the treated verbs.
   final evFan = '/Volumes/developer_ssd/Developer/totem_labs/'
       'clients/architect-gallore/design/suczka-studio/evidence/dial-card';
-  File(evFan + '/arxa-fan-open-1280.png').writeAsBytesSync(await tab.screenshot());
+  File('$evFan/arxa-fan-open-1280.png').writeAsBytesSync(await tab.screenshot());
 
-  await js(tab, SR + ".querySelector('[data-verb=edit]').click()");
+  await js(tab, "$sr.querySelector('[data-verb=edit]').click()");
   await Future.delayed(const Duration(milliseconds: 450));
   c = await card(tab);
-  stdout.writeln('edit armed: ' + jsonEncode(c));
+  stdout.writeln('edit armed: ${jsonEncode(c)}');
   check(c['mode'] == 'edit' && c['editVis'] == true && c['restVis'] == false,
       'Edit tap flips the card to the edit face (animated swap)');
   check(c['editHasSvg'] == true, 'edit face carries the edit icon');
 
   // 5. disarm Edit (verb toggles).
-  await js(tab, SR + ".querySelector('#dockbtn').click()");
+  await js(tab, "$sr.querySelector('#dockbtn').click()");
   await Future.delayed(const Duration(milliseconds: 350));
-  await js(tab, SR + ".querySelector('[data-verb=edit]').click()");
+  await js(tab, "$sr.querySelector('[data-verb=edit]').click()");
   await Future.delayed(const Duration(milliseconds: 450));
   c = await card(tab);
   check(c['mode'] == '' && c['restVis'] == true && c['editVis'] == false,
       'disarm returns the arxa rest face');
 
   // 6. arm Comment, then toggle off.
-  await js(tab, SR + ".querySelector('#dockbtn').click()");
+  await js(tab, "$sr.querySelector('#dockbtn').click()");
   await Future.delayed(const Duration(milliseconds: 350));
-  await js(tab, SR + ".querySelector('[data-verb=comment]').click()");
+  await js(tab, "$sr.querySelector('[data-verb=comment]').click()");
   await Future.delayed(const Duration(milliseconds: 450));
   c = await card(tab);
-  stdout.writeln('comment armed: ' + jsonEncode(c));
+  stdout.writeln('comment armed: ${jsonEncode(c)}');
   check(c['mode'] == 'comment' && c['commentVis'] == true && c['restVis'] == false,
       'Comment tap flips the card to the comment face');
   check(c['commentHasSvg'] == true, 'comment face carries the comment icon');
-  await js(tab, SR + ".querySelector('#dockbtn').click()");
+  await js(tab, "$sr.querySelector('#dockbtn').click()");
   await Future.delayed(const Duration(milliseconds: 350));
-  await js(tab, SR + ".querySelector('[data-verb=comment]').click()");
+  await js(tab, "$sr.querySelector('[data-verb=comment]').click()");
   await Future.delayed(const Duration(milliseconds: 450));
   c = await card(tab);
   check(c['mode'] == '' && c['restVis'] == true,
@@ -254,8 +250,7 @@ Future<void> main() async {
 
   // Evidence: rest-face card, clipped at 2x for OCR-able pixels.
   Future<List<int>> clipCard() async {
-    final rect = await js(tab, '''
-      (() => { const r = ''' + SR + '''.getElementById('dockbtn').getBoundingClientRect();
+    final rect = await js(tab, '''      (() => { const r = $sr.getElementById('dockbtn').getBoundingClientRect();
         return JSON.stringify({x: r.x, y: r.y, w: r.width, h: r.height}); })()
     ''');
     final rc = jsonDecode(rect as String) as Map;
@@ -274,32 +269,34 @@ Future<void> main() async {
   final evDir = '/Volumes/developer_ssd/Developer/totem_labs/'
       'clients/architect-gallore/design/suczka-studio/evidence/dial-card';
   Directory(evDir).createSync(recursive: true);
-  File(evDir + '/arxa-card-rest-2x.png').writeAsBytesSync(await clipCard());
+  File('$evDir/arxa-card-rest-2x.png').writeAsBytesSync(await clipCard());
   // full page with the branded card in the corner
   final full = await tab.screenshot();
-  File(evDir + '/page-with-card-1280.png').writeAsBytesSync(full);
-  stdout.writeln('evidence: ' + evDir);
+  File('$evDir/page-with-card-1280.png').writeAsBytesSync(full);
+  stdout.writeln('evidence: $evDir');
 
   // 8. park law at the new size: sheet open parks the card off-screen.
-  await js(tab, SR + ".querySelector('#dockbtn').click()");
+  await js(tab, "$sr.querySelector('#dockbtn').click()");
   await Future.delayed(const Duration(milliseconds: 350));
-  await js(tab, SR + ".querySelector('[data-verb=studio]').click()");
+  await js(tab, "$sr.querySelector('[data-verb=studio]').click()");
   await Future.delayed(const Duration(milliseconds: 900));
-  final parked = await js(tab, '''
-    (() => { const r = ''' + SR + '''.getElementById('dockbtn').getBoundingClientRect();
+  final parked = await js(tab, '''    (() => { const r = $sr.getElementById('dockbtn').getBoundingClientRect();
       return r.left >= innerWidth || r.top >= innerHeight; })()
   ''') == true;
   check(parked, 'sheet open parks the square card fully off-screen');
-  await js(tab, SR + ".getElementById('tclose').click()");
+  await js(tab, "$sr.getElementById('tclose').click()");
   final back = await poll(tab,
-      "getComputedStyle(" + SR + ".getElementById('dockbtn')).visibility === 'visible'",
+      "getComputedStyle($sr.getElementById('dockbtn')).visibility === 'visible'",
       const Duration(seconds: 4));
   check(back, 'sheet close springs the card back in');
 
-  stdout.writeln('console errors: ' + tab.consoleErrors.length.toString() +
-      '; page errors: ' + tab.pageErrors.length.toString());
-  tab.consoleErrors.forEach((e) => stdout.writeln('  console: ' + e));
-  tab.pageErrors.forEach((e) => stdout.writeln('  page: ' + e));
+  stdout.writeln('console errors: ${tab.consoleErrors.length}; page errors: ${tab.pageErrors.length}');
+  for (var e in tab.consoleErrors) {
+    stdout.writeln('  console: $e');
+  }
+  for (var e in tab.pageErrors) {
+    stdout.writeln('  page: $e');
+  }
   if (tab.consoleErrors.isNotEmpty || tab.pageErrors.isNotEmpty) fails++;
   await browser.close();
   stdout.writeln(fails == 0 ? '\nPROBE VERDICT: PASS' : '\nPROBE VERDICT: FAIL');

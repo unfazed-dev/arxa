@@ -42,7 +42,7 @@ import 'dart:io';
 import 'package:appboxd/cdp.dart';
 
 Future<dynamic> js(CdpSession tab, String e) => tab.evaluate(e);
-const SR = "document.getElementById('arxa-dial-host').shadowRoot";
+const sr = "document.getElementById('arxa-dial-host').shadowRoot";
 const dialUrl = 'http://127.0.0.1:4319/';
 const guiUrl = 'http://arxa.studio.localhost:7891/';
 
@@ -66,7 +66,7 @@ Future<bool> poll(CdpSession tab, String expr, Duration limit) async {
 Future<String?> httpGet(String path) async {
   final client = HttpClient();
   try {
-    final req = await client.getUrl(Uri.parse('http://127.0.0.1:4319' + path));
+    final req = await client.getUrl(Uri.parse('http://127.0.0.1:4319$path'));
     final res = await req.close();
     return await res.transform(utf8.decoder).join();
   } finally {
@@ -81,7 +81,7 @@ Future<Map?> httpCall(String method, String path, Map? body) async {
   final client = HttpClient();
   try {
     final req =
-        await client.openUrl(method, Uri.parse('http://127.0.0.1:4319' + path));
+        await client.openUrl(method, Uri.parse('http://127.0.0.1:4319$path'));
     if (body != null) {
       req.headers.contentType =
           ContentType.parse('application/json; charset=utf-8');
@@ -96,9 +96,8 @@ Future<Map?> httpCall(String method, String path, Map? body) async {
 }
 
 // The floating card, tab-law view.
-const CARDST = '''
-  JSON.stringify((() => {
-    const root = ''' + SR + ''';
+const cardSt = '''  JSON.stringify((() => {
+    const root = $sr;
     const card = root.getElementById('card');
     const tabs = [...card.querySelectorAll('#chead .tab')]
       .map((b) => ({ id: b.getAttribute('data-tab'), on: b.classList.contains('on'),
@@ -123,7 +122,7 @@ const CARDST = '''
 ''';
 
 Future<Map> cardst(CdpSession tab) async =>
-    jsonDecode((await js(tab, CARDST)) as String) as Map;
+    jsonDecode((await js(tab, cardSt)) as String) as Map;
 
 Future<void> clickAt(CdpSession tab, num x, num y) async {
   await tab.send('Input.dispatchMouseEvent',
@@ -171,11 +170,11 @@ Future<void> deselectAndRearm(CdpSession tab) async {
     await Future.delayed(const Duration(milliseconds: 80));
   }
   await poll(tab,
-      "getComputedStyle(" + SR + ".getElementById('dockbtn')).visibility === 'visible'",
+      "getComputedStyle($sr.getElementById('dockbtn')).visibility === 'visible'",
       const Duration(seconds: 6));
-  await js(tab, SR + ".querySelector('#dockbtn').click()");
+  await js(tab, "$sr.querySelector('#dockbtn').click()");
   await Future.delayed(const Duration(milliseconds: 400));
-  await js(tab, SR + ".querySelector('[data-verb=edit]').click()");
+  await js(tab, "$sr.querySelector('[data-verb=edit]').click()");
   await Future.delayed(const Duration(milliseconds: 400));
 }
 
@@ -184,9 +183,8 @@ Future<void> deselectAndRearm(CdpSession tab) async {
 // first leaf passing the gate. ALWAYS re-queries (the page's split-text
 // animation restructures the DOM — rects and hit regions move).
 Future<Map?> pickLeaf(CdpSession tab, int skip, [String? excludeId]) async {
-  final raw = await js(tab, '''
-    (() => {
-      const exclude = ''' + (excludeId == null ? 'null' : "'" + excludeId + "'") + ''';
+  final raw = await js(tab, '''    (() => {
+      const exclude = ${excludeId == null ? 'null' : "'$excludeId'"};
       const els = [...document.querySelectorAll('[data-arxa-id]')];
       const leaves = els.filter((el) => {
         if (exclude && el.getAttribute('data-arxa-id') === exclude) return false;
@@ -196,7 +194,7 @@ Future<Map?> pickLeaf(CdpSession tab, int skip, [String? excludeId]) async {
         return r.width > 40 && r.height > 12 && r.x >= 0 && r.y >= 0 &&
           r.x + r.width <= innerWidth && r.y + r.height <= innerHeight;
       });
-      for (let i = ''' + skip.toString() + '''; i < leaves.length; i++) {
+      for (let i = $skip; i < leaves.length; i++) {
         const el = leaves[i];
         const r = el.getBoundingClientRect();
         const cx = r.x + r.width / 2, cy = r.y + r.height / 2;
@@ -220,9 +218,8 @@ Future<Map?> pickLeaf(CdpSession tab, int skip, [String? excludeId]) async {
 // Fresh hit-point for an element by id (post-split DOM — never reuse a
 // stale rect across animation restructuring).
 Future<Map?> hitFor(CdpSession tab, String id) async {
-  final raw = await js(tab, '''
-    (() => {
-      const el = document.querySelector('[data-arxa-id="''' + id + '''"]');
+  final raw = await js(tab, '''    (() => {
+      const el = document.querySelector('[data-arxa-id="$id"]');
       if (!el) return 'null';
       const r = el.getBoundingClientRect();
       if (r.width < 2 || r.height < 2) return 'null';
@@ -257,11 +254,11 @@ Future<void> main() async {
     await Future.delayed(const Duration(milliseconds: 80));
   }
   await poll(tab,
-      "getComputedStyle(" + SR + ".getElementById('dockbtn')).visibility === 'visible'",
+      "getComputedStyle($sr.getElementById('dockbtn')).visibility === 'visible'",
       const Duration(seconds: 4));
-  await js(tab, SR + ".querySelector('#dockbtn').click()");
+  await js(tab, "$sr.querySelector('#dockbtn').click()");
   await Future.delayed(const Duration(milliseconds: 400));
-  await js(tab, SR + ".querySelector('[data-verb=edit]').click()");
+  await js(tab, "$sr.querySelector('[data-verb=edit]').click()");
   await Future.delayed(const Duration(milliseconds: 300));
 
   await Future.delayed(const Duration(milliseconds: 2500)); // split-text settle
@@ -271,7 +268,7 @@ Future<void> main() async {
     await browser.close();
     exit(1);
   }
-  stdout.writeln('element A: ' + (elA['id'] as String));
+  stdout.writeln('element A: ${elA['id'] as String}');
   await clickAt(tab, elA['x'], elA['y']);
   await Future.delayed(const Duration(milliseconds: 500));
 
@@ -281,38 +278,35 @@ Future<void> main() async {
   final tabs = (st['tabs'] as List).cast<Map>();
   check(tabs.length == 2 &&
       tabs[0]['id'] == 'customise' && tabs[1]['id'] == 'arxa',
-      'header is the tab bar: ' +
-          tabs.map((t) => t['text']).join('|'));
+      'header is the tab bar: ${tabs.map((t) => t['text']).join('|')}');
   check(st['sparkle'] == false, 'the ✨ arxa header button retired');
   check(st['hasIdrow'] == true && st['idrowHasLabel'] == true,
       'identity row carries label + chip');
 
   // 2. Customise default; footer holds Apply CSS.
-  stdout.writeln('customise body: ' + (st['body'] as String));
+  stdout.writeln('customise body: ${st['body'] as String}');
   check(tabs.isNotEmpty && tabs[0]['on'] == true, 'Customise is the default tab');
   check((st['body'] as String).contains('Facets'),
       'customise pane shows the facets');
   check((st['foot'] as List).contains('Apply CSS'),
-      'footer holds Apply CSS: ' + (st['foot'] as List).join('|'));
+      'footer holds Apply CSS: ${(st['foot'] as List).join('|')}');
 
   // 3. Arxa tab: unsent state; viewing sends NOTHING.
-  await js(tab, SR + ".querySelector('#chead .tab[data-tab=arxa]').click()");
+  await js(tab, "$sr.querySelector('#chead .tab[data-tab=arxa]').click()");
   await Future.delayed(const Duration(milliseconds: 300));
   st = await cardst(tab);
-  stdout.writeln('arxa body: ' + (st['body'] as String));
+  stdout.writeln('arxa body: ${st['body'] as String}');
   check((st['body'] as String).contains('Send this element'),
       'Arxa unsent state explains the send');
   check((st['foot'] as List).contains('Send to arxa studio'),
-      'unsent footer holds Send: ' + (st['foot'] as List).join('|'));
+      'unsent footer holds Send: ${(st['foot'] as List).join('|')}');
 
   // 4. Send: pane shows the real id; footer switches; server has a PNG.
-  await js(tab, '''
-    (() => { const b = [...''' + SR + '''.querySelectorAll('#cfoot button')]
+  await js(tab, '''    (() => { const b = [...$sr.querySelectorAll('#cfoot button')]
       .find((x) => (x.textContent || '').trim() === 'Send to arxa studio');
       if (b) b.click(); return !!b; })()
   ''');
-  final sent = await poll(tab, '''
-    (() => { const m = (''' + SR + '''.querySelector('.tabpane.on .arxaid') || {}).textContent || '';
+  final sent = await poll(tab, '''    (() => { const m = ($sr.querySelector('.tabpane.on .arxaid') || {}).textContent || '';
       return m.indexOf('design selection s') >= 0; })()
   ''', const Duration(seconds: 10));
   check(sent, 'send flips the pane to the sent state with the real id');
@@ -320,15 +314,14 @@ Future<void> main() async {
   check((st['foot'] as List).contains('→ composer') &&
       (st['foot'] as List).contains('copy line') &&
       (st['foot'] as List).contains('send again'),
-      'sent footer: ' + (st['foot'] as List).join('|'));
-  final sentId = await js(tab, '''
-    (''' + SR + '''.querySelector('.tabpane.on .arxaid') || {}).textContent
+      'sent footer: ${(st['foot'] as List).join('|')}');
+  final sentId = await js(tab, '''    ($sr.querySelector('.tabpane.on .arxaid') || {}).textContent
       .replace(/^.*design selection\\s*/, '').trim()
   ''');
   final entry = selIdFrom(sentId);
   var pngLen = 0;
   if (entry != null) {
-    final body = await httpGet('/__dial/selection/' + entry);
+    final body = await httpGet('/__dial/selection/$entry');
     if (body != null) {
       final m = jsonDecode(body) as Map;
       final png = m['png'];
@@ -336,17 +329,16 @@ Future<void> main() async {
     }
   }
   check(pngLen > 100,
-      'server entry for ' + (entry ?? '?') + ' carries a real PNG (' +
-          pngLen.toString() + ' chars)');
+      'server entry for ${entry ?? '?'} carries a real PNG ($pngLen chars)');
   check((st['body'] as String).contains('snapshot captured'),
       'sent pane shows the snapshot line');
 
   // 5. tab memory: close + reopen SAME element -> Arxa restored.
-  await js(tab, SR + ".querySelector('#chead .tab[data-tab=customise]').click()");
+  await js(tab, "$sr.querySelector('#chead .tab[data-tab=customise]').click()");
   await Future.delayed(const Duration(milliseconds: 200));
-  await js(tab, SR + ".querySelector('#chead .tab[data-tab=arxa]').click()");
+  await js(tab, "$sr.querySelector('#chead .tab[data-tab=arxa]').click()");
   await Future.delayed(const Duration(milliseconds: 200));
-  await js(tab, SR + ".querySelector('#chead .cclose').click()");
+  await js(tab, "$sr.querySelector('#chead .cclose').click()");
   await Future.delayed(const Duration(milliseconds: 300));
   final again = await hitFor(tab, elA['id'] as String);
   if (again == null) {
@@ -359,11 +351,10 @@ Future<void> main() async {
     // The reopen MUST select the same element — the idline is the proof
     // (a different element means the hit region shifted, not memory).
     final idlineNow = await js(tab,
-        "(" + SR + ".querySelector('#cidrow .idline') || {}).textContent || ''");
+        "($sr.querySelector('#cidrow .idline') || {}).textContent || ''");
     check(t2.length == 2 && t2[1]['on'] == true &&
         (idlineNow as String).contains(elA['id'] as String),
-        'same element restores the Arxa tab after close/reopen (idline: ' +
-            (idlineNow as String) + ')');
+        'same element restores the Arxa tab after close/reopen (idline: ${idlineNow as String})');
   }
 
   // 5b. a DIFFERENT element starts on Customise (no cross-element memory).
@@ -371,7 +362,7 @@ Future<void> main() async {
   // for living" splits into two e8 leaves), so exclude A's id outright.
   final elB = await pickLeaf(tab, 0, elA['id'] as String);
   if (elB != null) {
-    stdout.writeln('element B: ' + (elB['id'] as String) + ' @' + elB['x'].toString() + ',' + elB['y'].toString());
+    stdout.writeln('element B: ${elB['id'] as String} @${elB['x']},${elB['y']}');
     // one-focus law (2026-08-26): A still holds the focus — a direct
     // click on B is absorbed. The beat walks the law's door instead:
     // deselect fully, re-arm, then pick.
@@ -381,10 +372,8 @@ Future<void> main() async {
     st = await cardst(tab);
     final t3 = (st['tabs'] as List).cast<Map>();
     final bline = await js(tab,
-        "(" + SR + ".querySelector('#cidrow .idline') || {}).textContent || '(no idline)'");
-    stdout.writeln('B card: open=' + st['open'].toString() +
-        ' tabs=' + t3.map((t) => t['id'].toString() + (t['on'] == true ? '*' : '')).join(',') +
-        ' idline=' + (bline as String));
+        "($sr.querySelector('#cidrow .idline') || {}).textContent || '(no idline)'");
+    stdout.writeln('B card: open=${st['open']} tabs=${t3.map((t) => t['id'].toString() + (t['on'] == true ? '*' : '')).join(',')} idline=${bline as String}');
     check(t3.length == 2 && t3[0]['on'] == true &&
         !(bline as String).contains(elA['id'] as String),
         'a different element starts on Customise');
@@ -394,9 +383,9 @@ Future<void> main() async {
 
   // 6. a tab click never drags the card.
   final before = await cardst(tab);
-  await js(tab, SR + ".querySelector('#chead .tab[data-tab=arxa]').click()");
+  await js(tab, "$sr.querySelector('#chead .tab[data-tab=arxa]').click()");
   await Future.delayed(const Duration(milliseconds: 200));
-  await js(tab, SR + ".querySelector('#chead .tab[data-tab=customise]').click()");
+  await js(tab, "$sr.querySelector('#chead .tab[data-tab=customise]').click()");
   await Future.delayed(const Duration(milliseconds: 200));
   final after = await cardst(tab);
   check(after['left'] == before['left'] && after['top'] == before['top'],
@@ -413,7 +402,7 @@ Future<void> main() async {
     await clickAt(tab, back['x'], back['y']);
   }
   await Future.delayed(const Duration(milliseconds: 500));
-  await js(tab, SR + ".querySelector('#chead .tab[data-tab=arxa]').click()");
+  await js(tab, "$sr.querySelector('#chead .tab[data-tab=arxa]').click()");
   await Future.delayed(const Duration(milliseconds: 300));
 
   // 7. → composer: island asks, studio inserts (panel dock CLOSED),
@@ -432,8 +421,7 @@ Future<void> main() async {
         'height:32px;z-index:2147483000';
       document.body.prepend(d); return true; })()
   ''');
-  await js(tab, '''
-    (() => { const b = [...''' + SR + '''.querySelectorAll('#cfoot button')]
+  await js(tab, '''    (() => { const b = [...$sr.querySelectorAll('#cfoot button')]
       .find((x) => (x.textContent || '').trim() === '→ composer');
       if (b) b.click(); return !!b; })()
   ''');
@@ -456,8 +444,7 @@ Future<void> main() async {
   check((rail as num? ?? 0) >= 1, 'snapshot attached in the composer image rail');
   final chipOk = await js(gui, "!!document.getElementById('arxa-compose-chip')");
   check(chipOk == true, 'destination confirmation chip flashed (tab B)');
-  final ackOk = await poll(tab, '''
-    (() => { const s = (''' + SR + '''.querySelector('.tabpane.on .arxastatus') || {}).textContent || '';
+  final ackOk = await poll(tab, '''    (() => { const s = ($sr.querySelector('.tabpane.on .arxastatus') || {}).textContent || '';
       return s.indexOf('inserted into the composer') >= 0; })()
   ''', const Duration(seconds: 6));
   check(ackOk, 'the ack loop flips the Arxa tab to a VERIFIED ✓');
@@ -466,8 +453,7 @@ Future<void> main() async {
   //     CONSTANT size — min(440px, 62vh) tall — no matter which tab or
   //     how much content; the body alone scrolls inside it.
   Future<Map> cardDims() async {
-    final raw = await js(tab, '''
-      (() => { const c = ''' + SR + '''.getElementById('card');
+    final raw = await js(tab, '''      (() => { const c = $sr.getElementById('card');
         const b = c.querySelector('.cbody');
         return JSON.stringify({ h: Math.round(c.getBoundingClientRect().height),
           expect: Math.min(440, Math.round(window.innerHeight * 0.62)),
@@ -477,21 +463,19 @@ Future<void> main() async {
   }
   final dmA = await cardDims();
   check(dmA['h'] == dmA['expect'],
-      'card height is FIXED at min(440px,62vh) on the Arxa tab (got ' +
-          dmA['h'].toString() + ', want ' + dmA['expect'].toString() + ')');
-  await js(tab, SR + ".querySelector('#chead .tab[data-tab=customise]').click()");
+      'card height is FIXED at min(440px,62vh) on the Arxa tab (got ${dmA['h']}, want ${dmA['expect']})');
+  await js(tab, "$sr.querySelector('#chead .tab[data-tab=customise]').click()");
   await Future.delayed(const Duration(milliseconds: 300));
   final dmC = await cardDims();
   check(dmC['h'] == dmA['h'], 'card height is constant across tabs');
   check(dmC['scrolls'] == true,
       'the card body scrolls (Customise content exceeds the fixed body)');
-  await js(tab, SR + ".querySelector('#chead .tab[data-tab=arxa]').click()");
+  await js(tab, "$sr.querySelector('#chead .tab[data-tab=arxa]').click()");
   await Future.delayed(const Duration(milliseconds: 300));
 
   // Evidence: the Arxa tab sent state at 2x, plus the studio composer.
   Future<List<int>> clipCard() async {
-    final rect = await js(tab, '''
-      (() => { const r = ''' + SR + '''.getElementById('card').getBoundingClientRect();
+    final rect = await js(tab, '''      (() => { const r = $sr.getElementById('card').getBoundingClientRect();
         return JSON.stringify({x: r.x, y: r.y, w: r.width, h: r.height}); })()
     ''');
     final rc = jsonDecode(rect as String) as Map;
@@ -510,9 +494,9 @@ Future<void> main() async {
   final evDir = '/Volumes/developer_ssd/Developer/totem_labs/'
       'clients/architect-gallore/design/suczka-studio/evidence/dial-card';
   Directory(evDir).createSync(recursive: true);
-  File(evDir + '/arxa-tab-sent-2x.png').writeAsBytesSync(await clipCard());
-  File(evDir + '/arxa-tab-studio-insert-1280.png').writeAsBytesSync(await gui.screenshot());
-  stdout.writeln('evidence: ' + evDir);
+  File('$evDir/arxa-tab-sent-2x.png').writeAsBytesSync(await clipCard());
+  File('$evDir/arxa-tab-studio-insert-1280.png').writeAsBytesSync(await gui.screenshot());
+  stdout.writeln('evidence: $evDir');
 
   // 7c. Legacy bridge (version-skew law): an island bundle older than
   //     the tabbed card — a stale design tab — asks by POSTing
@@ -548,10 +532,8 @@ Future<void> main() async {
   //     ✓ is true. The strict assertion is therefore on THIS page's
   //     chip (never a fake ✓ from the page that inserted nothing) plus
   //     the card reaching SOME honest terminal state.
-  await js(gui, "(() => { [...document.querySelectorAll('textarea')]" +
-      '.forEach((t) => t.remove()); return true; })()');
-  await js(tab, '''
-    (() => { const b = [...''' + SR + '''.querySelectorAll('#cfoot button')]
+  await js(gui, "(() => { [...document.querySelectorAll('textarea')]" '.forEach((t) => t.remove()); return true; })()');
+  await js(tab, '''    (() => { const b = [...$sr.querySelectorAll('#cfoot button')]
       .find((x) => (x.textContent || '').trim() === '→ composer');
       if (b) b.click(); return !!b; })()
   ''');
@@ -561,8 +543,7 @@ Future<void> main() async {
   ''', const Duration(seconds: 8));
   check(chipWarn,
       'no composer in that studio page → the HONEST warning chip, never a fake ✓ chip');
-  final term = await poll(tab, '''
-    (() => { const s = (''' + SR + '''.querySelector('.tabpane.on .arxastatus') || {}).textContent || '';
+  final term = await poll(tab, '''    (() => { const s = ($sr.querySelector('.tabpane.on .arxastatus') || {}).textContent || '';
       return s.indexOf('inserted into the composer') >= 0 ||
         s.indexOf('no open composer') >= 0; })()
   ''', const Duration(seconds: 10));
@@ -576,18 +557,17 @@ Future<void> main() async {
   //     author is mid-edit in the CSS escape hatch may NOT wipe their
   //     unapplied text or steal focus (skip that beat); the next frame
   //     after blur catches the card up.
-  await js(tab, SR + ".querySelector('#chead .tab[data-tab=customise]').click()");
+  await js(tab, "$sr.querySelector('#chead .tab[data-tab=customise]').click()");
   await Future.delayed(const Duration(milliseconds: 300));
   Future<String?> swatchOf() async {
-    return await js(tab, '''
-      (() => { const row = [...''' + SR + '''.querySelectorAll('#card .facet')]
+    return await js(tab, '''      (() => { const row = [...$sr.querySelectorAll('#card .facet')]
           .find((r) => (r.querySelector('label') || {textContent:''}).textContent === 'background');
         const sw = row && row.querySelector('input[type="color"]');
         return sw ? sw.value : null; })()
     ''') as String?;
   }
   final keyRaw = await js(tab,
-      "(((" + SR + ".querySelector('#cidrow .idline') || {textContent:''}).textContent || '').split(' → ').pop())");
+      "((($sr.querySelector('#cidrow .idline') || {textContent:''}).textContent || '').split(' → ').pop())");
   final dkey = (keyRaw as String).trim();
   Map? draftDoc;
   Future<bool> patchBackground(String cssColor) async {
@@ -608,29 +588,26 @@ Future<void> main() async {
   check(await patchBackground('rgb(192, 57, 43)'),
       'external draft patch accepted (agent path)');
   // diagnostics for the beat: did the pane re-render at all?
-  await js(tab, '''
-    (() => { window.__rc = 1; window.__rerenders = 0;
+  await js(tab, '''    (() => { window.__rc = 1; window.__rerenders = 0;
       const mo = new MutationObserver(() => { window.__rerenders++; });
-      mo.observe(''' + SR + '''.querySelector('.cbody'), { childList: true, subtree: true });
+      mo.observe($sr.querySelector('.cbody'), { childList: true, subtree: true });
       return true; })()
   ''');
-  var sw = await poll(tab, '''
-    (() => { const row = [...''' + SR + '''.querySelectorAll('#card .facet')]
+  var sw = await poll(tab, '''    (() => { const row = [...$sr.querySelectorAll('#card .facet')]
         .find((r) => (r.querySelector('label') || {textContent:''}).textContent === 'background');
         const sw = row && row.querySelector('input[type="color"]');
         return !!(sw && sw.value === '#c0392b'); })()
   ''', const Duration(seconds: 8));
   check(sw, 'external restyle: the background swatch re-syncs live');
   if (!sw) {
-    final diagInfo = await js(tab, '''
-      (() => { const row = [...''' + SR + '''.querySelectorAll('#card .facet')]
+    final diagInfo = await js(tab, '''      (() => { const row = [...$sr.querySelectorAll('#card .facet')]
           .find((r) => (r.querySelector('label') || {textContent:''}).textContent === 'background');
         const swx = row && row.querySelector('input[type="color"]');
         return JSON.stringify({ canary: window.__rc === 1 ? 'no-reload' : 'RELOADED',
           rerenders: window.__rerenders, swatch: swx ? swx.value : 'no-row',
-          cardOpen: ''' + SR + '''.getElementById('card').classList.contains('open') }); })()
+          cardOpen: $sr.getElementById('card').classList.contains('open') }); })()
     ''');
-    stdout.writeln('NOTE  swatch FAIL diagnostics: ' + (diagInfo ?? 'n/a'));
+    stdout.writeln('NOTE  swatch FAIL diagnostics: ${diagInfo ?? 'n/a'}');
   }
 
   // mid-edit beat: focus the CSS ESCAPE HATCH (the textarea whose
@@ -638,17 +615,14 @@ Future<void> main() async {
   // textarea in the card — that one is the CONTENT editor and its
   // input listener live-writes the element's text into the draft
   // (a probe typing there corrupts the design's text signature).
-  final CSSTA = "[..." + SR + ".querySelectorAll('#card textarea')]" +
-      ".find((t) => (t.placeholder || '').indexOf('prop:') === 0)";
-  await js(tab, '''
-    (() => { const t = ''' + CSSTA + ''';
+  final cssTa = "[...$sr.querySelectorAll('#card textarea')].find((t) => (t.placeholder || '').indexOf('prop:') === 0)";
+  await js(tab, '''    (() => { const t = $cssTa;
       t.focus(); t.value = 'opacity: .9;'; return !!t; })()
   ''');
   check(await patchBackground('rgb(41, 128, 185)'),
       'second external patch accepted while editing');
   await Future.delayed(const Duration(milliseconds: 1200));
-  final guard = await js(tab, '''
-    (() => { const t = ''' + CSSTA + ''';
+  final guard = await js(tab, '''    (() => { const t = $cssTa;
       const ae = document.getElementById('arxa-dial-host').shadowRoot.activeElement;
       return !!(t && (t.value || '').indexOf('opacity: .9;') >= 0 &&
         ae && ae === t); })()
@@ -656,21 +630,19 @@ Future<void> main() async {
   check(guard == true,
       'mid-edit: unapplied CSS text AND focus survive the external frame');
   if (guard != true) {
-    final gdiag = await js(tab, '''
-      (() => { const t = ''' + CSSTA + ''';
+    final gdiag = await js(tab, '''      (() => { const t = $cssTa;
         const ae = document.getElementById('arxa-dial-host').shadowRoot.activeElement;
         return JSON.stringify({ text: t ? t.value : null,
           aeTag: ae ? ae.tagName : null }); })()
     ''');
-    stdout.writeln('NOTE  guard FAIL diagnostics: ' + (gdiag ?? 'n/a'));
+    stdout.writeln('NOTE  guard FAIL diagnostics: ${gdiag ?? 'n/a'}');
   }
 
   // catch-up beat: blur, one more external frame, the card follows
   await js(tab, "document.activeElement && document.activeElement.blur()");
   check(await patchBackground('rgb(39, 174, 96)'),
       'third external patch accepted after blur');
-  sw = await poll(tab, '''
-    (() => { const row = [...''' + SR + '''.querySelectorAll('#card .facet')]
+  sw = await poll(tab, '''    (() => { const row = [...$sr.querySelectorAll('#card .facet')]
         .find((r) => (r.querySelector('label') || {textContent:''}).textContent === 'background');
         const sw = row && row.querySelector('input[type="color"]');
         return !!(sw && sw.value === '#27ae60'); })()
@@ -687,10 +659,8 @@ Future<void> main() async {
   //     catch-up half of the reactivity law: a frame skipped because
   //     the author is focused in the card is made up when focus
   //     LEAVES — a suppressed beat may not be dropped forever.
-  final BGROW = "[..." + SR + ".querySelectorAll('#card .facet')]" +
-      ".find((r) => (r.querySelector('label') || {textContent:''}).textContent === 'background')";
-  await js(tab, '''
-    (() => { const row = ''' + BGROW + ''';
+  final bgRow = "[...$sr.querySelectorAll('#card .facet')].find((r) => (r.querySelector('label') || {textContent:''}).textContent === 'background')";
+  await js(tab, '''    (() => { const row = $bgRow;
       const f = row && row.querySelector('input[type="text"]');
       if (!f) return false;
       f.focus(); f.value = '#18cd45';
@@ -698,11 +668,10 @@ Future<void> main() async {
       return true; })()
   ''');
   final kJs = jsonEncode(dkey);
-  var chipSync = await poll(tab, '''
-    (() => { const row = ''' + BGROW + ''';
+  var chipSync = await poll(tab, '''    (() => { const row = $bgRow;
       const sw = row && row.querySelector('input[type="color"]');
       const f = row && row.querySelector('input[type="text"]');
-      const k = ''' + kJs + ''';
+      const k = $kJs;
       const el = k.indexOf('el:') === 0
         ? document.querySelector('[data-el="' + k.slice(3) + '"]')
         : document.querySelector('[data-arxa-id="' + k + '"]');
@@ -714,23 +683,21 @@ Future<void> main() async {
   check(chipSync,
       'typed green: page turns, field keeps the hex AND focus, the CHIP follows');
   if (!chipSync) {
-    final d7g = await js(tab, '''
-      (() => { const row = ''' + BGROW + ''';
+    final d7g = await js(tab, '''      (() => { const row = $bgRow;
         const sw = row && row.querySelector('input[type="color"]');
         const f = row && row.querySelector('input[type="text"]');
         const ae = document.getElementById('arxa-dial-host').shadowRoot.activeElement;
         return JSON.stringify({ field: f ? f.value : null,
           chip: sw ? sw.value : null, focus: ae ? ae.type : null }); })()
     ''');
-    stdout.writeln('NOTE  chip-sync FAIL diagnostics: ' + (d7g ?? 'n/a'));
+    stdout.writeln('NOTE  chip-sync FAIL diagnostics: ${d7g ?? 'n/a'}');
   }
 
   // catch-up half: an external frame arriving while the author is in
   // the hex field is skipped (the guard); BLUR must make it up.
   await patchBackground('rgb(142, 68, 173)');
   await Future.delayed(const Duration(milliseconds: 1200));
-  final guardField = await js(tab, '''
-    (() => { const row = ''' + BGROW + ''';
+  final guardField = await js(tab, '''    (() => { const row = $bgRow;
       const f = row && row.querySelector('input[type="text"]');
       return !!(f && f.value === '#18cd45'); })()
   ''');
@@ -740,8 +707,7 @@ Future<void> main() async {
     (() => { const s = document.getElementById('arxa-dial-host').shadowRoot;
       if (s.activeElement) s.activeElement.blur(); return true; })()
   ''');
-  final caughtUp = await poll(tab, '''
-    (() => { const row = ''' + BGROW + ''';
+  final caughtUp = await poll(tab, '''    (() => { const row = $bgRow;
       const sw = row && row.querySelector('input[type="color"]');
       return !!(sw && sw.value === '#8e44ad'); })()
   ''', const Duration(seconds: 8));
@@ -758,19 +724,17 @@ Future<void> main() async {
   //     → (0,0,0) closed.) The input[type=color] contract (MDN): an
   //     invalid or empty value renders as #000000 — so feeding it an
   //     unparsed value is indistinguishable from black.
-  await js(tab, '''
-    (() => { const row = ''' + BGROW + ''';
+  await js(tab, '''    (() => { const row = $bgRow;
       const sw = row && row.querySelector('input[type="color"]');
       if (!sw) return false;
       sw.focus(); sw.value = '#ff0000';
       sw.dispatchEvent(new Event('input', { bubbles: true }));
       return true; })()
   ''');
-  var pickLive = await poll(tab, '''
-    (() => { const row = ''' + BGROW + ''';
+  var pickLive = await poll(tab, '''    (() => { const row = $bgRow;
       const sw = row && row.querySelector('input[type="color"]');
       const f = row && row.querySelector('input[type="text"]');
-      const k = ''' + kJs + ''';
+      const k = $kJs;
       const el = k.indexOf('el:') === 0
         ? document.querySelector('[data-el="' + k.slice(3) + '"]')
         : document.querySelector('[data-arxa-id="' + k + '"]');
@@ -785,8 +749,7 @@ Future<void> main() async {
   // ~1.6s later → refreshOpenCard re-renders the facets. THAT re-render
   // is where the operator's chip went black — bare blur alone re-renders
   // nothing (no pending beat), so the beat must ride the save echo.
-  await js(tab, '''
-    (() => { const row = ''' + BGROW + ''';
+  await js(tab, '''    (() => { const row = $bgRow;
       const sw = row && row.querySelector('input[type="color"]');
       if (sw) sw.blur(); return true; })()
   ''');
@@ -806,22 +769,20 @@ Future<void> main() async {
   // let the deferred recheck fire and re-render; the chip must STILL
   // be the picked red afterwards
   await Future.delayed(const Duration(milliseconds: 3500));
-  final pickStays = await poll(tab, '''
-    (() => { const row = ''' + BGROW + ''';
+  final pickStays = await poll(tab, '''    (() => { const row = $bgRow;
       const sw = row && row.querySelector('input[type="color"]');
       return !!(sw && sw.value === '#ff0000'); })()
   ''', const Duration(seconds: 6));
   check(pickStays,
       'picker closed: the chip KEEPS the picked color through the save-echo re-render');
   if (!pickStays) {
-    final d7h = await js(tab, '''
-      (() => { const row = ''' + BGROW + ''';
+    final d7h = await js(tab, '''      (() => { const row = $bgRow;
         const sw = row && row.querySelector('input[type="color"]');
         const f = row && row.querySelector('input[type="text"]');
         return JSON.stringify({ chip: sw ? sw.value : null,
           field: f ? f.value : null }); })()
     ''');
-    stdout.writeln('NOTE  picker-persist FAIL diagnostics: ' + (d7h ?? 'n/a'));
+    stdout.writeln('NOTE  picker-persist FAIL diagnostics: ${d7h ?? 'n/a'}');
   }
   // 7i. The hunt-freeze law (operator, 2026-08-25): in Edit Mode, the
   //     cursor's selection hunting STOPS once an element is selected —
@@ -830,18 +791,16 @@ Future<void> main() async {
   //     hunting resumes. (MDN pointer-events: hover feedback is the
   //     app's own overlay on its own pointermove listener — nothing
   //     platform-side forces it.)
-  final HOVER = SR + ".querySelector('#hover')";
+  final hoverJs = "$sr.querySelector('#hover')";
   Future<String?> hoverState() async {
-    return await js(tab, '''
-      (() => { const hv = ''' + HOVER + ''';
+    return await js(tab, '''      (() => { const hv = $hoverJs;
         if (!hv) return 'no-el';
         const cs = getComputedStyle(hv);
         return cs.display + '|' + ((hv.firstChild || {}).textContent || ''); })()
     ''') as String?;
   }
   // a DIFFERENT visible stamped element to sweep the cursor over
-  final sweepPt = await js(tab, '''
-    (() => { const selKey = ''' + kJs + ''';
+  final sweepPt = await js(tab, '''    (() => { const selKey = $kJs;
       const els = [...document.querySelectorAll('[data-arxa-id]')];
       for (const el of els) {
         const id = el.getAttribute('data-arxa-id');
@@ -869,7 +828,7 @@ Future<void> main() async {
     await Future.delayed(const Duration(milliseconds: 300));
     final st = (await hoverState()) ?? '?';
     check(st.split('|')[0] == 'none',
-        'selected (card closed): cursor sweep does NOT hunt — hover stays hidden (got ' + st + ')');
+        'selected (card closed): cursor sweep does NOT hunt — hover stays hidden (got $st)');
     // deselect fully: second Escape disarms Edit Mode; re-arm it fresh
     await js(tab, "document.dispatchEvent(new KeyboardEvent('keydown', {key:'Escape'}))");
     await Future.delayed(const Duration(milliseconds: 400));
@@ -878,9 +837,9 @@ Future<void> main() async {
           {'type': 'mouseMoved', 'x': 1276 - i, 'y': 796 - i});
       await Future.delayed(const Duration(milliseconds: 80));
     }
-    await js(tab, SR + ".querySelector('#dockbtn').click()");
+    await js(tab, "$sr.querySelector('#dockbtn').click()");
     await Future.delayed(const Duration(milliseconds: 400));
-    await js(tab, SR + ".querySelector('[data-verb=edit]').click()");
+    await js(tab, "$sr.querySelector('[data-verb=edit]').click()");
     await Future.delayed(const Duration(milliseconds: 400));
     await tab.send('Input.dispatchMouseEvent',
         {'type': 'mouseMoved', 'x': sweep!['x'] as num, 'y': sweep!['y'] as num});
@@ -889,7 +848,7 @@ Future<void> main() async {
     final parts2 = st2.split('|');
     check(parts2[0] == 'block' &&
         parts2.length > 1 && parts2[1].trim().isNotEmpty,
-        'deselected + re-armed: hunting resumes (hover labels the swept element, got ' + st2 + ')');
+        'deselected + re-armed: hunting resumes (hover labels the swept element, got $st2)');
   }
 
   // 7j. The track-back law (operator, 2026-08-26): "i need a icon
@@ -902,7 +861,7 @@ Future<void> main() async {
   //     off-body and survives) kills the selected ELEMENT while the
   //     card floats on — the button navigates back to the element's
   //     route and restores the selection, centered.
-  final CGO = SR + ".querySelector('#chead .cgo')";
+  final cgoJs = "$sr.querySelector('#chead .cgo')";
   // ORACLE LAW (learned the hard way): the inline amber outline is
   // CLOBBERED by the hero animator (node styles churn continuously),
   // so beats read the island's own truth — the card's idline KEY —
@@ -911,20 +870,18 @@ Future<void> main() async {
     await clickAt(tab, sweep!['x'] as num, sweep!['y'] as num);
     await Future.delayed(const Duration(milliseconds: 800));
   }
-  final keyRaw2 = await js(tab, '''
-    (() => (((''' + SR + '''.querySelector('#cidrow .idline') ||
+  final keyRaw2 = await js(tab, '''    (() => ((($sr.querySelector('#cidrow .idline') ||
       {textContent:''}).textContent || '').split(' → ').pop()) || null)()
   ''');
   final skey = ((keyRaw2 as String?) ?? '').trim();
   final keyJs = jsonEncode(skey);
-  final cardSel = await poll(tab, '''
-    (() => { const c = ''' + SR + '''.getElementById('card');
+  final cardSel = await poll(tab, '''    (() => { const c = $sr.getElementById('card');
       const t = ((c && c.classList.contains('open')
-        ? ''' + SR + '''.querySelector('#cidrow .idline') : null) || {textContent:''}).textContent || '';
-      return !!(c && c.classList.contains('open') && t && ''' + CGO + '''); })()
+        ? $sr.querySelector('#cidrow .idline') : null) || {textContent:''}).textContent || '';
+      return !!(c && c.classList.contains('open') && t && $cgoJs); })()
   ''', const Duration(seconds: 6));
   check(cardSel,
-      'element selected by a real click; the card carries the track-back button (.cgo) [key ' + skey + ']');
+      'element selected by a real click; the card carries the track-back button (.cgo) [key $skey]');
   if (cardSel && skey.isNotEmpty) {
     // (a) same page: scroll the element off-screen — through the
     // PAGE'S OWN SCROLLER (a Lenis-style lerp owns the wheel here and
@@ -936,8 +893,7 @@ Future<void> main() async {
         'deltaX': 0, 'deltaY': 2500});
       await Future.delayed(const Duration(milliseconds: 220));
     }
-    final awayState = await js(tab, '''
-      (() => { const k = ''' + keyJs + ''';
+    final awayState = await js(tab, '''      (() => { const k = $keyJs;
         const insts = k.indexOf('el:') === 0
           ? document.querySelectorAll('[data-el="' + k.slice(3) + '"]')
           : document.querySelectorAll('[data-arxa-id="' + k + '"]');
@@ -955,12 +911,11 @@ Future<void> main() async {
     check(away != null && away!['off'] == true,
         'same page: the selected element is scrolled OUT of view');
     if (away != null && away!['off'] != true) {
-      stdout.writeln('NOTE  away diag: ' + awayState.toString());
+      stdout.writeln('NOTE  away diag: $awayState');
     }
     if (away != null && away!['off'] == true) {
-      await js(tab, CGO + ".click()");
-      final backIn = await poll(tab, '''
-        (() => { const k = ''' + keyJs + ''';
+      await js(tab, "$cgoJs.click()");
+      final backIn = await poll(tab, '''        (() => { const k = $keyJs;
           const insts = k.indexOf('el:') === 0
             ? document.querySelectorAll('[data-el="' + k.slice(3) + '"]')
             : document.querySelectorAll('[data-arxa-id="' + k + '"]');
@@ -975,9 +930,9 @@ Future<void> main() async {
     // the link) — so navigation means DISARM first (the card closes;
     // the live stash keeps the selection), roam to /about, then come
     // BACK: boot or htmx afterSwap restores the selection, centered.
-    await js(tab, SR + ".querySelector('#dockbtn').click()");
+    await js(tab, "$sr.querySelector('#dockbtn').click()");
     await Future.delayed(const Duration(milliseconds: 400));
-    await js(tab, SR + ".querySelector('[data-verb=edit]').click()"); // disarm
+    await js(tab, "$sr.querySelector('[data-verb=edit]').click()"); // disarm
     await Future.delayed(const Duration(milliseconds: 400));
     await js(tab, '''
       (() => { const link = document.querySelector('a[href="/about"]');
@@ -988,8 +943,7 @@ Future<void> main() async {
     check(onAbout, 'cross-page: disarmed and navigated to /about (the disarm closed the card)');
     if (onAbout) {
       // the stash must NOT have restored anything on the wrong route
-      final quiet = await js(tab, '''
-        (() => { const c = ''' + SR + '''.getElementById('card');
+      final quiet = await js(tab, '''        (() => { const c = $sr.getElementById('card');
           return !!(c && !c.classList.contains('open')); })()
       ''');
       check(quiet == true, 'on the other route nothing chases the author (card stays closed)');
@@ -1005,15 +959,14 @@ Future<void> main() async {
       {
         final deadline = DateTime.now().add(const Duration(seconds: 14));
         while (DateTime.now().isBefore(deadline)) {
-          final stage = await js(tab, '''
-            (() => { if (location.pathname !== '/') return 'path';
+          final stage = await js(tab, '''            (() => { if (location.pathname !== '/') return 'path';
               const hostEl = document.getElementById('arxa-dial-host');
               if (!hostEl || !hostEl.shadowRoot) return 'host';
               const c = hostEl.shadowRoot.getElementById('card');
               if (!c || !c.classList.contains('open')) return 'card';
               const t = ((hostEl.shadowRoot.querySelector('#cidrow .idline') ||
                 {textContent:''}).textContent || '').split(' → ').pop();
-              if (t !== ''' + keyJs + ''') return 'key:' + t;
+              if (t !== $keyJs) return 'key:' + t;
               const insts = t.indexOf('el:') === 0
                 ? document.querySelectorAll('[data-el="' + t.slice(3) + '"]')
                 : document.querySelectorAll('[data-arxa-id="' + t + '"]');
@@ -1028,17 +981,16 @@ Future<void> main() async {
           await Future.delayed(const Duration(milliseconds: 250));
         }
       }
-      if (!restored) stdout.writeln('NOTE  restore poll stuck at: ' + lastStage);
+      if (!restored) stdout.writeln('NOTE  restore poll stuck at: $lastStage');
       check(restored,
           'track-back (cross-page): back home the selection is restored and centered');
       if (!restored) {
-        final rdiag = await js(tab, '''
-          (() => { const hostEl = document.getElementById('arxa-dial-host');
+        final rdiag = await js(tab, '''          (() => { const hostEl = document.getElementById('arxa-dial-host');
             const sr = hostEl ? hostEl.shadowRoot : null;
             const card = sr ? sr.getElementById('card') : null;
             const idl = sr ? ((sr.querySelector('#cidrow .idline') ||
               {textContent:''}).textContent || '') : '';
-            const k = ''' + keyJs + ''';
+            const k = $keyJs;
             const insts = k.indexOf('el:') === 0
               ? document.querySelectorAll('[data-el="' + k.slice(3) + '"]')
               : document.querySelectorAll('[data-arxa-id="' + k + '"]');
@@ -1049,7 +1001,7 @@ Future<void> main() async {
               idline: idl.slice(0, 60), n: insts.length,
               rect: r ? { top: Math.round(r.top), h: Math.round(r.height) } : null }); })()
         ''');
-        stdout.writeln('NOTE  restore diag: ' + (rdiag ?? 'n/a'));
+        stdout.writeln('NOTE  restore diag: ${rdiag ?? 'n/a'}');
       }
     }
   }
@@ -1071,8 +1023,7 @@ Future<void> main() async {
     // outline itself is clobbered by the hero animator — 7j's oracle
     // law). The handles' bounding box marks exactly the selected one.
     Future<Map?> handlesCtr() async {
-      final raw = await js(tab, '''
-        (() => { const hs = [...''' + SR + '''.querySelectorAll('#handles .hnd')];
+      final raw = await js(tab, '''        (() => { const hs = [...$sr.querySelectorAll('#handles .hnd')];
           if (hs.length < 8) return null;
           const xs = hs.map((x) => parseFloat(x.style.left) || 0);
           const ys = hs.map((y) => parseFloat(y.style.top) || 0);
@@ -1088,14 +1039,13 @@ Future<void> main() async {
       }
     }
     Future<String?> curKey() async => ((await js(tab,
-            "(((" + SR + ".querySelector('#cidrow .idline') || {textContent:''}).textContent || '').split(' → ').pop() || '').trim() || null"))
+            "((($sr.querySelector('#cidrow .idline') || {textContent:''}).textContent || '').split(' → ').pop() || '').trim() || null"))
         as String?);
     Future<bool> cardOpen() async => await js(tab,
-            "!!(" + SR + ".getElementById('card') || {classList:{contains:function(){return false;}}}).classList.contains('open')") ==
+            "!!($sr.getElementById('card') || {classList:{contains:function(){return false;}}}).classList.contains('open')") ==
         true;
 
-    final aidRaw = await js(tab, '''
-      (() => { const k = ''' + keyJs + ''';
+    final aidRaw = await js(tab, '''      (() => { const k = $keyJs;
         const insts = k.indexOf('el:') === 0
           ? document.querySelectorAll('[data-el="' + k.slice(3) + '"]')
           : document.querySelectorAll('[data-arxa-id="' + k + '"]');
@@ -1106,12 +1056,10 @@ Future<void> main() async {
     final lockB = aid.isNotEmpty ? await pickLeaf(tab, 0, aid) : null;
     final actr = await handlesCtr();
     if (lockB == null || actr == null) {
-      stdout.writeln('NOTE  one-focus preconditions (B=' +
-          (lockB != null).toString() + ', handles=' + (actr != null).toString() +
-          '); beats skipped');
+      stdout.writeln('NOTE  one-focus preconditions (B=${lockB != null}, handles=${actr != null}); beats skipped');
     } else {
       final bId = lockB!['id'] as String;
-      stdout.writeln('one-focus: A=' + skey + '  B=' + bId);
+      stdout.writeln('one-focus: A=$skey  B=$bId');
 
       // (1) absorbed switch: A holds the focus, a real click lands on B.
       await clickAt(tab, lockB!['x'] as num, lockB!['y'] as num);
@@ -1120,33 +1068,30 @@ Future<void> main() async {
       final open1 = await cardOpen();
       final path1 = await js(tab, 'location.pathname');
       check(k1 == skey && open1 && path1 == '/',
-          'one-focus: a click on another element does NOT steal the selection (idline: ' +
-              (k1 ?? 'none') + ', card open=' + open1.toString() + ')');
+          'one-focus: a click on another element does NOT steal the selection (idline: ${k1 ?? 'none'}, card open=$open1)');
 
       // (2) a real double-click on B is absorbed the same way — and
       // must NOT start on-canvas typing inside the unselected element.
       await dblClickAt(tab, lockB!['x'] as num, lockB!['y'] as num);
       await Future.delayed(const Duration(milliseconds: 600));
       final k2 = await curKey();
-      final bEditing = await js(tab, '''
-        (() => { const els = document.querySelectorAll('[data-arxa-id="''' + bId + '''"]');
+      final bEditing = await js(tab, '''        (() => { const els = document.querySelectorAll('[data-arxa-id="$bId"]');
           for (var i = 0; i < els.length; i++) {
             if (els[i].getAttribute('contenteditable')) return true; }
           return false; })()
       ''');
       check(k2 == skey && bEditing != true,
-          'one-focus: a double-click on another element is absorbed — no reselect, no inline typing (idline: ' +
-              (k2 ?? 'none') + ', B editable=' + bEditing.toString() + ')');
+          'one-focus: a double-click on another element is absorbed — no reselect, no inline typing (idline: ${k2 ?? 'none'}, B editable=$bEditing)');
 
       // (3) the SAME element stays clickable: × keeps the selection;
       // re-clicking the element is the card's way back.
       final stillOpen3 = await cardOpen();
       if (stillOpen3) {
-        await js(tab, SR + ".querySelector('#chead .cclose').click()");
+        await js(tab, "$sr.querySelector('#chead .cclose').click()");
         await Future.delayed(const Duration(milliseconds: 400));
       }
       final handles3 = await js(tab,
-          "(() => " + SR + ".querySelectorAll('#handles .hnd').length)()");
+          "(() => $sr.querySelectorAll('#handles .hnd').length)()");
       check(handles3 == 8,
           'card closed by ×: the selection (and its 8 handles) STAY');
       final hctr = await handlesCtr();
@@ -1158,8 +1103,7 @@ Future<void> main() async {
         final k3 = await curKey();
         final open3 = await cardOpen();
         check(open3 && k3 == skey,
-            'one-focus: re-clicking the SAME element re-opens its card (idline: ' +
-                (k3 ?? 'none') + ')');
+            'one-focus: re-clicking the SAME element re-opens its card (idline: ${k3 ?? 'none'})');
       }
 
       // (4) the door: full deselect releases the lock — B selects.
@@ -1169,8 +1113,7 @@ Future<void> main() async {
       final k4 = await curKey();
       final open4 = await cardOpen();
       check(open4 && k4 != null && k4 != skey,
-          'deselected first: B selects freely through the law\'s door (idline: ' +
-              (k4 ?? 'none') + ')');
+          'deselected first: B selects freely through the law\'s door (idline: ${k4 ?? 'none'})');
 
       // hygiene (holds in GREEN and RED worlds alike): end any inline
       // edit, close any card, disarm, and clear the track-back stash —
@@ -1179,8 +1122,7 @@ Future<void> main() async {
       // fresh-page assumption.
       Map? hst;
       for (var hi = 0; hi < 4; hi++) {
-        final st = await js(tab, '''
-          (() => { const sr = ''' + SR + ''';
+        final st = await js(tab, '''          (() => { const sr = $sr;
             const editing = !!document.querySelector('[data-arxa-id][contenteditable]');
             const card = sr.getElementById('card');
             const open = !!(card && card.classList.contains('open'));
@@ -1238,14 +1180,14 @@ Future<void> main() async {
     await Future.delayed(const Duration(milliseconds: 80));
   }
   final dockReady = await poll(tab,
-      "getComputedStyle(" + SR + ".getElementById('dockbtn')).visibility === 'visible'",
+      "getComputedStyle($sr.getElementById('dockbtn')).visibility === 'visible'",
       const Duration(seconds: 10));
   check(dockReady, 'dial re-armed after the cleanup reload');
-  await js(tab, SR + ".querySelector('#dockbtn').click()");
+  await js(tab, "$sr.querySelector('#dockbtn').click()");
   await Future.delayed(const Duration(milliseconds: 400));
-  await js(tab, SR + ".querySelector('[data-verb=edit]').click()");
+  await js(tab, "$sr.querySelector('[data-verb=edit]').click()");
   await Future.delayed(const Duration(milliseconds: 2000)); // split-text settle
-  var mediaPick;
+  String? mediaPick;
 
   // 7f. One-pick law (operator, 2026-08-26): changing ONE image via the
   //     Media section rewrites exactly THAT image — an anchor whose
@@ -1312,7 +1254,7 @@ Future<void> main() async {
   try { mhit = mediaHit is String ? jsonDecode(mediaHit as String) as Map : null; } catch (_) {}
   if (mhit == null) {
     final stackInfo = await js(tab, 'JSON.stringify(window.__mediaTopDebug || [])');
-    stdout.writeln('NOTE  media stack tops: ' + (stackInfo ?? 'n/a'));
+    stdout.writeln('NOTE  media stack tops: ${stackInfo ?? 'n/a'}');
     check(false, 'a visible media-source image was tapped for the one-pick law');
   } else {
     await clickAt(tab, mhit!['x'] as num, mhit!['y'] as num);
@@ -1327,19 +1269,16 @@ Future<void> main() async {
     final midx = mpick!['idx'] as int;
     // card should be open on the media element; From assets → first
     // asset whose path differs from this image's current src
-    await js(tab, '''
-      (() => { const b = [...''' + SR + '''.querySelectorAll('#card button')]
+    await js(tab, '''      (() => { const b = [...$sr.querySelectorAll('#card button')]
           .find((x) => (x.textContent || '').trim() === 'From assets');
         if (b) b.click(); return !!b; })()
     ''');
-    final assetsReady = await poll(tab, '''
-      (() => [...''' + SR + '''.querySelectorAll('#card button')]
+    final assetsReady = await poll(tab, '''      (() => [...$sr.querySelectorAll('#card button')]
           .some((b) => (b.title || '').indexOf('assets/') === 0))()
     ''', const Duration(seconds: 6));
     check(assetsReady, 'From assets listed the artifact assets');
     if (!assetsReady) {
-      final mediaDiag = await js(tab, '''
-        (() => { const d = ''' + SR + ''';
+      final mediaDiag = await js(tab, '''        (() => { const d = $sr;
           const card = d.getElementById('card');
           const btns = [...d.querySelectorAll('#card button')]
             .map((b) => (b.textContent || '').trim()).slice(0, 10);
@@ -1352,32 +1291,27 @@ Future<void> main() async {
             dockMode: dockBtn ? (dockBtn.getAttribute('data-mode') || '') : 'no-dockbtn',
             page: window.__preCleanup === 1 ? 'same-page' : 'reloaded' }); })()
       ''');
-      stdout.writeln('NOTE  media section diagnostics: ' + (mediaDiag ?? 'n/a'));
+      stdout.writeln('NOTE  media section diagnostics: ${mediaDiag ?? 'n/a'}');
     }
-    final pickedPath = await js(tab, '''
-      (() => { const btns = [...''' + SR + '''.querySelectorAll('#card button')]
+    final pickedPath = await js(tab, '''      (() => { const btns = [...$sr.querySelectorAll('#card button')]
           .filter((b) => (b.title || '').indexOf('assets/') === 0);
-        const cur = document.querySelectorAll('[data-el="media-source"]')[''' +
-        midx.toString() + '''].getAttribute('src');
+        const cur = document.querySelectorAll('[data-el="media-source"]')[$midx].getAttribute('src');
         const b = btns.find((x) => x.title !== cur) || btns[0];
         if (b) b.click(); return b ? b.title : null; })()
     ''');
     check(pickedPath is String && (pickedPath as String).isNotEmpty,
         'an asset was picked for one image');
     await Future.delayed(const Duration(milliseconds: 900));
-    final wantJs = "const want = '" + (pickedPath is String ? pickedPath as String : 'zz') + "';";
-    final counts = await js(tab, '''
-      (() => { const all = [...document.querySelectorAll('[data-el="media-source"]')];
-        ''' + wantJs + '''
-        return JSON.stringify({ withNew: all.filter((m) => m.getAttribute('src') === want).length,
+    final wantJs = "const want = '${pickedPath is String ? pickedPath as String : 'zz'}';";
+    final counts = await js(tab, '''      (() => { const all = [...document.querySelectorAll('[data-el="media-source"]')];
+        $wantJs        return JSON.stringify({ withNew: all.filter((m) => m.getAttribute('src') === want).length,
           total: all.length }); })()
     ''').then((raw) => raw is String ? jsonDecode(raw) as Map : null);
     if (counts == null) {
       check(false, 'one-pick counts readable');
     } else {
       check(counts!['withNew'] == 1,
-          'ONE image changed (got ' + counts!['withNew'].toString() + ' of ' +
-          counts!['total'].toString() + ')');
+          'ONE image changed (got ${counts!['withNew']} of ${counts!['total']})');
     }
     // draft carries the instance scoping
     final ddoc = await httpCall('GET', '/__dial/draft', null);
@@ -1389,18 +1323,14 @@ Future<void> main() async {
     }
     final nth = attrsNthMap?['src'];
     check(nth == midx,
-        'the patch records the picked instance (attrsNth.src=' +
-        nth.toString() + ', want ' + midx.toString() + ')');
+        'the patch records the picked instance (attrsNth.src=$nth, want $midx)');
     // reload parity: the overlay must reproduce the SAME one image
     await tab.navigateAndSettleForCapture(dialUrl, settleMs: 3000);
-    final counts2 = await js(tab, '''
-      (() => { const all = [...document.querySelectorAll('[data-el="media-source"]')];
-        ''' + wantJs + '''
-        return all.filter((m) => m.getAttribute('src') === want).length; })()
+    final counts2 = await js(tab, '''      (() => { const all = [...document.querySelectorAll('[data-el="media-source"]')];
+        $wantJs        return all.filter((m) => m.getAttribute('src') === want).length; })()
     ''');
     check(counts2 == 1,
-        'after reload the overlay still changes exactly ONE image (got ' +
-        counts2.toString() + ')');
+        'after reload the overlay still changes exactly ONE image (got $counts2)');
     // cleanup: the probe never leaves media patches behind
     final ddoc2 = await httpCall('GET', '/__dial/draft', null);
     final draft2 = ((ddoc2?['draft']) as Map?) ?? {};
@@ -1416,15 +1346,19 @@ Future<void> main() async {
   // 8. both error channels clean, both tabs.
   check(tab.pageErrors.isEmpty && tab.consoleErrors.isEmpty &&
       gui.pageErrors.isEmpty && gui.consoleErrors.isEmpty,
-      'zero page + console errors, both tabs (A ' +
-          (tab.pageErrors.length + tab.consoleErrors.length).toString() +
-          ', B ' + (gui.pageErrors.length + gui.consoleErrors.length).toString() + ')');
-  for (final e in tab.pageErrors) stdout.writeln('PAGE-A: ' + e);
-  for (final e in gui.pageErrors) stdout.writeln('PAGE-B: ' + e);
-  for (final e in gui.consoleErrors) stdout.writeln('CONSOLE-B: ' + e);
+      'zero page + console errors, both tabs (A ${tab.pageErrors.length + tab.consoleErrors.length}, B ${gui.pageErrors.length + gui.consoleErrors.length})');
+  for (final e in tab.pageErrors) {
+    stdout.writeln('PAGE-A: $e');
+  }
+  for (final e in gui.pageErrors) {
+    stdout.writeln('PAGE-B: $e');
+  }
+  for (final e in gui.consoleErrors) {
+    stdout.writeln('CONSOLE-B: $e');
+  }
 
   await browser.close();
-  stdout.writeln(fails == 0 ? 'ALL PASS' : 'FAILURES: ' + fails.toString());
+  stdout.writeln(fails == 0 ? 'ALL PASS' : 'FAILURES: $fails');
   exit(fails == 0 ? 0 : 1);
 }
 
@@ -1432,5 +1366,5 @@ Future<void> main() async {
 String? selIdFrom(Object? raw) {
   if (raw is! String) return null;
   final m = RegExp(r's[0-9a-z]{3,20}').firstMatch(raw);
-  return m == null ? null : m.group(0);
+  return m?.group(0);
 }

@@ -21,7 +21,7 @@
 ///     400, never attempted.
 ///   - Names are sanitized to [a-z0-9-]; extensions to a closed set; bytes
 ///     capped at 25 MB; the written path is always inside
-///     <artifactDir>/assets/images/<artifact>/.
+///     `<artifactDir>/assets/images/<artifact>/`.
 ///   - Every copy records a credit line in assets/credits.json (the
 ///     providers' attribution expectations are not optional).
 ///   - The fetcher is injectable: tests feed canned responses, production

@@ -32,7 +32,7 @@ import 'dart:io';
 import 'package:appboxd/cdp.dart';
 
 Future<dynamic> js(CdpSession tab, String e) => tab.evaluate(e);
-const SR = "document.getElementById('arxa-dial-host').shadowRoot";
+const sr = "document.getElementById('arxa-dial-host').shadowRoot";
 const dialUrl = 'http://127.0.0.1:4319/';
 int fails = 0;
 void check(bool ok, String label) {
@@ -121,7 +121,7 @@ Future<void> main() async {
     await Future.delayed(const Duration(milliseconds: 80));
   }
   await Future.delayed(const Duration(milliseconds: 900));
-  await js(tab, SR + ".querySelector('#dockbtn').click()");
+  await js(tab, "$sr.querySelector('#dockbtn').click()");
   await Future.delayed(const Duration(milliseconds: 400));
 
   // ---- inject the probe anchor and bring it to center stage.
@@ -133,7 +133,7 @@ Future<void> main() async {
     final ax = (anchor['x'] as num).toInt(), ay = (anchor['y'] as num).toInt();
 
     // ============ improvement 4: context text rides the pin ==============
-    await js(tab, SR + ".querySelector('[data-verb=comment]').click()");
+    await js(tab, "$sr.querySelector('[data-verb=comment]').click()");
     await Future.delayed(const Duration(milliseconds: 500));
     await tab.send('Input.dispatchMouseEvent',
         {'type': 'mouseMoved', 'x': ax, 'y': ay});
@@ -143,15 +143,15 @@ Future<void> main() async {
         {'type': 'mouseReleased', 'x': ax, 'y': ay, 'button': 'left', 'clickCount': 1});
     await Future.delayed(const Duration(milliseconds: 600));
     final composerOpen = await js(tab,
-        SR + ".querySelector('#composer').classList.contains('open')");
+        "$sr.querySelector('#composer').classList.contains('open')");
     check(composerOpen == true, 'composer opens on the probe anchor');
     final sawCtx = await js(tab,
-        SR + ".querySelector('#composer .ctx') != null");
+        "$sr.querySelector('#composer .ctx') != null");
     check(sawCtx == true, 'composer previews the anchored text');
     await js(tab,
-        SR + ".querySelector('#composer textarea').value = 'probe: context rides the pin'");
+        "$sr.querySelector('#composer textarea').value = 'probe: context rides the pin'");
     await js(tab,
-        SR + ".querySelector('#composer button.btn:not(.ghost)').click()");
+        "$sr.querySelector('#composer button.btn:not(.ghost)').click()");
     await Future.delayed(const Duration(milliseconds: 1200));
     final pinInfo = await js(tab, '''
       (async () => {
@@ -163,20 +163,18 @@ Future<void> main() async {
       })()
     ''');
     check(pinInfo is Map && (pinInfo['text'] as String).length >= 8,
-        'wire carries anchor.text (' +
-        (pinInfo is Map ? (pinInfo['text'] as String).length : 0).toString() +
-        ' chars)');
+        'wire carries anchor.text (${pinInfo is Map ? (pinInfo['text'] as String).length : 0} chars)');
 
     // =============== improvement 2a: the thread tracks scroll ============
-    await js(tab, SR + ".querySelector('#pins .pin:last-child').click()");
+    await js(tab, "$sr.querySelector('#pins .pin:last-child').click()");
     await Future.delayed(const Duration(milliseconds: 400));
     final ctxInThread = await js(tab,
-        SR + ".querySelector('#thread .ctx') != null");
+        "$sr.querySelector('#thread .ctx') != null");
     check(ctxInThread == true, 'thread quotes the anchored text');
 
-    final tp = threadPosJs.replaceAll('SRMARK', SR);
+    final tp = threadPosJs.replaceAll('SRMARK', sr);
     final before = await js(tab, tp);
-    final moved = await js(tab, scrollJs + '(250)');
+    final moved = await js(tab, '$scrollJs(250)');
     await Future.delayed(const Duration(milliseconds: 500));
     final after = await js(tab, tp);
     if (before is Map && after is Map && moved is num) {
@@ -187,10 +185,7 @@ Future<void> main() async {
           (after['t'] as num) <= (after['ih'] as num) - 300 &&
           (after['t'] as num) >= 8;
       check((moved as num) > 100 && da.abs() > 100 && (exact || clamped),
-          'thread tracks its anchor on scroll (scrolled ' + moved.toString() +
-          'px, anchor ' + da.toStringAsFixed(0) + 'px, thread ' +
-          dt.toStringAsFixed(0) + 'px' +
-          (exact ? ', exact' : clamped ? ', clamped at edge' : ', BROKEN') + ')');
+          'thread tracks its anchor on scroll (scrolled ${moved}px, anchor ${da.toStringAsFixed(0)}px, thread ${dt.toStringAsFixed(0)}px${exact ? ', exact' : clamped ? ', clamped at edge' : ', BROKEN'})');
     } else {
       check(false, 'thread position readable before/after scroll');
     }
@@ -201,7 +196,7 @@ Future<void> main() async {
     await js(tab,
         "document.getElementById('probe-anchor').scrollIntoView({block: 'center'})");
     await Future.delayed(const Duration(milliseconds: 400));
-    await js(tab, SR + ".querySelector('[data-verb=edit]').click()");
+    await js(tab, "$sr.querySelector('[data-verb=edit]').click()");
     await Future.delayed(const Duration(milliseconds: 400));
     final cpt = await js(tab, '''
       (() => {
@@ -222,12 +217,12 @@ Future<void> main() async {
           {'type': 'mouseReleased', 'x': cx, 'y': cy, 'button': 'left', 'clickCount': 1});
       await Future.delayed(const Duration(milliseconds: 500));
       final cardOpen = await js(tab,
-          SR + ".querySelector('#card').classList.contains('open')");
+          "$sr.querySelector('#card').classList.contains('open')");
       check(cardOpen == true, 'card opens on the probe anchor');
       if (cardOpen == true) {
-        final cp = cardPosJs.replaceAll('SRMARK', SR);
+        final cp = cardPosJs.replaceAll('SRMARK', sr);
         final cBefore = await js(tab, cp);
-        final cmoved = await js(tab, scrollJs + '(250)');
+        final cmoved = await js(tab, '$scrollJs(250)');
         await Future.delayed(const Duration(milliseconds: 500));
         final cAfter = await js(tab, cp);
         if (cBefore is Map && cAfter is Map && cmoved is num) {
@@ -243,11 +238,7 @@ Future<void> main() async {
               (cAfter['t'] as num) + (cAfter['h'] as num) <=
                   (cAfter['ih'] as num) - 4;
           check((cmoved as num) > 100 && da.abs() > 100 && rederived && onScreen,
-              'card re-derives placement on scroll (scrolled ' + cmoved.toString() +
-              'px, anchor ' + da.toStringAsFixed(0) + 'px, card moved ' +
-              dt.toStringAsFixed(0) + 'px' +
-              (rederived ? ', repositioned' : ', FROZEN') +
-              (onScreen ? ', on screen' : ', OFF SCREEN') + ')');
+              'card re-derives placement on scroll (scrolled ${cmoved}px, anchor ${da.toStringAsFixed(0)}px, card moved ${dt.toStringAsFixed(0)}px${rederived ? ', repositioned' : ', FROZEN'}${onScreen ? ', on screen' : ', OFF SCREEN'})');
         } else {
           check(false, 'card position readable before/after scroll');
         }
@@ -259,7 +250,7 @@ Future<void> main() async {
 
   // ================= improvement 3: keyboard sheet navigation ===========
   await esc(tab);
-  await js(tab, SR + ".querySelector('[data-verb=studio]').click()");
+  await js(tab, "$sr.querySelector('[data-verb=studio]').click()");
   await Future.delayed(const Duration(milliseconds: 700));
   final trackExpr = '''
     (() => {
@@ -274,38 +265,36 @@ Future<void> main() async {
       };
     })()
   ''';
-  final trackAttrs = await js(tab, trackExpr.replaceAll('SRMARK', SR));
+  final trackAttrs = await js(tab, trackExpr.replaceAll('SRMARK', sr));
   check(trackAttrs is Map && trackAttrs['tab'] == 0 && trackAttrs['role'] == 'region',
       'track is a focusable labelled region');
   check(trackAttrs is Map && trackAttrs['d0'] == 0 && trackAttrs['d1'] == -1,
       'dots use roving tabindex (active 0, others -1)');
   final keyRight =
       "SRMARK.querySelector('#track').dispatchEvent(new KeyboardEvent('keydown', {key: 'ArrowRight'}))";
-  await js(tab, keyRight.replaceAll('SRMARK', SR));
+  await js(tab, keyRight.replaceAll('SRMARK', sr));
   await Future.delayed(const Duration(milliseconds: 1000));
   final cur1 = await js(tab,
-      SR + ".querySelector('.dotbtn[aria-current]') != null ? " +
-      SR + ".querySelector('.dotbtn[aria-current]').getAttribute('data-i') : null");
+      "$sr.querySelector('.dotbtn[aria-current]') != null ? $sr.querySelector('.dotbtn[aria-current]').getAttribute('data-i') : null");
   check(cur1 == '1', 'ArrowRight moves to slide 2 (aria-current on dot 2)');
   final keyLeft =
       "SRMARK.querySelector('#track').dispatchEvent(new KeyboardEvent('keydown', {key: 'ArrowLeft'}))";
-  await js(tab, keyLeft.replaceAll('SRMARK', SR));
+  await js(tab, keyLeft.replaceAll('SRMARK', sr));
   await Future.delayed(const Duration(milliseconds: 1000));
   final cur2 = await js(tab,
-      SR + ".querySelector('.dotbtn[aria-current]') != null ? " +
-      SR + ".querySelector('.dotbtn[aria-current]').getAttribute('data-i') : null");
+      "$sr.querySelector('.dotbtn[aria-current]') != null ? $sr.querySelector('.dotbtn[aria-current]').getAttribute('data-i') : null");
   check(cur2 == '0', 'ArrowLeft returns to slide 1');
-  await js(tab, SR + ".querySelector('#tclose').click()");
+  await js(tab, "$sr.querySelector('#tclose').click()");
   await Future.delayed(const Duration(milliseconds: 300));
 
   // ================= improvement 1: SSE ids + Last-Event-ID replay ======
   final framesSeen = await js(tab,
       '(window.__probeFrames || []).filter(f => /^\\d+\\|/.test(f)).length');
   check(framesSeen is num && (framesSeen as num) >= 1,
-      'in-page EventSource sees numbered frames (' + framesSeen.toString() + ')');
+      'in-page EventSource sees numbered frames ($framesSeen)');
 
   // Dart-side: stream, two mutations, reconnect with Last-Event-ID.
-  final sse = await Process.start('curl', ['-sN', dialUrl + '__dial/events']);
+  final sse = await Process.start('curl', ['-sN', '${dialUrl}__dial/events']);
   final lines = <String>[];
   sse.stdout
       .transform(utf8.decoder)
@@ -314,7 +303,7 @@ Future<void> main() async {
   await Future.delayed(const Duration(milliseconds: 800));
   Future<void> postPin(String body) async {
     await Process.run('curl', [
-      '-s', '-X', 'POST', dialUrl + '__dial/pins',
+      '-s', '-X', 'POST', '${dialUrl}__dial/pins',
       '-H', 'Content-Type: application/json',
       '-d', jsonEncode({
         'route': '/',
@@ -339,7 +328,7 @@ Future<void> main() async {
       .whereType<int>()
       .toList();
   check(ids.length >= 2,
-      'live stream stamped ids on broadcasts (' + ids.length.toString() + ')');
+      'live stream stamped ids on broadcasts (${ids.length})');
   var replayOk = false;
   var replayDetail = 'no ids';
   if (ids.length >= 2) {
@@ -347,27 +336,25 @@ Future<void> main() async {
     final second = ids.last;
     final replay = await Process.run('curl', [
       '-sN', '--max-time', '4',
-      '-H', 'Last-Event-ID: ' + first.toString(),
-      dialUrl + '__dial/events',
+      '-H', 'Last-Event-ID: $first',
+      '${dialUrl}__dial/events',
     ]);
     final out = (replay.stdout as String?) ?? '';
-    final replayedFrame = out.contains('id: ' + second.toString());
+    final replayedFrame = out.contains('id: $second');
     final resync = out.contains('resumed');
     replayOk = replayedFrame && resync;
-    replayDetail = 'replayed id ' +
-        (replayedFrame ? second.toString() : 'MISSING') +
-        (resync ? ' + resync frame' : ', resync MISSING');
+    replayDetail = 'replayed id ${replayedFrame ? second.toString() : 'MISSING'}${resync ? ' + resync frame' : ', resync MISSING'}';
   }
-  check(replayOk, 'Last-Event-ID reconnect replays missed frames (' + replayDetail + ')');
+  check(replayOk, 'Last-Event-ID reconnect replays missed frames ($replayDetail)');
 
   // ---- errors (the law: both channels asserted).
   check(tab.pageErrors.isEmpty,
-      'page errors none (' + tab.pageErrors.length.toString() + ')');
+      'page errors none (${tab.pageErrors.length})');
   check(tab.consoleErrors.isEmpty,
-      'console clean (' + tab.consoleErrors.length.toString() + ')');
+      'console clean (${tab.consoleErrors.length})');
 
   stdout.writeln(
-      fails == 0 ? 'ALL PROBES PASS' : fails.toString() + ' PROBES FAILED');
+      fails == 0 ? 'ALL PROBES PASS' : '$fails PROBES FAILED');
   await client.close();
   exit(fails == 0 ? 0 : 1);
 }

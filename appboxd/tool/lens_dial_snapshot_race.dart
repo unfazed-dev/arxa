@@ -19,7 +19,7 @@ import 'dart:io';
 import 'package:appboxd/cdp.dart';
 
 Future<dynamic> js(CdpSession tab, String e) => tab.evaluate(e);
-const SR = "document.getElementById('arxa-dial-host').shadowRoot";
+const sr = "document.getElementById('arxa-dial-host').shadowRoot";
 const guiUrl = 'http://arxa.studio.localhost:7891/';
 const dialUrl = 'http://127.0.0.1:4319/';
 
@@ -78,9 +78,9 @@ Future<void> main() async {
     await Future.delayed(const Duration(milliseconds: 80));
   }
   await Future.delayed(const Duration(milliseconds: 900));
-  await js(dial, SR + ".querySelector('#dockbtn').click()");
+  await js(dial, "$sr.querySelector('#dockbtn').click()");
   await Future.delayed(const Duration(milliseconds: 400));
-  await js(dial, SR + ".querySelector('[data-verb=edit]').click()");
+  await js(dial, "$sr.querySelector('[data-verb=edit]').click()");
   await Future.delayed(const Duration(milliseconds: 300));
   final pt = await js(dial, '''
     (() => {
@@ -109,9 +109,8 @@ Future<void> main() async {
   await dial.send('Input.dispatchMouseEvent',
       {'type': 'mouseReleased', 'x': x, 'y': y, 'button': 'left', 'clickCount': 1});
   await Future.delayed(const Duration(milliseconds: 500));
-  await js(dial, '''
-    (() => {
-      const ask = ''' + SR + '''.querySelector('#chead button[title*=arxa]');
+  await js(dial, '''    (() => {
+      const ask = $sr.querySelector('#chead button[title*=arxa]');
       if (ask) ask.click();
       return true;
     })()
@@ -151,8 +150,7 @@ Future<void> main() async {
   check(railFilled,
       'SNAPSHOT attached despite the click racing the context fetch');
 
-  stdout.writeln('tab A console errors: ' + dial.consoleErrors.length.toString() +
-      '; tab B console errors: ' + gui.consoleErrors.length.toString());
+  stdout.writeln('tab A console errors: ${dial.consoleErrors.length}; tab B console errors: ${gui.consoleErrors.length}');
   if (dial.consoleErrors.isNotEmpty || gui.consoleErrors.isNotEmpty) fails++;
   await browser.close();
   stdout.writeln(fails == 0 ? '\nRACE VERDICT: PASS' : '\nRACE VERDICT: FAIL');

@@ -17,10 +17,10 @@ import 'dart:io';
 import 'package:appboxd/cdp.dart';
 
 Future<dynamic> js(CdpSession tab, String e) => tab.evaluate(e);
-const SR = "document.getElementById('arxa-dial-host').shadowRoot";
+const sr = "document.getElementById('arxa-dial-host').shadowRoot";
 const clientDir = '/Volumes/developer_ssd/Developer/totem_labs/'
     'clients/architect-gallore';
-const artifactDir = '${clientDir}/design/suczka-studio';
+const artifactDir = '$clientDir/design/suczka-studio';
 
 int fails = 0;
 void check(bool ok, String label) {
@@ -60,7 +60,7 @@ bool wranglerResolvable() {
 Future<void> main() async {
   final truthBranch = gitBranch();
   final truthPr = ghPr();
-  final ejectExists = Directory('${artifactDir}/eject').existsSync();
+  final ejectExists = Directory('$artifactDir/eject').existsSync();
   final wrOk = wranglerResolvable();
   stdout.writeln('ground truth: branch=$truthBranch pr=${truthPr == null ? "none" : "#${truthPr['number']} ${truthPr['state']}"} ejectDir=$ejectExists wrangler=$wrOk');
 
@@ -178,11 +178,11 @@ Future<void> main() async {
     await Future.delayed(const Duration(milliseconds: 80));
   }
   await Future.delayed(const Duration(milliseconds: 900));
-  await js(tab, '$SR.querySelector("#dockbtn").click()');
+  await js(tab, '$sr.querySelector("#dockbtn").click()');
   await Future.delayed(const Duration(milliseconds: 400));
-  await js(tab, "$SR.querySelector('[data-verb=studio]').click()");
+  await js(tab, "$sr.querySelector('[data-verb=studio]').click()");
   await Future.delayed(const Duration(milliseconds: 700));
-  await js(tab, "$SR.querySelectorAll('#dots .dotbtn')[4].click()");
+  await js(tab, "$sr.querySelectorAll('#dots .dotbtn')[4].click()");
   // The slide renders its facts from an async ship-status fetch (gh latency
   // varies seconds); a fixed wait raced it and read an empty body. Poll for
   // the CONTENT, not the clock.
@@ -190,7 +190,7 @@ Future<void> main() async {
   final slideDeadline = DateTime.now().add(const Duration(seconds: 10));
   while (DateTime.now().isBefore(slideDeadline)) {
     slideReady = await js(tab, '''(() => {
-      const b = $SR.querySelector('[data-slide=ship]');
+      const b = $sr.querySelector('[data-slide=ship]');
       return !!(b && b.textContent.includes('Deploy gates'));
     })()''') == true;
     if (slideReady) break;
@@ -199,12 +199,12 @@ Future<void> main() async {
   check(slideReady, 'ship slide rendered its content');
   final slide = await js(tab, '''
     (() => {
-      const body = $SR.querySelector('[data-slide=ship]');
+      const body = $sr.querySelector('[data-slide=ship]');
       const txt = body ? body.textContent : '';
       const btns = body ? [...body.querySelectorAll('button')] : [];
       const pr = btns.find(b => b.textContent.includes('Branch + PR'));
       const merge = btns.find(b => b.textContent.includes('Merge'));
-      const cta = $SR.querySelector('#cta');
+      const cta = $sr.querySelector('#cta');
       return {
         facts: txt.includes('${stFresh['repo']}') && txt.includes('${stFresh['branch']}'),
         prDisabled: pr ? pr.disabled : null,

@@ -30,12 +30,12 @@ Future<void> main() async {
     }
     return info;
   })()''');
-  print('DOM says: ' + found.toString());
+  print('DOM says: $found');
   if (found is Map) {
     final bytes = await t.screenshot();
     final im = img.decodeImage(Uint8List.fromList(bytes))!;
     final px = im.getPixel((found['x'] as num).toInt(), (found['y'] as num).toInt());
-    print('pixel at element center: ' + px.r.toInt().toString() + ',' + px.g.toInt().toString() + ',' + px.b.toInt().toString());
+    print('pixel at element center: ${px.r.toInt()},${px.g.toInt()},${px.b.toInt()}');
   }
   await c.close();
   exit(0);

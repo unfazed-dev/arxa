@@ -49,12 +49,12 @@ List<String> _newErrors(CdpSession tab) {
 
 void report(String step, bool ok, String evidence, [List<String>? errs]) {
   if (!ok) _fails++;
-  final e = (errs != null && errs.isNotEmpty) ? '  CONSOLE: ' + errs.join(' | ') : '';
-  print((ok ? 'PASS' : 'FAIL') + '  ' + step + '  ' + evidence + e);
+  final e = (errs != null && errs.isNotEmpty) ? '  CONSOLE: ${errs.join(' | ')}' : '';
+  print('${ok ? 'PASS' : 'FAIL'}  $step  $evidence$e');
 }
 
 Future<void> shot(CdpSession tab, String name) async {
-  File(_frames.path + '/' + name + '.png').writeAsBytesSync(await tab.screenshot());
+  File('${_frames.path}/$name.png').writeAsBytesSync(await tab.screenshot());
 }
 
 Future<bool> waitBoot(CdpSession tab) async {
@@ -133,7 +133,7 @@ Future<void> main(List<String> args) async {
       jsonEncode(boot),
       _newErrors(tab));
   report('S0b shade-off-at-boot', boot['shadeOpacity'] == '0',
-      'shade opacity at boot: ' + boot['shadeOpacity']);
+      'shade opacity at boot: ${boot['shadeOpacity']}');
   await shot(tab, 's0-boot');
 
   // Stash any live draft before the steps below mutate it.
@@ -142,7 +142,7 @@ Future<void> main(List<String> args) async {
     return JSON.stringify({draft: d.draft || null});
   ''');
   _draftStash = d0['draft'] as Map<String, dynamic>?;
-  print('INFO  draft stash: ' + (_draftStash == null ? '(none)' : ((_draftStash!['patches'] as Map).keys.length.toString() + ' patches stashed')));
+  print('INFO  draft stash: ${_draftStash == null ? '(none)' : ('${(_draftStash!['patches'] as Map).keys.length} patches stashed')}');
 
   // ── S1 fan ───────────────────────────────────────────────────────────
   final fan = await jsShadow(tab, '''
@@ -498,7 +498,7 @@ Future<void> main(List<String> args) async {
       lay['pinsHidden'] == true && lay['pinsBack'] == true && lay['drawHidden'] == true,
       jsonEncode(lay), _newErrors(tab));
   report('S7b layers-panel-survives', lay['panelHiddenWithLayersOpen'] == false,
-      'panel hidden while layers panel open: ' + (lay['panelHiddenWithLayersOpen']).toString());
+      'panel hidden while layers panel open: ${lay['panelHiddenWithLayersOpen']}');
 
   // ── S8 pen ───────────────────────────────────────────────────────────
   final pen = await jsShadow(tab, '''
@@ -521,7 +521,7 @@ Future<void> main(List<String> args) async {
   report('S8a pen-draws', pen['armed'] == true && pen['painted'] == true,
       jsonEncode(pen), _newErrors(tab));
   report('S8b pen-escape-disarms', pen['armedAfterEscape'] == false,
-      'canvas still armed after Escape: ' + (pen['armedAfterEscape']).toString());
+      'canvas still armed after Escape: ${pen['armedAfterEscape']}');
   await shadow(tab, '''
     if (R.querySelector("#draw").classList.contains("armed")) R.querySelector('[data-verb="pen"]').click();
     return "ok";
@@ -658,7 +658,7 @@ Future<void> main(List<String> args) async {
     await clientSync.close();
   }
   report('S11 cross-rung sync', syncSeen == 'SMOKE SYNC',
-      'second document saw: ' + syncSeen);
+      'second document saw: $syncSeen');
   await waitBoot(tab); // the editing rung's own converge reload
   await shadow(tab,
       'await fetch("/__dial/draft", {method: "DELETE"}); return "ok";');
@@ -824,7 +824,7 @@ Future<void> main(List<String> args) async {
             !gv.contains('tokens') &&
             !gv.contains('share'),
         jsonEncode(g));
-    File(_frames.path + '/s9-guest.png')
+    File('${_frames.path}/s9-guest.png')
         .writeAsBytesSync(await gtab.screenshot());
 
     final dtab = await client2.newTab();
@@ -854,7 +854,7 @@ Future<void> main(List<String> args) async {
   await _cleanup();
 
   print('');
-  print(_fails == 0 ? 'SMOKE GREEN — no failures' : 'SMOKE: ' + _fails.toString() + ' failure(s)');
+  print(_fails == 0 ? 'SMOKE GREEN — no failures' : 'SMOKE: $_fails failure(s)');
   exit(_fails == 0 ? 0 : 1);
 }
 
@@ -874,13 +874,13 @@ Future<void> _cleanup() async {
     }
     final res = await req.close();
     await res.drain<void>();
-    print('cleanup draft restore: ' + res.statusCode.toString());
+    print('cleanup draft restore: ${res.statusCode}');
   } catch (e) {
-    print('cleanup draft restore FAILED: ' + e.toString());
+    print('cleanup draft restore FAILED: $e');
   }
   final home = Platform.environment['HOME'];
   if (home == null) return;
-  final credsFile = File(home + '/.appbox/supabase');
+  final credsFile = File('$home/.appbox/supabase');
   if (!credsFile.existsSync()) return;
   String? url, key;
   for (final line in credsFile.readAsStringSync().split('\n')) {
@@ -894,16 +894,16 @@ Future<void> _cleanup() async {
   if (url == null || key == null) return;
   final http = HttpClient();
   Future<void> del(String table, String filter) async {
-    final req = await http.deleteUrl(Uri.parse(url! + '/rest/v1/' + table + '?' + filter));
+    final req = await http.deleteUrl(Uri.parse('${url!}/rest/v1/$table?$filter'));
     req.headers.set('apikey', key!);
-    req.headers.set('Authorization', 'Bearer ' + key);
+    req.headers.set('Authorization', 'Bearer $key');
     final res = await req.close();
     await res.drain<void>();
-    print('cleanup ' + table + ': ' + res.statusCode.toString());
+    print('cleanup $table: ${res.statusCode}');
   }
 
   if (_createdPinIds.isNotEmpty) {
-    final ids = _createdPinIds.map((i) => '%22' + i + '%22').join(',');
+    final ids = _createdPinIds.map((i) => '%22$i%22').join(',');
     await del('design_dial_drawings', 'pin_id=in.($ids)');
     await del('design_dial_replies', 'pin_id=in.($ids)');
     await del('design_dial_pins', 'id=in.($ids)');
@@ -911,7 +911,7 @@ Future<void> _cleanup() async {
   if (_shareToken != null) {
     // the table stores token_hash = sha256(token), never the raw token
     final digest = sha256.convert(ascii.encode(_shareToken!)).toString(); // matches _hashToken in design_dial.dart
-    await del('design_dial_share_links', 'token_hash=eq.' + digest);
+    await del('design_dial_share_links', 'token_hash=eq.$digest');
   }
   http.close();
 }

@@ -47,7 +47,7 @@ void main() {
 
     test('apostrophe in JSX text does not eat the following tag', () {
       final res = stampSource(
-        "<p>Don\'t stop</p><span>next</span>",
+        "<p>Don't stop</p><span>next</span>",
         'p',
       );
       expect(res.stamped, 2);

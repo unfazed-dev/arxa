@@ -20,10 +20,10 @@ Map<String, dynamic> pinBody({
       'body': body,
       'viewport': {'w': 1280, 'h': 800},
       'anchor': {
-        if (el != null) 'el': el,
+        'el': ?el,
         'rect': {'x': 10.0, 'y': 20.0, 'w': 83.0, 'h': 32.0},
       },
-      if (name != null) 'name': name,
+      'name': ?name,
     };
 
 void main() {
@@ -76,12 +76,12 @@ void main() {
       final id = (reg.json as Map)['id'] as String;
       expect(id, startsWith('s'));
 
-      final read = await api.handle('GET', '/selection/' + id, {}, null, null);
+      final read = await api.handle('GET', '/selection/$id', {}, null, null);
       expect(read.status, 200);
       final j = (read.json as Map).cast<String, dynamic>();
       expect(j['key'], 'ui-widgets-x-e11');
       expect(j['law'], contains('LOCKED'));
-      expect(j['fetch'], '/__dial/selection/' + id);
+      expect(j['fetch'], '/__dial/selection/$id');
       expect((j['styles'] as Map)['font-size'], '12rem');
       expect(j['png'], startsWith('data:image/png'));
 
@@ -94,7 +94,7 @@ void main() {
 
       // Oversize png refuses.
       final big = await api.handle('POST', '/selection', {}, {
-        'key': 'k', 'label': 'l', 'png': 'data:image/png;base64,' + 'x' * 500000,
+        'key': 'k', 'label': 'l', 'png': 'data:image/png;base64,${'x' * 500000}',
       }, null);
       expect(big.status, 400);
     });

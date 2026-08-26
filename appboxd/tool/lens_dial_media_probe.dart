@@ -5,7 +5,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:appboxd/cdp.dart';
 Future<dynamic> js(CdpSession tab, String e) => tab.evaluate(e);
-const SR = "document.getElementById('arxa-dial-host').shadowRoot";
+const sr = "document.getElementById('arxa-dial-host').shadowRoot";
 int fails = 0;
 void check(bool ok, String label) {
   stdout.writeln((ok ? 'PASS ' : 'FAIL ') + label);
@@ -38,20 +38,19 @@ Future<void> main() async {
 
   // 2. copy: writes into the artifact + credits
   final first = (s['first'] as Map).cast<String, dynamic>();
-  final copy = await js(tab, '''
-    (async () => {
+  final copy = await js(tab, '''    (async () => {
       const r = await fetch('/__dial/media/copy', {method: 'POST',
         headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({url: ''' + jsonDart(first['full']) + ''',
-          name: 'lens-probe-' + Date.now(), credit: ''' + jsonDart(first['credit']) + ''',
-          provider: ''' + jsonDart(first['provider']) + '''})});
+        body: JSON.stringify({url: ${jsonDart(first['full'])},
+          name: 'lens-probe-' + Date.now(), credit: ${jsonDart(first['credit'])},
+          provider: ${jsonDart(first['provider'])}})});
       return await r.json();
     })()
   ''');
   final c = (copy as Map).cast<String, dynamic>();
   check(c['path'] != null && (c['path'] as String).startsWith('assets/images/'),
       'copy returned artifact path (${c['path']})');
-  final abs = '/Volumes/developer_ssd/Developer/totem_labs/clients/architect-gallore/design/suczka-studio/' + (c['path'] as String? ?? 'x');
+  final abs = '/Volumes/developer_ssd/Developer/totem_labs/clients/architect-gallore/design/suczka-studio/${c['path'] as String? ?? 'x'}';
   check(File(abs).existsSync(), 'file exists on disk');
 
   // 3. assets lists it
@@ -92,9 +91,9 @@ Future<void> main() async {
     await Future.delayed(const Duration(milliseconds: 80));
   }
   await Future.delayed(const Duration(milliseconds: 900));
-  await js(tab, '$SR.querySelector("#dockbtn").click()');
+  await js(tab, '$sr.querySelector("#dockbtn").click()');
   await Future.delayed(const Duration(milliseconds: 400));
-  await js(tab, "$SR.querySelector('[data-verb=edit]').click()");
+  await js(tab, "$sr.querySelector('[data-verb=edit]').click()");
   await Future.delayed(const Duration(milliseconds: 300));
   // The home canvas is scroll-driven; walk down until a usable img shows.
   Map? imgPt;
@@ -125,8 +124,8 @@ Future<void> main() async {
     await Future.delayed(const Duration(milliseconds: 500));
     final mediaSect = await js(tab, '''
       (() => {
-        const sects = [...$SR.querySelectorAll('#card .sect')].map(s => s.textContent);
-        return {media: sects.includes('Media'), find: !!$SR.querySelector('#card .facet .btn')};
+        const sects = [...$sr.querySelectorAll('#card .sect')].map(s => s.textContent);
+        return {media: sects.includes('Media'), find: !!$sr.querySelector('#card .facet .btn')};
       })()
     ''');
     final ms = (mediaSect as Map).cast<String, dynamic>();
@@ -134,7 +133,7 @@ Future<void> main() async {
     // search from the card against live providers
     await js(tab, '''
       (() => {
-        const btns = [...$SR.querySelectorAll('#card .facet .btn')];
+        const btns = [...$sr.querySelectorAll('#card .facet .btn')];
         const find = btns.find(b => b.textContent === 'Find');
         if (!find) return false;
         const facet = find.closest('.facet');
@@ -144,7 +143,7 @@ Future<void> main() async {
       })()
     ''');
     await Future.delayed(const Duration(milliseconds: 2500));
-    final thumbs = await js(tab, '$SR.querySelectorAll("#card img").length');
+    final thumbs = await js(tab, '$sr.querySelectorAll("#card img").length');
     check((thumbs as num) >= 5, 'card search renders provider thumbnails ($thumbs)');
   } else {
     check(false, 'artifact renders an img to select');
@@ -159,7 +158,7 @@ Future<void> main() async {
   final credits = File('/Volumes/developer_ssd/Developer/totem_labs/clients/architect-gallore/design/suczka-studio/assets/credits.json');
   if (credits.existsSync()) {
     final j = jsonDecode(credits.readAsStringSync()) as Map;
-    final media = (j['media'] as List? ?? []).where((e) => File('/Volumes/developer_ssd/Developer/totem_labs/clients/architect-gallore/design/suczka-studio/' + (e as Map)['file']).existsSync()).toList();
+    final media = (j['media'] as List? ?? []).where((e) => File('/Volumes/developer_ssd/Developer/totem_labs/clients/architect-gallore/design/suczka-studio/${(e as Map)['file'] as String}').existsSync()).toList();
     if (media.isEmpty) { credits.deleteSync(); }
     else { credits.writeAsStringSync(const JsonEncoder.withIndent('  ').convert({...j, 'media': media})); }
   }

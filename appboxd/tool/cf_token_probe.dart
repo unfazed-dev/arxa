@@ -16,7 +16,7 @@ const acc = '997e3edfd319cbbac9797d1c53ad61d5';
 
 Future<void> main() async {
   final store =
-      await defaultCredentialStore(Platform.environment['HOME']! + '/.appbox');
+      await defaultCredentialStore('${Platform.environment['HOME']!}/.appbox');
   final token = await store.read('CLOUDFLARE_API_TOKEN');
   if (token == null) {
     stdout.writeln('vault: CLOUDFLARE_API_TOKEN NOT SET');
@@ -27,21 +27,21 @@ Future<void> main() async {
   Future<void> probe(String label, String path) async {
     try {
       final req = await client
-          .getUrl(Uri.parse('https://api.cloudflare.com/client/v4' + path));
-      req.headers.set('Authorization', 'Bearer ' + token);
+          .getUrl(Uri.parse('https://api.cloudflare.com/client/v4$path'));
+      req.headers.set('Authorization', 'Bearer $token');
       final res = await req.close();
       final body = await res.transform(utf8.decoder).join();
-      stdout.writeln('--- ' + label + ' [HTTP ' + res.statusCode.toString() + ']');
-      stdout.writeln(body.length > 700 ? body.substring(0, 700) + '…' : body);
+      stdout.writeln('--- $label [HTTP ${res.statusCode}]');
+      stdout.writeln(body.length > 700 ? '${body.substring(0, 700)}…' : body);
     } catch (e) {
-      stdout.writeln('--- ' + label + ' THREW ' + e.toString());
+      stdout.writeln('--- $label THREW $e');
     }
   }
 
   await probe('/user/tokens/verify', '/user/tokens/verify');
-  await probe('/accounts/<acc>/tokens/verify', '/accounts/' + acc + '/tokens/verify');
+  await probe('/accounts/<acc>/tokens/verify', '/accounts/$acc/tokens/verify');
   await probe('/accounts/<acc>/pages/projects (auth proof)',
-      '/accounts/' + acc + '/pages/projects');
-  await probe('/accounts/<acc>/tokens (list)', '/accounts/' + acc + '/tokens');
+      '/accounts/$acc/pages/projects');
+  await probe('/accounts/<acc>/tokens (list)', '/accounts/$acc/tokens');
   client.close();
 }

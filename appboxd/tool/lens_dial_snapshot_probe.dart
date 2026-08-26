@@ -22,7 +22,7 @@ import 'dart:io';
 import 'package:appboxd/cdp.dart';
 
 Future<dynamic> js(CdpSession tab, String e) => tab.evaluate(e);
-const SR = "document.getElementById('arxa-dial-host').shadowRoot";
+const sr = "document.getElementById('arxa-dial-host').shadowRoot";
 const guiUrl = 'http://arxa.studio.localhost:7891/';
 const dialUrl = 'http://127.0.0.1:4319/';
 
@@ -46,7 +46,7 @@ Future<bool> poll(CdpSession tab, String expr, Duration limit) async {
 Future<String?> httpGet(String path) async {
   final client = HttpClient();
   try {
-    final req = await client.getUrl(Uri.parse('http://127.0.0.1:4319' + path));
+    final req = await client.getUrl(Uri.parse('http://127.0.0.1:4319$path'));
     final res = await req.close();
     return await res.transform(utf8.decoder).join();
   } finally {
@@ -84,9 +84,9 @@ Future<void> main() async {
     await Future.delayed(const Duration(milliseconds: 80));
   }
   await Future.delayed(const Duration(milliseconds: 900));
-  await js(dial, SR + ".querySelector('#dockbtn').click()");
+  await js(dial, "$sr.querySelector('#dockbtn').click()");
   await Future.delayed(const Duration(milliseconds: 400));
-  await js(dial, SR + ".querySelector('[data-verb=edit]').click()");
+  await js(dial, "$sr.querySelector('[data-verb=edit]').click()");
   await Future.delayed(const Duration(milliseconds: 300));
   final pt = await js(dial, '''
     (() => {
@@ -115,14 +115,13 @@ Future<void> main() async {
   await dial.send('Input.dispatchMouseEvent',
       {'type': 'mouseReleased', 'x': x, 'y': y, 'button': 'left', 'clickCount': 1});
   await Future.delayed(const Duration(milliseconds: 500));
-  check(await js(dial, SR + ".querySelector('#card').classList.contains('open')") == true,
+  check(await js(dial, "$sr.querySelector('#card').classList.contains('open')") == true,
       'card opens on a real element (tab A)');
   // The Arxa tab flow: open the tab, then the footer Send button.
-  await js(dial, SR + ".querySelector('#chead .tab[data-tab=arxa]').click()");
+  await js(dial, "$sr.querySelector('#chead .tab[data-tab=arxa]').click()");
   await Future.delayed(const Duration(milliseconds: 300));
-  check(await js(dial, '''
-    (() => {
-      const b = [...''' + SR + '''.querySelectorAll('#cfoot button')]
+  check(await js(dial, '''    (() => {
+      const b = [...$sr.querySelectorAll('#cfoot button')]
         .find((x) => (x.textContent || '').trim() === 'Send to arxa studio');
       if (!b) return false;
       b.click();
@@ -130,21 +129,20 @@ Future<void> main() async {
     })()
   ''') == true, 'Arxa tab Send tapped (tab A)');
   await Future.delayed(const Duration(milliseconds: 4000));
-  check(await js(dial, '''
-    (() => { const m = (''' + SR + '''.querySelector('.tabpane.on .arxaid') || {}).textContent || '';
+  check(await js(dial, '''    (() => { const m = ($sr.querySelector('.tabpane.on .arxaid') || {}).textContent || '';
       return m.indexOf('design selection s') >= 0; })()
   ''') == true, 'Arxa tab shows the sent state (tab A)');
 
   // ---- 1+2: the frame content, verbatim.
   final frames = await js(dial,
       "JSON.stringify((window.__frames || []).filter(f => f.includes('selection')))");
-  stdout.writeln('SSE selection frames: ' + (frames is String ? frames : '(none)'));
+  stdout.writeln('SSE selection frames: ${frames is String ? frames : '(none)'}');
   String? selId;
   if (frames is String && frames.length > 4) {
     final list = jsonDecode(frames) as List;
     if (list.isNotEmpty) {
       final data = (jsonDecode(list.last as String) as Map)['data'];
-      stdout.writeln('frame data keys: ' + (data as Map).keys.toList().toString());
+      stdout.writeln('frame data keys: ${(data as Map).keys.toList()}');
       selId = data['id'] as String?;
     }
   }
@@ -154,35 +152,30 @@ Future<void> main() async {
   var pngLen = 0;
   var label = '';
   if (selId != null) {
-    final body = await httpGet('/__dial/selection/' + selId);
+    final body = await httpGet('/__dial/selection/$selId');
     if (body != null) {
       final m = jsonDecode(body) as Map;
       final png = m['png'];
       pngLen = png is String ? png.length : 0;
       label = (m['label'] ?? '').toString();
-      stdout.writeln('server entry: label=' + label + ' png=' +
-          (png is String ? (png.length.toString() + ' chars') : 'ABSENT') +
-          ' text=' + ((m['text'] as String?) ?? '').length.toString() + 'ch' +
-          ' styles=' + ((m['styles'] as Map?) ?? {}).length.toString());
+      stdout.writeln('server entry: label=$label png=${png is String ? ('${png.length} chars') : 'ABSENT'} text=${((m['text'] as String?) ?? '').length}ch styles=${((m['styles'] as Map?) ?? {}).length}');
     }
   }
   check(pngLen > 100, 'island captureElement produced a real PNG on suczka');
 
   // ---- 3: the card shows the sent state — the retired studio card's
   // content lives in the floating card's Arxa tab now.
-  final sentBody = await js(dial, '''
-    (() => { const p = ''' + SR + '''.querySelector('.tabpane.on');
+  final sentBody = await js(dial, '''    (() => { const p = $sr.querySelector('.tabpane.on');
       return p ? (p.textContent || '').replace(/\\s+/g, ' ').slice(0, 240) : ''; })()
   ''');
-  stdout.writeln('arxa pane: ' + (sentBody ?? '').toString());
+  stdout.writeln('arxa pane: ${sentBody ?? ''}');
   final safeLabel = label.replaceAll("'", '');
   check(label.isEmpty || (sentBody as String).contains(safeLabel.split(' · ')[0].trim()),
       'arxa tab shows the real element label from the sent handoff');
 
   // ---- 4: the card's OWN footer button - pointer text AND snapshot.
-  check(await js(dial, '''
-    (() => {
-      const b = [...''' + SR + '''.querySelectorAll('#cfoot button')]
+  check(await js(dial, '''    (() => {
+      const b = [...$sr.querySelectorAll('#cfoot button')]
         .find((x) => (x.textContent || '').trim() === '\u2192 composer');
       if (!b) return false;
       b.click();
@@ -202,15 +195,14 @@ Future<void> main() async {
       return {fresh: fresh.length, src0: fresh.length ? fresh[0].src.slice(0, 40) : ''};
     })()
   ''');
-  stdout.writeln('composer image rail: ' + (rail ?? '').toString());
+  stdout.writeln('composer image rail: ${rail ?? ''}');
   check((rail is Map ? (rail['fresh'] as num? ?? 0) : 0) >= 1,
       'SNAPSHOT attached in the composer draft image rail');
   // the destination chip flashed (tab B) and the ack verified back in
   // the card (tab A) — both confirmations (operator, 2026-08-26).
   check(await js(gui, "!!document.getElementById('arxa-compose-chip')") == true,
       'destination confirmation chip flashed (tab B)');
-  check(await poll(dial, '''
-    (() => { const s = (''' + SR + '''.querySelector('.tabpane.on .arxastatus') || {}).textContent || '';
+  check(await poll(dial, '''    (() => { const s = ($sr.querySelector('.tabpane.on .arxastatus') || {}).textContent || '';
       return s.indexOf('inserted into the composer') >= 0; })()
   ''', const Duration(seconds: 6)), 'ack ✓ verified in the card (tab A)');
 
@@ -219,11 +211,10 @@ Future<void> main() async {
   final evDir = '/Volumes/developer_ssd/Developer/totem_labs/'
       'clients/architect-gallore/design/suczka-studio/evidence/snapshot-to-composer';
   Directory(evDir).createSync(recursive: true);
-  File(evDir + '/studio-gui-1280.png').writeAsBytesSync(shot);
-  stdout.writeln('evidence: ' + evDir + '/studio-gui-1280.png');
+  File('$evDir/studio-gui-1280.png').writeAsBytesSync(shot);
+  stdout.writeln('evidence: $evDir/studio-gui-1280.png');
 
-  stdout.writeln('tab A console errors: ' + dial.consoleErrors.length.toString() +
-      '; tab B console errors: ' + gui.consoleErrors.length.toString());
+  stdout.writeln('tab A console errors: ${dial.consoleErrors.length}; tab B console errors: ${gui.consoleErrors.length}');
   if (dial.consoleErrors.isNotEmpty || gui.consoleErrors.isNotEmpty) fails++;
   await browser.close();
   stdout.writeln(fails == 0 ? '\nPROBE VERDICT: PASS' : '\nPROBE VERDICT: FAIL');

@@ -10,7 +10,7 @@ import 'dart:io';
 import 'package:appboxd/cdp.dart';
 
 Future<dynamic> js(CdpSession tab, String e) => tab.evaluate(e);
-const SR = "document.getElementById('arxa-dial-host').shadowRoot";
+const sr = "document.getElementById('arxa-dial-host').shadowRoot";
 int fails = 0;
 void check(bool ok, String label) {
   stdout.writeln((ok ? 'PASS ' : 'FAIL ') + label);
@@ -30,20 +30,19 @@ Future<void> main() async {
     await Future.delayed(const Duration(milliseconds: 80));
   }
   await Future.delayed(const Duration(milliseconds: 900));
-  await js(tab, SR + ".querySelector('#dockbtn').click()");
+  await js(tab, "$sr.querySelector('#dockbtn').click()");
   await Future.delayed(const Duration(milliseconds: 400));
 
-  final verb = await js(tab, SR + ".querySelector('[data-verb=comment]') != null");
+  final verb = await js(tab, "$sr.querySelector('[data-verb=comment]') != null");
   check(verb == true, 'comment verb present');
-  await js(tab, SR + ".querySelector('[data-verb=comment]').click()");
+  await js(tab, "$sr.querySelector('[data-verb=comment]').click()");
   await Future.delayed(const Duration(milliseconds: 600));
 
   final typeErrs = tab.consoleErrors
       .where((e) => e.contains('TypeError') || e.contains('verbEls'))
       .toList();
   check(typeErrs.isEmpty,
-      'comment verb arms without TypeError' +
-          (typeErrs.isEmpty ? '' : ' -- ' + typeErrs.first));
+      'comment verb arms without TypeError${typeErrs.isEmpty ? '' : ' -- ${typeErrs.first}'}');
 
   final pt = await js(tab, '''(() => {
     const els = [...document.querySelectorAll('[data-arxa-id]')];
@@ -65,17 +64,17 @@ Future<void> main() async {
         {'type': 'mouseReleased', 'x': x, 'y': y, 'button': 'left', 'clickCount': 1});
     await Future.delayed(const Duration(milliseconds: 600));
     final composerOpen = await js(tab,
-        SR + ".querySelector('#composer').classList.contains('open')");
+        "$sr.querySelector('#composer').classList.contains('open')");
     check(composerOpen == true, 'composer opens on element click');
 
     if (composerOpen == true) {
       await js(tab,
-          SR + ".querySelector('#composer textarea').value = 'probe: pin the hero'");
+          "$sr.querySelector('#composer textarea').value = 'probe: pin the hero'");
       await js(tab,
-          SR + ".querySelector('#composer button.btn:not(.ghost)').click()");
+          "$sr.querySelector('#composer button.btn:not(.ghost)').click()");
       await Future.delayed(const Duration(milliseconds: 1200));
-      final pins = await js(tab, SR + ".querySelectorAll('#pins .pin').length");
-      check((pins is num) && pins > 0, 'pin badge rendered (' + pins.toString() + ')');
+      final pins = await js(tab, "$sr.querySelectorAll('#pins .pin').length");
+      check((pins is num) && pins > 0, 'pin badge rendered ($pins)');
       final stored = await js(tab, '''(async () => {
         const r = await fetch('/__dial/pins');
         const j = await r.json();
@@ -87,11 +86,11 @@ Future<void> main() async {
     check(false, 'selectable element in view');
   }
   check(tab.pageErrors.isEmpty,
-      'page errors none (' + tab.pageErrors.length.toString() + ')');
+      'page errors none (${tab.pageErrors.length})');
   check(tab.consoleErrors.isEmpty,
-      'console clean (' + tab.consoleErrors.length.toString() + ')');
+      'console clean (${tab.consoleErrors.length})');
 
-  stdout.writeln(fails == 0 ? 'ALL PROBES PASS' : fails.toString() + ' PROBES FAILED');
+  stdout.writeln(fails == 0 ? 'ALL PROBES PASS' : '$fails PROBES FAILED');
   await client.close();
   exit(fails == 0 ? 0 : 1);
 }

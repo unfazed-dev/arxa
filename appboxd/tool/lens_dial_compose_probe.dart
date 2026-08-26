@@ -19,7 +19,7 @@ import 'dart:io';
 import 'package:appboxd/cdp.dart';
 
 Future<dynamic> js(CdpSession tab, String e) => tab.evaluate(e);
-const SR = "document.getElementById('arxa-dial-host').shadowRoot";
+const sr = "document.getElementById('arxa-dial-host').shadowRoot";
 const guiUrl = 'http://arxa.studio.localhost:7891/';
 const dialUrl = 'http://127.0.0.1:4319/';
 const evidenceDir = '/Volumes/developer_ssd/Developer/totem_labs/'
@@ -52,9 +52,7 @@ Future<void> main() async {
   await gui.setViewport(1280, 800);
   await gui.navigateAndSettleForCapture(guiUrl, settleMs: 4000);
   final opened = await js(gui,
-      '(() => { const b = document.querySelector(' +
-      '"button[title=\'arxa design panel\']");' +
-      ' if (!b) return false; b.click(); return true; })()');
+      '(() => { const b = document.querySelector(' '"button[title=\'arxa design panel\']");' ' if (!b) return false; b.click(); return true; })()');
   check(opened == true, 'design panel button present and clicked');
   final dockUp = await poll(gui,
       "!![...document.querySelectorAll('button')].some(b => /(mobile|tablet|desktop)/.test(b.textContent||''))",
@@ -80,9 +78,9 @@ Future<void> main() async {
     await Future.delayed(const Duration(milliseconds: 80));
   }
   await Future.delayed(const Duration(milliseconds: 900));
-  await js(dial, SR + ".querySelector('#dockbtn').click()");
+  await js(dial, "$sr.querySelector('#dockbtn').click()");
   await Future.delayed(const Duration(milliseconds: 400));
-  await js(dial, SR + ".querySelector('[data-verb=edit]').click()");
+  await js(dial, "$sr.querySelector('[data-verb=edit]').click()");
   await Future.delayed(const Duration(milliseconds: 300));
   final pt = await js(dial, '''
     (() => {
@@ -111,11 +109,10 @@ Future<void> main() async {
   await dial.send('Input.dispatchMouseEvent',
       {'type': 'mouseReleased', 'x': x, 'y': y, 'button': 'left', 'clickCount': 1});
   await Future.delayed(const Duration(milliseconds: 500));
-  check(await js(dial, SR + ".querySelector('#card').classList.contains('open')") == true,
+  check(await js(dial, "$sr.querySelector('#card').classList.contains('open')") == true,
       'card opens on a real element (tab A)');
-  final tapped = await js(dial, '''
-    (() => {
-      const ask = ''' + SR + '''.querySelector('#chead button[title*=arxa]');
+  final tapped = await js(dial, '''    (() => {
+      const ask = $sr.querySelector('#chead button[title*=arxa]');
       if (!ask) return false;
       ask.click();
       return true;
@@ -153,22 +150,21 @@ Future<void> main() async {
   check(line is String && line.contains('design selection'),
       'composer textarea holds the pointer line');
   if (line is String) {
-    stdout.writeln('     line: ' +
-        (line.length > 160 ? line.substring(0, 160) + '...' : line));
+    stdout.writeln('     line: ${line.length > 160 ? '${line.substring(0, 160)}...' : line}');
   }
 
   // ---- evidence + cleanliness.
   try {
-    File(evidenceDir + '/gui-composer-1280.png')
+    File('$evidenceDir/gui-composer-1280.png')
         .writeAsBytesSync(await gui.screenshot());
-    stdout.writeln('     evidence: ' + evidenceDir + '/gui-composer-1280.png');
+    stdout.writeln('     evidence: $evidenceDir/gui-composer-1280.png');
   } catch (e) {
-    stdout.writeln('     evidence: screenshot failed - ' + e.toString());
+    stdout.writeln('     evidence: screenshot failed - $e');
   }
   check(gui.consoleErrors.isEmpty, 'GUI console clean');
   check(dial.consoleErrors.isEmpty, 'dial console clean');
 
-  stdout.writeln(fails == 0 ? 'ALL PROBES PASS' : fails.toString() + ' PROBES FAILED');
+  stdout.writeln(fails == 0 ? 'ALL PROBES PASS' : '$fails PROBES FAILED');
   await client.close();
   exit(fails == 0 ? 0 : 1);
 }

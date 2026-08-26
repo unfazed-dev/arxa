@@ -31,7 +31,7 @@ import 'dart:math' as math;
 import 'package:appboxd/cdp.dart';
 
 Future<dynamic> js(CdpSession tab, String e) => tab.evaluate(e);
-const SR = "document.getElementById('arxa-dial-host').shadowRoot";
+const sr = "document.getElementById('arxa-dial-host').shadowRoot";
 const dialUrl = 'http://127.0.0.1:4319/';
 
 int fails = 0;
@@ -51,9 +51,8 @@ Future<bool> poll(CdpSession tab, String expr, Duration limit) async {
   return false;
 }
 
-const CARDST = '''
-  JSON.stringify((() => {
-    const root = ''' + SR + ''';
+const cardSt = '''  JSON.stringify((() => {
+    const root = $sr;
     const card = root.getElementById('card');
     const head = root.getElementById('chead');
     const cs = getComputedStyle(card);
@@ -63,7 +62,7 @@ const CARDST = '''
     const hr = head.getBoundingClientRect();
     return {
       open: card.classList.contains('open'),
-      grad: (cs.backgroundImage || '').replace(/\s+/g, ' '),
+      grad: (cs.backgroundImage || '').replace(/s+/g, ' '),
       left: Math.round(r.x), top: Math.round(r.y),
       w: Math.round(r.width), h: Math.round(r.height),
       headCursor: getComputedStyle(head).cursor,
@@ -80,7 +79,7 @@ const CARDST = '''
 ''';
 
 Future<Map> cardst(CdpSession tab) async =>
-    jsonDecode((await js(tab, CARDST)) as String) as Map;
+    jsonDecode((await js(tab, cardSt)) as String) as Map;
 
 // The selectable-element finder from the snapshot probe: leaf elements
 // with real text, fully in view. [skip] drops the first N (to pick a
@@ -118,10 +117,10 @@ Future<void> clickAt(CdpSession tab, num x, num y) async {
 // Mirror of positionCard's anchor math (the no-pin branch) so the probe
 // can prove a reopened card is truly re-anchored, not just "somewhere".
 Map anchorExpect(Map el, num cardH, num innerW, num innerH) {
-  const W = 300.0, GAP = 12.0;
+  const W = 300.0, gap = 12.0;
   final ch = cardH.toDouble();
-  var x = (el['rt'] as num).toDouble() + GAP;
-  if (x + W > innerW - 8) x = (el['l'] as num).toDouble() - W - GAP;
+  var x = (el['rt'] as num).toDouble() + gap;
+  if (x + W > innerW - 8) x = (el['l'] as num).toDouble() - W - gap;
   if (x < 8) {
     x = math.min(
         math.max(8.0, (el['l'] as num).toDouble()), math.max(8.0, innerW - W - 8));
@@ -145,11 +144,11 @@ Future<void> main() async {
     await Future.delayed(const Duration(milliseconds: 80));
   }
   await poll(tab,
-      "getComputedStyle(" + SR + ".getElementById('dockbtn')).visibility === 'visible'",
+      "getComputedStyle($sr.getElementById('dockbtn')).visibility === 'visible'",
       const Duration(seconds: 4));
-  await js(tab, SR + ".querySelector('#dockbtn').click()");
+  await js(tab, "$sr.querySelector('#dockbtn').click()");
   await Future.delayed(const Duration(milliseconds: 400));
-  await js(tab, SR + ".querySelector('[data-verb=edit]').click()");
+  await js(tab, "$sr.querySelector('[data-verb=edit]').click()");
   await Future.delayed(const Duration(milliseconds: 300));
 
   // 1. open the card on a real element.
@@ -171,18 +170,17 @@ Future<void> main() async {
       (grad.contains('139, 165, 101') || grad.contains('139,165,101')) &&
       (grad.contains('106, 133, 74') || grad.contains('106,133,74')) &&
       (grad.contains('64, 80, 44') || grad.contains('64,80,44')),
-      'card paints the arxa moss gradient: ' + grad);
+      'card paints the arxa moss gradient: $grad');
 
   // 3. drag by the header with the real mouse pipeline.
   check((st['headCursor'] as String).contains('grab'),
-      'header is a grab handle: cursor=' + (st['headCursor'] as String));
+      'header is a grab handle: cursor=${st['headCursor'] as String}');
   final before = await cardst(tab);
   // The header is a TAB BAR now (2026-08-26): buttons never start a
   // drag, so the grab point is the free space BETWEEN the tab pair and
   // the × button — computed live, never a magic offset.
-  final grabPt = await js(tab, '''
-    (() => {
-      const root = ''' + SR + ''';
+  final grabPt = await js(tab, '''    (() => {
+      const root = $sr;
       const arxa = root.querySelector('#chead .tab[data-tab=arxa]');
       const close = root.querySelector('#chead .cclose');
       const head = root.getElementById('chead').getBoundingClientRect();
@@ -222,8 +220,7 @@ Future<void> main() async {
   final mdy = (dragged['top'] as num) - (before['top'] as num);
   check(dragged['open'] == true, 'card stays open through the drag');
   check((mdx - dx).abs() <= 8 && (mdy - dy).abs() <= 8,
-      'header drag moves the card by the delta: d=(' + mdx.toString() + ',' +
-          mdy.toString() + ') want=(' + dx.toString() + ',' + dy.toString() + ')');
+      'header drag moves the card by the delta: d=($mdx,$mdy) want=($dx,$dy)');
 
   // 4. drag overrides the anchor law: fire the float tracker directly.
   await js(tab, 'window.dispatchEvent(new Event("scroll"))');
@@ -288,19 +285,17 @@ Future<void> main() async {
       await Future.delayed(const Duration(milliseconds: 80));
     }
     await poll(tab,
-        "getComputedStyle(" + SR + ".getElementById('dockbtn')).visibility === 'visible'",
+        "getComputedStyle($sr.getElementById('dockbtn')).visibility === 'visible'",
         const Duration(seconds: 6));
-    await js(tab, SR + ".querySelector('#dockbtn').click()");
+    await js(tab, "$sr.querySelector('#dockbtn').click()");
     await Future.delayed(const Duration(milliseconds: 400));
-    await js(tab, SR + ".querySelector('[data-verb=edit]').click()");
+    await js(tab, "$sr.querySelector('[data-verb=edit]').click()");
     await Future.delayed(const Duration(milliseconds: 400));
     // ALWAYS re-query (7j law): the door added ~2s between the rect
     // capture and this click, and the hero animator translates
     // elements while it runs — the card anchors where the element is
     // AT CLICK TIME, so the expectation must read the LIVE rect.
-    final elBRaw = await js(tab, '''
-      (() => { const el = document.querySelector('[data-arxa-id="''' +
-        (elB!['id'] as String) + '''"]');
+    final elBRaw = await js(tab, '''      (() => { const el = document.querySelector('[data-arxa-id="${elB!['id'] as String}"]');
         if (!el) return 'null';
         const r = el.getBoundingClientRect();
         const cx = r.x + r.width / 2, cy = r.y + r.height / 2;
@@ -321,9 +316,7 @@ Future<void> main() async {
       final okX = ((reopened['left'] as num) - exp['x']).abs() <= 3;
       final okY = ((reopened['top'] as num) - exp['y']).abs() <= 3;
       check(okX && okY,
-          'reopening on a fresh selection re-anchors: pos=(' +
-              reopened['left'].toString() + ',' + reopened['top'].toString() +
-              ') want=(' + exp['x'].toString() + ',' + exp['y'].toString() + ')');
+          'reopening on a fresh selection re-anchors: pos=(${reopened['left']},${reopened['top']}) want=(${exp['x']},${exp['y']})');
     }
   }
 
@@ -331,17 +324,16 @@ Future<void> main() async {
   final sc = (st['scrollColor'] as String? ?? '');
   final trackGone = sc.endsWith('rgba(0, 0, 0, 0)');
   final thumb = sc.replaceAll(' rgba(0, 0, 0, 0)', '');
-  check(trackGone, 'scrollbar track is transparent: ' + sc);
+  check(trackGone, 'scrollbar track is transparent: $sc');
   check(thumb.contains('43, 54, 29') || thumb.contains('110, 136, 76'),
-      'scrollbar thumb blends into the moss scheme: ' + thumb);
+      'scrollbar thumb blends into the moss scheme: $thumb');
   check(st['scrollWidth'] == 'thin', 'scrollbar-width thin');
   check(st['sheetHasCardTrack'] == true, 'sheet carries the card track rule');
   check(st['sheetHasCardThumb'] == true, 'sheet carries the card thumb rule');
 
   // Evidence: the dragged card at 2x, plus the full page.
   Future<List<int>> clipCard() async {
-    final rect = await js(tab, '''
-      (() => { const r = ''' + SR + '''.getElementById('card').getBoundingClientRect();
+    final rect = await js(tab, '''      (() => { const r = $sr.getElementById('card').getBoundingClientRect();
         return JSON.stringify({x: r.x, y: r.y, w: r.width, h: r.height}); })()
     ''');
     final rc = jsonDecode(rect as String) as Map;
@@ -360,16 +352,15 @@ Future<void> main() async {
   final evDir = '/Volumes/developer_ssd/Developer/totem_labs/'
       'clients/architect-gallore/design/suczka-studio/evidence/dial-card';
   Directory(evDir).createSync(recursive: true);
-  File(evDir + '/float-card-dragged-2x.png').writeAsBytesSync(await clipCard());
-  File(evDir + '/page-with-float-card-1280.png').writeAsBytesSync(await tab.screenshot());
-  stdout.writeln('evidence: ' + evDir);
+  File('$evDir/float-card-dragged-2x.png').writeAsBytesSync(await clipCard());
+  File('$evDir/page-with-float-card-1280.png').writeAsBytesSync(await tab.screenshot());
+  stdout.writeln('evidence: $evDir');
 
   // 7. both error channels clean.
   check(tab.pageErrors.isEmpty && tab.consoleErrors.isEmpty,
-      'zero page + console errors (' + tab.pageErrors.length.toString() + '+' +
-          tab.consoleErrors.length.toString() + ')');
+      'zero page + console errors (${tab.pageErrors.length}+${tab.consoleErrors.length})');
 
   await browser.close();
-  stdout.writeln(fails == 0 ? 'ALL PASS' : 'FAILURES: ' + fails.toString());
+  stdout.writeln(fails == 0 ? 'ALL PASS' : 'FAILURES: $fails');
   exit(fails == 0 ? 0 : 1);
 }

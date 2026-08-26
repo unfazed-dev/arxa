@@ -37,12 +37,12 @@ Future<void> main() async {
   await mouse(tab, 'mousePressed', 1228, 748,
       extra: {'button': 'left', 'buttons': 1, 'clickCount': 1});
   await Future.delayed(Duration(milliseconds: 100));
-  stdout.writeln('after down : ' + await js(tab,
-      '(() => { const b = document.getElementById("arxa-dial-host").shadowRoot.querySelector("#dockbtn"); window.__cap.hasAfterDown = String(b.hasPointerCapture(1)); return JSON.stringify(window.__cap); })()'));
+  stdout.writeln('after down : ${await js(tab,
+      '(() => { const b = document.getElementById("arxa-dial-host").shadowRoot.querySelector("#dockbtn"); window.__cap.hasAfterDown = String(b.hasPointerCapture(1)); return JSON.stringify(window.__cap); })()')}');
   await mouse(tab, 'mouseMoved', 1108, 668, extra: {'buttons': 1});
   await Future.delayed(Duration(milliseconds: 150));
   await mouse(tab, 'mouseMoved', 1000, 600, extra: {'buttons': 1});
   await Future.delayed(Duration(milliseconds: 150));
-  stdout.writeln('after moves: ' + await js(tab, 'JSON.stringify(window.__cap)'));
+  stdout.writeln('after moves: ${await js(tab, 'JSON.stringify(window.__cap)')}');
   await client.close();
 }

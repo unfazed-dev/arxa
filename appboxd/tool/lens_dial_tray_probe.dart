@@ -9,7 +9,7 @@ Future<dynamic> js(CdpSession tab, String e) => tab.evaluate(e);
 Future<void> mouse(CdpSession t, int x, int y) async {
   await t.send('Input.dispatchMouseEvent', {'type': 'mouseMoved', 'x': x, 'y': y});
 }
-const SR = "document.getElementById('arxa-dial-host').shadowRoot";
+const sr = "document.getElementById('arxa-dial-host').shadowRoot";
 int fails = 0;
 void check(bool ok, String label) {
   stdout.writeln((ok ? 'PASS ' : 'FAIL ') + label);
@@ -27,21 +27,21 @@ Future<void> main() async {
     await Future.delayed(const Duration(milliseconds: 80));
   }
   await Future.delayed(const Duration(milliseconds: 900));
-  final shown = await js(tab, '$SR.querySelector("#dockbtn").getBoundingClientRect().x');
+  final shown = await js(tab, '$sr.querySelector("#dockbtn").getBoundingClientRect().x');
   check((shown as num) > 900, 'dial revealed from hot corner (x=$shown)');
 
   // 2. fan: exactly 3 triggers with the right ids
-  await js(tab, '$SR.querySelector("#dockbtn").click()');
+  await js(tab, '$sr.querySelector("#dockbtn").click()');
   await Future.delayed(const Duration(milliseconds: 500));
   final ids = await js(tab, '''
-    (() => { return [...$SR.querySelectorAll('.verb')].map(v => v.dataset.verb).join(','); })()
+    (() => { return [...$sr.querySelectorAll('.verb')].map(v => v.dataset.verb).join(','); })()
   ''');
   check(ids == 'edit,comment,studio', 'fan = 3 triggers ($ids)');
 
   // 3. no-overlap: neighbor centers >= 40px apart
   final chords = await js(tab, '''
     (() => {
-      const vs = [...$SR.querySelectorAll('.verb')].map(v => {
+      const vs = [...$sr.querySelectorAll('.verb')].map(v => {
         const r = v.getBoundingClientRect(); return {x: r.x + r.width/2, y: r.y + r.height/2};
       });
       let m = 1e9;
@@ -52,14 +52,14 @@ Future<void> main() async {
   check((chords as num) >= 40, 'fan neighbors never overlap (min chord=$chords px)');
 
   // 4. Studio: tray opens, dial parks, 5 slides + 5 dots
-  await js(tab, "$SR.querySelector('[data-verb=studio]').click()");
+  await js(tab, "$sr.querySelector('[data-verb=studio]').click()");
   await Future.delayed(const Duration(milliseconds: 700));
-  final trayOpen = await js(tab, '$SR.querySelector("#tray").classList.contains("open")');
-  final dockX = await js(tab, '$SR.querySelector("#dockbtn").getBoundingClientRect().x');
-  final slides = await js(tab, '$SR.querySelectorAll("#track .slide").length');
-  final dotsN = await js(tab, '$SR.querySelectorAll("#dots .dotbtn").length');
+  final trayOpen = await js(tab, '$sr.querySelector("#tray").classList.contains("open")');
+  final dockX = await js(tab, '$sr.querySelector("#dockbtn").getBoundingClientRect().x');
+  final slides = await js(tab, '$sr.querySelectorAll("#track .slide").length');
+  final dotsN = await js(tab, '$sr.querySelectorAll("#dots .dotbtn").length');
   final slideIds = await js(tab, '''
-    (() => { return [...$SR.querySelectorAll('#track .slide')].map(s => s.dataset.slide).join(','); })()
+    (() => { return [...$sr.querySelectorAll('#track .slide')].map(s => s.dataset.slide).join(','); })()
   ''');
   check(trayOpen == true, 'tray opens on Studio');
   check((dockX as num) > 1300, 'dial parked while tray open (x=$dockX)');
@@ -67,27 +67,27 @@ Future<void> main() async {
   check(slideIds == 'edit,comments,settings,tweak,ship', 'slide order ($slideIds)');
 
   // 5. CTA per slide: Edit -> Commit, Comments -> Share, Ship -> Deploy
-  await js(tab, "$SR.querySelectorAll('#dots .dotbtn')[1].click()");
+  await js(tab, "$sr.querySelectorAll('#dots .dotbtn')[1].click()");
   await Future.delayed(const Duration(milliseconds: 900));
-  final ctaComments = await js(tab, '$SR.querySelector("#cta").textContent');
-  await js(tab, "$SR.querySelectorAll('#dots .dotbtn')[4].click()");
+  final ctaComments = await js(tab, '$sr.querySelector("#cta").textContent');
+  await js(tab, "$sr.querySelectorAll('#dots .dotbtn')[4].click()");
   await Future.delayed(const Duration(milliseconds: 900));
-  final ctaShip = await js(tab, '$SR.querySelector("#cta").textContent');
-  final ctaDisabled = await js(tab, '$SR.querySelector("#cta").disabled');
+  final ctaShip = await js(tab, '$sr.querySelector("#cta").textContent');
+  final ctaDisabled = await js(tab, '$sr.querySelector("#cta").disabled');
   check(ctaComments == 'Share', 'Comments CTA = Share ($ctaComments)');
   check(ctaShip == 'Deploy' && ctaDisabled == true, 'Ship CTA = Deploy, disabled until slice 6');
 
   // 6. close: dial springs back
-  await js(tab, '$SR.querySelector("#tclose").click()');
+  await js(tab, '$sr.querySelector("#tclose").click()');
   await Future.delayed(const Duration(milliseconds: 900));
-  final dockBack = await js(tab, '$SR.querySelector("#dockbtn").getBoundingClientRect().x');
-  final trayClosed = await js(tab, '$SR.querySelector("#tray").classList.contains("open")');
+  final dockBack = await js(tab, '$sr.querySelector("#dockbtn").getBoundingClientRect().x');
+  final trayClosed = await js(tab, '$sr.querySelector("#tray").classList.contains("open")');
   check((dockBack as num) < 1300 && trayClosed == false, 'tray close springs dial back (x=$dockBack)');
 
   // 7. Edit trigger -> select a real element -> card opens with facets
-  await js(tab, '$SR.querySelector("#dockbtn").click()');
+  await js(tab, '$sr.querySelector("#dockbtn").click()');
   await Future.delayed(const Duration(milliseconds: 400));
-  await js(tab, "$SR.querySelector('[data-verb=edit]').click()");
+  await js(tab, "$sr.querySelector('[data-verb=edit]').click()");
   await Future.delayed(const Duration(milliseconds: 300));
   final clicked = await js(tab, '''
     (() => {
@@ -102,10 +102,10 @@ Future<void> main() async {
     await tab.send('Input.dispatchMouseEvent', {'type': 'mousePressed', 'x': (clicked['x'] as num).toInt(), 'y': (clicked['y'] as num).toInt(), 'button': 'left', 'clickCount': 1});
     await tab.send('Input.dispatchMouseEvent', {'type': 'mouseReleased', 'x': (clicked['x'] as num).toInt(), 'y': (clicked['y'] as num).toInt(), 'button': 'left', 'clickCount': 1});
     await Future.delayed(const Duration(milliseconds: 500));
-    final cardOpen = await js(tab, '$SR.querySelector("#card").classList.contains("open")');
-    final facets = await js(tab, '$SR.querySelectorAll("#card .facet").length');
+    final cardOpen = await js(tab, '$sr.querySelector("#card").classList.contains("open")');
+    final facets = await js(tab, '$sr.querySelectorAll("#card .facet").length');
     final inViewport = await js(tab, '''
-      (() => { const r = $SR.querySelector("#card").getBoundingClientRect();
+      (() => { const r = $sr.querySelector("#card").getBoundingClientRect();
         return r.x >= 0 && r.x + r.width <= innerWidth && r.y >= 0 && r.y + r.height <= innerHeight; })()
     ''');
     check(cardOpen == true, 'card opens on element click');
@@ -132,7 +132,7 @@ Future<void> main() async {
   if (guest is String && guest.isNotEmpty) {
     final tab2 = await client.newTab();
     await tab2.setViewport(390, 844);
-    await tab2.navigateAndSettleForCapture('http://127.0.0.1:4319/?dial=' + guest, settleMs: 2500);
+    await tab2.navigateAndSettleForCapture('http://127.0.0.1:4319/?dial=$guest', settleMs: 2500);
     for (var i = 0; i < 5; i++) {
       await tab2.send('Input.dispatchMouseEvent', {'type': 'mouseMoved', 'x': 386 - i, 'y': 840 - i});
       await Future.delayed(const Duration(milliseconds: 80));
