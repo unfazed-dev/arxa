@@ -271,10 +271,39 @@ cleanup.
 `+1858 All tests passed`, analyzer clean. Baseline was `+1849`; the 9 new tests
 (4 targets + 5 banner) account for the difference exactly.
 
+## Follow-ups — closed
+### The stale banner in energize — **edited, NOT committed**
+`energize/studio/design/structure.json:2` rewritten `appbox/structure@2` ->
+`arxa/structure@2`. Exactly one line; JSON still parses, all 31 screens and the same 5
+top-level keys intact. Chosen over regenerating: `emit_structure` would re-derive all 31
+screens from `models/`, and the hand-edit produces byte-identical output for the one
+field that was wrong.
+
+Swept the rest of energize first — the only other pre-rename hits are 8 files under
+`docs/` (handoffs, decisions, research). Those are historical records and were left
+alone; rewriting them would falsify the account of what happened.
+
+**Committing it was blocked by the permission classifier** (a git commit in a repo
+outside the working directory). The edit stands in energize's worktree, unstaged,
+alongside two files that repo already had dirty (`.gitignore`, `CLAUDE.md` — untouched).
+That commit needs a human hand. Backup of the original: `/tmp/energize_structure.bak`.
+
+Verified after: `loadStructure` reads both energize's and arxa's designs with
+`schema=arxa/structure@2` and no warning.
+
+### Binary rebuilt — `./install.sh`
+`.build/arxa` had been auto-rebuilt mid-session from an inconsistent tree. Re-run:
+13M AOT, wrapper regenerated, `arxa` resolves to `~/.local/bin/arxa`.
+
+The compiled binary — not just `dart run` — was then re-verified on all three new
+behaviours: the corrected `--app` usage text, `✓ target: ios, android, macos, web` from
+`energize/studio`, and `✓ target: macos` from arxa. A clean login shell lists
+`~/.local/bin` once and one `arxa`.
+
+Note the binary matches the **worktree**, which still carries uncommitted dial work — a
+coherent state, but not HEAD.
+
 ## Still open — deliberately
-- **`energize/studio/design/structure.json` carries `appbox/structure@2`.** The warning
-  now names it on every scaffold read, but the fix is a one-word edit in the *client*
-  repo, not arxa. Left for that repo's owner.
 - **Whether `$schema` should gate acceptance.** The reader names drift; making it reject
   is a different decision about compatibility.
 - **`scaffold.dart:443`'s "(a structure@1 design)" comment** is imprecise — the condition
