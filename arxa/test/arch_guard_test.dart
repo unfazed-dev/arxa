@@ -1027,6 +1027,16 @@ void main() {
       expect(r.violations.where((v) => v.rule == 'G14'), isEmpty);
     });
 
+    // Pins the deliberate boundary: the casing rule is anchored on the
+    // capital 'A' so an all-lowercase reverse-DNS id stays legal. Widening
+    // it to [Aa] breaks the real package id this fixture mirrors.
+    test('an all-lowercase reverse-DNS package id does not fire', () {
+      _file(tmp, 'lib/ui/kit_action/pkg.dart',
+          "const packageId = 'com.arxakit.arxa_kit_showcase_app';\n");
+      final r = archGuard(tmp.path);
+      expect(r.violations.where((v) => v.rule == 'G14'), isEmpty);
+    });
+
     test('a rival Abx* PascalCase type declaration is a violation', () {
       _file(tmp, 'lib/ui/kit_action/rival.dart', 'class AbxActionHub {}\n');
       final r = archGuard(tmp.path);

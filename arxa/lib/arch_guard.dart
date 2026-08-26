@@ -154,6 +154,12 @@ final _g14KPrefixActionRe = RegExp(
 // contiguously (this file is itself scanned, so a literal contiguous match
 // would self-flag); it matches identically to a plain substring search,
 // including mid-identifier (the `dispose…Actions` form).
+// Anchored on the capital `A` on purpose. An all-lowercase run is a
+// legitimate reverse-DNS / domain context, not an identifier typo:
+// widening this to `[Aa]` fires on the real package id in
+// kit/showcase_app/lib/ui/views/showcase_profile_shell/showcase_maps/
+// showcase_maps_viewmodel.dart. The lowerCamel typo form is therefore
+// uncaught by design — to catch it, strip quoted spans first.
 final _g14KitCasingRe = RegExp(r'Arxa(?=kit)');
 
 // G14: a rival PascalCase `Abx*` type declaration — the sanctioned type
