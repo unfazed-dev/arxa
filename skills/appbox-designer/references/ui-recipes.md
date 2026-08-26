@@ -298,6 +298,12 @@ export const AppBarFragment: FC<{ bar: BarData }> = ({ bar }) => <AppBar bar={ba
 
 **CSS:** `.appbar` in widgets.css — sticky top, flex row with gap, title
 ellipsis; `.appbar__menu-list` is the absolutely-positioned dropdown card.
+This BEM vocabulary is the **starter** path only. An app-kind artifact ships
+`families.css` + the active style overlay *instead of* `widgets.css`
+(`starter-partials/widgets/README.md`), and there family 23's contract is
+`.appbar` + `.ibtn`, a `<b>` title, a `.sp` spacer and an `.appmenu` — which
+`liquid-glass` re-sequences with flex `order` to float the bar as separate
+elements. Same partial, different class contract; do not mix them.
 
 **htmx:** actions are boosted links; the dropdown needs no htmx (`<details>`
 is the whole mechanism — a server roundtrip to open a menu is a bug).

@@ -58,8 +58,8 @@ two jobs.
 
 | archetype | compact | medium | expanded |
 |---|---|---|---|
-| **tab-shell** | tabbar | nav-rail | nav-rail or permanent drawer |
-| **nested-shell** | tabbar + inner segmented control | nav-rail + inner tabs | nav-rail + two-pane content |
+| **tab-shell** | tabbar | nav-rail | nav-rail or permanent drawer — **glass: sidebar, no rail** |
+| **nested-shell** | tabbar + inner segmented control | nav-rail + inner tabs | nav-rail + two-pane content — **glass: sidebar + two-pane** |
 | **dashboard-stack** | one scrolling column of cards | two-column grid | true multi-column grid |
 | **inset-grouped-list** | full-width grouped rows | wider inset, same rows | master–detail two-pane |
 | **pinned-search-list** | pinned search + results column | same, wider gutters | search + results list + detail pane |
@@ -81,7 +81,7 @@ the resolved ladder at session start.
 | chrome | compact | medium | expanded |
 |---|---|---|---|
 | header panel | always — title + **drawer action** + **dropdown menu** | same as compact | always — full action row |
-| primary nav | **tabbar** | **railbar**, collapsible/expandable | **activity panel + composer panel**, the composer permanent |
+| primary nav | **tabbar** | **railbar**, collapsible/expandable | **activity panel + composer panel**, the composer permanent — **glass swaps the railbar for a sidebar here** |
 | footer panel | — | — | body: the read-only stage timeline |
 | FAB | **staggered action menu**, animated fan-out | same as compact | — |
 
