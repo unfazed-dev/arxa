@@ -601,6 +601,21 @@ void main() {
       expect(cors, '*');
     });
 
+    // The mirror softening once swallowed this one. A DNS-rebinding probe is
+    // a GET with a forged Host and no Origin — the exact shape of an opaque
+    // frame's read — so it matched the softening and got 200 instead of 421.
+    // The refusal reasons are different questions: Host asks "is this
+    // connection even for me", Origin asks "may that page read me".
+    test('a foreign Host is refused with 421, never mirrored', () async {
+      final (status, body, cors) = await reqWithCors(
+          'GET', '$mirrorBase/__projects',
+          headers: {'Host': 'evil.example.com'});
+      expect(status, 421, reason: 'the DNS-rebinding defence was softened '
+          'into a 200 by the opaque-origin mirror branch');
+      expect(body, isNot(contains('"mirror":true')));
+      expect(cors, isNull);
+    });
+
     // The security invariant. If this ever goes green on a 200, the softening
     // has leaked from reads into writes and any sandboxed frame on the machine
     // can mutate the operator's draft.
