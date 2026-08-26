@@ -31,6 +31,7 @@ import 'package:arxa/gate_design_widgets.dart'
         widgetHomeOf;
 import 'package:arxa/project.dart';
 import 'package:path/path.dart' as p;
+import 'package:arxa/scaffold.dart' show findRepoRoot;
 
 // ══ result types ════════════════════════════════════════════════════════
 
@@ -236,18 +237,8 @@ List<File> _allViewModels(String dir) => _walkFiles(Directory(p.join(dir, 'ui'))
     .where((f) => f.path.endsWith('_viewmodel.js'))
     .toList();
 
-String? _findRepoRoot() {
-  var dir = Directory.current;
-  while (true) {
-    if (File('${dir.path}/config/arxa.config.json').existsSync()) return dir.path;
-    final parent = dir.parent;
-    if (parent.path == dir.path) return null;
-    dir = parent;
-  }
-}
-
 String _defaultSkillDir() {
-  final repo = _findRepoRoot() ?? Directory.current.path;
+  final repo = findRepoRoot() ?? Directory.current.path;
   return p.join(repo, 'skills', 'arxa-designer');
 }
 

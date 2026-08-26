@@ -943,9 +943,15 @@ int scaffold(
   // app, write-on-diff like the rest of the emit. Best-effort — a memory
   // read failure warns, never fails the scaffold.
   try {
-    if (writeMemB(
+    // MEM-B is repo memory travelling with the app. With no repo root there is
+    // no memory to carry, so skip it — assembling from a wrong root would ship
+    // another project's history inside this one.
+    final memRoot = findRepoRoot(appRoot);
+    if (memRoot == null) {
+      stderr.writeln('scaffold: WARN MEM-B skipped — no arxa repo root above $appRoot');
+    } else if (writeMemB(
         appRoot,
-        assembleMemB(findRepoRoot(appRoot),
+        assembleMemB(memRoot,
             appName: appRoot.split('/').where((s) => s.isNotEmpty).last,
             surfaces: [for (final s in frozen) s['surface'] as String],
             targets: targets,
@@ -1122,9 +1128,10 @@ class ScaffoldEmitter {
   String get _absAppRoot => _abs(appRoot);
 
   String get _derivationPath =>
-      derivationPath ?? '${findRepoRoot(appRoot)}/pipeline/state/targets.derivation.json';
+      derivationPath ??
+      '${requireRepoRoot(appRoot)}/pipeline/state/targets.derivation.json';
   String get _configPath =>
-      configPath ?? '${findRepoRoot(appRoot)}/config/arxa.config.json';
+      configPath ?? '${requireRepoRoot(appRoot)}/config/arxa.config.json';
 
   /// Emit the per-surface tree. Returns 0 on success, 1 on failure.
   int emit() => scaffold(_designRoot, _absAppRoot, targets, _derivationPath, _configPath);
@@ -1136,19 +1143,34 @@ class ScaffoldEmitter {
 
 String _abs(String path) => File(path).absolute.path;
 
-/// Discover the repo root by walking up from [start] for config/arxa.config.json.
-String findRepoRoot(String start) {
-  var dir = Directory(start).absolute;
+/// Walk up from [start] (default: cwd) for `config/arxa.config.json`, the
+/// marker that identifies an arxa checkout. Null when the walk-up exhausts.
+///
+/// The single implementation: five near-identical private copies of this walk
+/// used to disagree about the miss case — four returned null, two silently
+/// substituted `Directory.current`, which let a CLIENT repo stand in for the
+/// arxa checkout. Callers now state their own fallback, out loud. See
+/// docs/plans/arxa-rename-handoff-response.md (A5b).
+String? findRepoRoot([String? start]) {
+  var dir = Directory(start ?? Directory.current.path).absolute;
   while (true) {
     if (File('${dir.path}/config/arxa.config.json').existsSync()) {
       return dir.path;
     }
     final parent = dir.parent;
-    if (parent.path == dir.path) break;
+    if (parent.path == dir.path) return null;
     dir = parent;
   }
-  return Directory.current.absolute.path;
 }
+
+/// [findRepoRoot], or a named failure. For paths that are WRONG against the
+/// wrong root — the engine config, the derivation table — rather than merely
+/// unavailable. A garbage root here surfaces later as a confusing
+/// file-not-found deep in the emit; this fails where the cause is.
+String requireRepoRoot([String? start]) =>
+    findRepoRoot(start) ??
+    (throw StateError('no config/arxa.config.json above '
+        '${start ?? Directory.current.path} — not an arxa repo checkout'));
 
 // ----------------------------------------------------------- self-test
 

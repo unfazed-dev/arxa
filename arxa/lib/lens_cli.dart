@@ -21,6 +21,7 @@ import 'package:arxa/lens/native/adb.dart';
 import 'package:arxa/lens/native/flutter_vm.dart';
 import 'package:arxa/lens/native/sck.dart';
 import 'package:arxa/lens/native/simctl.dart';
+import 'package:arxa/scaffold.dart' show findRepoRoot;
 
 const String _usage = '''
 Usage: arxa lens <verb> [args]
@@ -921,16 +922,6 @@ List<_Rung> _loadLadder(String repoRoot) {
   }
 }
 
-String _findRepoRoot() {
-  var dir = Directory.current;
-  while (true) {
-    if (File('${dir.path}/config/arxa.config.json').existsSync()) return dir.path;
-    final parent = dir.parent;
-    if (parent.path == dir.path) return Directory.current.path;
-    dir = parent;
-  }
-}
-
 Future<int> _shoot(_Args a) async {
   if (a.positional.isEmpty) {
     return _usageErr('shoot <url> [--rungs=compact,medium,expanded] [--out=dir] [--artifact=dir]');
@@ -938,7 +929,10 @@ Future<int> _shoot(_Args a) async {
   final url = a.positional[0];
   final List<_Rung> rungs;
   try {
-    rungs = _resolveRungs(a, _findRepoRoot());
+    // Was a private copy that returned Directory.current on exhaustion —
+    // the same value it started from, so a miss was indistinguishable from
+    // a hit at the root. The fallback is the same; now it is visible.
+    rungs = _resolveRungs(a, findRepoRoot() ?? Directory.current.path);
   } on StateError catch (e) {
     stderr.writeln('lens shoot: $e');
     return 2;

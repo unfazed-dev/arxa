@@ -25,6 +25,7 @@ import 'package:arxa/crypto_aead.dart';
 import 'package:arxa/design_server/l10n.dart';
 import 'package:arxa/gate_design_styles.dart' show gateDesignStyles;
 import 'package:arxa/gate_design_widgets.dart' show gateDesignWidgets;
+import 'package:arxa/scaffold.dart' show findRepoRoot;
 
 // The l10n primitives are part of the design-tools public surface (pseudolocalize
 // uses parsePlural/parseArb; Task 20 extends the l10n submodule further).
@@ -498,7 +499,7 @@ List<LintFinding> _clientJsCeilingFindings(String artifactDir,
           'client-js.json present but no numeric ceilingKb — fix or remove')
     ];
   }
-  final repo = _findRepoRoot();
+  final repo = findRepoRoot();
   if (repo == null) {
     notes?.add(LintFinding(ceilingFile.path,
         'ceilingKb=$ceilingKb declared but vendor dir unresolvable (no repo '
@@ -658,7 +659,7 @@ CmdResult designCheckLadder(List<String> args) {
           stderrLines: ['usage: arxa design check-ladder [--config <p>] [--doc <p>]']);
     }
   }
-  final repo = _findRepoRoot() ?? Directory.current.path;
+  final repo = findRepoRoot() ?? Directory.current.path;
   configPath ??= '$repo/skills/arxa-designer/runtime/ladder.json';
   docPath ??= '$repo/skills/arxa-designer/references/viewport-ladder.md';
   final problems = checkLadderFromInputs(
@@ -1580,7 +1581,7 @@ Future<CmdResult> designVendorFetch(List<String> args) async {
           stderrLines: const ['usage: arxa design vendor-fetch [--vendor <dir>]']);
     }
   }
-  final repo = _findRepoRoot() ?? Directory.current.path;
+  final repo = findRepoRoot() ?? Directory.current.path;
   vendorDir ??= '$repo/skills/arxa-designer/runtime/vendor';
   return vendorFetch(vendorDir);
 }
@@ -1714,7 +1715,7 @@ DoctorReport doctorCheck({Iterable<DoctorRow>? probes, String? runtimeDir}) {
 /// from-scratch project must not make doctor report the checkout's own
 /// committed runtime as missing).
 String skillRuntimeDir() =>
-    p.join(_findRepoRoot() ?? scriptRepoRoot() ?? Directory.current.path,
+    p.join(findRepoRoot() ?? scriptRepoRoot() ?? Directory.current.path,
         'skills', 'arxa-designer', 'runtime');
 
 /// Locates the arxa checkout that is executing, wherever the user's CWD
@@ -1843,7 +1844,7 @@ Future<CmdResult> designEject(List<String> args) async {
   }
   final artifact = p.absolute(positional[0]);
   final out = p.absolute(positional[1]);
-  final repo = _findRepoRoot() ?? Directory.current.path;
+  final repo = findRepoRoot() ?? Directory.current.path;
   final vendorDir =
       p.join(repo, 'skills', 'arxa-designer', 'runtime', 'vendor');
 
@@ -3704,13 +3705,3 @@ CmdResult designDsImport(List<String> args) {
 }
 
 // ═─ shared ─════════════════════════════════════════════════════════════
-
-String? _findRepoRoot() {
-  var dir = Directory.current;
-  while (true) {
-    if (File('${dir.path}/config/arxa.config.json').existsSync()) return dir.path;
-    final parent = dir.parent;
-    if (parent.path == dir.path) return null;
-    dir = parent;
-  }
-}

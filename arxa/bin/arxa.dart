@@ -69,6 +69,7 @@ import 'package:arxa/kb_check.dart';
 import 'package:arxa/kit_conventions.dart';
 import 'package:arxa/kit_facts.dart';
 import 'package:arxa/kit_lock.dart';
+import 'package:arxa/scaffold.dart' show findRepoRoot;
 
 Future<void> main(List<String> args) async {
   if (args.isEmpty) {
@@ -104,7 +105,7 @@ Future<void> main(List<String> args) async {
         // credential shells (`!arxa credentials exec …` in Pi's models.json)
         // run from arbitrary directories.
         catalogPath:
-            '${_findRepoRoot() ?? scriptRepoRoot() ?? Directory.current.path}/config/credentials.catalog.json',
+            '${findRepoRoot() ?? scriptRepoRoot() ?? Directory.current.path}/config/credentials.catalog.json',
       ));
     case 'emit':
       _runEmit(rest);
@@ -304,7 +305,7 @@ Future<void> _runGate(List<String> args) async {
   }
 
   // Discover repo root by walking up for config/arxa.config.json.
-  repoRoot ??= _findRepoRoot();
+  repoRoot ??= findRepoRoot();
   if (repoRoot == null) {
     stderr.writeln('arxa gate: cannot find repo root (no config/arxa.config.json found)');
     exit(2);
@@ -354,7 +355,7 @@ Future<void> _runAllGates(List<String> args) async {
         break;
     }
   }
-  repoRoot ??= _findRepoRoot();
+  repoRoot ??= findRepoRoot();
   if (repoRoot == null) {
     stderr.writeln('arxa gate --all: cannot find repo root');
     exit(2);
@@ -447,7 +448,7 @@ int _runTier1Gate(List<String> args) {
       stderr.writeln('tier1 --promote: refusing to promote — suites failed');
       return 1;
     }
-    final root = _findRepoRoot();
+    final root = findRepoRoot();
     if (root == null) {
       stderr.writeln('tier1 --promote: cannot find repo root');
       return 2;
@@ -646,7 +647,7 @@ void _runEmit(List<String> args) {
     }
   }
 
-  final repoRoot = _findRepoRoot() ?? Directory.current.path;
+  final repoRoot = findRepoRoot() ?? Directory.current.path;
   appRoot ??= repoRoot;
   // The canonical studio design default — keep in step with
   // GateContext.studioDesignDir (gates.dart). v2 replaced v1 2026-08-16.
@@ -745,7 +746,7 @@ int _emitPalette(String seedHex, List<String> rest) {
 void _runLint(List<String> args) {
   final root = args.isNotEmpty && !args.first.startsWith('-')
       ? args.first
-      : (_findRepoRoot() ?? Directory.current.path);
+      : (findRepoRoot() ?? Directory.current.path);
   if (!File('$root/config/forbidden_abs_prefixes.txt').existsSync() ||
       !File('$root/config/stripped_names.txt').existsSync()) {
     stderr.writeln('arxa lint: missing config rule files under $root/config/');
@@ -768,7 +769,7 @@ void _runLint(List<String> args) {
 void _runDocs(List<String> args) {
   final root = args.isNotEmpty && !args.first.startsWith('-')
       ? args.first
-      : (_findRepoRoot() ?? Directory.current.path);
+      : (findRepoRoot() ?? Directory.current.path);
   final result = validateDocs(root);
   for (final f in result.failures) {
     stderr.writeln('DOCS FAIL: $f');
@@ -802,7 +803,7 @@ void _runKb(List<String> args) {
   }
   final sub = args.first;
   final rest = args.sublist(1);
-  final repoRoot = _findRepoRoot() ?? Directory.current.path;
+  final repoRoot = findRepoRoot() ?? Directory.current.path;
 
   switch (sub) {
     case 'facts':
@@ -866,7 +867,7 @@ void _runKb(List<String> args) {
 int _runCapabilityGate(List<String> args) {
   final appRoot = args.isNotEmpty && !args.first.startsWith('-')
       ? args.first
-      : (_findRepoRoot() ?? Directory.current.path);
+      : (findRepoRoot() ?? Directory.current.path);
   final result = scanCapabilities(appRoot);
   for (final e in result.evidence) {
     print('  $e');
@@ -884,7 +885,7 @@ int _runCapabilityGate(List<String> args) {
 int _runApiMapGate(List<String> args) {
   final appRoot = args.isNotEmpty && !args.first.startsWith('-')
       ? args.first
-      : (_findRepoRoot() ?? Directory.current.path);
+      : (findRepoRoot() ?? Directory.current.path);
   final mapPath = '$appRoot/kit/core/FLUTTER_API_MAP.md';
   final violations = scanApiMap(appRoot, mapPath);
   if (violations.isEmpty) {
@@ -905,7 +906,7 @@ void _runServe(List<String> args) {
       port = int.tryParse(args[++i]) ?? ArxadConfig.defaultPort;
     }
   }
-  final repoRoot = _findRepoRoot();
+  final repoRoot = findRepoRoot();
   if (repoRoot == null) {
     stderr.writeln('arxa serve: cannot find repo root');
     exit(2);
@@ -921,17 +922,4 @@ void _runServe(List<String> args) {
 String? _flagValue(List<String> args, String flag) {
   final i = args.indexOf(flag);
   return (i >= 0 && i + 1 < args.length) ? args[i + 1] : null;
-}
-
-String? _findRepoRoot() {
-  var dir = Directory.current;
-  while (true) {
-    if (File('${dir.path}/config/arxa.config.json').existsSync()) {
-      return dir.path;
-    }
-    final parent = dir.parent;
-    if (parent.path == dir.path) break;
-    dir = parent;
-  }
-  return null;
 }

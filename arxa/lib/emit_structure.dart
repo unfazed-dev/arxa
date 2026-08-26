@@ -807,8 +807,12 @@ String? _compOf(String? surface) {
 /// walk-up the runtime assets use. The kit vocabulary is arxa's, never the
 /// project's.
 Set<String>? _loadKitDirs(String designRoot) {
-  var path = '${findRepoRoot(designRoot)}/config/kit-registry.json';
-  if (!File(path).existsSync()) {
+  // A repo-mode project has no config/ of its own, so this walk-up legitimately
+  // misses — the executable walk-up below is the designed fallback for exactly
+  // that case. Interpolating a null root would have produced 'null/config/...'.
+  final root = findRepoRoot(designRoot);
+  var path = root == null ? '' : '$root/config/kit-registry.json';
+  if (path.isEmpty || !File(path).existsSync()) {
     var dir = File(Platform.executable).parent.absolute;
     while (true) {
       final candidate = '${dir.path}/config/kit-registry.json';

@@ -16,6 +16,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:arxa/deploy.dart';
+import 'package:arxa/scaffold.dart' show findRepoRoot;
 
 const String _usage = '''
 Usage: arxa deploy <subcommand> [options]
@@ -114,24 +115,10 @@ String _resolveLedger(String? flag) {
   if (flag != null && flag.isNotEmpty) return flag;
   final env = Platform.environment['ARXA_DEPLOY_LEDGER'];
   if (env != null && env.isNotEmpty) return env;
-  final root = _findRepoRoot() ?? Directory.current.path;
+  final root = findRepoRoot() ?? Directory.current.path;
   return '$root/pipeline/state/deploy-ledger.json';
 }
 
-/// Walk up for config/arxa.config.json — the repo-root convention shared with
-/// bin/arxa.dart (kept private there; duplicated here because deploy_cli is a
-/// standalone entry, not a bin/ helper).
-String? _findRepoRoot() {
-  var dir = Directory.current;
-  while (true) {
-    if (File('${dir.path}/config/arxa.config.json').existsSync()) {
-      return dir.path;
-    }
-    final parent = dir.parent;
-    if (parent.path == dir.path) return null;
-    dir = parent;
-  }
-}
 
 /// Minimal `--flag value` parser for the deploy flags. Returns null + writes
 /// usage on an unknown flag.
