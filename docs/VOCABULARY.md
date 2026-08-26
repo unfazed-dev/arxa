@@ -1019,20 +1019,20 @@ _Avoid_: downward-only placement (rejected — leaves placement co-managed by
 graph + discretion)
 _Layer_: Design medium
 
-**Design Dial**:
+**Arxa Dial**:
 The floating control baked into every design artifact, so the author can adjust the design live and clients can leave feedback on it — one control, two modes.
 The always-present first-party island generated on every artifact: a radial dock with expanding panels, default on, toggleable by the operator only, never hideable by clients (watermark role). Its two modes are Design Mode and Feedback Mode.
 _Avoid_: feedback dial (superseded — it was the Feedback-Mode-only ancestor), FAB, widget (reserved)
 _Layer_: Design medium
 
 **Design Mode**:
-The author-only side of the Design Dial: select a piece of the design, adjust its look or wording, and see the change live.
-The Design Dial mode available to the Author only, offering selection plus curated per-widget-kind facet editors (with a raw-CSS escape hatch) across three edit tiers — tokens, element style, text. Edits auto-save into the Draft Overlay; structure (add/move/reorder widgets) is never editable here.
+The author-only side of the Arxa Dial: select a piece of the design, adjust its look or wording, and see the change live.
+The Arxa Dial mode available to the Author only, offering selection plus curated per-widget-kind facet editors (with a raw-CSS escape hatch) across three edit tiers — tokens, element style, text. Edits auto-save into the Draft Overlay; structure (add/move/reorder widgets) is never editable here.
 _Layer_: Design medium
 
 **Feedback Mode**:
-The client side of the Design Dial: look at the shared design, drop Pins on it, draw over it, and track what happened to each comment.
-The Design Dial mode available over a Share Link: Pins with threaded replies and a kanban lifecycle (Open / Triaged / In progress / Resolved / Won't do), freehand draw-over whose strokes persist by attaching to a Pin (never standalone; stored as a `design_dial_drawings` row, 1:1 with its Pin), per-layer toggles (comments / pins / drawings) and the Review Shade. Clients never edit the design.
+The client side of the Arxa Dial: look at the shared design, drop Pins on it, draw over it, and track what happened to each comment.
+The Arxa Dial mode available over a Share Link: Pins with threaded replies and a kanban lifecycle (Open / Triaged / In progress / Resolved / Won't do), freehand draw-over whose strokes persist by attaching to a Pin (never standalone; stored as a `design_dial_drawings` row, 1:1 with its Pin), per-layer toggles (comments / pins / drawings) and the Review Shade. Clients never edit the design.
 _Layer_: Design medium
 
 **Draft Overlay**:
@@ -1043,7 +1043,7 @@ _Layer_: Design medium
 
 **Publish**:
 The author's manual button that makes the current design — with all committed adjustments — live at the one stable client link.
-The operator-triggered deploy of committed artifact source to the artifact's single stable share URL; never automatic, always from the Design Dial. Draft Overlay content reaches clients only through a commit followed by a Publish.
+The operator-triggered deploy of committed artifact source to the artifact's single stable share URL; never automatic, always from the Arxa Dial. Draft Overlay content reaches clients only through a commit followed by a Publish.
 _Avoid_: deploy (the pipeline verb this rides), save, push (git)
 _Layer_: Design medium
 
@@ -1072,7 +1072,7 @@ _Layer_: Design medium
 
 **Author**:
 The person whose design it is — the only one who can change it. Clients comment; the Author edits and publishes.
-The single editing identity on an artifact's Design Dial: holds Design Mode, resolves Pins, commits the Draft Overlay, and publishes. An artifact has exactly one Author.
+The single editing identity on an artifact's Arxa Dial: holds Design Mode, resolves Pins, commits the Draft Overlay, and publishes. An artifact has exactly one Author.
 _Avoid_: owner (billing/tenancy), operator (the arxa persona running the pipeline), designer (a role, not the identity)
 _Layer_: Design medium
 

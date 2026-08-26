@@ -53,7 +53,7 @@ class DialShip {
   /// The environment deploy gates read (injectable for tests).
   final Map<String, String> env;
 
-  /// The operator-owned branch prefix — design dial PRs are identifiable
+  /// The operator-owned branch prefix — arxa dial PRs are identifiable
   /// and never collide with feature branches.
   static const branchPrefix = 'design/dial';
 

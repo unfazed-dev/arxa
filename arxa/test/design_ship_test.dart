@@ -7,7 +7,7 @@ library;
 
 import 'dart:io';
 
-import 'package:arxa/design_dial.dart';
+import 'package:arxa/arxa_dial.dart';
 import 'package:arxa/design_ship.dart';
 import 'package:test/test.dart';
 

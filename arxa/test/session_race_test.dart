@@ -21,7 +21,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:arxa/design_dial.dart';
+import 'package:arxa/arxa_dial.dart';
 import 'package:arxa/design_server.dart';
 import 'package:path/path.dart' as p;
 import 'package:test/test.dart';

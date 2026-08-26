@@ -1,5 +1,5 @@
 // Operator launcher: serve the suczka-studio design artifact on
-// 127.0.0.1:4319 with watch ON and the Design Dial enabled. Draft overlay
+// 127.0.0.1:4319 with watch ON and the Arxa Dial enabled. Draft overlay
 // state persists under ~/.arxa/drafts (the real store - this is the
 // operator-facing process, not a test).
 //

@@ -1,4 +1,4 @@
-// dial_probe.dart — E2E evidence for the Design Dial Feedback slice:
+// dial_probe.dart — E2E evidence for the Arxa Dial Feedback slice:
 // drives the LIVE served artifact over CDP through the shadow DOM:
 // boots the dial, expands the radial, arms pin mode, drops a pin on a real
 // element, verifies the badge, mints a Share Link, opens the guest view,

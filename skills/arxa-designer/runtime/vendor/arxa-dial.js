@@ -1,5 +1,5 @@
-/* dial_island.js — the Design Dial island (first-party, ADR-0002 form;
-   locked amendment 2026-08-23: 'the feedback dial becomes the Design Dial').
+/* dial_island.js — the Arxa Dial island (first-party, ADR-0002 form;
+   locked amendment 2026-08-23: 'the feedback dial becomes the Arxa Dial').
 
    WHY THIS EXISTS. Every arxa artifact carries one floating control so the
    Author can adjust the design live and clients can leave feedback on the
@@ -569,7 +569,7 @@
   ]);
   const dockBtn = h(
     'button',
-    { id: 'dockbtn', title: 'Design Dial', 'aria-label': 'Design Dial — arxa' },
+    { id: 'dockbtn', title: 'Arxa Dial', 'aria-label': 'Arxa Dial — arxa' },
     [restFace, editFace, commentFace],
   );
   const badge = h('span', { class: 'dot', text: '0' });
@@ -2795,8 +2795,8 @@
   function updatePreviewMark() {
     dock.classList.toggle('previewing', axesPreviewing());
     dockBtn.title = axesPreviewing()
-      ? 'Design Dial — previewing unpublished style/theme'
-      : 'Design Dial — arxa';
+      ? 'Arxa Dial — previewing unpublished style/theme'
+      : 'Arxa Dial — arxa';
   }
   async function flipAxes(patch) {
     if (!S.axes) return;
@@ -3282,7 +3282,7 @@
     const row = h('div', { class: 'btnrow', style: 'flex-wrap:wrap;gap:6px' });
     row.appendChild(mk(canPr ? 'Branch + PR (' + st.dirty + ' dirty)' : 'Branch + PR', canPr, async () => {
       const title = 'design(dial): live edit batch';
-      const bodyTxt = 'Committed from the Design Dial (Ship slide). ' +
+      const bodyTxt = 'Committed from the Arxa Dial (Ship slide). ' +
         Object.keys(S.draft.patches).length + ' element patch keys pending in the draft overlay; ' +
         'run the commit ops via the Edit slide CTA first if the draft is still uncommitted.';
       await shipVerb('/ship/pr', { title, body: bodyTxt });
@@ -3491,7 +3491,7 @@
   // CORS-clean 200 so not even a console line escapes.
   function mirrorNote() {
     try {
-      console.info('[arxa dial] unavailable in this context — view-only mirror');
+      console.info('[Arxa Dial] unavailable in this context — view-only mirror');
     } catch (_) {}
   }
   // A boot can collide with a design-server restart or a stalled renderer,

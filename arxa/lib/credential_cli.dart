@@ -32,7 +32,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:arxa/credentials.dart';
-import 'package:arxa/design_dial.dart' show parseSupabaseCredentials;
+import 'package:arxa/arxa_dial.dart' show parseSupabaseCredentials;
 import 'package:arxa/secure_store.dart';
 import 'package:arxa/vault.dart';
 import 'package:path/path.dart' as p;
@@ -93,7 +93,7 @@ List<CatalogEntry> loadCredentialCatalog(String path) {
   ];
 }
 
-/// Which supabase catalog keys the design dial's machine-scoped store
+/// Which supabase catalog keys the arxa dial's machine-scoped store
 /// satisfies, mapped to a provenance note for `list`.
 ///
 /// There are TWO sources of truth for Supabase, and reporting only the vault
@@ -219,7 +219,7 @@ Future<int> credentialsMain(
       }
       if (notedMachineStore) {
         print('(machine store = env ARXA_SUPABASE_URL/ARXA_SUPABASE_SERVICE_KEY '
-            'or ~/.arxa/supabase, which the design dial reads directly; '
+            'or ~/.arxa/supabase, which the arxa dial reads directly; '
             'check/exec still read the vault)');
       }
       return 0;

@@ -9,7 +9,7 @@ Future<void> main() async {
   stdout.writeln('host: ${await js(tab,
       'String(!!document.getElementById("arxa-dial-host"))')}');
   stdout.writeln('island tag: ${await js(tab,
-      'String(!!document.querySelector("script[src*=dial_island]"))')}');
+      'String(!!document.querySelector("script[src*=arxa-dial]"))')}');
   stdout.writeln('config: ${await js(tab,
       'document.getElementById("arxa-dial-config")?.textContent ?? "none"')}');
   stdout.writeln('errors: ${tab.consoleErrors.length} ${tab.consoleErrors.take(3)}');

@@ -1,11 +1,11 @@
-// design_dial_test.dart — the Design Dial Feedback Mode core (decisions
+// arxa_dial_test.dart — the Arxa Dial Feedback Mode core (decisions
 // 1/6/7/9 of the 2026-08-23 amendment). Pure-core tests: no HTTP server, no
 // Chrome — DialApi.handle is a pure function and MemoryDialStore is real.
 
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:arxa/design_dial.dart';
+import 'package:arxa/arxa_dial.dart';
 import 'package:arxa/design_draft.dart';
 import 'package:test/test.dart';
 

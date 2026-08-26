@@ -7,7 +7,7 @@ library;
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:arxa/design_dial.dart';
+import 'package:arxa/arxa_dial.dart';
 import 'package:arxa/design_media.dart';
 import 'package:test/test.dart';
 

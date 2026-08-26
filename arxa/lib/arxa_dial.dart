@@ -1,6 +1,6 @@
-/// The Design Dial's server core — Feedback Mode slice (locked amendment
+/// The Arxa Dial's server core — Feedback Mode slice (locked amendment
 /// 2026-08-23, rust-port-closure-and-surgical-lens.md 'the feedback dial
-/// becomes the Design Dial').
+/// becomes the Arxa Dial').
 ///
 /// WHAT LIVES HERE. Everything the dial needs that is NOT the island: the
 /// pin/share-link domain model, the kanban vocabulary, validation, and the

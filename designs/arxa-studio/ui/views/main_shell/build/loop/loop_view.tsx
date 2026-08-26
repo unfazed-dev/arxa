@@ -771,7 +771,7 @@ export function RunSwap(props: LoopProps) {
 }
 
 // ===== No build evidence yet ================================================
-// Nothing in appboxd writes build evidence, so this is what EVERY project
+// Nothing in arxa writes build evidence, so this is what EVERY project
 // shows today. Literal copy — l10n is outside this change's scope.
 
 export function NoEvidence(_props: LoopProps) {

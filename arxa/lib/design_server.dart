@@ -24,7 +24,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:arxa/design_axes.dart';
-import 'package:arxa/design_dial.dart';
+import 'package:arxa/arxa_dial.dart';
 import 'package:arxa/design_media.dart';
 import 'package:arxa/design_ship.dart';
 import 'package:arxa/design_draft.dart';
@@ -180,7 +180,7 @@ Iterable<String> _splitList(String? raw) =>
 /// The name of the machine-wide trusted-origins file under [arxaHome].
 const kTrustedOriginsFile = 'trusted-origins';
 
-/// The Design Dial's central-store credentials: `url=` + `service_key=`
+/// The Arxa Dial's central-store credentials: `url=` + `service_key=`
 /// lines in `~/.arxa/supabase`, `#` starts a comment. Read at boot only;
 /// the env vars (ARXA_SUPABASE_URL / ARXA_SUPABASE_SERVICE_KEY) win when
 /// set. Same machine-scoped argument as trusted origins: the operator's
@@ -367,7 +367,7 @@ class DesignServer {
   String _vendorDir = '';
   String _workerAssetsDir = '';
 
-  /// The Design Dial (locked amendment 2026-08-23): baked into every served
+  /// The Arxa Dial (locked amendment 2026-08-23): baked into every served
   /// artifact page by default; the operator turns it off with --no-dial.
   /// Clients cannot hide it (watermark role) — there is no per-page switch.
   bool dialEnabled = true;
@@ -377,10 +377,10 @@ class DesignServer {
   /// store (the island badges that mode 'local').
   late final DialStore dialStore;
 
-  /// The pure request core behind /__dial/* (see design_dial.dart).
+  /// The pure request core behind /__dial/* (see arxa_dial.dart).
   late final DialApi dialApi;
 
-  /// The Design Dial's Draft Overlay store (Design Mode): per-artifact local
+  /// The Arxa Dial's Draft Overlay store (Design Mode): per-artifact local
   /// file state, never Supabase (decisions 5/11). Null when the dial is off.
   DraftFileStore? draftStore;
 
@@ -720,7 +720,7 @@ class DesignServer {
       if (method == 'POST' && path == '/__project_write') {
         return await _handleProjectWrite(req);
       }
-      // The Design Dial API + event stream (design_dial.dart). The stream is
+      // The Arxa Dial API + event stream (arxa_dial.dart). The stream is
       // answered ahead of the API for the same reason /__events is: a
       // subscriber must never queue behind work it is waiting to hear about.
       if (dialEnabled && path.startsWith('/__dial')) {
@@ -1075,7 +1075,7 @@ class DesignServer {
           '</body>',
           '<script type="module" src="/__worker_assets/islands_eager.js">'
           '</script></body>');
-      // The Design Dial (locked amendment 2026-08-23): baked into every full
+      // The Arxa Dial (locked amendment 2026-08-23): baked into every full
       // page of every artifact — never fragments (no shell), never the ejected
       // app (its own runtime injects). A valid ?dial= token flips the island
       // into guest mode (the Share Link preview); an INVALID token still
@@ -1129,7 +1129,7 @@ class DesignServer {
             '</body>',
             '<script type="application/json" id="arxa-dial-config">'
             '$config</script>'
-            '<script src="/assets/vendor/dial_island.js"></script></body>');
+            '<script src="/assets/vendor/arxa-dial.js"></script></body>');
       }
     }
     // Scrollbars are the preview harness showing through, not the design.
@@ -1328,7 +1328,7 @@ class DesignServer {
     _broadcastReload();
   }
 
-  // ── the Design Dial (GET/POST /__dial/*, GET /__dial/events) ────────────
+  // ── the Arxa Dial (GET/POST /__dial/*, GET /__dial/events) ────────────
   // The adapter between the wire and DialApi's pure core: read the body,
   // resolve the caller (a valid ?dial= token makes a guest; anything else on
   // loopback is the Author — see browser_trust.dart), call, answer JSON.

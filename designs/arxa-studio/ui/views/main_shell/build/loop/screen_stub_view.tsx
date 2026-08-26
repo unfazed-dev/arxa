@@ -3,9 +3,9 @@
 // In the shipped app this src is the designer artifact the daemon serves; here
 // it is an honest labelled stub.
 //
-// appbox:provenance
-//   generator: app-box  licence: free  project: 662368770980
-//   Built with app-box (free tier) — https://appbox.dev
+// arxa:provenance
+//   generator: arxa  licence: free  project: 662368770980
+//   Built with arxa (free tier) — https://arxa.dev
 
 import { Fragment, type FC, type Child } from 'hono/jsx';
 import { raw } from 'hono/utils/html';
@@ -94,7 +94,7 @@ const ScreenStubView: FC<ScreenStubViewProps> = (props) => {
                   {props.partial ? (
                     <Label name="screen-stub:brand" class="stub-brand">{props.translate('app.brand') as string}</Label>
                   ) : (
-                    <Label name="screen-stub:brand" class="stub-brand">appbox</Label>
+                    <Label name="screen-stub:brand" class="stub-brand">arxa</Label>
                   )}
                   {!props.partial && <Label name="screen-stub:nav-links" class="stub-nav-links">{props.translate(`stub.kind.${props.kind}`) as string}</Label>}
                 </header>

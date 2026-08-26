@@ -11,7 +11,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:path/path.dart' as p;
-import 'package:arxa/design_dial.dart';
+import 'package:arxa/arxa_dial.dart';
 import 'package:arxa/design_server.dart';
 import 'package:arxa/design_tools.dart';
 import 'package:arxa/design_cli.dart';

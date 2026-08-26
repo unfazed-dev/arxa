@@ -1,4 +1,4 @@
-/// The Design Dial's media proxy (rework 2026-08-24, slice 4): the card's
+/// The Arxa Dial's media proxy (rework 2026-08-24, slice 4): the card's
 /// Media section searches Unsplash + Pexels SERVER-SIDE and copies the pick
 /// into the artifact's assets — the provider keys never reach the browser
 /// (Pexels is kind:secret in credentials.catalog.json; Unsplash rides the

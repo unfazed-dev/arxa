@@ -1,4 +1,4 @@
-// dial_smoke.dart — verb-by-verb smoke of the Design Dial against a LIVE
+// dial_smoke.dart — verb-by-verb smoke of the Arxa Dial against a LIVE
 // serve. Unlike dial_probe.dart (one happy-path story), this drives EVERY
 // radial verb in isolation and asserts its observable contract, one check
 // per line, so a regression names its verb:
@@ -910,7 +910,7 @@ Future<void> _cleanup() async {
   }
   if (_shareToken != null) {
     // the table stores token_hash = sha256(token), never the raw token
-    final digest = sha256.convert(ascii.encode(_shareToken!)).toString(); // matches _hashToken in design_dial.dart
+    final digest = sha256.convert(ascii.encode(_shareToken!)).toString(); // matches _hashToken in arxa_dial.dart
     await del('design_dial_share_links', 'token_hash=eq.$digest');
   }
   http.close();

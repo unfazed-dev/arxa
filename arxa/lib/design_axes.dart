@@ -1,4 +1,4 @@
-/// The Design Dial's axes plane (consolidation arc 1, grilled 2026-08-25):
+/// The Arxa Dial's axes plane (consolidation arc 1, grilled 2026-08-25):
 /// style + theme selection is dial-owned and artifact-agnostic. The
 /// artifact only DECLARES its axes in the served head —
 ///   `<link rel="stylesheet" ... data-axes-style="glass" [disabled]>`
@@ -224,7 +224,7 @@ class SupabaseAxesStore implements AxesStore {
         author: author);
   }
 
-  // The dial's network discipline (design_dial.dart, measured 2026-08-25):
+  // The dial's network discipline (arxa_dial.dart, measured 2026-08-25):
   // capped idle so a dropped pooled connection can never hang the next
   // request behind TCP retransmit backoff; timeouts + abort convert a
   // stall into a fast failure instead of a held browser socket.

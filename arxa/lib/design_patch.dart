@@ -26,7 +26,7 @@
 /// [patchAllRendered] for RENDERED markup, where loop-rendered instances
 /// SHARE an id by design (design_stamp.dart) and the design-level semantic
 /// of patching the source element is "every row at once". The Draft Overlay
-/// (Design Dial, Design Mode) applies through [patchAllRendered]; the commit
+/// (Arxa Dial, Design Mode) applies through [patchAllRendered]; the commit
 /// path applies through [patchSource].
 ///
 /// Loud bails, by design: id not found (exit 3), id found in more than one

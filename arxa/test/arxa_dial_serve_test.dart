@@ -1,4 +1,4 @@
-// design_dial_serve_test.dart — the Design Dial's SERVER half, end to end:
+// design_dial_serve_test.dart — the Arxa Dial's SERVER half, end to end:
 // a real DesignServer (hello-hda fixture, real worker) proving that
 //   - every full HTML page carries the dial (config + island script),
 //   - --no-dial / dial:false pages do NOT,
@@ -18,7 +18,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:arxa/design_axes.dart';
-import 'package:arxa/design_dial.dart';
+import 'package:arxa/arxa_dial.dart';
 import 'package:arxa/design_draft.dart';
 import 'package:arxa/design_server.dart';
 import 'package:path/path.dart' as p;
@@ -42,7 +42,7 @@ Future<(int, String)> _req(String method, String url,
 }
 
 void main() {
-  group('design dial over a real server', () {
+  group('arxa dial over a real server', () {
     late DesignServer srv;
     late DesignServer bare; // dial: false
     late Directory draftHome;
@@ -78,7 +78,7 @@ void main() {
       final (code, html) = await _req('GET', base);
       expect(code, 200);
       expect(html, contains('id="arxa-dial-config"'));
-      expect(html, contains('/assets/vendor/dial_island.js'));
+      expect(html, contains('/assets/vendor/arxa-dial.js'));
       expect(html, contains('"mode":"author"'));
 
       final (bcode, bhtml) = await _req('GET', bareBase);
@@ -103,7 +103,7 @@ void main() {
 
     test('the dial host mounts OFF the body so boosts cannot remove it',
         () async {
-      final (code, js) = await _req('GET', '$base/assets/vendor/dial_island.js');
+      final (code, js) = await _req('GET', '$base/assets/vendor/arxa-dial.js');
       expect(code, 200);
       expect(js, contains('documentElement.appendChild(host)'),
           reason: 'hx-boost swaps body innerHTML - a body-mounted host is '
@@ -112,9 +112,9 @@ void main() {
     });
 
     test('the island script is served from /assets/vendor/', () async {
-      final (code, js) = await _req('GET', '$base/assets/vendor/dial_island.js');
+      final (code, js) = await _req('GET', '$base/assets/vendor/arxa-dial.js');
       expect(code, 200);
-      expect(js, contains('Design Dial'));
+      expect(js, contains('Arxa Dial'));
       // Operator law (2026-08-24): the dial is NOT draggable. The dock FAB
       // toggles the fan on click and nothing else - no drag machinery may
       // ship in the island.
@@ -123,7 +123,7 @@ void main() {
 
     test('rework 2026-08-24: 3-trigger fan, tray + card, dead verbs gone',
         () async {
-      final (code, js) = await _req('GET', '$base/assets/vendor/dial_island.js');
+      final (code, js) = await _req('GET', '$base/assets/vendor/arxa-dial.js');
       expect(code, 200);
       // The fan carries exactly the three triggers.
       expect(js, contains("id: 'edit'"));
