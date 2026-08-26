@@ -1,0 +1,528 @@
+{
+  "style": "custom",
+  "checked": 130,
+  "probes": 65,
+  "fails": 130,
+  "bad": [
+    [
+      "light/btn-primary",
+      "MISSING .btn:not(.btn--ghost):not(.btn--text):not(.btn--danger)"
+    ],
+    [
+      "light/btn-ghost",
+      "MISSING .btn--ghost"
+    ],
+    [
+      "light/btn-danger",
+      "MISSING .btn--danger"
+    ],
+    [
+      "light/btn-text",
+      "MISSING .btn--text"
+    ],
+    [
+      "light/ibtn-on",
+      "MISSING .ibtn.on"
+    ],
+    [
+      "light/fab",
+      "MISSING .fab"
+    ],
+    [
+      "light/seg-on",
+      "MISSING .seg button.on"
+    ],
+    [
+      "light/seg-off",
+      "MISSING .seg button:not(.on)"
+    ],
+    [
+      "light/tabset-on",
+      "MISSING .tabset a.on"
+    ],
+    [
+      "light/tabset-off",
+      "MISSING .tabset a:not(.on)"
+    ],
+    [
+      "light/toggle-on",
+      "MISSING .toggle.on"
+    ],
+    [
+      "light/toggle-off",
+      "MISSING .toggle:not(.on)"
+    ],
+    [
+      "light/check-label",
+      "MISSING .check"
+    ],
+    [
+      "light/cb-on-mark",
+      "MISSING .cb.on"
+    ],
+    [
+      "light/radio-label",
+      "MISSING .radio"
+    ],
+    [
+      "light/switch-label",
+      "MISSING .switch"
+    ],
+    [
+      "light/select",
+      "MISSING .select"
+    ],
+    [
+      "light/menu-item",
+      "MISSING #menus .menu .mi"
+    ],
+    [
+      "light/menu-sel",
+      "MISSING .menu .mi.sel"
+    ],
+    [
+      "light/menu-danger",
+      "MISSING .menu .mi.danger"
+    ],
+    [
+      "light/menubar-on",
+      "MISSING .menubar span.on"
+    ],
+    [
+      "light/pop-text",
+      "MISSING .pop b"
+    ],
+    [
+      "light/tip",
+      "MISSING .tip"
+    ],
+    [
+      "light/hcard-body",
+      "MISSING .hcard-body"
+    ],
+    [
+      "light/cal-day",
+      "MISSING .day:not(.out):not(.today):not(.sel):not(.range):not(.sel-end)"
+    ],
+    [
+      "light/day-sel",
+      "MISSING .day.sel"
+    ],
+    [
+      "light/day-today",
+      "MISSING .day.today"
+    ],
+    [
+      "light/day-range",
+      "MISSING .day.range"
+    ],
+    [
+      "light/datepick",
+      "MISSING .datepick"
+    ],
+    [
+      "light/tp-on",
+      "MISSING .tp-f.on"
+    ],
+    [
+      "light/tp-dial-n",
+      "MISSING .tp-n"
+    ],
+    [
+      "light/dlg-title",
+      "MISSING .dlg h3"
+    ],
+    [
+      "light/dlg-body",
+      "MISSING .dlg p"
+    ],
+    [
+      "light/sheet-sel",
+      "MISSING .sheet .mi.sel"
+    ],
+    [
+      "light/drawer-title",
+      "MISSING .drawer h3"
+    ],
+    [
+      "light/toast",
+      "MISSING .toast"
+    ],
+    [
+      "light/toast-action",
+      "MISSING .toast--act a"
+    ],
+    [
+      "light/banner",
+      "MISSING .banner:not(.banner--warn):not(.banner--bad)"
+    ],
+    [
+      "light/banner-warn",
+      "MISSING .banner--warn"
+    ],
+    [
+      "light/banner-bad",
+      "MISSING .banner--bad"
+    ],
+    [
+      "light/crumbs-link",
+      "MISSING .crumbs a"
+    ],
+    [
+      "light/crumbs-current",
+      "MISSING .crumbs b"
+    ],
+    [
+      "light/pg-on",
+      "MISSING .pg.on"
+    ],
+    [
+      "light/tbl-head",
+      "MISSING .tbl th"
+    ],
+    [
+      "light/tbl-cell",
+      "MISSING .tbl td"
+    ],
+    [
+      "light/tbl-sel",
+      "MISSING .tbl tr.sel td"
+    ],
+    [
+      "light/acc-head",
+      "MISSING .acc-head"
+    ],
+    [
+      "light/acc-body",
+      "MISSING .acc-body"
+    ],
+    [
+      "light/card-media",
+      "MISSING .g-media"
+    ],
+    [
+      "light/avatar",
+      "MISSING .avatar"
+    ],
+    [
+      "light/badge",
+      "MISSING .badge"
+    ],
+    [
+      "light/empty-body",
+      "MISSING .empty p"
+    ],
+    [
+      "light/hint",
+      "MISSING .hint"
+    ],
+    [
+      "light/error",
+      "MISSING .emsg"
+    ],
+    [
+      "light/caption",
+      "MISSING .g-cap"
+    ],
+    [
+      "light/sub",
+      "MISSING .type-scale .sub"
+    ],
+    [
+      "light/kbd",
+      "MISSING .kbd"
+    ],
+    [
+      "light/appbar-title",
+      "MISSING .appbar b"
+    ],
+    [
+      "light/nb-on",
+      "MISSING .nb.on"
+    ],
+    [
+      "light/nb-off",
+      "MISSING .nb:not(.on)"
+    ],
+    [
+      "light/nr-on",
+      "MISSING .nr.on"
+    ],
+    [
+      "light/nr-off",
+      "MISSING .nr:not(.on)"
+    ],
+    [
+      "light/sb-on",
+      "MISSING .sb-i.on"
+    ],
+    [
+      "light/sb-off",
+      "MISSING .sb-i:not(.on)"
+    ],
+    [
+      "light/sb-head",
+      "MISSING .sb-head"
+    ],
+    [
+      "dark/btn-primary",
+      "MISSING .btn:not(.btn--ghost):not(.btn--text):not(.btn--danger)"
+    ],
+    [
+      "dark/btn-ghost",
+      "MISSING .btn--ghost"
+    ],
+    [
+      "dark/btn-danger",
+      "MISSING .btn--danger"
+    ],
+    [
+      "dark/btn-text",
+      "MISSING .btn--text"
+    ],
+    [
+      "dark/ibtn-on",
+      "MISSING .ibtn.on"
+    ],
+    [
+      "dark/fab",
+      "MISSING .fab"
+    ],
+    [
+      "dark/seg-on",
+      "MISSING .seg button.on"
+    ],
+    [
+      "dark/seg-off",
+      "MISSING .seg button:not(.on)"
+    ],
+    [
+      "dark/tabset-on",
+      "MISSING .tabset a.on"
+    ],
+    [
+      "dark/tabset-off",
+      "MISSING .tabset a:not(.on)"
+    ],
+    [
+      "dark/toggle-on",
+      "MISSING .toggle.on"
+    ],
+    [
+      "dark/toggle-off",
+      "MISSING .toggle:not(.on)"
+    ],
+    [
+      "dark/check-label",
+      "MISSING .check"
+    ],
+    [
+      "dark/cb-on-mark",
+      "MISSING .cb.on"
+    ],
+    [
+      "dark/radio-label",
+      "MISSING .radio"
+    ],
+    [
+      "dark/switch-label",
+      "MISSING .switch"
+    ],
+    [
+      "dark/select",
+      "MISSING .select"
+    ],
+    [
+      "dark/menu-item",
+      "MISSING #menus .menu .mi"
+    ],
+    [
+      "dark/menu-sel",
+      "MISSING .menu .mi.sel"
+    ],
+    [
+      "dark/menu-danger",
+      "MISSING .menu .mi.danger"
+    ],
+    [
+      "dark/menubar-on",
+      "MISSING .menubar span.on"
+    ],
+    [
+      "dark/pop-text",
+      "MISSING .pop b"
+    ],
+    [
+      "dark/tip",
+      "MISSING .tip"
+    ],
+    [
+      "dark/hcard-body",
+      "MISSING .hcard-body"
+    ],
+    [
+      "dark/cal-day",
+      "MISSING .day:not(.out):not(.today):not(.sel):not(.range):not(.sel-end)"
+    ],
+    [
+      "dark/day-sel",
+      "MISSING .day.sel"
+    ],
+    [
+      "dark/day-today",
+      "MISSING .day.today"
+    ],
+    [
+      "dark/day-range",
+      "MISSING .day.range"
+    ],
+    [
+      "dark/datepick",
+      "MISSING .datepick"
+    ],
+    [
+      "dark/tp-on",
+      "MISSING .tp-f.on"
+    ],
+    [
+      "dark/tp-dial-n",
+      "MISSING .tp-n"
+    ],
+    [
+      "dark/dlg-title",
+      "MISSING .dlg h3"
+    ],
+    [
+      "dark/dlg-body",
+      "MISSING .dlg p"
+    ],
+    [
+      "dark/sheet-sel",
+      "MISSING .sheet .mi.sel"
+    ],
+    [
+      "dark/drawer-title",
+      "MISSING .drawer h3"
+    ],
+    [
+      "dark/toast",
+      "MISSING .toast"
+    ],
+    [
+      "dark/toast-action",
+      "MISSING .toast--act a"
+    ],
+    [
+      "dark/banner",
+      "MISSING .banner:not(.banner--warn):not(.banner--bad)"
+    ],
+    [
+      "dark/banner-warn",
+      "MISSING .banner--warn"
+    ],
+    [
+      "dark/banner-bad",
+      "MISSING .banner--bad"
+    ],
+    [
+      "dark/crumbs-link",
+      "MISSING .crumbs a"
+    ],
+    [
+      "dark/crumbs-current",
+      "MISSING .crumbs b"
+    ],
+    [
+      "dark/pg-on",
+      "MISSING .pg.on"
+    ],
+    [
+      "dark/tbl-head",
+      "MISSING .tbl th"
+    ],
+    [
+      "dark/tbl-cell",
+      "MISSING .tbl td"
+    ],
+    [
+      "dark/tbl-sel",
+      "MISSING .tbl tr.sel td"
+    ],
+    [
+      "dark/acc-head",
+      "MISSING .acc-head"
+    ],
+    [
+      "dark/acc-body",
+      "MISSING .acc-body"
+    ],
+    [
+      "dark/card-media",
+      "MISSING .g-media"
+    ],
+    [
+      "dark/avatar",
+      "MISSING .avatar"
+    ],
+    [
+      "dark/badge",
+      "MISSING .badge"
+    ],
+    [
+      "dark/empty-body",
+      "MISSING .empty p"
+    ],
+    [
+      "dark/hint",
+      "MISSING .hint"
+    ],
+    [
+      "dark/error",
+      "MISSING .emsg"
+    ],
+    [
+      "dark/caption",
+      "MISSING .g-cap"
+    ],
+    [
+      "dark/sub",
+      "MISSING .type-scale .sub"
+    ],
+    [
+      "dark/kbd",
+      "MISSING .kbd"
+    ],
+    [
+      "dark/appbar-title",
+      "MISSING .appbar b"
+    ],
+    [
+      "dark/nb-on",
+      "MISSING .nb.on"
+    ],
+    [
+      "dark/nb-off",
+      "MISSING .nb:not(.on)"
+    ],
+    [
+      "dark/nr-on",
+      "MISSING .nr.on"
+    ],
+    [
+      "dark/nr-off",
+      "MISSING .nr:not(.on)"
+    ],
+    [
+      "dark/sb-on",
+      "MISSING .sb-i.on"
+    ],
+    [
+      "dark/sb-off",
+      "MISSING .sb-i:not(.on)"
+    ],
+    [
+      "dark/sb-head",
+      "MISSING .sb-head"
+    ]
+  ]
+}

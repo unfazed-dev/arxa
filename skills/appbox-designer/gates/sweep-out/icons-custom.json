@@ -1,0 +1,12 @@
+{
+  "style": "custom",
+  "checked": 4,
+  "spriteSymbols": 0,
+  "iconsRendered": 0,
+  "distinctUsed": 0,
+  "pass": false,
+  "fails": [
+    "no <symbol> found — icon sprite missing entirely",
+    "no svg.ic elements — glyph migration has not happened"
+  ]
+}
