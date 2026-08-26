@@ -47,6 +47,10 @@ const String _usage = '''
 Usage: arxa design <subcommand> [options]
 
 Subcommands:
+  commission <app-dir>               Compile the designer's binding mandate
+                                     from the intake chain — gates on the
+                                     moodboard record (approved selection, every
+                                     LOCKED criterion fed)
   lint <artifact-dir>                Client-JS lint (ADR-0002 as amended
                                      by ADR-0009: vendored libs, first-party
                                      islands, artifact app modules) + the
@@ -69,6 +73,10 @@ Subcommands:
   pseudolocalize <artifact-dir>      Generate the qps-ploc pseudo-locale
   vendor-fetch [--vendor <dir>]      Fetch + SRI-pin the vendored client libs
   doctor                             Preflight the Dart toolchain the gates use
+  serve <artifact-dir>               Boot the live design server: the dial,
+                                     the inspect/patch loop, and watch-rebuild
+       [--port <n>] [--project <p>]  against an artifact dir
+       [--no-dial] [--no-watch]
   eject <artifact-dir> <out-dir>     Eject a self-contained Hono app (JS runtime
        [--target=node|cloudflare|vercel]   scaffold + narrowed vendor + README).
        [--kits=a,b]                   node boots locally (default port 4399);
