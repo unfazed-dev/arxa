@@ -80,7 +80,18 @@ void main() {
           .close();
       final body = await r.transform(const SystemEncoding().decoder).join();
       c.close();
-      designTitle = RegExp(r'<title>([^<]*)</title>').firstMatch(body)!.group(1)!;
+      // `<title[^>]*>`, not `<title>`: the design server stamps a
+      // data-arxa-id onto EVERY element it serves, `<title>` included, so the
+      // served tag reads `<title data-arxa-id="ui-common-base-e6">`. A bare
+      // `<title>` pattern stopped matching the moment that stamping arrived
+      // and took setUpAll down with a null-check throw — which reads as "the
+      // page lost its title" when the page is in fact fine.
+      final titleTag =
+          RegExp(r'<title[^>]*>([^<]*)</title>').firstMatch(body);
+      expect(titleTag, isNotNull,
+          reason: 'no <title> in the served page — this test discriminates on '
+              'the title, so it cannot run without one');
+      designTitle = titleTag!.group(1)!;
       expect(designTitle, isNotEmpty,
           reason: 'the fixture must have a title for this test to discriminate');
 
