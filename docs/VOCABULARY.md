@@ -1031,8 +1031,8 @@ The Arxa Dial mode available to the Author only, offering selection plus curated
 _Layer_: Design medium
 
 **Feedback Mode**:
-The client side of the Arxa Dial: look at the shared design, drop Pins on it, draw over it, and track what happened to each comment.
-The Arxa Dial mode available over a Share Link: Pins with threaded replies and a kanban lifecycle (Open / Triaged / In progress / Resolved / Won't do), freehand draw-over whose strokes persist by attaching to a Pin (never standalone; stored as a `arxa_dial_drawings` row, 1:1 with its Pin), per-layer toggles (comments / pins / drawings) and the Review Shade. Clients never edit the design.
+The client side of the Arxa Dial: look at the shared design, drop Pins on it, and track what happened to each comment.
+The Arxa Dial mode available over a Share Link: Pins with threaded replies and a kanban lifecycle (Open / Resolved / Won't do in the island; the API additionally accepts Triaged / In progress). Clients never edit the design. Freehand draw-over, per-layer toggles, and the Review Shade were DELETED by operator decision (the island's displaced-verbs list); `arxa_dial_drawings` survives only as dormant schema, no UI writes it.
 _Layer_: Design medium
 
 **Draft Overlay**:
@@ -1050,7 +1050,7 @@ _Layer_: Design medium
 **Pin**:
 A comment stuck onto an exact spot of the design — it stays attached to that piece even when the design changes, and remembers where it was if that piece is removed.
 A Feedback Mode comment anchored to element identity (route + viewport recorded), with a rect snapshot fallback: if the anchor element disappears, the Pin survives as an Orphaned Pin at its last known position rather than vanishing.
-_Avoid_: annotation (the draw-over marks), marker, note
+_Avoid_: annotation, marker, note
 _Layer_: Design medium
 
 **Orphaned Pin**:
@@ -1058,10 +1058,8 @@ A Pin whose piece of the design was removed — shown at its last known spot so 
 A Pin whose element-identity anchor no longer resolves; rendered at its stored rect snapshot, flagged orphaned, still fully replyable and resolvable.
 _Layer_: Design medium
 
-**Review Shade**:
-The dimmer over the design during review: slide it up to make Pins and drawings stand out, slide it down to see the design clearly.
-The opacity-adjustable overlay layer between the design and the annotation layers in Feedback Mode; independent of the per-layer toggles (comments / pins / drawings), which switch content on and off while the shade only dims.
-_Avoid_: overlay (bare — every artifact layer is an overlay), dimmer (the mechanism)
+**Review Shade** (retired):
+Deleted by operator decision along with draw-over and per-layer toggles (the island's displaced-verbs list) — no shade ships in the Arxa Dial. Entry kept only so the name is not reused for something else.
 _Layer_: Design medium
 
 **Share Link**:
