@@ -19,13 +19,14 @@ body {
 h1 { font-size: 1.4rem; font-weight: 600; margin-bottom: 0.5rem; }
 p { color: var(--muted); font-size: 0.95rem; }
 .hint { margin-top: 1rem; font-size: 0.8rem; opacity: 0.8; }
-.pulse {
-  width: 14px; height: 14px; border-radius: 50%;
-  background: var(--accent);
+.logo {
+  display: block;
   margin: 0 auto 1.25rem;
-  animation: pulse 1.2s ease-in-out infinite;
+}
+.pulse {
+  animation: pulse 1.6s ease-in-out infinite;
 }
 @keyframes pulse {
   0%, 100% { transform: scale(1); opacity: 1; }
-  50% { transform: scale(1.6); opacity: 0.45; }
+  50% { transform: scale(1.08); opacity: 0.7; }
 }
