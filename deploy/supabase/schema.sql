@@ -9,7 +9,7 @@ create table subscriptions (
   user_id              uuid primary key references auth.users,
   stripe_customer_id   text not null,
   stripe_subscription_id text not null,
-  tier                 text not null check (tier in ('pro', 'scale')),
+  tier                 text not null check (tier in ('pro', 'scale', 'agency')),  -- D31: agency = arxa studio paid tier
   status               text not null,  -- Stripe's, verbatim
   current_period_end   timestamptz not null,
   updated_at           timestamptz not null default now()

@@ -1,5 +1,5 @@
 -- Seed data for the arxa Supabase project (dev/dogfood only — NEVER prod).
--- Persona-shaped: Totem Labs org (Evan owner+staff, support admin+staff,
+-- Persona-shaped: Arxa Digital Solutions org (Evan owner+staff, support admin+staff,
 -- billing, member) exercising the full role matrix; Michelle as an
 -- individual-tier buyer. Placeholder emails, one shared dev password.
 --
@@ -12,11 +12,11 @@ begin;
 
 -- ── auth users ──────────────────────────────────────────────────────────────
 delete from auth.identities where provider = 'email' and provider_id in
-  ('evan@totemlabs.dev', 'support@totemlabs.dev', 'billing@totemlabs.dev',
-   'dev@totemlabs.dev', 'michelle@buyer.dev');
+  ('evan@arxadigital.solutions', 'support@arxadigital.solutions', 'billing@arxadigital.solutions',
+   'dev@arxadigital.solutions', 'michelle@buyer.dev');
 delete from auth.users where email in
-  ('evan@totemlabs.dev', 'support@totemlabs.dev', 'billing@totemlabs.dev',
-   'dev@totemlabs.dev', 'michelle@buyer.dev');
+  ('evan@arxadigital.solutions', 'support@arxadigital.solutions', 'billing@arxadigital.solutions',
+   'dev@arxadigital.solutions', 'michelle@buyer.dev');
 
 insert into auth.users (
   id, instance_id, aud, role, email, encrypted_password,
@@ -32,10 +32,10 @@ select
   jsonb_build_object('full_name', u.full_name),
   '', '', '', ''
 from (values
-  ('11111111-1111-1111-1111-111111111101'::uuid, 'evan@totemlabs.dev',    'Evan Founder'),
-  ('11111111-1111-1111-1111-111111111102'::uuid, 'support@totemlabs.dev', 'Sam Support'),
-  ('11111111-1111-1111-1111-111111111103'::uuid, 'billing@totemlabs.dev', 'Bill Billing'),
-  ('11111111-1111-1111-1111-111111111104'::uuid, 'dev@totemlabs.dev',     'Dana Dev'),
+  ('11111111-1111-1111-1111-111111111101'::uuid, 'evan@arxadigital.solutions',    'Evan Founder'),
+  ('11111111-1111-1111-1111-111111111102'::uuid, 'support@arxadigital.solutions', 'Sam Support'),
+  ('11111111-1111-1111-1111-111111111103'::uuid, 'billing@arxadigital.solutions', 'Bill Billing'),
+  ('11111111-1111-1111-1111-111111111104'::uuid, 'dev@arxadigital.solutions',     'Dana Dev'),
   ('22222222-2222-2222-2222-222222222201'::uuid, 'michelle@buyer.dev',    'Michelle Buyer')
 ) as u(id, email, full_name);
 
@@ -47,10 +47,10 @@ select
   jsonb_build_object('sub', u.id::text, 'email', u.email),
   now(), now()
 from (values
-  ('11111111-1111-1111-1111-111111111101'::uuid, 'aaaaaaaa-0000-0000-0000-000000000101'::uuid, 'evan@totemlabs.dev'),
-  ('11111111-1111-1111-1111-111111111102'::uuid, 'aaaaaaaa-0000-0000-0000-000000000102'::uuid, 'support@totemlabs.dev'),
-  ('11111111-1111-1111-1111-111111111103'::uuid, 'aaaaaaaa-0000-0000-0000-000000000103'::uuid, 'billing@totemlabs.dev'),
-  ('11111111-1111-1111-1111-111111111104'::uuid, 'aaaaaaaa-0000-0000-0000-000000000104'::uuid, 'dev@totemlabs.dev'),
+  ('11111111-1111-1111-1111-111111111101'::uuid, 'aaaaaaaa-0000-0000-0000-000000000101'::uuid, 'evan@arxadigital.solutions'),
+  ('11111111-1111-1111-1111-111111111102'::uuid, 'aaaaaaaa-0000-0000-0000-000000000102'::uuid, 'support@arxadigital.solutions'),
+  ('11111111-1111-1111-1111-111111111103'::uuid, 'aaaaaaaa-0000-0000-0000-000000000103'::uuid, 'billing@arxadigital.solutions'),
+  ('11111111-1111-1111-1111-111111111104'::uuid, 'aaaaaaaa-0000-0000-0000-000000000104'::uuid, 'dev@arxadigital.solutions'),
   ('22222222-2222-2222-2222-222222222201'::uuid, 'aaaaaaaa-0000-0000-0000-000000000201'::uuid, 'michelle@buyer.dev')
 ) as u(id, ident_id, email);
 
@@ -58,7 +58,7 @@ from (values
 delete from orgs where id = 'bbbbbbbb-0000-0000-0000-000000000001';
 
 insert into orgs (id, name, slug, analytics_opt_in) values
-  ('bbbbbbbb-0000-0000-0000-000000000001', 'Totem Labs', 'totem-labs', true);
+  ('bbbbbbbb-0000-0000-0000-000000000001', 'Arxa Digital Solutions', 'arxa-digital-solutions', true);
   -- analytics_opt_in true: Totem dogfoods its own metadata-only analytics.
 
 insert into org_members (org_id, user_id, role, totem_staff) values
@@ -70,7 +70,7 @@ insert into org_members (org_id, user_id, role, totem_staff) values
 -- ── billing + entitlement + seats ───────────────────────────────────────────
 insert into subscriptions (user_id, org_id, stripe_customer_id, stripe_subscription_id, tier, status, current_period_end) values
   ('11111111-1111-1111-1111-111111111101', 'bbbbbbbb-0000-0000-0000-000000000001',
-   'cus_seed_totem', 'sub_seed_totem', 'scale', 'active', now() + interval '1 year'),
+   'cus_seed_arxa', 'sub_seed_arxa', 'agency', 'active', now() + interval '1 year'),
   ('22222222-2222-2222-2222-222222222201', null,
    'cus_seed_michelle', 'sub_seed_michelle', 'pro', 'active', now() + interval '1 year');
 
