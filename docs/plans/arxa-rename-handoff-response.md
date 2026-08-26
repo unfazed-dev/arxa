@@ -55,6 +55,8 @@ lines. **Open — see Deferred.**
 | 868 | `ArxaKitChip / ArxaKitFilterChip` | `ArxaKitChip / ArxaKitChipCarousel` | `kit/ui_library/lib/widgets/arxa_kit_chip_carousel.dart:27` |
 
 `ArxaKitFilterChip` = 0 hits, `ArxaKitSection` = 0 hits. Comment-box alignment preserved.
+Confirmed no golden/fixture pins the old strings (grep across `*.dart`/`*.css`/`*.json`/
+`*.html` outside `starter-partials/`: zero hits), so nothing emitted still carries them.
 
 ### A3 — `1e349e01` · `serve` and `commission` undocumented
 `arxa/lib/design_cli.dart`. Both added to `_usage`. Mechanically confirmed the block is
@@ -88,30 +90,79 @@ rename.
 
 ---
 
+## Confirmed defect the handoff did NOT catch
+
+### A5b · six repo-root resolvers, two contradictory policies
+Found while investigating A5. The same walk-up for the same file
+(`config/arxa.config.json`) is implemented **six times**, and they disagree about what
+"not found" means:
+
+| site | on exhaustion |
+|---|---|
+| `arxa/lib/scaffold.dart:1140` `findRepoRoot()` | **returns `Directory.current`** |
+| `arxa/lib/lens_cli.dart:924` `_findRepoRoot()` | **returns `Directory.current`** |
+| `arxa/lib/deploy_cli.dart:124` `_findRepoRoot()` | `null` |
+| `arxa/lib/design_tools.dart:3708` `_findRepoRoot()` | `null` |
+| `arxa/lib/design_selftest.dart:239` `_findRepoRoot()` | `null` |
+| `arxa/bin/arxa.dart:307` `_findRepoRoot()` | `null` → hard exit 2 |
+
+**This is reachable, not theoretical.** `arxa emit scaffold` is a user command
+(`arxa/bin/arxa.dart:400`, `:658`). `scaffold_cli.dart:103` calls the *cwd-falling-back*
+resolver with `Directory.current.path`, then at `:104-105` builds:
+
+```
+<repoRoot>/pipeline/state/targets.derivation.json
+<repoRoot>/config/arxa.config.json
+```
+
+Run from a client repo, the walk-up exhausts, `repoRoot` silently becomes **the client
+repo**, and both paths point at files that do not exist there. So where `arxa gate`
+fails loudly (A5), `arxa emit scaffold` proceeds against a wrong root — the same
+underlying gap with the worse failure mode.
+
+Not fixed here: consolidating six resolvers is a cross-file refactor, and picking the
+surviving policy is the same decision A5 raises. Deliberately left intact rather than
+half-migrated while the dial is under edit.
+
+---
+
 ## Needs your decision — not fixed
 
+### B2 · stale `appbox` shim is LIVE, not dead — the only item with ongoing cost
+Sharper than the handoff has it. `~/.pub-cache/bin/appbox` still exists and execs:
+
+```
+/Volumes/developer_ssd/Developer/totem_labs/app-box/appboxd/bin/appbox.dart
+```
+
+**That directory still exists.** So this is not a dangling shim that errors — it is a
+working entrypoint into the *pre-rename engine*. Anything still calling `appbox` gets the
+old code silently, with no warning that it is a fork. `arxa` on PATH is unaffected
+(`~/.local/bin/arxa` wins), so nothing is broken today, but this is the one finding where
+doing nothing keeps costing:
+
+```sh
+rm ~/.pub-cache/bin/appbox
+```
+
+Not run — it is outside the repo, on your machine. Also noticed: `which -a arxa` prints
+`~/.local/bin/arxa` twice, so PATH carries a duplicate entry. Cosmetic.
+
 ### A5 · `arxa gate` cannot run from a repo-mode project
-**Confirmed, and worse than the handoff states: there are two inconsistent repo-root
-resolvers.**
+Confirmed at `arxa/bin/arxa.dart:309`. `config/arxa.config.json` exists only in the arxa
+checkout — verified absent from every client repo under `clients/`. So a repo-mode client
+project genuinely cannot resolve one.
 
-- `arxa/bin/arxa.dart:307` — `_findRepoRoot()`, returns null → hard exit 2.
-- `arxa/lib/scaffold.dart:1139` — `findRepoRoot(start)`, **falls back to
-  `Directory.current` and never returns null.**
-
-`config/arxa.config.json` exists only in the arxa checkout — confirmed absent from every
-client repo under `clients/`. So a repo-mode client project genuinely cannot resolve one.
-
-The real question is whether that is a bug or a category boundary: the gates check
-*arxa's own* engine invariants, so "run them from a client repo" may be meaningless. If
-it is meaningful, the fix is to resolve via the `arxa.json` marker (`repo_project.dart`)
-when no `config/` is found. **Either way the two resolvers should agree** — one silently
-defaulting to cwd while the other hard-errors is a trap regardless of which policy wins.
-Not inventing that policy.
+The question is whether that is a bug or a category boundary: the gates check *arxa's own*
+engine invariants, so "run them from a client repo" may be meaningless. If it is
+meaningful, the fix is to resolve via the `arxa.json` marker (`repo_project.dart`) when no
+`config/` is found. **Whichever way that lands, it should settle A5b at the same time** —
+one policy, one resolver. Not inventing that policy.
 
 ### C · SPEC.md does not name the `.navbar--top` markup hook
-**Confirmed.** `navbar--top` = 0 hits in `skills/arxa-designer`, while
-`SPEC.md:179` already refers to "the `--alt` discriminator this swap requires" without
-ever naming it — the gap the handoff describes.
+**Confirmed.** `navbar--top` = 0 hits in `skills/arxa-designer`, while `SPEC.md:179`
+already refers to "the `--alt` discriminator this swap requires" without ever naming it —
+exactly the gap the handoff describes.
 
 **Blocked on direction of truth, and the handoff's caution was right.** The real class
 exists upstream, in the *energize* repo:
@@ -120,35 +171,16 @@ exists upstream, in the *energize* repo:
 - SSOT: `clients/energize/docs/technique-layer/component-specs.md`
 
 `SPEC.md:5` states component-specs.md "remains the SSOT" and that SPEC is compiled from
-it. So editing `SPEC.md` directly would either be overwritten on the next compile or
-silently fork from the SSOT. **The fix belongs in energize's technique-layer, then
-recompile** — unless the line-169 prose is arxa-authored rather than compiled, which
-only you can confirm. Not editing either repo unilaterally.
+it. Editing `SPEC.md` directly would either be overwritten on the next compile or silently
+fork from the SSOT. **The fix belongs in energize's technique-layer, then recompile** —
+unless the line-169 prose is arxa-authored rather than compiled, which only you can
+confirm. Not editing either repo unilaterally.
 
 ### B1 · installed wrapper bakes the repo root
 `~/.local/bin/arxa` hard-codes `REPO='/Volumes/.../arxa'` at install time. If the repo
 moves, the failure message says `run: $REPO/install.sh` — naming the path that just
 stopped existing. `install.sh --check` already exists (`install.sh:29,57`). One-line
 message fix; low value, no data at risk. Say the word.
-
-### B2 · stale `appbox` shim is LIVE, not dead
-Sharper than the handoff has it. `~/.pub-cache/bin/appbox` still exists and execs:
-
-```
-/Volumes/developer_ssd/Developer/totem_labs/app-box/appboxd/bin/appbox.dart
-```
-
-**That directory still exists.** So this is not a dangling shim that errors — it is a
-working entrypoint into the *pre-rename engine*. Anything that still calls `appbox` gets
-the old code silently. `arxa` on PATH is unaffected (`~/.local/bin/arxa` wins), so this
-is not urgent, but it should be removed deliberately rather than left as a live fork:
-
-```sh
-rm ~/.pub-cache/bin/appbox
-```
-
-Not run — it is outside the repo, on your machine. Also noticed: `which -a arxa` prints
-`~/.local/bin/arxa` twice, so PATH carries a duplicate entry. Cosmetic.
 
 ### B3 · no action
 The handoff itself concludes it is not a defect. Agreed on read; nothing to do.
