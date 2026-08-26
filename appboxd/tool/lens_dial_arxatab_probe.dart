@@ -375,7 +375,7 @@ Future<void> main() async {
         "($sr.querySelector('#cidrow .idline') || {}).textContent || '(no idline)'");
     stdout.writeln('B card: open=${st['open']} tabs=${t3.map((t) => t['id'].toString() + (t['on'] == true ? '*' : '')).join(',')} idline=${bline as String}');
     check(t3.length == 2 && t3[0]['on'] == true &&
-        !(bline as String).contains(elA['id'] as String),
+        !(bline).contains(elA['id'] as String),
         'a different element starts on Customise');
   } else {
     stdout.writeln('NOTE  no second clean element; cross-element memory check skipped');
@@ -512,9 +512,9 @@ Future<void> main() async {
           png: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==' }) });
       const j = await r.json(); return j.id || null; })()
   ''');
-  check(legacyId is String && (legacyId as String).isNotEmpty,
+  check(legacyId is String && (legacyId).isNotEmpty,
       'legacy selection registered (no v marker)');
-  final lid = legacyId is String ? legacyId as String : 'zzz';
+  final lid = legacyId is String ? legacyId : 'zzz';
   final legacyLine = await poll(gui, '''
     (() => { const ta = [...document.querySelectorAll('textarea')]
         .find((t) => t.hasAttribute('data-phase'));
@@ -559,13 +559,6 @@ Future<void> main() async {
   //     after blur catches the card up.
   await js(tab, "$sr.querySelector('#chead .tab[data-tab=customise]').click()");
   await Future.delayed(const Duration(milliseconds: 300));
-  Future<String?> swatchOf() async {
-    return await js(tab, '''      (() => { const row = [...$sr.querySelectorAll('#card .facet')]
-          .find((r) => (r.querySelector('label') || {textContent:''}).textContent === 'background');
-        const sw = row && row.querySelector('input[type="color"]');
-        return sw ? sw.value : null; })()
-    ''') as String?;
-  }
   final keyRaw = await js(tab,
       "((($sr.querySelector('#cidrow .idline') || {textContent:''}).textContent || '').split(' → ').pop())");
   final dkey = (keyRaw as String).trim();
@@ -818,13 +811,13 @@ Future<void> main() async {
       return null; })()
   ''');
   Map? sweep;
-  try { sweep = sweepPt is String ? jsonDecode(sweepPt as String) as Map : null; } catch (_) {}
+  try { sweep = sweepPt is String ? jsonDecode(sweepPt) as Map : null; } catch (_) {}
   check(sweep != null, 'a second stamped element is visible for the hunt-freeze sweep');
   if (sweep != null) {
     await js(tab, "document.dispatchEvent(new KeyboardEvent('keydown', {key:'Escape'}))"); // card closed, selection STAYS
     await Future.delayed(const Duration(milliseconds: 400));
     await tab.send('Input.dispatchMouseEvent',
-        {'type': 'mouseMoved', 'x': sweep!['x'] as num, 'y': sweep!['y'] as num});
+        {'type': 'mouseMoved', 'x': sweep['x'] as num, 'y': sweep['y'] as num});
     await Future.delayed(const Duration(milliseconds: 300));
     final st = (await hoverState()) ?? '?';
     check(st.split('|')[0] == 'none',
@@ -842,7 +835,7 @@ Future<void> main() async {
     await js(tab, "$sr.querySelector('[data-verb=edit]').click()");
     await Future.delayed(const Duration(milliseconds: 400));
     await tab.send('Input.dispatchMouseEvent',
-        {'type': 'mouseMoved', 'x': sweep!['x'] as num, 'y': sweep!['y'] as num});
+        {'type': 'mouseMoved', 'x': sweep['x'] as num, 'y': sweep['y'] as num});
     await Future.delayed(const Duration(milliseconds: 300));
     final st2 = (await hoverState()) ?? '?';
     final parts2 = st2.split('|');
@@ -867,7 +860,7 @@ Future<void> main() async {
   // so beats read the island's own truth — the card's idline KEY —
   // and resolve the element through targetsForKey semantics.
   if (sweep != null) {
-    await clickAt(tab, sweep!['x'] as num, sweep!['y'] as num);
+    await clickAt(tab, sweep['x'] as num, sweep['y'] as num);
     await Future.delayed(const Duration(milliseconds: 800));
   }
   final keyRaw2 = await js(tab, '''    (() => ((($sr.querySelector('#cidrow .idline') ||
@@ -908,12 +901,12 @@ Future<void> main() async {
     ''') as String?;
     Map? away;
     try { away = awayState != null ? jsonDecode(awayState) as Map : null; } catch (_) {}
-    check(away != null && away!['off'] == true,
+    check(away != null && away['off'] == true,
         'same page: the selected element is scrolled OUT of view');
-    if (away != null && away!['off'] != true) {
+    if (away != null && away['off'] != true) {
       stdout.writeln('NOTE  away diag: $awayState');
     }
-    if (away != null && away!['off'] == true) {
+    if (away != null && away['off'] == true) {
       await js(tab, "$cgoJs.click()");
       final backIn = await poll(tab, '''        (() => { const k = $keyJs;
           const insts = k.indexOf('el:') === 0
@@ -1058,11 +1051,11 @@ Future<void> main() async {
     if (lockB == null || actr == null) {
       stdout.writeln('NOTE  one-focus preconditions (B=${lockB != null}, handles=${actr != null}); beats skipped');
     } else {
-      final bId = lockB!['id'] as String;
+      final bId = lockB['id'] as String;
       stdout.writeln('one-focus: A=$skey  B=$bId');
 
       // (1) absorbed switch: A holds the focus, a real click lands on B.
-      await clickAt(tab, lockB!['x'] as num, lockB!['y'] as num);
+      await clickAt(tab, lockB['x'] as num, lockB['y'] as num);
       await Future.delayed(const Duration(milliseconds: 600));
       final k1 = await curKey();
       final open1 = await cardOpen();
@@ -1072,7 +1065,7 @@ Future<void> main() async {
 
       // (2) a real double-click on B is absorbed the same way — and
       // must NOT start on-canvas typing inside the unselected element.
-      await dblClickAt(tab, lockB!['x'] as num, lockB!['y'] as num);
+      await dblClickAt(tab, lockB['x'] as num, lockB['y'] as num);
       await Future.delayed(const Duration(milliseconds: 600));
       final k2 = await curKey();
       final bEditing = await js(tab, '''        (() => { const els = document.querySelectorAll('[data-arxa-id="$bId"]');
@@ -1098,7 +1091,7 @@ Future<void> main() async {
       if (hctr == null) {
         check(false, 'handles re-readable for the same-element re-click');
       } else {
-        await clickAt(tab, hctr!['x'] as num, hctr!['y'] as num);
+        await clickAt(tab, hctr['x'] as num, hctr['y'] as num);
         await Future.delayed(const Duration(milliseconds: 600));
         final k3 = await curKey();
         final open3 = await cardOpen();
@@ -1108,7 +1101,7 @@ Future<void> main() async {
 
       // (4) the door: full deselect releases the lock — B selects.
       await deselectAndRearm(tab);
-      await clickAt(tab, lockB!['x'] as num, lockB!['y'] as num);
+      await clickAt(tab, lockB['x'] as num, lockB['y'] as num);
       await Future.delayed(const Duration(milliseconds: 600));
       final k4 = await curKey();
       final open4 = await cardOpen();
@@ -1136,7 +1129,7 @@ Future<void> main() async {
           hst = null;
         }
         if (hst == null) break;
-        if (hst!['editing'] == true || hst!['open'] == true || hst!['armed'] == true) {
+        if (hst['editing'] == true || hst['open'] == true || hst['armed'] == true) {
           await js(tab,
               "document.dispatchEvent(new KeyboardEvent('keydown', {key:'Escape'}))");
           await Future.delayed(const Duration(milliseconds: 300));
@@ -1148,8 +1141,8 @@ Future<void> main() async {
           "try { sessionStorage.removeItem('arxa-dial-trackback'); } catch (e) {} true");
       final stashGone = await js(tab,
           "sessionStorage.getItem('arxa-dial-trackback') === null");
-      check(hst != null && hst!['armed'] != true && hst!['open'] != true &&
-          hst!['editing'] != true && stashGone == true,
+      check(hst != null && hst['armed'] != true && hst['open'] != true &&
+          hst['editing'] != true && stashGone == true,
           'one-focus hygiene: disarmed, card closed, stash cleared');
     }
   }
@@ -1251,14 +1244,14 @@ Future<void> main() async {
       return 'none'; })()
   ''');
   Map? mhit;
-  try { mhit = mediaHit is String ? jsonDecode(mediaHit as String) as Map : null; } catch (_) {}
+  try { mhit = mediaHit is String ? jsonDecode(mediaHit) as Map : null; } catch (_) {}
   if (mhit == null) {
     final stackInfo = await js(tab, 'JSON.stringify(window.__mediaTopDebug || [])');
     stdout.writeln('NOTE  media stack tops: ${stackInfo ?? 'n/a'}');
     check(false, 'a visible media-source image was tapped for the one-pick law');
   } else {
-    await clickAt(tab, mhit!['x'] as num, mhit!['y'] as num);
-    mediaPick = jsonEncode({'idx': mhit!['idx'], 'src': mhit!['src']});
+    await clickAt(tab, mhit['x'] as num, mhit['y'] as num);
+    mediaPick = jsonEncode({'idx': mhit['idx'], 'src': mhit['src']});
   }
   await Future.delayed(const Duration(milliseconds: 800));
   Map? mpick;
@@ -1266,7 +1259,7 @@ Future<void> main() async {
   if (mpick == null) {
     check(false, 'a visible media-source image was tapped for the one-pick law');
   } else {
-    final midx = mpick!['idx'] as int;
+    final midx = mpick['idx'] as int;
     // card should be open on the media element; From assets → first
     // asset whose path differs from this image's current src
     await js(tab, '''      (() => { const b = [...$sr.querySelectorAll('#card button')]
@@ -1299,10 +1292,10 @@ Future<void> main() async {
         const b = btns.find((x) => x.title !== cur) || btns[0];
         if (b) b.click(); return b ? b.title : null; })()
     ''');
-    check(pickedPath is String && (pickedPath as String).isNotEmpty,
+    check(pickedPath is String && (pickedPath).isNotEmpty,
         'an asset was picked for one image');
     await Future.delayed(const Duration(milliseconds: 900));
-    final wantJs = "const want = '${pickedPath is String ? pickedPath as String : 'zz'}';";
+    final wantJs = "const want = '${pickedPath is String ? pickedPath : 'zz'}';";
     final counts = await js(tab, '''      (() => { const all = [...document.querySelectorAll('[data-el="media-source"]')];
         $wantJs        return JSON.stringify({ withNew: all.filter((m) => m.getAttribute('src') === want).length,
           total: all.length }); })()
@@ -1310,15 +1303,15 @@ Future<void> main() async {
     if (counts == null) {
       check(false, 'one-pick counts readable');
     } else {
-      check(counts!['withNew'] == 1,
-          'ONE image changed (got ${counts!['withNew']} of ${counts!['total']})');
+      check(counts['withNew'] == 1,
+          'ONE image changed (got ${counts['withNew']} of ${counts['total']})');
     }
     // draft carries the instance scoping
     final ddoc = await httpCall('GET', '/__dial/draft', null);
     final patch = (((ddoc?['draft']) as Map?)?['patches'] as Map?)?['el:media-source'];
     Map? attrsNthMap;
     if (patch is Map) {
-      final rawNth = (patch as Map)['attrsNth'];
+      final rawNth = (patch)['attrsNth'];
       if (rawNth is Map) attrsNthMap = rawNth;
     }
     final nth = attrsNthMap?['src'];

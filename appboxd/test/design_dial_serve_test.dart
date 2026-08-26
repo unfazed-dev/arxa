@@ -10,6 +10,9 @@
 // The island's pixels are NOT asserted here — that is the lens's job
 // (appbox lens shoot), which the verification step of this slice performs.
 
+@Timeout(Duration(minutes: 3))
+library;
+
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
@@ -38,7 +41,6 @@ Future<(int, String)> _req(String method, String url,
   return (res.statusCode, text);
 }
 
-@Timeout(Duration(minutes: 3))
 void main() {
   group('design dial over a real server', () {
     late DesignServer srv;

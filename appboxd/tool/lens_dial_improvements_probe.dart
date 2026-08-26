@@ -184,7 +184,7 @@ Future<void> main() async {
       final clamped = dt >= 100 &&
           (after['t'] as num) <= (after['ih'] as num) - 300 &&
           (after['t'] as num) >= 8;
-      check((moved as num) > 100 && da.abs() > 100 && (exact || clamped),
+      check(moved > 100 && da.abs() > 100 && (exact || clamped),
           'thread tracks its anchor on scroll (scrolled ${moved}px, anchor ${da.toStringAsFixed(0)}px, thread ${dt.toStringAsFixed(0)}px${exact ? ', exact' : clamped ? ', clamped at edge' : ', BROKEN'})');
     } else {
       check(false, 'thread position readable before/after scroll');
@@ -237,7 +237,7 @@ Future<void> main() async {
           final onScreen = (cAfter['t'] as num) >= 8 &&
               (cAfter['t'] as num) + (cAfter['h'] as num) <=
                   (cAfter['ih'] as num) - 4;
-          check((cmoved as num) > 100 && da.abs() > 100 && rederived && onScreen,
+          check(cmoved > 100 && da.abs() > 100 && rederived && onScreen,
               'card re-derives placement on scroll (scrolled ${cmoved}px, anchor ${da.toStringAsFixed(0)}px, card moved ${dt.toStringAsFixed(0)}px${rederived ? ', repositioned' : ', FROZEN'}${onScreen ? ', on screen' : ', OFF SCREEN'})');
         } else {
           check(false, 'card position readable before/after scroll');
@@ -290,7 +290,7 @@ Future<void> main() async {
   // ================= improvement 1: SSE ids + Last-Event-ID replay ======
   final framesSeen = await js(tab,
       '(window.__probeFrames || []).filter(f => /^\\d+\\|/.test(f)).length');
-  check(framesSeen is num && (framesSeen as num) >= 1,
+  check(framesSeen is num && framesSeen >= 1,
       'in-page EventSource sees numbered frames ($framesSeen)');
 
   // Dart-side: stream, two mutations, reconnect with Last-Event-ID.

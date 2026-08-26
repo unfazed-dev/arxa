@@ -39,7 +39,6 @@ Future<void> main() async {
   // CLOSE THE FAN -> the 30s timer starts from here.
   await tapFab();
   await Future.delayed(Duration(milliseconds: 300));
-  sw() {} // noop
   final sw2 = Stopwatch()..start();
   var hiddenAt = -1;
   while (sw2.elapsed.inSeconds < 40) {

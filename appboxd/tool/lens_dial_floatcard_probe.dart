@@ -295,7 +295,7 @@ Future<void> main() async {
     // capture and this click, and the hero animator translates
     // elements while it runs — the card anchors where the element is
     // AT CLICK TIME, so the expectation must read the LIVE rect.
-    final elBRaw = await js(tab, '''      (() => { const el = document.querySelector('[data-arxa-id="${elB!['id'] as String}"]');
+    final elBRaw = await js(tab, '''      (() => { const el = document.querySelector('[data-arxa-id="${elB['id'] as String}"]');
         if (!el) return 'null';
         const r = el.getBoundingClientRect();
         const cx = r.x + r.width / 2, cy = r.y + r.height / 2;

@@ -61,7 +61,7 @@ Future<void> main() async {
     })()
   ''');
   final a = (assets as Map).cast<String, dynamic>();
-  check(((a['assets'] as List) ?? []).contains(c['path']), 'assets lists the copy');
+  check((a['assets'] as List? ?? []).contains(c['path']), 'assets lists the copy');
 
   // 4. SSRF guard: a non-CDN url refuses
   final guard = await js(tab, '''

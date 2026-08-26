@@ -57,7 +57,7 @@ Future<void> main() async {
   await Future.delayed(const Duration(milliseconds: 800));
 
   // land on the comments slide
-  final moved = await js(tab, '''(() => {
+  await js(tab, '''(() => {
     const track = $sr.querySelector('#track');
     const slides = [...track.querySelectorAll('.slide')];
     const target = track.querySelector('.slide[data-slide=comments]') || slides[1];
@@ -108,7 +108,7 @@ Future<void> main() async {
   })()''');
   stdout.writeln('     tray: $trayRect');
   final im = img.decodeImage(pngBytes)!;
-  final tc = im.getPixel(((trayRect as Map)['x'] as num).toInt() + 20, ((trayRect as Map)['y'] as num).toInt() + 20);
+  final tc = im.getPixel(((trayRect as Map)['x'] as num).toInt() + 20, ((trayRect)['y'] as num).toInt() + 20);
   stdout.writeln('     tray-corner px: ${tc.r.toInt()},${tc.g.toInt()},${tc.b.toInt()}');
   final sx = ((r['x'] as num) + (r['w'] as num) - 4).toInt();
   final cy = ((r['y'] as num) + (r['h'] as num) / 2).toInt();

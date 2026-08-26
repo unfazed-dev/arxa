@@ -2,7 +2,6 @@
 // tray (opens, parks the dial, 5 slides author / 1 slide guest), the tray
 // close spring-back, the floating card on a real element, and a clean
 // console — in real Chrome over the live design server.
-import 'dart:convert';
 import 'dart:io';
 import 'package:appboxd/cdp.dart';
 Future<dynamic> js(CdpSession tab, String e) => tab.evaluate(e);

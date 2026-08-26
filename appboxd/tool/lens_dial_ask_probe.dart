@@ -4,7 +4,6 @@
 // the PNG captured (best-effort — foreignObject rasterization), and the
 // SSE broadcast frame fired for the studio plugin.
 import 'dart:async';
-import 'dart:convert';
 import 'dart:io';
 import 'package:appboxd/cdp.dart';
 Future<dynamic> js(CdpSession tab, String e) => tab.evaluate(e);
@@ -21,7 +20,6 @@ Future<void> main() async {
   await tab.navigateAndSettleForCapture('http://127.0.0.1:4319/', settleMs: 2500);
 
   // SSE reader running BEFORE the tap, capturing dial frames.
-  final frames = <String>[];
   await js(tab, '''
     window.__probeFrames = [];
     (() => {

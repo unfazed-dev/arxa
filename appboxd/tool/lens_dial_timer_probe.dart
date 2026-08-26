@@ -19,7 +19,6 @@ Future<void> main() async {
   await tab.navigateAndSettleForCapture('http://127.0.0.1:4319/',
       settleMs: 2500);
 
-  String pose(String label) => '';
   Future<String> vis() async => await js(
           tab, 'document.getElementById("arxa-dial-host")?.style.visibility ?? "NO-HOST"')
       as String;
