@@ -138,11 +138,22 @@ build() {
   mv -f "$tmp" "$BIN"
 }
 
+# The repo path is baked in above, at install time. If the checkout has since
+# moved, "run: $REPO/install.sh" names a path that no longer exists — which
+# reads as a broken installer rather than a moved repo. Check before pointing.
+reinstall_hint() {
+  if [ -d "$REPO" ]; then
+    echo "run: $REPO/install.sh"
+  else
+    echo "the arxa repo is no longer at $REPO (moved or removed) — re-run install.sh from wherever it lives now to regenerate this wrapper"
+  fi
+}
+
 if [ ! -x "$BIN" ]; then
   if [ -n "${ARXA_FAST:-}" ]; then
     # Hook context: never pay a ~4s compile inside someone's tool call. Fail
     # loudly on stderr instead of silently doing nothing.
-    echo "[arxa] binary missing at $BIN — run: $REPO/install.sh" >&2
+    echo "[arxa] binary missing at $BIN — $(reinstall_hint)" >&2
     exit 127
   fi
   echo "[arxa] building (first run)..." >&2
@@ -151,7 +162,7 @@ elif stale; then
   if [ -n "${ARXA_FAST:-}" ]; then
     # Announce staleness rather than silently running old code — a silently
     # stale binary is a correctness hazard, not a convenience one.
-    echo "[arxa] WARNING: binary is STALE (source newer). Run: $REPO/install.sh" >&2
+    echo "[arxa] WARNING: binary is STALE (source newer). $(reinstall_hint)" >&2
   else
     echo "[arxa] source changed — rebuilding..." >&2
     build || exit 1
