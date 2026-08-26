@@ -607,17 +607,19 @@ class DesignServer {
         // was inert by design. The body carries nothing; writes and every
         // named origin keep the full refusal.
         final originHeader = req.headers.value('Origin');
-        // NOT a 421 (2026-08-26). A foreign Host is the DNS-rebinding
-        // refusal, and it is not an origin question: a rebinding probe is a
-        // plain GET with no Origin, so the opaque-origin test below matches it
-        // exactly and used to turn its 421 into a 200. That answers a security
-        // refusal with OK and made every probe read as a hit. The softening
-        // exists for ONE reason — a sandboxed frame's console — and a request
-        // that named an authority this server does not answer to is not that
-        // frame. Deny reasons are not interchangeable; soften only the origin
-        // one.
+        // ONLY the 403s (2026-08-26). browser_trust has three deny paths and
+        // they are not the same question: 421 asks "is this connection even
+        // for me" (hostAllowed), the two 403s ask "may that page read me"
+        // (browser_trust.dart:277 cross-site, :285 the older-browser variant).
+        // The softening exists for ONE reason — a sandboxed frame's console —
+        // which is the 403 question. A DNS-rebinding probe is a plain GET with
+        // a forged Host and no Origin, i.e. the exact shape tested below, so
+        // it used to match and turn its 421 into a 200: a security refusal
+        // answered OK. Written as an ALLOW-list, not `!= 421`: a deny reason
+        // added later must then be softened deliberately rather than by
+        // default.
         if (method == 'GET' &&
-            verdict.status != 421 &&
+            verdict.status == 403 &&
             (originHeader == null || originHeader == 'null')) {
           // ITS OWN LOG LINE (2026-08-26). This branch ANSWERS 200, but it
           // used to be logged through the refusal line below — which tells
