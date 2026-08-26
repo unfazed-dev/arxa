@@ -65,9 +65,33 @@ fn server_reachable(url: &str) -> bool {
     false
 }
 
-/// Rider 2: graceful shutdown of OUR child only. SIGTERM first so the engine
-/// can flush, short grace, then the hard kill. Errors are ignored — the child
-/// may have exited on its own, and there is nothing useful to do at app exit.
+/// All live descendant PIDs of `pid` (children, grandchildren, …) via
+/// `pgrep -P`, breadth-first. Needed because the sidecar is a launcher: the
+/// wrapper node process spawns the real dsh server as a grandchild, and
+/// killing only the direct child would orphan the server on the port.
+#[cfg(unix)]
+fn descendants(pid: u32) -> Vec<u32> {
+    let mut all = Vec::new();
+    let mut queue = vec![pid];
+    while let Some(p) = queue.pop() {
+        if let Ok(out) = std::process::Command::new("pgrep")
+            .args(["-P", &p.to_string()])
+            .output()
+        {
+            for line in String::from_utf8_lossy(&out.stdout).lines() {
+                if let Ok(c) = line.trim().parse::<u32>() {
+                    all.push(c);
+                    queue.push(c);
+                }
+            }
+        }
+    }
+    all
+}
+
+/// Rider 2: graceful shutdown of OUR child only — including its whole process
+/// tree. SIGTERM first so the engine can flush, short grace, then SIGKILL for
+/// stragglers. Errors are ignored — processes may have exited on their own.
 fn kill_spawned(app: &tauri::AppHandle) {
     let Some(state) = app.try_state::<SpawnedServer>() else {
         return;
@@ -77,10 +101,23 @@ fn kill_spawned(app: &tauri::AppHandle) {
     };
     #[cfg(unix)]
     {
-        let _ = std::process::Command::new("kill")
-            .args(["-TERM", &child.pid().to_string()])
-            .status();
+        let pid = child.pid();
+        // Snapshot the tree BEFORE terminating the parent, otherwise the
+        // grandchildren are reparented to PID 1 and become unfindable.
+        let tree = descendants(pid);
+        let term = |p: u32, sig: &str| {
+            let _ = std::process::Command::new("kill")
+                .args([sig, &p.to_string()])
+                .status();
+        };
+        term(pid, "-TERM");
+        for p in &tree {
+            term(*p, "-TERM");
+        }
         std::thread::sleep(Duration::from_millis(1200));
+        for p in &tree {
+            term(*p, "-KILL");
+        }
     }
     let _ = child.kill();
 }
