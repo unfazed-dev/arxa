@@ -7,6 +7,7 @@ import 'dart:io';
 
 import 'package:arxa/arxa_dial.dart';
 import 'package:arxa/design_draft.dart';
+import 'package:arxa/design_journal.dart';
 import 'package:test/test.dart';
 
 Map<String, dynamic> pinBody({
@@ -609,6 +610,118 @@ group('the identity plane (arc 2)', () {
     expect(gs.length, 1, reason: 'upsert on (design, email), never a fork');
     expect(gs.single['linksAlive'], 2);
     expect(gs.single['name'], 'A');
+  });
+});
+
+group('undo/redo routes (Design Journal)', () {
+  late Directory home;
+  late DialApi api;
+  setUp(() {
+    home = Directory.systemTemp.createTempSync('dial-undo-test');
+    api = DialApi(
+      store: MemoryDialStore(),
+      artifact: 'demo',
+      draftStore:
+          DraftFileStore(artifactDir: '/tmp/w/demo', home: home.path),
+      journalStore:
+          JournalFileStore(artifactDir: '/tmp/w/demo', home: home.path),
+      artifactDir: '/tmp/w/demo',
+    );
+  });
+  tearDown(() => home.deleteSync(recursive: true));
+
+  Future<Map> put(Map body) async {
+    final r = await api.handle('PUT', '/draft', {}, body, null);
+    expect(r.status, 200, reason: jsonEncode(r.json));
+    return r.json as Map;
+  }
+
+  test('PUT journals a step and reports depths', () async {
+    final r = await put({
+      'gesture': 'g1',
+      'tokens': {'--brand': '#0af'},
+    });
+    expect(r['undoDepth'], 1);
+    expect(r['redoDepth'], 0);
+  });
+
+  test('same-gesture writes coalesce into one step', () async {
+    await put({'gesture': 'drag', 'tokens': {'--brand': '#111'}});
+    final r =
+        await put({'gesture': 'drag', 'tokens': {'--brand': '#999'}});
+    expect(r['undoDepth'], 1, reason: 'one slider drag, one step');
+    final u = await api.handle('POST', '/undo', {}, null, null);
+    final draft = (u.json as Map)['draft'] as Map;
+    // Undone-to-empty tokens are omitted from toJson entirely.
+    expect((draft['tokens'] as Map?)?['--brand'], isNull,
+        reason: 'undo lands before the drag, not mid-drag');
+  });
+
+  test('undo → redo roundtrips the overlay', () async {
+    await put({'gesture': 'g1', 'tokens': {'--brand': '#0af'}});
+    await put({
+      'gesture': 'g2',
+      'tokens': {'--brand': '#0af'},
+      'patches': {
+        'e1': {'text': 'Hi'}
+      },
+    });
+    final u = await api.handle('POST', '/undo', {}, null, null);
+    final um = u.json as Map;
+    expect(um['applied'], true);
+    expect(um['undoDepth'], 1);
+    expect(um['redoDepth'], 1);
+    // An undone-to-empty patches map is omitted from toJson entirely.
+    final undonePatches = (um['draft'] as Map)['patches'] as Map?;
+    expect(undonePatches?['e1'], isNull);
+    final r = await api.handle('POST', '/redo', {}, null, null);
+    final rm = r.json as Map;
+    expect(rm['applied'], true);
+    expect((((rm['draft'] as Map)['patches'] as Map)['e1'] as Map)['text'],
+        'Hi');
+  });
+
+  test('undo at the barrier answers applied:false, never an error',
+      () async {
+    final u = await api.handle('POST', '/undo', {}, null, null);
+    expect(u.status, 200);
+    expect((u.json as Map)['applied'], false);
+  });
+
+  test('a write without a gesture is its own step', () async {
+    await put({'tokens': {'--a': '1'}});
+    await put({'tokens': {'--a': '2'}});
+    final g = await api.handle('GET', '/draft', {}, null, null);
+    expect((g.json as Map)['undoDepth'], 2);
+  });
+
+  test('DELETE /draft (commit landed) clears the journal too', () async {
+    await put({'gesture': 'g1', 'tokens': {'--brand': '#0af'}});
+    await api.handle('DELETE', '/draft', {}, null, null);
+    final g = await api.handle('GET', '/draft', {}, null, null);
+    expect((g.json as Map)['undoDepth'], 0);
+    expect((g.json as Map)['redoDepth'], 0);
+    final u = await api.handle('POST', '/undo', {}, null, null);
+    expect((u.json as Map)['applied'], false);
+  });
+
+  test('guests are refused on /undo and /redo', () async {
+    final token =
+        await api.store.mintShareLink('demo', const Duration(days: 1));
+    final grant = await api.store.resolveShareLink(token);
+    final u = await api.handle('POST', '/undo', {'dial': token}, null, grant);
+    expect(u.status, 403);
+    final r = await api.handle('POST', '/redo', {'dial': token}, null, grant);
+    expect(r.status, 403);
+  });
+
+  test('a new write after undo truncates the redo branch', () async {
+    await put({'gesture': 'g1', 'tokens': {'--a': '1'}});
+    await put({'gesture': 'g2', 'tokens': {'--a': '2'}});
+    await api.handle('POST', '/undo', {}, null, null);
+    final r = await put({'gesture': 'g3', 'tokens': {'--a': '3'}});
+    expect(r['redoDepth'], 0, reason: 'linear history, no forks');
+    expect(r['undoDepth'], 2);
   });
 });
 

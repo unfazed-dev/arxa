@@ -28,6 +28,7 @@ import 'package:arxa/arxa_dial.dart';
 import 'package:arxa/design_media.dart';
 import 'package:arxa/design_ship.dart';
 import 'package:arxa/design_draft.dart';
+import 'package:arxa/design_journal.dart';
 import 'package:arxa/design_server/browser_trust.dart';
 import 'package:arxa/design_server/l10n.dart';
 import 'package:arxa/design_server/worker.dart';
@@ -387,6 +388,10 @@ class DesignServer {
   /// file state, never Supabase (decisions 5/11). Null when the dial is off.
   DraftFileStore? draftStore;
 
+  /// The Design Journal store (undo/redo, 2026-08-26): sits beside the
+  /// draft file, lives and dies with it. Null when the dial is off.
+  JournalFileStore? journalStore;
+
   /// The axes plane (arc 1, 2026-08-25): the dial's style/theme store —
   /// non-null only when the dial is on AND the nearest arxa.json marker
   /// says kind: app. Sites and markerless artifacts never see axes.
@@ -441,6 +446,7 @@ class DesignServer {
     bool dial = true,
     DialStore? dialStore,
     DraftFileStore? draftStore,
+    JournalFileStore? journalStore,
     ArtifactMarker? marker,
     AxesStore? axesStore,
   }) async {
@@ -480,6 +486,9 @@ class DesignServer {
           MemoryDialStore()
       ..draftStore = dial
           ? (draftStore ?? DraftFileStore(artifactDir: artifactDir))
+          : null
+      ..journalStore = dial
+          ? (journalStore ?? JournalFileStore(artifactDir: artifactDir))
           : null;
     if (dial && resolvedMarker != null && resolvedMarker.kind == 'app') {
       if (authorIdentity == null) {
@@ -511,6 +520,7 @@ class DesignServer {
         store: srv.dialStore,
         artifact: srv._dialArtifact,
         draftStore: srv.draftStore,
+        journalStore: srv.journalStore,
         artifactDir: srv.artifactDir,
         media: DialMediaProxy(
           unsplashKey: Platform.environment['UNSPLASH_ACCESS_KEY'] ?? '',

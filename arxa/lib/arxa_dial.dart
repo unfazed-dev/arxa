@@ -44,6 +44,7 @@ import 'package:crypto/crypto.dart' show sha256;
 
 import 'design_axes.dart';
 import 'design_draft.dart';
+import 'design_journal.dart';
 import 'design_patch.dart' show nameSiteLocations;
 
 // ── vocabulary ───────────────────────────────────────────────────────────
@@ -1131,6 +1132,7 @@ class DialApi {
       {required this.store,
       required this.artifact,
       this.draftStore,
+      this.journalStore,
       this.artifactDir,
       this.media,
       this.ship,
@@ -1144,6 +1146,11 @@ class DialApi {
   /// The Draft Overlay's file store (decisions 5/11: local-server state,
   /// never Supabase). Null disables the draft/commit routes (503).
   final DraftFileStore? draftStore;
+
+  /// The Design Journal's file store (undo/redo plan, 2026-08-26): the
+  /// draft's per-artifact history, cleared when the draft is consumed.
+  /// Null disables /undo, /redo and depth reporting (503 / omitted).
+  final JournalFileStore? journalStore;
 
   /// The artifact's absolute dir — reported by /commit so the studio agent
   /// knows where to run `arxa design patch`.
@@ -1266,6 +1273,14 @@ class DialApi {
         if (method == 'GET') return await _getDraft();
         if (method == 'PUT') return await _putDraft(body);
         if (method == 'DELETE') return await _clearDraft();
+      }
+      // The Design Journal (undo/redo plan, 2026-08-26). Author-only for
+      // the same reason as /draft: history over draft state IS draft state.
+      if (method == 'POST' && (sub == '/undo' || sub == '/redo')) {
+        if (caller != DialCaller.author) {
+          return const DialResponse(403, {'error': 'author only'});
+        }
+        return await _timeTravel(redo: sub == '/redo');
       }
       if (method == 'POST' && sub == '/commit') {
         if (caller != DialCaller.author) {
@@ -1424,11 +1439,15 @@ class DialApi {
     final ds = draftStore;
     if (ds == null) return _noDraftStore();
     final d = await ds.load();
-    if (d == null) return const DialResponse(200, {'draft': null});
+    final depths = await _depths();
+    if (d == null) {
+      return DialResponse(200, {'draft': null, ...?depths});
+    }
     final warn = _parityWarnings(d);
     return DialResponse(200, {
       'draft': d.toJson(),
       'warnings': ?warn,
+      ...?depths,
     });
   }
 
@@ -1436,6 +1455,11 @@ class DialApi {
     final ds = draftStore;
     if (ds == null) return _noDraftStore();
     final d = DraftOverlay.fromJson(body, artifact: artifact);
+    // Journal the write BEFORE saving: the diff needs the old overlay.
+    // The island marks step boundaries with an opaque `gesture` id in the
+    // body (ignored by DraftOverlay.fromJson); a write without one is its
+    // own step — API callers get honest history for free.
+    final depths = await _journalPut(body, d);
     await ds.save(d);
     final warn = _parityWarnings(d);
     return DialResponse(200, {
@@ -1444,6 +1468,7 @@ class DialApi {
       'tokens': d.tokens.length,
       'updatedAt': d.updatedAt,
       'warnings': ?warn,
+      ...?depths,
     });
   }
 
@@ -1451,7 +1476,88 @@ class DialApi {
     final ds = draftStore;
     if (ds == null) return _noDraftStore();
     await ds.clear();
+    // Clear-at-commit (undo/redo decision 4): the journal dies with the
+    // draft it shadows — this DELETE is the "commit landed" signal, and
+    // undo immediately after does nothing, honestly.
+    await journalStore?.clear();
     return const DialResponse(200, {'ok': true});
+  }
+
+  /// Depth pair for dock arrows, or null when the journal is disabled.
+  Future<Map<String, int>?> _depths([DesignJournal? j]) async {
+    final js = journalStore;
+    if (js == null) return null;
+    final journal = j ?? await js.load();
+    return {'undoDepth': journal.undoDepth, 'redoDepth': journal.redoDepth};
+  }
+
+  /// Diffs the stored overlay against the incoming one and records a step
+  /// per changed key under the write's gesture id. Single-writer rule: the
+  /// server owns the journal; the island only minted the id.
+  Future<Map<String, int>?> _journalPut(Object? body, DraftOverlay next) async {
+    final js = journalStore;
+    final ds = draftStore;
+    if (js == null || ds == null) return null;
+    var gesture = body is Map ? '${body['gesture'] ?? ''}' : '';
+    if (gesture.isEmpty || gesture.length > JournalCaps.label) {
+      gesture = 'put-${DateTime.now().toUtc().microsecondsSinceEpoch}';
+    }
+    final prev = await ds.load() ?? DraftOverlay(artifact: artifact);
+    final journal = await js.load();
+    for (final key in {...prev.tokens.keys, ...next.tokens.keys}) {
+      final before = prev.tokens[key];
+      final after = next.tokens[key];
+      if (before == after) continue;
+      journal.record(
+          gesture: gesture,
+          scope: JournalScope.token,
+          key: key,
+          before: before,
+          after: after);
+    }
+    for (final key in {...prev.patches.keys, ...next.patches.keys}) {
+      final before = prev.patches[key]?.toJson();
+      final after = next.patches[key]?.toJson();
+      if (jsonEncode(before) == jsonEncode(after)) continue;
+      journal.record(
+          gesture: gesture,
+          scope: JournalScope.patch,
+          key: key,
+          before: before,
+          after: after);
+    }
+    await js.save(journal);
+    return _depths(journal);
+  }
+
+  /// POST /__dial/undo | /__dial/redo — move the cursor, write the step's
+  /// snapshot into the overlay, persist both files, and answer with the
+  /// full updated draft + depths so the island re-applies live (no reload —
+  /// the draft law about not fighting the Author holds). At the barrier the
+  /// draft comes back unchanged with `applied: false`; the dock arrow's
+  /// disabled state is the only toast this needs.
+  Future<DialResponse> _timeTravel({required bool redo}) async {
+    final ds = draftStore;
+    if (ds == null) return _noDraftStore();
+    final js = journalStore;
+    if (js == null) {
+      return const DialResponse(503, {'error': 'journal unavailable'});
+    }
+    final journal = await js.load();
+    final overlay = await ds.load() ?? DraftOverlay(artifact: artifact);
+    final step = redo ? journal.redo(overlay) : journal.undo(overlay);
+    if (step != null) {
+      await ds.save(overlay);
+      await js.save(journal);
+    }
+    final warn = _parityWarnings(overlay);
+    return DialResponse(200, {
+      'ok': true,
+      'applied': step != null,
+      'draft': overlay.toJson(),
+      'warnings': ?warn,
+      ...?await _depths(journal),
+    });
   }
 
   /// The studio-socket commit (decision 2): hand the studio agent the draft
