@@ -1,0 +1,64 @@
+# arxa desktop shell
+
+Tauri v2 shell implementing decision D30 (see
+`arxa-studio/docs/plans/arxa-studio-grill-decisions.md`): a native window over
+the **locally served arxa studio web UI**, with the arxa engine and CLI bundled
+as sidecars. The shell contains no product logic — dsh + PI serve the real UI.
+
+- App identifier: `solutions.arxadigital.arxa` (owner: Arxa Digital Solutions)
+- Default server URL: `http://localhost:7891` — override with `ARXA_STUDIO_URL`
+- Until the server answers, the shell shows a "waiting for arxa studio server"
+  screen (`src/index.html`) that polls once per second, then navigates to the
+  served UI.
+
+## Layout
+
+```
+desktop/
+  src/               waiting screen (static, no build step)
+  src-tauri/         Rust shell
+    tauri.conf.json  identity, window, CSP, sidecar (externalBin) config
+    capabilities/    shell:allow-execute scoped to the two sidecars
+    binaries/        sidecar drop zone — EMPTY in git, filled by release CI
+```
+
+## Sidecars (not vendored)
+
+`tauri.conf.json > bundle.externalBin` declares two sidecars:
+
+- `binaries/arxa-studio` — the studio engine/server (packaged
+  `bin/arxa-studio.mjs`, compiled or wrapped to a single executable)
+- `binaries/arxa` — the compiled Dart CLI (`dart compile exe`)
+
+Binaries are **not** committed. The release pipeline must, before
+`tauri build`, place per-platform binaries next to the config using
+target-triple suffixes, e.g.:
+
+```
+src-tauri/binaries/arxa-aarch64-apple-darwin
+src-tauri/binaries/arxa-x86_64-apple-darwin
+src-tauri/binaries/arxa-studio-aarch64-apple-darwin
+...
+```
+
+(Tauri resolves `binaries/arxa` + current target triple at bundle time; a
+missing binary fails the bundle, not `cargo check`.)
+
+## Develop / verify
+
+`tauri-build` verifies sidecar paths at **compile** time, so create local stub
+binaries first (gitignored; real ones come from the release pipeline):
+
+```sh
+desktop/scripts/dev-stub-sidecars.sh
+cd desktop/src-tauri
+cargo check          # compile-verifies the shell (no bundling needed)
+cargo tauri dev      # run the shell (requires tauri-cli; expects studio server or shows wait screen)
+```
+
+## Remaining work (tracked in arxa-studio docs/plans/desktop-shell-scaffold.md)
+
+- real icon assets (`icons/icon.png` is a solid-color placeholder; `.icns`/`.ico` set still needed)
+- sidecar injection step in the release pipeline
+- shell should optionally auto-spawn the `arxa-studio` sidecar on launch
+- auto-update, code signing / notarization
