@@ -37,7 +37,7 @@ GateResult deployGate(GateContext ctx) {
   // ---- target + version + account, read from state in one pass ----
   // approvalTokens.deploy carries the human confirmations (plan 11 shape);
   // targets is the top-level list.
-  final targets = ctx.state.targets;
+  final targets = ctx.targets;
   if (targets.isEmpty) {
     fail('no build target in state.targets — set the target before deploying');
   } else {

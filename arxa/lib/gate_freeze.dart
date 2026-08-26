@@ -71,7 +71,7 @@ Future<GateResult> freezeGate(
   }
 
   // ---- targets (6.2 / 6.3): explicit flag, else ambient pipeline state ----
-  final requested = targets?.where((t) => t.isNotEmpty).toList() ?? ctx.state.targets;
+  final requested = targets?.where((t) => t.isNotEmpty).toList() ?? ctx.targets;
   if (requested.isEmpty) {
     final msg = 'no --targets given and no targets in pipeline state — pass '
         '--targets explicitly (6.3); a reproducibility run that reads ambient '

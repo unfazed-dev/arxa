@@ -21,6 +21,7 @@ import 'package:arxa/credential_cli.dart';
 import 'package:arxa/crud.dart';
 import 'package:arxa/design_cli.dart';
 import 'package:arxa/design_tools.dart' show scriptRepoRoot;
+import 'package:arxa/repo_project.dart' show findRepoProject;
 import 'package:arxa/deploy_cli.dart';
 import 'package:arxa/docs_lint.dart';
 import 'package:arxa/emit_htmx.dart';
@@ -213,7 +214,8 @@ Future<void> _runGate(List<String> args) async {
     stdout.writeln('Gates: $gateNames');
     stdout.writeln('');
     stdout.writeln('Common flags:');
-    stdout.writeln('  --app <root>    App root (defaults to repo root)');
+    stdout.writeln('  --app <root>    App root (default: the nearest arxa.json');
+    stdout.writeln('                  marker at or above cwd, else the repo root)');
     stdout.writeln('  --check         Drift-check mode (no writes, no test runs)');
     stdout.writeln('  --self-test     Run the gate\'s embedded self-test');
     stdout.writeln('  --sarif <path>  Write SARIF output to <path>');
@@ -311,6 +313,12 @@ Future<void> _runGate(List<String> args) async {
     exit(2);
   }
 
+  // A repo-mode app owns its pipeline state (the arxa law), so standing inside
+  // one and running a gate should gate THAT app, not fall through to arxa's
+  // own studio. --app stays the explicit override; this only fills the gap.
+  // No arxa.json sits above the arxa checkout, so gating arxa is unaffected.
+  appRoot ??= findRepoProject()?.dir;
+
   final ctx = GateContext(
     repoRoot: repoRoot,
     appRoot: appRoot,
@@ -360,6 +368,12 @@ Future<void> _runAllGates(List<String> args) async {
     stderr.writeln('arxa gate --all: cannot find repo root');
     exit(2);
   }
+
+  // A repo-mode app owns its pipeline state (the arxa law), so standing inside
+  // one and running a gate should gate THAT app, not fall through to arxa's
+  // own studio. --app stays the explicit override; this only fills the gap.
+  // No arxa.json sits above the arxa checkout, so gating arxa is unaffected.
+  appRoot ??= findRepoProject()?.dir;
   final ctx = GateContext(repoRoot: repoRoot, appRoot: appRoot, project: project);
   final suite = await runAllGates(ctx);
   for (final s in suite.summaries) {

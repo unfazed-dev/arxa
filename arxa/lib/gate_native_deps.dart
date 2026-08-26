@@ -137,7 +137,7 @@ GateResult nativeDepsGate(GateContext ctx) {
   }
 
   // ---- targets ----
-  final targets = ctx.state.targets.where((t) => t.isNotEmpty).toList();
+  final targets = ctx.targets.where((t) => t.isNotEmpty).toList();
   if (targets.isEmpty) {
     return GateResult(
       passed: false,

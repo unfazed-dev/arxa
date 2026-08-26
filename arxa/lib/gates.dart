@@ -13,6 +13,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 
+import 'package:arxa/repo_project.dart' show findRepoProject;
 import 'package:arxa/crypto_aead.dart' as crypto;
 
 /// Exit codes matching the bash gate contract.
@@ -67,6 +68,22 @@ class GateContext {
   String get designRoot => appRoot != null
       ? '$appRoot/$studioDesignDir'
       : '$repoRoot/$studioDesignDir';
+
+  /// Build targets for this run.
+  ///
+  /// A repo-mode app's `arxa.json` WINS over the engine's pipeline state. The
+  /// marker is that app's own SSOT (the arxa law: a repo owns its pipeline
+  /// state), while `$repoRoot/pipeline/state/*.state.json` carries ARXA's
+  /// targets. Gating energize-studio against arxa's default.state.json meant
+  /// gating `[macos]` when the app declares `[ios, android, macos, web]` —
+  /// three targets silently unchecked.
+  ///
+  /// Falls back to [state] when there is no marker or it declares none, so
+  /// gating arxa's own repo is unchanged (no arxa.json sits above it).
+  List<String> get targets {
+    final t = appRoot == null ? null : findRepoProject(appRoot)?.targets;
+    return (t != null && t.isNotEmpty) ? t : state.targets;
+  }
 
   /// Path to config/arxa.config.json.
   String get configFile => '$repoRoot/config/arxa.config.json';

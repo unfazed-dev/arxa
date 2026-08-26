@@ -60,8 +60,8 @@ GateResult coverageGate(GateContext ctx) {
 
   // ---- targets: ambient pipeline state (6.2). --targets (6.3) is the bash ----
   // flag; not wired through GateContext, so the explicit-override path is the
-  // caller's responsibility — same as gate_deploy reading ctx.state.targets.
-  final targets = ctx.state.targets;
+  // caller's responsibility — same as gate_deploy reading ctx.targets.
+  final targets = ctx.targets;
   if (targets.isEmpty) {
     const m = 'no --targets given and no targets in pipeline state — pass '
         '--targets explicitly (6.3); a reproducibility run that reads ambient '
