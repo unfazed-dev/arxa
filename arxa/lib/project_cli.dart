@@ -24,6 +24,7 @@ import 'package:arxa/repo_project.dart';
 
 int projectMain(List<String> args) {
   if (args.isEmpty) return _usage();
+  if (_isHelp(args.first)) return _usage(0);
   switch (args.first) {
     case 'init':
       return _init(args.sublist(1));
@@ -51,6 +52,9 @@ int projectMain(List<String> args) {
 
 int _init(List<String> args) {
   if (args.isEmpty) return _usage();
+  // `--help` reaches here as a positional, so it would otherwise be
+  // parsed as a project name and rejected as one. Intercept first.
+  if (_isHelp(args.first)) return _usage(0);
   // Repo mode: `init --repo <dir> --kind site|app ...` — the arxa law.
   if (args.first == '--repo') return _initRepo(args.sublist(1));
   final name = args.first;
@@ -206,7 +210,9 @@ int _missing(String flag) {
   return 2;
 }
 
-int _usage() {
+bool _isHelp(String a) => a == '--help' || a == '-h';
+
+int _usage([int code = 2]) {
   stderr.writeln('''
 Usage: arxa project <sub> [options]
 
@@ -228,5 +234,5 @@ Subcommands:
   list         List projects (* = current)
 
 Honors ARXA_HOME (default ~/.arxa).''');
-  return 2;
+  return code;
 }
