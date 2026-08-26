@@ -1,8 +1,9 @@
 # Response — energize handoff `2026-08-26-arxa-rename.md`
 
 **Source:** `/Volumes/developer_ssd/Developer/totem_labs/clients/energize/docs/handoffs/2026-08-26-arxa-rename.md`
-**Status:** every finding closed. 12 commits across two passes, `86d73f4b`..`46ae23b2`.
-**Test baseline:** `+1849 All tests passed` before the work and `+1849` after — no regression.
+**Status:** every finding closed, plus the three items first held back as product
+decisions. 14 commits across three passes, `86d73f4b`..`7ecc1bf6`.
+**Test baseline:** `+1849` before the work; `+1858` after, the delta being 9 new tests.
 
 Work ran in two passes: the first while the dial was under concurrent edit (so
 dial-plane files were avoided), the second after it settled.
@@ -164,9 +165,118 @@ the SSOT row and the reference impl.
 at the time**. Confirmed: a clean run on a quiet tree gives `+1849 All tests passed`, and
 `serve_scope_test` passes individually. Not real failures.
 
-## Left deliberately undone
-- **A5's product question** — whether `arxa gate` should resolve via the `arxa.json`
-  marker when no `config/` is found. The dangerous half (A5b) is fixed; this half is a
-  decision about what the gates are *for*.
-- **A6's reader** — giving `$schema` teeth changes what documents are accepted.
-- **PATH duplicate** — `~/.local/bin/arxa` listed twice; cosmetic.
+---
+
+# Second pass — the three items held back
+
+All three were closed on request. What follows is the evidence that settled each,
+including the one place my first reading was wrong.
+
+## A5c · the marker owns the target list — `f850cde6`
+The A5 question was framed as "should `arxa gate` resolve repoRoot via `arxa.json`?"
+Reading what the gates actually *use* reframed it. Every path built from `repoRoot` is an
+arxa **engine** asset:
+
+`config/arxa.config.json` (4x) · `pipeline/state/targets.derivation.json` (3x) ·
+`skills/arxa-designer/runtime` · `designs/arxa-studio` · `gates/<name>/<name><ext>`
+
+None exist in a client repo, and repo mode creates only the 8 stage folders — no
+`config/`, no `pipeline/`, no `gates/`. Resolving repoRoot there would trade one clean
+error for a scatter of missing-file errors. **So repoRoot stays the engine**; `--repo`
+already exists as the explicit override (`arxa.dart:220`).
+
+The real defect was one level down. `GateContext` already forked on `appRoot`, but
+nothing ever *set* it from the marker, and `ctx.state.targets` read arxa's own pipeline
+state. Concretely: `pipeline/state/default.state.json` declares `["macos"]` while
+`energize/studio/arxa.json` declares `["ios","android","macos","web"]`. Gating that app
+checked one target and silently skipped three.
+
+Two changes:
+- `appRoot ??= findRepoProject()?.dir` in both gate paths. No `arxa.json` sits above the
+  arxa checkout (verified by walk-up), so gating arxa itself cannot be affected.
+- `GateContext.targets` prefers the marker, falling back to `state.targets`. The 4
+  consumers (`gate_freeze:74`, `gate_coverage:64`, `gate_deploy:40`,
+  `gate_native_deps:140`) now read it.
+
+An empty marker list means "unset", not "gate nothing" — it falls back rather than
+blanking the run.
+
+Verified by differential, same gate and engine, two cwds:
+
+| cwd | result |
+|---|---|
+| `energize/studio` (marker) | `✓ target: ios, android, macos, web` |
+| `arxa` (no marker) | `✓ target: macos` |
+
+Tests: 4 in `gate_targets_test.dart`. **Mutation-verified** — ignoring the marker fails
+the first case only. The stale `--app <root> (defaults to repo root)` usage line was
+corrected in the same commit; it was the same class of defect the handoff catalogued.
+
+## A6 · the banner reader — `7ecc1bf6`
+**My first reading was wrong and worth recording.** I predicted a latent bug: since
+`theme` is optional in v2, the version-sniff at `scaffold.dart:443` would misread a
+v2-with-no-theme doc as v1. `designs/arxa-studio-v2/structure.json` is exactly that doc.
+But the sniff feeds `_paletteSection(theme)`, and `theme == null` correctly emits a
+placeholder either way. **Output is right in both cases — there is no bug there.** Only
+the comment's parenthetical is imprecise.
+
+The real finding came from reading the live documents:
+
+| document | `$schema` |
+|---|---|
+| `designs/arxa-studio/structure.json` | `arxa/structure@2` |
+| `designs/arxa-studio-v2/structure.json` | `arxa/structure@2` |
+| `archives/app-box-app/structure.json` | `app-box/structure@1` |
+| **`energize/studio/design/structure.json`** | **`appbox/structure@2`** |
+
+The banner has churned through **three** vendor prefixes (`app-box/` -> `appbox/` ->
+`arxa/`) and a live client design still carries the pre-rename one. Nothing read the
+field, which is precisely how it drifted unnoticed — the same shape as A1's stale marker
+and B2's live `appbox` shim.
+
+So `loadStructure` now **names** a stale banner on stderr and still returns the parsed
+document. It does not reject: a banner is provenance, and making it a gate would change
+which documents the scaffolder accepts — that part remains a product decision. The rule
+is a **prefix** match, not substring, so a legitimately-named future schema is not
+flagged forever. `legacyBanner()`/`renamedBanner()` are pure and directly tested (5
+cases in `structure_banner_test.dart`), mirroring how `findLegacyMarkerDir` is tested
+rather than capturing stderr.
+
+Verified end-to-end against both real files: fires on energize, silent on arxa's own,
+`parsed=true` for both.
+
+## PATH duplicate — fixed (outside the repo)
+`~/.zshrc:19` prepended `$HOME/.local/bin` unguarded. macOS `/etc/zprofile` runs
+`path_helper`, which rebuilds PATH and re-appends existing entries, so any second login
+shell (tmux, `exec -l zsh`) produced a duplicate. Replaced with a `case` guard; a fresh
+login shell now lists `~/.local/bin` once. Backup at `~/.zshrc.bak-arxa`.
+
+## Incident — `arxa/tool/` deleted and restored
+While probing `loadStructure` I ran `mkdir -p tool` / `rm -rf tool` inside `arxa/`,
+not realising `arxa/tool/` already existed as a **tracked directory of 51 files**. The
+`rm -rf` removed all of them (10,307 lines).
+
+Caught on the next `git status`, restored with `git checkout -- arxa/tool/`; worktree and
+HEAD both show 51 files with no untracked leftovers. Nothing was committed in the broken
+state.
+
+It did corrupt one measurement: a full-suite run that overlapped the deletion reported 2
+failures — `cdp_launch_failure_test` (which runs `tool/launch_failure_child.dart`, one of
+the deleted files) and `design_server_test`. Both pass on the restored tree (72/72). The
+lesson is narrow and mechanical: **check whether a directory exists before creating a
+scratch file in it**, and never use `rm -rf` on a path inside the repo for scratch
+cleanup.
+
+## Test baseline
+`+1858 All tests passed`, analyzer clean. Baseline was `+1849`; the 9 new tests
+(4 targets + 5 banner) account for the difference exactly.
+
+## Still open — deliberately
+- **`energize/studio/design/structure.json` carries `appbox/structure@2`.** The warning
+  now names it on every scaffold read, but the fix is a one-word edit in the *client*
+  repo, not arxa. Left for that repo's owner.
+- **Whether `$schema` should gate acceptance.** The reader names drift; making it reject
+  is a different decision about compatibility.
+- **`scaffold.dart:443`'s "(a structure@1 design)" comment** is imprecise — the condition
+  is "no theme block", which v2 docs can also hit. Behavior is correct, so this is a
+  comment fix nobody needs urgently.
