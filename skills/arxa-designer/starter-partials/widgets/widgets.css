@@ -378,7 +378,7 @@
 }
 .appbar__menu-link:hover { background: color-mix(in srgb, currentColor 8%, transparent); }
 
-/* ── list rows & sections (_list-row.html) · Flutter: ArxaKitListTile/Section ─ */
+/* ── list rows & sections (_list-row.html) · Flutter: ArxaKitListTile / ArxaKitListSection ─ */
 .list-section { margin-bottom: 24px; font-family: var(--c-font); }
 .list-section__header {
   margin: 0;
@@ -865,7 +865,7 @@ a.list-row:hover { background: color-mix(in srgb, currentColor 6%, transparent);
   .panel-activity { display: none; }
 }
 
-/* ── chip (_chip.html) · Flutter: ArxaKitChip / ArxaKitFilterChip ───────────────── */
+/* ── chip (_chip.html) · Flutter: ArxaKitChip / ArxaKitChipCarousel ─────────────── */
 .chip-row { display: flex; flex-wrap: wrap; gap: 6px; }
 .chip {
   --chip-fg: var(--accent, #4f46e5);
