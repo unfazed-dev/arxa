@@ -599,15 +599,6 @@ class DesignServer {
         secFetchSite: req.headers.value('Sec-Fetch-Site'),
       );
       if (!verdict.allowed) {
-        // Name the caller in the log — a refusal that does not say WHO was
-        // refused cannot be told apart from an attack or a misconfigured
-        // first-party client without packet capture.
-        stderr.writeln('[design-server] refused $method $path '
-            '(origin=${req.headers.value('Origin')}, '
-            'sec-fetch-site=${req.headers.value('Sec-Fetch-Site')}, '
-            'dest=${req.headers.value('Sec-Fetch-Dest')}, '
-            'referer=${req.headers.value('Referer')}): '
-            '${verdict.reason}');
         // Opaque-origin READS (origin literally "null" — a sandboxed mirror
         // frame whose island predates its quiet-mirror boot, or any stray
         // viewer) get a CORS-CLEAN empty 200 instead of an error status:
@@ -618,6 +609,22 @@ class DesignServer {
         final originHeader = req.headers.value('Origin');
         if (method == 'GET' &&
             (originHeader == null || originHeader == 'null')) {
+          // ITS OWN LOG LINE (2026-08-26). This branch ANSWERS 200, but it
+          // used to be logged through the refusal line below — which tells
+          // the operator to "add the origin to ~/.appbox/trusted-origins"
+          // for a request that was in fact served. That advice cannot be
+          // followed: an opaque origin has no name to allowlist, and must
+          // never be given one. Every boot then read as a live
+          // misconfiguration (it cost a false-alarm investigation on
+          // 2026-08-26). Kept rather than silenced: this line is the only
+          // evidence that mirror frames exist at all, which is how the
+          // quiet-mirror path gets diagnosed.
+          final originShown = originHeader ?? '<absent>';
+          stderr.writeln('[design-server] mirror $method $path '
+              '(origin=$originShown, '
+              'sec-fetch-site=${req.headers.value('Sec-Fetch-Site')}): '
+              'opaque origin — read-only frame, answered {"mirror":true}. '
+              'No action needed.');
           req.response.statusCode = 200;
           req.response.headers
             ..contentType = ContentType.parse('application/json; charset=utf-8')
@@ -626,6 +633,15 @@ class DesignServer {
           await req.response.close();
           return;
         }
+        // Name the caller in the log — a refusal that does not say WHO was
+        // refused cannot be told apart from an attack or a misconfigured
+        // first-party client without packet capture.
+        stderr.writeln('[design-server] refused $method $path '
+            '(origin=${req.headers.value('Origin')}, '
+            'sec-fetch-site=${req.headers.value('Sec-Fetch-Site')}, '
+            'dest=${req.headers.value('Sec-Fetch-Dest')}, '
+            'referer=${req.headers.value('Referer')}): '
+            '${verdict.reason}');
         req.response.statusCode = verdict.status;
         req.response.headers.contentType =
             ContentType.parse('text/plain; charset=utf-8');
