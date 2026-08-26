@@ -92,6 +92,24 @@ the resolved ladder at session start.
   and behaviour, not items.
 - The staggered FAB is the home of contextual actions on touch rungs; on
   expanded those same actions live in the panels/footer panel instead.
+- **`liquid-glass` deviates at expanded, and this is the stated override the
+  table above requires.** Glass maps each rung to the Apple platform that owns
+  it — compact = iOS, medium = iPadOS, expanded = macOS — so at `≥ 840` the
+  nav-rail gives way to a **sidebar**, and the rail is not rendered at all.
+  HIG "Sidebars": a sidebar "can float above content in the Liquid Glass
+  layer"; macOS's primary navigation is a sidebar, not a rail. The other three
+  styles keep the rail at expanded — m3's navigation-rail and shadcn's sidebar
+  are both live at that rung. This is style-scoped, so it belongs to the style
+  module (`styles/app/liquid-glass/SPEC.md`), not to this table's defaults.
+  Our sidebar width is **260** (Apple publishes none).
+- **Where the swap is implemented.** In the artifact's own `chrome.css` +
+  overlay, not in the style overlay the skill ships: the swap keys on the
+  shell's slot classes, which are artifact vocabulary. The artifact renders
+  BOTH occupants in the nav-rail slot and lets the active overlay pick one —
+  and the alternate sidebar must carry a discriminator class (energize uses
+  `.sidebar--alt`), because an app whose *other* shell already puts a plain
+  `.sidebar` in that same slot will otherwise have it hidden by the default
+  rule. Keying on the bare `.sidebar` is the bug this design exists to avoid.
 
 ## Authoring and verifying at every rung
 

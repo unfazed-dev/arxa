@@ -137,8 +137,15 @@ h1, h2, .hub-rail h1, .q-top h1 { letter-spacing: -0.015em; } /* approximates SF
 .toggle { border-radius: 999px; border: 0; box-shadow: inset 0 0 0 1px rgb(60 60 67 / 0.18); background: transparent; } /* w5:not-a-chip - capsule control (glass) */
 .toggle.on { background: rgb(15 163 163 / 0.14); color: var(--accent-text); box-shadow: none; }
 .toggle-grp .toggle { margin-left: 6px; border-radius: 999px; } /* w5:not-a-chip - capsule control (glass) */
-/* HIG checkmark idiom: round check circle, not a box */
-.cb { border-radius: 50%; width: 22px; height: 22px; }
+/* HIG "Toggles" (fetched live 2026-08-26) — macOS only; UIKit has no checkbox
+   at all: "A checkbox is a small, square button that's empty when the button
+   is off, contains a checkmark when the button is on, and can contain a dash
+   when the button's state is mixed." The prior comment here cited the HIG for
+   the opposite of what the HIG says, and the round 22px override enforced it.
+   The artifact's families.css base is already the correct rounded square —
+   20px, radius 6px — so glass wins by NOT overriding it. Only the fill and
+   checkmark colour below belong to glass. (Radio deliberately untouched: the
+   rim-vs-dot call needs the HIG artwork and is not settled — see D6b.) */
 .cb.on { background: var(--accent); border-color: var(--accent); color: #FFFFFF; }
 .rd.on { border-width: 6px; border-color: var(--accent); }
 /* iOS 26 toggle: CLEAN capsule — no inner glyphs. Source: the real specimens on

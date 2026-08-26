@@ -85,8 +85,13 @@ Full inventory + behavior laws: component-craft.md §inventory and
   (`--knob`), travel 16px on the MOVE spring, accent track when on
   (dark ON keeps tint via a (0,3,1) rule — the dark track override (0,2,1)
   otherwise grays it out). Checkbox/radio are NOT iOS idioms (HIG: macOS
-  only) — render list-row checkmark accessories; a round check circle for
-  forms. Radio = 6px accent ring.
+  only) — on iOS use a switch, or a list-row checkmark accessory. Where a
+  form does render one, it is a SQUARE box: HIG "Toggles" (fetched
+  2026-08-26) — "A checkbox is a small, square button that's empty when the
+  button is off, contains a checkmark when the button is on". The earlier
+  "round check circle for forms" here was RETRACTED 2026-08-26 — it cited
+  the HIG for the opposite of what the HIG says. Radio = 6px accent ring
+  (UNVERIFIED — rim-vs-dot needs the HIG artwork; deliberately unsettled).
 - **range + progress** — slider: 4px tinted track, 26px white thumb
   (`--knob` — same invariant as the switch; geometry gate asserts
   slider-thumb background == switch-knob background, computed). Spinner
@@ -136,9 +141,42 @@ Full inventory + behavior laws: component-craft.md §inventory and
 - **identity** — badge = system red (contrast-stepped #D70015 light /
   #FF453A dark w/ dark ink); avatar = gray fill; chips = iOS fill-material
   capsule.
-- **top bar / nav rail** — floating glass capsule bars (sticky, margins
-  10/14px, specular + shadow); rail rows r10, selection = gray systemFill
-  (never tint — HIG sidebar law), group labels sentence-case gray 12/600.
+- **top bar / nav rail / sidebar (families 23-26)** — floating glass capsule
+  bars (sticky, margins 10/14px, specular + shadow); rail rows r10, selection =
+  gray systemFill (never tint — HIG sidebar law), group labels sentence-case
+  gray 12/600. Three additions from the 2026-08-26 HIG re-read (energize
+  `component-specs.md` rows 92-94 are the SSOT; `/navigation-bars` now
+  301-redirects to `/toolbars`):
+  - **The app bar floats as ELEMENTS, not as a bar.** HIG Toolbars, Best
+    practices: *"Reduce the use of toolbar backgrounds ... use the content
+    layer to inform the color and appearance of the toolbar."* So glass gives
+    `.appbar` NO background and NO backdrop-filter, and floats three separate
+    Liquid Glass elements: back circle at the far LEADING edge, the title in
+    its own capsule beside it (r999, h36 — the collapsed standard title iOS
+    moves a large title into on scroll), the More-menu circle at the far
+    TRAILING edge. Title law, same page: concise, under 15 characters, never
+    the app name. DOM order stays the family's; glass re-SEQUENCES visually
+    with flex `order` — sequence is presentation, not structure, so m3 /
+    shadcn / custom keep their leading hamburger. **Requires family-23 inner
+    vocabulary the starter does not yet define:** a `<b>` title, a `.sp` flex
+    spacer and an `.appmenu` trailing menu alongside `.ibtn`. Until the
+    artifact provides all four, do NOT ship a partial `order:` set — an
+    unmatched `.sp`/`.appmenu` defaults to `order: 0` and jumps to the front,
+    which is worse than no reordering at all.
+  - **The tab bar floats too, and its placement is platform-by-rung.** The
+    68pt/46pt figure in HIG is **tvOS** — do not apply it to iOS. Compact =
+    bottom capsule over scrolling content (iPhone); medium = capsule at the
+    TOP under the app bar with icon-beside-label (iPad, June-2026 ed.);
+    heights and margins are our capsule idiom, Apple publishes no px.
+  - **At expanded the rail gives way to the sidebar.** Glass maps rungs to
+    platforms — compact iOS, medium iPadOS, expanded macOS — and macOS's
+    primary navigation is a sidebar. HIG "Sidebars": ≤ 2 levels of hierarchy,
+    hideable, icons take the accent colour, *"can float above content in the
+    Liquid Glass layer"*. Glass renders NO rail at `≥ 840`. Sidebar width
+    **260** (Apple publishes none; m3 uses 360, shadcn 256). The other three
+    styles keep the rail. Layout lives in the artifact's `chrome.css`, never
+    here — see `references/viewport-ladder.md` for the slot contract and the
+    `--alt` discriminator this swap requires.
 - **empty states** — solid, shadow-free.
 - **type + rhythm** — platform stack; titles bold per platform convention.
 - **iconography (R9b)** — Lucide only, vendored lucide-static@1.27.0
