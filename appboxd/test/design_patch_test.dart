@@ -311,6 +311,24 @@ void main() {
       }
     });
 
+    // Regression: the no-stylesheet fallback used
+    // `orElse: () => null as File`, which threw a TypeError instead of
+    // returning null, so the CmdResult(5) below it was unreachable.
+    test('--token with no :root stylesheet exits 5, does not throw', () {
+      final dir = Directory.systemTemp.createTempSync('patch_test_tok_none');
+      try {
+        Directory('${dir.path}/ui/styles/common').createSync(recursive: true);
+        // a .css file that exists but has no :root — the scan must reject it
+        File('${dir.path}/ui/styles/common/other.css')
+            .writeAsStringSync('.a { color: red; }');
+        final res = patchMain([dir.path, '--token', '--red=#00FF00']);
+        expect(res.exitCode, 5);
+        expect(res.stderrLines.join(' '), contains('no tokens.css'));
+      } finally {
+        dir.deleteSync(recursive: true);
+      }
+    });
+
     test('--token inserts a brand-new custom property', () {
       final dir = Directory.systemTemp.createTempSync('patch_test_tok2');
       try {

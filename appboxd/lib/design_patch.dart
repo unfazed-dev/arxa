@@ -1234,11 +1234,16 @@ CmdResult patchMain(List<String> args) {
     for (final c in candidates) {
       if (File(c).existsSync()) { css = File(c); break; }
     }
-    css ??= dir
-        .listSync(recursive: true)
-        .whereType<File>()
-        .firstWhere((f) => f.path.endsWith('.css') &&
-            f.readAsStringSync().contains(':root'), orElse: () => null as File);
+    if (css == null) {
+      // `firstWhere(..., orElse: () => null as File)` threw a TypeError here
+      // instead of falling through, so the CmdResult(5) below was unreachable.
+      for (final f in dir.listSync(recursive: true).whereType<File>()) {
+        if (f.path.endsWith('.css') && f.readAsStringSync().contains(':root')) {
+          css = f;
+          break;
+        }
+      }
+    }
     if (css == null) {
       return CmdResult(5, stderrLines: [
         'appbox design patch: no tokens.css / :root stylesheet found under '
@@ -1309,7 +1314,7 @@ CmdResult patchMain(List<String> args) {
     }
   } else if (elTarget != null) {
     final sites = <(File, int, int)>[
-      for (final s2 in nameSiteLocations(dir, elTarget!))
+      for (final s2 in nameSiteLocations(dir, elTarget))
         (File(s2.$1), s2.$2, s2.$3),
     ];
     if (sites.isEmpty) {
