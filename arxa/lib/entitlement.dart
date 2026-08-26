@@ -377,6 +377,8 @@ class Entitlement {
           'forever.',
       'Inspect the cached entitlement with `arxa entitlement status` '
           '(~/.arxa/entitlement.jwt), then re-run.',
+      'To (re)activate this machine: `arxa login`, or `arxa entitlement '
+          'refresh` if already signed in.',
     ],
   );
 }

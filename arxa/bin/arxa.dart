@@ -60,6 +60,7 @@ import 'package:arxa/tier1.dart';
 import 'package:arxa/api_map_scan.dart';
 import 'package:arxa/capability_scan.dart';
 import 'package:arxa/entitlement_cli.dart';
+import 'package:arxa/entitlement_refresh.dart';
 import 'package:arxa/gen_playbook.dart';
 import 'package:arxa/intake_cli.dart';
 import 'package:arxa/memory_cli.dart';
@@ -83,6 +84,10 @@ Future<void> main(List<String> args) async {
 
   switch (command) {
     case 'gate':
+      // Entitlement-gated surface: silently renew a near-expiry token first
+      // (no-op for sessionless users; failures never block — the D17
+      // assertion at the paywall stays the only fatal voice).
+      await maybeRefreshEntitlement();
       await _runGate(rest);
       break;
     case 'lens':
@@ -109,6 +114,8 @@ Future<void> main(List<String> args) async {
             '${findRepoRoot() ?? scriptRepoRoot() ?? Directory.current.path}/config/credentials.catalog.json',
       ));
     case 'emit':
+      // Same silent renewal as `gate` — `emit scaffold` is the paid boundary.
+      await maybeRefreshEntitlement();
       _runEmit(rest);
       break;
     case 'crud':
@@ -118,7 +125,9 @@ Future<void> main(List<String> args) async {
       _runServe(rest);
       break;
     case 'entitlement':
-      exit(entitlementMain(rest));
+      exit(await entitlementMain(rest));
+    case 'login':
+      exit(await loginMain(rest));
     case 'lint':
       _runLint(rest);
       break;
@@ -176,9 +185,12 @@ Commands:
                  unindexed docs + KB-lint orphans warn)
   kb <sub>       Kit introspection: facts, build, check, lock, playbook,
                  conventions
-  entitlement <sub>  Cached entitlement JWT — status/verify (the D17 scaffold
-                 paywall's operator surface); tokens are issued by the
-                 /activate Edge Function (no client-side mint)
+  login          Sign in to the arxa backend (email+password); persists the
+                 Supabase session at ~/.arxa/session.json and activates this
+                 machine's entitlement
+  entitlement <sub>  Cached entitlement JWT — status/verify/refresh (the D17
+                 scaffold paywall's operator surface); tokens are issued by
+                 the /activate Edge Function (no client-side mint)
 
 Options:
   --app <root>   App root (defaults to repo root)

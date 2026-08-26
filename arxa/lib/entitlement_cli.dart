@@ -3,6 +3,7 @@
 ///
 ///   `arxa entitlement status [--token <path>]`
 ///   `arxa entitlement verify <file>`
+///   `arxa entitlement refresh`
 ///
 /// `status` prints exactly one JSON line to stdout — the contract other
 /// arxa code consumes:
@@ -22,6 +23,12 @@
 /// (valid|grace|expired|invalid|none plus subject/features/expires) for the
 /// given file only. Same exit-code rule.
 ///
+/// `refresh` is the explicit renewal form (manual/CI): refresh the Supabase
+/// session if needed, call the /activate Edge Function for this machine, and
+/// overwrite the cache — the same path the silent pre-command hook takes
+/// (lib/entitlement_refresh.dart). Exit 0 unless the machine is left
+/// unentitled.
+///
 /// There is NO mint path in this binary. Tokens are issued exclusively by
 /// the /activate Edge Function (docs/plans/entitlement-backend-runbook.md);
 /// the former `mint --dev` dogfood path was deleted when the production
@@ -32,9 +39,10 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'entitlement.dart';
+import 'entitlement_refresh.dart';
 
 /// Entry point for `arxa entitlement`. Returns the process exit code.
-int entitlementMain(List<String> args) {
+Future<int> entitlementMain(List<String> args) async {
   if (args.isEmpty) _usage();
   switch (args.first) {
     case 'status':
@@ -42,6 +50,9 @@ int entitlementMain(List<String> args) {
     case 'verify':
       if (args.length != 2) _usage();
       return _verify(args[1]);
+    case 'refresh':
+      if (args.length != 1) _usage();
+      return _refresh();
     case 'mint':
       stderr.writeln('arxa entitlement mint has been removed: the production '
           'keypair has landed and there is no client-side mint. Tokens are '
@@ -54,8 +65,18 @@ int entitlementMain(List<String> args) {
 
 Never _usage() {
   stderr.writeln('usage: arxa entitlement status [--token <path>] | '
-      'arxa entitlement verify <file>');
+      'arxa entitlement verify <file> | arxa entitlement refresh');
   exit(64);
+}
+
+Future<int> _refresh() async {
+  final outcome = await ensureFreshEntitlement();
+  _print({
+    'refreshed': outcome.refreshed,
+    'entitled': !outcome.fatal,
+    'reason': outcome.message,
+  });
+  return outcome.fatal ? 1 : 0;
 }
 
 int _status(List<String> args) {
