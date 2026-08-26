@@ -1584,7 +1584,28 @@
   }
 
   let saveTimer = null;
-  function scheduleSave() {
+  // Undo journal (decisions 2026-08-26): edits carry a gesture id so a
+  // whole slider drag is ONE undo step. Rotate when the author moves to a
+  // different target+tier, or after ~1s idle on the same one — the same
+  // boundaries a human would call "that was one tweak".
+  const journal = { undo: 0, redo: 0 };
+  const gesture = { id: '', key: '', at: 0 };
+  function markGesture(gkey) {
+    const now = Date.now();
+    if (!gesture.id || gesture.key !== gkey || now - gesture.at > 1000) {
+      gesture.id = 'g-' + now.toString(36) + '-' + Math.random().toString(36).slice(2, 7);
+      gesture.key = gkey;
+    }
+    gesture.at = now;
+  }
+  function noteDepths(r) {
+    if (!r || typeof r.undoDepth !== 'number') return;
+    journal.undo = r.undoDepth;
+    journal.redo = typeof r.redoDepth === 'number' ? r.redoDepth : 0;
+    renderJournalUi();
+  }
+  function scheduleSave(gkey) {
+    markGesture(gkey || gesture.key || '*');
     S.draftDirty = true;
     clearTimeout(saveTimer);
     saveTimer = setTimeout(saveDraft, 700);
@@ -1608,10 +1629,11 @@
     if (!S.draftDirty) return;
     S.draftDirty = false;
     S.ownSave = Date.now();
-    const r = await api('PUT', '/draft', { tokens: S.draft.tokens, patches: S.draft.patches });
+    const r = await api('PUT', '/draft', { tokens: S.draft.tokens, patches: S.draft.patches, gesture: gesture.id });
     if (r && r.ok) {
       S.draftMeta = r;
       S.draftWarnings = r.warnings || [];
+      noteDepths(r);
       renderDraftMeta();
     }
     else say(r && r.error ? 'Draft refused: ' + r.error : 'Draft save failed');
@@ -1628,6 +1650,79 @@
     } else {
       lastTextSig = sig;
     }
+  }
+
+  // Undo/redo (decisions 2026-08-26). POST /undo|/redo returns the whole
+  // draft after the move; the island adopts it live — same muscle as
+  // syncRemoteDraft, but from the journal instead of another tab. Any
+  // property the incoming overlay no longer carries is un-applied from the
+  // DOM first (inline style/token removal reverts to the stylesheet); attr
+  // overrides that vanish have no captured original, so that one case
+  // converges by the session-preserving reload, like text.
+  let travelling = false;
+  async function timeTravel(redo) {
+    if (S.mode !== 'author' || travelling) return;
+    if (S.inlineEditing != null) return;
+    clearTimeout(saveTimer);
+    if (S.draftDirty) await saveDraft(); // flush first — step order stays honest
+    travelling = true;
+    try {
+      S.ownSave = Date.now(); // journal writes echo on SSE like our own saves
+      const r = await api('POST', redo ? '/redo' : '/undo');
+      if (!r || !r.ok) { say(r && r.error ? r.error : (redo ? 'Redo failed' : 'Undo failed')); return; }
+      gesture.id = ''; // next edit is a NEW gesture, never glued to a restored step
+      gesture.key = '';
+      noteDepths(r);
+      S.draftWarnings = r.warnings || [];
+      if (!r.applied) { renderDraftMeta(); return; } // barrier/empty — arrows already say so
+      adoptDraft(r.draft);
+    } finally { travelling = false; }
+  }
+  function adoptDraft(draft) {
+    const next = {
+      tokens: (draft && draft.tokens) || {},
+      patches: (draft && draft.patches) || {},
+    };
+    let needReload = false;
+    for (const key of Object.keys(S.draft.patches)) {
+      const prev = S.draft.patches[key] || {};
+      const np = next.patches[key] || {};
+      for (const prop of Object.keys(prev.style || {})) {
+        if (!np.style || !(prop in np.style)) {
+          for (const el of targetsForKey(key)) el.style.removeProperty(prop);
+        }
+      }
+      for (const name of Object.keys(prev.attrs || {})) {
+        if (!np.attrs || !(name in np.attrs)) needReload = true; // no pre-edit attr capture
+      }
+      if (prev.text != null && np.text == null) {
+        // the outgoing patch carries its own provenance: was = pre-edit text
+        if (prev.was != null) {
+          const insts = targetsForKey(key);
+          const scoped = prev.nth != null && insts[prev.nth] ? [insts[prev.nth]] : insts;
+          for (const el of scoped) { if (isTextEditable(el)) el.textContent = prev.was; }
+        } else needReload = true;
+      }
+    }
+    S.draft.tokens = next.tokens;
+    S.draft.patches = next.patches;
+    lastTextSig = textSig(S.draft); // travel is not typing — no converge fight
+    applyTokensLive();
+    applyPatchesLive();
+    renderDraftMeta();
+    if (S.tray === 'edit') renderTraySlide('edit');
+    if (S.tray === 'tweak') renderTraySlide('tweak');
+    if (needReload) resumeReload();
+  }
+  function renderJournalUi() {
+    root.querySelectorAll('.jundo').forEach((b) => {
+      b.disabled = !journal.undo;
+      b.textContent = '↺ Undo' + (journal.undo ? ' (' + journal.undo + ')' : '');
+    });
+    root.querySelectorAll('.jredo').forEach((b) => {
+      b.disabled = !journal.redo;
+      b.textContent = '↻ Redo' + (journal.redo ? ' (' + journal.redo + ')' : '');
+    });
   }
 
   // The editing rung's text-converge reload must not cost the author his
@@ -1698,6 +1793,7 @@
     // mirror marker or a dead network means this context has no dial.
     if (r == null || r.mirror === true) return false;
     S.draftWarnings = r.warnings || []; // parity: computed server-side on every draft read
+    noteDepths(r); // journal depths ride every draft read
     if (r.draft) {
       S.draft.tokens = r.draft.tokens || {};
       S.draft.patches = r.draft.patches || {};
@@ -1873,7 +1969,7 @@
       if (value) el.setAttribute(name, value);
       else el.removeAttribute(name);
     }
-    scheduleSave();
+    scheduleSave(key + '/attr');
   }
   function setStyleProp(key, prop, value) {
     const p = patchFor(key);
@@ -1882,7 +1978,7 @@
       if (value) el.style.setProperty(prop, value);
       else el.style.removeProperty(prop);
     }
-    scheduleSave();
+    scheduleSave(key + '/style:' + prop);
   }
   function setTextContent(key, value, origin) {
     const p = patchFor(key);
@@ -1915,7 +2011,7 @@
     for (const el of scoped) {
       if (isTextEditable(el)) el.textContent = value;
     }
-    scheduleSave();
+    scheduleSave(key + '/text');
   }
 
   // Normalize-on-write (input[type=color] contract, MDN): the color
@@ -1967,6 +2063,13 @@
   // parity line, and reset-all (the tray CTA reuses requestCommit — one
   // action, one home, promoted to the bar).
   function renderLedger(body) {
+    body.appendChild(h('div', { class: 'sect', text: 'History' }));
+    const ub = h('button', { class: 'btn jundo', text: '↺ Undo', title: 'Cmd+Z' });
+    const rb = h('button', { class: 'btn jredo', text: '↻ Redo', title: 'Shift+Cmd+Z' });
+    ub.addEventListener('click', () => timeTravel(false));
+    rb.addEventListener('click', () => timeTravel(true));
+    body.appendChild(h('div', { class: 'btnrow' }, [ub, rb]));
+    renderJournalUi();
     body.appendChild(h('div', { class: 'sect', text: 'Draft ledger' }));
     body.appendChild(h('div', { class: 'draftmeta' }));
     const keys = Object.keys(S.draft.patches);
@@ -2385,7 +2488,7 @@
         if (v) S.draft.tokens[name] = v;
         else delete S.draft.tokens[name];
         applyTokensLive();
-        scheduleSave();
+        scheduleSave('tok:' + name);
       });
       row.appendChild(input);
       body.appendChild(row);
@@ -2400,7 +2503,7 @@
       if (!/^--[a-zA-Z0-9-]+$/.test(n) || !v) { say('A token needs a --name and a value'); return; }
       S.draft.tokens[n] = v;
       applyTokensLive();
-      scheduleSave();
+      scheduleSave('tok:' + n);
       renderTraySlide('tweak');
     });
     body.appendChild(h('div', { class: 'facet' }, [nameIn]));
@@ -3346,6 +3449,21 @@
         e.preventDefault();
         inlineEditEnd(false);
       }
+      return;
+    }
+    // Cmd/Ctrl+Z undo, Shift+Cmd+Z / Cmd+Y redo (decisions 2026-08-26).
+    // Runs AFTER the inlineEditing branch, and yields to native undo when
+    // focus sits in any input/textarea/contenteditable (dial fields live in
+    // the shadow root — composedPath sees through the retargeting).
+    const mod = e.metaKey || e.ctrlKey;
+    const k = (e.key || '').toLowerCase();
+    if (mod && !e.altKey && (k === 'z' || k === 'y')) {
+      if (S.mode !== 'author') return;
+      const t = e.composedPath ? e.composedPath()[0] : e.target;
+      const tag = t && t.tagName ? t.tagName.toLowerCase() : '';
+      if (tag === 'input' || tag === 'textarea' || (t && t.isContentEditable)) return;
+      e.preventDefault();
+      timeTravel(k === 'y' || e.shiftKey);
       return;
     }
     if (e.key === 'Escape') {
