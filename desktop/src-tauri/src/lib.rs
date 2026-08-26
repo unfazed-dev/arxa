@@ -159,6 +159,32 @@ pub fn run() {
                     }
                 }
             }
+            // Watchdog: if the server dies while the shell is showing its UI,
+            // send the window back to the bundled waiting page (brand logo +
+            // "Waiting for main app to start…"), which polls and returns to
+            // the UI once the server is back. `home` is captured now, while
+            // the window still shows the bundled page.
+            let home = app
+                .get_webview_window("main")
+                .and_then(|w| w.url().ok());
+            if let Some(home) = home {
+                let handle = app.handle().clone();
+                let watch_url = url.clone();
+                std::thread::spawn(move || {
+                    let mut was_up = false;
+                    loop {
+                        std::thread::sleep(Duration::from_secs(2));
+                        let up = server_reachable(&watch_url);
+                        if was_up && !up {
+                            eprintln!("[arxa-desktop] server lost - showing waiting page");
+                            if let Some(mut win) = handle.get_webview_window("main") {
+                                let _ = win.navigate(home.clone());
+                            }
+                        }
+                        was_up = up;
+                    }
+                });
+            }
             Ok(())
         })
         .build(tauri::generate_context!())
