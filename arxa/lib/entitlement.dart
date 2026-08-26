@@ -104,13 +104,20 @@ class Entitlement {
 
   /// The arxa entitlement PUBLIC key (Ed25519, 32 bytes).
   ///
-  /// DEV KEYPAIR — the matching private key lives in
-  /// test/entitlement_fixture.dart so the whole flow is exercisable today.
-  /// Replace this constant (and the issuer-side private key, which must never
-  /// ship in this repo) with the production Totem keypair before the first
-  /// paid release; nothing else in the verification path changes.
+  /// PRODUCTION keypair — the private half lives ONLY in the Supabase secret
+  /// ENTITLEMENT_ISSUER_JWK (and the operator's gitignored
+  /// deploy/supabase/secrets/entitlement-issuer.jwk.json). Tokens are minted
+  /// exclusively by the /activate Edge Function
+  /// (docs/plans/entitlement-backend-runbook.md §1, §7).
   static final List<int> publicKey = _hex(
-      'f3251c81da2ad5932308ec72886a19ea0c0309ef115417fffb41e746522fdd07');
+      '15b672f349df85c6e10cc5d14c85ec2431de351dc9fe8491b1b105865d16e768');
+
+  /// TEST SEAM — when non-null, [verify] trusts this key instead of the
+  /// embedded production [publicKey]. Tests set it to the dev fixture
+  /// keypair (test/entitlement_fixture.dart) so signed fixtures verify
+  /// in-process; nothing in lib/ or bin/ ever assigns it, so shipped
+  /// binaries always verify against [publicKey].
+  static List<int>? debugPublicKeyOverride;
 
   /// Verifies a compact-JWS entitlement [token]. [now] and [fingerprint]
   /// (the sha256-hex machine fingerprint) are injectable for tests; a null
@@ -148,7 +155,8 @@ class Entitlement {
 
     // The signature covers the exact compact bytes — never re-encoded.
     final signingInput = utf8.encode('${parts[0]}.${parts[1]}');
-    if (!ed25519Verify(publicKey, signingInput, signature)) {
+    if (!ed25519Verify(
+        debugPublicKeyOverride ?? publicKey, signingInput, signature)) {
       return const EntitlementVerdict(
           status: EntitlementStatus.invalid, reason: 'bad signature');
     }

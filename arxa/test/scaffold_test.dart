@@ -7,6 +7,7 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:arxa/entitlement.dart';
 import 'package:arxa/gate_scaffold.dart';
 import 'package:arxa/gate_tests.dart';
 import 'package:arxa/gates.dart';
@@ -16,6 +17,12 @@ import 'package:test/test.dart';
 import 'entitlement_fixture.dart';
 
 void main() {
+  // Dev-signed fixture tokens only verify through the test seam — the
+  // embedded key is production since the rotation (release_gate_test.dart).
+  setUpAll(() =>
+      Entitlement.debugPublicKeyOverride = devEntitlementKey.publicKey);
+  tearDownAll(() => Entitlement.debugPublicKeyOverride = null);
+
   late Directory tmp;
   late String derivationPath;
   late String configPath;

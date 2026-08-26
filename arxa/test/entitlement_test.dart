@@ -36,6 +36,14 @@ EntitlementVerdict verifyAt(String token, DateTime now) =>
     Entitlement.verify(token, now: now, fingerprint: testFingerprint);
 
 void main() {
+  // The embedded key is the PRODUCTION key since the rotation
+  // (release_gate_test.dart). In-process tests verify dev-signed fixtures
+  // through the test seam; subprocess (CLI) tests run the real binary,
+  // where dev-signed tokens are now bad-signature — asserted as such below.
+  setUpAll(() =>
+      Entitlement.debugPublicKeyOverride = devEntitlementKey.publicKey);
+  tearDownAll(() => Entitlement.debugPublicKeyOverride = null);
+
   group('sha512 (FIPS 180-4 known answers)', () {
     test('empty message', () {
       expect(_hexOf(sha512([])),
@@ -272,7 +280,8 @@ void main() {
   });
 
   group('entitlement CLI contract', () {
-    test('status prints entitled JSON and exits 0 for a valid token', () async {
+    test('status reports unentitled for a dev-signed token (production key '
+        'embedded — no dev token unlocks the real binary)', () async {
       final token = makeEntitlementJwt(
           devEntitlementKey,
           entitlementClaims(
@@ -286,10 +295,10 @@ void main() {
       try {
         final res = await Process.run('dart',
             ['run', 'bin/arxa.dart', 'entitlement', 'status', '--token', tmp.path]);
-        expect(res.exitCode, 0, reason: '${res.stderr}');
+        expect(res.exitCode, 1, reason: '${res.stdout}\n${res.stderr}');
         final out = jsonDecode((res.stdout as String).trim());
-        expect(out['status'], 'entitled');
-        expect(out['features'], ['emit.scaffold']);
+        expect(out['status'], 'unentitled');
+        expect(out['reason'], contains('bad signature'));
       } finally {
         await tmp.delete();
       }
@@ -308,9 +317,13 @@ void main() {
       expect(jsonDecode((res.stdout as String).trim())['status'], 'none');
     });
 
-    test('verify reports the raw verdict and exits 1 for a wrong-machine token',
+    test('verify reports the raw verdict and exits 1 for a dev-signed token',
         () async {
-      final token = tokenFor(); // bound to testFingerprint, not this machine
+      // Signature is checked before the machine binding, so a dev-signed
+      // token fails as bad-signature in the real binary regardless of fpr.
+      // (Machine-binding verdicts are covered in-process above, where the
+      // test seam lets dev-signed fixtures reach the fingerprint check.)
+      final token = tokenFor(); // bound to testFingerprint, dev-signed
       final tmp = await File(
               '${Directory.systemTemp.path}/entitlement_cli_test_${DateTime.now().microsecondsSinceEpoch}.jwt')
           .writeAsString(token);
@@ -320,56 +333,25 @@ void main() {
         expect(res.exitCode, 1, reason: '${res.stderr}');
         final out = jsonDecode((res.stdout as String).trim());
         expect(out['status'], 'invalid');
-        expect(out['reason'], contains('different machine'));
+        expect(out['reason'], contains('bad signature'));
       } finally {
         await tmp.delete();
       }
     });
 
-    test('mint --dev writes a token this machine verifies as entitled',
-        () async {
-      final tmp =
-          '${Directory.systemTemp.path}/entitlement_mint_test_${DateTime.now().microsecondsSinceEpoch}.jwt';
-      try {
-        final mint = await Process.run('dart', [
-          'run',
-          'bin/arxa.dart',
-          'entitlement',
-          'mint',
-          '--dev',
-          '--token',
-          tmp,
-        ]);
-        expect(mint.exitCode, 0, reason: '${mint.stderr}');
-        expect(mint.stderr as String, contains('DEV entitlement'));
-        final minted = jsonDecode((mint.stdout as String).trim());
-        expect(minted['status'], 'minted');
-        expect(minted['dev'], isTrue);
-
-        // The minted token is valid right now, bound to this machine.
-        final verdict = Entitlement.verifyFile(tmp);
-        expect(verdict.status, EntitlementStatus.valid,
-            reason: verdict.reason);
-        expect(verdict.unlocks, isTrue);
-        expect(verdict.features, ['emit.scaffold']);
-
-        // …and the status contract reports entitled / exit 0 on it.
-        final status = await Process.run('dart',
-            ['run', 'bin/arxa.dart', 'entitlement', 'status', '--token', tmp]);
-        expect(status.exitCode, 0, reason: '${status.stderr}');
-        expect(jsonDecode((status.stdout as String).trim())['status'],
-            'entitled');
-      } finally {
-        final f = File(tmp);
-        if (f.existsSync()) await f.delete();
+    test('mint refuses in every form — the mint path is deleted', () async {
+      // The dev dogfood mint was removed with the production key rotation;
+      // tokens are issued only by the /activate Edge Function.
+      for (final args in [
+        ['entitlement', 'mint'],
+        ['entitlement', 'mint', '--dev'],
+      ]) {
+        final res =
+            await Process.run('dart', ['run', 'bin/arxa.dart', ...args]);
+        expect(res.exitCode, 64, reason: '${res.stderr}');
+        expect(res.stderr as String, contains('removed'));
+        expect(res.stderr as String, contains('/activate'));
       }
-    });
-
-    test('mint without --dev refuses (no production mint path)', () async {
-      final res = await Process.run(
-          'dart', ['run', 'bin/arxa.dart', 'entitlement', 'mint']);
-      expect(res.exitCode, 64);
-      expect(res.stderr as String, contains('--dev is required'));
     });
 
     test('a PATH-spoofed ioreg cannot fake the machine binding', () async {
@@ -412,7 +394,11 @@ void main() {
         expect(res.exitCode, 1, reason: '${res.stdout}\n${res.stderr}');
         final out = jsonDecode((res.stdout as String).trim());
         expect(out['status'], 'unentitled');
-        expect(out['reason'], contains('different machine'));
+        // Since the key rotation the dev-signed spoof token dies at the
+        // signature check, before fingerprint resolution — the spoof still
+        // fails closed. (PATH-vs-absolute-path ioreg resolution is exercised
+        // in-process via the seam in the fingerprint tests above.)
+        expect(out['reason'], contains('bad signature'));
       } finally {
         await fakeBin.delete(recursive: true);
       }

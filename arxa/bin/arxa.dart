@@ -177,8 +177,8 @@ Commands:
   kb <sub>       Kit introspection: facts, build, check, lock, playbook,
                  conventions
   entitlement <sub>  Cached entitlement JWT — status/verify (the D17 scaffold
-                 paywall's operator surface); mint --dev is the dev-only
-                 dogfood path (7-day token, this machine, dev keypair only)
+                 paywall's operator surface); tokens are issued by the
+                 /activate Edge Function (no client-side mint)
 
 Options:
   --app <root>   App root (defaults to repo root)

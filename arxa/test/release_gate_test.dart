@@ -8,7 +8,8 @@
 //
 // THIS TEST MUST FAIL BEFORE THE FIRST PAID RELEASE. If it passes, the dev
 // keypair is still embedded and shipping. Rotation checklist:
-//   1. Replace `Entitlement.publicKey` with the production Totem public key.
+// EXECUTED 2026-08-26 — the production Ed25519 keypair landed:
+//   1. `Entitlement.publicKey` now carries the production Totem public key.
 //   2. Delete `_devSeed` and the whole `mint --dev` path from
 //      lib/entitlement_cli.dart.
 //   3. Flip this test to assert the embedded key is NOT the dev key (or
@@ -21,13 +22,16 @@ import 'package:test/test.dart';
 import 'entitlement_fixture.dart';
 
 void main() {
-  test('embedded public key is still the DEV keypair — rotation pending', () {
+  test(
+      'RELEASE GATE (flipped 2026-08-26): embedded public key is the '
+      'PRODUCTION key, never the dev keypair', () {
     expect(
       Entitlement.publicKey,
-      devEntitlementKey.publicKey,
-      reason: 'The embedded entitlement key no longer matches the dev '
-          'keypair: the production key has landed. Flip or delete this '
-          'release-gate test (see its file header).',
+      isNot(equals(devEntitlementKey.publicKey)),
+      reason: 'The embedded entitlement key matches the DEV keypair again — '
+          'the production rotation has been reverted. Restore the production '
+          'public key: dev-signed tokens must never verify in a shipped '
+          'binary.',
     );
   });
 }
