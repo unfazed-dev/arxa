@@ -1,5 +1,5 @@
-import 'package:appbox_kit_showcase_app/ui/widgets/mouse_transforms/scale_on_hover_widget.dart';
-import 'package:appbox_kit_showcase_app/ui/widgets/mouse_transforms/translate_on_hover_widget.dart';
+import 'package:arxa_kit_showcase_app/ui/widgets/mouse_transforms/scale_on_hover_widget.dart';
+import 'package:arxa_kit_showcase_app/ui/widgets/mouse_transforms/translate_on_hover_widget.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 

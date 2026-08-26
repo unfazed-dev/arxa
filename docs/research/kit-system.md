@@ -1,11 +1,11 @@
 # Kit system and runtime/artifact contract
 
 Scope note: the original task brief referenced paths (`runtime/README.md`,
-`runtime/vendor/`, `examples/hello-hda/`, `.claude/skills/appbox-designer/…`)
+`runtime/vendor/`, `examples/hello-hda/`, `.claude/skills/arxa-designer/…`)
 that do not exist in this worktree. The actual paths in this checkout are
-`kit/`, `skills/appbox-designer/`, and there is no `runtime/` top-level dir or
+`kit/`, `skills/arxa-designer/`, and there is no `runtime/` top-level dir or
 `examples/` dir — design-time vendor JS lives under a `runtime/vendor/`
-*reference path named in docs* (see `skills/appbox-designer/references/kit-catalog.md`,
+*reference path named in docs* (see `skills/arxa-designer/references/kit-catalog.md`,
 "Visual islands" section) but that tree is not present on disk in this
 worktree; it may live in the designer skill's own asset tree elsewhere. All
 paths below are what actually exists here and were read directly.
@@ -15,7 +15,7 @@ paths below are what actually exists here and were read directly.
 A kit is a Flutter package under `kit/<dir>/` that a built app wires in at
 build time. The single source of truth for what kits exist is
 `config/kit-registry.json` (`version: 1`, 24 entries). Per
-`skills/appbox-designer/references/kit-catalog.md` ("What the kit is"
+`skills/arxa-designer/references/kit-catalog.md` ("What the kit is"
 section): *"If a capability is not in the registry, it does not exist — do
 not design around an imagined module."*
 
@@ -40,33 +40,33 @@ report.
 
 | dir | package | topology | phase | providers (tier) |
 |---|---|---|---|---|
-| `core` | `appbox_kit_core` | core | stable | — |
+| `core` | `arxa_kit_core` | core | stable | — |
 | `ui_library` | `ui_library` | ui-tier | stable | — |
-| `state` | `appbox_kit_state` | standalone | stable | — |
-| `data` | `appbox_kit_data` | core-coupled | stable | — |
-| `auth` | `appbox_kit_auth` | standalone | stable | SeedAuthBackend: port-tested; Apple SignIn: port-tested; Google SignIn: port-tested |
-| `forms` | `appbox_kit_forms` | standalone | stable | — |
-| `permissions` | `appbox_kit_permissions` | standalone | native-first | — |
-| `media` | `appbox_kit_media` | standalone | native-first | — |
-| `documents` | `appbox_kit_documents` | standalone | native-first-partial | — |
-| `notifications` | `appbox_kit_notifications` | standalone | native-first-partial | — |
-| `analytics` | `appbox_kit_analytics` | standalone | stable | — |
-| `payments` | `appbox_kit_payments` | standalone | native-first | Stripe: port-tested; PayPal: port-tested; Apple Pay: stub |
-| `maps` | `appbox_kit_maps` | standalone | native-first-partial | OpenStreetMap: port-tested; Mapbox: port-tested |
-| `deploy` | `appbox_kit_deploy` | standalone | stable | Vercel: port-tested; Cloudflare Pages: port-tested; Cloudflare Workers: port-tested; fastlane: port-tested; Shorebird: port-tested |
-| `haptics` | `appbox_kit_haptics` | standalone | stable | — |
-| `bluetooth` | `appbox_kit_bluetooth` | standalone | native-first-partial | — |
-| `wifi` | `appbox_kit_wifi` | standalone | stable | — |
-| `support` | `appbox_kit_support` | standalone | stable | — |
-| `security` | `appbox_kit_security` | standalone | native-first-partial | — |
-| `compliance` | `appbox_kit_compliance` | standalone | stable | — |
+| `state` | `arxa_kit_state` | standalone | stable | — |
+| `data` | `arxa_kit_data` | core-coupled | stable | — |
+| `auth` | `arxa_kit_auth` | standalone | stable | SeedAuthBackend: port-tested; Apple SignIn: port-tested; Google SignIn: port-tested |
+| `forms` | `arxa_kit_forms` | standalone | stable | — |
+| `permissions` | `arxa_kit_permissions` | standalone | native-first | — |
+| `media` | `arxa_kit_media` | standalone | native-first | — |
+| `documents` | `arxa_kit_documents` | standalone | native-first-partial | — |
+| `notifications` | `arxa_kit_notifications` | standalone | native-first-partial | — |
+| `analytics` | `arxa_kit_analytics` | standalone | stable | — |
+| `payments` | `arxa_kit_payments` | standalone | native-first | Stripe: port-tested; PayPal: port-tested; Apple Pay: stub |
+| `maps` | `arxa_kit_maps` | standalone | native-first-partial | OpenStreetMap: port-tested; Mapbox: port-tested |
+| `deploy` | `arxa_kit_deploy` | standalone | stable | Vercel: port-tested; Cloudflare Pages: port-tested; Cloudflare Workers: port-tested; fastlane: port-tested; Shorebird: port-tested |
+| `haptics` | `arxa_kit_haptics` | standalone | stable | — |
+| `bluetooth` | `arxa_kit_bluetooth` | standalone | native-first-partial | — |
+| `wifi` | `arxa_kit_wifi` | standalone | stable | — |
+| `support` | `arxa_kit_support` | standalone | stable | — |
+| `security` | `arxa_kit_security` | standalone | native-first-partial | — |
+| `compliance` | `arxa_kit_compliance` | standalone | stable | — |
 | `branding` | `branding` | standalone | stable | — |
-| `motion` | `appbox_kit_motion` | standalone | stable | — |
-| `i18n` | `appbox_kit_i18n` | standalone | stable | — |
-| `showcase_app` | `appbox_kit_showcase_app` | app-integration | n/a | — |
+| `motion` | `arxa_kit_motion` | standalone | stable | — |
+| `i18n` | `arxa_kit_i18n` | standalone | stable | — |
+| `showcase_app` | `arxa_kit_showcase_app` | app-integration | n/a | — |
 
 No `providers` entry means "a plain module, not a provider seam" — per
-`kit-catalog.md`'s "The 24 kits" table note (`skills/appbox-designer/references/kit-catalog.md`).
+`kit-catalog.md`'s "The 24 kits" table note (`skills/arxa-designer/references/kit-catalog.md`).
 
 No `hasSkill: true` entries exist yet (all 24 report `false`) — every kit
 currently relies on general designer/builder skill guidance rather than a
@@ -82,7 +82,7 @@ Verification-tier semantics (`kit-catalog.md`, "What the kit is"):
 ### 3a. How a design declares a kit
 
 A design artifact's screen registry (`models/screens_model/registry.json` in
-a design project — SSOT per `skills/appbox-designer/references/app-architecture.md:14`)
+a design project — SSOT per `skills/arxa-designer/references/app-architecture.md:14`)
 adds an optional `kits` array to a surface entry:
 
 ```json
@@ -91,7 +91,7 @@ adds an optional `kits` array to a surface entry:
   "comp": "ShopLocator", "route": "/locator", "kits": ["maps"] }
 ```
 
-Contract table row: `skills/appbox-designer/references/app-architecture.md:53`
+Contract table row: `skills/arxa-designer/references/app-architecture.md:53`
 — *"`kits` | no | kit dir names from `config/kit-registry.json` (`kits[].dir`)
 — the kit modules the surface's built app will use"*. Lines 55–67 spell out
 that `kits`, `requiresAuth`, and `tab` are the only sanctioned optional
@@ -114,7 +114,7 @@ declaration-only"):
 
 ### 3b. How a kit manifests at runtime (build side)
 
-- Validation + threading: `appboxd/lib/emit_structure.dart` reads each
+- Validation + threading: `arxa/lib/emit_structure.dart` reads each
   screen's `kits` list, loads the valid dir set from
   `config/kit-registry.json` via `_loadKitDirs` (`emit_structure.dart:351-365`),
   and fails hard on an unknown name (`emit_structure.dart:248-250`:
@@ -122,39 +122,39 @@ declaration-only"):
   or non-list/non-string values (`emit_structure.dart:236-243`). Valid
   declarations are threaded into the emitted `structure.json` at
   `emit_structure.dart:304` (`if (kits != null) screen['kits'] = kits;`).
-  Test coverage: `appboxd/test/emit_structure_test.dart:136-207` — passthrough,
+  Test coverage: `arxa/test/emit_structure_test.dart:136-207` — passthrough,
   omission-when-absent, and three hard-fail cases (unknown kit, non-list,
   wrong item type).
 - Scaffolder: stamps the declaration into each generated stub's header comment
   as `//   kits (builder wires): <names>` and into `.shell-structure.json`
-  (per `skills/appbox-builder/SKILL.md:54-57`: *"Stubs carry `//   kits
+  (per `skills/arxa-builder/SKILL.md:54-57`: *"Stubs carry `//   kits
   (builder wires): <names>` — the designer's declaration, threaded through
   `structure.json`."*). `decision_log.dart:41` independently confirms
   `scaffold.dart:499` is the consumer of `screen['kits']`, and
   `blueprint.dart:81` receives it as a parameter — *"Nothing anywhere picks a
   kit for a project, so there is no kit decision to record and none is
-  invented"* (`appboxd/lib/decision_log.dart:39-46`).
+  invented"* (`arxa/lib/decision_log.dart:39-46`).
 - Builder: for each named kit, wires the **real providers** via locator
   injection per the kit's playbook (`kit/<name>/<name>_playbook.mdx`) and the
   tier recorded in `config/kit-registry.json`
-  (`skills/appbox-builder/SKILL.md:59-61`). Required credentials
+  (`skills/arxa-builder/SKILL.md:59-61`). Required credentials
   (`config/credentials.catalog.json`, keyed by `module: kit/<name>`) are read
   from the environment/credential store at build time
-  (`skills/appbox-builder/SKILL.md:66`) — never embedded by the designer.
-- Deployer / advertise gate: `appboxd/lib/gate_advertise.dart` builds a
+  (`skills/arxa-builder/SKILL.md:66`) — never embedded by the designer.
+- Deployer / advertise gate: `arxa/lib/gate_advertise.dart` builds a
   `{(kit_dir/provider_name): verification}` ledger across all kits in
   registry order (`gate_advertise.dart:48-53`, reading
   `config/kit-registry.json` at `gate_advertise.dart:221`) and caps any
   capability offer at the recorded tier — *"say 'port-tested', not 'proven'"*
-  (`skills/appbox-deployer/SKILL.md:33`).
-- Anti-rot check: `appboxd/lib/design_selftest_kit_catalog_mirror.dart`
+  (`skills/arxa-deployer/SKILL.md:33`).
+- Anti-rot check: `arxa/lib/design_selftest_kit_catalog_mirror.dart`
   enforces that every `dir` in `config/kit-registry.json` also appears in
-  `skills/appbox-designer/references/kit-catalog.md` as `` `dir` `` — it
+  `skills/arxa-designer/references/kit-catalog.md` as `` `dir` `` — it
   caught the catalog doc rotting to zero listed kits against 24 in the
   registry before being wired (file header, lines 1-26). Registered into
   `design_selftest.dart` as of 2026-08-02, bringing that selftest to 25
   checks total.
-- Spec-vs-real pairing: `appboxd/lib/tier1.dart` is a pure-Dart **spec copy**
+- Spec-vs-real pairing: `arxa/lib/tier1.dart` is a pure-Dart **spec copy**
   of provider behavior (auth/payments/maps) used for Tier-1 behavioral
   testing without a Flutter dependency; it explicitly is not an importer of
   kit code (`tier1.dart:31-37`) but is paired 1:1 with real implementations —
@@ -176,14 +176,14 @@ to surface which keys the client must collect before build, not to hold them.
 
 ```
 registry.json (design, hand-authored, kits: [...])
-        ↓  appbox emit structure  (appboxd/lib/emit_structure.dart)
+        ↓  arxa emit structure  (arxa/lib/emit_structure.dart)
         ↓  validates names against config/kit-registry.json; fails on unknown
 structure.json  (generated, carries kits per screen)
-        ↓  appbox emit scaffold  (appboxd/lib/scaffold.dart:499 per decision_log.dart:41)
+        ↓  arxa emit scaffold  (arxa/lib/scaffold.dart:499 per decision_log.dart:41)
 per-surface stub headers ("// kits (builder wires): <names>") + .shell-structure.json
-        ↓  builder (skills/appbox-builder/SKILL.md:54-66)
+        ↓  builder (skills/arxa-builder/SKILL.md:54-66)
 locator-wired real providers, keyed against kit-registry.json tiers + credentials.catalog.json
-        ↓  gates/advertise (appboxd/lib/gate_advertise.dart)
+        ↓  gates/advertise (arxa/lib/gate_advertise.dart)
 capability offer to the client, capped at the recorded verification tier
 ```
 
@@ -201,13 +201,13 @@ Registry `backing` field states the only formal dependency data:
 
 Individual kit docs assert **no** dependency beyond that, explicitly, as a
 design constraint rather than an accident:
-- `appbox_kit_motion`: "No dependency back on `appbox_kit` core,
+- `arxa_kit_motion`: "No dependency back on `arxa_kit` core,
   `stacked_services`, or a host app's locator. The kit is pure widgets — no
   service registration at all."
-- `appbox_kit_security`: "This package depends on no other kit. The host app
-  (or `appbox_kit` core) binds the ports in its locator."
-- `appbox_kit_maps`: "Standalone by design: no dependency on stacked,
-  stacked_services, or appbox_kit core."
+- `arxa_kit_security`: "This package depends on no other kit. The host app
+  (or `arxa_kit` core) binds the ports in its locator."
+- `arxa_kit_maps`: "Standalone by design: no dependency on stacked,
+  stacked_services, or arxa_kit core."
 
 So the only real inter-kit coupling in the registry is `ui_library → core`
 and `data → core + ui_library`; every capability kit (auth, payments, maps,
@@ -217,18 +217,18 @@ host app's service locator — never through a kit-to-kit import.
 ## Files read for this report
 
 - `config/kit-registry.json`
-- `skills/appbox-designer/references/kit-catalog.md`
-- `skills/appbox-designer/references/app-architecture.md`
+- `skills/arxa-designer/references/kit-catalog.md`
+- `skills/arxa-designer/references/app-architecture.md`
 - `config/credentials.catalog.json`
-- `appboxd/lib/emit_structure.dart`
-- `appboxd/test/emit_structure_test.dart`
-- `appboxd/lib/gate_advertise.dart`
-- `appboxd/lib/decision_log.dart`
-- `appboxd/lib/design_selftest_kit_catalog_mirror.dart`
-- `appboxd/lib/tier1.dart`
-- `appboxd/lib/prd_adr.dart`
-- `skills/appbox-builder/SKILL.md`
-- `skills/appbox-deployer/SKILL.md`
-- `skills/appbox-designer/built-in-skills/declare-structure.md`
+- `arxa/lib/emit_structure.dart`
+- `arxa/test/emit_structure_test.dart`
+- `arxa/lib/gate_advertise.dart`
+- `arxa/lib/decision_log.dart`
+- `arxa/lib/design_selftest_kit_catalog_mirror.dart`
+- `arxa/lib/tier1.dart`
+- `arxa/lib/prd_adr.dart`
+- `skills/arxa-builder/SKILL.md`
+- `skills/arxa-deployer/SKILL.md`
+- `skills/arxa-designer/built-in-skills/declare-structure.md`
 - `tools/phase5_kit_copy.sh`
 - `kit/` directory listing (25 subdirs)

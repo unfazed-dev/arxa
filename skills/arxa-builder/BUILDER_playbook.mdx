@@ -1,0 +1,169 @@
+<Callout id="header" tone="info">
+# arxa-builder — Per-Skill Playbook
+
+`arxa-builder` · status: **active**
+
+**Role (one line):** fill the extension-point View/ViewModel bodies in an emitted target by composing the adaptive primitive layer once.
+
+**Scope of this document:** lets a human OR an LLM drive the build phase without reading the skill source. Folded from `SKILL.md`.
+
+**Pipeline position:** stage 4 — upstream `arxa-scaffolder` (stub tree + `deps` headers); downstream `arxa-tester` (hand over arch_guard-clean — pre-check the reviewer's stage-6 gate) and the build-phase `arxa-lens` goldens. Full chain, stage numbers, per-stage artifacts: `docs/research/pipeline-map.md` §1.
+
+## Table of contents
+
+0. Header & TOC · 1. Overview & role · 2. Inputs · 3. Procedure · 4. Outputs · 5. Rules · 6. View/ViewModel boundaries · 7. Enums layer · 8. Kit wiring · 9. References
+
+</Callout>
+
+### Overview & role
+
+The blueprint emits two things this role relies on: the **adaptive primitive layer** (`lib/ui/primitives.dart`, generated) — `AdaptiveScaffold`, `AdaptiveButton`, `AdaptiveCard`, `AdaptiveTextField`, `AdaptiveSegmented`, `AdaptiveProgress`, each reading `currentStrategy()` — and empty View/ViewModel **stubs** (`@arxa-extension-point`). This role fills the stubs by composing the primitives once from `breakdown.json`. A view never branches on platform; the same breakdown yields the same widget code (freeze + replay).
+
+### Inputs
+
+- `.blueprint/<source>/breakdown.json` — `pages[].components[].primitives[]`, the widget inventory per screen.
+- The emitted target: extension-point files carry `@arxa-extension-point`; `lib/ui/primitives.dart` is generated — read it for the available widgets.
+
+### Procedure
+
+For each `<Screen>View` + `<Screen>ViewModel`: match the page by screen id; map each breakdown primitive to the matching `Adaptive*` widget (`action.button`→`AdaptiveButton`, `surface.card`→`AdaptiveCard`, `input.text-field`→`AdaptiveTextField`, `action.segmented`→`AdaptiveSegmented`, `feedback.spinner`→`AdaptiveProgress`, the page scaffold→`AdaptiveScaffold`). Data-viz (`data.chart`, `display.stat`) is platform-identical — paint it with `CustomPainter`. Scrolling list rows use `AdaptiveCard(lite: true)` (Flutter-drawn even under glass; platform views jank in long lists); reserve real platform views for static surfaces. Style is automatic (primitives read `AppTokens`); populate content + interactions from the ViewModel; async → `setBusy`/`setError`; Ports locator-injected. If the design needs a primitive the layer lacks, add it to `lib/ui/primitives.dart` (generated, with all three family branches) — never hand-roll a native widget inside a view.
+
+### Outputs
+
+Filled `*_view.dart` / `*_viewmodel.dart` composing the primitive layer. Pre-check `arch_guard` (the reviewer's stage-6 gate) → clean before handoff to the tester.
+
+### Rules
+
+**Platform laws (2026-08-13):** `docs/liquid-glass-allowlist.md` (THE liquid-glass law) and `docs/m3e-law.md` govern all native chrome and glass composition; the lint law pass enforces them. The laws constrain how chrome composes, never whether a surface has chrome — that is the design's call, resolved per surface by the scaffolder, and a surface designed bar-less stays bar-less. Builder-relevant consequences: where a design declares shell/tab-root top chrome the assembly is `ArxaKitChromeScaffold` — never hand-assemble `Scaffold.appBar` beside in-scroll native glass, and never wrap a nested router in floating chrome that its pushed routes would inherit (the double-bar stack); no saveLayer effect (`BackdropFilter`/`ShaderMask`/`ImageFiltered`) or partial-alpha `Opacity` over a subtree that may host platform views; lists with native glass under floating chrome use `ArxaKitEdgeAwareListView` with `extendBehindTopBar: true` and add `MediaQuery.paddingOf(context).top` to their top padding; fixed native glass must never overhang the travel path of in-scroll native glass (title-pill precedent, law rule 5).
+
+Compose, don't branch: no `switch(currentStrategy())` in a view; no raw `LiquidGlass*`/`Shad*`/`AndroidView` in a view — those belong only in `primitives.dart`. Native is real on both mobile platforms (glass + expressive). Gestures (swipe-to-delete, long-press menu, pull-to-refresh, scroll-snap) are shared Flutter, native where the idiom differs. Don't touch generated-layer files (`AUTO-GENERATED` marker) except `primitives.dart` when adding a primitive. Determinism: freeze filled Views/ViewModels into `.blueprint/<source>/built/` and replay; drift → gated diff, not silent rebuild. i18n (when the design carries `l10n/`): never hardcode user-visible strings (the review gate's `no_hardcoded_strings` fails the build) — views read copy via `AppLocalizations.of(context)`, ViewModels via a small `L10nService` holding the latest `AppLocalizations` (attached from the root view's builder); register `ArxaKitI18n` + `ArxaKitLocaleStore` in the locator, settings gets a System / English / Polski language row, and generative-UI prompts carry `arxaKitI18n.llmLocaleDirective()`.
+
+### View/ViewModel boundaries
+
+A view owns **composition and binding only**: laying out widgets, binding VM streams with `ArxaKitStreamBuilder`, calling VM actions, navigating. Everything else has exactly one home — use this table before writing any logic in a view or widget:
+
+| What you have | Where it lives | Never |
+|---|---|---|
+| Formatting / labels / derived presentation (durations, "Edited …" labels) | A VM method the view calls (`viewModel.formatDuration(d)`) | Top-level helpers in the view file; callback params threaded through widgets |
+| Confirm-then-act flows (dialogs, bottom sheets) | A VM hub command with a confirm gate: `abxActionHub.on('op', op, confirmTitle:, confirmActionLabel:, confirmDestructive:)` — a decline never runs the op; the view tears off a one-line `send` method. Hand-write `ArxaKitNotificationService.confirm(...)` only when the message is payload-derived (the gate takes static strings) | Dialog/sheet calls + decision logic in a view or widget; app-registered stacked dialog variants for generic confirm/text-input |
+| Intent born at navigation ("open editor AND start camera") | A **route path/query param** → `viewModelBuilder` reads it → VM constructor param (recipe below) | Static fields on another VM class; a view importing a foreign VM |
+| State shared across screens, living beyond one navigation | A facade/repository stream both VMs subscribe to | VM-to-VM calls, messengers, event buses |
+| Controller lifecycles (TextEditingController, scroll) | The widget that paints it (create/seed/dispose), value mirror in the VM | Controllers owned by the VM |
+
+**One viewmodel per view, always.** A view imports exactly its own VM. If another screen's VM seems to have what you need, the real need is one of the rows above — pick it. Widgets that already receive the VM call its methods directly; do not thread VM logic down as callbacks.
+
+**Route-param recipe (the canonical fix for navigation-scoped intent):** push with a query param — `context.router.pushNamed('note/$id?quickAction=$action')`; in the destination view's `viewModelBuilder` read `context.routeData.queryParams.optString('quickAction')` (`pathParams.getString('id')` for path params) and pass it as a VM constructor param. The VM stores it as an instance `final`, guarded by a one-shot bool if it fires off a stream. Query params need no router codegen. This deletes the whole class of bugs that static intent slots carry: two-instances clashes, stale state on dispose, and invisible coupling between screens.
+
+**What lives where — viewmodel / facade / adapter / repository.** Dependency direction is one-way: `repository < adapter < facade < viewmodel` (arch_guard G9 enforces it) — and a viewmodel's **only service door is the facade**: it never imports adapters or repositories; the facade re-exposes whatever adapter surface the screen needs as plain delegations. The test for every piece of logic: *if a second screen performed this same operation, would anything be lost or duplicated?* If yes, it does not belong in a viewmodel.
+
+| Layer | Owns | Never |
+|---|---|---|
+| **ViewModel** | View-session state (text being typed, one-shot route intent), presentation formatting, confirm-then-act prompts (`confirm`/`prompt`), stream passthroughs for the view, screen-scoped commands (autosave debounce) | Multi-service transactions, business ordering, entity-lifecycle side effects, repository/adapter imports |
+| **Facade** | Every write touching more than one service, business ordering ("unlink the note row, then delete the file"), lifecycle side effects (purging a note deletes its attachment files), derived domain composition (counts, sectioning, search), pass-through re-exposure of the adapter surface its viewmodels need | View/viewmodel imports, device APIs |
+| **Adapter** | Device/hardware/external IO (pick, record, play, files) and derivations of its **own** state (`isAttachmentPlaying$`, `playbackProgress$`) | Domain state, facade/repository/view imports |
+| **Repository** | Persistence CRUD + watch streams | Imports of facades, adapters, views, viewmodels |
+
+A viewmodel orchestrating two services looks harmless with one caller — the damage shows up when a second surface performs the same operation and silently skips a step (a purge path that never deletes attachment files because only the editor VM knew about them). One consumer is not a reason to keep logic in a VM; put it where every present and future caller inherits it.
+
+**abxAction — when, and whose hub.** Every user-triggered async op runs on an abxAction hub; the only question is *which owner's*. The rule is one hub per owner, at the layer that owns the behavior:
+
+| Layer | abxAction? | What runs on its hub |
+|---|---|---|
+| **Repository** | **Never** | Nothing — CRUD + watch streams only. No notifications, no guards: the facade's `mutate` wraps every write, so a repository hub would double-guard *below* the facade's entity keys. |
+| **Adapter** | Device IO ops | Pick/record/play/file ops via `abxActionHub.send`, keyed per entity where the op targets one (`playback.<id>`), with `errorNotification` + `withValue` fallbacks. |
+| **Facade** | Every write | `mutate(name:, entity:, error:, success:)` — error snackbar always, success snackbar for destructive ops. Reads are plain streams, never ops. |
+| **ViewModel** | VM-owned behavior only | A `// ── Commands ──` section holds `abxActionHub.on(...)` definitions for what no lower layer can own: debounce/throttle windows, `flushOnDispose`, confirm gates (`confirmTitle:`), side-effect `listen`s. |
+
+`abxAction`/`ArxaKitActionHub` is the one vocabulary — no rename, no rival. Arch_guard's G14 mechanically enforces it: no `k`-prefixed reintroduction for the action/hub family, no lowercase-b casing typo (`ArxaKit` is the canonical casing), no rival PascalCase `Abx*` type.
+
+**Never wrap a facade/adapter call in a viewmodel command.** The call already runs as a hub op on that layer, keyed better (per entity) than a VM command name can be — a VM-level guard is coarser and can drop legitimate sends (tap play on memo A, then B: a VM `togglePlayback` guard attaches B to A's in-flight run). Double commands also fork `actionState$` into two subjects describing the same run. The test: *does this op need behavior only this screen owns?* If not, the VM method is a plain one-line delegate — and that IS using abxAction, at the right layer.
+
+**Notifications, dialogs, sheets — one door: `ArxaKitNotificationService`.** All transient UI goes through its verbs, never through stacked's services directly: `show(...)` (toast/snackbar, platform-routed), `confirm(...)` → `bool`, `prompt(...)` → `String?`, `alert(...)`, `notice(title, message)` (modal sheet). Apps do not register stacked `DialogType`/`BottomSheetType` variants for the generic cases — the kit renders them natively. Registrations live in the kit too: `main()` calls `setupArxaKitUiServices()` (DialogService / SnackbarService / BottomSheetService-as-ArxaKitBottomSheetService / Talker) after `setupLocator()`. App pubspecs never declare `stacked`, `stacked_services`, `rxdart`, or `talker_flutter` — the `arxa_kit_ui_library` barrel re-exports stacked (+ annotations), rxdart's `BehaviorSubject`/`ValueStream`/`Rx`/`SwitchMapExtension`, and the stacked_services config types (`RouterService`, `SnackbarService`, `SnackbarConfig`, `SnackPosition`, `StackedService`).
+
+**Imports and barrels.** One directive per URI — a repeated URI within a file's imports (or within its exports) is a G10 violation. A viewmodel **never re-exports** (G11): no `export` directives in a `*_viewmodel.dart`. Views and widgets import model barrels (`models.dart`) and kit types directly — types are vocabulary, not behavior; only *behavior* flows exclusively through the viewmodel. Prefer the folder barrel over several imports from the same directory.
+
+### Enums layer
+
+Every `enum` and every sealed discriminator type lives under `lib/enums/`, organized per shell: `lib/enums/<shell>_enums/` with a shell barrel `enums.dart`; the root barrel `lib/enums/enums.dart` exports ONLY the shell barrels. Files are `<app>_<subject>_enum.dart` (plain name for sealed types, e.g. `showcase_folder_scope.dart`); classes carry the app prefix (`Showcase…` in the showcase app). Arch_guard's G12 flags any enum/sealed declaration outside `lib/enums/**` — stringly-literal misuse is not mechanically decidable, so it stays a playbook rule: **if a value picks behavior, it is an enum, never a raw string/int.** That covers route-param actions, tab identity, rail/segment selections, dialog results, and motion presets.
+
+- **Enhanced vs simple.** When a value carries presentation or wire data, the enum carries it as fields so parallel arrays and label→value maps die:
+  ```dart
+  enum ShowcaseQuickAction {
+    record('Record new memo'),
+    photo('Attach a photo');
+    const ShowcaseQuickAction(this.label);
+    final String label;
+  }
+  ```
+  An enum with nothing to carry stays plain.
+- **Op enums.** abxAction op names are per-owner op-verb enums (`ShowcaseNotesFacadeOp`, `ShowcaseNotesMediaOp`); `.name` is the hub/mutate wire key — camelCase, so a dotted key like `'folder.create'` becomes `folderCreate`. Entity-keyed ops interpolate the verb: `'${ShowcaseNotesMediaOp.playback.name}.$id'`. Facade op enums carry their mutate copy as fields (`error`, nullable `success`) copied from the call sites; ops without user-facing copy stay simple.
+- **Sealed for mixed domains.** A domain of sentinels plus an open id set (folder scope `'all' | 'trash' | <uuid>`) is a sealed type with a `parse` at the route boundary and exhaustive switches — an enum cannot honestly hold an open set.
+- **Purity.** Views, widgets, viewmodels, and services may all import enums barrels (pure types); the view↔viewmodel purity rule is unaffected — a view imports the enums barrel directly (G11: viewmodels never re-export).
+
+### File structure (semantic frontmatter)
+
+Every covered file carries a **semantic library doc comment** (`///`) above `library;` — a five-part spine that makes the file's role, requirements, and relationships machine-readable — followed by a locked body section order. The pilot VM (`kit/showcase_app/.../showcase_note_editor_viewmodel.dart`) is the living reference implementation.
+
+**The spine (every covered file, in order):**
+
+1. **Layer intro** — one sentence framing what this *kind* of file is in flow vocabulary (viewmodel: actions in, streams out, never touches the view; per-layer variants use the same data-flow framing).
+2. **Plain paragraph** — opens with a fixed role name, then what the file does for a human:
+   - view → `This is the user interface for …`
+   - viewmodel → `This is the business logic for …`
+   - facade → `This is the front door for …`
+   - adapter → `This is the bridge to the device for …`
+   - repository → `This is the store for …`
+3. **Requirements** — numbered list, one per line: `N. [Name] — story-id(s)`, then one plain sentence on the next line. `[Name]` brackets are mandatory; multiple stories separated by ` / `. The story-id tail appears ONLY when a real story in `map.json` covers it — never invent citations (startup/infra files list requirements story-free).
+4. **Relationships** — an ASCII diagram per the fixed grammar below, then the column inventory.
+5. **History** — `History: git log --follow -- <repo-relative path>`.
+
+Then `library;`, then imports, then the class.
+
+**Body sections (locked order per kind, `// ── Name ──` separators):**
+
+| Kind | Order |
+|---|---|
+| viewmodel | Setup / Initial state / Streams / Commands / Actions / Side effects / Cleanup |
+| facade | Setup / Initial state / Streams / Writes / Reads / Cleanup |
+| adapter | Setup / Initial state / Streams / Actions / Cleanup |
+| repository | Setup / Reads / Writes / Cleanup |
+| views/widgets | same spine frontmatter; body follows the file's natural build order (no invented sections) |
+
+The viewmodel Commands section carries the sentence `// Commands decide when — and whether — Actions run.` Empty sections are omitted — a VM with no hub commands has no Commands section; the sentence appears only where the section exists.
+
+**Diagram grammar (fixed — review-enforced):**
+
+- Boxes `┌──┐ │ │ └──┘`, label centered with one-space padding; the file's own box is centered, every tier above/below center-aligns to it.
+- Arrows between tiers: `ACT ▼` (actions down) / `▲ STRM` (streams up), tips touching box edges, each with a connecting line.
+- Numbered ranges `[1-N]` sit centered under their **labels** (not boxes).
+- Last diagram line: `════════ abxAction ════════` rail, bare, no caption.
+- Below the diagram, the column inventory: `streams (STRM)` / `actions (ACT)` / `commands (CMD)` — numbered items, one kind per column, aligned; numbers match the diagram ranges.
+
+**Coverage:**
+
+- **Full spine** — views, viewmodels, facades, adapters, repositories, widgets.
+- **Light variant** (role paragraph + field-purpose comments, no diagram) — models.
+- **Exempt** — enum files (one-line doc), tests (story-ids live in test names per behavior-TDD canon).
+
+**Inline comments:** `/// [N. Requirement name] One short sentence.` citing the frontmatter requirement; the code carries the rest. Comments support the code, never restate it. See `kit/showcase_app/lib/ui/views/showcase_notes_shell/showcase_note_editor/showcase_note_editor_viewmodel.dart` for the reference implementation.
+
+### Prose comment canon
+
+Every prose `///` block follows the language canon. Style exemplar: `kit/showcase_app/lib/ui/views/showcase_notes_shell/showcase_note_editor/showcase_note_editor_viewmodel.dart`.
+
+- **Plain language.** User-visible behavior, present tense, plain verbs: "Pins or unpins the note." / "Where an attachment's file lives." — never "Leverages the facade abstraction to facilitate mutations."
+- **Frontmatter paragraphs** (above `library;`): max 6 lines each.
+- **Class docs.** NONE for the primary class — the frontmatter speaks for it. A secondary class may carry one plain sentence.
+- **Member docs.** `/// [N. Requirement name] One plain sentence.` — max 2 lines, requirement citation first (citing the frontmatter requirement list).
+- **No API type names, framework talk, or jargon in prose.** Banned (gate-enforced): paradigm, leverage, utilize, facilitate, abstraction, boilerplate, wrapper, self-contained, PreferredSizeWidget, NestedRouter, IndexedStack, StatelessWidget, StatefulWidget, BuildContext, Scaffold.
+- **Technical refs** only in backticks and only when load-bearing: route paths (`/showcase/notes/note/:id`), flag/operator names (`take(1)`, `flushOnDispose`).
+- **Exempt:** requirement list lines, the relationships diagram, the inventory columns, the History line, and `//` code comments.
+- **Enforcement:** G13-language in arch_guard checks this mechanically; violations fail `arxa gate arch`.
+
+### Kit wiring
+
+When a stub header declares `//   kits (builder wires): <names>`, wire each named kit's **real providers** via locator injection, per the kit's playbook (`kit/<name>/<name>_playbook.mdx`) and the providers + verification tiers in `config/kit-registry.json`. Never offer a `stub`-tier provider to users — that tier means unproven, and the advertise gate fails a shipped surface presenting one (dev fallback + flag only). Required credentials come from `config/credentials.catalog.json` (match `module: kit/<name>`), read from the environment / credential store at runtime, never hardcoded; name missing keys in the handoff notes.
+
+<!-- kb:begin -->
+### References
+<!-- kb:end -->

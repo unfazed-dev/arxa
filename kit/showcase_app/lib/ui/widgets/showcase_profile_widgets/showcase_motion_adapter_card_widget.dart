@@ -5,7 +5,7 @@
 ///
 /// This is the user interface for the flutter_animate adapter demo — a card
 /// whose plain animate chain takes its timeline from the enclosing motion
-/// scope via AppBoxKitMotionAdapter.
+/// scope via ArxaKitMotionAdapter.
 ///
 /// Requirements:
 /// 1. [flutter_animate adapter] — view-the-motion-demo
@@ -19,27 +19,27 @@ library;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
-import 'package:appbox_kit_motion/appbox_kit_motion.dart';
-import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
+import 'package:arxa_kit_motion/arxa_kit_motion.dart';
+import 'package:arxa_kit_ui_library/arxa_kit_ui_library.dart';
 
 class ShowcaseMotionAdapterCardWidget extends StatelessWidget {
   const ShowcaseMotionAdapterCardWidget({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return AppBoxKitGlassCard(
+    return ArxaKitGlassCard(
       child: Padding(
         padding: const EdgeInsets.all(abxSize16),
         child: Text(
           'This card animates through a plain flutter_animate '
           'chain, but its timeline comes from the scope via '
-          'AppBoxKitMotionAdapter — same driver, same scrub, same '
+          'ArxaKitMotionAdapter — same driver, same scrub, same '
           'reduce-motion handling.',
           style: Theme.of(context).textTheme.bodyMedium,
         ),
       ),
     )
-        .animate(adapter: AppBoxKitMotionAdapter.of(context))
+        .animate(adapter: ArxaKitMotionAdapter.of(context))
         .fadeIn()
         .slideY(begin: 0.08, end: 0);
   }

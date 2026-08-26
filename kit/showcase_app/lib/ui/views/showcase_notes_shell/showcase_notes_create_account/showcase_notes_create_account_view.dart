@@ -1,5 +1,5 @@
 /// A view composes adaptive primitives from the kit's native family and binds
-/// the viewmodel's streams with [AppBoxKitStreamBuilder], calling the viewmodel's
+/// the viewmodel's streams with [ArxaKitStreamBuilder], calling the viewmodel's
 /// actions on user input. It never contains business logic — every decision
 /// lives in the viewmodel, and only the subtree bound to a changed stream
 /// redraws.
@@ -36,12 +36,12 @@ library;
 
 import 'package:flutter/material.dart';
 import 'package:responsive_builder/responsive_builder.dart';
-import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
+import 'package:arxa_kit_ui_library/arxa_kit_ui_library.dart';
 
-import 'package:appbox_kit_showcase_app/ui/views/showcase_notes_shell/showcase_notes_create_account/showcase_notes_create_account_view.desktop.dart';
-import 'package:appbox_kit_showcase_app/ui/views/showcase_notes_shell/showcase_notes_create_account/showcase_notes_create_account_view.tablet.dart';
-import 'package:appbox_kit_showcase_app/ui/views/showcase_notes_shell/showcase_notes_create_account/showcase_notes_create_account_view.mobile.dart';
-import 'package:appbox_kit_showcase_app/ui/views/showcase_notes_shell/showcase_notes_create_account/showcase_notes_create_account_viewmodel.dart';
+import 'package:arxa_kit_showcase_app/ui/views/showcase_notes_shell/showcase_notes_create_account/showcase_notes_create_account_view.desktop.dart';
+import 'package:arxa_kit_showcase_app/ui/views/showcase_notes_shell/showcase_notes_create_account/showcase_notes_create_account_view.tablet.dart';
+import 'package:arxa_kit_showcase_app/ui/views/showcase_notes_shell/showcase_notes_create_account/showcase_notes_create_account_view.mobile.dart';
+import 'package:arxa_kit_showcase_app/ui/views/showcase_notes_shell/showcase_notes_create_account/showcase_notes_create_account_viewmodel.dart';
 
 class ShowcaseNotesCreateAccountView
     extends StackedView<ShowcaseNotesCreateAccountViewModel> {
@@ -49,7 +49,7 @@ class ShowcaseNotesCreateAccountView
       {required this.onBackToSignIn, super.key});
 
   /// Identity stamped at emit time (Q12 triple).
-  static const AppBoxKitInspectAttrs inspectAttrs = AppBoxKitInspectAttrs(
+  static const ArxaKitInspectAttrs inspectAttrs = ArxaKitInspectAttrs(
     screenId: 'showcase.createaccount',
     surfaceId: 'surface.notes.notes_create_account',
     anatomyNodeId: 'anatomy:view.body',

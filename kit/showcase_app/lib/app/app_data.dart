@@ -1,11 +1,11 @@
-import 'package:appbox_kit_data/appbox_kit_data.dart';
+import 'package:arxa_kit_data/arxa_kit_data.dart';
 
-import 'package:appbox_kit_showcase_app/data/schemas/showcase_notes_schemas/showcase_note_schema.dart';
-import 'package:appbox_kit_showcase_app/data/schemas/showcase_notes_schemas/showcase_note_folder_schema.dart';
+import 'package:arxa_kit_showcase_app/data/schemas/showcase_notes_schemas/showcase_note_schema.dart';
+import 'package:arxa_kit_showcase_app/data/schemas/showcase_notes_schemas/showcase_note_folder_schema.dart';
 
 /// The app's data-layer boot. Called once from `main()` after `setupLocator()`.
 ///
-/// Boots `appbox_kit_data` with the Notes entities + fixtures. Service
+/// Boots `arxa_kit_data` with the Notes entities + fixtures. Service
 /// registration (ShowcaseNotesFacadeService, ShowcaseNotesMediaAdapterService — like every other service)
 /// lives in the `@StackedApp` dependencies (lib/app/app.dart), created via
 /// `stacked create service …`; they're lazy singletons, so they construct on
@@ -18,8 +18,8 @@ class AppData {
   /// exists when another app depends on this one.
   static const _assets = 'data/seed';
 
-  /// The bundled fake-users fixture, public so a custom [AppBoxKitDataConfig] (or a
-  /// test) can point [AppBoxKitAuthConfig.fakeUsersAsset] at the same file.
+  /// The bundled fake-users fixture, public so a custom [ArxaKitDataConfig] (or a
+  /// test) can point [ArxaKitAuthConfig.fakeUsersAsset] at the same file.
   static const fakeUsersAsset = '$_assets/kit_auth_users.json';
 
   /// The bundled Notes fixtures, in load order.
@@ -32,17 +32,17 @@ class AppData {
   /// write-through snapshot persistence and fake auth pre-seeded from the
   /// bundled users fixture — pass a supabase/appwrite config to smoke-test a
   /// real backend with zero other changes (that absence of change is the
-  /// point). [assetReader] is a test seam, forwarded to `AppBoxKitData.initialize`.
+  /// point). [assetReader] is a test seam, forwarded to `ArxaKitData.initialize`.
   static Future<void> initialize({
-    AppBoxKitDataConfig? config,
-    AppBoxKitAssetReader? assetReader,
+    ArxaKitDataConfig? config,
+    ArxaKitAssetReader? assetReader,
   }) async {
-    await AppBoxKitData.initialize(
+    await ArxaKitData.initialize(
       config: config ??
-          const AppBoxKitDataConfig(
-            backend: AppBoxKitDataBackend.seed,
-            seedPersistence: AppBoxKitSeedPersistenceMode.snapshot,
-            auth: AppBoxKitAuthConfig(fakeUsersAsset: fakeUsersAsset),
+          const ArxaKitDataConfig(
+            backend: ArxaKitDataBackend.seed,
+            seedPersistence: ArxaKitSeedPersistenceMode.snapshot,
+            auth: ArxaKitAuthConfig(fakeUsersAsset: fakeUsersAsset),
           ),
       entities: [showcaseNoteFolderRegistration, showcaseNoteRegistration],
       fixtureAssets: fixtureAssets,

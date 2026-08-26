@@ -15,4 +15,4 @@ while [ -L "$self" ]; do
   esac
 done
 REPO=$(CDPATH= cd -- "$(dirname -- "$self")/.." && pwd -P)
-exec node "$REPO/hooks/appbox-guard.js" "$@"
+exec node "$REPO/hooks/arxa-guard.js" "$@"

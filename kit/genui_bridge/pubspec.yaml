@@ -1,8 +1,8 @@
-name: appbox_kit_genui_bridge
+name: arxa_kit_genui_bridge
 description: Provider- and model-agnostic reliability core for making any LLM
   emit valid A2UI v0.9 JSON messages for Flutter's genui package — an A2UI
   message model, incremental stream parser, catalog-schema validation, and a
-  bounded repair loop over a thin AppBoxKitChatStream port (OpenAI-compatible and
+  bounded repair loop over a thin ArxaKitChatStream port (OpenAI-compatible and
   Anthropic adapters). Pure Dart, zero Flutter imports.
 version: 0.1.0
 publish_to: 'none'
@@ -10,7 +10,7 @@ publish_to: 'none'
 environment:
   sdk: '>=3.0.3 <4.0.0'
 
-# STANDALONE: pure Dart. No flutter, stacked, stacked_services, or appbox_kit
+# STANDALONE: pure Dart. No flutter, stacked, stacked_services, or arxa_kit
 # dependency. HTTP is dart:io + dart:convert only, behind an injectable
 # transport seam so adapters are unit-testable without network.
 dependencies: {}

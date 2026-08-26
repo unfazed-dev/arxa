@@ -31,7 +31,7 @@ contract preserved — hono/jsx renders to HTML strings on the server.
 | Artifact | `.html` files | Heaviest |
 |---|---|---|
 | hello-hda | 9 | `home_view.html` (islands, includes, i18n) |
-| appbox-studio | 49 | `loop_view.html` (152 nunjucks tags), `design_viewer.html` (129) |
+| arxa-studio | 49 | `loop_view.html` (152 nunjucks tags), `design_viewer.html` (129) |
 
 All become `.tsx`. The nunjucks construct → TSX mapping:
 
@@ -140,7 +140,7 @@ on one template, then convert the rest.
 
 **Verification gate:**
 - `timer_view.tsx` renders identical HTML to `timer_view.html`
-- `appbox lens check` passes on the `/timer` route
+- `arxa lens check` passes on the `/timer` route
 - Pixel compare: 0.95+ vs the nunjucks-rendered golden
 
 ### Phase B — Convert all hello-hda templates (9 files)
@@ -160,12 +160,12 @@ Files in conversion order:
 9. `ui/views/main_shell/home/widgets/_form-field.html` → `<FormField>`
 
 **Verification gate:**
-- `appbox design lint` passes (adapted for `.tsx`)
-- `appbox design selftest` passes
-- `appbox lens check` + ladder on every route
+- `arxa design lint` passes (adapted for `.tsx`)
+- `arxa design selftest` passes
+- `arxa lens check` + ladder on every route
 - Pixel compare 0.95+ on all viewports
 
-### Phase C — Convert appbox-studio templates (49 files)
+### Phase C — Convert arxa-studio templates (49 files)
 
 The heavy lift. 47 files with nunjucks logic, 1760 tag occurrences. The
 heaviest: `loop_view.html` (152 tags), `design_viewer.html` (129),

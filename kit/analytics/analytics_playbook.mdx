@@ -1,15 +1,15 @@
 <Callout id="header" tone="info">
 
-# appbox_kit_analytics — Per-Package Playbook
+# arxa_kit_analytics — Per-Package Playbook
 
 
-`appbox_kit_analytics` v**0.1.0** · `publish_to: 'none'` · status: **active**
+`arxa_kit_analytics` v**0.1.0** · `publish_to: 'none'` · status: **active**
 
 
-**Role (one line):** Analytics port for appbox_kit apps — a backend-agnostic AppBoxKitAnalyticsService that fans a single event stream out to any number of registered backends, with a zero-dependency AppBoxKitDebugConsoleAnalyticsBackend shipped as the working default.
+**Role (one line):** Analytics port for arxa_kit apps — a backend-agnostic ArxaKitAnalyticsService that fans a single event stream out to any number of registered backends, with a zero-dependency ArxaKitDebugConsoleAnalyticsBackend shipped as the working default.
 
 
-**Scope of this document:** lets a human OR an LLM use, wire, and extend `appbox_kit_analytics` **without reading its source**. The public surface below was extracted from the barrel; README content is folded into the narrative sections.
+**Scope of this document:** lets a human OR an LLM use, wire, and extend `arxa_kit_analytics` **without reading its source**. The public surface below was extracted from the barrel; README content is folded into the narrative sections.
 
 
 ## Table of contents
@@ -22,29 +22,29 @@
 
 ### Overview & role
 
-Analytics port for appbox_kit apps — a backend-agnostic AppBoxKitAnalyticsService that fans a single event stream out to any number of registered backends, with a zero-dependency AppBoxKitDebugConsoleAnalyticsBackend shipped as the working default.
+Analytics port for arxa_kit apps — a backend-agnostic ArxaKitAnalyticsService that fans a single event stream out to any number of registered backends, with a zero-dependency ArxaKitDebugConsoleAnalyticsBackend shipped as the working default.
 
 
 ### Public surface
 
-Exported from `lib/appbox_kit_analytics.dart`:
+Exported from `lib/arxa_kit_analytics.dart`:
 
-<Table id="analytics-api" columns={["Symbol", "Kind", "Defined in"]} rows={[["AppBoxKitAnalyticsBackend", "abstract class", "src/appbox_kit_analytics_backend.dart"], ["AppBoxKitAnalyticsEvent", "class", "src/appbox_kit_analytics_event.dart"], ["AppBoxKitScreenView", "class", "src/appbox_kit_analytics_event.dart"], ["AppBoxKitUserProperty", "class", "src/appbox_kit_analytics_event.dart"], ["AppBoxKitAnalyticsTiming", "class", "src/appbox_kit_analytics_event.dart"], ["AppBoxKitAnalyticsErrorHandler", "typedef", "src/appbox_kit_analytics_service.dart"], ["AppBoxKitAnalyticsService", "class", "src/appbox_kit_analytics_service.dart"], ["AppBoxKitAmplitudeBackend", "class", "src/backends/appbox_kit_amplitude_backend.dart"], ["AppBoxKitDebugConsoleAnalyticsBackend", "class", "src/backends/appbox_kit_debug_console_backend.dart"], ["AppBoxKitFirebaseAnalyticsBackend", "class", "src/backends/appbox_kit_firebase_analytics_backend.dart"], ["AppBoxKitPosthogBackend", "class", "src/backends/appbox_kit_posthog_backend.dart"]]} />
+<Table id="analytics-api" columns={["Symbol", "Kind", "Defined in"]} rows={[["ArxaKitAnalyticsBackend", "abstract class", "src/arxa_kit_analytics_backend.dart"], ["ArxaKitAnalyticsEvent", "class", "src/arxa_kit_analytics_event.dart"], ["ArxaKitScreenView", "class", "src/arxa_kit_analytics_event.dart"], ["ArxaKitUserProperty", "class", "src/arxa_kit_analytics_event.dart"], ["ArxaKitAnalyticsTiming", "class", "src/arxa_kit_analytics_event.dart"], ["ArxaKitAnalyticsErrorHandler", "typedef", "src/arxa_kit_analytics_service.dart"], ["ArxaKitAnalyticsService", "class", "src/arxa_kit_analytics_service.dart"], ["ArxaKitAmplitudeBackend", "class", "src/backends/arxa_kit_amplitude_backend.dart"], ["ArxaKitDebugConsoleAnalyticsBackend", "class", "src/backends/arxa_kit_debug_console_backend.dart"], ["ArxaKitFirebaseAnalyticsBackend", "class", "src/backends/arxa_kit_firebase_analytics_backend.dart"], ["ArxaKitPosthogBackend", "class", "src/backends/arxa_kit_posthog_backend.dart"]]} />
 
-Test doubles in `lib/appbox_kit_testing.dart`: `RecordingAppBoxKitAnalyticsBackend`, `ThrowingAppBoxKitAnalyticsBackend`.
+Test doubles in `lib/arxa_kit_testing.dart`: `RecordingArxaKitAnalyticsBackend`, `ThrowingArxaKitAnalyticsBackend`.
 
 Scripts and call-counts — tests never touch platform channels.
 
 
 ### Usage & wiring
 
-Add the package as a path dependency (`appbox_kit_analytics: { path: ../analytics }`, since it is `publish_to: 'none'`), import the barrel, and construct `AppBoxKitAnalyticsService` with the backends you want — `AppBoxKitDebugConsoleAnalyticsBackend` ships as the working default. The service is intentionally not a Stacked service and has no dependency on `stacked`, `stacked_services`, or `appbox_kit` core, so register the constructed instance on your app's locator however you wire singletons (the kits resolve through the shared `StackedLocator.instance`). Minimal usage:
+Add the package as a path dependency (`arxa_kit_analytics: { path: ../analytics }`, since it is `publish_to: 'none'`), import the barrel, and construct `ArxaKitAnalyticsService` with the backends you want — `ArxaKitDebugConsoleAnalyticsBackend` ships as the working default. The service is intentionally not a Stacked service and has no dependency on `stacked`, `stacked_services`, or `arxa_kit` core, so register the constructed instance on your app's locator however you wire singletons (the kits resolve through the shared `StackedLocator.instance`). Minimal usage:
 
 ```dart
-import 'package:appbox_kit_analytics/appbox_kit_analytics.dart';
+import 'package:arxa_kit_analytics/arxa_kit_analytics.dart';
 
-final analytics = AppBoxKitAnalyticsService(
-  backends: [AppBoxKitDebugConsoleAnalyticsBackend()],
+final analytics = ArxaKitAnalyticsService(
+  backends: [ArxaKitDebugConsoleAnalyticsBackend()],
 );
 
 await analytics.logEvent('checkout_completed', params: {'total_cents': 4200});
@@ -62,30 +62,30 @@ See `kit_matrix.md` for the full routing + dependency graph.
 
 ### Architecture
 
-`AppBoxKitAnalyticsService` is the single entry point and depends only on its own value objects — it normalizes each call into a `AppBoxKitAnalyticsEvent` / `AppBoxKitScreenView` / `AppBoxKitUserProperty` / `AppBoxKitAnalyticsTiming` and fans it out, via `Future.wait`, to every registered `AppBoxKitAnalyticsBackend` held in an id-keyed map. `AppBoxKitAnalyticsBackend` is the abstract port each destination implements, so the dependency direction is backends → port, never the service → a vendor SDK. Each backend call is wrapped in a try/catch so one throwing backend is isolated (routed to `onError`, default `debugPrint`) and the remaining backends still receive the call. The package is deliberately not a Stacked service and has no dependency on `appbox_kit` core, `stacked`, or `stacked_services`.
+`ArxaKitAnalyticsService` is the single entry point and depends only on its own value objects — it normalizes each call into a `ArxaKitAnalyticsEvent` / `ArxaKitScreenView` / `ArxaKitUserProperty` / `ArxaKitAnalyticsTiming` and fans it out, via `Future.wait`, to every registered `ArxaKitAnalyticsBackend` held in an id-keyed map. `ArxaKitAnalyticsBackend` is the abstract port each destination implements, so the dependency direction is backends → port, never the service → a vendor SDK. Each backend call is wrapped in a try/catch so one throwing backend is isolated (routed to `onError`, default `debugPrint`) and the remaining backends still receive the call. The package is deliberately not a Stacked service and has no dependency on `arxa_kit` core, `stacked`, or `stacked_services`.
 
 
 ### Gotchas
 
-This package is pure Dart with zero native dependencies, so it requires no permissions, manifest keys, or platform channels — any native setup belongs to the vendor SDK a host opts into, not here. The Firebase / Amplitude / PostHog backends are `UnimplementedError` stubs: registering one before implementing it will throw on every call (caught and reported, but the event is lost), and each stub documents a 2026-verified target version (`firebase_analytics ^12.1.1`, `amplitude_flutter ^4.6.1`, `posthog_flutter ^5.24.2`) that will need re-pinning as those SDKs move. Note also that `registerBackend` replaces any existing backend with the same `id` (last registration wins), `AppBoxKitDebugConsoleAnalyticsBackend` is suppressed in release by default (`enableInRelease: false`), and fan-out is awaited as a group so one slow backend stalls the whole call.
+This package is pure Dart with zero native dependencies, so it requires no permissions, manifest keys, or platform channels — any native setup belongs to the vendor SDK a host opts into, not here. The Firebase / Amplitude / PostHog backends are `UnimplementedError` stubs: registering one before implementing it will throw on every call (caught and reported, but the event is lost), and each stub documents a 2026-verified target version (`firebase_analytics ^12.1.1`, `amplitude_flutter ^4.6.1`, `posthog_flutter ^5.24.2`) that will need re-pinning as those SDKs move. Note also that `registerBackend` replaces any existing backend with the same `id` (last registration wins), `ArxaKitDebugConsoleAnalyticsBackend` is suppressed in release by default (`enableInRelease: false`), and fan-out is awaited as a group so one slow backend stalls the whole call.
 
 
 ### Testing
 
-`import 'package:appbox_kit_analytics/appbox_kit_testing.dart';` for
-`RecordingAppBoxKitAnalyticsBackend` (records every call with `eventsNamed`, `lastEvent`,
-`userProperty`, `didLog` query helpers) and `ThrowingAppBoxKitAnalyticsBackend` (proves
+`import 'package:arxa_kit_analytics/arxa_kit_testing.dart';` for
+`RecordingArxaKitAnalyticsBackend` (records every call with `eventsNamed`, `lastEvent`,
+`userProperty`, `didLog` query helpers) and `ThrowingArxaKitAnalyticsBackend` (proves
 fan-out isolation).
 
 
 ### Features
 
-<Checklist id="analytics-features" items={[{"id": "analytics-feat-0", "label": "`AppBoxKitAnalyticsBackend` \u2014 abstract class"}, {"id": "analytics-feat-1", "label": "`AppBoxKitAnalyticsEvent` \u2014 class"}, {"id": "analytics-feat-2", "label": "`AppBoxKitScreenView` \u2014 class"}, {"id": "analytics-feat-3", "label": "`AppBoxKitUserProperty` \u2014 class"}, {"id": "analytics-feat-4", "label": "`AppBoxKitAnalyticsTiming` \u2014 class"}, {"id": "analytics-feat-5", "label": "`AppBoxKitAnalyticsErrorHandler` \u2014 typedef"}, {"id": "analytics-feat-6", "label": "`AppBoxKitAnalyticsService` \u2014 class"}, {"id": "analytics-feat-7", "label": "`AppBoxKitAmplitudeBackend` \u2014 class"}, {"id": "analytics-feat-8", "label": "`AppBoxKitDebugConsoleAnalyticsBackend` \u2014 class"}, {"id": "analytics-feat-9", "label": "`AppBoxKitFirebaseAnalyticsBackend` \u2014 class"}, {"id": "analytics-feat-10", "label": "`AppBoxKitPosthogBackend` \u2014 class"}]} />
+<Checklist id="analytics-features" items={[{"id": "analytics-feat-0", "label": "`ArxaKitAnalyticsBackend` \u2014 abstract class"}, {"id": "analytics-feat-1", "label": "`ArxaKitAnalyticsEvent` \u2014 class"}, {"id": "analytics-feat-2", "label": "`ArxaKitScreenView` \u2014 class"}, {"id": "analytics-feat-3", "label": "`ArxaKitUserProperty` \u2014 class"}, {"id": "analytics-feat-4", "label": "`ArxaKitAnalyticsTiming` \u2014 class"}, {"id": "analytics-feat-5", "label": "`ArxaKitAnalyticsErrorHandler` \u2014 typedef"}, {"id": "analytics-feat-6", "label": "`ArxaKitAnalyticsService` \u2014 class"}, {"id": "analytics-feat-7", "label": "`ArxaKitAmplitudeBackend` \u2014 class"}, {"id": "analytics-feat-8", "label": "`ArxaKitDebugConsoleAnalyticsBackend` \u2014 class"}, {"id": "analytics-feat-9", "label": "`ArxaKitFirebaseAnalyticsBackend` \u2014 class"}, {"id": "analytics-feat-10", "label": "`ArxaKitPosthogBackend` \u2014 class"}]} />
 
 
 ### Decisions / ADRs
 
-The kit chose a **native-first / standalone** stance: it depends on neither `appbox_kit` core, `stacked`, nor `stacked_services`, shipping only a pure-Dart port plus the zero-dependency `AppBoxKitDebugConsoleAnalyticsBackend`. The vendor backends (Firebase / Amplitude / PostHog) are kept as real-signature file stubs rather than wired dependencies so this package's dependency graph stays minimal and `flutter pub get` resolves without pulling any vendor SDK — a host pays that cost only when it opts in. Consent / opt-out gating, offline queuing, and A/B assignment were explicitly deferred as app- or backend-level concerns.
+The kit chose a **native-first / standalone** stance: it depends on neither `arxa_kit` core, `stacked`, nor `stacked_services`, shipping only a pure-Dart port plus the zero-dependency `ArxaKitDebugConsoleAnalyticsBackend`. The vendor backends (Firebase / Amplitude / PostHog) are kept as real-signature file stubs rather than wired dependencies so this package's dependency graph stays minimal and `flutter pub get` resolves without pulling any vendor SDK — a host pays that cost only when it opts in. Consent / opt-out gating, offline queuing, and A/B assignment were explicitly deferred as app- or backend-level concerns.
 
 <!-- kb:begin -->
 ### References
@@ -99,7 +99,7 @@ Official docs and tooling:
 - [stacked_cli (pub.dev)](https://pub.dev/packages/stacked_cli) — Scaffolding CLI for new Stacked apps/views/services.
 - [Flutter — official documentation](https://docs.flutter.dev) — Framework docs, platform integration, performance.
 - [Dart — official documentation](https://dart.dev) — Language tour, async, package ecosystem.
-- [Dart & Flutter MCP server (official)](https://dart.dev/tools/mcp-server) — Ships with the Dart SDK (dart mcp-server). Exposes analyzer diagnostics, pub, tests, and live Flutter app introspection via DTD. Wired in appbox_kit/.mcp.json.
+- [Dart & Flutter MCP server (official)](https://dart.dev/tools/mcp-server) — Ships with the Dart SDK (dart mcp-server). Exposes analyzer diagnostics, pub, tests, and live Flutter app introspection via DTD. Wired in arxa_kit/.mcp.json.
 <!-- kb:end -->
 
 <QuestionForm id="open-questions" questions={[

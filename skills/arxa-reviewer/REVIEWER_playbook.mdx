@@ -1,0 +1,41 @@
+<Callout id="header" tone="info">
+# arxa-reviewer — Per-Skill Playbook
+
+`arxa-reviewer` · status: **active**
+
+**Role (one line):** the QC gate before a target is released — runs the contract validator, the over-engineering review, the manifest hash check, and emits a green/red verdict.
+
+**Scope of this document:** lets a human OR an LLM run the review phase without reading the skill source. Folded from `SKILL.md`.
+
+**Pipeline position:** stage 6 — upstream `arxa-tester` (suite + freeze) and `arxa-builder` (the built target this gate judges; arch_guard/ponytail findings route back to it); downstream `arxa-deployer` (GREEN required); REJECT rewinds to `arxa-designer`. HUMAN GATE 2. Full chain, stage numbers, per-stage artifacts: `docs/research/pipeline-map.md` §1.
+
+## Table of contents
+
+0. Header & TOC · 1. Overview & role · 2. Inputs · 3. Procedure · 4. Outputs · 5. Rules · 6. References
+
+</Callout>
+
+### Overview & role
+
+Two independent reviewers, both must be green. This role wires existing tools; it builds nothing.
+
+### Inputs
+
+- A built target at `<target>/` with `.arxa/manifest.json`.
+- The blueprint package golden (`golden.sha256`).
+
+### Procedure
+
+Run in order, stop on red. Contract — run `arch_guard` (resolved from the repo's vendored stages); exit 0 required; violations → builder re-emits. Code economy — over-engineering review on the diff (built extension points + generated-layer drift): flags reinvented stdlib, unneeded deps, speculative abstractions, dead flexibility; each finding → builder cuts it. Reproducibility — the target's `.arxa/manifest.json` `blueprintHash` must equal the package's `golden.sha256`; mismatch = drifted → re-emit (replay) or surface an operator divergence honestly (update mode = gated diff, not byte-replay). Deferral ledger — every `kimitail:` deferral is listed; none should hide a bug farm.
+
+### Outputs
+
+A verdict: GREEN (all pass → release-ready, hand to deployer) or RED (any fail → back to builder with the specific findings). Never green a target with contract violations.
+
+### Rules
+
+Don't add validators inline — extend `arch_guard` (deterministic) for new contract rules; keep this role as wiring. The contract gate is non-negotiable; the economy gate is advisory-but-acted-on (findings returned to builder).
+
+<!-- kb:begin -->
+### References
+<!-- kb:end -->

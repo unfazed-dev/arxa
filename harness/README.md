@@ -1,14 +1,14 @@
 # harness/ — one policy, every agent CLI
 
-The portable core's claim is that an appbox gate means the same thing no matter
+The portable core's claim is that an arxa gate means the same thing no matter
 which agent CLI is driving. That works because there is exactly **one** policy
 file and the harnesses are thin adapters over it:
 
 ```
-hooks/appbox-guard.js          ← THE policy. Claude Code hook protocol.
+hooks/arxa-guard.js          ← THE policy. Claude Code hook protocol.
    ├── Claude Code   PreToolUse hook            (.claude/settings.json)
    ├── dsh           harness/dsh-external-gate  (cordis tools/pre-execute)
-   └── Pi            harness/pi/appbox-gate.ts  (pi.on('tool_call'))
+   └── Pi            harness/pi/arxa-gate.ts  (pi.on('tool_call'))
 ```
 
 A rule added to the guard is live on all three at once. No surface can drift.
@@ -32,44 +32,44 @@ port with little change.
 > | layer | `0` | `1` | `2` |
 > |---|---|---|---|
 > | **hook protocol** (this dir) | allow | *(caller's choice)* | **DENY** |
-> | **appbox gates** (`gates.dart:19-21`) | pass | fail | **env / not-applicable** |
+> | **arxa gates** (`gates.dart:19-21`) | pass | fail | **env / not-applicable** |
 >
-> Never wire `appbox gate <name>` directly as a `command:` verdict. A gate that
+> Never wire `arxa gate <name>` directly as a `command:` verdict. A gate that
 > is merely *not applicable* here exits 2, which the hook protocol reads as a
-> hard **deny** — inverting the meaning. `appbox gate lens` exits 2 on this
+> hard **deny** — inverting the meaning. `arxa gate lens` exits 2 on this
 > machine right now, so this is live, not theoretical. Always go through
 > `harness/verdict.sh`, which speaks the hook protocol deliberately.
 
 ## Modes
 
-`APPBOX_GUARD_MODE`, else `~/.appbox/guard-mode`, else `dev`:
+`ARXA_GUARD_MODE`, else `~/.arxa/guard-mode`, else `dev`:
 
-> **Prefer the env var.** `~/.appbox/guard-mode` is machine-global, but
-> "using-session vs appbox-dev session" is a *per-session* property — with
+> **Prefer the env var.** `~/.arxa/guard-mode` is machine-global, but
+> "using-session vs arxa-dev session" is a *per-session* property — with
 > concurrent sessions the last writer wins for all of them. The file is a
 > convenience for a machine dedicated to one mode; anything else should set
-> `APPBOX_GUARD_MODE` per session, which is per-session by construction.
+> `ARXA_GUARD_MODE` per session, which is per-session by construction.
 
-- **`dev`** — appbox-dev session. Everything allowed. *Default*, so installing
+- **`dev`** — arxa-dev session. Everything allowed. *Default*, so installing
   the guard never breaks the operator's own work.
-- **`using`** — using-session. The appbox checkout is read-only **except**
+- **`using`** — using-session. The arxa checkout is read-only **except**
   `docs/`, `designs/`, `logs/`, where findings can still be recorded.
 
-  The scope is an **allowlist** (`WRITABLE` in `hooks/appbox-guard.js`), ratified
+  The scope is an **allowlist** (`WRITABLE` in `hooks/arxa-guard.js`), ratified
   2026-08-21. It replaced a nine-entry denylist of source dirs that left
-  `appbox-studio/`, `deploy/`, `memory/`, `archives/` and every repo-root file
+  `arxa-studio/`, `deploy/`, `memory/`, `archives/` and every repo-root file
   writable — and would have admitted each future top-level dir writable by
   default. Inverted, there are no holes, and adding a fourth write target is a
   deliberate one-line change.
 
   Two consequences worth knowing:
-  - This list is **not** the same as `appbox-doc-enforce.js`'s, and must not be
+  - This list is **not** the same as `arxa-doc-enforce.js`'s, and must not be
     re-synced with it. That one answers a different question ("which dirs'
     changes require a doc update") and is legitimately a denylist.
   - Because an unrecognized path now *denies*, `writeTargets()` discards shell
     candidates containing `$ \` * ? ~` — an unexpanded `> "$OUT"` was a guess,
     not a path, and under an allowlist a guess would become a false refusal.
-  - Escape hatch for a legitimate one-off: `APPBOX_GUARD_MODE=dev <command>`.
+  - Escape hatch for a legitimate one-off: `ARXA_GUARD_MODE=dev <command>`.
 - **`off`** — disabled.
 
 ## Wiring each harness
@@ -97,14 +97,14 @@ port with little change.
 
 ```sh
 # 1. install the plugin into the profile you boot
-dsh plugin --profile web add /abs/path/to/app-box/harness/dsh-external-gate
+dsh plugin --profile web add /abs/path/to/arxa/harness/dsh-external-gate
 
 # 2. add an insert row to ~/.dsh/profiles/<name>/cordis.patch.yml
 - insert:
-  - id: appbox-gate
+  - id: arxa-gate
     name: dsh-external-gate
     config:
-      command: /abs/path/to/app-box/harness/verdict.sh
+      command: /abs/path/to/arxa/harness/verdict.sh
       tools: [Write, Edit, MultiEdit, Bash]   # omit to gate every tool
       timeoutMs: 5000
 ```
@@ -121,7 +121,7 @@ roots (`dsh-skill-filesystem/lib/index.js:150`, ascending precedence) are
 `<root>/.dsh/skills`, `<root>/.agents/skills`, configured `customSkillDirs`,
 `~/.dsh/skills`, `~/.agents/skills` — it **never scans `.claude/skills`**. Pi
 scans `.pi/skills` and `.agents/skills`. The committed `.agents/skills -> skills`
-symlink therefore serves both; without it dsh and Pi see zero appbox skills.
+symlink therefore serves both; without it dsh and Pi see zero arxa skills.
 Both accept the `<name>/SKILL.md` directory form this repo uses.
 
 **Instruction files — exclude `CLAUDE.md` on dsh.** dsh loads agent instructions
@@ -146,7 +146,7 @@ not affected by that list.
 ```sh
 npm install -g @earendil-works/pi-coding-agent
 mkdir -p ~/.pi/agent/extensions
-ln -s /abs/path/to/app-box/harness/pi/appbox-gate.ts ~/.pi/agent/extensions/
+ln -s /abs/path/to/arxa/harness/pi/arxa-gate.ts ~/.pi/agent/extensions/
 ```
 
 Pi loads `.ts` extensions directly via jiti — no build step. Project-scoped
@@ -176,8 +176,8 @@ through these seams end to end. Both need model credentials and would spend
 tokens. To check by hand:
 
 ```sh
-APPBOX_GUARD_MODE=using dsh --profile web   # then ask it to edit appboxd/lib/*.dart
-APPBOX_GUARD_MODE=using pi                  # same request
+ARXA_GUARD_MODE=using dsh --profile web   # then ask it to edit arxa/lib/*.dart
+ARXA_GUARD_MODE=using pi                  # same request
 ```
 
 Expect a refusal quoting the guard's reason. Until someone runs that, treat

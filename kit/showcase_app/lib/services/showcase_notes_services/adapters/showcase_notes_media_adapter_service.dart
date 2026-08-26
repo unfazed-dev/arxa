@@ -53,30 +53,30 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:path_provider/path_provider.dart';
-import 'package:appbox_kit_media/appbox_kit_media.dart';
-import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart'
-    show AppBoxKitActionOwner, BehaviorSubject, Rx;
+import 'package:arxa_kit_media/arxa_kit_media.dart';
+import 'package:arxa_kit_ui_library/arxa_kit_ui_library.dart'
+    show ArxaKitActionOwner, BehaviorSubject, Rx;
 import 'package:uuid/uuid.dart';
 
-import 'package:appbox_kit_showcase_app/data/models/showcase_notes_models/showcase_note_attachment_model.dart';
-import 'package:appbox_kit_showcase_app/enums/showcase_notes_enums/enums.dart';
+import 'package:arxa_kit_showcase_app/data/models/showcase_notes_models/showcase_note_attachment_model.dart';
+import 'package:arxa_kit_showcase_app/enums/showcase_notes_enums/enums.dart';
 
-class ShowcaseNotesMediaAdapterService with AppBoxKitActionOwner {
+class ShowcaseNotesMediaAdapterService with ArxaKitActionOwner {
   // ── Setup ───────────────────────────────────────────────────────────────
 
   /// Ports default to their real plugin-backed implementations; inject fakes
-  /// (from `package:appbox_kit_media/appbox_kit_testing.dart`) in tests.
+  /// (from `package:arxa_kit_media/arxa_kit_testing.dart`) in tests.
   ShowcaseNotesMediaAdapterService({
-    AppBoxKitMediaCaptureService? capture,
-    AppBoxKitAudioRecorderService? recorder,
-    AppBoxKitAudioPlayerService? player,
-  })  : _capture = capture ?? AppBoxKitImagePickerMediaCaptureService(),
-        _recorder = recorder ?? AppBoxKitRecordAudioRecorderService(),
-        _player = player ?? AppBoxKitJustAudioPlayerService() {
+    ArxaKitMediaCaptureService? capture,
+    ArxaKitAudioRecorderService? recorder,
+    ArxaKitAudioPlayerService? player,
+  })  : _capture = capture ?? ArxaKitImagePickerMediaCaptureService(),
+        _recorder = recorder ?? ArxaKitRecordAudioRecorderService(),
+        _player = player ?? ArxaKitJustAudioPlayerService() {
     // Mirror the kit ports' streams onto app-owned BehaviorSubjects, subscribed
     // here at construction so late-binding viewmodels still get the last value.
     // One listen per stream (each commands to a different subject) — all
-    // owner-keyed, so [dispose]'s disposeAppBoxKitActions() cancels them.
+    // owner-keyed, so [dispose]'s disposeArxaKitActions() cancels them.
     listen('bridge.elapsed',
         to: [_recorder.elapsed$],
         onData: (value) => recording$.add(value as Duration?));
@@ -88,14 +88,14 @@ class ShowcaseNotesMediaAdapterService with AppBoxKitActionOwner {
         onData: (value) => _duration.add(value as Duration?));
     listen('bridge.state',
         to: [_player.state$],
-        onData: (value) => _playerState.add(value as AppBoxKitPlaybackState));
+        onData: (value) => _playerState.add(value as ArxaKitPlaybackState));
   }
 
   static const _uuid = Uuid();
 
-  final AppBoxKitMediaCaptureService _capture;
-  final AppBoxKitAudioRecorderService _recorder;
-  final AppBoxKitAudioPlayerService _player;
+  final ArxaKitMediaCaptureService _capture;
+  final ArxaKitAudioRecorderService _recorder;
+  final ArxaKitAudioPlayerService _player;
 
   // ── Initial state ──────────────────────────────────────────────────────
 
@@ -113,9 +113,9 @@ class ShowcaseNotesMediaAdapterService with AppBoxKitActionOwner {
       BehaviorSubject<Duration>.seeded(Duration.zero);
   final BehaviorSubject<Duration?> _duration =
       BehaviorSubject<Duration?>.seeded(null);
-  final BehaviorSubject<AppBoxKitPlaybackState> _playerState =
-      BehaviorSubject<AppBoxKitPlaybackState>.seeded(
-          AppBoxKitPlaybackState.idle);
+  final BehaviorSubject<ArxaKitPlaybackState> _playerState =
+      BehaviorSubject<ArxaKitPlaybackState>.seeded(
+          ArxaKitPlaybackState.idle);
 
   /// [5. Camera detection] Whether the camera exists — false on the simulator,
   /// where the UI hides the "Take Photo" action.
@@ -127,7 +127,7 @@ class ShowcaseNotesMediaAdapterService with AppBoxKitActionOwner {
   /// from the kit ports onto app-owned subjects.
   Stream<Duration> get position$ => _position.stream;
   Stream<Duration?> get duration$ => _duration.stream;
-  Stream<AppBoxKitPlaybackState> get playerState$ => _playerState.stream;
+  Stream<ArxaKitPlaybackState> get playerState$ => _playerState.stream;
 
   /// [3. Play back audio] Whether [attachmentId] is the one loaded and playing
   /// right now — derived from the adapter's own player state, so any surface
@@ -135,13 +135,13 @@ class ShowcaseNotesMediaAdapterService with AppBoxKitActionOwner {
   Stream<bool> isAttachmentPlaying$(String attachmentId) => Rx.combineLatest2(
         playingAttachmentId$,
         playerState$,
-        (String? id, AppBoxKitPlaybackState state) =>
+        (String? id, ArxaKitPlaybackState state) =>
             id == attachmentId && state.playing,
       );
 
   /// [3. Play back audio] Live position paired with the track length, for a
   /// scrubber.
-  Stream<AppBoxKitPlaybackProgress> get playbackProgress$ => Rx.combineLatest2(
+  Stream<ArxaKitPlaybackProgress> get playbackProgress$ => Rx.combineLatest2(
         position$,
         duration$,
         (Duration position, Duration? duration) =>
@@ -152,7 +152,7 @@ class ShowcaseNotesMediaAdapterService with AppBoxKitActionOwner {
 
   Future<Directory> _attachmentsDir() async {
     final docs = await getApplicationDocumentsDirectory();
-    final dir = Directory('${docs.path}/appbox_kit_showcase_app/attachments');
+    final dir = Directory('${docs.path}/arxa_kit_showcase_app/attachments');
     await dir.create(recursive: true);
     return dir;
   }
@@ -173,15 +173,15 @@ class ShowcaseNotesMediaAdapterService with AppBoxKitActionOwner {
           // Degrade to the library on simulators rather than crash — mirrors how
           // the UI hides the camera action via [isCameraAvailable].
           final source = (fromCamera && _capture.hasCamera)
-              ? AppBoxKitMediaSource.camera
-              : AppBoxKitMediaSource.gallery;
+              ? ArxaKitMediaSource.camera
+              : ArxaKitMediaSource.gallery;
           final result = await _capture.capturePhoto(
             source: source,
             // Bounded so seed-snapshot-era demo photos don't balloon the docs dir.
             maxWidth: 2048,
             imageQuality: 85,
           );
-          if (result is! AppBoxKitMediaCaptured) {
+          if (result is! ArxaKitMediaCaptured) {
             return null; // cancelled / denied / failed
           }
           final media = result.media;
@@ -297,7 +297,7 @@ class ShowcaseNotesMediaAdapterService with AppBoxKitActionOwner {
   // ── Cleanup ──────────────────────────────────────────────────────────────
 
   Future<void> dispose() async {
-    disposeAppBoxKitActions();
+    disposeArxaKitActions();
     await _recorder.dispose();
     await _player.dispose();
     await recording$.close();

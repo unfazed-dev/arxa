@@ -1,11 +1,11 @@
 // Regression guard: the showcase is a STANDALONE app, so its asset constants
-// must be plain keys ('data/seed/...'). The 'packages/appbox_kit_showcase_app/'
+// must be plain keys ('data/seed/...'). The 'packages/arxa_kit_showcase_app/'
 // prefix is only valid when a host app bundles this package as a dependency —
 // with the prefixed keys the standalone app white-screens at boot
 // (initialize() throws "Unable to load asset" before runApp).
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:appbox_kit_showcase_app/app/app_data.dart';
+import 'package:arxa_kit_showcase_app/app/app_data.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();

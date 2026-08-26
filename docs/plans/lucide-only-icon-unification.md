@@ -14,7 +14,7 @@ Symbols next to pixelated lucide glyphs. Root causes:
    images at logical point size, scale 1.0. 24×24 bitmap upscaled on 2x/3x
    displays → pixelation. Same risk on the `customIconBytes` PNG path
    (`CupertinoButtonPlatformView.swift`, priority `imageAsset > customIcon > icon`).
-2. **Tri-vocabulary** — `AppBoxKitGlyph(Icons.home, 'house.fill')` pairs
+2. **Tri-vocabulary** — `ArxaKitGlyph(Icons.home, 'house.fill')` pairs
    Material (Android/M3E tier) + SF Symbol (Apple tiers); Lucide is a third
    vocabulary for content (1,994 `LucideIcons.` usages, `lucide_flutter ^1.25.0`
    — the canonical lucide-icons-org package).
@@ -30,7 +30,7 @@ diverges.
 | Scope | Lucide everywhere, including native chrome |
 | Apple chrome rendering | Custom SF Symbols bundle **generated from our vendored lucide SVGs** (ISC), riding the existing `withSymbolConfiguration` pipeline in `cupertino_native_better` |
 | Android/M3E tier | `lucide_flutter` font glyphs, Flutter-rendered; Material vocabulary dies |
-| API shape | Keep `AppBoxKitGlyph` type + semantic catalog; back it by a single lucide name that yields IconData (font) + symbol name (Apple bundle) |
+| API shape | Keep `ArxaKitGlyph` type + semantic catalog; back it by a single lucide name that yields IconData (font) + symbol name (Apple bundle) |
 | Raster bug | Fix regardless (render at screen scale) — protects any residual SVG/customIcon path |
 
 ## Workstreams (order matters)
@@ -47,7 +47,7 @@ diverges.
      an asset catalog bundled with `cupertino_native_better` (or kit assets).
    - Version-locked to `lucide_flutter` vocabulary; regenerate on package bump.
 3. **Glyph catalog rewrite**
-   - `AppBoxKitGlyph` internals: one lucide name → `LucideIcons` IconData +
+   - `ArxaKitGlyph` internals: one lucide name → `LucideIcons` IconData +
      custom symbol name. ~59 catalog entries remapped Material→lucide
      equivalents; call sites unchanged.
    - Native side: resolve custom symbols via `UIImage(named:in:)` /

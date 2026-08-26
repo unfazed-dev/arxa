@@ -1,13 +1,13 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:appbox_kit_data/appbox_kit_data.dart';
-import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart'
-    show AppBoxKitErrorService, AppBoxKitNotificationService, BehaviorSubject;
-import 'package:appbox_kit_ui_library/appbox_kit_testing.dart';
-import 'package:appbox_kit_showcase_app/app/app.locator.dart';
-import 'package:appbox_kit_showcase_app/data/models/showcase_notes_models/models.dart';
-import 'package:appbox_kit_showcase_app/enums/showcase_notes_enums/enums.dart';
-import 'package:appbox_kit_showcase_app/ui/views/showcase_notes_shell/showcase_notes_folder/showcase_notes_folder_viewmodel.dart';
+import 'package:arxa_kit_data/arxa_kit_data.dart';
+import 'package:arxa_kit_ui_library/arxa_kit_ui_library.dart'
+    show ArxaKitErrorService, ArxaKitNotificationService, BehaviorSubject;
+import 'package:arxa_kit_ui_library/arxa_kit_testing.dart';
+import 'package:arxa_kit_showcase_app/app/app.locator.dart';
+import 'package:arxa_kit_showcase_app/data/models/showcase_notes_models/models.dart';
+import 'package:arxa_kit_showcase_app/enums/showcase_notes_enums/enums.dart';
+import 'package:arxa_kit_showcase_app/ui/views/showcase_notes_shell/showcase_notes_folder/showcase_notes_folder_viewmodel.dart';
 
 import '../helpers/test_helpers.dart';
 
@@ -15,8 +15,8 @@ import '../helpers/test_helpers.dart';
 /// resolution (all/trash/folder), the live title lookup, the query$ → groups$
 /// filter, and the mutation delegations. The facade's own semantics (iOS
 /// grouping, trash unpinning, …) are covered in test/services/notes_facade_test.dart.
-final _evan = AppBoxKitAuthSession(
-  user: AppBoxKitAuthUser(id: 'user-1', email: 'evan@seed.local'),
+final _evan = ArxaKitAuthSession(
+  user: ArxaKitAuthUser(id: 'user-1', email: 'evan@seed.local'),
 );
 
 ShowcaseNoteFolderModel _folder(String id, String name, int sortOrder) =>
@@ -55,16 +55,16 @@ void main() {
 
     setUp(() async {
       registerServices();
-      registerAppBoxKitActionServices();
-      // The real AppBoxKitAction error path logs through the error service's
+      registerArxaKitActionServices();
+      // The real ArxaKitAction error path logs through the error service's
       // late Talker — initialize it before any op can fail.
-      await locator<AppBoxKitErrorService>().initialize();
+      await locator<ArxaKitErrorService>().initialize();
       facade = getAndRegisterShowcaseNotesFacadeService();
     });
     tearDown(() => locator.reset());
 
-    BehaviorSubject<AppBoxKitAuthSession?> stubSignedIn() {
-      final session = seededSubject<AppBoxKitAuthSession?>(_evan);
+    BehaviorSubject<ArxaKitAuthSession?> stubSignedIn() {
+      final session = seededSubject<ArxaKitAuthSession?>(_evan);
       when(() => facade.session$).thenAnswer((_) => session.stream);
       return session;
     }
@@ -305,9 +305,9 @@ void main() {
       final doomed = _note('n1', 'Old draft', deleted: true);
       when(() => facade.deletePermanently(any())).thenAnswer((_) async {});
       // The kit notification fake (registered by
-      // registerAppBoxKitActionServices) scripts the confirm.
-      final notifications = locator<AppBoxKitNotificationService>()
-          as FakeAppBoxKitNotificationService;
+      // registerArxaKitActionServices) scripts the confirm.
+      final notifications = locator<ArxaKitNotificationService>()
+          as FakeArxaKitNotificationService;
       final vm = ShowcaseNotesFolderViewModel(folderKey: 'trash');
       addTearDown(vm.dispose);
 
@@ -355,8 +355,8 @@ void main() {
       // given
       when(() => facade.currentSession).thenReturn(_evan);
       when(() => facade.emptyTrash(any())).thenAnswer((_) async {});
-      final notifications = locator<AppBoxKitNotificationService>()
-          as FakeAppBoxKitNotificationService;
+      final notifications = locator<ArxaKitNotificationService>()
+          as FakeArxaKitNotificationService;
       final vm = ShowcaseNotesFolderViewModel(folderKey: 'trash');
       addTearDown(vm.dispose);
 

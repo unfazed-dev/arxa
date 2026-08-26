@@ -1,9 +1,9 @@
 import 'package:mocktail/mocktail.dart';
-import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
-import 'package:appbox_kit_ui_library/appbox_kit_testing.dart';
-import 'package:appbox_kit_showcase_app/app/app.locator.dart';
-import 'package:appbox_kit_showcase_app/services/showcase_notes_services/facades/showcase_notes_facade_service.dart';
-import 'package:appbox_kit_showcase_app/services/showcase_notes_services/adapters/showcase_notes_media_adapter_service.dart';
+import 'package:arxa_kit_ui_library/arxa_kit_ui_library.dart';
+import 'package:arxa_kit_ui_library/arxa_kit_testing.dart';
+import 'package:arxa_kit_showcase_app/app/app.locator.dart';
+import 'package:arxa_kit_showcase_app/services/showcase_notes_services/facades/showcase_notes_facade_service.dart';
+import 'package:arxa_kit_showcase_app/services/showcase_notes_services/adapters/showcase_notes_media_adapter_service.dart';
 // @stacked-import
 
 /// mocktail mocks — no codegen (behavior-TDD canon: mocktail only).
@@ -22,24 +22,24 @@ void registerServices() {
 // @stacked-mock-register
 }
 
-/// Registers the services an `AppBoxKitAction` chain lazily resolves from the
-/// locator — the kit's UI services (Talker backs AppBoxKitErrorService
-/// logging), the real [AppBoxKitErrorService], and the kit's scriptable
-/// [FakeAppBoxKitNotificationService] — so viewmodel tests can execute REAL
+/// Registers the services an `ArxaKitAction` chain lazily resolves from the
+/// locator — the kit's UI services (Talker backs ArxaKitErrorService
+/// logging), the real [ArxaKitErrorService], and the kit's scriptable
+/// [FakeArxaKitNotificationService] — so viewmodel tests can execute REAL
 /// action chains (error snackbars land on the fake, where the test can assert
 /// them) instead of mocking the chain away. Confirm/prompt paths set
 /// `confirmResult`/`promptResult` on the fake.
-void registerAppBoxKitActionServices() {
+void registerArxaKitActionServices() {
   // Talker isn't re-exported by the kit barrel; the kit's own setup
   // registers it (plus the stacked Dialog/Snackbar/BottomSheet bases —
   // SnackbarService doubles as the idempotency check).
-  if (!locator.isRegistered<SnackbarService>()) setupAppBoxKitUiServices();
-  _removeRegistrationIfExists<AppBoxKitErrorService>();
-  locator.registerLazySingleton<AppBoxKitErrorService>(
-      () => AppBoxKitErrorService());
-  _removeRegistrationIfExists<AppBoxKitNotificationService>();
-  locator.registerLazySingleton<AppBoxKitNotificationService>(
-      () => FakeAppBoxKitNotificationService());
+  if (!locator.isRegistered<SnackbarService>()) setupArxaKitUiServices();
+  _removeRegistrationIfExists<ArxaKitErrorService>();
+  locator.registerLazySingleton<ArxaKitErrorService>(
+      () => ArxaKitErrorService());
+  _removeRegistrationIfExists<ArxaKitNotificationService>();
+  locator.registerLazySingleton<ArxaKitNotificationService>(
+      () => FakeArxaKitNotificationService());
 }
 
 /// Seeded [BehaviorSubject] for the stream-first VMs — stub facade streams
@@ -47,7 +47,7 @@ void registerAppBoxKitActionServices() {
 /// stream so tests get the seed synchronously on subscribe and can push later
 /// events (sign-out, edits) through the same subject:
 /// ```dart
-/// final session = seededSubject<AppBoxKitAuthSession?>(null);
+/// final session = seededSubject<ArxaKitAuthSession?>(null);
 /// when(() => facade.session$).thenAnswer((_) => session.stream);
 /// ```
 /// Assert the FULL sequence including the seed (canon streams rules) — never

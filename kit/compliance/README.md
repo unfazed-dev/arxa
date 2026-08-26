@@ -1,4 +1,4 @@
-# appbox_kit_compliance
+# arxa_kit_compliance
 
 A standalone kit for the legal/compliance surfaces every app eventually needs:
 a versioned document registry, consent tracking behind a port, a pure
@@ -8,23 +8,23 @@ dependencies** — the Flutter SDK is the only backing package.
 
 ## Scope
 
-- **Documents & versions** — `AppBoxKitComplianceDocument` (id, `AppBoxKitComplianceDocumentKind`,
-  opaque `version`, title, sealed `AppBoxKitComplianceSource` remote/inline body,
+- **Documents & versions** — `ArxaKitComplianceDocument` (id, `ArxaKitComplianceDocumentKind`,
+  opaque `version`, title, sealed `ArxaKitComplianceSource` remote/inline body,
   `effectiveDate`, `requiresExplicitAcceptance`, `locale`) held in a
-  `AppBoxKitComplianceRegistry` (`register` / `byId` / `currentFor(kind)` /
+  `ArxaKitComplianceRegistry` (`register` / `byId` / `currentFor(kind)` /
   `currentDocuments` / `all`).
-- **Consent** — `AppBoxKitConsentRecord` (with `AppBoxKitConsentMethod`:
+- **Consent** — `ArxaKitConsentRecord` (with `ArxaKitConsentMethod`:
   `explicitTap` / `implicitContinue` / `imported` / `withdrawn`) persisted
-  behind the `AppBoxKitConsentStore` port. `InMemoryAppBoxKitConsentStore` is the working
-  default. `AppBoxKitConsentService` derives a typed `AppBoxKitConsentStatus`
+  behind the `ArxaKitConsentStore` port. `InMemoryArxaKitConsentStore` is the working
+  default. `ArxaKitConsentService` derives a typed `ArxaKitConsentStatus`
   (`accepted` / `acceptedOutdatedVersion(acceptedVersion)` / `withdrawn` /
   `neverAccepted` / `notRequired`), exposes `outstandingDocuments()`, and emits
-  `AppBoxKitConsentStatusChange`es on a broadcast `statusChanges` stream.
-- **Consent gate** — `AppBoxKitConsentGate.evaluate()` returns a sealed
-  `AppBoxKitConsentGateResult` (`allowed` / `blocked(outstanding)`), in registry
+  `ArxaKitConsentStatusChange`es on a broadcast `statusChanges` stream.
+- **Consent gate** — `ArxaKitConsentGate.evaluate()` returns a sealed
+  `ArxaKitConsentGateResult` (`allowed` / `blocked(outstanding)`), in registry
   order. Pure logic, no UI.
-- **OSS licenses** — `AppBoxKitLicensesService` gathers `LicenseRegistry.licenses`
-  into typed `AppBoxKitLicenseEntry`s (`collect()` / `byPackage()`). Rendering
+- **OSS licenses** — `ArxaKitLicensesService` gathers `LicenseRegistry.licenses`
+  into typed `ArxaKitLicenseEntry`s (`collect()` / `byPackage()`). Rendering
   (`showLicensePage` or custom) stays in the app.
 
 ## Semantics
@@ -42,14 +42,14 @@ dependencies** — the Flutter SDK is the only backing package.
 
 ## Dependency direction
 
-This package intentionally depends on **no other kit** (not `appbox_kit`,
-`stacked`, or `stacked_services`). Persistence is behind the `AppBoxKitConsentStore`
-port; the app binds `InMemoryAppBoxKitConsentStore` or its own durable
+This package intentionally depends on **no other kit** (not `arxa_kit`,
+`stacked`, or `stacked_services`). Persistence is behind the `ArxaKitConsentStore`
+port; the app binds `InMemoryArxaKitConsentStore` or its own durable
 implementation. Nothing here imports Flutter widgets.
 
 ## Backing packages
 
-- **State / persistence** — Flutter SDK only. `AppBoxKitConsentStore` is an abstract
+- **State / persistence** — Flutter SDK only. `ArxaKitConsentStore` is an abstract
   port; the in-memory default keeps an append-only log. Consent value types and
   the license reader use `@immutable` and `LicenseRegistry` from
   `package:flutter/foundation.dart`.
@@ -58,22 +58,22 @@ implementation. Nothing here imports Flutter widgets.
 
 ## Testing
 
-`package:appbox_kit_compliance/appbox_kit_testing.dart` re-exports the API and adds
-`FakeAppBoxKitLicensesService`, a `AppBoxKitLicensesService` backed by a scripted list of
+`package:arxa_kit_compliance/arxa_kit_testing.dart` re-exports the API and adds
+`FakeArxaKitLicensesService`, a `ArxaKitLicensesService` backed by a scripted list of
 `LicenseEntry`s (build them with `LicenseEntryWithLineBreaks`) so license
 collection can be tested without a Flutter binding. The in-memory consent store
 is used directly in tests.
 
 ## Phase notes
 
-- **v0 (this package)** — standalone, own `AppBoxKitConsentStore` port, in-memory
+- **v0 (this package)** — standalone, own `ArxaKitConsentStore` port, in-memory
   default, exact-string versioning.
 - **One document per kind** — `currentDocuments` and the gate collapse to a
-  single current document per `AppBoxKitComplianceDocumentKind` (latest registered
+  single current document per `ArxaKitComplianceDocumentKind` (latest registered
   wins). Two documents sharing a kind — most plausibly `custom` — gate as one;
   give each its own kind if both must be presented.
 - **Deferred** — durable store bindings (secure storage / a backend), semver-aware
   version policies, locale-negotiation of which document to present, and any
   consent UI. Add as consuming apps need them. Unifying the typed results onto
-  `appbox_kit_state` is a documented later phase; there are no cross-kit imports
+  `arxa_kit_state` is a documented later phase; there are no cross-kit imports
   now.

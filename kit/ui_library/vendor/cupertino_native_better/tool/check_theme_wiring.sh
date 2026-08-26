@@ -2,7 +2,7 @@
 # Deterministic wiring check for the iOS 26 liquid-glass theme-flip cure.
 # Fails (exit 1) if any native view that handles brightness is missing part
 # of the stack, or a banned pattern reappears. The mechanics and the
-# clip-by-clip evidence live in the app-box repo at
+# clip-by-clip evidence live in the arxa repo at
 # docs/plans/native-glass-theme-lag-measured.md; the checklist for NEW view
 # types is in this package's AGENTS.md.
 set -u

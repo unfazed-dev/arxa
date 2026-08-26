@@ -1,6 +1,6 @@
 # device_input_probe — real-touch verification for the native input stack
 
-Verifies `AppBoxKitNativeInputBar` / `AppBoxKitNativeTextField` behavior with
+Verifies `ArxaKitNativeInputBar` / `ArxaKitNativeTextField` behavior with
 **real touches on real platform views** — the one thing `flutter test` and the
 `integration_test` harness structurally cannot do.
 
@@ -46,7 +46,7 @@ focus tree (checked by render-tree containment, which distinguishes fields).
 flutter build apk --debug
 adb install -r build/app/outputs/flutter-apk/app-debug.apk
 adb shell settings put secure show_ime_with_hard_keyboard 1  # emulator only
-adb shell monkey -p dev.appbox.device_input_probe -c android.intent.category.LAUNCHER 1
+adb shell monkey -p dev.arxa.device_input_probe -c android.intent.category.LAUNCHER 1
 ./android_choreo.sh emulator-5554 /tmp/probe_android_shots
 ```
 
@@ -62,7 +62,7 @@ channel runs through `adb shell run-as` (debug builds only). NOTE: Dart's
 ```bash
 flutter build ios --simulator --debug
 xcrun simctl install booted build/ios/iphonesimulator/Runner.app
-xcrun simctl launch booted dev.appbox.deviceInputProbe
+xcrun simctl launch booted dev.arxa.deviceInputProbe
 ./ios_choreo.sh <UDID>   # defaults: booted GlassDebug sim, this bundle id
 ```
 

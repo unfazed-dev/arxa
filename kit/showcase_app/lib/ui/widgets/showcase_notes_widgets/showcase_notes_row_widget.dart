@@ -1,10 +1,10 @@
 /// A widget is a reusable UI piece composed by views. It receives data via
-/// constructor params or [AppBoxKitStreamBuilder] bindings and renders its
+/// constructor params or [ArxaKitStreamBuilder] bindings and renders its
 /// slice of the surface — it holds no business logic and never decides when
 /// an action runs.
 ///
 /// This is the user interface for a single tappable folder-list row — glyph,
-/// label, trailing count, chevron. A thin adapter over [AppBoxKitListTile].
+/// label, trailing count, chevron. A thin adapter over [ArxaKitListTile].
 ///
 /// Requirements:
 /// 1. [Folder-list row]
@@ -19,7 +19,7 @@
 library;
 
 import 'package:flutter/material.dart';
-import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
+import 'package:arxa_kit_ui_library/arxa_kit_ui_library.dart';
 
 class ShowcaseNotesRowWidget extends StatelessWidget {
   const ShowcaseNotesRowWidget({
@@ -30,13 +30,13 @@ class ShowcaseNotesRowWidget extends StatelessWidget {
     required this.onTap,
   });
 
-  final AppBoxKitGlyph glyph;
+  final ArxaKitGlyph glyph;
   final String label;
   final int trailingCount;
   final VoidCallback onTap;
 
   @override
-  Widget build(BuildContext context) => AppBoxKitListTile(
+  Widget build(BuildContext context) => ArxaKitListTile(
         glyph: glyph,
         title: label,
         trailingValue: '$trailingCount',

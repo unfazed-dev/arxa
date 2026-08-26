@@ -1,23 +1,23 @@
 // Widget tests for the motion showcase surface. The motion primitives
-// themselves are proven in appbox_kit_motion's own tests; these pin the
+// themselves are proven in arxa_kit_motion's own tests; these pin the
 // showcase wiring that the liquid-glass law depends on — specifically the
 // chrome-scaffold migration's padding arithmetic, which no other test covers.
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:appbox_kit_showcase_app/ui/views/showcase_profile_shell/showcase_motion/showcase_motion_view.dart';
-import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
+import 'package:arxa_kit_showcase_app/ui/views/showcase_profile_shell/showcase_motion/showcase_motion_view.dart';
+import 'package:arxa_kit_ui_library/arxa_kit_ui_library.dart';
 
 import 'helpers.dart';
 
 void main() {
   setUpAll(registerKitTestServices);
-  tearDownAll(() => appBoxKitLocator.reset());
+  tearDownAll(() => arxaKitLocator.reset());
 
   setUp(() {
-    AppBoxKitPlatform.override =
-        const AppBoxKitPlatformOverride(isAndroid: true);
+    ArxaKitPlatform.override =
+        const ArxaKitPlatformOverride(isAndroid: true);
   });
-  tearDown(AppBoxKitPlatform.reset);
+  tearDown(ArxaKitPlatform.reset);
 
   // The list's top padding must be read from a context BELOW the chrome
   // scaffold (the view wraps its body in a Builder for exactly this): the
@@ -42,8 +42,8 @@ void main() {
       // binding reports as a failure. The components surface has no such card.
       await tester.pump(const Duration(milliseconds: 800));
       return tester
-          .widget<AppBoxKitEdgeAwareListView>(
-              find.byType(AppBoxKitEdgeAwareListView))
+          .widget<ArxaKitEdgeAwareListView>(
+              find.byType(ArxaKitEdgeAwareListView))
           .padding!
           .resolve(TextDirection.ltr);
     }
@@ -59,10 +59,10 @@ void main() {
 
     testWidgets('glass tier adds the status bar + floating-bar block',
         (tester) async {
-      AppBoxKitPlatform.override =
-          const AppBoxKitPlatformOverride(isIOS: true, iosMajor: 26);
+      ArxaKitPlatform.override =
+          const ArxaKitPlatformOverride(isIOS: true, iosMajor: 26);
       expect((await pumpAndReadPadding(tester)).top,
-          abxSize16 + statusBar + kAppBoxKitFloatingBarBlockHeight,
+          abxSize16 + statusBar + kArxaKitFloatingBarBlockHeight,
           reason: 'missing the raise means the padding was read above the '
               'floating chrome, tucking the first card under the bar');
     });

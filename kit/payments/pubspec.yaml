@@ -1,5 +1,5 @@
-name: appbox_kit_payments
-description: Native-first payments for appbox_kit apps — Apple Pay + Google Pay via Google's first-party pay plugin, behind a pluggable provider port so Stripe/PayPal backends slot in later. Typed AppBoxKitPaymentResult, scriptable fakes.
+name: arxa_kit_payments
+description: Native-first payments for arxa_kit apps — Apple Pay + Google Pay via Google's first-party pay plugin, behind a pluggable provider port so Stripe/PayPal backends slot in later. Typed ArxaKitPaymentResult, scriptable fakes.
 version: 0.1.0
 publish_to: 'none'
 
@@ -12,10 +12,10 @@ dependencies:
     sdk: flutter
   # Google-maintained wrapper over PassKit (Apple Pay) and the Google Pay API.
   # The native-first choice; ships the ApplePayButton/GooglePayButton widgets
-  # this package re-exports behind AppBoxKitPayButton. Android + iOS only.
+  # this package re-exports behind ArxaKitPayButton. Android + iOS only.
   pay: ^3.3.0
   # Stripe PaymentSheet (card + Apple Pay / Google Pay + 3DS) behind
-  # AppBoxKitStripePaymentsProvider. CardField/CardForm are sunset; PaymentSheet is the
+  # ArxaKitStripePaymentsProvider. CardField/CardForm are sunset; PaymentSheet is the
   # supported surface. The publishable key only — secrets stay server-side.
   flutter_stripe: ^13.1.0
   # ASWebAuthenticationSession / Chrome Auth Tab for PayPal's web approval

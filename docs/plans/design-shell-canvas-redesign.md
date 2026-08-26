@@ -10,8 +10,8 @@
 
 Grilled and confirmed with the operator (session 2026-07-30). Every line below
 was a decided behavior at the time, not a proposal — see the Superseded note
-above for what replaced it. Target artifact: `designs/appbox`. Skill
-amendments: `.kimi-code/skills/appbox-designer`.
+above for what replaced it. Target artifact: `designs/arxa`. Skill
+amendments: `.kimi-code/skills/arxa-designer`.
 
 ## Stage
 
@@ -108,7 +108,7 @@ amendments: `.kimi-code/skills/appbox-designer`.
 - `POST /design/undo/:stack` / `POST /design/redo/:stack` — stack ∈ canvas|chat.
 - `GET /design/viewer` gains `mode=flow|prototype`, `inspect=1`, `embed=1`.
 
-## Skill amendments (appbox-designer)
+## Skill amendments (arxa-designer)
 
 - ADR-0002 amendment: `inspect.js` as the second named island; `drag.js` as the
   gesture island (or fold gestures into canvas.js — decided at build time,

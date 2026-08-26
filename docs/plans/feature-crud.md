@@ -94,7 +94,7 @@ Two prior failures constrain the design:
 | desktop GUI feature list | `registry.json` |
 | chat ("add a settings screen") | `registry.json` + scaffolds the pair |
 | companion app | `registry.json` |
-| `appbox-designer` | both authored layers |
+| `arxa-designer` | both authored layers |
 | **anything** | never `structure.json`, never `lib/**` |
 
 ## Test that proves the rule holds

@@ -1,4 +1,4 @@
-# deploy/remote — appbox self-host remote access
+# deploy/remote — arxa self-host remote access
 
 The R2 "Anywhere" pack (consolidation plan, decision 10). LAN-only QR pairing
 stays the default; this pack is for reaching your daemon from any network
@@ -29,15 +29,15 @@ over the tailnet. No app traffic is ever public.
    ```
 
 3. **Create a user and a single-use, short-lived pre-auth key** (this key is
-   what travels in the appbox pairing QR — treat it like a password):
+   what travels in the arxa pairing QR — treat it like a password):
 
    ```bash
    docker compose exec headscale headscale users create alice
    docker compose exec headscale headscale preauthkeys create \
-     --user alice --reusable=false --expiration 1h --tags tag:appbox
+     --user alice --reusable=false --expiration 1h --tags tag:arxa
    ```
 
-4. **Pair** — in the appbox app, choose "Remote (self-host)", enter
+4. **Pair** — in the arxa app, choose "Remote (self-host)", enter
    `https://hs.example.com` as the login server and the pre-auth key. The app
    renders the pairing QR; the companion device scans it and enrolls its
    Tailscale client at your headscale. The key is dead after one use / 1 hour.
@@ -46,11 +46,11 @@ over the tailnet. No app traffic is ever public.
    openssl 3, then copy):
 
    ```bash
-   ./scripts/gen-mesh-cert.sh mybox ~/.appbox/mesh-ca
+   ./scripts/gen-mesh-cert.sh mybox ~/.arxa/mesh-ca
    ```
 
    The daemon's web builder serves `leaf.crt`/`leaf.key` for
-   `*.<slug>.appbox` origins (`https://app.mybox.appbox/…`). Install
+   `*.<slug>.arxa` origins (`https://app.mybox.arxa/…`). Install
    `ca.crt` on each client at pairing: macOS/Windows/Linux import into the
    system trust store; **iOS** gets it as a config profile — install the
    profile, then Settings → General → About → Certificate Trust Settings →
@@ -62,7 +62,7 @@ over the tailnet. No app traffic is ever public.
    docker compose exec headscale headscale nodes list     # devices enrolled
    tailscale status                                        # on a client
    curl -I https://hs.example.com                          # LE cert, door up
-   openssl s_client -connect app.mybox.appbox:443 -servername app.mybox.appbox </dev/null
+   openssl s_client -connect app.mybox.arxa:443 -servername app.mybox.arxa </dev/null
    ```
 
 ## Honesty box — what the operator (you, on this VPS) can see
@@ -80,7 +80,7 @@ over the tailnet. No app traffic is ever public.
 - `docker-compose.yml` — headscale 0.29.2 (pinned) + Caddy 2.10 (pinned), named volumes.
 - `Caddyfile` — public LE TLS for the headscale endpoint only.
 - `headscale/config.yaml` — sane defaults; env-expanded `HEADSCALE_DOMAIN`.
-- `scripts/gen-mesh-cert.sh` — mesh-CA root + `*.<slug>.appbox` wildcard leaf
+- `scripts/gen-mesh-cert.sh` — mesh-CA root + `*.<slug>.arxa` wildcard leaf
   (EC P-256, serverAuth, 825-day, idempotent root, re-runnable for leaf rotation).
 - `.env.example` — the two knobs.
 

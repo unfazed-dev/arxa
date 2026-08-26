@@ -26,9 +26,9 @@
 library;
 
 import 'package:flutter/material.dart';
-import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
-import 'package:appbox_kit_showcase_app/enums/showcase_profile_enums/enums.dart';
-import 'package:appbox_kit_showcase_app/ui/widgets/common/showcase_tabs_shared/widgets.dart';
+import 'package:arxa_kit_ui_library/arxa_kit_ui_library.dart';
+import 'package:arxa_kit_showcase_app/enums/showcase_profile_enums/enums.dart';
+import 'package:arxa_kit_showcase_app/ui/widgets/common/showcase_tabs_shared/widgets.dart';
 
 /// Sheet heights the three preset buttons present at, as fractions of screen
 /// height. 0.92 is the Cupertino route's own default — `1 - _kTopGapRatio`,
@@ -44,7 +44,7 @@ class ShowcaseComponentsOverlaysCardWidget extends StatelessWidget {
       StackedService.navigatorKey?.currentContext ?? fallback;
 
   static void _toast(BuildContext context, String message) =>
-      appBoxKitLocator<AppBoxKitNotificationService>()
+      arxaKitLocator<ArxaKitNotificationService>()
           .show(message, context: context);
 
   /// The height notifier is created per presentation and disposed when the
@@ -58,7 +58,7 @@ class ShowcaseComponentsOverlaysCardWidget extends StatelessWidget {
   static Future<void> _showSheetAt(BuildContext context, double factor) async {
     final ValueNotifier<double> height = ValueNotifier<double>(factor);
     try {
-      await appBoxKitShowSheet<void>(
+      await arxaKitShowSheet<void>(
         context: _modalContext(context),
         heightFactor: height,
         builder: (_) => _ResizableSheetBody(height: height),
@@ -70,37 +70,37 @@ class ShowcaseComponentsOverlaysCardWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return AppBoxKitGlassCard(
+    return ArxaKitGlassCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           const ShowcaseSectionLabelWidget('Overlays'),
-          appBoxKitVerticalSpaceSmall,
+          arxaKitVerticalSpaceSmall,
           SizedBox(
             height: abxButtonHeightMedium,
-            child: AppBoxKitNativeButton(
+            child: ArxaKitNativeButton(
               label: 'Show dialog',
-              glyph: AppBoxKitGlyphs.info,
+              glyph: ArxaKitGlyphs.info,
               onPressed: () async {
                 final result =
-                    await appBoxKitShowNativeDialog<ShowcaseDialogResult>(
+                    await arxaKitShowNativeDialog<ShowcaseDialogResult>(
                   context: _modalContext(context),
                   title: 'Delete note?',
                   message: 'This cannot be undone.',
                   actions: [
-                    const AppBoxKitNativeDialogAction<ShowcaseDialogResult>(
+                    const ArxaKitNativeDialogAction<ShowcaseDialogResult>(
                       label: 'Keep note',
-                      role: AppBoxKitDialogActionRole.primary,
+                      role: ArxaKitDialogActionRole.primary,
                       value: ShowcaseDialogResult.kept,
                     ),
-                    const AppBoxKitNativeDialogAction<ShowcaseDialogResult>(
+                    const ArxaKitNativeDialogAction<ShowcaseDialogResult>(
                       label: 'Cancel',
                       value: ShowcaseDialogResult.cancelled,
                     ),
-                    const AppBoxKitNativeDialogAction<ShowcaseDialogResult>(
+                    const ArxaKitNativeDialogAction<ShowcaseDialogResult>(
                       label: 'Delete',
-                      glyph: AppBoxKitGlyphs.delete,
-                      role: AppBoxKitDialogActionRole.destructive,
+                      glyph: ArxaKitGlyphs.delete,
+                      role: ArxaKitDialogActionRole.destructive,
                       value: ShowcaseDialogResult.deleted,
                     ),
                   ],
@@ -111,9 +111,9 @@ class ShowcaseComponentsOverlaysCardWidget extends StatelessWidget {
               },
             ),
           ),
-          appBoxKitVerticalSpaceSmall,
+          arxaKitVerticalSpaceSmall,
           const ShowcaseSectionLabelWidget('Sheet height'),
-          appBoxKitVerticalSpaceXSmall,
+          arxaKitVerticalSpaceXSmall,
           // Equal thirds so the three read as one control, not three buttons
           // that happen to sit together.
           SizedBox(
@@ -126,38 +126,38 @@ class ShowcaseComponentsOverlaysCardWidget extends StatelessWidget {
                   ('30%', 0.30),
                 ]) ...[
                   Expanded(
-                    child: AppBoxKitNativeButton(
+                    child: ArxaKitNativeButton(
                       label: label,
                       onPressed: () => _showSheetAt(context, factor),
                     ),
                   ),
-                  if (factor != 0.30) appBoxKitHorizontalSpaceSmall,
+                  if (factor != 0.30) arxaKitHorizontalSpaceSmall,
                 ],
               ],
             ),
           ),
-          appBoxKitVerticalSpaceSmall,
+          arxaKitVerticalSpaceSmall,
           SizedBox(
             height: abxButtonHeightMedium,
-            child: AppBoxKitNativeButton(
+            child: ArxaKitNativeButton(
               label: 'Show center toast',
-              glyph: AppBoxKitGlyphs.alertsBadge,
+              glyph: ArxaKitGlyphs.alertsBadge,
               onPressed: () =>
-                  appBoxKitLocator<AppBoxKitNotificationService>().show(
+                  arxaKitLocator<ArxaKitNotificationService>().show(
                 'Centered',
-                position: AppBoxKitToastPosition.center,
+                position: ArxaKitToastPosition.center,
                 context: context,
               ),
             ),
           ),
-          appBoxKitVerticalSpaceSmall,
+          arxaKitVerticalSpaceSmall,
           SizedBox(
             height: abxButtonHeightMedium,
             // Builder: openDrawer needs a context UNDER this Scaffold.
             child: Builder(
-              builder: (scaffoldContext) => AppBoxKitNativeButton(
+              builder: (scaffoldContext) => ArxaKitNativeButton(
                 label: 'Open drawer',
-                glyph: AppBoxKitGlyphs.more,
+                glyph: ArxaKitGlyphs.more,
                 onPressed: () => Scaffold.of(scaffoldContext).openDrawer(),
               ),
             ),
@@ -208,7 +208,7 @@ class _ResizableSheetBody extends StatelessWidget {
           ),
           ValueListenableBuilder<double>(
             valueListenable: height,
-            builder: (_, double value, __) => AppBoxKitNativeSlider(
+            builder: (_, double value, __) => ArxaKitNativeSlider(
               value: value,
               min: _kMinSheetHeight,
               max: _kDefaultSheetHeight,
@@ -224,9 +224,9 @@ class _ResizableSheetBody extends StatelessWidget {
                     'Frosted sheet body',
                     style: theme.textTheme.titleLarge,
                   ),
-                  appBoxKitVerticalSpaceXSmall,
+                  arxaKitVerticalSpaceXSmall,
                   Text(
-                    'This body is one AppBoxKitFrostedSurface panel with the '
+                    'This body is one ArxaKitFrostedSurface panel with the '
                     'sheet\'s own top corners and grabber, sized live by the '
                     'slider above. The page behind is dimmed by the sheet\'s '
                     'overlay — tap it to dismiss.',

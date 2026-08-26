@@ -1,0 +1,41 @@
+<Callout id="header" tone="info">
+# arxa-tester — Per-Skill Playbook
+
+`arxa-tester` · status: **active**
+
+**Role (one line):** write and run tests for a built target — mocktail the repository Ports for unit/TDD, arxa lens (`arxa/lib/lens.dart`, the probe-runner port) for visual + smoke, Patrol for native E2E.
+
+**Scope of this document:** lets a human OR an LLM drive the test phase without reading the skill source. Folded from `SKILL.md`.
+
+**Pipeline position:** stage 5 — upstream `arxa-builder`; downstream `arxa-reviewer` (gates on the passing suite + the freeze); visual/smoke capture via `arxa-lens`. Full chain, stage numbers, per-stage artifacts: `docs/research/pipeline-map.md` §1.
+
+## Table of contents
+
+0. Header & TOC · 1. Overview & role · 2. Inputs · 3. Procedure · 4. Outputs · 5. Rules · 6. References
+
+</Callout>
+
+### Overview & role
+
+The architecture contract is statically enforced by `arch_guard` — do not re-assert "ViewModel extends BaseViewModel" or "Supabase in infrastructure" in tests. This role writes FEATURE tests: the behavior, not the contract. **Behavior-TDD is the mandated posture** — the canon is `skills/arxa-tester/behavior-tdd-rules.md`, enforced by `arxa gate tests` (T1/T2/T3).
+
+### Inputs
+
+- A built target at `<target>/` with repository Ports in `domain/`.
+- The frozen design surfaces (`design/surfaces/*.html`) for visual pixel-diff baselines.
+
+### Procedure
+
+TDD loop (red-green-refactor): red — write the test first against a repository Port (interface in `domain/`), mocking it with mocktail (no codegen); it fails with no impl. Green — builder emits the minimum code to pass (Ports locator-injected; adapter behind the Port). Refactor — keep tests green; `arch_guard` stays PASS. Layers, cheapest first: unit (`flutter_test` + mocktail, VM logic + Port contracts); widget (`flutter_test`, a View renders given a VM state); smoke (arxa lens: app boots, first screen renders, no crash); visual (arxa lens golden compare, byte/pixel diff vs `design/*.html`; console/page errors fail the lens); E2E (Patrol, real taps/scrolls on ios/android).
+
+### Outputs
+
+A passing suite (unit → widget → smoke → visual → E2E) plus the freeze into `.blueprint/<source>/test/` (replayable). The reviewer gates on it.
+
+### Rules
+
+Tests are extension points (the pipeline emits once; the operator owns them). Mock the Port, never the adapter directly — keeps tests infrastructure-free. Freeze the suite for reproducibility. Unit tests mock `WorkoutRepository` (the Port), never the concrete repo. Test names are `<story-id> — <behavior sentence>` (story-ID verbatim from `map.json`; kits cite `kit.<package>.<capability>`); no mechanical tests (getter/verify-only/stub round-trips/empty stubs) — the gate fails them.
+
+<!-- kb:begin -->
+### References
+<!-- kb:end -->

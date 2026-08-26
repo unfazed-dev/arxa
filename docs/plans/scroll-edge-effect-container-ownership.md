@@ -7,7 +7,7 @@ Status: **landed**. Two user-approved decisions, both implemented and green.
 `kit/showcase_app/test/slowness_measurement_test.dart` declared `platformViewBackedTypes`
 containing `'CNLiquidGlassContainer'`. **No such class exists.** The vendor names it
 `LiquidGlassContainer` (`liquid_glass_container.dart:17`), and it is exactly what
-`AppBoxKitGlassCard` builds on the iOS 26 tier (`appbox_kit_glass_card.dart:66-77`).
+`ArxaKitGlassCard` builds on the iOS 26 tier (`arxa_kit_glass_card.dart:66-77`).
 
 So the set matched nothing for every glass card, and the previous session's numbers —
 reported to the user as verified — were wrong in the direction of "nothing to see here":
@@ -23,7 +23,7 @@ The other 14 names in the set are real and map 1:1 onto the vendor files contain
 **Harness ceiling, stated:** `LiquidGlassContainer.build` gates on the *vendor's*
 `PlatformVersion.supportsLiquidGlass`, which resolves through `dart:io`
 `Platform.isIOS` (`version_detector.dart:143,149`) — false headlessly regardless of
-`AppBoxKitPlatform.override`. So it returns `widget.child` in tests and **no `UiKitView`
+`ArxaKitPlatform.override`. So it returns `widget.child` in tests and **no `UiKitView`
 is ever instantiated**. The counts above are "widgets that become `UiKitView`s on
 device", which is the best available headless proxy, not live platform views.
 
@@ -38,14 +38,14 @@ device", which is the best available headless proxy, not live platform views.
 | Profile tree specifically | 3 with, **8 without** |
 
 The visible case: `showcase_profile_view.mobile.dart:69` placed a bare
-`AppBoxKitNativeToolbar` (`CNGlassButtonGroup` — a platform view on iOS 26) directly in
+`ArxaKitNativeToolbar` (`CNGlassButtonGroup` — a platform view on iOS 26) directly in
 the `ListView`, sandwiched between two treated cards. On scroll the cards faded under the
 tab bar and the toolbar stayed crisp at full alpha. `showcase_profile_rail_card_widget.dart:96`
 rationalised it — *"Cards only: the bare toolbar/labels are chrome, not content"* — but it
 is inside the list, it scrolls, it is content. A leaf cannot detect that a sibling was
 forgotten; a container cannot miss a child.
 
-**Fix:** `AppBoxKitEdgeAwareListView` (`kit/ui_library/lib/widgets/appbox_kit_edge_aware_list_view.dart`)
+**Fix:** `ArxaKitEdgeAwareListView` (`kit/ui_library/lib/widgets/arxa_kit_edge_aware_list_view.dart`)
 wraps every child, spacers included, so the rule has no exceptions to remember.
 
 Edges stay opt-in on purpose. An edge effect with no chrome on that edge is *wrong*, not
@@ -71,11 +71,11 @@ missed this because the wiring uses the `.chromeGated()` extension.
 
 ## Defect 2 — the blur reached the text but never the glass
 
-`AppBoxKitScrollEdgeEffect`'s blur is an `ImageFilterLayer`, which filters **Flutter's
+`ArxaKitScrollEdgeEffect`'s blur is an `ImageFilterLayer`, which filters **Flutter's
 painted output**. On the Liquid Glass tier the card's surface is a platform view
 composited natively, so the filter reached the card's *text* and not the slab under it:
 softening labels on a crisp slab, mid-crossing. Opacity is the mutator iOS hybrid
-composition applies to platform views reliably (`appbox_kit_native_chrome_gate.dart`).
+composition applies to platform views reliably (`arxa_kit_native_chrome_gate.dart`).
 
 **Fix:** blur is frosted-tier only. Driven to `sigma = 0` rather than branched, because
 the wrapper chain must keep a constant node count — that invariant is what stops a
@@ -86,7 +86,7 @@ already paints its child directly with no layer. One-line change plus docs.
 
 1. Unit level — no `ImageFilterLayer` is pushed on the glass tier while the fade is
    engaged, with a frosted-tier control proving the assertion is not vacuous
-   (`appbox_kit_scroll_edge_effect_tier_test.dart`).
+   (`arxa_kit_scroll_edge_effect_tier_test.dart`).
 2. In situ — M5 now counts `ImageFilterLayer`s in the live layer tree across a 200-frame
    notes scroll: **0 frames**, while its control asserts 4 glass-backed widgets really are
    passing under an engaged effect. Without that control the zero would be vacuous.
@@ -116,7 +116,7 @@ still be true. It now doubles as the control for the filter-layer assertion besi
 
 ## The sliver case (round 2)
 
-`AppBoxKitEdgeAwareSliverList` is the `CustomScrollView` counterpart — a `SliverList`
+`ArxaKitEdgeAwareSliverList` is the `CustomScrollView` counterpart — a `SliverList`
 whose every item is edge-treated, with the same `topEdge` / `bottomOcclusion` contract.
 Both containers share one `_treat` helper so their treatment cannot drift; two copies of
 that logic would be the same class of bug the containers exist to prevent.
@@ -125,11 +125,11 @@ that logic would be the same class of bug the containers exist to prevent.
 `SliverList.builder`, so the fit is exact. Its `.wake(order: i)` stagger now sits *inside*
 the edge wrappers rather than outside.
 
-That nesting flip is safe, and it was **checked rather than assumed**: `AppBoxKitWake`
+That nesting flip is safe, and it was **checked rather than assumed**: `ArxaKitWake`
 composes only `ScaleTransition` / `SlideTransition` / `FadeTransition`
-(`kit/motion/lib/src/appbox_kit_wake.dart:83-98`) — all paint-time. Had any of them been
+(`kit/motion/lib/src/arxa_kit_wake.dart:83-98`) — all paint-time. Had any of them been
 layout-affecting, the effect's own box would hit zero height at animation start and
-`_recompute` would early-return (`appbox_kit_scroll_edge_effect.dart:149`), freezing `_t`
+`_recompute` would early-return (`arxa_kit_scroll_edge_effect.dart:149`), freezing `_t`
 stale through every rise-in.
 
 In-situ coverage is asserted on the real list, not just the synthetic harness: M5 counts

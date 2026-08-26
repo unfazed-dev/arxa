@@ -39,10 +39,10 @@ need "$o" "freeze: PASS" "happy prints PASS"
 need "$o" "derived widths for targets [macos]: desktop" "happy reports the derived width set"
 
 # ---- §6: a passing freeze records designHash into LIVE pipeline state --------
-# Fixture state via APPBOX_STATE (R5). The tracked seed default.state.json must
+# Fixture state via ARXA_STATE (R5). The tracked seed default.state.json must
 # never be written — with no live state the gate notes-and-skips instead.
 printf '{"phase":"design","targets":["macos"],"approvalTokens":{},"designHash":"","kitSha":""}\n' > "$T/live.state.json"
-o="$(APPBOX_STATE="$T/live.state.json" FREEZE_RENDER=skip bash "$GATE" --targets macos "$T" 2>&1)"; chk "$?" 0 "§6: freeze pass with live state still passes"
+o="$(ARXA_STATE="$T/live.state.json" FREEZE_RENDER=skip bash "$GATE" --targets macos "$T" 2>&1)"; chk "$?" 0 "§6: freeze pass with live state still passes"
 need "$o" "designHash: recorded" "§6: freeze reports the recorded designHash"
 h="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["designHash"])' "$T/live.state.json")"
 [ -n "$h" ] && pass=$((pass+1)) || { failc=$((failc+1)); echo "  FAIL: designHash not written to live state"; }
@@ -75,7 +75,7 @@ mktokens  # restore
 
 # ---- NEGATIVE (6.3): no --targets and no targets in state -> fails loudly ----
 printf '{"phase":"intake"}\n' > "$T/empty.state.json"   # no targets key
-o="$(APPBOX_STATE="$T/empty.state.json" FREEZE_RENDER=skip bash "$GATE" "$T" 2>&1)"; chk "$?" 1 "negative: no targets fails loudly"
+o="$(ARXA_STATE="$T/empty.state.json" FREEZE_RENDER=skip bash "$GATE" "$T" 2>&1)"; chk "$?" 1 "negative: no targets fails loudly"
 need "$o" "no --targets given" "names the missing explicit-targets requirement"
 
 # ---- NEGATIVE: unknown target fails loudly ----------------------------------
@@ -105,7 +105,7 @@ need "$o" "approval STALE" "stale approval fails loudly"
 need "$o" "targets changed since approval" "names the reason (targets changed)"
 
 # ---- htmx producer: shape detection + htmx shape contract (skip render) ----
-# Producer-shape seam (dogfood P14 #1): an appbox-designer design (app.routes.js
+# Producer-shape seam (dogfood P14 #1): an arxa-designer design (app.routes.js
 # + registry + ui/views) is detected as htmx and must NOT need tokens.json /
 # exclusions.json / surfaces/*.html (the stacked_kit contract).
 TH="$(mktemp -d)"

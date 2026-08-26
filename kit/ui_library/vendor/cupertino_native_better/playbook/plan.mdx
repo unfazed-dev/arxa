@@ -2,7 +2,7 @@
 
 <Callout id="cn-header" tone="info">
 
-**Version:** 1.5.2 · **Role:** the iOS native tier (real Liquid Glass via Swift/UIKit + SVGKit, `UiKitView`-backed; Cupertino/Material fallback) — the concrete iOS adapter under `appbox_kit`'s `Kit*` ports. **Status:** vendored fork of upstream `cupertino_native_better@1.5.2` with **four local patches** held in-repo until upstreaming. Path-dep of `appbox_kit` (not a normal direct host dep).
+**Version:** 1.5.2 · **Role:** the iOS native tier (real Liquid Glass via Swift/UIKit + SVGKit, `UiKitView`-backed; Cupertino/Material fallback) — the concrete iOS adapter under `arxa_kit`'s `Kit*` ports. **Status:** vendored fork of upstream `cupertino_native_better@1.5.2` with **four local patches** held in-repo until upstreaming. Path-dep of `arxa_kit` (not a normal direct host dep).
 
 </Callout>
 
@@ -14,7 +14,7 @@
 4. [Public API reference](#public-api-reference) — every exported symbol
 5. [Usage playbook](#usage-playbook)
 5b. [Wiring](#wiring) — path dep, deployment target, the two patches, route observer registration
-6. [Integration map](#integration-map) — consumed by `appbox_kit`
+6. [Integration map](#integration-map) — consumed by `arxa_kit`
 7. [Features appendix](#features-appendix) — native surfaces, controllers, glass unioning, dark-mode sync
 8. [Examples](#examples)
 9. [Gotchas](#gotchas) — patches, SVGKit weight, `CNTabBarNative` semantics, `LiquidGlassContainer`
@@ -26,17 +26,17 @@
 
 ### Overview & role
 
-`cupertino_native_better` (internally still `package:cupertino_native_better/...`) is the **iOS native tier** of the host app. On iOS 26+ and macOS 26+ it renders Apple's real Liquid Glass through Swift/UIKit (iOS) and AppKit (macOS) `UiKitView`/`AppKitView` platform views; on older Apple OSes it falls back to `Cupertino`; on Android/web it falls back to Material. It is the concrete implementation beneath `appbox_kit`'s `Kit*` ports — the host almost never imports `cupertino_native_better` directly; `appbox_kit` does, and re-exports nothing.
+`cupertino_native_better` (internally still `package:cupertino_native_better/...`) is the **iOS native tier** of the host app. On iOS 26+ and macOS 26+ it renders Apple's real Liquid Glass through Swift/UIKit (iOS) and AppKit (macOS) `UiKitView`/`AppKitView` platform views; on older Apple OSes it falls back to `Cupertino`; on Android/web it falls back to Material. It is the concrete implementation beneath `arxa_kit`'s `Kit*` ports — the host almost never imports `cupertino_native_better` directly; `arxa_kit` does, and re-exports nothing.
 
 The package ships three layers fused into one `path` dep: a federated Flutter plugin (Dart platform interface + method channel + Swift/SPM native), a Dart widget library of `CN*` widgets that own the build-time platform branch, and an iOS-26-only native tab-bar takeover (`CNTabBarNative`) that bypasses the widget tree and presents a real `UITabBarController`.
 
-<Diagram id="cn-role-diagram" caption="cupertino_native_better is the iOS native tier under appbox_kit's Kit* ports.">
+<Diagram id="cn-role-diagram" caption="cupertino_native_better is the iOS native tier under arxa_kit's Kit* ports.">
 
 ```html
 <div class="diagram-panel" data-rough>
   <div class="diagram-box" data-rough>
-    <div class="diagram-pill">Host app (e.g. appbox_kit_showcase)</div>
-    <div class="diagram-node">appbox_kit · ~18 Kit* ports</div>
+    <div class="diagram-pill">Host app (e.g. arxa_kit_showcase)</div>
+    <div class="diagram-node">arxa_kit · ~18 Kit* ports</div>
     <div class="diagram-muted">KitNativeButton, KitTabBar, KitNativeSheet, KitGlassCard, KitNativeSlider, KitNativeSwitch, KitNativePopupMenu, KitNativeSegmentedControl, KitNativeSearchBar, KitNativeSplitButton, KitNativeFab, KitNativeToolbar, KitNativeIconButton, KitNativeChromeGate, KitNativeOverlay, KitNativeRangeSlider, KitTabBar, KitNotificationService</div>
   </div>
   <div class="diagram-arrow">↓ delegates to</div>
@@ -442,7 +442,7 @@ Every public symbol exported by `lib/cupertino_native_better.dart`, grouped. The
 
 <Callout id="cn-wiring-callout" tone="warning">
 
-**Hosts almost never declare this package as a direct dep.** It is a `path:` dependency of `appbox_kit` (`path: ../cupertino_native_better`); `appbox_kit` is the only intended consumer. Importing `cupertino_native_better` directly from a host app is fine for one-off native surfaces, but the Kit* ports are the supported surface. **iOS deployment target: 15.0** (set in `ios/cupertino_native_better/Package.swift`). **macOS deployment target: 11.0**. Swift tools version **5.9**. Native code is consumed via Swift Package Manager (with `.podspec` fallbacks).
+**Hosts almost never declare this package as a direct dep.** It is a `path:` dependency of `arxa_kit` (`path: ../cupertino_native_better`); `arxa_kit` is the only intended consumer. Importing `cupertino_native_better` directly from a host app is fine for one-off native surfaces, but the Kit* ports are the supported surface. **iOS deployment target: 15.0** (set in `ios/cupertino_native_better/Package.swift`). **macOS deployment target: 11.0**. Swift tools version **5.9**. Native code is consumed via Swift Package Manager (with `.podspec` fallbacks).
 
 </Callout>
 
@@ -458,7 +458,7 @@ The four local patches held in this vendored fork:
 
 <AnnotatedCode
   id="cn-patch2"
-  filename="appbox_kit/pubspec.yaml (records patch #2)"
+  filename="arxa_kit/pubspec.yaml (records patch #2)"
   language="yaml"
   code={"  # Vendored at ../cupertino_native_better: upstream 1.5.2 + local fix to the\n  # iOS tab-bar platform view (refresh no longer clobbers native selection /\n  # setSelectedIndex race — the \"Search tab mixed state\" ticket). Path dep\n  # so the patch survives `pub cache repair`; drop back to hosted once\n  # upstreamed.\n  cupertino_native_better:\n    path: ../cupertino_native_better"}
   annotations={[{ lines: "5-6", label: "Path dep", note: "Path dep (not hosted) so the local fix survives `pub cache repair`. Patch #2 lives in the Swift tab-bar factory on the iOS side and pairs with CNTabBarRouteObserver/CNTabBar logic in components/tab_bar.dart." }]}
@@ -488,17 +488,17 @@ The four local patches held in this vendored fork:
 
 ### Integration map
 
-<Diagram id="cn-integration-diagram" caption="appbox_kit is the only intended consumer; ~18 Kit* ports delegate to CN*. cupertino_native_better is NOT re-exported by appbox_kit.">
+<Diagram id="cn-integration-diagram" caption="arxa_kit is the only intended consumer; ~18 Kit* ports delegate to CN*. cupertino_native_better is NOT re-exported by arxa_kit.">
 
 ```html
 <div class="diagram-panel" data-rough>
   <div class="diagram-box" data-rough>
     <div class="diagram-pill">Host app</div>
-    <div class="diagram-node">imports package:appbox_kit</div>
+    <div class="diagram-node">imports package:arxa_kit</div>
   </div>
   <div class="diagram-arrow">↓</div>
   <div class="diagram-box" data-rough>
-    <div class="diagram-pill">appbox_kit (sole consumer)</div>
+    <div class="diagram-pill">arxa_kit (sole consumer)</div>
     <div class="diagram-node">KitNativeButton → CNButton</div>
     <div class="diagram-node">KitTabBar → CNTabBar</div>
     <div class="diagram-node">KitNativeSheet → CNBottomSheet</div>
@@ -628,7 +628,7 @@ The four local patches held in this vendored fork:
 
 <Callout id="cn-gotcha-patches" tone="warning">
 
-**Four local patches — revert when upstreamed.** Patch #1 (`cupertino_icons: ^1.0.8` in this package's `pubspec.yaml`) fixes "?" tofu toast icons. Patch #2 (in the Swift tab-bar factory + `components/tab_bar.dart`) fixes the iOS tab-bar platform-view refresh race that corrupted the search tab's selection ("Search tab mixed state"). Patch #3 (`components/button.dart`, both fallback tiers) pins the fallback button's width only for icon-ONLY buttons — icon+label buttons were squashed to a 44pt-wide box. Patch #4 (`components/icon.dart` + a public `PlatformViewGuard.isTestEnvironment` getter) gates `CNIcon`'s native tier on `defaultTargetPlatform` instead of dart:io `Platform`, so `flutter test` on a macOS host no longer builds an `AppKitView` headless (`MissingPluginException`). All are recorded in code comments (`LOCAL PATCH #n`); the path dep on `appbox_kit` ensures they survive `pub cache repair`. When upstream ships them, drop back to hosted.
+**Four local patches — revert when upstreamed.** Patch #1 (`cupertino_icons: ^1.0.8` in this package's `pubspec.yaml`) fixes "?" tofu toast icons. Patch #2 (in the Swift tab-bar factory + `components/tab_bar.dart`) fixes the iOS tab-bar platform-view refresh race that corrupted the search tab's selection ("Search tab mixed state"). Patch #3 (`components/button.dart`, both fallback tiers) pins the fallback button's width only for icon-ONLY buttons — icon+label buttons were squashed to a 44pt-wide box. Patch #4 (`components/icon.dart` + a public `PlatformViewGuard.isTestEnvironment` getter) gates `CNIcon`'s native tier on `defaultTargetPlatform` instead of dart:io `Platform`, so `flutter test` on a macOS host no longer builds an `AppKitView` headless (`MissingPluginException`). All are recorded in code comments (`LOCAL PATCH #n`); the path dep on `arxa_kit` ensures they survive `pub cache repair`. When upstream ships them, drop back to hosted.
 
 </Callout>
 
@@ -671,7 +671,7 @@ No formal ADRs in this package. Four upstream-pending decisions are documented i
   columns={["Field", "Value"]}
   rows={[
     ["Version", "1.5.2 (upstream baseline this fork tracks)"],
-    ["Status", "Vendored fork with four local patches; not published. Path-dep of appbox_kit."],
+    ["Status", "Vendored fork with four local patches; not published. Path-dep of arxa_kit."],
     ["iOS deployment target", "15.0"],
     ["macOS deployment target", "11.0"],
     ["Swift tools version", "5.9"],
@@ -696,7 +696,7 @@ No formal ADRs in this package. Four upstream-pending decisions are documented i
     {
       id: "upstream-prs",
       title: "Have patches #1–#4 been filed upstream?",
-      subtitle: "The path dep on appbox_kit is debt; once upstream ships all four fixes we revert to hosted.",
+      subtitle: "The path dep on arxa_kit is debt; once upstream ships all four fixes we revert to hosted.",
       mode: "single",
       options: [
         { id: "filed-both", label: "All PRs filed", detail: "Track merge; switch to hosted on next upstream release." },

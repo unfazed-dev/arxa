@@ -1,42 +1,42 @@
 [
   {
-    "fact": "E1: all N provider keys (Kimi, z.ai, Anthropic, OpenAI, DeepSeek, Gemini, Grok, ...) live only in appboxd's vault; every consumer receives a scoped token minted at spawn, raw keys never enter another process.",
-    "source": "docs/plans/appbox-engine-llm-fabric.md",
+    "fact": "E1: all N provider keys (Kimi, z.ai, Anthropic, OpenAI, DeepSeek, Gemini, Grok, ...) live only in arxa's vault; every consumer receives a scoped token minted at spawn, raw keys never enter another process.",
+    "source": "docs/plans/arxa-engine-llm-fabric.md",
     "ts": "2026-07-30"
   },
   {
-    "fact": "E2: appboxd serves an OpenAI-compatible AND Anthropic-compatible loopback gateway on 127.0.0.1 — token check, provider adapters, per-module usage/spend attribution feeding the routing scorecard.",
-    "source": "docs/plans/appbox-engine-llm-fabric.md",
+    "fact": "E2: arxa serves an OpenAI-compatible AND Anthropic-compatible loopback gateway on 127.0.0.1 — token check, provider adapters, per-module usage/spend attribution feeding the routing scorecard.",
+    "source": "docs/plans/arxa-engine-llm-fabric.md",
     "ts": "2026-07-30"
   },
   {
     "fact": "E3 (corrected): headless stage run = `kimi -p \"<prompt>\" --output-format=stream-json` with a throwaway KIMI_CODE_HOME/config.toml (base_url + scoped token + default_permission_mode=auto); env injection via KIMI_MODEL_NAME/API_KEY/BASE_URL/PROVIDER_TYPE; resume = -r <session_id>. There is no --print, --afk, or --config.",
-    "source": "docs/plans/appbox-engine-llm-fabric.md (Corrections 2026-07-30)",
+    "source": "docs/plans/arxa-engine-llm-fabric.md (Corrections 2026-07-30)",
     "ts": "2026-07-30"
   },
   {
     "fact": "E4: one model fabric catalog at config/model-fabric.json (schema_version 1) with 3 neutral tiers — frontier owns the plan and the truth; cheaper tiers do mechanical, bounded, or evidence work; never own truth-judgment.",
-    "source": "docs/plans/appbox-engine-llm-fabric.md",
+    "source": "docs/plans/arxa-engine-llm-fabric.md",
     "ts": "2026-07-30"
   },
   {
     "fact": "Escalation: gate fail re-runs that stage one tier up, bounded once; never a silent cross-tier downgrade. Maker/checker split: review model != build's provider.",
-    "source": "docs/plans/appbox-engine-llm-fabric.md",
+    "source": "docs/plans/arxa-engine-llm-fabric.md",
     "ts": "2026-07-30"
   },
   {
     "fact": "Scorecard per run appended to pipeline state: {stage, tier, provider, model, tokens_in, tokens_out, cost, gate_pass, retries}; routing-regret metric = per-stage gate-pass-rate per tier (Fugu measured-affinity at zero training cost).",
-    "source": "docs/plans/appbox-engine-llm-fabric.md",
+    "source": "docs/plans/arxa-engine-llm-fabric.md",
     "ts": "2026-07-30"
   },
   {
-    "fact": "Built 2026-07-30: config/model-fabric.json, appboxd/lib/fabric.dart, appboxd/lib/gateway.dart (scoped tokens, routing, param_policy, Anthropic<->OpenAI translation, usage.jsonl), appboxd/lib/engine.dart (registry from gates/run_all.sh order, headless runner, manifests, scorecard.jsonl).",
-    "source": "docs/plans/appbox-engine-llm-fabric.md (Corrections 2026-07-30)",
+    "fact": "Built 2026-07-30: config/model-fabric.json, arxa/lib/fabric.dart, arxa/lib/gateway.dart (scoped tokens, routing, param_policy, Anthropic<->OpenAI translation, usage.jsonl), arxa/lib/engine.dart (registry from gates/run_all.sh order, headless runner, manifests, scorecard.jsonl).",
+    "source": "docs/plans/arxa-engine-llm-fabric.md (Corrections 2026-07-30)",
     "ts": "2026-07-30"
   },
   {
     "fact": "Reasoning-effort switching is session-level only — per-request dial changes invalidate the provider prompt cache.",
-    "source": "docs/plans/appbox-engine-llm-fabric.md",
+    "source": "docs/plans/arxa-engine-llm-fabric.md",
     "ts": "2026-07-30"
   }
 ]

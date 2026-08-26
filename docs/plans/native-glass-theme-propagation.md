@@ -63,8 +63,8 @@ dropping the line fails it).
 **Scope of the fix — one app root, deliberately.** `kit/showcase_app/lib/main.dart`
 is the only `MaterialApp` in the repo that embeds the native glass tier; there is no
 scaffolder template that emits an app root (searched `tool/` and all `*.tmpl`/
-`*.njk`/`*.mustache`), and `appbox-studio` depends on neither
-`cupertino_native_better` nor `appbox_kit_ui_library`. So generated apps do **not**
+`*.njk`/`*.mustache`), and `arxa-studio` depends on neither
+`cupertino_native_better` nor `arxa_kit_ui_library`. So generated apps do **not**
 inherit this automatically — whenever an app root is templated, it must carry
 `themeAnimationDuration: Duration.zero` or reproduce this bug.
 
@@ -197,7 +197,7 @@ and one does not. Nothing in this document explains it, and the fixes above are 
 claimed to.
 
 Narrowed as far as source allows. Both instances are unioned glass: the toolbar
-passes `glassEffectUnionId: union` (`appbox_kit_native_toolbar.dart:138`) and
+passes `glassEffectUnionId: union` (`arxa_kit_native_toolbar.dart:138`) and
 `CNSplitButton` passes `glassEffectUnionId: _union` (`split_button.dart:75`), so the
 union is not the difference either. The **only** structural difference left is that
 the split group's second half is a `CNButtonData.popup` and the toolbar's are plain

@@ -29,11 +29,11 @@
 library;
 
 import 'package:flutter/material.dart';
-import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
-import 'package:appbox_kit_showcase_app/ui/widgets/common/showcase_gallery_chrome/showcase_gallery_chrome_widget.dart';
-import 'package:appbox_kit_showcase_app/ui/widgets/common/showcase_tabs_shared/widgets.dart';
-import 'package:appbox_kit_showcase_app/ui/widgets/showcase_home_widgets/widgets.dart';
-import 'package:appbox_kit_showcase_app/ui/views/showcase_home_shell/showcase_home/showcase_home_viewmodel.dart';
+import 'package:arxa_kit_ui_library/arxa_kit_ui_library.dart';
+import 'package:arxa_kit_showcase_app/ui/widgets/common/showcase_gallery_chrome/showcase_gallery_chrome_widget.dart';
+import 'package:arxa_kit_showcase_app/ui/widgets/common/showcase_tabs_shared/widgets.dart';
+import 'package:arxa_kit_showcase_app/ui/widgets/showcase_home_widgets/widgets.dart';
+import 'package:arxa_kit_showcase_app/ui/views/showcase_home_shell/showcase_home/showcase_home_viewmodel.dart';
 
 class ShowcaseHomeViewMobile extends ViewModelWidget<ShowcaseHomeViewModel> {
   const ShowcaseHomeViewMobile({super.key});
@@ -48,12 +48,12 @@ class ShowcaseHomeViewMobile extends ViewModelWidget<ShowcaseHomeViewModel> {
     return ShowcaseGalleryChromeWidget(
       child: Builder(
         builder: (context) =>
-            // Edge treatment owned by the list (see AppBoxKitEdgeAwareListView):
+            // Edge treatment owned by the list (see ArxaKitEdgeAwareListView):
             // before this, only 2 of the 5 cards here carried
             // `.scrollEdgeEffect()`, so most of the home list slid under the tab
             // bar untreated. Top fade is auto-skipped by the wrapper under
             // extendBehindTopBar (cull boundary off-screen by construction).
-            AppBoxKitEdgeAwareListView(
+            ArxaKitEdgeAwareListView(
           bottomOcclusion: kShowcaseTabBarBlockHeight,
           // Materialization headroom (clip 13-53-b): a culled child re-enters
           // painting AT the boundary, and iOS 26 glass runs its materialize
@@ -80,24 +80,24 @@ class ShowcaseHomeViewMobile extends ViewModelWidget<ShowcaseHomeViewModel> {
           children: [
             const Center(
               child: Text(
-                'AppBox Showcase',
+                'Arxa Showcase',
                 style: TextStyle(
                     fontSize: abxFontXXXLarge, fontWeight: FontWeight.w900),
               ),
             ),
-            appBoxKitVerticalSpaceMedium,
+            arxaKitVerticalSpaceMedium,
             const ShowcaseSnackbarSmokeRowWidget(),
-            appBoxKitVerticalSpaceMedium,
+            arxaKitVerticalSpaceMedium,
             const ShowcaseGlassCtaButtonWidget(),
-            appBoxKitVerticalSpaceMedium,
-            // Native segmented control that drives AppBoxKitThemeService's theme
+            arxaKitVerticalSpaceMedium,
+            // Native segmented control that drives ArxaKitThemeService's theme
             // mode — proves the kit theme is wired end-to-end (see swatch below).
             const ShowcaseThemeModeSegmentedDemoWidget(),
-            appBoxKitVerticalSpaceLarge,
+            arxaKitVerticalSpaceLarge,
 
             // --- Showcase: feedback tier (progress / loading / split button) ---
             const ShowcaseProgressLoadingCardWidget(),
-            appBoxKitVerticalSpaceMedium,
+            arxaKitVerticalSpaceMedium,
             const ShowcaseSplitButtonCardWidget(),
           ],
         ),

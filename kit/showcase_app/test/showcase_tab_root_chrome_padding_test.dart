@@ -17,10 +17,10 @@
 // inside the hub's tab router.
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
-import 'package:appbox_kit_showcase_app/ui/views/showcase_home_shell/showcase_home/showcase_home_view.dart';
-import 'package:appbox_kit_showcase_app/ui/views/showcase_profile_shell/showcase_profile/showcase_profile_view.dart';
-import 'package:appbox_kit_showcase_app/ui/views/showcase_search_shell/showcase_search/showcase_search_view.dart';
+import 'package:arxa_kit_ui_library/arxa_kit_ui_library.dart';
+import 'package:arxa_kit_showcase_app/ui/views/showcase_home_shell/showcase_home/showcase_home_view.dart';
+import 'package:arxa_kit_showcase_app/ui/views/showcase_profile_shell/showcase_profile/showcase_profile_view.dart';
+import 'package:arxa_kit_showcase_app/ui/views/showcase_search_shell/showcase_search/showcase_search_view.dart';
 
 import 'helpers.dart';
 
@@ -31,7 +31,7 @@ void main() {
   });
 
   tearDownAll(teardownShowcase);
-  tearDown(AppBoxKitPlatform.reset);
+  tearDown(ArxaKitPlatform.reset);
 
   // `bootShell` pins the view at 3.0 dpr, and `FakeViewPadding` is in physical
   // pixels — 132 physical is the 44pt status bar the assertions below use.
@@ -56,11 +56,11 @@ void main() {
             'proves nothing');
     final Finder list = find.descendant(
       of: find.byType(view),
-      matching: find.byType(AppBoxKitEdgeAwareListView),
+      matching: find.byType(ArxaKitEdgeAwareListView),
     );
     expect(list, findsOneWidget);
     return tester
-        .widget<AppBoxKitEdgeAwareListView>(list)
+        .widget<ArxaKitEdgeAwareListView>(list)
         .padding!
         .resolve(TextDirection.ltr);
   }
@@ -74,8 +74,8 @@ void main() {
         'shell-demos.browse-the-application-shell — the $name list takes the '
         'bare inset on the boxed tier (its chrome Scaffold stripped it)',
         (tester) async {
-      AppBoxKitPlatform.override =
-          const AppBoxKitPlatformOverride(isAndroid: true);
+      ArxaKitPlatform.override =
+          const ArxaKitPlatformOverride(isAndroid: true);
       expect((await pumpTabAndReadPadding(tester, route, view)).top, abxSize16,
           reason: 'a boxed tier that leaks the status bar into the list is the '
               "padding read from above the tab root's own chrome");
@@ -84,10 +84,10 @@ void main() {
     testWidgets(
         'shell-demos.browse-the-application-shell — the $name list adds the '
         'status bar + floating-bar block on the glass tier', (tester) async {
-      AppBoxKitPlatform.override =
-          const AppBoxKitPlatformOverride(isIOS: true, iosMajor: 26);
+      ArxaKitPlatform.override =
+          const ArxaKitPlatformOverride(isIOS: true, iosMajor: 26);
       expect((await pumpTabAndReadPadding(tester, route, view)).top,
-          abxSize16 + statusBar + kAppBoxKitFloatingBarBlockHeight,
+          abxSize16 + statusBar + kArxaKitFloatingBarBlockHeight,
           reason: 'missing the raise means the padding was read above the '
               'floating chrome, tucking the first card under the bar');
     }, timeout: const Timeout(Duration(minutes: 2)));

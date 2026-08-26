@@ -130,7 +130,7 @@ class CNButtonConfig {
 
   /// LOCAL PATCH #4: force the Flutter fallback tier even where native glass
   /// is available (iOS/macOS 26+). Platform-view glass inside a scrollable is
-  /// out of contract (see appbox_kit_scroll_edge_effect.dart tier-split note);
+  /// out of contract (see arxa_kit_scroll_edge_effect.dart tier-split note);
   /// hosts set this when the button lives under a Scrollable so it renders the
   /// same CupertinoButton tier that pre-26 OSes get.
   final bool preferFlutterTier;

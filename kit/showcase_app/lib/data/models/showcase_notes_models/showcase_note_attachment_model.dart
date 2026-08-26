@@ -11,7 +11,7 @@
 /// History: git log --follow -- kit/showcase_app/lib/data/models/showcase_notes_models/showcase_note_attachment_model.dart
 library;
 
-import 'package:appbox_kit_showcase_app/enums/showcase_notes_enums/enums.dart';
+import 'package:arxa_kit_showcase_app/enums/showcase_notes_enums/enums.dart';
 
 class ShowcaseNoteAttachmentModel {
   /// The attachment's unique id.

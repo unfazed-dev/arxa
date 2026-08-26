@@ -20,7 +20,7 @@ Both reports are correct. Neither was a misreading.
 
 ### What it actually is
 
-`appBoxKitShowNativeSheet` (`kit/ui_library/lib/widgets/appbox_kit_native_sheet.dart:53`)
+`arxaKitShowNativeSheet` (`kit/ui_library/lib/widgets/arxa_kit_native_sheet.dart:53`)
 routes the iOS tier to `CNBottomSheet.show`. That call is, verbatim, a thin
 wrapper around **Flutter's Material `showModalBottomSheet`**:
 
@@ -42,12 +42,12 @@ adds no UI and no native presentation.
 On top of that, the kit passes `backgroundColor: Colors.transparent`,
 `elevation: 0`, `shape: RoundedRectangleBorder()` and renders `_GlassSheetBody`
 — a `Padding(12, 0, 12, 8 + viewPadding.bottom)` around an
-`AppBoxKitFrostedSurface(borderRadius: 28, blur: 30)`.
+`ArxaKitFrostedSurface(borderRadius: 28, blur: 30)`.
 
 So the thing on screen is a **Material modal-bottom-sheet route with invisible
 chrome, containing a floating inset frosted card**. That is precisely why it
 reads as "similar to a bottom sheet but not one": it is a floating panel, not a
-sheet. The name `appBoxKitShowNativeSheet` is misleading — nothing on this path
+sheet. The name `arxaKitShowNativeSheet` is misleading — nothing on this path
 is native.
 
 ### What is available instead
@@ -78,17 +78,17 @@ distinction decides this bug.
 
 - **Only one app call site**:
   `kit/showcase_app/lib/ui/widgets/showcase_profile_widgets/showcase_components_overlays_card_widget.dart:87`
-  (plus two in `AppBoxKitBottomSheetService` and one in
-  `AppBoxKitNotificationService`).
+  (plus two in `ArxaKitBottomSheetService` and one in
+  `ArxaKitNotificationService`).
 - **No production call site passes `backgroundColor`.** The documented
   "pre-wave-2 opt-out" branch is exercised only by
-  `appbox_kit_native_sheet_test.dart:194`.
+  `arxa_kit_native_sheet_test.dart:194`.
 - The modal-depth bracket (`markAnyModalActive`/`markAnyModalInactive`) is
   manual and wraps whichever route is used, so it survives the swap.
 - `CNSheetGeometryProbe` is injected by `showCupertino` too.
 
 **Open risk to regression-check deliberately:** `showCupertinoSheet` pushes a
-*page* route, not a `ModalBottomSheetRoute`. `AppBoxKitNativeChromeGate` now
+*page* route, not a `ModalBottomSheetRoute`. `ArxaKitNativeChromeGate` now
 reads `hasActiveTransitionAbove` plus the route's own animations (see
 `liquid-glass-reappear-on-back.md`). That is the exact surface of the five-fix
 saga, so it gets a test rather than a device discovery.
@@ -133,7 +133,7 @@ moved `native_tab_bar` out of the working group — it contains `setBrightness`
 but never calls it from a dependency change, so a grep-based table had it
 wrong in the *other* direction from `liquid_glass_container`. Nothing
 references `CNTabBarNative`, so it has no consequence; the kit's own
-`AppBoxKitNativeTabBar` uses `CNTabBar` (`tab_bar.dart`), which syncs
+`ArxaKitNativeTabBar` uses `CNTabBar` (`tab_bar.dart`), which syncs
 correctly.
 
 The Swift side of both stuck components **already implements the
@@ -226,8 +226,8 @@ Both fixes are in. Verification: `kit/ui_library` **293/293**,
 ### Bug A, as built
 
 The user chose the Cupertino route over a bespoke
-`UISheetPresentationController` bridge. `appBoxKitShowNativeSheet` →
-`appBoxKitShowSheet` (the old name overclaimed; nothing on either tier is
+`UISheetPresentationController` bridge. `arxaKitShowNativeSheet` →
+`arxaKitShowSheet` (the old name overclaimed; nothing on either tier is
 native). `CNBottomSheet.showCupertino` gained `showDragHandle`/`topGap`
 passthrough so the framework draws its own grabber rather than the kit painting
 a second one.
@@ -279,7 +279,7 @@ by a test:
 `CupertinoSheetRoute` has **no detents**. It is a single height governed by
 `topGap`, whose default (`_kTopGapRatio`) leaves ~8% of the screen above it.
 Measured on a 844 pt surface with the three-line shape
-`AppBoxKitBottomSheetService` builds (title, description, button row):
+`ArxaKitBottomSheetService` builds (title, description, button row):
 
 ```
 screen=844pt   sheet=776pt   → 92% of screen
@@ -304,14 +304,14 @@ Also changed, and checked: `isDismissible: false` would now mean no dismiss
 affordance at all, since the route has no dismissible barrier and
 `isDismissible` maps to `enableDrag`. **No sheet call site passes it** — the
 only `barrierDismissible: false` in the kit is on the dialog path
-(`appbox_kit_notification_manager.dart:55` → `alert`, not `notice`).
+(`arxa_kit_notification_manager.dart:55` → `alert`, not `notice`).
 
 ---
 
 ## Drag handles on by default (2026-08-11)
 
 Requested: sheets should show a grab handle unless a caller says otherwise.
-`appBoxKitShowSheet` now takes `showDragHandle`, defaulting to **true**, applied
+`arxaKitShowSheet` now takes `showDragHandle`, defaulting to **true**, applied
 to both tiers.
 
 **This was a behaviour fix on Android, not just a new knob.** The kit passed

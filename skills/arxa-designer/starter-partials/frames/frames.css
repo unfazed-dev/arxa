@@ -1,0 +1,863 @@
+/* ============================================================================
+   frames.css — shared styles for starter-partials/frames (arxa-designer)
+
+   Pure HTML+CSS ports of arxa-designer's React device frames (ios-frame.jsx,
+   android-frame.jsx, macos-window.jsx, browser-window.jsx). Zero JavaScript.
+   Measurements are ported from the React sources; colors/textures are CSS
+   custom properties so artifacts can re-theme without editing rules.
+
+   Usage
+   -----
+   Copy the whole frames/ directory into your artifact (artifacts are
+   self-contained), e.g.
+
+     ui/widgets/frames/*.html  → import the partials from your views
+     assets/css/frames.css     → <link rel="stylesheet" href="/assets/css/frames.css">
+
+   Each frame partial exposes a device/window macro that takes the context
+   bag `c` (runtime convention) and reads `c.frame` for its options; screen
+   content goes in the `<div class="frame-screen">` slot — see each partial's
+   header comment for its call example.
+
+   Sizing: frames render at their natural device pixel size (402×874 iOS,
+   412×892 Android, 900×600 windows). For thumbnails, wrap the frame and set
+   `zoom` on the wrapper (`.thumb { zoom: .5 }`); where zoom is unsupported
+   the wrapper simply overflows — give it `overflow: auto`.
+
+   Theming: override the custom properties per frame root class or inline
+   (`style="--ios-bg: #000"`). The `--dark` modifier classes are added by the
+   macros themselves when `c.frame.dark` is set.
+   ============================================================================ */
+
+.ios-device, .ios-device *,
+.android-device, .android-device *,
+.mac-window, .mac-window *,
+.browser-window, .browser-window * { box-sizing: border-box; }
+
+/* The screen-content slot every frame partial exposes. */
+.frame-screen { flex: 1 1 auto; min-height: 0; overflow: auto; }
+
+/* ============================================================================
+   iOS 26 (Liquid Glass) — port of ios-frame.jsx · natural size 402×874, r48
+   ============================================================================ */
+
+.ios-device {
+  --ios-w: 402px;
+  --ios-h: 874px;
+  --ios-bg: #f2f2f7;
+  --ios-fg: #000;
+  --ios-muted: #404040;
+  --ios-secondary: rgba(60, 60, 67, .6);
+  --ios-tertiary: rgba(60, 60, 67, .3);
+  --ios-sep: rgba(60, 60, 67, .12);
+  --ios-card: #fff;
+  --ios-header: rgba(60, 60, 67, .6);
+  --ios-home: rgba(0, 0, 0, .25);
+  --ios-pill-bg: rgba(255, 255, 255, .5);
+  --ios-pill-shine: inset 1.5px 1.5px 1px rgba(255, 255, 255, .7),
+                    inset -1px -1px 1px rgba(255, 255, 255, .4);
+  --ios-pill-border: rgba(0, 0, 0, .06);
+  --ios-pill-shadow: 0 1px 3px rgba(0, 0, 0, .07), 0 3px 10px rgba(0, 0, 0, .06);
+  --ios-keyboard-bg: rgba(255, 255, 255, .25);
+  --ios-keyboard-shadow: 0 -1px 6px rgba(0, 0, 0, .018), 0 -3px 20px rgba(0, 0, 0, .012);
+  --ios-key-bg: rgba(255, 255, 255, .85);
+  --ios-key-fg: #595959;
+  --ios-key-sugg: #333;
+  --ios-key-return: #08f;
+
+  position: relative;
+  width: var(--ios-w);
+  height: var(--ios-h);
+  border-radius: 48px;
+  overflow: hidden;
+  background: var(--ios-bg);
+  color: var(--ios-fg);
+  box-shadow: 0 40px 80px rgba(0, 0, 0, .18), 0 0 0 1px rgba(0, 0, 0, .12);
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro", system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+.ios-device--dark {
+  --ios-bg: #000;
+  --ios-fg: #fff;
+  --ios-muted: rgba(255, 255, 255, .6);
+  --ios-secondary: rgba(235, 235, 245, .6);
+  --ios-tertiary: rgba(235, 235, 245, .3);
+  --ios-sep: rgba(84, 84, 88, .65);
+  --ios-card: #1c1c1e;
+  --ios-header: rgba(235, 235, 245, .6);
+  --ios-home: rgba(255, 255, 255, .7);
+  --ios-pill-bg: rgba(120, 120, 128, .28);
+  --ios-pill-shine: inset 1.5px 1.5px 1px rgba(255, 255, 255, .15),
+                    inset -1px -1px 1px rgba(255, 255, 255, .08);
+  --ios-pill-border: rgba(255, 255, 255, .15);
+  --ios-pill-shadow: 0 2px 6px rgba(0, 0, 0, .35), 0 6px 16px rgba(0, 0, 0, .2);
+  --ios-keyboard-bg: rgba(120, 120, 128, .14);
+  --ios-keyboard-shadow: 0 -2px 20px rgba(0, 0, 0, .09);
+  --ios-key-bg: rgba(255, 255, 255, .22);
+  --ios-key-fg: rgba(255, 255, 255, .7);
+  --ios-key-sugg: rgba(255, 255, 255, .6);
+}
+
+/* Dynamic island */
+.ios-device__island {
+  position: absolute;
+  top: 11px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 126px;
+  height: 37px;
+  border-radius: 24px;
+  background: #000;
+  z-index: 50;
+}
+
+/* Status bar (absolute, sits over the nav bar's 62px top padding) */
+.ios-status {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 20;
+  display: flex;
+  gap: 154px;
+  align-items: center;
+  justify-content: center;
+  padding: 21px 24px 19px;
+}
+.ios-status__cell {
+  flex: 1;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.ios-status__time {
+  padding-top: 1.5px;
+  font-weight: 590;
+  font-size: 17px;
+  line-height: 22px;
+}
+.ios-status__icons {
+  gap: 7px;
+  padding-top: 1px;
+  padding-right: 1px;
+}
+.ios-status svg { display: block; }
+
+/* Layout column under the chrome */
+.ios-device__body {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Navigation bar — glass pills + large title */
+.ios-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-top: 62px;
+  padding-bottom: 10px;
+  position: relative;
+  z-index: 5;
+}
+.ios-nav__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px;
+}
+.ios-nav__title {
+  padding: 0 16px;
+  font-size: 34px;
+  font-weight: 700;
+  line-height: 41px;
+  letter-spacing: .4px;
+}
+
+/* Liquid glass pill — blur + tint + shine (also used standalone via the
+   pill macro; wrap content with the call block) */
+.ios-pill {
+  height: 44px;
+  min-width: 44px;
+  border-radius: 9999px;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: var(--ios-pill-shadow);
+}
+.ios-pill::before {           /* blur + tint */
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+  backdrop-filter: blur(12px) saturate(180%);
+  -webkit-backdrop-filter: blur(12px) saturate(180%);
+  background: var(--ios-pill-bg);
+}
+.ios-pill::after {            /* shine */
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+  box-shadow: var(--ios-pill-shine);
+  border: .5px solid var(--ios-pill-border);
+}
+.ios-pill > * {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  padding: 0 4px;
+}
+.ios-pill__icon {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--ios-muted);
+}
+
+/* Home indicator — always on top */
+.ios-device__home {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 60;
+  height: 34px;
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  padding-bottom: 8px;
+  pointer-events: none;
+}
+.ios-device__home-bar {
+  width: 139px;
+  height: 5px;
+  border-radius: 100px;
+  background: var(--ios-home);
+}
+
+/* Grouped list (inset card r26) + row (52px) */
+.ios-list__header {
+  font-size: 13px;
+  color: var(--ios-header);
+  text-transform: uppercase;
+  padding: 8px 36px 6px;
+  letter-spacing: -.08px;
+}
+.ios-list__card {
+  background: var(--ios-card);
+  border-radius: 26px;
+  margin: 0 16px;
+  overflow: hidden;
+}
+.ios-row {
+  display: flex;
+  align-items: center;
+  min-height: 52px;
+  padding: 0 16px;
+  position: relative;
+  font-size: 17px;
+  letter-spacing: -.43px;
+}
+.ios-row__icon {
+  width: 30px;
+  height: 30px;
+  border-radius: 7px;
+  margin-right: 12px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff; /* the white Lucide glyph inside the colored badge */
+}
+.ios-row__title { flex: 1; }
+.ios-row__detail { color: var(--ios-secondary); margin-right: 6px; }
+.ios-row__chevron { flex-shrink: 0; color: var(--ios-tertiary); }
+.ios-row:not(:last-child)::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  left: 16px;
+  height: .5px;
+  background: var(--ios-sep);
+}
+.ios-row--icon:not(:last-child)::after { left: 58px; }
+
+/* Keyboard — iOS 26 liquid glass */
+.ios-kb {
+  position: relative;
+  z-index: 15;
+  border-radius: 27px;
+  overflow: hidden;
+  padding: 11px 0 2px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  box-shadow: var(--ios-keyboard-shadow);
+}
+.ios-kb::before {             /* glass tint */
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 27px;
+  backdrop-filter: blur(12px) saturate(180%);
+  -webkit-backdrop-filter: blur(12px) saturate(180%);
+  background: var(--ios-keyboard-bg);
+}
+.ios-kb::after {              /* shine */
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 27px;
+  box-shadow: var(--ios-pill-shine);
+  border: .5px solid var(--ios-pill-border);
+  pointer-events: none;
+}
+.ios-kb__suggest {
+  display: flex;
+  gap: 20px;
+  align-items: center;
+  padding: 8px 22px 13px;
+  width: 100%;
+  position: relative;
+}
+.ios-kb__suggest-word {
+  flex: 1;
+  text-align: center;
+  font-size: 17px;
+  color: var(--ios-key-sugg);
+  letter-spacing: -.43px;
+  line-height: 22px;
+}
+.ios-kb__suggest-sep { width: 1px; height: 25px; background: #ccc; opacity: .3; }
+.ios-kb__rows {
+  display: flex;
+  flex-direction: column;
+  gap: 13px;
+  padding: 0 6.5px;
+  width: 100%;
+  position: relative;
+}
+.ios-kb__row { display: flex; gap: 6.5px; justify-content: center; }
+.ios-kb__row--inset { padding: 0 20px; }
+.ios-kb__row--wide { gap: 14.25px; align-items: center; }
+.ios-kb__key {
+  height: 42px;
+  border-radius: 8.5px;
+  flex: 1;
+  min-width: 0;
+  background: var(--ios-key-bg);
+  box-shadow: 0 1px 0 rgba(0, 0, 0, .075);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: -apple-system, "SF Compact", system-ui, sans-serif;
+  font-size: 25px;
+  font-weight: 458;
+  color: var(--ios-key-fg);
+}
+.ios-kb__key--special { flex: 0 0 45px; }
+.ios-kb__key--bottom { flex: 0 0 92.25px; font-size: 18px; }
+.ios-kb__key--return { background: var(--ios-key-return); color: #fff; }
+.ios-kb__row3 { display: flex; gap: 6.5px; flex: 1; }
+.ios-kb__bottom-spacer { height: 56px; width: 100%; position: relative; }
+
+/* ============================================================================
+   Android (Material 3) — port of android-frame.jsx · natural 412×892, r18,
+   8px bezel border. `dark` re-skins frame + status + gesture bar only
+   (the app bar keeps the light surface, exactly like the React source).
+   ============================================================================ */
+
+.android-device {
+  --md-w: 412px;
+  --md-h: 892px;
+  --md-surface: #f4fbf8;
+  --md-surface-variant: #dae5e1;
+  --md-inverse-on-surface: #ecf2ef;
+  --md-secondary-container: #cde8e1;
+  --md-primary-fixed-dim: #83d5c6;
+  --md-on-surface: #171d1b;
+  --md-on-surface-var: #49454f;
+  --md-on-primary-container: #00201c;
+  --md-primary: #006a60;
+  --md-frame-border: rgba(116, 119, 117, .5);
+  --md-status-fg: var(--md-on-surface);
+  --md-device-bg: var(--md-surface);
+  --md-gesture: var(--md-on-surface);
+
+  width: var(--md-w);
+  height: var(--md-h);
+  border-radius: 18px;
+  overflow: hidden;
+  background: var(--md-device-bg);
+  border: 8px solid var(--md-frame-border);
+  box-shadow: 0 30px 80px rgba(0, 0, 0, .25);
+  display: flex;
+  flex-direction: column;
+  font-family: Roboto, system-ui, sans-serif;
+  color: var(--md-on-surface);
+}
+.android-device--dark {
+  --md-status-fg: #fff;
+  --md-device-bg: #1d1b20;
+  --md-gesture: #fff;
+}
+
+/* Status bar — time left, punch-hole camera center, icons right */
+.android-status {
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px;
+  position: relative;
+  flex-shrink: 0;
+}
+.android-status__time-box { width: 128px; display: flex; align-items: center; gap: 8px; }
+.android-status__time {
+  font-size: 14px;
+  font-weight: 400;
+  letter-spacing: .25px;
+  line-height: 20px;
+  color: var(--md-status-fg);
+}
+.android-status__camera {
+  position: absolute;
+  left: 50%;
+  top: 8px;
+  transform: translateX(-50%);
+  width: 24px;
+  height: 24px;
+  border-radius: 100px;
+  background: #2e2e2e;
+}
+.android-status__icons { display: flex; align-items: center; color: var(--md-status-fg); }
+.android-status__icons-pair { display: flex; padding-right: 2px; }
+.android-status__icons-pair svg { margin-right: -2px; }
+.android-status svg { display: block; }
+
+/* Top app bar (M3 small / large) */
+.android-appbar {
+  background: var(--md-surface);
+  padding: 4px 4px 0;
+  flex-shrink: 0;
+}
+.android-appbar__row { height: 56px; display: flex; align-items: center; gap: 4px; }
+.android-appbar__icon {
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--md-on-surface-var);
+}
+.android-appbar__title { flex: 1; font-size: 22px; font-weight: 400; }
+.android-appbar__spacer { flex: 1; }
+.android-appbar__large-title { padding: 16px 16px 20px; font-size: 28px; font-weight: 400; }
+
+/* List item (M3) */
+.android-list-item {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 12px 16px;
+  min-height: 56px;
+}
+.android-list-item__leading {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--md-primary);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  font-weight: 500;
+  flex-shrink: 0;
+}
+.android-list-item__text { flex: 1; min-width: 0; }
+.android-list-item__headline { font-size: 16px; line-height: 24px; }
+.android-list-item__supporting { font-size: 14px; line-height: 20px; color: var(--md-on-surface-var); }
+
+/* Gesture nav bar (pill) */
+.android-nav {
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.android-nav__pill {
+  width: 108px;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--md-gesture);
+  opacity: .4;
+}
+
+/* Keyboard — Gboard (M3) */
+.android-kb {
+  background: var(--md-inverse-on-surface);
+  padding: 0 8px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex-shrink: 0;
+}
+.android-kb__navbar-spacer { height: 44px; }
+.android-kb__rows { display: flex; flex-direction: column; gap: 12px; }
+.android-kb__row { display: flex; gap: 6px; justify-content: center; }
+.android-kb__row--inset { padding: 0 20px; }
+.android-kb__key {
+  height: 46px;
+  border-radius: 6px;
+  flex: 1;
+  background: var(--md-surface);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 21px;
+  color: var(--md-on-primary-container);
+}
+.android-kb__key--variant { background: var(--md-surface-variant); }
+.android-kb__key--symbol {
+  background: var(--md-secondary-container);
+  border-radius: 100px;
+  flex: 0 0 auto;
+  min-width: 58px;
+  font-size: 14px;
+}
+.android-kb__key--space { flex: 3; min-width: 154px; }
+.android-kb__key--return {
+  background: var(--md-primary-fixed-dim);
+  border-radius: 100px;
+  flex: 0 0 auto;
+  min-width: 58px;
+}
+.android-kb__row3 { display: flex; gap: 6px; flex: 7; min-width: 274px; }
+
+/* ============================================================================
+   macOS Tahoe (Liquid Glass) window — port of macos-window.jsx · 900×600, r26
+   ============================================================================ */
+
+.mac-window {
+  --mac-w: 900px;
+  --mac-h: 600px;
+  --mac-bg: #fff;
+  --mac-font: -apple-system, BlinkMacSystemFont, "SF Pro", "Helvetica Neue", sans-serif;
+  --mac-text: rgba(0, 0, 0, .85);
+  --mac-text-dim: rgba(0, 0, 0, .5);
+  --mac-light-close: #ff736a;
+  --mac-light-min: #febc2e;
+  --mac-light-max: #19c332;
+  --mac-sidebar-bg: rgba(210, 225, 245, .45);
+  --mac-sidebar-border: rgba(255, 255, 255, .5);
+  --mac-selected: rgba(0, 0, 0, .11);
+  --mac-accent: #007aff;
+  --mac-glass-bg: rgba(255, 255, 255, .35);
+  --mac-glass-border: rgba(255, 255, 255, .6);
+  --mac-glass-shadow: 0 8px 40px rgba(0, 0, 0, .08), inset 0 1px 0 rgba(255, 255, 255, .4);
+
+  width: var(--mac-w);
+  height: var(--mac-h);
+  border-radius: 26px;
+  overflow: hidden;
+  background: var(--mac-bg);
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, .23), 0 16px 48px rgba(0, 0, 0, .35);
+  display: flex;
+  position: relative;
+  font-family: var(--mac-font);
+  color: var(--mac-text);
+}
+
+/* Liquid glass primitive */
+.mac-glass { position: relative; border-radius: var(--mac-glass-radius, 296px); }
+.mac-glass::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: var(--mac-glass-radius, 296px);
+  background: var(--mac-glass-bg);
+  backdrop-filter: blur(40px) saturate(180%);
+  -webkit-backdrop-filter: blur(40px) saturate(180%);
+  border: .5px solid var(--mac-glass-border);
+  box-shadow: var(--mac-glass-shadow);
+}
+.mac-glass > * { position: relative; z-index: 1; }
+.mac-glass--dark {
+  --mac-glass-bg: rgba(255, 255, 255, .08);
+  --mac-glass-border: rgba(255, 255, 255, .12);
+  --mac-glass-shadow: 0 8px 40px rgba(0, 0, 0, .2);
+}
+
+/* Traffic lights (14px, Tahoe colors) */
+.mac-traffic { display: flex; gap: 9px; align-items: center; padding: 1px; }
+.mac-traffic__dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: .5px solid rgba(0, 0, 0, .1);
+}
+.mac-traffic__dot--close { background: var(--mac-light-close); }
+.mac-traffic__dot--min { background: var(--mac-light-min); }
+.mac-traffic__dot--max { background: var(--mac-light-max); }
+
+/* Sidebar — frosted glass panel floating inside the window */
+.mac-sidebar {
+  width: 220px;
+  height: 100%;
+  padding: 8px;
+  flex-shrink: 0;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+.mac-sidebar::before {
+  content: "";
+  position: absolute;
+  inset: 8px;
+  border-radius: 18px;
+  background: var(--mac-sidebar-bg);
+  backdrop-filter: blur(50px) saturate(200%);
+  -webkit-backdrop-filter: blur(50px) saturate(200%);
+  border: .5px solid var(--mac-sidebar-border);
+  box-shadow: 0 8px 40px rgba(0, 0, 0, .1), inset 0 1px 0 rgba(255, 255, 255, .35);
+}
+.mac-sidebar__content {
+  position: relative;
+  z-index: 1;
+  padding: 10px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.mac-sidebar__controls {
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 10px;
+  margin-bottom: 4px;
+}
+.mac-sidebar__header {
+  padding: 14px 18px 5px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--mac-text-dim);
+}
+.mac-sidebar-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 24px;
+  padding: 4px 10px 4px 6px;
+  margin: 0 10px;
+  border-radius: 8px;
+  position: relative;
+  font-size: 11px;
+  font-weight: 500;
+}
+.mac-sidebar-item.is-selected::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 8px;
+  background: var(--mac-selected);
+  mix-blend-mode: multiply;
+}
+.mac-sidebar-item__icon {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--mac-text-dim);
+}
+.mac-sidebar-item.is-selected .mac-sidebar-item__icon { color: var(--mac-accent); }
+.mac-sidebar-item__label { position: relative; }
+
+/* Toolbar — title + single glass pill icon + search */
+.mac-toolbar { display: flex; gap: 8px; align-items: center; padding: 8px; flex-shrink: 0; }
+.mac-toolbar__title {
+  font-size: 15px;
+  font-weight: 700;
+  white-space: nowrap;
+  padding-left: 8px;
+}
+.mac-toolbar__spacer { flex: 1; }
+.mac-toolbar__action {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #4c4c4c;
+}
+.mac-toolbar__search {
+  width: 140px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 12px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #727272;
+}
+.mac-window__main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+.mac-window .frame-screen { padding: 4px 8px; }
+
+/* ============================================================================
+   Chrome browser window (dark, macOS) — port of browser-window.jsx · 900×600,
+   r10. Content area is a white page under the tab strip + URL bar.
+   ============================================================================ */
+
+.browser-window {
+  --browser-w: 900px;
+  --browser-h: 600px;
+  --browser-bar-bg: #202124;
+  --browser-tab-bg: #35363a;
+  --browser-text: #e8eaed;
+  --browser-dim: #9aa0a6;
+  --browser-url-bg: #282a2d;
+  --browser-light-close: #ff5f57;
+  --browser-light-min: #febc2e;
+  --browser-light-max: #28c840;
+  --browser-page-bg: #fff;
+
+  width: var(--browser-w);
+  height: var(--browser-h);
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 24px 80px rgba(0, 0, 0, .35), 0 0 0 1px rgba(0, 0, 0, .1);
+  display: flex;
+  flex-direction: column;
+  background: var(--browser-tab-bg);
+  font-family: system-ui, sans-serif;
+}
+
+.browser-traffic { display: flex; gap: 8px; padding: 0 14px; }
+.browser-traffic__dot { width: 12px; height: 12px; border-radius: 50%; }
+.browser-traffic__dot--close { background: var(--browser-light-close); }
+.browser-traffic__dot--min { background: var(--browser-light-min); }
+.browser-traffic__dot--max { background: var(--browser-light-max); }
+
+/* Tab bar */
+.browser-tabbar {
+  display: flex;
+  align-items: center;
+  height: 44px;
+  background: var(--browser-bar-bg);
+  padding-right: 8px;
+  flex-shrink: 0;
+}
+.browser-tabbar__tabs {
+  display: flex;
+  align-items: flex-end;
+  height: 100%;
+  padding-left: 4px;
+  flex: 1;
+  min-width: 0;
+}
+.browser-tab {
+  position: relative;
+  height: 34px;
+  align-self: flex-end;
+  padding: 0 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-radius: 8px 8px 0 0;
+  min-width: 120px;
+  max-width: 220px;
+  flex: 0 1 auto;
+  font-size: 12px;
+  color: var(--browser-dim);
+}
+.browser-tab.is-active { background: var(--browser-tab-bg); color: var(--browser-text); }
+.browser-tab__scoop {
+  position: absolute;
+  bottom: 0;
+  display: none;
+  color: var(--browser-tab-bg);
+}
+.browser-tab__scoop--left { left: -8px; }
+.browser-tab__scoop--right { right: -8px; transform: scaleX(-1); }
+.browser-tab.is-active .browser-tab__scoop { display: block; }
+.browser-tab__icon {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--browser-dim);
+}
+.browser-tab__title {
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Toolbar — nav dot + URL pill */
+.browser-toolbar {
+  height: 40px;
+  background: var(--browser-tab-bg);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0 8px;
+  flex-shrink: 0;
+}
+.browser-toolbar__icon {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--browser-dim);
+}
+.browser-toolbar__url {
+  flex: 1;
+  height: 30px;
+  border-radius: 15px;
+  background: var(--browser-url-bg);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 14px;
+  margin: 0 6px;
+  min-width: 0;
+}
+.browser-toolbar__lock {
+  width: 12px;
+  height: 12px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--browser-dim);
+}
+.browser-toolbar__url-text {
+  flex: 1;
+  min-width: 0;
+  color: var(--browser-text);
+  font-size: 13px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.browser-window .frame-screen { background: var(--browser-page-bg); }

@@ -21,7 +21,7 @@ The sizing-mode attributes are written to source correctly and then render nothi
 Evidence chain:
 
 1. The contract rules exist in exactly one file —
-   `skills/appbox-designer/starter-partials/widgets/widgets.css`:
+   `skills/arxa-designer/starter-partials/widgets/widgets.css`:
    ```
    79 [data-resize-x="hug"]   { width: fit-content; }
    80 [data-resize-x="fill"]  { flex-grow: 1; min-width: 0; }
@@ -42,13 +42,13 @@ Evidence chain:
    four links — `app.css`, `theme.css`, `appshell.css`, `media.css`. **It never
    links `widgets.css`.**
 
-3. The studio's own `designs/appbox-studio/assets/css/widgets.css` is a
+3. The studio's own `designs/arxa-studio/assets/css/widgets.css` is a
    **name collision, not the same file** — 375 lines of studio chrome
    (`.chip`, `.prov-chip`). It contains zero occurrences of `data-pad`,
    `data-gap`, `data-resize` or `data-layout`. Verified across all five
    stylesheets: every count is 0.
 
-4. The project overlay in `appboxd/lib/design_server/worker.dart` (L187–210)
+4. The project overlay in `arxa/lib/design_server/worker.dart` (L187–210)
    serves only `design/surfaces/**.html`, `design/l10n/app_*.arb` and
    `**.json`. **It serves no CSS at all**, so a bound project's own
    `assets/css/widgets.css` never reaches the tile; `/assets/css/*` always
@@ -80,7 +80,7 @@ There is a fourth option, and it is probably the cheapest correct one:
 
 - **Serve the contract through the existing `/assets/vendor/` channel.**
   `design_server.dart:478` maps `/assets/vendor/<rel>` straight onto
-  `skills/appbox-designer/runtime/vendor/`, and that channel already carries
+  `skills/arxa-designer/runtime/vendor/`, and that channel already carries
   CSS as well as JS (`design_tools.dart:1191` matches `\.(?:js|css)`;
   `gate_design_widgets.dart:680` allowlists the prefix). So the layout
   contract could be ONE physical file served to the stub, with no second copy
@@ -153,7 +153,7 @@ defects — two of which made the increment non-functional:
    mid-morph aimed the click at nothing.
 
 Verified in headless Chrome against the real `portalo` project by
-`appboxd/tool/shot_increment3.dart` (harness retired 2026-08-05 in `7babc79`;
+`arxa/tool/shot_increment3.dart` (harness retired 2026-08-05 in `7babc79`;
 the armed-click → selection → resize-handles chain lives on in
 `probe_widget_tools.dart` §F), which drives the actual UI (clicks the
 arm chip, then clicks a real `[data-el]` widget) rather than poking routes:

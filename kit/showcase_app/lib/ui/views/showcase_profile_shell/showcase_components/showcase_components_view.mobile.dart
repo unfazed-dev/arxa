@@ -45,11 +45,11 @@ library;
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
-import 'package:appbox_kit_showcase_app/ui/widgets/common/showcase_tabs_shared/widgets.dart';
-import 'package:appbox_kit_showcase_app/ui/widgets/showcase_profile_widgets/widgets.dart';
+import 'package:arxa_kit_ui_library/arxa_kit_ui_library.dart';
+import 'package:arxa_kit_showcase_app/ui/widgets/common/showcase_tabs_shared/widgets.dart';
+import 'package:arxa_kit_showcase_app/ui/widgets/showcase_profile_widgets/widgets.dart';
 
-import 'package:appbox_kit_showcase_app/ui/views/showcase_profile_shell/showcase_components/showcase_components_viewmodel.dart';
+import 'package:arxa_kit_showcase_app/ui/views/showcase_profile_shell/showcase_components/showcase_components_viewmodel.dart';
 
 class ShowcaseComponentsViewMobile
     extends ViewModelWidget<ShowcaseComponentsViewModel> {
@@ -57,13 +57,13 @@ class ShowcaseComponentsViewMobile
 
   @override
   Widget build(BuildContext context, ShowcaseComponentsViewModel viewModel) {
-    return AppBoxKitChromeScaffold(
+    return ArxaKitChromeScaffold(
       // THE reuse unit (law): a pushed route sets `leading` rather than
-      // hand-assembling Scaffold + AppBoxKitNativeAppBar. The native back
+      // hand-assembling Scaffold + ArxaKitNativeAppBar. The native back
       // button is lawful in the bar's leading slot under rule 5's
       // interactive-bar-controls carve-out.
-      leading: AppBoxKitNativeIconButton(
-        glyph: AppBoxKitGlyphs.back,
+      leading: ArxaKitNativeIconButton(
+        glyph: ArxaKitGlyphs.back,
         onPressed: () => context.popRoute(),
       ),
       title: 'Components',
@@ -80,7 +80,7 @@ class ShowcaseComponentsViewMobile
       resizeToAvoidBottomInset: false,
       bottomSheet:
           ShowcaseComponentsInputBarWidget(viewModel: viewModel),
-      // Edge treatment owned by the list (see AppBoxKitEdgeAwareListView) so a
+      // Edge treatment owned by the list (see ArxaKitEdgeAwareListView) so a
       // child added later inherits it instead of regressing the screen.
       //
       // Builder: the padding below must be read BELOW the scaffold. The glass
@@ -94,7 +94,7 @@ class ShowcaseComponentsViewMobile
           // gallery to the newest bubble, as a chat does — without this the
           // new content lands below the fold and the thread reads as static.
           pulse: viewModel.messages.skip(1),
-          builder: (context, controller) => AppBoxKitEdgeAwareListView(
+          builder: (context, controller) => ArxaKitEdgeAwareListView(
             // Materialization headroom, lawful since the migration above: on the
             // glass tier the body is full-bleed under NATIVE floating chrome, so
             // the cull/re-add boundary sits off-screen and iOS 26's glass
@@ -113,7 +113,7 @@ class ShowcaseComponentsViewMobile
             // must not ALSO dissolve into it. `top` is the per-edge design
             // decision (the kit's both default is the look everywhere else);
             // the top band itself stays suppressed by extendBehindTopBar.
-            edges: AppBoxKitScrollEdges.top,
+            edges: ArxaKitScrollEdges.top,
             extendBehindTopBar: true,
             // Bottom clearance for the docked input bar alone — the host tab bar
             // yields its slot on this route, so the old extra 64 is dead space.
@@ -123,7 +123,7 @@ class ShowcaseComponentsViewMobile
             // and the input bar owns its own SafeArea, so one would double-count.
             //
             // Top inset: 0 under the boxed bar (Scaffold strips it); status bar
-            // + kAppBoxKitFloatingBarBlockHeight on glass, where the floating
+            // + kArxaKitFloatingBarBlockHeight on glass, where the floating
             // chrome raises padding.top for its body subtree. Pinned both tiers
             // by showcase_components_view_test.
             controller: controller,
@@ -132,23 +132,23 @@ class ShowcaseComponentsViewMobile
             children: [
               ShowcaseComponentsInsetWidget(
                   child: ShowcaseSectionLabelWidget('Frosted surface')),
-              appBoxKitVerticalSpaceSmall,
+              arxaKitVerticalSpaceSmall,
               ShowcaseComponentsInsetWidget(
                   child: ShowcaseComponentsFrostedSectionWidget()),
-              appBoxKitVerticalSpaceMedium,
+              arxaKitVerticalSpaceMedium,
               ShowcaseComponentsInsetWidget(
                   child: ShowcaseSectionLabelWidget('Chip carousel')),
-              appBoxKitVerticalSpaceSmall,
+              arxaKitVerticalSpaceSmall,
               ShowcaseComponentsChipRailWidget(),
-              appBoxKitVerticalSpaceMedium,
+              arxaKitVerticalSpaceMedium,
               ShowcaseComponentsSettingsSectionWidget(),
-              appBoxKitVerticalSpaceMedium,
+              arxaKitVerticalSpaceMedium,
               ShowcaseComponentsInsetWidget(
                   child: ShowcaseComponentsOverlaysCardWidget()),
-              appBoxKitVerticalSpaceMedium,
+              arxaKitVerticalSpaceMedium,
               ShowcaseComponentsInsetWidget(
                   child: ShowcaseSectionLabelWidget('Conversation')),
-              appBoxKitVerticalSpaceSmall,
+              arxaKitVerticalSpaceSmall,
               ShowcaseComponentsInsetWidget(
                   child: ShowcaseComponentsConversationWidget(
                       messages: viewModel.messages, typing: viewModel.typing)),

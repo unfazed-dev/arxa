@@ -1,4 +1,4 @@
-# appbox_kit_showcase_app
+# arxa_kit_showcase_app
 
 A new Flutter project.
 

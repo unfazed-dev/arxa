@@ -33,10 +33,10 @@
 library;
 
 import 'package:flutter/material.dart';
-import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
-import 'package:appbox_kit_showcase_app/enums/showcase_profile_enums/enums.dart';
-import 'package:appbox_kit_showcase_app/ui/views/showcase_profile_shell/showcase_profile/showcase_profile_viewmodel.dart';
-import 'package:appbox_kit_showcase_app/ui/widgets/common/showcase_tabs_shared/widgets.dart';
+import 'package:arxa_kit_ui_library/arxa_kit_ui_library.dart';
+import 'package:arxa_kit_showcase_app/enums/showcase_profile_enums/enums.dart';
+import 'package:arxa_kit_showcase_app/ui/views/showcase_profile_shell/showcase_profile/showcase_profile_viewmodel.dart';
+import 'package:arxa_kit_showcase_app/ui/widgets/common/showcase_tabs_shared/widgets.dart';
 
 class ShowcaseProfileRailCardWidget extends StatelessWidget {
   const ShowcaseProfileRailCardWidget({required this.viewModel, super.key});
@@ -45,12 +45,12 @@ class ShowcaseProfileRailCardWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return AppBoxKitGlassCard(
+    return ArxaKitGlassCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const ShowcaseSectionLabelWidget('Navigation rail'),
-          appBoxKitVerticalSpaceSmall,
+          arxaKitVerticalSpaceSmall,
           // ponytail: NavigationRail wants bounded height; a fixed SizedBox
           // is the simplest showcase container (a real app puts it in a Row
           // beside content that fills the screen height). 330 fits the M3E
@@ -61,16 +61,16 @@ class ShowcaseProfileRailCardWidget extends StatelessWidget {
             height: 330,
             child: Row(
               children: [
-                AppBoxKitNativeNavigationRail(
+                ArxaKitNativeNavigationRail(
                   selectedIndex: viewModel.railIndex,
                   onDestinationSelected: viewModel.setRailIndex,
                   destinations: [
                     for (final rail in ShowcaseProfileRail.values)
-                      AppBoxKitRailDestination(
+                      ArxaKitRailDestination(
                         glyph: switch (rail) {
-                          ShowcaseProfileRail.account => AppBoxKitGlyphs.person,
-                          ShowcaseProfileRail.privacy => AppBoxKitGlyphs.lock,
-                          ShowcaseProfileRail.alerts => AppBoxKitGlyphs.alerts,
+                          ShowcaseProfileRail.account => ArxaKitGlyphs.person,
+                          ShowcaseProfileRail.privacy => ArxaKitGlyphs.lock,
+                          ShowcaseProfileRail.alerts => ArxaKitGlyphs.alerts,
                         },
                         label: rail.label,
                       ),
@@ -89,7 +89,7 @@ class ShowcaseProfileRailCardWidget extends StatelessWidget {
         ],
       ),
     );
-    // No .scrollEdgeEffect() here: the enclosing AppBoxKitEdgeAwareListView
+    // No .scrollEdgeEffect() here: the enclosing ArxaKitEdgeAwareListView
     // applies it to every child. The old per-widget call was "cards only" —
     // which left the bare toolbar demo and the section labels untreated,
     // because a leaf can't tell that a sibling was forgotten.

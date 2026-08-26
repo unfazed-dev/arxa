@@ -1,4 +1,4 @@
-# appbox_kit_documents
+# arxa_kit_documents
 
 A deliberately **API-first** kit for document workflows. It defines the typed
 ports now so app code can be written against them, and backs them natively
@@ -11,28 +11,28 @@ page counting/rendering via `pdfrx`).
 
 ### Working paths
 
-- `AppBoxKitDocumentPickerService` — `pickDocument({extensions})` /
+- `ArxaKitDocumentPickerService` — `pickDocument({extensions})` /
   `pickDocuments({extensions})`. Backed by `file_selector`
-  (`FileSelectorAppBoxKitDocumentPickerService`).
-- `AppBoxKitPickedDocument` — `name` / `path` / `mimeType` / lazy `readBytes()`.
+  (`FileSelectorArxaKitDocumentPickerService`).
+- `ArxaKitPickedDocument` — `name` / `path` / `mimeType` / lazy `readBytes()`.
   `file_selector`'s `XFile` never crosses the seam.
-- `AppBoxKitPdfService` — `pageCount` / `renderPage` backed by **`pdfrx`**
-  (`AppBoxKitPdfrxPdfService`, PDFium: iOS/Android/macOS/Windows/Linux/Web).
+- `ArxaKitPdfService` — `pageCount` / `renderPage` backed by **`pdfrx`**
+  (`ArxaKitPdfrxPdfService`, PDFium: iOS/Android/macOS/Windows/Linux/Web).
   `createFromImages` stays stubbed — pdfrx renders, it does not assemble.
-- `AppBoxKitPdfViewer` — interactive viewing (scroll/zoom/selection) over pdfrx's
+- `ArxaKitPdfViewer` — interactive viewing (scroll/zoom/selection) over pdfrx's
   `PdfViewer`; `.data` / `.asset` / `.file` / `.network` constructors.
 
 ### Stub ports (phase 2 — native-first)
 
 Mission name → class:
 
-- `DocumentScanService` → **`AppBoxKitDocumentScanService`** (`scan({pageLimit})` →
-  `AppBoxKitScannedDocument`/`AppBoxKitScannedPage`).
-- `OcrService` → **`AppBoxKitOcrService`** (`recognizeText(bytes)` → `AppBoxKitOcrResult`/
-  `AppBoxKitOcrBlock`).
+- `DocumentScanService` → **`ArxaKitDocumentScanService`** (`scan({pageLimit})` →
+  `ArxaKitScannedDocument`/`ArxaKitScannedPage`).
+- `OcrService` → **`ArxaKitOcrService`** (`recognizeText(bytes)` → `ArxaKitOcrResult`/
+  `ArxaKitOcrBlock`).
 
 Each ships an `Unimplemented…` concrete class whose methods throw
-`UnimplementedError` and carry `// TODO(appbox_kit_documents)` tags naming the
+`UnimplementedError` and carry `// TODO(arxa_kit_documents)` tags naming the
 target native API.
 
 ## Native-first plan
@@ -50,14 +50,14 @@ Backing package (working path) verified pub.dev 2026-07-14: `file_selector`
 
 ## Testing
 
-`package:appbox_kit_documents/appbox_kit_testing.dart` exports fakes for all four ports —
-`FakeAppBoxKitDocumentPickerService`, `FakeAppBoxKitDocumentScanService`,
-`FakeAppBoxKitOcrService`, `FakeAppBoxKitPdfService`. Each supports a `failWith` error to
+`package:arxa_kit_documents/arxa_kit_testing.dart` exports fakes for all four ports —
+`FakeArxaKitDocumentPickerService`, `FakeArxaKitDocumentScanService`,
+`FakeArxaKitOcrService`, `FakeArxaKitPdfService`. Each supports a `failWith` error to
 exercise **failure states**; the picker/scan fakes return `null` to simulate a
 **user cancel**.
 
 ## Non-goals
 
-No path dependency on `appbox_kit_permissions` (or any kit). The camera /
+No path dependency on `arxa_kit_permissions` (or any kit). The camera /
 photo-library permission dependency for scanning is wired by the downstream
 reconciliation pass.

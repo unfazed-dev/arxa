@@ -12,51 +12,51 @@
 library;
 
 import 'package:flutter/material.dart';
-import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
-import 'package:appbox_kit_showcase_app/ui/widgets/common/showcase_tabs_shared/widgets.dart';
+import 'package:arxa_kit_ui_library/arxa_kit_ui_library.dart';
+import 'package:arxa_kit_showcase_app/ui/widgets/common/showcase_tabs_shared/widgets.dart';
 
 class ShowcaseSplitButtonCardWidget extends StatelessWidget {
   const ShowcaseSplitButtonCardWidget({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return AppBoxKitGlassCard(
+    return ArxaKitGlassCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const ShowcaseSectionLabelWidget('Split button'),
-          appBoxKitVerticalSpaceSmall,
+          arxaKitVerticalSpaceSmall,
           Center(
-            child: AppBoxKitNativeSplitButton(
+            child: ArxaKitNativeSplitButton(
               label: 'Send',
-              glyph: AppBoxKitGlyphs.send,
+              glyph: ArxaKitGlyphs.send,
               onAction: () =>
-                  appBoxKitLocator<AppBoxKitNotificationService>().show(
+                  arxaKitLocator<ArxaKitNotificationService>().show(
                 'Send this message?',
-                kind: AppBoxKitNotificationKind.warning,
+                kind: ArxaKitNotificationKind.warning,
                 actionLabel: 'Confirm',
-                onAction: () => appBoxKitLocator<AppBoxKitNotificationService>()
+                onAction: () => arxaKitLocator<ArxaKitNotificationService>()
                     .show('Sent',
-                        kind: AppBoxKitNotificationKind.success,
+                        kind: ArxaKitNotificationKind.success,
                         context: context),
                 context: context,
               ),
               menuItems: const [
-                AppBoxKitMenuItem(
-                    label: 'Send now', glyph: AppBoxKitGlyphs.send),
-                AppBoxKitMenuItem(
-                    label: 'Schedule', glyph: AppBoxKitGlyphs.schedule),
-                AppBoxKitMenuItem(
-                    label: 'Save draft', glyph: AppBoxKitGlyphs.saveDraft),
+                ArxaKitMenuItem(
+                    label: 'Send now', glyph: ArxaKitGlyphs.send),
+                ArxaKitMenuItem(
+                    label: 'Schedule', glyph: ArxaKitGlyphs.schedule),
+                ArxaKitMenuItem(
+                    label: 'Save draft', glyph: ArxaKitGlyphs.saveDraft),
               ],
               onMenuSelected: (item) =>
-                  appBoxKitLocator<AppBoxKitNotificationService>()
+                  arxaKitLocator<ArxaKitNotificationService>()
                       .show(item.label, context: context),
             ),
           ),
         ],
       ),
     );
-    // Edge treatment belongs to the enclosing AppBoxKitEdgeAwareListView.
+    // Edge treatment belongs to the enclosing ArxaKitEdgeAwareListView.
   }
 }

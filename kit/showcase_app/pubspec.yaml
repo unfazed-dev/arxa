@@ -1,5 +1,5 @@
-name: appbox_kit_showcase_app
-description: Template Stacked app built the opinionated way on the appbox_kit core/ui_library/data kits. iOS/Android native-chrome shell + Notes data slice (Repository/Facade over the seeded data layer); web/desktop/tablet responsive stubs kept unimplemented as a form-factor showcase.
+name: arxa_kit_showcase_app
+description: Template Stacked app built the opinionated way on the arxa_kit core/ui_library/data kits. iOS/Android native-chrome shell + Notes data slice (Repository/Facade over the seeded data layer); web/desktop/tablet responsive stubs kept unimplemented as a form-factor showcase.
 publish_to: 'none'
 version: 0.1.0
 
@@ -10,19 +10,19 @@ dependencies:
   flutter:
     sdk: flutter
   # stacked / stacked_services / rxdart / talker_flutter come via the kit
-  # barrel (appbox_kit_ui_library re-exports them) — never declared here.
+  # barrel (arxa_kit_ui_library re-exports them) — never declared here.
   # The kit under test — path deps to the sibling packages.
-  appbox_kit_core:
+  arxa_kit_core:
     path: ../core
-  appbox_kit_ui_library:
+  arxa_kit_ui_library:
     path: ../ui_library
-  appbox_kit_data:
+  arxa_kit_data:
     path: ../data
-  # Device haptics — extracted from appbox_kit core (phase 2B).
-  appbox_kit_haptics:
+  # Device haptics — extracted from arxa_kit core (phase 2B).
+  arxa_kit_haptics:
     path: ../haptics
   uuid: ^4.5.3
-  # Imported directly (appbox_kit_colors.dart, glyphs lucide map) — declared
+  # Imported directly (arxa_kit_colors.dart, glyphs lucide map) — declared
   # here so they're direct deps, not transitives (depend_on_referenced_packages).
   m3e_collection: ^0.3.7
   lucide_flutter: ^1.25.0
@@ -34,47 +34,47 @@ dependencies:
   # voice-memo capture, playback with position streams, camera/library photos —
   # now via the media kit's framework-free ports. record/just_audio/image_picker
   # are absorbed into the kit; NotesMediaService is a thin app-side adapter.
-  appbox_kit_media:
+  arxa_kit_media:
     path: ../media
   # Wake/set-down choreography — KitMotionScope/KitWake demoed on the Motion
   # showcase surface (pushed from the Profile tab).
-  appbox_kit_motion:
+  arxa_kit_motion:
     path: ../motion
   # Full kit registration (Task #7 reconciliation): mirrors the upstream app
   # root — all
   # extracted kits resolve in the showcase's universe so conflicts surface at
   # pub get time.
-  appbox_kit_analytics:
+  arxa_kit_analytics:
     path: ../analytics
-  appbox_kit_auth:
+  arxa_kit_auth:
     path: ../auth
-  appbox_kit_bluetooth:
+  arxa_kit_bluetooth:
     path: ../bluetooth
-  appbox_kit_compliance:
+  arxa_kit_compliance:
     path: ../compliance
-  appbox_kit_deploy:
+  arxa_kit_deploy:
     path: ../deploy
-  appbox_kit_documents:
+  arxa_kit_documents:
     path: ../documents
-  appbox_kit_forms:
+  arxa_kit_forms:
     path: ../forms
-  appbox_kit_i18n:
+  arxa_kit_i18n:
     path: ../i18n
-  appbox_kit_maps:
+  arxa_kit_maps:
     path: ../maps
-  appbox_kit_notifications:
+  arxa_kit_notifications:
     path: ../notifications
-  appbox_kit_payments:
+  arxa_kit_payments:
     path: ../payments
-  appbox_kit_permissions:
+  arxa_kit_permissions:
     path: ../permissions
-  appbox_kit_security:
+  arxa_kit_security:
     path: ../security
-  appbox_kit_state:
+  arxa_kit_state:
     path: ../state
-  appbox_kit_support:
+  arxa_kit_support:
     path: ../support
-  appbox_kit_wifi:
+  arxa_kit_wifi:
     path: ../wifi
   # Attachment binaries live in the app documents dir (rows carry paths).
   path_provider: ^2.1.5
@@ -135,7 +135,7 @@ dev_dependencies:
   # from the assets/brand-icons/ master; config in flutter_launcher_icons.yaml.
   flutter_launcher_icons: ^0.14.3
 flutter:
-  # Standalone app: bundles the MaterialIcons font (appbox_kit + the M3E
+  # Standalone app: bundles the MaterialIcons font (arxa_kit + the M3E
   # packages require it, else Material icons render as tofu).
   uses-material-design: true
   assets:
@@ -144,8 +144,8 @@ flutter:
     # App-owned assets: images/media + the brand icon. Fonts are Google Fonts
     # by name (google_fonts, families from assets.manifest.json roles — no
     # binaries unless "source": "file"); UI icons are kit glyphs
-    # (appbox_kit_glyphs.dart). Referenced in code only via abxImg* constants
-    # in appbox_kit_assets.dart.
+    # (arxa_kit_glyphs.dart). Referenced in code only via abxImg* constants
+    # in arxa_kit_assets.dart.
     - assets/images/
     # Brand icon: flutter_launcher_icons master AND runtime asset
     # (splash / startup brand logo) — abxImgBrandIcon.

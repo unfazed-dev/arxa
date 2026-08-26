@@ -36,19 +36,19 @@
 /// History: git log --follow -- kit/showcase_app/lib/ui/views/showcase_notes_shell/showcase_notes_create_account/showcase_notes_create_account_viewmodel.dart
 library;
 
-import 'package:appbox_kit_data/appbox_kit_data.dart';
-import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
+import 'package:arxa_kit_data/arxa_kit_data.dart';
+import 'package:arxa_kit_ui_library/arxa_kit_ui_library.dart';
 
-import 'package:appbox_kit_showcase_app/enums/showcase_notes_enums/enums.dart';
-import 'package:appbox_kit_showcase_app/services/showcase_notes_services/facades/showcase_notes_facade_service.dart';
+import 'package:arxa_kit_showcase_app/enums/showcase_notes_enums/enums.dart';
+import 'package:arxa_kit_showcase_app/services/showcase_notes_services/facades/showcase_notes_facade_service.dart';
 
-class ShowcaseNotesCreateAccountViewModel extends AppBoxKitViewModel {
+class ShowcaseNotesCreateAccountViewModel extends ArxaKitViewModel {
   // ── Setup ──────────────────────────────────────────────────────────────────
 
   final ShowcaseNotesFacadeService _notes =
-      appBoxKitLocator<ShowcaseNotesFacadeService>();
+      arxaKitLocator<ShowcaseNotesFacadeService>();
 
-  AppBoxKitAuthService get auth => _notes.auth;
+  ArxaKitAuthService get auth => _notes.auth;
 
   // ── Initial state ─────────────────────────────────────────────────────────
 
@@ -65,7 +65,7 @@ class ShowcaseNotesCreateAccountViewModel extends AppBoxKitViewModel {
   /// [1. Create account] Live busy/error state of the sign-up op — the stream
   /// form of the old `.withLoading(setBusy)`: the form binds it to disable
   /// buttons and show the inline spinner while sign-up runs.
-  ValueStream<AppBoxKitActionState> get signUpState$ =>
+  ValueStream<ArxaKitActionState> get signUpState$ =>
       actionState$(ShowcaseNotesAuthOp.signUp.name);
 
   /// Inline form error (seeded null = none): auth errors show their message,
@@ -84,7 +84,7 @@ class ShowcaseNotesCreateAccountViewModel extends AppBoxKitViewModel {
     (p) => auth.signUpWithEmailPassword(email: p.$1, password: p.$2),
     errorMessage: 'Sign-up failed',
     onSend: () => _errorMessage.add(null),
-    onError: (error) => _errorMessage.add(error is AppBoxKitAuthException
+    onError: (error) => _errorMessage.add(error is ArxaKitAuthException
         ? error.message
         : 'Something went wrong. Try again.'),
   );

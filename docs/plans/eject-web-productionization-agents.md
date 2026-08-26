@@ -7,20 +7,20 @@ verification gates. Do not re-litigate strategy; do not expand scope.
 ## Read first (in order)
 
 1. `docs/plans/eject-web-productionization.md` (this repo, branch
-   `appbox-designer-feature`) — the binding plan. Its "Current machinery"
+   `arxa-designer-feature`) — the binding plan. Its "Current machinery"
    section has every path you need.
-2. `.kimi-code/skills/appbox-designer/built-in-skills/productionize.md` —
+2. `.kimi-code/skills/arxa-designer/built-in-skills/productionize.md` —
    what eject means today.
-3. `.kimi-code/skills/appbox-designer/examples/hello-hda/` — the reference
+3. `.kimi-code/skills/arxa-designer/examples/hello-hda/` — the reference
    artifact all phases use.
-4. `appboxd/lib/design_tools.dart:1208-1303` (eject) and
-   `appboxd/lib/design_server/worker_assets/worker_shim.js` (the Hono shim
+4. `arxa/lib/design_tools.dart:1208-1303` (eject) and
+   `arxa/lib/design_server/worker_assets/worker_shim.js` (the Hono shim
    you are replacing with a real runtime).
 
 ## Working agreement
 
-- Work on branch `appbox-designer-feature` in
-  `.kimi-code/worktrees/appbox-designer-feature`. Never touch the main
+- Work on branch `arxa-designer-feature` in
+  `.kimi-code/worktrees/arxa-designer-feature`. Never touch the main
   checkout. Never commit or push unless the user explicitly asks.
 - **The artifact contract is frozen**: no changes to artifact format,
   `app.routes.js` shape, registry schema, or lint rules
@@ -29,7 +29,7 @@ verification gates. Do not re-litigate strategy; do not expand scope.
   touching the contract, stop and report — that is a decision for the user.
 - The Dart design server and `worker_shim.js` are design-time only — do not
   modify them except where a phase explicitly says (Phase 2 vendoring).
-- Match the repo's existing conventions (Dart style in appboxd, JSDoc style
+- Match the repo's existing conventions (Dart style in arxa, JSDoc style
   in emitted JS). Minimal diffs; no speculative abstractions.
 - Every phase ends by running its verification gate from the plan and
   pasting the actual command output into your report. A phase is not done
@@ -77,8 +77,8 @@ Phases are sequential through Phase 1; then 2 and 3 may run in parallel;
   typescript, esbuild, alien-signals, optional devalue, per-target tooling,
   official kit SDKs). Anything else needs explicit user approval.
 - Design-time behavior must not change: after your work,
-  `appbox design serve` + lint + selftest on hello-hda and
-  `designs/appbox-studio` must be exactly as green as before. Run them.
+  `arxa design serve` + lint + selftest on hello-hda and
+  `designs/arxa-studio` must be exactly as green as before. Run them.
 - htmx 4 is beta: isolate every extension-hook usage in
   `runtime/islands.js` alone.
 - Report per phase: what was built (paths), gate output, deviations from
@@ -87,7 +87,7 @@ Phases are sequential through Phase 1; then 2 and 3 may run in parallel;
 ## Reference docs in this repo
 
 - Plan: `docs/plans/eject-web-productionization.md`
-- Skill contract: `.kimi-code/skills/appbox-designer/SKILL.md`,
+- Skill contract: `.kimi-code/skills/arxa-designer/SKILL.md`,
   `DESIGN-ARCHITECTURE.md`, `docs/adr/0008-productionize-eject-harden.md`
 - Research basis: the plan's strategy/phase sections cite the verified
   claims (htmx 4 beta6 source, alien-signals choice, SSE platform limits,

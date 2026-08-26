@@ -1,8 +1,8 @@
 # Moodboard — Chat & message-input UI (composers + generative-UI responses)
 
-Slice: the conversation surface for **appbox** — a chat-first build monitor where the composer is the primary control and responses render as contextual cards (pipeline state, gates, charts) inline in the thread.
+Slice: the conversation surface for **arxa** — a chat-first build monitor where the composer is the primary control and responses render as contextual cards (pipeline state, gates, charts) inline in the thread.
 
-Captured 2026-07-28 with the appbox lens. Freshness: **🔥** current · **🌡️** canonical.
+Captured 2026-07-28 with the arxa lens. Freshness: **🔥** current · **🌡️** canonical.
 
 ---
 
@@ -16,7 +16,7 @@ The reference composer, seen logged-out: one centered pill — leading `+` (atta
   - **One centered composer + one short headline** as the whole empty state; nothing else competes.
   - **Composer anatomy**: leading `+` for attachment affordance, trailing voice/mic cluster, pill shape, soft dark fill against the page.
   - Sidebar reduced to 3 entries — navigation is collapsed until needed.
-- **Why it fits:** appbox's chat surface should open to exactly this: "What are we shipping today?" + composer. Gates, runs, findings stay out of view until the conversation calls them up.
+- **Why it fits:** arxa's chat surface should open to exactly this: "What are we shipping today?" + composer. Gates, runs, findings stay out of view until the conversation calls them up.
 
 ## 2. v0 by Vercel — https://v0.app · 🔥
 
@@ -25,8 +25,8 @@ The reference composer, seen logged-out: one centered pill — leading `+` (atta
 v0's logged-out home is a live composer: "What do you want to create?", input with **model-picker chip** (v0 Max ⌄) + mic inside the field, and **suggestion chips directly under the composer** (Contact Form / Image Editor / Mini Game / Finance Calculator) — one tap from empty state to running generation. Template cards with live previews sit below.
 
 - **Steal:**
-  - **Suggestion chips as the bridge** from blank page to first message — for appbox: "Cut a release build", "Why did the review gate fail?", "Ship to TestFlight".
-  - **In-composer context chip** (model picker) → appbox equivalent: target picker (ios/android/macos) or environment chip *inside* the composer, not a settings page.
+  - **Suggestion chips as the bridge** from blank page to first message — for arxa: "Cut a release build", "Why did the review gate fail?", "Ship to TestFlight".
+  - **In-composer context chip** (model picker) → arxa equivalent: target picker (ios/android/macos) or environment chip *inside* the composer, not a settings page.
   - Template/gallery cards with real thumbnails below the fold — history as visual cards, not a table of runs.
 - **Why it fits:** proves a generative-UI product can be welcoming at rest and powerful mid-thread; the chips pattern directly solves "user doesn't know what to ask".
 
@@ -38,7 +38,7 @@ Anthropic's own marketing is **already the warm palette**: cream paper backgroun
 
 - **Steal:**
   - **Warm cream + terracotta as an AI-product brand** — validates the entire genui-calm-warm direction with a tier-1 precedent.
-  - **Artifact pattern**: generated content opens as a focused panel *beside* the thread, keeping the conversation clean — appbox's big artifacts (diffs, structure.json, screenshots) belong in a side canvas, not dumped in-line.
+  - **Artifact pattern**: generated content opens as a focused panel *beside* the thread, keeping the conversation clean — arxa's big artifacts (diffs, structure.json, screenshots) belong in a side canvas, not dumped in-line.
   - Long-form product story told as stacked, spacious sections — the anti-dashboard.
 - **Why it fits:** the closest existing brand to the target feel; mine its color/type decisions freely. _(Note: claude.ai itself redirects to login — skipped per no-auth rule; the product page carries the same UI in marketing shots.)_
 
@@ -46,7 +46,7 @@ Anthropic's own marketing is **already the warm palette**: cream paper backgroun
 
 ![assistant-ui generative demo](shots/chat-ui/assistant-ui__generative-demo.png)
 
-Open-source React chat toolkit whose homepage *is* a working demo: a chat thread where responses render as **generative UI — cards, forms and components inline in the conversation**, with branching/regenerate controls. This is the exact interaction model of appbox's GenUI surface.
+Open-source React chat toolkit whose homepage *is* a working demo: a chat thread where responses render as **generative UI — cards, forms and components inline in the conversation**, with branching/regenerate controls. This is the exact interaction model of arxa's GenUI surface.
 
 - **Steal:**
   - **Generative responses as inline cards**: the assistant answers with a purpose-built component (a card with fields/actions), not a wall of markdown — map to: pipeline-status card, gate-approval card, findings-summary card.
@@ -62,7 +62,7 @@ The perennial calm-UI benchmark: paper-white surfaces, one list, huge margins, a
 
 - **Steal:**
   - **Restraint as luxury**: one accent color (their blue → our terracotta), one list, generous air.
-  - **Inline expanding composer**: new item appears as a row in place — for appbox, quick actions materialize inside the thread, not in modals.
+  - **Inline expanding composer**: new item appears as a row in place — for arxa, quick actions materialize inside the thread, not in modals.
   - **Empty states with one gentle line** and no calls-to-action shouting.
 - **Why it fits:** Things proves a productivity tool people describe as "beautiful" can do *less* per screen; it's the emotional bar for the redesign.
 

@@ -2,7 +2,7 @@
   "tables": [
     {
       "$id": "notes_folders",
-      "databaseId": "appbox_kit_showcase_app",
+      "databaseId": "arxa_kit_showcase_app",
       "name": "notes_folders",
       "enabled": true,
       "rowSecurity": false,
@@ -38,7 +38,7 @@
     },
     {
       "$id": "notes",
-      "databaseId": "appbox_kit_showcase_app",
+      "databaseId": "arxa_kit_showcase_app",
       "name": "notes",
       "enabled": true,
       "rowSecurity": false,

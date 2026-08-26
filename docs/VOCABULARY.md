@@ -1,7 +1,7 @@
-# appbox — VOCABULARY
+# arxa — VOCABULARY
 
 **This document is sacred.** It is the single source of truth for the words
-every human and every agent working on appbox uses. When two documents, two
+every human and every agent working on arxa uses. When two documents, two
 agents, or a human and an LLM disagree about what a word means, the conflict
 resolves **here** — not in the doc that shouted loudest or shipped most
 recently.
@@ -30,7 +30,7 @@ paths. Ownership attribution (term → layer) is the only pointer allowed.
 
 Terms for the thing we are selling and the people it serves.
 
-**appbox**:
+**arxa**:
 The product: one app plus its daemon that turns a client conversation into a
 shipped mobile/desktop app, with a human approving every irreversible step.
 A chat-centric Flutter app driving a deterministic design→build→ship pipeline
@@ -52,7 +52,7 @@ _Layer_: Product
 **Daemon**:
 The always-on helper process on the developer's machine that does the actual
 work — drafting screens, running builds, talking to paired devices.
-The local background process (appboxd) the app talks to; daemon and apps are
+The local background process (arxa) the app talks to; daemon and apps are
 tailnet nodes, and approvals bind to its node identity.
 _Avoid_: server, backend, cloud
 _Layer_: Product
@@ -84,7 +84,7 @@ _Layer_: Product
 
 **Release Swimlane**:
 Which release a story lands in: R1 Dogfood, R2 Anywhere, or R3 Delight.
-The story map's horizontal grouping per release — R1 Dogfood (appbox ships
+The story map's horizontal grouping per release — R1 Dogfood (arxa ships
 itself; Michelle's 20-minute evaluation), R2 Anywhere (remote/review depth),
 R3 Delight (polish).
 _Avoid_: milestone, sprint, phase (as release names)
@@ -103,7 +103,7 @@ _Layer_: Product
 A browsable collection of real apps worth stealing from, gathered per epic,
 with captured screenshots, consulted before any screen is authored.
 The per-epic reference artifact assembled by fan-out gathering: each
-reference's key screens captured by the appbox lens under semantic filenames and
+reference's key screens captured by the arxa lens under semantic filenames and
 verified on disk.
 _Avoid_: inspiration board, references (bare)
 _Layer_: Product
@@ -117,14 +117,14 @@ _Avoid_: step, tab (a stage is a phase, never a navigation element)
 _Layer_: Product
 
 **Main Panel**:
-The big middle area of the app: everything appbox shows you — a file, a
+The big middle area of the app: everything arxa shows you — a file, a
 design, the story map, a video — appears there, automatically in the right
 form.
 The center chrome region between the activity and composer panels; the single
 render destination for all content, in both the design prototype and the
 shipped app. Fully automatic: the active shell plus the content type select
 the mode and the panel composition — the user has no mode toggles, no tabs,
-no panel picking. Every file made available in appbox (code, text, image,
+no panel picking. Every file made available in arxa (code, text, image,
 svg, pdf, video) renders here, read-only, as does all stage content.
 _Avoid_: mainboard (proposed, renamed before landing), center panel,
 workspace, canvas
@@ -222,7 +222,7 @@ _Avoid_: login (touch devices), linking
 _Layer_: Product
 
 **Tailnet**:
-Your private network of your own devices; appbox never relays through a
+Your private network of your own devices; arxa never relays through a
 third-party cloud.
 A self-hosted WireGuard mesh (self-host compose or hosted Tailscale); daemon
 and apps are in-process nodes and approvals bind to node identity.
@@ -249,7 +249,7 @@ _Layer_: Product
 
 **Golden**:
 The approved design image a built screen is compared against, pixel by pixel.
-The frozen capture used by appbox lens design-vs-built checks: byte/pixel/SSIM
+The frozen capture used by arxa lens design-vs-built checks: byte/pixel/SSIM
 comparison against it; console/page errors fail the lens
 regardless of pixel match.
 _Avoid_: screenshot (bare), reference image, baseline
@@ -264,7 +264,7 @@ _Avoid_: attachment, mention
 _Layer_: Product
 
 **BYO Key**:
-You bring your own AI key; appbox never meters or marks up inference.
+You bring your own AI key; arxa never meters or marks up inference.
 Bring-your-own-key credential model: keys live in the OS vault, are never
 logged, and inference cost stays the user's — a structural cost advantage,
 not a discount tier.
@@ -341,7 +341,7 @@ _Avoid_: lock (bare), finalize, sign-off
 _Layer_: Pipeline
 
 **Drift**:
-When reality quietly moves away from what was approved — appbox treats that
+When reality quietly moves away from what was approved — arxa treats that
 as an alarm, not a shrug.
 Any divergence between the frozen manifest and current state; the drift
 report plus brief-to-surface-to-code traceability is a freeze-stage
@@ -403,31 +403,31 @@ derive from targets, never from hand decisions.
 _Avoid_: boilerplate, codegen (bare)
 _Layer_: Pipeline
 
-**appbox lens**:
+**arxa lens**:
 The robot photographer: captures screens of the design and of the built app
 so they can be compared honestly.
-The appbox-native capture/compare tool — `appboxd/lib/lens.dart` over the CDP
-client (`appboxd/lib/cdp.dart`), driven via `skills/appbox-lens` — behind
+The arxa-native capture/compare tool — `arxa/lib/lens.dart` over the CDP
+client (`arxa/lib/cdp.dart`), driven via `skills/arxa-lens` — behind
 moodboard shots, flows-canvas captures, and the design-vs-built visual gates
 (byte/pixel against the golden; console/page errors are an automatic
 failure). The promoted port of
-the archived probe-runner: **for anything regarding appbox, appbox's own
-tools come first** — lens (and the `appbox` CLI: gate, crud, serve, emit,
+the archived probe-runner: **for anything regarding arxa, arxa's own
+tools come first** — lens (and the `arxa` CLI: gate, crud, serve, emit,
 lint, watermark) before any external or archived tooling. If a capture verb
 is missing, extend lens.dart/cdp.dart; never reach back for probe-runner.
 _Avoid_: screenshot tool, test runner, probe-runner (archived name)
 _Layer_: Pipeline
 
 **Contract probe**:
-A probe that holds any appbox-built app to the appbox opinion, not one that
+A probe that holds any arxa-built app to the arxa opinion, not one that
 knows this app.
-Asserts the appbox opinion (panels, chips, no-reload HDA behavior) against ANY
+Asserts the arxa opinion (panels, chips, no-reload HDA behavior) against ANY
 served design, deriving its targets from the design's own declarations. The
 behavioral sibling of the W-gate. Route discovery is `GET /__routes`, the
 served design's own route table: a contract probe that names a route is
 miscategorised by construction, and that is greppable — no `/design`,
 `/intake` or `/build` literal may appear under
-`appboxd/lib/probes/contract/`. Run with `appbox design probe contract`; the
+`arxa/lib/probes/contract/`. Run with `arxa design probe contract`; the
 v1 set is `contract-panels` and `contract-chips`.
 _Avoid_: generic probe, universal probe
 _Layer_: Pipeline
@@ -435,28 +435,28 @@ _Layer_: Pipeline
 **Studio suite**:
 The engine's own smoke test, run through the one design it is allowed to know.
 The existing ten probes: the engine's smoke test, run through its reference
-design (appbox-studio). Legitimate engine concern, named for what it is —
+design (arxa-studio). Legitimate engine concern, named for what it is —
 free to hard-code studio routes, because knowing the studio IS its job. Run
-with `appbox design probe studio`; `probe all` runs contract first, then this.
+with `arxa design probe studio`; `probe all` runs contract first, then this.
 _Avoid_: the probe suite (bare), smoke suite (bare)
 _Layer_: Pipeline
 
 **Project**:
 One client's app-in-progress: its interview answers, brief, registry, flows,
 design seeds, and build evidence, kept together outside this repo.
-A user project directory at `~/.appbox/projects/<name>/` with four shell dirs
+A user project directory at `~/.arxa/projects/<name>/` with four shell dirs
 — `intake/` (answers, brief, registry, flows), `design/` (seeds,
 surfaces/partials, l10n), `build/` (evidence), `settings/` (project.json).
-~/.appbox holds user projects only; the studio's own design stays in the
+~/.arxa holds user projects only; the studio's own design stays in the
 repo.
 _Avoid_: workspace, repo (a project is not the repo)
 _Layer_: Pipeline
 
 **Current project**:
-The project appbox is looking at right now — the studio shows it and the
+The project arxa is looking at right now — the studio shows it and the
 pipeline writes into it.
-The active project named by the one-line `~/.appbox/current` file (default
-`portalo`); the design server resolves it as `--project` → `APPBOX_PROJECT`
+The active project named by the one-line `~/.arxa/current` file (default
+`portalo`); the design server resolves it as `--project` → `ARXA_PROJECT`
 → `current`, and `POST /__project_use` repoints it.
 _Avoid_: active project, selected project
 _Layer_: Pipeline
@@ -503,16 +503,16 @@ _Avoid_: vendoring strategy, package mode
 _Layer_: Kit
 
 **Lucide**:
-The icon set — the only icons appbox ships, written as a name, never drawn
+The icon set — the only icons arxa ships, written as a name, never drawn
 by hand.
 The icon vocabulary: `icon('name')` inlines a vendored Lucide glyph at design
-time; `AppBoxKitGlyphs.lucide('name')` resolves the same name in Flutter.
+time; `ArxaKitGlyphs.lucide('name')` resolves the same name in Flutter.
 _Avoid_: emoji, custom icons, icon font, sprite
 _Layer_: Kit
 
-**AppBoxKitGlyphs**:
+**ArxaKitGlyphs**:
 How Flutter code asks for an icon by name.
-The kit's glyph accessor; `AppBoxKitGlyphs.lucide('name')` is the Flutter-side
+The kit's glyph accessor; `ArxaKitGlyphs.lucide('name')` is the Flutter-side
 spelling of the design-time `icon('name')`.
 _Avoid_: IconData (bare), icon lookup
 _Layer_: Kit
@@ -541,7 +541,7 @@ The ratified ruleset for native Liquid Glass on iOS/macOS 26+ — control
 allowlist, composition rules (no saveLayer over platform views, chrome-gate
 every glass widget, no glass-on-glass overhang, materialization headroom,
 slide-never-fade), and the deselect ladder. SSOT:
-`docs/liquid-glass-allowlist.md`; enforced by kit gate tests + appbox-lint
+`docs/liquid-glass-allowlist.md`; enforced by kit gate tests + arxa-lint
 rules, not by prose. Sibling: the M3E law (`docs/m3e-law.md`) for Android.
 _Avoid_: glass rules, glass allowlist (bare), glass guidelines
 _Layer_: Kit
@@ -550,7 +550,7 @@ _Layer_: Kit
 The one widget a screen uses when its design declares a top bar — it gets
 the bar and layout right on every kind of device; a screen designed without
 top chrome simply doesn't use it.
-`AppBoxKitChromeScaffold` — the liquid-glass law's reuse unit: Scaffold-level
+`ArxaKitChromeScaffold` — the liquid-glass law's reuse unit: Scaffold-level
 widget carrying the runtime tier branch (Liquid Glass → floating chrome over
 a full-bleed body; Android → boxed bar rendering M3 Expressive; else boxed
 fallback). Hosts never hand-assemble top chrome.
@@ -560,7 +560,7 @@ _Layer_: Kit
 **Floating chrome**:
 The glass tier's top bar: a title pill and buttons floating over content
 that scrolls underneath, tucking away as you scroll.
-`AppBoxKitFloatingChrome` / `AppBoxKitNativeFloatingBar` — full-bleed body,
+`ArxaKitFloatingChrome` / `ArxaKitNativeFloatingBar` — full-bleed body,
 native action controls, Flutter frosted title pill (glass-on-glass ban),
 scroll behaviors pinned/minimize/minimizeTrailing/minimizeLeading/hide with
 24px travel hysteresis; minimize (both ends tuck) is the ratified default.
@@ -594,7 +594,7 @@ _Layer_: Kit
 **Chrome gate**:
 The one switch that takes native glass off the screen while a screen slides
 away, so it doesn't flicker back into view.
-`AppBoxKitNativeChromeGate` — the SOLE hide authority for native glass, with
+`ArxaKitNativeChromeGate` — the SOLE hide authority for native glass, with
 exactly one hide reason: an opaque route transition above a gate that is not
 travelling with it. Modal coverage is NOT a hide reason — a sheet or dialog
 never blanks the chrome behind it; the barrier scrim dims still-painted
@@ -605,7 +605,7 @@ ratified deviation: on modal, the native tab bar must be *destroyed*, not
 merely unpainted — the `UITabBar` layer keeps rendering above Flutter-drawn
 modal content otherwise, and the gate's `keepAlive` mode leaves it
 mounted-but-unpainted, which is precisely not destroying it. Pinned by
-`ui_library/test/kit/widgets/appbox_kit_tab_bar_single_hide_authority_test.dart`.
+`ui_library/test/kit/widgets/arxa_kit_tab_bar_single_hide_authority_test.dart`.
 Anything else toggling chrome visibility is a violation, not a
 second mechanism.
 _Avoid_: chrome hider, visibility manager, hide flag (ad hoc), gate (bare —
@@ -627,7 +627,7 @@ _Layer_: Kit
 **Glass warm-up**:
 A boot-time trick that plays each kind of glass once before the user sees
 it, so the first real screen doesn't stutter.
-`AppBoxKitGlassWarmup` — off-screen materialization of each glass kind at
+`ArxaKitGlassWarmup` — off-screen materialization of each glass kind at
 startup (law rule 9), erasing first-push jank that per-route fixes could
 not.
 _Avoid_: preload, shader warm-up (it is view materialization, not shaders)
@@ -636,12 +636,12 @@ _Layer_: Kit
 **Edge scrim**:
 The soft fade at the top and bottom of the screen that lets content
 dissolve under the status bar and tab bar instead of hard-clipping.
-`AppBoxKitTopEdgeScrim` / `AppBoxKitBottomEdgeScrim` — Flutter-drawn
+`ArxaKitTopEdgeScrim` / `ArxaKitBottomEdgeScrim` — Flutter-drawn
 vertical gradient fills (no saveLayer, `IgnorePointer`), hosted by
-`AppBoxKitBottomEdgeScrimHost` (scaffold `bottomEdgeScrim` flag, default
+`ArxaKitBottomEdgeScrimHost` (scaffold `bottomEdgeScrim` flag, default
 on); the only dissolve that works on every tier; a fade, never a dimming
 barrier. Rule 15: two independent toggles, do not confuse — the scaffold's
-`bottomEdgeScrim` governs the scrim host; `AppBoxKitScrollEdges` governs
+`bottomEdgeScrim` governs the scrim host; `ArxaKitScrollEdges` governs
 the per-child scroll edge effect (tier-inert on glass). The top scrim is
 skipped automatically under `extendBehindTopBar`; the bottom scrim reads the
 RAW device inset (`MediaQuery.viewPaddingOf(context).bottom`) and must mount
@@ -654,8 +654,8 @@ _Layer_: Kit
 **Scroll edge effect**:
 The progressive blur of content under a pinned bar — switched off on the
 glass tier, where the edge scrim does the job instead.
-`AppBoxKitScrollEdgeEffect` — progressive blur applied to content pixels
-beneath pinned chrome; toggled per-child by `AppBoxKitScrollEdges`
+`ArxaKitScrollEdgeEffect` — progressive blur applied to content pixels
+beneath pinned chrome; toggled per-child by `ArxaKitScrollEdges`
 (none/top/bottom/both, default both); deliberately inert on the Liquid
 Glass tier because its partial-alpha fade over children washed glyphs on
 native controls — the edge scrim supplies the dissolve there (rule 15, ADR
@@ -707,7 +707,7 @@ _Layer_: Kit
 **Sheet**:
 The slide-up panel — every sheet is the same body-sized kind with a close
 button; there is no second sheet look in the app.
-The body-sized Cupertino path (`appBoxKitShowSheet()` →
+The body-sized Cupertino path (`arxaKitShowSheet()` →
 `CNBottomSheet.showCupertino`, Flutter's `showCupertinoSheet`); unsized
 callers ride a fixed medium height; native close icon top-right
 (`showCloseButton`, default true); dim is a STATIC Cupertino barrier under
@@ -763,7 +763,7 @@ _Layer_: Kit
 **Chrome existence**:
 Whether a screen has a top bar at all is a design decision, not something
 the glass rules impose.
-The laws govern COMPOSITION, never inventory: appbox-designer's frozen
+The laws govern COMPOSITION, never inventory: arxa-designer's frozen
 anatomy decides whether a surface has top chrome; the law decides how chrome
 is assembled where it exists. "Native glass always" scopes to MATERIAL, not
 to presence — a bar-less surface is fully lawful and is not a lint finding.
@@ -965,7 +965,7 @@ as one live screen inside a device frame.
 A design-viewer mode over the current project's screens: `views` (a flat
 grid in registry order), `flows` (one row per flow, tiles in edge-chain order
 with trigger-labelled connectors), `proto` (one live screen at a real rung
-inside device chrome). Same word, different thing from the **appbox lens**
+inside device chrome). Same word, different thing from the **arxa lens**
 (the capture/compare tool).
 _Avoid_: viewer mode (bare), preview (bare)
 _Layer_: Design medium
@@ -1037,7 +1037,7 @@ _Layer_: Design medium
 
 **Draft Overlay**:
 The author's unsent adjustments, saved automatically as they work — visible on their screen, invisible to clients until Publish.
-The auto-saved patch set layered over an artifact: token, element-style, and text patches recorded while designing, persisted server-side per artifact (one JSON file under `~/.appbox/drafts/`, keyed by the artifact's path — never in Supabase, never in the watched artifact tree), applied to served pages for the Author only, and never written into artifact source until committed. Clients always see the last published state, never the Draft Overlay. Patch keys ride machine identity (`data-arxa-id`) by default; when one machine id fans out to instances with DIFFERENT authored meanings (heterogeneous `data-el`), the patch binds to the authored identity instead — the key is `el:<data-el>` (amended 2026-08-24: authored identity wins on divergence; homogeneous loops keep every-row-at-once). Every open Author document applies draft changes live (same amendment: the ladder's rungs stay in sync); only guests wait for Publish.
+The auto-saved patch set layered over an artifact: token, element-style, and text patches recorded while designing, persisted server-side per artifact (one JSON file under `~/.arxa/drafts/`, keyed by the artifact's path — never in Supabase, never in the watched artifact tree), applied to served pages for the Author only, and never written into artifact source until committed. Clients always see the last published state, never the Draft Overlay. Patch keys ride machine identity (`data-arxa-id`) by default; when one machine id fans out to instances with DIFFERENT authored meanings (heterogeneous `data-el`), the patch binds to the authored identity instead — the key is `el:<data-el>` (amended 2026-08-24: authored identity wins on divergence; homogeneous loops keep every-row-at-once). Every open Author document applies draft changes live (same amendment: the ladder's rungs stay in sync); only guests wait for Publish.
 _Avoid_: autosave (the mechanism, not the thing), unpublished changes
 _Layer_: Design medium
 
@@ -1073,7 +1073,7 @@ _Layer_: Design medium
 **Author**:
 The person whose design it is — the only one who can change it. Clients comment; the Author edits and publishes.
 The single editing identity on an artifact's Design Dial: holds Design Mode, resolves Pins, commits the Draft Overlay, and publishes. An artifact has exactly one Author.
-_Avoid_: owner (billing/tenancy), operator (the appbox persona running the pipeline), designer (a role, not the identity)
+_Avoid_: owner (billing/tenancy), operator (the arxa persona running the pipeline), designer (a role, not the identity)
 _Layer_: Design medium
 
 ---
@@ -1100,12 +1100,12 @@ Dead words and what replaced them. Never reintroduce the left column.
 | tab | **Shell** | Shell is THE grouping/navigation unit; the code rename is landing alongside this entry |
 | tab-group / tab-group shell | **Shell** | same retirement; older flow docs still say it |
 | top stage strip | **Footer Panel** | the read-only stage timeline moved to the bottom strip, which is now the footer panel; the top strip is removed |
-| companion (app) | **appbox app** | consolidation (2026-07-28): one app + daemon, no separate companion |
+| companion (app) | **arxa app** | consolidation (2026-07-28): one app + daemon, no separate companion |
 | Totem Cloud | **tailnet** | self-hosted remote only; no third-party relay, no Totem-run cloud |
 | spine (bare) | **Data Spine** | "the spine" meant both the system shape and the artifact's data flow; the artifact one is always *data* spine |
 | bottom bar | **Footer Panel** | panel consolidation (2026-07-30): all chrome is named panels; dead in code (`{% block footer %}`, `#panel-footer`) |
 | left rail | **Activity Panel** | same consolidation; dead in code |
 | right rail | **Composer Panel** | same consolidation; the composer panel is permanent and single-state; dead in code |
 | mainboard | **Main Panel** | proposed during the panel consolidation, renamed before it ever landed |
-| detent route / detent-tracked dim | **`appBoxKitShowSheet`** (the one body-sized Cupertino sheet) | retired 2026-08-14: it took only the unsized case and put two sheet chromes in one app; the tracked dim is now a static barrier under `showOverlay`, and the body owns its own grabber |
+| detent route / detent-tracked dim | **`arxaKitShowSheet`** (the one body-sized Cupertino sheet) | retired 2026-08-14: it took only the unsized case and put two sheet chromes in one app; the tracked dim is now a static barrier under `showOverlay`, and the body owns its own grabber |
 | Issue 31 exception | **destroy-hide exception** (Chrome gate) | retired 2026-08-14: named after an upstream issue number, which dates poorly; the number stays as a citation, the mechanism is named for what it does |

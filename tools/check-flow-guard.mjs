@@ -9,7 +9,7 @@
 // the written flows. Dart is not runnable here, so check 4 asserts the SHAPE
 // that intake.dart:604-615 makes a fixed point (spread + `action` default +
 // declared-feedback-wins) rather than the emit itself. The Dart-side proof is
-// appboxd's own passthrough test.
+// arxa's own passthrough test.
 //
 //   node tools/check-flow-guard.mjs
 //
@@ -19,8 +19,8 @@
 // the retained reference (VISUAL PARITY LAW) — flip these only if the flow
 // services are ported into a v2 design.
 import assert from 'node:assert/strict';
-import { canRemoveFrom } from '../designs/appbox-studio/services/facades/design_facade.js';
-import { patchAnswersFlows } from '../designs/appbox-studio/services/repositories/project_repository.js';
+import { canRemoveFrom } from '../designs/arxa-studio/services/facades/design_facade.js';
+import { patchAnswersFlows } from '../designs/arxa-studio/services/repositories/project_repository.js';
 
 const clone = (x) => structuredClone(x);
 let n = 0;

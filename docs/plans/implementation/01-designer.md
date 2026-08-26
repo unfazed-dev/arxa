@@ -1,4 +1,4 @@
-# 01 — `appbox-designer`
+# 01 — `arxa-designer`
 
 **STATUS: COMPLETE** — executed 2026-07-27. All 15 steps done, selftest 14/14 with a demonstrated negative for every check. Five amendments to the plan are recorded at the bottom; each one was a defect in the plan, not a deviation from it.
 
@@ -37,7 +37,7 @@ whose fonts 404.
 ## Steps
 
 - [x] **1.1** Copy the skill into the repo as the SSOT:
-      `appbox/skills/appbox-designer/`. Exclude `.git/`, `runtime/node_modules/`,
+      `arxa/skills/arxa-designer/`. Exclude `.git/`, `runtime/node_modules/`,
       `agents/vendor/`, `agents/gen-pptx/`.
 - [x] **1.2** Create `THIRD-PARTY-NOTICES.md` at repo root containing the
       upstream MIT licence text and `Copyright (c) 2026 Jim Liu 宝玉` **verbatim**.
@@ -60,12 +60,12 @@ whose fonts 404.
       `baoyu`, `huashu`, `K3`, `p2` in: `SKILL.md`, `CONTEXT.md`,
       `system-prompt.md`, `DESIGN-ARCHITECTURE.md`, `built-in-skills/*.md`,
       `agents/*.md`, and every filename. Rename the skill to
-      `appbox-designer` in frontmatter `name:` and all cross-links.
-      **Verify with:** `grep -ril 'kimi\|baoyu\|huashu' skills/appbox-designer
+      `arxa-designer` in frontmatter `name:` and all cross-links.
+      **Verify with:** `grep -ril 'kimi\|baoyu\|huashu' skills/arxa-designer
       --exclude=LICENSE --exclude=THIRD-PARTY-NOTICES.md` → must return nothing.
-- [x] **1.6** Rewrite `SKILL.md` frontmatter `description:` for appbox's
+- [x] **1.6** Rewrite `SKILL.md` frontmatter `description:` for arxa's
       trigger surface. It must say the skill produces an **app prototype whose
-      structure the appbox pipeline consumes** — not decks, not docs.
+      structure the arxa pipeline consumes** — not decks, not docs.
 - [x] **1.7** **Add the viewport ladder.** New file
       `references/viewport-ladder.md`, doctrine sourced from
       `kimi-design-flutter/references/layout-archetypes.md`. Content:
@@ -87,7 +87,7 @@ whose fonts 404.
       - `app.routes.js` exports the route table **and** `shellRoots`.
 - [x] **1.10** Fold `DESIGN-ARCHITECTURE.md` (87 lines, already the upstream
       "spine architecture contract") into the above rather than replacing it.
-      Keep its structure; add the appbox-specific layers.
+      Keep its structure; add the arxa-specific layers.
 - [x] **1.11** **Keep the skill's own `runtime/` — do not adopt p2's
       `server.js`.** These diverged: the skill ships a factored Hono runtime
       (`runtime/lib/{router,state,templates,helpers,timers}.mjs`, `serve.mjs`,
@@ -109,21 +109,21 @@ whose fonts 404.
       `registry.json` and `surfaceId` while designing, so structure is never
       back-filled.
 - [x] **1.13** Symlink into the harness skills dir:
-      `ln -s <repo>/skills/appbox-designer ~/.agents/skills/appbox-designer`.
+      `ln -s <repo>/skills/arxa-designer ~/.agents/skills/arxa-designer`.
       The repo is the SSOT; the symlink is the consumer. Confirm with
-      `readlink ~/.agents/skills/appbox-designer`.
-- [x] **1.14** Write `skills/appbox-designer/selftest.sh`: scaffold a
+      `readlink ~/.agents/skills/arxa-designer`.
+- [x] **1.14** Write `skills/arxa-designer/selftest.sh`: scaffold a
       two-surface throwaway producer from the starter, assert the registry
       parses, every viewmodel declares a `surfaceId`, `shellRoots` is non-empty,
       and each surface renders at every ladder width without console errors.
 
 ## Done-when
 
-1. `grep -ril 'kimi\|baoyu\|huashu\|flutter-crew' skills/appbox-designer`
+1. `grep -ril 'kimi\|baoyu\|huashu\|flutter-crew' skills/arxa-designer`
    returns **nothing** except `LICENSE`.
 2. `THIRD-PARTY-NOTICES.md` exists and contains the upstream copyright line.
 3. `references/viewport-ladder.md` and `references/app-architecture.md` exist.
-4. `~/.agents/skills/appbox-designer` resolves to the repo copy.
+4. `~/.agents/skills/arxa-designer` resolves to the repo copy.
 5. `selftest.sh` passes, **including a negative case**: remove one `surfaceId`
    and assert the selftest exits `1` naming that viewmodel (R5).
 6. ~~A human can invoke the skill and produce a prototype whose `registry.json`
@@ -163,7 +163,7 @@ Step 1.3 deletes `productionize.md`; step 1.11 explicitly keeps
 `runtime/eject.mjs`, which `productionize.md` documents. Deleting the doc while
 shipping the tool left six dangling references. **`productionize.md` was
 restored.** Ejecting a prototype into a self-contained Hono app is also directly
-useful for appbox's "take your code and leave" position.
+useful for arxa's "take your code and leave" position.
 
 ### A3 — the lineage ADRs had nowhere to go
 
@@ -182,7 +182,7 @@ files that matter most (`SKILL.md` frontmatter, `system-prompt.md` header,
 `references/kimi.md`'s harness table, whose contents were harness-specific tool
 names). **`SKILL.md` and `references/harness-tools.md` were rewritten by hand**;
 `system-prompt.md` was repaired in place. `references/kimi.md` →
-`references/harness-tools.md`, restated capability-first because appbox is
+`references/harness-tools.md`, restated capability-first because arxa is
 harness-agnostic.
 
 Also: `// kimitail:` survived the strip (no word boundary after `kimi`) →
@@ -205,9 +205,9 @@ dependencies installed and exits non-zero.
 
 | | result |
 |---|---|
-| `selftest.sh` | **21/21 pass**, exit 0 — starter and `designs/appbox-app` |
+| `selftest.sh` | **21/21 pass**, exit 0 — starter and `designs/arxa-app` |
 | `selftest.sh --negative` | **22/22 proven**, exit 0 on both — one deliberate break per check, each required to flip *that* check, plus one inverse case (a comment naming a banned attribute must NOT trip the linter). A check with no mutation aborts the run (exit 65) rather than being counted proven |
-| `check_wiring.mjs` | the presence half: 4 joins (fragments, mutations-posted, urls-resolve, targets-exist). Verified against the reconstructed original defect — strip every `hx-` attribute from `designs/appbox-app` and the linter still reports clean while `mutations-posted` names the orphaned POST routes |
+| `check_wiring.mjs` | the presence half: 4 joins (fragments, mutations-posted, urls-resolve, targets-exist). Verified against the reconstructed original defect — strip every `hx-` attribute from `designs/arxa-app` and the linter still reports clean while `mutations-posted` names the orphaned POST routes |
 | tracked-tree check | every file under the artifact must appear in `git ls-files`. This is the gate the `.gitignore`/`build/` incident got past: 58 files reported, 3 surfaces missing, every gate green because none of them asked git. Two branches — untracked-inside-a-repo is the defect, no-repo-at-all is not, so an ejected app or scratch prototype reports a visible **skip** (20/20) rather than a red suite, and `--negative` skips that row instead of counting it proven |
 | every other check's negative | was "proved by hand"; now mechanical — the mutation table in `selftest.sh` is the record. A red baseline aborts with exit 65 instead of handing every mutation a free pass, which is how the starter's own unexempted theme flip surfaced |
 | `doctor.mjs` with nothing installed | exit 1, names all 6 missing pieces and the two commands that fix them |
@@ -222,7 +222,7 @@ dependencies installed and exits non-zero.
 - **`send-to-figma.md` is untested** — it needs a Figma MCP server that is not
   configured here. It fails with a clear message when the tools are absent.
 - **The `--targets` → active-rungs derivation is documented, not implemented.**
-  `shoot.mjs` accepts `--rungs`/`$APPBOX_LADDER`/`_d_meta.json`; nothing yet
+  `shoot.mjs` accepts `--rungs`/`$ARXA_LADDER`/`_d_meta.json`; nothing yet
   computes that list from a project's targets. **That is plan 06's job** —
   until it lands, the rung list is passed by hand.
 

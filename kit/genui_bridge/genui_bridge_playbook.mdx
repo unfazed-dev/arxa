@@ -1,15 +1,15 @@
 <Callout id="header" tone="info">
 
-# appbox_kit_genui_bridge — Per-Package Playbook
+# arxa_kit_genui_bridge — Per-Package Playbook
 
 
-`appbox_kit_genui_bridge` v**0.1.0** · `publish_to: 'none'` · status: **active**
+`arxa_kit_genui_bridge` v**0.1.0** · `publish_to: 'none'` · status: **active**
 
 
 **Role (one line):** Provider- and model-agnostic reliability core for making any LLM emit valid A2UI v0.
 
 
-**Scope of this document:** lets a human OR an LLM use, wire, and extend `appbox_kit_genui_bridge` **without reading its source**. The public surface below was extracted from the barrel; README content is folded into the narrative sections.
+**Scope of this document:** lets a human OR an LLM use, wire, and extend `arxa_kit_genui_bridge` **without reading its source**. The public surface below was extracted from the barrel; README content is folded into the narrative sections.
 
 
 ## Table of contents
@@ -22,16 +22,16 @@
 
 ### Overview & role
 
-Provider- and model-agnostic reliability core for making any LLM emit valid A2UI v0.9 JSON messages for Flutter's genui package — an A2UI message model, incremental stream parser, catalog-schema validation, and a bounded repair loop over a thin AppBoxKitChatStream port (OpenAI-compatible and Anthropic adapters). Pure Dart, zero Flutter imports.
+Provider- and model-agnostic reliability core for making any LLM emit valid A2UI v0.9 JSON messages for Flutter's genui package — an A2UI message model, incremental stream parser, catalog-schema validation, and a bounded repair loop over a thin ArxaKitChatStream port (OpenAI-compatible and Anthropic adapters). Pure Dart, zero Flutter imports.
 
 
 ### Public surface
 
-Exported from `lib/appbox_kit_genui_bridge.dart`:
+Exported from `lib/arxa_kit_genui_bridge.dart`:
 
-<Table id="genui_bridge-api" columns={["Symbol", "Kind", "Defined in"]} rows={[["AppBoxKitA2uiFormatException", "class", "src/appbox_kit_a2ui_message.dart"], ["AppBoxKitA2uiMessage", "class", "src/appbox_kit_a2ui_message.dart"], ["AppBoxKitCreateSurface", "class", "src/appbox_kit_a2ui_message.dart"], ["AppBoxKitUpdateComponents", "class", "src/appbox_kit_a2ui_message.dart"], ["AppBoxKitUpdateDataModel", "class", "src/appbox_kit_a2ui_message.dart"], ["AppBoxKitDeleteSurface", "class", "src/appbox_kit_a2ui_message.dart"], ["AppBoxKitA2uiStreamEvent", "class", "src/appbox_kit_a2ui_stream_parser.dart"], ["AppBoxKitA2uiMessageEvent", "class", "src/appbox_kit_a2ui_stream_parser.dart"], ["AppBoxKitA2uiTextEvent", "class", "src/appbox_kit_a2ui_stream_parser.dart"], ["AppBoxKitA2uiErrorEvent", "class", "src/appbox_kit_a2ui_stream_parser.dart"], ["AppBoxKitA2uiStreamParser", "class", "src/appbox_kit_a2ui_stream_parser.dart"], ["AppBoxKitChatRole", "enum", "src/appbox_kit_chat_stream.dart"], ["AppBoxKitChatMessage", "class", "src/appbox_kit_chat_stream.dart"], ["AppBoxKitChatStream", "abstract class", "src/appbox_kit_chat_stream.dart"], ["AppBoxKitChatStreamException", "class", "src/appbox_kit_chat_stream.dart"], ["AppBoxKitA2uiTurn", "class", "src/appbox_kit_genui_bridge.dart"], ["AppBoxKitGenuiBridgeFailure", "class", "src/appbox_kit_genui_bridge.dart"], ["AppBoxKitGenuiBridge", "class", "src/appbox_kit_genui_bridge.dart"], ["AppBoxKitJsonSchema", "typedef", "src/appbox_kit_json_schema.dart"], ["AppBoxKitSchemaError", "class", "src/appbox_kit_json_schema.dart"], ["AppBoxKitJsonSchemaValidator", "class", "src/appbox_kit_json_schema.dart"], ["AppBoxKitSseTransport", "typedef", "src/appbox_kit_sse_transport.dart"], ["AppBoxKitAnthropicChatStream", "class", "src/adapters/appbox_kit_anthropic_chat_stream.dart"], ["AppBoxKitOpenAIParamPolicy", "enum", "src/adapters/appbox_kit_openai_chat_stream.dart"], ["AppBoxKitOpenAIChatStream", "class", "src/adapters/appbox_kit_openai_chat_stream.dart"]]} />
+<Table id="genui_bridge-api" columns={["Symbol", "Kind", "Defined in"]} rows={[["ArxaKitA2uiFormatException", "class", "src/arxa_kit_a2ui_message.dart"], ["ArxaKitA2uiMessage", "class", "src/arxa_kit_a2ui_message.dart"], ["ArxaKitCreateSurface", "class", "src/arxa_kit_a2ui_message.dart"], ["ArxaKitUpdateComponents", "class", "src/arxa_kit_a2ui_message.dart"], ["ArxaKitUpdateDataModel", "class", "src/arxa_kit_a2ui_message.dart"], ["ArxaKitDeleteSurface", "class", "src/arxa_kit_a2ui_message.dart"], ["ArxaKitA2uiStreamEvent", "class", "src/arxa_kit_a2ui_stream_parser.dart"], ["ArxaKitA2uiMessageEvent", "class", "src/arxa_kit_a2ui_stream_parser.dart"], ["ArxaKitA2uiTextEvent", "class", "src/arxa_kit_a2ui_stream_parser.dart"], ["ArxaKitA2uiErrorEvent", "class", "src/arxa_kit_a2ui_stream_parser.dart"], ["ArxaKitA2uiStreamParser", "class", "src/arxa_kit_a2ui_stream_parser.dart"], ["ArxaKitChatRole", "enum", "src/arxa_kit_chat_stream.dart"], ["ArxaKitChatMessage", "class", "src/arxa_kit_chat_stream.dart"], ["ArxaKitChatStream", "abstract class", "src/arxa_kit_chat_stream.dart"], ["ArxaKitChatStreamException", "class", "src/arxa_kit_chat_stream.dart"], ["ArxaKitA2uiTurn", "class", "src/arxa_kit_genui_bridge.dart"], ["ArxaKitGenuiBridgeFailure", "class", "src/arxa_kit_genui_bridge.dart"], ["ArxaKitGenuiBridge", "class", "src/arxa_kit_genui_bridge.dart"], ["ArxaKitJsonSchema", "typedef", "src/arxa_kit_json_schema.dart"], ["ArxaKitSchemaError", "class", "src/arxa_kit_json_schema.dart"], ["ArxaKitJsonSchemaValidator", "class", "src/arxa_kit_json_schema.dart"], ["ArxaKitSseTransport", "typedef", "src/arxa_kit_sse_transport.dart"], ["ArxaKitAnthropicChatStream", "class", "src/adapters/arxa_kit_anthropic_chat_stream.dart"], ["ArxaKitOpenAIParamPolicy", "enum", "src/adapters/arxa_kit_openai_chat_stream.dart"], ["ArxaKitOpenAIChatStream", "class", "src/adapters/arxa_kit_openai_chat_stream.dart"]]} />
 
-Test doubles in `lib/appbox_kit_testing.dart`: `FakeAppBoxKitChatStream`.
+Test doubles in `lib/arxa_kit_testing.dart`: `FakeArxaKitChatStream`.
 
 Scripts and call-counts — tests never touch platform channels.
 
@@ -39,16 +39,16 @@ Scripts and call-counts — tests never touch platform channels.
 ### Usage & wiring
 
 ```dart
-import 'package:appbox_kit_genui_bridge/appbox_kit_genui_bridge.dart';
+import 'package:arxa_kit_genui_bridge/arxa_kit_genui_bridge.dart';
 
-final chat = AppBoxKitOpenAIChatStream(
+final chat = ArxaKitOpenAIChatStream(
   model: 'qwen3:8b',
   baseUrl: Uri.parse('http://localhost:11434'), // no apiKey — local server
 );
 
-final bridge = AppBoxKitGenuiBridge(
+final bridge = ArxaKitGenuiBridge(
   chat: chat,
-  catalogId: 'appbox.dev:catalog',
+  catalogId: 'arxa.dev:catalog',
   catalog: {
     'StageCard': {
       'type': 'object',
@@ -67,32 +67,32 @@ final bridge = AppBoxKitGenuiBridge(
 
 try {
   final turn = await bridge.generate([
-    const AppBoxKitChatMessage.user('show me the build pipeline status'),
+    const ArxaKitChatMessage.user('show me the build pipeline status'),
   ]);
   // Only valid messages ever get here. Forward the canonical JSONL to the
   // Flutter client, whose genui A2uiTransportAdapter.addChunk() consumes it:
   final jsonl = turn.toJsonl();
-} on AppBoxKitGenuiBridgeFailure catch (f) {
+} on ArxaKitGenuiBridgeFailure catch (f) {
   // Still invalid after 1 + maxRepairs attempts: f.errors, f.lastRawOutput.
 }
 ```
 
 What you get, in layers (each usable on its own):
 
-- **`AppBoxKitA2uiMessage` model** — parse/serialize the four v0.9 verbs
+- **`ArxaKitA2uiMessage` model** — parse/serialize the four v0.9 verbs
   (`createSurface`, `updateComponents`, `updateDataModel`, `deleteSurface`).
   Read-tolerant of the rename-in-flight (`surfaceUpdate`/`dataModelUpdate`
   accepted as aliases), canonical v0.9 on write. Strict on
   `version == 'v0.9'`, because that is what genui's `a2ui_core` accepts.
-- **`AppBoxKitA2uiStreamParser`** — `StreamTransformer<String, AppBoxKitA2uiStreamEvent>` that
+- **`ArxaKitA2uiStreamParser`** — `StreamTransformer<String, ArxaKitA2uiStreamEvent>` that
   assembles messages split across arbitrary chunk boundaries (fenced blocks,
   balanced-brace objects, JSONL separators), passes prose through as
-  `AppBoxKitA2uiTextEvent`, and surfaces malformed/truncated payloads as
-  `AppBoxKitA2uiErrorEvent`s instead of throwing.
-- **`AppBoxKitGenuiBridge`** — prompt → parse → catalog validation → bounded repair,
+  `ArxaKitA2uiTextEvent`, and surfaces malformed/truncated payloads as
+  `ArxaKitA2uiErrorEvent`s instead of throwing.
+- **`ArxaKitGenuiBridge`** — prompt → parse → catalog validation → bounded repair,
   per turn. An attempt that mixes valid and invalid messages is discarded
   whole; a turn's messages are only emitted once every one validates.
-- **`lib/appbox_kit_testing.dart`** — `FakeAppBoxKitChatStream` (script queues + call recording)
+- **`lib/arxa_kit_testing.dart`** — `FakeArxaKitChatStream` (script queues + call recording)
   for testing your own bridge consumer without network.
 
 
@@ -108,23 +108,23 @@ See `kit_matrix.md` for the full routing + dependency graph.
 Four layers, each usable on its own, all depending inward on the protocol
 core — nothing depends on Flutter or another kit:
 
-- **Protocol core** (`appbox_kit_a2ui_message.dart`) — the four-verb `AppBoxKitA2uiMessage`
+- **Protocol core** (`arxa_kit_a2ui_message.dart`) — the four-verb `ArxaKitA2uiMessage`
   model. The single seam that absorbs A2UI renames: v0.8 verb aliases are
   accepted on read, canonical v0.9 is always written.
-- **Stream layer** (`appbox_kit_a2ui_stream_parser.dart`) — `AppBoxKitA2uiStreamParser`, a
-  `StreamTransformer<String, AppBoxKitA2uiStreamEvent>`. Errors flow as data
-  (`AppBoxKitA2uiErrorEvent`), never as exceptions, so the repair loop can consume
+- **Stream layer** (`arxa_kit_a2ui_stream_parser.dart`) — `ArxaKitA2uiStreamParser`, a
+  `StreamTransformer<String, ArxaKitA2uiStreamEvent>`. Errors flow as data
+  (`ArxaKitA2uiErrorEvent`), never as exceptions, so the repair loop can consume
   them without try/catch plumbing.
-- **Port + adapters** (`appbox_kit_chat_stream.dart`, `appbox_kit_sse_transport.dart`,
-  `adapters/`) — the one abstraction is `AppBoxKitChatStream`
+- **Port + adapters** (`arxa_kit_chat_stream.dart`, `arxa_kit_sse_transport.dart`,
+  `adapters/`) — the one abstraction is `ArxaKitChatStream`
   (`Stream<String> complete(messages, {schema})`). Adapters build the
   provider request and parse SSE; the actual HTTP is an injected
-  `AppBoxKitSseTransport` function (default: dart:io `appBoxKitHttpPostStream`), which is how
+  `ArxaKitSseTransport` function (default: dart:io `arxaKitHttpPostStream`), which is how
   tests assert request shapes with zero network.
-- **Orchestrator** (`appbox_kit_genui_bridge.dart`) — `AppBoxKitGenuiBridge.generate` runs one
+- **Orchestrator** (`arxa_kit_genui_bridge.dart`) — `ArxaKitGenuiBridge.generate` runs one
   turn: prompt (catalog schemas embedded) → streamed parse → catalog
   validation → bounded repair (re-ask with the error appended, n ≤ 2) →
-  `AppBoxKitA2uiTurn`, or a typed `AppBoxKitGenuiBridgeFailure`. An attempt that mixes valid
+  `ArxaKitA2uiTurn`, or a typed `ArxaKitGenuiBridgeFailure`. An attempt that mixes valid
   and invalid messages is discarded whole — only fully valid batches leave
   the bridge.
 
@@ -136,53 +136,53 @@ core — nothing depends on Flutter or another kit:
   `beginRendering` is *not* aliased (its body shape differs from
   `createSurface`). A2UI is pre-1.0; when re-pinning, re-fetch the fixtures
   in `assets/a2ui/` and update `PROVENANCE.md`.
-- **`AppBoxKitJsonSchemaValidator` is a subset validator** — `$ref`/`$defs`,
+- **`ArxaKitJsonSchemaValidator` is a subset validator** — `$ref`/`$defs`,
   `allOf`/`oneOf`/`anyOf`, `pattern` and `format` are ignored. Flatten refs
   and unions out of catalog schemas before handing them over (they are
   runtime inputs, not compiled in).
 - **Batch semantics** — `generate` buffers each attempt; there is no
   progressive emission of a partial batch. Consumers forwarding to a genui
-  client should send `AppBoxKitA2uiTurn.toJsonl()`.
+  client should send `ArxaKitA2uiTurn.toJsonl()`.
 - **Provider-native structured output is never load-bearing** — the
   `schema` hint maps to OpenAI `response_format` but is *ignored* by the
   Anthropic adapter (no shape-preserving native mode). Reliability comes
   from validate + repair, not from the hint.
-- **`appBoxKitHttpPostStream` has no timeout or retry** — wrap the `AppBoxKitSseTransport`
+- **`arxaKitHttpPostStream` has no timeout or retry** — wrap the `ArxaKitSseTransport`
   seam in the embedding daemon if it needs either. Auth is an injected
   header per request; nothing is stored.
 - **Typed failure** — after `1 + maxRepairs` attempts, `generate` throws
-  `AppBoxKitGenuiBridgeFailure` carrying `errors` and `lastRawOutput` for
+  `ArxaKitGenuiBridgeFailure` carrying `errors` and `lastRawOutput` for
   diagnostics; it is an exception, not a silent empty turn.
 
 
 ### Testing
 
-`appbox_kit_genui_bridge` ships `lib/appbox_kit_testing.dart`.
+`arxa_kit_genui_bridge` ships `lib/arxa_kit_testing.dart`.
 
 
 ### Features
 
-<Checklist id="genui_bridge-features" items={[{"id": "genui_bridge-feat-0", "label": "`AppBoxKitA2uiFormatException` \u2014 class"}, {"id": "genui_bridge-feat-1", "label": "`AppBoxKitA2uiMessage` \u2014 class"}, {"id": "genui_bridge-feat-2", "label": "`AppBoxKitCreateSurface` \u2014 class"}, {"id": "genui_bridge-feat-3", "label": "`AppBoxKitUpdateComponents` \u2014 class"}, {"id": "genui_bridge-feat-4", "label": "`AppBoxKitUpdateDataModel` \u2014 class"}, {"id": "genui_bridge-feat-5", "label": "`AppBoxKitDeleteSurface` \u2014 class"}, {"id": "genui_bridge-feat-6", "label": "`AppBoxKitA2uiStreamEvent` \u2014 class"}, {"id": "genui_bridge-feat-7", "label": "`AppBoxKitA2uiMessageEvent` \u2014 class"}, {"id": "genui_bridge-feat-8", "label": "`AppBoxKitA2uiTextEvent` \u2014 class"}, {"id": "genui_bridge-feat-9", "label": "`AppBoxKitA2uiErrorEvent` \u2014 class"}, {"id": "genui_bridge-feat-10", "label": "`AppBoxKitA2uiStreamParser` \u2014 class"}, {"id": "genui_bridge-feat-11", "label": "`AppBoxKitChatRole` \u2014 enum"}]} />
+<Checklist id="genui_bridge-features" items={[{"id": "genui_bridge-feat-0", "label": "`ArxaKitA2uiFormatException` \u2014 class"}, {"id": "genui_bridge-feat-1", "label": "`ArxaKitA2uiMessage` \u2014 class"}, {"id": "genui_bridge-feat-2", "label": "`ArxaKitCreateSurface` \u2014 class"}, {"id": "genui_bridge-feat-3", "label": "`ArxaKitUpdateComponents` \u2014 class"}, {"id": "genui_bridge-feat-4", "label": "`ArxaKitUpdateDataModel` \u2014 class"}, {"id": "genui_bridge-feat-5", "label": "`ArxaKitDeleteSurface` \u2014 class"}, {"id": "genui_bridge-feat-6", "label": "`ArxaKitA2uiStreamEvent` \u2014 class"}, {"id": "genui_bridge-feat-7", "label": "`ArxaKitA2uiMessageEvent` \u2014 class"}, {"id": "genui_bridge-feat-8", "label": "`ArxaKitA2uiTextEvent` \u2014 class"}, {"id": "genui_bridge-feat-9", "label": "`ArxaKitA2uiErrorEvent` \u2014 class"}, {"id": "genui_bridge-feat-10", "label": "`ArxaKitA2uiStreamParser` \u2014 class"}, {"id": "genui_bridge-feat-11", "label": "`ArxaKitChatRole` \u2014 enum"}]} />
 
 
 ### Decisions / ADRs
 
-- **Pure Dart, zero dependencies** — the primary consumer is appboxd, a
+- **Pure Dart, zero dependencies** — the primary consumer is arxa, a
   dart:io daemon, so the package has no Flutter imports and no third-party
   deps at all. This keeps it inside the repo's standalone-topology default.
-- **dart:io HTTP behind a `AppBoxKitSseTransport` typedef seam, not `package:http`** —
+- **dart:io HTTP behind a `ArxaKitSseTransport` typedef seam, not `package:http`** —
   no kit in the repo depends on `http`/`dio`, and the function seam makes
   both adapters unit-testable without mocking dart:io types.
 - **Hand-rolled subset schema validator** — no kit depends on a JSON Schema
   package and the catalog's dataSchemas are caller-controlled runtime
   inputs, so the object/properties/required subset suffices (ceiling marked
-  `# kimitail:` in `appbox_kit_json_schema.dart`; upgrade to a real schema package the
+  `# kimitail:` in `arxa_kit_json_schema.dart`; upgrade to a real schema package the
   day a catalog needs union types).
-- **Rename tolerance in exactly one place** — the appbox plan pins the
+- **Rename tolerance in exactly one place** — the arxa plan pins the
   bridge against genui's experimental 0.x API "with one adapter seam for
-  renames"; that seam is `AppBoxKitA2uiMessage.fromJson`'s alias map.
-- **Unprefixed package name** — `appbox_kit_genui_bridge` (like `ui_library` and
-  `branding`) is the name the appbox consolidation plan
+  renames"; that seam is `ArxaKitA2uiMessage.fromJson`'s alias map.
+- **Unprefixed package name** — `arxa_kit_genui_bridge` (like `ui_library` and
+  `branding`) is the name the arxa consolidation plan
   (`consolidate-one-app-plus-daemon.md`, "Kit candidate — kit_genui")
   assigns; the Flutter layer (`kit_genui`) is a future sibling kit.
 - **Provenance fixtures** — `assets/a2ui/server_to_client.json` is a
@@ -202,7 +202,7 @@ Official docs and tooling:
 - [stacked_cli (pub.dev)](https://pub.dev/packages/stacked_cli) — Scaffolding CLI for new Stacked apps/views/services.
 - [Flutter — official documentation](https://docs.flutter.dev) — Framework docs, platform integration, performance.
 - [Dart — official documentation](https://dart.dev) — Language tour, async, package ecosystem.
-- [Dart & Flutter MCP server (official)](https://dart.dev/tools/mcp-server) — Ships with the Dart SDK (dart mcp-server). Exposes analyzer diagnostics, pub, tests, and live Flutter app introspection via DTD. Wired in appbox_kit/.mcp.json.
+- [Dart & Flutter MCP server (official)](https://dart.dev/tools/mcp-server) — Ships with the Dart SDK (dart mcp-server). Exposes analyzer diagnostics, pub, tests, and live Flutter app introspection via DTD. Wired in arxa_kit/.mcp.json.
 <!-- kb:end -->
 
 <QuestionForm id="open-questions" questions={[

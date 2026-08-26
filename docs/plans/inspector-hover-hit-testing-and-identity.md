@@ -4,9 +4,9 @@
 
 **Goal:** Every authored widget on a served design surface — including Label/Heading/Txt leaves and icons — resolves to its own `data-el` identity on hover/click, with per-instance disambiguation, correct pane rendering, and gate + probe enforcement so regressions are mechanical failures, not silent mis-resolves.
 
-**Architecture:** The inspector island (`skills/appbox-designer/runtime/vendor/inspect.js`) resolves hovers via an `elementsFromPoint` stack-walk to the nearest `[data-el]` and posts `name + instance path` to the design server's inspector endpoint. Identity is authored only (JSX primitives spread `inspectAttrs`); the Dart widget gate makes raw text unrepresentable; probes assert the full resolution surface.
+**Architecture:** The inspector island (`skills/arxa-designer/runtime/vendor/inspect.js`) resolves hovers via an `elementsFromPoint` stack-walk to the nearest `[data-el]` and posts `name + instance path` to the design server's inspector endpoint. Identity is authored only (JSX primitives spread `inspectAttrs`); the Dart widget gate makes raw text unrepresentable; probes assert the full resolution surface.
 
-**Tech stack:** Vanilla JS island (no ad-hoc client JS beyond named islands), Hono+htmx TSX views, Dart gate/probes (`appboxd`).
+**Tech stack:** Vanilla JS island (no ad-hoc client JS beyond named islands), Hono+htmx TSX views, Dart gate/probes (`arxa`).
 
 ## Decisions (locked in grill 2026-08-08)
 
@@ -32,18 +32,18 @@
 - `inspect.js:241` — bubble-phase `pointermove`, `e.target` only (topmost element; occluded widgets unreachable).
 - `primitives.tsx:10-19,24-47` — Label(span)/Heading(h*)/Txt(p) all emit `data-el` correctly; primitives are NOT the bug.
 - `gate_design_widgets.dart:782,830-833` — identity required only for `{button,a,input,select,textarea}`; raw text tags exempt.
-- `designs/appbox-studio/ui/runtime/icon.tsx` — no `inspectAttrs`; every icon resolves to its parent.
+- `designs/arxa-studio/ui/runtime/icon.tsx` — no `inspectAttrs`; every icon resolves to its parent.
 - `screen_stub_view.tsx:112` — raw `<span class="stub-thumb sm">`; `:113` — `screen-stub:row-name` duplicated per loop row.
 - `inspector_pane.tsx:120,182` — `TypeBadge type={el.kind}` unstyled for `.tb-span/.tb-p/.tb-h1`; pin posts name only.
 - `ui/common/widgets/chrome.tsx`, `header_panel.tsx` — zero `inspectAttrs`.
-- `appboxd/lib/probes/studio/probe_inspect.dart` — no assertions on text leaves, icons, duplicates, occlusion.
+- `arxa/lib/probes/studio/probe_inspect.dart` — no assertions on text leaves, icons, duplicates, occlusion.
 
 ---
 
 ### Task 1: Gate — make raw text unrepresentable
 
 **Files:**
-- Modify: `appboxd/lib/gate_design_widgets.dart` (around `:782` `_interactiveTags` and `:830-833` identity check)
+- Modify: `arxa/lib/gate_design_widgets.dart` (around `:782` `_interactiveTags` and `:830-833` identity check)
 - Test: extend the gate's existing fixture/self-test harness alongside the current interactive-tag cases
 
 **Rule:** For every element with non-whitespace *direct* text content, its nearest ancestor-or-self carrying `data-el` must have `data-inspect-role` in `_textBearingRoles = {label, heading, text, button, link, chip, badge, input, option}`. A container-role carrier (card/panel/list/section/nav…) or no carrier at all = FAIL with message: `raw text "<snippet>" in <tag> — author via Label/Heading/Txt (or a text-bearing widget)`.
@@ -51,14 +51,14 @@
 - [ ] **Step 1: failing test** — add gate fixture: a card (`data-el`, role `card`) containing `<span>hello</span>`. Expect gate failure with the message above. Run the gate self-test; confirm it fails (rule not implemented).
 - [ ] **Step 2: implement** — add `_textBearingRoles` const; in the element walk, for each node with non-whitespace direct text, resolve nearest `data-el` ancestor-or-self, check role membership. Whitespace-only and script/style contents exempt.
 - [ ] **Step 3: pass** — gate self-test green; also add a passing fixture (text inside Label span, text directly inside a `data-el` button).
-- [ ] **Step 4: sweep** — run the gate across `designs/appbox-studio`; convert every newly failing raw text node to Label/Heading/Txt (known: `screen_stub_view.tsx:112` thumb span is empty → unaffected; check chrome/header_panel after Task 3). Re-run until green.
+- [ ] **Step 4: sweep** — run the gate across `designs/arxa-studio`; convert every newly failing raw text node to Label/Heading/Txt (known: `screen_stub_view.tsx:112` thumb span is empty → unaffected; check chrome/header_panel after Task 3). Re-run until green.
 - [ ] **Step 5: commit** `feat: gate requires text-bearing widget identity for rendered text`
 
 ### Task 2: Icon becomes a first-class widget
 
 **Files:**
-- Modify: `designs/appbox-studio/ui/runtime/icon.tsx`
-- Consumes: `inspectAttrs` from `designs/appbox-studio/ui/common/widgets/primitives.tsx:10`
+- Modify: `designs/arxa-studio/ui/runtime/icon.tsx`
+- Consumes: `inspectAttrs` from `designs/arxa-studio/ui/common/widgets/primitives.tsx:10`
 
 - [ ] **Step 1:** Spread `inspectAttrs(props.name ?? `icon:${glyph}`, { role: 'icon', style: 'icon' })` on the `<svg>` root (glyph = the icon's registered name prop). Accept optional `name`/`fn` passthrough props mirroring `TextProps`.
 - [ ] **Step 2:** Verify in a served surface: hover any icon → badge shows `icon:<glyph>`, hovering an internal `path` shows the same (collapse lands on the svg's own `data-el`). No path/group ever selectable.
@@ -67,16 +67,16 @@
 ### Task 3: Annotate chrome holes
 
 **Files:**
-- Modify: `designs/appbox-studio/ui/common/widgets/chrome.tsx`, `designs/appbox-studio/ui/common/widgets/header_panel.tsx`
+- Modify: `designs/arxa-studio/ui/common/widgets/chrome.tsx`, `designs/arxa-studio/ui/common/widgets/header_panel.tsx`
 
 - [ ] **Step 1:** Spread `inspectAttrs` on each widget's root element (names namespaced like existing widgets, e.g. `chrome:top-bar`, `header-panel`; roles from DESIGN-ARCHITECTURE vocabulary). Any rendered text inside them must flow through Label/Heading/Txt (Task 1 gate will enforce).
-- [ ] **Step 2:** `appbox design lint <artifact-dir>` clean; gate green.
+- [ ] **Step 2:** `arxa design lint <artifact-dir>` clean; gate green.
 - [ ] **Step 3: commit** `feat: chrome and header panel widgets carry inspect identity`
 
 ### Task 4: inspect.js — stack-walk hit-testing + instance paths
 
 **Files:**
-- Modify: `skills/appbox-designer/runtime/vendor/inspect.js` (`inspectTarget` `:98-106`, `pointermove` `:241`, `measure()` `:173-188`, `buildChain` `:108-120`)
+- Modify: `skills/arxa-designer/runtime/vendor/inspect.js` (`inspectTarget` `:98-106`, `pointermove` `:241`, `measure()` `:173-188`, `buildChain` `:108-120`)
 
 **Resolution spec (replaces `inspectTarget`):**
 ```js
@@ -103,7 +103,7 @@ const resolveAt = (x, y, fallbackTarget) => {
 ### Task 5: inspect.js — per-fragment highlight
 
 **Files:**
-- Modify: `skills/appbox-designer/runtime/vendor/inspect.js` (`ensureOverlay`/`showOverlay`), `skills/appbox-designer/runtime/vendor/viewer.css` (`:320-321` region)
+- Modify: `skills/arxa-designer/runtime/vendor/inspect.js` (`ensureOverlay`/`showOverlay`), `skills/arxa-designer/runtime/vendor/viewer.css` (`:320-321` region)
 
 - [ ] **Step 1:** Overlay holds a reusable pool of absolutely-positioned rect divs inside the `position:fixed` `data-inspect-overlay` container. `showOverlay(el)`: `rects = el.getClientRects()`; draw one div per rect (batch read then write in one rAF; position via `transform`). Blocks yield exactly one rect — visual parity.
 - [ ] **Step 2:** `rects.length === 0` (empty inline/`display:contents`) → draw the nearest block container's rect but keep the leaf's name/identity in the badge and POST.
@@ -113,7 +113,7 @@ const resolveAt = (x, y, fallbackTarget) => {
 ### Task 6: Pane — leaf badges + instance-aware pin
 
 **Files:**
-- Modify: `designs/appbox-studio/ui/views/main_shell/…/inspector_pane.tsx` (`:120` TypeBadge, `:182` pin POST), server route handling the inspector session lock
+- Modify: `designs/arxa-studio/ui/views/main_shell/…/inspector_pane.tsx` (`:120` TypeBadge, `:182` pin POST), server route handling the inspector session lock
 
 - [ ] **Step 1:** Map `kind` → styled badge set: `span→text·label`, `p→text·body`, `h1|h2|h3→text·heading`, `svg→icon`; unknown kinds get a neutral styled badge (no more bare `.tb-span/.tb-p/.tb-h1`).
 - [ ] **Step 2:** Pin/lock POST includes `instance`; session lock stores `{name, instance}`; pane header renders `name · k/n` when `n > 1`.
@@ -123,7 +123,7 @@ const resolveAt = (x, y, fallbackTarget) => {
 ### Task 7: Probes — cover the regression surface
 
 **Files:**
-- Modify: `appboxd/lib/probes/studio/probe_inspect.dart` (+ its fixture surface)
+- Modify: `arxa/lib/probes/studio/probe_inspect.dart` (+ its fixture surface)
 
 New assertions (each = hover/click via CDP, then assert POST payload/badge):
 - [ ] Label, Heading, Txt each resolve to their OWN `data-el` (`role` label/heading/text), never the parent container.
@@ -136,7 +136,7 @@ New assertions (each = hover/click via CDP, then assert POST payload/badge):
 
 ### Task 8: End-to-end verification
 
-- [ ] `appbox design lint` + widget gate green across `designs/appbox-studio`.
+- [ ] `arxa design lint` + widget gate green across `designs/arxa-studio`.
 - [ ] Serve studio, arm inspector: walk one real screen — every visible element resolves to an authored widget or the screen sentinel; no raw span/path/div identity anywhere.
 - [ ] Full probe suite exit-verdict green. Final commit if any stragglers.
 

@@ -1,15 +1,15 @@
 // The showcase's brand accent: the app root wires the authored 'moss' swatch
-// (theme.json SSOT, mirrored in appbox_kit_core) into BOTH theme constructors,
-// instead of the kit-default studio violet (AppBoxKitColors.accent).
+// (theme.json SSOT, mirrored in arxa_kit_core) into BOTH theme constructors,
+// instead of the kit-default studio violet (ArxaKitColors.accent).
 //
 // This is a one-line property with no visible surface of its own (the accent
 // reaches every chrome surface through Theme.of(context).colorScheme), so
 // nothing else in the suite would notice it being dropped.
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:appbox_kit_showcase_app/main.dart' show ShowcaseApp;
-import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart'
-    show AppBoxKitColors, appBoxKitAccentByName;
+import 'package:arxa_kit_showcase_app/main.dart' show ShowcaseApp;
+import 'package:arxa_kit_ui_library/arxa_kit_ui_library.dart'
+    show ArxaKitColors, arxaKitAccentByName;
 
 import 'helpers.dart';
 
@@ -31,7 +31,7 @@ void main() {
     final MaterialApp app =
         tester.widget<MaterialApp>(find.byType(MaterialApp).first);
 
-    final moss = appBoxKitAccentByName('moss');
+    final moss = arxaKitAccentByName('moss');
     expect(app.theme?.colorScheme.primary, moss.light.accent,
         reason: 'light mode must carry the moss swatch light accent');
     expect(app.darkTheme?.colorScheme.primary, moss.dark.accent,
@@ -39,7 +39,7 @@ void main() {
 
     // Anti-vacuous: moss must actually differ from the kit-default violet the
     // theme constructors fall back to, or the assertions above prove nothing.
-    expect(moss.light.accent, isNot(AppBoxKitColors.accent));
-    expect(moss.dark.accent, isNot(AppBoxKitColors.accent));
+    expect(moss.light.accent, isNot(ArxaKitColors.accent));
+    expect(moss.dark.accent, isNot(ArxaKitColors.accent));
   }, timeout: const Timeout(Duration(minutes: 2)));
 }

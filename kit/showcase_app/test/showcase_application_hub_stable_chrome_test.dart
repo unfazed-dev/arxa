@@ -1,8 +1,8 @@
 // Regression guard for the Notes-tab "reload on tap" fix.
 //
 // Root cause: ShowcaseApplicationHubView used to own the per-tab chrome conditionally —
-//   appBar: inNotes ? null : PreferredSize(... AppBoxKitNativeAppBar ...)
-//   floatingActionButton: index == 3 ? null : SizedBox(... AppBoxKitNativeFabMenu ...)
+//   appBar: inNotes ? null : PreferredSize(... ArxaKitNativeAppBar ...)
+//   floatingActionButton: index == 3 ? null : SizedBox(... ArxaKitNativeFabMenu ...)
 // so every Notes tap unmounted/remounted native chrome (platform views) and
 // re-faded the body → "feels like the app reloaded." The fix hoists chrome
 // into each tab shell (the host's Train/Shop shell paradigm), leaving the
@@ -35,7 +35,7 @@ void main() {
     final outer = scaffolds.firstWhere(
       (s) => s.bottomNavigationBar != null,
       orElse: () => throw StateError('outer shell Scaffold (with tab bar) '
-          'not found — did the shell stop rendering AppBoxKitNativeTabBar?'),
+          'not found — did the shell stop rendering ArxaKitNativeTabBar?'),
     );
 
     expect(outer.appBar, isNull,

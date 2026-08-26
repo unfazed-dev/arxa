@@ -74,15 +74,15 @@
 library;
 
 import 'package:flutter/material.dart' show BuildContext, TimeOfDay;
-import 'package:appbox_kit_media/appbox_kit_media.dart'
-    show AppBoxKitPlaybackProgress, AppBoxKitPlaybackState;
-import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
+import 'package:arxa_kit_media/arxa_kit_media.dart'
+    show ArxaKitPlaybackProgress, ArxaKitPlaybackState;
+import 'package:arxa_kit_ui_library/arxa_kit_ui_library.dart';
 
-import 'package:appbox_kit_showcase_app/data/models/showcase_notes_models/models.dart';
-import 'package:appbox_kit_showcase_app/enums/showcase_notes_enums/enums.dart';
-import 'package:appbox_kit_showcase_app/services/showcase_notes_services/facades/showcase_notes_facade_service.dart';
+import 'package:arxa_kit_showcase_app/data/models/showcase_notes_models/models.dart';
+import 'package:arxa_kit_showcase_app/enums/showcase_notes_enums/enums.dart';
+import 'package:arxa_kit_showcase_app/services/showcase_notes_services/facades/showcase_notes_facade_service.dart';
 
-class ShowcaseNoteEditorViewModel extends AppBoxKitViewModel {
+class ShowcaseNoteEditorViewModel extends ArxaKitViewModel {
   // ── Setup ──────────────────────────────────────────────────────────────────
 
   ShowcaseNoteEditorViewModel({required this.noteId, this.quickAction}) {
@@ -104,7 +104,7 @@ class ShowcaseNoteEditorViewModel extends AppBoxKitViewModel {
   final String noteId;
 
   final ShowcaseNotesFacadeService _notes =
-      appBoxKitLocator<ShowcaseNotesFacadeService>();
+      arxaKitLocator<ShowcaseNotesFacadeService>();
 
   // ── Initial state ─────────────────────────────────────────────────────────
 
@@ -135,14 +135,14 @@ class ShowcaseNoteEditorViewModel extends AppBoxKitViewModel {
   ValueStream<String?> get playingAttachmentId$ => _notes.playingAttachmentId$;
 
   /// [11. Playing audio] Whether the player is playing, paused, or loading.
-  Stream<AppBoxKitPlaybackState> get playerState$ => _notes.playerState$;
+  Stream<ArxaKitPlaybackState> get playerState$ => _notes.playerState$;
 
   /// [11. Playing audio] Whether this attachment is the one playing right now.
   Stream<bool> isAttachmentPlaying$(String attachmentId) =>
       _notes.isAttachmentPlaying$(attachmentId);
 
   /// [11. Playing audio] Live progress for the audio scrubber.
-  Stream<AppBoxKitPlaybackProgress> get playbackProgress$ =>
+  Stream<ArxaKitPlaybackProgress> get playbackProgress$ =>
       _notes.playbackProgress$;
 
   // ── Commands ─────────────────────────────────────────

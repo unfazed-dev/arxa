@@ -1,17 +1,17 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "$id": "pipeline/state/intake.state.schema.json",
-  "title": "appbox intake state",
-  "description": "The pipeline-owned state slot for intake answers (plan 10.1). The answers shape is defined by skills/appbox-intake/intake.schema.json (the engine's artefact format — the skill keeps it); this schema binds those answers into pipeline state and records where the engine wrote its emitted artefacts. Architecture §22: intake elicits; it does not generate. Every field in `answers` carries provenance (client|founder|inferred); every surface carries {id,label,shell,provenance}.",
+  "title": "arxa intake state",
+  "description": "The pipeline-owned state slot for intake answers (plan 10.1). The answers shape is defined by skills/arxa-intake/intake.schema.json (the engine's artefact format — the skill keeps it); this schema binds those answers into pipeline state and records where the engine wrote its emitted artefacts. Architecture §22: intake elicits; it does not generate. Every field in `answers` carries provenance (client|founder|inferred); every surface carries {id,label,shell,provenance}.",
   "type": "object",
   "required": ["answers", "artefacts"],
   "additionalProperties": false,
   "properties": {
     "answers": {
-      "description": "The elicited intake answers, or null before intake has run. When non-null, conforms to skills/appbox-intake/intake.schema.json: product, audience, appMustDo, targets, existingSystems, brand, constraints, outOfScope, surfaces — each with provenance.",
+      "description": "The elicited intake answers, or null before intake has run. When non-null, conforms to skills/arxa-intake/intake.schema.json: product, audience, appMustDo, targets, existingSystems, brand, constraints, outOfScope, surfaces — each with provenance.",
       "oneOf": [
         { "type": "null" },
-        { "$ref": "skills/appbox-intake/intake.schema.json" }
+        { "$ref": "skills/arxa-intake/intake.schema.json" }
       ]
     },
     "artefacts": {
@@ -25,11 +25,11 @@
           "properties": {
             "brief": {
               "type": "string",
-              "description": "Path to docs/intake/brief.md emitted by appbox intake emit. Every inferred field is visibly marked in the output."
+              "description": "Path to docs/intake/brief.md emitted by arxa intake emit. Every inferred field is visibly marked in the output."
             },
             "registry": {
               "type": "string",
-              "description": "Path to docs/intake/registry.json emitted by appbox intake emit. surface is null in every seed entry — intake names, it never designs."
+              "description": "Path to docs/intake/registry.json emitted by arxa intake emit. surface is null in every seed entry — intake names, it never designs."
             }
           }
         }

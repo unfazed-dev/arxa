@@ -1,14 +1,14 @@
-# Design-derived contract probes — probes for what appbox builds, not just for the studio
+# Design-derived contract probes — probes for what arxa builds, not just for the studio
 
 Status: approved by user 2026-08-03 ("the probes should be for any applications
-designed, built by appbox and not appbox studio itself, that is being used as a
-smoke test for the appbox engine"). Follows the wave-D retirement (5cafaf7);
+designed, built by arxa and not arxa studio itself, that is being used as a
+smoke test for the arxa engine"). Follows the wave-D retirement (5cafaf7);
 task #21.
 
-Trigger: after the one-engine consolidation, `appbox design probe` is honestly
-"the appbox-studio smoke suite hosted in the engine" — every one of the ten
+Trigger: after the one-engine consolidation, `arxa design probe` is honestly
+"the arxa-studio smoke suite hosted in the engine" — every one of the ten
 probe definitions hard-codes studio routes (`/design`, `/intake`, `/build`) and
-is compiled into appboxd via `registry.dart`. The harness, CLI, and CDP layer
+is compiled into arxa via `registry.dart`. The harness, CLI, and CDP layer
 are design-agnostic; the probe *content* is not. That is the same misplacement
 shape the placement law exists to catch: the engine knows one design by name.
 By contrast `design lint` (W1–W6), `selftest`, and `check-wiring` already take
@@ -16,20 +16,20 @@ any artifact dir.
 
 ## Vocabulary (one term each, D6 discipline)
 
-- **Contract probe** — asserts the appbox opinion (panels, chips, no-reload
+- **Contract probe** — asserts the arxa opinion (panels, chips, no-reload
   HDA behavior) against ANY served design, deriving its targets from the
   design's own declarations. The behavioral sibling of the W-gate.
 - **Studio suite** — the existing ten probes: the engine's smoke test, run
-  through its reference design (appbox-studio). Legitimate engine concern,
+  through its reference design (arxa-studio). Legitimate engine concern,
   named for what it is.
 
 ## Deliverables
 
-1. **Registry split** (`appboxd/lib/probes/registry.dart`): two suites,
+1. **Registry split** (`arxa/lib/probes/registry.dart`): two suites,
    `contract` and `studio`. Files move to `lib/probes/contract/` and
    `lib/probes/studio/` (git mv; probe_base.dart, probe_cli.dart,
    registry.dart stay at the root). CLI: suite names become selectable —
-   `appbox design probe contract|studio|all|<name…>`. `all` = every suite,
+   `arxa design probe contract|studio|all|<name…>`. `all` = every suite,
    contract first (cheap, read-only-leaning probes lead, per the existing
    run-order doctrine). Existing `probe all` call sites gain contract coverage
    automatically — that is the opinionated behavior we want, not a regression.
@@ -42,7 +42,7 @@ any artifact dir.
    design_server (same family as `/__projects`), with a test. No probe may
    hard-code a route.
 3. **Contract probe v1 set** — small, each mutation-tested, each REQUIRED to
-   pass on BOTH appbox-studio and the hello-hda example (the proof of
+   pass on BOTH arxa-studio and the hello-hda example (the proof of
    design-agnosticism):
    - `contract-panels`: for every discovered surface — declared role panels
      (header/main/activity/composer/footer) each mounted at most once;
@@ -74,7 +74,7 @@ having per-app build evidence; see the data-static parked item.
 ## Rules (unchanged, from wave D)
 
 - Disposable-project guard applies to every suite: `-probe`/`-test` names
-  only; explicit target; `~/.appbox/current` untouched.
+  only; explicit target; `~/.arxa/current` untouched.
 - Every new check is mutation-tested (kill widgets.css → contract-chips
   fails; unmount/duplicate a panel → contract-panels fails; each proves
   non-vacuous before it counts).
@@ -84,9 +84,9 @@ having per-app build evidence; see the data-static parked item.
 
 ## Verification (definition of done)
 
-- `appbox design probe contract` green on appbox-studio AND hello-hda, from
+- `arxa design probe contract` green on arxa-studio AND hello-hda, from
   the same binary, no per-design code paths.
-- `appbox design probe all` green (contract + studio) on appbox-studio.
+- `arxa design probe all` green (contract + studio) on arxa-studio.
 - Mutation evidence per contract probe recorded in the capability map.
 - `dart analyze` clean; `dart test -j 2` green (registry move breaks no test).
 - Zero hard-coded routes in `lib/probes/contract/` (greppable: no `/design`,

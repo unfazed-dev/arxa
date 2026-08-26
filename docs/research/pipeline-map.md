@@ -1,4 +1,4 @@
-# The appbox pipeline, end to end, and the scaffold stage's contract
+# The arxa pipeline, end to end, and the scaffold stage's contract
 
 Scope: every stage from client idea to a shipped app, with each stage's input
 artifact, output artifact, and the skill/tool that runs it; the scaffold
@@ -9,15 +9,15 @@ claim below is a file path + line reference into this worktree.
 ## 1. Ordered pipeline stages
 
 The FSM phase order is `intake → prototype → design → scaffold → review →
-build → deploy` (`appboxd/lib/phases.dart`, restated at
-`docs/appbox-system-map.md:1` under "2. Pipeline stages and user-interaction
+build → deploy` (`arxa/lib/phases.dart`, restated at
+`docs/arxa-system-map.md:1` under "2. Pipeline stages and user-interaction
 checkpoints", and again in `pipeline/README.md:1`: "the phase FSM is
-`appboxd/lib/phases.dart` (+ `pipeline_fsm.dart`): intake → prototype →
+`arxa/lib/phases.dart` (+ `pipeline_fsm.dart`): intake → prototype →
 design → scaffold → review → build → deploy, with the current phase tracked
-in `pipeline/state/default.state.json`"). `appboxd/lib/engine.dart` derives
-the deterministic stage runner from `gateOrder` (`appboxd/lib/gate_runner.dart`).
+in `pipeline/state/default.state.json`"). `arxa/lib/engine.dart` derives
+the deterministic stage runner from `gateOrder` (`arxa/lib/gate_runner.dart`).
 
-The system map's stage diagram (`docs/appbox-system-map.md`, "2. Pipeline
+The system map's stage diagram (`docs/arxa-system-map.md`, "2. Pipeline
 stages...") groups the FSM phases with their gates and human checkpoints
 (marked ⧗ — an agent can reach these, never pass them):
 
@@ -37,43 +37,43 @@ REJECT rewinds FSM to design"| p3`).
 ### Stage-by-stage: skill, input artifact, output artifact
 
 **Ø. Orchestration (front door, optional)**
-- Skill: `skills/appbox-orchestrator/SKILL.md`.
+- Skill: `skills/arxa-orchestrator/SKILL.md`.
 - Position: stage Ø — the operator’s front door, before everything. Interactive
-  start in ONE OF TWO MODES — the **appbox law**
-  (`appboxd/lib/repo_project.dart`): **repo mode** when the product lives in
-  an existing repo (`appbox project init --repo <app-dir> --kind site|app`
-  writes the `appbox.json` marker + the 8 stage folders with CLI-owned,
-  kind-aware READMEs; a same-named `~/.appbox/projects/` shadow is a HARD
+  start in ONE OF TWO MODES — the **arxa law**
+  (`arxa/lib/repo_project.dart`): **repo mode** when the product lives in
+  an existing repo (`arxa project init --repo <app-dir> --kind site|app`
+  writes the `arxa.json` marker + the 8 stage folders with CLI-owned,
+  kind-aware READMEs; a same-named `~/.arxa/projects/` shadow is a HARD
   ERROR — an existing repo owns its pipeline state, full stop), or **native
-  mode** (asks where + name + targets + locales; runs `appbox project init` /
-  `use` verbatim, `appboxd/lib/project_cli.dart`). Then dispatch to the ONE next
-  skill by pipeline state (`projectStage()` in `appboxd/lib/project.dart`),
+  mode** (asks where + name + targets + locales; runs `arxa project init` /
+  `use` verbatim, `arxa/lib/project_cli.dart`). Then dispatch to the ONE next
+  skill by pipeline state (`projectStage()` in `arxa/lib/project.dart`),
   and the cross-stage where-are-we view. Never owns a stage, never writes
   artifacts, never enforces ordering — the FSM/gates stay the only enforcer.
   `kind: site|app` (elicited as intake's FIRST closed question, synced into
-  the marker via `appbox project sync`) decides each stage's stack: htmx +
+  the marker via `arxa project sync`) decides each stage's stack: htmx +
   islands eject for sites, Flutter targets for apps.
-  First call after project creation is `appbox-cicd` day-zero bootstrap.
+  First call after project creation is `arxa-cicd` day-zero bootstrap.
 
 **0. Story mapping / moodboarding (pre-intake, optional)**
-- Skill: `skills/appbox-story-mapper/SKILL.md`, `skills/appbox-moodboarder/SKILL.md`.
+- Skill: `skills/arxa-story-mapper/SKILL.md`, `skills/arxa-moodboarder/SKILL.md`.
 - Position: "story-mapper → moodboarder → selection gate → commission →
-  appbox-designer" (`skills/appbox-moodboarder/SKILL.md`, opening ASCII
+  arxa-designer" (`skills/arxa-moodboarder/SKILL.md`, opening ASCII
   diagram + Score/Record/Selection sections). The
   story-mapper is described as "the tail of the intake chain — one chain, one
-  brief" (`skills/appbox-story-mapper/SKILL.md`, "Where this sits in the
-  appbox pipeline"). Both skills "elicit; do not generate" (architecture §22)
+  brief" (`skills/arxa-story-mapper/SKILL.md`, "Where this sits in the
+  arxa pipeline"). Both skills "elicit; do not generate" (architecture §22)
   — they gather and curate, never design.
 - Input: a JSON requirements object (`data.json`) for story-mapper; for
   moodboarder the INTAKE-DERIVED rubric (direction adjectives — motion/3D
   ones LOCKED at weight 3 — plus layoutTemplate; see its Score section) and
   the client's visual references.
 - Output: `docs/intake/story_map.html` + `docs/intake/story-map.json` +
-  `docs/intake/brief.md` (story-mapper, via `appbox emit story-map --input
+  `docs/intake/brief.md` (story-mapper, via `arxa emit story-map --input
   data.json --output ... --data-out ... --brief-out ...`, "Step 3: Generate
   the artifacts"); `moodboard/boards/*` + `moodboard/shots/*` + the scored,
   selected `intake/moodboard.json` (moodboarder — recorded via the answers
-  group + intake re-emit, gated by `appbox moodboard check`).
+  group + intake re-emit, gated by `arxa moodboard check`).
   When intake answers exist, `--answers <f>` makes the brief the **unified**
   one (intake sections first).
 - Selection seam: scoring is the moodboarder subagents' judgment (0–5 per
@@ -82,41 +82,41 @@ REJECT rewinds FSM to design"| p3`).
   consumes only selected references, only via the commission.
 
 **1. Intake**
-- Skill: `skills/appbox-intake/SKILL.md`.
+- Skill: `skills/arxa-intake/SKILL.md`.
 - Input: elicited client answers conforming to
-  `skills/appbox-intake/intake.schema.json`, or a hand-written
-  `docs/intake/brief.md` (`appbox intake seed --brief ...`).
+  `skills/arxa-intake/intake.schema.json`, or a hand-written
+  `docs/intake/brief.md` (`arxa intake seed --brief ...`).
 - Output ("What you produce (and what you do not)"): `answers.json`,
   `brief.md`, `registry.json`, `flows.json`, `personas.json`, `map.json`,
   `moodboard.json`, `direction.json` — written to
-  `~/.appbox/projects/<name>/intake/` with `--project`, or the registry
+  `~/.arxa/projects/<name>/intake/` with `--project`, or the registry
   seeded at the design root (`designs/<app>/models/screens_model/registry.json`,
   or `structure.json`'s `"registry"` field) without it.
 - Gate: `gate: intake` — registry ↔ answers/brief traceability (pure Dart,
-  `appboxd/lib/gate_intake.dart`; plan 10.6), which "asserts every registry
+  `arxa/lib/gate_intake.dart`; plan 10.6), which "asserts every registry
   entry traces to a brief requirement and back" (SKILL.md "Procedure (2)").
-- Hand-off: "The brief and the seed are the inputs to `appbox-designer`... The
+- Hand-off: "The brief and the seed are the inputs to `arxa-designer`... The
   emitted `## Layout template` section is consumed by the designer
   **verbatim**" (SKILL.md "Procedure (2)").
 
 **2. Prototype / Design**
-- Skill: `skills/appbox-designer/SKILL.md`, methodology in
-  `skills/appbox-designer/system-prompt.md`, binding contract in
-  `skills/appbox-designer/DESIGN-ARCHITECTURE.md`, and the pipeline-facing
-  layer contract in `skills/appbox-designer/references/app-architecture.md`.
+- Skill: `skills/arxa-designer/SKILL.md`, methodology in
+  `skills/arxa-designer/system-prompt.md`, binding contract in
+  `skills/arxa-designer/DESIGN-ARCHITECTURE.md`, and the pipeline-facing
+  layer contract in `skills/arxa-designer/references/app-architecture.md`.
 - Input: **the commission** — `design/commission.md` +
   `design/commission-prompt.md`, compiled deterministically by
-  `appbox design commission <app-dir>` from the brief + direction + ONLY the
+  `arxa design commission <app-dir>` from the brief + direction + ONLY the
   selected, scored moodboard references (+ their shot paths). The commission
   REFUSES to compile while the moodboard selection is unapproved or a locked
-  criterion is unfed (`appboxd/lib/commission.dart`) — the anti-blandness
+  criterion is unfed (`arxa/lib/commission.dart`) — the anti-blandness
   seam. Then the intake brief + registry seed (or a hand-written brief); the
   Layout Template section; the viewport ladder
-  (`skills/appbox-designer/references/viewport-ladder.md`).
+  (`skills/arxa-designer/references/viewport-ladder.md`).
 - Output — "the triad output": *three switchable lenses over one screen
   registry* — **prototype** (wired navigation over each entry's `route`),
   **flows** (journeys as an edge graph), **screens** (the tile inventory) —
-  "never three separate artifacts" (`skills/appbox-designer/SKILL.md`, opening
+  "never three separate artifacts" (`skills/arxa-designer/SKILL.md`, opening
   section). Concretely: an authored `models/screens_model/registry.json`, a
   `surfaceId` in every viewmodel, `app.routes.js` (route table +
   `shellRoots`), optional `models/screens_model/flows.json`, and — once frozen
@@ -126,7 +126,7 @@ REJECT rewinds FSM to design"| p3`).
   (phase "design" — "`structure.json` sync + `designHash` fresh"). **HUMAN
   GATE 1** (manifest approval) sits inside `freeze`.
 - The three-layer arrow, never reversed
-  (`skills/appbox-designer/references/app-architecture.md:13-24`):
+  (`skills/arxa-designer/references/app-architecture.md:13-24`):
   ```
   AUTHORED      models/screens_model/registry.json   ← you write this, by hand
                          ↓
@@ -136,25 +136,25 @@ REJECT rewinds FSM to design"| p3`).
   ```
 
 **3. Scaffold** — see §2 below for the full contract.
-- Skill: `skills/appbox-scaffolder/SKILL.md`, `skills/appbox-scaffolder/README.md`.
-- Engine: `appboxd/lib/scaffold.dart` (`appbox emit scaffold`).
-- Gates: `scaffold S0–S10` (`appboxd/lib/gate_scaffold.dart`) + `coverage
+- Skill: `skills/arxa-scaffolder/SKILL.md`, `skills/arxa-scaffolder/README.md`.
+- Engine: `arxa/lib/scaffold.dart` (`arxa emit scaffold`).
+- Gates: `scaffold S0–S10` (`arxa/lib/gate_scaffold.dart`) + `coverage
   C1–C5`.
 
 **4. Build (widget implementation)**
-- Skill: `skills/appbox-builder/SKILL.md` ("builder — fill extension points by
+- Skill: `skills/arxa-builder/SKILL.md` ("builder — fill extension points by
   composing adaptive primitives").
 - Input: the scaffolded stub tree (View/ViewModel extension points) +
   `deps` recorded in each stub's header
-  (`skills/appbox-scaffolder/...` "Procedure" step 4: "Hand off to the
-  builder. The scaffold is structure; `appbox-builder` implements the widget
+  (`skills/arxa-scaffolder/...` "Procedure" step 4: "Hand off to the
+  builder. The scaffold is structure; `arxa-builder` implements the widget
   trees and wires services from the `deps` recorded in each stub's header").
 - Output: filled View/ViewModel bodies composing
   `lib/ui/primitives.dart` once; the per-platform native family (glass /
   expressive / shadcn) lives in the primitives, not the views.
 
 **5. Test**
-- Skill: `skills/appbox-tester/SKILL.md` ("tester — TDD (Ports mocked),
+- Skill: `skills/arxa-tester/SKILL.md` ("tester — TDD (Ports mocked),
   visual, smoke, E2E").
 - Layers: unit → widget → smoke → visual → E2E (cheapest first, escalate
   scope).
@@ -162,7 +162,7 @@ REJECT rewinds FSM to design"| p3`).
   reviewer gates on it."
 
 **6. Review**
-- Skill: `skills/appbox-reviewer/README.md`, `skills/appbox-reviewer/SKILL.md`.
+- Skill: `skills/arxa-reviewer/README.md`, `skills/arxa-reviewer/SKILL.md`.
 - "Runs the design judge. Belongs: review logic. Does not belong: scaffolding
   or deployment" (README.md).
 - Gates: `review` (arch_guard + ponytail + manifest hash) + memory.
@@ -170,15 +170,15 @@ REJECT rewinds FSM to design"| p3`).
   `design`.
 
 **7. Lint (cross-cutting, not phase-bound)**
-- Skill: `skills/appbox-lint/SKILL.md` ("keep the knowledge base honest").
-- Runs `appbox docs` (Dart port of `lint_kb.py`) plus a semantic
+- Skill: `skills/arxa-lint/SKILL.md` ("keep the knowledge base honest").
+- Runs `arxa docs` (Dart port of `lint_kb.py`) plus a semantic
   cross-check across `catalogs/*.json` ↔ `docs/` ↔ `memory/` ↔ code comments,
   resolved per `KNOWLEDGE.md`'s layer hierarchy.
 
 **8. Lens (cross-cutting capture/verification, used by moodboarder, build,
    and review)**
-- Skill: `skills/appbox-lens/SKILL.md` ("see appbox with appbox's own eyes").
-- Dart library over CDP (`appboxd/lib/lens.dart` over `appboxd/lib/cdp.dart`)
+- Skill: `skills/arxa-lens/SKILL.md` ("see arxa with arxa's own eyes").
+- Dart library over CDP (`arxa/lib/lens.dart` over `arxa/lib/cdp.dart`)
   — "the promoted probe-runner port... never use the archived probe-runner."
 - Capabilities: golden capture/compare, console-error checks, DOM/a11y/net
   extraction, motion capture, design-token extraction, native capture
@@ -186,25 +186,25 @@ REJECT rewinds FSM to design"| p3`).
   goldens)` gate.
 
 **9. Build (packaging) + Deploy**
-- Skill: `skills/appbox-deployer/SKILL.md` ("stores (fastlane) + OTA patches
+- Skill: `skills/arxa-deployer/SKILL.md` ("stores (fastlane) + OTA patches
   (shorebird) + web (Cloudflare Pages/Workers, Vercel)").
 - Gates: `native_deps` (phase "build" — asserts every plugin is packaged for
   each target's native toolchain) + `deploy` (triple, fail-closed; the licence
   check moved to the scaffold boundary as the entitlement JWT, 2026-08-05).
   **HUMAN GATE 3**: `deploy --approval` token, human-supplied
   ("Deploy is the only outward-facing pipeline action — confirm with the
-  operator before pushing," `skills/appbox-deployer/SKILL.md` "Output").
+  operator before pushing," `skills/arxa-deployer/SKILL.md` "Output").
 - Output: "A shipped build (store track), a shorebird patch version, and/or a
   web deployment URL (Pages, Workers or Vercel)."
 
 **10. CI/CD (cross-cutting automation around the tail; not a build stage)**
-- Skill: `skills/appbox-cicd/SKILL.md` ("elicit the decisions, then wire the
+- Skill: `skills/arxa-cicd/SKILL.md` ("elicit the decisions, then wire the
   pipeline").
 - Position: not a build stage — **the frame the build grows inside**:
-  invocable at day zero (before intake; `appbox-orchestrator` dispatches here
-  first), wrapping ALL gates via `appbox gate --all`; the tail (tester suites,
+  invocable at day zero (before intake; `arxa-orchestrator` dispatches here
+  first), wrapping ALL gates via `arxa gate --all`; the tail (tester suites,
   reviewer verdicts, deployer gates) runs inside it once artifacts exist
-  (`skills/appbox-cicd/SKILL.md` "Pipeline position"). Two modes: **bootstrap**
+  (`skills/arxa-cicd/SKILL.md` "Pipeline position"). Two modes: **bootstrap**
   (no CI — grill + generate) and **adopt** (CI exists — audit against the
   guardrail list + a report-only PR sweep: read PRs, `gh pr checks`, reproduce
   red checks locally, one feedback report; never bot-comments, never merges).
@@ -215,7 +215,7 @@ REJECT rewinds FSM to design"| p3`).
   `docs/ci-decisions.md`, then generates `scripts/check.sh` (the one-root
   check: local green = CI green), `.github/workflows/ci.yml`, branch
   protection via `gh api`, and runner setup.
-- For appbox-built targets it wires `appbox gate --all` and never
+- For arxa-built targets it wires `arxa gate --all` and never
   re-implements a validator; the deploy job PREPARES and HALTS at the
   deployer's approval gate (human gate 3 stands — CI can never mint the
   token).
@@ -225,9 +225,9 @@ REJECT rewinds FSM to design"| p3`).
 ### Position
 
 Scaffold is FSM phase 4 of 7, immediately after `design` and before `review`
-(`docs/appbox-system-map.md`, "2. Pipeline stages..."; `pipeline/README.md`).
+(`docs/arxa-system-map.md`, "2. Pipeline stages..."; `pipeline/README.md`).
 Its skill states the position as an inversion of an existing gate pair
-(`skills/appbox-scaffolder/SKILL.md`, "Core principle"):
+(`skills/arxa-scaffolder/SKILL.md`, "Core principle"):
 
 > "The scaffolder PRODUCES the tree; the gates ASSERT it." (architecture §16)
 > The structure gate checks the authored layer (`registry.json` +
@@ -239,16 +239,16 @@ Its skill states the position as an inversion of an existing gate pair
 
 ### What it reads
 
-The scaffold engine (`appboxd/lib/scaffold.dart` — `appbox emit scaffold`)
+The scaffold engine (`arxa/lib/scaffold.dart` — `arxa emit scaffold`)
 "reads a FROZEN `structure.json` + the target set and PRODUCES the file set
 + the `.shell-structure.json` manifest the coverage gate reads"
-(`appboxd/lib/scaffold.dart:5-20`). It **never re-derives structure**; the
+(`arxa/lib/scaffold.dart:5-20`). It **never re-derives structure**; the
 skill's Procedure step 1 requires confirming freeze first (`KIT_DESIGN_DIR=<design>
-appbox emit structure --check`).
+arxa emit structure --check`).
 
 `structure.json` is generated by `emit_structure.dart` from the authored
-layer (`skills/appbox-designer/references/app-architecture.md:11-24`). Its
-top-level keys, per `appboxd/lib/emit_structure.dart:334-337`:
+layer (`skills/arxa-designer/references/app-architecture.md:11-24`). Its
+top-level keys, per `arxa/lib/emit_structure.dart:334-337`:
 
 ```dart
 'registry': 'models/screens_model/registry.json',
@@ -257,14 +257,14 @@ top-level keys, per `appboxd/lib/emit_structure.dart:334-337`:
 ```
 
 plus, per screen (implicit in the emitted `screen` map, `emit_structure.dart:299-315`
-and confirmed by `appboxd/lib/scaffold.dart:338-339` — "its screen records
+and confirmed by `arxa/lib/scaffold.dart:338-339` — "its screen records
 are id/comp/shellDir/surface/viewmodel/kits"): `id`, `comp`, `shellDir`,
 `surface`, `viewmodel`, and optional `kits`.
 
 Each registry entry (`models/screens_model/registry.json`, one entry per
 surface — the SSOT for what the app contains) carries the fields documented
-in `skills/appbox-designer/references/app-architecture.md:30-67` and
-`skills/appbox-designer/DESIGN-ARCHITECTURE.md:49-57` ("Registry canon"):
+in `skills/arxa-designer/references/app-architecture.md:30-67` and
+`skills/arxa-designer/DESIGN-ARCHITECTURE.md:49-57` ("Registry canon"):
 
 | key | required | meaning |
 |---|---|---|
@@ -279,8 +279,8 @@ in `skills/appbox-designer/references/app-architecture.md:30-67` and
 | `kits` | no | array of kit dir names from `config/kit-registry.json` (`kits[].dir`) that the surface's built app will use |
 
 Concretely what scaffold consumes from each field, per
-`skills/appbox-scaffolder/README.md` and
-`skills/appbox-scaffolder/SKILL.md` ("What you produce (and what you do
+`skills/arxa-scaffolder/README.md` and
+`skills/arxa-scaffolder/SKILL.md` ("What you produce (and what you do
 not)"):
 
 - **`--targets` + `pipeline/state/targets.derivation.json` + config
@@ -292,20 +292,20 @@ not)"):
   guess it").
 - **`kits` on a frozen surface** → recorded per surface: a `//   kits
   (builder wires): <names>` line in each stub header
-  (`appboxd/lib/scaffold.dart:145-159`, `:254-263`) and a `kits` entry in
-  `.shell-structure.json` (`appboxd/lib/scaffold.dart:444-451`). "It records,
+  (`arxa/lib/scaffold.dart:145-159`, `:254-263`) and a `kits` entry in
+  `.shell-structure.json` (`arxa/lib/scaffold.dart:444-451`). "It records,
   never acts — the builder wires the modules."
 - **the design's `l10n/*.arb` catalogs** (when present) → copied verbatim
   into `lib/l10n/`, a fixed-contract `l10n.yaml` dropped at the app root
-  (`appboxd/lib/scaffold.dart:44`, `:396-405`), and `"l10n":
+  (`arxa/lib/scaffold.dart:44`, `:396-405`), and `"l10n":
   {"arbDir","locales"}` recorded in the manifest
-  (`appboxd/lib/scaffold.dart:440-441`). A design with no `l10n/` dir gets no
-  l10n artifacts (`appboxd/lib/scaffold.dart:376`: "an empty l10n/ dir =
+  (`arxa/lib/scaffold.dart:440-441`). A design with no `l10n/` dir gets no
+  l10n artifacts (`arxa/lib/scaffold.dart:376`: "an empty l10n/ dir =
   absent").
 
 It explicitly does **not** read or write `pubspec.yaml` — dependency
 resolution for declared `kits` is the builder's wiring step, not the
-scaffolder's (`skills/appbox-scaffolder/SKILL.md`, "What you produce...":
+scaffolder's (`skills/arxa-scaffolder/SKILL.md`, "What you produce...":
 "You do not choose dependencies").
 
 ### What it emits
@@ -315,39 +315,39 @@ view + viewmodel — 3, 4, or 5 files depending on `--targets`), plus:
 
 1. `lib/ui/views/.shell-structure.json` — the manifest the coverage gate
    reads: `selfContained` shells + the `{shell: {surfaceId: dir}}` map, plus
-   optional `l10n` and `kits` sub-maps (`appboxd/lib/scaffold.dart:410-451`).
+   optional `l10n` and `kits` sub-maps (`arxa/lib/scaffold.dart:410-451`).
 2. (When `l10n/` exists in the design) `lib/l10n/*.arb` + `l10n.yaml` at the
    app root.
 3. The pubspec side of l10n (`flutter_localizations`, `intl`,
    `flutter.generate: true`) — emitted unconditionally, but by
-   `appboxd/lib/blueprint.dart`, not the scaffolder.
+   `arxa/lib/blueprint.dart`, not the scaffolder.
 
 It does **not** produce widget bodies, business logic, or platform ceremony
-files (entitlements, `Info.plist`) — those belong to `appbox-builder` /
-`appbox-deployer` (`skills/appbox-scaffolder/SKILL.md`, end of "What you
+files (entitlements, `Info.plist`) — those belong to `arxa-builder` /
+`arxa-deployer` (`skills/arxa-scaffolder/SKILL.md`, end of "What you
 produce...").
 
 ### Verification and hand-off
 
-`appbox emit scaffold --design-dir <design> --app-root <app> --targets
+`arxa emit scaffold --design-dir <design> --app-root <app> --targets
 macos --check` regenerates the expected set in memory and diffs against
 disk — "a missing factor file, a stale manifest, or a hand-edited dir is
 named and fails. This is the same file set `gates/coverage` (C1) walks."
-(`skills/appbox-scaffolder/SKILL.md`, "Procedure" step 3). Step 4: "Hand off
-to the builder. The scaffold is structure; `appbox-builder` implements the
+(`skills/arxa-scaffolder/SKILL.md`, "Procedure" step 3). Step 4: "Hand off
+to the builder. The scaffold is structure; `arxa-builder` implements the
 widget trees and wires services from the `deps` recorded in each stub's
 header. The coverage gate then asserts the scaffolded layer."
 
-`appbox emit scaffold --self-test` is the engine's own negative + positive
-proof (`skills/appbox-scaffolder/SKILL.md`, "The guardrail, as a test").
+`arxa emit scaffold --self-test` is the engine's own negative + positive
+proof (`skills/arxa-scaffolder/SKILL.md`, "The guardrail, as a test").
 
 ## 3. Docs proving the design output already carries everything scaffold needs
 
-- `skills/appbox-designer/references/app-architecture.md:11-24` states the
+- `skills/arxa-designer/references/app-architecture.md:11-24` states the
   one-directional arrow explicitly: `structure.json` is *generated* from the
   registry (never inferred from filenames, never hand-edited), which is
   exactly the frozen input scaffold requires.
-- `skills/appbox-designer/DESIGN-ARCHITECTURE.md:29-36` ("output triad"
+- `skills/arxa-designer/DESIGN-ARCHITECTURE.md:29-36` ("output triad"
   section): "Every generated artifact — fixtures, `registry.json`/
   `structure.json`... is a **pure function of checked-in inputs**... Same
   inputs, byte-identical output, on every machine and every run... This is
@@ -355,18 +355,18 @@ proof (`skills/appbox-scaffolder/SKILL.md`, "The guardrail, as a test").
   pipeline input: regenerating a design never invents drift." This is the
   guarantee that lets scaffold treat `structure.json` as authoritative
   without re-deriving anything.
-- `skills/appbox-designer/built-in-skills/declare-structure.md` ("`kits`
+- `skills/arxa-designer/built-in-skills/declare-structure.md` ("`kits`
   field — declaring kit modules") documents the designer-side authoring rule
   that produces the `kits` array scaffold later threads through: "Names must
   come from `config/kit-registry.json` (`kits[].dir`) — the emitter
   validates them and fails on an unknown name... each name becomes wiring
   the builder must do."
-- `appboxd/lib/emit_structure.dart:236-250` is the validation that makes this
+- `arxa/lib/emit_structure.dart:236-250` is the validation that makes this
   binding: it fails at freeze/structure-emit time if a screen declares a
   `kits` name absent from `config/kit-registry.json`, so by the time
   scaffold reads `structure.json` the `kits` list is already guaranteed
   valid — scaffold does no re-validation, just records it.
-- `skills/appbox-scaffolder/README.md`: "Scaffolds app surfaces from a frozen
+- `skills/arxa-scaffolder/README.md`: "Scaffolds app surfaces from a frozen
   structure.json + target set, emitting the per-surface Dart files that
   match the target-DERIVED form-factor set" — stated as the skill's entire
   reason to exist, i.e. structure.json is sufficient input.
@@ -381,7 +381,7 @@ proof (`skills/appbox-scaffolder/SKILL.md`, "The guardrail, as a test").
   resolved 21 of 37 measured cases).
 
 **Stop condition check**: the scaffold skill and stage exist, are fully
-specified, and have a working Dart engine (`appboxd/lib/scaffold.dart`,
-`appboxd/lib/gate_scaffold.dart`, `appboxd/lib/scaffold_cli.dart`,
-`appboxd/test/scaffold_test.dart`, `appboxd/test/gate_scaffold_test.dart`) —
+specified, and have a working Dart engine (`arxa/lib/scaffold.dart`,
+`arxa/lib/gate_scaffold.dart`, `arxa/lib/scaffold_cli.dart`,
+`arxa/test/scaffold_test.dart`, `arxa/test/gate_scaffold_test.dart`) —
 this is not a missing stage.

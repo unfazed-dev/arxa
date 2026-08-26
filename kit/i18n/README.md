@@ -1,6 +1,6 @@
-# appbox_kit_i18n
+# arxa_kit_i18n
 
-Locale machinery for appbox_kit apps: a supported-language value type, a
+Locale machinery for arxa_kit apps: a supported-language value type, a
 persisted system+override locale model with live switching, intl-backed
 formatting, a placeholder-parity guard, and an LLM locale directive for
 generative UI. Ships English + Polish; works for any locales.
@@ -13,7 +13,7 @@ persists the user's choice, and formats values for it.
 
 ```yaml
 dependencies:
-  appbox_kit_i18n:
+  arxa_kit_i18n:
     path: ../i18n
 ```
 
@@ -23,13 +23,13 @@ Register in the locator at startup and wire `MaterialApp`:
 
 ```dart
 // main.dart — create once, load the persisted override before runApp.
-final store = await SharedPreferencesAppBoxKitLocaleStore.create();
-final i18n = AppBoxKitI18n(
+final store = await SharedPreferencesArxaKitLocaleStore.create();
+final i18n = ArxaKitI18n(
   store: store,
   systemLocale: WidgetsBinding.instance.platformDispatcher.locale,
 );
 await i18n.load();
-locator.registerSingleton<AppBoxKitI18n>(i18n);
+locator.registerSingleton<ArxaKitI18n>(i18n);
 
 // MaterialApp — listen so the app rebuilds live on setLocale().
 MaterialApp(
@@ -75,15 +75,15 @@ final systemPrompt = '${i18n.llmLocaleDirective()}\n\n$restOfPrompt';
 
 ## Scope
 
-- `AppBoxKitLanguage` — value type: BCP-47 `tag`, `nameEn`, `nameNative`;
-  `AppBoxKitLanguage.supported` ships `en` + `pl`; `byTag` falls back to the base
+- `ArxaKitLanguage` — value type: BCP-47 `tag`, `nameEn`, `nameNative`;
+  `ArxaKitLanguage.supported` ships `en` + `pl`; `byTag` falls back to the base
   subtag (`'pl-PL'` → `'pl'`).
-- `AppBoxKitLocaleStore` — persistence port (`read`/`write`/`clear`);
-  `SharedPreferencesAppBoxKitLocaleStore` is the shipped default.
-- `AppBoxKitI18n` — resolution (override → system → `en`), live switching via
+- `ArxaKitLocaleStore` — persistence port (`read`/`write`/`clear`);
+  `SharedPreferencesArxaKitLocaleStore` is the shipped default.
+- `ArxaKitI18n` — resolution (override → system → `en`), live switching via
   `ChangeNotifier`, intl formatting, `placeholderParity`,
   `llmLocaleDirective`.
-- `appbox_kit_i18n/appbox_kit_testing.dart` — `FakeAppBoxKitLocaleStore` with a script queue
+- `arxa_kit_i18n/arxa_kit_testing.dart` — `FakeArxaKitLocaleStore` with a script queue
   and call counts; tests never touch platform channels.
 
 ## Gotchas
@@ -96,7 +96,7 @@ final systemPrompt = '${i18n.llmLocaleDirective()}\n\n$restOfPrompt';
 - **Translation strings live in the app.** The kit has no ARB/codegen; it
   expects the app's gen-l10n delegates to sit next to the
   `flutter_localizations` delegates.
-- **`SharedPreferencesAppBoxKitLocaleStore.create()` is async** — create it once
+- **`SharedPreferencesArxaKitLocaleStore.create()` is async** — create it once
   before `runApp`, not per viewmodel.
 - **The LLM directive is a prompt block, not a translator** — it steers the
   model to answer in `languageNameEn`/`languageNameNative`, preserve

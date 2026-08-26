@@ -1,15 +1,15 @@
 <Callout id="header" tone="info">
 
-# appbox_kit_security — Per-Package Playbook
+# arxa_kit_security — Per-Package Playbook
 
 
-`appbox_kit_security` v**0.1.0** · `publish_to: 'none'` · status: **active**
+`arxa_kit_security` v**0.1.0** · `publish_to: 'none'` · status: **active**
 
 
 **Role (one line):** Plugin-neutral security capability kit — typed biometric auth, secure storage, AES-GCM crypto, a pure-Dart app-lock state machine, and a device-integrity port.
 
 
-**Scope of this document:** lets a human OR an LLM use, wire, and extend `appbox_kit_security` **without reading its source**. The public surface below was extracted from the barrel; README content is folded into the narrative sections.
+**Scope of this document:** lets a human OR an LLM use, wire, and extend `arxa_kit_security` **without reading its source**. The public surface below was extracted from the barrel; README content is folded into the narrative sections.
 
 
 ## Table of contents
@@ -27,18 +27,18 @@ Plugin-neutral security capability kit — typed biometric auth, secure storage,
 
 ### Public surface
 
-Exported from `lib/appbox_kit_security.dart`:
+Exported from `lib/arxa_kit_security.dart`:
 
-<Table id="security-api" columns={["Symbol", "Kind", "Defined in"]} rows={[["CryptographyAppBoxKitCryptoService", "class", "src/crypto/appbox_kit_cryptography_crypto_service.dart"], ["AppBoxKitCryptoFailureReason", "enum", "src/crypto/appbox_kit_crypto_failure.dart"], ["AppBoxKitCryptoFailure", "class", "src/crypto/appbox_kit_crypto_failure.dart"], ["AppBoxKitCryptoKey", "class", "src/crypto/appbox_kit_crypto_key.dart"], ["AppBoxKitCryptoService", "abstract interface class", "src/crypto/appbox_kit_crypto_service.dart"], ["AppBoxKitSecretBox", "class", "src/crypto/appbox_kit_secret_box.dart"], ["FlutterSecureStorageAppBoxKitSecureStorageService", "class", "src/storage/appbox_kit_flutter_secure_storage_secure_storage_service.dart"], ["AppBoxKitSecureStorageService", "abstract interface class", "src/storage/appbox_kit_secure_storage_service.dart"], ["AppBoxKitBiometricAvailabilityStatus", "enum", "src/biometric/appbox_kit_biometric_availability.dart"], ["AppBoxKitBiometricAvailability", "class", "src/biometric/appbox_kit_biometric_availability.dart"], ["AppBoxKitBiometricFailureReason", "enum", "src/biometric/appbox_kit_biometric_result.dart"], ["AppBoxKitBiometricResult", "class", "src/biometric/appbox_kit_biometric_result.dart"], ["AppBoxKitBiometricSuccess", "class", "src/biometric/appbox_kit_biometric_result.dart"], ["AppBoxKitBiometricFailure", "class", "src/biometric/appbox_kit_biometric_result.dart"], ["AppBoxKitBiometricService", "abstract interface class", "src/biometric/appbox_kit_biometric_service.dart"], ["AppBoxKitBiometricType", "enum", "src/biometric/appbox_kit_biometric_type.dart"], ["LocalAuthAppBoxKitBiometricService", "class", "src/biometric/appbox_kit_local_auth_biometric_service.dart"], ["AppBoxKitAppLockConfig", "class", "src/app_lock/appbox_kit_app_lock_config.dart"], ["AppBoxKitAppLockController", "class", "src/app_lock/appbox_kit_app_lock_controller.dart"], ["AppBoxKitAppLockMethod", "enum", "src/app_lock/appbox_kit_app_lock_outcome.dart"], ["AppBoxKitAppLockDenialReason", "enum", "src/app_lock/appbox_kit_app_lock_outcome.dart"], ["AppBoxKitAppLockOutcome", "class", "src/app_lock/appbox_kit_app_lock_outcome.dart"], ["AppBoxKitAppLockUnlocked", "class", "src/app_lock/appbox_kit_app_lock_outcome.dart"], ["AppBoxKitAppLockDenied", "class", "src/app_lock/appbox_kit_app_lock_outcome.dart"], ["AppBoxKitAppLockFailed", "class", "src/app_lock/appbox_kit_app_lock_outcome.dart"], ["AppBoxKitAppLockState", "enum", "src/app_lock/appbox_kit_app_lock_state.dart"], ["AppBoxKitPinVerifier", "abstract interface class", "src/app_lock/appbox_kit_pin_verifier.dart"], ["SecureStoragePinVerifier", "class", "src/app_lock/appbox_kit_secure_storage_pin_verifier.dart"], ["AppBoxKitDeviceIntegrityService", "abstract interface class", "src/integrity/appbox_kit_device_integrity_service.dart"], ["AppBoxKitIntegrityReport", "class", "src/integrity/appbox_kit_integrity_report.dart"], ["AppBoxKitTriState", "enum", "src/integrity/appbox_kit_tri_state.dart"], ["UnimplementedAppBoxKitDeviceIntegrityService", "class", "src/integrity/appbox_kit_unimplemented_device_integrity_service.dart"]]} />
+<Table id="security-api" columns={["Symbol", "Kind", "Defined in"]} rows={[["CryptographyArxaKitCryptoService", "class", "src/crypto/arxa_kit_cryptography_crypto_service.dart"], ["ArxaKitCryptoFailureReason", "enum", "src/crypto/arxa_kit_crypto_failure.dart"], ["ArxaKitCryptoFailure", "class", "src/crypto/arxa_kit_crypto_failure.dart"], ["ArxaKitCryptoKey", "class", "src/crypto/arxa_kit_crypto_key.dart"], ["ArxaKitCryptoService", "abstract interface class", "src/crypto/arxa_kit_crypto_service.dart"], ["ArxaKitSecretBox", "class", "src/crypto/arxa_kit_secret_box.dart"], ["FlutterSecureStorageArxaKitSecureStorageService", "class", "src/storage/arxa_kit_flutter_secure_storage_secure_storage_service.dart"], ["ArxaKitSecureStorageService", "abstract interface class", "src/storage/arxa_kit_secure_storage_service.dart"], ["ArxaKitBiometricAvailabilityStatus", "enum", "src/biometric/arxa_kit_biometric_availability.dart"], ["ArxaKitBiometricAvailability", "class", "src/biometric/arxa_kit_biometric_availability.dart"], ["ArxaKitBiometricFailureReason", "enum", "src/biometric/arxa_kit_biometric_result.dart"], ["ArxaKitBiometricResult", "class", "src/biometric/arxa_kit_biometric_result.dart"], ["ArxaKitBiometricSuccess", "class", "src/biometric/arxa_kit_biometric_result.dart"], ["ArxaKitBiometricFailure", "class", "src/biometric/arxa_kit_biometric_result.dart"], ["ArxaKitBiometricService", "abstract interface class", "src/biometric/arxa_kit_biometric_service.dart"], ["ArxaKitBiometricType", "enum", "src/biometric/arxa_kit_biometric_type.dart"], ["LocalAuthArxaKitBiometricService", "class", "src/biometric/arxa_kit_local_auth_biometric_service.dart"], ["ArxaKitAppLockConfig", "class", "src/app_lock/arxa_kit_app_lock_config.dart"], ["ArxaKitAppLockController", "class", "src/app_lock/arxa_kit_app_lock_controller.dart"], ["ArxaKitAppLockMethod", "enum", "src/app_lock/arxa_kit_app_lock_outcome.dart"], ["ArxaKitAppLockDenialReason", "enum", "src/app_lock/arxa_kit_app_lock_outcome.dart"], ["ArxaKitAppLockOutcome", "class", "src/app_lock/arxa_kit_app_lock_outcome.dart"], ["ArxaKitAppLockUnlocked", "class", "src/app_lock/arxa_kit_app_lock_outcome.dart"], ["ArxaKitAppLockDenied", "class", "src/app_lock/arxa_kit_app_lock_outcome.dart"], ["ArxaKitAppLockFailed", "class", "src/app_lock/arxa_kit_app_lock_outcome.dart"], ["ArxaKitAppLockState", "enum", "src/app_lock/arxa_kit_app_lock_state.dart"], ["ArxaKitPinVerifier", "abstract interface class", "src/app_lock/arxa_kit_pin_verifier.dart"], ["SecureStoragePinVerifier", "class", "src/app_lock/arxa_kit_secure_storage_pin_verifier.dart"], ["ArxaKitDeviceIntegrityService", "abstract interface class", "src/integrity/arxa_kit_device_integrity_service.dart"], ["ArxaKitIntegrityReport", "class", "src/integrity/arxa_kit_integrity_report.dart"], ["ArxaKitTriState", "enum", "src/integrity/arxa_kit_tri_state.dart"], ["UnimplementedArxaKitDeviceIntegrityService", "class", "src/integrity/arxa_kit_unimplemented_device_integrity_service.dart"]]} />
 
-Test doubles in `lib/appbox_kit_testing.dart`: `FakeAppBoxKitBiometricService`, `FakeAppBoxKitSecureStorageService`, `FakeAppBoxKitCryptoService`, `FakeAppBoxKitPinVerifier`, `FakeAppBoxKitDeviceIntegrityService`.
+Test doubles in `lib/arxa_kit_testing.dart`: `FakeArxaKitBiometricService`, `FakeArxaKitSecureStorageService`, `FakeArxaKitCryptoService`, `FakeArxaKitPinVerifier`, `FakeArxaKitDeviceIntegrityService`.
 
 Scripts and call-counts — tests never touch platform channels.
 
 
 ### Usage & wiring
 
-Add `appbox_kit_security` to your app's `pubspec.yaml` and import `package:appbox_kit_security/appbox_kit_security.dart`; for tests, import `package:appbox_kit_security/appbox_kit_testing.dart` to pick up the scriptable fakes (`FakeAppBoxKitBiometricService`, `FakeAppBoxKitSecureStorageService`, `FakeAppBoxKitCryptoService`, `FakeAppBoxKitPinVerifier`, `FakeAppBoxKitDeviceIntegrityService`). The kit depends on no other kit, so at bootstrap the host app registers each production binding in its locator — `AppBoxKitBiometricService` → `LocalAuthAppBoxKitBiometricService`, `AppBoxKitSecureStorageService` → `FlutterSecureStorageAppBoxKitSecureStorageService`, `AppBoxKitCryptoService` → `CryptographyAppBoxKitCryptoService` (full block in Architecture). After wiring, consume the ports directly: `biometricService.authenticate()` returns a typed `AppBoxKitBiometricResult`, `secureStorage.write(key: k, value: v)` persists through the iOS Keychain / Android EncryptedSharedPreferences, and `cryptoService.encryptBytes(...)` yields an AES-GCM-256 `AppBoxKitSecretBox` whose tag is verified on `decryptBytes`.
+Add `arxa_kit_security` to your app's `pubspec.yaml` and import `package:arxa_kit_security/arxa_kit_security.dart`; for tests, import `package:arxa_kit_security/arxa_kit_testing.dart` to pick up the scriptable fakes (`FakeArxaKitBiometricService`, `FakeArxaKitSecureStorageService`, `FakeArxaKitCryptoService`, `FakeArxaKitPinVerifier`, `FakeArxaKitDeviceIntegrityService`). The kit depends on no other kit, so at bootstrap the host app registers each production binding in its locator — `ArxaKitBiometricService` → `LocalAuthArxaKitBiometricService`, `ArxaKitSecureStorageService` → `FlutterSecureStorageArxaKitSecureStorageService`, `ArxaKitCryptoService` → `CryptographyArxaKitCryptoService` (full block in Architecture). After wiring, consume the ports directly: `biometricService.authenticate()` returns a typed `ArxaKitBiometricResult`, `secureStorage.write(key: k, value: v)` persists through the iOS Keychain / Android EncryptedSharedPreferences, and `cryptoService.encryptBytes(...)` yields an AES-GCM-256 `ArxaKitSecretBox` whose tag is verified on `decryptBytes`.
 
 
 ### Integration map
@@ -50,16 +50,16 @@ See `kit_matrix.md` for the full routing + dependency graph.
 
 ### Architecture
 
-This package depends on no other kit. The host app (or `appbox_kit` core)
+This package depends on no other kit. The host app (or `arxa_kit` core)
 binds the ports in its locator:
 
 ```dart
 // app bootstrap — choose the production bindings you need
-locator.registerSingleton<AppBoxKitBiometricService>(LocalAuthAppBoxKitBiometricService());
-locator.registerSingleton<AppBoxKitSecureStorageService>(
-  FlutterSecureStorageAppBoxKitSecureStorageService(),
+locator.registerSingleton<ArxaKitBiometricService>(LocalAuthArxaKitBiometricService());
+locator.registerSingleton<ArxaKitSecureStorageService>(
+  FlutterSecureStorageArxaKitSecureStorageService(),
 );
-locator.registerSingleton<AppBoxKitCryptoService>(CryptographyAppBoxKitCryptoService());
+locator.registerSingleton<ArxaKitCryptoService>(CryptographyArxaKitCryptoService());
 ```
 
 
@@ -74,11 +74,11 @@ locator.registerSingleton<AppBoxKitCryptoService>(CryptographyAppBoxKitCryptoSer
   brute-force-resistant: an attacker who exfiltrates the secure-storage
   contents can grind a short numeric PIN offline. This is the documented
   portable default, acceptable when the app enforces attempt limits — which
-  `AppBoxKitAppLockController` does (biometric lockout + PIN cooldown). For a
+  `ArxaKitAppLockController` does (biometric lockout + PIN cooldown). For a
   high-value lock, back the PIN with a rate-limited secure element
   (StrongBox / Secure Enclave) or a slow KDF (Argon2/ PBKDF2) by supplying
-  your own `AppBoxKitPinVerifier`.
-- **Biometric-only.** `LocalAuthAppBoxKitBiometricService` passes `biometricOnly:
+  your own `ArxaKitPinVerifier`.
+- **Biometric-only.** `LocalAuthArxaKitBiometricService` passes `biometricOnly:
   true`; the device passcode fallback is the app-lock's job, not the
   biometric seam's.
 - **Device integrity is phase 2.** No production binding ships; the stub
@@ -88,20 +88,20 @@ locator.registerSingleton<AppBoxKitCryptoService>(CryptographyAppBoxKitCryptoSer
 
 ### Testing
 
-`appbox_kit_security` ships `lib/appbox_kit_testing.dart`.
+`arxa_kit_security` ships `lib/arxa_kit_testing.dart`.
 
 
 ### Features
 
-<Checklist id="security-features" items={[{"id": "security-feat-0", "label": "`CryptographyAppBoxKitCryptoService` \u2014 class"}, {"id": "security-feat-1", "label": "`AppBoxKitCryptoFailureReason` \u2014 enum"}, {"id": "security-feat-2", "label": "`AppBoxKitCryptoFailure` \u2014 class"}, {"id": "security-feat-3", "label": "`AppBoxKitCryptoKey` \u2014 class"}, {"id": "security-feat-4", "label": "`AppBoxKitCryptoService` \u2014 abstract interface class"}, {"id": "security-feat-5", "label": "`AppBoxKitSecretBox` \u2014 class"}, {"id": "security-feat-6", "label": "`FlutterSecureStorageAppBoxKitSecureStorageService` \u2014 class"}, {"id": "security-feat-7", "label": "`AppBoxKitSecureStorageService` \u2014 abstract interface class"}, {"id": "security-feat-8", "label": "`AppBoxKitBiometricAvailabilityStatus` \u2014 enum"}, {"id": "security-feat-9", "label": "`AppBoxKitBiometricAvailability` \u2014 class"}, {"id": "security-feat-10", "label": "`AppBoxKitBiometricFailureReason` \u2014 enum"}, {"id": "security-feat-11", "label": "`AppBoxKitBiometricResult` \u2014 class"}]} />
+<Checklist id="security-features" items={[{"id": "security-feat-0", "label": "`CryptographyArxaKitCryptoService` \u2014 class"}, {"id": "security-feat-1", "label": "`ArxaKitCryptoFailureReason` \u2014 enum"}, {"id": "security-feat-2", "label": "`ArxaKitCryptoFailure` \u2014 class"}, {"id": "security-feat-3", "label": "`ArxaKitCryptoKey` \u2014 class"}, {"id": "security-feat-4", "label": "`ArxaKitCryptoService` \u2014 abstract interface class"}, {"id": "security-feat-5", "label": "`ArxaKitSecretBox` \u2014 class"}, {"id": "security-feat-6", "label": "`FlutterSecureStorageArxaKitSecureStorageService` \u2014 class"}, {"id": "security-feat-7", "label": "`ArxaKitSecureStorageService` \u2014 abstract interface class"}, {"id": "security-feat-8", "label": "`ArxaKitBiometricAvailabilityStatus` \u2014 enum"}, {"id": "security-feat-9", "label": "`ArxaKitBiometricAvailability` \u2014 class"}, {"id": "security-feat-10", "label": "`ArxaKitBiometricFailureReason` \u2014 enum"}, {"id": "security-feat-11", "label": "`ArxaKitBiometricResult` \u2014 class"}]} />
 
 
 ### Decisions / ADRs
 
-- **Standalone by design.** The kit declares no dependency on `appbox_kit`, `stacked`, or `stacked_services`, so it ships as a pure capability layer; the host app owns locator registration and never inherits a framework coupling it does not need.
-- **Typed ports over plugin types.** Each of the five seams is consumed through an abstract interface with plugin-neutral value types and results (`AppBoxKitBiometricResult`, `AppBoxKitCryptoFailure`, `AppBoxKitIntegrityReport`). Backing-plugin types — `local_auth`'s `BiometricType` and `LocalAuthExceptionCode`, the `cryptography` package's `SecretKey` / `SecretBox` / `Mac` — are mapped at the boundary and never leak past it.
+- **Standalone by design.** The kit declares no dependency on `arxa_kit`, `stacked`, or `stacked_services`, so it ships as a pure capability layer; the host app owns locator registration and never inherits a framework coupling it does not need.
+- **Typed ports over plugin types.** Each of the five seams is consumed through an abstract interface with plugin-neutral value types and results (`ArxaKitBiometricResult`, `ArxaKitCryptoFailure`, `ArxaKitIntegrityReport`). Backing-plugin types — `local_auth`'s `BiometricType` and `LocalAuthExceptionCode`, the `cryptography` package's `SecretKey` / `SecretBox` / `Mac` — are mapped at the boundary and never leak past it.
 - **Backing packages (verified pub.dev 2026-07-14).** `local_auth ^3.0.2` (publisher `flutter.dev`) and `flutter_secure_storage ^10.3.1` cover platform Keychain/Keystore; `cryptography ^2.9.0` was chosen because its pure-Dart `DartCryptography` fallback runs fully off-device in `flutter test`, so the AES-GCM/SHA-256/HMAC backend is exercisable without a device.
-- **Integrity deferred to a native-first phase.** Device integrity ships only the throwing `UnimplementedAppBoxKitDeviceIntegrityService` stub today; a real check is deferred so the kit takes no root-detection plugin dependency now, and the scriptable `FakeAppBoxKitDeviceIntegrityService` drives UIs and tests meanwhile.
+- **Integrity deferred to a native-first phase.** Device integrity ships only the throwing `UnimplementedArxaKitDeviceIntegrityService` stub today; a real check is deferred so the kit takes no root-detection plugin dependency now, and the scriptable `FakeArxaKitDeviceIntegrityService` drives UIs and tests meanwhile.
 
 <!-- kb:begin -->
 ### References
@@ -115,13 +115,13 @@ Official docs and tooling:
 - [stacked_cli (pub.dev)](https://pub.dev/packages/stacked_cli) — Scaffolding CLI for new Stacked apps/views/services.
 - [Flutter — official documentation](https://docs.flutter.dev) — Framework docs, platform integration, performance.
 - [Dart — official documentation](https://dart.dev) — Language tour, async, package ecosystem.
-- [Dart & Flutter MCP server (official)](https://dart.dev/tools/mcp-server) — Ships with the Dart SDK (dart mcp-server). Exposes analyzer diagnostics, pub, tests, and live Flutter app introspection via DTD. Wired in appbox_kit/.mcp.json.
+- [Dart & Flutter MCP server (official)](https://dart.dev/tools/mcp-server) — Ships with the Dart SDK (dart mcp-server). Exposes analyzer diagnostics, pub, tests, and live Flutter app introspection via DTD. Wired in arxa_kit/.mcp.json.
 
 Kit-specific:
 
-- [local_auth (pub.dev)](https://pub.dev/packages/local_auth) — local_auth — backing dependency of appbox_kit_security.
-- [flutter_secure_storage (pub.dev)](https://pub.dev/packages/flutter_secure_storage) — flutter_secure_storage — backing dependency of appbox_kit_security.
-- [cryptography (pub.dev)](https://pub.dev/packages/cryptography) — cryptography — backing dependency of appbox_kit_security.
+- [local_auth (pub.dev)](https://pub.dev/packages/local_auth) — local_auth — backing dependency of arxa_kit_security.
+- [flutter_secure_storage (pub.dev)](https://pub.dev/packages/flutter_secure_storage) — flutter_secure_storage — backing dependency of arxa_kit_security.
+- [cryptography (pub.dev)](https://pub.dev/packages/cryptography) — cryptography — backing dependency of arxa_kit_security.
 <!-- kb:end -->
 
 <QuestionForm id="open-questions" questions={[

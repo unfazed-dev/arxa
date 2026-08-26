@@ -1,9 +1,9 @@
-# memory/ — appbox curated memory
+# memory/ — arxa curated memory
 
-The durable, human-auditable memory of the appbox pipeline. Files, not a
-service: plain markdown + JSON, git-tracked, diffable, deletable. appbox owns
+The durable, human-auditable memory of the arxa pipeline. Files, not a
+service: plain markdown + JSON, git-tracked, diffable, deletable. arxa owns
 this tree — stacked_kit's `memory/` is the template, never a dependency
-(docs/plans/appbox-memory-and-payment.md, M1).
+(docs/plans/arxa-memory-and-payment.md, M1).
 
 Consumers: the engine (self-tuning prompt assembly), the operator (briefings).
 Per-app runtime memory ships as a kit inside generated apps — never here.
@@ -11,7 +11,7 @@ Per-app runtime memory ships as a kit inside generated apps — never here.
 ## Write-path doctrine (M1)
 
 - **Raw events, always.** Deterministic writers (gates, runner, gateway)
-  append raw events — scorecards, usage, gate outcomes — to the appboxd data
+  append raw events — scorecards, usage, gate outcomes — to the arxa data
   dir (JSONL, git-ignored, high-volume). Nothing curated lives there.
 - **Curated lessons, gate-triggered only.** A consolidation stage promotes
   durable lessons into `stages/`, and its output passes a gate like every

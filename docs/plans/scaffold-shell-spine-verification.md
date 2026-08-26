@@ -1,6 +1,6 @@
 # Scaffold shell — spine verification (behavioural, not just static)
 
-Server used: private probe instance on `:4347` (`dart bin/appbox.dart design serve ../designs/appbox-studio --port 4347`).
+Server used: private probe instance on `:4347` (`dart bin/arxa.dart design serve ../designs/arxa-studio --port 4347`).
 Shared `:4319` loads its route table at boot, so it still 404s the new scaffold routes until someone restarts it.
 
 ## 1. Gate state: selftest 25/25, emit structure clean

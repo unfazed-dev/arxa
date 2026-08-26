@@ -1,15 +1,15 @@
 <Callout id="header" tone="info">
 
-# appbox_kit_forms — Per-Package Playbook
+# arxa_kit_forms — Per-Package Playbook
 
 
-`appbox_kit_forms` v**0.1.0** · `publish_to: 'none'` · status: **active**
+`arxa_kit_forms` v**0.1.0** · `publish_to: 'none'` · status: **active**
 
 
-**Role (one line):** Stacked form management for appbox_kit apps — typed field/form controllers (pristine/dirty/validating/valid/invalid) with sync + async validation, a composable validator library, and code-first error mapping for i18n.
+**Role (one line):** Stacked form management for arxa_kit apps — typed field/form controllers (pristine/dirty/validating/valid/invalid) with sync + async validation, a composable validator library, and code-first error mapping for i18n.
 
 
-**Scope of this document:** lets a human OR an LLM use, wire, and extend `appbox_kit_forms` **without reading its source**. The public surface below was extracted from the barrel; README content is folded into the narrative sections.
+**Scope of this document:** lets a human OR an LLM use, wire, and extend `arxa_kit_forms` **without reading its source**. The public surface below was extracted from the barrel; README content is folded into the narrative sections.
 
 
 ## Table of contents
@@ -22,53 +22,53 @@
 
 ### Overview & role
 
-Stacked form management for appbox_kit apps — typed field/form controllers (pristine/dirty/validating/valid/invalid) with sync + async validation, a composable validator library, and code-first error mapping for i18n. Integrates with Stacked's form generator conventions.
+Stacked form management for arxa_kit apps — typed field/form controllers (pristine/dirty/validating/valid/invalid) with sync + async validation, a composable validator library, and code-first error mapping for i18n. Integrates with Stacked's form generator conventions.
 
 
 ### Public surface
 
-Exported from `lib/appbox_kit_forms.dart`:
+Exported from `lib/arxa_kit_forms.dart`:
 
-<Table id="forms-api" columns={["Symbol", "Kind", "Defined in"]} rows={[["AppBoxKitFormController", "class", "forms/appbox_kit_form_controller.dart"], ["AppBoxKitFormStatus", "enum", "forms/appbox_kit_form_status.dart"], ["AppBoxKitFormViewModelMixin", "mixin", "forms/appbox_kit_form_view_model.dart"], ["AppBoxKitFormDraftStore", "abstract interface class", "persistence/appbox_kit_form_draft.dart"], ["AppBoxKitInMemoryDraftStore", "class", "persistence/appbox_kit_form_draft.dart"], ["AppBoxKitFieldController", "class", "fields/appbox_kit_field_controller.dart"], ["AppBoxKitFieldStatus", "enum", "fields/appbox_kit_field_status.dart"], ["AppBoxKitErrorMessages", "class", "validators/appbox_kit_error_messages.dart"], ["AppBoxKitFieldError", "class", "validators/appbox_kit_field_error.dart"], ["AppBoxKitValidationCode", "class", "validators/appbox_kit_validation_code.dart"], ["AppBoxKitValidator", "typedef", "validators/appbox_kit_validator.dart"], ["AppBoxKitAsyncValidator", "typedef", "validators/appbox_kit_validator.dart"], ["AppBoxKitStringValidator", "typedef", "validators/appbox_kit_validator.dart"], ["AppBoxKitValidators", "class", "validators/appbox_kit_validators.dart"], ["AppBoxKitMultiStepFormController", "class", "flows/appbox_kit_multi_step_form.dart"]]} />
+<Table id="forms-api" columns={["Symbol", "Kind", "Defined in"]} rows={[["ArxaKitFormController", "class", "forms/arxa_kit_form_controller.dart"], ["ArxaKitFormStatus", "enum", "forms/arxa_kit_form_status.dart"], ["ArxaKitFormViewModelMixin", "mixin", "forms/arxa_kit_form_view_model.dart"], ["ArxaKitFormDraftStore", "abstract interface class", "persistence/arxa_kit_form_draft.dart"], ["ArxaKitInMemoryDraftStore", "class", "persistence/arxa_kit_form_draft.dart"], ["ArxaKitFieldController", "class", "fields/arxa_kit_field_controller.dart"], ["ArxaKitFieldStatus", "enum", "fields/arxa_kit_field_status.dart"], ["ArxaKitErrorMessages", "class", "validators/arxa_kit_error_messages.dart"], ["ArxaKitFieldError", "class", "validators/arxa_kit_field_error.dart"], ["ArxaKitValidationCode", "class", "validators/arxa_kit_validation_code.dart"], ["ArxaKitValidator", "typedef", "validators/arxa_kit_validator.dart"], ["ArxaKitAsyncValidator", "typedef", "validators/arxa_kit_validator.dart"], ["ArxaKitStringValidator", "typedef", "validators/arxa_kit_validator.dart"], ["ArxaKitValidators", "class", "validators/arxa_kit_validators.dart"], ["ArxaKitMultiStepFormController", "class", "flows/arxa_kit_multi_step_form.dart"]]} />
 
-Test doubles in `lib/appbox_kit_testing.dart`: `AppBoxKitScriptedValidator`, `AppBoxKitFakeAsyncValidator`.
+Test doubles in `lib/arxa_kit_testing.dart`: `ArxaKitScriptedValidator`, `ArxaKitFakeAsyncValidator`.
 
 Scripts and call-counts — tests never touch platform channels.
 
 
 ### Usage & wiring
 
-Add `appbox_kit_forms` to the consuming app's `pubspec.yaml`, then import the barrel. There is no service-locator or `@StackedApp` registration step: the kit ships only controllers and validators (no services), so it has nothing to register with the locator — you instantiate the controllers directly where the ViewModel needs them.
+Add `arxa_kit_forms` to the consuming app's `pubspec.yaml`, then import the barrel. There is no service-locator or `@StackedApp` registration step: the kit ships only controllers and validators (no services), so it has nothing to register with the locator — you instantiate the controllers directly where the ViewModel needs them.
 
 ```dart
-import 'package:appbox_kit_forms/appbox_kit_forms.dart';
+import 'package:arxa_kit_forms/arxa_kit_forms.dart';
 
-final email = AppBoxKitFieldController<String>(
+final email = ArxaKitFieldController<String>(
   name: 'email',
-  validators: [AppBoxKitValidators.required(), AppBoxKitValidators.email()],
+  validators: [ArxaKitValidators.required(), ArxaKitValidators.email()],
 );
-final password = AppBoxKitFieldController<String>(
+final password = ArxaKitFieldController<String>(
   name: 'password',
-  validators: [AppBoxKitValidators.required(), AppBoxKitValidators.minLength(8)],
+  validators: [ArxaKitValidators.required(), ArxaKitValidators.minLength(8)],
 );
 
-final form = AppBoxKitFormController([email, password]);
+final form = ArxaKitFormController([email, password]);
 // form.canSubmit gates the submit button; form.values / form.errors are live maps.
 await form.submit((values) => api.signIn(values));
 ```
 
-To drive a generated Stacked form's `<field>ValidationMessage` getters from the same typed layer, mix `AppBoxKitFormViewModelMixin` into a `FormViewModel` and call `syncAppBoxKitForm()` on change (see Architecture). For a plain `@FormTextField(validator:)`, adapt a composed validator down to the generator's signature with `.toStacked()`.
+To drive a generated Stacked form's `<field>ValidationMessage` getters from the same typed layer, mix `ArxaKitFormViewModelMixin` into a `FormViewModel` and call `syncArxaKitForm()` on change (see Architecture). For a plain `@FormTextField(validator:)`, adapt a composed validator down to the generator's signature with `.toStacked()`.
 
-#### Wiring a field to a `AppBoxKitNativeTextField` (app-side bridge)
+#### Wiring a field to a `ArxaKitNativeTextField` (app-side bridge)
 
-`AppBoxKitFieldController<String>` is value-based and validates on write; `AppBoxKitNativeTextField` (in `ui_library`) is controller-based. The kit's star topology forbids `appbox_kit_forms` from importing `ui_library` — there is no kit→kit edge — so that bridge **cannot ship in-kit**. Each app owns a ~40-line **leaf adapter** widget: a `StatefulWidget` that manages only a `TextEditingController`'s create / dispose / sync. The source of truth (the `AppBoxKitFieldController`, its value, validation, and `AppBoxKitFieldStatus`) stays in the viewmodel — the adapter is plumbing, not state-splitting, mirroring stacked's own generated `$View` form mixin (stateful for controller disposal, not to hold state).
+`ArxaKitFieldController<String>` is value-based and validates on write; `ArxaKitNativeTextField` (in `ui_library`) is controller-based. The kit's star topology forbids `arxa_kit_forms` from importing `ui_library` — there is no kit→kit edge — so that bridge **cannot ship in-kit**. Each app owns a ~40-line **leaf adapter** widget: a `StatefulWidget` that manages only a `TextEditingController`'s create / dispose / sync. The source of truth (the `ArxaKitFieldController`, its value, validation, and `ArxaKitFieldStatus`) stays in the viewmodel — the adapter is plumbing, not state-splitting, mirroring stacked's own generated `$View` form mixin (stateful for controller disposal, not to hold state).
 
 Sync is echo-free in both directions:
 
 - **User typing** → `onChanged` → `field.value =` (drives validation + `StackedView` rebuild).
 - **External prefill** (e.g. a model loaded into the VM) → `field.value =` → a `field` listener seeds the controller **only when the value differs** (`value != controller.text`); that equal-value guard avoids cursor resets on the echo of a user's own keystroke.
 
-Reference implementation (upstream app): `lib/ui/widgets/kit_field_text_field.dart` — `KitFieldTextField`, a `StatefulWidget` wiring `AppBoxKitFieldController<String>` → `AppBoxKitNativeTextField`.
+Reference implementation (upstream app): `lib/ui/widgets/kit_field_text_field.dart` — `KitFieldTextField`, a `StatefulWidget` wiring `ArxaKitFieldController<String>` → `ArxaKitNativeTextField`.
 
 
 ### Integration map
@@ -80,37 +80,37 @@ See `kit_matrix.md` for the full routing + dependency graph.
 
 ### Architecture
 
-The kit is layered strictly by dependency direction, bottoming out at pure Dart plus `stacked`'s `FormViewModel` / `FormStateHelper` conventions. The error model — `AppBoxKitValidationCode`, `AppBoxKitFieldError`, `AppBoxKitErrorMessages` — underpins the `AppBoxKitValidator` / `AppBoxKitAsyncValidator` / `AppBoxKitStringValidator` typedefs and the `AppBoxKitValidators` factory library (`required`, `email`, `minLength`, `maxLength`, `pattern`, `match`, `custom`, `compose`). On top of that, `AppBoxKitFieldController<T>` wraps a single value with a `AppBoxKitFieldStatus` (pristine / dirty / validating / valid / invalid), running sync validators first and async validators only on sync success, with concurrent `validate()` calls epoch-guarded; `AppBoxKitFormController` then aggregates fields into a derived `AppBoxKitFormStatus`, gates `canSubmit` on all-valid, and owns/disposes its fields by default.
+The kit is layered strictly by dependency direction, bottoming out at pure Dart plus `stacked`'s `FormViewModel` / `FormStateHelper` conventions. The error model — `ArxaKitValidationCode`, `ArxaKitFieldError`, `ArxaKitErrorMessages` — underpins the `ArxaKitValidator` / `ArxaKitAsyncValidator` / `ArxaKitStringValidator` typedefs and the `ArxaKitValidators` factory library (`required`, `email`, `minLength`, `maxLength`, `pattern`, `match`, `custom`, `compose`). On top of that, `ArxaKitFieldController<T>` wraps a single value with a `ArxaKitFieldStatus` (pristine / dirty / validating / valid / invalid), running sync validators first and async validators only on sync success, with concurrent `validate()` calls epoch-guarded; `ArxaKitFormController` then aggregates fields into a derived `ArxaKitFormStatus`, gates `canSubmit` on all-valid, and owns/disposes its fields by default.
 
-The only file that touches Stacked's runtime surface is `AppBoxKitFormViewModelMixin` — a thin edge adapter that pushes the kit's values and errors into `FormStateHelper.formValueMap` / `fieldsValidationMessages` so generated forms stay in sync. Everything below that edge has no Stacked dependency beyond the type conventions. `AppBoxKitMultiStepFormController` (flows) and `AppBoxKitFormDraftStore` / `AppBoxKitInMemoryDraftStore` (persistence) are exported stubs that define the ports ahead of their durable implementations.
+The only file that touches Stacked's runtime surface is `ArxaKitFormViewModelMixin` — a thin edge adapter that pushes the kit's values and errors into `FormStateHelper.formValueMap` / `fieldsValidationMessages` so generated forms stay in sync. Everything below that edge has no Stacked dependency beyond the type conventions. `ArxaKitMultiStepFormController` (flows) and `ArxaKitFormDraftStore` / `ArxaKitInMemoryDraftStore` (persistence) are exported stubs that define the ports ahead of their durable implementations.
 
-**Forms ↔ data are deliberately disjoint reactivity axes.** This kit is `ChangeNotifier`-based: `AppBoxKitFieldController`/`AppBoxKitFormController` (and `AppBoxKitMultiStepFormController`) all `extend ChangeNotifier`, so a field's value/status change notifies the `StackedView` to rebuild, and the kit depends on `stacked` alone — **no `rxdart`**. `appbox_kit_data` is the opposite: `rxdart`-based. `KitSeedStore` and each auth backend own `BehaviorSubject`s, and `KitDataFacade` composes them with `Rx.combineLatest` / `.map` / `.debounceTime`, feeding `KitStreamBuilder` in the view. These two axes meet only in the viewmodel — field-state reactivity (`ChangeNotifier` → `StackedView` rebuild) on one side, data-stream reactivity (`rxdart` → `KitStreamBuilder`) on the other. The kit_matrix calls this out explicitly (§4): `appbox_kit_forms` is **not** a dependency of `appbox_kit_data` — "bind them in viewmodels". So don't go looking for an `rxdart` form-fields path; there isn't one, by design.
+**Forms ↔ data are deliberately disjoint reactivity axes.** This kit is `ChangeNotifier`-based: `ArxaKitFieldController`/`ArxaKitFormController` (and `ArxaKitMultiStepFormController`) all `extend ChangeNotifier`, so a field's value/status change notifies the `StackedView` to rebuild, and the kit depends on `stacked` alone — **no `rxdart`**. `arxa_kit_data` is the opposite: `rxdart`-based. `KitSeedStore` and each auth backend own `BehaviorSubject`s, and `KitDataFacade` composes them with `Rx.combineLatest` / `.map` / `.debounceTime`, feeding `KitStreamBuilder` in the view. These two axes meet only in the viewmodel — field-state reactivity (`ChangeNotifier` → `StackedView` rebuild) on one side, data-stream reactivity (`rxdart` → `KitStreamBuilder`) on the other. The kit_matrix calls this out explicitly (§4): `arxa_kit_forms` is **not** a dependency of `arxa_kit_data` — "bind them in viewmodels". So don't go looking for an `rxdart` form-fields path; there isn't one, by design.
 
 
 ### Gotchas
 
-No platform setup is required — the kit is pure Dart with no method channels, native permissions, or manifest keys. `AppBoxKitFormController` owns and disposes its fields by default, so pass `ownsFields: false` if you inject field instances that outlive the form. Input formatters (email / OTP / mobile) still live in `appbox_kit` core and are intentionally not re-exported here; import them from core rather than waiting on this barrel. Finally, `AppBoxKitMultiStepFormController` and durable draft storage are stubs today — only the `AppBoxKitFormDraftStore` port and `AppBoxKitInMemoryDraftStore` exist — so don't rely on durable draft-restore or branching/progress/back-stack wizard behavior yet.
+No platform setup is required — the kit is pure Dart with no method channels, native permissions, or manifest keys. `ArxaKitFormController` owns and disposes its fields by default, so pass `ownsFields: false` if you inject field instances that outlive the form. Input formatters (email / OTP / mobile) still live in `arxa_kit` core and are intentionally not re-exported here; import them from core rather than waiting on this barrel. Finally, `ArxaKitMultiStepFormController` and durable draft storage are stubs today — only the `ArxaKitFormDraftStore` port and `ArxaKitInMemoryDraftStore` exist — so don't rely on durable draft-restore or branching/progress/back-stack wizard behavior yet.
 
 
 ### Testing
 
-`package:appbox_kit_forms/appbox_kit_testing.dart` provides:
+`package:arxa_kit_forms/arxa_kit_testing.dart` provides:
 
-- **`AppBoxKitScriptedValidator<T>`** — returns queued outcomes then a default;
+- **`ArxaKitScriptedValidator<T>`** — returns queued outcomes then a default;
   records call count and received values.
-- **`AppBoxKitFakeAsyncValidator<T>`** — parks on a `Completer` so tests drive
+- **`ArxaKitFakeAsyncValidator<T>`** — parks on a `Completer` so tests drive
   async-validation timing (the `validating` window) deterministically via
   `resolveValid()` / `resolveInvalid()`.
 
 
 ### Features
 
-<Checklist id="forms-features" items={[{"id": "forms-feat-0", "label": "`AppBoxKitFormController` \u2014 class"}, {"id": "forms-feat-1", "label": "`AppBoxKitFormStatus` \u2014 enum"}, {"id": "forms-feat-2", "label": "`AppBoxKitFormViewModelMixin` \u2014 mixin"}, {"id": "forms-feat-3", "label": "`AppBoxKitFormDraftStore` \u2014 abstract interface class"}, {"id": "forms-feat-4", "label": "`AppBoxKitInMemoryDraftStore` \u2014 class"}, {"id": "forms-feat-5", "label": "`AppBoxKitFieldController` \u2014 class"}, {"id": "forms-feat-6", "label": "`AppBoxKitFieldStatus` \u2014 enum"}, {"id": "forms-feat-7", "label": "`AppBoxKitErrorMessages` \u2014 class"}, {"id": "forms-feat-8", "label": "`AppBoxKitFieldError` \u2014 class"}, {"id": "forms-feat-9", "label": "`AppBoxKitValidationCode` \u2014 class"}, {"id": "forms-feat-10", "label": "`AppBoxKitValidator` \u2014 typedef"}, {"id": "forms-feat-11", "label": "`AppBoxKitAsyncValidator` \u2014 typedef"}]} />
+<Checklist id="forms-features" items={[{"id": "forms-feat-0", "label": "`ArxaKitFormController` \u2014 class"}, {"id": "forms-feat-1", "label": "`ArxaKitFormStatus` \u2014 enum"}, {"id": "forms-feat-2", "label": "`ArxaKitFormViewModelMixin` \u2014 mixin"}, {"id": "forms-feat-3", "label": "`ArxaKitFormDraftStore` \u2014 abstract interface class"}, {"id": "forms-feat-4", "label": "`ArxaKitInMemoryDraftStore` \u2014 class"}, {"id": "forms-feat-5", "label": "`ArxaKitFieldController` \u2014 class"}, {"id": "forms-feat-6", "label": "`ArxaKitFieldStatus` \u2014 enum"}, {"id": "forms-feat-7", "label": "`ArxaKitErrorMessages` \u2014 class"}, {"id": "forms-feat-8", "label": "`ArxaKitFieldError` \u2014 class"}, {"id": "forms-feat-9", "label": "`ArxaKitValidationCode` \u2014 class"}, {"id": "forms-feat-10", "label": "`ArxaKitValidator` \u2014 typedef"}, {"id": "forms-feat-11", "label": "`ArxaKitAsyncValidator` \u2014 typedef"}]} />
 
 
 ### Decisions / ADRs
 
-The kit depends on exactly one package — `stacked` (^3.5.0) — and deliberately not `stacked_services`, because the generator bridge needs only `FormViewModel` / `FormStateHelper` conventions and `stacked_services` would be dead weight. Errors are code-first: `AppBoxKitValidationCode` is the primary i18n key, with a resolved English `AppBoxKitFieldError.message` fallback, so apps can localize without forking validators or rewiring factories. Validator factories return typed `AppBoxKitValidator<T>` rather than the generator's `String? Function(String?)` in order to preserve async and cross-field cases; `AppBoxKitValidatorStackedAdapter.toStacked()` adapts down to the generator's signature only at the edge. Input formatters were left in `appbox_kit` core (a scheduled Phase 5 ride-along) rather than moved, to keep core untouched and the migration breaking-change-free.
+The kit depends on exactly one package — `stacked` (^3.5.0) — and deliberately not `stacked_services`, because the generator bridge needs only `FormViewModel` / `FormStateHelper` conventions and `stacked_services` would be dead weight. Errors are code-first: `ArxaKitValidationCode` is the primary i18n key, with a resolved English `ArxaKitFieldError.message` fallback, so apps can localize without forking validators or rewiring factories. Validator factories return typed `ArxaKitValidator<T>` rather than the generator's `String? Function(String?)` in order to preserve async and cross-field cases; `ArxaKitValidatorStackedAdapter.toStacked()` adapts down to the generator's signature only at the edge. Input formatters were left in `arxa_kit` core (a scheduled Phase 5 ride-along) rather than moved, to keep core untouched and the migration breaking-change-free.
 
 <!-- kb:begin -->
 ### References
@@ -124,7 +124,7 @@ Official docs and tooling:
 - [stacked_cli (pub.dev)](https://pub.dev/packages/stacked_cli) — Scaffolding CLI for new Stacked apps/views/services.
 - [Flutter — official documentation](https://docs.flutter.dev) — Framework docs, platform integration, performance.
 - [Dart — official documentation](https://dart.dev) — Language tour, async, package ecosystem.
-- [Dart & Flutter MCP server (official)](https://dart.dev/tools/mcp-server) — Ships with the Dart SDK (dart mcp-server). Exposes analyzer diagnostics, pub, tests, and live Flutter app introspection via DTD. Wired in appbox_kit/.mcp.json.
+- [Dart & Flutter MCP server (official)](https://dart.dev/tools/mcp-server) — Ships with the Dart SDK (dart mcp-server). Exposes analyzer diagnostics, pub, tests, and live Flutter app introspection via DTD. Wired in arxa_kit/.mcp.json.
 
 Kit-specific:
 

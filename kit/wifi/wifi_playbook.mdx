@@ -1,15 +1,15 @@
 <Callout id="header" tone="info">
 
-# appbox_kit_wifi — Per-Package Playbook
+# arxa_kit_wifi — Per-Package Playbook
 
 
-`appbox_kit_wifi` v**0.1.0** · `publish_to: 'none'` · status: **active**
+`arxa_kit_wifi` v**0.1.0** · `publish_to: 'none'` · status: **active**
 
 
 **Role (one line):** Plugin-neutral port for observing Wi-Fi connectivity state and escorting the user to Wi-Fi settings — live OS state stream, best-effort network info, and a capability gate so UIs can label controls direct vs escorted.
 
 
-**Scope of this document:** lets a human OR an LLM use, wire, and extend `appbox_kit_wifi` **without reading its source**. The public surface below was extracted from the barrel; README content is folded into the narrative sections.
+**Scope of this document:** lets a human OR an LLM use, wire, and extend `arxa_kit_wifi` **without reading its source**. The public surface below was extracted from the barrel; README content is folded into the narrative sections.
 
 
 ## Table of contents
@@ -27,18 +27,18 @@ Plugin-neutral port for observing Wi-Fi connectivity state and escorting the use
 
 ### Public surface
 
-Exported from `lib/appbox_kit_wifi.dart`:
+Exported from `lib/arxa_kit_wifi.dart`:
 
-<Table id="wifi-api" columns={["Symbol", "Kind", "Defined in"]} rows={[["ConnectivityAppBoxKitWifiService", "class", "src/appbox_kit_connectivity_wifi_service.dart"], ["AppBoxKitWifiCapabilities", "class", "src/appbox_kit_wifi_capabilities.dart"], ["AppBoxKitWifiNetwork", "class", "src/appbox_kit_wifi_network.dart"], ["AppBoxKitWifiUnsupportedError", "class", "src/appbox_kit_wifi_service.dart"], ["AppBoxKitWifiService", "abstract interface class", "src/appbox_kit_wifi_service.dart"], ["AppBoxKitWifiState", "enum", "src/appbox_kit_wifi_state.dart"]]} />
+<Table id="wifi-api" columns={["Symbol", "Kind", "Defined in"]} rows={[["ConnectivityArxaKitWifiService", "class", "src/arxa_kit_connectivity_wifi_service.dart"], ["ArxaKitWifiCapabilities", "class", "src/arxa_kit_wifi_capabilities.dart"], ["ArxaKitWifiNetwork", "class", "src/arxa_kit_wifi_network.dart"], ["ArxaKitWifiUnsupportedError", "class", "src/arxa_kit_wifi_service.dart"], ["ArxaKitWifiService", "abstract interface class", "src/arxa_kit_wifi_service.dart"], ["ArxaKitWifiState", "enum", "src/arxa_kit_wifi_state.dart"]]} />
 
-Test doubles in `lib/appbox_kit_testing.dart`: `FakeAppBoxKitWifiService`.
+Test doubles in `lib/arxa_kit_testing.dart`: `FakeArxaKitWifiService`.
 
 Scripts and call-counts — tests never touch platform channels.
 
 
 ### Usage & wiring
 
-This package is a **standalone port** — it depends on no other kit (not `appbox_kit`, `stacked`, or `stacked_services`), so there is no locator or `@StackedApp` registration step. Add the dependency, then construct `ConnectivityAppBoxKitWifiService` directly (optionally injecting `Connectivity` / `NetworkInfo` for tests) and hold it in whatever ViewModel or service needs it. Minimal usage: listen to `stateChanges` for the live OS connectivity stream, call `currentNetwork()` for a best-effort SSID/IP read, and reach the escort via `openSettings()` — or catch `AppBoxKitWifiUnsupportedError` from `requestEnable()` and fall back to `openSettings()`. No in-package permission wiring ships here; the SSID-read location-permission dependency is deferred to a downstream reconciliation pass.
+This package is a **standalone port** — it depends on no other kit (not `arxa_kit`, `stacked`, or `stacked_services`), so there is no locator or `@StackedApp` registration step. Add the dependency, then construct `ConnectivityArxaKitWifiService` directly (optionally injecting `Connectivity` / `NetworkInfo` for tests) and hold it in whatever ViewModel or service needs it. Minimal usage: listen to `stateChanges` for the live OS connectivity stream, call `currentNetwork()` for a best-effort SSID/IP read, and reach the escort via `openSettings()` — or catch `ArxaKitWifiUnsupportedError` from `requestEnable()` and fall back to `openSettings()`. No in-package permission wiring ships here; the SSID-read location-permission dependency is deferred to a downstream reconciliation pass.
 
 
 ### Integration map
@@ -50,17 +50,17 @@ See `kit_matrix.md` for the full routing + dependency graph.
 
 ### Architecture
 
-`AppBoxKitWifiService` is the abstract interface **port** (`stateChanges`, `currentState`, `currentNetwork`, `capabilities`, `requestEnable`, `openSettings`); `ConnectivityAppBoxKitWifiService` is the sole production **adapter**, binding the port to `connectivity_plus` (the live stream), `network_info_plus` (on-demand SSID/BSSID/IP), and `app_settings` (the Wi-Fi settings deep-link). Value types model the observable surface — `AppBoxKitWifiState` (connected/disconnected/unknown), `AppBoxKitWifiNetwork` (nullable SSID/BSSID/IP), `AppBoxKitWifiCapabilities` (the direct-vs-escorted gate) — and `AppBoxKitWifiUnsupportedError` signals unsupported adapter control. Dependency direction is one-way inward: the adapter depends on the port plus the three backing plugins, the port depends on nothing, and the whole package depends on no other kit — so callers can swap `ConnectivityAppBoxKitWifiService` for `FakeAppBoxKitWifiService` without touching any Stacked wiring.
+`ArxaKitWifiService` is the abstract interface **port** (`stateChanges`, `currentState`, `currentNetwork`, `capabilities`, `requestEnable`, `openSettings`); `ConnectivityArxaKitWifiService` is the sole production **adapter**, binding the port to `connectivity_plus` (the live stream), `network_info_plus` (on-demand SSID/BSSID/IP), and `app_settings` (the Wi-Fi settings deep-link). Value types model the observable surface — `ArxaKitWifiState` (connected/disconnected/unknown), `ArxaKitWifiNetwork` (nullable SSID/BSSID/IP), `ArxaKitWifiCapabilities` (the direct-vs-escorted gate) — and `ArxaKitWifiUnsupportedError` signals unsupported adapter control. Dependency direction is one-way inward: the adapter depends on the port plus the three backing plugins, the port depends on nothing, and the whole package depends on no other kit — so callers can swap `ConnectivityArxaKitWifiService` for `FakeArxaKitWifiService` without touching any Stacked wiring.
 
 
 ### Gotchas
 
-`AppBoxKitWifiState` reflects **reachability, not radio power**: `disconnected` does not prove the adapter is off — on-but-idle is indistinguishable from off from inside the app, and `connected` only implies the adapter is on. SSID/BSSID reads are location-permission gated on modern iOS and Android (plus iOS entitlements), so a `null` SSID on a `connected` device usually means permission denied rather than "no network"; treat `AppBoxKitWifiNetwork` as a hint, never authoritative. `requestEnable()` throws `AppBoxKitWifiUnsupportedError` on iOS and Android 10+ (no cross-platform OS API enables the radio) — the UI must catch it and call `openSettings()` instead. No native manifest keys are documented in this package and the location-permission wiring is not included; both are deferred to the downstream reconciliation pass.
+`ArxaKitWifiState` reflects **reachability, not radio power**: `disconnected` does not prove the adapter is off — on-but-idle is indistinguishable from off from inside the app, and `connected` only implies the adapter is on. SSID/BSSID reads are location-permission gated on modern iOS and Android (plus iOS entitlements), so a `null` SSID on a `connected` device usually means permission denied rather than "no network"; treat `ArxaKitWifiNetwork` as a hint, never authoritative. `requestEnable()` throws `ArxaKitWifiUnsupportedError` on iOS and Android 10+ (no cross-platform OS API enables the radio) — the UI must catch it and call `openSettings()` instead. No native manifest keys are documented in this package and the location-permission wiring is not included; both are deferred to the downstream reconciliation pass.
 
 
 ### Testing
 
-`package:appbox_kit_wifi/appbox_kit_testing.dart` exports `FakeAppBoxKitWifiService`: drive the
+`package:arxa_kit_wifi/arxa_kit_testing.dart` exports `FakeArxaKitWifiService`: drive the
 stream with `emit`, set `currentNetwork` with `setNetwork`, and assert the
 escort via `openSettingsCallCount` / `requestEnableCallCount`. `requestEnable`
 throws by default (adapter uncontrollable) so the escort branch is exercisable.
@@ -68,12 +68,12 @@ throws by default (adapter uncontrollable) so the escort branch is exercisable.
 
 ### Features
 
-<Checklist id="wifi-features" items={[{"id": "wifi-feat-0", "label": "`ConnectivityAppBoxKitWifiService` \u2014 class"}, {"id": "wifi-feat-1", "label": "`AppBoxKitWifiCapabilities` \u2014 class"}, {"id": "wifi-feat-2", "label": "`AppBoxKitWifiNetwork` \u2014 class"}, {"id": "wifi-feat-3", "label": "`AppBoxKitWifiUnsupportedError` \u2014 class"}, {"id": "wifi-feat-4", "label": "`AppBoxKitWifiService` \u2014 abstract interface class"}, {"id": "wifi-feat-5", "label": "`AppBoxKitWifiState` \u2014 enum"}]} />
+<Checklist id="wifi-features" items={[{"id": "wifi-feat-0", "label": "`ConnectivityArxaKitWifiService` \u2014 class"}, {"id": "wifi-feat-1", "label": "`ArxaKitWifiCapabilities` \u2014 class"}, {"id": "wifi-feat-2", "label": "`ArxaKitWifiNetwork` \u2014 class"}, {"id": "wifi-feat-3", "label": "`ArxaKitWifiUnsupportedError` \u2014 class"}, {"id": "wifi-feat-4", "label": "`ArxaKitWifiService` \u2014 abstract interface class"}, {"id": "wifi-feat-5", "label": "`ArxaKitWifiState` \u2014 enum"}]} />
 
 
 ### Decisions / ADRs
 
-**Why `connectivity_plus` for the stream:** `network_info_plus` is request/response only — it has no stream, and polling `getWifiName()` would both violate the "real OS stream, never cached" contract and misreport "off" whenever location permission is denied (SSID reads return `null`). The live `Stream<AppBoxKitWifiState>` therefore comes from `connectivity_plus` (Android `ConnectivityManager` / iOS `NWPathMonitor`); `network_info_plus` is used only for the on-demand SSID/IP read, and `app_settings` only for the escort deep-link. **Why standalone:** the package is a pure port over native plugins, so it deliberately takes no path dependency on `appbox_kit_permissions` (or any kit), letting app code adopt or test it without pulling `stacked`, `stacked_services`, or the wider kit matrix. **Stubbed by design:** direct adapter control (`requestEnable`) and programmatic network-join are non-goals — no mobile OS exposes a cross-platform API for either.
+**Why `connectivity_plus` for the stream:** `network_info_plus` is request/response only — it has no stream, and polling `getWifiName()` would both violate the "real OS stream, never cached" contract and misreport "off" whenever location permission is denied (SSID reads return `null`). The live `Stream<ArxaKitWifiState>` therefore comes from `connectivity_plus` (Android `ConnectivityManager` / iOS `NWPathMonitor`); `network_info_plus` is used only for the on-demand SSID/IP read, and `app_settings` only for the escort deep-link. **Why standalone:** the package is a pure port over native plugins, so it deliberately takes no path dependency on `arxa_kit_permissions` (or any kit), letting app code adopt or test it without pulling `stacked`, `stacked_services`, or the wider kit matrix. **Stubbed by design:** direct adapter control (`requestEnable`) and programmatic network-join are non-goals — no mobile OS exposes a cross-platform API for either.
 
 <!-- kb:begin -->
 ### References
@@ -87,13 +87,13 @@ Official docs and tooling:
 - [stacked_cli (pub.dev)](https://pub.dev/packages/stacked_cli) — Scaffolding CLI for new Stacked apps/views/services.
 - [Flutter — official documentation](https://docs.flutter.dev) — Framework docs, platform integration, performance.
 - [Dart — official documentation](https://dart.dev) — Language tour, async, package ecosystem.
-- [Dart & Flutter MCP server (official)](https://dart.dev/tools/mcp-server) — Ships with the Dart SDK (dart mcp-server). Exposes analyzer diagnostics, pub, tests, and live Flutter app introspection via DTD. Wired in appbox_kit/.mcp.json.
+- [Dart & Flutter MCP server (official)](https://dart.dev/tools/mcp-server) — Ships with the Dart SDK (dart mcp-server). Exposes analyzer diagnostics, pub, tests, and live Flutter app introspection via DTD. Wired in arxa_kit/.mcp.json.
 
 Kit-specific:
 
-- [connectivity_plus (pub.dev)](https://pub.dev/packages/connectivity_plus) — connectivity_plus — backing dependency of appbox_kit_wifi.
-- [network_info_plus (pub.dev)](https://pub.dev/packages/network_info_plus) — network_info_plus — backing dependency of appbox_kit_wifi.
-- [app_settings (pub.dev)](https://pub.dev/packages/app_settings) — app_settings — backing dependency of appbox_kit_wifi.
+- [connectivity_plus (pub.dev)](https://pub.dev/packages/connectivity_plus) — connectivity_plus — backing dependency of arxa_kit_wifi.
+- [network_info_plus (pub.dev)](https://pub.dev/packages/network_info_plus) — network_info_plus — backing dependency of arxa_kit_wifi.
+- [app_settings (pub.dev)](https://pub.dev/packages/app_settings) — app_settings — backing dependency of arxa_kit_wifi.
 <!-- kb:end -->
 
 <QuestionForm id="open-questions" questions={[

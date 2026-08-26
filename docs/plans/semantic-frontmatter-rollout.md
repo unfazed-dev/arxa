@@ -1,4 +1,4 @@
-# Plan — appbox file structure (semantic frontmatter + locked sections)
+# Plan — arxa file structure (semantic frontmatter + locked sections)
 
 **Status:** confirmed with owner 2026-08-07; implementation is delegated.
 **Pilot (reference, DONE):** `kit/showcase_app/lib/ui/views/showcase_notes_shell/showcase_note_editor/showcase_note_editor_viewmodel.dart` — treat it as the living example; do not restyle it.
@@ -97,14 +97,14 @@ The pilot VM is the measuring stick; these numbers are taken from it.
    owner review before continuing.
 2. **Adapter + repository pilots** — after owner approves the facade.
 3. **Canon spec** — add the full grammar (this doc's spine, sections, diagram
-   rules, requirement format) to `skills/appbox-builder/BUILDER_playbook.mdx`;
-   one bullet in `skills/appbox-builder/SKILL.md`; reference section in
+   rules, requirement format) to `skills/arxa-builder/BUILDER_playbook.mdx`;
+   one bullet in `skills/arxa-builder/SKILL.md`; reference section in
    `kit/showcase_app/PLAYBOOK.md`.
 4. **Showcase sweep** — all remaining views/VMs/services/widgets in
    `kit/showcase_app/lib`, fanned out to subagents per shell. The prose sweep
    (G13-language violations) rides along in the same pass — one sweep, not
    two.
-5. **G13 light gate** — `appboxd/lib/arch_guard.dart` + tests. Mechanical
+5. **G13 light gate** — `arxa/lib/arch_guard.dart` + tests. Mechanical
    checks ONLY: frontmatter block + `library;` present; the five spine parts
    in order; requirement lines match `N. [Name]( — story-ids)?`; section
    separators present in the locked order for the file kind. Diagram geometry
@@ -114,12 +114,12 @@ The pilot VM is the measuring stick; these numbers are taken from it.
    no class doc above a frontmatter-covered class, banned tokens outside
    backticks and exempt zones. Run against covered dirs to LIST violations;
    the sweep fixes what it reports.
-6. **Scaffolder** — `skills/appbox-scaffolder` templates emit the structure
+6. **Scaffolder** — `skills/arxa-scaffolder` templates emit the structure
    for new apps.
 
 ## Verification (every step)
 
 - `cd kit/showcase_app && dart analyze lib test` — zero issues
 - `cd kit/showcase_app && flutter test` — all green (baseline 111)
-- after G13: `cd appboxd && dart test test/arch_guard_test.dart` and
-  `dart run bin/appbox.dart gate arch --target ../kit/showcase_app` — PASS
+- after G13: `cd arxa && dart test test/arch_guard_test.dart` and
+  `dart run bin/arxa.dart gate arch --target ../kit/showcase_app` — PASS

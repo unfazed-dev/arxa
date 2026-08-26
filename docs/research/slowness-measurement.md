@@ -38,17 +38,17 @@ grep -rn 'UiKitView(\|AppKitView(\|PlatformViewLink(' --include='*.dart' \
 `search_bar`, `popup_menu_button`, `segmented_control`, `button`, `tab_bar`, `icon`,
 `search_scaffold`, `floating_island`, `range_slider`, `slider`, `glass_button_group`,
 `liquid_glass_container`, `switch`. Nothing in `kit/ui_library/lib` constructs one directly —
-the kit's `AppBoxKitNative*` widgets are tier selectors that delegate to these.
+the kit's `ArxaKitNative*` widgets are tier selectors that delegate to these.
 
 Two corrections were required before the number meant anything:
 
-**(a) The headless census is a mixture, not the device tier.** `AppBoxKitNativeIconButton`
+**(a) The headless census is a mixture, not the device tier.** `ArxaKitNativeIconButton`
 falls through to `CNButton` on any non-Android host, so it appears headless. But
-`AppBoxKitNativeTabBar`/`SegmentedControl`/`SplitButton` gate on
-`AppBoxKitPlatform.supportsLiquidGlass` (`= isIOS && iosMajor >= 26`,
-`kit/core/lib/platform/appbox_kit_platform.dart:58`), which is false headless — so those take
+`ArxaKitNativeTabBar`/`SegmentedControl`/`SplitButton` gate on
+`ArxaKitPlatform.supportsLiquidGlass` (`= isIOS && iosMajor >= 26`,
+`kit/core/lib/platform/arxa_kit_platform.dart:58`), which is false headless — so those take
 the Flutter fallback and never appear. Test **M1b** forces
-`AppBoxKitPlatform.override = AppBoxKitPlatformOverride(isIOS: true, iosMajor: 26,
+`ArxaKitPlatform.override = ArxaKitPlatformOverride(isIOS: true, iosMajor: 26,
 targetPlatform: TargetPlatform.iOS)` plus `debugDefaultTargetPlatformOverride`, which
 reproduces the device's widget selection.
 
@@ -75,17 +75,17 @@ raster/platform-thread merge on the boot path.
 
 ### The naming convention is not the marker (confirmed again)
 
-`AppBoxKitNative*`-named widgets mounted at boot: `AppBoxKitNativeIconButton: 8`,
-`AppBoxKitNativeChromeGate: 11`, `AppBoxKitNativeButton: 1`,
-`AppBoxKitNativeSegmentedControl: 1`, `AppBoxKitNativeProgress: 2`,
-`AppBoxKitNativeLoadingIndicator: 1`, `AppBoxKitNativeSplitButton: 1`,
-`AppBoxKitNativeAppBar: 1`, `AppBoxKitNativePopupMenu: 1`, `AppBoxKitNativeFabMenu: 1`,
-`AppBoxKitNativeTabBar: 1` — 28 instances across 11 types.
+`ArxaKitNative*`-named widgets mounted at boot: `ArxaKitNativeIconButton: 8`,
+`ArxaKitNativeChromeGate: 11`, `ArxaKitNativeButton: 1`,
+`ArxaKitNativeSegmentedControl: 1`, `ArxaKitNativeProgress: 2`,
+`ArxaKitNativeLoadingIndicator: 1`, `ArxaKitNativeSplitButton: 1`,
+`ArxaKitNativeAppBar: 1`, `ArxaKitNativePopupMenu: 1`, `ArxaKitNativeFabMenu: 1`,
+`ArxaKitNativeTabBar: 1` — 28 instances across 11 types.
 
-Of these, `AppBoxKitNativeProgress` (2), `AppBoxKitNativeLoadingIndicator` (1),
-`AppBoxKitNativeAppBar` (1, → `CupertinoNavigationBar`; its own doc at
-`appbox_kit_native_app_bar.dart:16` says the CN tier is pure Flutter) and
-`AppBoxKitNativeChromeGate` (11, a gate, not a surface) contribute **zero** platform views.
+Of these, `ArxaKitNativeProgress` (2), `ArxaKitNativeLoadingIndicator` (1),
+`ArxaKitNativeAppBar` (1, → `CupertinoNavigationBar`; its own doc at
+`arxa_kit_native_app_bar.dart:16` says the CN tier is pure Flutter) and
+`ArxaKitNativeChromeGate` (11, a gate, not a surface) contribute **zero** platform views.
 
 The plan doc's "Home has **5** platform views" is not contradicted so much as differently
 scoped: 14 is the whole first interactive hub frame (tab bar + app bar chrome + FAB menu +
@@ -122,7 +122,7 @@ So per host rebuild the router allocates **4 `KeepAliveTab` objects** (two field
 ```
 [M2] mounted shell elements at boot: home=1 search=0 profile=0 notes=0
 [M2] KeepAliveTab elements mounted = 1
-[M2] AppBoxKitAnimatedTabStack elements = 1
+[M2] ArxaKitAnimatedTabStack elements = 1
 [M2] NestedRouter elements = 1
 [M2] total elements in tree at boot = 1596
 ```
@@ -133,7 +133,7 @@ appear. Three of the four shells are absent.
 ### Verdict — count without consequence
 
 The router does **not** build four tab shell trees per frame. It allocates four cheap wrapper
-objects; `AppBoxKitAnimatedTabStack` inflates only the visited index, so three of the four
+objects; `ArxaKitAnimatedTabStack` inflates only the visited index, so three of the four
 `KeepAliveTab`s never reach `build()` — no ViewModel construction, no `NestedRouter`, no shell
 widget tree. Only **one** `NestedRouter` and **one** `KeepAliveTab` element exist at boot.
 **This is not a slowness source.**
@@ -150,12 +150,12 @@ kit/ui_library/lib` (excluding doc comments) returns **6 hits total, and zero
 
 | Site | Status |
 |---|---|
-| `appbox_kit_scroll_edge_effect.dart:128` → `_recompute` | measured below (M3a/M3b/M5) |
-| `appbox_kit_scroll_occlusion_gate.dart:134` → `_recompute` | C6, already measured fine — not re-chased |
-| `appbox_kit_scroll_occlusion_gate.dart:118` → `_onModalDepthChanged` | modal notifier, not scroll-driven |
-| `appbox_kit_native_chrome_gate.dart:149` → `_onDepthChanged` | modal notifier, not scroll-driven |
-| `appbox_kit_native_chrome_gate.dart:150` → `_onDepthChanged` | transition notifier, not scroll-driven |
-| `appbox_kit_chip_carousel.dart:72` → `_updateFades` | source-verified negative (below) |
+| `arxa_kit_scroll_edge_effect.dart:128` → `_recompute` | measured below (M3a/M3b/M5) |
+| `arxa_kit_scroll_occlusion_gate.dart:134` → `_recompute` | C6, already measured fine — not re-chased |
+| `arxa_kit_scroll_occlusion_gate.dart:118` → `_onModalDepthChanged` | modal notifier, not scroll-driven |
+| `arxa_kit_native_chrome_gate.dart:149` → `_onDepthChanged` | modal notifier, not scroll-driven |
+| `arxa_kit_native_chrome_gate.dart:150` → `_onDepthChanged` | transition notifier, not scroll-driven |
+| `arxa_kit_chip_carousel.dart:72` → `_updateFades` | source-verified negative (below) |
 
 So exactly **two** scroll-position listeners exist in the whole codebase, and one of them
 (C6) is already closed.
@@ -167,12 +167,12 @@ unchanged (`:180`), then `setState`s. Its `build()` returns
 `IgnorePointer > Opacity > ClipRect > _EdgeEffectBlur > widget.child`.
 
 The probe was placed twice: once as an identical instance handed to
-`AppBoxKitScrollEdgeEffect` as `child` (the real usage), once rebuilt inline by a control that
+`ArxaKitScrollEdgeEffect` as `child` (the real usage), once rebuilt inline by a control that
 `setState`s on every scroll frame. 300 scroll steps:
 
 ```
 [M3a] scroll steps = 300
-[M3a] child rebuilds UNDER AppBoxKitScrollEdgeEffect = 0
+[M3a] child rebuilds UNDER ArxaKitScrollEdgeEffect = 0
 [M3a] control rebuilds (inline-constructed child) = 300
 [M3a] frames with a LIVE blur/saveLayer (Opacity < 1) = 115
 ```
@@ -184,7 +184,7 @@ consequence *for UI-thread build work* — same shape as the previously correcte
 ### M3b — the real home list: **nothing fires**
 
 ```
-[M3b] AppBoxKitScrollEdgeEffect instances on home = 2
+[M3b] ArxaKitScrollEdgeEffect instances on home = 2
 [M3b] frames (of 200) with a LIVE blur/saveLayer = 0
 [M3b] total elements before=1596 after=1596
 [M3b] platform-view-backed count before=22 after=22
@@ -202,7 +202,7 @@ magnitude.) **The home tab has no measurable Dart-side scroll cost.**
 the iOS 26 tier override, since §1 showed the tiers change the tree structurally:
 
 ```
-[M5] AppBoxKitScrollEdgeEffect instances mounted on notes folder = 15
+[M5] ArxaKitScrollEdgeEffect instances mounted on notes folder = 15
 [M5] total elements on notes folder = 2050
 [M5] scroll distance = 200 steps x 2px = 400px, monotonically down
      (hysteresis: enter 0.04, exit 0.01 — once engaged it stays engaged)
@@ -224,7 +224,7 @@ produces for this gesture — it is not by itself evidence of a defect. And M3b 
 
 **The lead this was chasing is dead.** The reason a live blur over this list would matter is
 the documented hybrid-composition pathology the kit's own docs cite
-(`appbox_kit_animated_tab_stack.dart:60`, `appbox_kit_directional_tab_transition.dart:6`;
+(`arxa_kit_animated_tab_stack.dart:60`, `arxa_kit_directional_tab_transition.dart:6`;
 flutter#24164 / #148639): an `ImageFilterLayer` + `saveLayer` over a `UiKitView`. Measured
 under device tiers, **zero platform views are ever under a live blur** — 0 in every one of the
 200 frames. It is a plain Flutter blur over plain Flutter content. That is an ordinary raster
@@ -256,17 +256,17 @@ data layer from the list of cold-start suspects.
 
 1. **Tab-shell eagerness.** The `stacked` router builds 4 `KeepAliveTab` objects but inflates
    1. Shell elements at boot: home 1, search 0, profile 0, notes 0. (M2)
-2. **`AppBoxKitScrollEdgeEffect`'s per-scroll `setState`.** 0 descendant rebuilds against a
+2. **`ArxaKitScrollEdgeEffect`'s per-scroll `setState`.** 0 descendant rebuilds against a
    300-rebuild control. `widget.child` identity short-circuits `updateChild`. (M3a)
 3. **Home-tab scrolling.** 0/200 frames with a live blur; zero element churn; platform-view
    count invariant across the scroll. (M3b)
-4. **`AppBoxKitNative*` naming as a platform-view proxy.** 28 `AppBoxKitNative*` instances at
-   boot map to 14 platform views. `AppBoxKitNativeProgress`, `AppBoxKitNativeLoadingIndicator`,
-   `AppBoxKitNativeAppBar` and `AppBoxKitNativeChromeGate` contribute zero. (M1/M1b)
+4. **`ArxaKitNative*` naming as a platform-view proxy.** 28 `ArxaKitNative*` instances at
+   boot map to 14 platform views. `ArxaKitNativeProgress`, `ArxaKitNativeLoadingIndicator`,
+   `ArxaKitNativeAppBar` and `ArxaKitNativeChromeGate` contribute zero. (M1/M1b)
 5. **Nested `CNIcon` inside `CNButton`/`CNPopupMenuButton`.** 11 headless, 0 on device — the
    native button is a childless `UiKitView` and the icon is a creationParam
    (`button.dart:675`). (M1b, source-verified)
-6. **`AppBoxKitChipCarousel._updateFades`** (`appbox_kit_chip_carousel.dart:72`).
+6. **`ArxaKitChipCarousel._updateFades`** (`arxa_kit_chip_carousel.dart:72`).
    Source-verified negative, **not runtime-measured**: the listener is edge-triggered — it
    only `setState`s when one of `hasOverflow`/`canBack`/`canForward` actually flips, so it is
    not a per-frame rebuild. It is also only mounted on the profile tab, not on the boot path.
@@ -296,7 +296,7 @@ then read `build/start_up_info.json`: `timeToFirstFrameRasterizedMicros` is the 
 matches the user's complaint (`timeToFrameworkInitMicros` /
 `timeToFirstFrameMicros` split tells you whether the cost is Dart init or the first raster).
 Take 5 cold runs after a device reboot; compare against a build with the 14 platform views
-stubbed to Flutter tiers (`AppBoxKitPlatform.override` accepts `iosMajor: 25` at runtime,
+stubbed to Flutter tiers (`ArxaKitPlatform.override` accepts `iosMajor: 25` at runtime,
 which flips every `supportsLiquidGlass` gate) — that A/B isolates the platform-view boot cost
 without changing anything else.
 

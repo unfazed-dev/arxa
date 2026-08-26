@@ -1,5 +1,5 @@
 // Widget tests for the ADR 0011 components showcase surface — the demos
-// themselves are proven in appbox_kit_ui_library's per-component tests; these pin the
+// themselves are proven in arxa_kit_ui_library's per-component tests; these pin the
 // showcase wiring (sections render, dialog/sheet/center-toast/drawer
 // presentation paths fire from this surface).
 //
@@ -9,14 +9,14 @@
 // center pill — no platform views, so everything renders headless.
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:appbox_kit_showcase_app/ui/views/showcase_profile_shell/showcase_components/showcase_components_view.dart';
-import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
+import 'package:arxa_kit_showcase_app/ui/views/showcase_profile_shell/showcase_components/showcase_components_view.dart';
+import 'package:arxa_kit_ui_library/arxa_kit_ui_library.dart';
 
 import 'helpers.dart';
 
 /// The Android toast tier renders through stacked_services' GetX snackbar,
 /// which needs a GetMaterialApp the test harness doesn't have — stub it (same
-/// pattern as appbox_kit_ui_library's own notification-service tests) and record calls
+/// pattern as arxa_kit_ui_library's own notification-service tests) and record calls
 /// so the feedback paths stay assertable.
 class _StubSnackbarService extends SnackbarService {
   final shown = <String>[];
@@ -43,18 +43,18 @@ void main() {
   late _StubSnackbarService snackbar;
 
   setUpAll(registerKitTestServices);
-  tearDownAll(() => appBoxKitLocator.reset());
+  tearDownAll(() => arxaKitLocator.reset());
 
   setUp(() {
-    AppBoxKitPlatform.override =
-        const AppBoxKitPlatformOverride(isAndroid: true);
-    if (appBoxKitLocator.isRegistered<SnackbarService>()) {
-      appBoxKitLocator.unregister<SnackbarService>();
+    ArxaKitPlatform.override =
+        const ArxaKitPlatformOverride(isAndroid: true);
+    if (arxaKitLocator.isRegistered<SnackbarService>()) {
+      arxaKitLocator.unregister<SnackbarService>();
     }
     snackbar = _StubSnackbarService();
-    appBoxKitLocator.registerSingleton<SnackbarService>(snackbar);
+    arxaKitLocator.registerSingleton<SnackbarService>(snackbar);
   });
-  tearDown(AppBoxKitPlatform.reset);
+  tearDown(ArxaKitPlatform.reset);
 
   Future<void> pumpView(WidgetTester tester) async {
     // Tall surface so the whole demo list is built and tappable — the default
@@ -71,17 +71,17 @@ void main() {
   testWidgets('renders every demo section', (tester) async {
     await pumpView(tester);
 
-    expect(find.byType(AppBoxKitFrostedSurface), findsWidgets,
+    expect(find.byType(ArxaKitFrostedSurface), findsWidgets,
         reason: 'the explicit frosted content-tier card');
-    expect(find.byType(AppBoxKitChipCarousel), findsOneWidget);
-    expect(find.byType(AppBoxKitChip), findsNWidgets(10));
-    expect(find.byType(AppBoxKitListSection), findsOneWidget,
+    expect(find.byType(ArxaKitChipCarousel), findsOneWidget);
+    expect(find.byType(ArxaKitChip), findsNWidgets(10));
+    expect(find.byType(ArxaKitListSection), findsOneWidget,
         reason: 'the settings group in the body (the drawer menu group only '
             'builds once the drawer first opens)');
     expect(tester.widget<Scaffold>(find.byType(Scaffold)).drawer, isNotNull,
-        reason: 'the glassPeek AppBoxKitDrawer is configured on the Scaffold '
+        reason: 'the glassPeek ArxaKitDrawer is configured on the Scaffold '
             '(its subtree only builds once opened)');
-    expect(find.byType(AppBoxKitNativeInputBar), findsOneWidget);
+    expect(find.byType(ArxaKitNativeInputBar), findsOneWidget);
   });
 
   testWidgets('Show dialog presents the native dialog and pops on action',
@@ -135,8 +135,8 @@ void main() {
     // a different native control per tier, and what is under test here is the
     // wiring from the control to the sheet's height, not either tier's gesture
     // handling (the kit suite covers the resize itself).
-    final AppBoxKitNativeSlider slider = tester
-        .widget<AppBoxKitNativeSlider>(find.byType(AppBoxKitNativeSlider));
+    final ArxaKitNativeSlider slider = tester
+        .widget<ArxaKitNativeSlider>(find.byType(ArxaKitNativeSlider));
     expect(slider.min, 0.20, reason: 'minimum height is 20% of screen');
     expect(slider.max, 0.92,
         reason: 'maximum is the Cupertino route default, 1 - _kTopGapRatio');
@@ -152,13 +152,13 @@ void main() {
 
     await tester.tap(find.text('Show center toast'));
     await tester.pump(); // mount the pill's overlay entry
-    expect(find.byKey(const Key('appBoxKitCenterToastPill')), findsOneWidget);
+    expect(find.byKey(const Key('arxaKitCenterToastPill')), findsOneWidget);
     expect(find.text('Centered'), findsOneWidget);
 
     // Auto-dismiss (3s default) — elapse fake time so no timer is pending.
     await tester.pump(const Duration(seconds: 4));
     await tester.pumpAndSettle();
-    expect(find.byKey(const Key('appBoxKitCenterToastPill')), findsNothing);
+    expect(find.byKey(const Key('arxaKitCenterToastPill')), findsNothing);
   });
 
   testWidgets('drawer opens via the button and closes on scrim tap',
@@ -172,18 +172,18 @@ void main() {
     await tester.pumpAndSettle();
     expect(scaffold.isDrawerOpen, isTrue,
         reason: 'Open drawer calls Scaffold.of(context).openDrawer()');
-    expect(find.byType(AppBoxKitDrawer), findsOneWidget,
+    expect(find.byType(ArxaKitDrawer), findsOneWidget,
         reason:
-            'the opened drawer builds the AppBoxKitDrawer (glassPeek) subtree');
+            'the opened drawer builds the ArxaKitDrawer (glassPeek) subtree');
     expect(find.text('About'), findsOneWidget,
         reason:
-            'menu rows are AppBoxKitListTiles inside a AppBoxKitListSection');
-    expect(find.byType(AppBoxKitListSection), findsNWidgets(2),
+            'menu rows are ArxaKitListTiles inside a ArxaKitListSection');
+    expect(find.byType(ArxaKitListSection), findsNWidgets(2),
         reason: 'the drawer menu group builds on first open');
 
     // Stock Drawer machinery: tapping the scrim beside the peek closes it.
-    final drawerLeft = tester.getTopLeft(find.byType(AppBoxKitDrawer));
-    final drawerWidth = tester.getSize(find.byType(AppBoxKitDrawer)).width;
+    final drawerLeft = tester.getTopLeft(find.byType(ArxaKitDrawer));
+    final drawerWidth = tester.getSize(find.byType(ArxaKitDrawer)).width;
     await tester.tapAt(Offset(drawerLeft.dx + drawerWidth + 40, 500));
     await tester.pumpAndSettle();
     expect(scaffold.isDrawerOpen, isFalse);
@@ -208,8 +208,8 @@ void main() {
           .pumpWidget(const MaterialApp(home: ShowcaseComponentsView()));
       await tester.pump();
       return tester
-          .widget<AppBoxKitEdgeAwareListView>(
-              find.byType(AppBoxKitEdgeAwareListView))
+          .widget<ArxaKitEdgeAwareListView>(
+              find.byType(ArxaKitEdgeAwareListView))
           .padding!
           .resolve(TextDirection.ltr);
     }
@@ -225,10 +225,10 @@ void main() {
 
     testWidgets('glass tier adds the status bar + floating-bar block',
         (tester) async {
-      AppBoxKitPlatform.override =
-          const AppBoxKitPlatformOverride(isIOS: true, iosMajor: 26);
+      ArxaKitPlatform.override =
+          const ArxaKitPlatformOverride(isIOS: true, iosMajor: 26);
       expect((await pumpAndReadPadding(tester)).top,
-          abxSize16 + statusBar + kAppBoxKitFloatingBarBlockHeight,
+          abxSize16 + statusBar + kArxaKitFloatingBarBlockHeight,
           reason: 'missing the raise means the padding was read above the '
               'floating chrome, tucking the first card under the bar');
     });
@@ -251,13 +251,13 @@ void main() {
     await tester.pumpWidget(const MaterialApp(home: ShowcaseComponentsView()));
     await tester.pump();
 
-    final AppBoxKitEdgeAwareListView list =
-        tester.widget<AppBoxKitEdgeAwareListView>(
-            find.byType(AppBoxKitEdgeAwareListView));
-    expect(list.edges, AppBoxKitScrollEdges.top,
+    final ArxaKitEdgeAwareListView list =
+        tester.widget<ArxaKitEdgeAwareListView>(
+            find.byType(ArxaKitEdgeAwareListView));
+    expect(list.edges, ArxaKitScrollEdges.top,
         reason: 'the input bar owns the trailing edge, so the list must not '
             'fade content into it');
-    expect(find.byType(AppBoxKitScrollEdgeEffect), findsNothing,
+    expect(find.byType(ArxaKitScrollEdgeEffect), findsNothing,
         reason: 'top is suppressed by extendBehindTopBar and bottom is '
             'excluded — the same wrapper-free state as edges: none');
   });

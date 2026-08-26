@@ -1,4 +1,4 @@
-# Sweep scope: rename `rung` → `viewport` (appbox-studio-v2)
+# Sweep scope: rename `rung` → `viewport` (arxa-studio-v2)
 
 Status: CLOSED — decision 2026-08-09: **keep `rung`** (option C). No rename.
 Rationale: `rung` is skill-ratified (doctrine `viewport-ladder.md`, runtime
@@ -11,7 +11,7 @@ false UA-detection claim. Only zero-collision alternative found: `gauge`
 
 ## Occurrence counts (design dir, case-insensitive)
 
-132 matches across 32 files in `designs/appbox-studio-v2/`:
+132 matches across 32 files in `designs/arxa-studio-v2/`:
 
 | Bucket | Files | Hits |
 |---|---|---|
@@ -28,7 +28,7 @@ Token shapes: `rung` (87), `Rung` (8), `rungs` (7), `rung--desktop|tablet|mobile
 
 ## Findings that complicate the rename
 
-1. **Skill-level contract.** `.claude/skills/appbox-designer/` has 57 `rung`
+1. **Skill-level contract.** `.claude/skills/arxa-designer/` has 57 `rung`
    occurrences, including `runtime/ladder.json` — a runtime contract with a
    `"rungs"` key, a `--rungs` CLI flag, and `_d_meta.json ladder` selection.
    Doctrine file: `references/viewport-ladder.md` (16 hits). The ratified
@@ -40,8 +40,8 @@ Token shapes: `rung` (87), `Rung` (8), `rungs` (7), `rung--desktop|tablet|mobile
    rename, "viewport lock" (window) and `.viewport--desktop` (width variant)
    collide — a one-vocabulary violation worse than the status quo.
 3. **Blast radius beyond the design.** `rung` also appears in
-   `designs/appbox-studio/services/*.js` (v1 facades/repos), the
-   `.kimi-code/skills/appbox-designer/` mirror (SSOT-divergence hazard), and
+   `designs/arxa-studio/services/*.js` (v1 facades/repos), the
+   `.kimi-code/skills/arxa-designer/` mirror (SSOT-divergence hazard), and
    archived probes. Design-local rename forks vocabulary from the skill;
    full rename is a breaking change to the ladder contract for every design.
 4. **Concurrency.** 53 of 132 hits are in `studio_dashboard_shell/` files that

@@ -35,7 +35,7 @@
 const fs = require('fs');
 const path = require('path');
 
-const ROOT = process.argv[2] || path.join(__dirname, '../../designs/appbox-studio');
+const ROOT = process.argv[2] || path.join(__dirname, '../../designs/arxa-studio');
 
 // Endpoints independently measured live by teammates, deliberately spanning
 // separate route files so a missing file breaks an anchor rather than hiding.
@@ -143,7 +143,7 @@ if (undeclared.length) {
 // registered POST route. One instrument, both classes: action="" (facade
 // assigned nothing) and set-but-unrouted (assigned, no route → live 404).
 // A skip is reported as a skip. It is never scored as a pass.
-const ORIGIN = process.env.APPBOX_ORIGIN || 'http://127.0.0.1:4319';
+const ORIGIN = process.env.ARXA_ORIGIN || 'http://127.0.0.1:4319';
 (async () => {
   const gets = routes.filter(r => r.method === 'GET' && !r.p.includes(':'));
   let up = true;

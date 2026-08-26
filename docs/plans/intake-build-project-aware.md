@@ -9,16 +9,16 @@ when most of it isn't one.
 
 ## The reframe: intake_model conflates three phases
 
-`designs/appbox-studio/models/intake_model/` is a single fixture standing
+`designs/arxa-studio/models/intake_model/` is a single fixture standing
 in for the output of **three** pipeline phases:
 
 | Phase | Skill | Owns | Project-side home |
 |---|---|---|---|
-| intake | `skills/appbox-intake` | answers, registry, flows | `intake/` — exists |
-| story-mapper | `skills/appbox-story-mapper` | `map`, MoSCoW priority/release | none — never wired |
-| moodboarder | `skills/appbox-moodboarder` | `moodboard` | none — never wired |
+| intake | `skills/arxa-intake` | answers, registry, flows | `intake/` — exists |
+| story-mapper | `skills/arxa-story-mapper` | `map`, MoSCoW priority/release | none — never wired |
+| moodboarder | `skills/arxa-moodboarder` | `moodboard` | none — never wired |
 
-Canonical elicitation list: `skills/appbox-intake/intake.schema.json:1-78`.
+Canonical elicitation list: `skills/arxa-intake/intake.schema.json:1-78`.
 It has **no** `personas`, `map`, or `moodboard` field. That is deliberate,
 not an omission.
 
@@ -38,9 +38,9 @@ legitimately own them, or leave them studio-local.
   (already done). Fixed in Slice A.
 - **(b) correctly studio-local — the wizard's own machinery.** `personas`,
   `questionBanks`, `state`, `narrative`, `replies`/`replyFallback`,
-  `statuses`, `files`. 8 of 13 keys. These are appbox asking, not the
+  `statuses`, `files`. 8 of 13 keys. These are arxa asking, not the
   client answering.
-  `personas` specifically = appbox's own proto-personas
+  `personas` specifically = arxa's own proto-personas
   (`docs/plans/architecture.md:14`, `docs/VOCABULARY.md:43-49`), not a
   client-intake concept.
 - **(c) belongs to story-mapper / moodboarder.** `map`, `moodboard`, and
@@ -54,7 +54,7 @@ concepts.
 
 ## The projectStage trap — read before touching `build/`
 
-`appboxd/lib/project.dart:114-129`:
+`arxa/lib/project.dart:114-129`:
 
 ```dart
 if (buildDir.existsSync() &&
@@ -70,8 +70,8 @@ that project to stage `gates`.** So the obvious migration — copy
 would falsely advance every project. Do not seed fixture json under
 `build/`.
 
-Compounding this: **no evidence writer exists in appboxd at all.** Grep
-over `appboxd/lib/*.dart` finds three `build/` references, none a writer
+Compounding this: **no evidence writer exists in arxa at all.** Grep
+over `arxa/lib/*.dart` finds three `build/` references, none a writer
 (`project.dart:116` the check itself, `project_cli.dart:81` help text,
 `design_tools.dart:279` a comment). An empty `build/` is not an edge case,
 it is the only reachable state today for every project.
@@ -180,7 +180,7 @@ beyond what intake elicits.
 **5. Surfaces priority/release — extend `registry.json` entries.** Decided
 by existing shipped intent, not preference: `intake.dart:645-654`
 (`seedFromBrief`) already treats `priority`/`release`/`states` as additive
-optional registry columns, commented *"appbox-story-mapper emits
+optional registry columns, commented *"arxa-story-mapper emits
 priority/release"*. `gate_intake` reads only `id,label,shell,comp,route,
 surface` (+`states`/`requiresAuth`/`tab`), so additive fields are safe. No
 sidecar, no fold into `map.json`.

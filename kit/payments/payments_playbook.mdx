@@ -1,15 +1,15 @@
 <Callout id="header" tone="info">
 
-# appbox_kit_payments — Per-Package Playbook
+# arxa_kit_payments — Per-Package Playbook
 
 
-`appbox_kit_payments` v**0.1.0** · `publish_to: 'none'` · status: **active**
+`arxa_kit_payments` v**0.1.0** · `publish_to: 'none'` · status: **active**
 
 
-**Role (one line):** Native-first payments for appbox_kit apps — Apple Pay + Google Pay via Google's first-party pay plugin, behind a pluggable provider port so Stripe/PayPal backends slot in later.
+**Role (one line):** Native-first payments for arxa_kit apps — Apple Pay + Google Pay via Google's first-party pay plugin, behind a pluggable provider port so Stripe/PayPal backends slot in later.
 
 
-**Scope of this document:** lets a human OR an LLM use, wire, and extend `appbox_kit_payments` **without reading its source**. The public surface below was extracted from the barrel; README content is folded into the narrative sections.
+**Scope of this document:** lets a human OR an LLM use, wire, and extend `arxa_kit_payments` **without reading its source**. The public surface below was extracted from the barrel; README content is folded into the narrative sections.
 
 
 ## Table of contents
@@ -22,16 +22,16 @@
 
 ### Overview & role
 
-Native-first payments for appbox_kit apps — Apple Pay + Google Pay via Google's first-party pay plugin, behind a pluggable provider port so Stripe/PayPal backends slot in later. Typed AppBoxKitPaymentResult, scriptable fakes.
+Native-first payments for arxa_kit apps — Apple Pay + Google Pay via Google's first-party pay plugin, behind a pluggable provider port so Stripe/PayPal backends slot in later. Typed ArxaKitPaymentResult, scriptable fakes.
 
 
 ### Public surface
 
-Exported from `lib/appbox_kit_payments.dart`:
+Exported from `lib/arxa_kit_payments.dart`:
 
-<Table id="payments-api" columns={["Symbol", "Kind", "Defined in"]} rows={[["AppBoxKitPaymentsProvider", "abstract interface class", "src/providers/appbox_kit_payments_provider.dart"], ["AppBoxKitPaymentsProviderRegistry", "class", "src/providers/appbox_kit_payments_provider.dart"], ["AppBoxKitSeedPaymentProfile", "class", "src/providers/seed/appbox_kit_seed_payments_provider.dart"], ["AppBoxKitSeedSucceed", "class", "src/providers/seed/appbox_kit_seed_payments_provider.dart"], ["AppBoxKitSeedDecline", "class", "src/providers/seed/appbox_kit_seed_payments_provider.dart"], ["AppBoxKitSeedCancel", "class", "src/providers/seed/appbox_kit_seed_payments_provider.dart"], ["AppBoxKitSeedTimeout", "class", "src/providers/seed/appbox_kit_seed_payments_provider.dart"], ["AppBoxKitSeedPaymentsProvider", "class", "src/providers/seed/appbox_kit_seed_payments_provider.dart"], ["AppBoxKitPayPaymentsProvider", "class", "src/providers/native/appbox_kit_pay_payments_provider.dart"], ["AppBoxKitPayPalPaymentsProvider", "class", "src/providers/paypal/appbox_kit_paypal_payments_provider.dart"], ["AppBoxKitStripePaymentsProvider", "class", "src/providers/stripe/appbox_kit_stripe_payments_provider.dart"], ["AppBoxKitPaymentConfig", "class", "src/models/appbox_kit_payment_config.dart"], ["AppBoxKitApplePayConfig", "class", "src/models/appbox_kit_payment_config.dart"], ["AppBoxKitGooglePayConfig", "class", "src/models/appbox_kit_payment_config.dart"], ["AppBoxKitPaymentItemStatus", "enum", "src/models/appbox_kit_payment_item.dart"], ["AppBoxKitPaymentItem", "class", "src/models/appbox_kit_payment_item.dart"], ["AppBoxKitPaymentMethod", "enum", "src/models/appbox_kit_payment_method.dart"], ["AppBoxKitPaymentResult", "class", "src/models/appbox_kit_payment_result.dart"], ["AppBoxKitPaymentSuccess", "class", "src/models/appbox_kit_payment_result.dart"], ["AppBoxKitPaymentCancelled", "class", "src/models/appbox_kit_payment_result.dart"], ["AppBoxKitPaymentDeclined", "class", "src/models/appbox_kit_payment_result.dart"], ["AppBoxKitPaymentError", "class", "src/models/appbox_kit_payment_result.dart"], ["AppBoxKitPaymentsService", "abstract interface class", "src/service/appbox_kit_payments_service.dart"], ["DefaultAppBoxKitPaymentsService", "class", "src/service/appbox_kit_payments_service.dart"], ["AppBoxKitPayButton", "class", "src/widgets/kit_pay_button.dart"]]} />
+<Table id="payments-api" columns={["Symbol", "Kind", "Defined in"]} rows={[["ArxaKitPaymentsProvider", "abstract interface class", "src/providers/arxa_kit_payments_provider.dart"], ["ArxaKitPaymentsProviderRegistry", "class", "src/providers/arxa_kit_payments_provider.dart"], ["ArxaKitSeedPaymentProfile", "class", "src/providers/seed/arxa_kit_seed_payments_provider.dart"], ["ArxaKitSeedSucceed", "class", "src/providers/seed/arxa_kit_seed_payments_provider.dart"], ["ArxaKitSeedDecline", "class", "src/providers/seed/arxa_kit_seed_payments_provider.dart"], ["ArxaKitSeedCancel", "class", "src/providers/seed/arxa_kit_seed_payments_provider.dart"], ["ArxaKitSeedTimeout", "class", "src/providers/seed/arxa_kit_seed_payments_provider.dart"], ["ArxaKitSeedPaymentsProvider", "class", "src/providers/seed/arxa_kit_seed_payments_provider.dart"], ["ArxaKitPayPaymentsProvider", "class", "src/providers/native/arxa_kit_pay_payments_provider.dart"], ["ArxaKitPayPalPaymentsProvider", "class", "src/providers/paypal/arxa_kit_paypal_payments_provider.dart"], ["ArxaKitStripePaymentsProvider", "class", "src/providers/stripe/arxa_kit_stripe_payments_provider.dart"], ["ArxaKitPaymentConfig", "class", "src/models/arxa_kit_payment_config.dart"], ["ArxaKitApplePayConfig", "class", "src/models/arxa_kit_payment_config.dart"], ["ArxaKitGooglePayConfig", "class", "src/models/arxa_kit_payment_config.dart"], ["ArxaKitPaymentItemStatus", "enum", "src/models/arxa_kit_payment_item.dart"], ["ArxaKitPaymentItem", "class", "src/models/arxa_kit_payment_item.dart"], ["ArxaKitPaymentMethod", "enum", "src/models/arxa_kit_payment_method.dart"], ["ArxaKitPaymentResult", "class", "src/models/arxa_kit_payment_result.dart"], ["ArxaKitPaymentSuccess", "class", "src/models/arxa_kit_payment_result.dart"], ["ArxaKitPaymentCancelled", "class", "src/models/arxa_kit_payment_result.dart"], ["ArxaKitPaymentDeclined", "class", "src/models/arxa_kit_payment_result.dart"], ["ArxaKitPaymentError", "class", "src/models/arxa_kit_payment_result.dart"], ["ArxaKitPaymentsService", "abstract interface class", "src/service/arxa_kit_payments_service.dart"], ["DefaultArxaKitPaymentsService", "class", "src/service/arxa_kit_payments_service.dart"], ["ArxaKitPayButton", "class", "src/widgets/kit_pay_button.dart"]]} />
 
-Test doubles in `lib/appbox_kit_testing.dart`: `FakeAppBoxKitPaymentsService`, `FakeAppBoxKitPaymentsProvider`.
+Test doubles in `lib/arxa_kit_testing.dart`: `FakeArxaKitPaymentsService`, `FakeArxaKitPaymentsProvider`.
 
 Scripts and call-counts — tests never touch platform channels.
 
@@ -39,23 +39,23 @@ Scripts and call-counts — tests never touch platform channels.
 ### Usage & wiring
 
 ```dart
-import 'package:appbox_kit_payments/appbox_kit_payments.dart';
+import 'package:arxa_kit_payments/arxa_kit_payments.dart';
 
-final payments = DefaultAppBoxKitPaymentsService.native(
-  applePay: const AppBoxKitApplePayConfig.fromAsset('assets/apple_pay_config.json'),
-  googlePay: const AppBoxKitGooglePayConfig.fromAsset('assets/google_pay_config.json'),
+final payments = DefaultArxaKitPaymentsService.native(
+  applePay: const ArxaKitApplePayConfig.fromAsset('assets/apple_pay_config.json'),
+  googlePay: const ArxaKitGooglePayConfig.fromAsset('assets/google_pay_config.json'),
 );
 
-if (await payments.canPay(AppBoxKitPaymentMethod.applePay)) {
+if (await payments.canPay(ArxaKitPaymentMethod.applePay)) {
   final result = await payments.requestPayment(
-    config: const AppBoxKitApplePayConfig.fromAsset('assets/apple_pay_config.json'),
-    items: const [AppBoxKitPaymentItem(label: 'Total', amount: '99.99')],
+    config: const ArxaKitApplePayConfig.fromAsset('assets/apple_pay_config.json'),
+    items: const [ArxaKitPaymentItem(label: 'Total', amount: '99.99')],
   );
   switch (result) {
-    case AppBoxKitPaymentSuccess(:final token):   // forward token to your server / PSP
-    case AppBoxKitPaymentCancelled():             // user dismissed — do nothing
-    case AppBoxKitPaymentDeclined(:final reason): // retry with another method
-    case AppBoxKitPaymentError(:final message):   // log; not user-fixable
+    case ArxaKitPaymentSuccess(:final token):   // forward token to your server / PSP
+    case ArxaKitPaymentCancelled():             // user dismissed — do nothing
+    case ArxaKitPaymentDeclined(:final reason): // retry with another method
+    case ArxaKitPaymentError(:final message):   // log; not user-fixable
   }
 }
 ```
@@ -63,10 +63,10 @@ if (await payments.canPay(AppBoxKitPaymentMethod.applePay)) {
 Or drop in the button directly:
 
 ```dart
-AppBoxKitPayButton(
-  applePay: const AppBoxKitApplePayConfig.fromAsset('assets/apple_pay_config.json'),
-  googlePay: const AppBoxKitGooglePayConfig.fromAsset('assets/google_pay_config.json'),
-  items: const [AppBoxKitPaymentItem(label: 'Total', amount: '99.99')],
+ArxaKitPayButton(
+  applePay: const ArxaKitApplePayConfig.fromAsset('assets/apple_pay_config.json'),
+  googlePay: const ArxaKitGooglePayConfig.fromAsset('assets/google_pay_config.json'),
+  items: const [ArxaKitPaymentItem(label: 'Total', amount: '99.99')],
   onResult: (result) { /* same switch as above */ },
 );
 ```
@@ -81,44 +81,44 @@ See `kit_matrix.md` for the full routing + dependency graph.
 
 ### Architecture
 
-Hosts depend only on the `AppBoxKitPaymentsService` port (`canPay` + `requestPayment`) and the sealed `AppBoxKitPaymentResult`; `DefaultAppBoxKitPaymentsService` routes each call through a `AppBoxKitPaymentsProviderRegistry` to the first registered `AppBoxKitPaymentsProvider` whose `supportedMethods` contains the requested wallet. `AppBoxKitPayPaymentsProvider` is the sole live adapter, wrapping the `pay` plugin, while `AppBoxKitStripePaymentsProvider` and `AppBoxKitPayPalPaymentsProvider` ship as same-shaped stubs that throw `UnimplementedError` until their phase arrives. Dependency direction is strictly models/service → providers → `pay`: the service and ViewModels carry no provider SDK, so backends can be swapped without touching call sites. The package is also standalone — it declares no dependency on `appbox_kit`, `stacked`, or `stacked_services`.
+Hosts depend only on the `ArxaKitPaymentsService` port (`canPay` + `requestPayment`) and the sealed `ArxaKitPaymentResult`; `DefaultArxaKitPaymentsService` routes each call through a `ArxaKitPaymentsProviderRegistry` to the first registered `ArxaKitPaymentsProvider` whose `supportedMethods` contains the requested wallet. `ArxaKitPayPaymentsProvider` is the sole live adapter, wrapping the `pay` plugin, while `ArxaKitStripePaymentsProvider` and `ArxaKitPayPalPaymentsProvider` ship as same-shaped stubs that throw `UnimplementedError` until their phase arrives. Dependency direction is strictly models/service → providers → `pay`: the service and ViewModels carry no provider SDK, so backends can be swapped without touching call sites. The package is also standalone — it declares no dependency on `arxa_kit`, `stacked`, or `stacked_services`.
 
 
 ### Gotchas
 
-Native setup is yours to own: Apple Pay requires the Apple Merchant ID entitlement and a matching `merchantIdentifier` in the profile JSON, and Google Pay requires merchant approval in the Google Pay & Wallet Console plus the gateway wiring in the Android manifest — this package ships the flow, not the merchant onboarding. The sample profiles under `example/` (`apple_pay_config.json`, `google_pay_config.json`) must be copied into the host app's own `assets/` and declared in its pubspec; no payment profile is bundled here. Note that Apple/Google Pay do not distinguish a card decline client-side, so a declined instrument surfaces as `AppBoxKitPaymentError`, not `AppBoxKitPaymentDeclined` — the decline-vs-error split only becomes meaningful once the Stripe/PayPal stubs (currently `UnimplementedError`) are implemented. This package only mints a wallet token; capturing/charging it is your server's job (an explicit non-goal), and it targets Android + iOS only — the `pay` plugin supports no other platform.
+Native setup is yours to own: Apple Pay requires the Apple Merchant ID entitlement and a matching `merchantIdentifier` in the profile JSON, and Google Pay requires merchant approval in the Google Pay & Wallet Console plus the gateway wiring in the Android manifest — this package ships the flow, not the merchant onboarding. The sample profiles under `example/` (`apple_pay_config.json`, `google_pay_config.json`) must be copied into the host app's own `assets/` and declared in its pubspec; no payment profile is bundled here. Note that Apple/Google Pay do not distinguish a card decline client-side, so a declined instrument surfaces as `ArxaKitPaymentError`, not `ArxaKitPaymentDeclined` — the decline-vs-error split only becomes meaningful once the Stripe/PayPal stubs (currently `UnimplementedError`) are implemented. This package only mints a wallet token; capturing/charging it is your server's job (an explicit non-goal), and it targets Android + iOS only — the `pay` plugin supports no other platform.
 
 
 ### Testing
 
 ```dart
-import 'package:appbox_kit_payments/appbox_kit_testing.dart';
+import 'package:arxa_kit_payments/arxa_kit_testing.dart';
 
-final payments = FakeAppBoxKitPaymentsService(
-  canPayByMethod: {AppBoxKitPaymentMethod.applePay: true},
+final payments = FakeArxaKitPaymentsService(
+  canPayByMethod: {ArxaKitPaymentMethod.applePay: true},
   results: [
-    AppBoxKitPaymentSuccess(token: 't', method: AppBoxKitPaymentMethod.applePay),
-    const AppBoxKitPaymentCancelled(),
-    const AppBoxKitPaymentDeclined(reason: 'insufficient funds'),
-    const AppBoxKitPaymentError('network'),
+    ArxaKitPaymentSuccess(token: 't', method: ArxaKitPaymentMethod.applePay),
+    const ArxaKitPaymentCancelled(),
+    const ArxaKitPaymentDeclined(reason: 'insufficient funds'),
+    const ArxaKitPaymentError('network'),
   ],
 );
 ```
 
 Named factories cover the common single-outcome cases:
-`FakeAppBoxKitPaymentsService.alwaysSucceeds()`, `.alwaysCancels()`,
-`.alwaysDeclined()`, `.alwaysErrors()`. `FakeAppBoxKitPaymentsProvider` exercises the
+`FakeArxaKitPaymentsService.alwaysSucceeds()`, `.alwaysCancels()`,
+`.alwaysDeclined()`, `.alwaysErrors()`. `FakeArxaKitPaymentsProvider` exercises the
 registry/routing layer directly.
 
 
 ### Features
 
-<Checklist id="payments-features" items={[{"id": "payments-feat-0", "label": "`AppBoxKitPaymentsProvider` \u2014 abstract interface class"}, {"id": "payments-feat-1", "label": "`AppBoxKitPaymentsProviderRegistry` \u2014 class"}, {"id": "payments-feat-2", "label": "`AppBoxKitSeedPaymentProfile` \u2014 class"}, {"id": "payments-feat-3", "label": "`AppBoxKitSeedSucceed` \u2014 class"}, {"id": "payments-feat-4", "label": "`AppBoxKitSeedDecline` \u2014 class"}, {"id": "payments-feat-5", "label": "`AppBoxKitSeedCancel` \u2014 class"}, {"id": "payments-feat-6", "label": "`AppBoxKitSeedTimeout` \u2014 class"}, {"id": "payments-feat-7", "label": "`AppBoxKitSeedPaymentsProvider` \u2014 class"}, {"id": "payments-feat-8", "label": "`AppBoxKitPayPaymentsProvider` \u2014 class"}, {"id": "payments-feat-9", "label": "`AppBoxKitPayPalPaymentsProvider` \u2014 class"}, {"id": "payments-feat-10", "label": "`AppBoxKitStripePaymentsProvider` \u2014 class"}, {"id": "payments-feat-11", "label": "`AppBoxKitPaymentConfig` \u2014 class"}]} />
+<Checklist id="payments-features" items={[{"id": "payments-feat-0", "label": "`ArxaKitPaymentsProvider` \u2014 abstract interface class"}, {"id": "payments-feat-1", "label": "`ArxaKitPaymentsProviderRegistry` \u2014 class"}, {"id": "payments-feat-2", "label": "`ArxaKitSeedPaymentProfile` \u2014 class"}, {"id": "payments-feat-3", "label": "`ArxaKitSeedSucceed` \u2014 class"}, {"id": "payments-feat-4", "label": "`ArxaKitSeedDecline` \u2014 class"}, {"id": "payments-feat-5", "label": "`ArxaKitSeedCancel` \u2014 class"}, {"id": "payments-feat-6", "label": "`ArxaKitSeedTimeout` \u2014 class"}, {"id": "payments-feat-7", "label": "`ArxaKitSeedPaymentsProvider` \u2014 class"}, {"id": "payments-feat-8", "label": "`ArxaKitPayPaymentsProvider` \u2014 class"}, {"id": "payments-feat-9", "label": "`ArxaKitPayPalPaymentsProvider` \u2014 class"}, {"id": "payments-feat-10", "label": "`ArxaKitStripePaymentsProvider` \u2014 class"}, {"id": "payments-feat-11", "label": "`ArxaKitPaymentConfig` \u2014 class"}]} />
 
 
 ### Decisions / ADRs
 
-The package backs itself with Google's first-party `pay` plugin because it wraps PassKit and the Google Pay API directly, driving the wallet the user already trusts without putting a third-party PSP SDK in the hot path. It ships standalone (no dependency on `appbox_kit`, `stacked`, or `stacked_services`) so the payments surface stays usable from non-stacked apps and is not coupled to the framework's release cadence — `pay ^3.3.0` is its only backing dependency. Stripe and PayPal were left as same-shaped stubs behind the `AppBoxKitPaymentsProvider` port rather than baked in, so a real PSP backend can be added later without changing any call site: native-wallet coverage first, PSP capture deferred to the layer that actually owns it (your server).
+The package backs itself with Google's first-party `pay` plugin because it wraps PassKit and the Google Pay API directly, driving the wallet the user already trusts without putting a third-party PSP SDK in the hot path. It ships standalone (no dependency on `arxa_kit`, `stacked`, or `stacked_services`) so the payments surface stays usable from non-stacked apps and is not coupled to the framework's release cadence — `pay ^3.3.0` is its only backing dependency. Stripe and PayPal were left as same-shaped stubs behind the `ArxaKitPaymentsProvider` port rather than baked in, so a real PSP backend can be added later without changing any call site: native-wallet coverage first, PSP capture deferred to the layer that actually owns it (your server).
 
 <!-- kb:begin -->
 ### References
@@ -132,11 +132,11 @@ Official docs and tooling:
 - [stacked_cli (pub.dev)](https://pub.dev/packages/stacked_cli) — Scaffolding CLI for new Stacked apps/views/services.
 - [Flutter — official documentation](https://docs.flutter.dev) — Framework docs, platform integration, performance.
 - [Dart — official documentation](https://dart.dev) — Language tour, async, package ecosystem.
-- [Dart & Flutter MCP server (official)](https://dart.dev/tools/mcp-server) — Ships with the Dart SDK (dart mcp-server). Exposes analyzer diagnostics, pub, tests, and live Flutter app introspection via DTD. Wired in appbox_kit/.mcp.json.
+- [Dart & Flutter MCP server (official)](https://dart.dev/tools/mcp-server) — Ships with the Dart SDK (dart mcp-server). Exposes analyzer diagnostics, pub, tests, and live Flutter app introspection via DTD. Wired in arxa_kit/.mcp.json.
 
 Kit-specific:
 
-- [pay (pub.dev)](https://pub.dev/packages/pay) — pay — backing dependency of appbox_kit_payments.
+- [pay (pub.dev)](https://pub.dev/packages/pay) — pay — backing dependency of arxa_kit_payments.
 <!-- kb:end -->
 
 <QuestionForm id="open-questions" questions={[

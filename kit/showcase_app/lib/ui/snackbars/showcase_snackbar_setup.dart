@@ -1,20 +1,20 @@
 import 'package:flutter/material.dart';
-import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
+import 'package:arxa_kit_ui_library/arxa_kit_ui_library.dart';
 
 /// The app's snackbar seat. The kit supplies the severity VARIANTS
-/// (`setupAppBoxKitSnackbars` — one SnackbarConfig per AppBoxKitSnackbarType); what the
+/// (`setupArxaKitSnackbars` — one SnackbarConfig per ArxaKitSnackbarType); what the
 /// APP owns lives here: the default SnackbarConfig in the app's own palette,
 /// and any future showcase-specific variants. Registration management sits in
 /// the app's ui/ layer alongside bottom_sheets/ and dialogs/ — the kit removes
 /// setup boilerplate, it does not take over app presentation.
 ///
 /// Call once from `main()` after `setupLocator` (replaces the bare
-/// `setupAppBoxKitSnackbars()` call; the scaffold gate greps lib/ for that call,
+/// `setupArxaKitSnackbars()` call; the scaffold gate greps lib/ for that call,
 /// which happens inside this function).
 void setupShowcaseSnackbars() {
-  setupAppBoxKitSnackbars();
+  setupArxaKitSnackbars();
 
-  appBoxKitLocator<SnackbarService>().registerSnackbarConfig(
+  arxaKitLocator<SnackbarService>().registerSnackbarConfig(
     SnackbarConfig(
       snackPosition: SnackPosition.BOTTOM,
 

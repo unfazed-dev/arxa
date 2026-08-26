@@ -35,7 +35,7 @@ above the sheet still swallows every tap, so the dim overlay would be visible bu
 inert. The kit must supply the bottom-anchored path so that space is occupied by
 an `Align`, which does not hit-test where it has no child.
 
-## Kit changes — `appBoxKitShowSheet`
+## Kit changes — `arxaKitShowSheet`
 
 Two new parameters, both additive; omitting them reproduces today's behaviour.
 
@@ -49,7 +49,7 @@ body so a value change resizes the live sheet.
   `showDragHandle: false`; the body is
   `Align(bottomCenter, ValueListenableBuilder(→ SizedBox(height: f × H)))`
   wrapped in `ClipRSuperellipse` with top-only r=12 (matching the route's own
-  clip) over `AppBoxKitFrostedSurface(borderRadius: 0)`, plus a kit-drawn 36×5
+  clip) over `ArxaKitFrostedSurface(borderRadius: 0)`, plus a kit-drawn 36×5
   grabber using the framework's own constants (`sheet.dart:704-708`).
 - **Android** — `isScrollControlled: true` and the same
   `ValueListenableBuilder` sizing. Material's sheet sizes to its child, so a
@@ -78,7 +78,7 @@ route offered no tappable barrier to map it onto.
 
 ### Known test fallout
 
-`appbox_kit_native_sheet_test.dart` currently asserts that an outside tap does
+`arxa_kit_native_sheet_test.dart` currently asserts that an outside tap does
 **not** dismiss the iOS sheet. That assertion encodes the old no-barrier
 behaviour and must be inverted, not deleted — the sheet should now dismiss.
 
@@ -89,7 +89,7 @@ behaviour and must be inverted, not deleted — the sheet should now dismiss.
 
 - A centered `Row` of three equal-width buttons — `92%`, `56%`, `30%` — each
   seeding the notifier and presenting.
-- The sheet body carries `AppBoxKitNativeSlider(min: 0.20, max: 0.92)` bound to
+- The sheet body carries `ArxaKitNativeSlider(min: 0.20, max: 0.92)` bound to
   that same notifier, so dragging resizes the sheet under the finger.
 
 ## Verification
@@ -181,13 +181,13 @@ rect. With that in place the mutation fails as it should.
 outside tap, since `barrierDismissible => enableDrag` and `enableDrag:
 isDismissible`, which defaults true. That is a restoration rather than a break:
 
-- `AppBoxKitBottomSheetService` already forwards a parameter *named*
+- `ArxaKitBottomSheetService` already forwards a parameter *named*
   `barrierDismissible` into `isDismissible` (`:56`, `:133`) — callers were
   already declaring this intent, and iOS was silently ignoring it.
-- `AppBoxKitNotificationService.notice` documents itself as "Fire-and-forget:
+- `ArxaKitNotificationService.notice` documents itself as "Fire-and-forget:
   dismissible by drag/barrier" (`:209-210`). iOS was violating its own doc.
 - The ask surfaces' Cancel button already pops with no value
-  (`appbox_kit_ask_surfaces.dart:79,135`), so a dismissal yields the same `null`
+  (`arxa_kit_ask_surfaces.dart:79,135`), so a dismissal yields the same `null`
   callers already had to handle. No new ambiguity is introduced.
 
 ### Known limitation

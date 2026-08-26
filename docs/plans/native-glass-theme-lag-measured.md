@@ -212,7 +212,7 @@ class entirely. Fixed against this evidence:
   held the old appearance for seconds. Now wrapped in `applyInstantly` like
   the four button-family handlers.
 - **Hard-coded light-ramp colours in the showcase** — not a native defect at
-  all. `ShowcaseSectionLabelWidget` used `const AppBoxKitColors.muted`, so
+  all. `ShowcaseSectionLabelWidget` used `const ArxaKitColors.muted`, so
   RADIUS / PRICE RANGE / NAVIGATION RAIL / TOOLBAR went near-invisible in
   dark mode; the snackbar smoke-row icons forwarded fixed light-ramp tints to
   the native glyph/tint. Both now resolve from the active theme, pinned
@@ -804,8 +804,8 @@ popup trigger (a group re-root mid-presentation remains untested).
 
 Durability docs (the "always deliver liquid glass correctly" contract):
 the mechanics + this sweep are now written into
-`skills/appbox-builder/SKILL.md` ("Native liquid glass (iOS 26) —
-settled mechanics"), `skills/appbox-scaffolder/SKILL.md` (kind
+`skills/arxa-builder/SKILL.md` ("Native liquid glass (iOS 26) —
+settled mechanics"), `skills/arxa-scaffolder/SKILL.md` (kind
 resolution carries the mechanics by construction), and the vendored
 package's own `AGENTS.md` (a 4-point checklist any NEW native view type
 must implement). Scaffolded apps get correct glass by composing kit

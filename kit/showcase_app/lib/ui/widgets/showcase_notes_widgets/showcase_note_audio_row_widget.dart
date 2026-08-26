@@ -1,5 +1,5 @@
 /// A widget is a reusable UI piece composed by views. It receives data via
-/// constructor params or [AppBoxKitStreamBuilder] bindings and renders its
+/// constructor params or [ArxaKitStreamBuilder] bindings and renders its
 /// slice of the surface — it holds no business logic and never decides when
 /// an action runs.
 ///
@@ -32,11 +32,11 @@
 library;
 
 import 'package:flutter/material.dart';
-import 'package:appbox_kit_media/appbox_kit_media.dart'
-    show AppBoxKitPlaybackProgress;
-import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
-import 'package:appbox_kit_showcase_app/data/models/showcase_notes_models/models.dart';
-import 'package:appbox_kit_showcase_app/ui/views/showcase_notes_shell/showcase_note_editor/showcase_note_editor_viewmodel.dart';
+import 'package:arxa_kit_media/arxa_kit_media.dart'
+    show ArxaKitPlaybackProgress;
+import 'package:arxa_kit_ui_library/arxa_kit_ui_library.dart';
+import 'package:arxa_kit_showcase_app/data/models/showcase_notes_models/models.dart';
+import 'package:arxa_kit_showcase_app/ui/views/showcase_notes_shell/showcase_note_editor/showcase_note_editor_viewmodel.dart';
 
 /// One audio attachment row: play/pause, live progress bar, duration label.
 class ShowcaseNoteAudioRowWidget extends StatelessWidget {
@@ -52,7 +52,7 @@ class ShowcaseNoteAudioRowWidget extends StatelessWidget {
     if (progressTotal == null || progressTotal.inMilliseconds == 0) {
       return const SizedBox.shrink();
     }
-    return AppBoxKitNativeProgress.linear(
+    return ArxaKitNativeProgress.linear(
       value: (progress.inMilliseconds / progressTotal.inMilliseconds)
           .clamp(0.0, 1.0),
     );
@@ -68,29 +68,29 @@ class ShowcaseNoteAudioRowWidget extends StatelessWidget {
     // swaps play/pause and starts/stops its progress subscription off it.
     // Seeded false: the composed stream's first event lands a frame after
     // subscribe; the seed paints the play glyph for that first frame.
-    return AppBoxKitStreamBuilder<bool>(
+    return ArxaKitStreamBuilder<bool>(
       stream: viewModel.isAttachmentPlaying$(attachment.id),
       initialData: false,
       builder: (context, playing) {
         return GestureDetector(
           onLongPress: () => viewModel.confirmRemoveAttachment(attachment),
-          child: AppBoxKitGlassCard(
+          child: ArxaKitGlassCard(
             padding: const EdgeInsets.symmetric(
                 horizontal: abxSize12, vertical: abxSize8),
             child: Row(
               children: [
-                AppBoxKitNativeIconButton(
-                  glyph: playing ? AppBoxKitGlyphs.pause : AppBoxKitGlyphs.play,
+                ArxaKitNativeIconButton(
+                  glyph: playing ? ArxaKitGlyphs.pause : ArxaKitGlyphs.play,
                   onPressed: () => viewModel.togglePlayback(attachment),
                 ),
-                appBoxKitHorizontalSpaceSmall,
+                arxaKitHorizontalSpaceSmall,
                 // Only the playing row subscribes to live progress, so position
                 // ticks rebuild this bar alone — not the whole editor. Seeded so
                 // the first frame paints at 0 without a loading flash.
                 Expanded(
                   child: !playing
                       ? _progressBar(Duration.zero, total)
-                      : AppBoxKitStreamBuilder<AppBoxKitPlaybackProgress>(
+                      : ArxaKitStreamBuilder<ArxaKitPlaybackProgress>(
                           stream: viewModel.playbackProgress$,
                           initialData: const (
                             position: Duration.zero,
@@ -100,8 +100,8 @@ class ShowcaseNoteAudioRowWidget extends StatelessWidget {
                               prog.position, prog.duration ?? total),
                         ),
                 ),
-                appBoxKitHorizontalSpaceSmall,
-                Text(total == null ? '--:--' : appBoxKitFormatDuration(total)),
+                arxaKitHorizontalSpaceSmall,
+                Text(total == null ? '--:--' : arxaKitFormatDuration(total)),
               ],
             ),
           ),

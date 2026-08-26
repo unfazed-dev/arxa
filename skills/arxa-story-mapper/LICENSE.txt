@@ -1,0 +1,8 @@
+arxa-story-mapper — proprietary
+
+Copyright (c) 2026 Totem Labs. All rights reserved.
+
+This skill is original Totem Labs work governed by the repository root
+LICENSE. It is not offered under the MIT license; the MIT text formerly in
+this file was boilerplate added in error at the skill's creation and granted
+no intended rights.

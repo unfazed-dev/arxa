@@ -33,18 +33,18 @@ library;
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:responsive_builder/responsive_builder.dart';
-import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
+import 'package:arxa_kit_ui_library/arxa_kit_ui_library.dart';
 
-import 'package:appbox_kit_showcase_app/ui/views/showcase_startup_shell/showcase_startup/showcase_startup_view.desktop.dart';
-import 'package:appbox_kit_showcase_app/ui/views/showcase_startup_shell/showcase_startup/showcase_startup_view.tablet.dart';
-import 'package:appbox_kit_showcase_app/ui/views/showcase_startup_shell/showcase_startup/showcase_startup_view.mobile.dart';
-import 'package:appbox_kit_showcase_app/ui/views/showcase_startup_shell/showcase_startup/showcase_startup_viewmodel.dart';
+import 'package:arxa_kit_showcase_app/ui/views/showcase_startup_shell/showcase_startup/showcase_startup_view.desktop.dart';
+import 'package:arxa_kit_showcase_app/ui/views/showcase_startup_shell/showcase_startup/showcase_startup_view.tablet.dart';
+import 'package:arxa_kit_showcase_app/ui/views/showcase_startup_shell/showcase_startup/showcase_startup_view.mobile.dart';
+import 'package:arxa_kit_showcase_app/ui/views/showcase_startup_shell/showcase_startup/showcase_startup_viewmodel.dart';
 
 class ShowcaseStartupView extends StackedView<ShowcaseStartupViewModel> {
   const ShowcaseStartupView({super.key});
 
   /// Identity stamped at emit time (Q12 triple).
-  static const AppBoxKitInspectAttrs inspectAttrs = AppBoxKitInspectAttrs(
+  static const ArxaKitInspectAttrs inspectAttrs = ArxaKitInspectAttrs(
     screenId: 'showcase.startup',
     surfaceId: 'surface.startup.startup',
     anatomyNodeId: 'anatomy:view.body',

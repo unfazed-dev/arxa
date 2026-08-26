@@ -27,6 +27,6 @@
 /// History: git log --follow -- kit/showcase_app/lib/ui/views/showcase_notes_shell/showcase_notes_shell_viewmodel.dart
 library;
 
-import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
+import 'package:arxa_kit_ui_library/arxa_kit_ui_library.dart';
 
 class ShowcaseNotesShellViewModel extends BaseViewModel {}

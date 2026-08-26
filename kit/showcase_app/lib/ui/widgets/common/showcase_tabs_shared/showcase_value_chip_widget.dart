@@ -19,7 +19,7 @@
 library;
 
 import 'package:flutter/material.dart';
-import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
+import 'package:arxa_kit_ui_library/arxa_kit_ui_library.dart';
 
 class ShowcaseValueChipWidget extends StatelessWidget {
   const ShowcaseValueChipWidget(this.value, {super.key});

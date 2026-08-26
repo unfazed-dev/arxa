@@ -1,6 +1,6 @@
-# appbox spine — measured findings
+# arxa spine — measured findings
 
-Scored against `appbox-spine-rubric.md`, which was written first. Every number
+Scored against `arxa-spine-rubric.md`, which was written first. Every number
 below has the command that produced it. Where a pre-compaction claim of mine was
 wrong, the correction is stated rather than quietly replaced.
 
@@ -91,7 +91,7 @@ than comparing a stored value to itself. The mechanism holds.
    (`extract_tokens`, `guard`, `run_pipeline`) are inside the 7 modules asko
    vendored.** `generate_view.py` *does* self-test, so step 5's risk is contained.
 
-Neither overturns the call. Both are inherited debt appbox must close rather than
+Neither overturns the call. Both are inherited debt arxa must close rather than
 copy, and they revise D3 for flutter-crew downward from "628 assertions" to "628
 assertions covering 22 of 32 stages."
 
@@ -161,10 +161,10 @@ present`). So the emitters are a starting point, not a drop-in.
 **Three stacked-MVVM emitters exist on this machine** — flutter-crew's
 `generate_view.py`, asko's `12-presentation/{emit_presentation,view_generator}.py`,
 and stacked_kit's `kit-designer` skill. That triplication *is* the consolidation
-opportunity appbox exists to close.
+opportunity arxa exists to close.
 
 *Update — this is now closed.* The end-to-end run was done on p2's
-`train_shell_today_view`; see `appbox-headtohead-train-shell.md`. Summary:
+`train_shell_today_view`; see `arxa-headtohead-train-shell.md`. Summary:
 
 - The chain **does** reach Dart deterministically (`DONE (deterministic, no LLM)`,
   `golden.sha256` emitted). The census inference held.
@@ -195,7 +195,7 @@ stdlib-only, layout mirrored so no path patching was needed. That is a stronger
 signal than any score here.
 
 One defect in it: vendored from commit `7a4f08d` with the **working tree dirty**.
-The exact input is unreproducible. appbox must vendor from a clean tag.
+The exact input is unreproducible. arxa must vendor from a clean tag.
 
 ## Spine call
 

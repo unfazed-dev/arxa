@@ -1,6 +1,6 @@
 # htmx conformance — the skill vs. the artifact it produced
 
-Checked `skills/appbox-designer` and `designs/appbox-app` against
+Checked `skills/arxa-designer` and `designs/arxa-app` against
 <https://htmx.org/docs/> (fetched 2026-07-27, indexed as `htmx-official-docs`).
 
 **Verdict: the skill is docs-accurate. The artifact I generated from it is not.**
@@ -24,7 +24,7 @@ The skill's prose is a faithful pattern catalogue —
 
 ## 2. The artifact does not
 
-`designs/appbox-app`, 14 surfaces, **5 distinct htmx attributes**:
+`designs/arxa-app`, 14 surfaces, **5 distinct htmx attributes**:
 
 ```
 artifact   hx-boost hx-ext hx-post hx-swap hx-sync

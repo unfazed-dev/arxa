@@ -1,8 +1,8 @@
 # Designer/Scaffolder refactor grill — decision log (in progress)
 
-Session goal: refactor `skills/appbox-designer` and `skills/appbox-scaffolder` so both
+Session goal: refactor `skills/arxa-designer` and `skills/arxa-scaffolder` so both
 produce/consume exactly the `kit/showcase_app/lib` structure, deterministically, across runs.
-Studio context: appbox is driven ~99% of the time inside appbox studio via composers connected
+Studio context: arxa is driven ~99% of the time inside arxa studio via composers connected
 to LLMs (intake interviews, design updates, feature additions). FSM phases (`lib/phases.dart`):
 intake → prototype → design → scaffold → review → build → deploy, per-phase gates, human checkpoints.
 
@@ -24,13 +24,13 @@ intake → prototype → design → scaffold → review → build → deploy, pe
     (colors, spacing/ui_helpers, app constants, glyphs, fonts) — same symbol names, generated
     from Dart, `kitCatalogMirrorCheck` extended to gate parity.
   - Tier 2: service kits (auth, payments, maps…) exposed via `kit-catalog.md` + `runtime/kit-facades/*.js`.
-  - `AppBoxKitNative*` / ui_library widgets are **excluded** from the designer mirror: designer
+  - `ArxaKitNative*` / ui_library widgets are **excluded** from the designer mirror: designer
     designs web (baoyu design core fork, ejects production web); natives are scaffolder
     transliteration targets only.
 - **Q7 — Designed-widget → kit-native mapping contract (both-sides, closed):** designer artifacts
   declare a widget `kind` from a closed vocabulary (its starter-partials kinds: appbar, tabbar,
   bottom-sheet, dialog, toast, card, chip, list-row, nav-rail, form-field, empty-state, cta-link…);
-  scaffolder owns a closed resolution registry kind→`appbox_kit` widget/recipe. Gates on both
+  scaffolder owns a closed resolution registry kind→`arxa_kit` widget/recipe. Gates on both
   sides; unmapped kind = fail, never improvise. Adding a widget kind = deliberate two-registry change.
 - **Q8 — Feature recipe SSOT:** machine-readable path-template manifest, showcase-adjacent
   (`kit/showcase_app/`): artifact-type → path template + naming template + frontmatter/comment
@@ -84,7 +84,7 @@ intake → prototype → design → scaffold → review → build → deploy, pe
   3. Second run byte-identical — **transliteration output only** (per Q2↔Q11 audit resolution).
   4. Every emitted surface carries `inspectAttrs`.
   5. Frontmatter/comment conventions present (Q5's normative rules mechanically enforced).
-  After the spike passes: continue with the rest of the appbox studio design refactoring (Q13).
+  After the spike passes: continue with the rest of the arxa studio design refactoring (Q13).
 - **Q12 — Inspector/studio tie-in (locked):** identity is **stamped at emit time, never inferred
   at runtime** (Flutter `--track-widget-creation` pattern). Designer/scaffolder emit `inspectAttrs`
   derived from registry ids as the triple **(screenId, surfaceId, anatomy-node id)** on every
@@ -111,7 +111,7 @@ intake → prototype → design → scaffold → review → build → deploy, pe
     changes (layout/styling of existing screens) patch design-owned registry sections. Same
     validation + gate for both.
 
-- **Q15 — Live-generation viewer (locked):** appbox studio renders pipeline progress itself —
+- **Q15 — Live-generation viewer (locked):** arxa studio renders pipeline progress itself —
   the Flutter `genui` package / A2UI stays **out** of the studio viewer (genui is alpha,
   Flutter-side, and built for LLM-composed UI at runtime, which Q10/Q14 forbid — our pipeline is
   deterministic after the registry patch). The A2UI *pattern* (constrained catalog +
@@ -132,9 +132,9 @@ intake → prototype → design → scaffold → review → build → deploy, pe
 
 Registry mapped 12/15 derived kinds; three resolved as follows, restoring closure (15/15, asserted mechanically against `starter-partials/widgets/_*.tsx`):
 
-- **tabs** → `AppBoxKitAnimatedTabStack` (promoted from `tabbar.companions`; `tabbar` = in-surface strip, `tabs` = animated content stack).
-- **modal** → kept as a distinct kind (vocabulary is mechanically derived; deleting it would mean deleting the partial). Resolves to a **presentation mode**, not a widget subtree: route-flag + `AppBoxKitOverlayService`/`AppBoxKitFrostedSurface`. `dialog` remains separate.
-- **panel-activity** → COMPOSITION (`AppBoxKitGlassCard` + `AppBoxKitListSection` + `AppBoxKitNotificationRecord`), recorded debt pending a first-class kit activity widget.
+- **tabs** → `ArxaKitAnimatedTabStack` (promoted from `tabbar.companions`; `tabbar` = in-surface strip, `tabs` = animated content stack).
+- **modal** → kept as a distinct kind (vocabulary is mechanically derived; deleting it would mean deleting the partial). Resolves to a **presentation mode**, not a widget subtree: route-flag + `ArxaKitOverlayService`/`ArxaKitFrostedSurface`. `dialog` remains separate.
+- **panel-activity** → COMPOSITION (`ArxaKitGlassCard` + `ArxaKitListSection` + `ArxaKitNotificationRecord`), recorded debt pending a first-class kit activity widget.
 
 **Composition rule (user directive):** every composition is a designer RECIPE — the designer always composes (panels included) for any design; the scaffolder emits compositions explicitly and never resolves them to one class. Recipe knowledge lives with the designer; the registry records the resolved target set.
 
@@ -155,19 +155,19 @@ Four decisions surfaced by the Q11 shell spike (`docs/plans/q11-shell-spike.md`,
 
 Reverses the Q6 "lib/ui/common deleted, import kit core directly" mechanism. The anti-fork goal is unchanged; the mechanism flips from *import* to *scaffold-time copy*:
 
-- **Stacked replacement recipe.** The stacked CLI (used by appbox for apps/views/widgets/services) generates `lib/ui/common/` (incl. its own `app_strings.dart`). The scaffolder **deletes every stacked-generated file there and refills the folder with a verbatim copy of `kit/core/lib/common/`**, plus one app-authored `appbox_kit_app_strings.dart`. Kit remains the single SSOT; copies are refreshed from kit, never hand-edited (hand-editing any copied file is a FAIL; only `appbox_kit_app_strings.dart` carries app-authored content).
-- **Imports.** App code imports its own copy — `package:<app_package>/ui/common/…`, never `package:appbox_kit_core/common/…`. Showcase rewired (3 files, 5 import lines) as the exemplar; `kit/showcase_app/lib/ui/common/` now carries the 8-file kit copy + demo strings file.
-- **Registry.** `kind-resolution.registry.json` import targets stay kit-canonical (`package:appbox_kit_core/common/…` — SSOT location, validator unchanged); the scaffolder rewrites the package prefix to the app's copy **at emit time**. One rule, no per-app registry churn, no version bump needed.
-- **Named strings vocabulary.** Prefix ratified as **`abxStr`** (`abx` = kit constants style, `Str` = string copy), e.g. `abxStrNotesEmptyTitle`. Every user-facing fixed string is a named const; design.json stores the name; studio inspector edits copy by rewriting the value behind the name; runtime data is never named and never copy-editable. Generic template: `kit/core/lib/common/appbox_kit_app_strings.dart`; per-app file demoed in showcase.
+- **Stacked replacement recipe.** The stacked CLI (used by arxa for apps/views/widgets/services) generates `lib/ui/common/` (incl. its own `app_strings.dart`). The scaffolder **deletes every stacked-generated file there and refills the folder with a verbatim copy of `kit/core/lib/common/`**, plus one app-authored `arxa_kit_app_strings.dart`. Kit remains the single SSOT; copies are refreshed from kit, never hand-edited (hand-editing any copied file is a FAIL; only `arxa_kit_app_strings.dart` carries app-authored content).
+- **Imports.** App code imports its own copy — `package:<app_package>/ui/common/…`, never `package:arxa_kit_core/common/…`. Showcase rewired (3 files, 5 import lines) as the exemplar; `kit/showcase_app/lib/ui/common/` now carries the 8-file kit copy + demo strings file.
+- **Registry.** `kind-resolution.registry.json` import targets stay kit-canonical (`package:arxa_kit_core/common/…` — SSOT location, validator unchanged); the scaffolder rewrites the package prefix to the app's copy **at emit time**. One rule, no per-app registry churn, no version bump needed.
+- **Named strings vocabulary.** Prefix ratified as **`abxStr`** (`abx` = kit constants style, `Str` = string copy), e.g. `abxStrNotesEmptyTitle`. Every user-facing fixed string is a named const; design.json stores the name; studio inspector edits copy by rewriting the value behind the name; runtime data is never named and never copy-editable. Generic template: `kit/core/lib/common/arxa_kit_app_strings.dart`; per-app file demoed in showcase.
 - **Doc surfaces updated:** scaffolder SKILL.md (Q6 section), designer SKILL.md, DESIGN-ARCHITECTURE.md (name-collision note), references/showcase-anatomy.md (§4, two spots), references/kit-catalog.md.
-- **ARB reconciliation (ruled, confirm A).** Studio widget-editing plan Decision 14 ("ARB-keyed chrome copy") amended: `abxStr` is the authoring SSOT for copy; ARB is derived-only (keys mechanically from const names, consts swapped for l10n lookups only at an app's i18n gate). No ARB exists in kit/showcase today; the only `.arb` files are appbox-studio's own UI localization. Amendment recorded in `widget-editing-autolayout-and-manager.md` below the decisions table.
-- **Pending:** portalo (and any future app) follows the same recipe at scaffold time. (Studio-side `abxStr` reference: done — the widget-editing plan is the studio inspector's doc surface; `appbox-studio/README.md` has no copy/inspector section to update.)
+- **ARB reconciliation (ruled, confirm A).** Studio widget-editing plan Decision 14 ("ARB-keyed chrome copy") amended: `abxStr` is the authoring SSOT for copy; ARB is derived-only (keys mechanically from const names, consts swapped for l10n lookups only at an app's i18n gate). No ARB exists in kit/showcase today; the only `.arb` files are arxa-studio's own UI localization. Amendment recorded in `widget-editing-autolayout-and-manager.md` below the decisions table.
+- **Pending:** portalo (and any future app) follows the same recipe at scaffold time. (Studio-side `abxStr` reference: done — the widget-editing plan is the studio inspector's doc surface; `arxa-studio/README.md` has no copy/inspector section to update.)
 
 ## Amendment — sizing-mode tokens join the abx vocabulary (ratified)
 
 `design.json` layout slots carry kit constant names only. Sizing modes are now
 first-class kit constants: `abxHug` / `abxFill` / `abxFixed` (`const String`s in
-`appbox_kit_app_constants.dart`), replacing the bare keywords `"hug"` /
+`arxa_kit_app_constants.dart`), replacing the bare keywords `"hug"` /
 `"fill"` / `"fixed"`. Standing rule: **every** new constant, whatever its
 concern, carries the `abx` prefix. Bound in DESIGN-ARCHITECTURE.md ("Kit token
 binding"), designer SKILL.md (compose-time rule), scaffolder SKILL.md
@@ -178,19 +178,19 @@ binding"), designer SKILL.md (compose-time rule), scaffolder SKILL.md
 
 - **Apps = B, type-first, the way Flutter manages assets.** `assets/` beside
   `lib/`, sibling type dirs only on real need, registered as pubspec
-  directories. UI icons are kit code glyphs (`appbox_kit_glyphs.dart`) — never
+  directories. UI icons are kit code glyphs (`arxa_kit_glyphs.dart`) — never
   asset files. (Font handling superseded below: Google Fonts, no binaries.)
-- **Named-asset vocabulary:** `appbox_kit_assets.dart` — generic kit template
+- **Named-asset vocabulary:** `arxa_kit_assets.dart` — generic kit template
   in `kit/core/lib/common/` + app-authored copy in `lib/ui/common/`
-  (the `appbox_kit_app_strings.dart` pattern). Consts are `abxImg*`; code and
+  (the `arxa_kit_app_strings.dart` pattern). Consts are `abxImg*`; code and
   designs reference the name, never a loose path. Showcase seed:
   `abxImgShowcaseLogo` → `assets/images/showcase_logo.png`.
 - **Studio exception (A, user-ratified as exception):** the studio design tree
-  is ownership-scoped — `designs/appbox-studio-v2/assets/{studio,portalo}/`,
+  is ownership-scoped — `designs/arxa-studio-v2/assets/{studio,portalo}/`,
   `portalo/` feature-scoped internally — because the studio hosts two owners:
   its own chrome and the design it simulates (portalo). This exception is
   studio-only; generated apps never use ownership folders.
-- **Studio v2 root (ratified):** `designs/appbox-studio-v2/{lib,assets}` —
+- **Studio v2 root (ratified):** `designs/arxa-studio-v2/{lib,assets}` —
   everything code under `lib/` mirroring the showcase recipe
   (hub > shells > views > widgets), assets as above.
 
@@ -202,10 +202,10 @@ binding"), designer SKILL.md (compose-time rule), scaffolder SKILL.md
   no drift. "Consolidate the kit, don't clean it": management *code* lives in
   the skills; the kit holds files + the manifest only.
 - **Taxonomy (ratified):** `assets/{brand-icons/, fonts/, images/}` +
-  `assets.manifest.json`. Defaults shipped: `brand-icons/appbox-icon.png` +
-  `appbox-icon.svg` (moved from repo root 2026-08-09).
+  `assets.manifest.json`. Defaults shipped: `brand-icons/arxa-icon.png` +
+  `arxa-icon.svg` (moved from repo root 2026-08-09).
 - **Fonts = Google Fonts by name, no binaries.** Designer resolves via
-  CDN/CSS; scaffolder emits the `google_fonts` package. `appbox_kit_fonts.dart`
+  CDN/CSS; scaffolder emits the `google_fonts` package. `arxa_kit_fonts.dart`
   is a pure catalogue: `abxFont*` → Google family name. Font *roles*
   (`primary`, `monospace`, …) in the manifest, not raw family lists — swapping
   a family at intake retouches nothing downstream. `assets/fonts/` holds files
@@ -225,8 +225,8 @@ binding"), designer SKILL.md (compose-time rule), scaffolder SKILL.md
   emitted folder) → designer emits merged `assets/` + manifest with the design
   → scaffolder pure copy-paste of the folder, reading ONLY the manifest to
   wire google_fonts, flutter_launcher_icons config, pubspec registration, and
-  the app's `appbox_kit_assets.dart` (`abxImg*` consts).
-- No uploads → the appbox defaults ship as-is (appbox brand icon, Inter/
+  the app's `arxa_kit_assets.dart` (`abxImg*` consts).
+- No uploads → the arxa defaults ship as-is (arxa brand icon, Inter/
   JetBrains Mono via Google Fonts).
 
 
@@ -248,17 +248,17 @@ binding"), designer SKILL.md (compose-time rule), scaffolder SKILL.md
 - Splashscreen = surface, not a shell (standing ruling). Portalo is NOT a
   shell — it is the simulated design rendered inside `studio_design_shell`,
   assets under `assets/portalo/`.
-- **Pipeline ↔ shell coherence (user-ruled):** the appbox pipeline must
+- **Pipeline ↔ shell coherence (user-ruled):** the arxa pipeline must
   reflect each shell and its **declared input/output** — every stage a shell
   fronts (intake → design → scaffold/eject) names the artifact it consumes
   and the artifact it produces, so the shell roster and the pipeline stay one
   vocabulary.
-- **Per-shell manual triggers (user-ruled):** appbox studio provides a manual
+- **Per-shell manual triggers (user-ruled):** arxa studio provides a manual
   "proceed to next stage" trigger per shell in the studio design — stage
-  advancement is user-gated, never implicit, maintaining appbox coherence.
+  advancement is user-gated, never implicit, maintaining arxa coherence.
 
 ## Q-v2-2 — shell↔pipeline mapping (DEFERRED)
-- User ruling 2026-08-09: defer. The studio is a UI to operate on the pipeline; the FSM (`appboxd/lib/pipeline_fsm.dart`, 7 phases, human gate on prototype) stays SSOT untouched.
+- User ruling 2026-08-09: defer. The studio is a UI to operate on the pipeline; the FSM (`arxa/lib/pipeline_fsm.dart`, 7 phases, human gate on prototype) stays SSOT untouched.
 - Not decided: registry `pipeline` section, all-phase manual advance, which shell fronts machine phases. Reopen when studio v2 wires stage controls.
 
 ## Q-v2-3 — views/widgets per shell + surface capability ladder (user-confirmed)
@@ -273,7 +273,7 @@ binding"), designer SKILL.md (compose-time rule), scaffolder SKILL.md
   - `studio_design_shell/` → `studio_design_view` (widgets: design_canvas [portalo renders here],
     inspector_panel, composer_slider_panel, needs_you_strip, activity)
 - **Studio is recipe-conforming — NO desktop-only exception.** Every studio view emits
-  desktop/mobile/tablet variants like any showcase app (appbox functions remotely).
+  desktop/mobile/tablet variants like any showcase app (arxa functions remotely).
 - **Preview containment rule:** a studio surface previews only designs of its own device class
   or smaller — desktop ⊇ tablet ⊇ mobile.
   - desktop (default): canvas previews portalo desktop/tablet/mobile; inspector panel,
@@ -287,7 +287,7 @@ binding"), designer SKILL.md (compose-time rule), scaffolder SKILL.md
 ## Q-v2-4 — recipe→web mapping for studio v2 (user-confirmed: A)
 
 - Studio v2 uses the Q8 manifest's folder/naming grammar verbatim at the **artifact
-  root** `designs/appbox-studio-v2/`, with a declared artifact-type → extension map for web:
+  root** `designs/arxa-studio-v2/`, with a declared artifact-type → extension map for web:
   view → `.tsx` (per-surface `*.desktop.tsx` / `*.tablet.tsx` / `*.mobile.tsx`),
   viewmodel → `.js`, services/facades → `.js`.
 - *Amended 2026-08-08 (emit blocker B1):* the earlier "`under …/lib/`" wording quoted the
@@ -305,7 +305,7 @@ binding"), designer SKILL.md (compose-time rule), scaffolder SKILL.md
 
 ## Q-v2-5 — v1→v2 cutover (user-confirmed: A, amended)
 
-- v2 built fresh at `designs/appbox-studio-v2/` per Q-v2-1…4; v1 untouched and running
+- v2 built fresh at `designs/arxa-studio-v2/` per Q-v2-1…4; v1 untouched and running
   throughout; v1 views are candidates only, never copied wholesale.
 - **No flip/toggle mechanism** (user-ruled): probe green is a precondition, but a shell goes
   live only on explicit **user validation** — manual, per shell. No automated flip, nothing
@@ -329,10 +329,10 @@ point recorded). Next: execute studio v2 build-out per this log.
 
 # Fidelity-mode grill (2026-08-14) — how the scaffolder chooses design fidelity
 
-Founder asked: appbox covers ios/android/web/desktop; wants a config file that scaffolds
+Founder asked: arxa covers ios/android/web/desktop; wants a config file that scaffolds
 the design as (1) pure Flutter, (2) mix of native chrome + Flutter (default), or
 (3) full native only. Docs-grounded state before ruling: mix is already the kit's
-runtime default (tier gate `wantNative && AppBoxKitPlatform.supports*`); pure Flutter
+runtime default (tier gate `wantNative && ArxaKitPlatform.supports*`); pure Flutter
 exists only per-widget via `preferFlutterTier` (no app-level knob); "full native only"
 did not exist and "no Flutter at all" is not expressible in the kit.
 
@@ -388,7 +388,7 @@ config file format + scaffolder emission and draft the law amendment, as separat
   deterministic `FidelityViolation` with one stack trace.
 - Per-gate check survives as a **debug-only assert** in the shared gate
   helper; no per-widget release throws (drift risk across ~10 widgets).
-- Same consult also ruled the mode const: `--dart-define=APPBOX_FIDELITY`
+- Same consult also ruled the mode const: `--dart-define=ARXA_FIDELITY`
   + `const bool.fromEnvironment` composition — a runtime static cannot
   tree-shake (only const environment values participate in const
   conditionals) and would add order-dependent test state. Gate factored as

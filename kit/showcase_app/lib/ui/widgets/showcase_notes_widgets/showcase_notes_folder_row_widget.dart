@@ -1,5 +1,5 @@
 /// A widget is a reusable UI piece composed by views. It receives data via
-/// constructor params or [AppBoxKitStreamBuilder] bindings and renders its
+/// constructor params or [ArxaKitStreamBuilder] bindings and renders its
 /// slice of the surface — it holds no business logic and never decides when
 /// an action runs.
 ///
@@ -29,9 +29,9 @@
 library;
 
 import 'package:flutter/material.dart';
-import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
-import 'package:appbox_kit_showcase_app/data/models/showcase_notes_models/models.dart';
-import 'package:appbox_kit_showcase_app/ui/views/showcase_notes_shell/showcase_notes/showcase_notes_viewmodel.dart';
+import 'package:arxa_kit_ui_library/arxa_kit_ui_library.dart';
+import 'package:arxa_kit_showcase_app/data/models/showcase_notes_models/models.dart';
+import 'package:arxa_kit_showcase_app/ui/views/showcase_notes_shell/showcase_notes/showcase_notes_viewmodel.dart';
 
 class ShowcaseNotesFolderRowWidget extends StatelessWidget {
   const ShowcaseNotesFolderRowWidget({
@@ -61,18 +61,18 @@ class ShowcaseNotesFolderRowWidget extends StatelessWidget {
         alignment: Alignment.centerRight,
         padding: const EdgeInsets.symmetric(horizontal: abxSize20),
         child:
-            Icon(AppBoxKitGlyphs.delete.icon, color: theme.colorScheme.onError),
+            Icon(ArxaKitGlyphs.delete.icon, color: theme.colorScheme.onError),
       ),
       confirmDismiss: (_) async {
         await viewModel.confirmDeleteFolder(folder);
         return false;
       },
       // Rendered inline rather than via ShowcaseNotesRowWidget: this row
-      // needs a long-press (rename) and AppBoxKitListTile exposes tap only.
-      // The layout below matches AppBoxKitListTile's tokens exactly so folder
+      // needs a long-press (rename) and ArxaKitListTile exposes tap only.
+      // The layout below matches ArxaKitListTile's tokens exactly so folder
       // rows stay visually identical to the "All Notes"/"Recently Deleted"
       // rows in the same section.
-      child: AppBoxKitPressable(
+      child: ArxaKitPressable(
         onTap: () => context.router.pushNamed('folder/${folder.id}'),
         onLongPress: onRename,
         child: ConstrainedBox(
@@ -85,7 +85,7 @@ class ShowcaseNotesFolderRowWidget extends StatelessWidget {
             child: Row(
               children: [
                 Icon(
-                  AppBoxKitGlyphs.folder.icon,
+                  ArxaKitGlyphs.folder.icon,
                   size: abxSize20,
                   color: theme.colorScheme.onSurfaceVariant,
                 ),
@@ -99,7 +99,7 @@ class ShowcaseNotesFolderRowWidget extends StatelessWidget {
                       ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
                 ),
                 Icon(
-                  AppBoxKitGlyphs.chevronRight.icon,
+                  ArxaKitGlyphs.chevronRight.icon,
                   size: abxSize18,
                   color: theme.colorScheme.onSurfaceVariant,
                 ),

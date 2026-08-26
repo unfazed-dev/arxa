@@ -12,8 +12,8 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
-import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart'
-    show AppBoxKitNativeInputBar, AppBoxKitNativeTextField, CNTextFieldFocus;
+import 'package:arxa_kit_ui_library/arxa_kit_ui_library.dart'
+    show ArxaKitNativeInputBar, ArxaKitNativeTextField, CNTextFieldFocus;
 
 Future<void> _markDone(int n) async => _mark(n, 'ok');
 
@@ -58,7 +58,7 @@ void main() {
 
   late WidgetTester tester0;
   RenderBox fieldBox() =>
-      tester0.renderObject(find.byType(AppBoxKitNativeTextField)) as RenderBox;
+      tester0.renderObject(find.byType(ArxaKitNativeTextField)) as RenderBox;
   Future<double> fieldHeight() async => fieldBox().size.height;
   Future<Offset> fieldCenter() async =>
       fieldBox().localToGlobal(fieldBox().size.center(Offset.zero));
@@ -75,7 +75,7 @@ void main() {
         body: Column(
           children: [
             const Expanded(child: SizedBox(key: Key('outside'))),
-            AppBoxKitNativeInputBar(
+            ArxaKitNativeInputBar(
               controller: controller,
               hintText: 'Message',
             ),

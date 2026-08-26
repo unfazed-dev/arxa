@@ -1,9 +1,9 @@
 ---
-name: appbox-kit
-description: Use when working on a Flutter app that depends on `appbox_kit`, or when integrating the kit into a new Stacked project, or when creating ANY app/view/service/sheet/dialog/widget in a kit app (Stacked CLI only — `stacked create …` / `stacked generate`, never `flutter create` or hand-rolled files). Reach for it to run async operations with loading/error/success/retry/streaming/cancellation via KitAction (`KitAction.run(...).withLoading(...).execute()`); log errors and events via KitErrorService (Talker-backed); trigger haptics; persist and react to ThemeMode; show transient feedback (toast/snackbar) via `KitNotificationService`; show blur overlays (`withOverlay`) or multi-select UI (`withSelectable`); use the kit's formatters and design tokens; or wire the sibling data layer (`appbox_kit_data`) via KitDataConfig, KitRepository, KitDataFacade, KitDataSeeder, seed data, fixtures, supabase, appwrite; or wire its auth seam via KitAuthService/KitAuthConfig for fake auth, sign in, OTP, google sign-in, or apple sign-in. Triggers — KitAction, KitErrorService, KitHapticService, KitThemeService, KitNotificationService, KitOverlayService, KitSelectableService, KitDataConfig, KitRepository, KitDataFacade, KitDataSeeder, KitAuthService, KitAuthConfig, "fake auth", sign in, OTP, google sign-in, apple sign-in, appbox_kit, appbox_kit_data, "add the kit to this project", "add a data layer".
+name: arxa-kit
+description: Use when working on a Flutter app that depends on `arxa_kit`, or when integrating the kit into a new Stacked project, or when creating ANY app/view/service/sheet/dialog/widget in a kit app (Stacked CLI only — `stacked create …` / `stacked generate`, never `flutter create` or hand-rolled files). Reach for it to run async operations with loading/error/success/retry/streaming/cancellation via KitAction (`KitAction.run(...).withLoading(...).execute()`); log errors and events via KitErrorService (Talker-backed); trigger haptics; persist and react to ThemeMode; show transient feedback (toast/snackbar) via `KitNotificationService`; show blur overlays (`withOverlay`) or multi-select UI (`withSelectable`); use the kit's formatters and design tokens; or wire the sibling data layer (`arxa_kit_data`) via KitDataConfig, KitRepository, KitDataFacade, KitDataSeeder, seed data, fixtures, supabase, appwrite; or wire its auth seam via KitAuthService/KitAuthConfig for fake auth, sign in, OTP, google sign-in, or apple sign-in. Triggers — KitAction, KitErrorService, KitHapticService, KitThemeService, KitNotificationService, KitOverlayService, KitSelectableService, KitDataConfig, KitRepository, KitDataFacade, KitDataSeeder, KitAuthService, KitAuthConfig, "fake auth", sign in, OTP, google sign-in, apple sign-in, arxa_kit, arxa_kit_data, "add the kit to this project", "add a data layer".
 ---
 
-# appbox_kit
+# arxa_kit
 
 A reusable Stacked MVVM toolkit, consumed as a path or git package. The kit owns
 **generic infrastructure and the default Material 3 theme** (palette +
@@ -13,19 +13,19 @@ no hardcoded project references, no host-specific colors. Its theme is a generic
 default any host can use as-is or override.
 
 ```dart
-import 'package:appbox_kit/appbox_kit.dart';
+import 'package:arxa_kit/arxa_kit.dart';
 ```
 
 ## When to use
 
-Use this skill any time you touch a Stacked app with `appbox_kit` in its
+Use this skill any time you touch a Stacked app with `arxa_kit` in its
 pubspec, especially when:
 
 - A ViewModel action loads data or calls an API → wrap it in **KitAction** for loading state, error handling, success/error snackbars, retry, timeout, streams, and cancellation in one fluent chain.
 - You need centralized, reactive error logging or event tracking → **KitErrorService** (Talker-backed; streams for latest error, unread count, per-widget errors/loading).
 - Triggering haptics, persisting/reacting to theme mode, showing a blur overlay, or building a multi-select list.
 - A widget should render real Liquid Glass (iOS 26) or Material 3 Expressive (Android), with a Flutter fallback elsewhere → use a **KitNative\*** widget; see **Native chrome**.
-- Adopting `appbox_kit` into a fresh Stacked project → follow **Host integration**.
+- Adopting `arxa_kit` into a fresh Stacked project → follow **Host integration**.
 
 ## Building on the kit — Stacked CLI only (no flutter CLI)
 
@@ -81,7 +81,7 @@ Verified mechanics (stacked_cli 1.15.5, 2026-07-12):
   Flutter). There is **no local `lib/ui/common/`**: delete the CLI-template
   `app_colors`/`app_strings`/`app_constants`/`ui_helpers` files and import
   colors, spacing helpers, constants, glyphs, and fonts from
-  `package:appbox_kit_core/common/…` instead.
+  `package:arxa_kit_core/common/…` instead.
 - **Documented exceptions** (the CLI has no verb for these — hand-author):
   a `KitDataFacade` subclass body (create the service via
   `stacked create service`, then make it `extends KitDataFacade`), entity
@@ -90,7 +90,7 @@ Verified mechanics (stacked_cli 1.15.5, 2026-07-12):
   `lib/ui/common/` — kit-core `common/` owns colors/helpers/constants).
 
 Reference template + full step-by-step: `showcase_app` and
-`docs/plans/appbox-kit-showcase-app-port.md` §7.
+`docs/plans/arxa-kit-showcase-app-port.md` §7.
 
 ## The kit's surface
 
@@ -121,10 +121,10 @@ Routing in `show()`:
 
 Boot: register `KitNotificationService` as a `LazySingleton` in the host `@StackedApp` + run `build_runner`, and call `setupKitSnackbars()` in `main()` — it registers a `SnackbarConfig` per `KitSnackbarType` and sets `mainButtonTextColor: foreground` so action buttons stay legible on every variant (without it, stacked defaults button text to white, invisible on the pale warning bg). KitAction notifications (`NotificationManager` loading/success/error) route through this service → CNToast on iOS.
 
-## Data layer (appbox_kit_data)
+## Data layer (arxa_kit_data)
 
-`appbox_kit_data` is a sibling package (`appbox_kit/data`, a path
-dependency exactly like `appbox_kit` itself) that gives a Stacked host one
+`arxa_kit_data` is a sibling package (`arxa_kit/data`, a path
+dependency exactly like `arxa_kit` itself) that gives a Stacked host one
 **Backend** at a time — seed (fixture-backed, in-memory), Supabase, or
 Appwrite — chosen entirely by a runtime `KitDataConfig` passed to
 `KitData.initialize` in `main()`; **supabase is the default**. `KitRepository<T>`
@@ -135,7 +135,7 @@ see — they compose repositories into UI-facing streams and route mutations
 through `KitAction` via `mutate(...)`.
 
 ```dart
-import 'package:appbox_kit_data/appbox_kit_data.dart';
+import 'package:arxa_kit_data/arxa_kit_data.dart';
 ```
 
 ### The data layer's surface
@@ -156,10 +156,10 @@ import 'package:appbox_kit_data/appbox_kit_data.dart';
 
 ### Host integration (data layer)
 
-1. **Dependency.** Add `appbox_kit_data` as a path dep. It pulls in the
+1. **Dependency.** Add `arxa_kit_data` as a path dep. It pulls in the
    `win32 ^6` `dependency_overrides` the package itself needs — copy the same
    override into the host's own `pubspec.yaml` (pub overrides don't
-   propagate): *"appwrite's transitive graph pins win32 5.x while appbox_kit
+   propagate): *"appwrite's transitive graph pins win32 5.x while arxa_kit
    → talker_flutter → share_plus 13 needs win32 ^6. win32 is Windows-only FFI —
    forcing 6.x is inert on iOS/Android/web/macOS."*
 2. **Registration.** Declare one `KitEntityRegistration<T>` per entity — a
@@ -240,7 +240,7 @@ class ShopFacade extends KitDataFacade {
   Descriptor (`KitTableSchema`) and regenerate — hand edits drift silently
   from the source of truth on the next regen.
 - **The kit never self-registers.** `KitData.initialize` only runs when the
-  host calls it, matching `appbox_kit`'s host-integration contract.
+  host calls it, matching `arxa_kit`'s host-integration contract.
 
 ### Auth seam (KitAuthService)
 
@@ -310,26 +310,26 @@ Per-backend notes:
   each platform, enable the Google/Apple providers (with their own OAuth
   credentials) in the Appwrite console.
 
-## Showcase & app template (appbox_kit_showcase_app)
+## Showcase & app template (arxa_kit_showcase_app)
 
 **`showcase_app` is the reference template** for bespoke
-appbox_kit apps — a standalone runnable app scaffolded and grown *entirely*
+arxa_kit apps — a standalone runnable app scaffolded and grown *entirely*
 via the Stacked CLI (see "Building on the kit" above; the step-by-step playbook
-lives in `docs/plans/appbox-kit-showcase-app-port.md` §7). The older
-`packages/appbox_kit_showcase` (pluggable, host-embedded) is superseded as the
+lives in `docs/plans/arxa-kit-showcase-app-port.md` §7). The older
+`packages/arxa_kit_showcase` (pluggable, host-embedded) is superseded as the
 template — read it only for history. The showcase ships the 17 native kit
-surfaces as routed tabs (Home/Search/Profile) plus **AppBox Notes** — an
-iOS-Notes-style app smoke-testing every appbox_kit_data capability over
+surfaces as routed tabs (Home/Search/Profile) plus **Arxa Notes** — an
+iOS-Notes-style app smoke-testing every arxa_kit_data capability over
 seeded data (folders, pinned, date groups, search, soft delete/restore,
 photo capture, voice memos, fake-auth sign-in with per-owner isolation).
 
 - **Host plug-in is exactly three moves** (see the package README):
-  `await AppboxKitShowcase.initialize()` in `main()`, the `/showcase`
+  `await ArxaKitShowcase.initialize()` in `main()`, the `/showcase`
   `CustomRoute` block in `@StackedApp` (paths must match
   `ShowcaseShellView.tabPaths`), and startup navigation to
   `ShowcaseShellViewRoute()`.
-- **It's a sibling package, not part of appbox_kit** — it depends on
-  appbox_kit_data (which depends on appbox_kit); nesting it in the kit
+- **It's a sibling package, not part of arxa_kit** — it depends on
+  arxa_kit_data (which depends on arxa_kit); nesting it in the kit
   would cycle the graph and force supabase/appwrite/media deps on every
   consumer.
 - **The template patterns to copy** for bespoke apps: every tab is its own
@@ -367,7 +367,7 @@ photo capture, voice memos, fake-auth sign-in with per-owner isolation).
 
 The kit is decoupled by design — the host wires three things, **none of them inside the kit**:
 
-1. **Dependency.** Add `appbox_kit` (path/git/pub). Declare in the host only what the host uses directly (commonly `stacked` + `stacked_services`); the kit's own deps resolve transitively — see **Dependency management** below.
+1. **Dependency.** Add `arxa_kit` (path/git/pub). Declare in the host only what the host uses directly (commonly `stacked` + `stacked_services`); the kit's own deps resolve transitively — see **Dependency management** below.
 2. **Registration.** In the host `@StackedApp(dependencies:)`, register `Talker`, `KitErrorService`, `KitHapticService`, `KitThemeService`, `KitNavigationControllerService`, `KitNotificationService`, `KitOverlayService`, `KitSelectableService` as `LazySingleton`, then run `dart run build_runner build`. The kit reaches them via `locator` (same `StackedLocator.instance`).
 3. **Snackbar setup.** The kit owns the `KitSnackbarType` vocabulary AND its default presentation — call `setupKitSnackbars()` in `main()` after `setupLocator` to register a `SnackbarConfig` per variant (KitColors). Hosts may register additional custom variants; KitActionConfig's snackbar-type fields are `dynamic`, so a call site can pass a host enum.
 
@@ -428,7 +428,7 @@ matches), drop the WidgetModel, and export from the shell barrel.
 The kit ships design tokens in `common/` — **use them instead of raw numbers**.
 A `SizedBox(height: 24)`, `BorderRadius.circular(10)`, or `fontSize: 32` in host
 or kit code is a defect: it drifts off the scale and can't be themed. All of the
-below are re-exported from the barrel (`package:appbox_kit/appbox_kit.dart`).
+below are re-exported from the barrel (`package:arxa_kit/arxa_kit.dart`).
 
 - **Spacing widgets** (`common/kit_ui_helpers.dart`) — const `SizedBox`es on a
   4 / 8 / 16 / 24 / 48 / 96 scale. Drop them straight into a `Column`/`Row`
@@ -551,7 +551,7 @@ set, the type-switch can't mirror most built widgets, the silent no-op on disall
 types is a footgun, and the native Swift/Kotlin must ship regardless — the extension
 is glue, not a way to avoid native code. Native surfaces ship via the kit's
 `cupertino_native_better` / `m3e_collection` dependencies (the separate
-`appbox_kit_native` plugin was removed); unavailable surfaces fall back to the
+`arxa_kit_native` plugin was removed); unavailable surfaces fall back to the
 built widget.
 
 ### Glyph ink & theme wiring — the contract (centralized, no hardcoding)
@@ -645,7 +645,7 @@ are covered.
    generated, per-app `StackedRouterWeb`):
    ```dart
    // lib/app/app_platform_router.dart
-   import 'package:appbox_kit/appbox_kit.dart' show KitPlatformPagesMixin;
+   import 'package:arxa_kit/arxa_kit.dart' show KitPlatformPagesMixin;
    import 'package:stacked_services/stacked_services.dart' show StackedService;
    import 'app.router.dart' show StackedRouterWeb;
 
@@ -680,11 +680,11 @@ drive it). Full design + decision rationale:
 
 ## Rules (don't break the decoupling)
 
-- **Never add a host import** (`package:<app>/...`) inside `appbox_kit/`. The kit stays host-agnostic; reach services only through `locator`.
+- **Never add a host import** (`package:<app>/...`) inside `arxa_kit/`. The kit stays host-agnostic; reach services only through `locator`.
 - **Don't register services from inside the kit** — registration belongs in the host `@StackedApp`. The kit defines classes; the app owns their lifecycle.
 - **Theme is kit-owned but generic.** The kit ships a default Material 3 palette + `ThemeData` (`common/kit_colors.dart`) and `ThemeMode`/status-bar state (`KitThemeService`). It must stay free of host-specific colors and third-party UI libs (no shadcn_ui) — no `package:<app>/...` imports, and `KitThemeService` holds no color values. Hosts override the accent via `kitLightTheme(accent:)` or substitute their own `ThemeData`.
-- **Native chrome = explicit `KitNative<X>` widgets**, gated by `KitPlatform` + `KitNativeComponent.<x>.nativeBuilt`. Never build a `.native()`-on-any-widget helper (Liquid Glass is a closed per-type set; most widgets can't be mirrored; the silent no-op is a footgun; native code ships regardless). The matrix + per-platform build status live in `core/NATIVE_COMPONENTS.md`; native surfaces come via the kit's `cupertino_native_better`/`m3e_collection` deps (`appbox_kit_native` was removed).
-- **Host/showcase views reuse the kit chrome wholesale — never hand-roll a parallel version.** Top bars are `KitNativeAppBar` slotted into `Scaffold.appBar` (it implements `PreferredSizeWidget` — no wrapper; avoid the `.sliver()` variant, whose iOS tier is a non-native Material `SliverAppBar` that renders as a floating title), FABs are `KitNativeFab`/`KitNativeFabMenu` (the kit owns tier-correct size + `colorScheme.primary`; pass no color), and every themeable color is a `colorScheme` role (`primary`/`onPrimary`, `tertiary`/`onTertiary`, `error`/`onError`) — no per-feature accent consts (`kFooAccent = Color(0x…)`) and no raw `Color(0x…)`/`CupertinoColors.*` for themeable values. The leading back affordance is `KitGlyphs.back`. A hand-rolled bar or FAB, or a stray accent constant, is a defect even if it renders fine. Fixed platform constants (e.g. an always-black media lightbox) are the lone exception, each a named `const` with a `ponytail:` comment naming the platform token. Full playbook: `docs/plans/appbox-kit-showcase-app-port.md` §7.8.
+- **Native chrome = explicit `KitNative<X>` widgets**, gated by `KitPlatform` + `KitNativeComponent.<x>.nativeBuilt`. Never build a `.native()`-on-any-widget helper (Liquid Glass is a closed per-type set; most widgets can't be mirrored; the silent no-op is a footgun; native code ships regardless). The matrix + per-platform build status live in `core/NATIVE_COMPONENTS.md`; native surfaces come via the kit's `cupertino_native_better`/`m3e_collection` deps (`arxa_kit_native` was removed).
+- **Host/showcase views reuse the kit chrome wholesale — never hand-roll a parallel version.** Top bars are `KitNativeAppBar` slotted into `Scaffold.appBar` (it implements `PreferredSizeWidget` — no wrapper; avoid the `.sliver()` variant, whose iOS tier is a non-native Material `SliverAppBar` that renders as a floating title), FABs are `KitNativeFab`/`KitNativeFabMenu` (the kit owns tier-correct size + `colorScheme.primary`; pass no color), and every themeable color is a `colorScheme` role (`primary`/`onPrimary`, `tertiary`/`onTertiary`, `error`/`onError`) — no per-feature accent consts (`kFooAccent = Color(0x…)`) and no raw `Color(0x…)`/`CupertinoColors.*` for themeable values. The leading back affordance is `KitGlyphs.back`. A hand-rolled bar or FAB, or a stray accent constant, is a defect even if it renders fine. Fixed platform constants (e.g. an always-black media lightbox) are the lone exception, each a named `const` with a `ponytail:` comment naming the platform token. Full playbook: `docs/plans/arxa-kit-showcase-app-port.md` §7.8.
 - **Never hand-roll `icon:` + `sfSymbol:` pairs.** Pass `glyph: KitGlyphs.<x>` (add a semantic entry to `common/kit_glyphs.dart` if missing) so the Material icon and SF Symbol can never drift apart. `KitGlyph` carries no size — surfaces own sizing (18pt bar glyphs; FAB 22pt glyph in a 56pt circle). See **Glyphs** above.
 - **Transient feedback goes through `KitNotificationService.show()`.** Never call `SnackbarService.showCustomSnackBar` or `CNToast` directly, and don't reach for a `kitShowNativeToast` helper (deleted). `actionLabel` is the only thing that promotes iOS from a CNToast to a snackbar.
 - KitAction snackbar-type fields are `dynamic` — an app may pass its **own** enum variant at a call site; defaults are `KitSnackbarType.*`.
@@ -696,6 +696,6 @@ drive it). Full design + decision rationale:
 ## Notes
 
 - Source of truth: `core/lib/`. Porting decisions (what was kept/dropped, the locator shim, `KitSnackbarType` reconciliation): `docs/plans/port-kinly-kit-to-p2.md`. Notification-service design (as-built): `docs/plans/kit-notification-service.md`.
-- Data layer source of truth: `appbox_kit/data/lib/`. Architecture + locked decisions: `docs/plans/appbox-kit-data-layer.md`. Auth seam decisions: `docs/plans/appbox-kit-data-auth.md`. Vocabulary (Backend, Seed Key, Canonical ID, Schema Descriptor, Auth Service, Session, Fake Auth, …): `CONTEXT.md`. Canonical-ID derivation: `docs/adr/0001-deterministic-v5-canonical-ids.md`.
-- SSOT: this skill lives IN the kit package at `appbox_kit/skills/appbox-kit/SKILL.md`; `.claude/skills/appbox-kit` is a symlink to it (edit either path, same file). When adopting the kit in another project, symlink `appbox_kit/skills/appbox-kit` into that project's `.claude/skills/appbox-kit` — do not copy (copies go stale).
+- Data layer source of truth: `arxa_kit/data/lib/`. Architecture + locked decisions: `docs/plans/arxa-kit-data-layer.md`. Auth seam decisions: `docs/plans/arxa-kit-data-auth.md`. Vocabulary (Backend, Seed Key, Canonical ID, Schema Descriptor, Auth Service, Session, Fake Auth, …): `CONTEXT.md`. Canonical-ID derivation: `docs/adr/0001-deterministic-v5-canonical-ids.md`.
+- SSOT: this skill lives IN the kit package at `arxa_kit/skills/arxa-kit/SKILL.md`; `.claude/skills/arxa-kit` is a symlink to it (edit either path, same file). When adopting the kit in another project, symlink `arxa_kit/skills/arxa-kit` into that project's `.claude/skills/arxa-kit` — do not copy (copies go stale).
 - Verified runtime: services resolve via the host `setupLocator`; `KitAction.run(...).execute()` runs end-to-end (see `test/kit/services/kit_services_resolve_test.dart`).

@@ -1,7 +1,7 @@
 # Icon library + components-first — research and decisions (2026-07-29)
 
 Web research (fan-out, three parallel investigators) plus local exploration that
-preceded the appbox-designer **components-first** update: the UI-recipes
+preceded the arxa-designer **components-first** update: the UI-recipes
 catalog, the vendored Lucide set with the `icon()` runtime global, and
 `KitGlyphs.lucide` in stacked_kit. Grades: **hot** = seen on the official
 page/repo that day · **warm** = official but indirect/stale · **cold** =
@@ -14,7 +14,7 @@ The designer skill's icons were CSS colored-dot placeholders
 rounded square; android/macOS/browser chrome used empty spans and gray
 circles — confirmed by reading every frames file). There was no icon primitive
 anywhere: no `kit_glyphs.dart` on disk in this repo (only the review-gate
-contract naming it), no icon package in `appbox/pubspec.yaml`, zero icon usage
+contract naming it), no icon package in `arxa/pubspec.yaml`, zero icon usage
 in `examples/hello-hda/`. Two decisions were needed: which icon library to
 standardize on, and how it flows HTML → Flutter.
 
@@ -108,4 +108,4 @@ build if pipeline-critical names vanish upstream).
 - Emitted Flutter views now require `KitGlyphs` in scope via the kit import
   chain (the same contract the review gate's "Use KitGlyphs.*" message assumes).
 - `runtime/serve.test.mjs` fails pre-existing: it hardcodes design
-  `appbox-app`, absent from this checkout.
+  `arxa-app`, absent from this checkout.

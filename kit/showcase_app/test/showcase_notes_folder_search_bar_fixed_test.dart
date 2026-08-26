@@ -11,9 +11,9 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart'
-    show AppBoxKitNativeSearchBar;
-import 'package:appbox_kit_showcase_app/ui/views/showcase_notes_shell/showcase_notes_folder/showcase_notes_folder_view.dart';
+import 'package:arxa_kit_ui_library/arxa_kit_ui_library.dart'
+    show ArxaKitNativeSearchBar;
+import 'package:arxa_kit_showcase_app/ui/views/showcase_notes_shell/showcase_notes_folder/showcase_notes_folder_view.dart';
 
 import 'helpers.dart';
 
@@ -41,7 +41,7 @@ void main() {
     expect(find.byType(ShowcaseNotesFolderView), findsOneWidget,
         reason: 'anti-vacuous: the folder view must be on screen');
 
-    final searchBar = find.byType(AppBoxKitNativeSearchBar);
+    final searchBar = find.byType(ArxaKitNativeSearchBar);
     expect(searchBar, findsOneWidget,
         reason: 'anti-vacuous: the search bar must be on screen');
 

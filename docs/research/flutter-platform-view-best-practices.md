@@ -72,7 +72,7 @@ it applies — but note the doc was not written iOS-first.
 **[V]** — both the iOS docs page and the engine doc carry this identical guidance.
 
 This is the entire official mitigation story. It is three sentences. It is also, notably,
-*exactly* the shape of the problem app-box hits during tab transitions (§3.2).
+*exactly* the shape of the problem arxa hits during tab transitions (§3.2).
 
 ### 1.4 Composition limitations — hard constraints
 
@@ -218,7 +218,7 @@ advice, arrived at independently.
 `ScaffoldState`, not pushed on the Navigator, so the observer never sees it; the package
 exposes manual `markAnyModalActive` / `markAnyModalInactive` hooks. **[V]**
 
-This repo already depends on that hook: `kit/ui_library/lib/utils/appbox_kit_native_overlay.dart`
+This repo already depends on that hook: `kit/ui_library/lib/utils/arxa_kit_native_overlay.dart`
 runs a full-screen Flutter overlay with every CN platform view hidden, precisely because a
 GetX snackbar is an `Overlay` entry rather than a route, so `CNTabBarRouteObserver` "never
 fires on its own." **[R]**
@@ -281,16 +281,16 @@ when platform views are involved. `IndexedStack` builds and retains hidden child
 is the reported `IndexedStack` + `UiKitView` memory leak (**[S]**, flutter#148639).
 
 This repo has already hit it and written the finding down.
-`kit/ui_library/lib/widgets/appbox_kit_tab_switch_transition.dart` **[R]**:
+`kit/ui_library/lib/widgets/arxa_kit_tab_switch_transition.dart` **[R]**:
 
 > "**Platform-view caution:** prefer `fade: false` (the default) over tabs that mount
-> platform views (`AppBoxKitNative*` / UiKitView chrome). Opacity-animating a platform-view
+> platform views (`ArxaKitNative*` / UiKitView chrome). Opacity-animating a platform-view
 > subtree forces per-frame native layer mutations, and the outgoing tab's UIViews linger
 > frame-submit-gated (flutter#148639) — the ghosting P2 verified on the iOS 26 simulator.
 > The slide is the smaller mutation surface; re-verify on device when the tabs carry native
 > chrome."
 
-`kit/ui_library/lib/widgets/appbox_kit_directional_tab_transition.dart:6` carries the
+`kit/ui_library/lib/widgets/arxa_kit_directional_tab_transition.dart:6` carries the
 matching warning that "Fade/slide-animating a platform-view subtree forces" the same
 per-frame native mutations. **[R]**
 
@@ -378,7 +378,7 @@ Confirmed occurrences of the same shape:
 
 Scope caveat **[I]**: these are the `imageAsset` and `customIcon` branches. A plain
 SF-Symbol (`CNSymbol`) button appears to take a synchronous path and should not be
-affected. But app-box renders lucide SVG icons through the custom-icon path, so the
+affected. But arxa renders lucide SVG icons through the custom-icon path, so the
 affected branch is plausibly this app's *hot* path — worth confirming against actual call
 sites before sizing the fix.
 
@@ -413,7 +413,7 @@ transitions ever being smooth, not an independent cleanup.
 
 ---
 
-## Rules for app-box
+## Rules for arxa
 
 Each rule tagged with the strongest evidence backing it.
 
@@ -427,7 +427,7 @@ Each rule tagged with the strongest evidence backing it.
 
 3. **Do not opacity-animate any subtree containing a platform view.** Prefer translation.
    Fade forces per-frame native layer mutations and leaves ghosting UIViews. — **[R]**
-   `appbox_kit_tab_switch_transition.dart` and `appbox_kit_directional_tab_transition.dart`,
+   `arxa_kit_tab_switch_transition.dart` and `arxa_kit_directional_tab_transition.dart`,
    verified on the iOS 26 simulator; **[S]** flutter#148639.
 
 4. **Mount native chrome once at the root, above the per-tab `Navigator`.** Upstream itself
@@ -445,7 +445,7 @@ Each rule tagged with the strongest evidence backing it.
 6. **Register `CNTabBarRouteObserver` once on the root navigator, and hand-drive the modal
    hooks for non-route overlays.** Snackbars and `Scaffold.showBottomSheet` are invisible to
    the observer. — **[V]** §2.3; **[R]** already implemented in
-   `kit/ui_library/lib/utils/appbox_kit_native_overlay.dart`.
+   `kit/ui_library/lib/utils/arxa_kit_native_overlay.dart`.
 
 7. **Treat "does this screen have any platform view at all" as the real budget question.**
    Mounting the first one migrates Flutter compositing to the platform thread; there is no
@@ -483,7 +483,7 @@ Each rule tagged with the strongest evidence backing it.
 - Does flutter#163498's Impeller regression list actually hold for the Flutter version this
   repo pins? Unverified, and it would change transition strategy if true.
 - Upstream lists "combining scroll views with native components" as unsolved **[S]**. This
-  repo has `appbox_kit_scroll_occlusion_gate_test.dart` **[R]**, suggesting it has already
+  repo has `arxa_kit_scroll_occlusion_gate_test.dart` **[R]**, suggesting it has already
   been confronted — worth reconciling the in-repo solution against upstream's open problem.
 - The engine's Performance section is Android-authored. An iOS-specific measurement of the
   platform-thread contention cost on this app's actual screens would beat inference.

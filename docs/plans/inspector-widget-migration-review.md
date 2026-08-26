@@ -1,13 +1,13 @@
 # Inspector widget migration — implementation review
 
-Date: 2026-08-08. Reviewer gate: `appbox design lint` + full `appbox design probe all`
+Date: 2026-08-08. Reviewer gate: `arxa design lint` + full `arxa design probe all`
 against a disposable project (`portalo-probe`, served on :4330 per the probe guard's
 recipe). Full log was at `/tmp/probe-all-4330.log` (tmp is session-scoped; verdicts
 recorded here).
 
 ## Gates
 
-- **Lint: CLEAN** — no ad-hoc JS, widget/panel gate W1–W6 clean on `designs/appbox-studio`.
+- **Lint: CLEAN** — no ad-hoc JS, widget/panel gate W1–W6 clean on `designs/arxa-studio`.
 - **Probe suite: 10/15 passed.** `widget-tools` (drawer editor, provenance honesty,
   selection round-trip, drag handles) fully passes — the core of the migration works.
 
@@ -41,7 +41,7 @@ classifier (`static`/`unknown` tiers), then the carousel icon state.
 ## Repro
 
 ```
-cp -R ~/.appbox/projects/portalo ~/.appbox/projects/portalo-probe   # if absent
-dart run appboxd/bin/appbox.dart design serve designs/appbox-studio --project portalo-probe --port 4330
-dart run appboxd/bin/appbox.dart design probe all --base http://localhost:4330
+cp -R ~/.arxa/projects/portalo ~/.arxa/projects/portalo-probe   # if absent
+dart run arxa/bin/arxa.dart design serve designs/arxa-studio --project portalo-probe --port 4330
+dart run arxa/bin/arxa.dart design probe all --base http://localhost:4330
 ```

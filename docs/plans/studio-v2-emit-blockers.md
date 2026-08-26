@@ -13,7 +13,7 @@ silently resolve it."
 ## B1 — where the recipe tree roots: `lib/` or the artifact root? (RESOLVED: artifact root)
 
 **Resolution.** The brief now reads: "Recipe grammar sits at the **artifact
-root** `designs/appbox-studio-v2/` (Q-v2-4 as amended 2026-08-08): the
+root** `designs/arxa-studio-v2/` (Q-v2-4 as amended 2026-08-08): the
 manifest's `lib/` is a Dart-medium prefix; anatomy §1 translates it to the
 artifact root for the design medium." That matches the evidence below.
 
@@ -21,7 +21,7 @@ artifact root for the design medium." That matches the evidence below.
 against the feature-recipe manifest: zero unexplained deltas" compares against
 `pathTemplate` values that literally begin with `lib/`
 (`lib/ui/views/<app>_<feature>_shell/`, …). The only in-repo reader of those
-templates, `appboxd/lib/probes/contract/probe_q11_shells.dart:39,76,485`, runs
+templates, `arxa/lib/probes/contract/probe_q11_shells.dart:39,76,485`, runs
 them against the **Dart golden** `kit/showcase_app/lib` — it never walks a
 `designs/*` artifact. So no shipped gate compares a design artifact to a
 `lib/`-prefixed template, and the structure diff for v2 is performed with the
@@ -33,7 +33,7 @@ not mistake a passing diff for a literal one.
 **Q-v2-4 verbatim:**
 
 > Studio v2 uses the Q8 manifest's folder/naming grammar verbatim under
-> `designs/appbox-studio-v2/lib/`
+> `designs/arxa-studio-v2/lib/`
 
 The brief echoes it: "`lib/` + `assets/` as siblings under the artifact root."
 
@@ -43,20 +43,20 @@ with no `lib/` segment:**
 | authority | evidence |
 |---|---|
 | recipe SSOT | `references/showcase-anatomy.md` §1 — the table's columns are literally `build medium (showcase_app/lib/…)` → `design medium (artifact root)`; rows read `app/app.routes.js`, `ui/views/<app>_<shell>_shell/`, `services/…` |
-| serve | `appboxd/lib/design_server.dart:129-146` — `resolveArtifact` accepts a candidate only if `<candidate>/app.routes.js` exists; the walk climbs `designs/` ancestors and never descends into `lib/` |
-| widget lint | `appboxd/lib/gate_design_widgets.dart:422,503,770` — scans `<artifactDir>/ui` and `<artifactDir>/ui/views` |
+| serve | `arxa/lib/design_server.dart:129-146` — `resolveArtifact` accepts a candidate only if `<candidate>/app.routes.js` exists; the walk climbs `designs/` ancestors and never descends into `lib/` |
+| widget lint | `arxa/lib/gate_design_widgets.dart:422,503,770` — scans `<artifactDir>/ui` and `<artifactDir>/ui/views` |
 | structure emit | `emit_structure.dart:384`, `crud.dart:20`, `gate_freeze.dart:319`, `gate_intake.dart:301`, `intake.dart:1327` — all literal `models/screens_model/registry.json` |
 | tools | `design_tools.dart:1592` `<out>/ui/common/base.tsx`; `:1833` `<artifactDir>/l10n`; `:1844` `<artifactDir>/models`; `:2001` `<artifactDir>/app.routes.js` |
 | css | `emit_htmx.dart:360,403` — `<designRoot>/assets/css/<name>` |
-| v1 precedent | `designs/appbox-studio/ui/…` — no `lib/` |
+| v1 precedent | `designs/arxa-studio/ui/…` — no `lib/` |
 
-A grep for a `lib/` join in `appboxd/lib/*.dart` returns only Flutter-app
+A grep for a `lib/` join in `arxa/lib/*.dart` returns only Flutter-app
 tooling (`arch_guard`, `blueprint`, `trace`, `gen_freshness`, `api_map_scan`,
 `capability_scan`) operating on a generated app's `targetDir` — **zero**
 design-artifact paths.
 
 **Consequence if emitted under `lib/`:** `resolveArtifact` cannot find the
-artifact, so `appbox design serve` never starts, and none of the brief's own
+artifact, so `arxa design serve` never starts, and none of the brief's own
 "Gates before surfacing" can run — lint, the lens width sweep, the console
 check. The tree would also miss `models/screens_model/registry.json`, read
 from the root by five call sites.
@@ -69,7 +69,7 @@ translation of that grammar onto the artifact root. That also satisfies the
 brief's "`lib/` + `assets/` as siblings": at the root they are siblings.
 
 **Question to the operator:** confirm the recipe tree roots at the artifact
-root (`designs/appbox-studio-v2/ui/…`, `app.routes.js`, `assets/`,
+root (`designs/arxa-studio-v2/ui/…`, `app.routes.js`, `assets/`,
 `models/`, `l10n/`, `runtime/`) per anatomy §1 — and Q-v2-4 gets a one-line
 amendment saying so. On confirmation the emit proceeds immediately.
 
@@ -99,7 +99,7 @@ What actually governs these:
 - `references/ui-recipes.md` §19 "Multi-view panel (the stateful widget)" is
   the catalog entry for exactly this — `_panel-views.tsx`, `Frame`/`Head`/
   `Body`/`Bar`, server-session panel state, OOB refresh.
-- v1 already does it: `designs/appbox-studio/ui/common/widgets/_panel.tsx`
+- v1 already does it: `designs/arxa-studio/ui/common/widgets/_panel.tsx`
   plus `main_panel.tsx`, `header_panel.tsx`, `activity_panel.tsx`,
   `composer_panel.tsx`, `footer_panel.tsx`.
 
@@ -146,11 +146,11 @@ change.
 ## B3 — kind validator cannot run in this checkout (non-blocking, blocks verification)
 
 ```
-$ python3 .claude/skills/appbox-scaffolder/scripts/validate-registry.py
+$ python3 .claude/skills/arxa-scaffolder/scripts/validate-registry.py
 REGISTRY INVALID — 2 violation(s):
   x no Dart classes found under …/.claude/kit/ui_library/lib — cannot verify targets
-  x inspectAttrs shape package:appbox_kit_core/common/appbox_kit_inspect_attrs.dart
-    does not exist on disk (…/.claude/kit/core/lib/common/appbox_kit_inspect_attrs.dart)
+  x inspectAttrs shape package:arxa_kit_core/common/arxa_kit_inspect_attrs.dart
+    does not exist on disk (…/.claude/kit/core/lib/common/arxa_kit_inspect_attrs.dart)
 ```
 
 The kit is not materialised at `.claude/kit/`, so the mechanical check
@@ -165,7 +165,7 @@ directly from the SSOT the validator itself derives from —
 ## Verified, not blockers
 
 - **Intake exists and is the only authoring surface:**
-  `designs/appbox-studio-v2/intake/design-brief.md` (3527 bytes). No second
+  `designs/arxa-studio-v2/intake/design-brief.md` (3527 bytes). No second
   source of truth was authored.
 - **`library;`** is scoped to `.dart` by anatomy §3's own wording ("Every
   emitted `.dart` file opens with a `///` block, then `library;`"). Omitting it
@@ -179,7 +179,7 @@ directly from the SSOT the validator itself derives from —
 
 ## Gate record — ceremony shells (hub + startup + stage board), 2026-08-09
 
-Served: `appbox design serve designs/appbox-studio-v2 --port 4319`.
+Served: `arxa design serve designs/arxa-studio-v2 --port 4319`.
 Probe target: a disposable copy, `--project portalo-probe --port 4330` (the
 probe refuses a non-disposable project; it mutates whatever it is pointed at).
 
@@ -258,7 +258,7 @@ in the portalo.home tile`) — v2 has no inspector pane, no canvas tiles, becaus
 the intake and design shells are deliberately absent under Q-v2-5. Not a v2
 defect; the probe has no subject there.
 
-Run against **v1** (`designs/appbox-studio`, disposable project
+Run against **v1** (`designs/arxa-studio`, disposable project
 `portalo-inspect-probe`, port 4331) it is **EXIT 0, ALL PASSED** — 40+ checks
 including arm/hover/lock/morph/pin/unlock and the 204 guard. Task #19's
 `probe_inspect.dart` changes therefore execute green.

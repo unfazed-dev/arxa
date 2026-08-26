@@ -22,12 +22,12 @@ library;
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
-import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
+import 'package:arxa_kit_ui_library/arxa_kit_ui_library.dart';
 
-import 'package:appbox_kit_showcase_app/app/app.router.dart';
-import 'package:appbox_kit_showcase_app/enums/showcase_application_enums/enums.dart';
-import 'package:appbox_kit_showcase_app/ui/widgets/common/showcase_tabs_shared/showcase_tabs_consts.dart';
-import 'package:appbox_kit_showcase_app/ui/views/showcase_application_hub/showcase_application_hub_view.dart';
+import 'package:arxa_kit_showcase_app/app/app.router.dart';
+import 'package:arxa_kit_showcase_app/enums/showcase_application_enums/enums.dart';
+import 'package:arxa_kit_showcase_app/ui/widgets/common/showcase_tabs_shared/showcase_tabs_consts.dart';
+import 'package:arxa_kit_showcase_app/ui/views/showcase_application_hub/showcase_application_hub_view.dart';
 
 class ShowcaseApplicationTabHostWidget extends StatelessWidget {
   const ShowcaseApplicationTabHostWidget({super.key});
@@ -45,22 +45,22 @@ class ShowcaseApplicationTabHostWidget extends StatelessWidget {
         // glass-card route push doesn't materialize on-screen (measured
         // first-push-only 39.6ms raster spike — docs/plans/
         // glass-push-hotspot-fix.md). Wraps the shell root, mounted once.
-        return AppBoxKitGlassWarmup(
+        return ArxaKitGlassWarmup(
             // Motion (pushed, not boot-visible) mounts a native switch; no
             // boot screen does, so its kind warms here (first-push 23.8ms
             // residual measured with the container-only warmer).
             alsoWarm: const [
-              AppBoxKitNativeSwitch(value: false),
+              ArxaKitNativeSwitch(value: false),
             ],
             child: Scaffold(
               // Let the body extend behind the floating tab bar pill so content
-              // scrolls underneath it (matches AppBoxKitBottomNavScaffold behaviour).
+              // scrolls underneath it (matches ArxaKitBottomNavScaffold behaviour).
               // Without this the body is laid out above the bar and produces a
               // hard cut against the scaffold background.
               extendBody: true,
               // Mirror the extendBody padding into viewPadding so per-tab FABs
               // float clear of the glass bar (flutter#145680).
-              // The pipeline default — AppBoxKitAnimatedTabStack, self-driving (it
+              // The pipeline default — ArxaKitAnimatedTabStack, self-driving (it
               // tracks the previous index, so the router's `animation` is not
               // needed). Platform-resolved: an INSTANT cross-cut on iOS, matching
               // UITabBarController and keeping one tab on stage per frame so a
@@ -82,9 +82,9 @@ class ShowcaseApplicationTabHostWidget extends StatelessWidget {
               // must get the raw edge — keeping the scrim up dissolves content
               // into the background right where that route's own bar sits,
               // defeating its glass sampling of the content scrolling under it.
-              body: AppBoxKitBottomEdgeScrimHost(
+              body: ArxaKitBottomEdgeScrimHost(
                 enabled: !_docksOwnBar(tabsRouter.topRoute.name),
-                child: AppBoxKitExtendBodyFabLift(
+                child: ArxaKitExtendBodyFabLift(
                   child: _DockFabLift(
                     // When the tab bar yields, the route's own dock occupies the same
                     // band — but it lives on a NESTED Scaffold, so the ancestor
@@ -109,7 +109,7 @@ class ShowcaseApplicationTabHostWidget extends StatelessWidget {
                     extraViewPadding: _docksOwnBar(tabsRouter.topRoute.name)
                         ? kShowcaseTabBarBlockHeight
                         : 0,
-                    child: AppBoxKitAnimatedTabStack(
+                    child: ArxaKitAnimatedTabStack(
                       activeIndex: tabsRouter.activeIndex,
                       // Tab pages are background-less (this host scaffold paints the
                       // shared surface), so the incoming layer must carry the
@@ -151,15 +151,15 @@ class ShowcaseApplicationTabHostWidget extends StatelessWidget {
               // and `viewPadding.bottom` arrived at the composer as 0.0.
               bottomNavigationBar: _docksOwnBar(tabsRouter.topRoute.name)
                   ? null
-                  : AppBoxKitNativeTabBar(
+                  : ArxaKitNativeTabBar(
                       tabs: [
                         for (final tab in ShowcaseTab.values)
-                          AppBoxKitTab(
+                          ArxaKitTab(
                             glyph: switch (tab) {
-                              ShowcaseTab.home => AppBoxKitGlyphs.home,
-                              ShowcaseTab.search => AppBoxKitGlyphs.search,
-                              ShowcaseTab.profile => AppBoxKitGlyphs.profile,
-                              ShowcaseTab.notes => AppBoxKitGlyphs.notes,
+                              ShowcaseTab.home => ArxaKitGlyphs.home,
+                              ShowcaseTab.search => ArxaKitGlyphs.search,
+                              ShowcaseTab.profile => ArxaKitGlyphs.profile,
+                              ShowcaseTab.notes => ArxaKitGlyphs.notes,
                             },
                             label: tab.label,
                           ),
@@ -180,7 +180,7 @@ class ShowcaseApplicationTabHostWidget extends StatelessWidget {
 /// content-inset consumer read `padding`, so raising that would shove real
 /// content around. `FloatingActionButtonLocation` reads `minViewPadding`
 /// (`floating_action_button_location.dart:566`), which is what this feeds —
-/// the same lever [AppBoxKitExtendBodyFabLift] pulls for the tab bar.
+/// the same lever [ArxaKitExtendBodyFabLift] pulls for the tab bar.
 class _DockFabLift extends StatelessWidget {
   const _DockFabLift({required this.extraViewPadding, required this.child});
 

@@ -17,14 +17,14 @@
 library;
 
 import 'package:flutter/material.dart';
-import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
+import 'package:arxa_kit_ui_library/arxa_kit_ui_library.dart';
 
 class ShowcaseMotionA11yCardWidget extends StatelessWidget {
   const ShowcaseMotionA11yCardWidget({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return AppBoxKitGlassCard(
+    return ArxaKitGlassCard(
       child: Padding(
         padding: const EdgeInsets.all(abxSize16),
         child: Text(

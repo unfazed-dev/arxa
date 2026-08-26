@@ -1,15 +1,15 @@
 <Callout id="header" tone="info">
 
-# appbox_kit_data — Per-Package Playbook
+# arxa_kit_data — Per-Package Playbook
 
 
-`appbox_kit_data` v**0.1.0** · `publish_to: 'none'` · status: **active**
+`arxa_kit_data` v**0.1.0** · `publish_to: 'none'` · status: **active**
 
 
-**Role (one line):** Data layer for appbox_kit apps — generic repositories over a seed (fixture-backed), Supabase, or Appwrite backend selected by AppBoxKitDataConfig, deterministic v5 canonical IDs, schema descriptors with SQL/appwrite.
+**Role (one line):** Data layer for arxa_kit apps — generic repositories over a seed (fixture-backed), Supabase, or Appwrite backend selected by ArxaKitDataConfig, deterministic v5 canonical IDs, schema descriptors with SQL/appwrite.
 
 
-**Scope of this document:** lets a human OR an LLM use, wire, and extend `appbox_kit_data` **without reading its source**. The public surface below was extracted from the barrel; README content is folded into the narrative sections.
+**Scope of this document:** lets a human OR an LLM use, wire, and extend `arxa_kit_data` **without reading its source**. The public surface below was extracted from the barrel; README content is folded into the narrative sections.
 
 
 ## Table of contents
@@ -22,37 +22,37 @@
 
 ### Overview & role
 
-Data layer for appbox_kit apps — generic repositories over a seed (fixture-backed), Supabase, or Appwrite backend selected by AppBoxKitDataConfig, deterministic v5 canonical IDs, schema descriptors with SQL/appwrite.json emitters, and rxdart facade services.
+Data layer for arxa_kit apps — generic repositories over a seed (fixture-backed), Supabase, or Appwrite backend selected by ArxaKitDataConfig, deterministic v5 canonical IDs, schema descriptors with SQL/appwrite.json emitters, and rxdart facade services.
 
 
 ### Public surface
 
-Exported from `lib/appbox_kit_data.dart`:
+Exported from `lib/arxa_kit_data.dart`:
 
-<Table id="data-api" columns={["Symbol", "Kind", "Defined in"]} rows={[["AppBoxKitData", "class", "appbox_kit_data.dart"], ["AppBoxKitDataBackend", "enum", "config/appbox_kit_data_config.dart"], ["AppBoxKitSeedPersistenceMode", "enum", "config/appbox_kit_data_config.dart"], ["AppBoxKitSupabaseConfig", "class", "config/appbox_kit_data_config.dart"], ["AppBoxKitAppwriteConfig", "class", "config/appbox_kit_data_config.dart"], ["AppBoxKitAuthConfig", "class", "config/appbox_kit_data_config.dart"], ["AppBoxKitDataConfig", "class", "config/appbox_kit_data_config.dart"], ["AppBoxKitSeedException", "class", "config/appbox_kit_seed_profile.dart"], ["AppBoxKitSeedProfile", "class", "config/appbox_kit_seed_profile.dart"], ["AppBoxKitAuthService", "abstract interface class", "auth/appbox_kit_auth_service.dart"], ["AppBoxKitAuthUser", "class", "auth/appbox_kit_auth_types.dart"], ["AppBoxKitAuthSession", "class", "auth/appbox_kit_auth_types.dart"], ["AppBoxKitAuthException", "class", "auth/appbox_kit_auth_types.dart"], ["AppBoxKitSeedAuthService", "class", "auth/seed/appbox_kit_seed_auth_service.dart"], ["AppBoxKitSupabaseAuthService", "class", "auth/supabase/appbox_kit_supabase_auth_service.dart"], ["AppBoxKitAppwriteAuthService", "class", "auth/appwrite/appbox_kit_appwrite_auth_service.dart"], ["AppBoxKitDataSeeder", "class", "seeding/appbox_kit_data_seeder.dart"], ["AppBoxKitFixtureLoader", "class", "seeding/appbox_kit_fixture_loader.dart"], ["AppBoxKitRepository", "abstract interface class", "repositories/appbox_kit_repository.dart"], ["AppBoxKitSeedPersistence", "abstract interface class", "repositories/seed/appbox_kit_seed_persistence.dart"], ["AppBoxKitNoPersistence", "class", "repositories/seed/appbox_kit_seed_persistence.dart"], ["AppBoxKitBootResolution", "class", "repositories/seed/appbox_kit_seed_persistence.dart"], ["AppBoxKitSnapshotPersistence", "class", "repositories/seed/appbox_kit_seed_persistence.dart"], ["AppBoxKitSeedRepository", "class", "repositories/seed/appbox_kit_seed_repository.dart"], ["AppBoxKitSeedStore", "class", "repositories/seed/appbox_kit_seed_store.dart"], ["AppBoxKitSupabaseRepository", "class", "repositories/supabase/appbox_kit_supabase_repository.dart"], ["AppBoxKitAppwriteRepository", "class", "repositories/appwrite/appbox_kit_appwrite_repository.dart"], ["AppBoxKitEntityRegistration", "class", "models/appbox_kit_entity_registration.dart"], ["StorageObjectRef", "class", "storage/appbox_kit_storage_service.dart"], ["AppBoxKitStorageService", "abstract interface class", "storage/appbox_kit_storage_service.dart"], ["AppBoxKitSeedStorageService", "class", "storage/seed/appbox_kit_seed_storage_service.dart"], ["AppBoxKitStoragePersistence", "abstract interface class", "storage/seed/appbox_kit_storage_persistence.dart"], ["AppBoxKitNoStoragePersistence", "class", "storage/seed/appbox_kit_storage_persistence.dart"], ["AppBoxKitSnapshotStoragePersistence", "class", "storage/seed/appbox_kit_storage_persistence.dart"], ["AppBoxKitSupabaseStorageService", "class", "storage/supabase/appbox_kit_supabase_storage_service.dart"], ["AppBoxKitAppwriteStorageService", "class", "storage/appwrite/appbox_kit_appwrite_storage_service.dart"], ["AppBoxKitIdService", "class", "ids/appbox_kit_id_service.dart"], ["AppBoxKitSchemaRegistry", "class", "schema/appbox_kit_schema_registry.dart"], ["AppBoxKitColumnType", "enum", "schema/appbox_kit_table_schema.dart"], ["AppBoxKitColumn", "class", "schema/appbox_kit_table_schema.dart"], ["AppBoxKitTableSchema", "class", "schema/appbox_kit_table_schema.dart"], ["AppBoxKitDataFacade", "abstract class", "facades/appbox_kit_data_facade.dart"], ["AppBoxKitAppwriteJsonEmitter", "class", "emitters/appbox_kit_appwrite_json_emitter.dart"], ["AppBoxKitSupabaseSeedEmitter", "class", "emitters/appbox_kit_supabase_seed_emitter.dart"], ["AppBoxKitSupabaseSqlEmitter", "class", "emitters/appbox_kit_supabase_sql_emitter.dart"], ["AppBoxKitFilterOp", "enum", "query/appbox_kit_query.dart"], ["AppBoxKitFilter", "class", "query/appbox_kit_query.dart"], ["AppBoxKitQuery", "class", "query/appbox_kit_query.dart"], ["AppBoxKitAssetReader", "abstract interface class", "assets/appbox_kit_asset_reader.dart"], ["AppBoxKitMemoryAssetReader", "class", "assets/appbox_kit_asset_reader.dart"], ["AppBoxKitRootBundleAssetReader", "class", "assets/appbox_kit_root_bundle_asset_reader.dart"]]} />
+<Table id="data-api" columns={["Symbol", "Kind", "Defined in"]} rows={[["ArxaKitData", "class", "arxa_kit_data.dart"], ["ArxaKitDataBackend", "enum", "config/arxa_kit_data_config.dart"], ["ArxaKitSeedPersistenceMode", "enum", "config/arxa_kit_data_config.dart"], ["ArxaKitSupabaseConfig", "class", "config/arxa_kit_data_config.dart"], ["ArxaKitAppwriteConfig", "class", "config/arxa_kit_data_config.dart"], ["ArxaKitAuthConfig", "class", "config/arxa_kit_data_config.dart"], ["ArxaKitDataConfig", "class", "config/arxa_kit_data_config.dart"], ["ArxaKitSeedException", "class", "config/arxa_kit_seed_profile.dart"], ["ArxaKitSeedProfile", "class", "config/arxa_kit_seed_profile.dart"], ["ArxaKitAuthService", "abstract interface class", "auth/arxa_kit_auth_service.dart"], ["ArxaKitAuthUser", "class", "auth/arxa_kit_auth_types.dart"], ["ArxaKitAuthSession", "class", "auth/arxa_kit_auth_types.dart"], ["ArxaKitAuthException", "class", "auth/arxa_kit_auth_types.dart"], ["ArxaKitSeedAuthService", "class", "auth/seed/arxa_kit_seed_auth_service.dart"], ["ArxaKitSupabaseAuthService", "class", "auth/supabase/arxa_kit_supabase_auth_service.dart"], ["ArxaKitAppwriteAuthService", "class", "auth/appwrite/arxa_kit_appwrite_auth_service.dart"], ["ArxaKitDataSeeder", "class", "seeding/arxa_kit_data_seeder.dart"], ["ArxaKitFixtureLoader", "class", "seeding/arxa_kit_fixture_loader.dart"], ["ArxaKitRepository", "abstract interface class", "repositories/arxa_kit_repository.dart"], ["ArxaKitSeedPersistence", "abstract interface class", "repositories/seed/arxa_kit_seed_persistence.dart"], ["ArxaKitNoPersistence", "class", "repositories/seed/arxa_kit_seed_persistence.dart"], ["ArxaKitBootResolution", "class", "repositories/seed/arxa_kit_seed_persistence.dart"], ["ArxaKitSnapshotPersistence", "class", "repositories/seed/arxa_kit_seed_persistence.dart"], ["ArxaKitSeedRepository", "class", "repositories/seed/arxa_kit_seed_repository.dart"], ["ArxaKitSeedStore", "class", "repositories/seed/arxa_kit_seed_store.dart"], ["ArxaKitSupabaseRepository", "class", "repositories/supabase/arxa_kit_supabase_repository.dart"], ["ArxaKitAppwriteRepository", "class", "repositories/appwrite/arxa_kit_appwrite_repository.dart"], ["ArxaKitEntityRegistration", "class", "models/arxa_kit_entity_registration.dart"], ["StorageObjectRef", "class", "storage/arxa_kit_storage_service.dart"], ["ArxaKitStorageService", "abstract interface class", "storage/arxa_kit_storage_service.dart"], ["ArxaKitSeedStorageService", "class", "storage/seed/arxa_kit_seed_storage_service.dart"], ["ArxaKitStoragePersistence", "abstract interface class", "storage/seed/arxa_kit_storage_persistence.dart"], ["ArxaKitNoStoragePersistence", "class", "storage/seed/arxa_kit_storage_persistence.dart"], ["ArxaKitSnapshotStoragePersistence", "class", "storage/seed/arxa_kit_storage_persistence.dart"], ["ArxaKitSupabaseStorageService", "class", "storage/supabase/arxa_kit_supabase_storage_service.dart"], ["ArxaKitAppwriteStorageService", "class", "storage/appwrite/arxa_kit_appwrite_storage_service.dart"], ["ArxaKitIdService", "class", "ids/arxa_kit_id_service.dart"], ["ArxaKitSchemaRegistry", "class", "schema/arxa_kit_schema_registry.dart"], ["ArxaKitColumnType", "enum", "schema/arxa_kit_table_schema.dart"], ["ArxaKitColumn", "class", "schema/arxa_kit_table_schema.dart"], ["ArxaKitTableSchema", "class", "schema/arxa_kit_table_schema.dart"], ["ArxaKitDataFacade", "abstract class", "facades/arxa_kit_data_facade.dart"], ["ArxaKitAppwriteJsonEmitter", "class", "emitters/arxa_kit_appwrite_json_emitter.dart"], ["ArxaKitSupabaseSeedEmitter", "class", "emitters/arxa_kit_supabase_seed_emitter.dart"], ["ArxaKitSupabaseSqlEmitter", "class", "emitters/arxa_kit_supabase_sql_emitter.dart"], ["ArxaKitFilterOp", "enum", "query/arxa_kit_query.dart"], ["ArxaKitFilter", "class", "query/arxa_kit_query.dart"], ["ArxaKitQuery", "class", "query/arxa_kit_query.dart"], ["ArxaKitAssetReader", "abstract interface class", "assets/arxa_kit_asset_reader.dart"], ["ArxaKitMemoryAssetReader", "class", "assets/arxa_kit_asset_reader.dart"], ["ArxaKitRootBundleAssetReader", "class", "assets/arxa_kit_root_bundle_asset_reader.dart"]]} />
 
-Test doubles in `lib/appbox_kit_testing.dart`: `FakeAppBoxKitRepository`, `FakeAppBoxKitDataFacade`.
+Test doubles in `lib/arxa_kit_testing.dart`: `FakeArxaKitRepository`, `FakeArxaKitDataFacade`.
 
 Scripts and call-counts — tests never touch platform channels.
 
 
 ### Usage & wiring
 
-Add `appbox_kit_data` as a path dependency (`path: ../data` from a sibling host), then call `AppBoxKitData.initialize` once in `main()` after `setupLocator()` — the kit never self-registers, so the host owns the call. Pass one `AppBoxKitEntityRegistration<T>` per model (a plain model plus `fromJson`/`toJson`; the storage mapping lives on the `AppBoxKitTableSchema`, never the model) and the fixture asset paths; `initialize` switches on `AppBoxKitDataConfig.backend` and registers one `AppBoxKitRepository<T>` per entity into the shared `StackedLocator.instance` (plus `AppBoxKitAuthService` when `auth:` is set). ViewModels then resolve them directly, e.g. `appBoxKitLocator<AppBoxKitRepository<Product>>()`, or through a `AppBoxKitDataFacade` subclass for derived streams and `mutate(...)`-driven writes.
+Add `arxa_kit_data` as a path dependency (`path: ../data` from a sibling host), then call `ArxaKitData.initialize` once in `main()` after `setupLocator()` — the kit never self-registers, so the host owns the call. Pass one `ArxaKitEntityRegistration<T>` per model (a plain model plus `fromJson`/`toJson`; the storage mapping lives on the `ArxaKitTableSchema`, never the model) and the fixture asset paths; `initialize` switches on `ArxaKitDataConfig.backend` and registers one `ArxaKitRepository<T>` per entity into the shared `StackedLocator.instance` (plus `ArxaKitAuthService` when `auth:` is set). ViewModels then resolve them directly, e.g. `arxaKitLocator<ArxaKitRepository<Product>>()`, or through a `ArxaKitDataFacade` subclass for derived streams and `mutate(...)`-driven writes.
 
 ```dart
-await AppBoxKitData.initialize(
-  config: const AppBoxKitDataConfig(backend: AppBoxKitDataBackend.seed),
+await ArxaKitData.initialize(
+  config: const ArxaKitDataConfig(backend: ArxaKitDataBackend.seed),
   entities: [productRegistration],
   fixtureAssets: ['assets/seed/products.json'],
 );
-final products = appBoxKitLocator<AppBoxKitRepository<Product>>();
+final products = arxaKitLocator<ArxaKitRepository<Product>>();
 ```
 
 
 ### Integration map
 
-<Table id="data-integration" columns={["Stacked framework deps", "Backing SDK packages", "Depends on (kit)"]} rows={[["stacked_shared", "appbox_kit_ui_library, rxdart, uuid, supabase_flutter, appwrite, path_provider, google_sign_in, sign_in_with_apple, crypto, win32, device_info_plus, package_info_plus", "appbox_kit_core"]]} />
+<Table id="data-integration" columns={["Stacked framework deps", "Backing SDK packages", "Depends on (kit)"]} rows={[["stacked_shared", "arxa_kit_ui_library, rxdart, uuid, supabase_flutter, appwrite, path_provider, google_sign_in, sign_in_with_apple, crypto, win32, device_info_plus, package_info_plus", "arxa_kit_core"]]} />
 
 See `kit_matrix.md` for the full routing + dependency graph.
 
@@ -63,34 +63,34 @@ See `kit_matrix.md` for the full routing + dependency graph.
 View → ViewModel → Facade Service → Repository → Backend
 ```
 
-- **Repository** (`AppBoxKitRepository<T>`) is the swap seam: one interface,
-  three backend implementations (`AppBoxKitSeedRepository`, `AppBoxKitSupabaseRepository`,
-  `AppBoxKitAppwriteRepository`). No codegen.
-- **Facade Service** (`AppBoxKitDataFacade` subclass) is the only layer ViewModels
+- **Repository** (`ArxaKitRepository<T>`) is the swap seam: one interface,
+  three backend implementations (`ArxaKitSeedRepository`, `ArxaKitSupabaseRepository`,
+  `ArxaKitAppwriteRepository`). No codegen.
+- **Facade Service** (`ArxaKitDataFacade` subclass) is the only layer ViewModels
   talk to. It composes repositories into derived streams and routes
-  mutations through `AppBoxKitAction` via `mutate(...)`.
-- Only one Backend is active per app run, chosen by `AppBoxKitDataConfig.backend`
-  (default `AppBoxKitDataBackend.supabase`).
+  mutations through `ArxaKitAction` via `mutate(...)`.
+- Only one Backend is active per app run, chosen by `ArxaKitDataConfig.backend`
+  (default `ArxaKitDataBackend.supabase`).
 
 
 ### Gotchas
 
-The host must mirror three `dependency_overrides` into its own `pubspec.yaml` (`win32: ^6.0.1`, `device_info_plus: ^13.0.0`, `package_info_plus: ^10.0.0`) — pub overrides don't propagate, and missing them breaks desktop `flutter test` (`win32_registry 2.x` won't compile against `win32 6.x`); the Windows FFI involved never runs on iOS/Android/web/macOS. Any file defining a `AppBoxKitTableSchema` or `AppBoxKitEntityRegistration` must use targeted imports, never the `appbox_kit_data` barrel — the barrel re-exports the Supabase/Appwrite adapters, whose FFI/native-asset deps crash the pure-Dart kernel compile inside `dart run` generators. The ADR-0001 namespace is load-bearing: changing it on a host that already stores rows orphans every primary key, every foreign-key reference, and breaks idempotent re-seeding. On the auth side, Fake Auth is seed-only (Supabase RLS and Appwrite default-deny reject it); Supabase Google needs `googleServerClientId` plus Android SHA fingerprints and the iOS URL scheme, while Appwrite OAuth runs as a browser flow behind the `appwrite-callback-<PROJECT_ID>` URL scheme.
+The host must mirror three `dependency_overrides` into its own `pubspec.yaml` (`win32: ^6.0.1`, `device_info_plus: ^13.0.0`, `package_info_plus: ^10.0.0`) — pub overrides don't propagate, and missing them breaks desktop `flutter test` (`win32_registry 2.x` won't compile against `win32 6.x`); the Windows FFI involved never runs on iOS/Android/web/macOS. Any file defining a `ArxaKitTableSchema` or `ArxaKitEntityRegistration` must use targeted imports, never the `arxa_kit_data` barrel — the barrel re-exports the Supabase/Appwrite adapters, whose FFI/native-asset deps crash the pure-Dart kernel compile inside `dart run` generators. The ADR-0001 namespace is load-bearing: changing it on a host that already stores rows orphans every primary key, every foreign-key reference, and breaks idempotent re-seeding. On the auth side, Fake Auth is seed-only (Supabase RLS and Appwrite default-deny reject it); Supabase Google needs `googleServerClientId` plus Android SHA fingerprints and the iOS URL scheme, while Appwrite OAuth runs as a browser flow behind the `appwrite-callback-<PROJECT_ID>` URL scheme.
 
 
 ### Testing
 
-The test seam is the AssetBundle inversion: `AppBoxKitAssetReader` is a pure-Dart port, so tests inject a `AppBoxKitMemoryAssetReader({...})` of fixture JSON (and `AppBoxKitData.initialize(assetReader: ...)` accepts it) and exercise the entire seed path under `flutter test` or `dart run` with no Flutter binding. The suite favors real components over scripted mocks — a real `AppBoxKitSeedStore` backed by `AppBoxKitNoPersistence` is the usual substrate — so assertions are on stream emissions (`emitsInOrder`) and on `tableSnapshot` row contents, not on mock call-counts. `AppBoxKitData.resetForTesting()` clears the composition root between cases.
+The test seam is the AssetBundle inversion: `ArxaKitAssetReader` is a pure-Dart port, so tests inject a `ArxaKitMemoryAssetReader({...})` of fixture JSON (and `ArxaKitData.initialize(assetReader: ...)` accepts it) and exercise the entire seed path under `flutter test` or `dart run` with no Flutter binding. The suite favors real components over scripted mocks — a real `ArxaKitSeedStore` backed by `ArxaKitNoPersistence` is the usual substrate — so assertions are on stream emissions (`emitsInOrder`) and on `tableSnapshot` row contents, not on mock call-counts. `ArxaKitData.resetForTesting()` clears the composition root between cases.
 
 
 ### Features
 
-<Checklist id="data-features" items={[{"id": "data-feat-0", "label": "`AppBoxKitData` \u2014 class"}, {"id": "data-feat-1", "label": "`AppBoxKitDataBackend` \u2014 enum"}, {"id": "data-feat-2", "label": "`AppBoxKitSeedPersistenceMode` \u2014 enum"}, {"id": "data-feat-3", "label": "`AppBoxKitSupabaseConfig` \u2014 class"}, {"id": "data-feat-4", "label": "`AppBoxKitAppwriteConfig` \u2014 class"}, {"id": "data-feat-5", "label": "`AppBoxKitAuthConfig` \u2014 class"}, {"id": "data-feat-6", "label": "`AppBoxKitDataConfig` \u2014 class"}, {"id": "data-feat-7", "label": "`AppBoxKitSeedException` \u2014 class"}, {"id": "data-feat-8", "label": "`AppBoxKitSeedProfile` \u2014 class"}, {"id": "data-feat-9", "label": "`AppBoxKitAuthService` \u2014 abstract interface class"}, {"id": "data-feat-10", "label": "`AppBoxKitAuthUser` \u2014 class"}, {"id": "data-feat-11", "label": "`AppBoxKitAuthSession` \u2014 class"}]} />
+<Checklist id="data-features" items={[{"id": "data-feat-0", "label": "`ArxaKitData` \u2014 class"}, {"id": "data-feat-1", "label": "`ArxaKitDataBackend` \u2014 enum"}, {"id": "data-feat-2", "label": "`ArxaKitSeedPersistenceMode` \u2014 enum"}, {"id": "data-feat-3", "label": "`ArxaKitSupabaseConfig` \u2014 class"}, {"id": "data-feat-4", "label": "`ArxaKitAppwriteConfig` \u2014 class"}, {"id": "data-feat-5", "label": "`ArxaKitAuthConfig` \u2014 class"}, {"id": "data-feat-6", "label": "`ArxaKitDataConfig` \u2014 class"}, {"id": "data-feat-7", "label": "`ArxaKitSeedException` \u2014 class"}, {"id": "data-feat-8", "label": "`ArxaKitSeedProfile` \u2014 class"}, {"id": "data-feat-9", "label": "`ArxaKitAuthService` \u2014 abstract interface class"}, {"id": "data-feat-10", "label": "`ArxaKitAuthUser` \u2014 class"}, {"id": "data-feat-11", "label": "`ArxaKitAuthSession` \u2014 class"}]} />
 
 
 ### Decisions / ADRs
 
-**ADR-0001 — Deterministic UUID v5 canonical IDs** (accepted, hard-to-reverse): every Seed Key becomes `uuid.v5(namespace, '<table>:<key>')`, so one fixture yields byte-identical primary keys on Seed, Supabase, and Appwrite and re-seeding is idempotent everywhere; the namespace is persisted as Postgres PKs / Appwrite row IDs, so changing it breaks every stored row. Rejected alternatives were random v4 plus a key→uuid mapping artifact (adds a sync problem), raw semantic keys as PKs (invalid for Postgres `uuid`, leaks authoring into storage), and per-backend native ID generation (the same row gets different IDs per backend). The package ships as `publish_to: 'none'` on a path dep, pairing `supabase_flutter` and `appwrite` behind one `AppBoxKitRepository<T>` port with no codegen, so the active backend is a runtime swap rather than a fork — see `kit_matrix.md` for the full decisions log.
+**ADR-0001 — Deterministic UUID v5 canonical IDs** (accepted, hard-to-reverse): every Seed Key becomes `uuid.v5(namespace, '<table>:<key>')`, so one fixture yields byte-identical primary keys on Seed, Supabase, and Appwrite and re-seeding is idempotent everywhere; the namespace is persisted as Postgres PKs / Appwrite row IDs, so changing it breaks every stored row. Rejected alternatives were random v4 plus a key→uuid mapping artifact (adds a sync problem), raw semantic keys as PKs (invalid for Postgres `uuid`, leaks authoring into storage), and per-backend native ID generation (the same row gets different IDs per backend). The package ships as `publish_to: 'none'` on a path dep, pairing `supabase_flutter` and `appwrite` behind one `ArxaKitRepository<T>` port with no codegen, so the active backend is a runtime swap rather than a fork — see `kit_matrix.md` for the full decisions log.
 
 <!-- kb:begin -->
 ### References
@@ -98,28 +98,28 @@ The test seam is the AssetBundle inversion: `AppBoxKitAssetReader` is a pure-Dar
 Official docs and tooling:
 
 - [Stacked — official documentation](https://stacked.filledstacks.com) — Canonical framework docs. Start here for ViewModel/Service patterns used by every kit.
-- [stacked (pub.dev)](https://pub.dev/packages/stacked) — Lightweight MVVM + service appBoxKitLocator. Pinned ^3.5.0 across the kits.
+- [stacked (pub.dev)](https://pub.dev/packages/stacked) — Lightweight MVVM + service arxaKitLocator. Pinned ^3.5.0 across the kits.
 - [stacked_shared (pub.dev)](https://pub.dev/packages/stacked_shared) — StackedLocator.instance — the shared singleton kits resolve through. Pinned ^1.4.2.
 - [stacked_generator (pub.dev)](https://pub.dev/packages/stacked_generator) — Generates routers + @StackedApp wiring. Pinned ^2.0.4.
 - [stacked_cli (pub.dev)](https://pub.dev/packages/stacked_cli) — Scaffolding CLI for new Stacked apps/views/services.
 - [Flutter — official documentation](https://docs.flutter.dev) — Framework docs, platform integration, performance.
 - [Dart — official documentation](https://dart.dev) — Language tour, async, package ecosystem.
-- [Dart & Flutter MCP server (official)](https://dart.dev/tools/mcp-server) — Ships with the Dart SDK (dart mcp-server). Exposes analyzer diagnostics, pub, tests, and live Flutter app introspection via DTD. Wired in appbox_kit/.mcp.json.
+- [Dart & Flutter MCP server (official)](https://dart.dev/tools/mcp-server) — Ships with the Dart SDK (dart mcp-server). Exposes analyzer diagnostics, pub, tests, and live Flutter app introspection via DTD. Wired in arxa_kit/.mcp.json.
 
 Kit-specific:
 
-- [ui_library (pub.dev)](https://pub.dev/packages/ui_library) — ui_library — backing dependency of appbox_kit_data.
-- [rxdart (pub.dev)](https://pub.dev/packages/rxdart) — rxdart — backing dependency of appbox_kit_data.
-- [uuid (pub.dev)](https://pub.dev/packages/uuid) — uuid — backing dependency of appbox_kit_data.
-- [supabase_flutter (pub.dev)](https://pub.dev/packages/supabase_flutter) — supabase_flutter — backing dependency of appbox_kit_data.
-- [appwrite (pub.dev)](https://pub.dev/packages/appwrite) — appwrite — backing dependency of appbox_kit_data.
-- [path_provider (pub.dev)](https://pub.dev/packages/path_provider) — path_provider — backing dependency of appbox_kit_data.
-- [google_sign_in (pub.dev)](https://pub.dev/packages/google_sign_in) — google_sign_in — backing dependency of appbox_kit_data.
-- [sign_in_with_apple (pub.dev)](https://pub.dev/packages/sign_in_with_apple) — sign_in_with_apple — backing dependency of appbox_kit_data.
-- [crypto (pub.dev)](https://pub.dev/packages/crypto) — crypto — backing dependency of appbox_kit_data.
-- [win32 (pub.dev)](https://pub.dev/packages/win32) — win32 — backing dependency of appbox_kit_data.
-- [device_info_plus (pub.dev)](https://pub.dev/packages/device_info_plus) — device_info_plus — backing dependency of appbox_kit_data.
-- [package_info_plus (pub.dev)](https://pub.dev/packages/package_info_plus) — package_info_plus — backing dependency of appbox_kit_data.
+- [ui_library (pub.dev)](https://pub.dev/packages/ui_library) — ui_library — backing dependency of arxa_kit_data.
+- [rxdart (pub.dev)](https://pub.dev/packages/rxdart) — rxdart — backing dependency of arxa_kit_data.
+- [uuid (pub.dev)](https://pub.dev/packages/uuid) — uuid — backing dependency of arxa_kit_data.
+- [supabase_flutter (pub.dev)](https://pub.dev/packages/supabase_flutter) — supabase_flutter — backing dependency of arxa_kit_data.
+- [appwrite (pub.dev)](https://pub.dev/packages/appwrite) — appwrite — backing dependency of arxa_kit_data.
+- [path_provider (pub.dev)](https://pub.dev/packages/path_provider) — path_provider — backing dependency of arxa_kit_data.
+- [google_sign_in (pub.dev)](https://pub.dev/packages/google_sign_in) — google_sign_in — backing dependency of arxa_kit_data.
+- [sign_in_with_apple (pub.dev)](https://pub.dev/packages/sign_in_with_apple) — sign_in_with_apple — backing dependency of arxa_kit_data.
+- [crypto (pub.dev)](https://pub.dev/packages/crypto) — crypto — backing dependency of arxa_kit_data.
+- [win32 (pub.dev)](https://pub.dev/packages/win32) — win32 — backing dependency of arxa_kit_data.
+- [device_info_plus (pub.dev)](https://pub.dev/packages/device_info_plus) — device_info_plus — backing dependency of arxa_kit_data.
+- [package_info_plus (pub.dev)](https://pub.dev/packages/package_info_plus) — package_info_plus — backing dependency of arxa_kit_data.
 <!-- kb:end -->
 
 <QuestionForm id="open-questions" questions={[

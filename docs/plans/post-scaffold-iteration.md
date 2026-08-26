@@ -2,7 +2,7 @@
 
 ## Scope & non-goals
 
-Scope: how a project changes *after* the first `appbox emit scaffold` run — design edits that
+Scope: how a project changes *after* the first `arxa emit scaffold` run — design edits that
 require re-scaffolding, the boundary between what regen may overwrite and what a developer owns,
 and the pipeline that decides whether a regen diff ships as a Shorebird patch or a store release.
 

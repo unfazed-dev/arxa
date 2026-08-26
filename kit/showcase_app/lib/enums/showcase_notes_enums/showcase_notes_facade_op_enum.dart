@@ -1,4 +1,4 @@
-/// The Notes facade's mutation ops — `.name` is the AppBoxKitAction hub key
+/// The Notes facade's mutation ops — `.name` is the ArxaKitAction hub key
 /// (visible to other layers; the wire format must not change), [error] and
 /// [success] are the snackbar copy shown by the action chain (destructive
 /// ops also confirm with a success snackbar; the rest get `success: null`).

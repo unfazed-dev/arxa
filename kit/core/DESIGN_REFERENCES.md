@@ -1,4 +1,4 @@
-# appbox_kit — Design References (Material 3 Expressive + iOS HIG)
+# arxa_kit — Design References (Material 3 Expressive + iOS HIG)
 
 Authoritative spec sources for every native-chrome component the kit renders.
 **Docs are the SSOT:** when a platform deprecates, renames, or re-scopes a

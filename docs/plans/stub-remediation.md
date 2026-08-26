@@ -25,8 +25,8 @@ her — which is her stated abandon condition.
 
 ### Tier 1 — port + scripted fake (no toolchain, runs in CI)
 
-The kit already proves this pattern works: `appbox_kit_deploy` runs every
-external CLI through `AppBoxKitProcessRunner`, so `ScriptedProcessRunner` asserts
+The kit already proves this pattern works: `arxa_kit_deploy` runs every
+external CLI through `ArxaKitProcessRunner`, so `ScriptedProcessRunner` asserts
 command shape **with no fastlane, no shorebird, no credentials**.
 
 Apply the same port to payments and auth. Tier 1 answers *"do we call the SDK
@@ -76,28 +76,28 @@ attached.**
 1. **`verification` field + the advertise-gate.** Cheapest, and it makes every
    later step honest by default.
 2. **`SeedAuthBackend`.** No device, no accounts, unblocks seeded data — and
-   appbox's own showcase depends on it.
+   arxa's own showcase depends on it.
 3. **Ports for payments and auth** (Tier 1). Now the SDK calls are asserted in
    CI forever.
-4. **Stripe to Tier 3.** appbox's own licensing needs it; dogfooding forces
+4. **Stripe to Tier 3.** arxa's own licensing needs it; dogfooding forces
    it to be real.
 5. **Auth providers to Tier 3.**
-6. **Maps, vercel** — lowest priority; neither blocks appbox itself.
+6. **Maps, vercel** — lowest priority; neither blocks arxa itself.
 
 ## Status — 2026-08-01
 
 - **Seq 1 done** (earlier): `verification` field + advertise gate live;
-  `appbox gate tier1 --promote` (added 2026-08-01, port of tier1.py's
+  `arxa gate tier1 --promote` (added 2026-08-01, port of tier1.py's
   `--promote`) is again the only path that writes tiers + `config/evidence.json`.
 - **Seq 2 done.** `kit/auth/lib/src/backends/seed_auth_backend.dart` is a
   genuine port of the tier1 spec (was `UnimplementedError`). tier1.dart stays
-  the pure-Dart paired spec — appboxd cannot depend on the Flutter kit — and
+  the pure-Dart paired spec — arxa cannot depend on the Flutter kit — and
   its header + SeedAuthBackend doc comment now name the pairing; drift
   reconciled (email matching after trim on both sides). kit/auth 48/48.
 - **Seq 3 done (spec-reconciled).** kit/payments is real: Stripe via
-  flutter_stripe 13.1.0 PaymentSheet behind `AppBoxKitStripeBackend`; PayPal via
+  flutter_stripe 13.1.0 PaymentSheet behind `ArxaKitStripeBackend`; PayPal via
   Orders v2 create → approve (flutter_web_auth_2 redirect) → capture behind
-  `AppBoxKitPayPalBackend`; `AppBoxKitPaymentMethod.payPal` added. tier1's PayPal comment
+  `ArxaKitPayPalBackend`; `ArxaKitPaymentMethod.payPal` added. tier1's PayPal comment
   now maps its scripted `tokens request` step to the real approve+capture
   half. kit/auth Apple (sign_in_with_apple 8.1.0) + Google (google_sign_in
   7.2.0) providers real. kit/payments 45/45, kit/auth 48/48.

@@ -22,7 +22,7 @@ server-issued, short-lived, machine-scoped credential, cached locally with an ex
 offline window, backed by a machine-activation table with a seat cap. Keygen documents
 this most concretely (validate → activate fingerprint → optional heartbeat →
 cryptographic license file for offline). JetBrains has moved the *opposite* way from
-appbox's current design — its self-hosted floating License Server was discontinued
+arxa's current design — its self-hosted floating License Server was discontinued
 2026-01-01 in favour of cloud License Vault. Machine binding is universally
 fingerprint-based (`IOPlatformUUID` / `MachineGuid` / `/etc/machine-id`), hashed, with
 fuzzy matching and self-service deactivation. Anti-tamper inside a shipped binary is
@@ -60,7 +60,7 @@ Keygen recommends `strict` policies (a license with zero activations is invalid)
 is the load-bearing detail: **it makes "no server contact ever" an invalid state**, not a
 degraded one.
 
-**JetBrains is a live counter-signal to the current appbox design.** The self-hosted
+**JetBrains is a live counter-signal to the current arxa design.** The self-hosted
 floating License Server (FLS) "was discontinued on January 1, 2026" and instances are
 being phased out; the replacement is cloud/on-prem **License Vault** in IDE Services.
 Licensing remains **per-machine**: "if a single user runs multiple IDEs concurrently on
@@ -105,14 +105,14 @@ claim that they represent an "industry norm" — no survey data was found.)
 
 For genuinely offline use, Keygen's current recommendation is **cryptographic license
 files** (checked-out, signed, optionally encrypted certificates with a TTL), *not* signed
-license keys. Their stated reason is directly relevant to appbox: "the embedded datasets
+license keys. Their stated reason is directly relevant to arxa: "the embedded datasets
 within cryptographic keys are **immutable** … changing the datasets, e.g. extending a
 license expiration or updating entitlements, requires generating a brand new license."
 (Grade A.)
 <https://keygen.sh/docs/choosing-a-licensing-model/offline-licenses/> ·
 <https://keygen.sh/blog/announcing-cryptographic-license-files/>
 
-**Uncertainty flag:** "30 days grace" (appbox's current value) has no documented vendor
+**Uncertainty flag:** "30 days grace" (arxa's current value) has no documented vendor
 source. It is convention, not standard. Keygen's mechanism is a *file TTL*, and TTL
 length is left to the vendor. Treat any specific grace number as a product decision, not
 a best practice.
@@ -216,7 +216,7 @@ Documented primitives:
   targets. <https://supabase.com/docs/guides/auth/native-mobile-deep-linking>
 
 **Gap worth knowing before design lock (grade B):** Supabase Auth documents **no RFC 8628
-device authorization grant**. A headless/SSH `appbox login` cannot use a standard device
+device authorization grant**. A headless/SSH `arxa login` cannot use a standard device
 code flow out of the box — it needs either loopback-redirect PKCE (browser on the same
 machine) or a first-party paste-a-code exchange implemented in an Edge Function.
 
@@ -245,15 +245,15 @@ are **two different clocks**. Conflating them is the common design error.
 
 ---
 
-## Recommended architecture for appbox
+## Recommended architecture for arxa
 
 1. **Keep the Ed25519 verifier; demote it.** It becomes the *offline continuation*
    mechanism, not the gate. Supersedes `monetization-and-licensing.md` §3's
    "never phone home."
 2. **Delete the plaintext env bypass from release builds** — compile-time excluded, not
    runtime-checked. Non-negotiable and independent of everything else.
-3. **`appbox login`** → Supabase Auth with loopback-redirect PKCE (desktop) or
-   deep-link (`appbox://auth-callback`) per Supabase's documented flow. Google/Apple ride
+3. **`arxa login`** → Supabase Auth with loopback-redirect PKCE (desktop) or
+   deep-link (`arxa://auth-callback`) per Supabase's documented flow. Google/Apple ride
    on this for free. Add a paste-a-code Edge Function path for headless/SSH.
 4. **Postgres schema:** `subscriptions` (Stripe mirror), `entitlements`
    (`user_id`, `feature`, `status`, `expires_at`), `machines`
@@ -261,14 +261,14 @@ are **two different clocks**. Conflating them is the common design error.
    `deactivated_at`). RLS: users read their own rows; **only the service role writes**.
 5. **`POST /activate` Edge Function** (`auth: 'user'`): takes a hashed fingerprint,
    enforces the seat cap, records the machine, returns an **entitlement token** — a JWT
-   signed by an appbox-controlled key, claims `sub`, `fpr`, `feat: ["emit.scaffold"]`,
-   `exp` ≈ 7 days, `nbf`. Cache it at `~/.appbox/entitlement.jwt`.
+   signed by an arxa-controlled key, claims `sub`, `fpr`, `feat: ["emit.scaffold"]`,
+   `exp` ≈ 7 days, `nbf`. Cache it at `~/.arxa/entitlement.jwt`.
 6. **`emit scaffold` gate:** verify the cached token locally against a pinned public key,
    require `fpr` to match the live fingerprint, require `exp` in the future. No network
    call on the hot path.
 7. **Refresh, not heartbeat.** Silent refresh on any command when the token is inside its
    last 48 h. Offline continues until `exp`. This is Keygen's license-file model, not a
-   ping loop — appbox is not a concurrency-limited product and does not need one.
+   ping loop — arxa is not a concurrency-limited product and does not need one.
 8. **Seats: 3 activations, self-service deactivation, activation counter for abuse.**
    Fuzzy match on fingerprint components so hardware changes don't burn a seat. (Seat
    count is a product decision — no documented industry number backs "3".)
@@ -289,9 +289,9 @@ are **two different clocks**. Conflating them is the common design error.
   emission." This architecture assumes *block* at `emit scaffold`. That contract
   inversion is a product decision this doc does not make. See
   [`paygate-hook-points.md`](./paygate-hook-points.md).
-- **First owned trust surface.** `paygate-hook-points.md` records that no appbox-owned
+- **First owned trust surface.** `paygate-hook-points.md` records that no arxa-owned
   server exists and every outbound call is third-party. A Supabase Edge Function is the
-  first appbox-controlled trust surface — it brings uptime, key-rotation and
+  first arxa-controlled trust surface — it brings uptime, key-rotation and
   incident-response obligations that do not exist today. An offline path that survives
   Supabase being down is therefore mandatory, not a nicety.
 - **Air-gapped users.** Steps 5–7 assume periodic connectivity. A genuinely air-gapped

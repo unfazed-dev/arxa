@@ -1,11 +1,11 @@
-# appbox_kit_analytics
+# arxa_kit_analytics
 
-A backend-agnostic analytics port for `appbox_kit` apps. One call site fans
+A backend-agnostic analytics port for `arxa_kit` apps. One call site fans
 every event out to any number of registered destinations.
 
 ## Scope
 
-- **`AppBoxKitAnalyticsService`** — the entry point: `logEvent(name, params)`,
+- **`ArxaKitAnalyticsService`** — the entry point: `logEvent(name, params)`,
   `setUserProperty(name, value)`, `screenView(name, screenClass)`,
   `timing(name, duration, params)`, plus `flush()`. Each call is normalized into
   a value object and dispatched to all registered backends.
@@ -13,13 +13,13 @@ every event out to any number of registered destinations.
   `clearBackends`. Multiple backends run **simultaneously**; a backend that
   throws is isolated (routed to `onError`, default `debugPrint`) so it can't
   break the others.
-- **`AppBoxKitDebugConsoleAnalyticsBackend`** — the working default. Structured
+- **`ArxaKitDebugConsoleAnalyticsBackend`** — the working default. Structured
   `dart:developer.log` output, **zero external dependencies**, suppressed in
   release by default.
 
 ## Non-goals
 
-- Not a Stacked service and **does not depend on `appbox_kit` core, `stacked`,
+- Not a Stacked service and **does not depend on `arxa_kit` core, `stacked`,
   or `stacked_services`** — construct and register it however your app wires
   singletons.
 - No vendor SDK is pulled by this package. The Firebase / Amplitude / PostHog
@@ -31,19 +31,19 @@ every event out to any number of registered destinations.
 
 ## Phase
 
-**0.1.0 — priority implemented.** `AppBoxKitAnalyticsService`, the backend registry
-with error-isolated fan-out, and `AppBoxKitDebugConsoleAnalyticsBackend` are complete and
-analyzer-clean. `AppBoxKitFirebaseAnalyticsBackend` (`firebase_analytics: ^12.1.1`),
-`AppBoxKitAmplitudeBackend` (`amplitude_flutter: ^4.6.1`), and `AppBoxKitPosthogBackend`
+**0.1.0 — priority implemented.** `ArxaKitAnalyticsService`, the backend registry
+with error-isolated fan-out, and `ArxaKitDebugConsoleAnalyticsBackend` are complete and
+analyzer-clean. `ArxaKitFirebaseAnalyticsBackend` (`firebase_analytics: ^12.1.1`),
+`ArxaKitAmplitudeBackend` (`amplitude_flutter: ^4.6.1`), and `ArxaKitPosthogBackend`
 (`posthog_flutter: ^5.24.2`) are real-signature stubs.
 
 ## Quickstart
 
 ```dart
-import 'package:appbox_kit_analytics/appbox_kit_analytics.dart';
+import 'package:arxa_kit_analytics/arxa_kit_analytics.dart';
 
-final analytics = AppBoxKitAnalyticsService(
-  backends: [AppBoxKitDebugConsoleAnalyticsBackend()],
+final analytics = ArxaKitAnalyticsService(
+  backends: [ArxaKitDebugConsoleAnalyticsBackend()],
 );
 
 await analytics.logEvent('checkout_completed', params: {'total_cents': 4200});
@@ -53,7 +53,7 @@ await analytics.timing('time_to_interactive', const Duration(milliseconds: 830))
 
 ## Testing
 
-`import 'package:appbox_kit_analytics/appbox_kit_testing.dart';` for
-`RecordingAppBoxKitAnalyticsBackend` (records every call with `eventsNamed`, `lastEvent`,
-`userProperty`, `didLog` query helpers) and `ThrowingAppBoxKitAnalyticsBackend` (proves
+`import 'package:arxa_kit_analytics/arxa_kit_testing.dart';` for
+`RecordingArxaKitAnalyticsBackend` (records every call with `eventsNamed`, `lastEvent`,
+`userProperty`, `didLog` query helpers) and `ThrowingArxaKitAnalyticsBackend` (proves
 fan-out isolation).

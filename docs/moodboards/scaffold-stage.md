@@ -2,9 +2,9 @@
 
 Slice: the blocking "kit gate" screen (~24 toggleable kit cards with a
 per-kit circular/percentage loader) and the scaffolding-process/progress
-screen that follows it, both hosted inside the existing appbox-studio panel
+screen that follows it, both hosted inside the existing arxa-studio panel
 shell (header / composer / activity / mini / footer panels —
-`designs/appbox-studio/ui/views/main_shell/shared/widgets/`).
+`designs/arxa-studio/ui/views/main_shell/shared/widgets/`).
 
 ## Raycast Store — https://www.raycast.com/store
 ![store grid](shots/scaffold-stage/raycast__store-grid.png)
@@ -80,7 +80,7 @@ shell (header / composer / activity / mini / footer panels —
 ![three-pane dark docs shell](shots/scaffold-stage/vercel__deployments-docs.png)
 - Steal: not a kit-gate pattern — a chrome-parity reference. The three-pane
   dark shell (left nav / center content / right "On this page" TOC) is
-  structurally close to appbox-studio's existing activity-panel-on-the-side
+  structurally close to arxa-studio's existing activity-panel-on-the-side
   layout, confirming the panel-based shell constraint is compatible with a
   CI/pipeline-flavored dark theme without inventing new chrome.
 - Grade: 🔥 (official docs, current)
@@ -91,11 +91,11 @@ shell (header / composer / activity / mini / footer panels —
    separate widgets.
 2. Percentage renders as a ring around/beside the toggle while scaffolding
    is running, and collapses to a plain on/off once idle — no reference here
-   ships a literal circular ring gauge; the ring itself is appbox's own
+   ships a literal circular ring gauge; the ring itself is arxa's own
    invention, informed by the toggle+bar fusion in Unleash/PostHog.
 3. ~24 cards are grouped into 3–4 tiers (VS Code's Featured/Most Popular/
    Recently Added, JetBrains' Installed/Available) rather than one flat grid
-   — likely Core / Integrations / Platform / Advanced for appbox's kit set.
+   — likely Core / Integrations / Platform / Advanced for arxa's kit set.
 4. A "select all essentials" or default-enabled-on-top affordance (JetBrains
    Installed-section-first) so the 24-card wall isn't uniformly blank on
    first load.

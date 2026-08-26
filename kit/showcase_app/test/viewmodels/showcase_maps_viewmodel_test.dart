@@ -1,7 +1,7 @@
-import 'package:appbox_kit_maps/appbox_kit_maps.dart';
+import 'package:arxa_kit_maps/arxa_kit_maps.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:appbox_kit_showcase_app/app/app.locator.dart';
-import 'package:appbox_kit_showcase_app/ui/views/showcase_profile_shell/showcase_maps/showcase_maps_viewmodel.dart';
+import 'package:arxa_kit_showcase_app/app/app.locator.dart';
+import 'package:arxa_kit_showcase_app/ui/views/showcase_profile_shell/showcase_maps/showcase_maps_viewmodel.dart';
 
 void main() {
   group('ShowcaseMapsViewModel', () {
@@ -16,7 +16,7 @@ void main() {
       final provider = vm.provider;
       // then
       expect(vm.mapboxAvailable, isFalse);
-      expect(provider, isA<AppBoxKitOpenStreetMapProvider>());
+      expect(provider, isA<ArxaKitOpenStreetMapProvider>());
       expect(vm.backendLabel, 'OpenStreetMap');
     });
 
@@ -29,13 +29,13 @@ void main() {
       final config = vm.config;
       // then
       expect(config.initialCameraPosition.target,
-          const AppBoxKitLatLng(51.5074, -0.1278));
+          const ArxaKitLatLng(51.5074, -0.1278));
       expect(config.initialCameraPosition.zoom, 11);
       expect(config.markers.map((m) => m.id),
           containsAll(<String>['london-eye', 'tower-bridge']));
       expect(
         config.markers.singleWhere((m) => m.id == 'london-eye').position,
-        const AppBoxKitLatLng(51.5033, -0.1196),
+        const ArxaKitLatLng(51.5033, -0.1196),
       );
     });
   });

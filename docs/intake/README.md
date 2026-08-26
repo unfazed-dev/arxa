@@ -1,9 +1,9 @@
 # docs/intake/ — the live intake-chain source
 
-This is the **current** intake source for appbox — story-mapper artifacts
+This is the **current** intake source for arxa — story-mapper artifacts
 (the chain's tail). Designer-stage artifacts live in `designs/<name>/`, never here:
 
-- `brief.md` — the design brief, elicited via the `appbox-story-mapper` skill
+- `brief.md` — the design brief, elicited via the `arxa-story-mapper` skill
   (provenance-marked; `inferred` fields flagged).
 - `story-map.json` — the story-map data (Epic → Feature → Story, chat-centric
   contract, 101 stories).
@@ -12,8 +12,8 @@ This is the **current** intake source for appbox — story-mapper artifacts
   hand-edit.
 
 This supersedes `archives/design-v2/` (personas Evan/Michelle, journeys,
-flows library — written in retired `app_box` vocabulary). The archive is kept
+flows library — written in retired `arxa` vocabulary). The archive is kept
 for history only; never cite it as current.
 
 For the system-level view (pipeline, kits, gates), see
-[`docs/appbox-system-map.md`](../appbox-system-map.md).
+[`docs/arxa-system-map.md`](../arxa-system-map.md).

@@ -2,12 +2,12 @@ import 'dart:io';
 
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:appbox_kit_media/appbox_kit_media.dart';
-import 'package:appbox_kit_media/appbox_kit_testing.dart';
-import 'package:appbox_kit_showcase_app/app/app.locator.dart';
-import 'package:appbox_kit_showcase_app/data/models/showcase_notes_models/showcase_note_attachment_model.dart';
-import 'package:appbox_kit_showcase_app/enums/showcase_notes_enums/enums.dart';
-import 'package:appbox_kit_showcase_app/services/showcase_notes_services/adapters/showcase_notes_media_adapter_service.dart';
+import 'package:arxa_kit_media/arxa_kit_media.dart';
+import 'package:arxa_kit_media/arxa_kit_testing.dart';
+import 'package:arxa_kit_showcase_app/app/app.locator.dart';
+import 'package:arxa_kit_showcase_app/data/models/showcase_notes_models/showcase_note_attachment_model.dart';
+import 'package:arxa_kit_showcase_app/enums/showcase_notes_enums/enums.dart';
+import 'package:arxa_kit_showcase_app/services/showcase_notes_services/adapters/showcase_notes_media_adapter_service.dart';
 
 import '../helpers/test_helpers.dart';
 
@@ -26,14 +26,14 @@ void main() {
 
   group('ShowcaseNotesMediaAdapterServiceTest -', () {
     late Directory docsDir;
-    late FakeAppBoxKitMediaCaptureService capture;
-    late FakeAppBoxKitAudioRecorderService recorder;
-    late FakeAppBoxKitAudioPlayerService player;
+    late FakeArxaKitMediaCaptureService capture;
+    late FakeArxaKitAudioRecorderService recorder;
+    late FakeArxaKitAudioPlayerService player;
     late ShowcaseNotesMediaAdapterService adapter;
 
     setUp(() {
       registerServices();
-      registerAppBoxKitActionServices();
+      registerArxaKitActionServices();
       // The adapter resolves real paths through path_provider's platform
       // channel; point it at a throwaway temp dir.
       docsDir = Directory.systemTemp.createTempSync('notes_media_test');
@@ -43,9 +43,9 @@ void main() {
             ? docsDir.path
             : null;
       });
-      capture = FakeAppBoxKitMediaCaptureService();
-      recorder = FakeAppBoxKitAudioRecorderService();
-      player = FakeAppBoxKitAudioPlayerService();
+      capture = FakeArxaKitMediaCaptureService();
+      recorder = FakeArxaKitAudioRecorderService();
+      player = FakeArxaKitAudioPlayerService();
       adapter = ShowcaseNotesMediaAdapterService(
         capture: capture,
         recorder: recorder,
@@ -72,12 +72,12 @@ void main() {
 
       // then — the camera source was used and the temp capture was moved into
       // the app's attachments dir under the row's fileName
-      expect(capture.requestedSources, [AppBoxKitMediaSource.camera]);
+      expect(capture.requestedSources, [ArxaKitMediaSource.camera]);
       expect(photo, isNotNull);
       expect(photo!.kind, ShowcaseNoteAttachmentKind.photo);
       expect(photo.fileName, endsWith('.jpg'));
       final stored = File(
-          '${docsDir.path}/appbox_kit_showcase_app/attachments/${photo.fileName}');
+          '${docsDir.path}/arxa_kit_showcase_app/attachments/${photo.fileName}');
       expect(stored.existsSync(), isTrue);
     });
 
@@ -92,7 +92,7 @@ void main() {
       final photo = await adapter.pickPhoto(fromCamera: true);
 
       // then — gallery picked instead of crashing; the note still gets a photo
-      expect(capture.requestedSources, [AppBoxKitMediaSource.gallery]);
+      expect(capture.requestedSources, [ArxaKitMediaSource.gallery]);
       expect(photo, isNotNull);
       expect(photo!.kind, ShowcaseNoteAttachmentKind.photo);
     });
@@ -120,7 +120,7 @@ void main() {
       expect(
         recorder.startedPaths.single,
         allOf(
-            contains('appbox_kit_showcase_app/attachments/'), endsWith('.m4a')),
+            contains('arxa_kit_showcase_app/attachments/'), endsWith('.m4a')),
       );
     });
 
@@ -170,9 +170,9 @@ void main() {
       final states = expectLater(
         adapter.playerState$,
         emitsInOrder([
-          predicate<AppBoxKitPlaybackState>((s) => s.playing),
-          predicate<AppBoxKitPlaybackState>((s) => !s.playing),
-          predicate<AppBoxKitPlaybackState>((s) => s.playing),
+          predicate<ArxaKitPlaybackState>((s) => s.playing),
+          predicate<ArxaKitPlaybackState>((s) => !s.playing),
+          predicate<ArxaKitPlaybackState>((s) => s.playing),
         ]),
       );
 
@@ -239,9 +239,9 @@ void main() {
       await pumpEventQueue(); // seed: idle, nothing loaded
 
       // when — playing with nothing loaded, then loaded AND playing
-      player.driveState(const AppBoxKitPlaybackState(
+      player.driveState(const ArxaKitPlaybackState(
         playing: true,
-        processing: AppBoxKitMediaProcessingState.ready,
+        processing: ArxaKitMediaProcessingState.ready,
       ));
       adapter.playingAttachmentId$.add('v1');
       await pumpEventQueue();
@@ -254,7 +254,7 @@ void main() {
         'search-and-attachments.media-attachments.play-back-an-audio-attachment — playbackProgress\$ pairs the live position with the track length',
         () async {
       // given
-      final progress = <AppBoxKitPlaybackProgress>[];
+      final progress = <ArxaKitPlaybackProgress>[];
       final sub = adapter.playbackProgress$.listen(progress.add);
       addTearDown(sub.cancel);
       await pumpEventQueue(); // seed: zero position, unknown length

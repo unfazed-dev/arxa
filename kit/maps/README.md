@@ -1,8 +1,8 @@
-# appbox_kit_maps
+# arxa_kit_maps
 
-Plugin-neutral maps port for appbox_kit apps. App code renders `AppBoxKitMapView`
-and depends only on Kit-owned value types (`AppBoxKitLatLng`, `AppBoxKitCameraPosition`,
-`AppBoxKitMapMarker`, `AppBoxKitMapConfig`) — never on a map SDK.
+Plugin-neutral maps port for arxa_kit apps. App code renders `ArxaKitMapView`
+and depends only on Kit-owned value types (`ArxaKitLatLng`, `ArxaKitCameraPosition`,
+`ArxaKitMapMarker`, `ArxaKitMapConfig`) — never on a map SDK.
 
 ## Providers
 
@@ -13,13 +13,13 @@ and depends only on Kit-owned value types (`AppBoxKitLatLng`, `AppBoxKitCameraPo
 | `openStreetMap` | flutter_map | **Wired** — pure Dart, no key, simulator/web-testable |
 | `mapbox` | flutter_map + Mapbox raster tiles | **Wired** — pure Dart, public `pk.*` token |
 
-Backend selection is `appBoxKitDefaultProviderFor(defaultTargetPlatform)`; pass
-`provider:` to `AppBoxKitMapView` to force one.
+Backend selection is `arxaKitDefaultProviderFor(defaultTargetPlatform)`; pass
+`provider:` to `ArxaKitMapView` to force one.
 
 ### OpenStreetMap
 
 ```dart
-AppBoxKitOpenStreetMapProvider(
+ArxaKitOpenStreetMapProvider(
   // REQUIRED by the OSM tile-usage policy (generic user agents are blocked)
   // — pass the host app's real package ID.
   userAgentPackageName: 'com.example.myapp',
@@ -28,7 +28,7 @@ AppBoxKitOpenStreetMapProvider(
 
 Attribution is always rendered (`SimpleAttributionWidget`), and flutter_map
 caches tiles itself (built-in since 8.2), satisfying the other two OSM
-tile-usage-policy requirements. `AppBoxKitMapConfig.mapType` is ignored — the
+tile-usage-policy requirements. `ArxaKitMapConfig.mapType` is ignored — the
 standard OSM tile server ships one style.
 
 ### Mapbox
@@ -41,7 +41,7 @@ web with zero native config.
 
 ```dart
 // flutter run --dart-define=MAPBOX_PUBLIC_TOKEN=pk....
-AppBoxKitMapboxProvider(
+ArxaKitMapboxProvider(
   accessToken: const String.fromEnvironment('MAPBOX_PUBLIC_TOKEN'),
   userAgentPackageName: 'com.example.myapp',
 )
@@ -50,7 +50,7 @@ AppBoxKitMapboxProvider(
 Never hardcode the token — the `MAPBOX_PUBLIC_TOKEN` entry in
 `config/credentials.catalog.json` is the publishable key this provider
 uses; the optional `MAPBOX_SECRET_TOKEN` entry is NOT needed here.
-`AppBoxKitMapConfig.mapType` selects the Mapbox style (normal → streets-v12,
+`ArxaKitMapConfig.mapType` selects the Mapbox style (normal → streets-v12,
 satellite → satellite-v9, hybrid → satellite-streets-v12,
 terrain → outdoors-v12).
 
@@ -58,38 +58,38 @@ terrain → outdoors-v12).
 
 No flutter_map equivalent exists for `myLocationEnabled`,
 `zoomControlsEnabled`, `compassEnabled`, or camera `tilt` — those
-`AppBoxKitMapConfig` fields are honored only by the native Google/Apple
+`ArxaKitMapConfig` fields are honored only by the native Google/Apple
 providers. `animateCamera` jumps (no animated camera API in flutter_map
 core).
 
 ## Usage
 
 ```dart
-import 'package:appbox_kit_maps/appbox_kit_maps.dart';
+import 'package:arxa_kit_maps/arxa_kit_maps.dart';
 
-AppBoxKitMapView(
-  config: const AppBoxKitMapConfig(
-    initialCameraPosition: AppBoxKitCameraPosition(
-      target: AppBoxKitLatLng(-33.8688, 151.2093),
+ArxaKitMapView(
+  config: const ArxaKitMapConfig(
+    initialCameraPosition: ArxaKitCameraPosition(
+      target: ArxaKitLatLng(-33.8688, 151.2093),
       zoom: 12,
     ),
     markers: {
-      AppBoxKitMapMarker(
+      ArxaKitMapMarker(
         id: 'office',
-        position: AppBoxKitLatLng(-33.8688, 151.2093),
+        position: ArxaKitLatLng(-33.8688, 151.2093),
         title: 'HQ',
       ),
     },
   ),
   onMapCreated: (controller) =>
-      controller.animateCamera(const AppBoxKitCameraPosition(
-    target: AppBoxKitLatLng(-37.8136, 144.9631),
+      controller.animateCamera(const ArxaKitCameraPosition(
+    target: ArxaKitLatLng(-37.8136, 144.9631),
   )),
 )
 ```
 
 Markers are declarative (rebuild with a new `markers` set);
-`AppBoxKitMapController` handles post-creation camera moves only.
+`ArxaKitMapController` handles post-creation camera moves only.
 
 ## Host-app platform setup
 
@@ -104,20 +104,20 @@ Markers are declarative (rebuild with a new `markers` set);
 ## Testing
 
 ```dart
-import 'package:appbox_kit_maps/appbox_kit_testing.dart';
+import 'package:arxa_kit_maps/arxa_kit_testing.dart';
 
-final fake = FakeAppBoxKitMapProvider();          // captures built configs
-fake.controller;                          // RecordingAppBoxKitMapController
+final fake = FakeArxaKitMapProvider();          // captures built configs
+fake.controller;                          // RecordingArxaKitMapController
 ```
 
 For widget tests against the real OSM/Mapbox providers, inject a fake
 `TileProvider` (one that serves in-memory images) so no HTTP happens — see
-`test/appbox_kit_tiled_providers_test.dart` for the pattern.
+`test/arxa_kit_tiled_providers_test.dart` for the pattern.
 
 ## Maintenance notes
 
 - `apple_maps_flutter` publishes slowly (17+ months between releases at
   wiring time). If it breaks on a future Flutter, point iOS at
-  `AppBoxKitGoogleMapsProvider` in `appBoxKitDefaultProviderFor` until fixed.
+  `ArxaKitGoogleMapsProvider` in `arxaKitDefaultProviderFor` until fixed.
 - Standalone by design: no dependency on stacked, stacked_services, or
-  appbox_kit core.
+  arxa_kit core.

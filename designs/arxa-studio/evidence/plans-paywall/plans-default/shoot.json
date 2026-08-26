@@ -1,0 +1,32 @@
+{
+  "url": "http://localhost:4319/workspace/plans",
+  "rungs": [
+    {
+      "name": "compact",
+      "width": 390,
+      "height": 844,
+      "consoleErrors": 0,
+      "overflow": false,
+      "clean": true,
+      "png": "../designs/arxa-studio/evidence/plans-paywall/plans-default/compact_390.png"
+    },
+    {
+      "name": "medium",
+      "width": 744,
+      "height": 1133,
+      "consoleErrors": 0,
+      "overflow": false,
+      "clean": true,
+      "png": "../designs/arxa-studio/evidence/plans-paywall/plans-default/medium_744.png"
+    },
+    {
+      "name": "expanded",
+      "width": 1280,
+      "height": 832,
+      "consoleErrors": 0,
+      "overflow": false,
+      "clean": true,
+      "png": "../designs/arxa-studio/evidence/plans-paywall/plans-default/expanded_1280.png"
+    }
+  ]
+}

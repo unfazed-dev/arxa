@@ -1,5 +1,5 @@
 /// A widget is a reusable UI piece composed by views. It receives data via
-/// constructor params or [AppBoxKitStreamBuilder] bindings and renders its
+/// constructor params or [ArxaKitStreamBuilder] bindings and renders its
 /// slice of the surface — it holds no business logic and never decides when
 /// an action runs.
 ///
@@ -32,10 +32,10 @@
 library;
 
 import 'package:flutter/material.dart';
-import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
+import 'package:arxa_kit_ui_library/arxa_kit_ui_library.dart';
 
-import 'package:appbox_kit_showcase_app/ui/views/showcase_notes_shell/showcase_notes_auth/showcase_notes_auth_viewmodel.dart';
-import 'package:appbox_kit_showcase_app/ui/widgets/showcase_notes_widgets/widgets.dart';
+import 'package:arxa_kit_showcase_app/ui/views/showcase_notes_shell/showcase_notes_auth/showcase_notes_auth_viewmodel.dart';
+import 'package:arxa_kit_showcase_app/ui/widgets/showcase_notes_widgets/widgets.dart';
 
 class ShowcaseNotesOtpFormWidget extends StatelessWidget {
   const ShowcaseNotesOtpFormWidget({super.key, required this.viewModel});
@@ -48,7 +48,7 @@ class ShowcaseNotesOtpFormWidget extends StatelessWidget {
     // Streams-only: the OTP step (email locked / code field / Verify vs Send
     // Code), the inline error, and busy each bind a VM stream — nothing here
     // rebuilds off notifyListeners.
-    return AppBoxKitStreamBuilder<bool>(
+    return ArxaKitStreamBuilder<bool>(
       stream: vm.otpRequested$,
       builder: (context, otpRequested) => Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -61,30 +61,30 @@ class ShowcaseNotesOtpFormWidget extends StatelessWidget {
             keyboardType: TextInputType.emailAddress,
           ),
           if (otpRequested) ...[
-            appBoxKitVerticalSpaceSmall,
+            arxaKitVerticalSpaceSmall,
             ShowcaseNotesAuthTextFieldWidget(
               onChanged: (v) => vm.code = v,
               placeholder: '000000',
               keyboardType: TextInputType.number,
             ),
           ],
-          AppBoxKitStreamBuilder<String?>(
+          ArxaKitStreamBuilder<String?>(
             stream: vm.errorMessage$,
             builder: (context, errorMessage) => errorMessage == null
                 ? const SizedBox.shrink()
                 : ShowcaseNotesFormErrorRowWidget(message: errorMessage),
           ),
-          appBoxKitVerticalSpaceMedium,
-          AppBoxKitStreamBuilder<bool>(
+          arxaKitVerticalSpaceMedium,
+          ArxaKitStreamBuilder<bool>(
             stream: vm.busy$,
             builder: (context, busy) => Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 SizedBox(
                   height: abxButtonHeightMedium,
-                  child: AppBoxKitNativeButton(
+                  child: ArxaKitNativeButton(
                     label: otpRequested ? 'Verify' : 'Send Code',
-                    style: AppBoxKitButtonStyle.prominentGlass,
+                    style: ArxaKitButtonStyle.prominentGlass,
                     onPressed: busy
                         ? null
                         : () => otpRequested
@@ -93,9 +93,9 @@ class ShowcaseNotesOtpFormWidget extends StatelessWidget {
                   ),
                 ),
                 if (busy) ...[
-                  appBoxKitVerticalSpaceSmall,
+                  arxaKitVerticalSpaceSmall,
                   const Center(
-                      child: AppBoxKitNativeLoadingIndicator(size: 20)),
+                      child: ArxaKitNativeLoadingIndicator(size: 20)),
                 ],
               ],
             ),

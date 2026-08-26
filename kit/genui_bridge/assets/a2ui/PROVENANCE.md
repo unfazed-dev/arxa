@@ -10,7 +10,7 @@ Do not edit them by hand — re-fetch and update this header instead.
 | --- | --- | --- | --- |
 | `server_to_client.json` | https://github.com/google/A2UI/blob/main/specification/v0_9/json/server_to_client.json (raw: https://raw.githubusercontent.com/google/A2UI/main/specification/v0_9/json/server_to_client.json) | A2UI **v0.9** (Stable, created 2025-11-20) | 2026-07-28 |
 
-Cross-checks the shapes in `lib/src/appbox_kit_a2ui_message.dart` were verified against
+Cross-checks the shapes in `lib/src/arxa_kit_a2ui_message.dart` were verified against
 on the same date:
 
 - The spec prose: https://github.com/google/A2UI/blob/main/specification/v0_9/docs/a2ui_protocol.md

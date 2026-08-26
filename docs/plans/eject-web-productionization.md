@@ -2,15 +2,15 @@
 
 Status: approved strategy + approved amendments, awaiting implementation
 (external agents).
-Worktree: `.kimi-code/worktrees/appbox-designer-feature` (branch
-`appbox-designer-feature`).
+Worktree: `.kimi-code/worktrees/arxa-designer-feature` (branch
+`arxa-designer-feature`).
 Date: 2026-08-06. v2 amends v1 with six verified research reports (htmx 4
 extension source, signals runtimes, SSE on edge, 2026 frontier scan,
 resumability landscape, resumability mechanics).
 
 ## Strategy (decided, do not re-litigate)
 
-`appbox design eject` evolves from "copy the artifact onto the Dart design
+`arxa design eject` evolves from "copy the artifact onto the Dart design
 server" into a **re-platforming**: it emits a standalone Hono app that runs
 natively on a JavaScript runtime and deploys to **Cloudflare Workers/Pages**
 and **Vercel**. The artifact itself — format, registry, lint contract — is
@@ -95,15 +95,15 @@ adopting are cheap. Verified mechanics:
 
 ## Current machinery (verified facts)
 
-- Eject: `designEject()` at `appboxd/lib/design_tools.dart:1208-1303` — today
+- Eject: `designEject()` at `arxa/lib/design_tools.dart:1208-1303` — today
   it copies the tree, narrows `runtime/vendor/` by scanning HTML for
   `/assets/vendor/*` refs (hard-fails if htmx is not referenced), writes a
   narrowed manifest + README. No package.json, no JS runtime, no smoke test.
-- Design server: `appboxd/lib/design_server.dart` owns HTTP, sessions
+- Design server: `arxa/lib/design_server.dart` owns HTTP, sessions
   (`kdh_sid` cookie, in-memory `_sessions`), locale (`?lang=` > prefs cookie >
   Accept-Language), timers, hot reload, static files. Per request it calls
   `_worker.dispatch(method, path, headers, body, {locale, session, timers})`.
-- JS execution: `appboxd/lib/design_server/worker_assets/worker_shim.js`
+- JS execution: `arxa/lib/design_server/worker_assets/worker_shim.js`
   (267 lines) — a hand-ported Hono-equivalent shim running in headless
   Chrome. `__boot` imports `<origin>/app.routes.js`; per request it builds a
   fake Hono `c` (`req.query/param/header/parseBody`, `c.html/text/redirect/
@@ -129,13 +129,13 @@ adopting are cheap. Verified mechanics:
   `{dir, package, capabilities, providers, provides}`) and
   `config/credentials.catalog.json` (rows `{module, provider, key, required,
   kind: secret|publishable, url}`). **No npm/env mapping exists today.**
-- Gates reusable against any URL: `appbox design lint`, `selftest`,
-  `check-wiring`, `check-ladder`, `appbox lens check/shoot/compare`.
+- Gates reusable against any URL: `arxa design lint`, `selftest`,
+  `check-wiring`, `check-ladder`, `arxa lens check/shoot/compare`.
 - ADR-0008 (`docs/adr/0008-productionize-eject-harden.md` under the skill)
   deliberately excludes auth/DB/CI from eject — Phase 5 amends it (kit
   facades bring Supabase/Stripe in through the Repository seam).
 
-Reference artifact for all phases: `.kimi-code/skills/appbox-designer/
+Reference artifact for all phases: `.kimi-code/skills/arxa-designer/
 examples/hello-hda/` (small, has l10n, timers, fragments, facade seam).
 
 ## Phase 0 — De-risking spike: artifact runs on real Hono
@@ -156,16 +156,16 @@ hello-hda artifact, unchanged, served by real Hono on Node.
     `stopPolling`, `refresh`, `location`;
   - serves `/assets/*` statically; `fixture_reader.js` works unchanged
     (real `node:fs`).
-- Success criteria: `appbox lens check http://localhost:<port>/` clean,
-  `appbox lens shoot` at the active ladder visually matching the Dart-served
-  artifact (`appbox lens compare` against goldens), locale switch + a timer
+- Success criteria: `arxa lens check http://localhost:<port>/` clean,
+  `arxa lens shoot` at the active ladder visually matching the Dart-served
+  artifact (`arxa lens compare` against goldens), locale switch + a timer
   fragment + a POST route all working.
 - Deliverable: a gap list — every place the real Hono `c` diverges from the
   shim's fake `c`. This list sizes Phase 1.
 
 ## Phase 1 — Eject emits the JS runtime scaffold
 
-Extend `designEject()` (`appboxd/lib/design_tools.dart:1208`) with
+Extend `designEject()` (`arxa/lib/design_tools.dart:1208`) with
 `--target=cloudflare|vercel|node` (default `node`; `--target` repeatable is
 fine if cheap, otherwise one target per eject).
 
@@ -206,13 +206,13 @@ The ejected tree gains:
 - `wrangler.toml` / `vercel.json` — routes, assets, compatibility date, env
   var placeholders sourced from `config/credentials.catalog.json` names.
 - `README.md` — replaces `_ejectReadme`: run/dev/deploy commands, the
-  **one-way eject statement** ("this tree is yours; appbox will never
+  **one-way eject statement** ("this tree is yours; arxa will never
   re-import it"), the hardening checklist from
   `built-in-skills/productionize.md` updated for the JS runtime.
 
 Verification: eject hello-hda for all three targets; `node server.js` +
-`appbox lens check` clean locally; `wrangler dev` smoke on cloudflare
-target; `appbox design lint` and `selftest` still clean on the artifact
+`arxa lens check` clean locally; `wrangler dev` smoke on cloudflare
+target; `arxa design lint` and `selftest` still clean on the artifact
 (proves the artifact contract is untouched).
 
 ## Phase 2 — htmx 4
@@ -236,8 +236,8 @@ target; `appbox design lint` and `selftest` still clean on the artifact
   beta6 (2026-07-23) processes new content after every swap style including
   morph. Verify the pinned version is ≥ that fix.
 
-Verification: hello-hda + `designs/appbox-studio` run on vendored htmx 4 in
-the Dart design server with `appbox lens check` clean at every ladder
+Verification: hello-hda + `designs/arxa-studio` run on vendored htmx 4 in
+the Dart design server with `arxa lens check` clean at every ladder
 width; ejected app behaves identically.
 
 ## Phase 3 — Islands machinery (at eject) — rewritten in v2
@@ -313,9 +313,9 @@ against beta6 source):
   form-state, derived-text). Named islands, so the lint contract holds.
 
 Verification: ejected hello-hda loads zero island JS until an island's
-condition fires (assert via `appbox lens net`); SRI mismatch on a tampered
+condition fires (assert via `arxa lens net`); SRI mismatch on a tampered
 chunk fails closed; island state survives a morph swap (effect stays
-subscribed, no re-init flash); `appbox lens check` clean.
+subscribed, no re-init flash); `arxa lens check` clean.
 
 ## Phase 4 — Typing + the codegen moat
 
@@ -345,7 +345,7 @@ subscribed, no re-init flash); `appbox lens check` clean.
 
 Verification: `npm run typecheck` clean on the ejected hello-hda; renaming
 a route in `app.routes.js` breaks typecheck (the falsifiability test);
-`appbox design selftest --negative` still green on the artifact.
+`arxa design selftest --negative` still green on the artifact.
 
 ## Phase 5 — Kits for web
 
@@ -388,13 +388,13 @@ request.
 - `npm run deploy` per target (`wrangler deploy` / `vercel deploy`); README
   walkthrough from eject to a live URL in <10 minutes.
 - Acceptance gate for the whole program (run in CI on this branch):
-  1. `appbox design lint` + `selftest` clean on hello-hda and appbox-studio
+  1. `arxa design lint` + `selftest` clean on hello-hda and arxa-studio
      (artifact contract untouched);
   2. eject both artifacts for `cloudflare` and `node`;
   3. `npm run typecheck` clean in each ejected tree;
-  4. `appbox lens check` + ladder `shoot` against the locally served
+  4. `arxa lens check` + ladder `shoot` against the locally served
      ejected app, `compare` against the Dart-served goldens;
-  5. a deployed Workers URL passes `appbox lens check` (manual step,
+  5. a deployed Workers URL passes `arxa lens check` (manual step,
      recorded in evidence);
   6. (v2) capture and publish the payload/TTI numbers of the ejected demo
      vs the same app on a mainstream SPA stack — the "htmx at scale"

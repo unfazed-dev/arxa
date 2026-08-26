@@ -1,7 +1,7 @@
 # Warm vs cold Chrome determinism
 
 Does a REUSED (warm) Chrome render a page byte-identically to a
-FRESHLY-LAUNCHED (cold) one? This gates the `appbox lens` daemon plan, which
+FRESHLY-LAUNCHED (cold) one? This gates the `arxa lens` daemon plan, which
 would hold one warm Chrome to save the ~1.4s per-invocation launch. `lens`
 exists to compare pixels, so a speed win that changes pixels is worthless.
 No official Chromium / CDP / Puppeteer / Playwright source documents this
@@ -16,10 +16,10 @@ The depth condition is NOT limited to the 15 captures above: it was measured sep
 ## How to reproduce
 
 ```
-cd appboxd && dart run tool/warm_vs_cold_probe.dart
+cd arxa && dart run tool/warm_vs_cold_probe.dart
 ```
 
-Probe source: `appboxd/tool/warm_vs_cold_probe.dart` (self-contained; serves
+Probe source: `arxa/tool/warm_vs_cold_probe.dart` (self-contained; serves
 its own pages from an in-process `HttpServer` on 127.0.0.1 — no network).
 
 ## Setup
@@ -139,7 +139,7 @@ YES, CONDITIONALLY — a warm Chrome is safe to reuse for pixel comparison, on t
 
 The depth condition is NOT limited to the 15 captures above: it was measured separately and much deeper by `warm_depth_probe.dart`. See the "Depth" section further down this document for the depth actually verified, the drift-onset result, the memory curve and the recycle policy — that section, not this paragraph, is the authority on how long one warm Chrome may be reused.
 
-Reproduce: cd appboxd && dart run tool/warm_vs_cold_probe.dart
+Reproduce: cd arxa && dart run tool/warm_vs_cold_probe.dart
 ```
 
 ## Operational hazards for a warm-Chrome daemon
@@ -147,10 +147,10 @@ Reproduce: cd appboxd && dart run tool/warm_vs_cold_probe.dart
 Found the hard way while running these probes, not derived from theory. All
 three bite a daemon specifically, because a daemon holds ONE browser for hours.
 
-**1. The `appbox-cdp-` profile prefix is shared by every launch.**
+**1. The `arxa-cdp-` profile prefix is shared by every launch.**
 `CdpClient.launch()` creates its profile with
-`Directory.systemTemp.createTemp('appbox-cdp-')`, so every Chrome any code in
-this repo starts carries that prefix. A `pkill -f "appbox-cdp-"` therefore kills
+`Directory.systemTemp.createTemp('arxa-cdp-')`, so every Chrome any code in
+this repo starts carries that prefix. A `pkill -f "arxa-cdp-"` therefore kills
 *every* such Chrome on the machine at once — a daemon's long-lived browser
 included, and any colleague's capture along with it. This was done for real
 during this work while reaping a killed probe's orphans, and it could have taken
@@ -159,7 +159,7 @@ out another worker's session.
 **2. The correct reap is an ownership check, not a prefix match.**
 `cdp.dart`'s `_pidsOwningProfile(dir, browserOnly: true)` matches on the exact
 `--user-data-dir=<dir>` and guards the boundary explicitly — its comment reads
-"Whole dir, not a prefix: `appbox-cdp-AB` must not claim `…-ABC`'s pid", so
+"Whole dir, not a prefix: `arxa-cdp-AB` must not claim `…-ABC`'s pid", so
 someone has already been bitten by this class of bug. A daemon reaping orphans
 at startup must ask *who owns this specific dir* and kill only those pids; a
 profile dir with no owning pid is a genuine orphan and its directory can be
@@ -186,7 +186,7 @@ liveness check for the same reason.
 - Distinct counts are computed by exact byte equality over the samples, not by
   hash bucketing, so they carry no collision risk. The printed hashes
   (FNV-1a 64, first 12 hex chars) are labels only; `package:crypto` is not an
-  `appboxd` dependency.
+  `arxa` dependency.
 - Both PNG-byte and decoded-RGBA distinct counts are reported. PNG encoding
   could in principle vary while pixels do not; the pixel column is what makes a
   "differs" result falsifiable.
@@ -242,8 +242,8 @@ NO DRIFT WITHIN THE MEASURED DEPTH. One warm Chrome produced byte-identical outp
 
 ### Setup
 
-- Probe: `appboxd/tool/warm_depth_probe.dart`
-- Reproduce: `cd appboxd && dart run tool/warm_depth_probe.dart`
+- Probe: `arxa/tool/warm_depth_probe.dart`
+- Reproduce: `cd arxa && dart run tool/warm_depth_probe.dart`
 - Source under measurement: `HEAD aeba5dec | lib/cdp.dart clean at HEAD, sha256 f1a94ed732522304`
 - Chrome: `Chrome/151.0.7922.170`
 - Settle: the plain fixed `navigateAndSettle(settleMs: 1500)`.
@@ -649,8 +649,8 @@ browser might reuse differently, and no earlier arm touched it.
 
 ### Setup
 
-- Probe: `appboxd/tool/warm_anim_probe.dart`
-- Reproduce: `cd appboxd && dart run tool/warm_anim_probe.dart`
+- Probe: `arxa/tool/warm_anim_probe.dart`
+- Reproduce: `cd arxa && dart run tool/warm_anim_probe.dart`
 - Source: `HEAD d8717759 | lib/cdp.dart clean at HEAD, sha256 2a8cd7c1fb4f88a4`
 - Chrome: `Chrome/151.0.7922.170`
 - Path: the real `navigateAndSettleForCapture`, reading its own

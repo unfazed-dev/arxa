@@ -17,38 +17,38 @@
 library;
 
 import 'package:flutter/material.dart';
-import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
+import 'package:arxa_kit_ui_library/arxa_kit_ui_library.dart';
 
 class ShowcaseComponentsDrawerWidget extends StatelessWidget {
   const ShowcaseComponentsDrawerWidget({super.key});
 
   static void _toast(BuildContext context, String message) =>
-      appBoxKitLocator<AppBoxKitNotificationService>()
+      arxaKitLocator<ArxaKitNotificationService>()
           .show(message, context: context);
 
   @override
   Widget build(BuildContext context) {
     return Builder(
-      builder: (drawerContext) => AppBoxKitDrawer(
+      builder: (drawerContext) => ArxaKitDrawer(
         child: SafeArea(
           child: ListView(
             padding: const EdgeInsets.symmetric(vertical: abxSize16),
             children: [
-              const AppBoxKitListTile(
-                glyph: AppBoxKitGlyphs.person,
+              const ArxaKitListTile(
+                glyph: ArxaKitGlyphs.person,
                 title: 'Showcase User',
                 subtitle: 'evan@seed.local',
               ),
-              appBoxKitVerticalSpaceSmall,
-              AppBoxKitListSection(
+              arxaKitVerticalSpaceSmall,
+              ArxaKitListSection(
                 showDividers: false,
                 children: [
                   for (final (glyph, label) in [
-                    (AppBoxKitGlyphs.home, 'Home'),
-                    (AppBoxKitGlyphs.settings, 'Settings'),
-                    (AppBoxKitGlyphs.info, 'About'),
+                    (ArxaKitGlyphs.home, 'Home'),
+                    (ArxaKitGlyphs.settings, 'Settings'),
+                    (ArxaKitGlyphs.info, 'About'),
                   ])
-                    AppBoxKitListTile(
+                    ArxaKitListTile(
                       glyph: glyph,
                       title: label,
                       onTap: () {

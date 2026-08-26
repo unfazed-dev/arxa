@@ -1,6 +1,6 @@
 # Demo app — design brief
 
-> Emitted by appbox-intake from elicited answers.
+> Emitted by arxa-intake from elicited answers.
 > **Intake elicits; it does not generate** (architecture §22).
 > Fields marked **[inferred]** were not stated by the client and MUST
 > be confirmed before design consumes this brief.

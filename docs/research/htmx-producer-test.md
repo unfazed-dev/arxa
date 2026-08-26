@@ -116,7 +116,7 @@ audit) and expensive to keep re-deciding per surface.
 
 htmx is the strongest producer measured: cheapest to author, cleanest markup,
 richest frozen artifact, carries theming, and clears the FSM's intake and output
-gates end to end. It should be appbox's default prototype language.
+gates end to end. It should be arxa's default prototype language.
 
 The phone-only viewport is the thing to fix — in the **producer**, by freezing
 each surface at three widths, not in the emitter by inferring two layouts per

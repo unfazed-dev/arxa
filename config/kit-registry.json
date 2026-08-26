@@ -3,15 +3,15 @@
   "kits": [
     {
       "dir": "core",
-      "package": "appbox_kit_core",
+      "package": "arxa_kit_core",
       "capabilities": [
         "MVVM plumbing",
         "error/theme services",
         "design tokens",
         "locator",
         "input formatters",
-        "AppBoxKitGlyphs",
-        "AppBoxKitPlatform"
+        "ArxaKitGlyphs",
+        "ArxaKitPlatform"
       ],
       "backing": "stacked, stacked_services, stacked_shared",
       "topology": "core",
@@ -22,10 +22,10 @@
     },
     {
       "dir": "ui_library",
-      "package": "appbox_kit_ui_library",
+      "package": "arxa_kit_ui_library",
       "capabilities": [
         "Kit* adaptive port widgets",
-        "AppBoxKitNative* widgets",
+        "ArxaKitNative* widgets",
         "UI-coupled services (navigation / sheet / notifications toast)"
       ],
       "backing": "core + vendored cupertino_native/m3e forks",
@@ -35,49 +35,49 @@
       "hasSkill": false,
       "provides": {
         "widgets": [
-          "AppBoxKitAnimatedTabStack",
-          "AppBoxKitBottomNavScaffold",
-          "AppBoxKitChip",
-          "AppBoxKitChipCarousel",
-          "AppBoxKitDirectionalTabTransition",
-          "AppBoxKitDrawer",
-          "AppBoxKitExtendBodyFabLift",
-          "AppBoxKitFabMorph",
-          "AppBoxKitFrostedSurface",
-          "AppBoxKitGlassCard",
-          "AppBoxKitImage",
-          "AppBoxKitLazyIndexedStack",
-          "AppBoxKitListSection",
-          "AppBoxKitListTile",
-          "AppBoxKitNativeAppBar",
-          "AppBoxKitNativeButton",
-          "AppBoxKitNativeChromeGate",
-          "AppBoxKitNativeFab",
-          "AppBoxKitNativeFabMenu",
-          "AppBoxKitNativeIconButton",
-          "AppBoxKitNativeInputBar",
-          "AppBoxKitNativeLoadingIndicator",
-          "AppBoxKitNativeNavigationRail",
-          "AppBoxKitNativePopupMenu",
-          "AppBoxKitNativeProgress",
-          "AppBoxKitNativeRangeSlider",
-          "AppBoxKitNativeSearchBar",
-          "AppBoxKitNativeSegmentedControl",
-          "AppBoxKitNativeSlider",
-          "AppBoxKitNativeSliverAppBar",
-          "AppBoxKitNativeSplitButton",
-          "AppBoxKitNativeSwitch",
-          "AppBoxKitNativeTabBar",
-          "AppBoxKitNativeTextField",
-          "AppBoxKitNativeToolbar",
-          "AppBoxKitScrollEdgeEffect",
-          "AppBoxKitScrollOcclusionGate",
-          "AppBoxKitStreamBuilder",
-          "AppBoxKitTabSwitchTransition"
+          "ArxaKitAnimatedTabStack",
+          "ArxaKitBottomNavScaffold",
+          "ArxaKitChip",
+          "ArxaKitChipCarousel",
+          "ArxaKitDirectionalTabTransition",
+          "ArxaKitDrawer",
+          "ArxaKitExtendBodyFabLift",
+          "ArxaKitFabMorph",
+          "ArxaKitFrostedSurface",
+          "ArxaKitGlassCard",
+          "ArxaKitImage",
+          "ArxaKitLazyIndexedStack",
+          "ArxaKitListSection",
+          "ArxaKitListTile",
+          "ArxaKitNativeAppBar",
+          "ArxaKitNativeButton",
+          "ArxaKitNativeChromeGate",
+          "ArxaKitNativeFab",
+          "ArxaKitNativeFabMenu",
+          "ArxaKitNativeIconButton",
+          "ArxaKitNativeInputBar",
+          "ArxaKitNativeLoadingIndicator",
+          "ArxaKitNativeNavigationRail",
+          "ArxaKitNativePopupMenu",
+          "ArxaKitNativeProgress",
+          "ArxaKitNativeRangeSlider",
+          "ArxaKitNativeSearchBar",
+          "ArxaKitNativeSegmentedControl",
+          "ArxaKitNativeSlider",
+          "ArxaKitNativeSliverAppBar",
+          "ArxaKitNativeSplitButton",
+          "ArxaKitNativeSwitch",
+          "ArxaKitNativeTabBar",
+          "ArxaKitNativeTextField",
+          "ArxaKitNativeToolbar",
+          "ArxaKitScrollEdgeEffect",
+          "ArxaKitScrollOcclusionGate",
+          "ArxaKitStreamBuilder",
+          "ArxaKitTabSwitchTransition"
         ],
         "services": [
           {
-            "name": "AppBoxKitNotificationService",
+            "name": "ArxaKitNotificationService",
             "methods": [
               "show"
             ]
@@ -87,7 +87,7 @@
     },
     {
       "dir": "state",
-      "package": "appbox_kit_state",
+      "package": "arxa_kit_state",
       "capabilities": [
         "async state vocabulary (idle/loading/error)",
         "retry policy",
@@ -102,7 +102,7 @@
     },
     {
       "dir": "data",
-      "package": "appbox_kit_data",
+      "package": "arxa_kit_data",
       "capabilities": [
         "repositories",
         "schema descriptors",
@@ -125,7 +125,7 @@
     },
     {
       "dir": "auth",
-      "package": "appbox_kit_auth",
+      "package": "arxa_kit_auth",
       "capabilities": [
         "email/OAuth auth seam",
         "typed AuthResult",
@@ -138,14 +138,14 @@
       "hasSkill": false,
       "provides": {
         "widgets": [
-          "AppBoxKitCan"
+          "ArxaKitCan"
         ]
       },
       "providers": [
         {
           "name": "SeedAuthBackend",
           "verification": "port-tested",
-          "notes": "implemented 2026-08-01 — kit/auth/lib/src/backends/seed_auth_backend.dart is a genuine port of the tier1 spec (no UnimplementedError); behavior suite green at kit/auth/test/backends/seed_auth_backend_test.dart. tier1.dart remains the pure-Dart paired spec (appboxd cannot depend on the Flutter kit). No device surface — port-tested is the honest ceiling."
+          "notes": "implemented 2026-08-01 — kit/auth/lib/src/backends/seed_auth_backend.dart is a genuine port of the tier1 spec (no UnimplementedError); behavior suite green at kit/auth/test/backends/seed_auth_backend_test.dart. tier1.dart remains the pure-Dart paired spec (arxa cannot depend on the Flutter kit). No device surface — port-tested is the honest ceiling."
         },
         {
           "name": "Apple SignIn",
@@ -161,11 +161,11 @@
     },
     {
       "dir": "forms",
-      "package": "appbox_kit_forms",
+      "package": "arxa_kit_forms",
       "capabilities": [
         "form field state",
         "sync/async validation",
-        "AppBoxKitFieldController",
+        "ArxaKitFieldController",
         "error messages"
       ],
       "backing": "stacked (ChangeNotifier; no rxdart)",
@@ -177,7 +177,7 @@
     },
     {
       "dir": "permissions",
-      "package": "appbox_kit_permissions",
+      "package": "arxa_kit_permissions",
       "capabilities": [
         "OS permissions (camera/location/...)",
         "typed permission + status"
@@ -191,7 +191,7 @@
     },
     {
       "dir": "media",
-      "package": "appbox_kit_media",
+      "package": "arxa_kit_media",
       "capabilities": [
         "camera/photos",
         "audio record",
@@ -206,7 +206,7 @@
     },
     {
       "dir": "documents",
-      "package": "appbox_kit_documents",
+      "package": "arxa_kit_documents",
       "capabilities": [
         "doc pick",
         "scan (stub)",
@@ -222,7 +222,7 @@
     },
     {
       "dir": "notifications",
-      "package": "appbox_kit_notifications",
+      "package": "arxa_kit_notifications",
       "capabilities": [
         "device push/local notifications",
         "tokens",
@@ -237,7 +237,7 @@
     },
     {
       "dir": "analytics",
-      "package": "appbox_kit_analytics",
+      "package": "arxa_kit_analytics",
       "capabilities": [
         "analytics event fan-out"
       ],
@@ -250,7 +250,7 @@
     },
     {
       "dir": "payments",
-      "package": "appbox_kit_payments",
+      "package": "arxa_kit_payments",
       "capabilities": [
         "Apple Pay",
         "Google Pay"
@@ -262,7 +262,7 @@
       "hasSkill": false,
       "provides": {
         "widgets": [
-          "AppBoxKitPayButton"
+          "ArxaKitPayButton"
         ]
       },
       "web": {
@@ -274,12 +274,12 @@
         {
           "name": "Stripe",
           "verification": "port-tested",
-          "notes": "implemented 2026-08-01 — kit/payments Stripe provider runs flutter_stripe 13.1.0 PaymentSheet behind the AppBoxKitStripeBackend port; unit tests green at the mocked backend boundary. device-verified needs a physical device with test keys (plan seq 4) — tier stays port-tested."
+          "notes": "implemented 2026-08-01 — kit/payments Stripe provider runs flutter_stripe 13.1.0 PaymentSheet behind the ArxaKitStripeBackend port; unit tests green at the mocked backend boundary. device-verified needs a physical device with test keys (plan seq 4) — tier stays port-tested."
         },
         {
           "name": "PayPal",
           "verification": "port-tested",
-          "notes": "implemented 2026-08-01 — kit/payments PayPal provider runs Orders v2 create -> approve (flutter_web_auth_2 redirect) -> capture behind the AppBoxKitPayPalBackend port; unit tests green at the mocked backend boundary. Sandbox smoke with real keys not yet run — tier stays port-tested."
+          "notes": "implemented 2026-08-01 — kit/payments PayPal provider runs Orders v2 create -> approve (flutter_web_auth_2 redirect) -> capture behind the ArxaKitPayPalBackend port; unit tests green at the mocked backend boundary. Sandbox smoke with real keys not yet run — tier stays port-tested."
         },
         {
           "name": "Apple Pay",
@@ -290,10 +290,10 @@
     },
     {
       "dir": "maps",
-      "package": "appbox_kit_maps",
+      "package": "arxa_kit_maps",
       "capabilities": [
         "native maps",
-        "AppBoxKitMapView"
+        "ArxaKitMapView"
       ],
       "backing": "google/apple maps; OSM/Mapbox on flutter_map",
       "topology": "standalone",
@@ -302,7 +302,7 @@
       "hasSkill": false,
       "provides": {
         "widgets": [
-          "AppBoxKitMapView"
+          "ArxaKitMapView"
         ]
       },
       "web": {
@@ -314,18 +314,18 @@
         {
           "name": "OpenStreetMap",
           "verification": "port-tested",
-          "notes": "implemented 2026-08-01 — kit/maps OSM provider on flutter_map 8.3.1; unit+widget tests green, showcase demo wired (profile -> maps). Tier-1 spec suite green 2026-08-01 (appboxd/lib/tier1.dart: tile URL/256px geometry/policy UA + provider resolution). Simulator/device tile-rendering smoke not yet run — tier stays port-tested."
+          "notes": "implemented 2026-08-01 — kit/maps OSM provider on flutter_map 8.3.1; unit+widget tests green, showcase demo wired (profile -> maps). Tier-1 spec suite green 2026-08-01 (arxa/lib/tier1.dart: tile URL/256px geometry/policy UA + provider resolution). Simulator/device tile-rendering smoke not yet run — tier stays port-tested."
         },
         {
           "name": "Mapbox",
           "verification": "port-tested",
-          "notes": "implemented 2026-08-01 — kit/maps Mapbox provider on flutter_map 8.3.1 (512px raster tiles, public pk token; empty token rejected eagerly with ArgumentError); unit+widget tests green. Tier-1 spec suite green 2026-08-01 (appboxd/lib/tier1.dart: URL/512px geometry/style map/token edge). Simulator/device tile-rendering smoke not yet run — tier stays port-tested."
+          "notes": "implemented 2026-08-01 — kit/maps Mapbox provider on flutter_map 8.3.1 (512px raster tiles, public pk token; empty token rejected eagerly with ArgumentError); unit+widget tests green. Tier-1 spec suite green 2026-08-01 (arxa/lib/tier1.dart: URL/512px geometry/style map/token edge). Simulator/device tile-rendering smoke not yet run — tier stays port-tested."
         }
       ]
     },
     {
       "dir": "deploy",
-      "package": "appbox_kit_deploy",
+      "package": "arxa_kit_deploy",
       "capabilities": [
         "release automation (fastlane/shorebird/CF Pages+Workers/Vercel)"
       ],
@@ -361,7 +361,7 @@
     },
     {
       "dir": "haptics",
-      "package": "appbox_kit_haptics",
+      "package": "arxa_kit_haptics",
       "capabilities": [
         "haptic feedback"
       ],
@@ -374,7 +374,7 @@
     },
     {
       "dir": "bluetooth",
-      "package": "appbox_kit_bluetooth",
+      "package": "arxa_kit_bluetooth",
       "capabilities": [
         "bluetooth adapter state",
         "BLE scan/GATT (stub)"
@@ -388,7 +388,7 @@
     },
     {
       "dir": "wifi",
-      "package": "appbox_kit_wifi",
+      "package": "arxa_kit_wifi",
       "capabilities": [
         "Wi-Fi state",
         "network info",
@@ -403,7 +403,7 @@
     },
     {
       "dir": "support",
-      "package": "appbox_kit_support",
+      "package": "arxa_kit_support",
       "capabilities": [
         "in-app support",
         "feedback + Talker export",
@@ -418,7 +418,7 @@
     },
     {
       "dir": "security",
-      "package": "appbox_kit_security",
+      "package": "arxa_kit_security",
       "capabilities": [
         "biometrics",
         "secure storage",
@@ -435,7 +435,7 @@
     },
     {
       "dir": "compliance",
-      "package": "appbox_kit_compliance",
+      "package": "arxa_kit_compliance",
       "capabilities": [
         "ToS/privacy/EULA",
         "consent gates",
@@ -450,7 +450,7 @@
     },
     {
       "dir": "branding",
-      "package": "appbox_kit_branding",
+      "package": "arxa_kit_branding",
       "capabilities": [
         "app icons",
         "native/in-Flutter splash",
@@ -466,12 +466,12 @@
     },
     {
       "dir": "motion",
-      "package": "appbox_kit_motion",
+      "package": "arxa_kit_motion",
       "capabilities": [
         "entrance/exit choreography",
         "gesture drivers",
         "motion scopes",
-        "AppBoxKitWake"
+        "ArxaKitWake"
       ],
       "backing": "pure Dart",
       "topology": "standalone",
@@ -486,14 +486,14 @@
           "standard"
         ],
         "widgets": [
-          "AppBoxKitMotionScope",
-          "AppBoxKitWake"
+          "ArxaKitMotionScope",
+          "ArxaKitWake"
         ]
       }
     },
     {
       "dir": "i18n",
-      "package": "appbox_kit_i18n",
+      "package": "arxa_kit_i18n",
       "capabilities": [
         "i18n"
       ],
@@ -506,7 +506,7 @@
     },
     {
       "dir": "showcase_app",
-      "package": "appbox_kit_showcase_app",
+      "package": "arxa_kit_showcase_app",
       "capabilities": [
         "integration surface / reference app (proves every kit)"
       ],

@@ -4,7 +4,7 @@
 /// places it owns the data.
 ///
 /// This is the user interface for the maps demo body — the app bar, the
-/// backend label, and the AppBoxKitMapView backed by the viewmodel's provider
+/// backend label, and the ArxaKitMapView backed by the viewmodel's provider
 /// (OpenStreetMap by default, Mapbox raster tiles when a public token is
 /// dart-defined).
 ///
@@ -36,9 +36,9 @@
 library;
 
 import 'package:flutter/material.dart';
-import 'package:appbox_kit_maps/appbox_kit_maps.dart';
-import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
-import 'package:appbox_kit_showcase_app/ui/views/showcase_profile_shell/showcase_maps/showcase_maps_viewmodel.dart';
+import 'package:arxa_kit_maps/arxa_kit_maps.dart';
+import 'package:arxa_kit_ui_library/arxa_kit_ui_library.dart';
+import 'package:arxa_kit_showcase_app/ui/views/showcase_profile_shell/showcase_maps/showcase_maps_viewmodel.dart';
 
 class ShowcaseMapsBodyWidget extends StatelessWidget {
   const ShowcaseMapsBodyWidget({required this.viewModel, super.key});
@@ -48,9 +48,9 @@ class ShowcaseMapsBodyWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBoxKitNativeAppBar(
-        leading: AppBoxKitNativeIconButton(
-          glyph: AppBoxKitGlyphs.back,
+      appBar: ArxaKitNativeAppBar(
+        leading: ArxaKitNativeIconButton(
+          glyph: ArxaKitGlyphs.back,
           onPressed: () => context.popRoute(),
         ),
         title: 'Maps',
@@ -61,17 +61,17 @@ class ShowcaseMapsBodyWidget extends StatelessWidget {
             padding: const EdgeInsets.all(abxSize16),
             child: Text(
               'Backend: ${viewModel.backendLabel}'
-              '${viewModel.mapboxAvailable ? '' : ' — pass --dart-define=MAPBOX_PUBLIC_TOKEN=pk.... to run the same AppBoxKitMapView on Mapbox tiles.'}',
+              '${viewModel.mapboxAvailable ? '' : ' — pass --dart-define=MAPBOX_PUBLIC_TOKEN=pk.... to run the same ArxaKitMapView on Mapbox tiles.'}',
               style: Theme.of(context).textTheme.bodySmall,
             ),
           ),
           Expanded(
             // Third-party platform view: NATIVE_COMPONENTS.md requires any
             // map/webview/video platform view to mount behind
-            // AppBoxKitNativeChromeGate so route pushes / swipe-backs over it
+            // ArxaKitNativeChromeGate so route pushes / swipe-backs over it
             // can't bleed or ghost the native surface.
-            child: AppBoxKitNativeChromeGate(
-              child: AppBoxKitMapView(
+            child: ArxaKitNativeChromeGate(
+              child: ArxaKitMapView(
                 config: viewModel.config,
                 provider: viewModel.provider,
               ),

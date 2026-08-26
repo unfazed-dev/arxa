@@ -43,7 +43,7 @@ No raw `Color(0x…)` literals — the review gate's raw-colour check owns that.
 
 ## Glyphs (kit tokens)
 
-`AppBoxKitGlyphs.` only, never a bare `Icons.`: `add`, `back`, `camera`, `close`,
+`ArxaKitGlyphs.` only, never a bare `Icons.`: `add`, `back`, `camera`, `close`,
 `compose`, `delete`, `error`, `folder`, `info`, `mic`, `more`, `newFolder`,
 `notes`, `pause`, `photo`, `pin`, `play`, `restore`, `signOut`, `stop`, `unpin`.
 
@@ -55,13 +55,13 @@ dimensions use the `axSize*` scale (`axSize4` … `axSize80`), never bare double
 
 ## Kit surface
 
-Chrome and inputs are kit-native throughout: `AppBoxKitNativeAppBar`,
-`AppBoxKitNativeTextField`, `AppBoxKitFieldTextField`, `AppBoxKitNativeButton`,
-`AppBoxKitNativeIconButton`, `AppBoxKitNativeSearchBar`, `AppBoxKitNativeSegmentedControl`,
-`AppBoxKitNativePopupMenu`, `AppBoxKitNativeFabMenu`, `AppBoxKitNativeProgress`,
-`AppBoxKitNativeLoadingIndicator`. Content surfaces compose on `AppBoxKitGlassCard`,
-`AppBoxKitListSection`, `AppBoxKitListTile`, `AppBoxKitMenuItem`. Streams render through
-`AppBoxKitStreamBuilder`. Motion is `AppBoxKitMotionScope`-owned.
+Chrome and inputs are kit-native throughout: `ArxaKitNativeAppBar`,
+`ArxaKitNativeTextField`, `ArxaKitFieldTextField`, `ArxaKitNativeButton`,
+`ArxaKitNativeIconButton`, `ArxaKitNativeSearchBar`, `ArxaKitNativeSegmentedControl`,
+`ArxaKitNativePopupMenu`, `ArxaKitNativeFabMenu`, `ArxaKitNativeProgress`,
+`ArxaKitNativeLoadingIndicator`. Content surfaces compose on `ArxaKitGlassCard`,
+`ArxaKitListSection`, `ArxaKitListTile`, `ArxaKitMenuItem`. Streams render through
+`ArxaKitStreamBuilder`. Motion is `ArxaKitMotionScope`-owned.
 
 ## Forbidden (enforced by the gates)
 
@@ -72,7 +72,7 @@ Chrome and inputs are kit-native throughout: `AppBoxKitNativeAppBar`,
   `<surface>_view.dart`.
 - A form-factor variant importing another variant (S9) — a variant is one
   layout, not a component library.
-- `appbox_kit_ui_library` or `flutter/{material,widgets,cupertino}` in a `*viewmodel.dart`
+- `arxa_kit_ui_library` or `flutter/{material,widgets,cupertino}` in a `*viewmodel.dart`
   (check 1m). Toasts fire from the view layer; see
   `showcase_profile_view.mobile.dart:86`.
 

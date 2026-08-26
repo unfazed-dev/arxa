@@ -7,14 +7,14 @@
 
 // ignore_for_file: public_member_api_docs, implementation_imports, depend_on_referenced_packages
 
-import 'package:appbox_kit_core/extensions/appbox_kit_selectable_extension.dart';
-import 'package:appbox_kit_core/services/error/appbox_kit_error_service.dart';
-import 'package:appbox_kit_core/services/theme/appbox_kit_theme_service.dart';
-import 'package:appbox_kit_haptics/src/appbox_kit_haptic_service.dart';
-import 'package:appbox_kit_media/src/audio/appbox_kit_audio_recorder_service.dart';
-import 'package:appbox_kit_ui_library/extensions/appbox_kit_overlay_extension.dart';
-import 'package:appbox_kit_ui_library/services/navigation/appbox_kit_navigation_controller_service.dart';
-import 'package:appbox_kit_ui_library/services/notifications/appbox_kit_notification_service.dart';
+import 'package:arxa_kit_core/extensions/arxa_kit_selectable_extension.dart';
+import 'package:arxa_kit_core/services/error/arxa_kit_error_service.dart';
+import 'package:arxa_kit_core/services/theme/arxa_kit_theme_service.dart';
+import 'package:arxa_kit_haptics/src/arxa_kit_haptic_service.dart';
+import 'package:arxa_kit_media/src/audio/arxa_kit_audio_recorder_service.dart';
+import 'package:arxa_kit_ui_library/extensions/arxa_kit_overlay_extension.dart';
+import 'package:arxa_kit_ui_library/services/navigation/arxa_kit_navigation_controller_service.dart';
+import 'package:arxa_kit_ui_library/services/notifications/arxa_kit_notification_service.dart';
 import 'package:stacked_services/src/navigation/router_service.dart';
 import 'package:stacked_shared/stacked_shared.dart';
 
@@ -35,15 +35,15 @@ Future<void> setupLocator(
 
 // Register dependencies
   locator.registerLazySingleton(() => RouterService());
-  locator.registerLazySingleton(() => AppBoxKitErrorService());
-  locator.registerLazySingleton(() => AppBoxKitNotificationService());
-  locator.registerLazySingleton(() => AppBoxKitHapticService());
-  locator.registerLazySingleton(() => AppBoxKitThemeService());
-  locator.registerLazySingleton(() => AppBoxKitNavigationControllerService());
-  locator.registerLazySingleton(() => AppBoxKitOverlayService());
-  locator.registerLazySingleton(() => AppBoxKitSelectableService());
-  locator.registerLazySingleton<AppBoxKitAudioRecorderService>(
-      () => AppBoxKitRecordAudioRecorderService());
+  locator.registerLazySingleton(() => ArxaKitErrorService());
+  locator.registerLazySingleton(() => ArxaKitNotificationService());
+  locator.registerLazySingleton(() => ArxaKitHapticService());
+  locator.registerLazySingleton(() => ArxaKitThemeService());
+  locator.registerLazySingleton(() => ArxaKitNavigationControllerService());
+  locator.registerLazySingleton(() => ArxaKitOverlayService());
+  locator.registerLazySingleton(() => ArxaKitSelectableService());
+  locator.registerLazySingleton<ArxaKitAudioRecorderService>(
+      () => ArxaKitRecordAudioRecorderService());
   locator.registerLazySingleton(() => ShowcaseNotesRepositoryService());
   locator.registerLazySingleton(() => ShowcaseNotesFacadeService());
   locator.registerLazySingleton(() => ShowcaseNotesMediaAdapterService());

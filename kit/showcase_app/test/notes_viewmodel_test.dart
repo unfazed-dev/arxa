@@ -1,21 +1,21 @@
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
-import 'package:appbox_kit_ui_library/appbox_kit_testing.dart';
-import 'package:appbox_kit_data/appbox_kit_data.dart';
-import 'package:appbox_kit_showcase_app/app/app_data.dart';
-import 'package:appbox_kit_showcase_app/data/models/showcase_notes_models/models.dart';
-import 'package:appbox_kit_showcase_app/services/showcase_notes_services/facades/showcase_notes_facade_service.dart';
-import 'package:appbox_kit_showcase_app/services/showcase_notes_services/repositories/showcase_notes_repository_service.dart';
-import 'package:appbox_kit_showcase_app/ui/views/showcase_notes_shell/showcase_notes/showcase_notes_viewmodel.dart';
+import 'package:arxa_kit_ui_library/arxa_kit_ui_library.dart';
+import 'package:arxa_kit_ui_library/arxa_kit_testing.dart';
+import 'package:arxa_kit_data/arxa_kit_data.dart';
+import 'package:arxa_kit_showcase_app/app/app_data.dart';
+import 'package:arxa_kit_showcase_app/data/models/showcase_notes_models/models.dart';
+import 'package:arxa_kit_showcase_app/services/showcase_notes_services/facades/showcase_notes_facade_service.dart';
+import 'package:arxa_kit_showcase_app/services/showcase_notes_services/repositories/showcase_notes_repository_service.dart';
+import 'package:arxa_kit_showcase_app/ui/views/showcase_notes_shell/showcase_notes/showcase_notes_viewmodel.dart';
 
 /// The notes-shell cascade: session → overview/admin streams, composed with
-/// rxdart switchMap and bound via AppBoxKitStreamBuilder in the views. This is the
+/// rxdart switchMap and bound via ArxaKitStreamBuilder in the views. This is the
 /// one non-trivial wiring the streams-only conversion introduced, so it gets
 /// the check: overview appears with a session and nulls out on sign-out.
-class _DiskAssetReader implements AppBoxKitAssetReader {
-  static const _prefix = 'packages/appbox_kit_showcase_app/';
+class _DiskAssetReader implements ArxaKitAssetReader {
+  static const _prefix = 'packages/arxa_kit_showcase_app/';
 
   @override
   Future<String> readString(String path) async {
@@ -30,32 +30,32 @@ void main() {
 
   setUpAll(() async {
     // Kit UI services (Talker / Dialog / Snackbar / BottomSheet) — the kit's
-    // own setup; AppBoxKitAction managers resolve these lazily on first
+    // own setup; ArxaKitAction managers resolve these lazily on first
     // execute().
-    setupAppBoxKitUiServices();
-    appBoxKitLocator
-      ..registerLazySingleton(() => AppBoxKitErrorService())
-      ..registerLazySingleton<AppBoxKitNotificationService>(
-          () => FakeAppBoxKitNotificationService())
+    setupArxaKitUiServices();
+    arxaKitLocator
+      ..registerLazySingleton(() => ArxaKitErrorService())
+      ..registerLazySingleton<ArxaKitNotificationService>(
+          () => FakeArxaKitNotificationService())
       ..registerLazySingleton<ShowcaseNotesRepositoryService>(
           () => ShowcaseNotesRepositoryService())
       ..registerLazySingleton<ShowcaseNotesFacadeService>(
           () => ShowcaseNotesFacadeService());
 
     await AppData.initialize(
-      config: const AppBoxKitDataConfig(
-        backend: AppBoxKitDataBackend.seed,
-        auth: AppBoxKitAuthConfig(fakeUsersAsset: AppData.fakeUsersAsset),
+      config: const ArxaKitDataConfig(
+        backend: ArxaKitDataBackend.seed,
+        auth: ArxaKitAuthConfig(fakeUsersAsset: AppData.fakeUsersAsset),
       ),
       assetReader: _DiskAssetReader(),
     );
 
-    notes = appBoxKitLocator<ShowcaseNotesFacadeService>();
+    notes = arxaKitLocator<ShowcaseNotesFacadeService>();
   });
 
   tearDownAll(() async {
-    AppBoxKitData.resetForTesting();
-    await appBoxKitLocator.reset();
+    ArxaKitData.resetForTesting();
+    await arxaKitLocator.reset();
   });
 
   Future<void> until(bool Function() cond) async {
@@ -74,7 +74,7 @@ void main() {
     addTearDown(vm.dispose);
 
     // Streams-only VM: capture the latest emission of each stream getter.
-    AppBoxKitAuthSession? session;
+    ArxaKitAuthSession? session;
     ShowcaseNotesOverview? overview;
     final subscriptions = [
       vm.session$.listen((s) => session = s),

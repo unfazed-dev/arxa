@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:appbox_kit_showcase_app/enums/showcase_notes_enums/enums.dart';
+import 'package:arxa_kit_showcase_app/enums/showcase_notes_enums/enums.dart';
 
 /// Pure parse/wire-format behaviors of the notes enums — the route contract
 /// (`?quickAction=`, `folder/:id`) lives on these types.

@@ -1,0 +1,113 @@
+<Callout id="header" tone="info">
+# arxa-lint — Per-Skill Playbook
+
+`arxa-lint` · status: **active**
+
+**Role (one line):** health-check the knowledge base — catch contradictions, stale claims, dead links, orphan pages, and docs that disagree with shipped code/catalogs.
+
+**Scope of this document:** lets a human OR an LLM run a docs-consistency pass without reading the skill source. Folded from `SKILL.md`.
+
+**Pipeline position:** cross-cutting stage 7, not phase-bound — audits the knowledge-base claims every other arxa skill makes, from `arxa-intake`'s brief contract to `arxa-deployer`'s gates; run before a session handoff or after any behavior change. Full chain, stage numbers, per-stage artifacts: `docs/research/pipeline-map.md` §1.
+
+## Table of contents
+
+0. Header & TOC · 1. Overview & role · 2. Inputs · 3. Procedure · 4. Outputs · 5. Rules · 6. References
+
+</Callout>
+
+### Overview & role
+
+The expensive failure isn't a missing doc — it's a confidently wrong one. A single un-caught contradiction propagates into memory, handoffs, and changelogs while contradicting the catalog's own rules, and costs a round-trip. Lint exists to catch that class of rot: a mechanical pass (a script, cheap, deterministic) and a semantic pass (you, reading — judgment the script can't do). Run both.
+
+### Inputs
+
+- The knowledge base layers (real paths): `config/catalogs/*.json` (enforced runtime truth), `docs/` prose (`INDEX.md` the index, `VOCABULARY.md` the glossary SSOT), `memory/facts/*.json` + `memory/stages/*.LESSONS.md` (cross-session memory), and the shipped gates/emitters in `arxa/lib/`.
+- The hierarchy itself: enforced layers (catalogs + code) outrank prose and memory; vocabulary conflicts resolve in `docs/VOCABULARY.md`.
+
+### Procedure
+
+Mechanical pass — run `arxa docs` (the Dart port of the archived `lint_kb.py`): flags dead `.md` links as errors; unindexed docs, KB-lint orphans, half-wired supersede pointers and unresolved memory wikilinks as warnings. Also run `arxa lint` (repo conventions, R2/R3). Fix errors before continuing. Semantic pass — for each topic touched recently (`git log --oneline -15`; `memory/stages/*.LESSONS.md` is the de-facto change log), cross-check the claim across all layers (`config/catalogs/*.json` ↔ `docs/` ↔ `memory/` ↔ the gate/emitter in `arxa/lib/`) and find disagreement. Resolve per the hierarchy: the enforced layer wins; fix the doc/memory to match the catalog/code, never the reverse unless primary-source-verified (then fix the catalog/code itself, with evidence). Record it: history is git — durable lessons land ONLY as gate-triggered appends in `memory/stages/<stage>.LESSONS.md` (`gate X failed because Y; do Z`); everything else is the direct doc/memory fix in the commit. There is no `docs/changelog.md` and no `skills/refresh` — those were retired with the pre-Dart toolchain.
+
+### Law pass — liquid-glass & M3E (ratified 2026-08-13)
+
+App/kit code must agree with the platform laws the same way docs must agree
+with catalogs. SSOTs: `docs/liquid-glass-allowlist.md` (THE liquid-glass
+law) and `docs/m3e-law.md`. Kit-side the law is enforced by
+`arxa_kit_liquid_glass_law_gate_test.dart` + the transition gate; this
+pass extends the same checks over app code (showcase + scaffolded apps).
+
+**Scope before you grep.** These are ASSEMBLY checks: they constrain how
+chrome and glass compose where a design put them, and never assert that a
+surface should have chrome — a bar-less surface is lawful and is not a
+finding. Checks 1–4 (glass composition) are the iOS/macOS standard; check 5
+(double-bar) is structural and holds on every target; check 6 covers Android
+under the M3E law; check 7 (chrome hidden outside the gate) rides the same
+iOS/macOS platform-view rationale as 1–4. Web and desktop are otherwise out
+of this pass's scope.
+
+Mechanical greps, each hit guilty until a `// glass-law-exempt: <reason>`
+names why:
+
+1. **saveLayer over platform views** — `BackdropFilter(|ImageFiltered(|ShaderMask(`
+   in any file that also references `ArxaKitNative*`/`CN*` widgets or
+   whose subtree hosts them (law rule 1).
+2. **Alpha over native** — `Opacity(|AnimatedOpacity(|FadeTransition(`
+   wrapping native-glass subtrees; motion must be slide/transform.
+3. **Hand-assembled top chrome** — `Scaffold(` with an `appBar:` in a file
+   that ALSO puts native glass controls in scrollable content; the chrome
+   scaffold (`ArxaKitChromeScaffold`) is the only lawful assembly
+   (law rule 4) — it takes `leading` for pushed-route back buttons since
+   the floating-back-affordance ruling (2026-08-13). A nested pushed-route
+   Scaffold with a boxed bar is lawful only while its scroll content is
+   Flutter-only or provably clip-not-cull (SingleChildScrollView — the
+   note-editor exemption).
+4. **Glass-on-glass overhang** — fixed native glass (a `LiquidGlassContainer`
+   or CN control positioned as chrome) overlapping the travel path of
+   in-scroll native glass (law rule 5; the title pill precedent).
+5. **Double-bar stack (ancestor chrome over pushed routes)** — any file
+   that references floating chrome (`ArxaKitChromeScaffold`,
+   `ArxaKitFloatingChrome`, `ArxaKitNativeFloatingBar`) AND hosts a
+   nested router (`AutoRouter(`, `RouterOutlet`, `AutoRouteWrapper`, a
+   nested `Navigator`, or a shell/router-host view per
+   `.shell-structure.json`) — file-scoped like check 1, deliberately loose,
+   because the chrome and the router injection are usually written apart
+   (the shell passes a `child`/`body` the router fills, often in another
+   file), so a construction-shaped grep would read well and never fire.
+   Guilty because the floating bar then stacks over every route pushed
+   inside it, and a pushed surface carrying its own bar renders two.
+   Chrome is per-surface; a pushed route must never inherit an ancestor
+   surface's floating chrome. Fix by moving the chrome down to each
+   surface whose design declares it — not by deleting the pushed route's
+   own bar (liquid-glass law → *Chrome existence is the design's call*).
+6. **M3E shape discipline** — new M3E chrome must repeat the
+   transparent-container + own-unrounded-Material fix and gate on
+   `wantNative && supportsComposeM3E`, never bare `Platform.isAndroid`
+   (M3E law rules 1–2).
+7. **Chrome hidden outside the gate** — `Offstage(`/`Visibility(`/a
+   conditional that drops the widget from the tree, wrapped around
+   `ArxaKitNative*`/`CN*` chrome in app code, or app code writing
+   `CNTabBarRouteObserver.anyModalDepth` directly.
+   `ArxaKitNativeChromeGate` is the only lawful way to take
+   platform-view pixels off screen while a Flutter overlay is up: the
+   `UiKitView` composites above the Flutter scene, so a hand-rolled hide
+   bypasses the gate's OR'd overlay signals and restore fade, and rots
+   the moment a new overlay kind ships. Raising the signal via
+   `arxaKitWithNativeChromeHidden` is lawful (that is how a snackbar
+   registers its on-screen lifetime); doing the hiding by hand is the
+   finding. Files under `kit/ui_library/lib/` are the gate's
+   implementation and are exempt by location.
+
+### Outputs
+
+A green mechanical pass plus a list of semantic corrections applied (each landed as the direct doc/memory fix in the commit; durable gate-failure lessons as `memory/stages/<stage>.LESSONS.md` appends). Note gaps the lint can't fix: a concept lacking a page in `docs/INDEX.md`, a plan whose status is unverified, a catalog that may be stale.
+
+### Rules
+
+Run the law pass whenever the touched code renders UI — the laws are
+catalogs in the hierarchy sense (they enforce; prose lags), and a law
+violation in app code is the same class of rot as a doc contradicting a
+catalog. Don't trust memory or a doc over a catalog/code — catalogs enforce, prose lags; on conflict the prose is wrong. Don't fix only the file you noticed — a wrong claim usually lives in 2-3 places; grep the assertion across all layers and fix every copy. Don't skip the semantic pass because the script went green. Don't write speculative lessons — `memory/stages/` is gate-triggered append-only, and a lint observation is not a gate failure. Keep `arxa docs` (the Dart docs_lint — `arxa/lib/docs_lint.dart` + `arxa/test/docs_lint_test.dart`) green when you change it.
+
+<!-- kb:begin -->
+### References
+<!-- kb:end -->

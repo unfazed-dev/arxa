@@ -1,5 +1,5 @@
 /// A widget is a reusable UI piece composed by views. It receives data via
-/// constructor params or [AppBoxKitStreamBuilder] bindings and renders its
+/// constructor params or [ArxaKitStreamBuilder] bindings and renders its
 /// slice of the surface — it holds no business logic and never decides when
 /// an action runs.
 ///
@@ -31,8 +31,8 @@
 library;
 
 import 'package:flutter/material.dart';
-import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
-import 'package:appbox_kit_showcase_app/ui/views/showcase_notes_shell/showcase_note_editor/showcase_note_editor_viewmodel.dart';
+import 'package:arxa_kit_ui_library/arxa_kit_ui_library.dart';
+import 'package:arxa_kit_showcase_app/ui/views/showcase_notes_shell/showcase_note_editor/showcase_note_editor_viewmodel.dart';
 
 /// The in-progress voice-recording row: cancel, elapsed pill, stop.
 class ShowcaseNoteRecordingRowWidget extends StatelessWidget {
@@ -44,7 +44,7 @@ class ShowcaseNoteRecordingRowWidget extends StatelessWidget {
   final ShowcaseNoteEditorViewModel viewModel;
 
   /// Live elapsed time — arrives as a builder param from the toolbar's
-  /// [AppBoxKitStreamBuilder] binding, never re-read off the viewmodel here.
+  /// [ArxaKitStreamBuilder] binding, never re-read off the viewmodel here.
   final Duration elapsed;
 
   @override
@@ -52,12 +52,12 @@ class ShowcaseNoteRecordingRowWidget extends StatelessWidget {
     final theme = Theme.of(context);
     return Row(
       children: [
-        AppBoxKitNativeIconButton(
-          glyph: AppBoxKitGlyphs.close,
+        ArxaKitNativeIconButton(
+          glyph: ArxaKitGlyphs.close,
           color: theme.colorScheme.onSurfaceVariant,
           onPressed: viewModel.cancelRecording,
         ),
-        appBoxKitHorizontalSpaceSmall,
+        arxaKitHorizontalSpaceSmall,
         Expanded(
           child: Container(
             padding: const EdgeInsets.symmetric(
@@ -71,9 +71,9 @@ class ShowcaseNoteRecordingRowWidget extends StatelessWidget {
               children: [
                 Icon(Icons.fiber_manual_record,
                     color: theme.colorScheme.error, size: 12),
-                appBoxKitHorizontalSpaceXSmall,
+                arxaKitHorizontalSpaceXSmall,
                 Text(
-                  appBoxKitFormatDuration(elapsed),
+                  arxaKitFormatDuration(elapsed),
                   style: TextStyle(
                     color: theme.colorScheme.error,
                     fontFeatures: const [FontFeature.tabularFigures()],
@@ -83,9 +83,9 @@ class ShowcaseNoteRecordingRowWidget extends StatelessWidget {
             ),
           ),
         ),
-        appBoxKitHorizontalSpaceSmall,
-        AppBoxKitNativeIconButton(
-          glyph: AppBoxKitGlyphs.stop,
+        arxaKitHorizontalSpaceSmall,
+        ArxaKitNativeIconButton(
+          glyph: ArxaKitGlyphs.stop,
           color: theme.colorScheme.error,
           onPressed: viewModel.stopRecording,
         ),

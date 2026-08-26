@@ -12,24 +12,24 @@
 // (perceptual/Checkpoint 4 verification). It catches the kit-specific slop and
 // contract violations that the Dart compiler accepts but the skill forbids:
 //
-//   1. no_stock_icons       — Icons.<x> outside allowlisted debug contexts → AppBoxKitGlyphs.*
+//   1. no_stock_icons       — Icons.<x> outside allowlisted debug contexts → ArxaKitGlyphs.*
 //   2. no_hardcoded_colors  — Color(0x…) / Color.fromARGB() / Color.fromRGBO() /
-//                             CupertinoColors.* / Colors.* literals in view files → AppBoxKitColors.*
+//                             CupertinoColors.* / Colors.* literals in view files → ArxaKitColors.*
 //   3. no_raw_dart_io       — `import 'dart:io'` (incl. `show`/`as` combiners) + raw
-//                             Platform.is* → AppBoxKitPlatform
+//                             Platform.is* → ArxaKitPlatform
 //   4. kit_theme_used      — unconfigured MaterialApp( or MaterialApp.router( without
-//                             appBoxKitLightTheme/appBoxKitDarkTheme
+//                             arxaKitLightTheme/arxaKitDarkTheme
 //   4b. no_stock_cta_buttons — ElevatedButton/FilledButton/TextButton as CTAs in view
-//                             code → AppBoxKitNativeButton
+//                             code → ArxaKitNativeButton
 //   4c. no_stock_loading_indicator — CircularProgressIndicator in view code →
-//                             AppBoxKitNativeLoadingIndicator
-//   4d. no_invented_native_widgets — AppBoxKitNative<X> not in the matrix allowlist
-//                             (e.g. AppBoxKitNativeDialog) → never invent a wrapper the kit lacks (#0c)
+//                             ArxaKitNativeLoadingIndicator
+//   4d. no_invented_native_widgets — ArxaKitNative<X> not in the matrix allowlist
+//                             (e.g. ArxaKitNativeDialog) → never invent a wrapper the kit lacks (#0c)
 //   4e. valid_dart_syntax   — brace/paren/bracket balance (catches truncated files the
 //                             regex gate would silently call "clean")
 //   5. form_factor_files    — for each <surface>_view.dart, the 4 sibling files exist
 //   6. design_system_doc    — design-system.md exists in the surface dir (mandatory)
-//   7. iteration_drift      — for a vN (N≥2) surface, no DROPPED AppBoxKitGlyphs/AppBoxKitColors vs prior
+//   7. iteration_drift      — for a vN (N≥2) surface, no DROPPED ArxaKitGlyphs/ArxaKitColors vs prior
 //   8. no_cross_shell_imports — view trees stay shell-private: a file under
 //                             /ui/views/<shellA>/ never imports /ui/views/<shellB>/
 //                             (overlay subdirs bottom_sheets|dialogs|snackbars exempt)
@@ -57,7 +57,7 @@ import 'dart:io';
 // ---------- patterns ----------
 
 // Icons.<name> usage. Allowlist: comments, debug-only chips, the kit's own
-// appbox_kit_glyphs.dart (where the Material IconData is the source of truth).
+// arxa_kit_glyphs.dart (where the Material IconData is the source of truth).
 final _iconsUsage = RegExp(r'\bIcons\.([a-zA-Z0-9_]+)');
 
 // Color(0x...) literal — the hardcoded-color smell.
@@ -69,7 +69,7 @@ final _colorLiteral = RegExp(r'\bColor\(\s*0x([0-9A-Fa-f]+)\s*\)');
 final _colorFromArgb = RegExp(r'\bColor\.fromARGB\s*\(');
 final _colorFromRgba = RegExp(r'\bColor\.fromRGBO\s*\(');
 
-// CupertinoColors.* / Colors.* literals (not colorScheme / AppBoxKitColors).
+// CupertinoColors.* / Colors.* literals (not colorScheme / ArxaKitColors).
 final _cupertinoColorsLiteral = RegExp(r'\bCupertinoColors\.([a-zA-Z0-9_]+)');
 final _colorsLiteralUsage =
     RegExp(r'\bColors\.([a-zA-Z0-9_]+)');
@@ -82,54 +82,54 @@ final _colorsLiteralUsage =
 final _dartIoImport =
     RegExp("^\\s*import\\s+['\\\"]dart:io['\\\"].*;", multiLine: true);
 
-// raw Platform.is* — use AppBoxKitPlatform instead (web-safe).
+// raw Platform.is* — use ArxaKitPlatform instead (web-safe).
 final _rawPlatform = RegExp(r'\bPlatform\.(isIOS|isAndroid|isMacOS|isWindows|isLinux)\b');
 
-// Stock CTA buttons as primary/secondary actions → AppBoxKitNativeButton. The anti-slop
+// Stock CTA buttons as primary/secondary actions → ArxaKitNativeButton. The anti-slop
 // blacklist names these explicitly. Allowlist: the kit's own widget wrappers
 // (kit_native_*.dart) use FilledButton.tonal internally — that's correct, they're
 // the wrapper layer, not app view code.
 final _stockCtaButton =
     RegExp(r'\b(ElevatedButton|FilledButton|TextButton|OutlinedButton|CupertinoButton)\b');
 
-// Stock CircularProgressIndicator everywhere → AppBoxKitNativeLoadingIndicator. Same
+// Stock CircularProgressIndicator everywhere → ArxaKitNativeLoadingIndicator. Same
 // allowlist rationale (the kit's own progress wrappers use it internally).
 final _stockLoadingIndicator =
     RegExp(r'\b(CircularProgressIndicator|LinearProgressIndicator)\b');
 
-// Invented AppBoxKitNative* widget references. The native-component matrix
-// (NATIVE_COMPONENTS.md) is the SSOT for which AppBoxKitNative* widgets actually
-// exist; inventing a name the matrix doesn't list (AppBoxKitNativeDialog,
-// AppBoxKitNativeDatePicker, AppBoxKitNativeCarousel…) is the #0c gate's "never invent a
-// AppBoxKitNative* class the matrix doesn't list" rule. This constant is the
+// Invented ArxaKitNative* widget references. The native-component matrix
+// (NATIVE_COMPONENTS.md) is the SSOT for which ArxaKitNative* widgets actually
+// exist; inventing a name the matrix doesn't list (ArxaKitNativeDialog,
+// ArxaKitNativeDatePicker, ArxaKitNativeCarousel…) is the #0c gate's "never invent a
+// ArxaKitNative* class the matrix doesn't list" rule. This constant is the
 // authoritative allowlist, sourced from NATIVE_COMPONENTS.md.
 const knownKitNativeWidgets = <String>{
-  'AppBoxKitNativeAppBar',
-  'AppBoxKitNativeButton',
-  'AppBoxKitNativeChromeGate',
-  'AppBoxKitNativeFab',
-  'AppBoxKitNativeFabMenu',
-  'AppBoxKitNativeIconButton',
-  'AppBoxKitNativeInputBar',
-  'AppBoxKitNativeLoadingIndicator',
-  'AppBoxKitNativeNavigationRail',
-  'AppBoxKitNativePopupMenu',
-  'AppBoxKitNativeProgress',
-  'AppBoxKitNativeRangeSlider',
-  'AppBoxKitNativeSearchBar',
-  'AppBoxKitNativeSegmentedControl',
-  'AppBoxKitNativeSlider',
-  'AppBoxKitNativeSplitButton',
-  'AppBoxKitNativeSwitch',
-  'AppBoxKitNativeTabBar',
-  'AppBoxKitNativeTextField',
-  'AppBoxKitNativeToolbar',
+  'ArxaKitNativeAppBar',
+  'ArxaKitNativeButton',
+  'ArxaKitNativeChromeGate',
+  'ArxaKitNativeFab',
+  'ArxaKitNativeFabMenu',
+  'ArxaKitNativeIconButton',
+  'ArxaKitNativeInputBar',
+  'ArxaKitNativeLoadingIndicator',
+  'ArxaKitNativeNavigationRail',
+  'ArxaKitNativePopupMenu',
+  'ArxaKitNativeProgress',
+  'ArxaKitNativeRangeSlider',
+  'ArxaKitNativeSearchBar',
+  'ArxaKitNativeSegmentedControl',
+  'ArxaKitNativeSlider',
+  'ArxaKitNativeSplitButton',
+  'ArxaKitNativeSwitch',
+  'ArxaKitNativeTabBar',
+  'ArxaKitNativeTextField',
+  'ArxaKitNativeToolbar',
 };
-// Matches any `AppBoxKitNative<Identifier>` reference so the invented-name check can
+// Matches any `ArxaKitNative<Identifier>` reference so the invented-name check can
 // flag names NOT in the allowlist above.
-final _anyKitNativeRef = RegExp(r'\bAppBoxKitNative([A-Z][a-zA-Z0-9]*)');
+final _anyKitNativeRef = RegExp(r'\bArxaKitNative([A-Z][a-zA-Z0-9]*)');
 
-// Card/tile/banner/panel CONTENT surfaces must compose on AppBoxKitGlassCard (the ✅
+// Card/tile/banner/panel CONTENT surfaces must compose on ArxaKitGlassCard (the ✅
 // "glass card" matrix row: Liquid Glass iOS 26 / M3E Material Card Android), never
 // a hand-rolled colored `Material(color:` / decorated `Container(…BoxDecoration)`.
 // The check fires ONLY when a file declares such a widget class (narrow by design;
@@ -141,7 +141,7 @@ final _rawColoredSurface =
 final _flutterOnlyOptOut = RegExp(r'//\s*flutter-only:');
 
 /// One row of the native-surface ban matrix (check 4g). [stock] is the raw
-/// Flutter widget/call an app author might reach for; [kit] is the AppBoxKitNative*
+/// Flutter widget/call an app author might reach for; [kit] is the ArxaKitNative*
 /// surface that must be used instead; [surface] labels the matrix row.
 class _NativeSurfaceBan {
   final RegExp stock;
@@ -162,46 +162,46 @@ class _NativeSurfaceBan {
 final _nativeSurfaceBans = <_NativeSurfaceBan>[
   _NativeSurfaceBan(
       RegExp(r'\b(?:TextField|TextFormField|CupertinoTextField)(?:\.\w+)?\s*\('),
-      'AppBoxKitNativeTextField',
+      'ArxaKitNativeTextField',
       'text field'),
   _NativeSurfaceBan(RegExp(r'\b(?:Switch|CupertinoSwitch)(?:\.\w+)?\s*\('),
-      'AppBoxKitNativeSwitch', 'switch'),
+      'ArxaKitNativeSwitch', 'switch'),
   _NativeSurfaceBan(RegExp(r'\b(?:Slider|CupertinoSlider)(?:\.\w+)?\s*\('),
-      'AppBoxKitNativeSlider', 'slider'),
+      'ArxaKitNativeSlider', 'slider'),
   _NativeSurfaceBan(
-      RegExp(r'\bRangeSlider(?:\.\w+)?\s*\('), 'AppBoxKitNativeRangeSlider', 'range slider'),
+      RegExp(r'\bRangeSlider(?:\.\w+)?\s*\('), 'ArxaKitNativeRangeSlider', 'range slider'),
   _NativeSurfaceBan(RegExp(r'\bFloatingActionButton(?:\.\w+)?\s*\('),
-      'AppBoxKitNativeFab / AppBoxKitNativeFabMenu', 'FAB'),
+      'ArxaKitNativeFab / ArxaKitNativeFabMenu', 'FAB'),
   _NativeSurfaceBan(
       RegExp(r'\b(?:SegmentedButton|CupertinoSegmentedControl|CupertinoSlidingSegmentedControl)(?:\.\w+)?\s*\('),
-      'AppBoxKitNativeSegmentedControl',
+      'ArxaKitNativeSegmentedControl',
       'segmented control'),
   _NativeSurfaceBan(
       RegExp(r'\b(?:SearchBar|SearchAnchor|CupertinoSearchTextField)(?:\.\w+)?\s*\('),
-      'AppBoxKitNativeSearchBar',
+      'ArxaKitNativeSearchBar',
       'search bar'),
   _NativeSurfaceBan(RegExp(r'\b(?:PopupMenuButton|MenuAnchor)(?:\.\w+)?\s*\('),
-      'AppBoxKitNativePopupMenu / AppBoxKitNativeSplitButton', 'popup / menu'),
+      'ArxaKitNativePopupMenu / ArxaKitNativeSplitButton', 'popup / menu'),
   _NativeSurfaceBan(RegExp(r'\bNavigationRail(?:\.\w+)?\s*\('),
-      'AppBoxKitNativeNavigationRail', 'navigation rail'),
+      'ArxaKitNativeNavigationRail', 'navigation rail'),
   _NativeSurfaceBan(RegExp(r'\.showSnackBar\s*\(|\bSnackBar(?:\.\w+)?\s*\('),
-      'appBoxKitShowNativeToast()', 'toast / snackbar'),
+      'arxaKitShowNativeToast()', 'toast / snackbar'),
   _NativeSurfaceBan(
       RegExp(r'\bshowModalBottomSheet\s*(?:<[^>]*?>)?\s*\('),
-      'appBoxKitShowSheet()',
+      'arxaKitShowSheet()',
       'bottom sheet'),
   _NativeSurfaceBan(
       RegExp(r'\bshowDialog\s*(?:<[^>]*?>)?\s*\('),
-      'appBoxKitShowNativeDialog()',
+      'arxaKitShowNativeDialog()',
       'dialog'),
   _NativeSurfaceBan(
       RegExp(
           r'\bshowCupertinoDialog\s*(?:<[^>]*?>)?\s*\(|\bshowCupertinoModalPopup\s*(?:<[^>]*?>)?\s*\('),
-      'appBoxKitShowNativeDialog() / appBoxKitShowSheet()',
+      'arxaKitShowNativeDialog() / arxaKitShowSheet()',
       'cupertino dialog/popup'),
   // A raw saveLayer blur in app code is the flutter#175048 hazard and the
   // per-site washout class: the kit's frosted surface owns the material.
-  _NativeSurfaceBan(RegExp(r'\bBackdropFilter\s*\('), 'AppBoxKitFrostedSurface',
+  _NativeSurfaceBan(RegExp(r'\bBackdropFilter\s*\('), 'ArxaKitFrostedSurface',
       'backdrop blur'),
 ];
 
@@ -209,9 +209,9 @@ final _nativeSurfaceBans = <_NativeSurfaceBan>[
 // truth that legitimately uses Material primitives) or a test. Used by the
 // anti-slop checks to avoid false-positiving on the kit's own wrappers.
 bool _isKitInternalOrTest(String path) {
-  if (path.endsWith('appbox_kit_glyphs.dart') ||
-      path.endsWith('appbox_kit_colors.dart') ||
-      path.contains('/widgets/appbox_kit_') || // the kit's own wrapper files
+  if (path.endsWith('arxa_kit_glyphs.dart') ||
+      path.endsWith('arxa_kit_colors.dart') ||
+      path.contains('/widgets/arxa_kit_') || // the kit's own wrapper files
       path.contains('/test/') ||
       path.endsWith('_test.dart')) {
     return true;
@@ -224,10 +224,10 @@ bool _isKitInternalOrTest(String path) {
 // at lib/main.dart), so the plain `(` form alone missed every real app. G1.
 final _materialApp = RegExp(r'\bMaterialApp(?:\.router)?\s*\(');
 
-// AppBoxKitGlyphs.<name> / AppBoxKitColors.<name> references (for iteration drift + allowlist logic).
-final _kitGlyphsRef = RegExp(r'\bAppBoxKitGlyphs\.([a-zA-Z0-9_]+)');
-final _kitColorsRef = RegExp(r'\bAppBoxKitColors\.([a-zA-Z0-9_]+)');
-final _kitDarkColorsRef = RegExp(r'\bAppBoxKitDarkColors\.([a-zA-Z0-9_]+)');
+// ArxaKitGlyphs.<name> / ArxaKitColors.<name> references (for iteration drift + allowlist logic).
+final _kitGlyphsRef = RegExp(r'\bArxaKitGlyphs\.([a-zA-Z0-9_]+)');
+final _kitColorsRef = RegExp(r'\bArxaKitColors\.([a-zA-Z0-9_]+)');
+final _kitDarkColorsRef = RegExp(r'\bArxaKitDarkColors\.([a-zA-Z0-9_]+)');
 
 // Text('…') / Text("…") and label: '…' / label: "…" — a string literal sitting
 // in a user-visible copy slot. Groups 1/2 hold the literal's contents. The i18n
@@ -241,7 +241,7 @@ final _textOrLabelLiteral = RegExp(
 // (Text('projects.home')) that the builder replaces with AppLocalizations
 // lookups, so a STRUCTURE ONLY file is exempt from no_hardcoded_strings.
 final _scaffolderStubHeader =
-    RegExp(r'//\s*appbox-scaffolder:[^\n]*STRUCTURE ONLY');
+    RegExp(r'//\s*arxa-scaffolder:[^\n]*STRUCTURE ONLY');
 
 // Any file under the view tree — no_hardcoded_strings scopes to view files.
 final _viewsTree = RegExp(r'/ui/views/');
@@ -257,12 +257,12 @@ class CheckResult {
 
 // ---------- individual checks (pure functions) ----------
 
-/// Check 1: no stock Icons.* glyphs. Allow: inside comments, in appbox_kit_glyphs.dart
+/// Check 1: no stock Icons.* glyphs. Allow: inside comments, in arxa_kit_glyphs.dart
 /// (the registry's source of truth), or in test files.
 CheckResult checkNoStockIcons(String src, String path) {
-  if (path.endsWith('appbox_kit_glyphs.dart')) {
+  if (path.endsWith('arxa_kit_glyphs.dart')) {
     return CheckResult('no_stock_icons', true,
-        'skipped (appbox_kit_glyphs.dart is the registry source of truth)');
+        'skipped (arxa_kit_glyphs.dart is the registry source of truth)');
   }
   if (path.contains('/test/') || path.endsWith('_test.dart')) {
     return CheckResult('no_stock_icons', true, 'skipped (test file)');
@@ -278,16 +278,16 @@ CheckResult checkNoStockIcons(String src, String path) {
   }
   final glyphs = matches.map((m) => 'Icons.${m.group(1)}').toSet();
   return CheckResult('no_stock_icons', false,
-      'stock Material Icons.* found: $glyphs. Use AppBoxKitGlyphs.* (add an entry to '
-      'appbox_kit_glyphs.dart if missing). Icons.* reads as "untuned Flutter".');
+      'stock Material Icons.* found: $glyphs. Use ArxaKitGlyphs.* (add an entry to '
+      'arxa_kit_glyphs.dart if missing). Icons.* reads as "untuned Flutter".');
 }
 
 /// Check 2: no hardcoded Color(0x…) / CupertinoColors.* / Colors.* in view files.
-/// Allow: the kit's own appbox_kit_colors.dart (source of truth), test files, comments.
+/// Allow: the kit's own arxa_kit_colors.dart (source of truth), test files, comments.
 CheckResult checkNoHardcodedColors(String src, String path) {
-  if (path.endsWith('appbox_kit_colors.dart')) {
+  if (path.endsWith('arxa_kit_colors.dart')) {
     return CheckResult('no_hardcoded_colors', true,
-        'skipped (appbox_kit_colors.dart is the palette source of truth)');
+        'skipped (arxa_kit_colors.dart is the palette source of truth)');
   }
   if (path.contains('/test/') || path.endsWith('_test.dart')) {
     return CheckResult('no_hardcoded_colors', true, 'skipped (test file)');
@@ -310,7 +310,7 @@ CheckResult checkNoHardcodedColors(String src, String path) {
     return CheckResult('no_hardcoded_colors', true, 'no hardcoded color literals');
   }
   return CheckResult('no_hardcoded_colors', false,
-      'hardcoded color literal(s) in view code: $all. Use AppBoxKitColors.* / AppBoxKitDarkColors.* '
+      'hardcoded color literal(s) in view code: $all. Use ArxaKitColors.* / ArxaKitDarkColors.* '
       'or Theme.of(context).colorScheme.*. Every ad-hoc color dilutes the palette.');
 }
 
@@ -332,8 +332,8 @@ CheckResult checkNoRawDartIo(String src, String path) {
         'mobile file renders on phone-width browsers)');
   }
   if (rawPlat.isNotEmpty) {
-    problems.add('raw $rawPlat (use AppBoxKitPlatform — web-safe, kIsWeb-guarded). Or better, '
-        'let a AppBoxKitNative* widget do the platform branch for you.');
+    problems.add('raw $rawPlat (use ArxaKitPlatform — web-safe, kIsWeb-guarded). Or better, '
+        'let a ArxaKitNative* widget do the platform branch for you.');
   }
   if (problems.isEmpty) {
     return CheckResult('no_raw_dart_io', true, 'no dart:io / raw Platform usage');
@@ -341,7 +341,7 @@ CheckResult checkNoRawDartIo(String src, String path) {
   return CheckResult('no_raw_dart_io', false, problems.join(' · '));
 }
 
-/// Check 4: if MaterialApp( appears, appBoxKitLightTheme/appBoxKitDarkTheme must too.
+/// Check 4: if MaterialApp( appears, arxaKitLightTheme/arxaKitDarkTheme must too.
 CheckResult checkKitThemeUsed(String src, String path) {
   if (path.contains('/test/') || path.endsWith('_test.dart')) {
     return CheckResult('kit_theme_used', true, 'skipped (test file)');
@@ -350,17 +350,17 @@ CheckResult checkKitThemeUsed(String src, String path) {
   if (!_materialApp.hasMatch(stripped)) {
     return CheckResult('kit_theme_used', true, 'no MaterialApp( in this file');
   }
-  final hasKitTheme = stripped.contains('appBoxKitLightTheme') || stripped.contains('appBoxKitDarkTheme');
+  final hasKitTheme = stripped.contains('arxaKitLightTheme') || stripped.contains('arxaKitDarkTheme');
   if (hasKitTheme) {
     return CheckResult('kit_theme_used', true, 'MaterialApp uses kit theme');
   }
   return CheckResult('kit_theme_used', false,
-      'MaterialApp( found without appBoxKitLightTheme()/appBoxKitDarkTheme(). The default M3 '
+      'MaterialApp( found without arxaKitLightTheme()/arxaKitDarkTheme(). The default M3 '
       'color scheme is purple-ish and screams "fresh flutter create".');
 }
 
 /// Check 4b: no stock CTA buttons (ElevatedButton/FilledButton/TextButton) as
-/// primary/secondary actions in app view code → AppBoxKitNativeButton. The anti-slop
+/// primary/secondary actions in app view code → ArxaKitNativeButton. The anti-slop
 /// blacklist names these as the loudest surface ("a stock M3 button reads as
 /// 'untuned Flutter' instantly"). Allowlist: the kit's own wrapper files use
 /// `FilledButton.tonal` internally (they're the wrapper layer, not view code).
@@ -376,14 +376,14 @@ CheckResult checkNoStockCtaButtons(String src, String path) {
   }
   final buttons = matches.map((m) => m.group(1)).toSet();
   return CheckResult('no_stock_cta_buttons', false,
-      'stock CTA button(s) in view code: $buttons. Use AppBoxKitNativeButton for every '
+      'stock CTA button(s) in view code: $buttons. Use ArxaKitNativeButton for every '
       'primary/secondary action — CTAs are the loudest surface and a stock button '
       '(Material or Cupertino) reads as "untuned Flutter" instantly.');
 }
 
 /// Check 4c: no stock progress indicator as the loading affordance in app view
-/// code. A spinner → AppBoxKitNativeLoadingIndicator (iOS Cupertino / Android M3E); a
-/// determinate/linear bar → AppBoxKitNativeProgress. Bans both CircularProgressIndicator
+/// code. A spinner → ArxaKitNativeLoadingIndicator (iOS Cupertino / Android M3E); a
+/// determinate/linear bar → ArxaKitNativeProgress. Bans both CircularProgressIndicator
 /// and LinearProgressIndicator. Allowlist: the kit's own progress wrappers use them
 /// internally (they're the wrapper layer).
 CheckResult checkNoStockLoadingIndicator(String src, String path) {
@@ -400,15 +400,15 @@ CheckResult checkNoStockLoadingIndicator(String src, String path) {
   }
   return CheckResult('no_stock_loading_indicator', false,
       'stock progress indicator(s) in view code: $hits. Use '
-      'AppBoxKitNativeLoadingIndicator (circular/spinner) or AppBoxKitNativeProgress '
+      'ArxaKitNativeLoadingIndicator (circular/spinner) or ArxaKitNativeProgress '
       '(determinate/linear) — each picks iOS Cupertino / Android M3E. A bare '
       'Material indicator reads as "untuned Flutter".');
 }
 
-/// Check 4d: no invented AppBoxKitNative* widget names. The native-component matrix is
-/// the SSOT for which AppBoxKitNative* widgets exist (see the `knownKitNativeWidgets`
-/// allowlist). A reference to `AppBoxKitNative<AnythingElse>` (AppBoxKitNativeDialog,
-/// AppBoxKitNativeDatePicker, …) is the #0c gate's "never invent a AppBoxKitNative* class the
+/// Check 4d: no invented ArxaKitNative* widget names. The native-component matrix is
+/// the SSOT for which ArxaKitNative* widgets exist (see the `knownKitNativeWidgets`
+/// allowlist). A reference to `ArxaKitNative<AnythingElse>` (ArxaKitNativeDialog,
+/// ArxaKitNativeDatePicker, …) is the #0c gate's "never invent a ArxaKitNative* class the
 /// matrix doesn't list" rule — it means the model hallucinated a wrapper that
 /// doesn't exist, which compiles (as an undefined class) but breaks at design
 /// intent long before the user can build it.
@@ -420,31 +420,31 @@ CheckResult checkNoInventedNativeWidgets(String src, String path) {
   final stripped = _stripNoise(src);
   final refs = _anyKitNativeRef
       .allMatches(stripped)
-      .map((m) => 'AppBoxKitNative${m.group(1)}')
+      .map((m) => 'ArxaKitNative${m.group(1)}')
       .toSet();
   final invented = refs.where((r) => !knownKitNativeWidgets.contains(r)).toSet();
   if (invented.isEmpty) {
     return CheckResult('no_invented_native_widgets', true,
-        'no invented AppBoxKitNative* widget names');
+        'no invented ArxaKitNative* widget names');
   }
   return CheckResult('no_invented_native_widgets', false,
-      'invented AppBoxKitNative* widget name(s): $invented. The native-component '
-      'matrix (NATIVE_COMPONENTS.md) is the SSOT for which AppBoxKitNative* widgets '
+      'invented ArxaKitNative* widget name(s): $invented. The native-component '
+      'matrix (NATIVE_COMPONENTS.md) is the SSOT for which ArxaKitNative* widgets '
       'exist. If a design needs a native primitive the kit lacks, that is a kit '
-      'contribution (a separate task) — never a stubbed AppBoxKitNative* in the view. '
+      'contribution (a separate task) — never a stubbed ArxaKitNative* in the view. '
       '(#0c / gate contract.)');
 }
 
 /// Check 4f: native-first content surface. A card/tile/banner/panel CONTENT widget
-/// must compose on AppBoxKitGlassCard (the matrix ✅ "glass card" row: real Liquid Glass
+/// must compose on ArxaKitGlassCard (the matrix ✅ "glass card" row: real Liquid Glass
 /// on iOS 26 / M3E Material Card on Android), never a hand-rolled colored
 /// `Material(color:` / decorated `Container(…BoxDecoration)`. This is the
 /// content-surface sibling of 4b (CTA buttons) / 4c (loaders); chrome bars are the
 /// review gate's 1c–1w. It closes the exact gap that shipped the shop's product
 /// tiles + upsell banner as plain Flutter over kit primitives instead of on
-/// AppBoxKitGlassCard. Narrow: fires only when the file DECLARES a *Tile/*Card/*Banner/
+/// ArxaKitGlassCard. Narrow: fires only when the file DECLARES a *Tile/*Card/*Banner/
 /// *Panel class. Deliberate plain Flutter opts out with a `// flutter-only:` comment
-/// (→ AppBoxKitGlassCard(wantNative:false) / stock).
+/// (→ ArxaKitGlassCard(wantNative:false) / stock).
 CheckResult checkNativeFirstSurface(String src, String path) {
   if (_isKitInternalOrTest(path)) {
     return CheckResult(
@@ -460,15 +460,15 @@ CheckResult checkNativeFirstSurface(String src, String path) {
     return CheckResult('no_raw_card_surface', true,
         'no card/tile/banner/panel widget class');
   }
-  if (stripped.contains('AppBoxKitGlassCard') || !_rawColoredSurface.hasMatch(stripped)) {
+  if (stripped.contains('ArxaKitGlassCard') || !_rawColoredSurface.hasMatch(stripped)) {
     return CheckResult('no_raw_card_surface', true,
-        'card surface composes on AppBoxKitGlassCard (or declares no raw surface)');
+        'card surface composes on ArxaKitGlassCard (or declares no raw surface)');
   }
   return CheckResult('no_raw_card_surface', false,
       'a card/tile/banner/panel widget hand-rolls a raw colored Material / '
-      'decorated Container surface. Compose it on AppBoxKitGlassCard — the matrix ✅ '
+      'decorated Container surface. Compose it on ArxaKitGlassCard — the matrix ✅ '
       '"glass card" row (real Liquid Glass on iOS 26 / M3E Material Card on '
-      'Android). Dense scrolling grid → AppBoxKitGlassCard(wantNative: false); a '
+      'Android). Dense scrolling grid → ArxaKitGlassCard(wantNative: false); a '
       'singular floating surface (hero/banner) → wantNative: true. Deliberate '
       'plain Flutter → mark it `// flutter-only: <reason>`. (#0c / native-first.)');
 }
@@ -476,9 +476,9 @@ CheckResult checkNativeFirstSurface(String src, String path) {
 /// Check 4g: whole-matrix native-first. Every ✅ NATIVE_COMPONENTS.md surface with
 /// a stock Flutter equivalent (text field, switch, slider, range slider, FAB,
 /// segmented control, search bar, popup/menu, navigation rail, toast, sheet) must
-/// route through its AppBoxKitNative* widget in app view code — never the raw Flutter
+/// route through its ArxaKitNative* widget in app view code — never the raw Flutter
 /// widget. This closes the "pipeline missed a native surface" gap that let a plain
-/// input ship: the shop sign-in used AppBoxKitNativeTextField correctly, but nothing
+/// input ship: the shop sign-in used ArxaKitNativeTextField correctly, but nothing
 /// guarded the OTHER matrix rows. The ban list (`_nativeSurfaceBans`) IS the
 /// matrix. Deliberate plain Flutter opts the file out with `// flutter-only:`
 /// (same contract as 4f). Kit-internal wrappers + tests are skipped.
@@ -610,7 +610,7 @@ CheckResult checkNoCrossShellImports(String src, String path) {
 /// It therefore runs on _stripComments only (a commented-out Text('…') is still
 /// not a violation), never on _stripNoise. The two paths stay separate.
 ///
-/// Exemptions: scaffolder stub files (the "appbox-scaffolder: … STRUCTURE
+/// Exemptions: scaffolder stub files (the "arxa-scaffolder: … STRUCTURE
 /// ONLY" header — their Text('<arb.key>') placeholders are filled by the
 /// builder); strings that are clearly not copy (see [_isNonCopyLiteral]):
 /// single chars/symbols/digits-only, route paths, asset paths, dotted keys.
@@ -754,7 +754,7 @@ CheckResult checkDesignSystemDoc(String surfaceDirOrViewPath) {
   // Light content check: must mention at least palette + forbidden (the minimum).
   final text = ds.readAsStringSync();
   final missing = <String>[];
-  if (!RegExp(r'\b(palette|color|accent|AppBoxKitColors)\b', caseSensitive: false).hasMatch(text)) {
+  if (!RegExp(r'\b(palette|color|accent|ArxaKitColors)\b', caseSensitive: false).hasMatch(text)) {
     missing.add('palette');
   }
   if (!RegExp(r'\b(forbidden|avoid|never|don.t)\b', caseSensitive: false).hasMatch(text)) {
@@ -769,8 +769,8 @@ CheckResult checkDesignSystemDoc(String surfaceDirOrViewPath) {
       'least palette + forbidden (see design-system-template.md).');
 }
 
-/// Check 7: iteration drift — for a vN (N≥2) surface, no DROPPED AppBoxKitGlyphs/
-/// AppBoxKitColors references vs the nearest existing prior (the improve≠rebrand
+/// Check 7: iteration drift — for a vN (N≥2) surface, no DROPPED ArxaKitGlyphs/
+/// ArxaKitColors references vs the nearest existing prior (the improve≠rebrand
 /// enforcement, mechanical).
 ///
 /// Iteration-suffix detection: matches `_vN` / `-vN` / `.vN` for any N≥2 (G6 —
@@ -812,14 +812,14 @@ CheckResult checkIterationDrift(String surfaceDirOrViewPath) {
         'iteration ($surfaceName) but no prior sibling found — drift check skipped');
   }
   final priorDir = Directory('${surfaceDir.parent.path}/$priorName');
-  // Collect AppBoxKitGlyphs + AppBoxKitColors refs from prior and current .dart files.
+  // Collect ArxaKitGlyphs + ArxaKitColors refs from prior and current .dart files.
   final priorRefs = _collectTokenRefs(priorDir);
   final curRefs = _collectTokenRefs(surfaceDir);
   // Prior tokens that current DROPPED (didn't carry over).
   final dropped = priorRefs.difference(curRefs);
   if (dropped.isEmpty) {
     return CheckResult('iteration_drift', true,
-        'no dropped AppBoxKitGlyphs/AppBoxKitColors tokens vs prior ($priorName)');
+        'no dropped ArxaKitGlyphs/ArxaKitColors tokens vs prior ($priorName)');
   }
   return CheckResult('iteration_drift', false,
       'tokens dropped vs prior ($priorName): $dropped. An iteration preserves + '
@@ -833,13 +833,13 @@ Set<String> _collectTokenRefs(Directory dir) {
   for (final ent in dir.listSync(recursive: false)) {
     if (ent is! File || !ent.path.endsWith('.dart')) continue;
     // Strip comments AND strings — a v2 file may legitimately MENTION a dropped
-    // token in a comment ("// AppBoxKitGlyphs.refresh removed — replaced by …") or a
+    // token in a comment ("// ArxaKitGlyphs.refresh removed — replaced by …") or a
     // doc/error string; that mention is not a usage and must not cancel the drift
     // signal.
     final src = _stripNoise(ent.readAsStringSync());
-    refs.addAll(_kitGlyphsRef.allMatches(src).map((m) => 'AppBoxKitGlyphs.${m.group(1)}'));
-    refs.addAll(_kitColorsRef.allMatches(src).map((m) => 'AppBoxKitColors.${m.group(1)}'));
-    refs.addAll(_kitDarkColorsRef.allMatches(src).map((m) => 'AppBoxKitDarkColors.${m.group(1)}'));
+    refs.addAll(_kitGlyphsRef.allMatches(src).map((m) => 'ArxaKitGlyphs.${m.group(1)}'));
+    refs.addAll(_kitColorsRef.allMatches(src).map((m) => 'ArxaKitColors.${m.group(1)}'));
+    refs.addAll(_kitDarkColorsRef.allMatches(src).map((m) => 'ArxaKitDarkColors.${m.group(1)}'));
   }
   return refs;
 }
@@ -916,7 +916,7 @@ final _sizingOptOut = RegExp(r'//\s*sizing:');
 final _sizedBoxAsChild = RegExp(r'child:\s*(const\s+)?SizedBox\(');
 
 /// 1w2: a single-argument `SizedBox(height:/width:)` with no child is a GAP,
-/// not sizing — gaps are the appbox_kit_core helpers. Line-scoped opt-outs
+/// not sizing — gaps are the arxa_kit_core helpers. Line-scoped opt-outs
 /// (`// sizing:`, `child: SizedBox(`) match review_checklist.sh exactly.
 CheckResult checkNoAdhocSpacing(String src, String path) {
   if (_isKitInternalOrTest(path) || path.endsWith('ui_helpers.dart')) {
@@ -950,7 +950,7 @@ CheckResult checkNoAdhocSpacing(String src, String path) {
       'no_adhoc_spacing',
       false,
       'ad-hoc spacing SizedBox (single-arg, no child) at ${hits.join('; ')}. '
-          'Gaps use the appbox_kit_core helpers (verticalSpace*/horizontalSpace*, '
+          'Gaps use the arxa_kit_core helpers (verticalSpace*/horizontalSpace*, '
           'or verticalSpace(h)/horizontalSpace(w) for one-offs, via the '
           'ui_library barrel). Placeholder sizing: mount it as `child:` or opt '
           'out with `// sizing: <reason>` (review_checklist check 1w2).');
@@ -958,9 +958,9 @@ CheckResult checkNoAdhocSpacing(String src, String path) {
 
 /// Verbatim-portable with review_checklist.sh check 1i's `GLASS_RE`.
 final _glassSurface = RegExp(
-    r'AppBoxKitGlassCard|AppBoxKitNativeSearchBar|AppBoxKitNativeSplitButton|AppBoxKitNativeToolbar|AppBoxKitNativeFabMenu|AppBoxKitNativeFab');
+    r'ArxaKitGlassCard|ArxaKitNativeSearchBar|ArxaKitNativeSplitButton|ArxaKitNativeToolbar|ArxaKitNativeFabMenu|ArxaKitNativeFab');
 final _scrollEdgeEffect = RegExp(
-    r'AppBoxKitScrollEdgeEffect|scrollEdgeEffect\(|AppBoxKitEdgeAwareSliverList|AppBoxKitEdgeAwareListView');
+    r'ArxaKitScrollEdgeEffect|scrollEdgeEffect\(|ArxaKitEdgeAwareSliverList|ArxaKitEdgeAwareListView');
 
 /// 1i: a glass surface inside a CustomScrollView needs the iOS 26 scroll edge
 /// effect, or content blurs under pinned chrome that never hides.
@@ -981,8 +981,8 @@ CheckResult checkScrollEdgeEffect(String src, String path) {
   return CheckResult(
       'scroll_edge_effect',
       false,
-      'glass surface inside a CustomScrollView without AppBoxKitScrollEdgeEffect / '
-          '.scrollEdgeEffect() / an AppBoxKitEdgeAware list — iOS 26 scroll edge '
+      'glass surface inside a CustomScrollView without ArxaKitScrollEdgeEffect / '
+          '.scrollEdgeEffect() / an ArxaKitEdgeAware list — iOS 26 scroll edge '
           'effect: content blurs and '
           'fades under pinned chrome and the chrome never hides '
           '(review_checklist check 1i).');
@@ -993,7 +993,7 @@ final _kitAppBarCtor = RegExp(r'[A-Za-z_]AppBar\(');
 final _stockAppBarCtor =
     RegExp(r'appBar:\s*(AppBar|SliverAppBar|CupertinoNavigationBar)\(');
 
-/// 1d: chrome is owned by LEAF views via AppBoxKitNativeAppBar; shells stay bare.
+/// 1d: chrome is owned by LEAF views via ArxaKitNativeAppBar; shells stay bare.
 ///
 /// COVERAGE LIMIT — this is narrower than review_checklist.sh's 1d, and
 /// deliberately so. The review gate scans the whole tree; the design gate is
@@ -1019,18 +1019,18 @@ CheckResult checkLeafAppBar(String src, String path) {
     return CheckResult(
         'leaf_app_bar',
         false,
-        'appBar: without a kit app bar — use AppBoxKitNativeAppBar (or an app '
+        'appBar: without a kit app bar — use ArxaKitNativeAppBar (or an app '
             'wrapper of it), never a stock app bar (review_checklist check 1d).');
   }
   if (_stockAppBarCtor.hasMatch(stripped)) {
     return CheckResult('leaf_app_bar', false,
-        'stock app bar alongside AppBoxKitNativeAppBar (review_checklist check 1d).');
+        'stock app bar alongside ArxaKitNativeAppBar (review_checklist check 1d).');
   }
   if (stripped.contains('PreferredSize(')) {
     return CheckResult(
         'leaf_app_bar',
         false,
-        'PreferredSize wrapper — AppBoxKitNativeAppBar already implements '
+        'PreferredSize wrapper — ArxaKitNativeAppBar already implements '
             'PreferredSizeWidget (review_checklist check 1d).');
   }
   return CheckResult('leaf_app_bar', true, 'kit app bar mounted on a leaf');
@@ -1181,7 +1181,7 @@ Future<int> _runSelfTest() async {
 
   // ---- pure negatives (no fixture files; always run) ----
 
-  // A7: a real kit widget name (AppBoxKitNativeButton) does NOT trip the check.
+  // A7: a real kit widget name (ArxaKitNativeButton) does NOT trip the check.
   // Verify the allowlist accepts every known name (no false negatives).
   for (final name in knownKitNativeWidgets) {
     final ok = checkNoInventedNativeWidgets(
@@ -1263,8 +1263,8 @@ void _fileFixtureSections(
 
   // 8. iteration_drift: a v2 surface that drops a v1 token fails.
   final driftV2 = checkIterationDrift('${fixturesDir.path}/drift_demo/mything_v2');
-  expect(!driftV2.ok, 'v2 that drops a AppBoxKitGlyphs token fails iteration_drift');
-  expect(driftV2.message.contains('AppBoxKitGlyphs.refresh'),
+  expect(!driftV2.ok, 'v2 that drops a ArxaKitGlyphs token fails iteration_drift');
+  expect(driftV2.message.contains('ArxaKitGlyphs.refresh'),
       'iteration_drift names the dropped token');
 
   // 9. iteration_drift: a v2 surface that preserves v1 tokens passes.
@@ -1276,28 +1276,28 @@ void _fileFixtureSections(
   expect(greenfield.ok, 'non-iteration surface skips iteration_drift cleanly');
 
   // 11. native-first content surface (4f): a *Card that hand-rolls a raw colored
-  //     Material (no AppBoxKitGlassCard, no // flutter-only:) must FAIL no_raw_card_surface
+  //     Material (no ArxaKitGlassCard, no // flutter-only:) must FAIL no_raw_card_surface
   //     for the right reason; the clean fixture (no card widget class) must pass it.
   final rawCardResults =
       checkFile('${fixturesDir.path}/raw_card_view.mobile.dart');
   final cardCheck =
       rawCardResults.firstWhere((r) => r.name == 'no_raw_card_surface');
   expect(!cardCheck.ok, 'raw-card fixture fails no_raw_card_surface');
-  expect(cardCheck.message.contains('AppBoxKitGlassCard'),
-      'no_raw_card_surface names the AppBoxKitGlassCard fix');
+  expect(cardCheck.message.contains('ArxaKitGlassCard'),
+      'no_raw_card_surface names the ArxaKitGlassCard fix');
   expect(cleanResults.firstWhere((r) => r.name == 'no_raw_card_surface').ok,
       'clean fixture passes no_raw_card_surface (no card widget class)');
 
   // 12. whole-matrix native-first (4g): a view that uses a raw stock Switch (a
   //     matrix surface not covered by 4b/4c/4f) must FAIL no_stock_native_surface
-  //     naming the AppBoxKitNative* fix; the clean fixture must pass it.
+  //     naming the ArxaKitNative* fix; the clean fixture must pass it.
   final stockSurfaceResults =
       checkFile('${fixturesDir.path}/stock_native_surface_view.mobile.dart');
   final surfaceCheck =
       stockSurfaceResults.firstWhere((r) => r.name == 'no_stock_native_surface');
   expect(!surfaceCheck.ok, 'stock-surface fixture fails no_stock_native_surface');
-  expect(surfaceCheck.message.contains('AppBoxKitNativeSwitch'),
-      'no_stock_native_surface names the AppBoxKitNativeSwitch fix');
+  expect(surfaceCheck.message.contains('ArxaKitNativeSwitch'),
+      'no_stock_native_surface names the ArxaKitNativeSwitch fix');
   expect(cleanResults.firstWhere((r) => r.name == 'no_stock_native_surface').ok,
       'clean fixture passes no_stock_native_surface (uses kit widgets)');
 
@@ -1310,17 +1310,17 @@ void _fileFixtureSections(
       .firstWhere((r) => r.name == 'no_stock_native_surface')
       .message;
   for (final kit in const [
-    'AppBoxKitNativeTextField',
-    'AppBoxKitNativeSwitch',
-    'AppBoxKitNativeSlider',
-    'AppBoxKitNativeRangeSlider',
-    'AppBoxKitNativeFab',
-    'AppBoxKitNativeSegmentedControl',
-    'AppBoxKitNativeSearchBar',
-    'AppBoxKitNativePopupMenu',
-    'AppBoxKitNativeNavigationRail',
-    'appBoxKitShowNativeToast',
-    'appBoxKitShowSheet',
+    'ArxaKitNativeTextField',
+    'ArxaKitNativeSwitch',
+    'ArxaKitNativeSlider',
+    'ArxaKitNativeRangeSlider',
+    'ArxaKitNativeFab',
+    'ArxaKitNativeSegmentedControl',
+    'ArxaKitNativeSearchBar',
+    'ArxaKitNativePopupMenu',
+    'ArxaKitNativeNavigationRail',
+    'arxaKitShowNativeToast',
+    'arxaKitShowSheet',
   ]) {
     expect(allSurfaceMsg.contains(kit),
         '4g all-surfaces fixture names $kit (no ban row silently misses)');
@@ -1377,7 +1377,7 @@ void _fileFixtureSections(
   expect(!driftV3.ok, 'G6: _v3 iterating _v2 with a dropped token fails drift');
   expect(driftV3.message.contains('thing_v2'),
       'G6: failure names the walked-back prior (thing_v2)');
-  expect(driftV3.message.contains('AppBoxKitGlyphs.refresh'),
+  expect(driftV3.message.contains('ArxaKitGlyphs.refresh'),
       'G6: failure names the dropped token');
 
   // G7: a lone non-view .dart file must NOT emit a form_factor_files FAIL.
@@ -1389,9 +1389,9 @@ void _fileFixtureSections(
       'G7: form_factor_files check is skipped entirely for a lone file');
 
   // ---- anti-slop checks (no_stock_cta_buttons + no_stock_loading_indicator) ----
-  // A1: clean fixture (uses AppBoxKitNativeButton) passes no_stock_cta_buttons.
+  // A1: clean fixture (uses ArxaKitNativeButton) passes no_stock_cta_buttons.
   final cleanCta = cleanResults.firstWhere((r) => r.name == 'no_stock_cta_buttons');
-  expect(cleanCta.ok, 'clean fixture passes no_stock_cta_buttons (uses AppBoxKitNativeButton)');
+  expect(cleanCta.ok, 'clean fixture passes no_stock_cta_buttons (uses ArxaKitNativeButton)');
 
   // A2: stock-buttons fixture FAILS no_stock_cta_buttons, naming all three buttons.
   final stockBtnResults =
@@ -1411,22 +1411,22 @@ void _fileFixtureSections(
       .firstWhere((r) => r.name == 'no_stock_loading_indicator');
   expect(!loadCheck.ok, 'stock-buttons fixture fails no_stock_loading_indicator');
 
-  // A4: allowlist — a kit-internal path (/widgets/appbox_kit_*) must NOT trip the checks
+  // A4: allowlist — a kit-internal path (/widgets/arxa_kit_*) must NOT trip the checks
   // even when it uses CircularProgressIndicator. The gate is told the kit path
   // explicitly here (simulating a real kit-wrapper location).
-  final kitInternalSrc = File('${scenariosDir.path}/kit_internal/appbox_kit_native_demo.dart')
+  final kitInternalSrc = File('${scenariosDir.path}/kit_internal/arxa_kit_native_demo.dart')
       .readAsStringSync();
   final kitLoadCheck = checkNoStockLoadingIndicator(
-      kitInternalSrc, 'lib/widgets/appbox_kit_native_demo.dart');
+      kitInternalSrc, 'lib/widgets/arxa_kit_native_demo.dart');
   expect(kitLoadCheck.ok,
-      'A: kit-internal path (/widgets/appbox_kit_*) allowlisted for loading indicator');
+      'A: kit-internal path (/widgets/arxa_kit_*) allowlisted for loading indicator');
   final kitCtaCheck = checkNoStockCtaButtons(
-      kitInternalSrc, 'lib/widgets/appbox_kit_native_toolbar.dart');
+      kitInternalSrc, 'lib/widgets/arxa_kit_native_toolbar.dart');
   expect(kitCtaCheck.ok,
-      'A: kit-internal path (/widgets/appbox_kit_*) allowlisted for CTA buttons');
+      'A: kit-internal path (/widgets/arxa_kit_*) allowlisted for CTA buttons');
 
   // ---- 4d: no_invented_native_widgets (the #0c matrix rule, now mechanical) ----
-  // A5: clean fixture uses only real AppBoxKitNative* names → passes.
+  // A5: clean fixture uses only real ArxaKitNative* names → passes.
   final cleanInvented = cleanResults
       .firstWhere((r) => r.name == 'no_invented_native_widgets');
   expect(cleanInvented.ok,
@@ -1439,10 +1439,10 @@ void _fileFixtureSections(
       .firstWhere((r) => r.name == 'no_invented_native_widgets');
   expect(!inventedCheck.ok,
       'invented-widgets fixture fails no_invented_native_widgets');
-  expect(inventedCheck.message.contains('AppBoxKitNativeDialog'),
-      '4d: failure names AppBoxKitNativeDialog (invented)');
-  expect(inventedCheck.message.contains('AppBoxKitNativeCarousel'),
-      '4d: failure names AppBoxKitNativeCarousel (invented)');
+  expect(inventedCheck.message.contains('ArxaKitNativeDialog'),
+      '4d: failure names ArxaKitNativeDialog (invented)');
+  expect(inventedCheck.message.contains('ArxaKitNativeCarousel'),
+      '4d: failure names ArxaKitNativeCarousel (invented)');
 
   // ---- 4e: valid_dart_syntax (the R5 false-clean gap, closed) ----
   // A8: clean fixture passes (balanced delimiters).
@@ -1488,9 +1488,9 @@ void _fileFixtureSections(
   expect(noTree.ok, '8: path without /ui/views/ no-ops (N/A, not a fail)');
   // A14: kit-internal / test paths are allowlisted.
   expect(
-      checkNoCrossShellImports(crossShellSrc, 'lib/widgets/appbox_kit_native_demo.dart')
+      checkNoCrossShellImports(crossShellSrc, 'lib/widgets/arxa_kit_native_demo.dart')
           .ok,
-      '8: kit-internal path (/widgets/appbox_kit_*) allowlisted');
+      '8: kit-internal path (/widgets/arxa_kit_*) allowlisted');
   // A15: the REAL gate wiring fires it — the RED fixture's own path carries
   // /ui/views/train_shell/, so gate() flags it naming shop_shell; the exempt
   // sibling passes the full per-file battery.
@@ -1540,39 +1540,39 @@ void _selfTestPureSections(void Function(bool, String) expect) {
   //     naming the remedy in a comment must NOT grant a pass.
   expect(
       !checkScrollEdgeEffect(
-              'CustomScrollView(slivers: [AppBoxKitGlassCard()]);', leaf)
+              'CustomScrollView(slivers: [ArxaKitGlassCard()]);', leaf)
           .ok,
       '9b: glass in a CustomScrollView without the effect fails');
   expect(
       checkScrollEdgeEffect(
-              'CustomScrollView(slivers: [AppBoxKitGlassCard().scrollEdgeEffect()]);',
+              'CustomScrollView(slivers: [ArxaKitGlassCard().scrollEdgeEffect()]);',
               leaf)
           .ok,
       '9b: the same tree with .scrollEdgeEffect() passes');
   expect(
       !checkScrollEdgeEffect(
-              '/// TODO: wrap in AppBoxKitScrollEdgeEffect.\nCustomScrollView(slivers: [AppBoxKitGlassCard()]);',
+              '/// TODO: wrap in ArxaKitScrollEdgeEffect.\nCustomScrollView(slivers: [ArxaKitGlassCard()]);',
               leaf)
           .ok,
-      '9b: AppBoxKitScrollEdgeEffect named only in a comment grants no pass');
+      '9b: ArxaKitScrollEdgeEffect named only in a comment grants no pass');
   expect(
       checkScrollEdgeEffect(
-              'CustomScrollView(slivers: [AppBoxKitEdgeAwareSliverList(itemCount: 1, itemBuilder: b)]);',
+              'CustomScrollView(slivers: [ArxaKitEdgeAwareSliverList(itemCount: 1, itemBuilder: b)]);',
               leaf)
           .ok,
       '9b: the edge-aware sliver list treats every item — naming the kit '
           'wrapper is the effect applied (notes-folder false positive)');
 
   // 9c. 1d — leaf app-bar contract.
-  expect(!checkLeafAppBar('Scaffold(appBar: AppBoxKitNativeAppBar());', shell).ok,
+  expect(!checkLeafAppBar('Scaffold(appBar: ArxaKitNativeAppBar());', shell).ok,
       '9c: a shell view setting appBar: fails (shells stay bare)');
-  expect(checkLeafAppBar('Scaffold(appBar: AppBoxKitNativeAppBar());', leaf).ok,
+  expect(checkLeafAppBar('Scaffold(appBar: ArxaKitNativeAppBar());', leaf).ok,
       '9c: the same code on a LEAF passes');
   expect(!checkLeafAppBar('Scaffold(appBar: AppBar());', leaf).ok,
       '9c: a stock AppBar on a leaf fails');
   expect(
       !checkLeafAppBar(
-              'Scaffold(appBar: PreferredSize(child: AppBoxKitNativeAppBar()));', leaf)
+              'Scaffold(appBar: PreferredSize(child: ArxaKitNativeAppBar()));', leaf)
           .ok,
       '9c: a PreferredSize wrapper fails');
   expect(checkLeafAppBar('/// Shells stay bare — no appBar: here.', shell).ok,
@@ -1602,7 +1602,7 @@ void _selfTestPureSections(void Function(bool, String) expect) {
   //      key Text('projects.home') is exempt.
   expect(
       checkNoHardcodedStrings(
-              '// appbox-scaffolder: surface skeleton. STRUCTURE ONLY — the builder fills this.\n'
+              '// arxa-scaffolder: surface skeleton. STRUCTURE ONLY — the builder fills this.\n'
               "Text('projects.home');",
               i18nLeaf)
           .ok,
@@ -1638,9 +1638,9 @@ void _selfTestPureSections(void Function(bool, String) expect) {
       '10f: a file outside /ui/views/ is N/A');
   expect(
       checkNoHardcodedStrings(
-              "Text('Loading ...');", 'lib/widgets/appbox_kit_native_demo.dart')
+              "Text('Loading ...');", 'lib/widgets/arxa_kit_native_demo.dart')
           .ok,
-      '10f: kit-internal path (/widgets/appbox_kit_*) allowlisted');
+      '10f: kit-internal path (/widgets/arxa_kit_*) allowlisted');
 }
 
 // ---------- CLI ----------

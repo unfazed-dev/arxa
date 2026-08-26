@@ -4,7 +4,7 @@
 
 v1 surfaces are three, per D23: native macOS app (app + daemon, unchanged
 shape), an iOS/Android controller app, and a Totem-hosted web version of
-appbox studio — free access, same Supabase-backed gates as the macOS app,
+arxa studio — free access, same Supabase-backed gates as the macOS app,
 BYO-LLM on macOS and web (D19, D26/D29). This plan covers how each surface
 ships and updates, and the release-engineering work that backs all three.
 
@@ -53,29 +53,29 @@ Store presence (e.g. Mac App Store) is deferred to a later, marketing-only
 consideration.
 
 This channel has a hard precondition, not yet met: D21 requires `dart
-compile exe` (currently only a comment at `appboxd/bin/appbox.dart:12`) plus
+compile exe` (currently only a comment at `arxa/bin/arxa.dart:12`) plus
 embedding every on-disk dependency the design server and design tools
 resolve from the source tree today (`design_server.dart:326`,
 `design_tools.dart:451/452/1046/1170` — worker_assets/, runtime/vendor/,
 ladder.json, reference text). `docs/research/distribution-protection-inventory.md`
 is unambiguous: nothing is compiled today, no packaging/notarization/installer
 scripts exist anywhere, and running the designer requires
-`skills/appbox-designer/` readable on disk — shipping today would hand over
+`skills/arxa-designer/` readable on disk — shipping today would hand over
 the methodology IP as files. AOT+embed gates this whole channel.
 
 Entitlement, not watermarking, gates the paid boundary at scaffold (D17,
 D18): Supabase Auth PKCE, Postgres entitlements synced from Stripe, a
-short-lived appbox-signed JWT bound to machine fingerprint, verified locally
+short-lived arxa-signed JWT bound to machine fingerprint, verified locally
 with silent background refresh, and Ed25519-licence demoted to a
 signed+TTL offline-continuation file. `watermark.dart` is retired entirely —
 the previous degrade-don't-block model is superseded specifically at the
 scaffold boundary, and no watermark or licence-string logic should appear
 anywhere in the scaffolded output path. The legal layer backing the shipped
 binary (D20): root proprietary LICENSE, short free-tier EULA (user owns
-ejected output; no redistribution/reverse-engineering of appbox components),
+ejected output; no redistribution/reverse-engineering of arxa components),
 and re-scoped MIT carve-outs on the two skill directories that currently leak
-methodology IP under an unscoped grant (`skills/appbox-designer/LICENSE`,
-`skills/appbox-story-mapper/LICENSE.txt` — inventory's ranked gaps #1-#3).
+methodology IP under an unscoped grant (`skills/arxa-designer/LICENSE`,
+`skills/arxa-story-mapper/LICENSE.txt` — inventory's ranked gaps #1-#3).
 EULA is presented at first-run accept.
 
 ### iOS/Android controller app
@@ -133,7 +133,7 @@ built from scaffolded output, not the scaffold artifact itself.
 ## Release engineering workstreams
 
 1. **AOT + embed (D21)** — blocking precondition for any macOS packaging
-   work below. `publish_to: 'none'` on `appboxd/pubspec.yaml` is a
+   work below. `publish_to: 'none'` on `arxa/pubspec.yaml` is a
    same-day stopgap already identified but not yet applied.
 2. **Signing/notarization + auto-update pipeline (D22)** — net-new; the
    repo currently has zero packaging, notarization, or installer machinery
@@ -142,7 +142,7 @@ built from scaffolded output, not the scaffold artifact itself.
    a signed build without a repeatable pipeline just moves the manual-step
    risk rather than removing it.
 3. **Deploy engine unification (D13, tracked in its own plan)** — `kit/
-   deploy`'s five target classes become the sole execution path; appboxd
+   deploy`'s five target classes become the sole execution path; arxa
    keeps the approval-token gate, append-only ledger, and licence gate as
    orchestration; `gate_deploy.dart` is wired to assert against the ledger,
    which it currently doesn't. This underlies web/app-store release lanes

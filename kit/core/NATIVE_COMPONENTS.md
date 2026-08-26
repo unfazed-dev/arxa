@@ -1,9 +1,9 @@
-# appbox_kit — Native Components (canonical matrix)
+# arxa_kit — Native Components (canonical matrix)
 
 The kit's canonical contract for which widgets get a **native chrome tier** (real
 Liquid Glass on iOS 26 / real Material 3 Expressive on Android, via platform views)
 vs. a **pure-Flutter fallback**. This ships **with the package**; the host's
-`docs/plans/appbox-kit-native-components.md` is the build roadmap / worklog.
+`docs/plans/arxa-kit-native-components.md` is the build roadmap / worklog.
 
 > **Spec sources:** every component here is grounded in the official
 > Material 3 (Expressive) and iOS HIG references — see
@@ -56,7 +56,7 @@ to Cupertino/Material below.
 | **popover / menu** | popover / `UIMenu` [popover] · `CNPopupMenuButton` | ✓ theme | — (motion via theme) | `MenuAnchor` | 3 | ✅ iOS `CNPopupMenuButton` · **Android Flutter `MenuAnchor`** (M3E motion via theme) |
 | **search bar** | `UISearchBar` [bar] · `CNSearchBar` | ✓ theme | — (motion via theme) | `SearchBar` / `SearchAnchor` | 3 | ✅ iOS `CNSearchBar` · **Android Material `SearchBar`** (M3E motion via theme) · structural (`wantNative`) |
 | **text field** | `UITextField` [control] · `CNTextField` | ✓ theme | ✅ `TextFieldM3E` | `TextField` | 2 | ✅ iOS `CNTextField` (Liquid Glass capsule; two-way `TextEditingController`) · **Android `TextFieldM3E`** (vendored M3E fork — focus shape-morph, mirrors split-button/toolbar/FAB; official Flutter M3E field flutter/flutter#168813 not shipped, so the kit vendors one) · Material `TextField` fallback (`wantNative:false`) |
-| **input bar** (`AppBoxKitNativeInputBar`) | inherits text field + icon button | ✓ theme | inherits (`TextFieldM3E` / `IconButtonM3E`) | Material composition | 6 | ✅ composite — `AppBoxKitNativeTextField` + leading/trailing `AppBoxKitNativeIconButton` slots (typed, one-size enforced), keyboard-riding inset handling · **multiline composer by default** (`multiline: true`, grow to `maxLines: 6` then scroll; `multiline: false` restores the single-line bar): iOS field = `TextField(axis: .vertical)` in a rounded-rect Liquid Glass capsule reporting intrinsic height over a `heightChanged` channel so the Flutter slot grows in lockstep; Android/fallback = min/maxLines grow-then-scroll · **`opaqueGlass: true` by default** (abe2b056): a flat opaque base behind the row (tint token at alpha 1.0, platform-view-safe frosted branch — the action slots are CN platform views), wrapping the `SafeArea` so the home-indicator strip is painted; `opaqueGlass: false` restores the old transparent backing · tiers inherited · structural · **device-verified with real touches, both platforms** (`kit/tools/device_input_probe` + host choreography, 2026-08-16): iOS 26.5 sim — focus/re-tap-keeps-focus (the original re-tap dismissal bug)/outside-tap/drag dismissal, 6-line growth + shrink, Select/SelectAll/AutoFill menu, second native glass field renders seam-free beside the bar; Android API 37 emulator — same dismissal matrix through the M3E tier, real-IME typing reaching the controller, 7-line growth, one-line shrink, "Select all" toolbar, per-field focus transfer; **action-tap regression fixed + device-verified** (2026-08-16): the bar's leading/trailing action slots join the input tap group (`abxInputTapGroupId`), so tapping +/mic mid-composition keeps the keyboard (iOS Messages idiom) — real-touch P11 verified it (iOS: native focus + keyboard held, screenshot; Android: focus tree held 2.4s after the tap), and a kit widget test pins the behavior |
+| **input bar** (`ArxaKitNativeInputBar`) | inherits text field + icon button | ✓ theme | inherits (`TextFieldM3E` / `IconButtonM3E`) | Material composition | 6 | ✅ composite — `ArxaKitNativeTextField` + leading/trailing `ArxaKitNativeIconButton` slots (typed, one-size enforced), keyboard-riding inset handling · **multiline composer by default** (`multiline: true`, grow to `maxLines: 6` then scroll; `multiline: false` restores the single-line bar): iOS field = `TextField(axis: .vertical)` in a rounded-rect Liquid Glass capsule reporting intrinsic height over a `heightChanged` channel so the Flutter slot grows in lockstep; Android/fallback = min/maxLines grow-then-scroll · **`opaqueGlass: true` by default** (abe2b056): a flat opaque base behind the row (tint token at alpha 1.0, platform-view-safe frosted branch — the action slots are CN platform views), wrapping the `SafeArea` so the home-indicator strip is painted; `opaqueGlass: false` restores the old transparent backing · tiers inherited · structural · **device-verified with real touches, both platforms** (`kit/tools/device_input_probe` + host choreography, 2026-08-16): iOS 26.5 sim — focus/re-tap-keeps-focus (the original re-tap dismissal bug)/outside-tap/drag dismissal, 6-line growth + shrink, Select/SelectAll/AutoFill menu, second native glass field renders seam-free beside the bar; Android API 37 emulator — same dismissal matrix through the M3E tier, real-IME typing reaching the controller, 7-line growth, one-line shrink, "Select all" toolbar, per-field focus transfer; **action-tap regression fixed + device-verified** (2026-08-16): the bar's leading/trailing action slots join the input tap group (`abxInputTapGroupId`), so tapping +/mic mid-composition keeps the keyboard (iOS Messages idiom) — real-touch P11 verified it (iOS: native focus + keyboard held, screenshot; Android: focus tree held 2.4s after the tap), and a kit widget test pins the behavior |
 | **switch / toggle** | `UISwitch` [control] · `CNSwitch` (self-degrades) | ✓ theme | — (no M3E branch **by design**) | `Switch` | 4 | ✅ iOS `CNSwitch` (self-degrades glass → Material) · **Android CN's Material `Switch` fallback** (no M3E by design; thin-wrap gate) |
 | **slider** | `UISlider` [control] · `CNSlider` | ✓ theme | ✅ `SliderM3E` | `Slider` | 4 | ✅ iOS `CNSlider` · **Android `SliderM3E`** |
 | **range slider** | two-thumb `UISlider` [control] · `CNRangeSlider` (iOS 26+) | ✓ theme | ✅ `RangeSliderM3E` | `RangeSlider` | 4 | ✅ iOS `CNRangeSlider` (iOS 26+; Material `RangeSlider` below) · **Android `RangeSliderM3E`** |
@@ -64,17 +64,17 @@ to Cupertino/Material below.
 | **progress** (`.linear`/`.circular`) | `UIActivityIndicator` [control] · Material `LinearProgressIndicator` / `CupertinoActivityIndicator` | ✓ theme | ✅ `LinearProgressIndicatorM3E` / `CircularProgressIndicatorM3E` | `LinearProgressIndicator` / `CircularProgressIndicator` | 3 | ✅ iOS Material `LinearProgressIndicator` / `CupertinoActivityIndicator` · **Android `LinearProgressIndicatorM3E`/`CircularProgressIndicatorM3E`** |
 | **toast** (`KitNotificationService.show`) | `CNToast.show`/`.success`/`.error` | — | — (kit snackbar infra) | `showSnackBar` | 3 | ✅ iOS `CNToast.show`/`.success`/`.error` · **Android kit snackbar via `SnackbarService`** (reuses kit infra) · function gate |
 | **glass card** | glass over content · `LiquidGlassContainer` | ✓ theme | — (M3 `Card` theme is the M3E surface) | `Card` | 5 | ✅ iOS `LiquidGlassContainer` (gated on `supportsLiquidGlass`) — **stays real glass, densified via the native `tint`** (abe2b056; the one density lever that does not add a Flutter layer) · **fallback tier is opaque by default** (`opaqueGlass: true` → frosted surface at tint alpha 1.0) · **Android Material `Card`** (M3 theme is the M3E surface) · structural |
-| **sheet** (`appBoxKitShowSheet()`) | **ONE presentation, both tiers Flutter-drawn** — `CNBottomSheet.showCupertino` (Flutter's `showCupertinoSheet`) + body-sized frosted body (`AppBoxKitFrostedSurface`) | ✓ theme | — (motion via theme) | `showModalBottomSheet` | 3 | ✅ iOS body-sized Cupertino sheet, **opaque by default** (`opaqueGlass: true`), dim barrier + tap-to-dismiss (`showOverlay: true`), native close icon button top-right (`showCloseButton: true`) · **Android `showModalBottomSheet`** · function gate |
-| **alert / dialog** (`appBoxKitShowNativeDialog()`) | iOS 26 alert idiom — Flutter-drawn frosted panel (`AppBoxKitFrostedSurface`) + stacked full-width `AppBoxKitNativeButton`s | ✓ theme | — (no `*_m3e` package) | `AlertDialog` | 3 | ✅ iOS frosted-glass panel, **opaque by default** (`opaqueGlass: true` → tint token at alpha 1.0 on the platform-view-safe branch, since the panel hosts CN buttons) + stacked pills (primary filled / secondary subdued / destructive tinted) · **Android stock M3 `AlertDialog`** · function gate |
+| **sheet** (`arxaKitShowSheet()`) | **ONE presentation, both tiers Flutter-drawn** — `CNBottomSheet.showCupertino` (Flutter's `showCupertinoSheet`) + body-sized frosted body (`ArxaKitFrostedSurface`) | ✓ theme | — (motion via theme) | `showModalBottomSheet` | 3 | ✅ iOS body-sized Cupertino sheet, **opaque by default** (`opaqueGlass: true`), dim barrier + tap-to-dismiss (`showOverlay: true`), native close icon button top-right (`showCloseButton: true`) · **Android `showModalBottomSheet`** · function gate |
+| **alert / dialog** (`arxaKitShowNativeDialog()`) | iOS 26 alert idiom — Flutter-drawn frosted panel (`ArxaKitFrostedSurface`) + stacked full-width `ArxaKitNativeButton`s | ✓ theme | — (no `*_m3e` package) | `AlertDialog` | 3 | ✅ iOS frosted-glass panel, **opaque by default** (`opaqueGlass: true` → tint token at alpha 1.0 on the platform-view-safe branch, since the panel hosts CN buttons) + stacked pills (primary filled / secondary subdued / destructive tinted) · **Android stock M3 `AlertDialog`** · function gate |
 | **carousel** | — | ✓ theme | Carousel (upstream only) | `PageView` + custom | — | ⏳ **deferred** — neither CN nor `*_m3e` ships one |
-| **drawer** (`KitDrawer` + `KitDrawerVariant`) | — (no native tier on either platform, by design) | ✓ theme | — (stock `Drawer` machinery) | `Drawer` + `KitFrostedSurface` | — | ✅ pure Flutter — stock `Drawer` machinery (edge-swipe/scrim/drag-close free) + variants: `glassPeek` (85% peek, 28dp trailing corner, ADR 0010 frosted skin) / `plain` (stock themed); optional `KitMotionScope` driver seam via `appbox_kit_motion` (ADR 0011 item 4) |
+| **drawer** (`KitDrawer` + `KitDrawerVariant`) | — (no native tier on either platform, by design) | ✓ theme | — (stock `Drawer` machinery) | `Drawer` + `KitFrostedSurface` | — | ✅ pure Flutter — stock `Drawer` machinery (edge-swipe/scrim/drag-close free) + variants: `glassPeek` (85% peek, 28dp trailing corner, ADR 0010 frosted skin) / `plain` (stock themed); optional `KitMotionScope` driver seam via `arxa_kit_motion` (ADR 0011 item 4) |
 
 ### Opaque-by-default — the modal/backing surfaces ground their frost
 
 **Ruling (2026-08-14, 755dc23c + abe2b056): every Flutter-drawn *modal or
 backing* surface takes a fully opaque base by default.** `opaqueGlass` defaults
-to `true` on `appBoxKitShowSheet`, `appBoxKitShowNativeDialog`,
-`AppBoxKitNativeInputBar`, and `AppBoxKitGlassCard`'s Flutter-drawn tier. The
+to `true` on `arxaKitShowSheet`, `arxaKitShowNativeDialog`,
+`ArxaKitNativeInputBar`, and `ArxaKitGlassCard`'s Flutter-drawn tier. The
 mechanism is the same in all four: the frosted surface takes its **tint token at
 alpha 1.0** on the `platformViewSafe` branch — no `BackdropFilter`. That is not
 a downgrade of the frosted read but a consequence of it: a fully opaque fill
@@ -84,7 +84,7 @@ views (dialog buttons, input-bar action slots).
 
 Two surfaces are deliberately **not** opaque:
 
-- **`AppBoxKitGlassCard`'s native tier stays real Liquid Glass** — it densifies
+- **`ArxaKitGlassCard`'s native tier stays real Liquid Glass** — it densifies
   through the native `LiquidGlassContainer` **`tint`** instead, the one density
   lever that adds no Flutter layer over a platform view.
 - Any caller passing `opaqueGlass: false`, which restores the previous
@@ -121,7 +121,7 @@ former `…ShowNativeSheet` name overclaimed. `CNBottomSheet` stays load-bearing
 only for its `CNSheetGeometryProbe`, which publishes the sheet body's live rect
 (the sized path places its own probe on the sized box, so `injectGeometryProbe`
 is off). Behavior is pinned by
-`ui_library/test/kit/widgets/appbox_kit_native_sheet_test.dart`.
+`ui_library/test/kit/widgets/arxa_kit_native_sheet_test.dart`.
 
 ### Composite content surfaces → compose on the `glass card` row
 
@@ -158,7 +158,7 @@ can't silently ship a plain-Flutter surface where a native one exists:
   sheet** → `enforce_design.dart` `no_stock_native_surface` (4g, table-driven —
   the ban list IS this matrix) + `review_checklist.sh` 1y. Stock CTA buttons and
   progress indicators are 4b/4c.
-- **Spacing** — gaps are the `appbox_kit_core` helpers (`verticalSpace*`/
+- **Spacing** — gaps are the `arxa_kit_core` helpers (`verticalSpace*`/
   `horizontalSpace*`, or `verticalSpace(h)`/`horizontalSpace(w)` for one-offs)
   → `review_checklist.sh` 1w2 bans single-arg spacing `SizedBox` in app-side
   code (sizing with a child / both dims / a `child:`-mounted placeholder stays
@@ -168,11 +168,11 @@ can't silently ship a plain-Flutter surface where a native one exists:
   `Color(0x…)` literals → `review_checklist.sh` 1x2.
 
 An app view that reaches for the raw Flutter widget (`TextField`, `Switch`,
-`showModalBottomSheet(`, …) instead of the `AppBoxKitNative*`/`appBoxKitShow*`
+`showModalBottomSheet(`, …) instead of the `ArxaKitNative*`/`arxaKitShow*`
 surface fails the gate — those are the identifiers `_nativeSurfaceBans` actually
 names as the replacement for each banned pattern. Deliberate plain Flutter opts
 out with `// flutter-only: <reason>`. Adding a new native surface = add its
-`AppBoxKitNative*` row here **and** one ban row to `_nativeSurfaceBans`
+`ArxaKitNative*` row here **and** one ban row to `_nativeSurfaceBans`
 (`gates/review/review.dart`) — the guard and the matrix stay in lockstep.
 
 ## Content widgets (pure Flutter — no native tier, by design)
@@ -188,10 +188,10 @@ native tier.
 |---|---|---|
 | **image** (`KitImage`) | `Image.asset` + placeholder-glyph fallback + `ClipRRect` radius | UIKit / M3 have no "native image" chrome — an asset image is always content. The placeholder glyph keeps the slot honest before decode / on error. |
 | **frosted surface** (`KitFrostedSurface`) | `BackdropFilter` blur + saturation + tint + rim highlight — the ADR 0010 content/sheet/dialog tier | Apple's HIG reserves Liquid Glass for the functional layer; content gets *standard materials* — a Flutter-drawn frosted surface is the documented-correct look, and being Flutter-drawn it is occlusion-safe by construction. |
-| **opaque bar base** (`AppBoxKitOpaqueBarBase`) | The pinned-strip opaque panel `AppBoxKitNativeInputBar` paints, extracted for any docked strip (pending-attachment rows, accessory bars): plain native anchor (`LiquidGlassContainer`, renders nothing — holds the view-slicer intersection over platform-view scrollables) + platform-view-safe opaque fill (tint token at alpha 1.0, no BackdropFilter). Content never shows through the seam |
+| **opaque bar base** (`ArxaKitOpaqueBarBase`) | The pinned-strip opaque panel `ArxaKitNativeInputBar` paints, extracted for any docked strip (pending-attachment rows, accessory bars): plain native anchor (`LiquidGlassContainer`, renders nothing — holds the view-slicer intersection over platform-view scrollables) + platform-view-safe opaque fill (tint token at alpha 1.0, no BackdropFilter). Content never shows through the seam |
 | **list section / list tile** (`KitListSection`, `KitListTile`) | Grouped inset sections (glass-card-backed) + glyph-leading rows: settings / menu / plugin idioms | UIKit grouped tables and M3 lists are layout idioms, not native chrome with a Liquid Glass / M3E surface — the section composes on the `glass card` row. |
 | **chip / chip carousel** (`KitChip`, `KitChipCarousel`) | Icon+label stadium chips and a horizontal rail (scroll, optional snap, overflow edge fades) | A chip rail is a scrolling content collection — no CN/`*_m3e` chip or rail exists, and the deferred M3E browsing-`Carousel` row is a different (large-format) component. |
-| **scroll edge effect** (`AppBoxKitScrollEdgeEffect`) | Progressive blur/fade on scrollable children beneath pinned chrome (ADR 0010). **Inert on the Liquid Glass tier** — there the dissolve comes from `AppBoxKitTopEdgeScrim` / `AppBoxKitBottomEdgeScrim` instead (8fc38af7 / d6994258; see [the scroll-edge section](#scrolled-under-pinned-chrome--two-mechanisms-split-by-tier-adr-0010)). | It is a treatment applied to *content pixels* (ImageFiltered), not a chrome surface — the iOS 26 semantic it mirrors (`UIScrollEdgeEffect`) is a scroll-view property, not a widget. |
+| **scroll edge effect** (`ArxaKitScrollEdgeEffect`) | Progressive blur/fade on scrollable children beneath pinned chrome (ADR 0010). **Inert on the Liquid Glass tier** — there the dissolve comes from `ArxaKitTopEdgeScrim` / `ArxaKitBottomEdgeScrim` instead (8fc38af7 / d6994258; see [the scroll-edge section](#scrolled-under-pinned-chrome--two-mechanisms-split-by-tier-adr-0010)). | It is a treatment applied to *content pixels* (ImageFiltered), not a chrome surface — the iOS 26 semantic it mirrors (`UIScrollEdgeEffect`) is a scroll-view property, not a widget. |
 
 **CN extras now wired through kit rows:** `CNToast` → toast (`KitNotificationService.show`),
 `LiquidGlassContainer` → glass card (`KitGlassCard`), and `CNIcon`'s SF-Symbol path →
@@ -278,7 +278,7 @@ the 13 components, the "don't drag unused components" rationale inverts — see
 `MaterialExpressiveTheme` does **not** exist in the Flutter 3.44 SDK — there is no
 zero-dep path; a package is required.
 
-The legacy `appbox_kit_native` Compose plugin is still on disk but unused by any
+The legacy `arxa_kit_native` Compose plugin is still on disk but unused by any
 wired widget — pending removal.
 
 ## Customizing the `*_m3e` tier (three surfaces, cheapest first)
@@ -328,17 +328,17 @@ change how one looks, reach for these **in order**; stop at the first that holds
 > **ADR 0010 amendment (snackbar blur scrim).** The kit snackbar's GetX
 > `overlayBlur` — initially removed under (1) — is restored at sigma 20
 > (Apple's regular material) with a `black54` dim: the presentation seat
-> (`AppBoxKitNotificationService.show`) wraps every stacked-snackbar in
-> `appBoxKitWithNativeChromeHidden`, so the CN chrome dematerializes for the
+> (`ArxaKitNotificationService.show`) wraps every stacked-snackbar in
+> `arxaKitWithNativeChromeHidden`, so the CN chrome dematerializes for the
 > snackbar's full lifetime and the blur never has to cover a platform view. The
 > dim value is a deliberate deviation — neither HIG nor M3 scrims a transient
 > snackbar; `black54` matches the kit's sheet/dialog barriers.
 >
-> **Reach, post-e2787605.** `appBoxKitWithNativeChromeHidden` still brackets the
+> **Reach, post-e2787605.** `arxaKitWithNativeChromeHidden` still brackets the
 > presentation with `markAnyModalActive/Inactive`, but what *listens* to
 > `anyModalDepth` is now nearly empty (see
 > [Per-widget coverage](#per-widget-coverage--who-actually-hides-when-a-modal-is-up)):
-> `AppBoxKitNativeChromeGate` dropped that listener entirely, and every vendor
+> `ArxaKitNativeChromeGate` dropped that listener entirely, and every vendor
 > component opted out of `ModalHideMixin`. The native **tab bar** is the one
 > surface the bracket still moves. Keep the wrapper on any host overlay that
 > paints a real blur — it is the only lever that reaches the tab bar — but do
@@ -359,7 +359,7 @@ while a modal *route* is up (via `CNTabBarRouteObserver`), but a snackbar is an
 presentation in the kit helper:
 
 ```dart
-appBoxKitWithNativeChromeHidden(() => locator<SnackbarService>().showCustomSnackBar(...));
+arxaKitWithNativeChromeHidden(() => locator<SnackbarService>().showCustomSnackBar(...));
 ```
 
 It brackets the overlay's visible window with `markAnyModalActive/Inactive`
@@ -376,7 +376,7 @@ render blurred-but-visible — native pixels can't be blurred, so removal is the
 only clean fix. The kit's own KitAction snackbars
 (`notification_manager.dart`) already route through this; **any direct
 `showCustomSnackBar` call must wrap itself.** Balance is unit-tested in
-`ui_library/test/kit/utils/appbox_kit_native_overlay_test.dart`.
+`ui_library/test/kit/utils/arxa_kit_native_overlay_test.dart`.
 
 ### Transient overlays mount in the ROOT overlay, on a plain glass anchor
 
@@ -421,7 +421,7 @@ so that window is the common case. The plain anchor is why the Flutter-drawn
 branch still carries a `// transition-exempt:` marker: it mounts a platform
 view, but one that shows nothing. **If this ever flips back to the glass tier,
 that exemption must be deleted** — the leak returns with it. Pinned by
-`ui_library/test/kit/services/appbox_kit_notification_service_test.dart`.
+`ui_library/test/kit/services/arxa_kit_notification_service_test.dart`.
 
 ### Per-widget coverage — who actually hides when a modal is up
 
@@ -430,7 +430,7 @@ and the modal destroy-hide is gone.** The section below used to describe two
 cooperating layers; there is now effectively one, and it no longer fires on
 modal depth at all.
 
-`AppBoxKitNativeChromeGate` **removed** its modal-coverage authority — the
+`ArxaKitNativeChromeGate` **removed** its modal-coverage authority — the
 `_modalCoversMe` rect-overlap predicate, its `anyModalDepth`/`topModalRect`
 listeners, and the `_mountDepth` baseline (a `TOMBSTONE` comment in the source
 marks the spot). It now listens only to `CNTabBarRouteObserver.sheetGestureDepth`
@@ -452,9 +452,9 @@ defaults `autoHideOnModal: false`. The one exception is the native tab bar.
 | Widget | Guard today | Notes |
 |---|---|---|
 | `CNButton`, `CNSegmentedControl`, `CNSwitch`, `CNSlider`, `CNSearchBar`, `CNPopupMenuButton`, `CNGlassButtonGroup`, `CNLiquidGlassContainer`, `CNFloatingIsland`, `CNTextField`, `CNRangeSlider` | **none on modal** — `autoHideOnModal: false` is now the vendor default | The position-aware destroy path is off. Route transitions are still covered, by the gate. |
-| `CNTabBar` (via `AppBoxKitNativeTabBar`) | **`autoHideOnModal: true` — the documented destroy-hide exception (upstream issue 31)** | The only surface where the modal hide must *destroy* the platform view: the native `UITabBar` layer keeps rendering above Flutter-drawn modal content otherwise (vendor `tab_bar.dart:521-526`). The gate's `keepAlive` mode leaves it mounted-but-unpainted, which is precisely **not** destroying it, so folding this into the gate would need `hideMode: unmount` plus on-device z-order verification. Left as an exception rather than an unverified regression, and pinned by `ui_library/test/kit/widgets/appbox_kit_tab_bar_single_hide_authority_test.dart`. |
-| `AppBoxKitGlassCard`'s native tier | **`autoHideOnModal: false`, explicitly** | The mixin swapped only the glass platform view for a placeholder while `child` kept rendering — the "card glass vanishes mid-drag but the buttons inside stay" artifact. The Issue #53 bleed is contained natively now (`setTransitioning` halo containment), so the destroy was a defective duplicate. |
-| `CNIcon`, `search_scaffold`, any third-party platform view (maps, webview, video) | **wrap in `AppBoxKitNativeChromeGate`** | Still the kit-side guard — but understand it as *transition* protection now, not modal protection. |
+| `CNTabBar` (via `ArxaKitNativeTabBar`) | **`autoHideOnModal: true` — the documented destroy-hide exception (upstream issue 31)** | The only surface where the modal hide must *destroy* the platform view: the native `UITabBar` layer keeps rendering above Flutter-drawn modal content otherwise (vendor `tab_bar.dart:521-526`). The gate's `keepAlive` mode leaves it mounted-but-unpainted, which is precisely **not** destroying it, so folding this into the gate would need `hideMode: unmount` plus on-device z-order verification. Left as an exception rather than an unverified regression, and pinned by `ui_library/test/kit/widgets/arxa_kit_tab_bar_single_hide_authority_test.dart`. |
+| `ArxaKitGlassCard`'s native tier | **`autoHideOnModal: false`, explicitly** | The mixin swapped only the glass platform view for a placeholder while `child` kept rendering — the "card glass vanishes mid-drag but the buttons inside stay" artifact. The Issue #53 bleed is contained natively now (`setTransitioning` halo containment), so the destroy was a defective duplicate. |
+| `CNIcon`, `search_scaffold`, any third-party platform view (maps, webview, video) | **wrap in `ArxaKitNativeChromeGate`** | Still the kit-side guard — but understand it as *transition* protection now, not modal protection. |
 
 #### New native-chrome surfaces (17) — modal-hide participation
 
@@ -463,31 +463,31 @@ defaults `autoHideOnModal: false`. The one exception is the native tab bar.
 participates via `ModalHideMixin`". That is no longer true — the vendor default
 flipped to `autoHideOnModal: false` on every component except the tab bar, so
 these surfaces participate in *nothing* on modal and rely on
-`AppBoxKitNativeChromeGate` for route transitions instead. Verified by grepping
+`ArxaKitNativeChromeGate` for route transitions instead. Verified by grepping
 `autoHideOnModal` across `vendor/cupertino_native_better/lib/components/`;
 **no `*_m3e` package exposes it** — the Android tier is pure Flutter, so it is a
 non-issue there.
 
 | New surface (Kit widget) | iOS tier | `autoHideOnModal` today |
 |---|---|---|
-| `AppBoxKitGlassCard` | `LiquidGlassContainer` | ❌ **explicitly `false`** — the destroy left the card's children rendering without their glass |
-| `AppBoxKitNativeToolbar` | `CNGlassButtonGroup` | ❌ vendor default is now `false` |
-| `AppBoxKitNativeFab` | glass `CNButton` | ❌ vendor default is now `false` |
-| `AppBoxKitNativeFabMenu` | glass `CNPopupMenuButton` | ❌ vendor default is now `false` |
-| `AppBoxKitNativeSearchBar` | `CNSearchBar` | ❌ vendor default is now `false` |
-| `AppBoxKitNativeTabBar` | `CNTabBar` | ✅ **`true` — the sole destroy-hide exception** (see the table above) |
-| `AppBoxKitNativeAppBar` | `CupertinoNavigationBar` | ❌ none — stock Cupertino widget, **not** a CN platform view (nothing to bleed) |
-| `AppBoxKitNativeNavigationRail` | Material `NavigationRail` | ❌ none — Flutter Material widget (nothing to bleed) |
+| `ArxaKitGlassCard` | `LiquidGlassContainer` | ❌ **explicitly `false`** — the destroy left the card's children rendering without their glass |
+| `ArxaKitNativeToolbar` | `CNGlassButtonGroup` | ❌ vendor default is now `false` |
+| `ArxaKitNativeFab` | glass `CNButton` | ❌ vendor default is now `false` |
+| `ArxaKitNativeFabMenu` | glass `CNPopupMenuButton` | ❌ vendor default is now `false` |
+| `ArxaKitNativeSearchBar` | `CNSearchBar` | ❌ vendor default is now `false` |
+| `ArxaKitNativeTabBar` | `CNTabBar` | ✅ **`true` — the sole destroy-hide exception** (see the table above) |
+| `ArxaKitNativeAppBar` | `CupertinoNavigationBar` | ❌ none — stock Cupertino widget, **not** a CN platform view (nothing to bleed) |
+| `ArxaKitNativeNavigationRail` | Material `NavigationRail` | ❌ none — Flutter Material widget (nothing to bleed) |
 
 **Not chrome (inline content controls) — deliberately outside the hide system:**
-`AppBoxKitNativeSwitch`, `AppBoxKitNativeSlider`, `AppBoxKitNativeRangeSlider`,
-`AppBoxKitNativeIconButton`, `AppBoxKitNativeProgress`,
-`AppBoxKitNativeLoadingIndicator`. The function-shaped natives
-(`appBoxKitShowSheet()` / `AppBoxKitNotificationService.show`) *raise* the modal
+`ArxaKitNativeSwitch`, `ArxaKitNativeSlider`, `ArxaKitNativeRangeSlider`,
+`ArxaKitNativeIconButton`, `ArxaKitNativeProgress`,
+`ArxaKitNativeLoadingIndicator`. The function-shaped natives
+(`arxaKitShowSheet()` / `ArxaKitNotificationService.show`) *raise* the modal
 signal (the sheet) or render through the kit-snackbar overlay infra (the toast)
 — they are shown *by* the system, not hidden *by* it.
 
-`AppBoxKitNativeChromeGate` (exported from `appbox_kit_ui_library.dart`) hides
+`ArxaKitNativeChromeGate` (exported from `arxa_kit_ui_library.dart`) hides
 any child while a route transition runs **above** it in an enclosing navigator
 (`CNTransitionObserver.hasActiveTransitionAbove`), with **zero layout shift** in
 either direction. Two refinements matter:
@@ -507,7 +507,7 @@ either direction. Two refinements matter:
   ignored — both edges are single-frame paint toggles, per the instant-edges
   rule below.
 
-The default `AppBoxKitChromeHideMode.keepAlive` hides at the **paint level** —
+The default `ArxaKitChromeHideMode.keepAlive` hides at the **paint level** —
 alpha 0 skips painting, an unpainted platform view is removed from the
 native view hierarchy (so it can't bleed through the blur), but the native
 view instance stays alive and restore fades the **same live view** back in.
@@ -574,7 +574,7 @@ any CN Swift file that constructs a `UIHostingController(` without calling
 after allocation; if the view *intentionally* wants safe area (docked chrome
 that never scrolls), add it to the test's allowlist with a comment saying why.
 
-**Verified (iOS 26.5 sim, appbox lens frame tracking):** pill-to-label offset
+**Verified (iOS 26.5 sim, arxa lens frame tracking):** pill-to-label offset
 and pill-to-card-bottom gap invariant across gentle scrolls, mid-scroll parks,
 and repeated hard-fling cycles; Search-tab switches pixel-identical before/after
 a fling. Native (Swift) changes need a **full stop + rebuild** to test — hot
@@ -594,13 +594,13 @@ depends on the tier** (8fc38af7 / d6994258):
 
 | Tier | Mechanism | Why |
 |---|---|---|
-| **Liquid Glass (iOS 26)** | `AppBoxKitTopEdgeScrim` / `AppBoxKitBottomEdgeScrim` — Flutter-DRAWN gradient fills | The per-child effect is **deliberately inert** here (below). A gradient fill adds no layer at all: no `saveLayer`, no alpha over a platform view. |
-| **Everything else** (Android / fallback / `wantNative: false`) | `AppBoxKitScrollEdgeEffect` per child | Content is Flutter-drawn, so the `ImageFiltered` blur + opacity are safe and the effect works as originally documented. |
+| **Liquid Glass (iOS 26)** | `ArxaKitTopEdgeScrim` / `ArxaKitBottomEdgeScrim` — Flutter-DRAWN gradient fills | The per-child effect is **deliberately inert** here (below). A gradient fill adds no layer at all: no `saveLayer`, no alpha over a platform view. |
+| **Everything else** (Android / fallback / `wantNative: false`) | `ArxaKitScrollEdgeEffect` per child | Content is Flutter-drawn, so the `ImageFiltered` blur + opacity are safe and the effect works as originally documented. |
 
 ### The per-child effect is inert on the glass tier
 
-`AppBoxKitScrollEdgeEffect` gates its blur on
-`blurs = !AppBoxKitPlatform.supportsLiquidGlass`, and on the glass tier renders
+`ArxaKitScrollEdgeEffect` gates its blur on
+`blurs = !ArxaKitPlatform.supportsLiquidGlass`, and on the glass tier renders
 **fully inert** — opacity 1.0 (`RenderOpacity` pushes no layer at 1.0),
 `Clip.none`, so children exit by plain viewport clipping instead.
 
@@ -614,7 +614,7 @@ the top dissolved via the scrim — which is what the bottom scrim was added to
 fix.
 
 The tier split is pinned by
-`ui_library/test/kit/widgets/appbox_kit_scroll_edge_effect_tier_test.dart`, and
+`ui_library/test/kit/widgets/arxa_kit_scroll_edge_effect_tier_test.dart`, and
 tree stability (the subtree shape must not change as `t` crosses 0) by
 `…_tree_stability_test.dart`.
 
@@ -623,25 +623,25 @@ tree stability (the subtree shape must not change as `t` crosses 0) by
 Both scrims are Flutter-drawn vertical gradients, opaque at the screen edge and
 ramping to transparent, drawn ON TOP of a full-bleed body:
 
-- **`AppBoxKitTopEdgeScrim`** — height is `MediaQuery.paddingOf(context).top`
+- **`ArxaKitTopEdgeScrim`** — height is `MediaQuery.paddingOf(context).top`
   plus `fadeExtent`, deliberately the same `padding.top` the floating bar's own
   `SafeArea` reads, so the fade lands exactly on the bar's bottom edge under
   every inset (pinned by test). **Read it from the chrome's own context**, never
   the body's raised `MediaQuery`, or the scrim double-counts the block.
-- **`AppBoxKitBottomEdgeScrim`** — height is
+- **`ArxaKitBottomEdgeScrim`** — height is
   `MediaQuery.viewPaddingOf(context).bottom` plus `fadeExtent`, the **RAW**
-  device inset, so read it **OUTSIDE** `AppBoxKitExtendBodyFabLift` (or any
+  device inset, so read it **OUTSIDE** `ArxaKitExtendBodyFabLift` (or any
   wrapper mirroring bar clearance into `viewPadding`), or it double-counts the
-  bar block and washes resting content. `AppBoxKitBottomEdgeScrimHost` is the
+  bar block and washes resting content. `ArxaKitBottomEdgeScrimHost` is the
   sugar that overlays it on a full-bleed `Scaffold(extendBody: true)` body.
 
 **Edges are ON by default at both ends, and turned off by design choice**
 (ratified 2026-08-14, superseding the original opt-in stance): the soft dissolve
 is part of the kit's look, not merely occlusion repair, so a fade with no chrome
 under it is a design effect rather than a bug. Steer with the four-value
-`AppBoxKitScrollEdges` enum (`none` / `top` / `bottom` / `both`, default
+`ArxaKitScrollEdges` enum (`none` / `top` / `bottom` / `both`, default
 `both`) — a named, greppable decision rather than an empty set literal, and a
-compile-time-constant default. `AppBoxKitEdgeAwareListView` skips the **top**
+compile-time-constant default. `ArxaKitEdgeAwareListView` skips the **top**
 edge automatically under `extendBehindTopBar`, where the cull boundary sits
 above the physical screen and the band would be off-screen by construction.
 
@@ -659,16 +659,16 @@ above the physical screen and the band would be off-screen by construction.
 ### The per-child effect (non-glass tiers)
 
 Wrap the scrollable's children, or use the `.scrollEdgeEffect()` extension
-sugar. `AppBoxKitEdgeAwareListView` applies it to every child so the treatment
+sugar. `ArxaKitEdgeAwareListView` applies it to every child so the treatment
 is a property of the *scrollable* rather than something each leaf must remember
 — forgetting was the observed failure mode (7 of 18 glass-bearing showcase
 widgets had it, 11 did not), and a leaf cannot detect that it was forgotten. The
 leaf sugar stays public for `CustomScrollView`s, where slivers still need it.
 
 ```dart
-AppBoxKitScrollEdgeEffect(
-  edge: AppBoxKitScrollEdge.top,                    // or .bottom
-  style: AppBoxKitScrollEdgeEffectStyle.soft,       // automatic → soft; hard = full cut
+ArxaKitScrollEdgeEffect(
+  edge: ArxaKitScrollEdge.top,                    // or .bottom
+  style: ArxaKitScrollEdgeEffectStyle.soft,       // automatic → soft; hard = full cut
   child: ...,                                       // a child of the scrollable
 )
 ```
@@ -681,18 +681,18 @@ AppBoxKitScrollEdgeEffect(
   geometry the retired gate used (pinned slivers' `maxScrollObstructionExtent`
   folds in); `occlusionPadding` covers chrome overlaid from *outside* the
   scrollable.
-- **`AppBoxKitScrollOcclusionGate` is retired from scroll duty** (public API
+- **`ArxaKitScrollOcclusionGate` is retired from scroll duty** (public API
   unchanged) — its residual role is the blur-over-glass case: a Flutter
   `BackdropFilter` overlay that must paint over a platform view. For scroll,
   use the edge effect or, on the glass tier, the scrims.
 
 Behavior is widget-tested in
-`ui_library/test/kit/widgets/appbox_kit_scroll_edge_effect_test.dart` (plus the
+`ui_library/test/kit/widgets/arxa_kit_scroll_edge_effect_test.dart` (plus the
 `_tier_test` / `_tree_stability_test` siblings) and
-`…/appbox_kit_edge_aware_list_view_test.dart`; the scrim geometry in
-`…/appbox_kit_native_floating_bar_test.dart`. The reviewer's objective gate
+`…/arxa_kit_edge_aware_list_view_test.dart`; the scrim geometry in
+`…/arxa_kit_native_floating_bar_test.dart`. The reviewer's objective gate
 still flags glass-bearing `CustomScrollView`s without
-`AppBoxKitScrollEdgeEffect` / `.scrollEdgeEffect()` (`review_checklist.sh` check
+`ArxaKitScrollEdgeEffect` / `.scrollEdgeEffect()` (`review_checklist.sh` check
 1i, mirrored in `gates/review/review.dart` as `checkScrollEdgeEffect`). Note the
 live tension: the check requires the wrapper on exactly the tier where it
 renders inert. That is deliberate — the wrapper is the portable, greppable

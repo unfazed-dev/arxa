@@ -2,20 +2,20 @@
   "$schema": "./feature-recipe.schema.json",
   "manifestVersion": "1.0.0",
   "_comment": [
-    "Q8 SSOT. Feature-recipe path/naming manifest. Loaded by BOTH appbox-designer and",
-    "appbox-scaffolder so their outputs converge on the same tree.",
+    "Q8 SSOT. Feature-recipe path/naming manifest. Loaded by BOTH arxa-designer and",
+    "arxa-scaffolder so their outputs converge on the same tree.",
     "PROVENANCE: derived by abstraction from kit/showcase_app/lib (207 .dart files), which",
     "Q1 locks as the structure contract, not an example. Showcase itself MUST pass the",
     "golden-expansion probe against this manifest (Q8 gate).",
     "PLACEMENT: showcase-adjacent by Q8, so both skills read one copy. The sibling",
     "feature-recipe.schema.json must stay in this directory — the $schema pointer above is",
     "relative. Move the pair together or not at all.",
-    "NOT here: kind-resolution.registry.json (Q7) lives in skills/appbox-scaffolder/."
+    "NOT here: kind-resolution.registry.json (Q7) lives in skills/arxa-scaffolder/."
   ],
   "structureContract": {
     "root": "kit/showcase_app/lib",
-    "packageTemplate": "appbox_kit_<app>_app",
-    "importTemplate": "package:appbox_kit_<app>_app/<path>"
+    "packageTemplate": "arxa_kit_<app>_app",
+    "importTemplate": "package:arxa_kit_<app>_app/<path>"
   },
   "tokens": {
     "app": {
@@ -87,7 +87,7 @@
     }
   },
   "frontmatterKinds": {
-    "_comment": "Q5: the semantic library doc comment in showcase files is NORMATIVE. Canon: skills/appbox-builder/BUILDER_playbook.mdx -> File structure. Every emitted file carries the doc comment ABOVE a bare `library;` directive. Order is locked. The scaffolder emits the layer-intro + role + History lines verbatim-derived and leaves the requirements/relationships bodies as a marked placeholder the builder fills.",
+    "_comment": "Q5: the semantic library doc comment in showcase files is NORMATIVE. Canon: skills/arxa-builder/BUILDER_playbook.mdx -> File structure. Every emitted file carries the doc comment ABOVE a bare `library;` directive. Order is locked. The scaffolder emits the layer-intro + role + History lines verbatim-derived and leaves the requirements/relationships bodies as a marked placeholder the builder fills.",
     "full": {
       "sections": [
         {
@@ -168,7 +168,7 @@
     "rule": "Studio inspect mode reads the triple ONLY. Zero DOM heuristics; inspect mode survives regeneration by construction.",
     "screenIdSource": "intake/registry.json entry ids, verbatim. A screenId outside that set is a gate failure. Class-name convention does NOT resolve it: ShowcaseNotesCreateAccountView carries its shell as a prefix and belongs to registry id 'showcase.createaccount' — the exact filename-convention miss app-architecture.md:169 describes, and the reason the triple is stamped rather than inferred.",
     "surfaceIdForm": "surface.<feature>.<surface> for a routed surface, surface.<feature>.shell for a shell view — the surface's own tree-derived id. The join to the registry is screenId.",
-    "anatomyNodeVocabulary": "skills/appbox-scaffolder/kind-resolution.registry.json#/anatomyNodes — CLOSED set, ratified at registry v1.2.0. An id outside it is a gate failure on both sides."
+    "anatomyNodeVocabulary": "skills/arxa-scaffolder/kind-resolution.registry.json#/anatomyNodes — CLOSED set, ratified at registry v1.2.0. An id outside it is a gate failure on both sides."
   },
   "artifactTypes": [
     {
@@ -434,7 +434,7 @@
       "frontmatter": "light",
       "inspectAttrs": false,
       "showcaseExample": "lib/app/app_data.dart",
-      "note": "Q4. The data-layer boot: registers entities + fixtures with appbox_kit_data, called once from main() after setupLocator(). Regenerated additively as features declare entities. Service registration does NOT live here — it lives in the @StackedApp dependencies in lib/app/app.dart."
+      "note": "Q4. The data-layer boot: registers entities + fixtures with arxa_kit_data, called once from main() after setupLocator(). Regenerated additively as features declare entities. Service registration does NOT live here — it lives in the @StackedApp dependencies in lib/app/app.dart."
     },
     {
       "id": "app-entrypoint",
@@ -515,15 +515,15 @@
     "_comment": "Q6 Tier 1. Scaffolded output IMPORTS the kit design vocabulary; it never generates local duplicates. showcase's lib/ui/common was deleted for exactly this reason. Emitting a local colors/spacing/glyphs/fonts file is a FAIL, not a style preference.",
     "source": "kit/core/lib/common/",
     "symbols": [
-      "appbox_kit_colors.dart",
-      "appbox_kit_ui_helpers.dart",
-      "appbox_kit_app_constants.dart",
-      "appbox_kit_fonts.dart",
-      "appbox_kit_glyphs.dart",
-      "appbox_kit_glyphs_lucide.dart",
-      "appbox_kit_glyphs_lucide_map.g.dart"
+      "arxa_kit_colors.dart",
+      "arxa_kit_ui_helpers.dart",
+      "arxa_kit_app_constants.dart",
+      "arxa_kit_fonts.dart",
+      "arxa_kit_glyphs.dart",
+      "arxa_kit_glyphs_lucide.dart",
+      "arxa_kit_glyphs_lucide_map.g.dart"
     ],
-    "widgetLibrary": "package:appbox_kit_ui_library/appbox_kit_ui_library.dart",
+    "widgetLibrary": "package:arxa_kit_ui_library/arxa_kit_ui_library.dart",
     "widgetLibraryNote": "The kit-native widget library — 149 imports across showcase, the single most imported package. Every widget the kind-resolution registry resolves to comes from here.",
     "forbiddenLocalDuplicates": [
       "lib/ui/common/**",
@@ -533,7 +533,7 @@
     ]
   },
   "routeTable": {
-    "_comment": "Unchanged by the grill and still binding. ONE go_router-shaped table compiled from intake/registry.json + intake/flows.json (exact shapes per appboxd/lib/intake.dart), emitted as lib/app/app.router.dart.",
+    "_comment": "Unchanged by the grill and still binding. ONE go_router-shaped table compiled from intake/registry.json + intake/flows.json (exact shapes per arxa/lib/intake.dart), emitted as lib/app/app.router.dart.",
     "registryEntry": [
       "id",
       "label",
@@ -579,7 +579,7 @@
       ]
     },
     "checkedBy": "--check asserts the catalog file set + l10n.yaml",
-    "pubspecNote": "flutter_localizations, intl and flutter.generate:true are emitted unconditionally by appboxd/lib/blueprint.dart — NOT by the scaffolder."
+    "pubspecNote": "flutter_localizations, intl and flutter.generate:true are emitted unconditionally by arxa/lib/blueprint.dart — NOT by the scaffolder."
   },
   "goldenExpansionProbe": {
     "_comment": "Q8 gate + Q11 verdict 1. The full locked verdict list lives in verdicts[] below so the probe reads it from the SSOT rather than from prose.",
@@ -650,9 +650,9 @@
     "_absentNote": "NOT shells and NOT in showcase. They expand from this manifest alone, exactly like the synthetic `payments` feature — the manifest is the authority where showcase offers no instance. `splashscreen` additionally is not a shell at all (mobile-device splash surface, brand logo only)."
   },
   "dependencyOverrides": {
-    "_comment": "F1. pub honours dependency_overrides from the ROOT package only, so a path dependency's own overrides do not propagate to a scaffolded app. appbox_kit_data declares these; every emitted app must replicate them verbatim or its first Windows build breaks. Recorded here so the emitted pubspec's override block is explained by the contract rather than only by kit/data prose (kit/data/README.md:41, kit/data/AGENTS.md:65) — prose the scaffolder cannot mechanically check itself against.",
+    "_comment": "F1. pub honours dependency_overrides from the ROOT package only, so a path dependency's own overrides do not propagate to a scaffolded app. arxa_kit_data declares these; every emitted app must replicate them verbatim or its first Windows build breaks. Recorded here so the emitted pubspec's override block is explained by the contract rather than only by kit/data prose (kit/data/README.md:41, kit/data/AGENTS.md:65) — prose the scaffolder cannot mechanically check itself against.",
     "rule": "Emit verbatim into every scaffolded app pubspec.yaml. Not optional, not version-floated.",
-    "cause": "appwrite's transitive graph pins win32 5.x while appbox_kit_core -> talker_flutter -> share_plus 13 requires win32 ^6. win32 is Windows-only FFI, so forcing 6.x is safe on every other platform.",
+    "cause": "appwrite's transitive graph pins win32 5.x while arxa_kit_core -> talker_flutter -> share_plus 13 requires win32 ^6. win32 is Windows-only FFI, so forcing 6.x is safe on every other platform.",
     "overrides": {
       "win32": "^6.0.1",
       "device_info_plus": "^13.0.0",

@@ -1,4 +1,4 @@
-name: appbox_kit_core
+name: arxa_kit_core
 description: Reusable Stacked MVVM toolkit — KitAction fluent operation API, reactive services (error/haptic/theme/navigation), overlay & selectable systems, formatters, and design-token constants for Flutter apps built on the Stacked architecture.
 version: 0.1.0
 publish_to: 'none'

@@ -2,7 +2,7 @@
 
 ## Symptom (device, 2026-08-11)
 
-Profile → Components. The message dock (`AppBoxKitNativeInputBar`) and the
+Profile → Components. The message dock (`ArxaKitNativeInputBar`) and the
 floating tab bar drew on the same pixels — the tab bar's pill covered the
 bottom of the input row.
 
@@ -42,7 +42,7 @@ own bar:
 ```dart
 bottomNavigationBar: _docksOwnBar(tabsRouter.topRoute.name)
     ? const SizedBox.shrink()
-    : AppBoxKitNativeTabBar(...)
+    : ArxaKitNativeTabBar(...)
 ```
 
 and the input bar drops its 64pt lift, so it sits on the bottom edge (its own
@@ -102,7 +102,7 @@ Mutations run against a committed tree:
 
 Suite: showcase 122, analyze clean.
 
-Verified headless, where `AppBoxKitPlatform.supportsLiquidGlass` is false — the
+Verified headless, where `ArxaKitPlatform.supportsLiquidGlass` is false — the
 tests exercise the **fallback** tab bar, not `CNTabBar`. The platform-view
 destroy/re-create on entering and leaving Components has not been observed on
 device.
@@ -110,7 +110,7 @@ device.
 ## Follow-up: the fallback toolbar overflow (fixed)
 
 Found while writing the handoff test: `/profile` **root** overflowed by 92px at
-phone width (390pt) in `AppBoxKitNativeToolbar`'s fallback tier — which is why
+phone width (390pt) in `ArxaKitNativeToolbar`'s fallback tier — which is why
 that test takes its baseline from Home.
 
 Root cause: the fallback picked its layout with

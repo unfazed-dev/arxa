@@ -11,7 +11,7 @@ Router/tab-bar switches in the showcase app "jump around" — not seamless.
   screen (tab bar already switched) until it vanishes in one frame.
 
 ## Root cause
-`kit/ui_library/lib/widgets/appbox_kit_animated_tab_stack.dart`: with
+`kit/ui_library/lib/widgets/arxa_kit_animated_tab_stack.dart`: with
 `fade: false` (default, platform-view safety per flutter#24164/#148639) the
 exit slot is painted ON TOP of the incoming layer, both fully opaque, and both
 travel only `slideFraction` (0.18) of the width. When the controller completes,
@@ -37,9 +37,9 @@ is fully covered when it happens:
 - `fade` stays opt-in with unchanged semantics (crossfade the pair).
 
 ## Touch list
-- `kit/ui_library/lib/widgets/appbox_kit_animated_tab_stack.dart` — geometry,
+- `kit/ui_library/lib/widgets/arxa_kit_animated_tab_stack.dart` — geometry,
   layer order, class docs.
-- `kit/ui_library/test/kit/widgets/appbox_kit_animated_tab_stack_test.dart` —
+- `kit/ui_library/test/kit/widgets/arxa_kit_animated_tab_stack_test.dart` —
   offset/order expectations.
 - `kit/showcase_app/.../showcase_application_tab_host_widget.dart` — comment.
 

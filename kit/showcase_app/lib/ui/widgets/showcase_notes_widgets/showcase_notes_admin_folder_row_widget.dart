@@ -1,5 +1,5 @@
 /// A widget is a reusable UI piece composed by views. It receives data via
-/// constructor params or [AppBoxKitStreamBuilder] bindings and renders its
+/// constructor params or [ArxaKitStreamBuilder] bindings and renders its
 /// slice of the surface — it holds no business logic and never decides when
 /// an action runs.
 ///
@@ -19,8 +19,8 @@
 library;
 
 import 'package:flutter/material.dart';
-import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
-import 'package:appbox_kit_showcase_app/data/models/showcase_notes_models/showcase_note_folder_model.dart';
+import 'package:arxa_kit_ui_library/arxa_kit_ui_library.dart';
+import 'package:arxa_kit_showcase_app/data/models/showcase_notes_models/showcase_note_folder_model.dart';
 
 class ShowcaseNotesAdminFolderRowWidget extends StatelessWidget {
   const ShowcaseNotesAdminFolderRowWidget({
@@ -33,8 +33,8 @@ class ShowcaseNotesAdminFolderRowWidget extends StatelessWidget {
   final int count;
 
   @override
-  Widget build(BuildContext context) => AppBoxKitListTile(
-        glyph: AppBoxKitGlyphs.folder,
+  Widget build(BuildContext context) => ArxaKitListTile(
+        glyph: ArxaKitGlyphs.folder,
         title: folder.name,
         subtitle: folder.owner,
         trailingValue: '$count',

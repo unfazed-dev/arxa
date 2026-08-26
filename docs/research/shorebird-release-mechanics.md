@@ -335,13 +335,13 @@ CI wiring that matters:
 
 ---
 
-## Q5 — Applied to the app-box scenario
+## Q5 — Applied to the arxa scenario
 
 Repo facts verified in this worktree (not assumed):
-- `appbox-studio/pubspec.yaml` has `generate: true`; `appbox-studio/l10n.yaml` sets
+- `arxa-studio/pubspec.yaml` has `generate: true`; `arxa-studio/l10n.yaml` sets
   `arb-dir: lib/l10n`, `template-arb-file: app_en.arb`,
   `output-localization-file: app_localizations.dart`.
-- `.arb` files live at `appbox-studio/lib/l10n/*.arb` and at `designs/appbox-studio/l10n/*.arb`.
+- `.arb` files live at `arxa-studio/lib/l10n/*.arb` and at `designs/arxa-studio/l10n/*.arb`.
 - The `flutter: assets:` block lists only `assets/config/` — the `.arb` files are **not** bundled
   assets.
 

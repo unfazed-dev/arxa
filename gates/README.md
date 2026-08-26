@@ -15,19 +15,19 @@ gates/<name>/
 - **One folder per gate.** A gate reads state/files, asserts, and exits `0`
   (pass), `1` (FAIL) or `2` (env / not-applicable). It never calls another gate
   and never imports from a sibling gate folder. (The bash-era `_common/`
-  shared layer was never built; shared logic now lives in `appboxd/lib/`.)
+  shared layer was never built; shared logic now lives in `arxa/lib/`.)
 
 ## The gates
 
-The gates are Dart. Eleven live in `appboxd/lib/gate_*.dart` (intake, freeze,
+The gates are Dart. Eleven live in `arxa/lib/gate_*.dart` (intake, freeze,
 structure, scaffold, coverage, memory, advertise, native_deps, lens, deploy,
 tests),
-orchestrated by `appboxd/lib/gate_runner.dart`; the review gate is
-`gates/review/review.dart`, dispatched the same way. Run them from `appboxd/`:
+orchestrated by `arxa/lib/gate_runner.dart`; the review gate is
+`gates/review/review.dart`, dispatched the same way. Run them from `arxa/`:
 
 ```sh
-dart run bin/appbox.dart gate <name>   # or: appbox gate <name>
-dart run bin/appbox.dart gate --all    # the full suite, in dependency order
+dart run bin/arxa.dart gate <name>   # or: arxa gate <name>
+dart run bin/arxa.dart gate --all    # the full suite, in dependency order
 ```
 
 Two legacy folders remain in `gates/`:
@@ -35,7 +35,7 @@ Two legacy folders remain in `gates/`:
 | folder | status |
 |---|---|
 | `freeze/` | ⚠️ SUPERSEDED bash gate — retained for reference only; it shells out to the archived designer `serve.mjs` and is silently broken. The live freeze gate is the Dart one above. See `freeze/README.md`. |
-| `review/` | the design judge — pure-Dart static analyzer over the scaffolded views (`review.dart` + `selftest.sh`), invoked via `appbox gate review` |
+| `review/` | the design judge — pure-Dart static analyzer over the scaffolded views (`review.dart` + `selftest.sh`), invoked via `arxa gate review` |
 
 ## R5 — every gate must be able to fail
 

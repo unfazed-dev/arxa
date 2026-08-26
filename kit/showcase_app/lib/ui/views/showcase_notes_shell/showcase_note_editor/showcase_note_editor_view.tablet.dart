@@ -1,5 +1,5 @@
 /// A view composes adaptive primitives from the kit's native family and binds
-/// the viewmodel's streams with [AppBoxKitStreamBuilder], calling the viewmodel's
+/// the viewmodel's streams with [ArxaKitStreamBuilder], calling the viewmodel's
 /// actions on user input. It never contains business logic — every decision
 /// lives in the viewmodel, and only the subtree bound to a changed stream
 /// redraws.
@@ -59,9 +59,9 @@
 library;
 
 import 'package:flutter/material.dart';
-import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
+import 'package:arxa_kit_ui_library/arxa_kit_ui_library.dart';
 
-import 'package:appbox_kit_showcase_app/ui/views/showcase_notes_shell/showcase_note_editor/showcase_note_editor_viewmodel.dart';
+import 'package:arxa_kit_showcase_app/ui/views/showcase_notes_shell/showcase_note_editor/showcase_note_editor_viewmodel.dart';
 
 class ShowcaseNoteEditorViewTablet
     extends ViewModelWidget<ShowcaseNoteEditorViewModel> {

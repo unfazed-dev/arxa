@@ -1,0 +1,824 @@
+// tier1 — Tier-1 verification suites for payments + auth + maps, plus
+// SeedAuthBackend.
+//
+// Dart port of archives/tooling-pre-dart/tools/verification/tier1.py.
+//
+// Tier 1 (plan 13.4) answers one question: *do we call the SDK correctly, and
+// handle its failures?* It answers it on every commit, with **no toolchain, no
+// credentials, no device**.
+//
+// The pattern mirrors the deploy kit's `ArxaKitProcessRunner` /
+// `ScriptedProcessRunner`: every external SDK is invoked through a
+// `ProcessRunner`. The real runner shells out; the scripted runner is a fake
+// that **asserts the command shape** and returns canned results. The suite
+// injects the scripted runner, so the port is proven without the real SDK
+// installed.
+//
+// SeedAuthBackend (13.7) is the exception: it has no external process, no
+// device, and no accounts — so its suite tests the REAL backend, not a
+// scripted fake. It is implemented first because it unblocks the seeded-data
+// story and proves the tier-promotion path end to end. The maps tile
+// providers (OSM + Mapbox on flutter_map) are the same shape: pure Dart, no
+// external process — their suites test the spec copy of the kit's tile
+// config directly.
+//
+// The Python original is self-contained (stdlib only) and does NOT import from
+// the auth/payments kits — the per-provider call shapes live in this file as
+// the spec under test. This Dart port keeps that property: no kit path
+// dependencies, pure Dart. [runTier1Suites] is the bundled self-check the CLI
+// gate runs (`arxa gate tier1`).
+//
+// 2026-08-01 — the kits are now real: kit/auth, kit/payments and kit/maps ship
+// genuine implementations with their own mocked-boundary suites. arxa must
+// stay pure Dart (the kits depend on Flutter, so a package dependency on them
+// is impossible), so this file remains the paired SPEC, not an importer of kit
+// code: SeedAuthBackend below is the spec copy of kit/auth's real backend (see
+// its doc comment for the pairing), and the scripted SDK shapes mirror what
+// the real kit providers issue. `arxa gate tier1 --promote` is the only
+// path that writes config/evidence.json + registry tiers (port of tier1.py's
+// --promote, plan 13.3).
+
+import 'dart:convert';
+import 'dart:io';
+
+import 'package:arxa/crypto_aead.dart' as crypto;
+
+// --------------------------------------------------------------------------- //
+// Process runner port (mirrors the deploy kit's ArxaKitProcessRunner seam)
+// --------------------------------------------------------------------------- //
+
+/// Result of one SDK/CLI invocation — port of tier1.py's `CompletedProc`.
+class CompletedProc {
+  final int exitCode;
+  final String stdout;
+  final String stderr;
+
+  const CompletedProc(this.exitCode, {this.stdout = '', this.stderr = ''});
+
+  bool get ok => exitCode == 0;
+
+  @override
+  String toString() => 'CompletedProc(exit=$exitCode, stdout=$stdout, stderr=$stderr)';
+}
+
+/// Seam every SDK call routes through — port of the `ProcessRunner` protocol.
+abstract class ProcessRunner {
+  CompletedProc run(List<String> argv, {Map<String, String>? env});
+}
+
+/// Shells out to a real SDK/CLI. Unused by the suite (Tier 1 needs no
+/// toolchain) — present so the port's real path is honest, not hidden.
+class RealRunner implements ProcessRunner {
+  const RealRunner();
+
+  @override
+  CompletedProc run(List<String> argv, {Map<String, String>? env}) {
+    final r = Process.runSync(
+      argv.first,
+      argv.sublist(1),
+      environment: env,
+      runInShell: false,
+    );
+    return CompletedProc(
+      r.exitCode,
+      stdout: r.stdout as String,
+      stderr: r.stderr as String,
+    );
+  }
+}
+
+/// Fake runner: preloaded with the exact commands the port must issue, in
+/// order. Each [run] asserts the argv matches the next expectation and returns
+/// its canned result. Proves the port calls the SDK correctly.
+class ScriptedRunner implements ProcessRunner {
+  final List<(List<String>, CompletedProc)> _expectations;
+  var _i = 0;
+
+  ScriptedRunner(this._expectations);
+
+  /// Number of expectations consumed so far (mirrors the Python `_i` field).
+  int get callCount => _i;
+
+  @override
+  CompletedProc run(List<String> argv, {Map<String, String>? env}) {
+    if (_i >= _expectations.length) {
+      throw StateError('port issued an unexpected extra command: $argv '
+          '(suite expected only ${_expectations.length})');
+    }
+    final (wantPrefix, result) = _expectations[_i];
+    if (!_startsWith(argv, wantPrefix)) {
+      final got = argv.length < wantPrefix.length ? argv : argv.sublist(0, wantPrefix.length);
+      throw StateError('port called the wrong command:\n'
+          '  expected prefix $wantPrefix\n'
+          '  got                  $got');
+    }
+    _i++;
+    return result;
+  }
+}
+
+bool _startsWith(List<String> a, List<String> prefix) {
+  if (a.length < prefix.length) return false;
+  for (var i = 0; i < prefix.length; i++) {
+    if (a[i] != prefix[i]) return false;
+  }
+  return true;
+}
+
+// --------------------------------------------------------------------------- //
+// Provider ports — each builds the SDK command shape and interprets the result
+// --------------------------------------------------------------------------- //
+
+class PaymentResult {
+  final bool ok;
+  final String provider;
+  final String? paymentIntentId;
+  final String? error;
+
+  const PaymentResult({
+    required this.ok,
+    required this.provider,
+    this.paymentIntentId,
+    this.error,
+  });
+
+  @override
+  String toString() =>
+      'PaymentResult(ok=$ok, provider=$provider, paymentIntentId=$paymentIntentId, error=$error)';
+}
+
+/// flutter_stripe SDK shape: init -> create payment intent -> present sheet.
+/// `amountMinor` is in the smallest currency unit (e.g. cents).
+PaymentResult stripePay(
+  ProcessRunner runner,
+  int amountMinor,
+  String currency, {
+  String customerId = 'cust_demo',
+}) {
+  runner.run(['stripe', 'init', '--publishable-key-env', 'STRIPE_PUBLISHABLE_KEY']);
+  final init = runner.run([
+    'stripe',
+    'payment-intents',
+    'create',
+    '--amount',
+    '$amountMinor',
+    '--currency',
+    currency,
+    '--customer',
+    customerId,
+  ]);
+  if (!init.ok) {
+    return PaymentResult(ok: false, provider: 'Stripe', error: 'intent create failed: ${init.stderr}');
+  }
+  final intentId = init.stdout.trim();
+  final sheet = runner.run(['stripe', 'payment-sheet', 'present']);
+  if (!sheet.ok) {
+    return PaymentResult(ok: false, provider: 'Stripe', error: 'sheet present failed: ${sheet.stderr}');
+  }
+  return PaymentResult(ok: true, provider: 'Stripe', paymentIntentId: intentId);
+}
+
+/// PayPal Orders v2 shape: create order -> approve -> capture. The real kit
+/// flow (kit/payments `PayPalPaymentsProvider`) is createOrder -> approve via
+/// web redirect (flutter_web_auth_2) -> captureOrder; the scripted
+/// `tokens request` step below stands in for the approve+capture half —
+/// Tier 1 asserts call shape and failure handling, not the redirect
+/// mechanics (those are covered by the kit's own mocked-boundary suite).
+PaymentResult paypalOrder(ProcessRunner runner, int amountMinor, String currency) {
+  final order = runner.run([
+    'paypal',
+    'orders',
+    'create',
+    '--amount',
+    '$amountMinor',
+    '--currency',
+    currency,
+  ]);
+  if (!order.ok) {
+    return PaymentResult(ok: false, provider: 'PayPal', error: 'order create failed: ${order.stderr}');
+  }
+  final orderId = order.stdout.trim();
+  final tok = runner.run(['paypal', 'tokens', 'request', '--order', orderId]);
+  if (!tok.ok) {
+    return PaymentResult(ok: false, provider: 'PayPal', error: 'tokenize failed: ${tok.stderr}');
+  }
+  return PaymentResult(ok: true, provider: 'PayPal', paymentIntentId: orderId);
+}
+
+class AuthResult {
+  final bool ok;
+  final String provider;
+  final String? userId;
+  final String? email;
+  final String? token;
+  final String? error;
+
+  const AuthResult({
+    required this.ok,
+    required this.provider,
+    this.userId,
+    this.email,
+    this.token,
+    this.error,
+  });
+
+  @override
+  String toString() =>
+      'AuthResult(ok=$ok, provider=$provider, userId=$userId, email=$email, token=$token, error=$error)';
+}
+
+/// Sign in with Apple SDK shape: request credential via the platform
+/// authorization provider. Tier 1 asserts the call shape + capability probe;
+/// Tier 2/3 add the real Apple ID (a missing capability fails SILENTLY —
+/// recorded in the gate README).
+AuthResult appleSignIn(ProcessRunner runner, String nonce) {
+  final cap = runner.run(['apple', 'signin', 'capability-check']);
+  if (!cap.ok) {
+    return AuthResult(
+      ok: false,
+      provider: 'Apple SignIn',
+      error: 'capability missing (fails silently at runtime)',
+    );
+  }
+  final cred = runner.run(['apple', 'signin', 'authorize', '--nonce', nonce]);
+  if (!cred.ok) {
+    return AuthResult(ok: false, provider: 'Apple SignIn', error: 'authorize failed: ${cred.stderr}');
+  }
+  return AuthResult(
+    ok: true,
+    provider: 'Apple SignIn',
+    userId: cred.stdout.trim().isEmpty ? 'apple_demo_user' : cred.stdout.trim(),
+    email: 'relay@apple.example',
+  );
+}
+
+/// Google Sign-In SDK shape: initialize -> authenticate.
+AuthResult googleSignIn(ProcessRunner runner, String nonce) {
+  runner.run(['google', 'signin', 'initialize', '--server-client-id-env', 'GOOGLE_SERVER_CLIENT_ID']);
+  final auth = runner.run(['google', 'signin', 'authenticate', '--nonce', nonce]);
+  if (!auth.ok) {
+    return AuthResult(ok: false, provider: 'Google SignIn', error: 'authenticate failed: ${auth.stderr}');
+  }
+  return AuthResult(
+    ok: true,
+    provider: 'Google SignIn',
+    userId: auth.stdout.trim().isEmpty ? 'google_demo_user' : auth.stdout.trim(),
+    email: 'demo@google.example',
+  );
+}
+
+// --------------------------------------------------------------------------- //
+// SeedAuthBackend (13.7) — the REAL backend, no scripted fake
+// --------------------------------------------------------------------------- //
+
+class _SeededUser {
+  final String email;
+  final String password;
+  const _SeededUser(this.email, this.password);
+}
+
+class _Session {
+  final String userId;
+  final String email;
+  final String token;
+  const _Session(this.userId, this.email, this.token);
+}
+
+/// Default seed — deterministic local showcase credentials. Never a real
+/// credential store.
+const _defaultSeed = <String, _SeededUser>{
+  'seed_alice': _SeededUser('alice@showcase.app', 'seed-alice'),
+  'seed_bob': _SeededUser('bob@showcase.app', 'seed-bob'),
+};
+
+/// In-memory seeded auth backend. No device, no external process, no real
+/// account. Powers the seeded-data story the product promises (the showcase
+/// depends on it). The one provider whose Tier-1 suite tests the real thing.
+///
+/// A backend, not a port: it does not shell out, so there is no runner to fake.
+/// Tokens are minted monotonically (`tok_1`, `tok_2`, …) so refresh rotation
+/// is observable and deterministic.
+///
+/// PAIRED IMPLEMENTATION: `kit/auth/lib/src/backends/seed_auth_backend.dart`
+/// is the real kit backend ported from this spec (same seeds, failure
+/// messages, deterministic token minting); its behavior suite is
+/// `kit/auth/test/backends/seed_auth_backend_test.dart`. Deliberate deltas
+/// there: it is async behind the kit's `ArxaKitAuthService` interface, tracks a
+/// single current user for the auth-state stream (per-uid sessions are still
+/// kept — see its `currentUserFor`), and refuses use after `dispose()`.
+/// Email matching is exact after trim, both here and in the kit.
+class SeedAuthBackend {
+  final Map<String, _SeededUser> _users = {};
+  final Map<String, _Session> _sessionsByUid = {}; // userId -> session
+  final Map<String, _Session> _sessionsByToken = {}; // token -> session
+  var _tokenSeq = 0;
+  var _uidSeq = 0;
+
+  SeedAuthBackend() {
+    _users.addAll(_defaultSeed);
+  }
+
+  /// Sign in an existing seed user. On success mints a fresh session token.
+  AuthResult signIn(String email, String password) {
+    email = email.trim(); // match after trim, mirroring the kit backend
+    String? uid;
+    _SeededUser? rec;
+    for (final entry in _users.entries) {
+      if (entry.value.email == email) {
+        uid = entry.key;
+        rec = entry.value;
+        break;
+      }
+    }
+    if (rec == null) {
+      return AuthResult(ok: false, provider: 'SeedAuthBackend', error: 'unknown user');
+    }
+    if (rec.password != password) {
+      return AuthResult(ok: false, provider: 'SeedAuthBackend', error: 'wrong password');
+    }
+    final session = _openSession(uid!, email);
+    return AuthResult(
+      ok: true,
+      provider: 'SeedAuthBackend',
+      userId: uid,
+      email: email,
+      token: session.token,
+    );
+  }
+
+  /// Register a brand-new user and open a session for them. Fails if the email
+  /// is already taken (mirrors a real signup endpoint's conflict).
+  AuthResult signUp(String email, String password) {
+    email = email.trim(); // match + store after trim, mirroring the kit backend
+    for (final rec in _users.values) {
+      if (rec.email == email) {
+        return AuthResult(ok: false, provider: 'SeedAuthBackend', error: 'user already exists');
+      }
+    }
+    final uid = 'user_${++_uidSeq}';
+    _users[uid] = _SeededUser(email, password);
+    final session = _openSession(uid, email);
+    return AuthResult(
+      ok: true,
+      provider: 'SeedAuthBackend',
+      userId: uid,
+      email: email,
+      token: session.token,
+    );
+  }
+
+  /// Rotate a session token. The old token is invalidated; a fresh one is
+  /// returned bound to the same user. Unknown/expired tokens fail.
+  AuthResult refreshToken(String token) {
+    final prev = _sessionsByToken.remove(token);
+    if (prev == null) {
+      return AuthResult(ok: false, provider: 'SeedAuthBackend', error: 'invalid or expired token');
+    }
+    final session = _openSession(prev.userId, prev.email);
+    return AuthResult(
+      ok: true,
+      provider: 'SeedAuthBackend',
+      userId: session.userId,
+      email: session.email,
+      token: session.token,
+    );
+  }
+
+  /// Currently signed-in user for `uid`, or null if no live session.
+  Map<String, String>? currentUser(String uid) {
+    final s = _sessionsByUid[uid];
+    if (s == null) return null;
+    return {'user_id': s.userId, 'email': s.email};
+  }
+
+  /// End the session for `uid` (idempotent).
+  void signOut(String uid) {
+    final s = _sessionsByUid.remove(uid);
+    if (s != null) _sessionsByToken.remove(s.token);
+  }
+
+  /// Read-only view of the seeded users (no passwords).
+  Map<String, Map<String, String>> seedUsers() {
+    return {
+      for (final e in _users.entries) e.key: {'email': e.value.email},
+    };
+  }
+
+  _Session _openSession(String uid, String email) {
+    final token = 'tok_${++_tokenSeq}';
+    final session = _Session(uid, email, token);
+    _sessionsByUid[uid] = session;
+    _sessionsByToken[token] = session;
+    return session;
+  }
+}
+
+// --------------------------------------------------------------------------- //
+// Maps tile-provider spec (paired with kit/maps' tiled providers)
+// --------------------------------------------------------------------------- //
+//
+// kit/maps' OpenStreetMap + Mapbox providers are pure-Dart flutter_map
+// backends — no external process, no native SDK — so, like SeedAuthBackend,
+// there is no runner to fake and the suite tests the REAL spec logic. This
+// section is the spec copy of the kit's behavioral contract, asserted by the
+// kit's own suites (kit/maps/test/provider_resolution_test.dart,
+// kit/maps/test/tiled_providers_test.dart):
+//   - defaultMapProviderFor   <-> kit_map_provider.dart's defaultProviderFor
+//   - osmTileLayer            <-> OpenStreetMapProvider.buildMap
+//   - mapboxTileLayer         <-> MapboxProvider.buildMap (+ _styleFor)
+//   - tileUserAgentHeader     <-> flutter_map's UA header the kit tests assert
+
+/// Which map backend a provider wraps — spec copy of kit/maps'
+/// `ArxaKitMapProviderKind`.
+enum MapProviderKind { google, apple, openStreetMap, mapbox }
+
+/// Spec copy of kit/maps' `defaultProviderFor`: Apple Maps on iOS
+/// (first-party SDK, no API key), Google Maps everywhere else. The platform
+/// is a plain string (`ios`, `android`, `fuchsia`, `linux`, `macos`,
+/// `windows`) — arxa is pure Dart and cannot import Flutter's
+/// TargetPlatform.
+MapProviderKind defaultMapProviderFor(String platform) =>
+    platform == 'ios' ? MapProviderKind.apple : MapProviderKind.google;
+
+/// The tile-layer config a tiled maps provider must produce.
+class TileLayerSpec {
+  final String urlTemplate;
+  final int tileDimension;
+  final double zoomOffset;
+  final String userAgentPackageName;
+
+  const TileLayerSpec({
+    required this.urlTemplate,
+    required this.tileDimension,
+    required this.zoomOffset,
+    required this.userAgentPackageName,
+  });
+}
+
+/// The User-Agent header flutter_map derives from `userAgentPackageName` —
+/// asserted by the kit's widget tests because the OSM tile-usage policy
+/// blocks generic user agents.
+String tileUserAgentHeader(String packageName) => 'flutter_map ($packageName)';
+
+/// Spec copy of kit/maps' OpenStreetMapProvider: the standard OSM tile
+/// server, 256px tiles, no API key. [userAgentPackageName] is REQUIRED by
+/// the OSM tile-usage policy (a required constructor parameter in the kit).
+TileLayerSpec osmTileLayer({required String userAgentPackageName}) {
+  return TileLayerSpec(
+    urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+    tileDimension: 256,
+    zoomOffset: 0,
+    userAgentPackageName: userAgentPackageName,
+  );
+}
+
+/// Mapbox style ID per kit map type — spec copy of MapboxProvider._styleFor.
+String mapboxStyleFor(String mapType) => switch (mapType) {
+      'normal' => 'streets-v12',
+      'satellite' => 'satellite-v9',
+      'hybrid' => 'satellite-streets-v12',
+      'terrain' => 'outdoors-v12',
+      _ => throw ArgumentError.value(mapType, 'mapType', 'unknown kit map type'),
+    };
+
+/// Spec copy of kit/maps' MapboxProvider: Mapbox 512px raster tiles (retina:
+/// `tileDimension: 512, zoomOffset: -1`) with the public `pk.*` token riding
+/// in the tile URL. An empty token is rejected eagerly — otherwise the
+/// misconfiguration surfaces only as tile 401s at runtime (the kit provider
+/// throws the same ArgumentError; the showcase falls back to OSM when the
+/// dart-define is absent).
+TileLayerSpec mapboxTileLayer({
+  required String accessToken,
+  required String userAgentPackageName,
+  String mapType = 'normal',
+}) {
+  if (accessToken.isEmpty) {
+    throw ArgumentError.value(accessToken, 'accessToken',
+        'MapboxProvider needs a public pk.* token — pass '
+        '--dart-define=MAPBOX_PUBLIC_TOKEN=pk....');
+  }
+  return TileLayerSpec(
+    urlTemplate: 'https://api.mapbox.com/styles/v1/mapbox/'
+        '${mapboxStyleFor(mapType)}/tiles/512/{z}/{x}/{y}@2x'
+        '?access_token=$accessToken',
+    tileDimension: 512,
+    zoomOffset: -1,
+    userAgentPackageName: userAgentPackageName,
+  );
+}
+
+// --------------------------------------------------------------------------- //
+// Suites — assert-based, runnable as a bundled self-check ([runTier1Suites])
+// --------------------------------------------------------------------------- //
+
+void _check(bool cond, String msg) {
+  if (!cond) throw StateError(msg);
+}
+
+/// Run [action] against a freshly loaded [ScriptedRunner], returning both so
+/// the caller can assert how many commands were consumed.
+(ScriptedRunner, R) _scripted<R>(
+  List<(List<String>, CompletedProc)> expectations,
+  R Function(ProcessRunner) action,
+) {
+  final runner = ScriptedRunner(expectations);
+  return (runner, action(runner));
+}
+
+void _suiteStripePort() {
+  var (r, res) = _scripted(
+    [
+      (['stripe', 'init'], const CompletedProc(0)),
+      (['stripe', 'payment-intents', 'create'], const CompletedProc(0, stdout: 'pi_demo_123')),
+      (['stripe', 'payment-sheet', 'present'], const CompletedProc(0, stdout: 'succeeded')),
+    ],
+    (run) => stripePay(run, 1999, 'usd'),
+  );
+  _check(r.callCount == 3, 'stripe port did not issue all 3 commands');
+  _check(res.ok && res.paymentIntentId == 'pi_demo_123', 'stripe: $res');
+
+  // failure handling: the sheet present step fails
+  (r, res) = _scripted(
+    [
+      (['stripe', 'init'], const CompletedProc(0)),
+      (['stripe', 'payment-intents', 'create'], const CompletedProc(0, stdout: 'pi_demo_456')),
+      (['stripe', 'payment-sheet', 'present'], const CompletedProc(1, stderr: 'user cancelled')),
+    ],
+    (run) => stripePay(run, 1999, 'usd'),
+  );
+  _check(!res.ok && res.error!.contains('user cancelled'), 'stripe failure: $res');
+}
+
+void _suitePaypalPort() {
+  var (_, res) = _scripted(
+    [
+      (['paypal', 'orders', 'create'], const CompletedProc(0, stdout: 'order_demo_1')),
+      (['paypal', 'tokens', 'request'], const CompletedProc(0, stdout: 'tok_demo_1')),
+    ],
+    (run) => paypalOrder(run, 4999, 'eur'),
+  );
+  _check(res.ok && res.paymentIntentId == 'order_demo_1', 'paypal: $res');
+
+  (_, res) = _scripted(
+    [
+      (['paypal', 'orders', 'create'], const CompletedProc(1, stderr: 'network')),
+    ],
+    (run) => paypalOrder(run, 4999, 'eur'),
+  );
+  _check(!res.ok && res.error!.contains('network'), 'paypal failure: $res');
+}
+
+void _suiteAppleSigninPort() {
+  var (_, res) = _scripted(
+    [
+      (['apple', 'signin', 'capability-check'], const CompletedProc(0)),
+      (['apple', 'signin', 'authorize'], const CompletedProc(0, stdout: 'apple_uid')),
+    ],
+    (run) => appleSignIn(run, 'nonce-abc'),
+  );
+  _check(res.ok && res.userId == 'apple_uid', 'apple: $res');
+
+  // the silent capability failure (Tier 1 must assert it, not just the happy path)
+  (_, res) = _scripted(
+    [
+      (['apple', 'signin', 'capability-check'], const CompletedProc(1)),
+    ],
+    (run) => appleSignIn(run, 'nonce-abc'),
+  );
+  _check(!res.ok && res.error!.contains('capability'), 'apple capability failure: $res');
+}
+
+void _suiteGoogleSigninPort() {
+  var (_, res) = _scripted(
+    [
+      (['google', 'signin', 'initialize'], const CompletedProc(0)),
+      (['google', 'signin', 'authenticate'], const CompletedProc(0, stdout: 'google_uid')),
+    ],
+    (run) => googleSignIn(run, 'nonce-xyz'),
+  );
+  _check(res.ok && res.userId == 'google_uid', 'google: $res');
+
+  (_, res) = _scripted(
+    [
+      (['google', 'signin', 'initialize'], const CompletedProc(0)),
+      (['google', 'signin', 'authenticate'], const CompletedProc(1, stderr: 'cancelled')),
+    ],
+    (run) => googleSignIn(run, 'nonce-xyz'),
+  );
+  _check(!res.ok && res.error!.contains('cancelled'), 'google failure: $res');
+}
+
+void _suiteSeedAuth() {
+  final backend = SeedAuthBackend();
+  final users = backend.seedUsers();
+  _check(users['seed_alice']?['email'] == 'alice@showcase.app', 'seedUsers: $users');
+
+  // valid sign-in → success + token
+  var res = backend.signIn('alice@showcase.app', 'seed-alice');
+  _check(res.ok && res.userId == 'seed_alice' && res.token != null, 'signIn ok: $res');
+  _check(backend.currentUser('seed_alice')?['email'] == 'alice@showcase.app', 'currentUser');
+
+  // wrong password
+  res = backend.signIn('alice@showcase.app', 'nope');
+  _check(!res.ok && res.error == 'wrong password', 'wrong password: $res');
+
+  // unknown user
+  res = backend.signIn('nobody@showcase.app', 'x');
+  _check(!res.ok && res.error == 'unknown user', 'unknown user: $res');
+
+  // sign out clears the session
+  backend.signOut('seed_alice');
+  _check(backend.currentUser('seed_alice') == null, 'signOut cleared session');
+
+  // sign-up creates a new user
+  res = backend.signUp('carol@showcase.app', 'pw-carol');
+  _check(res.ok && res.token != null, 'signUp: $res');
+  final newUid = res.userId;
+  _check(newUid != null && backend.currentUser(newUid)?['email'] == 'carol@showcase.app',
+      'signUp session');
+  // duplicate signup is rejected
+  _check(!backend.signUp('carol@showcase.app', 'x').ok, 'duplicate signUp rejected');
+  // the new user can sign in independently
+  _check(backend.signIn('carol@showcase.app', 'pw-carol').ok, 'new user can signIn');
+
+  // token refresh: valid token rotates, old token dies, bogus fails
+  final auth = backend.signIn('bob@showcase.app', 'seed-bob');
+  _check(auth.ok && auth.token != null, 'bob signIn for refresh: $auth');
+  final refreshed = backend.refreshToken(auth.token!);
+  _check(refreshed.ok && refreshed.token != null && refreshed.token != auth.token,
+      'refresh rotated: $refreshed');
+  _check(!backend.refreshToken(auth.token!).ok, 'old token dead after refresh');
+  _check(!backend.refreshToken('bogus').ok, 'bogus token rejected');
+}
+
+void _suiteOsmMapsPort() {
+  // provider resolution: Apple Maps on iOS, Google Maps everywhere else
+  _check(defaultMapProviderFor('ios') == MapProviderKind.apple,
+      'ios must resolve to Apple Maps');
+  for (final p in ['android', 'fuchsia', 'linux', 'macos', 'windows']) {
+    _check(defaultMapProviderFor(p) == MapProviderKind.google,
+        '$p must resolve to Google Maps');
+  }
+
+  // OSM tile config: standard tile server, 256px tiles, policy-required UA
+  final spec = osmTileLayer(userAgentPackageName: 'com.example.test');
+  _check(spec.urlTemplate == 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+      'osm url template: ${spec.urlTemplate}');
+  _check(spec.tileDimension == 256 && spec.zoomOffset == 0,
+      'osm geometry must be 256px tiles with no zoom offset');
+  _check(tileUserAgentHeader(spec.userAgentPackageName) ==
+      'flutter_map (com.example.test)', 'osm UA header');
+}
+
+void _suiteMapboxMapsPort() {
+  // 512px retina tiles (zoomOffset -1) with the public token in the URL
+  final spec = mapboxTileLayer(
+      accessToken: 'pk.test-token', userAgentPackageName: 'com.example.test');
+  _check(
+      spec.urlTemplate == 'https://api.mapbox.com/styles/v1/mapbox/'
+          'streets-v12/tiles/512/{z}/{x}/{y}@2x?access_token=pk.test-token',
+      'mapbox url template: ${spec.urlTemplate}');
+  _check(spec.tileDimension == 512 && spec.zoomOffset == -1,
+      'mapbox geometry must be 512px tiles with zoomOffset -1');
+  _check(tileUserAgentHeader(spec.userAgentPackageName) ==
+      'flutter_map (com.example.test)', 'mapbox UA header');
+
+  // mapType selects the Mapbox style
+  _check(mapboxStyleFor('normal') == 'streets-v12', 'normal style');
+  _check(mapboxStyleFor('satellite') == 'satellite-v9', 'satellite style');
+  _check(mapboxStyleFor('hybrid') == 'satellite-streets-v12', 'hybrid style');
+  _check(mapboxStyleFor('terrain') == 'outdoors-v12', 'terrain style');
+
+  // edge: a missing token fails eagerly, not as silent tile 401s at runtime
+  var threw = false;
+  try {
+    mapboxTileLayer(accessToken: '', userAgentPackageName: 'com.example.test');
+  } on ArgumentError {
+    threw = true;
+  }
+  _check(threw, 'empty mapbox token must throw ArgumentError');
+}
+
+/// One provider's Tier-1 suite: its `(kitDir, name)` key plus the entrypoint.
+typedef Tier1Suite = (String kitDir, String name, void Function() body);
+
+/// Every Tier-1 suite, in registry order (matches tier1.py's SUITES).
+final List<Tier1Suite> tier1Suites = <Tier1Suite>[
+  ('payments', 'Stripe', _suiteStripePort),
+  ('payments', 'PayPal', _suitePaypalPort),
+  ('auth', 'Apple SignIn', _suiteAppleSigninPort),
+  ('auth', 'Google SignIn', _suiteGoogleSigninPort),
+  ('auth', 'SeedAuthBackend', _suiteSeedAuth),
+  ('maps', 'OpenStreetMap', _suiteOsmMapsPort),
+  ('maps', 'Mapbox', _suiteMapboxMapsPort),
+];
+
+/// Outcome of running every Tier-1 suite.
+class Tier1SuiteResult {
+  final List<String> passed; // "kitDir/name"
+  final List<String> failed; // "kitDir/name: <error>"
+
+  Tier1SuiteResult(this.passed, this.failed);
+
+  bool get allPassed => failed.isEmpty;
+}
+
+/// Run every Tier-1 suite, catching failures per provider so one break does
+/// not mask the rest. Mirrors tier1.py's `main()` loop. Tier promotion is a
+/// separate explicit step: [promoteTier1] (`arxa gate tier1 --promote`).
+Tier1SuiteResult runTier1Suites() {
+  final passed = <String>[];
+  final failed = <String>[];
+  for (final (kitDir, name, body) in tier1Suites) {
+    try {
+      body();
+      passed.add('$kitDir/$name');
+    } catch (e) {
+      failed.add('$kitDir/$name: $e');
+    }
+  }
+  return Tier1SuiteResult(passed, failed);
+}
+
+
+// --------------------------------------------------------------------------- //
+// Promotion — port of tier1.py's promote(): the ONLY path that writes a tier
+// (plan 13.3). Idempotent: re-running with unchanged suite content leaves both
+// files byte-stable.
+// --------------------------------------------------------------------------- //
+
+/// Path of this suite relative to the repo root — what the evidence ledger
+/// records and what the advertise gate re-digests.
+const tier1SuitePath = 'arxa/lib/tier1.dart';
+
+/// `"sha256:" + hex` of this suite file's raw bytes (same construction as
+/// gate_advertise's `_fileDigest`).
+String _suiteDigest(String repoRoot) {
+  final digest = crypto.sha256(File('$repoRoot/$tier1SuitePath').readAsBytesSync());
+  return 'sha256:${digest.map((b) => b.toRadixString(16).padLeft(2, '0')).join()}';
+}
+
+/// `time.strftime("%Y-%m-%dT%H:%M:%SZ", gmtime())` — second precision, no
+/// fractional part.
+String _utcNow() {
+  final s = DateTime.now().toUtc().toIso8601String();
+  return s.replaceAll(RegExp(r'\.\d+Z$'), 'Z');
+}
+
+/// Port of tier1.py's promote(): set `verification: port-tested` for each
+/// passed provider in the registry AND record evidence (suite path + content
+/// digest + run timestamp) in the ledger. Call only on a fully green run —
+/// that is what makes a tier *evidence*, not a label. Returns the number of
+/// registry fields changed.
+int promoteTier1(List<(String kitDir, String name)> passed,
+    {required String repoRoot}) {
+  final registryPath = '$repoRoot/config/kit-registry.json';
+  final evidencePath = '$repoRoot/config/evidence.json';
+  final digest = _suiteDigest(repoRoot);
+  final ranAt = _utcNow();
+
+  final reg = jsonDecode(File(registryPath).readAsStringSync())
+      as Map<String, dynamic>;
+  final passedSet = passed.toSet();
+  var bumped = 0;
+  for (final kit in (reg['kits'] as List).cast<Map<String, dynamic>>()) {
+    final providers = kit['providers'];
+    if (providers is! List) continue;
+    for (final p in providers.cast<Map<String, dynamic>>()) {
+      if (passedSet.contains((kit['dir'] as String, p['name'] as String)) &&
+          p['verification'] != 'port-tested') {
+        p['verification'] = 'port-tested';
+        bumped++;
+      }
+    }
+  }
+  File(registryPath).writeAsStringSync(
+      '${const JsonEncoder.withIndent('  ').convert(reg)}\n');
+
+  var ledger = <String, dynamic>{};
+  final evFile = File(evidencePath);
+  if (evFile.existsSync()) {
+    final prev = jsonDecode(evFile.readAsStringSync());
+    if (prev is Map && prev['ledger'] is Map) {
+      ledger = (prev['ledger'] as Map).cast<String, dynamic>();
+    }
+  }
+  for (final (kitDir, name) in passed) {
+    final key = '$kitDir/$name';
+    final prevRec = ledger[key];
+    final prevMap =
+        prevRec is Map ? prevRec.cast<String, dynamic>() : const <String, dynamic>{};
+    // Preserve ran_at when nothing material changed, so re-running a stable
+    // suite does not churn the committed evidence (byte-stable no-op).
+    final same = prevMap['tier'] == 'port-tested' && prevMap['digest'] == digest;
+    ledger[key] = {
+      'tier': 'port-tested',
+      'suite': tier1SuitePath,
+      'digest': digest,
+      'ran_at': same ? prevMap['ran_at'] : ranAt,
+    };
+  }
+  evFile.writeAsStringSync(
+      '${const JsonEncoder.withIndent('  ').convert({'ledger': ledger})}\n');
+  return bumped;
+}

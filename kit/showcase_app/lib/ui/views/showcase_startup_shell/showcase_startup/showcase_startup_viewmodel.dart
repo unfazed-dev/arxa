@@ -37,14 +37,14 @@
 /// History: git log --follow -- kit/showcase_app/lib/ui/views/showcase_startup_shell/showcase_startup/showcase_startup_viewmodel.dart
 library;
 
-import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart'
-    show AppBoxKitViewModel, RouterService;
-import 'package:appbox_kit_showcase_app/app/app.locator.dart';
-import 'package:appbox_kit_showcase_app/app/app.router.dart';
-import 'package:appbox_kit_showcase_app/app/app_data.dart';
-import 'package:appbox_kit_showcase_app/enums/showcase_startup_enums/enums.dart';
+import 'package:arxa_kit_ui_library/arxa_kit_ui_library.dart'
+    show ArxaKitViewModel, RouterService;
+import 'package:arxa_kit_showcase_app/app/app.locator.dart';
+import 'package:arxa_kit_showcase_app/app/app.router.dart';
+import 'package:arxa_kit_showcase_app/app/app_data.dart';
+import 'package:arxa_kit_showcase_app/enums/showcase_startup_enums/enums.dart';
 
-class ShowcaseStartupViewModel extends AppBoxKitViewModel {
+class ShowcaseStartupViewModel extends ArxaKitViewModel {
   // ── Setup ──────────────────────────────────────────────────────────────────
 
   final _routerService = locator<RouterService>();

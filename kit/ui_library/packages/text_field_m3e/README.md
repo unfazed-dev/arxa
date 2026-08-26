@@ -10,7 +10,7 @@ branch of `KitNativeTextField`.
 
 ## Provenance — first-party
 
-**This is original `appbox_kit` code, not a vendored third-party fork.** It is
+**This is original `arxa_kit` code, not a vendored third-party fork.** It is
 covered by the repository's [`LICENSE`](../../../LICENSE) like any other
 first-party package.
 

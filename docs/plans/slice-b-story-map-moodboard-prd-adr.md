@@ -105,7 +105,7 @@ So both are **renders, not inferences**:
   | source | finding |
   |---|---|
   | `config/kit-registry.json` | entries carry `dir/package/capabilities/backing/topology/phase/playbook/provides` — **no `alternatives`, no `rationale`, and no record that any project chose one**. It is a catalogue of kits that *exist*, not alternatives *weighed*. No `selectedKit` field exists anywhere. |
-  | auth strategy | no `authStrategy`/`auth_strategy` field in `appboxd/`, `config/` or `skills/`. |
+  | auth strategy | no `authStrategy`/`auth_strategy` field in `arxa/`, `config/` or `skills/`. |
   | navigation model | ADR 0003 is the studio's own hand-written prose, not per-project pipeline output. |
   | `theme_map.dart` | pure token→config map; derives a fragment, records no choice. |
   | `gen_playbook.dart:84` | a genuine hook, but no kit README carries a decision/adr/rationale heading (all 20 checked), so it finds nothing today. |
@@ -123,7 +123,7 @@ So both are **renders, not inferences**:
   is now tracked as its own task; it is not something the emitter can conjure.
 
 Numbering follows the existing convention in
-`skills/appbox-designer/docs/adr/` (`NNNN-kebab-title.md`).
+`skills/arxa-designer/docs/adr/` (`NNNN-kebab-title.md`).
 
 Both emitters must be deterministic and idempotent over their own output, and
 must be provable by a test that a reverted emitter turns red.

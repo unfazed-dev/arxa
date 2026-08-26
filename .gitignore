@@ -12,7 +12,7 @@ build/
 !designs/*/ui/views/**/build/
 *.dill
 *.lock.bak
-# pubspec.lock is deliberately NOT ignored — appbox is an application, and its
+# pubspec.lock is deliberately NOT ignored — arxa is an application, and its
 # whole thesis is reproducibility. The kit arrives as ~39 git deps pinned to a
 # commit SHA; an unlocked resolve is exactly the ambient-state defect the
 # research documents (see docs/research/spine-findings.md).
@@ -45,17 +45,17 @@ npm-debug.log*
 
 # --- pipeline / run state (regenerated, never authoritative) ---
 .pipeline/
-.appbox/
+.arxa/
 .blueprint/
-# appboxd runtime state — raw memory events (M1: JSONL is git-ignored),
+# arxa runtime state — raw memory events (M1: JSONL is git-ignored),
 # scorecard/usage attribution streams, per-run manifests. Runtime state,
 # not source; the tracked curated layer is memory/ at the repo root.
 pipeline/state/memory/
 pipeline/state/scorecard.jsonl
 pipeline/state/usage.jsonl
 pipeline/state/runs/
-# appboxd runtime state (cont.): the offline licence file when it lives in the
-# repo (preferred home is ~/.appbox/licence.json).
+# arxa runtime state (cont.): the offline licence file when it lives in the
+# repo (preferred home is ~/.arxa/licence.json).
 pipeline/state/licence.json
 # .kit/ — gate SARIF + per-run state (run_all writes .kit/state/gates.sarif)
 .kit/

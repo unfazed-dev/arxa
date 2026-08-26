@@ -74,7 +74,7 @@ into a detected-and-handled condition instead of a silent outage.
 3. **CORS health probe** — scheduled preflight check against the four
    direct-eligible endpoints; client-side fallback switch to proxy path on
    failure; surfaced as a status the key-management UI can show ("using
-   direct connection" vs. "routed through appbox").
+   direct connection" vs. "routed through arxa").
 4. **Key-management UI states** — entry, validation (a cheap round-trip call
    to confirm the key works before saving), in-memory-vs-sessionStorage
    choice presented to the user, revoke/clear. Surface each provider's own

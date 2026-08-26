@@ -29,9 +29,9 @@
 /// History: git log --follow -- kit/showcase_app/lib/ui/views/showcase_profile_shell/showcase_profile/showcase_profile_viewmodel.dart
 library;
 
-import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
+import 'package:arxa_kit_ui_library/arxa_kit_ui_library.dart';
 
-import 'package:appbox_kit_showcase_app/enums/showcase_profile_enums/enums.dart';
+import 'package:arxa_kit_showcase_app/enums/showcase_profile_enums/enums.dart';
 
 class ShowcaseProfileViewModel extends BaseViewModel {
   // ── Initial state ─────────────────────────────────────────────────────────

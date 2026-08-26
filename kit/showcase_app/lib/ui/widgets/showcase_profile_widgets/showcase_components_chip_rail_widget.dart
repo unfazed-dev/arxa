@@ -4,7 +4,7 @@
 /// places it owns the data.
 ///
 /// This is the user interface for the chip-carousel demo — a snapping
-/// AppBoxKitChipCarousel of chips that toast their label on tap.
+/// ArxaKitChipCarousel of chips that toast their label on tap.
 ///
 /// Requirements:
 /// 1. [Chip carousel] — browse-the-components-gallery
@@ -17,33 +17,33 @@
 library;
 
 import 'package:flutter/material.dart';
-import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
+import 'package:arxa_kit_ui_library/arxa_kit_ui_library.dart';
 
 class ShowcaseComponentsChipRailWidget extends StatelessWidget {
   const ShowcaseComponentsChipRailWidget({super.key});
 
   static void _toast(BuildContext context, String message) =>
-      appBoxKitLocator<AppBoxKitNotificationService>()
+      arxaKitLocator<ArxaKitNotificationService>()
           .show(message, context: context);
 
   @override
   Widget build(BuildContext context) {
-    return AppBoxKitChipCarousel(
+    return ArxaKitChipCarousel(
       snap: true,
       children: [
         for (final (glyph, label) in [
-          (AppBoxKitGlyphs.home, 'Home'),
-          (AppBoxKitGlyphs.search, 'Search'),
-          (AppBoxKitGlyphs.notes, 'Notes'),
-          (AppBoxKitGlyphs.camera, 'Camera'),
-          (AppBoxKitGlyphs.mic, 'Voice'),
-          (AppBoxKitGlyphs.share, 'Share'),
-          (AppBoxKitGlyphs.edit, 'Edit'),
-          (AppBoxKitGlyphs.star, 'Star'),
-          (AppBoxKitGlyphs.tag, 'Tag'),
-          (AppBoxKitGlyphs.settings, 'Settings'),
+          (ArxaKitGlyphs.home, 'Home'),
+          (ArxaKitGlyphs.search, 'Search'),
+          (ArxaKitGlyphs.notes, 'Notes'),
+          (ArxaKitGlyphs.camera, 'Camera'),
+          (ArxaKitGlyphs.mic, 'Voice'),
+          (ArxaKitGlyphs.share, 'Share'),
+          (ArxaKitGlyphs.edit, 'Edit'),
+          (ArxaKitGlyphs.star, 'Star'),
+          (ArxaKitGlyphs.tag, 'Tag'),
+          (ArxaKitGlyphs.settings, 'Settings'),
         ])
-          AppBoxKitChip(
+          ArxaKitChip(
             glyph: glyph,
             label: label,
             onTap: () => _toast(context, label),

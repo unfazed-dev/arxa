@@ -1,10 +1,10 @@
 # One browser engine — port the studio probes onto the lens CDP stack
 
 Status: approved by user 2026-08-03 ("i want and need this sorted and consolidated").
-Trigger: appbox drives Chrome through two stacks — the promoted Dart lens
-(`appboxd/lib/lens.dart` over `appboxd/lib/cdp.dart`, probe-runner's replacement)
+Trigger: arxa drives Chrome through two stacks — the promoted Dart lens
+(`arxa/lib/lens.dart` over `arxa/lib/cdp.dart`, probe-runner's replacement)
 and ten Node/playwright-core contract probes (`tools/probe-*.mjs` +
-`tools/_probe_base.mjs`) for the appbox-studio design. Two engines managing one
+`tools/_probe_base.mjs`) for the arxa-studio design. Two engines managing one
 concern; same failure shape the vocabulary session just killed. End state: one
 engine (lens/cdp), the .mjs suite retired with the same capability-map audit
 discipline used to retire probe-runner.
@@ -26,16 +26,16 @@ discipline used to retire probe-runner.
 
 ## Deliverables
 
-1. `appboxd/lib/probes/probe_base.dart` — design-probe harness on CdpSession:
+1. `arxa/lib/probes/probe_base.dart` — design-probe harness on CdpSession:
    target resolution + disposable guard (ported from _probe_base.mjs), section/
    check reporting in the probes' current output style, assertion helpers.
-2. `appboxd/lib/probes/probe_<name>.dart` — one module per probe, ten total:
+2. `arxa/lib/probes/probe_<name>.dart` — one module per probe, ten total:
    panel_contract (12 sections), panel_resize, shell_chrome, no_reload, boost,
    composer_draft, context_sync, inspect, explode, flowwalk.
-3. CLI: `appbox design probe [names…] --port N` (house style per lens_cli.dart),
+3. CLI: `arxa design probe [names…] --port N` (house style per lens_cli.dart),
    runnable individually and as a suite.
 4. Capability map: `docs/probes-capability-map.md` (.mjs verb → Dart port |
-   dropped-with-reason), mirroring `.kimi-code/skills/appbox-lens/capability-map.md`.
+   dropped-with-reason), mirroring `.kimi-code/skills/arxa-lens/capability-map.md`.
 5. Retirement: `tools/probe-*.mjs` + `_probe_base.mjs` moved to
    `archives/tooling-pre-dart/` with a pointer note; every doc referencing
    tools/probe-*.mjs updated (plans, canon docs, skill docs).
@@ -59,8 +59,8 @@ discipline used to retire probe-runner.
 ## Constraints
 
 - Phase 5 (viewer demotion) is in flight in designs/; this work stays in
-  appboxd/lib/probes + docs until D. Final parity runs on the post-phase-5 tree.
+  arxa/lib/probes + docs until D. Final parity runs on the post-phase-5 tree.
 - The .mjs suite stays authoritative until D completes — phases still verify
   against it in the meantime.
-- Chrome binary resolution: reuse cdp.dart's existing discovery (APPBOX_CHROME
+- Chrome binary resolution: reuse cdp.dart's existing discovery (ARXA_CHROME
   escape hatch already mirrors the .mjs convention).

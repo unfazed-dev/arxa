@@ -3,13 +3,13 @@ import 'dart:io';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:appbox_kit_data/appbox_kit_data.dart';
-import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart'
-    show AppBoxKitErrorService, AppBoxKitNotificationService, RouterService;
-import 'package:appbox_kit_ui_library/appbox_kit_testing.dart';
-import 'package:appbox_kit_showcase_app/app/app.locator.dart';
-import 'package:appbox_kit_showcase_app/app/app.router.dart';
-import 'package:appbox_kit_showcase_app/ui/views/showcase_startup_shell/showcase_startup/showcase_startup_viewmodel.dart';
+import 'package:arxa_kit_data/arxa_kit_data.dart';
+import 'package:arxa_kit_ui_library/arxa_kit_ui_library.dart'
+    show ArxaKitErrorService, ArxaKitNotificationService, RouterService;
+import 'package:arxa_kit_ui_library/arxa_kit_testing.dart';
+import 'package:arxa_kit_showcase_app/app/app.locator.dart';
+import 'package:arxa_kit_showcase_app/app/app.router.dart';
+import 'package:arxa_kit_showcase_app/ui/views/showcase_startup_shell/showcase_startup/showcase_startup_viewmodel.dart';
 
 import '../helpers/test_helpers.dart';
 
@@ -25,22 +25,22 @@ void main() {
 
   group('ShowcaseStartupViewModel Tests -', () {
     late MockRouterService router;
-    late FakeAppBoxKitNotificationService notifications;
+    late FakeArxaKitNotificationService notifications;
 
     setUp(() async {
       registerServices();
-      registerAppBoxKitActionServices();
-      // The real AppBoxKitAction error path logs through the error service's
+      registerArxaKitActionServices();
+      // The real ArxaKitAction error path logs through the error service's
       // late Talker — initialize it before any op can fail (ui_library
       // playbook).
-      await locator<AppBoxKitErrorService>().initialize();
+      await locator<ArxaKitErrorService>().initialize();
       router = locator<RouterService>() as MockRouterService;
-      notifications = locator<AppBoxKitNotificationService>()
-          as FakeAppBoxKitNotificationService;
+      notifications = locator<ArxaKitNotificationService>()
+          as FakeArxaKitNotificationService;
       when(() => router.replaceWith(any())).thenAnswer((_) async => null);
     });
     tearDown(() async {
-      AppBoxKitData.resetForTesting();
+      ArxaKitData.resetForTesting();
       await locator.reset();
     });
 
@@ -75,7 +75,7 @@ void main() {
         () async {
       // given — no path_provider channel handler: the default snapshot
       // persistence throws MissingPluginException headless, so the boot fails
-      // and the AppBoxKitAction chain must surface it as a snackbar instead of
+      // and the ArxaKitAction chain must surface it as a snackbar instead of
       // stranding the app on the spinner.
       final vm = ShowcaseStartupViewModel();
       addTearDown(vm.dispose);

@@ -1,12 +1,12 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:appbox_kit_data/appbox_kit_data.dart';
-import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart'
-    show AppBoxKitErrorService, AppBoxKitNotificationService, BehaviorSubject;
-import 'package:appbox_kit_ui_library/appbox_kit_testing.dart';
-import 'package:appbox_kit_showcase_app/app/app.locator.dart';
-import 'package:appbox_kit_showcase_app/data/models/showcase_notes_models/models.dart';
-import 'package:appbox_kit_showcase_app/ui/views/showcase_notes_shell/showcase_notes/showcase_notes_viewmodel.dart';
+import 'package:arxa_kit_data/arxa_kit_data.dart';
+import 'package:arxa_kit_ui_library/arxa_kit_ui_library.dart'
+    show ArxaKitErrorService, ArxaKitNotificationService, BehaviorSubject;
+import 'package:arxa_kit_ui_library/arxa_kit_testing.dart';
+import 'package:arxa_kit_showcase_app/app/app.locator.dart';
+import 'package:arxa_kit_showcase_app/data/models/showcase_notes_models/models.dart';
+import 'package:arxa_kit_showcase_app/ui/views/showcase_notes_shell/showcase_notes/showcase_notes_viewmodel.dart';
 
 import '../helpers/test_helpers.dart';
 
@@ -14,8 +14,8 @@ import '../helpers/test_helpers.dart';
 /// switchMap cascade is covered by test/notes_viewmodel_test.dart over the real
 /// facade; here the facade is mocked and only the VM's logic is pinned:
 /// the create-account panel toggle/reset and the folder-op guards.
-final _evan = AppBoxKitAuthSession(
-  user: AppBoxKitAuthUser(id: 'user-1', email: 'evan@seed.local'),
+final _evan = ArxaKitAuthSession(
+  user: ArxaKitAuthUser(id: 'user-1', email: 'evan@seed.local'),
 );
 
 ShowcaseNoteFolderModel _folder(String id, String name, int sortOrder) =>
@@ -33,18 +33,18 @@ void main() {
 
   group('ShowcaseNotesViewModel', () {
     late MockShowcaseNotesFacadeService facade;
-    late BehaviorSubject<AppBoxKitAuthSession?> session;
+    late BehaviorSubject<ArxaKitAuthSession?> session;
 
     setUp(() async {
       registerServices();
-      registerAppBoxKitActionServices();
-      // The real AppBoxKitAction error path logs through the error service's
+      registerArxaKitActionServices();
+      // The real ArxaKitAction error path logs through the error service's
       // late Talker — initialize it before any op can fail.
-      await locator<AppBoxKitErrorService>().initialize();
+      await locator<ArxaKitErrorService>().initialize();
       facade = getAndRegisterShowcaseNotesFacadeService();
       // Signed out by default; the VM's ctor watch subscribes to session$ on
       // construction, so the stub must exist before any VM is created.
-      session = seededSubject<AppBoxKitAuthSession?>(null);
+      session = seededSubject<ArxaKitAuthSession?>(null);
       when(() => facade.session$).thenAnswer((_) => session.stream);
     });
     tearDown(() => locator.reset());
@@ -210,9 +210,9 @@ void main() {
               sortOrder: any(named: 'sortOrder'))).thenAnswer(
           (i) async => _folder('f9', i.positionalArguments[1] as String, 0));
       // The kit notification fake (registered by
-      // registerAppBoxKitActionServices) scripts the prompt.
-      final notifications = locator<AppBoxKitNotificationService>()
-          as FakeAppBoxKitNotificationService;
+      // registerArxaKitActionServices) scripts the prompt.
+      final notifications = locator<ArxaKitNotificationService>()
+          as FakeArxaKitNotificationService;
       final vm = ShowcaseNotesViewModel();
       addTearDown(vm.dispose);
 
@@ -238,8 +238,8 @@ void main() {
       final work = _folder('f2', 'Work', 1);
       when(() => facade.renameFolder(any(), any()))
           .thenAnswer((_) async => work);
-      final notifications = locator<AppBoxKitNotificationService>()
-          as FakeAppBoxKitNotificationService;
+      final notifications = locator<ArxaKitNotificationService>()
+          as FakeArxaKitNotificationService;
       final vm = ShowcaseNotesViewModel();
       addTearDown(vm.dispose);
 
@@ -261,8 +261,8 @@ void main() {
       // given
       final work = _folder('f2', 'Work', 1);
       when(() => facade.deleteFolder(any())).thenAnswer((_) async {});
-      final notifications = locator<AppBoxKitNotificationService>()
-          as FakeAppBoxKitNotificationService;
+      final notifications = locator<ArxaKitNotificationService>()
+          as FakeArxaKitNotificationService;
       final vm = ShowcaseNotesViewModel();
       addTearDown(vm.dispose);
 

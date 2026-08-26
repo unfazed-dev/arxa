@@ -80,34 +80,34 @@
 /// History: git log --follow -- kit/showcase_app/lib/services/showcase_notes_services/facades/showcase_notes_facade_service.dart
 library;
 
-import 'package:appbox_kit_data/appbox_kit_data.dart';
-import 'package:appbox_kit_media/appbox_kit_media.dart'
-    show AppBoxKitPlaybackProgress, AppBoxKitPlaybackState;
-import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart'
-    show appBoxKitLocator, Rx, ValueStream;
+import 'package:arxa_kit_data/arxa_kit_data.dart';
+import 'package:arxa_kit_media/arxa_kit_media.dart'
+    show ArxaKitPlaybackProgress, ArxaKitPlaybackState;
+import 'package:arxa_kit_ui_library/arxa_kit_ui_library.dart'
+    show arxaKitLocator, Rx, ValueStream;
 
-import 'package:appbox_kit_showcase_app/data/models/showcase_notes_models/models.dart';
-import 'package:appbox_kit_showcase_app/enums/showcase_notes_enums/enums.dart';
-import 'package:appbox_kit_showcase_app/services/showcase_notes_services/repositories/showcase_notes_repository_service.dart';
-import 'package:appbox_kit_showcase_app/services/showcase_notes_services/adapters/showcase_notes_media_adapter_service.dart';
+import 'package:arxa_kit_showcase_app/data/models/showcase_notes_models/models.dart';
+import 'package:arxa_kit_showcase_app/enums/showcase_notes_enums/enums.dart';
+import 'package:arxa_kit_showcase_app/services/showcase_notes_services/repositories/showcase_notes_repository_service.dart';
+import 'package:arxa_kit_showcase_app/services/showcase_notes_services/adapters/showcase_notes_media_adapter_service.dart';
 
-class ShowcaseNotesFacadeService extends AppBoxKitDataFacade {
+class ShowcaseNotesFacadeService extends ArxaKitDataFacade {
   // ── Setup ──────────────────────────────────────────────────────────────────
 
   ShowcaseNotesRepositoryService get _repo =>
-      appBoxKitLocator<ShowcaseNotesRepositoryService>();
+      arxaKitLocator<ShowcaseNotesRepositoryService>();
   ShowcaseNotesMediaAdapterService get _media =>
-      appBoxKitLocator<ShowcaseNotesMediaAdapterService>();
+      arxaKitLocator<ShowcaseNotesMediaAdapterService>();
 
-  Stream<AppBoxKitAuthSession?> get session$ => auth.session$;
-  AppBoxKitAuthSession? get currentSession => auth.currentSession;
+  Stream<ArxaKitAuthSession?> get session$ => auth.session$;
+  ArxaKitAuthSession? get currentSession => auth.currentSession;
 
   /// Whether the signed-in user carries the admin role in its seed metadata.
   bool get isAdmin => isAdminSession(currentSession);
 
   /// Role check on an arbitrary session — for viewmodels reacting to
   /// [session$] events, where [currentSession] may already have moved on.
-  static bool isAdminSession(AppBoxKitAuthSession? session) =>
+  static bool isAdminSession(ArxaKitAuthSession? session) =>
       session?.user.metadata['role'] == 'admin';
 
   // ── Initial state ─────────────────────────────────────────────────────────
@@ -212,14 +212,14 @@ class ShowcaseNotesFacadeService extends AppBoxKitDataFacade {
   ValueStream<String?> get playingAttachmentId$ => _media.playingAttachmentId$;
 
   /// [11. Play back audio] Whether the player is playing, paused, or loading.
-  Stream<AppBoxKitPlaybackState> get playerState$ => _media.playerState$;
+  Stream<ArxaKitPlaybackState> get playerState$ => _media.playerState$;
 
   /// [11. Play back audio] Whether this attachment is the one playing right now.
   Stream<bool> isAttachmentPlaying$(String attachmentId) =>
       _media.isAttachmentPlaying$(attachmentId);
 
   /// [11. Play back audio] Live progress for the audio scrubber.
-  Stream<AppBoxKitPlaybackProgress> get playbackProgress$ =>
+  Stream<ArxaKitPlaybackProgress> get playbackProgress$ =>
       _media.playbackProgress$;
 
   /// [10. Attach voice recording] Starts recording; false if permission denied.
@@ -237,9 +237,9 @@ class ShowcaseNotesFacadeService extends AppBoxKitDataFacade {
 
   // ── Writes ──────────────────────────────────────────────────────────────────
   //
-  // Notification policy (appbox convention): every chain shows an error
+  // Notification policy (arxa convention): every chain shows an error
   // snackbar; destructive chains also confirm with a success snackbar.
-  // Ops carry the entity id, so AppBoxKitAction's re-entry guard only ever
+  // Ops carry the entity id, so ArxaKitAction's re-entry guard only ever
   // drops a genuine same-op double-fire — never a concurrent op on another
   // entity. Value-returning chains rethrow after the snackbar (callers await
   // the value); void chains swallow post-snackbar via completeOnError.

@@ -12,7 +12,7 @@ ignored.
 
 ## Root cause
 
-`appboxd/lib/design_server/worker_assets/worker_shim.js` (helper `render`):
+`arxa/lib/design_server/worker_assets/worker_shim.js` (helper `render`):
 
 ```js
 render(c, viewRef, ctx, st) {
@@ -87,7 +87,7 @@ so those swaps start working from the identical change.
   **RETRACTED.** This item was false and generated a bad ask to chrome-integration.
   `states` *is* a real optional registry key (`emit_structure.dart` reads it,
   validates it, and emits `statesProvenance`), but its vocabulary is closed to
-  `['loading','empty','error']` (`appboxd/lib/intake.dart`). `signedOut`,
+  `['loading','empty','error']` (`arxa/lib/intake.dart`). `signedOut`,
   `notEntitled` **and `success`** are all inadmissible — adding any of them
   hard-fails emit, it is not a silent schema break. The six lens states are
   facade-driven off the `?state=` request param and already render distinctly

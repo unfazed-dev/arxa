@@ -7,7 +7,7 @@ proceeding on primary sources per advisor-conventions.
 ## Ratified decisions
 
 1. **No renames — the abx kill is dead.** `abx*` (lowerCamel constants and
-   identifiers) and `AppBoxKit*` (PascalCase types, capital B) are BOTH
+   identifiers) and `ArxaKit*` (PascalCase types, capital B) are BOTH
    canonical, per the standing rule in DESIGN-ARCHITECTURE.md ("Kit token
    binding"): every constant carries the `abx` prefix, chosen deliberately
    over Flutter's `k`-prefix style. `abxAction`/`abxActionHub` follow that
@@ -15,15 +15,15 @@ proceeding on primary sources per advisor-conventions.
    and gets swept (decision reversed by operator after fact-check; do not
    re-litigate).
 2. **Guard, not docs**: new `G14 naming` group in the arch-guard engine
-   (tests in `appboxd/test/arch_guard_test.dart`, engine wherever G0–G13
-   live), covering kit + appboxd source:
+   (tests in `arxa/test/arch_guard_test.dart`, engine wherever G0–G13
+   live), covering kit + arxa source:
    - kit constants/identifiers use the `abx` prefix (no bare `k` constants,
      no raw literals crossing the token boundary)
-   - types use `AppBoxKit` casing — ban the `AppboxKit` lowercase-b typo
-   - no rival action vocabulary bypassing `AppBoxKitActionHub`
+   - types use `ArxaKit` casing — ban the `ArxaKit` lowercase-b typo
+   - no rival action vocabulary bypassing `ArxaKitActionHub`
 3. **Adoption**: all notes-shell surfaces route actions through the existing
-   `abxAction` / `AppBoxKitActionHub` solution (`ui_library`
-   `utils/kit_action/appbox_kit_action.dart`).
+   `abxAction` / `ArxaKitActionHub` solution (`ui_library`
+   `utils/kit_action/arxa_kit_action.dart`).
 4. **InkWell/ripple fix** rides the adoption: long-press in the native liquid
    glass UI becomes an abxAction-owned press state on the native surface — no
    Material `InkWell`/ripple leaking over platform views
@@ -44,16 +44,16 @@ proceeding on primary sources per advisor-conventions.
 
 ## Non-goals
 
-- Renaming anything abx→AppBoxKit or the reverse.
-- Moving action code between appbox and kit (no `Abx*` class definitions
+- Renaming anything abx→ArxaKit or the reverse.
+- Moving action code between arxa and kit (no `Abx*` class definitions
   exist anywhere; kit already owns the implementation).
 - Touching surfaces outside the notes shell in this pass.
 
 ## Outcome (2026-08-12, fan-out complete)
 
 - **Adoption was already done one layer down.** Every notes-shell mutation
-  routes through `ShowcaseNotesFacadeService` → `AppBoxKitDataFacade.mutate()`
-  (`kit/data/lib/facades/appbox_kit_data_facade.dart:70`), which calls
+  routes through `ShowcaseNotesFacadeService` → `ArxaKitDataFacade.mutate()`
+  (`kit/data/lib/facades/arxa_kit_data_facade.dart:70`), which calls
   `abxActionHub.send()` with ENTITY-SCOPED keys (`'pin.${note.id}'`). Editor,
   folder, and notes/shell viewmodels required zero changes. Standing rule
   learned the hard way (a viewmodel-level wrapper was written and reverted):
@@ -68,10 +68,10 @@ proceeding on primary sources per advisor-conventions.
   `Semantics(button: true)`) duplicated in `showcase_notes_note_row_widget`
   and `showcase_notes_folder_row_widget`. Deliberate debt: hoist to a kit
   primitive when a third caller appears.
-- The folder row's leak was inherited from `AppBoxKitListTile`'s
+- The folder row's leak was inherited from `ArxaKitListTile`'s
   Material+InkWell via `ShowcaseNotesRowWidget` (gesture-arena share with the
   outer long-press); fixed by inlining the row with the same kit tokens.
-  `ShowcaseNotesRowWidget`/`AppBoxKitListTile` untouched (shared blast
+  `ShowcaseNotesRowWidget`/`ArxaKitListTile` untouched (shared blast
   radius).
 - Audio row / photo strip never had an ink ancestor — no leak possible; left
   WITHOUT press feedback because wrapping a platform view or BackdropFilter
@@ -88,11 +88,11 @@ proceeding on primary sources per advisor-conventions.
 
 Operator caught that "All Notes"/"Recently Deleted" rows still rippled: the
 arena-conflict framing hid that an `InkWell` inks on plain taps too, and
-`ShowcaseNotesRowWidget` → `AppBoxKitListTile` still carried Material ink.
+`ShowcaseNotesRowWidget` → `ArxaKitListTile` still carried Material ink.
 Full-repo sweep found exactly two remaining ink sources, both in the kit:
-`AppBoxKitListTile:127` and `AppBoxKitChip:47`. The third caller had arrived,
+`ArxaKitListTile:127` and `ArxaKitChip:47`. The third caller had arrived,
 so the debt was paid: `_ShowcaseNotesPressable` was hoisted to a public
-`AppBoxKitPressable` (`kit/ui_library/lib/widgets/appbox_kit_pressable.dart`,
+`ArxaKitPressable` (`kit/ui_library/lib/widgets/arxa_kit_pressable.dart`,
 barrel-exported), the tile and chip now press via it (no Material ink
 anywhere in the kit), and the two duplicated private copies were deleted.
 Fix lands transitively in every tile consumer: notes rows, admin folder row,

@@ -1,7 +1,7 @@
 # Provider fabric — re-verification pass (2026-07-30)
 
 Re-check of the "Flagged unverified" items in
-[../plans/appbox-engine-llm-fabric.md](../plans/appbox-engine-llm-fabric.md) against
+[../plans/arxa-engine-llm-fabric.md](../plans/arxa-engine-llm-fabric.md) against
 current official docs, plus three A-grade spot-checks. Sources fetched live on
 2026-07-30; official docs preferred, secondary corroboration marked.
 

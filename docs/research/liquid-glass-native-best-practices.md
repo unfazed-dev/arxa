@@ -1,6 +1,6 @@
 # Liquid Glass (iOS 26) — native wiring best practices
 
-Research notes for app-box. Compiled 2026-08-10 from Apple primary sources (developer documentation + WWDC25 session transcripts). Everything below is either a direct quote, a paraphrase of a cited Apple page, or an explicitly labelled repo observation / community report.
+Research notes for arxa. Compiled 2026-08-10 from Apple primary sources (developer documentation + WWDC25 session transcripts). Everything below is either a direct quote, a paraphrase of a cited Apple page, or an explicitly labelled repo observation / community report.
 
 **Source legend**
 
@@ -227,7 +227,7 @@ Treat this as a hard gate: **no Liquid Glass visual bug is confirmed until it is
 
 ---
 
-## 7. Rules for app-box
+## 7. Rules for arxa
 
 ### Do
 

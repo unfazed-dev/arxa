@@ -1,6 +1,6 @@
 # Dock bounce from headless Chrome — investigation
 
-**Status: NOT REPRODUCED in headless.** 60 launches across every launcher appbox
+**Status: NOT REPRODUCED in headless.** 60 launches across every launcher arxa
 has, zero bounces. `--visible` *does* bounce — measured at 780ms — so the
 question for the reporter is whether that flag was in play. Three unrelated real
 defects were found on the way and are recorded at the bottom. No speculative fix
@@ -43,7 +43,7 @@ tile**, in any launcher, in any configuration tried.
 | `open -g -n -a`, overlapping instances | 6 | 0 |
 | exact `worker.dart` flag set | 1 | 0 |
 | exact worker flags + `--no-startup-window` | 1 | 0 |
-| **real `appbox lens shot`/`dom`, clean state** | **10** | **0** |
+| **real `arxa lens shot`/`dom`, clean state** | **10** | **0** |
 | no `--headless` (control) | 1 | **1 — 49 samples** |
 
 ## The one apparent hit, and why it was thrown out
@@ -73,8 +73,8 @@ sees a transient `Foreground` registration the tile list misses.
 |---|---|---|---|
 | headless via `open -g -n -a` | 9 over 6 launches (**6/6**) | 40ms | blip |
 | headless via direct `Process.start` | 2 over 6 launches (2/6) | 20ms | blip |
-| real `appbox lens shot`, headless | 2 | 40ms | blip |
-| **real `appbox lens shot --visible`** | **39** | **780ms** | **BOUNCES** |
+| real `arxa lens shot`, headless | 2 | 40ms | blip |
+| **real `arxa lens shot --visible`** | **39** | **780ms** | **BOUNCES** |
 | no `--headless` (control) | 49 | ~1000ms | BOUNCES |
 
 Two things follow, and the second is the one that matters:
@@ -87,7 +87,7 @@ Two things follow, and the second is the one that matters:
    `open` of causing a bounce. Swapping the launcher on this evidence would be
    fixing a symptom that has not been shown to produce the reported behaviour.
 
-`--visible` is the only appbox path measured to actually bounce: **780ms**,
+`--visible` is the only arxa path measured to actually bounce: **780ms**,
 reproducible, and correct by design (it asks for a real window).
 
 ## Boundary of this claim — read before trusting it
@@ -97,7 +97,7 @@ tile list read `Brave_Browser, Code, Finder, Terminal`. If the reporter had
 Chrome open when they saw the bounce, `open -g -n -a "Google Chrome"` against an
 app LaunchServices has already registered as `Foreground` is a materially
 different path, and nothing here covers it. The "overlapping instances" trials
-overlapped *appbox headless* Chromes, not a user's GUI Chrome.
+overlapped *arxa headless* Chromes, not a user's GUI Chrome.
 
 That is the first thing to establish with the reporter.
 
@@ -127,7 +127,7 @@ Two things from the reporter:
    LaunchServices path left untested.
 
 Reproduce with the committed detector, which works with Chrome open (it scopes
-to appbox's own pid):
+to arxa's own pid):
 
 ```
 tools/dock-bounce-detect.sh <the exact command you ran>
@@ -184,9 +184,9 @@ Eliminated by direct test, each measured against a checksum:
 | candidate | window | result |
 |---|---|---|
 | plain `GET /design` | 2s | read-only |
-| `appbox lens shot` | 2s | read-only |
-| `appbox lens dom` | **60s** | read-only |
-| `appbox lens shot --visible` | 2s | read-only |
+| `arxa lens shot` | 2s | read-only |
+| `arxa lens dom` | **60s** | read-only |
+| `arxa lens shot --visible` | 2s | read-only |
 | `design serve --project <p>` boot | 3s | read-only (tested on a copy) |
 | server running, fully idle | **75s** | stable |
 | `touch` a file outside the design | 4s | stable |

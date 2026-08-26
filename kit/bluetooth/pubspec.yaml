@@ -1,4 +1,4 @@
-name: appbox_kit_bluetooth
+name: arxa_kit_bluetooth
 description: Plugin-neutral port over flutter_blue_plus — live Bluetooth adapter-state stream, a capability gate (Android enable-dialog vs iOS escort), and full stub ports for BLE scanning and GATT connect/read/write/notify.
 version: 0.1.0
 publish_to: 'none'

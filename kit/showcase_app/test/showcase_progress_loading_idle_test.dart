@@ -6,15 +6,15 @@
 import 'package:flutter/cupertino.dart' show CupertinoActivityIndicator;
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
-import 'package:appbox_kit_showcase_app/ui/widgets/showcase_home_widgets/showcase_progress_loading_card_widget.dart';
+import 'package:arxa_kit_ui_library/arxa_kit_ui_library.dart';
+import 'package:arxa_kit_showcase_app/ui/widgets/showcase_home_widgets/showcase_progress_loading_card_widget.dart';
 
 import 'helpers.dart';
 
 void main() {
   setUpAll(registerKitTestServices);
-  tearDownAll(() => appBoxKitLocator.reset());
-  tearDown(AppBoxKitPlatform.reset);
+  tearDownAll(() => arxaKitLocator.reset());
+  tearDown(ArxaKitPlatform.reset);
 
   TickerMode nearestTicker(WidgetTester tester, Finder child) =>
       tester.widget<TickerMode>(find
@@ -33,8 +33,8 @@ void main() {
     testWidgets(
       '[Progress demo] — indeterminate demos auto-stop after the demo window (iOS 26 glass tier)',
       (tester) async {
-        AppBoxKitPlatform.override =
-            const AppBoxKitPlatformOverride(isIOS: true, iosMajor: 26);
+        ArxaKitPlatform.override =
+            const ArxaKitPlatformOverride(isIOS: true, iosMajor: 26);
         await pumpCard(tester);
         final spinners = find.byType(CupertinoActivityIndicator);
         expect(spinners, findsNWidgets(2),
@@ -53,8 +53,8 @@ void main() {
     testWidgets(
       '[Progress demo] — replay restarts the demo window on demand (Flutter fallback tier)',
       (tester) async {
-        AppBoxKitPlatform.override =
-            const AppBoxKitPlatformOverride(isIOS: true, iosMajor: 18);
+        ArxaKitPlatform.override =
+            const ArxaKitPlatformOverride(isIOS: true, iosMajor: 18);
         await pumpCard(tester);
         final spinners = find.byType(CupertinoActivityIndicator);
         expect(spinners, findsNWidgets(2));

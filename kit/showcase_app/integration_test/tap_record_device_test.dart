@@ -24,9 +24,9 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
-import 'package:appbox_kit_media/appbox_kit_media.dart';
-import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
-import 'package:appbox_kit_showcase_app/ui/views/showcase_profile_shell/showcase_components/showcase_components_view.dart';
+import 'package:arxa_kit_media/arxa_kit_media.dart';
+import 'package:arxa_kit_ui_library/arxa_kit_ui_library.dart';
+import 'package:arxa_kit_showcase_app/ui/views/showcase_profile_shell/showcase_components/showcase_components_view.dart';
 
 Future<void> _mark(int n, String payload) async {
   await File('${Directory.systemTemp.path}/phase$n.done')
@@ -67,24 +67,24 @@ void main() {
 
   // The real services, exactly as the app registers them — the recorder is
   // the plugin-backed kit service under its interface (the point of the
-  // test). Boot order mirrors test_helpers' registerAppBoxKitActionServices:
+  // test). Boot order mirrors test_helpers' registerArxaKitActionServices:
   // the kit UI services first (Talker backs the error service), then the
   // error + notification services, then initialize — before any action can
   // fire.
-  setupAppBoxKitUiServices();
-  if (!appBoxKitLocator.isRegistered<AppBoxKitAudioRecorderService>()) {
-    appBoxKitLocator.registerLazySingleton<AppBoxKitAudioRecorderService>(
-        () => AppBoxKitRecordAudioRecorderService());
+  setupArxaKitUiServices();
+  if (!arxaKitLocator.isRegistered<ArxaKitAudioRecorderService>()) {
+    arxaKitLocator.registerLazySingleton<ArxaKitAudioRecorderService>(
+        () => ArxaKitRecordAudioRecorderService());
   }
-  if (!appBoxKitLocator.isRegistered<AppBoxKitErrorService>()) {
-    appBoxKitLocator
-        .registerLazySingleton<AppBoxKitErrorService>(() => AppBoxKitErrorService());
+  if (!arxaKitLocator.isRegistered<ArxaKitErrorService>()) {
+    arxaKitLocator
+        .registerLazySingleton<ArxaKitErrorService>(() => ArxaKitErrorService());
   }
-  if (!appBoxKitLocator.isRegistered<AppBoxKitNotificationService>()) {
-    appBoxKitLocator.registerLazySingleton<AppBoxKitNotificationService>(
-        () => AppBoxKitNotificationService());
+  if (!arxaKitLocator.isRegistered<ArxaKitNotificationService>()) {
+    arxaKitLocator.registerLazySingleton<ArxaKitNotificationService>(
+        () => ArxaKitNotificationService());
   }
-  appBoxKitLocator<AppBoxKitErrorService>().initialize();
+  arxaKitLocator<ArxaKitErrorService>().initialize();
 
   testWidgets('tap-to-toggle record — device gap verification', (tester) async {
     _log('START isIOS=${Platform.isIOS}');
@@ -106,7 +106,7 @@ void main() {
     // P2: the host's REAL tap on the native button fired the OS permission
     // prompt (first tap ever) and the host tapped Allow — verify through
     // the kit.
-    final recorder = appBoxKitLocator<AppBoxKitAudioRecorderService>();
+    final recorder = arxaKitLocator<ArxaKitAudioRecorderService>();
     // Poll the (async) permission future by caching it once and sampling
     // the settled result — _poll takes a sync check.
     final permissionFuture = recorder.hasPermission();
@@ -130,7 +130,7 @@ void main() {
     // this very button fired the OS permission prompt).
     final int before = find.textContaining('· voice note').evaluate().length;
     tester
-        .widget<AppBoxKitNativeIconButton>(
+        .widget<ArxaKitNativeIconButton>(
             find.byKey(const ValueKey('composer-record-button')))
         .onPressed!
         .call();
@@ -148,7 +148,7 @@ void main() {
     // P4: invoke stop (same slot, same channel-path closure) — sends.
     await tester.pump(const Duration(seconds: 3));
     tester
-        .widget<AppBoxKitNativeIconButton>(
+        .widget<ArxaKitNativeIconButton>(
             find.byKey(const ValueKey('composer-record-button')))
         .onPressed!
         .call();
@@ -165,7 +165,7 @@ void main() {
     // P5: arm another recording (same closure path), then Cancel through
     // the strip's own handler (a pure-Flutter control).
     tester
-        .widget<AppBoxKitNativeIconButton>(
+        .widget<ArxaKitNativeIconButton>(
             find.byKey(const ValueKey('composer-record-button')))
         .onPressed!
         .call();

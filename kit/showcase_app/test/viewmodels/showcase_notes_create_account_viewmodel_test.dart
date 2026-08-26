@@ -1,35 +1,35 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:appbox_kit_data/appbox_kit_data.dart';
-import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart'
-    show AppBoxKitErrorService;
-import 'package:appbox_kit_showcase_app/app/app.locator.dart';
-import 'package:appbox_kit_showcase_app/services/showcase_notes_services/facades/showcase_notes_facade_service.dart';
-import 'package:appbox_kit_showcase_app/ui/views/showcase_notes_shell/showcase_notes_create_account/showcase_notes_create_account_viewmodel.dart';
+import 'package:arxa_kit_data/arxa_kit_data.dart';
+import 'package:arxa_kit_ui_library/arxa_kit_ui_library.dart'
+    show ArxaKitErrorService;
+import 'package:arxa_kit_showcase_app/app/app.locator.dart';
+import 'package:arxa_kit_showcase_app/services/showcase_notes_services/facades/showcase_notes_facade_service.dart';
+import 'package:arxa_kit_showcase_app/ui/views/showcase_notes_shell/showcase_notes_create_account/showcase_notes_create_account_viewmodel.dart';
 
 import '../helpers/test_helpers.dart';
 
-class MockAppBoxKitAuthService extends Mock implements AppBoxKitAuthService {}
+class MockArxaKitAuthService extends Mock implements ArxaKitAuthService {}
 
-const _session = AppBoxKitAuthSession(user: AppBoxKitAuthUser(id: 'user-1'));
+const _session = ArxaKitAuthSession(user: ArxaKitAuthUser(id: 'user-1'));
 
 void main() {
   // registerServices()'s bottom-sheet stub matches on custom types.
 
   group('ShowcaseNotesCreateAccountViewModel Tests -', () {
     late MockShowcaseNotesFacadeService facade;
-    late MockAppBoxKitAuthService auth;
+    late MockArxaKitAuthService auth;
 
     setUp(() async {
       registerServices();
-      registerAppBoxKitActionServices();
-      // The real AppBoxKitAction error path logs through the error service's
+      registerArxaKitActionServices();
+      // The real ArxaKitAction error path logs through the error service's
       // late Talker — initialize it before any op can fail (ui_library
       // playbook).
-      await locator<AppBoxKitErrorService>().initialize();
+      await locator<ArxaKitErrorService>().initialize();
       facade = locator<ShowcaseNotesFacadeService>()
           as MockShowcaseNotesFacadeService;
-      auth = MockAppBoxKitAuthService();
+      auth = MockArxaKitAuthService();
       when(() => facade.auth).thenReturn(auth);
     });
     tearDown(() => locator.reset());
@@ -69,7 +69,7 @@ void main() {
                 password: any(named: 'password'),
               ))
           .thenThrow(
-              const AppBoxKitAuthException('That email is already registered'));
+              const ArxaKitAuthException('That email is already registered'));
       // Seed null, the guard's clear-to-null, then the surfaced message.
       final expectation = expectLater(
         vm.errorMessage$,

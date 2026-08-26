@@ -1,5 +1,5 @@
 /// A widget is a reusable UI piece composed by views. It receives data via
-/// constructor params or [AppBoxKitStreamBuilder] bindings and renders its
+/// constructor params or [ArxaKitStreamBuilder] bindings and renders its
 /// slice of the surface — it holds no business logic and never decides when
 /// an action runs.
 ///
@@ -33,10 +33,10 @@
 library;
 
 import 'package:flutter/material.dart';
-import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
+import 'package:arxa_kit_ui_library/arxa_kit_ui_library.dart';
 
-import 'package:appbox_kit_showcase_app/ui/views/showcase_notes_shell/showcase_notes_auth/showcase_notes_auth_viewmodel.dart';
-import 'package:appbox_kit_showcase_app/ui/widgets/showcase_notes_widgets/widgets.dart';
+import 'package:arxa_kit_showcase_app/ui/views/showcase_notes_shell/showcase_notes_auth/showcase_notes_auth_viewmodel.dart';
+import 'package:arxa_kit_showcase_app/ui/widgets/showcase_notes_widgets/widgets.dart';
 
 class ShowcaseNotesPasswordFormWidget extends StatelessWidget {
   const ShowcaseNotesPasswordFormWidget({
@@ -55,7 +55,7 @@ class ShowcaseNotesPasswordFormWidget extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         // No grouped section here: CNTextField renders its own native capsule,
-        // so a AppBoxKitListSection container + divider produces double chrome
+        // so a ArxaKitListSection container + divider produces double chrome
         // around the fields. Standalone capsules with plain spacing is the
         // iOS 26 look.
         ShowcaseNotesAuthTextFieldWidget(
@@ -63,7 +63,7 @@ class ShowcaseNotesPasswordFormWidget extends StatelessWidget {
           placeholder: 'Email',
           keyboardType: TextInputType.emailAddress,
         ),
-        appBoxKitVerticalSpaceSmall,
+        arxaKitVerticalSpaceSmall,
         ShowcaseNotesAuthTextFieldWidget(
           onChanged: (v) => vm.password = v,
           placeholder: 'Password',
@@ -71,33 +71,33 @@ class ShowcaseNotesPasswordFormWidget extends StatelessWidget {
         ),
         // Streams-only: inline error and busy bind the VM's streams — nothing
         // here rebuilds off notifyListeners.
-        AppBoxKitStreamBuilder<String?>(
+        ArxaKitStreamBuilder<String?>(
           stream: vm.errorMessage$,
           builder: (context, errorMessage) => errorMessage == null
               ? const SizedBox.shrink()
               : ShowcaseNotesFormErrorRowWidget(message: errorMessage),
         ),
-        appBoxKitVerticalSpaceMedium,
-        AppBoxKitStreamBuilder<bool>(
+        arxaKitVerticalSpaceMedium,
+        ArxaKitStreamBuilder<bool>(
           stream: vm.busy$,
           builder: (context, busy) => Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               SizedBox(
                 height: abxButtonHeightMedium,
-                child: AppBoxKitNativeButton(
+                child: ArxaKitNativeButton(
                   label: 'Sign In',
-                  style: AppBoxKitButtonStyle.prominentGlass,
+                  style: ArxaKitButtonStyle.prominentGlass,
                   onPressed:
                       busy ? null : () => vm.signInEmail(vm.email, vm.password),
                 ),
               ),
-              appBoxKitVerticalSpaceSmall,
+              arxaKitVerticalSpaceSmall,
               SizedBox(
                 height: abxButtonHeightMedium,
-                child: AppBoxKitNativeButton(
+                child: ArxaKitNativeButton(
                   label: 'Create Account',
-                  style: AppBoxKitButtonStyle.plain,
+                  style: ArxaKitButtonStyle.plain,
                   // Prefer the owner's panel swap (dedicated create-account view);
                   // inline fake sign-up remains the fallback for bare embeddings.
                   onPressed: busy
@@ -107,8 +107,8 @@ class ShowcaseNotesPasswordFormWidget extends StatelessWidget {
                 ),
               ),
               if (busy) ...[
-                appBoxKitVerticalSpaceSmall,
-                const Center(child: AppBoxKitNativeLoadingIndicator(size: 20)),
+                arxaKitVerticalSpaceSmall,
+                const Center(child: ArxaKitNativeLoadingIndicator(size: 20)),
               ],
             ],
           ),

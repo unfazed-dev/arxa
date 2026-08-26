@@ -1,15 +1,15 @@
 <Callout id="header" tone="info">
 
-# appbox_kit_notifications — Per-Package Playbook
+# arxa_kit_notifications — Per-Package Playbook
 
 
-`appbox_kit_notifications` v**0.1.0** · `publish_to: 'none'` · status: **active**
+`arxa_kit_notifications` v**0.1.0** · `publish_to: 'none'` · status: **active**
 
 
-**Role (one line):** Device-notifications port for appbox_kit apps — permission seam (typed result), push token / foreground-message streams, local notifications and per-notification badge, with a native-first flutter_local_notifications default.
+**Role (one line):** Device-notifications port for arxa_kit apps — permission seam (typed result), push token / foreground-message streams, local notifications and per-notification badge, with a native-first flutter_local_notifications default.
 
 
-**Scope of this document:** lets a human OR an LLM use, wire, and extend `appbox_kit_notifications` **without reading its source**. The public surface below was extracted from the barrel; README content is folded into the narrative sections.
+**Scope of this document:** lets a human OR an LLM use, wire, and extend `arxa_kit_notifications` **without reading its source**. The public surface below was extracted from the barrel; README content is folded into the narrative sections.
 
 
 ## Table of contents
@@ -22,16 +22,16 @@
 
 ### Overview & role
 
-Device-notifications port for appbox_kit apps — permission seam (typed result), push token / foreground-message streams, local notifications and per-notification badge, with a native-first flutter_local_notifications default. Distinct from appbox_kit core's in-app AppBoxKitNotificationService (transient toast/snackbar).
+Device-notifications port for arxa_kit apps — permission seam (typed result), push token / foreground-message streams, local notifications and per-notification badge, with a native-first flutter_local_notifications default. Distinct from arxa_kit core's in-app ArxaKitNotificationService (transient toast/snackbar).
 
 
 ### Public surface
 
-Exported from `lib/appbox_kit_notifications.dart`:
+Exported from `lib/arxa_kit_notifications.dart`:
 
-<Table id="notifications-api" columns={["Symbol", "Kind", "Defined in"]} rows={[["AppBoxKitNotificationsService", "abstract class", "src/appbox_kit_notifications_service.dart"], ["AppBoxKitNotificationAuthorization", "enum", "src/appbox_kit_notifications_types.dart"], ["AppBoxKitNotificationPermissionResult", "class", "src/appbox_kit_notifications_types.dart"], ["AppBoxKitNotificationPermissionRequest", "class", "src/appbox_kit_notifications_types.dart"], ["AppBoxKitPushProvider", "enum", "src/appbox_kit_notifications_types.dart"], ["AppBoxKitPushToken", "class", "src/appbox_kit_notifications_types.dart"], ["AppBoxKitRemoteMessage", "class", "src/appbox_kit_notifications_types.dart"], ["AppBoxKitLocalNotification", "class", "src/appbox_kit_notifications_types.dart"], ["AppBoxKitOutboundMessage", "class", "src/appbox_kit_notifications_types.dart"], ["AppBoxKitOutboundMessageSink", "abstract class", "src/appbox_kit_outbound_message_sink.dart"], ["AppBoxKitEmailBackend", "class", "src/backends/appbox_kit_email_backend.dart"], ["AppBoxKitFcmPushBackend", "class", "src/backends/appbox_kit_fcm_push_backend.dart"], ["AppBoxKitSmsBackend", "class", "src/backends/appbox_kit_sms_backend.dart"], ["LocalAppBoxKitNotificationsService", "class", "src/local/appbox_kit_local_notifications_service.dart"]]} />
+<Table id="notifications-api" columns={["Symbol", "Kind", "Defined in"]} rows={[["ArxaKitNotificationsService", "abstract class", "src/arxa_kit_notifications_service.dart"], ["ArxaKitNotificationAuthorization", "enum", "src/arxa_kit_notifications_types.dart"], ["ArxaKitNotificationPermissionResult", "class", "src/arxa_kit_notifications_types.dart"], ["ArxaKitNotificationPermissionRequest", "class", "src/arxa_kit_notifications_types.dart"], ["ArxaKitPushProvider", "enum", "src/arxa_kit_notifications_types.dart"], ["ArxaKitPushToken", "class", "src/arxa_kit_notifications_types.dart"], ["ArxaKitRemoteMessage", "class", "src/arxa_kit_notifications_types.dart"], ["ArxaKitLocalNotification", "class", "src/arxa_kit_notifications_types.dart"], ["ArxaKitOutboundMessage", "class", "src/arxa_kit_notifications_types.dart"], ["ArxaKitOutboundMessageSink", "abstract class", "src/arxa_kit_outbound_message_sink.dart"], ["ArxaKitEmailBackend", "class", "src/backends/arxa_kit_email_backend.dart"], ["ArxaKitFcmPushBackend", "class", "src/backends/arxa_kit_fcm_push_backend.dart"], ["ArxaKitSmsBackend", "class", "src/backends/arxa_kit_sms_backend.dart"], ["LocalArxaKitNotificationsService", "class", "src/local/arxa_kit_local_notifications_service.dart"]]} />
 
-Test doubles in `lib/appbox_kit_testing.dart`: `FakeAppBoxKitNotificationsService`, `FakeAppBoxKitOutboundMessageSink`.
+Test doubles in `lib/arxa_kit_testing.dart`: `FakeArxaKitNotificationsService`, `FakeArxaKitOutboundMessageSink`.
 
 Scripts and call-counts — tests never touch platform channels.
 
@@ -53,7 +53,7 @@ See `kit_matrix.md` for the full routing + dependency graph.
 
 ### Architecture
 
-Two ports sit at the center, each with a working default and pluggable backends. `AppBoxKitNotificationsService` (plural) is the device-notifications port — `initialize`, `requestPermission`, `permissionStatus`, `tokenStream`, `currentToken`, `foregroundMessages`, `showLocalNotification`, `cancel`/`cancelAll`, `setBadgeCount`/`clearBadge`, `dispose` — backed by `LocalAppBoxKitNotificationsService`, a native-first adapter over `flutter_local_notifications` (UNUserNotificationCenter on iOS/macOS, NotificationManager on Android). `AppBoxKitOutboundMessageSink` is a separate port for one-to-one SMS/email, backed by `AppBoxKitSmsBackend` / `AppBoxKitEmailBackend` stubs. `AppBoxKitFcmPushBackend` carries the real `firebase_messaging` signatures but pulls no `firebase_*` dependency; the local default emits nothing on `tokenStream` / `foregroundMessages`, leaving push to the host's APNs/FCM backend. Dependency direction is strictly outbound: this package depends on neither `appbox_kit` core, `stacked`, nor `stacked_services`, and does not import core's singular `AppBoxKitNotificationService` (in-app toast/snackbar), which stays in core.
+Two ports sit at the center, each with a working default and pluggable backends. `ArxaKitNotificationsService` (plural) is the device-notifications port — `initialize`, `requestPermission`, `permissionStatus`, `tokenStream`, `currentToken`, `foregroundMessages`, `showLocalNotification`, `cancel`/`cancelAll`, `setBadgeCount`/`clearBadge`, `dispose` — backed by `LocalArxaKitNotificationsService`, a native-first adapter over `flutter_local_notifications` (UNUserNotificationCenter on iOS/macOS, NotificationManager on Android). `ArxaKitOutboundMessageSink` is a separate port for one-to-one SMS/email, backed by `ArxaKitSmsBackend` / `ArxaKitEmailBackend` stubs. `ArxaKitFcmPushBackend` carries the real `firebase_messaging` signatures but pulls no `firebase_*` dependency; the local default emits nothing on `tokenStream` / `foregroundMessages`, leaving push to the host's APNs/FCM backend. Dependency direction is strictly outbound: this package depends on neither `arxa_kit` core, `stacked`, nor `stacked_services`, and does not import core's singular `ArxaKitNotificationService` (in-app toast/snackbar), which stays in core.
 
 
 ### Gotchas
@@ -66,20 +66,20 @@ Two ports sit at the center, each with a working default and pluggable backends.
 
 ### Testing
 
-`import 'package:appbox_kit_notifications/appbox_kit_testing.dart';` for
-`FakeAppBoxKitNotificationsService` (scripted `permissionResult`, `emitToken` /
+`import 'package:arxa_kit_notifications/arxa_kit_testing.dart';` for
+`FakeArxaKitNotificationsService` (scripted `permissionResult`, `emitToken` /
 `emitMessage` stream drivers, recorded `shown` / `cancelled` / `badgeCounts`)
-and `FakeAppBoxKitOutboundMessageSink` (records `sent`, scriptable `failWith`).
+and `FakeArxaKitOutboundMessageSink` (records `sent`, scriptable `failWith`).
 
 
 ### Features
 
-<Checklist id="notifications-features" items={[{"id": "notifications-feat-0", "label": "`AppBoxKitNotificationsService` \u2014 abstract class"}, {"id": "notifications-feat-1", "label": "`AppBoxKitNotificationAuthorization` \u2014 enum"}, {"id": "notifications-feat-2", "label": "`AppBoxKitNotificationPermissionResult` \u2014 class"}, {"id": "notifications-feat-3", "label": "`AppBoxKitNotificationPermissionRequest` \u2014 class"}, {"id": "notifications-feat-4", "label": "`AppBoxKitPushProvider` \u2014 enum"}, {"id": "notifications-feat-5", "label": "`AppBoxKitPushToken` \u2014 class"}, {"id": "notifications-feat-6", "label": "`AppBoxKitRemoteMessage` \u2014 class"}, {"id": "notifications-feat-7", "label": "`AppBoxKitLocalNotification` \u2014 class"}, {"id": "notifications-feat-8", "label": "`AppBoxKitOutboundMessage` \u2014 class"}, {"id": "notifications-feat-9", "label": "`AppBoxKitOutboundMessageSink` \u2014 abstract class"}, {"id": "notifications-feat-10", "label": "`AppBoxKitEmailBackend` \u2014 class"}, {"id": "notifications-feat-11", "label": "`AppBoxKitFcmPushBackend` \u2014 class"}]} />
+<Checklist id="notifications-features" items={[{"id": "notifications-feat-0", "label": "`ArxaKitNotificationsService` \u2014 abstract class"}, {"id": "notifications-feat-1", "label": "`ArxaKitNotificationAuthorization` \u2014 enum"}, {"id": "notifications-feat-2", "label": "`ArxaKitNotificationPermissionResult` \u2014 class"}, {"id": "notifications-feat-3", "label": "`ArxaKitNotificationPermissionRequest` \u2014 class"}, {"id": "notifications-feat-4", "label": "`ArxaKitPushProvider` \u2014 enum"}, {"id": "notifications-feat-5", "label": "`ArxaKitPushToken` \u2014 class"}, {"id": "notifications-feat-6", "label": "`ArxaKitRemoteMessage` \u2014 class"}, {"id": "notifications-feat-7", "label": "`ArxaKitLocalNotification` \u2014 class"}, {"id": "notifications-feat-8", "label": "`ArxaKitOutboundMessage` \u2014 class"}, {"id": "notifications-feat-9", "label": "`ArxaKitOutboundMessageSink` \u2014 abstract class"}, {"id": "notifications-feat-10", "label": "`ArxaKitEmailBackend` \u2014 class"}, {"id": "notifications-feat-11", "label": "`ArxaKitFcmPushBackend` \u2014 class"}]} />
 
 
 ### Decisions / ADRs
 
-**Standalone, not stacked-coupled.** The package deliberately depends on no `appbox_kit` core, `stacked`, or `stacked_services`, so it can be adopted host-side without dragging the framework graph in. **Native-first local default.** `flutter_local_notifications` was chosen as the backing SDK because it maps directly onto the platform notification centers (iOS/macOS UNUserNotificationCenter, Android NotificationManager) and gives real permission + show/cancel behavior out of the box; push (`AppBoxKitFcmPushBackend`) is a real-signature stub with no `firebase_*` dependency pulled, so the FCM/APNs seam is owned by the host backend. **Badge is per-notification, not standalone.** Because `flutter_local_notifications` v21 only sets the iOS badge as a side effect of a delivered notification (`DarwinNotificationDetails.badgeNumber`) and Android badges are launcher-specific, `LocalAppBoxKitNotificationsService.setBadgeCount` / `clearBadge` throw `UnsupportedError` — callers set `AppBoxKitLocalNotification.badgeCount` on a shown notification or own the badge from the push payload (a backend may override). **Outbound is a stub seam.** `AppBoxKitSmsBackend` / `AppBoxKitEmailBackend` are provider-side (Twilio/SendGrid over HTTPS) or native-send seams, wired only when a host opts in.
+**Standalone, not stacked-coupled.** The package deliberately depends on no `arxa_kit` core, `stacked`, or `stacked_services`, so it can be adopted host-side without dragging the framework graph in. **Native-first local default.** `flutter_local_notifications` was chosen as the backing SDK because it maps directly onto the platform notification centers (iOS/macOS UNUserNotificationCenter, Android NotificationManager) and gives real permission + show/cancel behavior out of the box; push (`ArxaKitFcmPushBackend`) is a real-signature stub with no `firebase_*` dependency pulled, so the FCM/APNs seam is owned by the host backend. **Badge is per-notification, not standalone.** Because `flutter_local_notifications` v21 only sets the iOS badge as a side effect of a delivered notification (`DarwinNotificationDetails.badgeNumber`) and Android badges are launcher-specific, `LocalArxaKitNotificationsService.setBadgeCount` / `clearBadge` throw `UnsupportedError` — callers set `ArxaKitLocalNotification.badgeCount` on a shown notification or own the badge from the push payload (a backend may override). **Outbound is a stub seam.** `ArxaKitSmsBackend` / `ArxaKitEmailBackend` are provider-side (Twilio/SendGrid over HTTPS) or native-send seams, wired only when a host opts in.
 
 <!-- kb:begin -->
 ### References
@@ -93,11 +93,11 @@ Official docs and tooling:
 - [stacked_cli (pub.dev)](https://pub.dev/packages/stacked_cli) — Scaffolding CLI for new Stacked apps/views/services.
 - [Flutter — official documentation](https://docs.flutter.dev) — Framework docs, platform integration, performance.
 - [Dart — official documentation](https://dart.dev) — Language tour, async, package ecosystem.
-- [Dart & Flutter MCP server (official)](https://dart.dev/tools/mcp-server) — Ships with the Dart SDK (dart mcp-server). Exposes analyzer diagnostics, pub, tests, and live Flutter app introspection via DTD. Wired in appbox_kit/.mcp.json.
+- [Dart & Flutter MCP server (official)](https://dart.dev/tools/mcp-server) — Ships with the Dart SDK (dart mcp-server). Exposes analyzer diagnostics, pub, tests, and live Flutter app introspection via DTD. Wired in arxa_kit/.mcp.json.
 
 Kit-specific:
 
-- [flutter_local_notifications (pub.dev)](https://pub.dev/packages/flutter_local_notifications) — flutter_local_notifications — backing dependency of appbox_kit_notifications.
+- [flutter_local_notifications (pub.dev)](https://pub.dev/packages/flutter_local_notifications) — flutter_local_notifications — backing dependency of arxa_kit_notifications.
 <!-- kb:end -->
 
 <QuestionForm id="open-questions" questions={[

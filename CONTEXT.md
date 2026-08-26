@@ -1,8 +1,8 @@
-# appbox / arxa
+# arxa / arxa
 
 The pipeline that turns client intake into designed, verified, deployed
-Flutter apps — one Dart binary (`appbox`), skills as stage fronts, gates as
-the only enforcer. **arxa** is the product identity; **appbox** is the
+Flutter apps — one Dart binary (`arxa`), skills as stage fronts, gates as
+the only enforcer. **arxa** is the product identity; **arxa** is the
 engine underneath.
 
 ## Language
@@ -11,9 +11,9 @@ engine underneath.
 
 **Arxa**:
 The product and brand: the harness, the compiled engine, and the paid
-editions together. The engine keeps the appbox name until the gated full
+editions together. The engine keeps the arxa name until the gated full
 rename.
-_Avoid_: using arxa and appbox interchangeably
+_Avoid_: using arxa and arxa interchangeably
 
 **Arxa harness**:
 The dedicated agent harness forked from DeepSeek Harness (dsh), rebranded,
@@ -88,7 +88,7 @@ _Avoid_: harness memory, chat memory
 
 **Provenance scan**:
 The gate that rejects any semantic token copied from scanned reference
-material into appbox output.
+material into arxa output.
 
 **Region identity**:
 The stable identifier a region keeps across its three lives — design
@@ -109,17 +109,17 @@ _Avoid_: lorem ipsum, placeholder text, text library
 ### Sessions
 
 **Using-session**:
-A session applying appbox to a client project. It may never modify appbox
+A session applying arxa to a client project. It may never modify arxa
 itself; its escape hatch for unseen questions is the lens eval verb.
 _Avoid_: project session
 
-**Appbox-dev session**:
-A session working ON appbox — the only place verbs get added, dictionaries
+**Arxa-dev session**:
+A session working ON arxa — the only place verbs get added, dictionaries
 grow, and promotions from eval scripts happen.
 
 ### Client review
 
-**Appbox dial**:
+**Arxa dial**:
 The branded radial control baked into every design artifact: sign-in gate,
 feedback capture (comment, change-list, draw-over), history, watermark.
 Operator-toggleable; clients cannot hide it.

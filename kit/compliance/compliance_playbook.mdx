@@ -1,15 +1,15 @@
 <Callout id="header" tone="info">
 
-# appbox_kit_compliance — Per-Package Playbook
+# arxa_kit_compliance — Per-Package Playbook
 
 
-`appbox_kit_compliance` v**0.1.0** · `publish_to: 'none'` · status: **active**
+`arxa_kit_compliance` v**0.1.0** · `publish_to: 'none'` · status: **active**
 
 
-**Role (one line):** Standalone port for legal/compliance surfaces — a versioned AppBoxKitComplianceDocument registry, AppBoxKitConsentStore-backed consent tracking with a typed AppBoxKitConsentStatus, a pure AppBoxKitConsentGate, and a AppBoxKitLicensesService over Flutter's LicenseRegistry.
+**Role (one line):** Standalone port for legal/compliance surfaces — a versioned ArxaKitComplianceDocument registry, ArxaKitConsentStore-backed consent tracking with a typed ArxaKitConsentStatus, a pure ArxaKitConsentGate, and a ArxaKitLicensesService over Flutter's LicenseRegistry.
 
 
-**Scope of this document:** lets a human OR an LLM use, wire, and extend `appbox_kit_compliance` **without reading its source**. The public surface below was extracted from the barrel; README content is folded into the narrative sections.
+**Scope of this document:** lets a human OR an LLM use, wire, and extend `arxa_kit_compliance` **without reading its source**. The public surface below was extracted from the barrel; README content is folded into the narrative sections.
 
 
 ## Table of contents
@@ -22,23 +22,23 @@
 
 ### Overview & role
 
-Standalone port for legal/compliance surfaces — a versioned AppBoxKitComplianceDocument registry, AppBoxKitConsentStore-backed consent tracking with a typed AppBoxKitConsentStatus, a pure AppBoxKitConsentGate, and a AppBoxKitLicensesService over Flutter's LicenseRegistry. Zero third-party runtime dependencies.
+Standalone port for legal/compliance surfaces — a versioned ArxaKitComplianceDocument registry, ArxaKitConsentStore-backed consent tracking with a typed ArxaKitConsentStatus, a pure ArxaKitConsentGate, and a ArxaKitLicensesService over Flutter's LicenseRegistry. Zero third-party runtime dependencies.
 
 
 ### Public surface
 
-Exported from `lib/appbox_kit_compliance.dart`:
+Exported from `lib/arxa_kit_compliance.dart`:
 
-<Table id="compliance-api" columns={["Symbol", "Kind", "Defined in"]} rows={[["AppBoxKitComplianceDocumentKind", "enum", "src/appbox_kit_compliance_document.dart"], ["AppBoxKitComplianceSource", "class", "src/appbox_kit_compliance_document.dart"], ["AppBoxKitComplianceRemoteSource", "class", "src/appbox_kit_compliance_document.dart"], ["AppBoxKitComplianceInlineSource", "class", "src/appbox_kit_compliance_document.dart"], ["AppBoxKitComplianceDocument", "class", "src/appbox_kit_compliance_document.dart"], ["AppBoxKitComplianceRegistry", "class", "src/appbox_kit_compliance_registry.dart"], ["AppBoxKitConsentGateResult", "class", "src/appbox_kit_consent_gate.dart"], ["AppBoxKitConsentGateAllowed", "class", "src/appbox_kit_consent_gate.dart"], ["AppBoxKitConsentGateBlocked", "class", "src/appbox_kit_consent_gate.dart"], ["AppBoxKitConsentGate", "class", "src/appbox_kit_consent_gate.dart"], ["AppBoxKitConsentMethod", "enum", "src/appbox_kit_consent_record.dart"], ["AppBoxKitConsentRecord", "class", "src/appbox_kit_consent_record.dart"], ["AppBoxKitConsentStatusChange", "class", "src/appbox_kit_consent_service.dart"], ["AppBoxKitConsentService", "class", "src/appbox_kit_consent_service.dart"], ["AppBoxKitConsentStatus", "class", "src/appbox_kit_consent_status.dart"], ["AppBoxKitConsentAccepted", "class", "src/appbox_kit_consent_status.dart"], ["AppBoxKitConsentAcceptedOutdatedVersion", "class", "src/appbox_kit_consent_status.dart"], ["AppBoxKitConsentWithdrawn", "class", "src/appbox_kit_consent_status.dart"], ["AppBoxKitConsentNeverAccepted", "class", "src/appbox_kit_consent_status.dart"], ["AppBoxKitConsentNotRequired", "class", "src/appbox_kit_consent_status.dart"], ["AppBoxKitConsentStore", "abstract interface class", "src/appbox_kit_consent_store.dart"], ["InMemoryAppBoxKitConsentStore", "class", "src/appbox_kit_consent_store.dart"], ["AppBoxKitLicenseEntry", "class", "src/appbox_kit_license_entry.dart"], ["AppBoxKitLicensesService", "class", "src/appbox_kit_licenses_service.dart"]]} />
+<Table id="compliance-api" columns={["Symbol", "Kind", "Defined in"]} rows={[["ArxaKitComplianceDocumentKind", "enum", "src/arxa_kit_compliance_document.dart"], ["ArxaKitComplianceSource", "class", "src/arxa_kit_compliance_document.dart"], ["ArxaKitComplianceRemoteSource", "class", "src/arxa_kit_compliance_document.dart"], ["ArxaKitComplianceInlineSource", "class", "src/arxa_kit_compliance_document.dart"], ["ArxaKitComplianceDocument", "class", "src/arxa_kit_compliance_document.dart"], ["ArxaKitComplianceRegistry", "class", "src/arxa_kit_compliance_registry.dart"], ["ArxaKitConsentGateResult", "class", "src/arxa_kit_consent_gate.dart"], ["ArxaKitConsentGateAllowed", "class", "src/arxa_kit_consent_gate.dart"], ["ArxaKitConsentGateBlocked", "class", "src/arxa_kit_consent_gate.dart"], ["ArxaKitConsentGate", "class", "src/arxa_kit_consent_gate.dart"], ["ArxaKitConsentMethod", "enum", "src/arxa_kit_consent_record.dart"], ["ArxaKitConsentRecord", "class", "src/arxa_kit_consent_record.dart"], ["ArxaKitConsentStatusChange", "class", "src/arxa_kit_consent_service.dart"], ["ArxaKitConsentService", "class", "src/arxa_kit_consent_service.dart"], ["ArxaKitConsentStatus", "class", "src/arxa_kit_consent_status.dart"], ["ArxaKitConsentAccepted", "class", "src/arxa_kit_consent_status.dart"], ["ArxaKitConsentAcceptedOutdatedVersion", "class", "src/arxa_kit_consent_status.dart"], ["ArxaKitConsentWithdrawn", "class", "src/arxa_kit_consent_status.dart"], ["ArxaKitConsentNeverAccepted", "class", "src/arxa_kit_consent_status.dart"], ["ArxaKitConsentNotRequired", "class", "src/arxa_kit_consent_status.dart"], ["ArxaKitConsentStore", "abstract interface class", "src/arxa_kit_consent_store.dart"], ["InMemoryArxaKitConsentStore", "class", "src/arxa_kit_consent_store.dart"], ["ArxaKitLicenseEntry", "class", "src/arxa_kit_license_entry.dart"], ["ArxaKitLicensesService", "class", "src/arxa_kit_licenses_service.dart"]]} />
 
-Test doubles in `lib/appbox_kit_testing.dart`: `FakeAppBoxKitLicensesService`.
+Test doubles in `lib/arxa_kit_testing.dart`: `FakeArxaKitLicensesService`.
 
 Scripts and call-counts — tests never touch platform channels.
 
 
 ### Usage & wiring
 
-Add `appbox_kit_compliance` as a path or git dependency — it is `publish_to: 'none'`, so it is not published to pub.dev. The kit mandates **no** Stacked locator or `@StackedApp` wiring (it depends on no other kit), so the only thing you register is the `AppBoxKitConsentStore` port: bind `InMemoryAppBoxKitConsentStore` for the working default, or your own durable implementation. Populate a `AppBoxKitComplianceRegistry` with your `AppBoxKitComplianceDocument`s, then drive the flow with `AppBoxKitConsentService.statusFor` / `outstandingDocuments()` and `AppBoxKitConsentGate.evaluate()`, which returns `allowed` or `blocked(outstanding)` in registry order. App version is passed in as a plain string — the kit takes no `package_info_plus` dependency.
+Add `arxa_kit_compliance` as a path or git dependency — it is `publish_to: 'none'`, so it is not published to pub.dev. The kit mandates **no** Stacked locator or `@StackedApp` wiring (it depends on no other kit), so the only thing you register is the `ArxaKitConsentStore` port: bind `InMemoryArxaKitConsentStore` for the working default, or your own durable implementation. Populate a `ArxaKitComplianceRegistry` with your `ArxaKitComplianceDocument`s, then drive the flow with `ArxaKitConsentService.statusFor` / `outstandingDocuments()` and `ArxaKitConsentGate.evaluate()`, which returns `allowed` or `blocked(outstanding)` in registry order. App version is passed in as a plain string — the kit takes no `package_info_plus` dependency.
 
 
 ### Integration map
@@ -50,31 +50,31 @@ See `kit_matrix.md` for the full routing + dependency graph.
 
 ### Architecture
 
-This package intentionally depends on **no other kit** (not `appbox_kit`,
-`stacked`, or `stacked_services`). Persistence is behind the `AppBoxKitConsentStore`
-port; the app binds `InMemoryAppBoxKitConsentStore` or its own durable
+This package intentionally depends on **no other kit** (not `arxa_kit`,
+`stacked`, or `stacked_services`). Persistence is behind the `ArxaKitConsentStore`
+port; the app binds `InMemoryArxaKitConsentStore` or its own durable
 implementation. Nothing here imports Flutter widgets.
 
 
 ### Gotchas
 
-- **v0 (this package)** — standalone, own `AppBoxKitConsentStore` port, in-memory
+- **v0 (this package)** — standalone, own `ArxaKitConsentStore` port, in-memory
   default, exact-string versioning.
 - **One document per kind** — `currentDocuments` and the gate collapse to a
-  single current document per `AppBoxKitComplianceDocumentKind` (latest registered
+  single current document per `ArxaKitComplianceDocumentKind` (latest registered
   wins). Two documents sharing a kind — most plausibly `custom` — gate as one;
   give each its own kind if both must be presented.
 - **Deferred** — durable store bindings (secure storage / a backend), semver-aware
   version policies, locale-negotiation of which document to present, and any
   consent UI. Add as consuming apps need them. Unifying the typed results onto
-  `appbox_kit_state` is a documented later phase; there are no cross-kit imports
+  `arxa_kit_state` is a documented later phase; there are no cross-kit imports
   now.
 
 
 ### Testing
 
-`package:appbox_kit_compliance/appbox_kit_testing.dart` re-exports the API and adds
-`FakeAppBoxKitLicensesService`, a `AppBoxKitLicensesService` backed by a scripted list of
+`package:arxa_kit_compliance/arxa_kit_testing.dart` re-exports the API and adds
+`FakeArxaKitLicensesService`, a `ArxaKitLicensesService` backed by a scripted list of
 `LicenseEntry`s (build them with `LicenseEntryWithLineBreaks`) so license
 collection can be tested without a Flutter binding. The in-memory consent store
 is used directly in tests.
@@ -82,12 +82,12 @@ is used directly in tests.
 
 ### Features
 
-<Checklist id="compliance-features" items={[{"id": "compliance-feat-0", "label": "`AppBoxKitComplianceDocumentKind` \u2014 enum"}, {"id": "compliance-feat-1", "label": "`AppBoxKitComplianceSource` \u2014 class"}, {"id": "compliance-feat-2", "label": "`AppBoxKitComplianceRemoteSource` \u2014 class"}, {"id": "compliance-feat-3", "label": "`AppBoxKitComplianceInlineSource` \u2014 class"}, {"id": "compliance-feat-4", "label": "`AppBoxKitComplianceDocument` \u2014 class"}, {"id": "compliance-feat-5", "label": "`AppBoxKitComplianceRegistry` \u2014 class"}, {"id": "compliance-feat-6", "label": "`AppBoxKitConsentGateResult` \u2014 class"}, {"id": "compliance-feat-7", "label": "`AppBoxKitConsentGateAllowed` \u2014 class"}, {"id": "compliance-feat-8", "label": "`AppBoxKitConsentGateBlocked` \u2014 class"}, {"id": "compliance-feat-9", "label": "`AppBoxKitConsentGate` \u2014 class"}, {"id": "compliance-feat-10", "label": "`AppBoxKitConsentMethod` \u2014 enum"}, {"id": "compliance-feat-11", "label": "`AppBoxKitConsentRecord` \u2014 class"}]} />
+<Checklist id="compliance-features" items={[{"id": "compliance-feat-0", "label": "`ArxaKitComplianceDocumentKind` \u2014 enum"}, {"id": "compliance-feat-1", "label": "`ArxaKitComplianceSource` \u2014 class"}, {"id": "compliance-feat-2", "label": "`ArxaKitComplianceRemoteSource` \u2014 class"}, {"id": "compliance-feat-3", "label": "`ArxaKitComplianceInlineSource` \u2014 class"}, {"id": "compliance-feat-4", "label": "`ArxaKitComplianceDocument` \u2014 class"}, {"id": "compliance-feat-5", "label": "`ArxaKitComplianceRegistry` \u2014 class"}, {"id": "compliance-feat-6", "label": "`ArxaKitConsentGateResult` \u2014 class"}, {"id": "compliance-feat-7", "label": "`ArxaKitConsentGateAllowed` \u2014 class"}, {"id": "compliance-feat-8", "label": "`ArxaKitConsentGateBlocked` \u2014 class"}, {"id": "compliance-feat-9", "label": "`ArxaKitConsentGate` \u2014 class"}, {"id": "compliance-feat-10", "label": "`ArxaKitConsentMethod` \u2014 enum"}, {"id": "compliance-feat-11", "label": "`ArxaKitConsentRecord` \u2014 class"}]} />
 
 
 ### Decisions / ADRs
 
-The kit is standalone by design — it depends on **no other kit** (not `appbox_kit`, `stacked`, or `stacked_services`) so the `AppBoxKitConsentStore` port stays the sole coupling point and consuming apps own persistence. Its only backing is the Flutter SDK: consent value types and the license reader use `@immutable` and `LicenseRegistry` from `package:flutter/foundation.dart`, yielding **zero third-party runtime dependencies**. App version is passed in as a plain string rather than pulling `package_info_plus`, and version comparison is exact-string (no semver parsing) so `2026-07-01` and `1.2.0` are equally valid version schemes.
+The kit is standalone by design — it depends on **no other kit** (not `arxa_kit`, `stacked`, or `stacked_services`) so the `ArxaKitConsentStore` port stays the sole coupling point and consuming apps own persistence. Its only backing is the Flutter SDK: consent value types and the license reader use `@immutable` and `LicenseRegistry` from `package:flutter/foundation.dart`, yielding **zero third-party runtime dependencies**. App version is passed in as a plain string rather than pulling `package_info_plus`, and version comparison is exact-string (no semver parsing) so `2026-07-01` and `1.2.0` are equally valid version schemes.
 
 <!-- kb:begin -->
 ### References
@@ -101,7 +101,7 @@ Official docs and tooling:
 - [stacked_cli (pub.dev)](https://pub.dev/packages/stacked_cli) — Scaffolding CLI for new Stacked apps/views/services.
 - [Flutter — official documentation](https://docs.flutter.dev) — Framework docs, platform integration, performance.
 - [Dart — official documentation](https://dart.dev) — Language tour, async, package ecosystem.
-- [Dart & Flutter MCP server (official)](https://dart.dev/tools/mcp-server) — Ships with the Dart SDK (dart mcp-server). Exposes analyzer diagnostics, pub, tests, and live Flutter app introspection via DTD. Wired in appbox_kit/.mcp.json.
+- [Dart & Flutter MCP server (official)](https://dart.dev/tools/mcp-server) — Ships with the Dart SDK (dart mcp-server). Exposes analyzer diagnostics, pub, tests, and live Flutter app introspection via DTD. Wired in arxa_kit/.mcp.json.
 <!-- kb:end -->
 
 <QuestionForm id="open-questions" questions={[

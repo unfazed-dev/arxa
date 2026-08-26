@@ -1,13 +1,13 @@
 // The boot screen's brand moment (2026-08-18 pass): the brand icon, then the
-// centered 'APPBOX SHOWCASE' lockup, then a prominent accent-colored native
+// centered 'ARXA SHOWCASE' lockup, then a prominent accent-colored native
 // spinner with a real gap between them — and no 'Loading…' copy. The spinner
-// is the kit's AppBoxKitNativeLoadingIndicator (M3E morph on Android,
+// is the kit's ArxaKitNativeLoadingIndicator (M3E morph on Android,
 // Cupertino spinner on iOS, Material elsewhere).
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
-import 'package:appbox_kit_showcase_app/ui/common/appbox_kit_app_strings.dart';
-import 'package:appbox_kit_showcase_app/ui/widgets/showcase_startup_widgets/showcase_startup_loading_widget.dart';
+import 'package:arxa_kit_ui_library/arxa_kit_ui_library.dart';
+import 'package:arxa_kit_showcase_app/ui/common/arxa_kit_app_strings.dart';
+import 'package:arxa_kit_showcase_app/ui/widgets/showcase_startup_widgets/showcase_startup_loading_widget.dart';
 
 void main() {
   testWidgets(
@@ -16,7 +16,7 @@ void main() {
       'spinner, with a real gap and no loading copy', (tester) async {
     const accent = Color(0xFF123456);
     await tester.pumpWidget(MaterialApp(
-      theme: appBoxKitLightTheme(accent: accent),
+      theme: arxaKitLightTheme(accent: accent),
       home: const ShowcaseStartupLoadingWidget(),
     ));
     final screen = tester.getRect(find.byType(Scaffold));
@@ -31,7 +31,7 @@ void main() {
 
     // One spinner, centered under the lockup, prominent (the old inline
     // spinner was 16px next to a 'Loading…' label), and wearing the accent.
-    final spinner = find.byType(AppBoxKitNativeLoadingIndicator);
+    final spinner = find.byType(ArxaKitNativeLoadingIndicator);
     expect(spinner, findsOneWidget,
         reason: 'anti-vacuous: the native loading indicator must be on screen');
     final spinnerRect = tester.getRect(spinner);

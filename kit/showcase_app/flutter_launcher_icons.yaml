@@ -4,23 +4,23 @@
 # splash both derive from that single master. Derived platform icons are
 # committed — regenerate after emit:  dart run flutter_launcher_icons
 flutter_launcher_icons:
-  image_path: "assets/brand-icons/appbox-icon.png"
+  image_path: "assets/brand-icons/arxa-icon.png"
   android: true
   ios: true
   remove_alpha_ios: true
   background_color_ios: "#ffffff"
   adaptive_icon_background: "#ffffff"
-  adaptive_icon_foreground: "assets/brand-icons/appbox-icon.png"
+  adaptive_icon_foreground: "assets/brand-icons/arxa-icon.png"
   # Theme-adaptive: Android 13+ tints the monochrome layer (alpha-only glyph)
   # to the system light/dark wallpaper theme; a static hex background cannot
   # follow the theme — the monochrome layer is the supported mechanism.
-  adaptive_icon_monochrome: "assets/brand-icons/appbox-icon-monochrome.png"
+  adaptive_icon_monochrome: "assets/brand-icons/arxa-icon-monochrome.png"
   # iOS 18 dark mode: transparent-background master; the system supplies the
   # dark backdrop. Tinted mode: auto-desaturated from the same master.
-  image_path_ios_dark_transparent: "assets/brand-icons/appbox-icon.png"
+  image_path_ios_dark_transparent: "assets/brand-icons/arxa-icon.png"
   desaturate_tinted_to_grayscale_ios: true
   web:
     generate: true
-    image_path: "assets/brand-icons/appbox-icon.png"
+    image_path: "assets/brand-icons/arxa-icon.png"
     background_color: "#ffffff"
     theme_color: "#ffffff"

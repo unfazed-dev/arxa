@@ -1,0 +1,81 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:m3e_collection/m3e_collection.dart' show RangeSliderM3E;
+import 'package:arxa_kit_core/platform/arxa_kit_platform.dart';
+import 'package:arxa_kit_ui_library/widgets/arxa_kit_native_range_slider.dart';
+
+import 'arxa_kit_native_test_helpers.dart';
+
+/// Native-widget tests for [ArxaKitNativeRangeSlider]. Two tiers:
+///
+/// - **M3E tier** (Android): the kit gate returns a [RangeSliderM3E], a plain
+///   widget — fully assertable via `find.byType(RangeSliderM3E)`. THIS is the
+///   load-bearing assertion.
+/// - **Default tier**: the kit gate returns Material's [RangeSlider] (there is
+///   no `cupertino_native_better` range slider, so no UiKitView is involved).
+///   Wrapped in [withAndroidFallback] to mirror the canonical pattern.
+void main() {
+  tearDown(ArxaKitPlatform.reset);
+
+  testWidgets(
+      'kit.ui-library.native-range-slider — Android routes to RangeSliderM3E',
+      (tester) async {
+    ArxaKitPlatform.override =
+        const ArxaKitPlatformOverride(isAndroid: true);
+    await tester.pumpWidget(host(const ArxaKitNativeRangeSlider(
+      values: RangeValues(0.2, 0.8),
+    )));
+
+    expect(
+      find.byType(RangeSliderM3E),
+      findsOneWidget,
+      reason:
+          'supportsComposeM3E → kit must route to RangeSliderM3E on Android',
+    );
+  });
+
+  testWidgets(
+      'kit.ui-library.native-range-slider — default platform routes to Material RangeSlider and builds clean',
+      (tester) async {
+    await withAndroidFallback(() async {
+      await tester.pumpWidget(host(const ArxaKitNativeRangeSlider(
+        values: RangeValues(0.1, 0.4),
+      )));
+
+      expect(
+        find.byType(RangeSliderM3E),
+        findsNothing,
+        reason: 'default platform is non-Android → kit must NOT route to M3E',
+      );
+      expect(
+        find.byType(RangeSlider),
+        findsOneWidget,
+        reason: 'default tier renders a Material RangeSlider',
+      );
+    });
+  });
+
+  testWidgets(
+      'kit.ui-library.native-range-slider — onChanged is wired on the M3E tier',
+      (tester) async {
+    ArxaKitPlatform.override =
+        const ArxaKitPlatformOverride(isAndroid: true);
+    RangeValues? fired;
+    await tester.pumpWidget(host(ArxaKitNativeRangeSlider(
+      values: const RangeValues(0.0, 0.5),
+      onChanged: (v) => fired = v,
+    )));
+
+    expect(find.byType(RangeSliderM3E), findsOneWidget);
+    // RangeSliderM3E wraps a Material RangeSlider; dragging the upper thumb
+    // rightward moves it.
+    await tester.drag(find.byType(RangeSlider), const Offset(60, 0));
+    await tester.pumpAndSettle();
+
+    expect(
+      fired,
+      isNotNull,
+      reason: 'dragging the range slider must invoke onChanged',
+    );
+  });
+}

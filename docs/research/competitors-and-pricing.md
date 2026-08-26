@@ -19,30 +19,30 @@ exactly the buyer that comparison enrages — and agencies are persona P5.
 
 ## The structural advantage: BYO key
 
-appbox's inference cost is the **user's**, because credentials are theirs
+arxa's inference cost is the **user's**, because credentials are theirs
 (`remote-control-and-chat.md`). Competitors bundling generation into a
-subscription must price in model cost and margin; appbox does not. That argues
+subscription must price in model cost and margin; arxa does not. That argues
 for a **flat licence or cheap seat**, not usage-based metering — and it means
 undercutting the incumbent is not a loss-leader, it is the actual cost
 structure.
 
 Secondary: the **Firebase "bill shock"** critique of FlutterFlow (unoptimised
 NoSQL queries producing surprise invoices) is a recurring complaint, with
-Supabase/Postgres cited as the predictable alternative. Anything appbox
+Supabase/Postgres cited as the predictable alternative. Anything arxa
 scaffolds for data should default to predictable-cost backends.
 
 ## The escape-hatch critique
 
 The spine research already recorded FlutterFlow's **one-way export trap**. That
-is the failure appbox is positioned against: output is ordinary stacked MVVM
+is the failure arxa is positioned against: output is ordinary stacked MVVM
 in the user's own repo, gated by tests they can read. Worth making explicit in
 positioning, because it is the thing the incumbent cannot copy without
 abandoning its own lock-in.
 
 ## The deploy-tool tiers (gap now closed)
 
-Previously flagged unresolved. Both matter because `appbox-deployer` invokes
-them **with the user's own account** — appbox never resells them, so these are
+Previously flagged unresolved. Both matter because `arxa-deployer` invokes
+them **with the user's own account** — arxa never resells them, so these are
 costs the buyer already carries or chooses.
 
 **Shorebird** (code push / OTA patching) — free tier for getting started;
@@ -71,7 +71,7 @@ customer-facing.*
 
 **The design lesson worth stealing:** Shorebird's annual plan solves a real
 customer grievance (expiring credits) by changing *when* the allowance lands,
-not by discounting. For appbox's own licence, that is a better lever than
+not by discounting. For arxa's own licence, that is a better lever than
 price — a flat annual with everything granted upfront reads as generous and
 costs nothing extra, given BYO-key means we carry no marginal inference cost.
 

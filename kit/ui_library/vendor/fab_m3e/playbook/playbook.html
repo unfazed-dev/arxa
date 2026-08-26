@@ -102,7 +102,7 @@ ul.checklist li .n{color:var(--muted);font-size:12.5px;display:block}
   </div>
   <div class="diagram-arrow">↓ consumed by</div>
   <div class="diagram-box" data-rough>
-    <div class="diagram-pill">appbox_kit</div>
+    <div class="diagram-pill">arxa_kit</div>
     <div class="diagram-node">Kit* wrappers</div>
   </div>
 </div>
@@ -197,7 +197,7 @@ dependency_overrides:
   fab_m3e:
     path: packages/fab_m3e</code></pre><ul class="ann"><li><b>WHY</b> <span class="ann-l">L1-4</span>: Root pubspec.yaml override comment. This is the auditable reason for the fork; edit it whenever the patch changes.</li><li><b>HOW</b> <span class="ann-l">L5-7</span>: path: override activates the fork. m3e_collection still re-exports fab_m3e by name; the override redirects that name to the local folder.</li></ul>
 
-<div class="callout "><p>Hosts almost never import <code>package:fab_m3e/...</code> directly. The fork is pulled in <strong>transitively</strong> via <code>m3e_collection</code> (the umbrella that re-exports every M3E widget), and most apps reach it through <code>appbox_kit</code>'s <code>Kit*</code> wrappers. The root <code>dependency_overrides</code> <code>path:</code> entry is the only thing that activates the patch — <code>m3e_collection</code>'s own version constraint is unchanged.</p></div>
+<div class="callout "><p>Hosts almost never import <code>package:fab_m3e/...</code> directly. The fork is pulled in <strong>transitively</strong> via <code>m3e_collection</code> (the umbrella that re-exports every M3E widget), and most apps reach it through <code>arxa_kit</code>'s <code>Kit*</code> wrappers. The root <code>dependency_overrides</code> <code>path:</code> entry is the only thing that activates the patch — <code>m3e_collection</code>'s own version constraint is unchanged.</p></div>
 <h3>Integration map</h3>
 <div class="diagram-wrap">
 <p class="diag-cap">Apps import m3e_collection; the root override redirects fab_m3e to the local fork.</p>
@@ -212,7 +212,7 @@ dependency_overrides:
   </div>
   <div class="diagram-arrow">↓ re-exports</div>
   <div class="diagram-box" data-rough>
-    <div class="diagram-pill">appbox_kit</div>
+    <div class="diagram-pill">arxa_kit</div>
     <div class="diagram-node">Kit* wrappers</div>
   </div>
   <div class="diagram-box" data-rough>
@@ -250,7 +250,7 @@ FabMenuM3E(
 <div class="callout warn"><p>Forward duration is <strong>300ms</strong> (raised from upstream's 200ms so the stagger cascade is legible). Reverse stays 200ms. If you change <code>_staggerSpread</code>, re-test with 4+ items — the cascade collapses if the spread window is too narrow.</p></div>
 <h3>Re-sync procedure (shared across all four forks)</h3>
 <p>When bumping upstream (<code>fab_m3e</code>, <code>navigation_rail_m3e</code>, <code>split_button_m3e</code>, or <code>toolbar_m3e</code>):</p>
-<p>1. <strong>Bump</strong> the fork's <code>pubspec.yaml</code> <code>version:</code> and the root <code>pubspec.yaml</code> override comment's stated version. 2. <strong>Backfill</strong> the fork's <code>CHANGELOG.md</code> with the new version entry (every fork's CHANGELOG is stale — see §11). 3. <strong>Diff</strong> each patched file against the new upstream release of the same path. 4. <strong>Re-apply</strong> each <code>// Patched (vendored fork)</code> / <code>// Fork patch:</code> / <code>// PATCH</code> block by hand. Do NOT copy upstream over the fork blindly — the markers are your only map of what to preserve. 5. <strong>Update</strong> the root <code>pubspec.yaml</code> override comment if the WHY or the patched-file list changed. 6. <strong>Run</strong> the fork's <code>flutter test</code> in <code>packages/&lt;name&gt;/</code>, then run the consuming showcase (<code>appbox_kit_showcase</code>) to confirm the patched behaviour still renders.</p>
+<p>1. <strong>Bump</strong> the fork's <code>pubspec.yaml</code> <code>version:</code> and the root <code>pubspec.yaml</code> override comment's stated version. 2. <strong>Backfill</strong> the fork's <code>CHANGELOG.md</code> with the new version entry (every fork's CHANGELOG is stale — see §11). 3. <strong>Diff</strong> each patched file against the new upstream release of the same path. 4. <strong>Re-apply</strong> each <code>// Patched (vendored fork)</code> / <code>// Fork patch:</code> / <code>// PATCH</code> block by hand. Do NOT copy upstream over the fork blindly — the markers are your only map of what to preserve. 5. <strong>Update</strong> the root <code>pubspec.yaml</code> override comment if the WHY or the patched-file list changed. 6. <strong>Run</strong> the fork's <code>flutter test</code> in <code>packages/&lt;name&gt;/</code>, then run the consuming showcase (<code>arxa_kit_showcase</code>) to confirm the patched behaviour still renders.</p>
 <h3>Override hygiene (shared)</h3>
 <div class="callout warn"><p>Never remove a <code>dependency_overrides</code> <code>path:</code> entry without first confirming upstream includes the fix. A "clean" <code>flutter pub get</code> silently reverts the fork to the pub.dev release, and the patch — including its bug fix — disappears with no compile error. The root override comment is the only durable record of why the patch exists.</p></div>
 

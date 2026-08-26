@@ -4,7 +4,7 @@ Status: **landed**, two commits. Reported against the showcase notes shell —
 "going back from a view, the liquid glass ui has a reappearing animation that is
 not right". Two independent defects, one in the vendored observer and one in the
 kit gate. Neither is notes-specific: both are kit-wide, so every Liquid Glass
-surface appbox produces is fixed by them.
+surface arxa produces is fixed by them.
 
 ## What the user actually sees
 
@@ -60,7 +60,7 @@ happily. Only a mid-pop sample can tell the two apart.
 
 ## Defect 2 — the gate animated alpha over a platform view
 
-`AppBoxKitNativeChromeGate` wrapped its child in `FadeTransition` +
+`ArxaKitNativeChromeGate` wrapped its child in `FadeTransition` +
 `ScaleTransition` (160 ms out, 180 ms back). That is the zoom. Four independent
 authorities say it is wrong, including the one the old code cited:
 
@@ -96,7 +96,7 @@ automatically, so the parameter's reason to exist is gone, not just its value.
 
 ### It was written down, pointing the wrong way
 
-`appbox_kit_tab_bar.dart:102` already recorded this artifact. The vendor's
+`arxa_kit_tab_bar.dart:102` already recorded this artifact. The vendor's
 *instant* `autoHideOnPageTransition` was turned **off** because it fought the
 gate's fade — "the instant swap blanks the bar in frame one while the gate is
 still fading something already invisible", named there as the **"fade-then-pop
@@ -140,7 +140,7 @@ origin under any alignment.
 
 ## Corrected in passing
 
-`appbox_kit_lazy_indexed_stack.dart` carried *"IndexedStack unmounts its
+`arxa_kit_lazy_indexed_stack.dart` carried *"IndexedStack unmounts its
 offstage children (verified in 3.44)"*. It does not — the gate's own test
 toggles five times and still sees exactly one `initState`. The observation
 behind that comment was real but the cause was wrong: that widget grows its
@@ -189,9 +189,9 @@ falsified two more theories before landing.
    back."* A probe pushing an opaque route over a gate and settling it showed
    `init=1 dispose=0` throughout, gate count constant, and the gate already at
    index 0 (hidden) on pop frame 1. The in-repo claim at
-   `appbox_kit_chrome_gate_transition_scope_test.dart:147` ("the Overlay …
+   `arxa_kit_chrome_gate_transition_scope_test.dart:147` ("the Overlay …
    disposes the gate") did not reproduce.
-2. *"The `.wake()` stagger replays on reveal."* `AppBoxKitMotionScope` drives
+2. *"The `.wake()` stagger replays on reveal."* `ArxaKitMotionScope` drives
    wake from `ModalRoute.of(context)?.animation` — the revealed route's OWN
    animation, which sits at 1.0 and never moves while the route above it pops.
 
@@ -213,7 +213,7 @@ inserts the other, applying `.glassEffect` **afresh** — and establishing glass
 materializes with an animation by Apple's design. The flag is driven by the Dart
 observer's `endTransition()`. On a push that fires while the route is still
 covered, so nobody sees it; on a **pop** it fires exactly as the revealed route
-becomes visible. Four `AppBoxKitListSection`s on the folders view, all at once.
+becomes visible. Four `ArxaKitListSection`s on the folders view, all at once.
 
 **Own goal, stated plainly:** round 1's D1 moved `endTransition()` from 350 ms
 (mid-slide, partly masked by motion) to ~500 ms (precisely at settle, fully in
@@ -226,8 +226,8 @@ conspicuous.
 `beginTransition`/`endTransition`. Their only consumers are three views that swap
 glass for a flat fill. This file already documented why that authority is the
 weaker one: a hybrid-composition platform view *"can't be tinted out of a leak:
-it must leave the frame's layer tree"* — which `AppBoxKitNativeChromeGate` does
-and de-tinting cannot. Same call as C5 in `appbox_kit_tab_bar.dart`. Per-view
+it must leave the frame's layer tree"* — which `ArxaKitNativeChromeGate` does
+and de-tinting cannot. Same call as C5 in `arxa_kit_tab_bar.dart`. Per-view
 `setTransitioning` (Issue #29 halo containment) is a separate channel and is
 untouched.
 
@@ -282,7 +282,7 @@ navigation once Fix A lands — the flag is only reachable via
 ## The other two instances of this pattern
 
 `CupertinoPopupMenuButtonPlatformView.swift:666,669` does the same thing in UIKit
-form (`config = .glass()` vs `.tinted()`), and `AppBoxKitNativePopupMenu` sits in
+form (`config = .glass()` vs `.tinted()`), and `ArxaKitNativePopupMenu` sits in
 the folders view app bar — the same broken screen. It needed no separate fix:
 its `isTransitioning` is set *only* by the NotificationCenter observer of the
 global flag, which Fix A stops posting, so it now always takes `.glass()`. (Its
@@ -346,7 +346,7 @@ trigger too." That claim was wrong, and the device is what said so.
   show through it. It genuinely must leave the frame. This is what
   `autoHideOnPageTransition` is for, and it is the case with device hours behind
   it.
-- An `AppBoxKitListSection` **inside** the folders route is the opposite case.
+- An `ArxaKitListSection` **inside** the folders route is the opposite case.
   It is part of that route's content and travels with the route's own transform.
   There is no z-order violation to prevent. Hiding it buys nothing and costs the
   `addSubview` materialize.
@@ -384,7 +384,7 @@ If sections track, the discriminator is: **is my own route animating?**
 The folders route's `secondaryAnimation` runs during the pop (stays, no
 materialize); the root route holding the tab bar is static during a nested push
 (hides, correct). `ModalRoute.of(context)` is already in the plumbing via
-`AppBoxKitMotionScope`.
+`ArxaKitMotionScope`.
 
 ## Resolution — the fix, and why it is defensible rather than lucky
 
@@ -425,7 +425,7 @@ it can be mounted in chrome that is a **sibling of the router**, not a
 descendant of its routes — `bottomNavigationBar` on a Scaffold whose `body`
 holds the Navigator, which is exactly where the showcase tab bar sits. Deleting
 the term would have meant rewriting
-`appbox_kit_chrome_gate_transition_scope_test.dart:117`, a test written from a
+`arxa_kit_chrome_gate_transition_scope_test.dart:117`, a test written from a
 **user-confirmed-on-device** regression, with no device readout in hand. That is
 the failure mode recorded in the `conflicting-mechanisms-fix-direction` note:
 disabling the mechanism with device hours behind it to protect newer reasoning.
@@ -491,7 +491,7 @@ applied to in-route content.
 - The **root-push-over-tab-scaffold** ceiling remains untested — no such
   configuration exists in the showcase. Named in the gate's class doc.
 - **No showcase test drives a nested pop through a gated widget.** The
-  regression is covered only by `appbox_kit_chrome_gate_transition_scope_test.dart`'s
+  regression is covered only by `arxa_kit_chrome_gate_transition_scope_test.dart`'s
   synthetic Cupertino route. 119 green in `showcase_app` does not imply
   integration coverage of this path.
 - **Fix B is retained but inert** on the normal navigation path (nothing drives
@@ -511,7 +511,7 @@ was found to be misstated here rather than defective in code.
 
 Recorded as "untested, no such configuration exists in the showcase". True of
 the showcase, but the shape is constructible directly, and untestable-there is
-not untestable-in-general. `appbox_kit_chrome_gate_transition_scope_test.dart`
+not untestable-in-general. `arxa_kit_chrome_gate_transition_scope_test.dart`
 now builds it: gate as `bottomNavigationBar`, nested `Navigator` in the body,
 push on the **root** navigator.
 

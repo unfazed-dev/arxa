@@ -1,5 +1,5 @@
-name: appbox_kit_deploy
-description: Deploy port for appbox_kit apps — a process-runner port with
+name: arxa_kit_deploy
+description: Deploy port for arxa_kit apps — a process-runner port with
   wired fastlane, shorebird, and Cloudflare Pages targets (plus a Vercel
   stub), so release automation is testable without shelling out.
 version: 0.1.0
@@ -9,10 +9,10 @@ environment:
   sdk: '>=3.0.3 <4.0.0'
 
 # NATIVE-FIRST / STANDALONE: pure Dart dev tooling. No dependency on
-# flutter, stacked, stacked_services, or appbox_kit core. External CLIs
+# flutter, stacked, stacked_services, or arxa_kit core. External CLIs
 # (fastlane, shorebird, wrangler, flutter) are invoked through the
-# AppBoxKitProcessRunner port, so every command shape is unit-testable via
-# ScriptedAppBoxKitProcessRunner without touching a real toolchain.
+# ArxaKitProcessRunner port, so every command shape is unit-testable via
+# ScriptedArxaKitProcessRunner without touching a real toolchain.
 dependencies: {}
 
 dev_dependencies:

@@ -1,10 +1,10 @@
 # Moodboard — genui-calm-warm
 
-Design-direction reference board for **appbox**'s next design pass: a calm, warm,
+Design-direction reference board for **arxa**'s next design pass: a calm, warm,
 GenUI-style (conversation-driven, cards-inline) developer tool. Replaces the
 direction rejected for information overload/paralysis.
 
-Captured 2026-07-28 with the appbox lens (per-shot CDP tab —
+Captured 2026-07-28 with the arxa lens (per-shot CDP tab —
 create → settle → Escape-consent → lazy-scroll → full-page shot → close;
 final URL + title logged per shot). All 22 PNGs verified on disk (>30 KB each)
 and sampled visually. One auth-walled target (claude.ai) was skipped per the

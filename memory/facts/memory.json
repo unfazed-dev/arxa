@@ -1,32 +1,32 @@
 [
   {
-    "fact": "M1: the memory module is a dedicated appboxd module owning memory read/write/consolidation. appbox manages its own memory — no dependency on stacked_kit's memory/ (its pattern is the template, not a dependency).",
-    "source": "docs/plans/appbox-memory-and-payment.md",
+    "fact": "M1: the memory module is a dedicated arxa module owning memory read/write/consolidation. arxa manages its own memory — no dependency on stacked_kit's memory/ (its pattern is the template, not a dependency).",
+    "source": "docs/plans/arxa-memory-and-payment.md",
     "ts": "2026-07-30"
   },
   {
     "fact": "Write path is hybrid: deterministic writers (gates, runner, gateway) append raw events always; a cheap-tier consolidation stage promotes durable lessons, and its output passes a gate like every other artifact — memory rots unless a gate consumes it.",
-    "source": "docs/plans/appbox-memory-and-payment.md",
+    "source": "docs/plans/arxa-memory-and-payment.md",
     "ts": "2026-07-30"
   },
   {
-    "fact": "Storage split by volatility: raw events/scorecards/response cache -> appboxd data dir (JSONL, git-ignored, high-volume); curated facts + per-stage LESSONS.md -> repo memory/ (git-tracked, human-editable, gate-consumed, ~200-line caps); per-app runtime memory -> a kit inside generated apps.",
-    "source": "docs/plans/appbox-memory-and-payment.md",
+    "fact": "Storage split by volatility: raw events/scorecards/response cache -> arxa data dir (JSONL, git-ignored, high-volume); curated facts + per-stage LESSONS.md -> repo memory/ (git-tracked, human-editable, gate-consumed, ~200-line caps); per-app runtime memory -> a kit inside generated apps.",
+    "source": "docs/plans/arxa-memory-and-payment.md",
     "ts": "2026-07-30"
   },
   {
-    "fact": "Coverage mandate (operator, explicit): logs for every gate, event, and pipeline happening in production plus analytics — appboxd managing all of it satisfies the mandate.",
-    "source": "docs/plans/appbox-memory-and-payment.md",
+    "fact": "Coverage mandate (operator, explicit): logs for every gate, event, and pipeline happening in production plus analytics — arxa managing all of it satisfies the mandate.",
+    "source": "docs/plans/arxa-memory-and-payment.md",
     "ts": "2026-07-30"
   },
   {
     "fact": "M2 skips (research-backed): no mem0/Letta/Zep-class agent-memory framework (mem0 production audit: 97.8% junk memories; Zep killed self-hosted CE; graph DBs die on local-first), no semantic cache, no vector retrieval — cat beats ANN at this scale.",
-    "source": "docs/plans/appbox-memory-and-payment.md",
+    "source": "docs/plans/arxa-memory-and-payment.md",
     "ts": "2026-07-30"
   },
   {
     "fact": "Self-learning = Fugu-style scorecard affinity + gate-triggered LESSONS.md + cache-first prompt assembly (static prefix, one Anthropic breakpoint, ~82% input-cost reduction) + exact-match response cache keyed (stage, model, prompt hash).",
-    "source": "docs/plans/appbox-memory-and-payment.md",
+    "source": "docs/plans/arxa-memory-and-payment.md",
     "ts": "2026-07-30"
   },
   {

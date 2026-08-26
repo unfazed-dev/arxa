@@ -1,5 +1,5 @@
 /// A view composes adaptive primitives from the kit's native family and binds
-/// the viewmodel's streams with [AppBoxKitStreamBuilder], calling the viewmodel's
+/// the viewmodel's streams with [ArxaKitStreamBuilder], calling the viewmodel's
 /// actions on user input. It never contains business logic — every decision
 /// lives in the viewmodel, and only the subtree bound to a changed stream
 /// redraws.
@@ -46,13 +46,13 @@
 library;
 
 import 'package:flutter/material.dart';
-import 'package:appbox_kit_motion/appbox_kit_motion.dart';
-import 'package:appbox_kit_showcase_app/ui/widgets/common/showcase_tabs_shared/widgets.dart';
-import 'package:appbox_kit_showcase_app/ui/widgets/showcase_notes_widgets/widgets.dart';
-import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
+import 'package:arxa_kit_motion/arxa_kit_motion.dart';
+import 'package:arxa_kit_showcase_app/ui/widgets/common/showcase_tabs_shared/widgets.dart';
+import 'package:arxa_kit_showcase_app/ui/widgets/showcase_notes_widgets/widgets.dart';
+import 'package:arxa_kit_ui_library/arxa_kit_ui_library.dart';
 
-import 'package:appbox_kit_showcase_app/enums/showcase_notes_enums/enums.dart';
-import 'package:appbox_kit_showcase_app/ui/views/showcase_notes_shell/showcase_notes_auth/showcase_notes_auth_viewmodel.dart';
+import 'package:arxa_kit_showcase_app/enums/showcase_notes_enums/enums.dart';
+import 'package:arxa_kit_showcase_app/ui/views/showcase_notes_shell/showcase_notes_auth/showcase_notes_auth_viewmodel.dart';
 
 class ShowcaseNotesAuthViewMobile
     extends ViewModelWidget<ShowcaseNotesAuthViewModel> {
@@ -76,10 +76,10 @@ class ShowcaseNotesAuthViewMobile
       bottom: false,
       // Auth is a single focused column, not a list, so the scope's stagger
       // steps across four blocks (hero → form → social → hint) rather than
-      // per-row. AppBoxKitWake is one-shot per scope, so the credential block's
+      // per-row. ArxaKitWake is one-shot per scope, so the credential block's
       // mode-toggle rebuild does NOT replay its entrance (no keys needed —
       // flutter_animate required ValueKeys for the same guarantee).
-      child: AppBoxKitMotionScope(
+      child: ArxaKitMotionScope(
         child: SingleChildScrollView(
           padding: EdgeInsets.fromLTRB(
               abxSize24,
@@ -91,36 +91,36 @@ class ShowcaseNotesAuthViewMobile
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              appBoxKitVerticalSpaceLarge,
+              arxaKitVerticalSpaceLarge,
               // (0) Brand mark + wordmark — the single signature hero. No
               // subtitle: the wordmark + the form is enough, a marketing tagline
               // here would be slop.
               Column(
                 children: [
-                  Icon(AppBoxKitGlyphs.notes.icon,
+                  Icon(ArxaKitGlyphs.notes.icon,
                       size: abxSize60, color: theme.colorScheme.primary),
-                  appBoxKitVerticalSpaceSmall,
+                  arxaKitVerticalSpaceSmall,
                   Text(
-                    'AppBox Notes',
+                    'Arxa Notes',
                     textAlign: TextAlign.center,
                     style: theme.textTheme.headlineSmall
                         ?.copyWith(fontWeight: FontWeight.w700),
                   ),
                 ],
               ).wake(order: 0),
-              appBoxKitVerticalSpaceLarge,
+              arxaKitVerticalSpaceLarge,
 
               // (1) Credential block: mode toggle + the form the mode selects.
-              // The mode binds via AppBoxKitStreamBuilder (streams-only — the VM
+              // The mode binds via ArxaKitStreamBuilder (streams-only — the VM
               // never calls notifyListeners). The form widgets and their
               // reusable field/error pieces come from the central
               // `showcase_notes_widgets` barrel.
-              AppBoxKitStreamBuilder<ShowcaseNotesAuthMode>(
+              ArxaKitStreamBuilder<ShowcaseNotesAuthMode>(
                 stream: viewModel.mode$,
                 builder: (context, mode) => Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    AppBoxKitNativeSegmentedControl(
+                    ArxaKitNativeSegmentedControl(
                       segments: [
                         for (final m in ShowcaseNotesAuthMode.values) m.label
                       ],
@@ -128,7 +128,7 @@ class ShowcaseNotesAuthViewMobile
                       onChanged: (i) =>
                           viewModel.setMode(ShowcaseNotesAuthMode.values[i]),
                     ),
-                    appBoxKitVerticalSpaceMedium,
+                    arxaKitVerticalSpaceMedium,
                     if (mode == ShowcaseNotesAuthMode.password)
                       ShowcaseNotesPasswordFormWidget(
                           viewModel: viewModel,
@@ -142,15 +142,15 @@ class ShowcaseNotesAuthViewMobile
               // (2) Alternatives — demoted below an "or" divider. Stacked full
               // width (not a cramped 3-across row) so each provider reads as a
               // peer secondary action, clearly below the prominent primary CTA.
-              // Busy binds via AppBoxKitStreamBuilder on the VM's busy$ (composed
-              // from the per-op AppBoxKitAction.state$ streams) — while any auth op
+              // Busy binds via ArxaKitStreamBuilder on the VM's busy$ (composed
+              // from the per-op ArxaKitAction.state$ streams) — while any auth op
               // runs, every button disables, same as the old global setBusy.
-              AppBoxKitStreamBuilder<bool>(
+              ArxaKitStreamBuilder<bool>(
                 stream: viewModel.busy$,
                 builder: (context, busy) => Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    appBoxKitVerticalSpaceLarge,
+                    arxaKitVerticalSpaceLarge,
                     Row(
                       children: [
                         Expanded(child: Divider(color: theme.dividerColor)),
@@ -164,32 +164,32 @@ class ShowcaseNotesAuthViewMobile
                         Expanded(child: Divider(color: theme.dividerColor)),
                       ],
                     ),
-                    appBoxKitVerticalSpaceMedium,
+                    arxaKitVerticalSpaceMedium,
                     SizedBox(
                       height: abxButtonHeightMedium,
-                      child: AppBoxKitNativeButton(
+                      child: ArxaKitNativeButton(
                         label: 'Continue with Google',
                         // glass (default) renders real Liquid Glass on iOS 26 and
                         // ButtonM3E on Android — the native peer to the primary CTA.
-                        style: AppBoxKitButtonStyle.glass,
+                        style: ArxaKitButtonStyle.glass,
                         onPressed: busy ? null : viewModel.google,
                       ),
                     ),
-                    appBoxKitVerticalSpaceSmall,
+                    arxaKitVerticalSpaceSmall,
                     SizedBox(
                       height: abxButtonHeightMedium,
-                      child: AppBoxKitNativeButton(
+                      child: ArxaKitNativeButton(
                         label: 'Continue with Apple',
-                        style: AppBoxKitButtonStyle.glass,
+                        style: ArxaKitButtonStyle.glass,
                         onPressed: busy ? null : viewModel.apple,
                       ),
                     ),
-                    appBoxKitVerticalSpaceSmall,
+                    arxaKitVerticalSpaceSmall,
                     SizedBox(
                       height: abxButtonHeightMedium,
-                      child: AppBoxKitNativeButton(
+                      child: ArxaKitNativeButton(
                         label: 'Continue as Guest',
-                        style: AppBoxKitButtonStyle.glass,
+                        style: ArxaKitButtonStyle.glass,
                         onPressed: busy ? null : viewModel.anonymous,
                       ),
                     ),
@@ -199,15 +199,15 @@ class ShowcaseNotesAuthViewMobile
 
               // (3) Seed hint — stays in glass at the tail; it's reference copy,
               // not action, so it earns the card chrome.
-              appBoxKitVerticalSpaceLarge,
-              AppBoxKitGlassCard(
+              arxaKitVerticalSpaceLarge,
+              ArxaKitGlassCard(
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Icon(AppBoxKitGlyphs.info.icon,
+                    Icon(ArxaKitGlyphs.info.icon,
                         size: abxSize18,
                         color: theme.colorScheme.onSurfaceVariant),
-                    appBoxKitHorizontalSpaceSmall,
+                    arxaKitHorizontalSpaceSmall,
                     Expanded(
                       child: Text(
                         'Seed backend: any password works. Try evan@seed.local '

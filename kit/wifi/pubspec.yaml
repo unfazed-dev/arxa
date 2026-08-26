@@ -1,4 +1,4 @@
-name: appbox_kit_wifi
+name: arxa_kit_wifi
 description: Plugin-neutral port for observing Wi-Fi connectivity state and escorting the user to Wi-Fi settings — live OS state stream, best-effort network info, and a capability gate so UIs can label controls direct vs escorted.
 version: 0.1.0
 publish_to: 'none'
@@ -9,7 +9,7 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  # Live OS connectivity stream backing the priority Stream<AppBoxKitWifiState>
+  # Live OS connectivity stream backing the priority Stream<ArxaKitWifiState>
   # (wraps Android ConnectivityManager / iOS NWPathMonitor). network_info_plus
   # has no stream, so connectivity_plus is the source of the "real OS stream".
   # Latest verified on pub.dev 2026-07-14: 7.2.0.

@@ -11,14 +11,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:appbox_kit_data/appbox_kit_data.dart';
-import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
-import 'package:appbox_kit_showcase_app/app/app_data.dart';
+import 'package:arxa_kit_data/arxa_kit_data.dart';
+import 'package:arxa_kit_ui_library/arxa_kit_ui_library.dart';
+import 'package:arxa_kit_showcase_app/app/app_data.dart';
 
-import 'package:appbox_kit_showcase_app/ui/views/showcase_home_shell/showcase_home_shell_view.dart';
-import 'package:appbox_kit_showcase_app/ui/views/showcase_search_shell/showcase_search_shell_view.dart';
-import 'package:appbox_kit_showcase_app/ui/views/showcase_profile_shell/showcase_profile_shell_view.dart';
-import 'package:appbox_kit_showcase_app/ui/views/showcase_notes_shell/showcase_notes_shell_view.dart';
+import 'package:arxa_kit_showcase_app/ui/views/showcase_home_shell/showcase_home_shell_view.dart';
+import 'package:arxa_kit_showcase_app/ui/views/showcase_search_shell/showcase_search_shell_view.dart';
+import 'package:arxa_kit_showcase_app/ui/views/showcase_profile_shell/showcase_profile_shell_view.dart';
+import 'package:arxa_kit_showcase_app/ui/views/showcase_notes_shell/showcase_notes_shell_view.dart';
 
 import 'helpers.dart';
 
@@ -51,7 +51,7 @@ int totalElements(WidgetTester tester) {
 /// Widget type names whose build() reaches a real `UiKitView(`/`AppKitView(`
 /// constructor. Derived by grepping constructor call sites in
 /// kit/ui_library/vendor/cupertino_native_better/lib/components/ — see the
-/// research doc's mapping table. `AppBoxKitNative*` is a NAMING CONVENTION and
+/// research doc's mapping table. `ArxaKitNative*` is a NAMING CONVENTION and
 /// is deliberately NOT used as the marker.
 const platformViewBackedTypes = <String>{
   'CNTextField',
@@ -69,7 +69,7 @@ const platformViewBackedTypes = <String>{
   'CNGlassButtonGroup',
   // NOT `CNLiquidGlassContainer` — no such class exists. The vendor names it
   // `LiquidGlassContainer` (liquid_glass_container.dart:17), and it is what
-  // `AppBoxKitGlassCard` builds on the iOS 26 tier OUTSIDE Scrollables
+  // `ArxaKitGlassCard` builds on the iOS 26 tier OUTSIDE Scrollables
   // (in-scroll cards demote to the frosted tier — ladder step 1). The old typo'd name
   // matched nothing, so EVERY glass card was invisible to this set and the
   // first run of M2/M5 under-counted platform views to zero. Verified: these
@@ -112,8 +112,8 @@ void main() {
     print('[M2] KeepAliveTab elements mounted = '
         '${census['KeepAliveTab'] ?? 0}');
     // ignore: avoid_print
-    print('[M2] AppBoxKitAnimatedTabStack elements = '
-        '${census['AppBoxKitAnimatedTabStack'] ?? 0}');
+    print('[M2] ArxaKitAnimatedTabStack elements = '
+        '${census['ArxaKitAnimatedTabStack'] ?? 0}');
     // ignore: avoid_print
     print('[M2] NestedRouter elements = ${census['NestedRouter'] ?? 0}');
     // ignore: avoid_print
@@ -138,11 +138,11 @@ void main() {
     }
     final total = pv.values.fold<int>(0, (a, b) => a + b);
 
-    // Everything named AppBoxKitNative*, for contrast — this is the count the
+    // Everything named ArxaKitNative*, for contrast — this is the count the
     // earlier audit reported, and it is NOT the platform-view count.
     final namedNative = <String, int>{};
     for (final entry in census.entries) {
-      if (entry.key.startsWith('AppBoxKitNative')) {
+      if (entry.key.startsWith('ArxaKitNative')) {
         namedNative[entry.key] = entry.value;
       }
     }
@@ -152,7 +152,7 @@ void main() {
     // ignore: avoid_print
     print('[M1] TOTAL platform views on boot path = $total');
     // ignore: avoid_print
-    print('[M1] AppBoxKitNative*-NAMED widgets (naming convention, NOT the '
+    print('[M1] ArxaKitNative*-NAMED widgets (naming convention, NOT the '
         'platform-view count): $namedNative');
 
     // A count is not a cost: a CNIcon nested INSIDE a CNButton is not an
@@ -176,7 +176,7 @@ void main() {
             .map((a) => a.widget.runtimeType.toString())
             .firstWhere(
               (n) =>
-                  n.startsWith('AppBoxKitNative') || n.startsWith('Showcase'),
+                  n.startsWith('ArxaKitNative') || n.startsWith('Showcase'),
               orElse: () => '<none>',
             );
         if (pvAncestors.isEmpty) {
@@ -205,15 +205,15 @@ void main() {
   // ---------------------------------------------------------------------
   // M1b — the SAME census with the tier gates forced to iOS 26, which is what
   // decides widget SELECTION on the user's device. Without this the census is
-  // a mixture: AppBoxKitNativeIconButton falls through to CNButton on any
-  // non-Android host (so it appears), but AppBoxKitNativeTabBar /
+  // a mixture: ArxaKitNativeIconButton falls through to CNButton on any
+  // non-Android host (so it appears), but ArxaKitNativeTabBar /
   // SegmentedControl / SplitButton gate on
-  // `AppBoxKitPlatform.supportsLiquidGlass` (= isIOS && iosMajor >= 26) and so
+  // `ArxaKitPlatform.supportsLiquidGlass` (= isIOS && iosMajor >= 26) and so
   // take the Flutter fallback headless and never appear.
   // ---------------------------------------------------------------------
   testWidgets('M1b boot: platform-view census with tier gates forced to iOS 26',
       (tester) async {
-    AppBoxKitPlatform.override = const AppBoxKitPlatformOverride(
+    ArxaKitPlatform.override = const ArxaKitPlatformOverride(
       isIOS: true,
       isAndroid: false,
       iosMajor: 26,
@@ -222,7 +222,7 @@ void main() {
     debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
     // Reset INSIDE the body, not addTearDown: flutter_test verifies the
     // foundation debug vars are unset before tearDowns run.
-    addTearDown(AppBoxKitPlatform.reset);
+    addTearDown(ArxaKitPlatform.reset);
 
     await bootShell(tester);
 
@@ -279,7 +279,7 @@ void main() {
   }, timeout: const Timeout(Duration(minutes: 2)));
 
   // ---------------------------------------------------------------------
-  // M3a — per-frame rebuild propagation through AppBoxKitScrollEdgeEffect.
+  // M3a — per-frame rebuild propagation through ArxaKitScrollEdgeEffect.
   //
   // The suspect calls setState from a ScrollPosition listener. The question is
   // NOT how many setStates fire; it is whether the descendant rebuilds. The
@@ -306,7 +306,7 @@ void main() {
                 SizedBox(
                   height: 120,
                   child: i == 0
-                      ? AppBoxKitScrollEdgeEffect(
+                      ? ArxaKitScrollEdgeEffect(
                           // Identical instance every rebuild — the real usage.
                           child: _BuildCounter(counter: childBuilds),
                         )
@@ -339,7 +339,7 @@ void main() {
       // A live blur/saveLayer exists whenever the effect's Opacity is < 1.
       for (final e in find
           .descendant(
-            of: find.byType(AppBoxKitScrollEdgeEffect),
+            of: find.byType(ArxaKitScrollEdgeEffect),
             matching: find.byType(Opacity),
           )
           .evaluate()) {
@@ -359,7 +359,7 @@ void main() {
     // ignore: avoid_print
     print('[M3a] scroll steps = $frames');
     // ignore: avoid_print
-    print('[M3a] child rebuilds UNDER AppBoxKitScrollEdgeEffect = $childDelta');
+    print('[M3a] child rebuilds UNDER ArxaKitScrollEdgeEffect = $childDelta');
     // ignore: avoid_print
     print('[M3a] control rebuilds (inline-constructed child) = $controlDelta');
     // ignore: avoid_print
@@ -405,7 +405,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 16));
       for (final e in find
           .descendant(
-            of: find.byType(AppBoxKitScrollEdgeEffect),
+            of: find.byType(ArxaKitScrollEdgeEffect),
             matching: find.byType(Opacity),
           )
           .evaluate()) {
@@ -427,8 +427,8 @@ void main() {
     final afterTotal = totalElements(tester);
 
     // ignore: avoid_print
-    print('[M3b] AppBoxKitScrollEdgeEffect instances on home = '
-        '${before['AppBoxKitScrollEdgeEffect'] ?? 0}');
+    print('[M3b] ArxaKitScrollEdgeEffect instances on home = '
+        '${before['ArxaKitScrollEdgeEffect'] ?? 0}');
     // ignore: avoid_print
     print('[M3b] frames (of 200) with a LIVE blur/saveLayer = '
         '$framesWithLiveBlur');
@@ -449,9 +449,9 @@ void main() {
       (tester) async {
     await bootShell(tester);
 
-    final tabBar = find.byType(AppBoxKitNativeTabBar);
+    final tabBar = find.byType(ArxaKitNativeTabBar);
     // ignore: avoid_print
-    print('[M4] AppBoxKitNativeTabBar found = ${tabBar.evaluate().length}');
+    print('[M4] ArxaKitNativeTabBar found = ${tabBar.evaluate().length}');
 
     final census0 = elementCensus(tester);
     // ignore: avoid_print
@@ -475,13 +475,13 @@ void main() {
     // Device tier selection — M1b showed the tiers change the tree
     // structurally (1596 -> 756 elements), so the headless-default tree is the
     // wrong one to ask "what is under the blur" about.
-    AppBoxKitPlatform.override = const AppBoxKitPlatformOverride(
+    ArxaKitPlatform.override = const ArxaKitPlatformOverride(
       isIOS: true,
       isAndroid: false,
       iosMajor: 26,
       targetPlatform: TargetPlatform.iOS,
     );
-    addTearDown(AppBoxKitPlatform.reset);
+    addTearDown(ArxaKitPlatform.reset);
     debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
 
     final router = await bootShell(tester);
@@ -497,23 +497,23 @@ void main() {
     await settle(tester);
 
     final census = elementCensus(tester);
-    final effects = census['AppBoxKitScrollEdgeEffect'] ?? 0;
+    final effects = census['ArxaKitScrollEdgeEffect'] ?? 0;
     // NOTE: this is a WHOLE-TREE census — it includes the kept-alive home tab
     // sitting offstage, so it must NOT be read as "notes' own effect count".
     // The decomposition below is the one that means something.
     // ignore: avoid_print
     print(
-        '[M5] AppBoxKitScrollEdgeEffect instances mounted app-wide = $effects');
+        '[M5] ArxaKitScrollEdgeEffect instances mounted app-wide = $effects');
     // ignore: avoid_print
     print('[M5] total elements on notes folder = ${totalElements(tester)}');
 
     // In-situ coverage: every item the sliver container builds must carry
     // exactly one wrapper per configured edge (this list configures both), on
-    // the REAL list rather than a synthetic harness. `AppBoxKitListSection`
+    // the REAL list rather than a synthetic harness. `ArxaKitListSection`
     // appears once per group inside the item builder, so it counts the items.
     int underList(String type) {
       final root = find
-          .byType(AppBoxKitEdgeAwareSliverList, skipOffstage: false)
+          .byType(ArxaKitEdgeAwareSliverList, skipOffstage: false)
           .evaluate();
       if (root.isEmpty) return -1;
       var n = 0;
@@ -526,8 +526,8 @@ void main() {
       return n;
     }
 
-    final groupsBuilt = underList('AppBoxKitListSection');
-    final effectsUnderList = underList('AppBoxKitScrollEdgeEffect');
+    final groupsBuilt = underList('ArxaKitListSection');
+    final effectsUnderList = underList('ArxaKitScrollEdgeEffect');
     // ignore: avoid_print
     print('[M5] notes folder list: items(ListSection)=$groupsBuilt '
         'effects=$effectsUnderList (expect 2 per item: top + bottom)');
@@ -581,7 +581,7 @@ void main() {
       if (filters > maxFilterLayers) maxFilterLayers = filters;
       var live = 0;
       var pvThisFrame = 0;
-      for (final effect in find.byType(AppBoxKitScrollEdgeEffect).evaluate()) {
+      for (final effect in find.byType(ArxaKitScrollEdgeEffect).evaluate()) {
         var isLive = false;
         void findOpacity(Element e) {
           final w = e.widget;
@@ -674,14 +674,14 @@ void main() {
     final samples = <int>[];
     for (var i = 0; i < 3; i++) {
       // Full teardown: resetForTesting alone leaves the GetIt singletons
-      // AppBoxKitData.initialize registers, so a second initialize throws.
+      // ArxaKitData.initialize registers, so a second initialize throws.
       await teardownShowcase();
       await registerKitTestServices();
       final sw = Stopwatch()..start();
       await AppData.initialize(
-        config: const AppBoxKitDataConfig(
-          backend: AppBoxKitDataBackend.seed,
-          auth: AppBoxKitAuthConfig(fakeUsersAsset: AppData.fakeUsersAsset),
+        config: const ArxaKitDataConfig(
+          backend: ArxaKitDataBackend.seed,
+          auth: ArxaKitAuthConfig(fakeUsersAsset: AppData.fakeUsersAsset),
         ),
         assetReader: DiskAssetReader(),
       );

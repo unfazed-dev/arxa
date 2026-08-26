@@ -103,7 +103,7 @@ void main() {
     testWidgets('CNButton label+SF-symbol renders headless (the flows wall)', (
       tester,
     ) async {
-      // End-to-end shape of the original failure: AppBoxKitNativeButton(label +
+      // End-to-end shape of the original failure: ArxaKitNativeButton(label +
       // sfSymbol) on the Material fallback embeds a CNIcon, which pre-patch
       // crashed the whole button with MissingPluginException in tests.
       await withPlatform(TargetPlatform.android, () async {

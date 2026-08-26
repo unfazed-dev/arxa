@@ -5,9 +5,9 @@
 ///
 /// This is the user interface for the composer demo's live thread — the
 /// message list the input bar appends to, plus the contact's typing
-/// indicator. Bubbles compose on [AppBoxKitGlassCard] (content-surface
+/// indicator. Bubbles compose on [ArxaKitGlassCard] (content-surface
 /// rule); the voice bubble plays back its fake recording with a
-/// timer-driven [AppBoxKitNativeProgress].
+/// timer-driven [ArxaKitNativeProgress].
 ///
 /// Requirements:
 /// 1. [Input bar] — browse-the-components-gallery
@@ -23,8 +23,8 @@ library;
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
-import 'package:appbox_kit_showcase_app/data/models/showcase_composer_models/models.dart';
+import 'package:arxa_kit_ui_library/arxa_kit_ui_library.dart';
+import 'package:arxa_kit_showcase_app/data/models/showcase_composer_models/models.dart';
 
 class ShowcaseComponentsConversationWidget extends StatelessWidget {
   const ShowcaseComponentsConversationWidget({
@@ -43,19 +43,19 @@ class ShowcaseComponentsConversationWidget extends StatelessWidget {
       '${sentAt.hour}:${sentAt.minute.toString().padLeft(2, '0')}';
 
   IconData _iconFor(ShowcaseComposerAttachmentKind kind) => switch (kind) {
-        ShowcaseComposerAttachmentKind.camera => AppBoxKitGlyphs.camera.icon,
-        ShowcaseComposerAttachmentKind.photo => AppBoxKitGlyphs.photo.icon,
-        ShowcaseComposerAttachmentKind.file => AppBoxKitGlyphs.folder.icon,
+        ShowcaseComposerAttachmentKind.camera => ArxaKitGlyphs.camera.icon,
+        ShowcaseComposerAttachmentKind.photo => ArxaKitGlyphs.photo.icon,
+        ShowcaseComposerAttachmentKind.file => ArxaKitGlyphs.folder.icon,
         ShowcaseComposerAttachmentKind.location =>
-          AppBoxKitGlyphs.locationPin.icon,
+          ArxaKitGlyphs.locationPin.icon,
       };
 
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    return AppBoxKitStreamBuilder<List<ShowcaseComposerMessageModel>>(
+    return ArxaKitStreamBuilder<List<ShowcaseComposerMessageModel>>(
       stream: messages,
-      builder: (_, list) => AppBoxKitStreamBuilder<bool>(
+      builder: (_, list) => ArxaKitStreamBuilder<bool>(
         stream: typing,
         builder: (_, isTyping) => Column(
           mainAxisSize: MainAxisSize.min,
@@ -70,7 +70,7 @@ class ShowcaseComponentsConversationWidget extends StatelessWidget {
                       : Alignment.centerLeft,
                   child: ConstrainedBox(
                     constraints: const BoxConstraints(maxWidth: 300),
-                    child: AppBoxKitGlassCard(
+                    child: ArxaKitGlassCard(
                       padding: const EdgeInsets.all(12),
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
@@ -90,7 +90,7 @@ class ShowcaseComponentsConversationWidget extends StatelessWidget {
                                 children: [
                                   Icon(_iconFor(attachment.kind),
                                       size: 20, color: scheme.primary),
-                                  appBoxKitHorizontalSpaceSmall,
+                                  arxaKitHorizontalSpaceSmall,
                                   Flexible(
                                     child: Column(
                                       mainAxisSize: MainAxisSize.min,
@@ -118,7 +118,7 @@ class ShowcaseComponentsConversationWidget extends StatelessWidget {
                               _VoiceBubbleBody(
                                   durationSeconds: durationSeconds),
                           },
-                          appBoxKitVerticalSpaceTiny,
+                          arxaKitVerticalSpaceTiny,
                           Text(_timeOf(message.sentAt),
                               style: TextStyle(
                                   color: scheme.onSurfaceVariant,
@@ -167,7 +167,7 @@ class _TypingIndicatorBubbleState extends State<_TypingIndicatorBubble>
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    return AppBoxKitGlassCard(
+    return ArxaKitGlassCard(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       // The dots pulse every frame for as long as the bubble is mounted:
       // confine the raster invalidation to the bubble so the conversation
@@ -179,7 +179,7 @@ class _TypingIndicatorBubbleState extends State<_TypingIndicatorBubble>
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              appBoxKitHorizontalSpaceXSmall,
+              arxaKitHorizontalSpaceXSmall,
               Text('typing…',
                   style:
                       TextStyle(color: scheme.onSurfaceVariant, fontSize: 12)),
@@ -275,22 +275,22 @@ class _VoiceBubbleBodyState extends State<_VoiceBubbleBody> {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        AppBoxKitNativeIconButton(
-          glyph: _playing ? AppBoxKitGlyphs.pause : AppBoxKitGlyphs.play,
+        ArxaKitNativeIconButton(
+          glyph: _playing ? ArxaKitGlyphs.pause : ArxaKitGlyphs.play,
           onPressed: _toggle,
         ),
-        appBoxKitHorizontalSpaceSmall,
+        arxaKitHorizontalSpaceSmall,
         Expanded(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              AppBoxKitNativeProgress.linear(
+              ArxaKitNativeProgress.linear(
                 value: widget.durationSeconds == 0
                     ? 0
                     : _elapsed / widget.durationSeconds,
               ),
-              appBoxKitVerticalSpaceTiny,
+              arxaKitVerticalSpaceTiny,
               Text(
                 '$_label · voice note',
                 style: TextStyle(color: scheme.onSurfaceVariant, fontSize: 12),

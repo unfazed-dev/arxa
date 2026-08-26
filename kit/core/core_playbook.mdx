@@ -1,15 +1,15 @@
 <Callout id="header" tone="info">
 
-# appbox_kit_core — Per-Package Playbook
+# arxa_kit_core — Per-Package Playbook
 
 
-`appbox_kit_core` v**0.1.0** · `publish_to: 'none'` · status: **active**
+`arxa_kit_core` v**0.1.0** · `publish_to: 'none'` · status: **active**
 
 
 **Role (one line):** Reusable Stacked MVVM toolkit — KitAction fluent operation API, reactive services (error/haptic/theme/navigation), overlay & selectable systems, formatters, and design-token constants for Flutter apps built on the Stacked architecture.
 
 
-**Scope of this document:** lets a human OR an LLM use, wire, and extend `appbox_kit_core` **without reading its source**. The public surface below was extracted from the barrel; README content is folded into the narrative sections.
+**Scope of this document:** lets a human OR an LLM use, wire, and extend `arxa_kit_core` **without reading its source**. The public surface below was extracted from the barrel; README content is folded into the narrative sections.
 
 
 ## Table of contents
@@ -27,7 +27,7 @@ Reusable Stacked MVVM toolkit — KitAction fluent operation API, reactive servi
 
 ### Public surface
 
-Exported from `lib/appbox_kit_core.dart`:
+Exported from `lib/arxa_kit_core.dart`:
 
 <Table id="core-api" columns={["Symbol", "Kind", "Defined in"]} rows={[["KitPlatform", "class", "platform/kit_platform.dart"], ["KitPlatformOverride", "class", "platform/kit_platform.dart"], ["KitTier", "enum", "platform/kit_platform.dart"], ["KitAppCommonEnumSafeArea", "enum", "enums/kit_app_common_enum.dart"], ["KitAppCommonDuration", "enum", "enums/kit_app_common_enum.dart"], ["KitBlurEffect", "enum", "enums/kit_app_common_enum.dart"], ["KitIconPosition", "enum", "enums/kit_icon_position.dart"], ["KitTimeUtils", "class", "utils/kit_time_utils.dart"], ["FillOnHover", "class", "utils/mouse_transforms/fill_on_hover.dart"], ["OutlineOnHover", "class", "utils/mouse_transforms/outline_on_hover.dart"], ["ScaleOnHover", "class", "utils/mouse_transforms/scale_on_hover.dart"], ["TranslateOnHover", "class", "utils/mouse_transforms/translate_on_hover.dart"], ["KitEmailInputFormatter", "class", "utils/formatters/email_input_formatter.dart"], ["KitMobileAusInputFormatter", "class", "utils/formatters/mobile_aus_input_formatter.dart"], ["KitMobileNumberInputFormatter", "class", "utils/formatters/mobile_number_input_formatter.dart"], ["KitOtpCodeInputFormatter", "class", "utils/formatters/otp_code_input_formatter.dart"], ["SelectablePosition", "enum", "extensions/kit_selectable_extension.dart"], ["KitSelectableOptions", "class", "extensions/kit_selectable_extension.dart"], ["KitSelectableService", "class", "extensions/kit_selectable_extension.dart"], ["KitColors", "class", "common/kit_colors.dart"], ["KitDarkColors", "class", "common/kit_colors.dart"], ["KitGlyph", "class", "common/kit_glyphs.dart"], ["KitGlyphs", "class", "common/kit_glyphs.dart"], ["KitLucideGlyphs", "class", "common/kit_glyphs_lucide.dart"], ["KitThemeService", "class", "services/theme/kit_theme_service.dart"], ["ErrorType", "enum", "services/error/kit_error_service.dart"], ["ErrorSeverity", "enum", "services/error/kit_error_service.dart"], ["KitErrorService", "class", "services/error/kit_error_service.dart"]]} />
 
@@ -38,7 +38,7 @@ Scripts and call-counts — tests never touch platform channels.
 
 ### Usage & wiring
 
-Add the package as a path dependency (`appbox_kit_core: path: ../core`), then `import 'package:appbox_kit_core/appbox_kit_core.dart';` for the whole public surface. The kit resolves services through `StackedLocator.instance` (`lib/kit_locator.dart`) — the same singleton your app's generated `locator` uses — so register `KitErrorService` and `KitThemeService` in your `@StackedApp` services list and existing `locator<T>()` call sites work unchanged. For theming, hand `kitLightTheme()` / `kitDarkTheme()` to `MaterialApp` (pass `accent` to override the brand primary), then drive mode changes through `locator<KitThemeService>()`. A minimal touch: `KitPlatform.isIOS`, `KitColors.accent`, or `KitTimeUtils.getPersonalizedGreeting(name)`.
+Add the package as a path dependency (`arxa_kit_core: path: ../core`), then `import 'package:arxa_kit_core/arxa_kit_core.dart';` for the whole public surface. The kit resolves services through `StackedLocator.instance` (`lib/kit_locator.dart`) — the same singleton your app's generated `locator` uses — so register `KitErrorService` and `KitThemeService` in your `@StackedApp` services list and existing `locator<T>()` call sites work unchanged. For theming, hand `kitLightTheme()` / `kitDarkTheme()` to `MaterialApp` (pass `accent` to override the brand primary), then drive mode changes through `locator<KitThemeService>()`. A minimal touch: `KitPlatform.isIOS`, `KitColors.accent`, or `KitTimeUtils.getPersonalizedGreeting(name)`.
 
 
 ### Integration map
@@ -86,20 +86,20 @@ Official docs and tooling:
 - [stacked_cli (pub.dev)](https://pub.dev/packages/stacked_cli) — Scaffolding CLI for new Stacked apps/views/services.
 - [Flutter — official documentation](https://docs.flutter.dev) — Framework docs, platform integration, performance.
 - [Dart — official documentation](https://dart.dev) — Language tour, async, package ecosystem.
-- [Dart & Flutter MCP server (official)](https://dart.dev/tools/mcp-server) — Ships with the Dart SDK (dart mcp-server). Exposes analyzer diagnostics, pub, tests, and live Flutter app introspection via DTD. Wired in appbox_kit/.mcp.json.
+- [Dart & Flutter MCP server (official)](https://dart.dev/tools/mcp-server) — Ships with the Dart SDK (dart mcp-server). Exposes analyzer diagnostics, pub, tests, and live Flutter app introspection via DTD. Wired in arxa_kit/.mcp.json.
 
 Kit-specific:
 
 - [stacked_services (pub.dev)](https://pub.dev/packages/stacked_services) — Navigation/dialog/snackbar services. Pinned ^1.6.0.
 - [Flutter API reference](https://api.flutter.dev) — Full widget/framework API. The source of truth for Flutter classes.
-- [get (pub.dev)](https://pub.dev/packages/get) — get — backing dependency of appbox_kit_core.
-- [rxdart (pub.dev)](https://pub.dev/packages/rxdart) — rxdart — backing dependency of appbox_kit_core.
-- [talker_flutter (pub.dev)](https://pub.dev/packages/talker_flutter) — talker_flutter — backing dependency of appbox_kit_core.
-- [flutter_animate (pub.dev)](https://pub.dev/packages/flutter_animate) — flutter_animate — backing dependency of appbox_kit_core.
-- [shared_preferences (pub.dev)](https://pub.dev/packages/shared_preferences) — shared_preferences — backing dependency of appbox_kit_core.
-- [cupertino_native_better (pub.dev)](https://pub.dev/packages/cupertino_native_better) — cupertino_native_better — backing dependency of appbox_kit_core.
-- [lucide_flutter (pub.dev)](https://pub.dev/packages/lucide_flutter) — lucide_flutter — backing dependency of appbox_kit_core.
-- [m3e_collection (pub.dev)](https://pub.dev/packages/m3e_collection) — m3e_collection — backing dependency of appbox_kit_core.
+- [get (pub.dev)](https://pub.dev/packages/get) — get — backing dependency of arxa_kit_core.
+- [rxdart (pub.dev)](https://pub.dev/packages/rxdart) — rxdart — backing dependency of arxa_kit_core.
+- [talker_flutter (pub.dev)](https://pub.dev/packages/talker_flutter) — talker_flutter — backing dependency of arxa_kit_core.
+- [flutter_animate (pub.dev)](https://pub.dev/packages/flutter_animate) — flutter_animate — backing dependency of arxa_kit_core.
+- [shared_preferences (pub.dev)](https://pub.dev/packages/shared_preferences) — shared_preferences — backing dependency of arxa_kit_core.
+- [cupertino_native_better (pub.dev)](https://pub.dev/packages/cupertino_native_better) — cupertino_native_better — backing dependency of arxa_kit_core.
+- [lucide_flutter (pub.dev)](https://pub.dev/packages/lucide_flutter) — lucide_flutter — backing dependency of arxa_kit_core.
+- [m3e_collection (pub.dev)](https://pub.dev/packages/m3e_collection) — m3e_collection — backing dependency of arxa_kit_core.
 <!-- kb:end -->
 
 <QuestionForm id="open-questions" questions={[

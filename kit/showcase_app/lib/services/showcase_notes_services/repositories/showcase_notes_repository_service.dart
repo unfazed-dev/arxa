@@ -1,6 +1,6 @@
 /// The notes repository — the app-level persistence seam over the kit's
-/// generic `AppBoxKitRepository<T>`. It owns query construction
-/// (AppBoxKitQuery — filters, ordering, direction) and id minting, and
+/// generic `ArxaKitRepository<T>`. It owns query construction
+/// (ArxaKitQuery — filters, ordering, direction) and id minting, and
 /// exposes raw single-table writes. It never aggregates or derives: counts,
 /// sectioning, and cross-table composition are facade work. Watch streams
 /// pass through from the kit; the facade wraps every call.
@@ -21,7 +21,7 @@
 /// 5. [Move a note into a folder] — notes.folders.move-a-note-into-a-folder
 /// A note's folder assignment is changed through a narrow patch write.
 /// 6. [Query construction]
-/// Filters, ordering, and direction are assembled into AppBoxKitQuery objects.
+/// Filters, ordering, and direction are assembled into ArxaKitQuery objects.
 /// 7. [Id minting]
 /// New notes and folders get a UUID v4 id before they reach the kit.
 /// 8. [Patch writes]
@@ -40,7 +40,7 @@
 ///      ACT ▼          ▲ STRM
 ///      [1-6]          [1-2]
 ///    ┌────────────────────────┐
-///    │ AppBoxKitRepository<T> │
+///    │ ArxaKitRepository<T> │
 ///    └────────────────────────┘
 ///    ════════ abxAction ════════
 ///
@@ -55,30 +55,30 @@
 /// History: git log --follow -- kit/showcase_app/lib/services/showcase_notes_services/repositories/showcase_notes_repository_service.dart
 library;
 
-import 'package:appbox_kit_data/appbox_kit_data.dart';
-import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart'
-    show appBoxKitLocator;
+import 'package:arxa_kit_data/arxa_kit_data.dart';
+import 'package:arxa_kit_ui_library/arxa_kit_ui_library.dart'
+    show arxaKitLocator;
 import 'package:uuid/uuid.dart';
 
-import 'package:appbox_kit_showcase_app/data/models/showcase_notes_models/showcase_note_model.dart';
-import 'package:appbox_kit_showcase_app/data/models/showcase_notes_models/showcase_note_folder_model.dart';
+import 'package:arxa_kit_showcase_app/data/models/showcase_notes_models/showcase_note_model.dart';
+import 'package:arxa_kit_showcase_app/data/models/showcase_notes_models/showcase_note_folder_model.dart';
 
 class ShowcaseNotesRepositoryService {
   // ── Setup ──────────────────────────────────────────────────────────────────
 
   static const _uuid = Uuid();
 
-  AppBoxKitRepository<ShowcaseNoteModel> get _notes =>
-      appBoxKitLocator<AppBoxKitRepository<ShowcaseNoteModel>>();
-  AppBoxKitRepository<ShowcaseNoteFolderModel> get _folders =>
-      appBoxKitLocator<AppBoxKitRepository<ShowcaseNoteFolderModel>>();
+  ArxaKitRepository<ShowcaseNoteModel> get _notes =>
+      arxaKitLocator<ArxaKitRepository<ShowcaseNoteModel>>();
+  ArxaKitRepository<ShowcaseNoteFolderModel> get _folders =>
+      arxaKitLocator<ArxaKitRepository<ShowcaseNoteFolderModel>>();
 
   // ── Reads ──────────────────────────────────────────────────────────────────
 
   /// [1. Read notes and folders] The owner's folders, in display order.
   Stream<List<ShowcaseNoteFolderModel>> foldersOf(String owner) =>
-      _folders.watchAll(AppBoxKitQuery(
-        filters: [AppBoxKitFilter.eq('owner', owner)],
+      _folders.watchAll(ArxaKitQuery(
+        filters: [ArxaKitFilter.eq('owner', owner)],
         orderBy: 'sort_order',
       ));
 
@@ -86,31 +86,31 @@ class ShowcaseNotesRepositoryService {
   /// newest-edited first — the single upstream the facade's derived streams map
   /// over.
   Stream<List<ShowcaseNoteModel>> allNotesOf(String owner) =>
-      _notes.watchAll(AppBoxKitQuery(
-        filters: [AppBoxKitFilter.eq('owner', owner)],
+      _notes.watchAll(ArxaKitQuery(
+        filters: [ArxaKitFilter.eq('owner', owner)],
         orderBy: 'updated_at',
         descending: true,
       ));
 
   /// [1. Read notes and folders] Every owner's folders (admin visibility — deliberately unfiltered).
   Stream<List<ShowcaseNoteFolderModel>> allFolders() =>
-      _folders.watchAll(const AppBoxKitQuery(orderBy: 'created_at'));
+      _folders.watchAll(const ArxaKitQuery(orderBy: 'created_at'));
 
   /// [1. Read notes and folders] Every owner's notes (admin visibility — deliberately unfiltered).
   Stream<List<ShowcaseNoteModel>> allNotes() =>
-      _notes.watchAll(const AppBoxKitQuery());
+      _notes.watchAll(const ArxaKitQuery());
 
   /// [1. Read notes and folders] Live watch on a single note by id.
   Stream<ShowcaseNoteModel?> watchNote(String id) => _notes.watchById(id);
 
   /// [1. Read notes and folders] One-shot fetch of the owner's notes (for multi-step mutations).
   Future<List<ShowcaseNoteModel>> notesOf(String owner) => _notes
-      .getAll(AppBoxKitQuery(filters: [AppBoxKitFilter.eq('owner', owner)]));
+      .getAll(ArxaKitQuery(filters: [ArxaKitFilter.eq('owner', owner)]));
 
   /// [1. Read notes and folders] One-shot fetch of a folder's notes (for cascade delete).
   Future<List<ShowcaseNoteModel>> notesInFolder(String folderId) =>
       _notes.getAll(
-          AppBoxKitQuery(filters: [AppBoxKitFilter.eq('folder_id', folderId)]));
+          ArxaKitQuery(filters: [ArxaKitFilter.eq('folder_id', folderId)]));
 
   // ── Writes ─────────────────────────────────────────────────────────────────
 

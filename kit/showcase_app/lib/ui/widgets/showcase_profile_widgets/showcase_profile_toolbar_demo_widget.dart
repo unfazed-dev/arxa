@@ -17,32 +17,32 @@
 library;
 
 import 'package:flutter/material.dart';
-import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
+import 'package:arxa_kit_ui_library/arxa_kit_ui_library.dart';
 
 class ShowcaseProfileToolbarDemoWidget extends StatelessWidget {
   const ShowcaseProfileToolbarDemoWidget({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return AppBoxKitNativeToolbar(
+    return ArxaKitNativeToolbar(
       actions: [
-        AppBoxKitToolbarAction(
+        ArxaKitToolbarAction(
             label: 'Share',
-            glyph: AppBoxKitGlyphs.share,
-            onPressed: () => appBoxKitLocator<AppBoxKitNotificationService>()
+            glyph: ArxaKitGlyphs.share,
+            onPressed: () => arxaKitLocator<ArxaKitNotificationService>()
                 .show('Shared', context: context)),
-        AppBoxKitToolbarAction(
+        ArxaKitToolbarAction(
             label: 'Edit',
-            glyph: AppBoxKitGlyphs.edit,
-            onPressed: () => appBoxKitLocator<AppBoxKitNotificationService>()
+            glyph: ArxaKitGlyphs.edit,
+            onPressed: () => arxaKitLocator<ArxaKitNotificationService>()
                 .show('Edit', context: context)),
-        AppBoxKitToolbarAction(
+        ArxaKitToolbarAction(
             label: 'Delete',
-            glyph: AppBoxKitGlyphs.delete,
+            glyph: ArxaKitGlyphs.delete,
             isDestructive: true,
-            onPressed: () => appBoxKitLocator<AppBoxKitNotificationService>()
+            onPressed: () => arxaKitLocator<ArxaKitNotificationService>()
                 .show('Deleted',
-                    kind: AppBoxKitNotificationKind.error, context: context)),
+                    kind: ArxaKitNotificationKind.error, context: context)),
       ],
     );
   }

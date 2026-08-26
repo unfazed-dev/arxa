@@ -1,5 +1,5 @@
 /// A view composes adaptive primitives from the kit's native family and binds
-/// the viewmodel's streams with [AppBoxKitStreamBuilder], calling the viewmodel's
+/// the viewmodel's streams with [ArxaKitStreamBuilder], calling the viewmodel's
 /// actions on user input. It never contains business logic — every decision
 /// lives in the viewmodel, and only the subtree bound to a changed stream
 /// redraws.
@@ -35,10 +35,10 @@
 library;
 
 import 'package:flutter/material.dart';
-import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
-import 'package:appbox_kit_showcase_app/ui/widgets/showcase_notes_widgets/widgets.dart';
+import 'package:arxa_kit_ui_library/arxa_kit_ui_library.dart';
+import 'package:arxa_kit_showcase_app/ui/widgets/showcase_notes_widgets/widgets.dart';
 
-import 'package:appbox_kit_showcase_app/ui/views/showcase_notes_shell/showcase_notes_create_account/showcase_notes_create_account_viewmodel.dart';
+import 'package:arxa_kit_showcase_app/ui/views/showcase_notes_shell/showcase_notes_create_account/showcase_notes_create_account_viewmodel.dart';
 
 class ShowcaseNotesCreateAccountViewMobile
     extends ViewModelWidget<ShowcaseNotesCreateAccountViewModel> {
@@ -64,12 +64,12 @@ class ShowcaseNotesCreateAccountViewMobile
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            appBoxKitVerticalSpaceLarge,
+            arxaKitVerticalSpaceLarge,
             Column(
               children: [
-                Icon(AppBoxKitGlyphs.notes.icon,
+                Icon(ArxaKitGlyphs.notes.icon,
                     size: abxSize60, color: theme.colorScheme.primary),
-                appBoxKitVerticalSpaceSmall,
+                arxaKitVerticalSpaceSmall,
                 Text(
                   'Create your account',
                   textAlign: TextAlign.center,
@@ -78,7 +78,7 @@ class ShowcaseNotesCreateAccountViewMobile
                 ),
               ],
             ),
-            appBoxKitVerticalSpaceLarge,
+            arxaKitVerticalSpaceLarge,
             // The form and its reusable field/error pieces come from the
             // central `showcase_notes_widgets` barrel.
             ShowcaseNotesCreateAccountFormWidget(

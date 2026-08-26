@@ -28,7 +28,7 @@ need "$o" "OK — all" "happy prints OK"
 
 # ---- NEGATIVE: a hardcoded Color literal in view code -----------------------
 # NEGATIVE: Color(0xFF112233) is an ad-hoc color -> no_hardcoded_colors fails,
-# naming the literal (view code must use AppBoxKitColors.* / Theme.of(context)).
+# naming the literal (view code must use ArxaKitColors.* / Theme.of(context)).
 plant_clean
 printf 'class HomeView { final c = Color(0xFF112233); }\n' > "$SURF/home_view.dart"
 o="$(dart "$GATE" "$SURF/home_view.dart" 2>&1)"; chk "$?" 1 "negative: hardcoded color fails"
@@ -92,7 +92,7 @@ need "$o" "Loading ..." "i18n negative names the offending literal"
 printf 'class HomeView { final t = Text(AppLocalizations.of(context)!.loading); }\n' > "$SURF/home_view.dart"
 o="$(dart "$GATE" "$SURF/home_view.dart" 2>&1)"; chk "$?" 0 "i18n: AppLocalizations copy passes"
 # GREEN: a scaffolder stub (STRUCTURE ONLY header) with a placeholder key passes.
-{ printf '// appbox-scaffolder: surface skeleton. STRUCTURE ONLY — the builder fills this.\n'
+{ printf '// arxa-scaffolder: surface skeleton. STRUCTURE ONLY — the builder fills this.\n'
   printf 'class HomeView { final t = Text(%s); }\n' "'projects.home'"; } > "$SURF/home_view.dart"
 o="$(dart "$GATE" "$SURF/home_view.dart" 2>&1)"; chk "$?" 0 "i18n: STRUCTURE ONLY stub with placeholder key passes"
 

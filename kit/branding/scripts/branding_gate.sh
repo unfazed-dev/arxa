@@ -76,7 +76,7 @@ fi
 
 # 7. LEGACY hosts only (app_colors.dart present): vendored brand_colors.dart
 #    must exist and match the host accent, and the splash background must not
-#    be that accent. Kit-native hosts skip (colors come from appbox_kit_core).
+#    be that accent. Kit-native hosts skip (colors come from arxa_kit_core).
 APP_COLORS="lib/ui/common/app_colors.dart"
 if [ -f "$APP_COLORS" ]; then
   ACCENT_ARGB=$(grep -E 'kcPrimaryColor[[:space:]]*=[[:space:]]*Color\(0x[0-9A-Fa-f]{8}\)' "$APP_COLORS" \

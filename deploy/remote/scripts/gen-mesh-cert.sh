@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
-# gen-mesh-cert.sh — private mesh-CA root + wildcard leaf for the appbox tailnet.
+# gen-mesh-cert.sh — private mesh-CA root + wildcard leaf for the arxa tailnet.
 # Port of arxa ADR-0036 (network/src/openssl.rs): every daemon web-builder origin
 # is `https://<origin>.<slug>.<MESH_TLD>`, browser-trusted over the mesh once the
 # CA root is installed at pairing. Re-running re-issues the leaf (auto-regen
 # friendly) and NEVER re-roots an existing CA.
 #
 # Usage:  ./gen-mesh-cert.sh <slug> [outdir]
-# Env:    MESH_TLD   (default: appbox)
+# Env:    MESH_TLD   (default: arxa)
 #         LEAF_DAYS  (default: 825 — CA/Browser-Forum cap)
 #         CA_DAYS    (default: 3650)
 #         OPENSSL    (default: openssl; must be OpenSSL 3.x)
@@ -19,7 +19,7 @@ umask 077
 
 SLUG="${1:?usage: gen-mesh-cert.sh <slug> [outdir]}"
 OUT="${2:-./mesh-ca}"
-MESH_TLD="${MESH_TLD:-appbox}"
+MESH_TLD="${MESH_TLD:-arxa}"
 LEAF_DAYS="${LEAF_DAYS:-825}"
 CA_DAYS="${CA_DAYS:-3650}"
 OPENSSL="${OPENSSL:-openssl}"
@@ -45,7 +45,7 @@ LEAF_EXT="$DIR/leaf.ext"; LEAF_CRT="$DIR/leaf.crt"
 if [[ ! -f "$CA_CRT" ]]; then
   "$OPENSSL" genpkey -algorithm EC -pkeyopt ec_paramgen_curve:P-256 -out "$CA_KEY"
   "$OPENSSL" req -x509 -new -key "$CA_KEY" -sha256 -days "$CA_DAYS" \
-    -subj "/CN=appbox Mesh CA $SLUG" \
+    -subj "/CN=arxa Mesh CA $SLUG" \
     -addext "basicConstraints=critical,CA:TRUE,pathlen:0" \
     -addext "keyUsage=critical,keyCertSign,cRLSign" \
     -out "$CA_CRT"

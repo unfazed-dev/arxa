@@ -1,12 +1,12 @@
-# appbox — architecture
+# arxa — architecture
 
 A shippable product that turns a client's design into a bespoke, opinionated
 Flutter application in stacked MVVM, for mobile (iOS + Android, the default), web
 (PWA) and desktop — with the pipeline, gates, memory, logs and a desktop UI that
 makes it operable by someone who is not its author.
 
-Evidence base: `.claude-flow/audit/appbox-spine-rubric.md` (pre-registered) and
-`.claude-flow/audit/appbox-spine-findings.md` (measured). Read those first; this
+Evidence base: `.claude-flow/audit/arxa-spine-rubric.md` (pre-registered) and
+`.claude-flow/audit/arxa-spine-findings.md` (measured). Read those first; this
 document assumes their conclusions.
 
 ---
@@ -51,19 +51,19 @@ Client approval, then three platform builds.
 - *Success:* `done` exits non-zero if the design moved after approval.
 
 ### P5 — **The buyer** — a different person entirely
-Bought appbox. Has none of your paths, repos, conventions or context. This
+Bought arxa. Has none of your paths, repos, conventions or context. This
 persona is the hard filter, and the reason D4 was scored as a gate.
 - *Wants:* install it, point it at a design, get an app.
 - *Fails today, measured:* asko hard-codes another repo's absolute path as a
   default (`orchestrate.py:45`); flutter-crew has 27 tracked files containing
   `/Volumes/`, including production code. stacked_kit is the only clean repo
   (0 absolute paths in 1,244 tracked files).
-- *Success:* `appbox init` on a fresh machine with no `~/Developer` produces a
+- *Success:* `arxa init` on a fresh machine with no `~/Developer` produces a
   working run.
 
 ---
 
-## 2. What appbox takes from where
+## 2. What arxa takes from where
 
 Settled by the measured findings — one execution model, not a blend of three.
 
@@ -126,17 +126,17 @@ Found while verifying the mechanisms rather than reading about them:
 - asko's smoke suite leaves **5 tracked files dirty** and leaks **4 design literals**
   into pipeline code.
 
-appbox's smoke suite starts with genericity and tree-clean green, and no stage
+arxa's smoke suite starts with genericity and tree-clean green, and no stage
 ships without a self-test.
 
 ## 3. Layout
 
 ```
-appbox/
+arxa/
 ├── input/           ← intake. Retargetable: --input <path>
 │   ├── designs/<client>/<design>/     frozen 6-file contract + surfaces/
 │   └── briefs/                        client brief, constraints, brand
-├── process/         ← appbox's own machinery. Never client-specific.
+├── process/         ← arxa's own machinery. Never client-specific.
 │   ├── stages/          one module per stage, --self-test, JSON emit
 │   ├── gates/           wrapped stacked_kit gates + new ones
 │   ├── kits/            vendored stacked_kit (clean tag, PROVENANCE.md)
@@ -148,15 +148,15 @@ appbox/
 │   ├── findings/        SARIF per gate per run
 │   └── logs/            per-stage stdout+stderr, retained
 └── output/          ← the generated app. Retargetable: --output <path>
-    ├── app/             the Flutter app. Knows nothing about appbox.
+    ├── app/             the Flutter app. Knows nothing about arxa.
     └── MEM-B.md         travels WITH the app (see §4)
 ```
 
 Two invariants, both testable:
 1. **`process/` never contains a client literal.** This is asko's failing smoke
-   S6 (4 design literals leaked into pipeline code) turned into a gate appbox
+   S6 (4 design literals leaked into pipeline code) turned into a gate arxa
    passes from day one.
-2. **`output/app/` contains no reference to appbox.** The delivered app must
+2. **`output/app/` contains no reference to arxa.** The delivered app must
    build with plain `flutter build` on a machine that has never seen this tool.
    That is the "decoupled, self-contained, isolated" requirement, made mechanical.
 
@@ -167,10 +167,10 @@ Two invariants, both testable:
 Agreed during the grilling; the split is by **lifetime and ownership**, which is
 what makes each independently useful.
 
-### MEM-A — `process/memory/` — *how appbox behaves*
+### MEM-A — `process/memory/` — *how arxa behaves*
 - **Owns:** gate failure patterns and their fixes, harness quirks, kit capability
   index, "this check fails this way for this reason" lessons.
-- **Lifetime:** the product's. Ships with appbox, improves across all customers.
+- **Lifetime:** the product's. Ships with arxa, improves across all customers.
 - **Shape:** stacked_kit's existing memory system (`test_memory.sh`, 33/33) — it
   already works and is already tested. Not rebuilt.
 - **Precedent:** asko's `read_notes(key)` feeds prior failure notes back into the
@@ -180,7 +180,7 @@ what makes each independently useful.
 - **Owns:** decisions taken for this client, surfaces built and why, deviations
   from the frozen design and their approvals, what the client rejected.
 - **Lifetime:** the app's. Travels with the delivered codebase.
-- **Why separate:** a customer who buys appbox must not receive your other
+- **Why separate:** a customer who buys arxa must not receive your other
   clients' decisions. This split is a confidentiality boundary, not just tidiness.
 - **Precedent:** flutter-crew's `docs/ORIENTATION.md` — *"the file a NEW agent
   session reads FIRST… the memory file the crew was missing"* — replacing a
@@ -188,7 +188,7 @@ what makes each independently useful.
   because an unbounded memory file is read by nobody.
 
 Neither reads the other. MEM-A must work with `output/` deleted; MEM-B must be
-readable by someone who has never installed appbox.
+readable by someone who has never installed arxa.
 
 ---
 
@@ -203,7 +203,7 @@ work has to happen. **A gate that only prints cannot be drawn.**
 - SARIF because it is an OASIS standard with `partialFingerprints` (stable
   finding identity across runs → "is this the same failure as last time?") and a
   provenance block. A bespoke schema would have to reinvent both.
-- `work/logs/<stage>.log` retains full stdout+stderr per stage. appbox currently
+- `work/logs/<stage>.log` retains full stdout+stderr per stage. arxa currently
   deletes its temp output; that stops.
 - `work/history.jsonl` is append-only and never pruned. It is what the UI's
   timeline renders and what makes "what changed since Tuesday" answerable.
@@ -239,24 +239,24 @@ Three interchangeable backends behind one interface, selected per run:
 | mode | how | for |
 |---|---|---|
 | `harness` | shells out to the CLI in the session (`claude`, `kimi`, …) | P2 — Evan, already in a harness, no API key needed |
-| `api` | direct API with the buyer's own key | P5 — the buyer, running appbox standalone |
+| `api` | direct API with the buyer's own key | P5 — the buyer, running arxa standalone |
 | `none` | deterministic stages only; LLM stages skipped, marked `blocked` | CI, reproducibility proofs, and the honesty check |
 
 `none` is not a degraded mode — it is the measurement that keeps D1 truthful. The
-fraction of the app producible under `none` is appbox's determinism, reported
+fraction of the app producible under `none` is arxa's determinism, reported
 per run rather than asserted in a README.
 
 ---
 
 ## 8. The desktop app
 
-**Recommendation: Flutter desktop.** It is dogfooding — appbox's UI becomes the
-first bespoke stacked-MVVM app appbox is judged by, and every rough edge in the
+**Recommendation: Flutter desktop.** It is dogfooding — arxa's UI becomes the
+first bespoke stacked-MVVM app arxa is judged by, and every rough edge in the
 generated architecture is one you feel daily. Alternative is Tauri/Rust; it is a
 better shell but proves nothing about the product.
 
 Bootstrap caveat, stated plainly: v1 of the UI must be hand-written, because
-appbox does not exist yet to generate it. The dogfooding only starts at v2, when
+arxa does not exist yet to generate it. The dogfooding only starts at v2, when
 the UI is regenerated through the pipeline. That is a real cost and it is the
 reason this is a recommendation rather than a settled decision.
 
@@ -278,7 +278,7 @@ estimate) → **Memory** (MEM-A patterns, MEM-B decisions).
 Each step ends with something runnable, and none is blocked on the desktop app.
 
 1. **Skeleton + packaging.** `input/process/work/output`, `install.sh` with
-   relative symlinks, `appbox init`. Gate: runs on a path with no `~/Developer`.
+   relative symlinks, `arxa init`. Gate: runs on a path with no `~/Developer`.
 2. **Ledger.** asko's `run.json` + `history.jsonl`, **content-hashed**. Gate: the
    four mutation experiments from the findings doc, as tests — including E3, which
    asko fails today.
@@ -295,7 +295,7 @@ Each step ends with something runnable, and none is blocked on the desktop app.
    **(b) form-factor dispatch** — `ScreenTypeLayout` occurs 0 times in 22,738
    lines; the five-file surface set does not exist in its model.
    **(c) kit vocabulary** — it emits `Icons.*` and raw `SizedBox`/`EdgeInsets`;
-   the kit demands `AppBoxKitGlyphs.*` and the spacing helpers.
+   the kit demands `ArxaKitGlyphs.*` and the spacing helpers.
    Gate: one surface regenerates byte-identically twice, passes all 73 checks, and
    `gen_freshness` catches a hand-edit to the base.
 6. **Harness adapters** — `harness` | `api` | `none`. Gate: the same design
@@ -309,7 +309,7 @@ Each step ends with something runnable, and none is blocked on the desktop app.
 ## 10. Open questions
 
 1. ~~Full flutter-crew end-to-end run~~ — **done**, see
-   `.claude-flow/audit/appbox-headtohead-train-shell.md`. It reaches Dart
+   `.claude-flow/audit/arxa-headtohead-train-shell.md`. It reaches Dart
    deterministically and its gates bite. Judged by stacked_kit's `enforce_design`:
    4 of 17 applicable checks failed, against 73/73 for the stacked_kit-built
    surface.
@@ -321,7 +321,7 @@ Each step ends with something runnable, and none is blocked on the desktop app.
    kimi-design's output. Nothing measured yet — needs a side-by-side.
 4. **Licensing.** flutter-crew's `.zcode-plugin` declares MIT; stacked_kit
    vendors 39 git dependencies. A paid product needs that graph audited.
-5. **Where appbox lives.** `factory/appbox/` matches the existing packaging
+5. **Where arxa lives.** `factory/arxa/` matches the existing packaging
    convention, but factory is currently a personal repo.
 
 ## 11. Targets — one flag, two derived axes
@@ -406,15 +406,15 @@ already the SSOT for phase; targets belong beside it. Flags and GUI both
 *write* state; every gate *reads* state. This also makes targets auditable in
 the ledger and hashable into the design-approval invalidation.
 
-### `appbox-*` command surface
+### `arxa-*` command surface
 
 The phase skills already exist as `kit-designer` / `kit-scaffolder` /
-`kit-reviewer`. `appbox-designer` is therefore not a new category — it is the
-port of a slot that is already occupied. `appbox-designer` is settled — a
+`kit-reviewer`. `arxa-designer` is therefore not a new category — it is the
+port of a slot that is already occupied. `arxa-designer` is settled — a
 clean-room rewrite, BYO designer optional. What is **not** settled is whether
-`appbox-scaffolder` / `appbox-reviewer` are ports too, or thin shims that
-invoke the kit's. Porting is what makes appbox standalone and sellable;
-shimming keeps one implementation so p2 and appbox cannot drift. The designer
+`arxa-scaffolder` / `arxa-reviewer` are ports too, or thin shims that
+invoke the kit's. Porting is what makes arxa standalone and sellable;
+shimming keeps one implementation so p2 and arxa cannot drift. The designer
 had a licensing reason to be clean-room; the scaffolder and reviewer do not, so
 the same answer does not follow automatically.
 
@@ -440,7 +440,7 @@ the p2 measurement from a second source.
 
 The reason is structural: **the Flutter skill carries form factors because its
 output contract demands five files; HTML never demanded anything.** So porting
-the htmx lineage *inherits the gap*. `appbox-designer` must add the viewport
+the htmx lineage *inherits the gap*. `arxa-designer` must add the viewport
 ladder — it cannot receive it. Borrow the ladder from `kimi-design-flutter`,
 which already reasons in 390/744 archetypes.
 
@@ -472,7 +472,7 @@ is blind to it. Measured in `design/new-htmx/`:
 
 That is **8,454 lines** carrying the *exact* stacked convention — `_view` /
 `_viewmodel` naming, and the `services/{facades, repositories}` split named in
-the appbox requirements.
+the arxa requirements.
 
 **What the freeze keeps: 37 flat HTML files.** `structure.json` is then
 re-inferred from *filenames*, which is why `new-htmx` shows `registry: null`
@@ -600,7 +600,7 @@ translatable at all.
 ## 15. The iOS companion — remote control, with the prototype as a mode
 
 **Decision (supersedes the research doc's "ship zero-install first"):** the
-prototype is reached **through the appbox iOS app**, not a bare Safari URL.
+prototype is reached **through the arxa iOS app**, not a bare Safari URL.
 The companion is the remote control; serving the prototype is something it
 *commands the desktop to do*. Rationale: the app is needed for control
 regardless, and one surface that both drives the pipeline and shows its output
@@ -615,7 +615,7 @@ as a fallback for handing a client a link — it is simply not the primary path.
    producer's `server.js` and returns the URL over the paired channel.
 3. The companion opens it **fullscreen in a WebView** — at true device width,
    which is why this doubles as real-device design review.
-4. A **floating, draggable FAB** rides above the WebView: appbox controls,
+4. A **floating, draggable FAB** rides above the WebView: arxa controls,
    stop server, back to the companion.
 
 ### What the FAB must not do
@@ -656,7 +656,7 @@ token has refresh, expiry and remote revocation.
 present; hold tokens only for the standalone case.** Owning a refresh loop for
 two vendors is permanent maintenance, and the only user who needs it is the
 buyer with no harness installed. This also keeps the harness-plugin path
-credential-free — appbox never sees a token it does not have to store.
+credential-free — arxa never sees a token it does not have to store.
 
 ## 16. Form-factor emission follows targets
 
@@ -679,8 +679,8 @@ own app than on a client's.
 
 ### Kit stays private → vendor at a pinned SHA
 
-Confirmed decision. `appbox-scaffolder` and `appbox-reviewer` are **neither
-ported nor shimmed**: the kit's gate tooling is vendored into appbox at a
+Confirmed decision. `arxa-scaffolder` and `arxa-reviewer` are **neither
+ported nor shimmed**: the kit's gate tooling is vendored into arxa at a
 recorded upstream SHA. A port means re-proving 628 assertions and maintaining
 two implementations that will drift; a shim needs the buyer to reach a private
 repo. Vendoring gives the buyer a working copy with no private dependency and
@@ -692,7 +692,7 @@ vendored SHA against upstream and fail on divergence, asserted with
 kit is ever published, this collapses back to a shim and the vendoring is
 deleted, not maintained.
 
-### The payment gate sits at `appbox-builder`
+### The payment gate sits at `arxa-builder`
 
 > **Amended twice — current placement: pay at scaffold.** This section placed
 > the gate at the builder. `consolidate-one-app-plus-daemon.md` (2026-07-28)
@@ -718,9 +718,9 @@ never be implemented as a check inside a correctness gate — a gate that can go
 red for payment reasons teaches people to distrust red, and that is the one
 thing this architecture cannot afford.
 
-### `appbox-deployer` — integrate, the work is already done
+### `arxa-deployer` — integrate, the work is already done
 
-`appbox_kit_deploy` is **pure Dart and standalone** (*"no flutter, stacked, or
+`arxa_kit_deploy` is **pure Dart and standalone** (*"no flutter, stacked, or
 stacked_kit dependency"*), registry `phase: stable`, `topology: standalone`:
 
 | target | status |
@@ -731,9 +731,9 @@ stacked_kit dependency"*), registry `phase: stable`, `topology: standalone`:
 | `vercel` | **wired** (real target since 2026-08-01, `261b2ad`; opt-in live smoke tests `93cf1ef` — was a stub throwing `UnimplementedError` when this table was written) |
 | `cloudflare-workers` | **wired** (added 2026-08-01, `261b2ad`) |
 
-It already has `bin/appbox_kit_deploy.dart` and a `doctor(config)` preflight.
+It already has `bin/arxa_kit_deploy.dart` and a `doctor(config)` preflight.
 
-**The property that makes it the right integration** is the `AppBoxKitProcessRunner`
+**The property that makes it the right integration** is the `ArxaKitProcessRunner`
 port: external CLIs are invoked through it, so `ScriptedProcessRunner` asserts
 every command shape **with no toolchain in CI**. A deploy stage normally cannot
 be self-tested — no credentials, no signing identity, no shorebird install.
@@ -741,7 +741,7 @@ This one can, which is exactly the flutter-crew stage contract (one module +
 `--self-test` + JSON emit) applied to the phase that could least afford to skip
 it.
 
-Caveats, stated: registry says `hasSkill: false`, so `appbox-deployer` would
+Caveats, stated: registry says `hasSkill: false`, so `arxa-deployer` would
 be its first phase skill; `doctor()` is preflight, not an assertion, so the
 gate still has to check a *value*. ~~and **vercel must not be advertised**
 while it throws~~ — moot since 2026-08-01 (`261b2ad`): the vercel target is
@@ -803,7 +803,7 @@ Prior art warns here: a fixer that deletes before it writes once left p2 with
 no `app.locator.dart`. Guard idempotence on the *desired end state*, never on
 "was this touched."
 
-## 19. `appbox-designer` is a fork, not a clean-room rewrite
+## 19. `arxa-designer` is a fork, not a clean-room rewrite
 
 **New evidence changes this decision.** `kimi-design-htmx` ships:
 
@@ -839,7 +839,7 @@ borrowed from `kimi-design-flutter`'s archetypes), **`export const surfaceId`**
 declarations, a **`shellRoots` source**, and the **`registry.json` convention**
 `emit_structure` can read.
 
-Of the 28 `built-in-skills/`, appbox needs the app-design subset —
+Of the 28 `built-in-skills/`, arxa needs the app-design subset —
 `hi-fi-design`, `interactive-prototype`, `mobile-prototype`, `wireframe`,
 `create-design-system`, `use-design-system`, `design-components`,
 `import-from-figma`. The deck and PPTX skills are not app design and are where
@@ -853,7 +853,7 @@ source, while `tools/test_memory.sh` **asserts the marker count is zero** for a
 rich README.
 
 That is the discipline to copy wholesale: **a generator that marks its own gaps
-and a test that counts them.** appbox gets one playbook per phase skill —
+and a test that counts them.** arxa gets one playbook per phase skill —
 designer, scaffolder, reviewer, builder, deployer — generated from the same
 source the skill reads, never hand-authored, with the same zero-`TODO(prose)`
 assertion in its suite.
@@ -864,19 +864,19 @@ Every decision above is settled. Sequencing for the agents:
 
 | # | work | why here |
 |---|---|---|
-| 1 | **Fork `kimi-design-htmx` → `appbox-designer`** (MIT, attributed); add the viewport ladder, `surfaceId`, `shellRoots` | nothing downstream can be dogfooded without it |
+| 1 | **Fork `kimi-design-htmx` → `arxa-designer`** (MIT, attributed); add the viewport ladder, `surfaceId`, `shellRoots` | nothing downstream can be dogfooded without it |
 | 2 | **`emit_structure` reads `registry.json`** when there is no `jsx/` | turns on a drift check currently impossible for htmx (§14) |
 | 3 | **Gates read targets from state** — freeze widths (§11) and form-factor emission (§16); assert with `git status --porcelain` | the bill §11 and §16 both defer |
 | 4 | **Orphan assertion + guarded delete path** (§18) | CRUD is incomplete without it |
-| 5 | **Vendor kit tooling at a pinned SHA** + freshness check (§17) | appbox cannot ship against a private repo |
-| 6 | **Dogfood: prototype appbox's own macOS app** from `design-brief.md` | `--targets macos` → one viewport, the cleanest first exercise |
+| 5 | **Vendor kit tooling at a pinned SHA** + freshness check (§17) | arxa cannot ship against a private repo |
+| 6 | **Dogfood: prototype arxa's own macOS app** from `design-brief.md` | `--targets macos` → one viewport, the cleanest first exercise |
 | 7 | **Desktop app**: chat (MCP, stdio + HTTP), credentials (OS vault), the three gates | the product |
-| 8 | **`appbox-deployer`** over `appbox_kit_deploy` | wired already; gate 3 |
+| 8 | **`arxa-deployer`** over `arxa_kit_deploy` | wired already; gate 3 |
 | 9 | **Companion app** — QR pairing, prototype WebView, state-bearing FAB (§15) | after the desktop exists to control |
 | 10 | **Payments** — implement Stripe in the kit, or route licensing outside it | blocked; product work, not pipeline work |
 
 **Two things are blocked and should not be discovered late:** payments and auth
-providers are stubs (`stub-inventory.md`), and appbox needs both for itself.
+providers are stubs (`stub-inventory.md`), and arxa needs both for itself.
 Remediation plan and the three test tiers: `stub-remediation.md`.
 
 > **Amendment (2026-08-04) on step 10.** Payments are no longer an
@@ -890,9 +890,9 @@ Remediation plan and the three test tiers: `stub-remediation.md`.
 
 **Recommendation: build it, make it optional, and put it before design.**
 
-An `appbox-intake` phase turns a client conversation into
+An `arxa-intake` phase turns a client conversation into
 `docs/design/brief.md` plus a **seeded `registry.json`** that
-`appbox-designer` consumes. Three reasons it earns phase status rather than
+`arxa-designer` consumes. Three reasons it earns phase status rather than
 being a wizard screen:
 
 1. **It has a consumable output.** The brief and the registry seed are inputs

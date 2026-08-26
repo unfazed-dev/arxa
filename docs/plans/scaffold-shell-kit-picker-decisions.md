@@ -28,7 +28,7 @@ entry points: intake (optional), design (declarations), scaffold (final pick).
 5. (Prior round) Dependency-ordered kit list; auto-included dependencies
    flagged distinctly from hand-picked.
 6. **Readiness: inform only, block at deploy.** Picker badges are driven by
-   `appbox credentials check --module kit/<x>` (credential_cli.dart; catalog =
+   `arxa credentials check --module kit/<x>` (credential_cli.dart; catalog =
    config/credentials.catalog.json with required/kind/url/simulator_note per
    key). Missing keys get a 'get key' deep-link; unready picks emit seed-backed
    with a manifest TODO. Deploy gate owns the hard stop.
@@ -51,14 +51,14 @@ entry points: intake (optional), design (declarations), scaffold (final pick).
 
 10. **GitHub repo content: one repo per app, SSOT + generated.** Design
     artifacts versioned from intake (email provided); generated Flutter from
-    scaffold onward with the generated-vs-owned boundary committed; appbox
+    scaffold onward with the generated-vs-owned boundary committed; arxa
     commits at pipeline gates (freeze, scaffold, release) with release tags.
     Constraint from user: folder organization must be sound — design separate
     from build, separate from deployment tags.
 
-11. **Free/paid line: take-away free, operated-for-you paid.** `appbox design
+11. **Free/paid line: take-away free, operated-for-you paid.** `arxa design
     eject` (hardened htmx artifact, self-hosted anywhere) stays free — the
-    Webflow export-vs-host split. Paid: appbox operating on your behalf —
+    Webflow export-vs-host split. Paid: arxa operating on your behalf —
     scaffold → Flutter build, store releases, Shorebird patches, managed
     Vercel/Cloudflare pushes, custom domains, GitHub auto-deploys,
     deploy.fleet tracking.
@@ -73,8 +73,8 @@ entry points: intake (optional), design (declarations), scaffold (final pick).
     is patchable); checkout redesign → store release. deploy.app surfaces the
     classifier verdict as Patch/Release.
 
-13. **Deploy engine: unify — kit runtime + appboxd governance.** kit/deploy's
-    AppBoxKitDeployTarget port + target classes become THE runtime; appboxd's
+13. **Deploy engine: unify — kit runtime + arxa governance.** kit/deploy's
+    ArxaKitDeployTarget port + target classes become THE runtime; arxa's
     approval token + append-only ledger + licence gate wrap it as
     orchestration; both rewired to read config/credentials.catalog.json
     (kit/deploy module, 10 keys); gate_deploy asserts against the ledger;
@@ -88,7 +88,7 @@ entry points: intake (optional), design (declarations), scaffold (final pick).
     redirect serves as existence-check + signup. Tokens in keychain vault;
     zero-org Supabase case deep-links to dashboard once; project creation
     behind cost confirmation; write-scoped MCP tools stay human-gated.
-15. **Appbox/studio's own auth: Supabase Auth + Google + Apple.** To be
+15. **Arxa/studio's own auth: Supabase Auth + Google + Apple.** To be
     smoke-tested when the designer kit implements the auth shell.
 
 16. **Sign-in gate: local-first, sign-in on first need.** Anonymous design is
@@ -102,7 +102,7 @@ entry points: intake (optional), design (declarations), scaffold (final pick).
     intervention; giving it away was a mistake in the earlier
     paywall-at-deploy placement (gate_deploy.dart:9 era thinking). A user
     rebuilding the ejected htmx design by hand costs them more time and more
-    tokens than appbox charges — that asymmetry is the accepted leak. Free
+    tokens than arxa charges — that asymmetry is the accepted leak. Free
     tier keeps design + eject (decision 11's take-away artifact); paid starts
     at scaffold, not at deploy. The degrade-don't-block philosophy
     (watermark.dart:16-17) is explicitly superseded for the scaffold
@@ -113,7 +113,7 @@ entry points: intake (optional), design (declarations), scaffold (final pick).
     documented gap); Postgres subscriptions/entitlements/machines tables,
     service-role-only writes, synced from Stripe Entitlements (vendor dunning
     clock ≈8 retries/2 weeks kept separate from client offline-grace clock);
-    /activate Edge Function issues ~7-day appbox-signed JWT bound to machine
+    /activate Edge Function issues ~7-day arxa-signed JWT bound to machine
     fingerprint; `emit scaffold` verifies locally — no network on hot path,
     silent background refresh; Ed25519 licence demoted to signed+TTL
     offline-continuation file; env bypass compiled out of release; 3
@@ -133,7 +133,7 @@ entry points: intake (optional), design (declarations), scaffold (final pick).
       per-customer or customer-owned — never pooled on Totem Labs' plan.~~
       *(SUPERSEDED by Decision 33: Totem owns a pooled Shorebird org;
       overage at $1.50/2,500. User-confirmed 2026-08-03.)*
-    - *Scale add-on direction (user):* managed kit features — e.g. appbox
+    - *Scale add-on direction (user):* managed kit features — e.g. arxa
       manages the customer's database (Supabase or future Totem Labs
       offering). Billing shape under research.
     - *LLM roadmap (user):* BYO-LLM stays on free AND paid at v1. Future
@@ -143,9 +143,9 @@ entry points: intake (optional), design (declarations), scaffold (final pick).
 
 20. **Distribution legal layer — all four fixes now (text-only).** Repo stays
     private as policy; root proprietary LICENSE + short free-tier EULA (user
-    owns ejected output; no redistribution/reverse-engineering of appbox
-    components); re-scope both MIT grants (skills/appbox-designer/LICENSE,
-    skills/appbox-story-mapper/LICENSE.txt) with explicit carve-outs —
+    owns ejected output; no redistribution/reverse-engineering of arxa
+    components); re-scope both MIT grants (skills/arxa-designer/LICENSE,
+    skills/arxa-story-mapper/LICENSE.txt) with explicit carve-outs —
     upstream attribution kept, derived files enumerated, everything else
     © Totem Labs; name the missing copyright holder. Basis:
     docs/research/distribution-protection-inventory.md.
@@ -154,7 +154,7 @@ entry points: intake (optional), design (declarations), scaffold (final pick).
     `dart compile exe` + embed worker_assets/, runtime/vendor/, ladder.json,
     needed reference text; eliminate source-tree reads
     (design_server.dart:326, design_tools.dart:451/452/1046/1170).
-    `publish_to: 'none'` added to appboxd/pubspec.yaml immediately.
+    `publish_to: 'none'` added to arxa/pubspec.yaml immediately.
     New redistribution gate in the gate suite (sibling of gate_coverage C5):
     fail on LICENSE outside third-party allowlist or source-tree read
     escaping the embed set. Free designer never ships as cleartext.
@@ -169,8 +169,8 @@ entry points: intake (optional), design (declarations), scaffold (final pick).
 
 ## Open branches
 
-- **Appbox-system distribution protection (new, round 5).** User requirement:
-  none of the appbox system itself — including the free designer — may be
+- **Arxa-system distribution protection (new, round 5).** User requirement:
+  none of the arxa system itself — including the free designer — may be
   made available/redistributable. Inventory of existing protections pending.
 
 - **Scale price + managed-kit billing + credits model (round 5).** Tier
@@ -184,12 +184,12 @@ entry points: intake (optional), design (declarations), scaffold (final pick).
   (a) checkout view completely redesigned, (b) one-word typo fix in another
   shell — how does each flow through regen → build → Shorebird patch vs
   store release? Awaiting shorebird-release research.
-- **Deploy shell (new).** Manages deployment of all appbox apps: app stores
+- **Deploy shell (new).** Manages deployment of all arxa apps: app stores
   (Shorebird + fastlane), web (Vercel/Cloudflare), GitHub for project
   versioning. Grilling to begin; repo already has deploy.dart/deploy_cli.dart
   (doctor, deploy, --self-test).
 - **Account automation (new).** Can Supabase MCP + GitHub MCP automate user
-  signup/signin through appbox — user provides email, appbox checks for
+  signup/signin through arxa — user provides email, arxa checks for
   existing accounts, creates with user approval, signs in; GitHub project
   sync from intake, Supabase provisioned when the kit is needed. Feasibility
   research required (GitHub account creation via API is likely impossible —
@@ -197,7 +197,7 @@ entry points: intake (optional), design (declarations), scaffold (final pick).
 
 23. **Platform pivot (round 6): v1 = macOS + controller + hosted web.**
     v1 surfaces: native macOS app (app + daemon, unchanged), iOS/Android
-    controller app, and a Totem-hosted web version of appbox studio —
+    controller app, and a Totem-hosted web version of arxa studio —
     free access, same Supabase-backed gates, BYO LLM on macOS and web.
     Native Windows/Linux (daemon + local web or runners) deferred to a
     later version; the hosted web version covers those users in v1.
@@ -205,7 +205,7 @@ entry points: intake (optional), design (declarations), scaffold (final pick).
 
 24. **Hosted web pipeline stops at scaffold.** Totem servers run only
     intake → design → freeze → scaffold. Scaffold is the existing
-    deterministic appboxd emitter (structure.json + --targets +
+    deterministic arxa emitter (structure.json + --targets +
     kit-manifest → Dart source text; no LLM, no Flutter SDK, no
     subprocess) — byte-identical to local output, cheap and
     sandbox-trivial. No build farm: Totem never compiles or ships
@@ -224,7 +224,7 @@ entry points: intake (optional), design (declarations), scaffold (final pick).
 
 - **BYO-LLM key custody on hosted web** — client-held key with direct
   browser→provider calls vs proxying through Totem servers.
-- **Hosted multi-tenancy/auth** — first appbox server ever; Supabase
+- **Hosted multi-tenancy/auth** — first arxa server ever; Supabase
   login binding, per-user project storage, quotas/abuse posture.
 - **Controller app pairing target** — macOS daemon only, hosted web
   session, or both.
@@ -294,10 +294,10 @@ picker-screen asked (t=197) for `signedOut` to be added to the `scaffold.picker`
 lens-state list in `models/screens_model/registry.json`. It cannot go there.
 
 - `states` on a screens_model registry entry is a CLOSED vocabulary:
-  `const surfaceStates = ['loading', 'empty', 'error']` (appboxd/lib/intake.dart:62).
-- `appbox emit structure` hard-FAILs on any other value
-  (appboxd/lib/emit_structure.dart:271) — "the screen-state vocabulary is closed".
-- No screen in appbox-studio's registry declares `states` today; the field is
+  `const surfaceStates = ['loading', 'empty', 'error']` (arxa/lib/intake.dart:62).
+- `arxa emit structure` hard-FAILs on any other value
+  (arxa/lib/emit_structure.dart:271) — "the screen-state vocabulary is closed".
+- No screen in arxa-studio's registry declares `states` today; the field is
   optional passthrough into structure.json, not the preview source.
 - Preview of gated variants works through the free-form `?state=` query param,
   which picker_viewmodel.js already reads and forwards to the facade. Both

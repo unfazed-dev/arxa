@@ -2,17 +2,17 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
-import 'package:appbox_kit_ui_library/appbox_kit_testing.dart';
-import 'package:appbox_kit_data/appbox_kit_data.dart';
-import 'package:appbox_kit_showcase_app/data/models/showcase_notes_models/showcase_note_model.dart';
-import 'package:appbox_kit_showcase_app/data/models/showcase_notes_models/showcase_note_attachment_model.dart';
-import 'package:appbox_kit_showcase_app/data/schemas/showcase_notes_schemas/showcase_note_folder_schema.dart';
-import 'package:appbox_kit_showcase_app/enums/showcase_notes_enums/enums.dart';
-import 'package:appbox_kit_showcase_app/services/showcase_notes_services/facades/showcase_notes_facade_service.dart';
-import 'package:appbox_kit_showcase_app/services/showcase_notes_services/adapters/showcase_notes_media_adapter_service.dart';
-import 'package:appbox_kit_showcase_app/services/showcase_notes_services/repositories/showcase_notes_repository_service.dart';
-import 'package:appbox_kit_showcase_app/app/app_data.dart';
+import 'package:arxa_kit_ui_library/arxa_kit_ui_library.dart';
+import 'package:arxa_kit_ui_library/arxa_kit_testing.dart';
+import 'package:arxa_kit_data/arxa_kit_data.dart';
+import 'package:arxa_kit_showcase_app/data/models/showcase_notes_models/showcase_note_model.dart';
+import 'package:arxa_kit_showcase_app/data/models/showcase_notes_models/showcase_note_attachment_model.dart';
+import 'package:arxa_kit_showcase_app/data/schemas/showcase_notes_schemas/showcase_note_folder_schema.dart';
+import 'package:arxa_kit_showcase_app/enums/showcase_notes_enums/enums.dart';
+import 'package:arxa_kit_showcase_app/services/showcase_notes_services/facades/showcase_notes_facade_service.dart';
+import 'package:arxa_kit_showcase_app/services/showcase_notes_services/adapters/showcase_notes_media_adapter_service.dart';
+import 'package:arxa_kit_showcase_app/services/showcase_notes_services/repositories/showcase_notes_repository_service.dart';
+import 'package:arxa_kit_showcase_app/app/app_data.dart';
 
 class _MockMediaAdapter extends Mock
     implements ShowcaseNotesMediaAdapterService {}
@@ -30,19 +30,19 @@ ShowcaseNoteAttachmentModel _attachment(String id) =>
 _MockMediaAdapter _registerMediaMock() {
   final media = _MockMediaAdapter();
   when(() => media.deleteFile(any())).thenAnswer((_) async {});
-  appBoxKitLocator.registerSingleton<ShowcaseNotesMediaAdapterService>(media);
+  arxaKitLocator.registerSingleton<ShowcaseNotesMediaAdapterService>(media);
   addTearDown(
-      () => appBoxKitLocator.unregister<ShowcaseNotesMediaAdapterService>());
+      () => arxaKitLocator.unregister<ShowcaseNotesMediaAdapterService>());
   return media;
 }
 
 /// Smoke tests for the Notes data slice over the REAL shipped fixtures —
 /// the same JSON the app seeds from, loaded off disk. One initialize for the
-/// whole file (AppBoxKitData is static state; see kit_data_initialize_test.dart in
-/// appbox_kit_data for the reasoning) — tests share the store and stay
+/// whole file (ArxaKitData is static state; see kit_data_initialize_test.dart in
+/// arxa_kit_data for the reasoning) — tests share the store and stay
 /// order-independent by only mutating rows they create.
-class _DiskAssetReader implements AppBoxKitAssetReader {
-  static const _prefix = 'packages/appbox_kit_showcase_app/';
+class _DiskAssetReader implements ArxaKitAssetReader {
+  static const _prefix = 'packages/arxa_kit_showcase_app/';
 
   @override
   Future<String> readString(String path) async {
@@ -59,18 +59,18 @@ void main() {
 
   setUpAll(() async {
     registerFallbackValue(_attachment('fallback'));
-    // AppBoxKitAction managers resolve these lazily on first execute() — the
+    // ArxaKitAction managers resolve these lazily on first execute() — the
     // kit's own setup registers Talker + the stacked UI service bases.
-    setupAppBoxKitUiServices();
-    appBoxKitLocator
-      ..registerLazySingleton(() => AppBoxKitErrorService())
+    setupArxaKitUiServices();
+    arxaKitLocator
+      ..registerLazySingleton(() => ArxaKitErrorService())
       // Fake: the real service's CNToast path needs a mounted navigator
       // context, which a data-layer suite doesn't have. Recording double from
-      // package:appbox_kit_ui_library/appbox_kit_testing.dart.
-      ..registerLazySingleton<AppBoxKitNotificationService>(
-          () => FakeAppBoxKitNotificationService())
+      // package:arxa_kit_ui_library/arxa_kit_testing.dart.
+      ..registerLazySingleton<ArxaKitNotificationService>(
+          () => FakeArxaKitNotificationService())
 
-      // Registered by the @StackedApp appBoxKitLocator in the app; this suite stays
+      // Registered by the @StackedApp arxaKitLocator in the app; this suite stays
       // self-contained (data layer only), so it registers them itself.
       ..registerLazySingleton<ShowcaseNotesRepositoryService>(
           () => ShowcaseNotesRepositoryService())
@@ -79,29 +79,29 @@ void main() {
 
     await AppData.initialize(
       // Snapshot persistence needs a platform channel; tests run in-memory.
-      config: const AppBoxKitDataConfig(
-        backend: AppBoxKitDataBackend.seed,
-        auth: AppBoxKitAuthConfig(fakeUsersAsset: AppData.fakeUsersAsset),
+      config: const ArxaKitDataConfig(
+        backend: ArxaKitDataBackend.seed,
+        auth: ArxaKitAuthConfig(fakeUsersAsset: AppData.fakeUsersAsset),
       ),
       assetReader: _DiskAssetReader(),
     );
 
-    notes = appBoxKitLocator<ShowcaseNotesFacadeService>();
+    notes = arxaKitLocator<ShowcaseNotesFacadeService>();
     final session = await notes.auth
         .signInWithEmailPassword(email: 'evan@seed.local', password: 'x');
     evanId = session.user.id;
   });
 
   tearDownAll(() async {
-    AppBoxKitData.resetForTesting();
-    await appBoxKitLocator.reset();
+    ArxaKitData.resetForTesting();
+    await arxaKitLocator.reset();
   });
 
   test(
       'auth-and-accounts.sign-in.sign-in-with-email-and-otp — fake sign-in resolves the fixture user and its canonical id',
       () {
-    final idService = appBoxKitLocator<AppBoxKitIdService>();
-    expect(evanId, idService.canonicalId(kAppBoxKitAuthUsersTable, 'user-1'));
+    final idService = arxaKitLocator<ArxaKitIdService>();
+    expect(evanId, idService.canonicalId(kArxaKitAuthUsersTable, 'user-1'));
   });
 
   test(
@@ -121,7 +121,7 @@ void main() {
     expect(overview.allCount, 7);
     expect(overview.trashCount, 1);
 
-    final idService = appBoxKitLocator<AppBoxKitIdService>();
+    final idService = arxaKitLocator<ArxaKitIdService>();
     String fid(String key) =>
         idService.canonicalId(kShowcaseNoteFoldersTable, key);
     expect(overview.liveCountByFolder[fid('folder-work')], 3);
@@ -184,7 +184,7 @@ void main() {
   test(
       'notes.note-crud.create-a-note — mutation round-trip: create → save (notes.note-crud.edit-a-note) → pin (notes.pin-notes.pin-a-note-to-the-top-of-the-inbox) → trash (notes.trash-and-restore.trash-a-note) → restore (notes.trash-and-restore.restore-a-trashed-note) → purge (notes.note-crud.delete-a-note-forever)',
       () async {
-    final idService = appBoxKitLocator<AppBoxKitIdService>();
+    final idService = arxaKitLocator<ArxaKitIdService>();
     final folderId =
         idService.canonicalId(kShowcaseNoteFoldersTable, 'folder-notes');
 
@@ -298,8 +298,8 @@ void main() {
   test(
       'notes.trash-and-restore.trash-a-note — a trash write preserves a concurrent body edit on the same note',
       () async {
-    final idService = appBoxKitLocator<AppBoxKitIdService>();
-    final kitRepo = appBoxKitLocator<AppBoxKitRepository<ShowcaseNoteModel>>();
+    final idService = arxaKitLocator<ArxaKitIdService>();
+    final kitRepo = arxaKitLocator<ArxaKitRepository<ShowcaseNoteModel>>();
     final folderId =
         idService.canonicalId(kShowcaseNoteFoldersTable, 'folder-notes');
     final note = await notes.createNote(evanId, folderId);
@@ -322,8 +322,8 @@ void main() {
   test(
       'notes.pin-notes.pin-a-note-to-the-top-of-the-inbox — a pin write preserves a concurrent body edit on the same note',
       () async {
-    final idService = appBoxKitLocator<AppBoxKitIdService>();
-    final kitRepo = appBoxKitLocator<AppBoxKitRepository<ShowcaseNoteModel>>();
+    final idService = arxaKitLocator<ArxaKitIdService>();
+    final kitRepo = arxaKitLocator<ArxaKitRepository<ShowcaseNoteModel>>();
     final folderId =
         idService.canonicalId(kShowcaseNoteFoldersTable, 'folder-notes');
     final note = await notes.createNote(evanId, folderId);
@@ -346,7 +346,7 @@ void main() {
     // given — a note carrying one photo, and a media mock that inspects the
     // store at the moment its delete runs
     final media = _registerMediaMock();
-    final idService = appBoxKitLocator<AppBoxKitIdService>();
+    final idService = arxaKitLocator<ArxaKitIdService>();
     final folderId =
         idService.canonicalId(kShowcaseNoteFoldersTable, 'folder-notes');
     final created = await notes.createNote(evanId, folderId);
@@ -374,7 +374,7 @@ void main() {
       () async {
     // given
     final media = _registerMediaMock();
-    final idService = appBoxKitLocator<AppBoxKitIdService>();
+    final idService = arxaKitLocator<ArxaKitIdService>();
     final folderId =
         idService.canonicalId(kShowcaseNoteFoldersTable, 'folder-notes');
     final created = await notes.createNote(evanId, folderId);
@@ -394,7 +394,7 @@ void main() {
       () async {
     // given — a trashed note carrying a photo
     final media = _registerMediaMock();
-    final idService = appBoxKitLocator<AppBoxKitIdService>();
+    final idService = arxaKitLocator<ArxaKitIdService>();
     final folderId =
         idService.canonicalId(kShowcaseNoteFoldersTable, 'folder-notes');
     final created = await notes.createNote(evanId, folderId);
@@ -418,7 +418,7 @@ void main() {
     final media = _registerMediaMock();
     when(() => media.pickPhoto(fromCamera: any(named: 'fromCamera')))
         .thenAnswer((_) async => null);
-    final idService = appBoxKitLocator<AppBoxKitIdService>();
+    final idService = arxaKitLocator<ArxaKitIdService>();
     final folderId =
         idService.canonicalId(kShowcaseNoteFoldersTable, 'folder-notes');
     final created = await notes.createNote(evanId, folderId);
@@ -445,7 +445,7 @@ void main() {
       createdAt: DateTime.utc(2026, 1, 1),
     );
     when(() => media.stopRecording()).thenAnswer((_) async => memo);
-    final idService = appBoxKitLocator<AppBoxKitIdService>();
+    final idService = arxaKitLocator<ArxaKitIdService>();
     final folderId =
         idService.canonicalId(kShowcaseNoteFoldersTable, 'folder-notes');
     final created = await notes.createNote(evanId, folderId);

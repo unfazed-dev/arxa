@@ -1,7 +1,7 @@
 {
   "provider": "apple_pay",
   "data": {
-    "merchantIdentifier": "merchant.com.example.appbox_kit",
+    "merchantIdentifier": "merchant.com.example.arxa_kit",
     "displayName": "Stacked Kit Store",
     "merchantCapabilities": ["3DS", "debit", "credit"],
     "supportedNetworks": ["amex", "visa", "discover", "masterCard"],

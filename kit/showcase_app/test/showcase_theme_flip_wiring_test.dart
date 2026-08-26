@@ -20,7 +20,7 @@
 // else in the suite would notice it being dropped.
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:appbox_kit_showcase_app/main.dart' show ShowcaseApp;
+import 'package:arxa_kit_showcase_app/main.dart' show ShowcaseApp;
 
 import 'helpers.dart';
 

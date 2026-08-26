@@ -15,7 +15,7 @@ stop and check the plan's *Source* table.
 
 ### R2 — No references to the repos we ported from
 
-appbox is a product, not a fork that reads like one. After copying, **strip
+arxa is a product, not a fork that reads like one. After copying, **strip
 every operational reference** to `flutter-crew`, `kimi-design`, `kimi-design-htmx`,
 `baoyu`, `huashu`, `p2`, `asko` from: module names, function names, file paths,
 CLI help text, log strings, doc cross-links, skill names, config keys.
@@ -112,16 +112,16 @@ moment it lands. Everything downstream of `02` can proceed simultaneously.
 | plan | owner | done |
 |---|---|---|
 | 01 designer | | ☐ |
-| 02 repo skeleton | appbox | ☑ |
-| 03 vendor tooling | appbox | ☑ |
-| 04 gates | appbox | ☑ |
-| 05 structure + registry | appbox | ☑ |
-| 06 targets in state | appbox | ☑ |
-| 07 CRUD + delete | appbox | ☑ |
-| 08 desktop app | appbox | ☑ |
-| 09 prototype runtime | appbox | ☑ |
-| 10 intake | appbox | ☑ |
+| 02 repo skeleton | arxa | ☑ |
+| 03 vendor tooling | arxa | ☑ |
+| 04 gates | arxa | ☑ |
+| 05 structure + registry | arxa | ☑ |
+| 06 targets in state | arxa | ☑ |
+| 07 CRUD + delete | arxa | ☑ |
+| 08 desktop app | arxa | ☑ |
+| 09 prototype runtime | arxa | ☑ |
+| 10 intake | arxa | ☑ |
 | 11 deployer | | ☑ |
 | 12 companion | | ☐ |
-| 13 verification tiers | appbox | ☑ |
+| 13 verification tiers | arxa | ☑ |
 | 14 dogfood | | ☐ |

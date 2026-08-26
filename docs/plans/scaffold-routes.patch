@@ -1,7 +1,7 @@
-diff --git a/designs/appbox-studio/ui/views/main_shell/scaffold/routes.scaffold.js b/designs/appbox-studio/ui/views/main_shell/scaffold/routes.scaffold.js
+diff --git a/designs/arxa-studio/ui/views/main_shell/scaffold/routes.scaffold.js b/designs/arxa-studio/ui/views/main_shell/scaffold/routes.scaffold.js
 index 372a8e0..1692eee 100644
---- a/designs/appbox-studio/ui/views/main_shell/scaffold/routes.scaffold.js
-+++ b/designs/appbox-studio/ui/views/main_shell/scaffold/routes.scaffold.js
+--- a/designs/arxa-studio/ui/views/main_shell/scaffold/routes.scaffold.js
++++ b/designs/arxa-studio/ui/views/main_shell/scaffold/routes.scaffold.js
 @@ -18,6 +18,23 @@ export default [
    // scaffold.picker — kit selection (shell root: /scaffold)
    ['GET', '/scaffold', picker.page],

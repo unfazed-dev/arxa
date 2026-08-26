@@ -20,15 +20,15 @@
 library;
 
 import 'package:flutter/material.dart';
-import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
+import 'package:arxa_kit_ui_library/arxa_kit_ui_library.dart';
 
 class ShowcaseThemeModeSegmentedDemoWidget extends StatelessWidget {
   const ShowcaseThemeModeSegmentedDemoWidget({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final theme = appBoxKitLocator<AppBoxKitThemeService>();
-    return AppBoxKitStreamBuilder<ThemeMode>(
+    final theme = arxaKitLocator<ArxaKitThemeService>();
+    return ArxaKitStreamBuilder<ThemeMode>(
       stream: theme.themeMode$,
       initialData: theme.themeMode$.value,
       builder: (context, mode) {
@@ -39,12 +39,12 @@ class ShowcaseThemeModeSegmentedDemoWidget extends StatelessWidget {
             // Intrinsic width/height: SegmentedButton sizes to its labels + the
             // 48px tap target, so the active fill is never clipped. No fixed
             // SizedBox (that was what "cut" the rounded active segment).
-            AppBoxKitNativeSegmentedControl(
+            ArxaKitNativeSegmentedControl(
               segments: const ['Auto', 'Light', 'Dark'],
               selectedIndex: mode.index,
               onChanged: (i) => theme.setTheme(ThemeMode.values[i]),
             ),
-            appBoxKitVerticalSpaceXSmall,
+            arxaKitVerticalSpaceXSmall,
             Container(
               padding: const EdgeInsets.symmetric(
                   horizontal: abxSize16, vertical: abxSize10),

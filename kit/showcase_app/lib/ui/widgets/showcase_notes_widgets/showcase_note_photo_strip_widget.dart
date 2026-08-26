@@ -1,5 +1,5 @@
 /// A widget is a reusable UI piece composed by views. It receives data via
-/// constructor params or [AppBoxKitStreamBuilder] bindings and renders its
+/// constructor params or [ArxaKitStreamBuilder] bindings and renders its
 /// slice of the surface — it holds no business logic and never decides when
 /// an action runs.
 ///
@@ -34,9 +34,9 @@ library;
 import 'dart:io';
 
 import 'package:flutter/material.dart';
-import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
-import 'package:appbox_kit_showcase_app/data/models/showcase_notes_models/models.dart';
-import 'package:appbox_kit_showcase_app/ui/views/showcase_notes_shell/showcase_note_editor/showcase_note_editor_viewmodel.dart';
+import 'package:arxa_kit_ui_library/arxa_kit_ui_library.dart';
+import 'package:arxa_kit_showcase_app/data/models/showcase_notes_models/models.dart';
+import 'package:arxa_kit_showcase_app/ui/views/showcase_notes_shell/showcase_note_editor/showcase_note_editor_viewmodel.dart';
 
 class ShowcaseNotePhotoStripWidget extends StatelessWidget {
   const ShowcaseNotePhotoStripWidget({
@@ -53,7 +53,7 @@ class ShowcaseNotePhotoStripWidget extends StatelessWidget {
         child: ListView.separated(
           scrollDirection: Axis.horizontal,
           itemCount: photos.length,
-          separatorBuilder: (_, __) => appBoxKitHorizontalSpaceSmall,
+          separatorBuilder: (_, __) => arxaKitHorizontalSpaceSmall,
           itemBuilder: (context, i) {
             final attachment = photos[i];
             // Decode at display pixels, not the full capture (up to 2048px):
@@ -68,7 +68,7 @@ class ShowcaseNotePhotoStripWidget extends StatelessWidget {
                     width: 84,
                     height: 84,
                     child: Center(
-                        child: AppBoxKitNativeLoadingIndicator(size: 20)),
+                        child: ArxaKitNativeLoadingIndicator(size: 20)),
                   );
                 }
                 final file = File(snap.data!);
@@ -96,7 +96,7 @@ class ShowcaseNotePhotoStripWidget extends StatelessWidget {
 
   void _openViewer(BuildContext context, File file) {
     // flutter-only: fullscreen media lightbox. No native dialog tier exists
-    // for a zoomable black-screen photo viewer — appBoxKitShowNativeDialog()
+    // for a zoomable black-screen photo viewer — arxaKitShowNativeDialog()
     // covers alert/confirm dialogs, not content lightboxes — so this
     // hand-rolls a raw showDialog + Dialog.
     // Present from the ROOT navigator: the tab shells nest a router, and a
@@ -106,7 +106,7 @@ class ShowcaseNotePhotoStripWidget extends StatelessWidget {
     // matches every PopupRoute, this push included); the explicit marks below
     // are kept as defense-in-depth — balanced by whenComplete and clamped at
     // zero — for any future presentation path the observer cannot see
-    // (Overlay entries). Pinned by appbox_kit_native_modal_observer_test.
+    // (Overlay entries). Pinned by arxa_kit_native_modal_observer_test.
     CNTabBarRouteObserver.markAnyModalActive();
     showDialog<void>(
       context: StackedService.navigatorKey?.currentContext ?? context,
@@ -123,8 +123,8 @@ class ShowcaseNotePhotoStripWidget extends StatelessWidget {
             Positioned(
               top: abxSize8,
               right: abxSize8,
-              child: AppBoxKitNativeIconButton(
-                glyph: AppBoxKitGlyphs.close,
+              child: ArxaKitNativeIconButton(
+                glyph: ArxaKitGlyphs.close,
                 onPressed: () => Navigator.of(context).pop(),
               ),
             ),

@@ -1,5 +1,5 @@
-name: appbox_kit_i18n
-description: Locale machinery for appbox_kit apps — a AppBoxKitLanguage value type, a persisted system+override locale model (AppBoxKitI18n extends ChangeNotifier for live switching), intl-backed date/number/currency formatting, placeholder-parity checking, and an LLM locale directive for generative UI. Standalone capability kit; no dependency on appbox_kit core. Translation strings are deliberately NOT codegen'd here — apps own their gen-l10n output.
+name: arxa_kit_i18n
+description: Locale machinery for arxa_kit apps — a ArxaKitLanguage value type, a persisted system+override locale model (ArxaKitI18n extends ChangeNotifier for live switching), intl-backed date/number/currency formatting, placeholder-parity checking, and an LLM locale directive for generative UI. Standalone capability kit; no dependency on arxa_kit core. Translation strings are deliberately NOT codegen'd here — apps own their gen-l10n output.
 version: 0.1.0
 publish_to: 'none'
 

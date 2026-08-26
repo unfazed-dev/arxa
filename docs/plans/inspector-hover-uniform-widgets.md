@@ -10,13 +10,13 @@
 
 ## Global Constraints
 
-- `inspect.js` exists as three byte-identical copies (regular files, NOT symlinks): `skills/appbox-designer/runtime/vendor/inspect.js`, `.claude/skills/appbox-designer/runtime/vendor/inspect.js`, `.kimi-code/skills/appbox-designer/runtime/vendor/inspect.js`. Edit `skills/...` then copy to the other two; verify all three share one md5 before committing.
+- `inspect.js` exists as three byte-identical copies (regular files, NOT symlinks): `skills/arxa-designer/runtime/vendor/inspect.js`, `.claude/skills/arxa-designer/runtime/vendor/inspect.js`, `.kimi-code/skills/arxa-designer/runtime/vendor/inspect.js`. Edit `skills/...` then copy to the other two; verify all three share one md5 before committing.
 - Decided vocabulary: badge = the hover label; widget = element carrying `data-el`; screen fallback = the only surviving "inferred" case.
 - Studio accent tokens: `theme.css` — cyan light `#0C87A8`, cyan dark `#45D5F5`; `--on-accent` is `#FFFCF0` (light accents) / `#100F0F` (dark-theme accents). Island literal fallback stays `#0891b2` only as last resort.
 
 ### Task 1: Accent resolution + badge restyle (inspect.js)
 
-**Files:** Modify: `skills/appbox-designer/runtime/vendor/inspect.js` (~L47–52 `accent()`, ~L148–160 `fillReadout`, ~L210–226 `showOverlay`); copy to the two sibling paths.
+**Files:** Modify: `skills/arxa-designer/runtime/vendor/inspect.js` (~L47–52 `accent()`, ~L148–160 `fillReadout`, ~L210–226 `showOverlay`); copy to the two sibling paths.
 
 - [ ] **Step 1: `accents()` resolver.** Replace `accent()` with a resolver returning `{ accent, onAccent }`. Order: (1) `window.parent.document.querySelector('#app')` computed `--accent`/`--on-accent` (same-origin; island already uses `parent.htmx`; wrap in try/catch for detached frames), (2) local `[data-accent]` host, (3) literals `#0891b2` / `#FFFCF0`.
 - [ ] **Step 2: badge cssText.** `background:${accent}; color:${onAccent}; font-size:11px; line-height:1.4; padding:4px 10px; border-radius:6px 6px 6px 0; white-space:nowrap; box-shadow:0 2px 8px rgba(0,0,0,.25);` — drop the `#1e1e2e` dark palette and the accent border-left. Add `font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;` on the label container.
@@ -37,7 +37,7 @@
 
 ### Task 3: Vendor cache-busting (`?v=` content hash)
 
-**Files:** Modify: `designs/appbox-studio/ui/common/base.tsx:75-77`, `designs/appbox-studio/ui/views/main_shell/build/loop/screen_stub_view.tsx:119,124` (and the htmx4 tag at :72 keeps its SRI, no `?v=` needed); `designs/appbox-studio/services/facades/design_facade.js` (compute + expose hash map).
+**Files:** Modify: `designs/arxa-studio/ui/common/base.tsx:75-77`, `designs/arxa-studio/ui/views/main_shell/build/loop/screen_stub_view.tsx:119,124` (and the htmx4 tag at :72 keeps its SRI, no `?v=` needed); `designs/arxa-studio/services/facades/design_facade.js` (compute + expose hash map).
 
 - [ ] **Step 1:** In the facade, at module init, hash each file in the served vendor dir (first 12 hex of sha256 of file bytes) into `vendorRev[name]`; expose to view props.
 - [ ] **Step 2:** Templates render `src={`/assets/vendor/inspect.js?v=${vendorRev['inspect.js']}`}` — same for `canvas.js`, `drag.js`, `reveal.js`, `flowwalk.js`.
@@ -46,15 +46,15 @@
 
 ### Task 4: Lint check — annotation coverage
 
-**Files:** Modify: `appboxd/lib/design_tools.dart` (where `appbox design lint` checks live).
+**Files:** Modify: `arxa/lib/design_tools.dart` (where `arxa design lint` checks live).
 
 - [ ] **Step 1:** Add check `widget-coverage`: parse served/authored surface HTML; flag visible interactive or text leaves (`button,a,input,select,textarea,h1-h6,p,label,svg`) with no `[data-el]` on self or any ancestor. Report file + selector path.
-- [ ] **Step 2:** Run against appbox-studio surfaces; fix any gaps it finds by adding `inspectAttrs()` at the widget boundary (not on leaves inside an annotated widget).
+- [ ] **Step 2:** Run against arxa-studio surfaces; fix any gaps it finds by adding `inspectAttrs()` at the widget boundary (not on leaves inside an annotated widget).
 - [ ] **Step 3:** Commit: `feat: design lint flags visible elements outside any authored widget`
 
 ### Task 5: Probes
 
-**Files:** Modify: `appboxd/lib/probes/studio/probe_inspect.dart`.
+**Files:** Modify: `arxa/lib/probes/studio/probe_inspect.dart`.
 
 - [ ] **Step 1:** Uniformity probe: hover a widget in studio chrome and in two different artifact tiles; assert computed `font-family` starts with `-apple-system`, `background` equals the studio `--accent` (resolve it from `#app`), `color` equals `--on-accent` — identical across all three.
 - [ ] **Step 2:** Targeting probe: dispatch hover on a `path` inside an icon; assert badge name equals the owning widget's `data-el`, never `path`/`svg`. Hover a bare unannotated `div` region; assert screen-fallback badge (`unannotated region`).
@@ -63,6 +63,6 @@
 
 ## Verification (whole plan)
 
-- [ ] `appbox design lint` green including new `widget-coverage` check
+- [ ] `arxa design lint` green including new `widget-coverage` check
 - [ ] Probe suite green; hard-refresh not required for new badge (fresh `?v=`)
 - [ ] Manual: flip studio accent pref → every badge (chrome + tiles) follows on next hover

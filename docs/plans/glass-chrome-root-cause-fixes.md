@@ -31,7 +31,7 @@ machinery, not by native glass behavior.**
 |---|-------|----------|----------|
 | C1 | ~~`future:` constructed inside `build()` in 5 vendor components → FutureBuilder identity-reset → `SizedBox` → UiKitView teardown/recreate + re-rasterize per rebuild~~ **(mechanism false; real cost is redundant re-resolution)** | `icon.dart:139,168` · `button.dart:385,413` · `glass_button_group.dart:266` · `popup_menu_button.dart:364,370` | ~~flicker (all contexts)~~, slowness |
 | C2 | Chrome gate hides on **global static** transition counter, no mount-scope guard (contrast modal check's `_mountDepth` on same lines); nested routers each add an observer; watchdog holds ~1.35 s | `chrome_gate.dart:186-187`, `transition_observer.dart:51,40`, `nested_router.dart:93` | tab bar hidden during notes-shell transitions; obscure glitch |
-| C3 | `appbox_kit_native_icon_button.dart:89` passes `customIcon:` unconditionally → shadows SF Symbol, forces raster branch on most numerous surface (FAB/split/toolbar guard it; rationale at `fab.dart:80-81`) | audit §3 | flicker + cold-start/build cost |
+| C3 | `arxa_kit_native_icon_button.dart:89` passes `customIcon:` unconditionally → shadows SF Symbol, forces raster branch on most numerous surface (FAB/split/toolbar guard it; rationale at `fab.dart:80-81`) | audit §3 | flicker + cold-start/build cost |
 | C4 | **Scroll-edge tree-shape flip** (2026-08-10 trace, promoted): `scroll_edge_effect.dart:171` returns `widget.child` raw at `t == 0`, wrapped in 4 levels (`IgnorePointer > Opacity > ClipRect > ImageFiltered`) at `t > 0` → Element not reused → subtree unmounts, platform views destroyed/re-created at every crossing. **The remount is the visible artifact** (at flip: sigma 0.16, alpha ≈ 0.983 — imperceptible). No hysteresis: single boundary both directions at `:163` (`t <= 0.02`). Post-frame `_recompute` at `:124` → create→destroy→create on first mount for cards starting under chrome. 10 showcase sites; `showcase_notes_folder_view.mobile.dart:182-183` chains it twice per row; `showcase_split_button_card_widget.dart:53` puts glass card + `CNButton` under the flip. Pure Dart — zero channel traffic. **Independent of the cluster; survives fixing C1/C2/C3.** | audit §4 (rewritten) | scroll-edge breakage ("lists break all the time"), scroll flicker, first-load flicker |
 | C5 (secondary) | Three uncoordinated tab-bar hide paths: 160 ms fade vs instant `SizedBox` swap vs `IndexedStack` swap | `chrome_gate` + `tab_bar.dart:540,566` | fade-then-pop artifacts |
 | C6 (cost only) | ~~Scroll occlusion gate: per-scroll `getOffsetToReveal` + ≤50 `setState`s over platform-view subtrees~~ **MEASURED 2026-08-10: not a real cost, no fix made — see C6 postscript** | `scroll_occlusion_gate.dart:147-179` | ~~scroll stutter~~ |
@@ -46,8 +46,8 @@ C1 > C4 > C2 > C3 > C5 > C6.
 - Interactive glass shimmer on touch is by-design (`Glass.interactive`).
 - `PlatformViewGuard` 500 ms startup swap is debug-only (`kReleaseMode` → immediately ready); ruled out by release repro.
 - Scroll-edge is pure Dart — no `invokeMethod` for scroll/edge/obscure anywhere; native `scrollEdgeAppearance` only in `CupertinoTabBarPlatformView.swift:224,357,946` (tab bar).
-- Home has **5** platform views, not 8 — `AppBoxKitNative*` prefix is naming convention, not a platform-view marker (`AppBoxKitNativeProgress`/`LoadingIndicator` are `CupertinoActivityIndicator`).
-- `cn_transition_observer_test.dart` does **not** exist; the transition tests are `appbox_kit_directional_tab_transition_test.dart`, `appbox_kit_glass_transition_gate_test.dart`, `appbox_kit_tab_switch_transition_test.dart`.
+- Home has **5** platform views, not 8 — `ArxaKitNative*` prefix is naming convention, not a platform-view marker (`ArxaKitNativeProgress`/`LoadingIndicator` are `CupertinoActivityIndicator`).
+- `cn_transition_observer_test.dart` does **not** exist; the transition tests are `arxa_kit_directional_tab_transition_test.dart`, `arxa_kit_glass_transition_gate_test.dart`, `arxa_kit_tab_switch_transition_test.dart`.
 
 ## Constraints
 
@@ -60,8 +60,8 @@ C1 > C4 > C2 > C3 > C5 > C6.
 1. **C1 — stable futures.** Resolve icon source in `initState`/`didUpdateWidget` (or memoize keyed on inputs), never in `build()`; keep last-good child while re-resolving (no `SizedBox` gap).
    *Failing test:* pump widget, trigger unrelated parent rebuild, assert platform-view child is **not** re-created (same state object / no second create call on the mocked channel).
 2. **C2 — scope the chrome gate.** Hide only when the transition belongs to the gate's own navigator scope (mirror the `_mountDepth` pattern already used for modals); make counter per-scope, not static.
-   *Failing test:* nested-router push inside one tab; assert root tab bar's gate never receives hide. New test file beside `appbox_kit_glass_transition_gate_test.dart` (no `cn_transition_observer_test.dart` exists).
-3. **C3 — guard `customIcon` at `appbox_kit_native_icon_button.dart:89`** exactly as FAB does.
+   *Failing test:* nested-router push inside one tab; assert root tab bar's gate never receives hide. New test file beside `arxa_kit_glass_transition_gate_test.dart` (no `cn_transition_observer_test.dart` exists).
+3. **C3 — guard `customIcon` at `arxa_kit_native_icon_button.dart:89`** exactly as FAB does.
    *Failing test:* construct with SF-symbol-only input, assert creationParams carry symbol, not raster bytes.
 4. **C4 — scroll-edge tree-shape stability + hysteresis.** Primary property: **constant tree shape across the threshold** — keep the 4-level wrapper mounted always, drive sigma/opacity to identity at `t == 0` (never return raw child). Hysteresis is secondary (reduces frequency; each flip stays visible without shape stability): dead band replacing the single `:163` boundary. Kill the `:124` post-frame first-mount create→destroy→create. Per glass-docs rule 6 / system-native preference, evaluate whether native-side appearance can drive the effect instead of Dart entirely.
    *Failing tests:* (a) pump child containing a stateful marker, cross threshold both ways, assert same Element/State survives; (b) oscillation around `t ≈ 0.02` produces ≤1 rebuild; (c) first mount under chrome produces exactly 1 mount.
@@ -118,14 +118,14 @@ instance so only the gate's own `setState` was counted. 300 × 1px steps — den
 Why the audit was wrong: `build()` returns `IgnorePointer > Opacity > widget.child` with
 `widget.child` an *identical instance* across the gate's own setState, so
 `Element.updateChild` short-circuits — the rebuild scope is two wrapper widgets, never the
-child subtree. And `appbox_kit_scroll_occlusion_gate.dart:177` (`if (alpha == _alpha) return;`,
+child subtree. And `arxa_kit_scroll_occlusion_gate.dart:177` (`if (alpha == _alpha) return;`,
 above it alpha quantized to 1/50 with 0.98/0.02 deadbands) **already is** the "notify only on
 change" fix this plan prescribed.
 
 Production exposure: exactly **one** call site repo-wide —
 `showcase_notes_folder_view.mobile.dart:128`, via the `.scrollOcclusion()` extension (a
-`AppBoxKitScrollOcclusionGate` grep misses it). It does sit over a platform view
-(`AppBoxKitNativeSearchBar` → `CNSearchBar` → `UiKitView`), and is still never rebuilt: the
+`ArxaKitScrollOcclusionGate` grep misses it). It does sit over a platform view
+(`ArxaKitNativeSearchBar` → `CNSearchBar` → `UiKitView`), and is still never rebuilt: the
 header is pinned, so alpha stays 1.0 and `RenderOpacity` skips the saveLayer too. The
 call-site comment at :117-119 already documented this.
 
@@ -209,7 +209,7 @@ constructor.
 1. Subagent worktrees branch from `origin/master`, which was **12 commits behind** local
    master. One agent spent an entire run re-deriving `6b6dc8c`'s watchdog fix; its
    `transition_observer.dart` came out byte-identical to master's — a pure no-op — while the
-   briefed `appbox_kit_native_chrome_gate.dart` scoping fix went untouched. Every dispatch now
+   briefed `arxa_kit_native_chrome_gate.dart` scoping fix went untouched. Every dispatch now
    carries a mandatory `git merge master` step 0.
 2. An agent whose worktree had been deleted (torn down when its parent coordinator stopped)
    fell back to editing the **main checkout**, then died mid-edit on `glass_button_group.dart`,
@@ -223,13 +223,13 @@ constructor.
 
 ### §3d — the tab-stack fade contradiction is FALSE; the audit misread an opt-in branch
 
-The audit read `appbox_kit_animated_tab_stack.dart:277,281` as fading tab layers. Both lines
+The audit read `arxa_kit_animated_tab_stack.dart:277,281` as fading tab layers. Both lines
 sit behind `if (widget.fade)`. `fade` defaults to **`false`** (`:73`), and the **only**
 production call site — `showcase_application_tab_host_widget.dart:56` — never sets it
 (`grep` over `kit/`, non-test, finds one call site and no `fade:` argument on it). The
 branches are dead at runtime. The comment at `tab_host_widget.dart:53-54` ("slide-only") and
 the code therefore **agree**; there is no contradiction to reconcile. Pinned already by
-`appbox_kit_animated_tab_stack_test.dart:250` ("fade stays off by default (platform-view
+`arxa_kit_animated_tab_stack_test.dart:250` ("fade stays off by default (platform-view
 safety)", `expect(find.byType(FadeTransition), findsNothing)`) — green on this base.
 
 ### Steelman of `20616f2` — and its commit message is misleading
@@ -249,7 +249,7 @@ left untouched. `6412916`'s live-run `ColoredBox` backing is the necessary compa
 background-less tab pages make a "cover" transparent, so the cover must carry the scaffold
 color to actually occlude.
 
-**The one live fade over platform views is elsewhere:** `appbox_kit_native_chrome_gate.dart:252-254`
+**The one live fade over platform views is elsewhere:** `arxa_kit_native_chrome_gate.dart:252-254`
 wraps native chrome in `FadeTransition` + `ScaleTransition` **unconditionally**, and its own
 doc at `:72` concedes opacity is only *"reliably"* applied to platform views under hybrid
 composition and that scale is not. That runs on every push/pop over gated chrome. Whether it
@@ -275,7 +275,7 @@ the chrome gate fades alpha 1→0 over 160 ms (`hideDuration`, `:99`), while `CN
 `IndexedStack` (`tab_bar.dart:566-574`) blanks it **instantly** in frame one. The instant swap
 wins; the fade is spent on something already invisible. That is the "fade-then-pop".
 
-**Fix:** `appbox_kit_tab_bar.dart:101` now passes `autoHideOnPageTransition: false` — the
+**Fix:** `arxa_kit_tab_bar.dart:101` now passes `autoHideOnPageTransition: false` — the
 gate is the single authority. Safe against the vendor warning at `tab_bar.dart:558-565` (which
 guards against the wrapper toggling *while the feature is on*): a constant `false` returns the
 bare platform view every build, so tree shape stays invariant and the `UiKitView` is never
@@ -287,7 +287,7 @@ otherwise renders over modal content); the gate's keep-alive alpha-0 does not de
 the gate's own doc `:71` concedes a fade kept the native view bleeding through. Those two
 claims cannot be reconciled headless, so the third path is left as a **documented exception**
 rather than an unverified z-order regression. Both states are pinned by
-`appbox_kit_tab_bar_single_hide_authority_test.dart`.
+`arxa_kit_tab_bar_single_hide_authority_test.dart`.
 
 **Verification on this base:** `flutter analyze --no-pub` clean in `kit/ui_library` and in the
 vendor; `flutter test` **267 passing / 0 failing** in `kit/ui_library` (265 baseline + 2 new);
@@ -303,7 +303,7 @@ Had it not been, this change would have deleted the only working hide and let th
 ride over an incoming page.
 
 **The tab-switch negative is now watched, not inferred.** "A tab-index change hides nothing"
-is pinned by the third case in `appbox_kit_tab_bar_single_hide_authority_test.dart`
+is pinned by the third case in `arxa_kit_tab_bar_single_hide_authority_test.dart`
 (observer installed, boot push settled, index 0→1, `IgnorePointer.ignoring` stays false). If
 that ever goes true, tab-switch flicker HAS a Flutter-side mechanism.
 
@@ -378,7 +378,7 @@ frame's platform-view set and z-order change mid-switch, and the iOS embedder an
 recomposing its overlays and merging the raster and platform threads. Going instant drops the
 exit slot as well, so the outgoing tab's `GlobalKey` reparent stops happening as a side effect.
 
-**Fix:** `AppBoxKitAnimatedTabStack` gains `animated`, defaulting to `!AppBoxKitPlatform.isIOS`.
+**Fix:** `ArxaKitAnimatedTabStack` gains `animated`, defaulting to `!ArxaKitPlatform.isIOS`.
 Instant is a real cross-cut, not a zero-duration animation — no controller run, no exit slot,
 no reparent, one frame. Material keeps the paired slide, where tab bodies are Flutter-rendered
 and cost nothing to have on stage together; `animated: true` forces the slide back.
@@ -404,7 +404,7 @@ gate's own rule at `:14-17` — **not** measured headlessly. The device pass dec
 
 ### Correction — the old "Lead 1" was wrong twice
 
-The closure named `appbox_kit_native_chrome_gate.dart:252-254` the prime suspect, saying "its
+The closure named `arxa_kit_native_chrome_gate.dart:252-254` the prime suspect, saying "its
 own doc at `:72` concedes the scale is not reliably applied". Both halves fail:
 
 1. **The doc says the opposite,** and lives at `:76-80`, not `:72` (`:72` is the blur-scrim
@@ -413,7 +413,7 @@ own doc at `:72` concedes the scale is not reliably applied". Both halves fail:
    dicier, and any translate would move pixels."* The slight scale is a deliberate, reasoned
    choice that masks the reattach. **No change made** — steelman, not defect.
 2. **The gate never fires on a tab switch.** Already pinned by the third case in
-   `appbox_kit_tab_bar_single_hide_authority_test.dart`, and by C5's discriminating fact: a
+   `arxa_kit_tab_bar_single_hide_authority_test.dart`, and by C5's discriminating fact: a
    `StackedTabsRouter` tab switch pushes no route, so `secondaryAnimation` never runs.
 
 That is **four** audit/closure claims now corrected by evidence in this engagement. The pattern
@@ -437,7 +437,7 @@ Numbers re-run on the merged tree, not taken from the agent report
 11 of those are `CNIcon`s nested inside `CNButton`, and on the device tier `CNButton` renders a
 **leaf** `UiKitView` (`button.dart:675` — `UiKitView` has no child slot at all) carrying the
 symbol as a creationParam, so nested count is 0 and the real number is 14. Likewise 28
-`AppBoxKitNative*`-named widgets → 14 platform views; the name is a convention, and
+`ArxaKitNative*`-named widgets → 14 platform views; the name is a convention, and
 Progress/LoadingIndicator/AppBar/ChromeGate contribute none. The notes-folder blur is live on
 200/200 frames, which is what a *correct* effect yields for a monotonic 400px gesture given the
 hysteresis — and **zero** platform views sit under it, so flutter#24164/#148639 does not apply.
@@ -451,7 +451,7 @@ kit defect — untested either way.
 
 **Decisive device A/B (not run — needs hardware):** `flutter run --profile --trace-startup`,
 read `timeToFirstFrameRasterizedMicros`, then repeat with
-`AppBoxKitPlatform.override = const AppBoxKitPlatformOverride(iosMajor: 25)`, which drops every
+`ArxaKitPlatform.override = const ArxaKitPlatformOverride(iosMajor: 25)`, which drops every
 tier below the Liquid Glass gate and stubs all 14 platform views to Flutter widgets. If cold
 start does not move, platform-view count is not the cause and the slowness is elsewhere.
 Raster-vs-UI thread split in DevTools decides the scroll-stutter half the same way.

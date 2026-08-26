@@ -26,18 +26,18 @@ library;
 
 import 'package:flutter/material.dart';
 import 'package:responsive_builder/responsive_builder.dart';
-import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
+import 'package:arxa_kit_ui_library/arxa_kit_ui_library.dart';
 
-import 'package:appbox_kit_showcase_app/ui/views/showcase_search_shell/showcase_search/showcase_search_view.desktop.dart';
-import 'package:appbox_kit_showcase_app/ui/views/showcase_search_shell/showcase_search/showcase_search_view.tablet.dart';
-import 'package:appbox_kit_showcase_app/ui/views/showcase_search_shell/showcase_search/showcase_search_view.mobile.dart';
-import 'package:appbox_kit_showcase_app/ui/views/showcase_search_shell/showcase_search/showcase_search_viewmodel.dart';
+import 'package:arxa_kit_showcase_app/ui/views/showcase_search_shell/showcase_search/showcase_search_view.desktop.dart';
+import 'package:arxa_kit_showcase_app/ui/views/showcase_search_shell/showcase_search/showcase_search_view.tablet.dart';
+import 'package:arxa_kit_showcase_app/ui/views/showcase_search_shell/showcase_search/showcase_search_view.mobile.dart';
+import 'package:arxa_kit_showcase_app/ui/views/showcase_search_shell/showcase_search/showcase_search_viewmodel.dart';
 
 class ShowcaseSearchView extends StackedView<ShowcaseSearchViewModel> {
   const ShowcaseSearchView({super.key});
 
   /// Identity stamped at emit time (Q12 triple).
-  static const AppBoxKitInspectAttrs inspectAttrs = AppBoxKitInspectAttrs(
+  static const ArxaKitInspectAttrs inspectAttrs = ArxaKitInspectAttrs(
     screenId: 'showcase.search',
     surfaceId: 'surface.search.search',
     anatomyNodeId: 'anatomy:view.body',

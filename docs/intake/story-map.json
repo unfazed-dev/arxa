@@ -1,9 +1,9 @@
 {
-  "project": "appbox",
+  "project": "arxa",
   "releases": [
     {
       "name": "R1 Dogfood",
-      "description": "appbox designs, builds and ships itself; Michelle's 20-minute evaluation"
+      "description": "arxa designs, builds and ships itself; Michelle's 20-minute evaluation"
     },
     {
       "name": "R2 Anywhere",
@@ -334,7 +334,7 @@
               "release": "R1 Dogfood"
             },
             {
-              "name": "Each reference's key screens are captured (appbox lens) and saved with semantic filenames (ref__screen.png)",
+              "name": "Each reference's key screens are captured (arxa lens) and saved with semantic filenames (ref__screen.png)",
               "priority": "must",
               "release": "R1 Dogfood"
             },
@@ -634,7 +634,7 @@
           "name": "Visual",
           "stories": [
             {
-              "name": "appbox lens design-vs-built gates: pixel (SSIM), skeleton, colour (deltaE) against the frozen golden",
+              "name": "arxa lens design-vs-built gates: pixel (SSIM), skeleton, colour (deltaE) against the frozen golden",
               "priority": "must",
               "release": "R1 Dogfood"
             },
@@ -669,7 +669,7 @@
               "release": "R2 Anywhere"
             },
             {
-              "name": "appbox scaffolds each project's git setup: repo init, .gitignore, host connect",
+              "name": "arxa scaffolds each project's git setup: repo init, .gitignore, host connect",
               "priority": "should",
               "release": "R2 Anywhere"
             }
@@ -694,7 +694,7 @@
           "name": "Canvas",
           "stories": [
             {
-              "name": "appbox auto-captures screenshots of design + built app per surface (appbox lens)",
+              "name": "arxa auto-captures screenshots of design + built app per surface (arxa lens)",
               "priority": "must",
               "release": "R2 Anywhere"
             },
@@ -861,7 +861,7 @@
               "release": "R1 Dogfood"
             },
             {
-              "name": "User sees which required keys are missing before build — the credentials surface and `appbox credentials check` report missing required keys per module",
+              "name": "User sees which required keys are missing before build — the credentials surface and `arxa credentials check` report missing required keys per module",
               "priority": "must",
               "release": "R1 Dogfood"
             },
@@ -871,7 +871,7 @@
               "release": "R1 Dogfood"
             },
             {
-              "name": "One config surface unifies the app's knobs — build targets and default locale (the appbox.config.json mirror), a credentials summary per module with missing-required badges, and shell prefs (theme, accent, jargon) — so the user reviews everything a generated app ships with in one place",
+              "name": "One config surface unifies the app's knobs — build targets and default locale (the arxa.config.json mirror), a credentials summary per module with missing-required badges, and shell prefs (theme, accent, jargon) — so the user reviews everything a generated app ships with in one place",
               "priority": "must",
               "release": "R1 Dogfood"
             }
@@ -897,7 +897,7 @@
           "name": "Site",
           "stories": [
             {
-              "name": "A visitor gets appbox in 30 seconds: gated pipeline, own-your-code export, pay-at-scaffold",
+              "name": "A visitor gets arxa in 30 seconds: gated pipeline, own-your-code export, pay-at-scaffold",
               "priority": "must",
               "release": "R2 Anywhere"
             },
@@ -937,7 +937,7 @@
           "name": "Showcase",
           "stories": [
             {
-              "name": "Recorded walkthroughs and design-vs-built comparisons (appbox lens captures) prove quality before install",
+              "name": "Recorded walkthroughs and design-vs-built comparisons (arxa lens captures) prove quality before install",
               "priority": "should",
               "release": "R2 Anywhere"
             },

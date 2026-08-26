@@ -1,6 +1,6 @@
 # 09 — Serving prototypes without a Node install
 
-**Goal.** appbox serves the htmx prototype with **~1 MB** of added weight and
+**Goal.** arxa serves the htmx prototype with **~1 MB** of added weight and
 **zero prerequisites** for the buyer.
 
 **Blocks:** 12, 14. **Depends on:** 08.

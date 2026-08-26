@@ -1,5 +1,5 @@
 /// A view composes adaptive primitives from the kit's native family and binds
-/// the viewmodel's streams with [AppBoxKitStreamBuilder], calling the viewmodel's
+/// the viewmodel's streams with [ArxaKitStreamBuilder], calling the viewmodel's
 /// actions on user input. It never contains business logic — every decision
 /// lives in the viewmodel, and only the subtree bound to a changed stream
 /// redraws.
@@ -54,19 +54,19 @@ library;
 
 import 'package:flutter/material.dart';
 import 'package:responsive_builder/responsive_builder.dart';
-import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
+import 'package:arxa_kit_ui_library/arxa_kit_ui_library.dart';
 
-import 'package:appbox_kit_showcase_app/ui/views/showcase_notes_shell/showcase_notes_folder/showcase_notes_folder_view.desktop.dart';
-import 'package:appbox_kit_showcase_app/ui/views/showcase_notes_shell/showcase_notes_folder/showcase_notes_folder_view.tablet.dart';
-import 'package:appbox_kit_showcase_app/ui/views/showcase_notes_shell/showcase_notes_folder/showcase_notes_folder_view.mobile.dart';
-import 'package:appbox_kit_showcase_app/ui/views/showcase_notes_shell/showcase_notes_folder/showcase_notes_folder_viewmodel.dart';
+import 'package:arxa_kit_showcase_app/ui/views/showcase_notes_shell/showcase_notes_folder/showcase_notes_folder_view.desktop.dart';
+import 'package:arxa_kit_showcase_app/ui/views/showcase_notes_shell/showcase_notes_folder/showcase_notes_folder_view.tablet.dart';
+import 'package:arxa_kit_showcase_app/ui/views/showcase_notes_shell/showcase_notes_folder/showcase_notes_folder_view.mobile.dart';
+import 'package:arxa_kit_showcase_app/ui/views/showcase_notes_shell/showcase_notes_folder/showcase_notes_folder_viewmodel.dart';
 
 class ShowcaseNotesFolderView
     extends StackedView<ShowcaseNotesFolderViewModel> {
   const ShowcaseNotesFolderView({super.key});
 
   /// Identity stamped at emit time (Q12 triple).
-  static const AppBoxKitInspectAttrs inspectAttrs = AppBoxKitInspectAttrs(
+  static const ArxaKitInspectAttrs inspectAttrs = ArxaKitInspectAttrs(
     screenId: 'showcase.notesfolder',
     surfaceId: 'surface.notes.notes_folder',
     anatomyNodeId: 'anatomy:view.body',

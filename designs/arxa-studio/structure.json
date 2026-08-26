@@ -1,0 +1,644 @@
+{
+  "$schema": "arxa/structure@2",
+  "registry": "models/screens_model/registry.json",
+  "shellRoots": {
+    "intake": "/intake",
+    "design": "/design",
+    "scaffold": "/scaffold",
+    "build": "/build",
+    "app": "/dashboard",
+    "workspace": "/workspace"
+  },
+  "screens": [
+    {
+      "id": "app.splash",
+      "shell": "app",
+      "comp": "AppSplash",
+      "shellDir": "app_shell",
+      "surface": "app_shell_app_splash_view",
+      "viewmodel": "ui/views/app_shell/splash/splash_viewmodel.js",
+      "deps": [
+        "services/facades/app_facade.js"
+      ]
+    },
+    {
+      "id": "app.startup",
+      "shell": "app",
+      "comp": "AppStartup",
+      "shellDir": "app_shell",
+      "surface": "app_shell_app_startup_view",
+      "viewmodel": "ui/views/app_shell/startup/startup_viewmodel.js",
+      "deps": [
+        "services/facades/app_facade.js"
+      ]
+    },
+    {
+      "id": "app.access",
+      "shell": "app",
+      "comp": "AppAccess",
+      "shellDir": "app_shell",
+      "surface": "app_shell_app_access_view",
+      "viewmodel": "ui/views/app_shell/auth/auth_viewmodel.js",
+      "deps": [
+        "services/facades/app_facade.js"
+      ]
+    },
+    {
+      "id": "app.dashboard",
+      "shell": "app",
+      "comp": "AppDashboard",
+      "shellDir": "app_shell",
+      "surface": "app_shell_app_dashboard_view",
+      "viewmodel": "ui/views/app_shell/dashboard/dashboard_viewmodel.js",
+      "deps": [
+        "services/facades/app_facade.js"
+      ]
+    },
+    {
+      "id": "app.unknown",
+      "shell": "app",
+      "comp": "AppUnknown",
+      "shellDir": "app_shell",
+      "surface": "app_shell_app_unknown_view",
+      "viewmodel": "ui/views/app_shell/unknown/unknown_viewmodel.js",
+      "deps": []
+    },
+    {
+      "id": "intake.interview",
+      "shell": "intake",
+      "comp": "IntakeInterview",
+      "shellDir": "main_shell",
+      "surface": "main_shell_intake_interview_view",
+      "viewmodel": "ui/views/main_shell/intake/interview/interview_viewmodel.js",
+      "deps": [
+        "services/facades/intake_facade.js"
+      ]
+    },
+    {
+      "id": "intake.personas",
+      "shell": "intake",
+      "comp": "IntakePersonas",
+      "shellDir": "main_shell",
+      "surface": "main_shell_intake_personas_view",
+      "viewmodel": "ui/views/main_shell/intake/personas/personas_viewmodel.js",
+      "deps": [
+        "services/facades/intake_facade.js"
+      ]
+    },
+    {
+      "id": "intake.surfaces",
+      "shell": "intake",
+      "comp": "IntakeSurfaces",
+      "shellDir": "main_shell",
+      "surface": "main_shell_intake_surfaces_view",
+      "viewmodel": "ui/views/main_shell/intake/surfaces/surfaces_viewmodel.js",
+      "deps": [
+        "services/facades/intake_facade.js"
+      ]
+    },
+    {
+      "id": "intake.flows",
+      "shell": "intake",
+      "comp": "IntakeFlows",
+      "shellDir": "main_shell",
+      "surface": "main_shell_intake_flows_view",
+      "viewmodel": "ui/views/main_shell/intake/flows/flows_viewmodel.js",
+      "deps": [
+        "services/facades/intake_facade.js"
+      ]
+    },
+    {
+      "id": "intake.mapping",
+      "shell": "intake",
+      "comp": "IntakeMapping",
+      "shellDir": "main_shell",
+      "surface": "main_shell_intake_mapping_view",
+      "viewmodel": "ui/views/main_shell/intake/mapping/mapping_viewmodel.js",
+      "deps": [
+        "services/facades/intake_facade.js"
+      ]
+    },
+    {
+      "id": "intake.direction",
+      "shell": "intake",
+      "comp": "IntakeDirection",
+      "shellDir": "main_shell",
+      "surface": "main_shell_intake_direction_view",
+      "viewmodel": "ui/views/main_shell/intake/direction/direction_viewmodel.js",
+      "deps": [
+        "services/facades/intake_facade.js"
+      ]
+    },
+    {
+      "id": "intake.live",
+      "shell": "intake",
+      "comp": "IntakeLive",
+      "shellDir": "main_shell",
+      "surface": null,
+      "viewmodel": null,
+      "deps": []
+    },
+    {
+      "id": "intake.brief",
+      "shell": "intake",
+      "comp": "IntakeBrief",
+      "shellDir": "main_shell",
+      "surface": "main_shell_intake_brief_view",
+      "viewmodel": "ui/views/main_shell/intake/brief/brief_viewmodel.js",
+      "deps": [
+        "services/facades/intake_facade.js"
+      ]
+    },
+    {
+      "id": "intake.moodboard",
+      "shell": "intake",
+      "comp": "IntakeMoodboard",
+      "shellDir": "main_shell",
+      "surface": "main_shell_intake_moodboard_view",
+      "viewmodel": "ui/views/main_shell/intake/moodboard/moodboard_viewmodel.js",
+      "deps": [
+        "services/facades/intake_facade.js"
+      ]
+    },
+    {
+      "id": "design.prototype",
+      "shell": "design",
+      "comp": "DesignPrototype",
+      "shellDir": "main_shell",
+      "surface": "main_shell_design_prototype_view",
+      "viewmodel": "ui/views/main_shell/design/prototype/prototype_viewmodel.js",
+      "deps": [
+        "services/facades/design_facade.js"
+      ]
+    },
+    {
+      "id": "design.chat",
+      "shell": "design",
+      "comp": "DesignChat",
+      "shellDir": "main_shell",
+      "surface": "main_shell_design_chat_view",
+      "viewmodel": "ui/views/main_shell/design/chat/chat_viewmodel.js",
+      "deps": [
+        "services/facades/design_facade.js"
+      ]
+    },
+    {
+      "id": "design.freeze",
+      "shell": "design",
+      "comp": "DesignFreeze",
+      "shellDir": "main_shell",
+      "surface": "main_shell_design_freeze_view",
+      "viewmodel": "ui/views/main_shell/design/freeze/freeze_viewmodel.js",
+      "deps": [
+        "services/facades/design_facade.js"
+      ]
+    },
+    {
+      "id": "scaffold.picker",
+      "shell": "scaffold",
+      "comp": "ScaffoldPicker",
+      "shellDir": "main_shell",
+      "surface": "main_shell_scaffold_picker_view",
+      "viewmodel": "ui/views/main_shell/scaffold/picker/picker_viewmodel.js",
+      "deps": [
+        "services/facades/scaffold_facade.js"
+      ]
+    },
+    {
+      "id": "scaffold.run",
+      "shell": "scaffold",
+      "comp": "ScaffoldRun",
+      "shellDir": "main_shell",
+      "surface": "main_shell_scaffold_run_view",
+      "viewmodel": "ui/views/main_shell/scaffold/run/run_viewmodel.js",
+      "deps": [
+        "services/facades/scaffold_run_facade.js"
+      ]
+    },
+    {
+      "id": "chat.chat2",
+      "shell": "chat",
+      "comp": "ChatChat2",
+      "shellDir": null,
+      "surface": null,
+      "viewmodel": null,
+      "deps": []
+    },
+    {
+      "id": "shell.composer",
+      "shell": "shell",
+      "comp": "ShellComposer",
+      "shellDir": null,
+      "surface": null,
+      "viewmodel": null,
+      "deps": []
+    },
+    {
+      "id": "shell.footer",
+      "shell": "shell",
+      "comp": "ShellFooter",
+      "shellDir": null,
+      "surface": null,
+      "viewmodel": null,
+      "deps": []
+    },
+    {
+      "id": "build.loop",
+      "shell": "build",
+      "comp": "BuildLoop",
+      "shellDir": "main_shell",
+      "surface": "main_shell_build_loop_view",
+      "viewmodel": "ui/views/main_shell/build/loop/loop_viewmodel.js",
+      "deps": [
+        "services/facades/build_facade.js"
+      ]
+    },
+    {
+      "id": "build.gates",
+      "shell": "build",
+      "comp": "BuildGates",
+      "shellDir": "main_shell",
+      "surface": null,
+      "viewmodel": null,
+      "deps": []
+    },
+    {
+      "id": "build.visual",
+      "shell": "build",
+      "comp": "BuildVisual",
+      "shellDir": "main_shell",
+      "surface": null,
+      "viewmodel": null,
+      "deps": []
+    },
+    {
+      "id": "source.git",
+      "shell": "source",
+      "comp": "SourceGit",
+      "shellDir": null,
+      "surface": null,
+      "viewmodel": null,
+      "deps": []
+    },
+    {
+      "id": "source.files",
+      "shell": "source",
+      "comp": "SourceFiles",
+      "shellDir": null,
+      "surface": null,
+      "viewmodel": null,
+      "deps": []
+    },
+    {
+      "id": "flows.canvas",
+      "shell": "flows",
+      "comp": "FlowsCanvas",
+      "shellDir": null,
+      "surface": null,
+      "viewmodel": null,
+      "deps": []
+    },
+    {
+      "id": "ship.deploy",
+      "shell": "ship",
+      "comp": "ShipDeploy",
+      "shellDir": null,
+      "surface": null,
+      "viewmodel": null,
+      "deps": []
+    },
+    {
+      "id": "first.showcase",
+      "shell": "first",
+      "comp": "FirstShowcase",
+      "shellDir": null,
+      "surface": null,
+      "viewmodel": null,
+      "deps": []
+    },
+    {
+      "id": "first.honesty",
+      "shell": "first",
+      "comp": "FirstHonesty",
+      "shellDir": null,
+      "surface": null,
+      "viewmodel": null,
+      "deps": []
+    },
+    {
+      "id": "workspace.projects2",
+      "shell": "workspace",
+      "comp": "WorkspaceProjects2",
+      "shellDir": "workspace_shell",
+      "surface": null,
+      "viewmodel": null,
+      "deps": []
+    },
+    {
+      "id": "workspace.settings",
+      "shell": "workspace",
+      "comp": "WorkspaceSettings",
+      "shellDir": "workspace_shell",
+      "surface": "workspace_shell_workspace_settings_view",
+      "viewmodel": "ui/views/workspace_shell/settings/settings_viewmodel.js",
+      "deps": [
+        "services/facades/app_facade.js"
+      ]
+    },
+    {
+      "id": "workspace.credentials",
+      "shell": "workspace",
+      "comp": "WorkspaceCredentials",
+      "shellDir": "workspace_shell",
+      "surface": "workspace_shell_workspace_credentials_view",
+      "viewmodel": "ui/views/workspace_shell/credentials/credential_viewmodel.js",
+      "deps": [
+        "services/facades/app_facade.js"
+      ]
+    },
+    {
+      "id": "workspace.config",
+      "shell": "workspace",
+      "comp": "WorkspaceConfig",
+      "shellDir": "workspace_shell",
+      "surface": "workspace_shell_workspace_config_view",
+      "viewmodel": "ui/views/workspace_shell/config/config_viewmodel.js",
+      "deps": [
+        "services/facades/app_facade.js"
+      ]
+    },
+    {
+      "id": "workspace.plans",
+      "shell": "workspace",
+      "comp": "WorkspacePlans",
+      "shellDir": "workspace_shell",
+      "surface": "workspace_shell_workspace_plans_view",
+      "viewmodel": "ui/views/workspace_shell/plans/plans_viewmodel.js",
+      "deps": [
+        "services/facades/app_facade.js"
+      ]
+    },
+    {
+      "id": "website.site",
+      "shell": "website",
+      "comp": "WebsiteSite",
+      "shellDir": null,
+      "surface": null,
+      "viewmodel": null,
+      "deps": []
+    },
+    {
+      "id": "website.docs",
+      "shell": "website",
+      "comp": "WebsiteDocs",
+      "shellDir": null,
+      "surface": null,
+      "viewmodel": null,
+      "deps": []
+    },
+    {
+      "id": "website.showcase2",
+      "shell": "website",
+      "comp": "WebsiteShowcase2",
+      "shellDir": null,
+      "surface": null,
+      "viewmodel": null,
+      "deps": []
+    },
+    {
+      "id": "website.download",
+      "shell": "website",
+      "comp": "WebsiteDownload",
+      "shellDir": null,
+      "surface": null,
+      "viewmodel": null,
+      "deps": []
+    }
+  ],
+  "flows": [
+    {
+      "id": "flow-intake",
+      "name": "New project intake",
+      "persona": "persona-client",
+      "provenance": "inferred",
+      "edges": [
+        {
+          "from": "app.dashboard",
+          "to": "intake.interview",
+          "trigger": "New project",
+          "label": "start"
+        },
+        {
+          "from": "intake.interview",
+          "to": "intake.personas",
+          "trigger": "Questions answered"
+        },
+        {
+          "from": "intake.personas",
+          "to": "intake.surfaces",
+          "trigger": "Personas confirmed"
+        },
+        {
+          "from": "intake.surfaces",
+          "to": "intake.flows",
+          "trigger": "Inventory confirmed"
+        },
+        {
+          "from": "intake.flows",
+          "to": "intake.mapping",
+          "trigger": "Flows confirmed"
+        },
+        {
+          "from": "intake.mapping",
+          "to": "intake.direction",
+          "trigger": "Map approved"
+        },
+        {
+          "from": "intake.direction",
+          "to": "intake.brief",
+          "trigger": "Direction confirmed"
+        },
+        {
+          "from": "intake.brief",
+          "to": "design.prototype",
+          "trigger": "Brief approved",
+          "label": "handoff"
+        }
+      ]
+    },
+    {
+      "id": "flow-build",
+      "name": "Design to build",
+      "persona": "persona-designer",
+      "provenance": "inferred",
+      "edges": [
+        {
+          "from": "design.prototype",
+          "to": "design.freeze",
+          "trigger": "Freeze"
+        },
+        {
+          "from": "design.freeze",
+          "to": "scaffold.picker",
+          "trigger": "Scaffold"
+        },
+        {
+          "from": "scaffold.picker",
+          "to": "scaffold.run",
+          "trigger": "Scaffold selected kits"
+        },
+        {
+          "from": "scaffold.run",
+          "to": "build.loop",
+          "trigger": "Scaffold complete"
+        },
+        {
+          "from": "build.loop",
+          "to": "build.gates",
+          "trigger": "Run gates"
+        },
+        {
+          "from": "build.gates",
+          "to": "ship.deploy",
+          "trigger": "Gates green"
+        }
+      ]
+    },
+    {
+      "id": "flow-credentials",
+      "name": "Connect services",
+      "persona": "persona-developer",
+      "provenance": "founder",
+      "edges": [
+        {
+          "from": "workspace.settings",
+          "to": "workspace.credentials",
+          "trigger": "Open credentials"
+        },
+        {
+          "from": "workspace.credentials",
+          "to": "workspace.config",
+          "trigger": "Add key"
+        },
+        {
+          "from": "workspace.config",
+          "to": "design.prototype",
+          "trigger": "Use kit in design"
+        }
+      ]
+    }
+  ],
+  "theme": {
+    "default": "cyan",
+    "roles": {
+      "surfaceMix": 8,
+      "textMix": 30,
+      "mutedMix": 20
+    },
+    "swatches": [
+      {
+        "name": "cyan",
+        "dot": "#21BFE9",
+        "light": {
+          "accent": "#0C87A8",
+          "soft": "rgba(12, 135, 168, .12)",
+          "on": "#FFFCF0"
+        },
+        "dark": {
+          "accent": "#45D5F5",
+          "soft": "rgba(69, 213, 245, .16)",
+          "on": "#100F0F"
+        }
+      },
+      {
+        "name": "violet",
+        "dot": "#4E28D5",
+        "light": {
+          "accent": "#4E28D5",
+          "soft": "rgba(78, 40, 213, .10)",
+          "on": "#FFFCF0"
+        },
+        "dark": {
+          "accent": "#9A82F0",
+          "soft": "rgba(154, 130, 240, .18)",
+          "on": "#100F0F"
+        }
+      },
+      {
+        "name": "blue",
+        "dot": "#3473DF",
+        "light": {
+          "accent": "#3473DF",
+          "soft": "rgba(52, 115, 223, .12)",
+          "on": "#FFFCF0"
+        },
+        "dark": {
+          "accent": "#7FA5F0",
+          "soft": "rgba(127, 165, 240, .18)",
+          "on": "#100F0F"
+        }
+      },
+      {
+        "name": "ember",
+        "dot": "#DA702C",
+        "light": {
+          "accent": "#BC5215",
+          "soft": "rgba(188, 82, 21, .09)",
+          "on": "#FFFCF0"
+        },
+        "dark": {
+          "accent": "#DA702C",
+          "soft": "rgba(218, 112, 44, .13)",
+          "on": "#100F0F"
+        }
+      },
+      {
+        "name": "moss",
+        "dot": "#879A39",
+        "light": {
+          "accent": "#66800B",
+          "soft": "rgba(102, 128, 11, .10)",
+          "on": "#FFFCF0"
+        },
+        "dark": {
+          "accent": "#879A39",
+          "soft": "rgba(135, 154, 57, .16)",
+          "on": "#100F0F"
+        }
+      }
+    ]
+  },
+  "fonts": {
+    "default": "lexend",
+    "families": [
+      {
+        "id": "lexend",
+        "label": "Lexend",
+        "cssName": "Lexend",
+        "role": "ui",
+        "license": "OFL-1.1"
+      },
+      {
+        "id": "grotesk",
+        "label": "Space Grotesk",
+        "cssName": "Space Grotesk",
+        "role": "display",
+        "license": "OFL-1.1"
+      },
+      {
+        "id": "lora",
+        "label": "Lora",
+        "cssName": "Lora",
+        "role": "ui",
+        "license": "OFL-1.1"
+      },
+      {
+        "id": "mono",
+        "label": "JetBrains Mono",
+        "cssName": "JetBrains Mono",
+        "role": "mono",
+        "license": "OFL-1.1"
+      }
+    ]
+  }
+}

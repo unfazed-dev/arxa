@@ -96,8 +96,8 @@ occur. The first draft had no wait, passed, and kept passing under mutation.
 
 ## Four things that bite
 
-1. **The shared temp prefix.** `Directory.systemTemp.createTemp('appbox-cdp-')`
-   means `pkill -f appbox-cdp-` kills *every* Chrome this repo started. A
+1. **The shared temp prefix.** `Directory.systemTemp.createTemp('arxa-cdp-')`
+   means `pkill -f arxa-cdp-` kills *every* Chrome this repo started. A
    daemon holding one for hours is one stray script away from death. Reaping
    must use the scoped ownership check on the exact `--user-data-dir=<dir>`.
    A dir with no owning pid is a true orphan and safe to delete alone.
@@ -142,11 +142,11 @@ that is a separate decision, not a silent one.
 3. ~~Verb integration~~ — `LensDaemon.acquire()`, 19 call sites by rename.
 4. ~~Recycle on `shotsServed`~~ — counted at the CDP chokepoint, 900.
 
-~~**Next, and it outranks more daemon work:** ship `appbox` as a compiled
+~~**Next, and it outranks more daemon work:** ship `arxa` as a compiled
 binary. 1.45s per invocation, three times the daemon's saving, for a build
-step.~~ — DONE in `fea797f0`: `install.sh` compiles to `.build/appbox` and
-installs a `~/.local/bin/appbox` shim that rebuilds when any `.dart` source is
-newer (and under `APPBOX_FAST` fails/warns loudly instead of paying the compile
+step.~~ — DONE in `fea797f0`: `install.sh` compiles to `.build/arxa` and
+installs a `~/.local/bin/arxa` shim that rebuilds when any `.dart` source is
+newer (and under `ARXA_FAST` fails/warns loudly instead of paying the compile
 or running stale). Measured warm start 0.02s against the 1.45s `dart run`
 floor.
 

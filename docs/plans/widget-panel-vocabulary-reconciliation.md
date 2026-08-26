@@ -9,7 +9,7 @@ scaffolder (widgets)".
 
 ### D1 — One term: widget
 - **Widget** is canonical everywhere; **component** is retired from all docs and paths.
-- `skills/appbox-designer/starter-partials/components/` → `starter-partials/widgets/`.
+- `skills/arxa-designer/starter-partials/components/` → `starter-partials/widgets/`.
 - `docs/VOCABULARY.md` gains entries: **Widget** (reusable UI piece; HTML macro/partial
   in the design medium, Dart class in the build medium — one concept, two mediums),
   **Panel** (the five roles), and the **placement law** (D5).
@@ -74,7 +74,7 @@ scaffolder (widgets)".
 - The scaffolder mirrors the five-role panel widget set so generated apps inherit the
   same shape.
 
-### D5 — Enforcement: the opinion lives in appboxd
+### D5 — Enforcement: the opinion lives in arxa
 **Placement law (one sentence): a widget lives at the narrowest scope that covers all
 its consumers; the include/import graph is the only authority, enforced in both
 directions.** (Generalizes S10's sole-consumer overlay rule; the alternative
@@ -96,7 +96,7 @@ Scaffolder updates (same law, build side):
 - **New cross-shell home `lib/ui/widgets/`**: legal only for widgets imported by 2+
   shells; `scaffold.dart` emits it when the design's widget map warrants;
   `gate_scaffold.dart` + `scaffold_test.dart` updated.
-- `skills/appbox-designer/references/app-architecture.md:141` ("Shared partials go in
+- `skills/arxa-designer/references/app-architecture.md:141` ("Shared partials go in
   ui/common/") rewritten to the three-tier law.
 
 ### D6 — One vocabulary, no box-themed aliases
@@ -108,7 +108,7 @@ Scaffolder updates (same law, build side):
 ## Execution order (each phase its own commit, probes gate every phase)
 
 0. **Pre-step**: SSOT check before touching the skill —
-   `~/.agents/skills/consultant/scripts/consult.sh gate skill appbox-designer`.
+   `~/.agents/skills/consultant/scripts/consult.sh gate skill arxa-designer`.
 1. **Docs + vocabulary**: VOCABULARY.md entries (Widget, Panel, placement law, brand
    glossary), app-architecture.md rewrite, _integration_panels.md additions (state
    ownership, chip-row rule), new ADR "one vocabulary + placement law",
@@ -122,7 +122,7 @@ Scaffolder updates (same law, build side):
    Verify: panel-contract probe (sections J/K keep passing).
 5. **design_viewer demotion**: largest slice, own commit; islands (canvas/drag/
    inspect/flowwalk/explode) selector audit; viewer probes updated deliberately.
-6. **W-gate**: W1–W6 in appboxd + `design lint` wiring; each rule mutation-tested
+6. **W-gate**: W1–W6 in arxa + `design lint` wiring; each rule mutation-tested
    (introduce violation → exact rule fails, others stay green).
 7. **Scaffolder**: S6 scope-truth, `lib/ui/widgets/`, scaffold.dart emission,
    scaffold_test + gate tests.
@@ -138,9 +138,9 @@ Scaffolder updates (same law, build side):
 ## Verification (definition of done)
 - `design lint` clean including new W-rules; every W-rule proven non-vacuous by
   mutation.
-- `dart test` green in appboxd (scaffold, gates, selftest).
+- `dart test` green in arxa (scaffold, gates, selftest).
 - Full probe suite green: panel-contract (incl. J/K), panel-resize, no-reload,
   composer-draft, shell-chrome, inspect + new chip section.
-- Zero `component` hits in skills/appbox-designer docs and appbox docs (excluding
+- Zero `component` hits in skills/arxa-designer docs and arxa docs (excluding
   third-party/vendor).
 - Chips visually aligned: one screenshot pass across intake/design/build at 1900/800px.

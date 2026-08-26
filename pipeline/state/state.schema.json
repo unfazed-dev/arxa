@@ -1,7 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "$id": "pipeline/state/state.schema.json",
-  "title": "appbox pipeline state",
+  "title": "arxa pipeline state",
   "description": "The single source of truth for a run. Targets live here in state, never in CLI flags (architecture §11). Approval tokens are minted only by a human at a gate — never by an agent.",
   "type": "object",
   "required": ["phase", "targets", "approvalTokens", "designHash", "kitSha"],

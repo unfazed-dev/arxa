@@ -8,38 +8,38 @@
 ///
 /// Requirements:
 /// 1. [Notification smoke test]
-/// Fires every notification kind and snackbar tier via AppBoxKitNotificationService.
+/// Fires every notification kind and snackbar tier via ArxaKitNotificationService.
 ///
 /// History: git log --follow -- kit/showcase_app/lib/ui/widgets/showcase_home_widgets/showcase_snackbar_smoke_row_widget.dart
 library;
 
 import 'package:flutter/material.dart';
-import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
+import 'package:arxa_kit_ui_library/arxa_kit_ui_library.dart';
 
 class ShowcaseSnackbarSmokeRowWidget extends StatelessWidget {
   const ShowcaseSnackbarSmokeRowWidget({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final notifications = appBoxKitLocator<AppBoxKitNotificationService>();
+    final notifications = arxaKitLocator<ArxaKitNotificationService>();
     // Resolve per theme: the fixed light ramp reads dim-to-invisible on the
     // dark glass after a theme flip (the colour crosses to the native tier
     // as the glyph/tint).
     final dark = Theme.of(context).brightness == Brightness.dark;
-    final muted = dark ? AppBoxKitDarkColors.ink3 : AppBoxKitColors.muted;
-    final good = dark ? AppBoxKitDarkColors.good : AppBoxKitColors.good;
-    final danger = dark ? AppBoxKitDarkColors.danger : AppBoxKitColors.danger;
-    final warn = dark ? AppBoxKitDarkColors.warn : AppBoxKitColors.warn;
+    final muted = dark ? ArxaKitDarkColors.ink3 : ArxaKitColors.muted;
+    final good = dark ? ArxaKitDarkColors.good : ArxaKitColors.good;
+    final danger = dark ? ArxaKitDarkColors.danger : ArxaKitColors.danger;
+    final warn = dark ? ArxaKitDarkColors.warn : ArxaKitColors.warn;
     Widget snackbarButton(
-      AppBoxKitGlyph glyph,
+      ArxaKitGlyph glyph,
       Color color,
-      AppBoxKitNotificationKind kind,
+      ArxaKitNotificationKind kind,
       String label, {
-      AppBoxKitToastPosition position = AppBoxKitToastPosition.top,
+      ArxaKitToastPosition position = ArxaKitToastPosition.top,
       String? title,
       String? actionLabel,
     }) =>
-        AppBoxKitNativeIconButton(
+        ArxaKitNativeIconButton(
           glyph: glyph,
           color: color,
           onPressed: () => notifications.show(
@@ -51,7 +51,7 @@ class ShowcaseSnackbarSmokeRowWidget extends StatelessWidget {
             onAction: actionLabel == null
                 ? null
                 : () => notifications.show('Undo tapped',
-                    kind: AppBoxKitNotificationKind.info, context: context),
+                    kind: ArxaKitNotificationKind.info, context: context),
             context: context,
           ),
         );
@@ -61,35 +61,35 @@ class ShowcaseSnackbarSmokeRowWidget extends StatelessWidget {
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            snackbarButton(AppBoxKitGlyphs.info, muted,
-                AppBoxKitNotificationKind.info, 'Info'),
-            appBoxKitHorizontalSpaceSmall,
-            snackbarButton(AppBoxKitGlyphs.success, good,
-                AppBoxKitNotificationKind.success, 'Success'),
-            appBoxKitHorizontalSpaceSmall,
-            snackbarButton(AppBoxKitGlyphs.error, danger,
-                AppBoxKitNotificationKind.error, 'Error'),
-            appBoxKitHorizontalSpaceSmall,
-            snackbarButton(AppBoxKitGlyphs.warning, warn,
-                AppBoxKitNotificationKind.warning, 'Warning',
-                position: AppBoxKitToastPosition.center),
+            snackbarButton(ArxaKitGlyphs.info, muted,
+                ArxaKitNotificationKind.info, 'Info'),
+            arxaKitHorizontalSpaceSmall,
+            snackbarButton(ArxaKitGlyphs.success, good,
+                ArxaKitNotificationKind.success, 'Success'),
+            arxaKitHorizontalSpaceSmall,
+            snackbarButton(ArxaKitGlyphs.error, danger,
+                ArxaKitNotificationKind.error, 'Error'),
+            arxaKitHorizontalSpaceSmall,
+            snackbarButton(ArxaKitGlyphs.warning, warn,
+                ArxaKitNotificationKind.warning, 'Warning',
+                position: ArxaKitToastPosition.center),
           ],
         ),
-        appBoxKitVerticalSpaceSmall,
+        arxaKitVerticalSpaceSmall,
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            snackbarButton(AppBoxKitGlyphs.compose, muted,
-                AppBoxKitNotificationKind.success, 'Changes saved',
+            snackbarButton(ArxaKitGlyphs.compose, muted,
+                ArxaKitNotificationKind.success, 'Changes saved',
                 title: 'Notes'),
-            appBoxKitHorizontalSpaceSmall,
-            snackbarButton(AppBoxKitGlyphs.error, danger,
-                AppBoxKitNotificationKind.error, 'Note deleted',
+            arxaKitHorizontalSpaceSmall,
+            snackbarButton(ArxaKitGlyphs.error, danger,
+                ArxaKitNotificationKind.error, 'Note deleted',
                 actionLabel: 'Undo'),
-            appBoxKitHorizontalSpaceSmall,
-            snackbarButton(AppBoxKitGlyphs.info, muted,
-                AppBoxKitNotificationKind.info, 'Bottom',
-                position: AppBoxKitToastPosition.bottom),
+            arxaKitHorizontalSpaceSmall,
+            snackbarButton(ArxaKitGlyphs.info, muted,
+                ArxaKitNotificationKind.info, 'Bottom',
+                position: ArxaKitToastPosition.bottom),
           ],
         ),
       ],

@@ -12,8 +12,8 @@
 library;
 
 import 'package:flutter/material.dart';
-import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
-import 'package:appbox_kit_showcase_app/ui/views/showcase_search_shell/showcase_search/showcase_search_viewmodel.dart';
+import 'package:arxa_kit_ui_library/arxa_kit_ui_library.dart';
+import 'package:arxa_kit_showcase_app/ui/views/showcase_search_shell/showcase_search/showcase_search_viewmodel.dart';
 
 class ShowcaseSearchOptionsSectionWidget extends StatelessWidget {
   const ShowcaseSearchOptionsSectionWidget(
@@ -24,22 +24,22 @@ class ShowcaseSearchOptionsSectionWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // The kit's grouped-list idiom (replacing the hand-composed
-    // AppBoxKitGlassCard + Divider + ShowcaseLabeledSwitch rows): margin zero —
+    // ArxaKitGlassCard + Divider + ShowcaseLabeledSwitch rows): margin zero —
     // the ListView padding already insets 16.
-    return AppBoxKitListSection(
+    return ArxaKitListSection(
       margin: EdgeInsets.zero,
       children: [
-        AppBoxKitListTile(
+        ArxaKitListTile(
           title: 'Open now',
-          trailing: AppBoxKitNativeSwitch(
+          trailing: ArxaKitNativeSwitch(
             value: viewModel.openNow,
             onChanged: viewModel.setOpenNow,
             semanticLabel: 'Open now',
           ),
         ),
-        AppBoxKitListTile(
+        ArxaKitListTile(
           title: 'Outdoor seating',
-          trailing: AppBoxKitNativeSwitch(
+          trailing: ArxaKitNativeSwitch(
             value: viewModel.outdoor,
             onChanged: viewModel.setOutdoor,
             semanticLabel: 'Outdoor seating',
@@ -47,6 +47,6 @@ class ShowcaseSearchOptionsSectionWidget extends StatelessWidget {
         ),
       ],
     );
-    // Edge treatment belongs to the enclosing AppBoxKitEdgeAwareListView.
+    // Edge treatment belongs to the enclosing ArxaKitEdgeAwareListView.
   }
 }

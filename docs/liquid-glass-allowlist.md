@@ -3,9 +3,9 @@
 **THE liquid-glass law** (term ratified 2026-08-13; VOCABULARY.md): single
 source of truth for which kit widgets are native platform views, which carry
 Liquid Glass, what happens inside scrollables, and the composition rules that
-keep it artifact-free. Enforced by kit gate tests + appbox-lint rules —
+keep it artifact-free. Enforced by kit gate tests + arxa-lint rules —
 gates, not prose. The reuse unit is the chrome scaffold
-(`AppBoxKitChromeScaffold`) — the lawful ASSEMBLY of top chrome wherever a
+(`ArxaKitChromeScaffold`) — the lawful ASSEMBLY of top chrome wherever a
 design declares it, never a mandate that a surface HAS chrome (see *Chrome
 existence is the design's call*). The Android sibling is the M3E law
 (docs/m3e-law.md); per target, iOS/macOS answer to this law, Android to
@@ -28,13 +28,13 @@ the reference). See *Chrome existence is the design's call*.
 
 | Kit widget | Notes |
 |---|---|
-| AppBoxKitTabBar / CNTabBar | |
-| AppBoxKitNativeToolbar (as chrome) | Scaffold-anchored bars only — see §3 for in-content demos |
-| AppBoxKitNativeFab / FabMenu | Scaffold FAB slot |
-| AppBoxKitNativeSheet / NativeDialog / NativePopupMenu | Transient overlays |
-| AppBoxKitNativeSearchBar (docked/pinned) | Pinned sliver headers count as chrome |
-| AppBoxKitNativeAppBar / SliverAppBar | Flutter-drawn; on the GLASS TIER the gallery replaces it with AppBoxKitNativeFloatingBar (see rule 4 ruling) |
-| AppBoxKitNativeFloatingBar | Native glass floating top chrome (glass tier) — title capsule + native actions over a full-bleed body; the top-edge counterpart of the tab bar. Since the floating-back-affordance ruling (2026-08-13) it takes a `leading` slot (tucks off the leading edge with the title pill — device ruling clip 22-34 superseded the same-day non-tucking ratification: a pill leaving without the back button read as a half-minimized bar; scroll-back/top restores both), so pushed routes with in-scroll native glass use the chrome scaffold too |
+| ArxaKitTabBar / CNTabBar | |
+| ArxaKitNativeToolbar (as chrome) | Scaffold-anchored bars only — see §3 for in-content demos |
+| ArxaKitNativeFab / FabMenu | Scaffold FAB slot |
+| ArxaKitNativeSheet / NativeDialog / NativePopupMenu | Transient overlays |
+| ArxaKitNativeSearchBar (docked/pinned) | Pinned sliver headers count as chrome |
+| ArxaKitNativeAppBar / SliverAppBar | Flutter-drawn; on the GLASS TIER the gallery replaces it with ArxaKitNativeFloatingBar (see rule 4 ruling) |
+| ArxaKitNativeFloatingBar | Native glass floating top chrome (glass tier) — title capsule + native actions over a full-bleed body; the top-edge counterpart of the tab bar. Since the floating-back-affordance ruling (2026-08-13) it takes a `leading` slot (tucks off the leading edge with the title pill — device ruling clip 22-34 superseded the same-day non-tucking ratification: a pill leaving without the back button read as a half-minimized bar; scroll-back/top restores both), so pushed routes with in-scroll native glass use the chrome scaffold too |
 
 ### 2. Controls — ALL NATIVE IN SCROLL (ruling 4, 2026-08-13, supersedes the informed allowlist)
 Every control is **native Liquid Glass everywhere, including scrollables**.
@@ -55,7 +55,7 @@ chrome-era ratification):
 2. Full demotion (`4af16e3f`): artifacts GONE — slicing mechanism confirmed
    (engine #150646, open through Flutter 3.47.0; overlay rects ignore clip
    bounds).
-3. Home's 7 `AppBoxKitNativeIconButton`s — real UiKitViews inside a ListView,
+3. Home's 7 `ArxaKitNativeIconButton`s — real UiKitViews inside a ListView,
    never gated — rendered clean the whole time: CNButton-backed views are
    exposure-safe in practice. Exposure is compositional, not categorical.
 4. Ruling 4 (user, chrome era): with every composition that actually fired
@@ -82,11 +82,11 @@ split button, button last
 in-scroll glass jitter/flicker reported on device (scroll of the gallery
 lists: re-entry flash at the un-headroomed trailing cull boundary + per-frame
 UiKitView compositing). The **glass card** re-demotes inside Scrollables:
-`AppBoxKitGlassCard` resolves the native tier only when
+`ArxaKitGlassCard` resolves the native tier only when
 `Scrollable.maybeOf(context) == null` — in-scroll cards take the frosted
 tier (opaque fill under `opaqueGlass`: zero blur, zero platform-view churn).
 Controls, toolbars, search bars, chrome stay native per ruling 4. Pinned by
-`kit/ui_library/test/kit/widgets/appbox_kit_glass_card_test.dart`. If
+`kit/ui_library/test/kit/widgets/arxa_kit_glass_card_test.dart`. If
 artifacts persist on the next device run, the next rung is the toolbar.. Never blanket-demote again — attribution first.
 
 **Sanctioned exception — app fidelity mode (QF-4, 2026-08-14):** the
@@ -103,16 +103,16 @@ mode selection, never a live app's rollback. Rulings:
 docs/plans/designer-scaffolder-grill-decisions.md QF-1…QF-4.
 
 ### 3. Glass surfaces in scroll — card demoted (step 1), toolbar native (updated 2026-08-27)
-Ruling 4 originally covered surfaces too (2026-08-13): AppBoxKitGlassCard and
-AppBoxKitNativeToolbar rendered native glass inside scrollables (their
+Ruling 4 originally covered surfaces too (2026-08-13): ArxaKitGlassCard and
+ArxaKitNativeToolbar rendered native glass inside scrollables (their
 in-scroll demotion — which had never landed beyond an uncommitted working
 tree — was dropped in the same flip). That knowingly deviated from Apple's
 named anti-pattern ("don't break the glass… keep glass out of the scrolling
 content layer" — WWDC25 design lab) and the vendor README's
 LiquidGlassContainer-in-lists warning, which is exactly why these two sat
 FIRST on the deselect ladder. The slab returned: ladder step 1 fired
-2026-08-27 (log above) and AppBoxKitGlassCard now takes the frosted tier
-inside Scrollables. AppBoxKitNativeToolbar stays native in scroll — it is the
+2026-08-27 (log above) and ArxaKitGlassCard now takes the frosted tier
+inside Scrollables. ArxaKitNativeToolbar stays native in scroll — it is the
 first REMAINING rung if a device run shows toolbar artifacts.
 
 **Composition rules (learned on device, 2026-08-12 evening):**
@@ -132,7 +132,7 @@ first REMAINING rung if a device run shows toolbar artifacts.
    platform views slice the ACTIVE tab's frame into overlay textures, and
    pieces of the hidden subtree composited over the active tab at visible
    alpha (stale rail-pane rectangle over Profile, "Maps showcase" ghost over
-   Search — device recording 2026-08-12 22:46). AppBoxKitAnimatedTabStack now
+   Search — device recording 2026-08-12 22:46). ArxaKitAnimatedTabStack now
    pairs the alpha-hide with a sub-pixel ClipRect: paint still happens (the
    views never detach — 00bc2f0c's guarantee holds), but a hidden tab can
    contribute at most half a pixel to the frame.
@@ -172,7 +172,7 @@ first REMAINING rung if a device run shows toolbar artifacts.
    tab bar is clean — or (b) no platform views in the scrolling content
    under the bar. Direction is a product ruling, not a patch.
    **Ruling (2026-08-13, user-ratified): native top bar.** The gallery
-   chrome now branches: glass tier = `AppBoxKitNativeFloatingBar` (frosted
+   chrome now branches: glass tier = `ArxaKitNativeFloatingBar` (frosted
    Flutter title pill per rule 5 + the existing native action buttons)
    floating over a FULL-BLEED body, so content culls at the physical
    screen edge; other tiers keep the boxed Flutter bar.
@@ -199,7 +199,7 @@ first REMAINING rung if a device run shows toolbar artifacts.
    unavailable to Flutter-composited content, and every effect-based
    equivalent is barred by composition rule 1 (a BackdropFilter band cannot
    sample platform-view pixels; an alpha fade saveLayers the content).
-   `AppBoxKitTopEdgeScrim` is the lawful substitute: a Flutter-DRAWN vertical
+   `ArxaKitTopEdgeScrim` is the lawful substitute: a Flutter-DRAWN vertical
    gradient from `scaffoldBackgroundColor` (opaque across the status-bar
    inset) to transparent at the bar block's bottom edge, a sibling in the
    chrome Stack between body and bar, `IgnorePointer`, surviving tuck/hide.
@@ -214,7 +214,7 @@ first REMAINING rung if a device run shows toolbar artifacts.
    watch-item — no clip has triggered it, which is not the same as ruling it
    out. The scrim has since gained a bottom-edge sibling and the pair became
    the kit's whole scroll-edge dissolve — see rule 15. Pinned by
-   appbox_kit_native_floating_bar_test (6 top-edge-scrim pins: height/ends on
+   arxa_kit_native_floating_bar_test (6 top-edge-scrim pins: height/ends on
    the bar edge, pointer, paint order under the bar, tuck/hide survival,
    gradient-fill no-saveLayer/no-alpha, fadeExtent ramp) and, for the
    bar-less host, showcase_notes_top_edge_scrim_test.
@@ -225,13 +225,13 @@ first REMAINING rung if a device run shows toolbar artifacts.
    the pill gaps stayed crisp (the discriminating observation). Apple's
    "don't stack glass" applies across our chrome/content split: fixed
    chrome elements that scrolled glass passes under must be Flutter-drawn
-   (AppBoxKitFrostedSurface platformViewSafe) — so the floating bar's
+   (ArxaKitFrostedSurface platformViewSafe) — so the floating bar's
    TITLE pill is deliberately not native. Interactive bar controls stay
    native glass; if partial overlaps (warning icon under the search
    button) ever artifact, widen the pill gaps before demoting anything.
    The Flutter pill additionally rides a plain (non-glass) native anchor —
    see rule 7; that anchor renders no material, so this rule's ban and the
-   anchor coexist. Pinned by appbox_kit_native_floating_bar_test.
+   anchor coexist. Pinned by arxa_kit_native_floating_bar_test.
 6. **Fill color and foreground travel together in fallbacks.** Any fallback
    that sets a CupertinoButton `color` must set the foreground too: solid
    fill → contrasting color, translucent tint wash (glass) → the tint itself
@@ -259,7 +259,7 @@ first REMAINING rung if a device run shows toolbar artifacts.
    chrome floating over glass-bearing scrollables needs the same anchor —
    partial-width Flutter overlays are NOT exempt from slicing, only
    full-width opaque bars were previously called out (rule 4 / 13-32).
-   Pinned by appbox_kit_native_floating_bar_test (anchor pin).
+   Pinned by arxa_kit_native_floating_bar_test (anchor pin).
 
    **Generalized beyond chrome, and paint order does NOT exempt you
    (2026-08-14, `1549ba8e` + `0d620115`).** Three more surfaces hit the same
@@ -278,10 +278,10 @@ first REMAINING rung if a device run shows toolbar artifacts.
    being composited last** — the rule is intersection, not paint order.
    Corollary from the pill: size the anchor to the SURFACE, never full-screen
    — a full-bleed native anchor swallows touches meant for the content behind
-   a transient overlay. Pinned by appbox_kit_native_input_bar_test
+   a transient overlay. Pinned by arxa_kit_native_input_bar_test
    ('opaque base rides a plain compositing anchor', which also asserts the
    anchor is absent when `opaqueGlass: false`) and, for the pill, by the
-   anchor assertion inside appbox_kit_notification_service_test's Android
+   anchor assertion inside arxa_kit_notification_service_test's Android
    center-pill case.
 
 8. **Hidden-but-painted platform views must be transformed off-screen — alpha
@@ -302,10 +302,10 @@ first REMAINING rung if a device run shows toolbar artifacts.
    from the shared stack; routes beneath opaque pushed routes are not
    painted at all (verified: no second anchor in the probe dumps), so ghost
    tabs were the only invisible slicing geometry in the app. Pinned by
-   appbox_kit_animated_tab_stack_test (off-screen translate pin).
+   arxa_kit_animated_tab_stack_test (off-screen translate pin).
 
 9. **Warm every glass KIND at boot that only pushed routes mount —
-   `AppBoxKitGlassWarmup` (device-measured 2026-08-14).** First
+   `ArxaKitGlassWarmup` (device-measured 2026-08-14).** First
    materialization of a glass kind is a once-per-PROCESS cost paid on
    whichever frame first composites it: pushing the first glass-card route
    cost a 39.6ms raster frame (4.8% of push frames over the 60Hz budget)
@@ -313,7 +313,7 @@ first REMAINING rung if a device run shows toolbar artifacts.
    over budget. The cost is per KIND, not per view — glass buttons/segmented
    already on the boot screen were warm; the surface container
    (`LiquidGlassContainer`, glass card) and the switch each paid their own
-   first-of-kind spike. The kit primitive `AppBoxKitGlassWarmup` wraps the
+   first-of-kind spike. The kit primitive `ArxaKitGlassWarmup` wraps the
    shell root once: it mounts one card-kind container (plus host-listed
    `alsoWarm` kinds) translated 100000px off-screen per rule 8, IgnorePointer
    + ExcludeSemantics, kept mounted (set constancy; NOT chromeGated — the
@@ -321,11 +321,11 @@ first REMAINING rung if a device run shows toolbar artifacts.
    after: first push worst frame 11–12ms, 0% over the 60Hz budget —
    indistinguishable from steady-state pushes. Rule: kinds visible at boot
    warm themselves; any kind a pushed route mounts first goes in `alsoWarm`.
-   Pinned by appbox_kit_glass_warmup_test (rule-8 translate + kind pin).
+   Pinned by arxa_kit_glass_warmup_test (rule-8 translate + kind pin).
 
 10. **An interactive back-swipe is a POP and must read as one — gesture state,
     not animation state, is the signal (device clip 00-26, 2026-08-14).**
-    `AppBoxKitNativeChromeGate` decides "am I travelling with this transition?"
+    `ArxaKitNativeChromeGate` decides "am I travelling with this transition?"
     from `route.animation/secondaryAnimation.isAnimating`. Both are false for
     the whole edge-drag, and the SDK says why: `dragUpdate` sets
     `controller.value` DIRECTLY (`cupertino/route.dart:846`), which never
@@ -350,7 +350,7 @@ first REMAINING rung if a device run shows toolbar artifacts.
     because there the bar sits on the route being revealed and travels with
     it — the same answer the button pop already gives. The result is that a gesture pop behaves
     identically to a button pop, which was already ratified and device-clean.
-    Pinned by appbox_kit_chrome_gate_transition_scope_test (back-swipe test,
+    Pinned by arxa_kit_chrome_gate_transition_scope_test (back-swipe test,
     mutation-checked: without the clause it reports a hidden gate on every
     drag frame; the drag must cross the halfway line or Cupertino cancels the
     pop and the frame samples go vacuous).
@@ -401,7 +401,7 @@ first REMAINING rung if a device run shows toolbar artifacts.
     `CNSheetGeometryProbe` for exactly this purpose (its comment: *"measuring
     the route would tear down native chrome sitting in the clear space above a
     short sheet"*), and the kit wraps the probe around the sized body, not the
-    route (`appbox_kit_native_sheet.dart:274`). Fix: the gate now consults
+    route (`arxa_kit_native_sheet.dart:274`). Fix: the gate now consults
     `CNTabBarRouteObserver.topModalRect` and hides only on overlap — the same
     predicate the vendor's `ModalHideMixin._computeShouldHide` already
     applies, deliberately identical so the two authorities cannot disagree
@@ -438,17 +438,17 @@ first REMAINING rung if a device run shows toolbar artifacts.
     `UITabBar` painting over a sheet, so the destroy is load-bearing there and
     is not an oversight to "clean up". Do not reintroduce a coverage hide
     without NEW bleed evidence — a tombstone in
-    `appbox_kit_native_chrome_gate.dart` says so at the deletion site. Pinned
-    by appbox_kit_tab_bar_single_hide_authority_test (3 cases: the gate is the
+    `arxa_kit_native_chrome_gate.dart` says so at the deletion site. Pinned
+    by arxa_kit_tab_bar_single_hide_authority_test (3 cases: the gate is the
     single authority, the Issue #31 destroy path stays on, and a tab-index
     change hides nothing) and by
-    appbox_kit_native_chrome_gate_test's 'modal depth and sheet rects are NOT
+    arxa_kit_native_chrome_gate_test's 'modal depth and sheet rects are NOT
     hide channels' case.
 
     **The scrim, stated correctly (an earlier draft of this rule got it
     backwards).** `CupertinoSheetRoute` does hardcode a transparent barrier —
     but the kit OVERRIDES that, and dimming is the DEFAULT, not opt-in:
-    `showOverlay` defaults `true` (`appbox_kit_native_sheet.dart:131`), so the
+    `showOverlay` defaults `true` (`arxa_kit_native_sheet.dart:131`), so the
     normal path passes `kCupertinoModalBarrierColor` and lands on
     `_CNDimmedSheetRoute` (vendor `bottom_sheet.dart:228`), a full-screen dim
     over the page. So glass left painted above a short sheet sits under a
@@ -468,7 +468,7 @@ first REMAINING rung if a device run shows toolbar artifacts.
     open sheet reads BRIGHTER than the dimmed content around it. That would be
     a tint bug, not a reason to go back to blanking the whole page.
 
-    Pinned by appbox_kit_chrome_gate_sheet_coverage_test — rewritten by
+    Pinned by arxa_kit_chrome_gate_sheet_coverage_test — rewritten by
     `e2787605` and now 3 cases, each asserting the NEGATIVE the supersession
     installed: a sheet rect never blanks the chrome it overlaps at any
     coverage, a modal publishing no rect hides nothing either, and a gate
@@ -483,13 +483,13 @@ first REMAINING rung if a device run shows toolbar artifacts.
     native glass surface in the kit that could not leave the frame for a route
     slide, and a toast most often fires right after a nav action. Fixed at the
     call site: every `CNToast` kind now passes `useGlassEffect: false`
-    (`appbox_kit_notification_service.dart`), matching `_centerPill`, the
+    (`arxa_kit_notification_service.dart`), matching `_centerPill`, the
     service's other, already-Flutter-drawn toast. Two enforcement holes let it
     live: the gate test scanned only `lib/widgets` non-recursively (the call
     site is in `lib/services/`), and `CNToast`/`CNIcon` were absent from its
     pattern. Both closed — the scan is now all of `lib/` recursively. **The
-    gate that carries this is appbox_kit_glass_transition_gate_test**, not the
-    similarly-named appbox_kit_liquid_glass_law_gate_test (which scans
+    gate that carries this is arxa_kit_glass_transition_gate_test**, not the
+    similarly-named arxa_kit_liquid_glass_law_gate_test (which scans
     `lib/widgets` non-recursively for saveLayer widgets and the floating bar's
     slide motion, and is a different rule); check the right one before
     concluding this clause is stale prose. It also
@@ -503,7 +503,7 @@ first REMAINING rung if a device run shows toolbar artifacts.
 13a. **The opaque law lives IN the primitive now, and luminance adapts
      globally (2026-08-27, sixth pass).** Two of this law's per-site
      disciplines are codified where they can no longer be missed:
-     (a) `AppBoxKitFrostedSurface` takes its no-saveLayer branch
+     (a) `ArxaKitFrostedSurface` takes its no-saveLayer branch
      AUTOMATICALLY for any fully opaque tint — the rule-13 rationale ("a
      fully opaque fill makes a backdrop blur invisible anyway") is now the
      primitive's own behavior, so a future surface cannot forget
@@ -511,13 +511,13 @@ first REMAINING rung if a device run shows toolbar artifacts.
      animate tint alpha across 1.0. (b) Glass-styled native buttons
      demote to the filled-gray idiom (on-surface monochrome ink)
      automatically on a bright OPAQUE base — the 2026-08-16 washout
-     remedy, globalized. The mechanism is `AppBoxKitGlassLuminance`: every
+     remedy, globalized. The mechanism is `ArxaKitGlassLuminance`: every
      frosted surface publishes `opaque` + `brightness` (one publisher, N
      consumers), and absent a scope the theme's scaffold background — an
      opaque base by definition — decides. Dark opaque surfaces keep glass
      (the washout was bright-base only); `prominentGlass` never demotes
      (the CTA idiom reads on bright); `luminanceAdaptive: false` is the
-     per-widget escape hatch. Pinned by appbox_kit_glass_luminance_test +
+     per-widget escape hatch. Pinned by arxa_kit_glass_luminance_test +
      the frosted-surface scope pins.
      **Modal depth is auto-bracketed for every route** — same pass:
      `CNTabBarRouteObserver._isAnyModal` matches every `PopupRoute`, so a
@@ -525,7 +525,7 @@ first REMAINING rung if a device run shows toolbar artifacts.
      (root + nested tab routers via `inheritNavigatorObservers`). The
      kit's explicit `markAnyModalActive` calls stay as defense-in-depth
      for the non-route case (Overlay entries). Pinned by
-     appbox_kit_native_modal_observer_test.
+     arxa_kit_native_modal_observer_test.
 
 13. **Glass surfaces that CONTAIN content are opaque-based by default — the
     material reads as glass, the base does not see through (2026-08-14,
@@ -537,7 +537,7 @@ first REMAINING rung if a device run shows toolbar artifacts.
     time: keep the frosted material (rim, saturation, the whole read) and
     ground it on the surface tint token at **alpha 1.0**. Because a fully
     opaque fill makes a backdrop blur invisible anyway, the opaque branch
-    takes `AppBoxKitFrostedSurface(platformViewSafe: true)` — so composition
+    takes `ArxaKitFrostedSurface(platformViewSafe: true)` — so composition
     rule 1 is satisfied for free rather than by discipline, which matters
     because every one of these surfaces hosts CN platform views (dialog
     action columns, input bar action slots, card bodies).
@@ -546,10 +546,10 @@ first REMAINING rung if a device run shows toolbar artifacts.
 
     | Surface | `opaqueGlass` default | What it does |
     |---|---|---|
-    | `appBoxKitShowSheet` | `false` (opt-in) | Frosted sheet on an opaque base. Ignored when `backgroundColor` is set — a flat colour always wins |
-    | `appBoxKitShowNativeDialog` / `AppBoxKitFrostedAlertDialog` | `true` | Opaque frosted panel; the action column is native buttons |
-    | `AppBoxKitNativeInputBar` | `true` | Opaque flat base behind the row. Exact nesting, which matters: `Padding(viewInsets)` › plain anchor (rule 7) › opaque frosted base › `SafeArea(top: false)` › bar — the base wraps the `SafeArea` so the home-indicator strip is painted, the anchor sits OUTSIDE the base, and both sit inside the `viewInsets` padding so the whole surface rides the keyboard up |
-    | `AppBoxKitGlassCard` | `true` | Two tiers, below |
+    | `arxaKitShowSheet` | `false` (opt-in) | Frosted sheet on an opaque base. Ignored when `backgroundColor` is set — a flat colour always wins |
+    | `arxaKitShowNativeDialog` / `ArxaKitFrostedAlertDialog` | `true` | Opaque frosted panel; the action column is native buttons |
+    | `ArxaKitNativeInputBar` | `true` | Opaque flat base behind the row. Exact nesting, which matters: `Padding(viewInsets)` › plain anchor (rule 7) › opaque frosted base › `SafeArea(top: false)` › bar — the base wraps the `SafeArea` so the home-indicator strip is painted, the anchor sits OUTSIDE the base, and both sit inside the `viewInsets` padding so the whole surface rides the keyboard up |
+    | `ArxaKitGlassCard` | `true` | Two tiers, below |
 
     **The glass card is TWO tiers and only one of them goes opaque.** On the
     native tier the card stays real Liquid Glass — this law is not repealed
@@ -566,8 +566,8 @@ first REMAINING rung if a device run shows toolbar artifacts.
     a densified native card is still native glass in a scrollable, so if slabs
     return it is still the FIRST re-demote — rule 5's overhang ban and the
     ladder both read tier, not opacity.
-    Pinned by appbox_kit_native_sheet_test ('default tier fills the sheet with
-    opaque glass and draws the kit grabber') and appbox_kit_native_input_bar_test
+    Pinned by arxa_kit_native_sheet_test ('default tier fills the sheet with
+    opaque glass and draws the kit grabber') and arxa_kit_native_input_bar_test
     ('opaque base rides a plain compositing anchor', both polarities).
 
 14. **Transient overlays mount in the ROOT overlay — no nested navigator's
@@ -577,14 +577,14 @@ first REMAINING rung if a device run shows toolbar artifacts.
     stacks above that navigator, so a scrolling surface or a bar could cover a
     toast the user is meant to read. Every transient tier now passes
     `rootOverlay: true`: both `CNToast` call sites (vendor `toast.dart`) and
-    the kit's center pill (`appbox_kit_notification_service.dart`). A toast
+    the kit's center pill (`arxa_kit_notification_service.dart`). A toast
     outranks every surface in the app or it is not a toast. This is a
     placement rule and does not touch rule 12's tier ruling — these entries
     are Flutter-drawn, which is precisely why they can be stacked by ordinary
     means; and being in the root overlay is still not sufficient on its own,
     because scene order beats paint order (see rule 7's generalization, which
     is why they also carry a plain anchor). Pinned by
-    appbox_kit_notification_service_test ('toast tiers mount in the ROOT
+    arxa_kit_notification_service_test ('toast tiers mount in the ROOT
     overlay, not a nested navigator's'), which asserts the mechanism
     STRUCTURALLY — which `OverlayState` hosts the entry — rather than by paint
     order, and whose fixture first proves the nested navigator really does
@@ -593,20 +593,20 @@ first REMAINING rung if a device run shows toolbar artifacts.
 15. **The scroll-edge dissolve is the SCRIM PAIR, not the per-child edge
     effect (2026-08-14, `d6994258` + `8fc38af7`).** These are easy to confuse
     and only one of them does anything on the glass tier.
-    `AppBoxKitScrollEdgeEffect` is deliberately INERT there (see *Resolved
+    `ArxaKitScrollEdgeEffect` is deliberately INERT there (see *Resolved
     residual*, clip 12-48: its partial-alpha fade over children hosting native
     controls washed glyphs and left ghosts), so on device the bottom edge
     showed NO fade at all — content hard-clipped at the physical screen edge
     (clip 18-50) — while the top dissolved, because the top had a scrim and the
     bottom had nothing. The mechanism that actually dissolves on every tier is
-    the pair `AppBoxKitTopEdgeScrim` / `AppBoxKitBottomEdgeScrim`:
+    the pair `ArxaKitTopEdgeScrim` / `ArxaKitBottomEdgeScrim`:
     Flutter-DRAWN vertical gradient fills, no saveLayer, no alpha over
     platform views, `IgnorePointer`, each reverting in one deletion. The
     bottom is the mirror of the top — transparent at the ramp, opaque through
     the home-indicator band, drawn over a full-bleed `extendBody: true` body,
-    hosted by `AppBoxKitBottomEdgeScrimHost` (`bottomEdgeScrim`, default on).
+    hosted by `ArxaKitBottomEdgeScrimHost` (`bottomEdgeScrim`, default on).
 
-    **Two toggles, do not confuse them.** `AppBoxKitScrollEdges` governs the
+    **Two toggles, do not confuse them.** `ArxaKitScrollEdges` governs the
     per-child EFFECT on the edge-aware containers (the tier-inert one); the
     scaffold's `bottomEdgeScrim` flag governs the SCRIM host. They are
     independent, and on the glass tier only the second one has any visible
@@ -614,8 +614,8 @@ first REMAINING rung if a device run shows toolbar artifacts.
 
     **Both are ON by default, and turned off by design choice** (ratified
     2026-08-14, superseding the original opt-in stance;
-    `AppBoxKitScrollEdges` — `none` / `top` / `bottom` / `both`, default
-    `both`; `AppBoxKitBottomNavScaffold.bottomEdgeScrim` default `true`). The
+    `ArxaKitScrollEdges` — `none` / `top` / `bottom` / `both`, default
+    `both`; `ArxaKitBottomNavScaffold.bottomEdgeScrim` default `true`). The
     dissolve is part of the kit's look, not merely occlusion
     repair, so a fade with no chrome under it is a design effect rather than a
     bug. A four-value enum rather than a `Set`, so the default is a
@@ -627,9 +627,9 @@ first REMAINING rung if a device run shows toolbar artifacts.
     **Geometry trap, and it is the one that bites: the bottom scrim reads the
     RAW device inset** (`MediaQuery.viewPaddingOf(context).bottom` plus the
     fade extent). It must therefore be mounted OUTSIDE
-    `AppBoxKitExtendBodyFabLift` — or any wrapper that mirrors bar clearance
+    `ArxaKitExtendBodyFabLift` — or any wrapper that mirrors bar clearance
     into `viewPadding` — or it double-counts the bar block and washes resting
-    content. `AppBoxKitBottomNavScaffold` hosts it outside the lift for
+    content. `ArxaKitBottomNavScaffold` hosts it outside the lift for
     exactly this reason.
 
     **Inherited watch-item.** Both scrims are full-width and opaque at their
@@ -638,15 +638,15 @@ first REMAINING rung if a device run shows toolbar artifacts.
     device-confirmed and the flash has not appeared, but "not yet observed" is
     not "ruled out" — if a clip shows body content flashing over either band
     during a fast fling, the answer is native chrome for that band, not
-    another gradient. Pinned by appbox_kit_native_floating_bar_test
+    another gradient. Pinned by arxa_kit_native_floating_bar_test
     (3 bottom-edge-scrim cases: pins to the physical bottom edge and spans the
     indicator inset plus the ramp; gradient clear at top and opaque across the
     whole indicator band; never intercepts taps and the toggle removes it
     entirely — plus the 6 top-edge-scrim cases in rule 4) and, for the effect
-    it replaces, appbox_kit_scroll_edge_effect_tier_test. The both-on default
-    is carried by the `AppBoxKitScrollEdges` doc comment and its call sites,
+    it replaces, arxa_kit_scroll_edge_effect_tier_test. The both-on default
+    is carried by the `ArxaKitScrollEdges` doc comment and its call sites,
     not by a dedicated test — the nearest pin,
-    appbox_kit_edge_aware_list_view_test's 'no edge configured means no effect
+    arxa_kit_edge_aware_list_view_test's 'no edge configured means no effect
     at all', fixes the `none` end of the enum only.
 
 **Known signature, not a defect — glass edge refraction (labelprobe
@@ -659,7 +659,7 @@ it read as a ghost because the rest of the glass effect is invisible. If it
 ever bothers on device, the levers are design ones: more spacing between
 labels and glass edges, or a more opaque card tint — not engine flags.
 
-**Resolved residual (2026-08-13, clip 12-48):** `AppBoxKitScrollEdgeEffect`'s
+**Resolved residual (2026-08-13, clip 12-48):** `ArxaKitScrollEdgeEffect`'s
 partial-alpha fade over edge-band children hosting native controls produced
 exactly the predicted artifact (home's smoke row + Glass CTA: glyphs washed
 out ahead of the shell, pale ghosts, pop-in on re-entry). Fix landed: the
@@ -667,26 +667,26 @@ effect is now **fully inert on the Liquid Glass tier** (alpha gated alongside
 the blur) — children exit by plain viewport clipping, which is what iOS does
 under opaque chrome anyway and costs zero layers. The frosted tiers keep the
 blur + fade (pure Flutter under the saveLayer). Pinned by
-`appbox_kit_scroll_edge_effect_tier_test.dart`.
+`arxa_kit_scroll_edge_effect_tier_test.dart`.
 
 **Deviation note — split button:** obsolete — under the informed allowlist
 (§2) CNSplitButton is native in content by rule, not by deviation.
 
 ## Chrome existence is the design's call (ruling 2026-08-13, user)
 
-This law governs COMPOSITION, never inventory. **appbox-designer decides
+This law governs COMPOSITION, never inventory. **arxa-designer decides
 whether a surface has top chrome; the law decides how chrome is assembled
 where it exists.** The designer's frozen structure/anatomy is the authority
 per surface; the scaffolder resolves that declaration through the appbar kind
-(`skills/appbox-scaffolder/kind-resolution.registry.json`) and builds it to
+(`skills/arxa-scaffolder/kind-resolution.registry.json`) and builds it to
 the target's own standard with native UI wherever applicable. Nothing here
 synthesizes chrome an anatomy did not declare.
 
 | What the design declares for a surface | What resolves |
 |---|---|
-| Shell / tab-root top chrome | `shell` variant → `AppBoxKitChromeScaffold` |
-| Pushed surface, native glass in its scroll | `AppBoxKitChromeScaffold` with `leading` (back) |
-| Pushed surface, Flutter-only scroll | bare boxed bar (`AppBoxKitNativeAppBar`) |
+| Shell / tab-root top chrome | `shell` variant → `ArxaKitChromeScaffold` |
+| Pushed surface, native glass in its scroll | `ArxaKitChromeScaffold` with `leading` (back) |
+| Pushed surface, Flutter-only scroll | bare boxed bar (`ArxaKitNativeAppBar`) |
 | No top chrome | nothing — bar-less is fully lawful (notes auth panels) |
 
 **Per target.** This law is the iOS/macOS standard. Android answers to the

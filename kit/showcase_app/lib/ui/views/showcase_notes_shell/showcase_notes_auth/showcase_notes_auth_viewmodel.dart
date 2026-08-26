@@ -50,32 +50,32 @@
 /// History: git log --follow -- kit/showcase_app/lib/ui/views/showcase_notes_shell/showcase_notes_auth/showcase_notes_auth_viewmodel.dart
 library;
 
-import 'package:appbox_kit_data/appbox_kit_data.dart';
-import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
+import 'package:arxa_kit_data/arxa_kit_data.dart';
+import 'package:arxa_kit_ui_library/arxa_kit_ui_library.dart';
 
-import 'package:appbox_kit_showcase_app/enums/showcase_notes_enums/enums.dart';
-import 'package:appbox_kit_showcase_app/services/showcase_notes_services/facades/showcase_notes_facade_service.dart';
+import 'package:arxa_kit_showcase_app/enums/showcase_notes_enums/enums.dart';
+import 'package:arxa_kit_showcase_app/services/showcase_notes_services/facades/showcase_notes_facade_service.dart';
 
-class ShowcaseNotesAuthViewModel extends AppBoxKitViewModel {
+class ShowcaseNotesAuthViewModel extends ArxaKitViewModel {
   // ── Setup ──────────────────────────────────────────────────────────────────
 
   final ShowcaseNotesFacadeService _notes =
-      appBoxKitLocator<ShowcaseNotesFacadeService>();
+      arxaKitLocator<ShowcaseNotesFacadeService>();
 
-  AppBoxKitAuthService get auth => _notes.auth;
+  ArxaKitAuthService get auth => _notes.auth;
 
-  /// The auth ops — [busy$] composes their [AppBoxKitAction.state$] streams;
-  /// AppBoxKitViewModel.dispose releases them.
+  /// The auth ops — [busy$] composes their [ArxaKitAction.state$] streams;
+  /// ArxaKitViewModel.dispose releases them.
   static final _ops = [for (final op in ShowcaseNotesAuthOp.values) op.name];
 
   /// Sends every auth op through the shared hub — busy state, double-tap
   /// guard, and inline errors come with it; the send returns after the op starts.
   @override
-  AppBoxKitActionHub createHub() => AppBoxKitActionHub(
+  ArxaKitActionHub createHub() => ArxaKitActionHub(
         owner: this,
         errorMessage: 'Authentication failed',
         onSend: () => _errorMessage.add(null),
-        onError: (error) => _errorMessage.add(error is AppBoxKitAuthException
+        onError: (error) => _errorMessage.add(error is ArxaKitAuthException
             ? error.message
             : 'Something went wrong. Try again.'),
       );
@@ -197,7 +197,7 @@ class ShowcaseNotesAuthViewModel extends AppBoxKitViewModel {
     _mode.close();
     _otpRequested.close();
     _errorMessage.close();
-    // The hub dies in super.dispose() → disposeAppBoxKitActions.
+    // The hub dies in super.dispose() → disposeArxaKitActions.
     super.dispose();
   }
 }

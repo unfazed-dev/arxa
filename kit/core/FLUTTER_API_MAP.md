@@ -1,4 +1,4 @@
-# appbox_kit — Flutter API Map (right problem → right API)
+# arxa_kit — Flutter API Map (right problem → right API)
 
 > **Version pin:** Flutter **3.44.0 / stable** (framework revision `559ffa3f75e7402d65a8def9c28389a9b2e6fe42`,
 > Dart **3.12.0**) — the repo's SDK, per `.metadata` + `flutter --version`; pubspecs declare `sdk: '>=3.0.3 <4.0.0'`.
@@ -30,7 +30,7 @@ One row per line inside the fenced `map` block, pipe-delimited, exactly 7 fields
 problem-class | mode | banned-tokens | sanctioned-material | sanctioned-cupertino | kit-equivalent | source-urls
 ```
 
-- `mode` — `E`: scanner fails on any banned token in `$APPBOX_APP/lib`; `A`: guidance only, not scanned.
+- `mode` — `E`: scanner fails on any banned token in `$ARXA_APP/lib`; `A`: guidance only, not scanned.
 - `banned-tokens` — comma-separated literals matched against comment-stripped Dart source. Word
   boundaries are added around tokens that start/end alphanumeric. A `*` inside a token is a
   `.*?` wildcard (for `Scaffold.of(ctx)`-style variants). `—` = nothing banned.
@@ -46,7 +46,7 @@ tab-bars-nav | A | — | NavigationBar, NavigationRail, TabBar | CupertinoTabBar
 dialogs | A | — | showDialog, AlertDialog | showCupertinoDialog, CupertinoAlertDialog | kitShowNativeDialog() | https://api.flutter.dev/flutter/material/showDialog.html, https://api.flutter.dev/flutter/cupertino/CupertinoAlertDialog-class.html
 sheets | A | — | showModalBottomSheet | showCupertinoModalPopup | kitShowNativeSheet(), KitBottomSheetService | https://api.flutter.dev/flutter/material/showModalBottomSheet.html, https://api.flutter.dev/flutter/cupertino/showCupertinoModalPopup.html
 pickers-date-time | A | — | showDatePicker, showTimePicker | CupertinoDatePicker, CupertinoTimerPicker (via showCupertinoModalPopup) | — (no kit picker; present via kitShowNativeSheet) | https://api.flutter.dev/flutter/material/showDatePicker.html, https://api.flutter.dev/flutter/cupertino/CupertinoDatePicker-class.html
-pickers-photo | A | — | — (no framework API — plugin: image_picker `pickImage`/`pickMedia` → XFile; `getImage`/`PickedFile` removed in image_picker 1.0.0) | same plugin | appbox_kit_media | https://pub.dev/packages/image_picker
+pickers-photo | A | — | — (no framework API — plugin: image_picker `pickImage`/`pickMedia` → XFile; `getImage`/`PickedFile` removed in image_picker 1.0.0) | same plugin | arxa_kit_media | https://pub.dev/packages/image_picker
 text-fields-forms | E | ToolbarOptions, toolbarOptions: | TextField, TextFormField, Form (context menu: `contextMenuBuilder`) | CupertinoTextField, CupertinoFormSection | KitNativeTextField, KitNativeInputBar | https://api.flutter.dev/flutter/widgets/ToolbarOptions-class.html (@Deprecated v3.3), https://api.flutter.dev/flutter/material/TextField-class.html
 lists-sections | A | — | ListView, ListTile | CupertinoListSection(.insetGrouped), CupertinoListTile | KitListSection, KitListTile | https://api.flutter.dev/flutter/cupertino/CupertinoListSection-class.html, https://api.flutter.dev/flutter/material/ListTile-class.html
 spacing | A | — | SizedBox, EdgeInsets, Padding | (same widgets) | verticalSpace(), spacedDivider (core/lib/common/kit_ui_helpers.dart) | https://api.flutter.dev/flutter/widgets/SizedBox-class.html

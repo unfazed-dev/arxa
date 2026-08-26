@@ -1,5 +1,5 @@
 {
-  "$id": "appbox.android-material-expressive",
+  "$id": "arxa.android-material-expressive",
   "$comment": "Shape: globalFacts (object) + map: { canonicalId -> PlatformMapping }. PlatformMapping fields defined in ../schemas/breakdown.schema.json.",
   "platform": "android",
   "system": "Material 3 Expressive (Jetpack Compose)",

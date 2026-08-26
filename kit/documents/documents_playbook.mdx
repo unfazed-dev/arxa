@@ -1,15 +1,15 @@
 <Callout id="header" tone="info">
 
-# appbox_kit_documents — Per-Package Playbook
+# arxa_kit_documents — Per-Package Playbook
 
 
-`appbox_kit_documents` v**0.1.0** · `publish_to: 'none'` · status: **active**
+`arxa_kit_documents` v**0.1.0** · `publish_to: 'none'` · status: **active**
 
 
 **Role (one line):** API-first document kit — typed ports for document scanning, OCR and PDF (stubbed, native-first for phase 2) plus a working file_selector-backed document picker.
 
 
-**Scope of this document:** lets a human OR an LLM use, wire, and extend `appbox_kit_documents` **without reading its source**. The public surface below was extracted from the barrel; README content is folded into the narrative sections.
+**Scope of this document:** lets a human OR an LLM use, wire, and extend `arxa_kit_documents` **without reading its source**. The public surface below was extracted from the barrel; README content is folded into the narrative sections.
 
 
 ## Table of contents
@@ -27,24 +27,24 @@ API-first document kit — typed ports for document scanning, OCR and PDF (stubb
 
 ### Public surface
 
-Exported from `lib/appbox_kit_documents.dart`:
+Exported from `lib/arxa_kit_documents.dart`:
 
-<Table id="documents-api" columns={["Symbol", "Kind", "Defined in"]} rows={[["AppBoxKitDocumentPickerService", "abstract interface class", "src/appbox_kit_document_picker_service.dart"], ["FileSelectorAppBoxKitDocumentPickerService", "class", "src/appbox_kit_document_picker_service.dart"], ["AppBoxKitScannedPage", "class", "src/appbox_kit_document_scan_service.dart"], ["AppBoxKitScannedDocument", "class", "src/appbox_kit_document_scan_service.dart"], ["AppBoxKitDocumentScanService", "abstract interface class", "src/appbox_kit_document_scan_service.dart"], ["UnimplementedAppBoxKitDocumentScanService", "class", "src/appbox_kit_document_scan_service.dart"], ["AppBoxKitOcrBlock", "class", "src/appbox_kit_ocr_service.dart"], ["AppBoxKitOcrResult", "class", "src/appbox_kit_ocr_service.dart"], ["AppBoxKitOcrService", "abstract interface class", "src/appbox_kit_ocr_service.dart"], ["UnimplementedAppBoxKitOcrService", "class", "src/appbox_kit_ocr_service.dart"], ["AppBoxKitPdfPageImage", "class", "src/appbox_kit_pdf_service.dart"], ["AppBoxKitPdfService", "abstract interface class", "src/appbox_kit_pdf_service.dart"], ["UnimplementedAppBoxKitPdfService", "class", "src/appbox_kit_pdf_service.dart"], ["AppBoxKitPdfViewer", "class", "src/appbox_kit_pdf_viewer.dart"], ["AppBoxKitPickedDocument", "class", "src/appbox_kit_picked_document.dart"], ["AppBoxKitPdfrxPdfService", "class", "src/appbox_kit_pdfrx_pdf_service.dart"]]} />
+<Table id="documents-api" columns={["Symbol", "Kind", "Defined in"]} rows={[["ArxaKitDocumentPickerService", "abstract interface class", "src/arxa_kit_document_picker_service.dart"], ["FileSelectorArxaKitDocumentPickerService", "class", "src/arxa_kit_document_picker_service.dart"], ["ArxaKitScannedPage", "class", "src/arxa_kit_document_scan_service.dart"], ["ArxaKitScannedDocument", "class", "src/arxa_kit_document_scan_service.dart"], ["ArxaKitDocumentScanService", "abstract interface class", "src/arxa_kit_document_scan_service.dart"], ["UnimplementedArxaKitDocumentScanService", "class", "src/arxa_kit_document_scan_service.dart"], ["ArxaKitOcrBlock", "class", "src/arxa_kit_ocr_service.dart"], ["ArxaKitOcrResult", "class", "src/arxa_kit_ocr_service.dart"], ["ArxaKitOcrService", "abstract interface class", "src/arxa_kit_ocr_service.dart"], ["UnimplementedArxaKitOcrService", "class", "src/arxa_kit_ocr_service.dart"], ["ArxaKitPdfPageImage", "class", "src/arxa_kit_pdf_service.dart"], ["ArxaKitPdfService", "abstract interface class", "src/arxa_kit_pdf_service.dart"], ["UnimplementedArxaKitPdfService", "class", "src/arxa_kit_pdf_service.dart"], ["ArxaKitPdfViewer", "class", "src/arxa_kit_pdf_viewer.dart"], ["ArxaKitPickedDocument", "class", "src/arxa_kit_picked_document.dart"], ["ArxaKitPdfrxPdfService", "class", "src/arxa_kit_pdfrx_pdf_service.dart"]]} />
 
-Test doubles in `lib/appbox_kit_testing.dart`: `FakeAppBoxKitDocumentPickerService`, `FakeAppBoxKitDocumentScanService`, `FakeAppBoxKitOcrService`, `FakeAppBoxKitPdfService`.
+Test doubles in `lib/arxa_kit_testing.dart`: `FakeArxaKitDocumentPickerService`, `FakeArxaKitDocumentScanService`, `FakeArxaKitOcrService`, `FakeArxaKitPdfService`.
 
 Scripts and call-counts — tests never touch platform channels.
 
 
 ### Usage & wiring
 
-Add `appbox_kit_documents` to your `pubspec.yaml` — it transitively pulls only `file_selector` and imports no other kit. Import `package:appbox_kit_documents/appbox_kit_documents.dart` to get every port plus its plugin-neutral value types. The production adapter is a `const` constructor with no dependencies, so you can hold it directly or register it into any service locator (e.g. the shared Stacked locator):
+Add `arxa_kit_documents` to your `pubspec.yaml` — it transitively pulls only `file_selector` and imports no other kit. Import `package:arxa_kit_documents/arxa_kit_documents.dart` to get every port plus its plugin-neutral value types. The production adapter is a `const` constructor with no dependencies, so you can hold it directly or register it into any service locator (e.g. the shared Stacked locator):
 
 ```dart
-import 'package:appbox_kit_documents/appbox_kit_documents.dart';
+import 'package:arxa_kit_documents/arxa_kit_documents.dart';
 
-final picker = FileSelectorAppBoxKitDocumentPickerService();
-final AppBoxKitPickedDocument? doc = await picker.pickDocument(extensions: ['pdf']);
+final picker = FileSelectorArxaKitDocumentPickerService();
+final ArxaKitPickedDocument? doc = await picker.pickDocument(extensions: ['pdf']);
 if (doc != null) {
   final Uint8List bytes = await doc.readBytes();
 }
@@ -62,7 +62,7 @@ See `kit_matrix.md` for the full routing + dependency graph.
 
 ### Architecture
 
-The kit is four `abstract interface class` ports — `AppBoxKitDocumentPickerService`, `AppBoxKitDocumentScanService`, `AppBoxKitOcrService`, `AppBoxKitPdfService` — each with its own concrete adapter behind the seam. Only the picker has a live adapter (`FileSelectorAppBoxKitDocumentPickerService` over `file_selector`); scan, OCR, and PDF ship `Unimplemented…` classes whose methods throw `UnimplementedError`, holding final signatures stable until the phase-2 native backends. Dependency direction is strictly outward: the package imports only `dart:typed_data` and `file_selector`, and nothing from `appbox_kit*`, `stacked`, or `stacked_services`. The `file_selector` `XFile` never crosses the seam — adapters project it onto plugin-neutral value types (`AppBoxKitPickedDocument`, `AppBoxKitScannedPage`, `AppBoxKitOcrResult`, `AppBoxKitPdfPageImage`), and bytes are read lazily so large files stay unloaded until used.
+The kit is four `abstract interface class` ports — `ArxaKitDocumentPickerService`, `ArxaKitDocumentScanService`, `ArxaKitOcrService`, `ArxaKitPdfService` — each with its own concrete adapter behind the seam. Only the picker has a live adapter (`FileSelectorArxaKitDocumentPickerService` over `file_selector`); scan, OCR, and PDF ship `Unimplemented…` classes whose methods throw `UnimplementedError`, holding final signatures stable until the phase-2 native backends. Dependency direction is strictly outward: the package imports only `dart:typed_data` and `file_selector`, and nothing from `arxa_kit*`, `stacked`, or `stacked_services`. The `file_selector` `XFile` never crosses the seam — adapters project it onto plugin-neutral value types (`ArxaKitPickedDocument`, `ArxaKitScannedPage`, `ArxaKitOcrResult`, `ArxaKitPdfPageImage`), and bytes are read lazily so large files stay unloaded until used.
 
 
 ### Gotchas
@@ -79,21 +79,21 @@ Backing package (working path) verified pub.dev 2026-07-14: `file_selector`
 
 ### Testing
 
-`package:appbox_kit_documents/appbox_kit_testing.dart` exports fakes for all four ports —
-`FakeAppBoxKitDocumentPickerService`, `FakeAppBoxKitDocumentScanService`,
-`FakeAppBoxKitOcrService`, `FakeAppBoxKitPdfService`. Each supports a `failWith` error to
+`package:arxa_kit_documents/arxa_kit_testing.dart` exports fakes for all four ports —
+`FakeArxaKitDocumentPickerService`, `FakeArxaKitDocumentScanService`,
+`FakeArxaKitOcrService`, `FakeArxaKitPdfService`. Each supports a `failWith` error to
 exercise **failure states**; the picker/scan fakes return `null` to simulate a
 **user cancel**.
 
 
 ### Features
 
-<Checklist id="documents-features" items={[{"id": "documents-feat-0", "label": "`AppBoxKitDocumentPickerService` \u2014 abstract interface class"}, {"id": "documents-feat-1", "label": "`FileSelectorAppBoxKitDocumentPickerService` \u2014 class"}, {"id": "documents-feat-2", "label": "`AppBoxKitScannedPage` \u2014 class"}, {"id": "documents-feat-3", "label": "`AppBoxKitScannedDocument` \u2014 class"}, {"id": "documents-feat-4", "label": "`AppBoxKitDocumentScanService` \u2014 abstract interface class"}, {"id": "documents-feat-5", "label": "`UnimplementedAppBoxKitDocumentScanService` \u2014 class"}, {"id": "documents-feat-6", "label": "`AppBoxKitOcrBlock` \u2014 class"}, {"id": "documents-feat-7", "label": "`AppBoxKitOcrResult` \u2014 class"}, {"id": "documents-feat-8", "label": "`AppBoxKitOcrService` \u2014 abstract interface class"}, {"id": "documents-feat-9", "label": "`UnimplementedAppBoxKitOcrService` \u2014 class"}, {"id": "documents-feat-10", "label": "`AppBoxKitPdfPageImage` \u2014 class"}, {"id": "documents-feat-11", "label": "`AppBoxKitPdfService` \u2014 abstract interface class"}]} />
+<Checklist id="documents-features" items={[{"id": "documents-feat-0", "label": "`ArxaKitDocumentPickerService` \u2014 abstract interface class"}, {"id": "documents-feat-1", "label": "`FileSelectorArxaKitDocumentPickerService` \u2014 class"}, {"id": "documents-feat-2", "label": "`ArxaKitScannedPage` \u2014 class"}, {"id": "documents-feat-3", "label": "`ArxaKitScannedDocument` \u2014 class"}, {"id": "documents-feat-4", "label": "`ArxaKitDocumentScanService` \u2014 abstract interface class"}, {"id": "documents-feat-5", "label": "`UnimplementedArxaKitDocumentScanService` \u2014 class"}, {"id": "documents-feat-6", "label": "`ArxaKitOcrBlock` \u2014 class"}, {"id": "documents-feat-7", "label": "`ArxaKitOcrResult` \u2014 class"}, {"id": "documents-feat-8", "label": "`ArxaKitOcrService` \u2014 abstract interface class"}, {"id": "documents-feat-9", "label": "`UnimplementedArxaKitOcrService` \u2014 class"}, {"id": "documents-feat-10", "label": "`ArxaKitPdfPageImage` \u2014 class"}, {"id": "documents-feat-11", "label": "`ArxaKitPdfService` \u2014 abstract interface class"}]} />
 
 
 ### Decisions / ADRs
 
-The kit is **API-first by design**: it ships the full typed port surface now so app code compiles against final signatures, then backfills native adapters in phase 2 — which is why scan/OCR/PDF exist as throwing `Unimplemented…` stubs rather than being absent entirely. It is **deliberately standalone**: it takes no path dependency on `appbox_kit`, `stacked`, `stacked_services`, or `appbox_kit_permissions`, staying pure ports over native plugins and reusable outside the Stacked graph. The one working path uses `file_selector` (`^1.1.0`, verified pub.dev 2026-07-14) because it wraps the OS document pickers (`UIDocumentPickerViewController` on iOS, the Storage Access Framework on Android) without dragging in a heavier media dependency. The native-first plan pins each stub to a first-party engine — VisionKit/Vision/PDFKit on iOS, ML Kit/PdfRenderer on Android — and per the README's Non-goals, camera/photo-library permission for scanning is deferred to a downstream reconciliation pass rather than forcing a `appbox_kit_permissions` dependency now.
+The kit is **API-first by design**: it ships the full typed port surface now so app code compiles against final signatures, then backfills native adapters in phase 2 — which is why scan/OCR/PDF exist as throwing `Unimplemented…` stubs rather than being absent entirely. It is **deliberately standalone**: it takes no path dependency on `arxa_kit`, `stacked`, `stacked_services`, or `arxa_kit_permissions`, staying pure ports over native plugins and reusable outside the Stacked graph. The one working path uses `file_selector` (`^1.1.0`, verified pub.dev 2026-07-14) because it wraps the OS document pickers (`UIDocumentPickerViewController` on iOS, the Storage Access Framework on Android) without dragging in a heavier media dependency. The native-first plan pins each stub to a first-party engine — VisionKit/Vision/PDFKit on iOS, ML Kit/PdfRenderer on Android — and per the README's Non-goals, camera/photo-library permission for scanning is deferred to a downstream reconciliation pass rather than forcing a `arxa_kit_permissions` dependency now.
 
 <!-- kb:begin -->
 ### References
@@ -107,12 +107,12 @@ Official docs and tooling:
 - [stacked_cli (pub.dev)](https://pub.dev/packages/stacked_cli) — Scaffolding CLI for new Stacked apps/views/services.
 - [Flutter — official documentation](https://docs.flutter.dev) — Framework docs, platform integration, performance.
 - [Dart — official documentation](https://dart.dev) — Language tour, async, package ecosystem.
-- [Dart & Flutter MCP server (official)](https://dart.dev/tools/mcp-server) — Ships with the Dart SDK (dart mcp-server). Exposes analyzer diagnostics, pub, tests, and live Flutter app introspection via DTD. Wired in appbox_kit/.mcp.json.
+- [Dart & Flutter MCP server (official)](https://dart.dev/tools/mcp-server) — Ships with the Dart SDK (dart mcp-server). Exposes analyzer diagnostics, pub, tests, and live Flutter app introspection via DTD. Wired in arxa_kit/.mcp.json.
 
 Kit-specific:
 
-- [file_selector (pub.dev)](https://pub.dev/packages/file_selector) — file_selector — backing dependency of appbox_kit_documents.
-- [pdfrx (pub.dev)](https://pub.dev/packages/pdfrx) — pdfrx — backing dependency of appbox_kit_documents.
+- [file_selector (pub.dev)](https://pub.dev/packages/file_selector) — file_selector — backing dependency of arxa_kit_documents.
+- [pdfrx (pub.dev)](https://pub.dev/packages/pdfrx) — pdfrx — backing dependency of arxa_kit_documents.
 <!-- kb:end -->
 
 <QuestionForm id="open-questions" questions={[

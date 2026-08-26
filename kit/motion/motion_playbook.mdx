@@ -1,15 +1,15 @@
 <Callout id="header" tone="info">
 
-# appbox_kit_motion — Per-Package Playbook
+# arxa_kit_motion — Per-Package Playbook
 
 
-`appbox_kit_motion` v**0.1.0** · `publish_to: 'none'` · status: **active**
+`arxa_kit_motion` v**0.1.0** · `publish_to: 'none'` · status: **active**
 
 
-**Role (one line):** Route-driven wake-up & set-down choreography for Stacked apps — AppBoxKitMotionScope + AppBoxKitWake stagger children off any Animation<double> (route push/pop, tab slide, manual controller), with a flutter_animate adapter for arbitrary effects.
+**Role (one line):** Route-driven wake-up & set-down choreography for Stacked apps — ArxaKitMotionScope + ArxaKitWake stagger children off any Animation<double> (route push/pop, tab slide, manual controller), with a flutter_animate adapter for arbitrary effects.
 
 
-**Scope of this document:** lets a human OR an LLM use, wire, and extend `appbox_kit_motion` **without reading its source**. The public surface below was extracted from the barrel; README content is folded into the narrative sections.
+**Scope of this document:** lets a human OR an LLM use, wire, and extend `arxa_kit_motion` **without reading its source**. The public surface below was extracted from the barrel; README content is folded into the narrative sections.
 
 
 ## Table of contents
@@ -22,14 +22,14 @@
 
 ### Overview & role
 
-Deterministic entrance/exit choreography for Stacked apps. `AppBoxKitMotionScope` establishes one 0→1 driver per subtree — the enclosing route's animation by default (push wakes, pop/swipe-back scrubs down), or any explicit `Animation<double>` (a `AppBoxKitDirectionalTabTransition`-style tab animation, a scroll-mapped animation, or a manual `AnimationController` replay). Descendant `AppBoxKitWake` widgets each claim a stagger slot and slice their window from that single timeline using pure `FadeTransition`/`SlideTransition`/`ScaleTransition` composition — cheap, reversible, no ticker owned. Standalone capability kit; no dependency on appbox_kit core.
+Deterministic entrance/exit choreography for Stacked apps. `ArxaKitMotionScope` establishes one 0→1 driver per subtree — the enclosing route's animation by default (push wakes, pop/swipe-back scrubs down), or any explicit `Animation<double>` (a `ArxaKitDirectionalTabTransition`-style tab animation, a scroll-mapped animation, or a manual `AnimationController` replay). Descendant `ArxaKitWake` widgets each claim a stagger slot and slice their window from that single timeline using pure `FadeTransition`/`SlideTransition`/`ScaleTransition` composition — cheap, reversible, no ticker owned. Standalone capability kit; no dependency on arxa_kit core.
 
 
 ### Public surface
 
-Exported from `lib/appbox_kit_motion.dart`:
+Exported from `lib/arxa_kit_motion.dart`:
 
-<Table id="motion-api" columns={["Symbol", "Kind", "Defined in"]} rows={[["AppBoxKitGestureDriver", "class", "src/appbox_kit_gesture_driver.dart"], ["AppBoxKitMotionAdapter", "class", "src/appbox_kit_motion_adapter.dart"], ["AppBoxKitMotionScope", "class", "src/appbox_kit_motion_scope.dart"], ["AppBoxKitMotionScopeState", "class", "src/appbox_kit_motion_scope.dart"], ["AppBoxKitMotionSpec", "class", "src/appbox_kit_motion_spec.dart"], ["AppBoxKitSprings", "class", "src/appbox_kit_springs.dart"], ["AppBoxKitWake", "class", "src/appbox_kit_wake.dart"]]} />
+<Table id="motion-api" columns={["Symbol", "Kind", "Defined in"]} rows={[["ArxaKitGestureDriver", "class", "src/arxa_kit_gesture_driver.dart"], ["ArxaKitMotionAdapter", "class", "src/arxa_kit_motion_adapter.dart"], ["ArxaKitMotionScope", "class", "src/arxa_kit_motion_scope.dart"], ["ArxaKitMotionScopeState", "class", "src/arxa_kit_motion_scope.dart"], ["ArxaKitMotionSpec", "class", "src/arxa_kit_motion_spec.dart"], ["ArxaKitSprings", "class", "src/arxa_kit_springs.dart"], ["ArxaKitWake", "class", "src/arxa_kit_wake.dart"]]} />
 
 Scripts and call-counts — tests never touch platform channels.
 
@@ -37,24 +37,24 @@ Scripts and call-counts — tests never touch platform channels.
 ### Usage & wiring
 
 ```dart
-import 'package:appbox_kit_motion/appbox_kit_motion.dart';
+import 'package:arxa_kit_motion/arxa_kit_motion.dart';
 
 // 1. Route-driven (default): children wake on push, scrub down on pop.
-AppBoxKitMotionScope(
+ArxaKitMotionScope(
   child: Column(children: [header, body, footer].wakeAll()),
 );
 
 // 2. Single widget, explicit slot + spec preset:
-Text('hi').wake(order: 3, spec: AppBoxKitMotionSpec.energetic);
+Text('hi').wake(order: 3, spec: ArxaKitMotionSpec.energetic);
 
 // 3. Any flutter_animate effect on the same timeline:
-card.animate(adapter: AppBoxKitMotionAdapter.of(context)).fadeIn().blurXY(begin: 8, end: 0);
+card.animate(adapter: ArxaKitMotionAdapter.of(context)).fadeIn().blurXY(begin: 8, end: 0);
 
 // 4. Manual replay: pass your own driver; forward(from: 0) re-wakes.
-AppBoxKitMotionScope(driver: _controller, child: demo);
+ArxaKitMotionScope(driver: _controller, child: demo);
 ```
 
-Tune via the `AppBoxKitMotionSpec` theme extension (or per-scope/per-wake `spec:` override): `staggerFraction`, `maxStartFraction`, `curve`, `offset`, `fade`, `scale`, `enabled` — presets `standard` / `subtle` / `energetic`.
+Tune via the `ArxaKitMotionSpec` theme extension (or per-scope/per-wake `spec:` override): `staggerFraction`, `maxStartFraction`, `curve`, `offset`, `fade`, `scale`, `enabled` — presets `standard` / `subtle` / `energetic`.
 
 
 ### Integration map
@@ -66,36 +66,36 @@ See `kit_matrix.md` for the full routing + dependency graph.
 
 ### Architecture
 
-`appbox_kit_motion` never imports `appbox_kit`. The allowed direction is the
-reverse: `appbox_kit` core (or any app) may take a path dependency on this kit.
-One driver per scope; `AppBoxKitWake` slots are auto-claimed in build order (sticky
+`arxa_kit_motion` never imports `arxa_kit`. The allowed direction is the
+reverse: `arxa_kit` core (or any app) may take a path dependency on this kit.
+One driver per scope; `ArxaKitWake` slots are auto-claimed in build order (sticky
 across rebuilds) or pinned via `order:` / `.wakeAll()` for lazy/sliver parents.
 
 
 ### Gotchas
 
-`AppBoxKitWake` degrades to rendering its child untouched when any of these hold: no `AppBoxKitMotionScope` above it, `MediaQuery.disableAnimations` (reduce-motion) set, or the resolved `AppBoxKitMotionSpec.enabled` false — shared components stay safe to embed anywhere, but it also means a missing scope fails *silently* (no wake, no error). Auto-claimed slot order follows build order, which lazy lists and slivers can shuffle — use explicit `order:` or `.wakeAll()` there. `AppBoxKitMotionAdapter.of(context)` needs a `Builder` (or any descendant context) *inside* the scope, and each `.animate()` call consumes one stagger slot just like a `AppBoxKitWake`. The only backing package is `flutter_animate` (^4.5.2), which must stay version-aligned with the showcase app and core.
+`ArxaKitWake` degrades to rendering its child untouched when any of these hold: no `ArxaKitMotionScope` above it, `MediaQuery.disableAnimations` (reduce-motion) set, or the resolved `ArxaKitMotionSpec.enabled` false — shared components stay safe to embed anywhere, but it also means a missing scope fails *silently* (no wake, no error). Auto-claimed slot order follows build order, which lazy lists and slivers can shuffle — use explicit `order:` or `.wakeAll()` there. `ArxaKitMotionAdapter.of(context)` needs a `Builder` (or any descendant context) *inside* the scope, and each `.animate()` call consumes one stagger slot just like a `ArxaKitWake`. The only backing package is `flutter_animate` (^4.5.2), which must stay version-aligned with the showcase app and core.
 
 
 ### Testing
 
 ```dart
-import 'package:appbox_kit_motion/appbox_kit_testing.dart';
+import 'package:arxa_kit_motion/arxa_kit_testing.dart';
 
-await tester.pumpWidget(staticAppBoxKitMotionScope(t: 0.5, child: view));
+await tester.pumpWidget(staticArxaKitMotionScope(t: 0.5, child: view));
 // choreography frozen mid-flight — no timers, golden-safe.
-// appBoxKitMotionSettled (t=1) / appBoxKitMotionDormant (t=0) for the endpoints.
+// arxaKitMotionSettled (t=1) / arxaKitMotionDormant (t=0) for the endpoints.
 ```
 
 
 ### Features
 
-<Checklist id="motion-features" items={[{"id": "motion-feat-0", "label": "`AppBoxKitGestureDriver` \u2014 class"}, {"id": "motion-feat-1", "label": "`AppBoxKitMotionAdapter` \u2014 class"}, {"id": "motion-feat-2", "label": "`AppBoxKitMotionScope` \u2014 class"}, {"id": "motion-feat-3", "label": "`AppBoxKitMotionScopeState` \u2014 class"}, {"id": "motion-feat-4", "label": "`AppBoxKitMotionSpec` \u2014 class"}, {"id": "motion-feat-5", "label": "`AppBoxKitSprings` \u2014 class"}, {"id": "motion-feat-6", "label": "`AppBoxKitWake` \u2014 class"}]} />
+<Checklist id="motion-features" items={[{"id": "motion-feat-0", "label": "`ArxaKitGestureDriver` \u2014 class"}, {"id": "motion-feat-1", "label": "`ArxaKitMotionAdapter` \u2014 class"}, {"id": "motion-feat-2", "label": "`ArxaKitMotionScope` \u2014 class"}, {"id": "motion-feat-3", "label": "`ArxaKitMotionScopeState` \u2014 class"}, {"id": "motion-feat-4", "label": "`ArxaKitMotionSpec` \u2014 class"}, {"id": "motion-feat-5", "label": "`ArxaKitSprings` \u2014 class"}, {"id": "motion-feat-6", "label": "`ArxaKitWake` \u2014 class"}]} />
 
 
 ### Decisions / ADRs
 
-appbox_kit_motion is a standalone capability kit extracted alongside the phase 2B kits: choreography can be consumed without dragging in core's UI/navigation surface. It deliberately owns **no ticker** — every wake is a slice of one external 0→1 driver, which makes the whole choreography reversible for free (pop and interactive swipe-back scrub the entrance back down symmetrically). Pure Flutter transition widgets were chosen over flutter_animate for the core path (cheap, const-friendly, reversible), with flutter_animate integrated *at the edge* via `AppBoxKitMotionAdapter` so its effect catalogue rides the same timeline instead of competing with it. Specs are a `ThemeExtension` so apps theme motion like color. The hard rule is that `appbox_kit_motion` never imports `appbox_kit`; the dependency direction is strictly reversed.
+arxa_kit_motion is a standalone capability kit extracted alongside the phase 2B kits: choreography can be consumed without dragging in core's UI/navigation surface. It deliberately owns **no ticker** — every wake is a slice of one external 0→1 driver, which makes the whole choreography reversible for free (pop and interactive swipe-back scrub the entrance back down symmetrically). Pure Flutter transition widgets were chosen over flutter_animate for the core path (cheap, const-friendly, reversible), with flutter_animate integrated *at the edge* via `ArxaKitMotionAdapter` so its effect catalogue rides the same timeline instead of competing with it. Specs are a `ThemeExtension` so apps theme motion like color. The hard rule is that `arxa_kit_motion` never imports `arxa_kit`; the dependency direction is strictly reversed.
 
 <!-- kb:begin -->
 ### References
@@ -109,11 +109,11 @@ Official docs and tooling:
 - [stacked_cli (pub.dev)](https://pub.dev/packages/stacked_cli) — Scaffolding CLI for new Stacked apps/views/services.
 - [Flutter — official documentation](https://docs.flutter.dev) — Framework docs, platform integration, performance.
 - [Dart — official documentation](https://dart.dev) — Language tour, async, package ecosystem.
-- [Dart & Flutter MCP server (official)](https://dart.dev/tools/mcp-server) — Ships with the Dart SDK (dart mcp-server). Exposes analyzer diagnostics, pub, tests, and live Flutter app introspection via DTD. Wired in appbox_kit/.mcp.json.
+- [Dart & Flutter MCP server (official)](https://dart.dev/tools/mcp-server) — Ships with the Dart SDK (dart mcp-server). Exposes analyzer diagnostics, pub, tests, and live Flutter app introspection via DTD. Wired in arxa_kit/.mcp.json.
 
 Kit-specific:
 
-- [flutter_animate (pub.dev)](https://pub.dev/packages/flutter_animate) — flutter_animate — backing dependency of appbox_kit_motion.
+- [flutter_animate (pub.dev)](https://pub.dev/packages/flutter_animate) — flutter_animate — backing dependency of arxa_kit_motion.
 <!-- kb:end -->
 
 <QuestionForm id="open-questions" questions={[

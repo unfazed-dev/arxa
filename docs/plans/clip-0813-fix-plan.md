@@ -176,7 +176,7 @@ participates, so `Clip.none` could not move the boundary. The bottom is
 clean because `extendBody: true` moves GEOMETRY (trailing edge at the
 physical screen edge), not the clip.
 
-Fix: `AppBoxKitEdgeAwareListView(extendBehindTopBar: true)` — OverflowBox
+Fix: `ArxaKitEdgeAwareListView(extendBehindTopBar: true)` — OverflowBox
 oversizes the viewport upward by viewPadding.top + kToolbarHeight + gap,
 bottom-aligned, overdraw returned as top padding. Leading edge now sits
 at/above the physical top; culling and glass re-materialization happen

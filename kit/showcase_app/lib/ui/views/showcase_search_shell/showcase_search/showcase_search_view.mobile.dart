@@ -25,11 +25,11 @@
 library;
 
 import 'package:flutter/material.dart';
-import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
-import 'package:appbox_kit_showcase_app/ui/widgets/common/showcase_gallery_chrome/showcase_gallery_chrome_widget.dart';
-import 'package:appbox_kit_showcase_app/ui/widgets/common/showcase_tabs_shared/widgets.dart';
-import 'package:appbox_kit_showcase_app/ui/widgets/showcase_search_widgets/widgets.dart';
-import 'package:appbox_kit_showcase_app/ui/views/showcase_search_shell/showcase_search/showcase_search_viewmodel.dart';
+import 'package:arxa_kit_ui_library/arxa_kit_ui_library.dart';
+import 'package:arxa_kit_showcase_app/ui/widgets/common/showcase_gallery_chrome/showcase_gallery_chrome_widget.dart';
+import 'package:arxa_kit_showcase_app/ui/widgets/common/showcase_tabs_shared/widgets.dart';
+import 'package:arxa_kit_showcase_app/ui/widgets/showcase_search_widgets/widgets.dart';
+import 'package:arxa_kit_showcase_app/ui/views/showcase_search_shell/showcase_search/showcase_search_viewmodel.dart';
 
 class ShowcaseSearchViewMobile
     extends ViewModelWidget<ShowcaseSearchViewModel> {
@@ -43,11 +43,11 @@ class ShowcaseSearchViewMobile
     return ShowcaseGalleryChromeWidget(
       child: Builder(
         builder: (context) =>
-            // Edge treatment owned by the list (see AppBoxKitEdgeAwareListView)
+            // Edge treatment owned by the list (see ArxaKitEdgeAwareListView)
             // — this also covers the search bar, which the per-widget calls
             // skipped. Top fade is auto-skipped here: extendBehindTopBar puts the
             // cull boundary above the physical top, so a top band is unseen.
-            AppBoxKitEdgeAwareListView(
+            ArxaKitEdgeAwareListView(
           bottomOcclusion: kShowcaseTabBarBlockHeight,
           // Materialization headroom above the physical top — see the home
           // list's note (clip 13-53-b; safe since the chrome went native).
@@ -68,15 +68,15 @@ class ShowcaseSearchViewMobile
             // arrives via onSubmitted — the VM holds no TextEditingController
             // (never-prefill query → onChanged/onSubmitted, per the forms
             // playbook).
-            AppBoxKitNativeSearchBar(
+            ArxaKitNativeSearchBar(
               hint: 'Search places, cafes, parks…',
               onSubmitted: (s) =>
-                  appBoxKitLocator<AppBoxKitNotificationService>()
+                  arxaKitLocator<ArxaKitNotificationService>()
                       .show('Search: $s', context: context),
             ),
-            appBoxKitVerticalSpaceMedium,
+            arxaKitVerticalSpaceMedium,
             ShowcaseSearchFilterCardWidget(viewModel: viewModel),
-            appBoxKitVerticalSpaceMedium,
+            arxaKitVerticalSpaceMedium,
             ShowcaseSearchOptionsSectionWidget(viewModel: viewModel),
           ],
         ),

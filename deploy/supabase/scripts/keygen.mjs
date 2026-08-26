@@ -9,7 +9,7 @@
 //
 // Then, manually:
 //   1. supabase secrets set ENTITLEMENT_ISSUER_JWK="$(cat deploy/supabase/secrets/entitlement-issuer.jwk.json)"
-//   2. Replace Entitlement.publicKey in appboxd/lib/entitlement.dart with the
+//   2. Replace Entitlement.publicKey in arxa/lib/entitlement.dart with the
 //      printed public hex, delete `mint --dev`, flip test/release_gate_test.dart
 //      (the rotation checklist lives in that file's header).
 

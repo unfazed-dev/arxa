@@ -37,7 +37,7 @@ fenced.
 
 ## Verification
 
-Disposable server on 4991 (`APPBOX_PROJECT=portalo`, `--no-watch`), one async
+Disposable server on 4991 (`ARXA_PROJECT=portalo`, `--no-watch`), one async
 lens `--expect` on `/design` (views) and `/design?mode=flows`: frame
 pointer-events auto, no `scrolling` attr, inner scrollTop moves, anchor click
 does not change `contentWindow.location.href`; console clean; design lint.

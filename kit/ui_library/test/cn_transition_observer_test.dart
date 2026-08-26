@@ -26,7 +26,7 @@ void main() {
     // (`LiquidGlassContainerView.swift:280`). Flipping it back re-applies
     // `.glassEffect` on a structurally new view, which materializes with an
     // animation — invisible on push (the route is still covered), fully visible
-    // on POP. AppBoxKitNativeChromeGate already removes the view from the frame,
+    // on POP. ArxaKitNativeChromeGate already removes the view from the frame,
     // which de-tinting cannot do, so the native flag is a second authority that
     // buys nothing and costs an animation.
     final src = File(

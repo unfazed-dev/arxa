@@ -1,0 +1,233 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "skills/arxa-moodboarder/moodboard.schema.json",
+  "title": "arxa moodboard (intake/moodboard.json)",
+  "$comment": "DRAFT, Slice B1 (suitors/suitorChoice/evidence added in lockstep with emitMoodboard + moodboard_check). Describes what arxa/lib/intake_artifacts.dart emitMoodboard WRITES, not what any loader enforces: nothing reads this file at runtime, exactly like skills/arxa-intake/intake.schema.json (see the note at intake.dart:70) — so it can drift invisibly. Change emitMoodboard and you must change this by hand. Do NOT build a loader for it on the strength of its existing.",
+  "type": "object",
+  "required": ["method", "boards", "counts"],
+  "properties": {
+    "method": {
+      "type": ["string", "null"],
+      "$comment": "FREE-TEXT methodology ('arxa lens captures · every shot verified on disk'), renamed from the seed's top-level `provenance` because that name promised the client|founder|inferred enum and delivered prose. A reader that parsed it as an enum would be wrong on every real moodboard. Real provenance is per-reference and does use the enum."
+    },
+    "criteria": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "$comment": "INTAKE-DERIVED rubric id (e.g. 'animated-3d', 'premium'). Derived by arxa-moodboarder from direction adjectives + layoutTemplate, never from taste."
+          },
+          "weight": {
+            "type": "number",
+            "$comment": "Multiplied into every score; locked criteria carry 3."
+          },
+          "locked": {
+            "type": "boolean",
+            "$comment": "TRUE for founder-signed concrete visual requirements (motion, 3D, animation, video). Two-phase law in arxa moodboard check: while selectionStatus is PENDING, some reference scoring >= 3 must exist (feasibility); once APPROVED, a SELECTED reference must carry it (fed) — the energize lesson, made structural. On new-style records (suitors present) a locked score >= 3 must also cite evidence naming the criterion."
+          }
+        },
+        "additionalProperties": true
+      },
+      "$comment": "Present whenever boards are scored. The emitter carries the group through verbatim."
+    },
+    "tokenSynthesis": {
+      "type": "object",
+      "additionalProperties": true,
+      "$comment": "The cross-pollinated starting direction (palette/type/radius/elevation/motion strings) authored at selection time. Carried through emitMoodboard verbatim. LEGACY spine: on new-style records (suitors present) the chosen suitor supersedes it as the commission's token layer."
+    },
+    "suitors": {
+      "type": "array",
+      "items": { "$ref": "#/definitions/suitor" },
+      "$comment": "The direction audition (new-style records): exactly three synthesized candidate directions labeled A/B/C, built from the SELECTED references only. Recorded after the selection gate is approved; carried through emitMoodboard verbatim; validated by arxa moodboard check."
+    },
+    "suitorChoice": {
+      "type": "object",
+      "required": ["primary"],
+      "properties": {
+        "primary": {
+          "type": "string",
+          "enum": ["A", "B", "C"],
+          "$comment": "The human pick at the audition gate — one primary suitor."
+        },
+        "remix": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["attribute", "from"],
+            "properties": {
+              "attribute": {
+                "type": "string",
+                "enum": ["palette", "type", "radius", "motion", "layout-register"],
+                "$comment": "The closed remix vocabulary — attribute-scoped amendments only; a clause outside it is a fourth, hidden suitor."
+              },
+              "from": {
+                "type": "string",
+                "enum": ["A", "B", "C"],
+                "$comment": "The sibling suitor the amended attribute comes from — never the primary itself."
+              }
+            }
+          }
+        }
+      },
+      "$comment": "The recorded answer of the second human gate. arxa design commission refuses to compile a new-style record without it, and renders primary + remixes as the mandate's token spine."
+    },
+    "selectionStatus": {
+      "type": "string",
+      "enum": ["pending", "approved"],
+      "$comment": "The human selection gate. 'approved' is written only after the founder picks references; arxa design commission refuses to run on anything else."
+    },
+    "boards": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "references"],
+        "properties": {
+          "id": { "type": "string" },
+          "title": { "type": "string" },
+          "slice": { "type": "string" },
+          "informs": { "type": "string" },
+          "references": {
+            "type": "array",
+            "items": { "$ref": "#/definitions/reference" }
+          }
+        },
+        "not": { "required": ["file"] },
+        "$comment": "No `file`. It points at the studio's authoring markdown, which does not exist inside a user project — a link that is dead by construction. No `curated` at the top level either: it is a date, and project.dart:13 bans clock fields so identical input yields identical bytes.",
+        "additionalProperties": true
+      }
+    },
+    "counts": {
+      "type": "object",
+      "required": ["boards", "references", "shots"],
+      "properties": {
+        "boards": { "type": "integer", "minimum": 0 },
+        "references": { "type": "integer", "minimum": 0 },
+        "shots": {
+          "type": "integer",
+          "minimum": 0,
+          "$comment": "References that actually carry a shot file — never equal to `references` by assumption. A reference with no capture is legal."
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": true,
+  "definitions": {
+    "provenance": {
+      "enum": ["client", "founder", "inferred"],
+      "$comment": "The same three values as intake.schema.json. A reference with no stated provenance is emitted as 'inferred' — not elicited IS inferred, and §22 requires that be visible rather than absent."
+    },
+    "reference": {
+      "type": "object",
+      "required": ["name", "provenance"],
+      "properties": {
+        "name": { "type": "string" },
+        "url": { "type": "string" },
+        "grade": {
+          "type": "string",
+          "$comment": "hot / warm / cold by convention. Not enumerated here: arxa-moodboarder owns the vocabulary and intake only republishes."
+        },
+        "shot": { "$ref": "#/definitions/shot" },
+        "steal": { "type": "string" },
+        "why": { "type": "string" },
+        "scores": {
+          "type": "object",
+          "additionalProperties": { "type": "integer", "minimum": 0, "maximum": 5 },
+          "$comment": "0-5 per criterion id (the moodboarder subagents' judgment). Keys are criterion ids."
+        },
+        "total": {
+          "type": "number",
+          "$comment": "COMPUTED AT EMIT: Σ(score×weight)/Σweight, 2 decimals. Never trusted from the seed; arxa moodboard check recomputes and compares."
+        },
+        "selected": {
+          "type": "boolean",
+          "$comment": "The recorded human selection. Only selected references reach the designer's commission."
+        },
+        "tokens": {
+          "type": "object",
+          "additionalProperties": { "type": "string" },
+          "$comment": "Style tokens EXTRACTED from this reference at selection time: palette (hexes), type (register + pairing), radius, motion (driver). Present on SELECTED references — the fidelity-ladder upgrade over screenshots-as-vibes. Rides the reference spread through the emitter."
+        },
+        "evidence": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/evidence" },
+          "$comment": "Lens artifacts backing the scores: on new-style records every locked-criterion score >= 3 must cite an entry naming that criterion — capture or measure the behavior, or score <= 2."
+        },
+        "provenance": { "$ref": "#/definitions/provenance" }
+      },
+      "additionalProperties": true,
+      "$comment": "OPEN on purpose. arxa-moodboarder owns this document; intake republishes it with ids, src paths and counts added. A closed set would delete a field the owning skill legitimately added — task #29's failure mode."
+    },
+    "suitor": {
+      "type": "object",
+      "required": ["id", "name", "spread", "leads", "tokens", "provenance"],
+      "properties": {
+        "id": { "type": "string", "enum": ["A", "B", "C"] },
+        "name": { "type": "string" },
+        "spread": {
+          "type": "string",
+          "$comment": "The register this direction owns that the other two do not. Three clones is a failed audition surfaced as a finding, not a completed gate."
+        },
+        "leads": {
+          "type": "array",
+          "items": { "type": "string" },
+          "$comment": "'<boardId>/<reference name>' pointers, each resolving to a SELECTED reference — suitors synthesize from the chosen material only."
+        },
+        "tokens": {
+          "type": "object",
+          "additionalProperties": { "type": "string" },
+          "$comment": "The direction's token set (palette/type/radius/motion, at least one) — lens-measured where the reference is publicly reachable."
+        },
+        "provenance": {
+          "type": "string",
+          "enum": ["measured", "judged"],
+          "$comment": "measured = captured (extractTokens) or watched (two settle states / burst), with evidence entries; judged = memory-judgment, graded and visible as such. Measured beats judged beats remembered."
+        },
+        "evidence": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/evidence" }
+        }
+      },
+      "additionalProperties": true
+    },
+    "evidence": {
+      "type": "object",
+      "required": ["kind", "file"],
+      "properties": {
+        "kind": {
+          "type": "string",
+          "$comment": "tokens (extractTokens output) | motion (two settle states / burst frames) | capture (a plain shot backing a claim)."
+        },
+        "file": {
+          "type": "string",
+          "$comment": "Path RELATIVE to <app-dir>/moodboard/ (e.g. 'evidence/polestar__two-settles.png'). The check resolves it on disk; a citation that does not resolve is a lie the gate catches."
+        },
+        "criterion": {
+          "type": "string",
+          "$comment": "The rubric criterion this artifact proves — required for locked-criterion proof on references; suitors' own evidence carries no criterion."
+        }
+      },
+      "additionalProperties": true
+    },
+    "shot": {
+      "type": "object",
+      "required": ["file", "id", "src"],
+      "properties": {
+        "file": { "type": "string" },
+        "caption": { "type": "string" },
+        "id": {
+          "type": "string",
+          "$comment": "PRECOMPUTED at emit time as `<boardId>--<file without extension>`."
+        },
+        "src": {
+          "type": "string",
+          "$comment": "PRECOMPUTED at emit time as `/assets/images/moodboard/<boardId>/<file>`. Baking the path in here is the job generate.mjs does for the studio fixture: every reader stays a dumb field selector and no JS has to learn the convention."
+        }
+      },
+      "additionalProperties": true
+    }
+  }
+}

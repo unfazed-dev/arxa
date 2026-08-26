@@ -1,4 +1,4 @@
-# appbox_kit_genui_bridge
+# arxa_kit_genui_bridge
 
 The provider- and model-agnostic reliability core for making **any LLM** emit
 valid [A2UI](https://github.com/google/A2UI) v0.9 JSON messages — the wire
@@ -17,17 +17,17 @@ catalog schemas in the system prompt
   → only valid messages leave the bridge
 ```
 
-## The `AppBoxKitChatStream` contract
+## The `ArxaKitChatStream` contract
 
 The one abstraction every provider lives behind:
 
 ```dart
-abstract class AppBoxKitChatStream {
-  Stream<String> complete(List<AppBoxKitChatMessage> messages, {AppBoxKitJsonSchema? schema});
+abstract class ArxaKitChatStream {
+  Stream<String> complete(List<ArxaKitChatMessage> messages, {ArxaKitJsonSchema? schema});
 }
 ```
 
-- `messages` — conversation turns (`AppBoxKitChatMessage.system/.user/.assistant`).
+- `messages` — conversation turns (`ArxaKitChatMessage.system/.user/.assistant`).
 - `schema` — an *optional acceleration hint* an adapter may map to a
   provider-native mode. Callers must validate output regardless; the bridge
   does. (The OpenAI adapter maps it to `response_format`; the Anthropic
@@ -38,27 +38,27 @@ Nothing in the interface names a provider or a model. Two adapters ship:
 
 | Adapter | Endpoint | Covers |
 | --- | --- | --- |
-| `AppBoxKitOpenAIChatStream` | `POST {baseUrl}/v1/chat/completions` | OpenAI, and Ollama / llama.cpp / vLLM via `baseUrl` (e.g. `http://localhost:11434`) |
-| `AppBoxKitAnthropicChatStream` | `POST {baseUrl}/v1/messages` | Anthropic messages API |
+| `ArxaKitOpenAIChatStream` | `POST {baseUrl}/v1/chat/completions` | OpenAI, and Ollama / llama.cpp / vLLM via `baseUrl` (e.g. `http://localhost:11434`) |
+| `ArxaKitAnthropicChatStream` | `POST {baseUrl}/v1/messages` | Anthropic messages API |
 
 Both are thin HTTP over `dart:io` + `dart:convert` only. Auth is an injected
 header per request (`Bearer` / `x-api-key`) — nothing is stored. The HTTP
-layer is a `AppBoxKitSseTransport` function you can inject, which is how the tests
+layer is a `ArxaKitSseTransport` function you can inject, which is how the tests
 assert request shapes without network.
 
-## Usage (how appboxd uses it)
+## Usage (how arxa uses it)
 
 ```dart
-import 'package:appbox_kit_genui_bridge/appbox_kit_genui_bridge.dart';
+import 'package:arxa_kit_genui_bridge/arxa_kit_genui_bridge.dart';
 
-final chat = AppBoxKitOpenAIChatStream(
+final chat = ArxaKitOpenAIChatStream(
   model: 'qwen3:8b',
   baseUrl: Uri.parse('http://localhost:11434'), // no apiKey — local server
 );
 
-final bridge = AppBoxKitGenuiBridge(
+final bridge = ArxaKitGenuiBridge(
   chat: chat,
-  catalogId: 'appbox.dev:catalog',
+  catalogId: 'arxa.dev:catalog',
   catalog: {
     'StageCard': {
       'type': 'object',
@@ -77,32 +77,32 @@ final bridge = AppBoxKitGenuiBridge(
 
 try {
   final turn = await bridge.generate([
-    const AppBoxKitChatMessage.user('show me the build pipeline status'),
+    const ArxaKitChatMessage.user('show me the build pipeline status'),
   ]);
   // Only valid messages ever get here. Forward the canonical JSONL to the
   // Flutter client, whose genui A2uiTransportAdapter.addChunk() consumes it:
   final jsonl = turn.toJsonl();
-} on AppBoxKitGenuiBridgeFailure catch (f) {
+} on ArxaKitGenuiBridgeFailure catch (f) {
   // Still invalid after 1 + maxRepairs attempts: f.errors, f.lastRawOutput.
 }
 ```
 
 What you get, in layers (each usable on its own):
 
-- **`AppBoxKitA2uiMessage` model** — parse/serialize the four v0.9 verbs
+- **`ArxaKitA2uiMessage` model** — parse/serialize the four v0.9 verbs
   (`createSurface`, `updateComponents`, `updateDataModel`, `deleteSurface`).
   Read-tolerant of the rename-in-flight (`surfaceUpdate`/`dataModelUpdate`
   accepted as aliases), canonical v0.9 on write. Strict on
   `version == 'v0.9'`, because that is what genui's `a2ui_core` accepts.
-- **`AppBoxKitA2uiStreamParser`** — `StreamTransformer<String, AppBoxKitA2uiStreamEvent>` that
+- **`ArxaKitA2uiStreamParser`** — `StreamTransformer<String, ArxaKitA2uiStreamEvent>` that
   assembles messages split across arbitrary chunk boundaries (fenced blocks,
   balanced-brace objects, JSONL separators), passes prose through as
-  `AppBoxKitA2uiTextEvent`, and surfaces malformed/truncated payloads as
-  `AppBoxKitA2uiErrorEvent`s instead of throwing.
-- **`AppBoxKitGenuiBridge`** — prompt → parse → catalog validation → bounded repair,
+  `ArxaKitA2uiTextEvent`, and surfaces malformed/truncated payloads as
+  `ArxaKitA2uiErrorEvent`s instead of throwing.
+- **`ArxaKitGenuiBridge`** — prompt → parse → catalog validation → bounded repair,
   per turn. An attempt that mixes valid and invalid messages is discarded
   whole; a turn's messages are only emitted once every one validates.
-- **`lib/appbox_kit_testing.dart`** — `FakeAppBoxKitChatStream` (script queues + call recording)
+- **`lib/arxa_kit_testing.dart`** — `FakeArxaKitChatStream` (script queues + call recording)
   for testing your own bridge consumer without network.
 
 ## Version pinning
@@ -111,12 +111,12 @@ Pinned to **A2UI v0.9**, the protocol genui 0.10.1's `a2ui_core` accepts on
 the wire. The canonical spec schema this package is checked against lives in
 `assets/a2ui/` with full provenance (source URLs, spec version, fetch date,
 and the known spec↔code disagreements). A2UI is pre-1.0 and renames are
-expected — the alias seam in `AppBoxKitA2uiMessage.fromJson` is the single place to
+expected — the alias seam in `ArxaKitA2uiMessage.fromJson` is the single place to
 absorb the next one.
 
 ## kimitail ceilings (deliberate simplifications)
 
-- **`AppBoxKitJsonSchemaValidator` is a subset validator.** It checks `type`
+- **`ArxaKitJsonSchemaValidator` is a subset validator.** It checks `type`
   (incl. multi-type lists), `properties`, `required`,
   `additionalProperties: false`, `items`, `enum`, `const`, `minItems`,
   `minLength`, `minimum`/`maximum` — and ignores everything else
@@ -125,16 +125,16 @@ absorb the next one.
   needs union types or shared refs — then depend on a real JSON Schema
   package.
 - **`generate` buffers each attempt** and returns the validated batch
-  (`Future<AppBoxKitA2uiTurn>`); there is no progressive emission of a partial batch.
+  (`Future<ArxaKitA2uiTurn>`); there is no progressive emission of a partial batch.
   *Add when:* a latency profile shows time-to-first-surface matters — emit
   per-message after validation, keep repair batch-scoped.
 - **No provider-native structured-output reliance and no tool-use forcing.**
   `schema` is a hint, not a guarantee. *Add when:* a specific provider
   pairing proves measurably more reliable with tool-forced output — behind
-  the same `AppBoxKitChatStream` interface, per adapter.
+  the same `ArxaKitChatStream` interface, per adapter.
 - **No auth/credential management, no retries/timeouts on the HTTP layer, no
   token counting.** Those belong to the embedding daemon, which owns the
-  `AppBoxKitSseTransport` seam and can wrap it.
+  `ArxaKitSseTransport` seam and can wrap it.
 - **v0.8's `beginRendering` is not aliased** (its body shape differs from
   `createSurface`); pre-v0.9 envelopes without `version: "v0.9"` are
   rejected. *Add when:* a producer genuinely speaks v0.8 — map it at the

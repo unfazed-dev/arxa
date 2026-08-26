@@ -1,5 +1,5 @@
 /// A widget is a reusable UI piece composed by views. It receives data via
-/// constructor params or [AppBoxKitStreamBuilder] bindings and renders its
+/// constructor params or [ArxaKitStreamBuilder] bindings and renders its
 /// slice of the surface — it holds no business logic and never decides when
 /// an action runs.
 ///
@@ -36,11 +36,11 @@
 library;
 
 import 'package:flutter/material.dart';
-import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
-import 'package:appbox_kit_showcase_app/data/models/showcase_notes_models/models.dart';
-import 'package:appbox_kit_showcase_app/enums/showcase_notes_enums/enums.dart';
-import 'package:appbox_kit_showcase_app/ui/views/showcase_notes_shell/showcase_note_editor/showcase_note_editor_viewmodel.dart';
-import 'package:appbox_kit_showcase_app/ui/widgets/showcase_notes_widgets/widgets.dart';
+import 'package:arxa_kit_ui_library/arxa_kit_ui_library.dart';
+import 'package:arxa_kit_showcase_app/data/models/showcase_notes_models/models.dart';
+import 'package:arxa_kit_showcase_app/enums/showcase_notes_enums/enums.dart';
+import 'package:arxa_kit_showcase_app/ui/views/showcase_notes_shell/showcase_note_editor/showcase_note_editor_viewmodel.dart';
+import 'package:arxa_kit_showcase_app/ui/widgets/showcase_notes_widgets/widgets.dart';
 
 class ShowcaseNoteEditorBodyWidget extends StatefulWidget {
   const ShowcaseNoteEditorBodyWidget({
@@ -97,17 +97,17 @@ class _ShowcaseNoteEditorBodyState extends State<ShowcaseNoteEditorBodyWidget> {
               viewModel: widget.viewModel,
               photos: photos,
             ),
-            appBoxKitVerticalSpaceSmall,
+            arxaKitVerticalSpaceSmall,
           ],
           for (final a in audio) ...[
             ShowcaseNoteAudioRowWidget(
               viewModel: widget.viewModel,
               attachment: a,
             ),
-            appBoxKitVerticalSpaceSmall,
+            arxaKitVerticalSpaceSmall,
           ],
           // flutter-only: multiline note body (maxLines: null, borderless custom
-          // style). AppBoxKitNativeTextField is a single-line credential/search field —
+          // style). ArxaKitNativeTextField is a single-line credential/search field —
           // a scrolling note body is outside the native text-field's scope.
           // ponytail: uniform body style for the whole field — a real title/body
           // split would need a rich-text controller; iOS Notes just bolds line 1.

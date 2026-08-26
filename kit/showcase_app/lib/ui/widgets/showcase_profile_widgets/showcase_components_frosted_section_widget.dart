@@ -4,7 +4,7 @@
 /// places it owns the data.
 ///
 /// This is the user interface for the frosted-surface demo — an explicit
-/// AppBoxKitFrostedSurface panel (the content-layer glass tier).
+/// ArxaKitFrostedSurface panel (the content-layer glass tier).
 ///
 /// Requirements:
 /// 1. [Frosted surface] — browse-the-components-gallery
@@ -17,18 +17,18 @@
 library;
 
 import 'package:flutter/material.dart';
-import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
+import 'package:arxa_kit_ui_library/arxa_kit_ui_library.dart';
 
-/// An explicit AppBoxKitFrostedSurface — the ADR 0010 content-layer glass tier.
+/// An explicit ArxaKitFrostedSurface — the ADR 0010 content-layer glass tier.
 class ShowcaseComponentsFrostedSectionWidget extends StatelessWidget {
   const ShowcaseComponentsFrostedSectionWidget({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return const AppBoxKitFrostedSurface(
+    return const ArxaKitFrostedSurface(
       padding: EdgeInsets.all(abxSize16),
       child: Text(
-        'An explicit AppBoxKitFrostedSurface — the ADR 0010 content-layer '
+        'An explicit ArxaKitFrostedSurface — the ADR 0010 content-layer '
         'glass tier (Flutter-drawn frost: BackdropFilter + tint + rim '
         'highlight). Sheet/dialog bodies and the drawer skin compose '
         'on this same widget.',

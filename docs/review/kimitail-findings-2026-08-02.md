@@ -1,4 +1,4 @@
-# kimitail findings — 2026-08-02 (post flows/.appbox refactor)
+# kimitail findings — 2026-08-02 (post flows/.arxa refactor)
 
 Original standing instruction was "document only"; that was overridden the
 same day and the findings were worked. Status per finding below. Three of
@@ -11,10 +11,10 @@ mechanism each named was still real.
 1. **Project-model migration is partial.** — **OPEN, rescoped.**
    The original framing ("same overlay pattern as design_model") is wrong.
    `intake_model` is one fixture standing in for **three** phases' output:
-   intake (`skills/appbox-intake`), story-mapper
-   (`skills/appbox-story-mapper`), and moodboarder
-   (`skills/appbox-moodboarder`). Only intake has a project-side home.
-   `skills/appbox-intake/intake.schema.json:1-78` — the canonical
+   intake (`skills/arxa-intake`), story-mapper
+   (`skills/arxa-story-mapper`), and moodboarder
+   (`skills/arxa-moodboarder`). Only intake has a project-side home.
+   `skills/arxa-intake/intake.schema.json:1-78` — the canonical
    elicitation list — has no `personas`, `map`, or `moodboard` field, and
    `docs/plans/architecture.md:895` states **"Intake elicits; it does not
    generate."** So inventing project-side schemas for those would violate
@@ -25,9 +25,9 @@ mechanism each named was still real.
    fixture json under a project's `build/`**; `project.dart:117-122` treats
    any `.json` there, recursively, as "this project reached `gates`".
 2. **`gate_intake` is design-root-bound** — **CLOSED** (`e523c82`).
-   `appbox gate intake --project <name>` resolves the flat
+   `arxa gate intake --project <name>` resolves the flat
    `intake/{answers.json,brief.md,registry.json}` layout that
-   `IntakeEngine.emit` writes (`appboxd/lib/intake.dart:747-751`), reusing
+   `IntakeEngine.emit` writes (`arxa/lib/intake.dart:747-751`), reusing
    `projectDir`/`shellDir`/`validProjectName` from `project.dart`. No-flag
    behaviour byte-identical. Also fixed a `RangeError` on a bare
    `--project`.
@@ -42,7 +42,7 @@ mechanism each named was still real.
    which is how this stayed invisible; it now writes to stderr.
    Verified empirically: editing `design_facade.js` (a nested import)
    changed the served output with no restart, and reverted cleanly.
-4. **Selftest's route-200 sweep needs a populated `~/.appbox`** —
+4. **Selftest's route-200 sweep needs a populated `~/.arxa`** —
    **CLOSED** (`e523c82`), symptom was false. The selftest already passed
    24/24 with no projects: the null-overlay guard landed in `457d61c`,
    ~7h before this doc was written. The sweep regexed only
@@ -141,7 +141,7 @@ mechanism each named was still real.
     and a check that silently doesn't run are the same defect wearing
     different clothes.
 10. **Headless Chrome leaks on server shutdown** — **CLOSED.** 16 orphaned
-    `appbox-design-worker` Chrome trees (ppid=1, ages 15-23h) were found on
+    `arxa-design-worker` Chrome trees (ppid=1, ages 15-23h) were found on
     the dev machine, predating this session.
     Measured per signal rather than assumed — `_ChromeHandle.close()` was
     never the problem:
@@ -173,8 +173,8 @@ mechanism each named was still real.
     `design serve: reaped orphaned worker chrome <pid>`; and a concurrently
     running server on another port survived three sweeps untouched.
 9. **`gate --all` silently drops `--project`** — **CLOSED.** `_runAllGates`
-   (`appboxd/bin/appbox.dart`) parsed only `--app`/`--repo`, so
-   `appbox gate --all --project x` gated the studio and reported on it as
+   (`arxa/bin/arxa.dart`) parsed only `--app`/`--repo`, so
+   `arxa gate --all --project x` gated the studio and reported on it as
    though it were the project — the worst of the three possible answers, since
    the summary was green for the wrong tree. `project` is now a `GateContext`
    field rather than a per-gate named param, because the suite runner takes
@@ -212,10 +212,10 @@ mechanism each named was still real.
     a step that silently does not run are the same defect. Fixed by naming the
     real package, pinning it, and **deleting the `optional` mechanism
     entirely** — the analyzer confirmed nothing else used it.
-15. **`appbox-cdp-*` Chrome orphans were outside finding 10's sweep** —
+15. **`arxa-cdp-*` Chrome orphans were outside finding 10's sweep** —
     **CLOSED**, after the first attempt at the fix broke four test files.
-    `sweepOrphans()` matched the `appbox-design-worker-` prefix only; a second
-    launch path (`CdpClient`) uses `appbox-cdp-` and leaks identically (an
+    `sweepOrphans()` matched the `arxa-design-worker-` prefix only; a second
+    launch path (`CdpClient`) uses `arxa-cdp-` and leaks identically (an
     orphan from 2026-08-01, pid 25068, was still resident 26h later).
     Simply adding the prefix was **wrong**, and measurably so: 4 CDP test files
     went red with the widened sweep and the full suite passed 907/907 with it
@@ -256,7 +256,7 @@ mechanism each named was still real.
     attached — undiagnosable by construction, and re-running it could never
     have helped. A bounded `StderrTail` now rides both failure paths (exit
     without a URL, and the 30s timeout), and `CdpClient.defaultChromePath()`
-    honours `APPBOX_CHROME`, the same escape hatch `tools/probe-*.mjs` already
+    honours `ARXA_CHROME`, the same escape hatch `tools/probe-*.mjs` already
     used. Verified end to end against a stub Chrome:
     `render boot failed: Bad state: Chrome exited before printing its DevTools
     URL — last 2 line(s) of Chrome stderr: FATAL:cannot create user data dir…`.
@@ -293,7 +293,7 @@ mechanism each named was still real.
   superseded — the views lens wraps (flex-wrap) and flows rows are the
   intended single-row-per-flow layout.
 - `models/screens_model/registry.json` vs `intake/registry.json` is **not**
-  a fixture/fallback pair. The first is appbox-studio's own chrome
+  a fixture/fallback pair. The first is arxa-studio's own chrome
   registry (used only for `labelOf()` shell labels); the second is the
   target project's screen registry. Same field shape, disjoint domains.
 - `files_repository.js`'s `"registry": "models/screens_model/registry.json"`

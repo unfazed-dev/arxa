@@ -25,7 +25,7 @@ target rows the scaffolder already derives in
 Values: `flutter | mix | native`.
 
 - **`mix` (default)** — the kit's existing tier gate unchanged:
-  `wantNative && AppBoxKitPlatform.supportsLiquidGlass|supportsComposeM3E`,
+  `wantNative && ArxaKitPlatform.supportsLiquidGlass|supportsComposeM3E`,
   frosted/fallback tier elsewhere. Omitted map ⇒ `{ios: mix, android: mix,
   web: flutter, desktop: flutter}`.
 - **`flutter`** — Flutter tier wholesale; native wiring tree-shaken (§3).
@@ -42,12 +42,12 @@ additionally forces the deployment floor to iOS 26 (Liquid Glass gate is
 ## 2. Runtime SSOT: root default (QF-2, data half)
 
 The kit gains one small surface (mirrors the existing
-`AppBoxKitPlatform.override` / `AppBoxKitPlatformOverride` pattern in
-`kit/core/lib/platform/appbox_kit_platform.dart`):
+`ArxaKitPlatform.override` / `ArxaKitPlatformOverride` pattern in
+`kit/core/lib/platform/arxa_kit_platform.dart`):
 
-- `AppBoxKitFidelity.mode` — resolved from
-  `const String.fromEnvironment('APPBOX_FIDELITY', defaultValue: 'mix')`.
-  The scaffolder emits `--dart-define=APPBOX_FIDELITY=<mode>` per build
+- `ArxaKitFidelity.mode` — resolved from
+  `const String.fromEnvironment('ARXA_FIDELITY', defaultValue: 'mix')`.
+  The scaffolder emits `--dart-define=ARXA_FIDELITY=<mode>` per build
   target, derived mechanically from the `fidelity` map (advisor 2026-08-14:
   a runtime static cannot tree-shake and adds mutable global state; only a
   const environment value participates in const conditionals). The review
@@ -75,11 +75,11 @@ The kit gains one small surface (mirrors the existing
 **Defaults (explicit):**
 - `fidelity` map absent ⇒ `{ios: mix, android: mix, web: flutter,
   desktop: flutter}` (§1).
-- `APPBOX_FIDELITY` define absent (un-scaffolded kit dev) ⇒ `mix` — on
+- `ARXA_FIDELITY` define absent (un-scaffolded kit dev) ⇒ `mix` — on
   web/desktop `supports*` is already false, so `mix` resolves to the
   Flutter tier there with no native wiring exercised.
 - Per-widget `native`/`preferFlutterTier` absent in `mix` ⇒ platform
-  default: `wantNative = AppBoxKitPlatform.supportsNativeChrome`.
+  default: `wantNative = ArxaKitPlatform.supportsNativeChrome`.
 
 ## 3. Tree-shake at scaffold (QF-2, code half)
 
@@ -105,8 +105,8 @@ the declared fidelity mode before flagging missing native wiring.
 
 ## 5. Open items (owed before implementation)
 
-- `AppBoxKitFidelity` kit implementation + tests (tier-gate composition,
-  strict throw, override interplay with `AppBoxKitPlatformOverride`).
+- `ArxaKitFidelity` kit implementation + tests (tier-gate composition,
+  strict throw, override interplay with `ArxaKitPlatformOverride`).
 - Lint/gate updates: recognize the sanctioned exception; add the
   `preferFlutterTier`-in-native-mode lint.
 - Desktop/web native tiers, if ever added, flip the §1 legality table —

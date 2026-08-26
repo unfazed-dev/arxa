@@ -30,14 +30,14 @@
 /// History: git log --follow -- kit/showcase_app/lib/ui/views/showcase_profile_shell/showcase_maps/showcase_maps_viewmodel.dart
 library;
 
-import 'package:appbox_kit_maps/appbox_kit_maps.dart';
-import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
+import 'package:arxa_kit_maps/arxa_kit_maps.dart';
+import 'package:arxa_kit_ui_library/arxa_kit_ui_library.dart';
 
 class ShowcaseMapsViewModel extends BaseViewModel {
   // ── Setup ──────────────────────────────────────────────────────────────────
 
   /// [1. Backend selection] The package id for the map provider's user agent.
-  static const _packageId = 'com.appboxkit.appbox_kit_showcase_app';
+  static const _packageId = 'com.arxakit.arxa_kit_showcase_app';
 
   /// [1. Backend selection] The Mapbox token, empty when not provided.
   static const _mapboxToken = String.fromEnvironment('MAPBOX_PUBLIC_TOKEN');
@@ -52,29 +52,29 @@ class ShowcaseMapsViewModel extends BaseViewModel {
       mapboxAvailable ? 'Mapbox raster tiles' : 'OpenStreetMap';
 
   /// [1. Backend selection] The provider — Mapbox when a token exists, otherwise
-  /// OpenStreetMap. The same AppBoxKitMapView renders both.
-  AppBoxKitMapProvider get provider => mapboxAvailable
-      ? AppBoxKitMapboxProvider(
+  /// OpenStreetMap. The same ArxaKitMapView renders both.
+  ArxaKitMapProvider get provider => mapboxAvailable
+      ? ArxaKitMapboxProvider(
           accessToken: _mapboxToken,
           userAgentPackageName: _packageId,
         )
-      : AppBoxKitOpenStreetMapProvider(userAgentPackageName: _packageId);
+      : ArxaKitOpenStreetMapProvider(userAgentPackageName: _packageId);
 
   /// [2. Demo config] The camera position and markers for the demo map.
-  AppBoxKitMapConfig get config => AppBoxKitMapConfig(
-        initialCameraPosition: const AppBoxKitCameraPosition(
-          target: AppBoxKitLatLng(51.5074, -0.1278), // London
+  ArxaKitMapConfig get config => ArxaKitMapConfig(
+        initialCameraPosition: const ArxaKitCameraPosition(
+          target: ArxaKitLatLng(51.5074, -0.1278), // London
           zoom: 11,
         ),
         markers: {
-          const AppBoxKitMapMarker(
+          const ArxaKitMapMarker(
             id: 'london-eye',
-            position: AppBoxKitLatLng(51.5033, -0.1196),
+            position: ArxaKitLatLng(51.5033, -0.1196),
             title: 'London Eye',
           ),
-          const AppBoxKitMapMarker(
+          const ArxaKitMapMarker(
             id: 'tower-bridge',
-            position: AppBoxKitLatLng(51.5055, -0.0754),
+            position: ArxaKitLatLng(51.5055, -0.0754),
             title: 'Tower Bridge',
           ),
         },

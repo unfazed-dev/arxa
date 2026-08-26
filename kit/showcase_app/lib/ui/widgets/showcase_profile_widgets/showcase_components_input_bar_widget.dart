@@ -11,7 +11,7 @@
 /// the iOS 26.5 simulator 2026-08-16).
 ///
 /// The record flow is tap-to-toggle on the NATIVE trailing action: the mic
-/// is a real [AppBoxKitNativeIconButton] — a Liquid Glass circle on iOS 26 —
+/// is a real [ArxaKitNativeIconButton] — a Liquid Glass circle on iOS 26 —
 /// whose glyph follows the recorder phase and animates mic → stop → mic
 /// through the SF Symbol replace transition on the Apple tiers (the button
 /// tree updates in place, so the native view survives the swap and can
@@ -49,9 +49,9 @@ library;
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
-import 'package:appbox_kit_showcase_app/data/models/showcase_composer_models/models.dart';
-import 'package:appbox_kit_showcase_app/ui/views/showcase_profile_shell/showcase_components/showcase_components_viewmodel.dart';
+import 'package:arxa_kit_ui_library/arxa_kit_ui_library.dart';
+import 'package:arxa_kit_showcase_app/data/models/showcase_composer_models/models.dart';
+import 'package:arxa_kit_showcase_app/ui/views/showcase_profile_shell/showcase_components/showcase_components_viewmodel.dart';
 
 /// One fake pick per attach kind — the seeded data behind the sheet.
 ShowcaseComposerAttachmentModel _fakeAttachment(
@@ -108,7 +108,7 @@ class _ShowcaseComponentsInputBarWidgetState
     // Modals push on the root navigator so they cover the tab bar (same
     // pattern as the overlays card).
     final context = StackedService.navigatorKey?.currentContext ?? this.context;
-    final kind = await appBoxKitShowSheet<ShowcaseComposerAttachmentKind>(
+    final kind = await arxaKitShowSheet<ShowcaseComposerAttachmentKind>(
       context: context,
       builder: (sheetContext) => SafeArea(
         child: Padding(
@@ -119,7 +119,7 @@ class _ShowcaseComponentsInputBarWidgetState
             children: [
               Text('Attach',
                   style: Theme.of(sheetContext).textTheme.titleMedium),
-              appBoxKitVerticalSpaceSmall,
+              arxaKitVerticalSpaceSmall,
               // Contrast-safe option rows, not native glass buttons: the
               // iOS tier's glass button label reads washed out on the
               // sheet's opaque bright base (measured 2026-08-16). The
@@ -127,22 +127,22 @@ class _ShowcaseComponentsInputBarWidgetState
               for (final (optionKind, glyph, label) in [
                 (
                   ShowcaseComposerAttachmentKind.camera,
-                  AppBoxKitGlyphs.camera,
+                  ArxaKitGlyphs.camera,
                   'Take photo'
                 ),
                 (
                   ShowcaseComposerAttachmentKind.photo,
-                  AppBoxKitGlyphs.photo,
+                  ArxaKitGlyphs.photo,
                   'Photo library'
                 ),
                 (
                   ShowcaseComposerAttachmentKind.file,
-                  AppBoxKitGlyphs.folder,
+                  ArxaKitGlyphs.folder,
                   'Choose file'
                 ),
                 (
                   ShowcaseComposerAttachmentKind.location,
-                  AppBoxKitGlyphs.locationPin,
+                  ArxaKitGlyphs.locationPin,
                   'Share location'
                 ),
               ])
@@ -168,13 +168,13 @@ class _ShowcaseComponentsInputBarWidgetState
     // bare function, not a context extension: the kit barrel exports two
     // dismissKeyboard extensions and the member is ambiguous at call sites
     // importing both.
-    appBoxKitDismissKeyboard();
+    arxaKitDismissKeyboard();
     unawaited(widget.viewModel.startRecording().then((started) {
       // Permission denial is a warning, not an error (notes-shell idiom).
       if (!started && mounted) {
-        appBoxKitLocator<AppBoxKitNotificationService>().show(
+        arxaKitLocator<ArxaKitNotificationService>().show(
           'Microphone permission needed',
-          kind: AppBoxKitNotificationKind.warning,
+          kind: ArxaKitNotificationKind.warning,
           context: context,
         );
       }
@@ -207,9 +207,9 @@ class _ShowcaseComponentsInputBarWidgetState
   /// rebuild) and the bar itself never rebuilds per tick; only this
   /// subtree does.
   Widget _dockedAudioControls() {
-    return AppBoxKitStreamBuilder<Duration?>(
+    return ArxaKitStreamBuilder<Duration?>(
       stream: widget.viewModel.recordingElapsed,
-      builder: (context, elapsed) => AppBoxKitStreamBuilder<double>(
+      builder: (context, elapsed) => ArxaKitStreamBuilder<double>(
         stream: widget.viewModel.recordingLevel,
         builder: (context, dbfs) => _RecordingStrip(
           elapsed: elapsed,
@@ -240,13 +240,13 @@ class _ShowcaseComponentsInputBarWidgetState
                 child: _PendingChip(
                   icon: switch (attachment.kind) {
                     ShowcaseComposerAttachmentKind.camera =>
-                      AppBoxKitGlyphs.camera.icon,
+                      ArxaKitGlyphs.camera.icon,
                     ShowcaseComposerAttachmentKind.photo =>
-                      AppBoxKitGlyphs.photo.icon,
+                      ArxaKitGlyphs.photo.icon,
                     ShowcaseComposerAttachmentKind.file =>
-                      AppBoxKitGlyphs.folder.icon,
+                      ArxaKitGlyphs.folder.icon,
                     ShowcaseComposerAttachmentKind.location =>
-                      AppBoxKitGlyphs.locationPin.icon,
+                      ArxaKitGlyphs.locationPin.icon,
                   },
                   label: attachment.name,
                   onRemove: () => setState(() => _pending.removeAt(index)),
@@ -262,11 +262,11 @@ class _ShowcaseComponentsInputBarWidgetState
     // (SF Symbol replace) instead of recreating the platform view — and
     // so the `above` zone can swap its row (chips out, audio controls
     // in) in the same rebuild.
-    return AppBoxKitStreamBuilder<ShowcaseComposerRecorderPhase>(
+    return ArxaKitStreamBuilder<ShowcaseComposerRecorderPhase>(
       stream: widget.viewModel.recorderPhase,
       builder: (context, phase) {
         final recording = phase == ShowcaseComposerRecorderPhase.recording;
-        return AppBoxKitNativeInputBar(
+        return ArxaKitNativeInputBar(
           // The zone hosts ONE row at a time: the audio controls own it
           // while recording (they take over the chips' spot), the chips
           // return the moment the recorder is idle again.
@@ -281,8 +281,8 @@ class _ShowcaseComponentsInputBarWidgetState
           onChanged: (_) => setState(() {}),
           onSubmitted: (_) => _send(),
           leading: [
-            AppBoxKitNativeIconButton(
-              glyph: AppBoxKitGlyphs.add,
+            ArxaKitNativeIconButton(
+              glyph: ArxaKitGlyphs.add,
               onPressed: _pickAttachment,
             ),
           ],
@@ -292,13 +292,13 @@ class _ShowcaseComponentsInputBarWidgetState
             // the idle mic. Same widget type + same key at the same
             // position = the CN button updates in place and its
             // glyph change animates natively.
-            AppBoxKitNativeIconButton(
+            ArxaKitNativeIconButton(
               key: const ValueKey('composer-record-button'),
               glyph: recording
-                  ? AppBoxKitGlyphs.stop
+                  ? ArxaKitGlyphs.stop
                   : _hasDraft
-                      ? AppBoxKitGlyphs.send
-                      : AppBoxKitGlyphs.mic,
+                      ? ArxaKitGlyphs.send
+                      : ArxaKitGlyphs.mic,
               // Disabled only while the OS permission prompt is up
               // (phase == starting) — the prompt claims the screen,
               // and a second tap mid-flight must be a no-op.
@@ -372,12 +372,12 @@ class _RecordingStrip extends StatelessWidget {
               ),
             );
           }),
-          appBoxKitHorizontalSpaceSmall,
+          arxaKitHorizontalSpaceSmall,
           Text(
             _elapsedLabel,
             style: TextStyle(color: scheme.onSurface, fontSize: 14),
           ),
-          appBoxKitHorizontalSpaceXSmall,
+          arxaKitHorizontalSpaceXSmall,
           // The strip's one gesture: abort. The send lives on the trailing
           // stop button, so the label points at it.
           GestureDetector(
@@ -397,7 +397,7 @@ class _RecordingStrip extends StatelessWidget {
               ),
             ),
           ),
-          appBoxKitHorizontalSpaceXSmall,
+          arxaKitHorizontalSpaceXSmall,
           Flexible(
             child: Text(
               '· tap stop to send',
@@ -424,7 +424,7 @@ class _AttachOptionRow extends StatelessWidget {
     required this.onTap,
   });
 
-  final AppBoxKitGlyph glyph;
+  final ArxaKitGlyph glyph;
 
   final String label;
 
@@ -441,7 +441,7 @@ class _AttachOptionRow extends StatelessWidget {
         child: Row(
           children: [
             Icon(glyph.icon, size: 22, color: theme.colorScheme.primary),
-            appBoxKitHorizontalSpaceSmall,
+            arxaKitHorizontalSpaceSmall,
             Expanded(
               child: Text(
                 label,
@@ -449,7 +449,7 @@ class _AttachOptionRow extends StatelessWidget {
                     ?.copyWith(color: theme.colorScheme.onSurface),
               ),
             ),
-            Icon(AppBoxKitGlyphs.chevronRight.icon,
+            Icon(ArxaKitGlyphs.chevronRight.icon,
                 size: 20, color: theme.colorScheme.onSurfaceVariant),
           ],
         ),
@@ -459,7 +459,7 @@ class _AttachOptionRow extends StatelessWidget {
 }
 
 /// One removable pending item above the field (content surfaces compose on
-/// [AppBoxKitGlassCard]).
+/// [ArxaKitGlassCard]).
 class _PendingChip extends StatelessWidget {
   const _PendingChip({
     required this.icon,
@@ -476,7 +476,7 @@ class _PendingChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    return AppBoxKitGlassCard(
+    return ArxaKitGlassCard(
       // OPAQUE by tier: the frosted branch's opaqueGlass default is a
       // solid alpha-1.0 rounded fill. The native Liquid Glass tier is
       // pinned chrome — its "opaque" is a 0.45 tint that still reads
@@ -488,12 +488,12 @@ class _PendingChip extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(icon, size: 16, color: scheme.primary),
-          appBoxKitHorizontalSpaceXSmall,
+          arxaKitHorizontalSpaceXSmall,
           Text(label, style: TextStyle(color: scheme.onSurface, fontSize: 12)),
           // Plain (chromeless) — the glass circle reads as a button inside
           // the chip; the remove affordance is the bare glyph.
-          AppBoxKitNativeIconButton(
-            glyph: AppBoxKitGlyphs.close,
+          ArxaKitNativeIconButton(
+            glyph: ArxaKitGlyphs.close,
             size: 16,
             plain: true,
             onPressed: onRemove,

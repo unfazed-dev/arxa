@@ -10,7 +10,7 @@ exercisable. The documented "untestable branch" stop condition does NOT trigger.
 Evidence, re-runnable:
 
 ```sh
-find ~/.appbox/projects/portalo -regex '.*/models/[^/]*/[^/]*_seed\.[A-Za-z0-9-]*\.json'
+find ~/.arxa/projects/portalo -regex '.*/models/[^/]*/[^/]*_seed\.[A-Za-z0-9-]*\.json'
 # design/models/design_model/design_seed.{en,pl,qps-ploc}.json   (3 locales)
 ```
 
@@ -50,7 +50,7 @@ server-side context map — the design server prefetches them as *templates* plu
 
 ## 2. Why the three write targets each need a raw-source window
 
-`appboxd/lib/design_server/worker.dart` (~L190–246). The prefetch already served
+`arxa/lib/design_server/worker.dart` (~L190–246). The prefetch already served
 parsed JSON at `/project/<rel>`; that cannot be the edit target, because
 re-serialising a decoded map reorders keys and drops the `@`-metadata siblings an
 ARB carries. So each provenance class gets a read-only raw window under

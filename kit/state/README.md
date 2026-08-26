@@ -1,8 +1,8 @@
-# appbox_kit_state
+# arxa_kit_state
 
-Pure-Dart async **state vocabulary** for `appbox_kit` apps — a sealed
-`AppBoxKitState<T>` (idle / pending / loading / success / error), a
-`AppBoxKitStateNotifier<T>` (current value + broadcast stream) with a guarded
+Pure-Dart async **state vocabulary** for `arxa_kit` apps — a sealed
+`ArxaKitState<T>` (idle / pending / loading / success / error), a
+`ArxaKitStateNotifier<T>` (current value + broadcast stream) with a guarded
 `track` helper, and a legal-transition matrix. **Zero Flutter dependency.**
 
 ## Why
@@ -10,17 +10,17 @@ Pure-Dart async **state vocabulary** for `appbox_kit` apps — a sealed
 The other kits' ports each shipped v0 with their own typed result shapes. This
 package is the *intended* common vocabulary those ports converge on — but that
 unification is a **documented later phase**. There are **no cross-kit imports
-now**; `appbox_kit_state` depends on nothing but `dart:async` and `meta`.
+now**; `arxa_kit_state` depends on nothing but `dart:async` and `meta`.
 
 ## The state vocabulary
 
 ```dart
-sealed class AppBoxKitState<T> {}
-final class AppBoxKitIdle<T>    extends AppBoxKitState<T> {}
-final class AppBoxKitPending<T> extends AppBoxKitState<T> {}
-final class AppBoxKitLoading<T> extends AppBoxKitState<T> { final double? progress; }
-final class AppBoxKitSuccess<T> extends AppBoxKitState<T> { final T data; }
-final class AppBoxKitError<T>   extends AppBoxKitState<T> { final AppBoxKitFailure failure; }
+sealed class ArxaKitState<T> {}
+final class ArxaKitIdle<T>    extends ArxaKitState<T> {}
+final class ArxaKitPending<T> extends ArxaKitState<T> {}
+final class ArxaKitLoading<T> extends ArxaKitState<T> { final double? progress; }
+final class ArxaKitSuccess<T> extends ArxaKitState<T> { final T data; }
+final class ArxaKitError<T>   extends ArxaKitState<T> { final ArxaKitFailure failure; }
 ```
 
 Every case implements **value equality**, so state sequences compare directly
@@ -39,25 +39,25 @@ final label = state.when(
 `when`/`maybeWhen` fold over payloads; `map`/`maybeMap` fold over the case
 objects. Convenience: `isBusy`, `isSuccess`, `dataOrNull`, `failureOrNull`.
 
-## AppBoxKitStateNotifier
+## ArxaKitStateNotifier
 
 Current value plus a broadcast stream — no Flutter, no rxdart.
 
 ```dart
-final notifier = AppBoxKitStateNotifier<Profile>();
+final notifier = ArxaKitStateNotifier<Profile>();
 
 // Drives loading -> success/error and returns the value (or null on error):
 await notifier.track(repository.loadProfile());
 
 notifier.stream.listen((state) => /* rebuild */);
 notifier.state;          // synchronous current value
-notifier.reset();        // back to AppBoxKitIdle
+notifier.reset();        // back to ArxaKitIdle
 notifier.dispose();
 ```
 
 ### Transition guard
 
-`emit` checks the target against `AppBoxKitStateTransition`'s legal matrix. A
+`emit` checks the target against `ArxaKitStateTransition`'s legal matrix. A
 transition **outside** the matrix (e.g. `idle → success` without passing
 through a busy state) trips an **assertion in debug** but is still applied, so
 release builds never crash on an unexpected sequence. The matrix:
@@ -74,30 +74,30 @@ Set `guardTransitions: false` to disable the check.
 
 ## Failures
 
-`AppBoxKitError` carries a `AppBoxKitFailure { code, message, cause?, stackTrace? }`.
-`code` is the stable i18n key (see `AppBoxKitFailureCode`); `message` is the
-fallback. `AppBoxKitFailure.from(error)` normalizes any thrown object.
+`ArxaKitError` carries a `ArxaKitFailure { code, message, cause?, stackTrace? }`.
+`code` is the stable i18n key (see `ArxaKitFailureCode`); `message` is the
+fallback. `ArxaKitFailure.from(error)` normalizes any thrown object.
 
 ## Testing
 
-`package:appbox_kit_state/appbox_kit_testing.dart` provides:
+`package:arxa_kit_state/arxa_kit_testing.dart` provides:
 
-- **`AppBoxKitStateRecorder<T>`** — subscribes to a notifier and records the emitted
+- **`ArxaKitStateRecorder<T>`** — subscribes to a notifier and records the emitted
   sequence for `expect(recorder.states, [...])` (leans on value equality).
-- **`AppBoxKitScriptedStateNotifier<T>`** — bypasses the guard so tests can push
+- **`ArxaKitScriptedStateNotifier<T>`** — bypasses the guard so tests can push
   illegal or repeated sequences via `script` / `scriptAll`.
 
 ```dart
-final notifier = AppBoxKitStateNotifier<int>();
-final recorder = AppBoxKitStateRecorder<int>(notifier);
+final notifier = ArxaKitStateNotifier<int>();
+final recorder = ArxaKitStateRecorder<int>(notifier);
 await notifier.track(Future.value(42));
 await Future<void>.delayed(Duration.zero); // drain the broadcast queue
-expect(recorder.states, const [AppBoxKitIdle<int>(), AppBoxKitLoading<int>(), AppBoxKitSuccess<int>(42)]);
+expect(recorder.states, const [ArxaKitIdle<int>(), ArxaKitLoading<int>(), ArxaKitSuccess<int>(42)]);
 ```
 
 ## Roadmap (file stubs)
 
-- **`AppBoxKitStatePersistence`** (`persistence/`) — hydrate the last terminal state
+- **`ArxaKitStatePersistence`** (`persistence/`) — hydrate the last terminal state
   across launches. Port defined; snapshot-backed implementation is scheduled.
-- **`AppBoxKitRetryPolicy`** (`retry/`) — backoff/attempt policy. Value object and
+- **`ArxaKitRetryPolicy`** (`retry/`) — backoff/attempt policy. Value object and
   delay curve are testable now; `track` integration is scheduled.

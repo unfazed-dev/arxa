@@ -24,7 +24,7 @@ Measured, not assumed:
 
 | | `app/` | `companion/` |
 |---|---|---|
-| package | `appbox` | `appbox_companion` |
+| package | `arxa` | `arxa_companion` |
 | platform folders | **`macos/` only** | **`ios/` only** |
 | architecture | Stacked MVVM + locator + generated router | plain `MaterialApp` + `StatefulWidget` |
 | Dart files in `lib/` | ~90 | 16 |
@@ -52,7 +52,7 @@ does not exist.** Merging now means hand-authoring the phone UI a second time,
 then throwing it away when D2 lands.
 
 **2. Hand-merging repeats the defect being fixed.** Plan **12.1** — *"Scaffold
-the companion through appbox's own pipeline… this is the mobile half of the
+the companion through arxa's own pipeline… this is the mobile half of the
 designer proof — do not hand-build it"* — is the one step in plan 12 still
 unticked, and `companion/README.md` says plainly: *"this run hand-built the
 minimal surface."* That is why the companion is not a Stacked app: it never went
@@ -78,7 +78,7 @@ When D2 exists, the merge is roughly a day, in this order:
    needing `ios/flutter_js/Sources/flutter_js/include/flutter_js/` with the
    public headers moved; the recipe is in `gates/native_deps/README.md`.
 2. **Port the iOS ceremony** from `companion/ios/Runner/Info.plist` —
-   `NSLocalNetworkUsageDescription`, `NSBonjourServices` (`_appbox._tcp`),
+   `NSLocalNetworkUsageDescription`, `NSBonjourServices` (`_arxa._tcp`),
    `NSCameraUsageDescription`. Without these, discovery dies with
    `NSNetServicesErrorCode: -72008` (plan 12.2).
 3. **Move the platform-agnostic half first** — `companion/lib/{pairing,channel,
@@ -86,7 +86,7 @@ When D2 exists, the merge is roughly a day, in this order:
    with no UI and no platform calls; it should go green immediately and is the
    part that carries the security properties (cert pin, nonce lifecycle,
    approval provenance). **Do not let this land without its tests.**
-4. **Merge the config files.** `companion.config.json` and `appbox.config.json`
+4. **Merge the config files.** `companion.config.json` and `arxa.config.json`
    become one bundled config with a `companion` section — R3 forbids literals in
    code, and two config files for one app reintroduces drift.
 5. **Generate the phone surfaces from D2 through the pipeline** — this is plan

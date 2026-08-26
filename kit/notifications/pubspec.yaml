@@ -1,13 +1,13 @@
-name: appbox_kit_notifications
-description: Device-notifications port for appbox_kit apps — permission seam (typed result), push token / foreground-message streams, local notifications and per-notification badge, with a native-first flutter_local_notifications default. Distinct from appbox_kit core's in-app AppBoxKitNotificationService (transient toast/snackbar).
+name: arxa_kit_notifications
+description: Device-notifications port for arxa_kit apps — permission seam (typed result), push token / foreground-message streams, local notifications and per-notification badge, with a native-first flutter_local_notifications default. Distinct from arxa_kit core's in-app ArxaKitNotificationService (transient toast/snackbar).
 version: 0.1.0
 publish_to: 'none'
 
 environment:
   sdk: '>=3.0.3 <4.0.0'
 
-# NATIVE-FIRST / STANDALONE: no dependency on appbox_kit (core), stacked, or
-# stacked_services. The working default (LocalAppBoxKitNotificationsService) wraps
+# NATIVE-FIRST / STANDALONE: no dependency on arxa_kit (core), stacked, or
+# stacked_services. The working default (LocalArxaKitNotificationsService) wraps
 # flutter_local_notifications, which is native-first — UNUserNotificationCenter
 # on iOS/macOS and NotificationManager on Android.
 #

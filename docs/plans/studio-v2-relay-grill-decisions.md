@@ -1,6 +1,6 @@
 # studio-v2 relay — grill decisions (ratified 2026-08-12)
 
-Grill of the appbox-studio-v2 restructure/handoff state (git history F0–F6, docs-conformance audit, scaffolder-handoff gap report). All rulings ratified by the operator 2026-08-12; operator reserves the right to update rulings as work proceeds.
+Grill of the arxa-studio-v2 restructure/handoff state (git history F0–F6, docs-conformance audit, scaffolder-handoff gap report). All rulings ratified by the operator 2026-08-12; operator reserves the right to update rulings as work proceeds.
 
 Advisor consult skipped: consult-mode returned `status:"error"` (no API key in `ANTHROPIC_API_KEY` or `~/.config/consult-mode/api-key.json`). Proceeded on primary sources.
 
@@ -13,7 +13,7 @@ Advisor consult skipped: consult-mode returned `status:"error"` (no API key in `
 | 3 | Derived registry shape | One regeneration of `models/screens_model/registry.json` at pin time, all 6 shells, canon Surface fields (`{id, labelKey, shell, consumes, produces, href, enabled}` → canon shape); unlanded shells route-less. Derived file is never hand-edited. |
 | 4 | First freeze timing | Wait for all 6 shells — no `structure.json` until the full roster lands and validates. |
 | 5 | Relay risk while waiting | Gitignored dry-runs allowed: freeze/`--check` into scratch; artifact root stays clean of frozen output until the real freeze. |
-| 6 | "Landed" definition | Full gate per shell: five-file split + `inspectAttrs` triple on every surface + canonical `///` frontmatter + `appbox design lint` + `appbox lens check` clean. Dashboard retro-stamped through this gate now. |
+| 6 | "Landed" definition | Full gate per shell: five-file split + `inspectAttrs` triple on every surface + canonical `///` frontmatter + `arxa design lint` + `arxa lens check` clean. Dashboard retro-stamped through this gate now. |
 | 7 | Conformance debris | One sweep commit now: panel-kind remap + missing `ui/widgets/common/widgets.tsx` root barrel + canonical frontmatter on the 3 built shells + 2 stray "screen" vocabulary hits. |
 | 8 | F6 incident (`49249e93` swept 9 concurrent-agent files; message over-claims) | No history rewrite. Correction record in `emit-findings.md` attributing the 9 files to the concurrent emit; F6 closed. Trail-leaving correction over silent rewrite. |
 
@@ -32,7 +32,7 @@ Waiting for all 6 shells before the first real freeze (D4) concentrates scaffold
 
 ## D9 — common/ root barrel: gate exemption ratified, presence-enforcement open
 
-Ratified 2026-08-12. `isCommonRootBarrel` (appboxd/lib/gate_design_widgets.dart)
+Ratified 2026-08-12. `isCommonRootBarrel` (arxa/lib/gate_design_widgets.dart)
 exempts `ui/widgets/common/widgets.tsx|.ts` from W1 (flat-common) and W2 (dead):
 it is a mandated fixture (showcase-anatomy §2), pure `export … from` lines that
 `_importRe` does not read as edges, so zero importers is by design. Barrel

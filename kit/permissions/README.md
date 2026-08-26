@@ -1,7 +1,7 @@
-# appbox_kit_permissions
+# arxa_kit_permissions
 
 Plugin-neutral **port** for OS permissions. The app depends on
-`AppBoxKitPermissionsService` and two small value types; the concrete plumbing
+`ArxaKitPermissionsService` and two small value types; the concrete plumbing
 (`permission_handler`) stays behind the seam.
 
 Phase: **1 — fully implemented** (this is the root permissions kit that the
@@ -9,30 +9,30 @@ hardware kits will eventually consume; see *Non-goals*).
 
 ## Scope
 
-- `AppBoxKitPermission` — a neutral enum covering `camera`, `microphone`, `photos`,
+- `ArxaKitPermission` — a neutral enum covering `camera`, `microphone`, `photos`,
   `bluetooth`, `location`, `notifications`.
-- `AppBoxKitPermissionStatus` — the four states a UI branches on: `granted`,
+- `ArxaKitPermissionStatus` — the four states a UI branches on: `granted`,
   `denied`, `permanentlyDenied`, `restricted`. iOS `limited`/`provisional`
   collapse to `granted` (usable access).
-- `AppBoxKitPermissionsService` — the port:
+- `ArxaKitPermissionsService` — the port:
   - `status(permission)` — live query, no prompt.
   - `request(permission)` / `requestEach(permissions)` — prompt where allowed.
   - `shouldShowRationale(permission)` — Android rationale hint (`false` on iOS).
   - `openAppSettings()` — the **settings-escort** recovery path.
-- `PermissionHandlerAppBoxKitPermissionsService` — production binding over
+- `PermissionHandlerArxaKitPermissionsService` — production binding over
   `permission_handler` **^12.0.3** (verified on pub.dev 2026-07-14).
 
 ### The escort contract
 
 When a query or request returns `permanentlyDenied` (or `restricted`), the UI
 must stop re-prompting and route the user to the system Settings screen via
-`openAppSettings()`. `AppBoxKitPermissionStatus.requiresSettingsEscort` is the
+`openAppSettings()`. `ArxaKitPermissionStatus.requiresSettingsEscort` is the
 predicate for that branch.
 
 ## Testing
 
-`package:appbox_kit_permissions/appbox_kit_testing.dart` exports
-`FakeAppBoxKitPermissionsService`: script per-permission responses (including the
+`package:arxa_kit_permissions/arxa_kit_testing.dart` exports
+`FakeArxaKitPermissionsService`: script per-permission responses (including the
 `permanentlyDenied → openAppSettings` escort scenario), then assert against
 `requestLog` and `openAppSettingsCallCount`.
 

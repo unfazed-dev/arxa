@@ -1,15 +1,15 @@
 <Callout id="header" tone="info">
 
-# appbox_kit_bluetooth — Per-Package Playbook
+# arxa_kit_bluetooth — Per-Package Playbook
 
 
-`appbox_kit_bluetooth` v**0.1.0** · `publish_to: 'none'` · status: **active**
+`arxa_kit_bluetooth` v**0.1.0** · `publish_to: 'none'` · status: **active**
 
 
 **Role (one line):** Plugin-neutral port over flutter_blue_plus — live Bluetooth adapter-state stream, a capability gate (Android enable-dialog vs iOS escort), and full stub ports for BLE scanning and GATT connect/read/write/notify.
 
 
-**Scope of this document:** lets a human OR an LLM use, wire, and extend `appbox_kit_bluetooth` **without reading its source**. The public surface below was extracted from the barrel; README content is folded into the narrative sections.
+**Scope of this document:** lets a human OR an LLM use, wire, and extend `arxa_kit_bluetooth` **without reading its source**. The public surface below was extracted from the barrel; README content is folded into the narrative sections.
 
 
 ## Table of contents
@@ -27,25 +27,25 @@ Plugin-neutral port over flutter_blue_plus — live Bluetooth adapter-state stre
 
 ### Public surface
 
-Exported from `lib/appbox_kit_bluetooth.dart`:
+Exported from `lib/arxa_kit_bluetooth.dart`:
 
-<Table id="bluetooth-api" columns={["Symbol", "Kind", "Defined in"]} rows={[["AppBoxKitFlutterBluePlusBluetoothService", "class", "src/appbox_kit_flutter_blue_plus_bluetooth_service.dart"], ["AppBoxKitBluetoothAdapterState", "enum", "src/appbox_kit_bluetooth_adapter_state.dart"], ["AppBoxKitBluetoothCapabilities", "class", "src/appbox_kit_bluetooth_capabilities.dart"], ["AppBoxKitBluetoothDevice", "class", "src/appbox_kit_bluetooth_device.dart"], ["AppBoxKitBluetoothScanResult", "class", "src/appbox_kit_bluetooth_device.dart"], ["AppBoxKitBluetoothConnectionState", "enum", "src/appbox_kit_bluetooth_device.dart"], ["AppBoxKitGattService", "class", "src/appbox_kit_bluetooth_device.dart"], ["AppBoxKitGattCharacteristic", "class", "src/appbox_kit_bluetooth_device.dart"], ["AppBoxKitBluetoothGattClient", "abstract interface class", "src/appbox_kit_bluetooth_gatt.dart"], ["UnimplementedAppBoxKitBluetoothGattClient", "class", "src/appbox_kit_bluetooth_gatt.dart"], ["AppBoxKitBluetoothScanner", "abstract interface class", "src/appbox_kit_bluetooth_scanner.dart"], ["UnimplementedAppBoxKitBluetoothScanner", "class", "src/appbox_kit_bluetooth_scanner.dart"], ["AppBoxKitBluetoothUnsupportedError", "class", "src/appbox_kit_bluetooth_service.dart"], ["AppBoxKitBluetoothService", "abstract interface class", "src/appbox_kit_bluetooth_service.dart"]]} />
+<Table id="bluetooth-api" columns={["Symbol", "Kind", "Defined in"]} rows={[["ArxaKitFlutterBluePlusBluetoothService", "class", "src/arxa_kit_flutter_blue_plus_bluetooth_service.dart"], ["ArxaKitBluetoothAdapterState", "enum", "src/arxa_kit_bluetooth_adapter_state.dart"], ["ArxaKitBluetoothCapabilities", "class", "src/arxa_kit_bluetooth_capabilities.dart"], ["ArxaKitBluetoothDevice", "class", "src/arxa_kit_bluetooth_device.dart"], ["ArxaKitBluetoothScanResult", "class", "src/arxa_kit_bluetooth_device.dart"], ["ArxaKitBluetoothConnectionState", "enum", "src/arxa_kit_bluetooth_device.dart"], ["ArxaKitGattService", "class", "src/arxa_kit_bluetooth_device.dart"], ["ArxaKitGattCharacteristic", "class", "src/arxa_kit_bluetooth_device.dart"], ["ArxaKitBluetoothGattClient", "abstract interface class", "src/arxa_kit_bluetooth_gatt.dart"], ["UnimplementedArxaKitBluetoothGattClient", "class", "src/arxa_kit_bluetooth_gatt.dart"], ["ArxaKitBluetoothScanner", "abstract interface class", "src/arxa_kit_bluetooth_scanner.dart"], ["UnimplementedArxaKitBluetoothScanner", "class", "src/arxa_kit_bluetooth_scanner.dart"], ["ArxaKitBluetoothUnsupportedError", "class", "src/arxa_kit_bluetooth_service.dart"], ["ArxaKitBluetoothService", "abstract interface class", "src/arxa_kit_bluetooth_service.dart"]]} />
 
-Test doubles in `lib/appbox_kit_testing.dart`: `FakeAppBoxKitBluetoothService`.
+Test doubles in `lib/arxa_kit_testing.dart`: `FakeArxaKitBluetoothService`.
 
 Scripts and call-counts — tests never touch platform channels.
 
 
 ### Usage & wiring
 
-Add `appbox_kit_bluetooth` to your `pubspec.yaml` and run `flutter pub get`. The package is **standalone** — no path dependency on any kit, no `setupLocator`, no codegen — so you construct the production binding directly and register it into your host app's locator (`StackedLocator.instance`, the same singleton the generated `locator` uses):
+Add `arxa_kit_bluetooth` to your `pubspec.yaml` and run `flutter pub get`. The package is **standalone** — no path dependency on any kit, no `setupLocator`, no codegen — so you construct the production binding directly and register it into your host app's locator (`StackedLocator.instance`, the same singleton the generated `locator` uses):
 
 ```dart
-import 'package:appbox_kit_bluetooth/appbox_kit_bluetooth.dart';
+import 'package:arxa_kit_bluetooth/arxa_kit_bluetooth.dart';
 
-final AppBoxKitBluetoothService bluetooth = AppBoxKitFlutterBluePlusBluetoothService();
+final ArxaKitBluetoothService bluetooth = ArxaKitFlutterBluePlusBluetoothService();
 // register once during app bootstrap:
-locator.registerSingleton<AppBoxKitBluetoothService>(AppBoxKitFlutterBluePlusBluetoothService());
+locator.registerSingleton<ArxaKitBluetoothService>(ArxaKitFlutterBluePlusBluetoothService());
 ```
 
 Consume the live adapter stream and branch the enable path off the capability gate (`canControlAdapter` is `true` on Android, `false` on iOS):
@@ -69,7 +69,7 @@ See `kit_matrix.md` for the full routing + dependency graph.
 
 ### Architecture
 
-`appbox_kit_bluetooth` is a hexagonal port-and-adapter package. `AppBoxKitBluetoothService` is the implemented port (with `AppBoxKitBluetoothScanner` and `AppBoxKitBluetoothGattClient` as phase-2 ports whose `Unimplemented*` stubs throw on every call); `AppBoxKitFlutterBluePlusBluetoothService` is the sole production adapter, wrapping `flutter_blue_plus` for adapter-state observation and `app_settings` for the iOS settings escort. Dependency direction points one way only — consumers depend on the ports and the Kit-prefixed value types (`AppBoxKitBluetoothAdapterState`, `AppBoxKitBluetoothDevice`, …), while the adapter alone imports `flutter_blue_plus`, so no plugin types leak across the seam. The package is standalone by design: it depends on no other kit and not on `stacked`/`stacked_services`, keeping it a pure port over a native plugin.
+`arxa_kit_bluetooth` is a hexagonal port-and-adapter package. `ArxaKitBluetoothService` is the implemented port (with `ArxaKitBluetoothScanner` and `ArxaKitBluetoothGattClient` as phase-2 ports whose `Unimplemented*` stubs throw on every call); `ArxaKitFlutterBluePlusBluetoothService` is the sole production adapter, wrapping `flutter_blue_plus` for adapter-state observation and `app_settings` for the iOS settings escort. Dependency direction points one way only — consumers depend on the ports and the Kit-prefixed value types (`ArxaKitBluetoothAdapterState`, `ArxaKitBluetoothDevice`, …), while the adapter alone imports `flutter_blue_plus`, so no plugin types leak across the seam. The package is standalone by design: it depends on no other kit and not on `stacked`/`stacked_services`, keeping it a pure port over a native plugin.
 
 
 ### Gotchas
@@ -81,7 +81,7 @@ always comes from the live OS stream, never cached UI state.
 
 ### Testing
 
-`package:appbox_kit_bluetooth/appbox_kit_testing.dart` exports `FakeAppBoxKitBluetoothService`:
+`package:arxa_kit_bluetooth/arxa_kit_testing.dart` exports `FakeArxaKitBluetoothService`:
 drive the adapter stream with `emit`, choose the capability set, and assert the
 escort via `openSettingsCallCount` / `requestEnableCallCount`. On the
 `escortOnly` capability set `requestEnable` throws so the escort branch is
@@ -90,12 +90,12 @@ exercisable.
 
 ### Features
 
-<Checklist id="bluetooth-features" items={[{"id": "bluetooth-feat-0", "label": "`AppBoxKitFlutterBluePlusBluetoothService` \u2014 class"}, {"id": "bluetooth-feat-1", "label": "`AppBoxKitBluetoothAdapterState` \u2014 enum"}, {"id": "bluetooth-feat-2", "label": "`AppBoxKitBluetoothCapabilities` \u2014 class"}, {"id": "bluetooth-feat-3", "label": "`AppBoxKitBluetoothDevice` \u2014 class"}, {"id": "bluetooth-feat-4", "label": "`AppBoxKitBluetoothScanResult` \u2014 class"}, {"id": "bluetooth-feat-5", "label": "`AppBoxKitBluetoothConnectionState` \u2014 enum"}, {"id": "bluetooth-feat-6", "label": "`AppBoxKitGattService` \u2014 class"}, {"id": "bluetooth-feat-7", "label": "`AppBoxKitGattCharacteristic` \u2014 class"}, {"id": "bluetooth-feat-8", "label": "`AppBoxKitBluetoothGattClient` \u2014 abstract interface class"}, {"id": "bluetooth-feat-9", "label": "`UnimplementedAppBoxKitBluetoothGattClient` \u2014 class"}, {"id": "bluetooth-feat-10", "label": "`AppBoxKitBluetoothScanner` \u2014 abstract interface class"}, {"id": "bluetooth-feat-11", "label": "`UnimplementedAppBoxKitBluetoothScanner` \u2014 class"}]} />
+<Checklist id="bluetooth-features" items={[{"id": "bluetooth-feat-0", "label": "`ArxaKitFlutterBluePlusBluetoothService` \u2014 class"}, {"id": "bluetooth-feat-1", "label": "`ArxaKitBluetoothAdapterState` \u2014 enum"}, {"id": "bluetooth-feat-2", "label": "`ArxaKitBluetoothCapabilities` \u2014 class"}, {"id": "bluetooth-feat-3", "label": "`ArxaKitBluetoothDevice` \u2014 class"}, {"id": "bluetooth-feat-4", "label": "`ArxaKitBluetoothScanResult` \u2014 class"}, {"id": "bluetooth-feat-5", "label": "`ArxaKitBluetoothConnectionState` \u2014 enum"}, {"id": "bluetooth-feat-6", "label": "`ArxaKitGattService` \u2014 class"}, {"id": "bluetooth-feat-7", "label": "`ArxaKitGattCharacteristic` \u2014 class"}, {"id": "bluetooth-feat-8", "label": "`ArxaKitBluetoothGattClient` \u2014 abstract interface class"}, {"id": "bluetooth-feat-9", "label": "`UnimplementedArxaKitBluetoothGattClient` \u2014 class"}, {"id": "bluetooth-feat-10", "label": "`ArxaKitBluetoothScanner` \u2014 abstract interface class"}, {"id": "bluetooth-feat-11", "label": "`UnimplementedArxaKitBluetoothScanner` \u2014 class"}]} />
 
 
 ### Decisions / ADRs
 
-`flutter_blue_plus` was chosen because it is native-first — a direct wrapper over CoreBluetooth (iOS) and `android.bluetooth` (Android) — so this package ships no custom native code of its own; it is pinned at `^2.3.10` (verified on pub.dev 2026-07-14). `app_settings` (`^7.0.0`) backs only the Bluetooth settings deep-link used by the iOS escort flow. The standalone stance (no path dependency on `appbox_kit_permissions` or any other kit, and no `stacked`/`stacked_services` dep) keeps this a pure plugin-neutral port: swapping the backing plugin later touches only `AppBoxKitFlutterBluePlusBluetoothService`, never its consumers. The Android 12+ `BLUETOOTH_CONNECT`/`BLUETOOTH_SCAN` runtime-permission wiring is deliberately deferred to the downstream reconciliation pass rather than pulled in here.
+`flutter_blue_plus` was chosen because it is native-first — a direct wrapper over CoreBluetooth (iOS) and `android.bluetooth` (Android) — so this package ships no custom native code of its own; it is pinned at `^2.3.10` (verified on pub.dev 2026-07-14). `app_settings` (`^7.0.0`) backs only the Bluetooth settings deep-link used by the iOS escort flow. The standalone stance (no path dependency on `arxa_kit_permissions` or any other kit, and no `stacked`/`stacked_services` dep) keeps this a pure plugin-neutral port: swapping the backing plugin later touches only `ArxaKitFlutterBluePlusBluetoothService`, never its consumers. The Android 12+ `BLUETOOTH_CONNECT`/`BLUETOOTH_SCAN` runtime-permission wiring is deliberately deferred to the downstream reconciliation pass rather than pulled in here.
 
 <!-- kb:begin -->
 ### References
@@ -109,12 +109,12 @@ Official docs and tooling:
 - [stacked_cli (pub.dev)](https://pub.dev/packages/stacked_cli) — Scaffolding CLI for new Stacked apps/views/services.
 - [Flutter — official documentation](https://docs.flutter.dev) — Framework docs, platform integration, performance.
 - [Dart — official documentation](https://dart.dev) — Language tour, async, package ecosystem.
-- [Dart & Flutter MCP server (official)](https://dart.dev/tools/mcp-server) — Ships with the Dart SDK (dart mcp-server). Exposes analyzer diagnostics, pub, tests, and live Flutter app introspection via DTD. Wired in appbox_kit/.mcp.json.
+- [Dart & Flutter MCP server (official)](https://dart.dev/tools/mcp-server) — Ships with the Dart SDK (dart mcp-server). Exposes analyzer diagnostics, pub, tests, and live Flutter app introspection via DTD. Wired in arxa_kit/.mcp.json.
 
 Kit-specific:
 
-- [flutter_blue_plus (pub.dev)](https://pub.dev/packages/flutter_blue_plus) — flutter_blue_plus — backing dependency of appbox_kit_bluetooth.
-- [app_settings (pub.dev)](https://pub.dev/packages/app_settings) — app_settings — backing dependency of appbox_kit_bluetooth.
+- [flutter_blue_plus (pub.dev)](https://pub.dev/packages/flutter_blue_plus) — flutter_blue_plus — backing dependency of arxa_kit_bluetooth.
+- [app_settings (pub.dev)](https://pub.dev/packages/app_settings) — app_settings — backing dependency of arxa_kit_bluetooth.
 <!-- kb:end -->
 
 <QuestionForm id="open-questions" questions={[

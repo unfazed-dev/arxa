@@ -5,7 +5,7 @@
  * What this proves: our plugin registers on `tools/pre-execute`, that cordis
  * actually dispatches the event to it, that the waterfall's return value is a
  * well-formed PreToolDecision, and that a real subprocess verdict (the shared
- * hooks/appbox-guard.js) turns into deny/allow correctly.
+ * hooks/arxa-guard.js) turns into deny/allow correctly.
  *
  * What it does NOT prove: that a live `dsh` session routes tool calls through
  * this seam end-to-end. That needs a booted agent and model credits. See
@@ -21,7 +21,7 @@ import * as plugin from './index.mjs';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const REPO = join(here, '..', '..');
-const GUARD = join(REPO, 'hooks', 'appbox-guard.js');
+const GUARD = join(REPO, 'hooks', 'arxa-guard.js');
 
 let pass = 0, fail = 0;
 const ok = (m) => { pass++; console.log(`  PASS ${m}`); };
@@ -72,9 +72,9 @@ async function run() {
   // PROOF OF LIFE — the only assertion that distinguishes "our plugin ran" from
   // "no plugin at all": a deny can ONLY come from us. Every allow-shaped result
   // is indistinguishable from an unmounted gate, so it is checked after this.
-  process.env.APPBOX_GUARD_MODE = 'using';
+  process.env.ARXA_GUARD_MODE = 'using';
   const alive = await ctx.waterfall('tools/pre-execute',
-    { name: 'Write', arguments: { file_path: join(REPO, 'appboxd', 'lib', 'probe.dart') }, callId: 'p' },
+    { name: 'Write', arguments: { file_path: join(REPO, 'arxa', 'lib', 'probe.dart') }, callId: 'p' },
     async () => ({ kind: 'allow' }));
   alive.kind === 'deny'
     ? ok('gate is genuinely intercepting (deny observed — cannot come from a no-op)')
@@ -85,14 +85,14 @@ async function run() {
   // introspection) — reaching into `_hooks` instead finds nothing and reports a
   // false NO_LISTENER.
   const call = async (name, args, mode) => {
-    process.env.APPBOX_GUARD_MODE = mode;
+    process.env.ARXA_GUARD_MODE = mode;
     const exec = { name, arguments: args, callId: 'c1', agent: undefined };
     return await ctx.waterfall('tools/pre-execute', exec,
       async () => ({ kind: 'allow' }));
   };
 
   const denied = await call('Write',
-    { file_path: join(REPO, 'appboxd', 'lib', 'x.dart') }, 'using');
+    { file_path: join(REPO, 'arxa', 'lib', 'x.dart') }, 'using');
   denied.kind === 'deny'
     ? ok(`protected write DENIED via real waterfall (${String(denied.reason).slice(0, 40)}...)`)
     : bad('protected write denied', `got ${JSON.stringify(denied)}`);
@@ -103,7 +103,7 @@ async function run() {
     : bad('docs write allowed', `got ${JSON.stringify(allowed)}`);
 
   const devMode = await call('Write',
-    { file_path: join(REPO, 'appboxd', 'lib', 'x.dart') }, 'dev');
+    { file_path: join(REPO, 'arxa', 'lib', 'x.dart') }, 'dev');
   devMode.kind === 'allow'
     ? ok('dev mode ALLOWS the same write (mode is honored)')
     : bad('dev mode allows', `got ${JSON.stringify(devMode)}`);
@@ -124,8 +124,8 @@ async function directHandlerTests() {
   handler ? ok('apply() registers a tools/pre-execute handler') : bad('handler registered');
   if (!handler) return;
 
-  process.env.APPBOX_GUARD_MODE = 'using';
-  const d = await handler({ name: 'Write', arguments: { file_path: join(REPO, 'appboxd', 'a.dart') }, callId: 'x' },
+  process.env.ARXA_GUARD_MODE = 'using';
+  const d = await handler({ name: 'Write', arguments: { file_path: join(REPO, 'arxa', 'a.dart') }, callId: 'x' },
     async () => ({ kind: 'allow' }));
   d.kind === 'deny' ? ok('protected write DENIED') : bad('protected write denied', JSON.stringify(d));
 

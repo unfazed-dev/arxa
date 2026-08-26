@@ -20,13 +20,13 @@ piecemeal.
 
 ## Blast radius (verified by grep, 2026-08-08)
 
-- `kit/core/lib/common/appbox_kit_inspect_attrs.dart` + `kit/core/lib/appbox_kit_core.dart`
-- `kit/showcase_app/feature-recipe.schema.json`, `kit/showcase_app/lib/ui/common/appbox_kit_inspect_attrs.dart`, showcase views (v1 medium)
+- `kit/core/lib/common/arxa_kit_inspect_attrs.dart` + `kit/core/lib/arxa_kit_core.dart`
+- `kit/showcase_app/feature-recipe.schema.json`, `kit/showcase_app/lib/ui/common/arxa_kit_inspect_attrs.dart`, showcase views (v1 medium)
 - `kit/showcase_app/lib/probe_inspect.dart` — contract v1.3.0 → **v2.0.0** (breaking)
 - 3 byte-identical copies of `kind-resolution.registry.json` (`./skills/`, `./.claude/skills/`, `./.kimi-code/skills/`) — must move together or probe/plan cite different vocabularies
-- `designs/appbox-studio-v2/models/screens_model/registry.json` + `services/studio_application_services/repositories/studio_application_repository_service.js`
+- `designs/arxa-studio-v2/models/screens_model/registry.json` + `services/studio_application_services/repositories/studio_application_repository_service.js`
 - Doc line `references/app-architecture.md:180` (`data-inspect-screen` — stale vs live `data-inspect-view`, already flagged in task #19 scope)
-- v1 (`designs/appbox-studio`?) — **decision needed**: migrate v1 or pin it to contract v1.3.0 and rename v2-forward only.
+- v1 (`designs/arxa-studio`?) — **decision needed**: migrate v1 or pin it to contract v1.3.0 and rename v2-forward only.
 
 ## Order of operations
 
@@ -44,7 +44,7 @@ piecemeal.
   does not exist on this machine; skill edits on 2026-08-08 were gated manually
   (twin-copy md5 agreement `.claude/skills/` ↔ `skills/`). Reconcile when the
   consultant skill is restored.
-- **`.kimi-code/skills/appbox-designer/`**: untracked in git, 0/43 md files
+- **`.kimi-code/skills/arxa-designer/`**: untracked in git, 0/43 md files
   match any SSOT state — independently seeded, no merge base. Left untouched.
   Decision pending: delete, or regenerate from SSOT when the kimi harness is
   next used. Until then it serves stale vocabulary.

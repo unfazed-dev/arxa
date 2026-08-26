@@ -13,7 +13,7 @@ import '../utils/modal_hide_mixin.dart';
 /// `.glassEffect(.regular, in: .capsule)`; below iOS 26 a `Color(.systemGray6)`
 /// capsule). **iOS-only**: the macOS plugin registers no `CNTextField` factory,
 /// so this widget never builds the platform view there (hosts fall to their
-/// Material tier on macOS). This is the primitive [AppBoxKitNativeTextField]
+/// Material tier on macOS). This is the primitive [ArxaKitNativeTextField]
 /// wraps on its Liquid Glass tier.
 ///
 /// **Two-way controller** (the gap [CNSearchBar] leaves open): pass a

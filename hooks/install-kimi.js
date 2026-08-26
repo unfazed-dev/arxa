@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// install-kimi.js — register the appbox doc hooks with Kimi Code.
+// install-kimi.js — register the arxa doc hooks with Kimi Code.
 //
 // Kimi Code reads hooks only from the GLOBAL config.toml ($KIMI_CODE_HOME or
 // ~/.kimi-code) — there is no project-level hook registration (docs:
@@ -17,33 +17,33 @@ const repoRoot = path.dirname(path.dirname(fs.realpathSync(__filename)));
 const home = process.env.KIMI_CODE_HOME || path.join(os.homedir(), '.kimi-code');
 const configPath = path.join(home, 'config.toml');
 
-const TAG = '# appbox doc hooks (hooks/install-kimi.js — do not edit between markers)';
+const TAG = '# arxa doc hooks (hooks/install-kimi.js — do not edit between markers)';
 const block = `
 ${TAG}
 [[hooks]]
 event = "PostToolUse"
 matcher = "Write|Edit|MultiEdit"
-command = "node \\"${path.join(repoRoot, 'hooks', 'appbox-doc-health.js')}\\""
+command = "node \\"${path.join(repoRoot, 'hooks', 'arxa-doc-health.js')}\\""
 timeout = 30
 
 [[hooks]]
 event = "Stop"
-command = "node \\"${path.join(repoRoot, 'hooks', 'appbox-doc-enforce.js')}\\" stop"
+command = "node \\"${path.join(repoRoot, 'hooks', 'arxa-doc-enforce.js')}\\" stop"
 timeout = 60
 
 [[hooks]]
 event = "SessionStart"
-command = "node \\"${path.join(repoRoot, 'hooks', 'appbox-doc-enforce.js')}\\" sessionstart"
+command = "node \\"${path.join(repoRoot, 'hooks', 'arxa-doc-enforce.js')}\\" sessionstart"
 timeout = 5
-${TAG.replace('do not edit between markers', 'end appbox doc hooks')}
+${TAG.replace('do not edit between markers', 'end arxa doc hooks')}
 `;
 
 let existing = '';
 try { existing = fs.readFileSync(configPath, 'utf8'); } catch (_) {}
 if (existing.includes(TAG)) {
-  console.log('appbox doc hooks already registered in ' + configPath + ' — nothing to do.');
+  console.log('arxa doc hooks already registered in ' + configPath + ' — nothing to do.');
   process.exit(0);
 }
 fs.mkdirSync(home, { recursive: true });
 fs.appendFileSync(configPath, block);
-console.log('Registered appbox doc hooks in ' + configPath + ' (takes effect on next session).');
+console.log('Registered arxa doc hooks in ' + configPath + ' (takes effect on next session).');

@@ -1,10 +1,10 @@
-# Capability map — studio probes → `appbox design probe`
+# Capability map — studio probes → `arxa design probe`
 
 > **RETIRED 2026-08-03.** The ten Node/playwright-core studio probes and their
 > shared `_probe_base.mjs` are archived at
 > `archives/tooling-pre-dart/tools/studio-probes/`. The live suite is
-> `appbox design probe <names…|all> --port N --project P`
-> (`appboxd/lib/probes/`, over the one CDP engine in `appboxd/lib/cdp.dart`).
+> `arxa design probe <names…|all> --port N --project P`
+> (`arxa/lib/probes/`, over the one CDP engine in `arxa/lib/cdp.dart`).
 > Nothing was deleted — the originals stay readable, and this map is the audit
 > trail that approved the swap.
 
@@ -21,8 +21,8 @@
 
 Full audit of every studio probe (originally `tools/probe-*.mjs` + the shared
 `tools/_probe_base.mjs`, now under `archives/tooling-pre-dart/tools/studio-probes/`)
-against the Dart harness — `appboxd/lib/probes/` over `appboxd/lib/cdp.dart`,
-dispatched by `appbox design probe <name…|all>`.
+against the Dart harness — `arxa/lib/probes/` over `arxa/lib/cdp.dart`,
+dispatched by `arxa design probe <name…|all>`.
 
 This map is the audit trail for the retirement: no `.mjs` file was archived
 until its row here said where every one of its sections went. A section that is
@@ -39,7 +39,7 @@ Status legend:
 
 Plan: `docs/plans/design-derived-contract-probes.md`. The ten probes catalogued
 below are the **studio suite** — the engine's smoke test, run through its
-reference design. The **contract suite** asserts the appbox opinion against ANY
+reference design. The **contract suite** asserts the arxa opinion against ANY
 served design by deriving its targets from the design's own declarations,
 rather than hard-coding studio routes.
 
@@ -54,7 +54,7 @@ including invisibly ("nothing is clipped": `#app.scrollHeight` exposes
 overgrowth that `overflow: hidden` merely hides, which is how its first run
 caught `/` and `/dashboard` clipping 220px that no screenshot showed). Studio
 suite, not contract: the doctrine is this design's stylesheet, not (yet) the
-appbox opinion — hello-hda is free to scroll its page.
+arxa opinion — hello-hda is free to scroll its page.
 
 ### The contract v1 set
 
@@ -65,7 +65,7 @@ a green run states its own denominator instead of implying one.
 
 Two exclusions, counted and printed rather than applied silently:
 
-- **Parameterized routes** (31 of 85 GET routes in appbox-studio). A value for
+- **Parameterized routes** (31 of 85 GET routes in arxa-studio). A value for
   `:id` can only come from knowing the design, and inventing one asserts about
   a 404 page. Deferred to v2, where the scaffolder's per-app manifest can
   supply real values.
@@ -86,13 +86,13 @@ both look like leniency and neither is:
   as two main panels and reds a correct composition.
 - **A chip may compute `display: flex` as well as `inline-flex`.** CSS
   blockifies a flex/grid item, so a chip inside a flex container computes
-  `flex` however it was authored — 161 correct chips in appbox-studio alone. An
+  `flex` however it was authored — 161 correct chips in arxa-studio alone. An
   unstyled chip computes `inline`/`block` and still fails.
 
 The centring rule holds a glyph only to a control that DECLARES centring
 (a flex/grid container with `align-items: center`). A card-shaped button that
 stacks an icon above a heading never promised to centre it vertically —
-`button.level-card` sits 24px off, correctly. On appbox-studio this excludes
+`button.level-card` sits 24px off, correctly. On arxa-studio this excludes
 exactly 1 glyph of 121; the other 120 are held, worst offset 0.01px.
 
 ### Deferred to v2: `contract-no-reload`
@@ -135,9 +135,9 @@ behavioural sibling of the W-gate rather than a duplicate of it.
 
 | target | result |
 |---|---|
-| `appbox-studio` (port 4390, project `c21-probe`) | 2/2 probes — 25 document surfaces, 68 role panels, 107 sections, 185 chips, 120 glyphs held (worst 0.01px) |
+| `arxa-studio` (port 4390, project `c21-probe`) | 2/2 probes — 25 document surfaces, 68 role panels, 107 sections, 185 chips, 120 glyphs held (worst 0.01px) |
 | `hello-hda` (port 4391, project `c21-hda-probe`) | 2/2 probes — discovers `/` and `/timer`, 0 panels and 0 chips, passes with loud `[skip]` vacuity lines |
-| `appbox design probe all` (appbox-studio) | 12/12 probes, contract first |
+| `arxa design probe all` (arxa-studio) | 12/12 probes, contract first |
 
 `hello-hda` is the design-agnosticism proof: no `registry.json`, no panels, no
 chips, and the same compiled probes pass against it without a per-design code
@@ -146,7 +146,7 @@ asserted about an empty set.
 
 **Cost to note: both contract probes are `mutates: true`.** They issue only
 GETs and never click, but a design may DECLARE a state-changing GET, and
-appbox-studio does (`/build/chips/pin` and its unpin sibling answer 200 and
+arxa-studio does (`/build/chips/pin` and its unpin sibling answer 200 and
 change pinned state). Walking every declared GET surface therefore leaves the
 served project changed, which is the same reasoning `probe_panel_contract.dart`
 records for itself. The consequence is real and may be worth revisiting: a
@@ -201,7 +201,7 @@ original's behaviour, and each is a strengthening rather than drift.
    `ALL CHECKS PASSED` trailer is not: one suite gets one scannable closing
    line, or `probe all` ends with a different trailer per probe.
 
-## Harness — `_probe_base.mjs` → `appboxd/lib/probes/probe_base.dart`
+## Harness — `_probe_base.mjs` → `arxa/lib/probes/probe_base.dart`
 
 > Command lines in the dated evidence blocks below are reproduced **as they
 > were run**, with the pre-retirement `tools/…` paths. They are records of
@@ -303,7 +303,7 @@ right after it proving the coordinates were fine by then.
 
 ### `composer-draft` — 2026-08-03
 
-Method: `designs/appbox-studio` on port 4371, bound to `portalo-probe`. Each
+Method: `designs/arxa-studio` on port 4371, bound to `portalo-probe`. Each
 side got its **own fresh `cp -R` of `portalo` and its own server boot** — not
 one shared server. That is the correction to an earlier run of this comparison
 which used a single server for both sides: the `.mjs` run POSTs two messages
@@ -320,7 +320,7 @@ made **both** suites fail on a genuinely fresh copy (the `.mjs` with
 and a trap for wave C's boot scripts.
 
 ```
-$ node tools/probe-composer-draft.mjs --port 4371          $ appbox design probe composer-draft --port 4371 --project portalo-probe
+$ node tools/probe-composer-draft.mjs --port 4371          $ arxa design probe composer-draft --port 4371 --project portalo-probe
 probe target: http://localhost:4371  (via --port)          probe target: http://localhost:4371  (via --port)
                                                            probe target: confirmed disposable project "portalo-probe" (boundProject)
 === /design ===                                            === /design ===
@@ -358,7 +358,7 @@ vacuously.
 | `--bogus 1` | 2 | refuses — "unsupported argument" naming the default it would otherwise have hit |
 | unknown probe name | 2 | refuses, listing the available names |
 
-The `~/.appbox/current` marker read `portalo` before, during and after both
+The `~/.arxa/current` marker read `portalo` before, during and after both
 runs — `--project` binds the server process without touching it, which is the
 reason the guard reads `boundProject` instead.
 
@@ -491,7 +491,7 @@ passes that assert nothing.
 
 ### `panel-contract` — 2026-08-03
 
-Method: `designs/appbox-studio` on port 4382, bound to `portalo-c1-probe` (a
+Method: `designs/arxa-studio` on port 4382, bound to `portalo-c1-probe` (a
 fresh `cp -R` of `portalo`), both suites against that one server. Boot readiness
 was polled on `/design` actually rendering `.panel-viewer` + `.panel-composer`,
 never on `/__projects` — the render worker answers the API several seconds
@@ -551,15 +551,15 @@ reports `confirmed: chips lost their box model`, so L is not vacuous.
 
 ### `boost` and `no-reload` — 2026-08-03
 
-**Method**: two fresh `cp -R ~/.appbox/projects/portalo` disposable copies
+**Method**: two fresh `cp -R ~/.arxa/projects/portalo` disposable copies
 (`portalo-wc-probe`, `portalo-wc-test`), two independent `design serve
-designs/appbox-studio` boots on dedicated ports — 4374 (`.mjs`/Node side, bound
+designs/arxa-studio` boots on dedicated ports — 4374 (`.mjs`/Node side, bound
 to `portalo-wc-probe`) and 4376 (Dart side, bound to `portalo-wc-test`), each
 confirmed via `GET /__projects` before running anything. `boost` (read-only)
 run before `no-reload` (mutates) on each server, so `boost` never sees pinned
-context-state left by `no-reload`. `~/.appbox/current` was never touched by
+context-state left by `no-reload`. `~/.arxa/current` was never touched by
 either boot — `--project` resolves the server's data directly from parsed
-args, with precedence over `APPBOX_PROJECT` and the current-file fallback, and
+args, with precedence over `ARXA_PROJECT` and the current-file fallback, and
 never calls `useProject()`; confirmed via `/__projects` on both servers
 throughout (`current: portalo` on both, unchanged by the `--project` flag).
 
@@ -596,14 +596,14 @@ project.
 `design probe no-reload --port 4319` (the live server, bound to the
 non-disposable `portalo`, `current` marker untouched) refused before any
 mutation with exit 2 and the guard's own remediation text (`cp -R
-~/.appbox/projects/portalo ~/.appbox/projects/portalo-probe`, `--project
+~/.arxa/projects/portalo ~/.arxa/projects/portalo-probe`, `--project
 <name> --port <n>`, `boundProject is fixed at boot`) — confirming the
 regex-gated refusal is live, not vestigial, and that a probe author pointing
 `no-reload` at the wrong project gets stopped before it writes anything.
 
 ### `context-sync` — 2026-08-03
 
-Method: `designs/appbox-studio`, two fresh `cp -R` copies of `portalo` and two
+Method: `designs/arxa-studio`, two fresh `cp -R` copies of `portalo` and two
 independent server boots — `.mjs` side on port 4372 bound to
 `portalo-cs-a-probe`, Dart side on port 4373 bound to `portalo-cs-b-test`.
 `needsBrowser: false`: no Chrome is launched for this probe at all, HTTP-only
@@ -788,7 +788,7 @@ number nobody could trust:
 
 1. **Sequential, one server, quiet machine.** Two measurement runs overlapped
    once; the second was executing probes while the first was DELIBERATELY
-   MUTATING `designs/appbox-studio/`. Its output recorded probes run against a
+   MUTATING `designs/arxa-studio/`. Its output recorded probes run against a
    knowingly broken studio, so it was discarded outright rather than treated as
    noisy-but-usable. Concurrency does not merely add variance here — it can
    invert what is being measured.
@@ -1015,7 +1015,7 @@ gets rediscovered as a flaky port.
 
 Two edits, and no wave-C agent touches another's file:
 
-1. Write `appboxd/lib/probes/probe_<name>.dart` exporting a `const Probe`:
+1. Write `arxa/lib/probes/probe_<name>.dart` exporting a `const Probe`:
 
    ```dart
    const Probe myProbe = Probe(
@@ -1027,7 +1027,7 @@ Two edits, and no wave-C agent touches another's file:
    );
    ```
 
-2. Add the import and one entry to `kProbes` in `appboxd/lib/probes/registry.dart`,
+2. Add the import and one entry to `kProbes` in `arxa/lib/probes/registry.dart`,
    positioned in run order (cheap/read-only probes first, so a broken server
    fails the suite in seconds).
 

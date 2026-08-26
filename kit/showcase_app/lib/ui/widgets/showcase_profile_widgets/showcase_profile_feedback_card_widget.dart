@@ -18,43 +18,43 @@
 library;
 
 import 'package:flutter/material.dart';
-import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
-import 'package:appbox_kit_showcase_app/ui/widgets/common/showcase_tabs_shared/widgets.dart';
+import 'package:arxa_kit_ui_library/arxa_kit_ui_library.dart';
+import 'package:arxa_kit_showcase_app/ui/widgets/common/showcase_tabs_shared/widgets.dart';
 
 class ShowcaseProfileFeedbackCardWidget extends StatelessWidget {
   const ShowcaseProfileFeedbackCardWidget({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return AppBoxKitGlassCard(
+    return ArxaKitGlassCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           const ShowcaseSectionLabelWidget('Toast & sheet'),
-          appBoxKitVerticalSpaceSmall,
+          arxaKitVerticalSpaceSmall,
           SizedBox(
             height: abxButtonHeightMedium,
-            child: AppBoxKitNativeButton(
+            child: ArxaKitNativeButton(
               label: 'Show toast',
-              glyph: AppBoxKitGlyphs.alertsBadge,
-              onPressed: () => appBoxKitLocator<AppBoxKitNotificationService>()
-                  .show('Hello from AppBox!',
-                      kind: AppBoxKitNotificationKind.info, context: context),
+              glyph: ArxaKitGlyphs.alertsBadge,
+              onPressed: () => arxaKitLocator<ArxaKitNotificationService>()
+                  .show('Hello from Arxa!',
+                      kind: ArxaKitNotificationKind.info, context: context),
             ),
           ),
-          appBoxKitVerticalSpaceSmall,
+          arxaKitVerticalSpaceSmall,
           SizedBox(
             height: abxButtonHeightMedium,
-            child: AppBoxKitNativeButton(
+            child: ArxaKitNativeButton(
               label: 'Show sheet',
-              glyph: AppBoxKitGlyphs.sheet,
-              // The kit notice path: AppBoxKitNotificationService.notice
+              glyph: ArxaKitGlyphs.sheet,
+              // The kit notice path: ArxaKitNotificationService.notice
               // presents through the kit's adaptive sheet from the ROOT
               // navigator context. Never pass a tab's own context here —
               // tabs live inside a NestedRouter, and a modal pushed on
               // the nested navigator renders behind the tab bar.
               onPressed: () =>
-                  appBoxKitLocator<AppBoxKitNotificationService>().notice(
+                  arxaKitLocator<ArxaKitNotificationService>().notice(
                 title: 'Native sheet',
                 message: 'The kit presents through its '
                     'adaptive sheet — CNBottomSheet on iOS, Material 3 '
@@ -65,6 +65,6 @@ class ShowcaseProfileFeedbackCardWidget extends StatelessWidget {
         ],
       ),
     );
-    // Edge treatment belongs to the enclosing AppBoxKitEdgeAwareListView.
+    // Edge treatment belongs to the enclosing ArxaKitEdgeAwareListView.
   }
 }

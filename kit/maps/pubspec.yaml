@@ -1,5 +1,5 @@
-name: appbox_kit_maps
-description: Maps port for appbox_kit apps — a plugin-neutral KitMapView that
+name: arxa_kit_maps
+description: Maps port for arxa_kit apps — a plugin-neutral KitMapView that
   resolves to a native map provider per platform (Google Maps on Android/web,
   Apple Maps on iOS), behind Kit-owned value types so no app code ever imports
   a map SDK directly.
@@ -10,7 +10,7 @@ environment:
   sdk: '>=3.0.3 <4.0.0'
 
 # NATIVE-FIRST / STANDALONE: this package intentionally depends on neither
-# appbox_kit (core), stacked, nor stacked_services. It is a pure port with
+# arxa_kit (core), stacked, nor stacked_services. It is a pure port with
 # four wired providers: google_maps_flutter and apple_maps_flutter (each
 # platform's first-party SDK), plus flutter_map for OpenStreetMap and Mapbox.
 # flutter_map is pure Dart (no native SDK, no secret download token), so the

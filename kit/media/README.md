@@ -1,7 +1,7 @@
-# appbox_kit_media
+# arxa_kit_media
 
 **Pixels and sound, in and out.** Framework-free ports for media capture and
-playback in `appbox_kit` apps, backed by thin wrappers over native
+playback in `arxa_kit` apps, backed by thin wrappers over native
 (AVFoundation / CameraX / ExoPlayer) plugins.
 
 Phase 2A of the kit split.
@@ -10,29 +10,29 @@ Phase 2A of the kit split.
 
 | Port | Backing | Status |
 | --- | --- | --- |
-| `AppBoxKitMediaCaptureService` | `image_picker` | implemented — camera + library photo capture |
-| `AppBoxKitAudioRecorderService` | `record` | implemented — start/stop/cancel + elapsed & amplitude streams |
-| `AppBoxKitAudioPlayerService` | `just_audio` | implemented — load/play/pause/seek + position/duration/state streams |
-| `AppBoxKitVideoPlayerService` | `video_player` | implemented — load/play/pause/seek + streams + `videoView()` |
-| `AppBoxKitMediaEditingService` | ffmpeg/native (unwired) | **stub** — throws `UnimplementedError` |
+| `ArxaKitMediaCaptureService` | `image_picker` | implemented — camera + library photo capture |
+| `ArxaKitAudioRecorderService` | `record` | implemented — start/stop/cancel + elapsed & amplitude streams |
+| `ArxaKitAudioPlayerService` | `just_audio` | implemented — load/play/pause/seek + position/duration/state streams |
+| `ArxaKitVideoPlayerService` | `video_player` | implemented — load/play/pause/seek + streams + `videoView()` |
+| `ArxaKitMediaEditingService` | ffmpeg/native (unwired) | **stub** — throws `UnimplementedError` |
 
 Music and video **playback are absorbed here** — per the project decision there
-are no separate `appbox_kit_music` / `appbox_kit_video` kits. Video playback
-is the next port to implement against the existing `AppBoxKitVideoPlayerService` seam.
+are no separate `arxa_kit_music` / `arxa_kit_video` kits. Video playback
+is the next port to implement against the existing `ArxaKitVideoPlayerService` seam.
 
 ## Design
 
-- **No dependency on `stacked` / `stacked_services` / `appbox_kit`.** This kit
+- **No dependency on `stacked` / `stacked_services` / `arxa_kit`.** This kit
   is pure ports + backing plugins; apps depend on it, never the reverse.
 - **No plugin type crosses a port.** `image_picker`'s `ImageSource`/`XFile`,
   `just_audio`'s `PlayerState`, and `record`'s `RecordConfig` stay inside the
-  implementations. Callers see kit-owned `AppBoxKitMediaSource`, `AppBoxKitCapturedMedia`,
-  `AppBoxKitPlaybackState`.
+  implementations. Callers see kit-owned `ArxaKitMediaSource`, `ArxaKitCapturedMedia`,
+  `ArxaKitPlaybackState`.
 - **Permission denial is a value, not an exception.** `capturePhoto` returns a
-  sealed `AppBoxKitMediaCaptureResult` (`AppBoxKitMediaCaptured` / `AppBoxKitMediaCaptureCancelled` /
-  `AppBoxKitMediaCapturePermissionDenied` / `AppBoxKitMediaCaptureUnavailable` /
-  `AppBoxKitMediaCaptureFailed`) so callers `switch` exhaustively.
-- **Capability flags:** `AppBoxKitMediaCaptureService.hasCamera` (false on the iOS
+  sealed `ArxaKitMediaCaptureResult` (`ArxaKitMediaCaptured` / `ArxaKitMediaCaptureCancelled` /
+  `ArxaKitMediaCapturePermissionDenied` / `ArxaKitMediaCaptureUnavailable` /
+  `ArxaKitMediaCaptureFailed`) so callers `switch` exhaustively.
+- **Capability flags:** `ArxaKitMediaCaptureService.hasCamera` (false on the iOS
   Simulator) lets UIs hide capture affordances that would fail.
 - **The recorder owns its clock:** `elapsed$` emits `Duration.zero` on start,
   ticks while recording, and emits `null` when idle — bind directly instead of
@@ -44,32 +44,32 @@ is the next port to implement against the existing `AppBoxKitVideoPlayerService`
 - No permission-request orchestration beyond what the plugins do (a dedicated
   permissions kit owns explicit prompts).
 - No file/organization policy — capture returns a temp file; the caller decides
-  the durable location (`AppBoxKitCapturedMedia.saveTo`).
-- No transcoding/editing yet (`AppBoxKitMediaEditingService` stub).
+  the durable location (`ArxaKitCapturedMedia.saveTo`).
+- No transcoding/editing yet (`ArxaKitMediaEditingService` stub).
 
 ## Usage
 
 ```dart
-import 'package:appbox_kit_media/appbox_kit_media.dart';
+import 'package:arxa_kit_media/arxa_kit_media.dart';
 
-final capture = AppBoxKitImagePickerMediaCaptureService();
-final result = await capture.capturePhoto(source: AppBoxKitMediaSource.camera);
+final capture = ArxaKitImagePickerMediaCaptureService();
+final result = await capture.capturePhoto(source: ArxaKitMediaSource.camera);
 switch (result) {
-  case AppBoxKitMediaCaptured(:final media):
+  case ArxaKitMediaCaptured(:final media):
     await media.saveTo('/somewhere/photo.jpg');
-  case AppBoxKitMediaCapturePermissionDenied():
+  case ArxaKitMediaCapturePermissionDenied():
     // surface a "grant camera access" hint
-  case AppBoxKitMediaCaptureCancelled():
-  case AppBoxKitMediaCaptureUnavailable():
-  case AppBoxKitMediaCaptureFailed():
+  case ArxaKitMediaCaptureCancelled():
+  case ArxaKitMediaCaptureUnavailable():
+  case ArxaKitMediaCaptureFailed():
 }
 ```
 
 ## Testing
 
-`package:appbox_kit_media/appbox_kit_testing.dart` ships scriptable fakes —
-`FakeAppBoxKitMediaCaptureService`, `FakeAppBoxKitAudioRecorderService`, `FakeAppBoxKitAudioPlayerService`
-(and `FakeAppBoxKitCapturedMedia`) — with canned files, scripted denial/failure, and
+`package:arxa_kit_media/arxa_kit_testing.dart` ships scriptable fakes —
+`FakeArxaKitMediaCaptureService`, `FakeArxaKitAudioRecorderService`, `FakeArxaKitAudioPlayerService`
+(and `FakeArxaKitCapturedMedia`) — with canned files, scripted denial/failure, and
 stream-driving helpers (`driveElapsed`, `drivePosition`, `driveState`, …). No
 plugins or MethodChannels required.
 

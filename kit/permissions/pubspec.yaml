@@ -1,5 +1,5 @@
-name: appbox_kit_permissions
-description: Plugin-neutral port for OS permissions — typed AppBoxKitPermission enum, four-state AppBoxKitPermissionStatus, and a permission_handler-backed service with a settings-escort contract for permanently-denied permissions.
+name: arxa_kit_permissions
+description: Plugin-neutral port for OS permissions — typed ArxaKitPermission enum, four-state ArxaKitPermissionStatus, and a permission_handler-backed service with a settings-escort contract for permanently-denied permissions.
 version: 0.1.0
 publish_to: 'none'
 

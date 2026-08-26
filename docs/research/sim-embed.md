@@ -1,11 +1,11 @@
-# Embedding a live iOS Simulator / Android emulator in the appbox canvas
+# Embedding a live iOS Simulator / Android emulator in the arxa canvas
 
 Reading-research digest (2026-07-29), with local measurements where marked
 **[measured]** — taken on this machine: macOS 26.5 arm64, Xcode 26.5-era
 simctl, iOS 26.5 sim runtime, Android emulator 36.5.11.0.
 
 **Verdict.** Literal embedding — putting Simulator.app's or the emulator's
-window *inside* the appbox window — is not possible on either platform.
+window *inside* the arxa window — is not possible on either platform.
 macOS has no supported cross-process NSWindow embedding; there is no Apple
 "embed the simulator" API. Every working approach is **capture → re-display
 in our own Flutter surface → inject input back**. The platforms differ

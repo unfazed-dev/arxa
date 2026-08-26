@@ -7,7 +7,7 @@
 -- service role bypasses RLS, and every other role is denied by default.
 -- Do NOT add anon/authenticated policies without amending the amendment.
 --
--- Apply:  psql "$APPBOX_SUPABASE_DB_URL" -f 20260823_design_dial.sql
+-- Apply:  psql "$ARXA_SUPABASE_DB_URL" -f 20260823_design_dial.sql
 --   or    paste into the SQL editor of the operator project.
 
 begin;

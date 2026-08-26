@@ -3,7 +3,7 @@
 All evidence below was taken against a **correctly launched design server**:
 
 ```
-dart run appboxd/bin/appbox.dart design serve designs/appbox-studio --port 4319
+dart run arxa/bin/arxa.dart design serve designs/arxa-studio --port 4319
 ```
 
 run from the worktree root
@@ -206,8 +206,8 @@ Honest count, because the ratio is the point. Before I could measure anything I 
 |---|---|---|
 | 1 | treatment URL `${u%%/*}` | expanded to empty → hit a nonexistent route |
 | 2 | `grep panel/size app.routes.js` | wrong scope; routes live in `routes.scaffold.js` |
-| 3 | `pgrep -f "appbox.dart serve"` | void instrument — see §7b, my stated reason was false |
-| 4 | `appbox/bin/appbox.dart` | it's `appboxd/` — the exact directory-name family already logged |
+| 3 | `pgrep -f "arxa.dart serve"` | void instrument — see §7b, my stated reason was false |
+| 4 | `arxa/bin/arxa.dart` | it's `arxa/` — the exact directory-name family already logged |
 
 Only #1 threatened a false *finding* — and it was caught in the first thirty seconds,
 because run-screen's Void 2 rule made me run the control **before** the subject. My
@@ -243,8 +243,8 @@ But the classification survives, and now with proof I didn't have then. Measured
 a live server, PID 9801, at 05:07:47:
 
 ```
-pgrep -f 'appbox.dart serve'   -> NO MATCH     (server up and serving 200s)
-pgrep -f 'appbox.dart'         -> 9801
+pgrep -f 'arxa.dart serve'   -> NO MATCH     (server up and serving 200s)
+pgrep -f 'arxa.dart'         -> 9801
 ```
 
 The pattern cannot see a running server. It returns "dead" unconditionally, so its
@@ -368,8 +368,8 @@ the same shortcut.
 Two distinct traps produced false evidence earlier in this phase. Both are worth
 knowing because both *look like passes*:
 
-1. **Wrong server.** `appbox serve` is the app/API server; `appbox design serve`
-   is the design server. `appbox serve` 404s every design surface, and because
+1. **Wrong server.** `arxa serve` is the app/API server; `arxa design serve`
+   is the design server. `arxa serve` 404s every design surface, and because
    404 bodies are uniform, a six-state sweep against it returns *byte-identical
    results for every state* — which reads exactly like a state-binding bug. An
    earlier reported table ("23333 B identical across six states, 5 `undefined`
@@ -386,9 +386,9 @@ The design server also loads its route table **at boot**, so newly added routes
 ## 1. Lint — exit 0
 
 ```
-dart run appboxd/bin/appbox.dart design lint designs/appbox-studio   # exit 0
-lint clean: no custom client-side JS in .../designs/appbox-studio
-widget/panel gate clean: W1–W6 in .../designs/appbox-studio
+dart run arxa/bin/arxa.dart design lint designs/arxa-studio   # exit 0
+lint clean: no custom client-side JS in .../designs/arxa-studio
+widget/panel gate clean: W1–W6 in .../designs/arxa-studio
 ```
 
 The prior W4 failure (`picker_view.html: mounts _panel.html`, not one of the
@@ -665,7 +665,7 @@ Because this worktree is shared with concurrent sessions and the edit is
 uncommitted, the exact tuples are recorded here so they survive a clean:
 
 ```js
-// in designs/appbox-studio/ui/views/main_shell/scaffold/routes.scaffold.js,
+// in designs/arxa-studio/ui/views/main_shell/scaffold/routes.scaffold.js,
 // immediately after: ['GET', '/scaffold/panel/size/:panel/:size', picker.panelSize],
 ['POST', '/scaffold/add',            picker.add],
 ['POST', '/scaffold/remove',         picker.remove],
@@ -727,7 +727,7 @@ has no literal to find. That one cost this thread the most time.
 
 ### Applied to my own live absence claim
 
-Claim: *no lens/preview state-picker UI exists under `appboxd/lib/` (the dart
+Claim: *no lens/preview state-picker UI exists under `arxa/lib/` (the dart
 tool) or `designs/` (the design tree)* — the sweep chrome-integration relied on
 to withdraw their "edit the dropdown in your UI" redirect. Scope is those two
 directories; my earlier phrasing said "the repo" and overclaimed. It had never
@@ -738,22 +738,22 @@ were the rule's own subject matter:
 
 | # | attempt | outcome |
 |---|---|---|
-| 1 | grep `surfaceStates` under `appbox/lib/` | 0 hits — but known-present. **No dir named `appbox`; it is `appboxd/`.** Fictional path — run-screen's failure #1/#2 |
-| 2 | re-run under `appboxd/lib/` → `intake.dart:62` hits | Instrument proven for *dart identifiers*. But the claim is about `<select>` **markup** — a different instrument. Wrong-control, i.e. failure #3, committed inside the demonstration of the rule |
+| 1 | grep `surfaceStates` under `arxa/lib/` | 0 hits — but known-present. **No dir named `arxa`; it is `arxa/`.** Fictional path — run-screen's failure #1/#2 |
+| 2 | re-run under `arxa/lib/` → `intake.dart:62` hits | Instrument proven for *dart identifiers*. But the claim is about `<select>` **markup** — a different instrument. Wrong-control, i.e. failure #3, committed inside the demonstration of the rule |
 | 3 | control on markup literals in `.dart` | `<div`×31, `<button`×3, `<a href`×2 → proven capable of finding HTML controls in dart |
 
 Only after attempt 3 does the zero carry information:
 
 | check | result |
 |---|---|
-| `<select>` / `<option>` in `appboxd/lib/**.dart` | 0 — **meaningful**, instrument proven |
+| `<select>` / `<option>` in `arxa/lib/**.dart` | 0 — **meaningful**, instrument proven |
 | `design_server.dart` reads a `state` param | no occurrences — it never branches on state |
 | `<select>` / `<option>` in `designs/` | 0, with `type="radio"`×1 as that sweep's own control |
 
 ### The failure positive control still can't catch: reading the right file in the wrong tree
 
 From run-screen, and it defeats both rules above as written. We work in a
-worktree; `app-box/designs/appbox-studio/` is a **real second checkout**. So
+worktree; `arxa/designs/arxa-studio/` is a **real second checkout**. So
 `cd <main>/... || cd <worktree>/...` is not a fallback — the first path exists,
 it always wins, and the shell silently reads a different file than the one under
 discussion. There is no zero to positive-control and no error to notice: `ls`
@@ -809,11 +809,11 @@ on it.** Re-ran both surviving §7 sweeps with stderr visible and a positive
 control inside the same invocation:
 
 ```
-grep -rn -e '<select' -e '<option' appboxd/lib --include=*.dart   -> exit 1
+grep -rn -e '<select' -e '<option' arxa/lib --include=*.dart   -> exit 1
   control (same invocation): <div  -> design_server.dart:2, synthesize.dart:5
 grep -rn -e '<select' -e '<option' designs/                       -> exit 1
   control: type="radio" -> workspace_shell/config/config_view.html:1
-ls -d appboxd/lib designs/                                        -> both exist
+ls -d arxa/lib designs/                                        -> both exist
 ```
 
 Both hold. The doc contains zero instances of `2>/dev/null`.
@@ -872,11 +872,11 @@ confident in, that happened to be true, survived on luck through two bad
 instruments.
 
 Second instance, same session: this finding nearly became a false broadcast. From
-`appbox/` ≠ `appboxd/` I inferred that every lane's `appbox/lib/intake.dart:62`
+`arxa/` ≠ `arxa/` I inferred that every lane's `arxa/lib/intake.dart:62`
 citation was one character wrong, and started drafting the correction. Checked
-first: this thread's docs already use `appboxd/lib/` and all three cited lines
+first: this thread's docs already use `arxa/lib/` and all three cited lines
 resolve (`intake.dart:62`, `design_tools.dart:260`, `emit_structure.dart:263`).
-The only two `appbox/lib` strings in `docs/plans/` are in unrelated pre-existing
+The only two `arxa/lib` strings in `docs/plans/` are in unrelated pre-existing
 files. A confident correction, aimed at teammates, built on one unverified
 inference — caught by the same rule one step before sending.
 

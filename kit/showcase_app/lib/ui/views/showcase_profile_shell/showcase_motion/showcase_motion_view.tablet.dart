@@ -3,7 +3,7 @@
 /// actions on the viewmodel. The view holds no business logic — swap the
 /// viewmodel for another and this file stays unchanged.
 ///
-/// This is the user interface for the motion demo — every appbox_kit_motion
+/// This is the user interface for the motion demo — every arxa_kit_motion
 /// feature on one pushed surface: route-driven wake/set-down (the route's own
 /// animation is the timeline), spec presets with a master switch, manual
 /// replay, the flutter_animate adapter, and a gesture-driven scrub card. The
@@ -47,10 +47,10 @@
 library;
 
 import 'package:flutter/material.dart';
-import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
+import 'package:arxa_kit_ui_library/arxa_kit_ui_library.dart';
 
-import 'package:appbox_kit_showcase_app/ui/views/showcase_profile_shell/showcase_motion/showcase_motion_view.mobile.dart';
-import 'package:appbox_kit_showcase_app/ui/views/showcase_profile_shell/showcase_motion/showcase_motion_viewmodel.dart';
+import 'package:arxa_kit_showcase_app/ui/views/showcase_profile_shell/showcase_motion/showcase_motion_view.mobile.dart';
+import 'package:arxa_kit_showcase_app/ui/views/showcase_profile_shell/showcase_motion/showcase_motion_viewmodel.dart';
 
 class ShowcaseMotionViewTablet
     extends ViewModelWidget<ShowcaseMotionViewModel> {

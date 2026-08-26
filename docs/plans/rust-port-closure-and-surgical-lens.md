@@ -10,7 +10,7 @@ per convention, proceeded on primary sources.
 ## A. The Rust question — CLOSED
 
 1. **No Rust port of the tooling.** The 2026-07-31 verdict in
-   [appbox-dart-only-tooling.md](appbox-dart-only-tooling.md) stands
+   [arxa-dart-only-tooling.md](arxa-dart-only-tooling.md) stands
    (addendum appended there). Every recorded pain from the energize /
    normal-is-boring runs is language-independent; emitter language is
    orthogonal to emission targets (OpenAPI Generator precedent: Java
@@ -81,29 +81,29 @@ per convention, proceeded on primary sources.
 
 ## E. Tooling discipline
 
-12. **Using-sessions never write into appbox.** Gate-enforced read-only
-    `appboxd/` during client-project work (the `tool/tmp_*.dart` and
+12. **Using-sessions never write into arxa.** Gate-enforced read-only
+    `arxa/` during client-project work (the `tool/tmp_*.dart` and
     `/tmp` py/mjs scripts pattern ends). Gap-filler: a first-class
-    `appbox lens eval <url> <js>` verb against the warm session, output
+    `arxa lens eval <url> <js>` verb against the warm session, output
     under the project's evidence dir. Recurring evals are promotion
-    candidates, promoted to real verbs only in appbox-dev sessions.
+    candidates, promoted to real verbs only in arxa-dev sessions.
 
 > **Amendment 2026-08-21 — scope is the headline, not the example.** This
-> decision's headline ("never write into appbox") and its mechanism clause
-> ("read-only `appboxd/`") disagreed on scope. Ratified in favour of the
+> decision's headline ("never write into arxa") and its mechanism clause
+> ("read-only `arxa/`") disagreed on scope. Ratified in favour of the
 > headline, and implemented as an **allowlist** rather than a wider denylist:
 > in a using-session the whole checkout is read-only except `docs/`,
-> `designs/`, `logs/`, where findings are recorded. `appboxd/` was only ever
+> `designs/`, `logs/`, where findings are recorded. `arxa/` was only ever
 > the example that produced the `tool/tmp_*.dart` litter — a using-session
-> editing `skills/`, `gates/` or `appbox-studio/` is the same defect.
-> Enforced per-tool-call by `hooks/appbox-guard.js` (`WRITABLE`) across all
+> editing `skills/`, `gates/` or `arxa-studio/` is the same defect.
+> Enforced per-tool-call by `hooks/arxa-guard.js` (`WRITABLE`) across all
 > three harnesses; rationale and the holes this closed are in
 > [arxa-harness-and-distribution.md](arxa-harness-and-distribution.md).
 > The `lens eval` gap-filler above is unaffected and still owed by W1.
 
 ## F. Client-facing islands
 
-13. **Feedback dial (the appbox FAB):** *(amended 2026-08-23 — see "the feedback dial becomes the Design Dial" below: two modes, Share Link access, Draft Overlay + manual Publish)* first-party island (ADR-0009
+13. **Feedback dial (the arxa FAB):** *(amended 2026-08-23 — see "the feedback dial becomes the Design Dial" below: two modes, Share Link access, Draft Overlay + manual Publish)* first-party island (ADR-0009
     form) baked into every design artifact. Default on; operator-only
     toggle; clients cannot hide it (watermark role). Art-dial design:
     radial icon-button options, draggable, animated. Supabase Auth
@@ -119,7 +119,7 @@ per convention, proceeded on primary sources.
 15. **Lock depth — server-verified on deploys:** *(amended 2026-08-23: clients authenticate via Share Link tokens, not Supabase accounts — the Worker verifies share tokens for comment-level access; the Supabase JWT path below remains the operator path)* the Cloudflare Worker
     serving deployed previews verifies the Supabase JWT before serving
     artifact HTML; the island only owns the sign-in UX. Local
-    `appbox design serve` stays open.
+    `arxa design serve` stays open.
 16. **Built apps join later:** the pub.dev `feedback` package wired to
     the same pipeline — separate stage, not now.
 17. **A11y toolbox:** a SEPARATE, decoupled island (coffee-tech
@@ -151,7 +151,7 @@ per convention, proceeded on primary sources.
 20. **Credentials:** `UNSPLASH_ACCESS_KEY`, `UNSPLASH_SECRET_KEY`,
     `PEXELS_API_KEY` are cataloged under `designer/media` in
     `config/credentials.catalog.json`; values live in the OS vault via
-    `appbox credentials set` (done 2026-08-21). Never in a tracked file.
+    `arxa credentials set` (done 2026-08-21). Never in a tracked file.
 21. **Content pass + LLM fallback:** the project's copy is generated ONCE
     at intake/story-map time into a `content.json` artifact (headlines,
     body, CTAs, empty-states per surface, keyed by abx dictionary terms);
@@ -167,7 +167,7 @@ per convention, proceeded on primary sources.
   the daemon (kills launch-per-invocation), settle protocol
   (`document.fonts.ready`, double-rAF, animation freeze, optional CDP
   virtual time for gate captures), `lens eval` verb, read-only gate on
-  `appboxd/` in using-sessions. Delete the `tool/tmp_*.dart` probes once
+  `arxa/` in using-sessions. Delete the `tool/tmp_*.dart` probes once
   eval lands; promote `lens_click_burst` / `lens_footer_states` into
   verbs or manifest states.
 
@@ -179,13 +179,13 @@ per convention, proceeded on primary sources.
 > not. One is provably broken and provably fixable, the other carries an
 > undocumented risk to the tool's core purpose.
 >
-> **1. Two W1 items are already done.** The `appboxd/` read-only gate shipped
-> as `hooks/appbox-guard.js` in H1 (wider than asked — whole checkout, allowlist
+> **1. Two W1 items are already done.** The `arxa/` read-only gate shipped
+> as `hooks/arxa-guard.js` in H1 (wider than asked — whole checkout, allowlist
 > of `docs/designs/logs`). The `tool/tmp_*.dart` probes are gone; they were
 > never committed. Remaining probe: `lens_click_burst.dart` (untracked).
 >
 > **2. `lens eval` is nearly free.** `CdpSession.evaluate` already wraps
-> `Runtime.evaluate` (`appboxd/lib/cdp.dart:625-644`). The `eval` verb exists
+> `Runtime.evaluate` (`arxa/lib/cdp.dart:625-644`). The `eval` verb exists
 > but is bound only to the Flutter VM path (`lens_cli.dart:1020`). Wiring it to
 > the web path is a CLI-surface change, not new capability.
 >
@@ -345,9 +345,9 @@ per convention, proceeded on primary sources.
 > **MIGRATION DEBT — and it cannot be exercised here.** A golden captured under
 > the flat timer on a page with any animation will now differ; static goldens
 > are unaffected (measured identical under both paths). But this repo has **zero
-> lens goldens**: `appbox gate lens` reports "no `lens` config block — gate
+> lens goldens**: `arxa gate lens` reports "no `lens` config block — gate
 > skipped", and the single committed golden PNG
-> (`appbox-studio/test/golden/goldens/home_view_default.png`) is a Flutter widget
+> (`arxa-studio/test/golden/goldens/home_view_default.png`) is a Flutter widget
 > golden, which this change does not touch. So the debt lands entirely in
 > downstream projects. Recapture there via `recaptureGoldens`, and expect the
 > new `LensUnstableCapture` throw to surface any surface that was never
@@ -355,9 +355,9 @@ per convention, proceeded on primary sources.
 > regression.
 >
 > **Verified 2026-08-21: the debt has no live target.** Checked both
-> downstream projects directly — `clients/energize` (`landing/appbox.json`,
-> `studio/appbox.json`: zero `lens` blocks) and `clients/normal_is_boring`
-> (no `config/appbox.config.json`; `appbox gate lens` reports it cannot find
+> downstream projects directly — `clients/energize` (`landing/arxa.json`,
+> `studio/arxa.json`: zero `lens` blocks) and `clients/normal_is_boring`
+> (no `config/arxa.config.json`; `arxa gate lens` reports it cannot find
 > a repo root). No lens-gate goldens exist anywhere downstream, so there is
 > nothing to recapture today. The goldens that DO exist downstream
 > (normal_is_boring `moodboard/reference/golden/*/…skeleton.json` +
@@ -409,9 +409,9 @@ per convention, proceeded on primary sources.
 > `git add goldens/` and a green "RECAPTURED" that skipped a surface is the same
 > false pass as ever.
 >
-> **Cost, measured on the real gate:** `appbox gate freeze` PASSES in **5m34s
+> **Cost, measured on the real gate:** `arxa gate freeze` PASSES in **5m34s
 > for 150 route/viewport renders** (~2.2s each) against
-> `designs/appbox-studio-v2`. It was minutes before this change and it is
+> `designs/arxa-studio-v2`. It was minutes before this change and it is
 > minutes after. The dominant term is the 1500ms floor, not the stability loop
 > (which converges in ~340ms on a settled page) and not the `fullPage` polling.
 > **The obvious lever — lower the floor, since the loop now adapts — is
@@ -423,16 +423,16 @@ per convention, proceeded on primary sources.
 >
 > **Two daemon constraints found by accident, which is the best way to find
 > them.** While the depth probe was running, its operator killed a stuck run
-> with `pkill -9 -f "appbox-cdp-"` and `rm -rf …/appbox-cdp-*`.
+> with `pkill -9 -f "arxa-cdp-"` and `rm -rf …/arxa-cdp-*`.
 > 1. **The temp-profile prefix is SHARED.** `cdp.dart:125` creates every
->    browser's profile with `Directory.systemTemp.createTemp('appbox-cdp-')`,
+>    browser's profile with `Directory.systemTemp.createTemp('arxa-cdp-')`,
 >    so that pattern matches *every* Chrome any `CdpClient.launch()` in this
 >    repo has started — not just the one you meant. A daemon holding one Chrome
->    for hours is a single `pkill -f appbox-cdp-` away from dying, from any
+>    for hours is a single `pkill -f arxa-cdp-` away from dying, from any
 >    script on the machine. The scoped reap already exists and must be the only
 >    one used: `_pidsOwningProfile(dir, browserOnly: true)` matches the exact
 >    `--user-data-dir=<dir>`, and its own comment records the near-miss —
->    *"Whole dir, not a prefix: `appbox-cdp-AB` must not claim `…-ABC`'s pid."*
+>    *"Whole dir, not a prefix: `arxa-cdp-AB` must not claim `…-ABC`'s pid."*
 >    A dir with no owning pid is a true orphan and safe to delete alone.
 > 2. **A SIGKILLed run can never clean up after itself**, so the daemon needs
 >    orphan reaping at startup — and that reap is exactly the scoped-ownership
@@ -498,7 +498,7 @@ per convention, proceeded on primary sources.
 >
 > **And the measurement corrected the premise.** Chrome launch is 0.46s of a
 > `lens shot`; the `dart run` JIT floor is 1.45s — three times larger, never
-> measured before the daemon was scoped. Shipping a compiled `appbox` binary
+> measured before the daemon was scoped. Shipping a compiled `arxa` binary
 > outranks any further daemon work.
 >
 > *(historical)* **Still open in W1:** the daemon itself. The blocking unknown is gone, but the
@@ -553,7 +553,7 @@ Share Link, Author) are canonical in docs/VOCABULARY.md.
 5. **Draft Overlay + manual Publish.** Auto-save persists edits as a
    server-side per-artifact patch-set overlay — artifact source is never
    touched by auto-save. Clients always see the last published state;
-   Publish is a manual dial button → studio socket → appbox-deployer/wrangler
+   Publish is a manual dial button → studio socket → arxa-deployer/wrangler
    → the artifact's ONE stable Workers hostname (links never churn).
 6. **Pin anchoring — element identity + rect snapshot.** Pins bind to W7
    data-el identity (route + viewport recorded), surviving restyles and live
@@ -605,7 +605,7 @@ it predated); curated facet sets keyed on the element's kind (`data-el`
 prefix, else tag) with the raw-CSS escape hatch parsing into structured
 patches; the token tier overrides `:root` custom properties; edits
 auto-save (debounced) into the Draft Overlay — one JSON file per artifact
-under `~/.appbox/drafts/`, never the watched tree (a save must not
+under `~/.arxa/drafts/`, never the watched tree (a save must not
 hot-reload the page being edited); the overlay applies at serve time for
 the Author only, so guests always see the last published state (decision
 5, wire-proven). The patch grammar gained `--text` (pure-text elements
@@ -613,7 +613,7 @@ only — nested markup refuses loudly) and `patchAllRendered` (loop-shared
 ids patch every instance — "every row at once"). Commit rides the dial
 event stream: `POST /__dial/commit` hands structured ops to the studio
 agent (the arxa-studio design panel surfaces them; the agent runs
-`appbox design patch`, re-runs gates, then DELETEs the draft — the
+`arxa design patch`, re-runs gates, then DELETEs the draft — the
 request itself is non-destructive). Also fixed: a dead share link
 previously resolved to caller=author on the API; it now 403s on every
 dial route. Publish (decision 5's button, the deployer seam) remains the

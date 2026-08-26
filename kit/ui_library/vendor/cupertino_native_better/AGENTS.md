@@ -15,7 +15,7 @@ Hybrid platform views do NOT re-sample glass on trait/config mutation; every
 native view type carries the cure in its `setBrightness` handler, and every
 new native view type MUST implement the same stack or it will lag on theme
 flips (evidence per component, clip by clip:
-`docs/plans/native-glass-theme-lag-measured.md` in the app-box repo):
+`docs/plans/native-glass-theme-lag-measured.md` in the arxa repo):
 
 1. Scope `overrideUserInterfaceStyle` to the view (container AND hosting
    controller) — never window-level, never `.preferredColorScheme` (both pin

@@ -1,14 +1,14 @@
 import 'dart:async';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:appbox_kit_media/appbox_kit_media.dart'
-    show AppBoxKitPlaybackProgress;
-import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
-import 'package:appbox_kit_ui_library/appbox_kit_testing.dart';
-import 'package:appbox_kit_showcase_app/app/app.locator.dart';
-import 'package:appbox_kit_showcase_app/data/models/showcase_notes_models/models.dart';
-import 'package:appbox_kit_showcase_app/enums/showcase_notes_enums/enums.dart';
-import 'package:appbox_kit_showcase_app/ui/views/showcase_notes_shell/showcase_note_editor/showcase_note_editor_viewmodel.dart';
+import 'package:arxa_kit_media/arxa_kit_media.dart'
+    show ArxaKitPlaybackProgress;
+import 'package:arxa_kit_ui_library/arxa_kit_ui_library.dart';
+import 'package:arxa_kit_ui_library/arxa_kit_testing.dart';
+import 'package:arxa_kit_showcase_app/app/app.locator.dart';
+import 'package:arxa_kit_showcase_app/data/models/showcase_notes_models/models.dart';
+import 'package:arxa_kit_showcase_app/enums/showcase_notes_enums/enums.dart';
+import 'package:arxa_kit_showcase_app/ui/views/showcase_notes_shell/showcase_note_editor/showcase_note_editor_viewmodel.dart';
 
 import '../helpers/test_helpers.dart';
 
@@ -55,7 +55,7 @@ void main() {
 
     setUp(() {
       registerServices();
-      registerAppBoxKitActionServices();
+      registerArxaKitActionServices();
       // The mocks register under their real service types; re-running the
       // factories captures typed handles (each re-registers a fresh mock).
       notes = getAndRegisterShowcaseNotesFacadeService();
@@ -324,10 +324,10 @@ void main() {
       final photo = attachment(id: 'p1');
       final subject =
           seededSubject<ShowcaseNoteModel?>(note(attachments: [photo]));
-      // The kit notification fake (registered by registerAppBoxKitActionServices)
+      // The kit notification fake (registered by registerArxaKitActionServices)
       // scripts the confirm: cancel first, accept second.
-      final notifications = locator<AppBoxKitNotificationService>()
-          as FakeAppBoxKitNotificationService;
+      final notifications = locator<ArxaKitNotificationService>()
+          as FakeArxaKitNotificationService;
       when(() => notes.removeAttachment(any(), any()))
           .thenAnswer((_) async => note());
       final vm = await openEditor(subject);
@@ -351,7 +351,7 @@ void main() {
         'search-and-attachments.media-attachments.play-back-an-audio-attachment — playbackProgress\$ forwards the facade\'s position/length pairing',
         () async {
       // given
-      final progress = seededSubject<AppBoxKitPlaybackProgress>(
+      final progress = seededSubject<ArxaKitPlaybackProgress>(
           (position: Duration.zero, duration: null));
       when(() => notes.playbackProgress$).thenAnswer((_) => progress.stream);
       final subject = seededSubject<ShowcaseNoteModel?>(note());

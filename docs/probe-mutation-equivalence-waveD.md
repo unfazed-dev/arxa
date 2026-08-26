@@ -1,6 +1,6 @@
 ================================================================================
-MUTATION-EQUIVALENCE REPORT — appbox probe consolidation (wave D)
-Node suite (tools/probe-*.mjs)  vs  Dart suite (appbox design probe <name>)
+MUTATION-EQUIVALENCE REPORT — arxa probe consolidation (wave D)
+Node suite (tools/probe-*.mjs)  vs  Dart suite (arxa design probe <name>)
 Date: 2026-08-03
 ================================================================================
 
@@ -29,21 +29,21 @@ environmental noise to skim past. Both are written up at the bottom. Read them.
 ================================================================================
 0. ENVIRONMENT / PROVENANCE
 ================================================================================
-Repo:      /Volumes/developer_ssd/Developer/totem_labs/app-box
+Repo:      /Volumes/developer_ssd/Developer/totem_labs/arxa
 HEAD:      4c7d8fbfa9b27f659f39feecfe8a244f66bf81c1  (unchanged start -> end)
-Server:    appbox design serve appbox-studio --port 4381 --project mutation-probe
-Project:   mutation-probe — created by this run as `cp -R ~/.appbox/projects/portalo`
+Server:    arxa design serve arxa-studio --port 4381 --project mutation-probe
+Project:   mutation-probe — created by this run as `cp -R ~/.arxa/projects/portalo`
            (portalo itself never written to; mtime unchanged Aug 2 10:39)
            Removed at teardown.
 Guard:     /__projects reported boundProject=mutation-probe (satisfies the
            probes' disposable regex -(?:probe|test)$ in probe_base.dart:49)
-~/.appbox/current: read "portalo" at START and at END. Never modified.
+~/.arxa/current: read "portalo" at START and at END. Never modified.
 
 PROBE SOURCE PIN (md5) — captured BEFORE the graded runs and re-checked AFTER.
 All six identical; the tree did not move under the verification.
-  appboxd/lib/probes/probe_panel_contract.dart  b5903bb9e2c8ac1bb84791eaaaa8df16
-  appboxd/lib/probes/probe_composer_draft.dart  8519464e54ecf449750237604e80896a
-  appboxd/lib/probes/probe_base.dart            2495f21d2880e193b6ae6f34ebb67815
+  arxa/lib/probes/probe_panel_contract.dart  b5903bb9e2c8ac1bb84791eaaaa8df16
+  arxa/lib/probes/probe_composer_draft.dart  8519464e54ecf449750237604e80896a
+  arxa/lib/probes/probe_base.dart            2495f21d2880e193b6ae6f34ebb67815
   tools/probe-panel-contract.mjs                237c7489846fdc8bffd3904d5ff446ca
   tools/probe-composer-draft.mjs                491c4e32fefffa60fdcb8c5f829529c6
   tools/_probe_base.mjs                         f0c58d526caa149eafeb4bdef25d4630
@@ -51,13 +51,13 @@ All six identical; the tree did not move under the verification.
 INVOCATION DIVERGENCE (found during setup, worth recording):
   The .mjs probes DO NOT accept --project. Passing it is a hard error:
       probe: unsupported argument "--project".
-             Supported: --base <url> | --port <n>. Or set APPBOX_BASE.
+             Supported: --base <url> | --port <n>. Or set ARXA_BASE.
              Refusing to run rather than silently target http://localhost:4319.
       exit 2
   This is _probe_base.mjs rule 1 ("an argument that cannot be honoured is a HARD
   ERROR") working as designed. The Dart probes DO accept --project. So the two
   suites are NOT drop-in interchangeable at the command line; correct pairing is
-      dart:  appbox design probe <name> --port N --project P
+      dart:  arxa design probe <name> --port N --project P
       node:  node tools/probe-<name>.mjs --port N
   Any retirement script that mechanically rewrites one into the other must drop
   --project, not pass it through.
@@ -74,7 +74,7 @@ BASELINE (all four green on mutation-probe, before any mutation):
 ================================================================================
 1. MUTATION 1 — chip contract kill  (panel-contract, section L)
 ================================================================================
-FILE: designs/appbox-studio/assets/css/widgets.css
+FILE: designs/arxa-studio/assets/css/widgets.css
 EDIT: wrapped the entire base `.chip` rule block (lines 8-15) in a CSS comment,
       bracketed by markers. Tone hooks (.chip--muted, .probe-chip, ...) left
       intact, so only the SHARED base box model died — exactly the regression
@@ -131,7 +131,7 @@ RESULTS — both suites, same server, same moment:
   exit code lost to output indexing, not to re-roll a result.)
 
 RESTORATION PROOF:
-  git checkout -- designs/appbox-studio/assets/css/widgets.css
+  git checkout -- designs/arxa-studio/assets/css/widgets.css
   Served asset re-verified to contain the live base rule again (comment-stripped
   check, landed on first poll).
   dart panel-contract  ->  exit 0, 0 FAIL, ==== ALL PASSED ====
@@ -140,7 +140,7 @@ RESTORATION PROOF:
 ================================================================================
 2. MUTATION 2 — composer draft-preservation kill  (composer-draft)
 ================================================================================
-FILE: designs/appbox-studio/ui/views/main_shell/shared/widgets/composer.html
+FILE: designs/arxa-studio/ui/views/main_shell/shared/widgets/composer.html
       (line ~144 — file had NOT moved in the widget-tree reorg)
 EDIT: removed the hx-preserve attribute and the conditional that exists solely
       to gate it. Nothing else on the tag touched.
@@ -201,7 +201,7 @@ RESULTS — both suites, same server, same moment:
   later.
 
 RESTORATION PROOF:
-  git checkout -- designs/appbox-studio/ui/views/main_shell/shared/widgets/composer.html
+  git checkout -- designs/arxa-studio/ui/views/main_shell/shared/widgets/composer.html
   Served /design re-verified to contain hx-preserve again (landed first poll).
   dart composer-draft  ->  exit 0, 0 FAIL, ==== ALL PASSED ====
 
@@ -214,8 +214,8 @@ RESTORATION PROOF:
   [x] designs/ git-clean                      `git status --short designs/` -> 0 lines
   [x]   widgets.css                           `git diff --stat` -> 0 lines
   [x]   composer.html                         `git diff --stat` -> 0 lines
-  [x] ~/.appbox/current reads "portalo"       verified (also verified at start)
-  [x] disposable project removed              ~/.appbox/projects/mutation-probe deleted
+  [x] ~/.arxa/current reads "portalo"       verified (also verified at start)
+  [x] disposable project removed              ~/.arxa/projects/mutation-probe deleted
   [x] projects root left as                   foxglove-demo, portalo
   [x] portalo never written                   mtime still Aug 2 10:39
   [x] probe sources unchanged                 all six md5s match the pin
@@ -229,14 +229,14 @@ RESTORATION PROOF:
 
 ANOMALY A — a concurrent agent DELETED the shared disposable project mid-run.
   Sequence, with evidence:
-   - Setup found ~/.appbox/projects/portalo-probe present and populated
+   - Setup found ~/.arxa/projects/portalo-probe present and populated
      (10 surfaces / 3 flows, dir mtime Aug 3 19:12). The first serve was bound
      to it and all four baseline probes ran GREEN against it.
    - Partway through mutation 1's restoration step, the projects dir mtime
      changed to 19:26 and portalo-probe was GONE.
    - The server logged:
        [design-server] hot reload failed: PathNotFoundException: Directory
-       listing failed, path = '/Users/unfazed-mac/.appbox/projects/portalo-probe/'
+       listing failed, path = '/Users/unfazed-mac/.arxa/projects/portalo-probe/'
        (OS Error: No such file or directory, errno = 2)
      and /design began returning 404.
    - The Dart probe run that straddled this reported
@@ -256,7 +256,7 @@ ANOMALY A — a concurrent agent DELETED the shared disposable project mid-run.
 
 ANOMALY B — probe sources were being edited concurrently during verification.
   At session start `git status` showed 5 modified files, none of them probes.
-  Midway it showed 18, including appboxd/lib/probes/probe_panel_contract.dart,
+  Midway it showed 18, including arxa/lib/probes/probe_panel_contract.dart,
   probe_composer_draft.dart, probe_base.dart, cdp.dart and 6 other probe ports.
   Teammates are actively editing the exact code under test.
   MITIGATION APPLIED: all six relevant probe sources were md5-pinned before the

@@ -17,13 +17,13 @@
 library;
 
 import 'package:flutter/material.dart';
-import 'package:appbox_kit_motion/appbox_kit_motion.dart';
-import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
+import 'package:arxa_kit_motion/arxa_kit_motion.dart';
+import 'package:arxa_kit_ui_library/arxa_kit_ui_library.dart';
 
 class ShowcaseMotionManualReplayCardWidget extends StatefulWidget {
   const ShowcaseMotionManualReplayCardWidget({required this.spec, super.key});
 
-  final AppBoxKitMotionSpec spec;
+  final ArxaKitMotionSpec spec;
 
   @override
   State<ShowcaseMotionManualReplayCardWidget> createState() =>
@@ -45,11 +45,11 @@ class _ShowcaseMotionManualReplayCardState
   }
 
   Widget _chip(BuildContext context, String label, int order) => Expanded(
-        // AppBoxKitWake wraps the card INSIDE the Expanded — wakeAll() on the Row's
+        // ArxaKitWake wraps the card INSIDE the Expanded — wakeAll() on the Row's
         // children list put the Fade/Slide transition between the Row and
         // each Expanded, breaking the FlexParentData contract (ParentDataWidget
         // assertion on route push).
-        child: AppBoxKitGlassCard(
+        child: ArxaKitGlassCard(
           child: Padding(
             padding: const EdgeInsets.symmetric(vertical: abxSize16),
             child: Center(
@@ -64,7 +64,7 @@ class _ShowcaseMotionManualReplayCardState
 
   @override
   Widget build(BuildContext context) {
-    return AppBoxKitMotionScope(
+    return ArxaKitMotionScope(
       driver: _controller,
       spec: widget.spec,
       child: Column(
@@ -73,22 +73,22 @@ class _ShowcaseMotionManualReplayCardState
           Row(
             children: <Widget>[
               _chip(context, 'One', 0),
-              appBoxKitHorizontalSpace(abxSize16 / 2),
+              arxaKitHorizontalSpace(abxSize16 / 2),
               _chip(context, 'Two', 1),
-              appBoxKitHorizontalSpace(abxSize16 / 2),
+              arxaKitHorizontalSpace(abxSize16 / 2),
               _chip(context, 'Three', 2),
             ],
           ),
-          appBoxKitVerticalSpaceSmall,
+          arxaKitVerticalSpaceSmall,
           Row(
             mainAxisAlignment: MainAxisAlignment.end,
             children: [
-              AppBoxKitNativeButton(
+              ArxaKitNativeButton(
                 label: 'Set down',
                 onPressed: () => _controller.reverse(),
               ),
-              appBoxKitHorizontalSpace(abxSize16 / 2),
-              AppBoxKitNativeButton(
+              arxaKitHorizontalSpace(abxSize16 / 2),
+              ArxaKitNativeButton(
                 label: 'Replay',
                 onPressed: () => _controller.forward(from: 0),
               ),

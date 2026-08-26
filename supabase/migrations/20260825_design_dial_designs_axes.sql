@@ -7,14 +7,14 @@
 -- RLS: enabled, zero policies — the service role bypasses; every other
 -- role is denied by default (the 2026-08-23 amendment's law, unchanged).
 --
--- Apply:  psql "$APPBOX_SUPABASE_DB_URL" -f 20260825_design_dial_designs_axes.sql
+-- Apply:  psql "$ARXA_SUPABASE_DB_URL" -f 20260825_design_dial_designs_axes.sql
 --   or    paste into the SQL editor of the operator project.
 
 begin;
 
 -- Designs (arc 1): the registry — one row per served artifact, keyed by
 -- (project, artifact) so two clients sharing a dir basename never collide.
--- Author attaches from ~/.appbox/identity.json; nullable so a missing
+-- Author attaches from ~/.arxa/identity.json; nullable so a missing
 -- identity never blocks a serve.
 create table if not exists design_dial_designs (
   id           uuid primary key default gen_random_uuid(),

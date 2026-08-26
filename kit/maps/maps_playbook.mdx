@@ -1,15 +1,15 @@
 <Callout id="header" tone="info">
 
-# appbox_kit_maps — Per-Package Playbook
+# arxa_kit_maps — Per-Package Playbook
 
 
-`appbox_kit_maps` v**0.1.0** · `publish_to: 'none'` · status: **active**
+`arxa_kit_maps` v**0.1.0** · `publish_to: 'none'` · status: **active**
 
 
-**Role (one line):** Maps port for appbox_kit apps — a plugin-neutral AppBoxKitMapView that resolves to a native map provider per platform (Google Maps on Android/web, Apple Maps on iOS), behind Kit-owned value types so no app code ever imports a map SDK directly.
+**Role (one line):** Maps port for arxa_kit apps — a plugin-neutral ArxaKitMapView that resolves to a native map provider per platform (Google Maps on Android/web, Apple Maps on iOS), behind Kit-owned value types so no app code ever imports a map SDK directly.
 
 
-**Scope of this document:** lets a human OR an LLM use, wire, and extend `appbox_kit_maps` **without reading its source**. The public surface below was extracted from the barrel; README content is folded into the narrative sections.
+**Scope of this document:** lets a human OR an LLM use, wire, and extend `arxa_kit_maps` **without reading its source**. The public surface below was extracted from the barrel; README content is folded into the narrative sections.
 
 
 ## Table of contents
@@ -22,16 +22,16 @@
 
 ### Overview & role
 
-Maps port for appbox_kit apps — a plugin-neutral AppBoxKitMapView that
+Maps port for arxa_kit apps — a plugin-neutral ArxaKitMapView that
 
 
 ### Public surface
 
-Exported from `lib/appbox_kit_maps.dart`:
+Exported from `lib/arxa_kit_maps.dart`:
 
-<Table id="maps-api" columns={["Symbol", "Kind", "Defined in"]} rows={[["AppBoxKitMapProviderKind", "enum", "src/appbox_kit_map_provider.dart"], ["AppBoxKitMapController", "abstract interface class", "src/appbox_kit_map_provider.dart"], ["AppBoxKitMapCreatedCallback", "typedef", "src/appbox_kit_map_provider.dart"], ["AppBoxKitMapProvider", "abstract interface class", "src/appbox_kit_map_provider.dart"], ["AppBoxKitAppleMapsProvider", "class", "src/providers/apple/appbox_kit_apple_maps_provider.dart"], ["AppBoxKitGoogleMapsProvider", "class", "src/providers/google/appbox_kit_google_maps_provider.dart"], ["AppBoxKitOpenStreetMapProvider", "class", "src/providers/open_street_map/appbox_kit_open_street_map_provider.dart"], ["AppBoxKitMapboxProvider", "class", "src/providers/mapbox/appbox_kit_mapbox_provider.dart"], ["AppBoxKitLatLng", "class", "src/models/appbox_kit_lat_lng.dart"], ["AppBoxKitLatLngBounds", "class", "src/models/appbox_kit_lat_lng.dart"], ["AppBoxKitCameraPosition", "class", "src/models/appbox_kit_lat_lng.dart"], ["AppBoxKitMapType", "enum", "src/models/appbox_kit_map_config.dart"], ["AppBoxKitMapConfig", "class", "src/models/appbox_kit_map_config.dart"], ["AppBoxKitMapMarker", "class", "src/models/appbox_kit_map_marker.dart"], ["AppBoxKitMapView", "class", "src/widgets/appbox_kit_map_view.dart"]]} />
+<Table id="maps-api" columns={["Symbol", "Kind", "Defined in"]} rows={[["ArxaKitMapProviderKind", "enum", "src/arxa_kit_map_provider.dart"], ["ArxaKitMapController", "abstract interface class", "src/arxa_kit_map_provider.dart"], ["ArxaKitMapCreatedCallback", "typedef", "src/arxa_kit_map_provider.dart"], ["ArxaKitMapProvider", "abstract interface class", "src/arxa_kit_map_provider.dart"], ["ArxaKitAppleMapsProvider", "class", "src/providers/apple/arxa_kit_apple_maps_provider.dart"], ["ArxaKitGoogleMapsProvider", "class", "src/providers/google/arxa_kit_google_maps_provider.dart"], ["ArxaKitOpenStreetMapProvider", "class", "src/providers/open_street_map/arxa_kit_open_street_map_provider.dart"], ["ArxaKitMapboxProvider", "class", "src/providers/mapbox/arxa_kit_mapbox_provider.dart"], ["ArxaKitLatLng", "class", "src/models/arxa_kit_lat_lng.dart"], ["ArxaKitLatLngBounds", "class", "src/models/arxa_kit_lat_lng.dart"], ["ArxaKitCameraPosition", "class", "src/models/arxa_kit_lat_lng.dart"], ["ArxaKitMapType", "enum", "src/models/arxa_kit_map_config.dart"], ["ArxaKitMapConfig", "class", "src/models/arxa_kit_map_config.dart"], ["ArxaKitMapMarker", "class", "src/models/arxa_kit_map_marker.dart"], ["ArxaKitMapView", "class", "src/widgets/arxa_kit_map_view.dart"]]} />
 
-Test doubles in `lib/testing.dart`: `RecordingAppBoxKitMapController`, `FakeAppBoxKitMapProvider`.
+Test doubles in `lib/testing.dart`: `RecordingArxaKitMapController`, `FakeArxaKitMapProvider`.
 
 Scripts and call-counts — tests never touch platform channels.
 
@@ -39,31 +39,31 @@ Scripts and call-counts — tests never touch platform channels.
 ### Usage & wiring
 
 ```dart
-import 'package:appbox_kit_maps/appbox_kit_maps.dart';
+import 'package:arxa_kit_maps/arxa_kit_maps.dart';
 
-AppBoxKitMapView(
-  config: const AppBoxKitMapConfig(
-    initialCameraPosition: AppBoxKitCameraPosition(
-      target: AppBoxKitLatLng(-33.8688, 151.2093),
+ArxaKitMapView(
+  config: const ArxaKitMapConfig(
+    initialCameraPosition: ArxaKitCameraPosition(
+      target: ArxaKitLatLng(-33.8688, 151.2093),
       zoom: 12,
     ),
     markers: {
-      AppBoxKitMapMarker(
+      ArxaKitMapMarker(
         id: 'office',
-        position: AppBoxKitLatLng(-33.8688, 151.2093),
+        position: ArxaKitLatLng(-33.8688, 151.2093),
         title: 'HQ',
       ),
     },
   ),
   onMapCreated: (controller) =>
-      controller.animateCamera(const AppBoxKitCameraPosition(
-    target: AppBoxKitLatLng(-37.8136, 144.9631),
+      controller.animateCamera(const ArxaKitCameraPosition(
+    target: ArxaKitLatLng(-37.8136, 144.9631),
   )),
 )
 ```
 
 Markers are declarative (rebuild with a new `markers` set);
-`AppBoxKitMapController` handles post-creation camera moves only.
+`ArxaKitMapController` handles post-creation camera moves only.
 
 - **Google Maps** requires an API key:
   - Android: `com.google.android.geo.API_KEY` meta-data in
@@ -78,12 +78,12 @@ Markers are declarative (rebuild with a new `markers` set);
 
 <Table id="maps-integration" columns={["Stacked framework deps", "Backing SDK packages", "Depends on (kit)"]} rows={[["\u2014", "google_maps_flutter, apple_maps_flutter", "\u2014 (standalone)"]]} />
 
-See `appbox_kit_matrix.md` for the full routing + dependency graph.
+See `arxa_kit_matrix.md` for the full routing + dependency graph.
 
 
 ### Architecture
 
-Classic ports-and-adapters: `AppBoxKitMapProvider` is the port (an `abstract interface class` exposing `kind` and `buildMap()`), and each backend is an adapter — all four are wired: `AppBoxKitGoogleMapsProvider`, `AppBoxKitAppleMapsProvider`, plus `AppBoxKitOpenStreetMapProvider` and `AppBoxKitMapboxProvider`, which share one flutter_map builder (`src/providers/tiled/appbox_kit_tiled_map_view.dart`) and differ only in tile URL, tile geometry (256px vs Mapbox's 512px retina tiles with `zoomOffset: -1`), and attribution. `AppBoxKitMapView` resolves the adapter via `appBoxKitDefaultProviderFor(defaultTargetPlatform)` (Apple on iOS, Google on Android/web/desktop) unless a `provider:` is injected, which is how tests pass a `FakeAppBoxKitMapProvider` and how an app forces a specific backend. `AppBoxKitMapController` is a narrow post-creation camera handle (`moveCamera`/`animateCamera` — the flutter_map backends jump on `animateCamera`, flutter_map core has no animated camera API); markers are declarative, rebuilt via `AppBoxKitMapConfig.markers`, never mutated through the controller. The dependency direction is one-way and standalone: the package imports only Flutter and the map SDKs, never `stacked`, `stacked_services`, or `appbox_kit` core, so app code depends on Kit-owned value types (`AppBoxKitLatLng`, `AppBoxKitCameraPosition`, `AppBoxKitMapConfig`, `AppBoxKitMapMarker`) and the port — never on a map SDK.
+Classic ports-and-adapters: `ArxaKitMapProvider` is the port (an `abstract interface class` exposing `kind` and `buildMap()`), and each backend is an adapter — all four are wired: `ArxaKitGoogleMapsProvider`, `ArxaKitAppleMapsProvider`, plus `ArxaKitOpenStreetMapProvider` and `ArxaKitMapboxProvider`, which share one flutter_map builder (`src/providers/tiled/arxa_kit_tiled_map_view.dart`) and differ only in tile URL, tile geometry (256px vs Mapbox's 512px retina tiles with `zoomOffset: -1`), and attribution. `ArxaKitMapView` resolves the adapter via `arxaKitDefaultProviderFor(defaultTargetPlatform)` (Apple on iOS, Google on Android/web/desktop) unless a `provider:` is injected, which is how tests pass a `FakeArxaKitMapProvider` and how an app forces a specific backend. `ArxaKitMapController` is a narrow post-creation camera handle (`moveCamera`/`animateCamera` — the flutter_map backends jump on `animateCamera`, flutter_map core has no animated camera API); markers are declarative, rebuilt via `ArxaKitMapConfig.markers`, never mutated through the controller. The dependency direction is one-way and standalone: the package imports only Flutter and the map SDKs, never `stacked`, `stacked_services`, or `arxa_kit` core, so app code depends on Kit-owned value types (`ArxaKitLatLng`, `ArxaKitCameraPosition`, `ArxaKitMapConfig`, `ArxaKitMapMarker`) and the port — never on a map SDK.
 
 
 ### Gotchas
@@ -109,30 +109,30 @@ Classic ports-and-adapters: `AppBoxKitMapProvider` is the port (an `abstract int
 - **flutter_map backends**: no support for `myLocationEnabled`,
   `zoomControlsEnabled`, `compassEnabled`, or camera `tilt`; widget tests
   must inject a fake `TileProvider` so no HTTP happens (see
-  `test/appbox_kit_tiled_providers_test.dart`).
+  `test/arxa_kit_tiled_providers_test.dart`).
 - **`apple_maps_flutter` staleness**: the plugin publishes slowly (17+ months
   between releases at wiring time). If it breaks against a future Flutter,
-  repoint iOS at `AppBoxKitGoogleMapsProvider` in `appBoxKitDefaultProviderFor` until it is fixed.
+  repoint iOS at `ArxaKitGoogleMapsProvider` in `arxaKitDefaultProviderFor` until it is fixed.
 
 
 ### Testing
 
 ```dart
-import 'package:appbox_kit_maps/appbox_kit_testing.dart';
+import 'package:arxa_kit_maps/arxa_kit_testing.dart';
 
-final fake = FakeAppBoxKitMapProvider();          // captures built configs
-fake.controller;                          // RecordingAppBoxKitMapController
+final fake = FakeArxaKitMapProvider();          // captures built configs
+fake.controller;                          // RecordingArxaKitMapController
 ```
 
 
 ### Features
 
-<Checklist id="maps-features" items={[{"id": "maps-feat-0", "label": "`AppBoxKitMapProviderKind` \u2014 enum"}, {"id": "maps-feat-1", "label": "`AppBoxKitMapController` \u2014 abstract interface class"}, {"id": "maps-feat-2", "label": "`AppBoxKitMapCreatedCallback` \u2014 typedef"}, {"id": "maps-feat-3", "label": "`AppBoxKitMapProvider` \u2014 abstract interface class"}, {"id": "maps-feat-4", "label": "`AppBoxKitAppleMapsProvider` \u2014 class"}, {"id": "maps-feat-5", "label": "`AppBoxKitGoogleMapsProvider` \u2014 class"}, {"id": "maps-feat-6", "label": "`AppBoxKitOpenStreetMapProvider` \u2014 class"}, {"id": "maps-feat-7", "label": "`AppBoxKitMapboxProvider` \u2014 class"}, {"id": "maps-feat-8", "label": "`AppBoxKitLatLng` \u2014 class"}, {"id": "maps-feat-9", "label": "`AppBoxKitLatLngBounds` \u2014 class"}, {"id": "maps-feat-10", "label": "`AppBoxKitCameraPosition` \u2014 class"}, {"id": "maps-feat-11", "label": "`AppBoxKitMapType` \u2014 enum"}]} />
+<Checklist id="maps-features" items={[{"id": "maps-feat-0", "label": "`ArxaKitMapProviderKind` \u2014 enum"}, {"id": "maps-feat-1", "label": "`ArxaKitMapController` \u2014 abstract interface class"}, {"id": "maps-feat-2", "label": "`ArxaKitMapCreatedCallback` \u2014 typedef"}, {"id": "maps-feat-3", "label": "`ArxaKitMapProvider` \u2014 abstract interface class"}, {"id": "maps-feat-4", "label": "`ArxaKitAppleMapsProvider` \u2014 class"}, {"id": "maps-feat-5", "label": "`ArxaKitGoogleMapsProvider` \u2014 class"}, {"id": "maps-feat-6", "label": "`ArxaKitOpenStreetMapProvider` \u2014 class"}, {"id": "maps-feat-7", "label": "`ArxaKitMapboxProvider` \u2014 class"}, {"id": "maps-feat-8", "label": "`ArxaKitLatLng` \u2014 class"}, {"id": "maps-feat-9", "label": "`ArxaKitLatLngBounds` \u2014 class"}, {"id": "maps-feat-10", "label": "`ArxaKitCameraPosition` \u2014 class"}, {"id": "maps-feat-11", "label": "`ArxaKitMapType` \u2014 enum"}]} />
 
 
 ### Decisions / ADRs
 
-Standalone by design: the package declares no `stacked` / `appbox_kit` dependency so it can be adopted without pulling the framework, and so a future backend swap is contained to this one package. Apple Maps is the iOS default because it is the only first-party-MapKit option and needs no API key; Google Maps is the default everywhere else (Android, web, desktop) as the most mature cross-platform SDK. OpenStreetMap and Mapbox are both wired on `flutter_map` (pure Dart — no native SDK, no secret download token, fully simulator/emulator/web-testable); Mapbox deliberately uses 512px raster tiles with a public `pk.*` token rather than `mapbox_maps_flutter`, which would require a secret `sk.*` token in ~/.netrc for SDK downloads. The accepted trade-off is `apple_maps_flutter`'s slow release cadence (17+ months between publishes at wiring time); if it breaks against a future Flutter, the documented fallback is to repoint the iOS branch of `appBoxKitDefaultProviderFor` to `AppBoxKitGoogleMapsProvider` until it is fixed.
+Standalone by design: the package declares no `stacked` / `arxa_kit` dependency so it can be adopted without pulling the framework, and so a future backend swap is contained to this one package. Apple Maps is the iOS default because it is the only first-party-MapKit option and needs no API key; Google Maps is the default everywhere else (Android, web, desktop) as the most mature cross-platform SDK. OpenStreetMap and Mapbox are both wired on `flutter_map` (pure Dart — no native SDK, no secret download token, fully simulator/emulator/web-testable); Mapbox deliberately uses 512px raster tiles with a public `pk.*` token rather than `mapbox_maps_flutter`, which would require a secret `sk.*` token in ~/.netrc for SDK downloads. The accepted trade-off is `apple_maps_flutter`'s slow release cadence (17+ months between publishes at wiring time); if it breaks against a future Flutter, the documented fallback is to repoint the iOS branch of `arxaKitDefaultProviderFor` to `ArxaKitGoogleMapsProvider` until it is fixed.
 
 <!-- kb:begin -->
 ### References
@@ -146,12 +146,12 @@ Official docs and tooling:
 - [stacked_cli (pub.dev)](https://pub.dev/packages/stacked_cli) — Scaffolding CLI for new Stacked apps/views/services.
 - [Flutter — official documentation](https://docs.flutter.dev) — Framework docs, platform integration, performance.
 - [Dart — official documentation](https://dart.dev) — Language tour, async, package ecosystem.
-- [Dart & Flutter MCP server (official)](https://dart.dev/tools/mcp-server) — Ships with the Dart SDK (dart mcp-server). Exposes analyzer diagnostics, pub, tests, and live Flutter app introspection via DTD. Wired in appbox_kit/.mcp.json.
+- [Dart & Flutter MCP server (official)](https://dart.dev/tools/mcp-server) — Ships with the Dart SDK (dart mcp-server). Exposes analyzer diagnostics, pub, tests, and live Flutter app introspection via DTD. Wired in arxa_kit/.mcp.json.
 
 Kit-specific:
 
-- [google_maps_flutter (pub.dev)](https://pub.dev/packages/google_maps_flutter) — google_maps_flutter — backing dependency of appbox_kit_maps.
-- [apple_maps_flutter (pub.dev)](https://pub.dev/packages/apple_maps_flutter) — apple_maps_flutter — backing dependency of appbox_kit_maps.
+- [google_maps_flutter (pub.dev)](https://pub.dev/packages/google_maps_flutter) — google_maps_flutter — backing dependency of arxa_kit_maps.
+- [apple_maps_flutter (pub.dev)](https://pub.dev/packages/apple_maps_flutter) — apple_maps_flutter — backing dependency of arxa_kit_maps.
 <!-- kb:end -->
 
 <QuestionForm id="open-questions" questions={[

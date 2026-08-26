@@ -10,7 +10,7 @@ BYO-key cost structure, the FlutterFlow export trap) — not repeated here.
 
 1. **Charge for the tool, never for the output.** Encrypted generated code is
    the FlutterFlow one-way-export trap squared — the exact thing
-   `competitors-and-pricing.md` positions appbox against. No precedent of
+   `competitors-and-pricing.md` positions arxa against. No precedent of
    users accepting it was found anywhere.
 2. **Sell a flat annual license with a JetBrains-style perpetual fallback**
    (12 months paid → keep the last version forever). Everything granted
@@ -20,10 +20,10 @@ BYO-key cost structure, the FlutterFlow export trap) — not repeated here.
    verified fully offline** against an embedded public key. One online
    activation (or a signed license file for air-gapped), then never phone home
    except a soft annual refresh with a ≥30-day grace.
-4. **Encrypt appbox's own vault** (BYO LLM keys, registry, design state) with
+4. **Encrypt arxa's own vault** (BYO LLM keys, registry, design state) with
    age/XChaCha20-Poly1305 — unambiguous win, users expect it.
 5. **Do not encrypt emitted targets.** If requirement (a) is truly mandatory,
-   scope "all files appbox generates" to the daemon's internal state, which
+   scope "all files arxa generates" to the daemon's internal state, which
    is the only reading users won't revolt against.
 6. Client-side DRM is a speed bump, not a wall — design for "make paying
    easier than pirating", not for defeating crackers.
@@ -116,7 +116,7 @@ sharing, not nation-state crackers — activation limits catch exactly that.
 **Cost of infrastructure:** hosted Keygen starts ~$99/mo
 ([B](https://onetimesuite.com/comparison/keygen-alternative/)); Keygen CE is
 free self-hosted but a Ruby+Postgres+Redis stack to run
-([A](https://keygen.sh/docs/self-hosting/)). For appbox's volume, a signed
+([A](https://keygen.sh/docs/self-hosting/)). For arxa's volume, a signed
 key is ~100 lines against an Ed25519 library plus a Stripe webhook — buying
 the platform is premature (C, judgement).
 
@@ -155,8 +155,8 @@ holds purely AI-generated output is not copyrightable without meaningful
 human authorship ([B](https://www.mondaq.com/unitedstates/copyright/1580572/key-insights-on-copyright-and-ai-from-the-us-copyright-offices-2025-report)),
 and every major AI vendor's terms assign output to the user (Anthropic,
 JetBrains AI; [B](https://talkthinkdo.com/blog/who-owns-ai-written-code-what-ctos-developers-and-procurement-teams-need-to-know/)).
-So the trained expectation of appbox's exact buyer is "**I own the output,
-in my repo, in plaintext**" — that is also appbox's stated positioning
+So the trained expectation of arxa's exact buyer is "**I own the output,
+in my repo, in plaintext**" — that is also arxa's stated positioning
 against FlutterFlow (`competitors-and-pricing.md` §escape-hatch).
 
 **Community reaction evidence (the risky part).** No tool was found that
@@ -181,7 +181,7 @@ itself the finding (C). Adjacent evidence, all negative:
 - **License-server dependency bricks the product.** Adobe retired CS3 /
   Acrobat 8 activation servers; paying customers permanently lost the ability
   to activate software they owned ([A, Adobe support forums](https://community.adobe.com/questions-617/cs3-acrobat-8-activation-servers-retired-536021)).
-  Any appbox scheme must survive our death: offline-verifiable keys, and a
+  Any arxa scheme must survive our death: offline-verifiable keys, and a
   published sunset plan (final build with checks removed, or key escrow).
 - **Retroactive/unpredictable pricing on output:** Unity Runtime Fee, §1.
 - **Surprise usage bills:** Cursor credits, §1.
@@ -216,7 +216,7 @@ itself the finding (C). Adjacent evidence, all negative:
   and indistinguishable from ransomware heuristics (C).
 - **Any check can be patched out** of a local binary; the emitted Flutter
   code is Dart source anyway — there is no binary to protect. The license
-  check can only live in appboxd/the pipeline.
+  check can only live in arxa/the pipeline.
 - **Expiry requires a trustworthy clock and a grace story.** Keygen's own
   guidance: embed grace periods, expect clock manipulation, accept it (A).
 - **Revocation vs offline is a real trade-off:** fully offline keys can't be
@@ -236,10 +236,10 @@ itself the finding (C). Adjacent evidence, all negative:
    `competitors-and-pricing.md`), **perpetual fallback after 12 paid months**
    (JetBrains pattern). No per-seat below a generous team size; no credits.
 2. **Ed25519-signed license key** (payload: expiry, fallback-version
-   watermark, grace 30 days, licensee email) verified offline in appboxd;
+   watermark, grace 30 days, licensee email) verified offline in arxa;
    one online activation against a tiny endpoint, 3 machines, self-service
    deactivate. Stripe webhook → key email. Signed license file for air-gap.
-3. **Encryption where it belongs:** appbox's vault (BYO LLM keys — already
+3. **Encryption where it belongs:** arxa's vault (BYO LLM keys — already
    flagged sensitive in `remote-control-and-chat.md` — registry, pipeline
    state) via age-format XChaCha20-Poly1305, daemon-held key in the OS
    keychain.

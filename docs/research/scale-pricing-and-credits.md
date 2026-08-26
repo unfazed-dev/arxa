@@ -15,7 +15,7 @@ bundled 50k.
 Managed Supabase is viable via **Supabase for Platforms** (projects in *our*
 org), whose price is ~$10–25/project — resell at ~$39 (≈30% take, the Heroku
 precedent). Escape hatch: OAuth `project-claim`. Credits should follow Cursor:
-BYO-LLM keeps **full parity**; credits buy convenience + the appbox fine-tune.
+BYO-LLM keeps **full parity**; credits buy convenience + the arxa fine-tune.
 
 ---
 
@@ -53,7 +53,7 @@ with installs as a pass-through line item, not the revenue engine.
 
 Comparables split cleanly by what they actually consume: CI prices on
 **concurrency** (Codemagic, Bitrise), OTA prices on **installs/MAU** (Shorebird,
-Expo, Capawesome), visual builders price on **seats** (FlutterFlow). appbox
+Expo, Capawesome), visual builders price on **seats** (FlutterFlow). arxa
 SCALE consumes store slots and release pipelines — an *app-fleet* cost. Prior
 repo research (`competitors-and-pricing.md`) records per-seat as the market's
 loudest complaint, with agencies as persona P5; agencies have few seats and many
@@ -73,7 +73,7 @@ bundled patch installs across the fleet.**
 
 ## Q2 — Reselling managed kit (Supabase et al.)
 
-### Can appbox provision Supabase per customer? Yes — two shapes.
+### Can arxa provision Supabase per customer? Yes — two shapes.
 
 **Supabase for Platforms** — Supabase is explicitly a PaaS "commonly used as a
 platform by AI Builders," managed via the **Management API** (`POST /v1/projects`,
@@ -86,7 +86,7 @@ Lovable, Bolt, and Baidu MeDo are cited as users of this path.
 ([docs](https://supabase.com/docs/guides/integrations/build-a-supabase-oauth-integration)).
 Critically there is a **`project-claim`** OAuth endpoint
 (`/v1/oauth/authorize/project-claim`) that transfers a project we created into
-the customer's org — the escape hatch that keeps appbox's no-lock-in promise
+the customer's org — the escape hatch that keeps arxa's no-lock-in promise
 intact while still offering a managed default.
 
 There is also a formal **Integration Partner Addendum** and partner program
@@ -111,7 +111,7 @@ price is *not* the market convention and would be visible and resented.
 
 ### Known failure modes (all attach to the *our-org* path)
 
-1. **Pooled-org liability** — every customer project sits under one appbox org: one payment failure, one ToS violation, or one Supabase-side suspension is fleet-wide. Compute, egress and MAU overages land on *our* card first.
+1. **Pooled-org liability** — every customer project sits under one arxa org: one payment failure, one ToS violation, or one Supabase-side suspension is fleet-wide. Compute, egress and MAU overages land on *our* card first.
 2. **Abuse surface** — we hold the personal access token that can create projects; a compromised or abusive tenant spends our money at $0.09/GB egress.
 3. **Free-tier arbitrage** — Supabase Free allows only **2 active projects per org** and pauses after 1 week idle, so a "free managed DB" cannot be pooled; anyone building one on our org is spending our Pro allowance.
 4. **Password custody** — project DB passwords cannot be rotated programmatically after creation (Supabase's own warning); we become the custodian of secrets we cannot rotate.
@@ -119,7 +119,7 @@ price is *not* the market convention and would be visible and resented.
 ### Recommendation
 
 **Managed Kit = a SCALE add-on at $39/project/mo (cost $10–25), billed through
-appbox as merchant of record, with a one-click `project-claim` handover to the
+arxa as merchant of record, with a one-click `project-claim` handover to the
 customer's own Supabase org at any time.** BYO-Supabase stays free on every
 tier. Cap egress/MAU per project with hard spend limits, and require a card on
 file for the add-on specifically — never pool a free tenant into the org.
@@ -147,7 +147,7 @@ complaints**; treat it as a thing to avoid, not copy.
 only the proprietary bits it cannot bill to your key (Tab, Apply). That is the
 principled line — gate on *what the vendor owns*, not on *how you pay*.
 
-### Recommendation for appbox
+### Recommendation for arxa
 
 **BYO-LLM keeps full parity on every generation feature, on every tier,
 forever.** It is our structural cost advantage, not a downgrade path.
@@ -155,7 +155,7 @@ forever.** It is our structural cost advantage, not a downgrade path.
 Credits sell three things BYO-LLM cannot supply:
 
 1. **Zero-config onboarding** — no key, works in 30 seconds.
-2. **The appbox fine-tune** — appbox-owned weights, so credit-gating it gates *our asset*, not a payment method. This is the Cursor-Tab line.
+2. **The arxa fine-tune** — arxa-owned weights, so credit-gating it gates *our asset*, not a payment method. This is the Cursor-Tab line.
 3. **Fleet/CI inference** — server-side generation in deploy pipelines where the user's key is not present.
 
 Shape: **monthly pool at face value** ($20 of credits inside the $20 PRO seat,

@@ -63,7 +63,7 @@ class CNTransitionObserver extends NavigatorObserver {
   /// route slide — the native `beginTransition`/`endTransition` flag only
   /// drives the on-view glass-effect tint, and a hybrid-composition platform
   /// view can't be tinted out of a leak: it must leave the frame's layer tree
-  /// (see `AppBoxKitNativeChromeGate`). Includes the interactive back-swipe, held
+  /// (see `ArxaKitNativeChromeGate`). Includes the interactive back-swipe, held
   /// open by the `didStartUserGesture`/`didStopUserGesture` hooks below —
   /// `didPop` alone fires only at gesture COMMIT, leaving the drag unguarded.
   static final ValueNotifier<int> _activeTransitions = ValueNotifier<int>(0);
@@ -85,7 +85,7 @@ class CNTransitionObserver extends NavigatorObserver {
   /// [activeTransitions] instead made any nested push dematerialize the root
   /// chrome across every tab — fix C2 of
   /// `docs/plans/glass-chrome-root-cause-fixes.md`. This mirrors the
-  /// `_mountDepth` baseline that `AppBoxKitNativeChromeGate` already applies to
+  /// `_mountDepth` baseline that `ArxaKitNativeChromeGate` already applies to
   /// modal depth: a scoped signal, never a raw global.
   static bool hasActiveTransitionAbove(BuildContext context) {
     if (_activeTransitions.value <= 0) return false;
@@ -335,10 +335,10 @@ class CNTransitionObserver extends NavigatorObserver {
   ///
   /// De-tinting was never sufficient anyway, which this file already said above:
   /// a hybrid-composition platform view *cannot be tinted out of a leak* — it has
-  /// to leave the frame's layer tree, and `AppBoxKitNativeChromeGate` is what
+  /// to leave the frame's layer tree, and `ArxaKitNativeChromeGate` is what
   /// actually does that. So the native flag is a second authority that duplicates
   /// a job it cannot do, at the cost of an animation. Same call as C5 in
-  /// `appbox_kit_tab_bar.dart`: one authority per event, and it is the gate.
+  /// `arxa_kit_tab_bar.dart`: one authority per event, and it is the gate.
   ///
   /// Per-view `setTransitioning` (Issue #29 halo containment) is a SEPARATE
   /// channel call on each view's own channel and is untouched by this.

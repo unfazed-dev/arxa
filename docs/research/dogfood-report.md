@@ -1,7 +1,7 @@
 # Dogfood report — plan 14 (the acceptance test)
 
 **Run:** 2026-07-27. **Executor:** builder agent (Phase B/C/D only — Phase A is
-founder-led). **Subject:** D1 = `designs/appbox-app/` (the appbox-designer
+founder-led). **Subject:** D1 = `designs/arxa-app/` (the arxa-designer
 producer; `macos` target). **Flutter:** 3.44.0. **Render backend:** `uv` +
 playwright + cached Chromium (working). **Baseline:** `HEAD=3402d82`, tree clean,
 `lint_conventions.sh` exit 0.
@@ -23,7 +23,7 @@ width is reported exactly once).
 The **pipeline cannot yet ingest D1 end-to-end**, for one root reason: the freeze
 gate (plan 04) and the coverage gate's ceremony paths are wired for the
 **stacked_kit producer** contract (`surfaces/*.html` + `tokens.json` + four docs),
-while D1 is the **appbox-designer htmx producer** (`ui/views/**/*.html` +
+while D1 is the **arxa-designer htmx producer** (`ui/views/**/*.html` +
 `registry.json`). Freeze fails D1 on six shape checks before it ever renders, and
 no scaffolder exists to turn D1 into the Flutter `app/` (which is currently the
 stacked_kit **showcase app**, not a D1 scaffold). Everything blocked in Phase B/C
@@ -33,12 +33,12 @@ traces back to that one producer-shape seam.
 
 ## 14.9 — gate pass counts (run_all.sh over D1)
 
-`KIT_DESIGN_DIR=designs/appbox-app bash gates/run_all.sh "$(pwd)"` (APP=repo
+`KIT_DESIGN_DIR=designs/arxa-app bash gates/run_all.sh "$(pwd)"` (APP=repo
 root so the design dir resolves):
 
 | gate | verdict | evidence |
 |---|---|---|
-| **freeze** | **FAIL** | 6 shape checks: `tokens.json`, `design-system.md`, `exclusions.json`, `direction-approved.md`, `brand-spec.md` missing; `no surfaces — designs/appbox-app/surfaces/*.html missing` |
+| **freeze** | **FAIL** | 6 shape checks: `tokens.json`, `design-system.md`, `exclusions.json`, `direction-approved.md`, `brand-spec.md` missing; `no surfaces — designs/arxa-app/surfaces/*.html missing` |
 | **structure** | **PASS** | `in-sync`; `20 screens / 15 frozen / 5 excluded, 6 tab roots land on a surface`; tracked+committed |
 | **scaffold** | **PASS (vacuous)** | `WARN: no …/lib/ui/views — nothing to check (shell structure gate is app-only)` → exit 0. **Green over no scaffolded app — see honest-bar #5.** |
 | **coverage** | **FAIL** | macos keychain ceremony: `macos/Runner/DebugProfile.entitlements missing`, `Release.entitlements missing`; `0/15 frozen surface(s) in 0 adopted shell(s) of 1` |
@@ -51,7 +51,7 @@ root so the design dir resolves):
 > coverage's ceremony paths are **app-root-relative**. D1 lives at the
 > **repo root** (`designs/`); the macos entitlements live under `app/macos/`.
 > No single `$APP` makes both resolve: at `$APP=app/` the design dir becomes
-> `app/designs/appbox-app` (not found); at `$APP=repo-root` the ceremony paths
+> `app/designs/arxa-app` (not found); at `$APP=repo-root` the ceremony paths
 > miss `app/macos/Runner/`. The entitlements themselves are correct — both
 > `app/macos/Runner/{DebugProfile,Release}.entitlements` carry
 > `keychain-access-groups`. This is a wiring seam, not a content defect
@@ -64,9 +64,9 @@ root so the design dir resolves):
 ### 14.5 structure.json is registry-derived — **PASS**
 
 ```
-$ KIT_DESIGN_DIR=designs/appbox-app python3 tools/emit_structure/emit_structure.py --check
-in-sync …/designs/appbox-app/structure.json                          [exit 0]
-$ KIT_DESIGN_DIR=designs/appbox-app python3 tools/emit_structure/emit_structure.py
+$ KIT_DESIGN_DIR=designs/arxa-app python3 tools/emit_structure/emit_structure.py --check
+in-sync …/designs/arxa-app/structure.json                          [exit 0]
+$ KIT_DESIGN_DIR=designs/arxa-app python3 tools/emit_structure/emit_structure.py
 unchanged …/structure.json (write-on-diff: content identical)
   20 screens, 15 with a surface, 5 excluded (surface:null)            [exit 0]
 $ git status --porcelain    # empty
@@ -81,18 +81,18 @@ non-filename-inferred by source.
 ### 14.6 freeze renders D1 at one width (macos → desktop) — **BLOCKED (defect)**
 
 ```
-$ KIT_DESIGN_DIR=designs/appbox-app bash gates/freeze/freeze.sh --targets macos "$(pwd)"
-FAIL: shape: designs/appbox-app/tokens.json missing
-FAIL: shape: designs/appbox-app/design-system.md missing
-FAIL: shape: designs/appbox-app/exclusions.json missing
-FAIL: shape: designs/appbox-app/direction-approved.md missing
-FAIL: shape: designs/appbox-app/brand-spec.md missing
+$ KIT_DESIGN_DIR=designs/arxa-app bash gates/freeze/freeze.sh --targets macos "$(pwd)"
+FAIL: shape: designs/arxa-app/tokens.json missing
+FAIL: shape: designs/arxa-app/design-system.md missing
+FAIL: shape: designs/arxa-app/exclusions.json missing
+FAIL: shape: designs/arxa-app/direction-approved.md missing
+FAIL: shape: designs/arxa-app/brand-spec.md missing
   ✓ shape: structure.json
-FAIL: shape: no surfaces — designs/appbox-app/surfaces/*.html missing
+FAIL: shape: no surfaces — designs/arxa-app/surfaces/*.html missing
 freeze: FAIL (6 shape check(s))                                       [exit 1]
 ```
 
-D1 is the appbox-designer htmx producer: surfaces live at
+D1 is the arxa-designer htmx producer: surfaces live at
 `ui/views/stage_shell/**/*_view.html` (Jinja-extending
 `ui/common/base.html`), authored through `models/screens_model/registry.json` +
 `app.routes.js`. The freeze gate (plan 04) expects the **stacked_kit producer**:
@@ -127,7 +127,7 @@ viewport)**, so it cannot accumulate across surfaces. Also covered by
 
 ### 14.8 scaffold D1 — three layout files/surface for macos — **BLOCKED (no scaffolder)**
 
-There is **no scaffolder tool**. `skills/appbox-scaffolder/` is a README only;
+There is **no scaffolder tool**. `skills/arxa-scaffolder/` is a README only;
 `pipeline.sh`'s scaffold gate delegates to vendored stacked_kit paths
 (`skills/kit-scaffolder/scripts/scaffold_gate.sh`,
 `tools/vendor/scaffold_coverage/…`). The committed Flutter `app/` is the
@@ -170,7 +170,7 @@ Deleted registry entry `settings.kits` but left its viewmodel pair on disk. Both
 owning gates fail and name the offender:
 
 ```
-$ crud verify designs/appbox-app
+$ crud verify designs/arxa-app
 FAIL: orphan pair ui/views/stage_shell/settings/kits/ declares surfaceId
   'settings.kits' but no registry entry has that id                 [exit 1]
 
@@ -253,7 +253,7 @@ that is the failure.* Findings, ranked by blast radius:
 2. **`app/` is not D1; no scaffolder.** The Flutter app is the stacked_kit
    showcase app (`showcase_notes_shell`, which doesn't exist as a dir). There is
    no tool that turns D1 → Flutter, so "scaffold D1" and "coverage of D1" have no
-   target. Done-when #4 (the macOS app built by appbox) is not yet demonstrable
+   target. Done-when #4 (the macOS app built by arxa) is not yet demonstrable
    on D1.
 
 3. **R5 meta-guard is RED over a passing gate (false negative).**
@@ -318,7 +318,7 @@ that is the failure.* Findings, ranked by blast radius:
 | 1 | D1 and D2 both pass every gate | **NOT MET** — D1 fails freeze/coverage/deploy; D2 not built. Root cause: producer-shape seam (#1) + no scaffolder (#2). |
 | 2 | Form-factor counts differ correctly (3 vs 4), derived | **MET (at the derivation layer)** — `coverage.sh --self-test` proves macos→3, ios/android→4, derived from targets; never configured per surface. Not yet observable on a real D1/D2 scaffold. |
 | 3 | All Phase D smoke tests pass, incl. every negative | **MET** — 14.11/14.12/14.13/14.15 pass with offenders named; 14.7 mechanism + 14.14 mechanism pass (on fixtures, since D1 can't reach them). |
-| 4 | appbox's macOS app, built by appbox, runs and drives its pipeline | **NOT MET** — `app/` is the showcase app; no D1-built app exists. |
+| 4 | arxa's macOS app, built by arxa, runs and drives its pipeline | **NOT MET** — `app/` is the showcase app; no D1-built app exists. |
 | 5 | Written report: gate counts, Michelle timing, intervention points | **MET (this report)** — Michelle timing N/A (14.19 blocked: no clean machine). |
 
 ---
@@ -332,7 +332,7 @@ hold with byte-level evidence. The freeze error-count fix is real and
 runtime-proven.
 
 The **product loop is not yet closed on D1**, because the freeze+coverage gates
-were built against a different producer contract than the one `appbox-designer`
+were built against a different producer contract than the one `arxa-designer`
 emits, and no scaffolder turns D1 into a Flutter app. Closing that seam (and
 giving `app/` a real D1 scaffold, or pointing the gates at a D1-shaped design) is
 the prerequisite for Done-when #1 and #4. The R5 meta-guard false-negative (#3)
@@ -344,21 +344,21 @@ should be fixed alongside, so the honesty net itself is honest.
 
 Setup: a real Flutter app-root (`flutter create --platforms macos` + P08's
 keychain entitlements) with D1 scaffolded into it (`scaffold.py --targets macos`
-→ 15 surfaces × 3 files = 45, 0 empty factors), producer at `designs/appbox-app`.
+→ 15 surfaces × 3 files = 45, 0 empty factors), producer at `designs/arxa-app`.
 
 | gate | result | note |
 |---|---|---|
 | **freeze** | **PASS** | htmx producer detected; 14 routes rendered at desktop (1280×800) via the designer Node server; **0 console errors** (the 4× fix holds). The producer-shape seam is closed. |
 | **coverage** | **PASS** | 15/15 frozen surfaces; macos → 3-file form-factor set derived; ceremony deferred (C4). |
 | **structure** | PASS (logic) | reconciles 20/15/5 + 6 tab roots; the only FAIL in the isolated test was `emit_structure.py not found at <app-root>/tools/…` + "not a git repo" — artifacts of the `/tmp` test harness, not the gate (passes in-repo, per P05 selftest + the producer-shape run). |
-| **scaffold** | wiring | shell/widget checks all ✓; FAIL only on `lib/app/app.dart` (the temp app isn't appbox's) — the design-dir↔app-root wiring (honest-bar #4), not a gate defect. |
+| **scaffold** | wiring | shell/widget checks all ✓; FAIL only on `lib/app/app.dart` (the temp app isn't arxa's) — the design-dir↔app-root wiring (honest-bar #4), not a gate defect. |
 | **review** | stubs | fails on the 15 stub `*_view.dart` — correct: the scaffolder emits stubs, the **builder** phase fills them. Not a gate defect. |
 | **deploy** | human gate | FAIL: version/account unconfirmed — by design (the gate must be able to fail). |
 
 **Done-when reassessment:** #2 (form-factor counts 3 vs 4, derived) ✅; #3 (all
 Phase-D smoke tests incl. negatives) ✅ (round-trip/orphan/drift/targets/gates-halt
 all passed in the first run and the gates they exercise are unchanged); #5 (this
-report) ✅. **#1 (D1+D2 pass every gate) and #4 (app built by appbox runs its
+report) ✅. **#1 (D1+D2 pass every gate) and #4 (app built by arxa runs its
 pipeline) are NOT fully met** — they require (a) the builder phase to fill the
 scaffolded views so `review` has real content to judge, (b) Apple signing creds
 for `deploy`/14.16, (c) an iOS device for D2/P12, and (d) founder-led Phase-A
@@ -415,7 +415,7 @@ human confirms the release — it is the gate working, not a defect.
 | 1 | D1 and D2 both pass every gate | **D1 MET** (6/7 automatable gates; deploy is the human gate). **D2 NOT MET** — needs P12 (iOS device) + companion design. |
 | 2 | Form-factor counts differ (3 vs 4), derived | **MET** — observable on the real D1 scaffold: macos → 3 files/surface, derived from targets. |
 | 3 | All Phase D smoke tests pass, incl. negatives | **MET** — 14.11–14.15 (round-trip/orphan/drift/targets/gates-halt) unchanged by this session's work; the gates they exercise still name offenders. |
-| 4 | appbox's macOS app, built by appbox, runs its pipeline | **PARTIAL** — the scaffolded D1 passes every design/build gate, but views are stubs (builder fills) and deploy awaits human approval. A running app needs the builder bodies + signing. |
+| 4 | arxa's macOS app, built by arxa, runs its pipeline | **PARTIAL** — the scaffolded D1 passes every design/build gate, but views are stubs (builder fills) and deploy awaits human approval. A running app needs the builder bodies + signing. |
 | 5 | Written report: gate counts, Michelle timing, interventions | **MET (this report)** — Michelle timing N/A (14.19: needs a clean machine). |
 
 ### Remaining (external / founder, not gate defects)

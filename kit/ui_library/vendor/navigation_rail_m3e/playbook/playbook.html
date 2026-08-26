@@ -102,7 +102,7 @@ ul.checklist li .n{color:var(--muted);font-size:12.5px;display:block}
   </div>
   <div class="diagram-arrow">↓ wrapped by</div>
   <div class="diagram-box" data-rough>
-    <div class="diagram-pill">appbox_kit</div>
+    <div class="diagram-pill">arxa_kit</div>
     <div class="diagram-muted">Kit* wrappers</div>
   </div>
 </div>
@@ -213,7 +213,7 @@ dependency_overrides:
   navigation_rail_m3e:
     path: packages/navigation_rail_m3e</code></pre><ul class="ann"><li><b>WHY</b> <span class="ann-l">L1-8</span>: Root pubspec.yaml override comment — the auditable reason for the fork. Edit whenever the patch list changes.</li><li><b>HOW</b> <span class="ann-l">L9-11</span>: path: override activates the fork. m3e_collection still re-exports navigation_rail_m3e by name; the override redirects that name to the local folder.</li></ul>
 
-<div class="callout "><p>Hosts almost never import <code>package:navigation_rail_m3e/...</code> directly. The fork is pulled in <strong>transitively</strong> via <code>m3e_collection</code> (the umbrella that re-exports every M3E widget), and most apps reach it through <code>appbox_kit</code>'s <code>Kit*</code> wrappers. The root <code>dependency_overrides</code> <code>path:</code> entry is the only thing that activates the patch — <code>m3e_collection</code>'s own version constraint is unchanged. The fork also has cross-deps on three sibling M3E forks/packages: <code>fab_m3e ^0.1.1</code>, <code>icon_button_m3e ^0.2.1</code>, <code>button_m3e ^0.1.1</code> (which is why <code>pubspec.lock</code> is committed here).</p></div>
+<div class="callout "><p>Hosts almost never import <code>package:navigation_rail_m3e/...</code> directly. The fork is pulled in <strong>transitively</strong> via <code>m3e_collection</code> (the umbrella that re-exports every M3E widget), and most apps reach it through <code>arxa_kit</code>'s <code>Kit*</code> wrappers. The root <code>dependency_overrides</code> <code>path:</code> entry is the only thing that activates the patch — <code>m3e_collection</code>'s own version constraint is unchanged. The fork also has cross-deps on three sibling M3E forks/packages: <code>fab_m3e ^0.1.1</code>, <code>icon_button_m3e ^0.2.1</code>, <code>button_m3e ^0.1.1</code> (which is why <code>pubspec.lock</code> is committed here).</p></div>
 <h3>Integration map</h3>
 <div class="diagram-wrap">
 <p class="diag-cap">Apps import m3e_collection; the root override redirects navigation_rail_m3e to the local fork, which depends on three more M3E packages.</p>
@@ -228,7 +228,7 @@ dependency_overrides:
   </div>
   <div class="diagram-arrow">re-exports</div>
   <div class="diagram-box" data-rough>
-    <div class="diagram-pill">appbox_kit</div>
+    <div class="diagram-pill">arxa_kit</div>
     <div class="diagram-muted">Kit* wrappers</div>
   </div>
   <div class="diagram-box" data-rough>
@@ -279,12 +279,12 @@ dependency_overrides:
 
 <div class="callout warn"><p>The reverse curve is <code>_expandCurve.flipped</code>, NOT <code>_expandCurve</code>. A straight time-reversal would spend its first ~300ms inside the spring's overshoot tail (width frozen at ~220) and read as lag. If you change <code>_expandCurve</code>, re-test both directions.</p></div>
 
-<div class="callout "><p>This is the <strong>only one of the four forks with no <code>test/</code></strong>. Re-syncs and edits are uninsured — every change must be smoke-tested manually in the consuming showcase (<code>appbox_kit_showcase</code>). Adding a <code>test/navigation_rail_m3e_test.dart</code> that asserts the Stack-of-two-layouts structure and the corner.full indicator is the single highest-value investment.</p></div>
+<div class="callout "><p>This is the <strong>only one of the four forks with no <code>test/</code></strong>. Re-syncs and edits are uninsured — every change must be smoke-tested manually in the consuming showcase (<code>arxa_kit_showcase</code>). Adding a <code>test/navigation_rail_m3e_test.dart</code> that asserts the Stack-of-two-layouts structure and the corner.full indicator is the single highest-value investment.</p></div>
 
 <div class="callout warn"><p>This fork depends on <strong>three</strong> other M3E packages (<code>fab_m3e</code>, <code>icon_button_m3e</code>, <code>button_m3e</code>). When re-syncing upstream, all four cross-deps must remain compatible — <code>pubspec.lock</code> is committed here precisely so a transitive resolution drift cannot silently break the rail. Re-run <code>flutter pub get</code> after any cross-dep bump and commit the new lock.</p></div>
 <h3>Re-sync procedure (shared across all four forks)</h3>
 <p>When bumping upstream (<code>fab_m3e</code>, <code>navigation_rail_m3e</code>, <code>split_button_m3e</code>, or <code>toolbar_m3e</code>):</p>
-<p>1. <strong>Bump</strong> the fork's <code>pubspec.yaml</code> <code>version:</code> and the root <code>pubspec.yaml</code> override comment's stated version. 2. <strong>Backfill</strong> the fork's <code>CHANGELOG.md</code> with the new version entry (every fork's CHANGELOG is stale — see §11). 3. <strong>Diff</strong> each patched file against the new upstream release of the same path. For this fork, that is four files: <code>navigation_rail_m3e_widget.dart</code>, <code>rail_item_button_m3e.dart</code>, <code>rail_tokens_adapter.dart</code>, <code>rail_theme.dart</code>. 4. <strong>Re-apply</strong> each <code>// Patched (vendored fork)</code> / <code>// Fork patch:</code> / <code>// PATCH</code> block by hand. Do NOT copy upstream over the fork blindly — the markers are your only map of what to preserve. 5. <strong>Update</strong> the root <code>pubspec.yaml</code> override comment if the WHY or the patched-file list changed. 6. <strong>Run</strong> the fork's <code>flutter test</code> in <code>packages/&lt;name&gt;/</code> (this fork has none — extra reason to add one), then run the consuming showcase (<code>appbox_kit_showcase</code>) to confirm the patched behaviour still renders.</p>
+<p>1. <strong>Bump</strong> the fork's <code>pubspec.yaml</code> <code>version:</code> and the root <code>pubspec.yaml</code> override comment's stated version. 2. <strong>Backfill</strong> the fork's <code>CHANGELOG.md</code> with the new version entry (every fork's CHANGELOG is stale — see §11). 3. <strong>Diff</strong> each patched file against the new upstream release of the same path. For this fork, that is four files: <code>navigation_rail_m3e_widget.dart</code>, <code>rail_item_button_m3e.dart</code>, <code>rail_tokens_adapter.dart</code>, <code>rail_theme.dart</code>. 4. <strong>Re-apply</strong> each <code>// Patched (vendored fork)</code> / <code>// Fork patch:</code> / <code>// PATCH</code> block by hand. Do NOT copy upstream over the fork blindly — the markers are your only map of what to preserve. 5. <strong>Update</strong> the root <code>pubspec.yaml</code> override comment if the WHY or the patched-file list changed. 6. <strong>Run</strong> the fork's <code>flutter test</code> in <code>packages/&lt;name&gt;/</code> (this fork has none — extra reason to add one), then run the consuming showcase (<code>arxa_kit_showcase</code>) to confirm the patched behaviour still renders.</p>
 <h3>Override hygiene (shared)</h3>
 <div class="callout warn"><p>Never remove a <code>dependency_overrides</code> <code>path:</code> entry without first confirming upstream includes the fix. A "clean" <code>flutter pub get</code> silently reverts the fork to the pub.dev release, and the patch — including its bug fix — disappears with no compile error. The root override comment is the only durable record of why the patch exists.</p></div>
 

@@ -6,23 +6,23 @@
 
 **Architecture:** Widget-first composition — the widget library auto-emits `data-el` + `data-inspect-*` from a single `inspectAttrs()` helper, so identity comes free at every nesting level; new leaf primitives (`Label`, `Heading`, `Txt`) make text a widget. The inspect island gains innermost-target selection, an ancestor-chain payload, and a synthesized-identity fallback (`inferred`) for anything not yet widgetized. A new W7 gate rule makes coverage enforced, not aspirational.
 
-**Tech Stack:** Hono JSX templates (`.tsx`), first-party JS island (`inspect.js`, IIFE, no framework), Dart (`appboxd` design server + gates), htmx transport.
+**Tech Stack:** Hono JSX templates (`.tsx`), first-party JS island (`inspect.js`, IIFE, no framework), Dart (`arxa` design server + gates), htmx transport.
 
 ## Decisions already made with the user (do not relitigate)
 
-1. **Scope:** artifact screens rendered in viewer tiles only (incl. `designs/appbox-studio` when viewed). Studio chrome around the viewer is NOT inspectable.
+1. **Scope:** artifact screens rendered in viewer tiles only (incl. `designs/arxa-studio` when viewed). Studio chrome around the viewer is NOT inspectable.
 2. **Mechanism:** widget-first composition (C) + island inference fallback marked `inferred` (B).
 3. **Selection:** innermost widget wins; inspector pane shows full ancestor breadcrumb, each crumb clickable to re-lock.
 4. **Depth:** full migration of all studio surfaces now, plus a gate rule (W7) so it can't regress.
 
 ## Global Constraints
 
-- **No ad-hoc client JS** — named islands only (`skills/appbox-designer/runtime/vendor/`). All new client behavior goes in `inspect.js`.
-- **Vendor SSOT:** the design server serves `skills/appbox-designer/runtime/vendor` (`appboxd/lib/design_server.dart:1360`). `.claude/skills/appbox-designer/` and `.kimi-code/skills/appbox-designer/` are **copies, not symlinks** — before first edit run `~/.agents/skills/consultant/scripts/consult.sh gate skill appbox-designer`; after editing, sync both copies byte-identical (`cp`) in the same commit.
+- **No ad-hoc client JS** — named islands only (`skills/arxa-designer/runtime/vendor/`). All new client behavior goes in `inspect.js`.
+- **Vendor SSOT:** the design server serves `skills/arxa-designer/runtime/vendor` (`arxa/lib/design_server.dart:1360`). `.claude/skills/arxa-designer/` and `.kimi-code/skills/arxa-designer/` are **copies, not symlinks** — before first edit run `~/.agents/skills/consultant/scripts/consult.sh gate skill arxa-designer`; after editing, sync both copies byte-identical (`cp`) in the same commit.
 - **Commit format:** single line, no author mentions, e.g. `feat: emit inspect identity from widget primitives`.
 - **Island contract (ADR-0002):** island only measures and POSTs (`window.parent.htmx.ajax('POST', '/design/inspector/select', {values})`); the server renders the pane. Keep that split.
-- **Serve/verify loop:** `dart run appboxd/bin/appbox.dart design serve designs/appbox-studio --port 4319` (plain `appbox` is not on PATH). Lint: `dart run appboxd/bin/appbox.dart design lint designs/appbox-studio`.
-- **Existing gate:** `appboxd/lib/gate_design_widgets.dart` holds W1–W6; W7 is added there, same failure-message style (`W7 <file>:<line> — <concrete fix>`).
+- **Serve/verify loop:** `dart run arxa/bin/arxa.dart design serve designs/arxa-studio --port 4319` (plain `arxa` is not on PATH). Lint: `dart run arxa/bin/arxa.dart design lint designs/arxa-studio`.
+- **Existing gate:** `arxa/lib/gate_design_widgets.dart` holds W1–W6; W7 is added there, same failure-message style (`W7 <file>:<line> — <concrete fix>`).
 - **Defensive pane rendering:** `inspector_pane.tsx` guards every scalar / length-checks every list; keep that for all new fields.
 
 ---
@@ -30,7 +30,7 @@
 ### Task 1: `inspectAttrs()` helper + leaf text primitives
 
 **Files:**
-- Modify: `designs/appbox-studio/ui/common/widgets/primitives.tsx`
+- Modify: `designs/arxa-studio/ui/common/widgets/primitives.tsx`
 
 **Interfaces:**
 - Produces: `inspectAttrs(name: string, meta: {role: string; style?: string; motion?: string; fn?: string}): Record<string,string>` returning `{'data-el': name, 'data-inspect-role': …, 'data-inspect-style': …, 'data-inspect-motion': …, 'data-inspect-fn': …}` (omit undefined keys).
@@ -87,25 +87,25 @@ export function Txt(props: TextProps) {
 
 - [ ] **Step 3: Retrofit `Chip`, `StatusPill`, `TypeBadge`, `CtaLink`** — spread `inspectAttrs` on each root element. Name pattern: `chip:<label>`, `status:<label>`, `type:<label>`, `cta:<label>` (mirrors the existing `data-el="hero:…"`/`list-item:Block N` convention in `screen_stub_view.tsx`).
 
-- [ ] **Step 4: Verify + commit** — `dart run appboxd/bin/appbox.dart design lint designs/appbox-studio` clean; serve and confirm a chip in any rendered screen shows the hover badge in inspect mode. `git commit -m "feat: inspectAttrs helper and leaf text primitives with auto inspect identity"`.
+- [ ] **Step 4: Verify + commit** — `dart run arxa/bin/arxa.dart design lint designs/arxa-studio` clean; serve and confirm a chip in any rendered screen shows the hover badge in inspect mode. `git commit -m "feat: inspectAttrs helper and leaf text primitives with auto inspect identity"`.
 
 ### Task 2: Retrofit the remaining widget library
 
 **Files (modify each; spread `inspectAttrs` on the component's root — and on meaningful inner regions where the widget has them):**
-- `designs/appbox-studio/ui/common/widgets/_panel.tsx`, `chrome.tsx`, `header_panel.tsx`, `main_panel.tsx`
-- `designs/appbox-studio/ui/views/main_shell/shared/widgets/activity_panel.tsx`, `composer_panel.tsx`, `composer.tsx`, `design_viewer.tsx`, `footer_panel.tsx`, `mini_panel.tsx`, `timeline.tsx`, `widget_editor.tsx`
+- `designs/arxa-studio/ui/common/widgets/_panel.tsx`, `chrome.tsx`, `header_panel.tsx`, `main_panel.tsx`
+- `designs/arxa-studio/ui/views/main_shell/shared/widgets/activity_panel.tsx`, `composer_panel.tsx`, `composer.tsx`, `design_viewer.tsx`, `footer_panel.tsx`, `mini_panel.tsx`, `timeline.tsx`, `widget_editor.tsx`
 
 **Interfaces:**
 - Consumes: `inspectAttrs` from Task 1 (import from `ui/common/widgets/primitives.tsx`).
 
 - [ ] **Step 1:** For each file, import `inspectAttrs` and spread on the root element of every exported component. Role vocabulary (keep to these): `nav`, `hero`, `heading`, `label`, `text`, `action`, `list`, `list row`, `card`, `panel`, `toolbar`, `input`, `image`, `group`.
-- [ ] **Step 2:** These widgets are studio *chrome* — identity attributes are inert outside an armed iframe (the island only runs in screen renders), so no behavior change is expected in the shell. Confirm with `dart run appboxd/bin/appbox.dart lens check http://localhost:4319/` (console clean).
+- [ ] **Step 2:** These widgets are studio *chrome* — identity attributes are inert outside an armed iframe (the island only runs in screen renders), so no behavior change is expected in the shell. Confirm with `dart run arxa/bin/arxa.dart lens check http://localhost:4319/` (console clean).
 - [ ] **Step 3:** Commit — `git commit -m "feat: widget library emits inspect identity from inspectAttrs"`.
 
 ### Task 3: Inspect island — innermost target, ancestor chain, inference fallback
 
 **Files:**
-- Modify: `skills/appbox-designer/runtime/vendor/inspect.js` (SSOT — run the gate-skill check first; sync `.claude/` + `.kimi-code/` copies in the same commit)
+- Modify: `skills/arxa-designer/runtime/vendor/inspect.js` (SSOT — run the gate-skill check first; sync `.claude/` + `.kimi-code/` copies in the same commit)
 
 **Interfaces:**
 - Produces POST values to `/design/inspector/select`: existing fields **plus** `inferred` (`'1'`/absent) and `chain` — JSON string, outermost→innermost, `[{el, role, inferred}]` (each entry's `el` is the `data-el` name or synthesized name; `role` from dataset or heuristic).
@@ -128,14 +128,14 @@ const synthesize = (el) => ({
   Skip only: the island's own overlay nodes, `<body>`, `<html>`, `<script>`, `<style>`.
 - [ ] **Step 2: Ancestor chain.** Walk `el.parentElement` up to `<body>`; keep every element that has `data-el` **or** bears a role per `synthesize` heuristic worth showing (elements with `data-el` always; un-annotated ancestors only if they'd synthesize to something ≠ bare `group` OR they have `data-el` descendants — simplest correct filter: keep `data-el` ancestors + the immediate parent). Serialize outermost→innermost into `chain`. Include the hovered element itself as the last entry.
 - [ ] **Step 3: POST additions.** Add `inferred` and `chain` to the `values` object of the existing `htmx.ajax('POST','/design/inspector/select',…)` call. Overlay badge shows the synthesized name for inferred elements, tinted at reduced opacity (add a `.inferred` style to the overlay label, or inline `opacity:.6`).
-- [ ] **Step 4: Sync copies.** `cp skills/appbox-designer/runtime/vendor/inspect.js .claude/skills/appbox-designer/runtime/vendor/inspect.js && cp skills/appbox-designer/runtime/vendor/inspect.js .kimi-code/skills/appbox-designer/runtime/vendor/inspect.js`
+- [ ] **Step 4: Sync copies.** `cp skills/arxa-designer/runtime/vendor/inspect.js .claude/skills/arxa-designer/runtime/vendor/inspect.js && cp skills/arxa-designer/runtime/vendor/inspect.js .kimi-code/skills/arxa-designer/runtime/vendor/inspect.js`
 - [ ] **Step 5: Verify** — serve, open a screen tile with inspect armed, hover a bare `<p>` in any un-migrated screen: badge appears, POST fires (check server log / pane swap). Commit — `git commit -m "feat: inspect island infers identity for unannotated elements and reports ancestor chain"`.
 
 ### Task 4: Select handler + inspector pane breadcrumb
 
 **Files:**
-- Modify: `designs/appbox-studio/ui/views/main_shell/design/routes.design.js` (the `inspectorSelect` handler)
-- Modify: `designs/appbox-studio/ui/views/main_shell/design/inspector_pane.tsx`
+- Modify: `designs/arxa-studio/ui/views/main_shell/design/routes.design.js` (the `inspectorSelect` handler)
+- Modify: `designs/arxa-studio/ui/views/main_shell/design/inspector_pane.tsx`
 
 **Interfaces:**
 - Consumes: POST fields `inferred`, `chain` (Task 3).
@@ -166,8 +166,8 @@ const synthesize = (el) => ({
 ### Task 5: W7 gate rule — no anonymous text/interactive elements in surfaces
 
 **Files:**
-- Modify: `appboxd/lib/gate_design_widgets.dart`
-- Test: wherever W1–W6 tests live (locate with `grep -rn "gate_design_widgets" appboxd/test/` and follow the existing test pattern — same fixture style, red-first)
+- Modify: `arxa/lib/gate_design_widgets.dart`
+- Test: wherever W1–W6 tests live (locate with `grep -rn "gate_design_widgets" arxa/test/` and follow the existing test pattern — same fixture style, red-first)
 
 **Interfaces:**
 - Produces: rule **W7** — *in surface/view templates outside widget-library dirs (`ui/common/widgets/`, `ui/*/shared/widgets/`, `<surface>/widgets/`), a rendered HTML element that bears literal text content or is interactive (`button|a|input|select|textarea`) must carry widget identity: literal `data-el` attribute, a spread of `inspectAttrs(…)`, or be a library-widget invocation.* Failure message: `W7 <file>:<line> — wrap this <tag> in a library widget (Label/Heading/Txt/…) or spread inspectAttrs(...)`.
@@ -175,12 +175,12 @@ const synthesize = (el) => ({
 - [ ] **Step 1: Write the failing test** — fixture surface template containing `<span>Raw text</span>` fails with a W7 message naming file+line; the same content as `<Label>Raw text</Label>` and as `<span data-el="x">…</span>` passes.
 - [ ] **Step 2: Run it, confirm it fails** (`dart test` on the gate's test file).
 - [ ] **Step 3: Implement W7** in `gate_design_widgets.dart` following the W1–W6 shape (the file already parses template sources and builds the include graph — reuse its file-walk; scan JSX source lines, not rendered output). Detection is source-level: a lowercase-tag JSX element whose children include a non-whitespace text literal or `{t(` call, or whose tag is in the interactive set, without `data-el`/`inspectAttrs` in its attribute span. `// ponytail: line-regex scan like the sibling rules, not a JSX parser — upgrade only if false positives appear in practice`.
-- [ ] **Step 4: Run test to green.** Note: the full gate over `designs/appbox-studio` will (correctly) fail until Task 6 completes — the test fixtures are green, the studio tree is the migration backlog. Print the W7 count; it is Task 6's progress meter.
+- [ ] **Step 4: Run test to green.** Note: the full gate over `designs/arxa-studio` will (correctly) fail until Task 6 completes — the test fixtures are green, the studio tree is the migration backlog. Print the W7 count; it is Task 6's progress meter.
 - [ ] **Step 5: Commit** — `git commit -m "feat: W7 gate rule requires widget identity on text and interactive elements"`.
 
 ### Task 6: Migrate all studio surfaces to widget-first
 
-**Files:** every W7-failing template under `designs/appbox-studio/ui/` (47 surface files total; the W7 output from Task 5 is the authoritative worklist). Batch by directory:
+**Files:** every W7-failing template under `designs/arxa-studio/ui/` (47 surface files total; the W7 output from Task 5 is the authoritative worklist). Batch by directory:
 1. `ui/views/main_shell/design/**` (incl. `chat/`, `freeze/`, `prototype/`, `inspector_pane.tsx`)
 2. `ui/views/main_shell/build/**` (`screen_stub_view.tsx` keeps its hand-written `data-el` — already compliant)
 3. remaining `ui/views/**` and `ui/common/**` non-widget templates
@@ -189,15 +189,15 @@ const synthesize = (el) => ({
 - Consumes: `Label`, `Heading`, `Txt`, `inspectAttrs` (Task 1); W7 output (Task 5).
 
 - [ ] **Step 1 (per batch):** Replace raw text-bearing elements with `Label`/`Heading`/`Txt` (or spread `inspectAttrs` where a bespoke element is structurally necessary — e.g. elements whose tag/attrs the leaf widgets don't cover). Interactive elements get `inspectAttrs` with role `action`/`input`. Repeated intra-shell patterns that emerge → promote to `ui/views/main_shell/shared/widgets/` per W1 placement law, don't inline-copy.
-- [ ] **Step 2 (per batch):** `dart run appboxd/bin/appbox.dart design lint designs/appbox-studio` + run the W-gate — W7 count strictly decreases, W1–W6 stay green.
-- [ ] **Step 3 (per batch):** Visual regression — `appbox lens shoot` the affected routes at **every width in the active ladder** (read the ladder from config per skill rules); compare against pre-migration shots (shoot a baseline set before batch 1). Zero intended visual delta: this is a structural refactor.
+- [ ] **Step 2 (per batch):** `dart run arxa/bin/arxa.dart design lint designs/arxa-studio` + run the W-gate — W7 count strictly decreases, W1–W6 stay green.
+- [ ] **Step 3 (per batch):** Visual regression — `arxa lens shoot` the affected routes at **every width in the active ladder** (read the ladder from config per skill rules); compare against pre-migration shots (shoot a baseline set before batch 1). Zero intended visual delta: this is a structural refactor.
 - [ ] **Step 4 (per batch):** Commit — `git commit -m "refactor: migrate <batch> surfaces to widget-first inspect identity"`.
-- [ ] **Step 5 (final):** W7 count is 0 over `designs/appbox-studio`.
+- [ ] **Step 5 (final):** W7 count is 0 over `designs/arxa-studio`.
 
 ### Task 7: End-to-end verification
 
-- [ ] Serve: `dart run appboxd/bin/appbox.dart design serve designs/appbox-studio --port 4319` (background).
-- [ ] `dart run appboxd/bin/appbox.dart design lint designs/appbox-studio` — clean; W-gate (W1–W7) — green.
-- [ ] `dart run appboxd/bin/appbox.dart lens check http://localhost:4319/` — console clean.
+- [ ] Serve: `dart run arxa/bin/arxa.dart design serve designs/arxa-studio --port 4319` (background).
+- [ ] `dart run arxa/bin/arxa.dart design lint designs/arxa-studio` — clean; W-gate (W1–W7) — green.
+- [ ] `dart run arxa/bin/arxa.dart lens check http://localhost:4319/` — console clean.
 - [ ] Manual/probe pass in the design shell viewer with a tile's inspect armed: (1) hover any text → labelled badge + pane card; (2) hover a button → `action` card with breadcrumb to its screen root; (3) crumb click re-locks; (4) an intentionally-raw element in a scratch fixture shows `inferred`; (5) lock survives a morph; (6) pin still POSTs `/design/chat/context/element`.
 - [ ] Commit anything outstanding; hand back for review (the plan author reviews — user instruction).

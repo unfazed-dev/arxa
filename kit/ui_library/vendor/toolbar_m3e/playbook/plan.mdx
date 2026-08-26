@@ -61,7 +61,7 @@ The fork contract has two halves: **WHY** the patch exists (the root `pubspec.ya
     <div class="diagram-muted">umbrella re-export</div>
     <div class="diagram-node">toolbar_m3e (fork)</div>
     <div class="diagram-muted">lib/src/toolbar_action_m3e.dart</div>
-    <div class="diagram-node">appbox_kit</div>
+    <div class="diagram-node">arxa_kit</div>
     <div class="diagram-muted">Kit* wrappers</div>
   </div>
   <div class="diagram-arrow">↓ fork adds real dep</div>
@@ -181,7 +181,7 @@ The barrel `lib/toolbar_m3e.dart` exports four files. The fork only changes the 
 
 <Callout id="toolbar-wiring-callout" tone="info">
 
-Hosts almost never import `package:toolbar_m3e/...` directly. The fork is pulled in **transitively** via `m3e_collection` (the umbrella that re-exports every M3E widget), and most apps reach it through `appbox_kit`'s `Kit*` wrappers. The root `dependency_overrides` `path:` entry is the only thing that activates the patch — `m3e_collection`'s own version constraint is unchanged.
+Hosts almost never import `package:toolbar_m3e/...` directly. The fork is pulled in **transitively** via `m3e_collection` (the umbrella that re-exports every M3E widget), and most apps reach it through `arxa_kit`'s `Kit*` wrappers. The root `dependency_overrides` `path:` entry is the only thing that activates the patch — `m3e_collection`'s own version constraint is unchanged.
 
 </Callout>
 
@@ -198,7 +198,7 @@ Hosts almost never import `package:toolbar_m3e/...` directly. The fork is pulled
     <div class="diagram-node">m3e_collection</div>
     <div class="diagram-muted">umbrella</div>
     <div class="diagram-muted">re-exports</div>
-    <div class="diagram-node">appbox_kit</div>
+    <div class="diagram-node">arxa_kit</div>
     <div class="diagram-muted">Kit* wrappers</div>
   </div>
   <div class="diagram-arrow">↓ root override redirects</div>
@@ -264,7 +264,7 @@ When bumping upstream (`fab_m3e`, `navigation_rail_m3e`, `split_button_m3e`, or 
 3. **Diff** each patched file against the new upstream release of the same path.
 4. **Re-apply** each `// Patched (vendored fork)` / `// Fork patch:` / `// PATCH` block by hand. Do NOT copy upstream over the fork blindly — the markers are your only map of what to preserve. For this fork, also re-add the `icon_button_m3e: ^0.2.1` line to `pubspec.yaml` (see §5b).
 5. **Update** the root `pubspec.yaml` override comment if the WHY or the patched-file list changed.
-6. **Run** the fork's `flutter test` in `packages/<name>/`, then run the consuming showcase (`appbox_kit_showcase`) to confirm the patched behaviour still renders.
+6. **Run** the fork's `flutter test` in `packages/<name>/`, then run the consuming showcase (`arxa_kit_showcase`) to confirm the patched behaviour still renders.
 
 ### Override hygiene (shared)
 

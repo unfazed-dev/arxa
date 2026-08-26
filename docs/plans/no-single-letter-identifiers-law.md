@@ -6,7 +6,7 @@ Date: 2026-08-09. Session: rung→viewport sweep follow-up.
 
 1. **Full ban** — including `t` (i18n convention loses; zero exceptions for invented names).
 2. **API members too** — `Helpers.t` renames; runtime contract change, not just bindings.
-3. **Sweep scope** — designs/appbox-studio-v2 (15 files, list below) **and** the skill SSOT
+3. **Sweep scope** — designs/arxa-studio-v2 (15 files, list below) **and** the skill SSOT
    (eject runtime, hello-hda example, starter-partials, ui-recipes).
 4. **Law + mechanical gate** — prose in DESIGN-ARCHITECTURE.md plus a grep-based check.
 5. **Carve-out** — medium-native tokens are exempt: the HTML `<a>` element, CSS single-letter
@@ -17,10 +17,10 @@ Date: 2026-08-09. Session: rung→viewport sweep follow-up.
 
 - Mechanical gate script `~/.agents/skills/consultant/scripts/consult.sh` **does not exist**
   on this machine; manual check performed instead.
-- SSOT = `skills/appbox-designer` (git-tracked). `.claude/skills/appbox-designer` is an
+- SSOT = `skills/arxa-designer` (git-tracked). `.claude/skills/arxa-designer` is an
   untracked content-identical copy the harness loads (delta: `.claude-flow` only).
-  `~/.agents/skills/app-box-designer` is a **dangling symlink** → nonexistent
-  `skills/app-box-designer`.
+  `~/.agents/skills/arxa-designer` is a **dangling symlink** → nonexistent
+  `skills/arxa-designer`.
 - Procedure: edit SSOT, then rsync SSOT → `.claude` copy. Debt: repoint or remove the
   dangling `~/.agents` symlink (surface to user; do not silently fix).
 - Advisor unavailable: consult-z API balance exhausted (HTTP 429), noted per conventions.
@@ -53,7 +53,7 @@ services: {studio_dashboard,studio_startup,studio_application}_services/facades/
 2. Rename runtime contract in SSOT eject runtime; sweep skill templates.
 3. Sweep v2 files.
 4. Law paragraph in DESIGN-ARCHITECTURE.md (SSOT).
-5. Gate: `skills/appbox-designer/runtime/eject/check_naming.sh` (or wire into existing
+5. Gate: `skills/arxa-designer/runtime/eject/check_naming.sh` (or wire into existing
    lint if found) — regex over generated js/tsx, vendor + node_modules excluded.
-6. rsync SSOT → `.claude/skills/appbox-designer`.
+6. rsync SSOT → `.claude/skills/arxa-designer`.
 7. Verify: gate passes on v2 + hello-hda; design server smoke (`h.t` gone, pages render).

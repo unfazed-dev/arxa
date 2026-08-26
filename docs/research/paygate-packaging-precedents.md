@@ -21,7 +21,7 @@ tokens/day). Free tiers universally hand back a *vendor-subdomain-hosted, waterm
 — good enough to evaluate, not to ship.
 
 FlutterFlow is the closest structural analogue and it is instructive in the opposite direction from what
-the appbox brief assumes: web publishing *is* free, but **code download costs $39/mo** — and that gate is
+the arxa brief assumes: web publishing *is* free, but **code download costs $39/mo** — and that gate is
 its single most-cited criticism after the Aug 2025 repricing.
 
 Two documented backlashes matter: Figma's Dev Mode (free Inspect removed, ~51k-view forum thread) and
@@ -102,7 +102,7 @@ No code export at all — pure lock-in.
 Source: <https://www.flutterflow.io/pricing>
 
 **Line drawn:** free tier can *publish web* but cannot *take the code anywhere*. Portability is the single
-paid trigger. This is the exact inverse of the appbox premise.
+paid trigger. This is the exact inverse of the arxa premise.
 
 ### Builder.io — *seat-priced, Fusion vs Publish split*
 
@@ -173,7 +173,7 @@ correction to the brief's framing. The gate is almost never on *design*; it is o
 4. **Generation/usage volume** — v0 7 msg/day, Lovable 5 credits/day, Bolt 300K tokens/day, Framer credits
 5. **Branding** — Bolt watermarks free sites; Webflow's "Made in Webflow" badge removal is a paid Site plan
 
-**No surveyed product gives away unlimited, production-grade, portable output on its free tier.** Appbox's
+**No surveyed product gives away unlimited, production-grade, portable output on its free tier.** Arxa's
 premise is therefore *not* the dominant pattern — it is a deliberate deviation. That may still be right
 (it's a strong wedge against exactly the grievance below), but it should be adopted knowingly, not on the
 belief that Webflow does it.
@@ -196,7 +196,7 @@ criticism is that the headline "free" hides that exporting your own work costs �
 Sources: <https://community.flutterflow.io/discussions/post/new-pricing-plan-ripoff-or-not-g0fpjgL1nRZG919>,
 <https://community.flutterflow.io/discussions/post/what-do-you-think-about-new-pricing-plan-OOzHxh2aEJrSDME>
 
-**Lesson for appbox:** the failure mode is *taking back*, not *charging*. Whatever is free at v1 must be
+**Lesson for arxa:** the failure mode is *taking back*, not *charging*. Whatever is free at v1 must be
 treated as permanently free — write it into the licence, not just the pricing page. A free tier that is
 *narrow but never shrinks* survives; a generous one that later contracts produces Figma-grade damage.
 
@@ -212,19 +212,19 @@ export licensing — is in [`monetization-and-licensing.md`](./monetization-and-
 codebase is open. Client-side licence checks against an open Dart CLI are a speed bump, not a control. The
 productive question is not *"how do we stop a patched binary?"* but **"what does the server necessarily
 hold?"** — i.e. what capability is structurally impossible to fork because it is not on the user's machine
-in the first place. For appbox those are:
+in the first place. For arxa those are:
 
 | Capability | Where it must live | Forkable? |
 |---|---|---|
 | Local scaffold + web build (htmx output) | User's machine | Yes — accept this, make it free |
 | Shorebird **patch signing key + patch CDN** | Shorebird's servers (resold) | No — structural |
 | App Store / Play Store credentials & submission | Vendor + store APIs | No — structural |
-| Vercel/Cloudflare deploy tokens, DNS, env-var management | Appbox-managed accounts | No — structural |
+| Vercel/Cloudflare deploy tokens, DNS, env-var management | Arxa-managed accounts | No — structural |
 | Provisioning of the above accounts (MCP account provisioning) | Server | No — structural |
 | Build artifact attestation / release history / rollback state | Server | No — structural |
 
 This is the Expo EAS / Codemagic lesson: their paywall is not enforced, it is *architectural* — the build
-happens in their cloud, so there is nothing to crack. Appbox's equivalent is that **deploy management is a
+happens in their cloud, so there is nothing to crack. Arxa's equivalent is that **deploy management is a
 server-held relationship (keys, credentials, release state), not a local feature flag.** Design the paid
 tier around what genuinely cannot run locally, and the licence check stops being the load-bearing part.
 
@@ -243,8 +243,8 @@ activation-server-retirement risk — but not these):
   because the token is only useful for calling server endpoints that do the paid work. Offline behaviour is
   the trade-off: the tool is dead without network, so this suits capabilities that are inherently online
   (deploy, patch publish, store submission) and is wrong for anything the user expects to work on a plane.
-  For appbox this is the natural mechanism for the Ship tier — and it composes with §3's table, because the
-  token gates access to credentials appbox holds, not to a local code path.
+  For arxa this is the natural mechanism for the Ship tier — and it composes with §3's table, because the
+  token gates access to credentials arxa holds, not to a local code path.
 - **Feature-flagged binaries.** One binary ships with paid code paths present but disabled behind a flag the
   licence check sets. Cheapest to build and the *weakest* — for an open Dart codebase it is a single-constant
   patch, and shipping the paid code to unlicensed users hands forkers the implementation. Only defensible for
@@ -259,7 +259,7 @@ and should be re-checked before use.
 
 ## Q4 — How build/deploy vendors tier themselves (fresh 2026-08-03)
 
-### Shorebird (directly relevant — appbox would resell this)
+### Shorebird (directly relevant — arxa would resell this)
 
 Metered on **patch installs** (a successful update applied on a device). All plans include unlimited apps
 and releases; tiers differ on installs, support channel, roles, and enterprise features.
@@ -281,8 +281,8 @@ Admin/Developer → +Viewer → +App Manager; support Community Discord → Emai
   are billed only on successful download **and** application. *"Users always skip to the latest patch. If you
   send two patches before a user updates, you're only billed for one patch install for that user."*
 - Billing is tied to the **organization owner's account**, not to each organization — one account can own
-  multiple orgs and all inherit the owner's plan. (Relevant if appbox provisions Shorebird orgs on behalf of
-  customers: a single appbox-owned account would pool every customer's installs onto one plan.)
+  multiple orgs and all inherit the owner's plan. (Relevant if arxa provisions Shorebird orgs on behalf of
+  customers: a single arxa-owned account would pool every customer's installs onto one plan.)
 - Self-service tops out around **2.5 million patches/month**; above that, or for invoice billing, tax support,
   alternative payment methods or custom procurement, Enterprise is required.
 
@@ -294,10 +294,10 @@ billing docs render or omit prices, so those came via web-search relay of Shoreb
 Note also that the pricing table's Business tier (1M installs) and the docs' 2.5M self-service ceiling leave
 an unexplained band — treat the top of the self-service range as unresolved.
 
-**Implication for appbox margin:** Shorebird's free 5,000 installs/mo is a hard cap with no overage. Any
-appbox tier that promises patching must either sit on top of a customer's own Shorebird account (pass-through)
+**Implication for arxa margin:** Shorebird's free 5,000 installs/mo is a hard cap with no overage. Any
+arxa tier that promises patching must either sit on top of a customer's own Shorebird account (pass-through)
 or absorb $1/2,500-installs COGS. A resold-at-flat-rate model has unbounded downside above the included cap
-unless appbox mirrors the same metered overage.
+unless arxa mirrors the same metered overage.
 
 ### Expo EAS
 
@@ -333,7 +333,7 @@ Pure usage, no capability gating.
 Source: <https://codemagic.io/pricing/>
 
 Codemagic's CodePush pricing is **identical to Shorebird's overage rate** ($1/2,500 installs) — that is the
-market clearing price for code-push delivery, and it caps what appbox can mark up.
+market clearing price for code-push delivery, and it caps what arxa can mark up.
 
 ### Vercel (deploy target)
 
@@ -364,15 +364,15 @@ credentials`.** In every case the free artifact lives at a vendor subdomain the 
 changes hands the moment the user wants (a) their own domain, (b) their own store listing, or (c) commercial
 traffic. The "managed" half is *credential custody*, not file delivery.
 
-For appbox this maps cleanly and favourably: htmx output is static files the user can rsync anywhere — that
-costs appbox nothing and is a genuine differentiator against Framer/FlutterFlow. What appbox sells is not
+For arxa this maps cleanly and favourably: htmx output is static files the user can rsync anywhere — that
+costs arxa nothing and is a genuine differentiator against Framer/FlutterFlow. What arxa sells is not
 the bytes but **the deploy relationship**: provisioned Vercel/Cloudflare accounts, DNS + domain wiring, env
 var and secret management, deploy history and rollback, preview environments, and — on mobile — Shorebird
 patch signing and store submission. That is the same structural paywall as §3's table.
 
-One caution: if appbox's free web output is *deployed by appbox* to an appbox-managed Cloudflare/Vercel
-account, appbox eats the bandwidth and Vercel's non-commercial Hobby ToS applies. "Free unlimited production
-web output" must therefore mean **free unlimited local build + free export**, with any appbox-hosted preview
+One caution: if arxa's free web output is *deployed by arxa* to an arxa-managed Cloudflare/Vercel
+account, arxa eats the bandwidth and Vercel's non-commercial Hobby ToS applies. "Free unlimited production
+web output" must therefore mean **free unlimited local build + free export**, with any arxa-hosted preview
 explicitly capped. Otherwise the free tier has unbounded COGS.
 
 ---
@@ -396,7 +396,7 @@ explicitly capped. Otherwise the free tier has unbounded COGS.
 
 ---
 
-## Three candidate tier structures for appbox
+## Three candidate tier structures for arxa
 
 All three keep the brief's commitment — **local design + local web build + export are free forever** — and
 differ in where the paid boundary sits. All three should carry a written "free-tier ratchet" promise (see
@@ -409,7 +409,7 @@ Q2 lesson): capabilities free at v1 stay free, additions may be tiered.
 | Tier | Price (indicative) | Contents |
 |---|---|---|
 | **Free** | $0 | Unlimited local design + scaffold; unlimited production htmx/web builds; full source export; unlimited local Flutter debug builds; manual deploy anywhere (user's own Vercel/Cloudflare/rsync) |
-| **Ship** | ~$25/mo | Managed deploy shell: appbox-provisioned Vercel/Cloudflare, DNS + domain wiring, env/secret management, deploy history + rollback, preview environments; 1 seat; up to N apps |
+| **Ship** | ~$25/mo | Managed deploy shell: arxa-provisioned Vercel/Cloudflare, DNS + domain wiring, env/secret management, deploy history + rollback, preview environments; 1 seat; up to N apps |
 | **Ship+Mobile** | ~$60/mo | Above + store submission automation + Shorebird patching passed through at cost + release/patch dashboards |
 | **Team** | ~$40/seat/mo | Above + shared projects, roles, audit trail, SSO |
 
@@ -424,14 +424,14 @@ sharply better than manual, not by crippling the free path.
 
 | Tier | Price | Contents |
 |---|---|---|
-| **Free** | $0 | Everything web, including managed web deploy to appbox-provisioned hosting, capped at N sites / X GB bandwidth/mo |
+| **Free** | $0 | Everything web, including managed web deploy to arxa-provisioned hosting, capped at N sites / X GB bandwidth/mo |
 | **Mobile** | ~$39/mo | Flutter builds, store submission, Shorebird patching to 25k installs/mo, then $1/2,500 |
 | **Business** | ~$150/mo | Higher install/bandwidth caps, concurrency, team seats, SSO, audit logs |
 
 **Rationale.** Treats web as pure acquisition and mobile as the monetisable surface — defensible because
 mobile has real COGS (store credentials, patch CDN, build machines) that web largely does not. Mirrors
-Expo/Shorebird's volume-metered shape, which is the least-resented model surveyed. Risk: appbox eats web
-hosting COGS on the free tier with no natural cap, and Vercel Hobby's non-commercial clause means appbox
+Expo/Shorebird's volume-metered shape, which is the least-resented model surveyed. Risk: arxa eats web
+hosting COGS on the free tier with no natural cap, and Vercel Hobby's non-commercial clause means arxa
 must use its own paid infrastructure for customer sites. Only viable with hard, visible bandwidth caps.
 
 ### Candidate C — "Seat + usage hybrid" (Figma/Expo blend)
@@ -443,7 +443,7 @@ must use its own paid infrastructure for customer sites. Only viable with hard, 
 | **Business** | ~$50/user/mo + usage | Roles, branches/environments, audit logs, SSO, priority queue, higher included credit |
 
 **Rationale.** Included-credit-plus-overage is the shape both Expo ($45/$225 build credit) and Vercel ($20
-credit) converged on, and it makes appbox's Shorebird COGS strictly pass-through rather than a margin risk —
+credit) converged on, and it makes arxa's Shorebird COGS strictly pass-through rather than a margin risk —
 the single biggest financial hazard identified in §4. Predictable unit economics. Risk: usage-based billing
 is the hardest to communicate and the most common source of "surprise bill" churn; needs spend caps and
 alerts from day one (Vercel and Framer both ship these, which is a tell).

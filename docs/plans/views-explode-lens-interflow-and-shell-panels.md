@@ -157,7 +157,7 @@ mirrors that split rather than inventing one.
 ### E6 — project surfaces are project-owned
 
 Portalo's screen partials live at
-`~/.appbox/projects/portalo/design/surfaces/*.html` (12 files), reachable only
+`~/.arxa/projects/portalo/design/surfaces/*.html` (12 files), reachable only
 through `POST /__project_write`. They are **not** in the repo. The generic
 `screen_stub_view.html` authors only 3 `data-el`s; every portalo element comes
 from those project files.
@@ -245,7 +245,7 @@ cannot fail when it matters.
 
 ### Slice 3 — two-axis state/feedback contract (D2 + D3)
 
-**`appboxd/lib/intake.dart`**
+**`arxa/lib/intake.dart`**
 
 - close the `states` vocabulary: `loading | empty | error`. Unknown values are
   a validation **error** naming the allowed set.
@@ -258,7 +258,7 @@ cannot fail when it matters.
 - `emitFlows` derives `feedback` on mutation edges, stamped `inferred: true`
 - brief renders both as `[inferred]` so the confirm step has something to confirm
 
-**`appboxd/lib/emit_structure.dart`** — validate and pass through both keys.
+**`arxa/lib/emit_structure.dart`** — validate and pass through both keys.
 
 **`design_viewer.html`** — the flows connector renders the feedback chip
 (`✓ Order placed`) under the trigger label.
@@ -266,7 +266,7 @@ cannot fail when it matters.
 **Check** — `dart test`: (a) an out-of-vocabulary state is rejected with the
 allowed set in the message; (b) a list surface with no declared states emits
 `[loading, empty]` + `statesProvenance: inferred`; (c) `feedback.kind` outside
-the enum is rejected. Plus `appbox gate intake --project portalo` stays PASS.
+the enum is rejected. Plus `arxa gate intake --project portalo` stays PASS.
 
 ### Slice 4 — the views explode lens (D4 + D5)
 
@@ -376,11 +376,11 @@ visible and clickable; assert build evidence (`static: true`) renders
   grid; the two-axis state/feedback contract; inter-flow hand-off.
 - `ui/common/_integration_viewer.md` — the `v` contract gains `title`,
   `actions`, `foot`, `rows[].explode`, `flows[].handoffs`.
-- `skills/appbox-intake/SKILL.md` — states vocabulary + derived-and-inferred
+- `skills/arxa-intake/SKILL.md` — states vocabulary + derived-and-inferred
   rule.
-- `skills/appbox-designer/SKILL.md` + `references/ui-recipes.md` — feedback on
+- `skills/arxa-designer/SKILL.md` + `references/ui-recipes.md` — feedback on
   edges, the explode lens.
-- `skills/appbox-story-mapper` — carries `states`/`feedback` through (it was
+- `skills/arxa-story-mapper` — carries `states`/`feedback` through (it was
   named in the last plan's docs slice and **not** edited; still outstanding).
 
 ---
@@ -388,7 +388,7 @@ visible and clickable; assert build evidence (`static: true`) renders
 ## Slice 8 — project data (operator-approved, both)
 
 Both were held back as OPEN items and both were approved. They mutate
-`~/.appbox/projects/portalo/` and go through `POST /__project_write` only —
+`~/.arxa/projects/portalo/` and go through `POST /__project_write` only —
 never a direct file write, never a hand-edit of a generated fixture.
 
 **8a — unscramble `flow-browse-buy` (E2).** Slice 2 stops *future* drags from
@@ -421,10 +421,10 @@ portalo.home     ["data"]            portalo.account  ["auth","data"]
 ```
 
 Every name is validated against `config/kit-registry.json` by
-`appbox emit structure`; a wrong name fails the build rather than rendering a
+`arxa emit structure`; a wrong name fails the build rather than rendering a
 plausible lie.
 
-**Check** — `appbox gate intake --project portalo` stays PASS; a probe asserts
+**Check** — `arxa gate intake --project portalo` stays PASS; a probe asserts
 the flows lens renders the corrected chain and that `portalo.checkout`'s
 explode column shows `kit/payments` rather than `—`.
 
@@ -466,7 +466,7 @@ GREEN  restored                         -> ALL CHECKS PASSED
 Confirmed separately: `__project_write` preserved everything it was not asked
 to change — `element: "button:Continue"` still on the auth→home edge, and 8/10
 `states` arrays intact (`portalo.splash` and `portalo.account` never had any,
-which matches the pre-write registry exactly). `dart run bin/appbox.dart docs`
+which matches the pre-write registry exactly). `dart run bin/arxa.dart docs`
 reports **94 pre-existing warnings** and 2 orphan docs; this plan file is
 likely a third. Not addressed — unrelated to this work.
 
@@ -485,7 +485,7 @@ reasoning:**
    and the prose-masked case (`payments`) go RED, and restore goes GREEN.
 2. *Wiring that check broke the selftest's own green baseline.* It resolved the
    repo root as `dirname(dirname(skill))`, true only for the real
-   `<repo>/skills/appbox-designer` layout — `design_selftest_test.dart` builds a
+   `<repo>/skills/arxa-designer` layout — `design_selftest_test.dart` builds a
    minimal clean skill in a system temp dir, so the guess landed in
    `/var/folders` and two tests failed (baseline exit 1; negative mode 65
    unproven, a cascade of the same cause). Fixed by walking up from the skill
@@ -515,7 +515,7 @@ the tick that `kind` supplies at render. Proven red by making the facade pass
 
 **A latent defect found by a subagent, outside the plan, that breaks two things
 this plan shipped.** `emitFlows`'s declared-edge passthrough
-(`appboxd/lib/intake.dart`) rebuilds each edge as
+(`arxa/lib/intake.dart`) rebuilds each edge as
 `{from, to, trigger, action, feedback}` — **`element` is absent**, and
 `intake_test.dart` had zero coverage for it. So the next intake re-emit deletes
 portalo's `element: "button:Continue"`, which silently degrades `flowwalk.js`
@@ -538,7 +538,7 @@ unknowns by name: the spread stops drops, the closed set stops garbage riding in
 on the spread. Neither works alone — and note the closed set would NOT have
 caught either original drop, because `element` and `feedback` were
 validated-then-forgotten, which is why the spread is the actual fix. The
-published schema (`skills/appbox-intake/intake.schema.json`) now matches
+published schema (`skills/arxa-intake/intake.schema.json`) now matches
 `edgeKeys` exactly, with the pairing requirement written into its own
 `description` because nothing loads it and drift there is invisible.
 

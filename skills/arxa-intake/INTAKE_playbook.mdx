@@ -1,0 +1,49 @@
+<Callout id="header" tone="info">
+# arxa-intake — Per-Skill Playbook
+
+`arxa-intake` · status: **active**
+
+**Role (one line):** turn a client conversation into a validated answers document plus a registry seeded at the design root — by eliciting, never by generating. Intake is the head of one chain; `arxa emit story-map` is its tail and writes the unified `docs/intake/brief.md`.
+
+**Scope of this document:** lets a human OR an LLM (or the desktop wizard) drive the intake engine without reading the skill source. Folded from `SKILL.md`.
+
+**Pipeline position:** stage 1 of the skill chain — upstream `arxa-orchestrator` (stage Ø front door, optional) or stage 0 `arxa-story-mapper` / `arxa-moodboarder` (optional), downstream `arxa-story-mapper` (the chain's tail, via `--answers`) then `arxa-designer` (brief + registry seed). Full chain, stage numbers, per-stage artifacts: `docs/research/pipeline-map.md` §1.
+
+## Table of contents
+
+0. Header & TOC · 1. Overview & role · 2. Inputs · 3. Procedure · 4. Outputs · 5. Rules · 6. References
+
+</Callout>
+
+### Overview & role
+
+Intake elicits; it does not generate (architecture §22). A phase that *writes* the brief produces confident fiction — requirements nobody asked for, stated with the authority of ones they did. Intake asks and records; where it must infer, it marks the inference explicitly. The brief is the client's words, and that is its only value. This is the single engine both the headless phase and the desktop wizard drive — one engine, so the two front ends cannot disagree. Optional: a hand-written brief is valid input, and a first-run buyer skips intake and still reaches the showcase app.
+
+### Inputs
+
+- **Either** an answers document (JSON conforming to `skills/arxa-intake/intake.schema.json`): one object per field (`product`, `audience`, `appMustDo`, `existingSystems`, `targets`, `brand`, `constraints`, `outOfScope`, `surfaces`), each carrying `value` + `provenance` (`client` | `founder` | `inferred`). Optional groups: `direction` (`{adjectives: [...], avoids: [...]}` — the design direction), `contentAnchors` (real content examples), `locales` (locale codes, rendered after Targets in the brief), and per-surface `states` (UI state names, carried into the registry seed and the brief's surface table).
+- **Or** a hand-written `brief.md` (plan 10.7) — the ideal case, already the client's words.
+
+### Procedure
+
+Elicit the field set with the client or founder; capture verbatim, rephrase nothing; where the client was silent, mark the field `inferred` with a placeholder (never an invented value). **One question at a time** — ask, wait, record, then next; attach a recommendation to every closed question (recommended option first, one sentence of tradeoff — the `arxa-cicd` grill pattern) and use `ask_user_question` for closed picks; a web search may inform your next question about an unfamiliar domain/brand, but search results are never `client` provenance (confirm with the client, or record `inferred`). Ask, beyond the core fields:
+
+- **Audience (JTBD):** "Finish this sentence for each kind of user — *When [situation], I want [motivation], so I can [outcome]*." Record the sentence verbatim.
+- **Design direction:** "Which three-to-five adjectives should the design feel like? Which should it deliberately avoid?" → `direction: {adjectives: [...], avoids: [...]}`.
+- **Content anchors:** "Give me real examples of the content this app shows — actual names, listings, messages, numbers." → `contentAnchors`.
+- **Locales:** "Which languages must the app ship in, and which is the default?" → `locales` (rendered after Targets in the brief).
+- **Per-surface states:** for each named surface, "Which UI states must this screen cover — loading, empty, error, offline, …?" → the surface's `states` list, carried into the registry seed and the brief's surface table.
+
+Author the answers document; each named surface is `{id, label, shell, provenance}` (plus optional `states`) with `id` = `<shell>.<short>` — do not set `comp` or `surface`. Emit: `arxa intake emit --answers <f> --project <name>` (the Dart port of the archived `intake.py`) validates the answers and seeds `registry.json` (one entry per surface, `surface` null, `comp` derived) at the **design root** — `designs/<app>/models/screens_model/registry.json`, or structure.json's `"registry"` field; `docs/intake/registry.json` is only the fallback when no design root exists. The unified `docs/intake/brief.md` is written by the chain's tail — `arxa emit story-map --answers <f>` (intake sections + releases + the epic/feature/story hierarchy + the surface inventory, every `inferred` field visibly marked). Validate-only while authoring: `arxa intake validate <f>`. Hand-written brief: `arxa intake seed --brief docs/intake/brief.md` derives the registry seed from the brief's surface table without rewriting a word; a brief with no table yields an empty seed (not an error). Output paths are overridable via `--brief-out` / `--registry-out` or `INTAKE_BRIEF_OUT` / `INTAKE_REGISTRY_OUT`. Without `--project` the emit now **refuses** unless `--brief-out`/`INTAKE_BRIEF_OUT` is given (the old default silently overwrote `<repoRoot>/docs/intake/brief.md`). Client strings are markdown-escaped by the emitter — record verbatim. Invalid input writes nothing.
+
+### Outputs
+
+The seeded `registry.json` at the design root (`designs/<app>/models/screens_model/registry.json`, or structure.json's `"registry"` field; keys exactly `{id, label, shell, comp, surface}` plus any elicited `states`, `surface` null everywhere) and — via the chain tail `arxa emit story-map` — the unified `docs/intake/brief.md` (provenance-marked; `inferred` fields flagged; `## Surface inventory`, and `## Layout template` when a template was picked). These are the inputs to `arxa-designer`; the traceability gate (plan 10.6, `arxa gate intake` — pure Dart, `arxa/lib/gate_intake.dart`) then asserts every registry entry traces to a brief requirement and back, and that the brief carries those sections.
+
+### Rules
+
+Elicit, do not generate — no views, viewmodels, routes, copy, or layouts; that is the next phase. Provenance is the whole contract: there is no fourth value, and "guessed"/"assumed"/"default" are all `inferred`. Never record a `client` field the client did not state — that manufactures authority the brief does not have. Never bind a `surface` — intake names; design binds, and a non-null seed surface means intake did design's job. Keep `arxa intake --self-test` (and `arxa/test/intake_test.dart`) green when you change the engine; it is the proof the guardrail holds (negatively: no invented entries, every surface null, every inference marked).
+
+<!-- kb:begin -->
+### References
+<!-- kb:end -->

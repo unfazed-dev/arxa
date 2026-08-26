@@ -1,4 +1,4 @@
-# 11 — `appbox-deployer` and gate 3
+# 11 — `arxa-deployer` and gate 3
 
 **Goal.** Ship through the already-wired deploy kit, behind the strictest human
 gate in the product.
@@ -9,7 +9,7 @@ gate in the product.
 
 `kit/deploy` is **pure Dart and standalone** (*"no flutter, stacked, or
 stacked_kit dependency"*), registry `phase: stable`, with a
-`bin/appbox_kit_deploy.dart` entry point and a `doctor(config)` preflight.
+`bin/arxa_kit_deploy.dart` entry point and a `doctor(config)` preflight.
 
 | target | status |
 |---|---|
@@ -19,13 +19,13 @@ stacked_kit dependency"*), registry `phase: stable`, with a
 | `vercel` | **stub — throws `UnimplementedError`** |
 
 **Why this is the right integration:** external CLIs run through a
-`AppBoxKitProcessRunner` port, so a scripted runner asserts **every command shape with
+`ArxaKitProcessRunner` port, so a scripted runner asserts **every command shape with
 no toolchain in CI**. A deploy stage normally cannot be self-tested — no
 credentials, no signing identity, no shorebird install. This one can.
 
 ## Steps
 
-- [x] **11.1** Wire `skills/appbox-deployer/` over the vendored deploy kit.
+- [x] **11.1** Wire `skills/arxa-deployer/` over the vendored deploy kit.
       Registry says `hasSkill: false` for every kit — this is the first phase
       skill of its kind, so there is no in-kit prior art to copy. Follow the
       stage contract: one module, a self-test, JSON emit.
@@ -46,7 +46,7 @@ credentials, no signing identity, no shorebird install. This one can.
 
 ## Done-when
 
-1. `appbox-deployer` runs fastlane, shorebird and Cloudflare Pages command
+1. `arxa-deployer` runs fastlane, shorebird and Cloudflare Pages command
    shapes under a scripted runner, asserted exactly.
 2. `vercel` is not offered.
 3. Gate 3 refuses to pass without a confirmation naming all three of target,

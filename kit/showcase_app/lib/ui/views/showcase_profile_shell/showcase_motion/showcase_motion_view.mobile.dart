@@ -3,7 +3,7 @@
 /// actions on the viewmodel. The view holds no business logic — swap the
 /// viewmodel for another and this file stays unchanged.
 ///
-/// This is the user interface for the motion demo — every appbox_kit_motion
+/// This is the user interface for the motion demo — every arxa_kit_motion
 /// feature on one pushed surface: route-driven wake/set-down (the route's own
 /// animation is the timeline), spec presets with a master switch, manual
 /// replay, the flutter_animate adapter, and a gesture-driven scrub card. The
@@ -47,12 +47,12 @@
 library;
 
 import 'package:flutter/material.dart';
-import 'package:appbox_kit_motion/appbox_kit_motion.dart';
-import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
-import 'package:appbox_kit_showcase_app/ui/widgets/common/showcase_tabs_shared/widgets.dart';
-import 'package:appbox_kit_showcase_app/ui/widgets/showcase_profile_widgets/widgets.dart';
+import 'package:arxa_kit_motion/arxa_kit_motion.dart';
+import 'package:arxa_kit_ui_library/arxa_kit_ui_library.dart';
+import 'package:arxa_kit_showcase_app/ui/widgets/common/showcase_tabs_shared/widgets.dart';
+import 'package:arxa_kit_showcase_app/ui/widgets/showcase_profile_widgets/widgets.dart';
 
-import 'package:appbox_kit_showcase_app/ui/views/showcase_profile_shell/showcase_motion/showcase_motion_viewmodel.dart';
+import 'package:arxa_kit_showcase_app/ui/views/showcase_profile_shell/showcase_motion/showcase_motion_viewmodel.dart';
 
 class ShowcaseMotionViewMobile
     extends ViewModelWidget<ShowcaseMotionViewModel> {
@@ -67,14 +67,14 @@ class ShowcaseMotionViewMobile
     // the slide channel alone; every other child keeps the full spec, so the
     // demo still shows the fade.
     final glassSafeSpec = viewModel.spec.copyWith(fade: false);
-    return AppBoxKitChromeScaffold(
+    return ArxaKitChromeScaffold(
       // Pushed route on THE chrome scaffold, not a hand-assembled Scaffold +
       // boxed bar: the glass tier now floats native chrome over a full-bleed
       // body, so the list culls at the physical screen edge instead of at a
       // mid-screen bar seam (law rule 4). The native back button is lawful in
       // the leading slot under rule 5's interactive-bar-controls carve-out.
-      leading: AppBoxKitNativeIconButton(
-        glyph: AppBoxKitGlyphs.back,
+      leading: ArxaKitNativeIconButton(
+        glyph: ArxaKitGlyphs.back,
         onPressed: () => context.popRoute(),
       ),
       title: 'Motion',
@@ -84,11 +84,11 @@ class ShowcaseMotionViewMobile
       // the unraised inset on glass and a bare status-bar inset on the boxed
       // tier, where Scaffold has already stripped it — wrong on both branches.
       body: Builder(
-        builder: (context) => AppBoxKitMotionScope(
+        builder: (context) => ArxaKitMotionScope(
           // No driver: adopts the enclosing route's animation. Push plays the
           // wake; iOS swipe-back scrubs the set-down interactively.
           spec: viewModel.spec,
-          // Edge treatment owned by the list (see AppBoxKitEdgeAwareListView)
+          // Edge treatment owned by the list (see ArxaKitEdgeAwareListView)
           // so a child added later inherits it instead of regressing the
           // screen.
           //
@@ -97,7 +97,7 @@ class ShowcaseMotionViewMobile
           // buttons) needs materialization headroom, and the overdraw region
           // is off-screen above NATIVE floating chrome. The clip 13-32
           // regression needed the opaque Flutter bar this migration removed.
-          child: AppBoxKitEdgeAwareListView(
+          child: ArxaKitEdgeAwareListView(
             extendBehindTopBar: true,
             // Top inset: 0 under the boxed bar (Scaffold strips it); the
             // status-bar + floating-bar block on glass, where the body is
@@ -107,29 +107,29 @@ class ShowcaseMotionViewMobile
             children: <Widget>[
               ...<Widget>[
                 const ShowcaseMotionHeaderCardWidget(),
-                appBoxKitVerticalSpaceMedium,
+                arxaKitVerticalSpaceMedium,
                 const ShowcaseSectionLabelWidget('Spec presets'),
-                appBoxKitVerticalSpaceSmall,
+                arxaKitVerticalSpaceSmall,
               ].wakeAll(),
               ...<Widget>[
                 ShowcaseMotionSpecControlsWidget(viewModel: viewModel),
-                appBoxKitVerticalSpaceMedium,
+                arxaKitVerticalSpaceMedium,
                 const ShowcaseSectionLabelWidget('Manual replay'),
-                appBoxKitVerticalSpaceSmall,
+                arxaKitVerticalSpaceSmall,
                 ShowcaseMotionManualReplayCardWidget(spec: viewModel.spec),
               ].wakeAll(from: 4, spec: glassSafeSpec),
               ...<Widget>[
-                appBoxKitVerticalSpaceMedium,
+                arxaKitVerticalSpaceMedium,
                 const ShowcaseSectionLabelWidget('flutter_animate adapter'),
-                appBoxKitVerticalSpaceSmall,
+                arxaKitVerticalSpaceSmall,
                 const ShowcaseMotionAdapterCardWidget(),
-                appBoxKitVerticalSpaceMedium,
+                arxaKitVerticalSpaceMedium,
                 const ShowcaseSectionLabelWidget('Gesture driver + springs'),
-                appBoxKitVerticalSpaceSmall,
+                arxaKitVerticalSpaceSmall,
                 ShowcaseMotionDragScrubCardWidget(spec: viewModel.spec),
-                appBoxKitVerticalSpaceMedium,
+                arxaKitVerticalSpaceMedium,
                 const ShowcaseSectionLabelWidget('Accessibility'),
-                appBoxKitVerticalSpaceSmall,
+                arxaKitVerticalSpaceSmall,
                 const ShowcaseMotionA11yCardWidget(),
               ].wakeAll(from: 9),
             ],

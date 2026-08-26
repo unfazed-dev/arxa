@@ -1,0 +1,43 @@
+<Callout id="header" tone="info">
+# arxa-orchestrator — Per-Skill Playbook
+
+`arxa-orchestrator` · status: **active**
+
+**Role (one line):** the operator’s front door — interactive project start (asks where, name, targets, locales, runs `arxa project init` verbatim), dispatch to the one next stage skill by pipeline state, and the cross-stage where-are-we view.
+
+**Scope of this document:** lets a human OR an LLM start and steer an arxa project without reading the skill source. Folded from `SKILL.md`.
+
+**Pipeline position:** stage Ø (before stage 0) — upstream the operator’s conversation; downstream `arxa-cicd` first (day-zero bootstrap), then the whole chain (stages 0 → 9) by state. Full chain, stage numbers, per-stage artifacts: `docs/research/pipeline-map.md` §1.
+
+## Table of contents
+
+0. Header & TOC · 1. Overview & role · 2. Inputs · 3. Procedure · 4. Outputs · 5. Rules · 6. References
+
+</Callout>
+
+### Overview & role
+
+The orchestrator conveys; it never owns. The FSM (`arxa/lib/phases.dart`) and the gates stay the only enforcer of order; every stage skill keeps its own contract. This skill asks, dispatches, and reports — no artifacts, no state, no gating.
+
+### Inputs
+
+The operator’s intent (start a project / where are we / what is next) plus readable state: `arxa project list`, the `~/.arxa/current` marker, and `projectStage()` derivation (`arxa/lib/project.dart`).
+
+### Procedure
+
+Ask ONE question at a time (recommendation attached): name → where (`ARXA_HOME`, default `~/.arxa`) → targets → locales. Run `arxa project init <name> --targets … --locales …` then `arxa project use <name>` verbatim — never create directories by hand. First hand-off is ALWAYS `arxa-cicd` (bootstrap when no CI exists; adopt + PR sweep when it does). Then dispatch per the SKILL.md table: each observable state maps to exactly one next skill (story-mapper/intake → moodboarder → designer → scaffolder → builder → tester → reviewer → deployer; lens and lint any time).
+
+### Outputs
+
+A created project shell (`~/.arxa/projects/<name>/` via the CLI), one dispatch decision at a time, and on request the cross-stage report (project, stage, gates green/red, the one skill that owns the next move). No project artifacts are ever authored here.
+
+### Rules
+
+Never owns a stage, never writes artifacts (the CLI writes), never enforces ordering, never re-implements a validator — dispatch, don’t do. The three-question minimum: name, where, targets; locales default en, pl.
+
+<!-- kb:begin -->
+### References
+- `arxa/lib/project_cli.dart` — `arxa project init|use|list`, the CLI this skill drives verbatim.
+- `arxa/lib/project.dart` — `ensureProject`, `projectStage()`, the `~/.arxa` model this skill reads.
+- `docs/research/pipeline-map.md` §1 — the stage chain this skill dispatches over.
+<!-- kb:end -->

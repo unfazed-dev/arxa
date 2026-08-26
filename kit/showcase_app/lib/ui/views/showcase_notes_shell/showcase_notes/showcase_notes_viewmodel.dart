@@ -45,16 +45,16 @@
 /// History: git log --follow -- kit/showcase_app/lib/ui/views/showcase_notes_shell/showcase_notes/showcase_notes_viewmodel.dart
 library;
 
-import 'package:appbox_kit_data/appbox_kit_data.dart';
-import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
+import 'package:arxa_kit_data/arxa_kit_data.dart';
+import 'package:arxa_kit_ui_library/arxa_kit_ui_library.dart';
 
-import 'package:appbox_kit_showcase_app/data/models/showcase_notes_models/models.dart';
-import 'package:appbox_kit_showcase_app/services/showcase_notes_services/facades/showcase_notes_facade_service.dart';
+import 'package:arxa_kit_showcase_app/data/models/showcase_notes_models/models.dart';
+import 'package:arxa_kit_showcase_app/services/showcase_notes_services/facades/showcase_notes_facade_service.dart';
 
-class ShowcaseNotesViewModel extends AppBoxKitViewModel {
+class ShowcaseNotesViewModel extends ArxaKitViewModel {
   // ── Setup ──────────────────────────────────────────────────────────────────
 
-  final _service = appBoxKitLocator<ShowcaseNotesFacadeService>();
+  final _service = arxaKitLocator<ShowcaseNotesFacadeService>();
 
   ShowcaseNotesViewModel() {
     // VM-internal side effect (no view data): reset the panel choice when a
@@ -80,7 +80,7 @@ class ShowcaseNotesViewModel extends AppBoxKitViewModel {
   // ── Streams ─────────────────────────────────────────────────────────
 
   /// Null while signed out — the views swap to the auth surface on null.
-  Stream<AppBoxKitAuthSession?> get session$ => _service.session$;
+  Stream<ArxaKitAuthSession?> get session$ => _service.session$;
 
   /// Owner-scoped folder overview; null while signed out.
   Stream<ShowcaseNotesOverview?> get overview$ => _service.session$.switchMap(
@@ -122,14 +122,14 @@ class ShowcaseNotesViewModel extends AppBoxKitViewModel {
   /// [1. Create a folder] Prompts for a folder name, then creates it (G8: the
   /// VM owns the dialog). A cancelled/empty prompt is a no-op.
   Future<void> createFolderWithPrompt() async {
-    final name = await appBoxKitLocator<AppBoxKitNotificationService>()
+    final name = await arxaKitLocator<ArxaKitNotificationService>()
         .prompt(title: 'New Folder', placeholder: 'Name');
     if (name != null) await createFolder(name);
   }
 
   /// Prompts for a new name (pre-filled with the current one), then renames.
   Future<void> renameFolderWithPrompt(ShowcaseNoteFolderModel folder) async {
-    final name = await appBoxKitLocator<AppBoxKitNotificationService>()
+    final name = await arxaKitLocator<ArxaKitNotificationService>()
         .prompt(title: 'Rename Folder', initialValue: folder.name);
     if (name != null) await renameFolder(folder, name);
   }
@@ -138,7 +138,7 @@ class ShowcaseNotesViewModel extends AppBoxKitViewModel {
   /// on confirm the folder is deleted and its notes move to Recently Deleted.
   Future<void> confirmDeleteFolder(ShowcaseNoteFolderModel folder) async {
     final confirmed =
-        await appBoxKitLocator<AppBoxKitNotificationService>().confirm(
+        await arxaKitLocator<ArxaKitNotificationService>().confirm(
       title: 'Delete Folder',
       message: 'Notes in "${folder.name}" will move to Recently Deleted.',
       actionLabel: 'Delete',

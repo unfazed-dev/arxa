@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
-# phase5_kit_copy.sh — copy stacked_kit packages into appbox, rename imports.
+# phase5_kit_copy.sh — copy stacked_kit packages into arxa, rename imports.
 #
 # Copies 24 library packages from the stacked_kit sibling repo into
-# appbox/packages/, then rewrites all stacked_kit_* identifiers to
-# appbox_kit_* across .dart and .yaml files.
+# arxa/packages/, then rewrites all stacked_kit_* identifiers to
+# arxa_kit_* across .dart and .yaml files.
 #
 # Usage: bash tools/phase5_kit_copy.sh
 set -euo pipefail
@@ -16,7 +16,7 @@ PACKAGES=(analytics auth bluetooth branding compliance core data deploy \
   documents forms genui_bridge haptics i18n maps media motion notifications \
   payments permissions security state support ui_library wifi)
 
-echo "=== Phase 5: appbox kit copy ==="
+echo "=== Phase 5: arxa kit copy ==="
 echo "Source: $SRC"
 echo "Target: $DST"
 echo "Packages: ${#PACKAGES[@]}"
@@ -37,7 +37,7 @@ for pkg in "${PACKAGES[@]}"; do
 done
 
 echo ""
-echo "Step 2: Rewrite stacked_kit_ → appbox_kit_ in .dart and .yaml files..."
+echo "Step 2: Rewrite stacked_kit_ → arxa_kit_ in .dart and .yaml files..."
 
 # Global replacement of the stacked_kit_ prefix across all copied files.
 # This catches: package names in imports, pubspec name: fields, dependency
@@ -45,7 +45,7 @@ echo "Step 2: Rewrite stacked_kit_ → appbox_kit_ in .dart and .yaml files..."
 COUNT=0
 while IFS= read -r -d '' file; do
   if grep -q 'stacked_kit_' "$file" 2>/dev/null; then
-    sed -i '' 's/stacked_kit_/appbox_kit_/g' "$file"
+    sed -i '' 's/stacked_kit_/arxa_kit_/g' "$file"
     COUNT=$((COUNT + 1))
   fi
 done < <(find "$DST" -type f \( -name '*.dart' -o -name '*.yaml' \) -print0)

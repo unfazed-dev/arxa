@@ -1,16 +1,16 @@
-name: appbox_kit_support
-description: In-app support port for appbox_kit apps — screenshot+annotation feedback flow (feedback package) bundled with an injected Talker log export, routed to a swappable submission sink (local-file export by default). Standalone; no appbox_kit core dependency.
+name: arxa_kit_support
+description: In-app support port for arxa_kit apps — screenshot+annotation feedback flow (feedback package) bundled with an injected Talker log export, routed to a swappable submission sink (local-file export by default). Standalone; no arxa_kit core dependency.
 version: 0.1.0
 publish_to: 'none'
 
 environment:
   sdk: '>=3.0.3 <4.0.0'
 
-# NATIVE-FIRST / STANDALONE: no dependency on appbox_kit (core), stacked, or
+# NATIVE-FIRST / STANDALONE: no dependency on arxa_kit (core), stacked, or
 # stacked_services. The Talker instance is INJECTED (apps already register it
 # as a lazy singleton) — this package never constructs one.
 #
-# Submission sinks are a port: the default AppBoxKitLocalFileSubmissionSink writes to the
+# Submission sinks are a port: the default ArxaKitLocalFileSubmissionSink writes to the
 # app-documents dir (path_provider, native). The email + github-issue sinks are
 # file stubs (no smtp / http client wired) that name their intent in a TODO.
 dependencies:

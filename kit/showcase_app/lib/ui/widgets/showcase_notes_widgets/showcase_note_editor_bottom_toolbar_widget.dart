@@ -1,5 +1,5 @@
 /// A widget is a reusable UI piece composed by views. It receives data via
-/// constructor params or [AppBoxKitStreamBuilder] bindings and renders its
+/// constructor params or [ArxaKitStreamBuilder] bindings and renders its
 /// slice of the surface — it holds no business logic and never decides when
 /// an action runs.
 ///
@@ -36,10 +36,10 @@
 library;
 
 import 'package:flutter/material.dart';
-import 'package:appbox_kit_motion/appbox_kit_motion.dart';
-import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
-import 'package:appbox_kit_showcase_app/ui/views/showcase_notes_shell/showcase_note_editor/showcase_note_editor_viewmodel.dart';
-import 'package:appbox_kit_showcase_app/ui/widgets/showcase_notes_widgets/widgets.dart';
+import 'package:arxa_kit_motion/arxa_kit_motion.dart';
+import 'package:arxa_kit_ui_library/arxa_kit_ui_library.dart';
+import 'package:arxa_kit_showcase_app/ui/views/showcase_notes_shell/showcase_note_editor/showcase_note_editor_viewmodel.dart';
+import 'package:arxa_kit_showcase_app/ui/widgets/showcase_notes_widgets/widgets.dart';
 
 class ShowcaseNoteEditorBottomToolbarWidget extends StatelessWidget {
   const ShowcaseNoteEditorBottomToolbarWidget({
@@ -55,14 +55,14 @@ class ShowcaseNoteEditorBottomToolbarWidget extends StatelessWidget {
         // a recording session ends the Row re-mounts AFTER the scope timeline
         // has finished, so it renders settled — no entrance replay (the old
         // unkeyed flutter_animate chain replayed on every toggle-back).
-        child: AppBoxKitMotionScope(
+        child: ArxaKitMotionScope(
           child: Padding(
             padding: const EdgeInsets.symmetric(
                 horizontal: abxSize16, vertical: abxSize8),
             // Streams-only: recordingElapsed$ (a seeded BehaviorSubject on the
             // media adapter, passed through the VM) swaps the action row for
             // the recording row and feeds the live elapsed pill.
-            child: AppBoxKitStreamBuilder<Duration?>(
+            child: ArxaKitStreamBuilder<Duration?>(
               stream: viewModel.recordingElapsed$,
               builder: (context, elapsed) => elapsed != null
                   ? ShowcaseNoteRecordingRowWidget(
@@ -72,28 +72,28 @@ class ShowcaseNoteEditorBottomToolbarWidget extends StatelessWidget {
                   : Row(
                       children: [
                         if (viewModel.isCameraAvailable) ...[
-                          AppBoxKitNativeIconButton(
-                            glyph: AppBoxKitGlyphs.camera,
+                          ArxaKitNativeIconButton(
+                            glyph: ArxaKitGlyphs.camera,
                             onPressed: () =>
                                 viewModel.addPhoto(fromCamera: true),
                           ),
-                          appBoxKitHorizontalSpaceSmall,
+                          arxaKitHorizontalSpaceSmall,
                         ],
-                        AppBoxKitNativeIconButton(
-                          glyph: AppBoxKitGlyphs.photo,
+                        ArxaKitNativeIconButton(
+                          glyph: ArxaKitGlyphs.photo,
                           onPressed: () =>
                               viewModel.addPhoto(fromCamera: false),
                         ),
                         const Spacer(),
-                        AppBoxKitNativeIconButton(
-                          glyph: AppBoxKitGlyphs.mic,
+                        ArxaKitNativeIconButton(
+                          glyph: ArxaKitGlyphs.mic,
                           onPressed: () async {
                             final started = await viewModel.startRecording();
                             if (!started && context.mounted) {
-                              appBoxKitLocator<AppBoxKitNotificationService>()
+                              arxaKitLocator<ArxaKitNotificationService>()
                                   .show(
                                 'Microphone permission needed',
-                                kind: AppBoxKitNotificationKind.warning,
+                                kind: ArxaKitNotificationKind.warning,
                                 context: context,
                               );
                             }

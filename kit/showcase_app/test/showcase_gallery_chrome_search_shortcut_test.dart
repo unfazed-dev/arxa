@@ -10,14 +10,14 @@
 import 'dart:async';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart'
+import 'package:arxa_kit_ui_library/arxa_kit_ui_library.dart'
     show
-        AppBoxKitGlyphs,
-        AppBoxKitNativeAppBar,
-        AppBoxKitNativeIconButton,
-        AppBoxKitNativeTabBar;
+        ArxaKitGlyphs,
+        ArxaKitNativeAppBar,
+        ArxaKitNativeIconButton,
+        ArxaKitNativeTabBar;
 
-import 'package:appbox_kit_showcase_app/enums/showcase_application_enums/enums.dart';
+import 'package:arxa_kit_showcase_app/enums/showcase_application_enums/enums.dart';
 
 import 'helpers.dart';
 
@@ -36,16 +36,16 @@ void main() {
     unawaited(router.navigateNamed('/home'));
     await settle(tester);
 
-    AppBoxKitNativeTabBar bar() => tester
-        .widget<AppBoxKitNativeTabBar>(find.byType(AppBoxKitNativeTabBar));
+    ArxaKitNativeTabBar bar() => tester
+        .widget<ArxaKitNativeTabBar>(find.byType(ArxaKitNativeTabBar));
     expect(bar().currentIndex, ShowcaseTab.home.index,
         reason: 'anti-vacuous: must start on Home or the switch below proves '
             'nothing');
 
     final searchShortcut = find.descendant(
-      of: find.byType(AppBoxKitNativeAppBar),
+      of: find.byType(ArxaKitNativeAppBar),
       matching: find.byWidgetPredicate((w) =>
-          w is AppBoxKitNativeIconButton && w.glyph == AppBoxKitGlyphs.search),
+          w is ArxaKitNativeIconButton && w.glyph == ArxaKitGlyphs.search),
     );
     expect(searchShortcut, findsOneWidget,
         reason: 'the gallery chrome app bar must carry the search shortcut');

@@ -1,15 +1,15 @@
 <Callout id="header" tone="info">
 
-# appbox_kit_media — Per-Package Playbook
+# arxa_kit_media — Per-Package Playbook
 
 
-`appbox_kit_media` v**0.1.0** · `publish_to: 'none'` · status: **active**
+`arxa_kit_media` v**0.1.0** · `publish_to: 'none'` · status: **active**
 
 
-**Role (one line):** Media kit for appbox_kit apps — "pixels and sound, in and out": camera and photo-library capture, audio recording, and audio + video playback exposed as framework-free ports over native-backed plugins.
+**Role (one line):** Media kit for arxa_kit apps — "pixels and sound, in and out": camera and photo-library capture, audio recording, and audio + video playback exposed as framework-free ports over native-backed plugins.
 
 
-**Scope of this document:** lets a human OR an LLM use, wire, and extend `appbox_kit_media` **without reading its source**. The public surface below was extracted from the barrel; README content is folded into the narrative sections.
+**Scope of this document:** lets a human OR an LLM use, wire, and extend `arxa_kit_media` **without reading its source**. The public surface below was extracted from the barrel; README content is folded into the narrative sections.
 
 
 ## Table of contents
@@ -27,11 +27,11 @@
 
 ### Public surface
 
-Exported from `lib/appbox_kit_media.dart`:
+Exported from `lib/arxa_kit_media.dart`:
 
-<Table id="media-api" columns={["Symbol", "Kind", "Defined in"]} rows={[["AppBoxKitCapturedMedia", "abstract class", "src/capture/appbox_kit_media_capture_result.dart"], ["AppBoxKitXFileCapturedMedia", "class", "src/capture/appbox_kit_media_capture_result.dart"], ["AppBoxKitMediaCaptureResult", "class", "src/capture/appbox_kit_media_capture_result.dart"], ["AppBoxKitMediaCaptured", "class", "src/capture/appbox_kit_media_capture_result.dart"], ["AppBoxKitMediaCaptureCancelled", "class", "src/capture/appbox_kit_media_capture_result.dart"], ["AppBoxKitMediaCapturePermissionDenied", "class", "src/capture/appbox_kit_media_capture_result.dart"], ["AppBoxKitMediaCaptureUnavailable", "class", "src/capture/appbox_kit_media_capture_result.dart"], ["AppBoxKitMediaCaptureFailed", "class", "src/capture/appbox_kit_media_capture_result.dart"], ["AppBoxKitMediaCaptureService", "abstract class", "src/capture/appbox_kit_media_capture_service.dart"], ["AppBoxKitImagePickerMediaCaptureService", "class", "src/capture/appbox_kit_media_capture_service.dart"], ["AppBoxKitMediaSource", "enum", "src/capture/appbox_kit_media_source.dart"], ["AppBoxKitVideoPlayerService", "abstract class", "src/video/appbox_kit_video_player_service.dart"], ["AppBoxKitPluginVideoPlayerService", "class", "src/video/appbox_kit_video_player_service.dart"], ["AppBoxKitAudioPlayerService", "abstract class", "src/audio/appbox_kit_audio_player_service.dart"], ["AppBoxKitJustAudioPlayerService", "class", "src/audio/appbox_kit_audio_player_service.dart"], ["AppBoxKitAudioRecorderService", "abstract class", "src/audio/appbox_kit_audio_recorder_service.dart"], ["AppBoxKitRecordAudioRecorderService", "class", "src/audio/appbox_kit_audio_recorder_service.dart"], ["AppBoxKitMediaProcessingState", "enum", "src/audio/appbox_kit_playback_state.dart"], ["AppBoxKitPlaybackState", "class", "src/audio/appbox_kit_playback_state.dart"], ["AppBoxKitMediaEditingService", "abstract class", "src/editing/appbox_kit_media_editing_service.dart"]]} />
+<Table id="media-api" columns={["Symbol", "Kind", "Defined in"]} rows={[["ArxaKitCapturedMedia", "abstract class", "src/capture/arxa_kit_media_capture_result.dart"], ["ArxaKitXFileCapturedMedia", "class", "src/capture/arxa_kit_media_capture_result.dart"], ["ArxaKitMediaCaptureResult", "class", "src/capture/arxa_kit_media_capture_result.dart"], ["ArxaKitMediaCaptured", "class", "src/capture/arxa_kit_media_capture_result.dart"], ["ArxaKitMediaCaptureCancelled", "class", "src/capture/arxa_kit_media_capture_result.dart"], ["ArxaKitMediaCapturePermissionDenied", "class", "src/capture/arxa_kit_media_capture_result.dart"], ["ArxaKitMediaCaptureUnavailable", "class", "src/capture/arxa_kit_media_capture_result.dart"], ["ArxaKitMediaCaptureFailed", "class", "src/capture/arxa_kit_media_capture_result.dart"], ["ArxaKitMediaCaptureService", "abstract class", "src/capture/arxa_kit_media_capture_service.dart"], ["ArxaKitImagePickerMediaCaptureService", "class", "src/capture/arxa_kit_media_capture_service.dart"], ["ArxaKitMediaSource", "enum", "src/capture/arxa_kit_media_source.dart"], ["ArxaKitVideoPlayerService", "abstract class", "src/video/arxa_kit_video_player_service.dart"], ["ArxaKitPluginVideoPlayerService", "class", "src/video/arxa_kit_video_player_service.dart"], ["ArxaKitAudioPlayerService", "abstract class", "src/audio/arxa_kit_audio_player_service.dart"], ["ArxaKitJustAudioPlayerService", "class", "src/audio/arxa_kit_audio_player_service.dart"], ["ArxaKitAudioRecorderService", "abstract class", "src/audio/arxa_kit_audio_recorder_service.dart"], ["ArxaKitRecordAudioRecorderService", "class", "src/audio/arxa_kit_audio_recorder_service.dart"], ["ArxaKitMediaProcessingState", "enum", "src/audio/arxa_kit_playback_state.dart"], ["ArxaKitPlaybackState", "class", "src/audio/arxa_kit_playback_state.dart"], ["ArxaKitMediaEditingService", "abstract class", "src/editing/arxa_kit_media_editing_service.dart"]]} />
 
-Test doubles in `lib/appbox_kit_testing.dart`: `FakeAppBoxKitCapturedMedia`, `FakeAppBoxKitMediaCaptureService`, `FakeAppBoxKitAudioRecorderService`, `FakeAppBoxKitAudioPlayerService`, `FakeAppBoxKitVideoPlayerService`, `AppBoxKitStubVideoPlayerService`, `AppBoxKitRecordingResult`, `AppBoxKitStubMediaEditingService`.
+Test doubles in `lib/arxa_kit_testing.dart`: `FakeArxaKitCapturedMedia`, `FakeArxaKitMediaCaptureService`, `FakeArxaKitAudioRecorderService`, `FakeArxaKitAudioPlayerService`, `FakeArxaKitVideoPlayerService`, `ArxaKitStubVideoPlayerService`, `ArxaKitRecordingResult`, `ArxaKitStubMediaEditingService`.
 
 Scripts and call-counts — tests never touch platform channels.
 
@@ -39,18 +39,18 @@ Scripts and call-counts — tests never touch platform channels.
 ### Usage & wiring
 
 ```dart
-import 'package:appbox_kit_media/appbox_kit_media.dart';
+import 'package:arxa_kit_media/arxa_kit_media.dart';
 
-final capture = AppBoxKitImagePickerMediaCaptureService();
-final result = await capture.capturePhoto(source: AppBoxKitMediaSource.camera);
+final capture = ArxaKitImagePickerMediaCaptureService();
+final result = await capture.capturePhoto(source: ArxaKitMediaSource.camera);
 switch (result) {
-  case AppBoxKitMediaCaptured(:final media):
+  case ArxaKitMediaCaptured(:final media):
     await media.saveTo('/somewhere/photo.jpg');
-  case AppBoxKitMediaCapturePermissionDenied():
+  case ArxaKitMediaCapturePermissionDenied():
     // surface a "grant camera access" hint
-  case AppBoxKitMediaCaptureCancelled():
-  case AppBoxKitMediaCaptureUnavailable():
-  case AppBoxKitMediaCaptureFailed():
+  case ArxaKitMediaCaptureCancelled():
+  case ArxaKitMediaCaptureUnavailable():
+  case ArxaKitMediaCaptureFailed():
 }
 ```
 
@@ -64,17 +64,17 @@ See `kit_matrix.md` for the full routing + dependency graph.
 
 ### Architecture
 
-- **No dependency on `stacked` / `stacked_services` / `appbox_kit`.** This kit
+- **No dependency on `stacked` / `stacked_services` / `arxa_kit`.** This kit
   is pure ports + backing plugins; apps depend on it, never the reverse.
 - **No plugin type crosses a port.** `image_picker`'s `ImageSource`/`XFile`,
   `just_audio`'s `PlayerState`, and `record`'s `RecordConfig` stay inside the
-  implementations. Callers see kit-owned `AppBoxKitMediaSource`, `AppBoxKitCapturedMedia`,
-  `AppBoxKitPlaybackState`.
+  implementations. Callers see kit-owned `ArxaKitMediaSource`, `ArxaKitCapturedMedia`,
+  `ArxaKitPlaybackState`.
 - **Permission denial is a value, not an exception.** `capturePhoto` returns a
-  sealed `AppBoxKitMediaCaptureResult` (`AppBoxKitMediaCaptured` / `AppBoxKitMediaCaptureCancelled` /
-  `AppBoxKitMediaCapturePermissionDenied` / `AppBoxKitMediaCaptureUnavailable` /
-  `AppBoxKitMediaCaptureFailed`) so callers `switch` exhaustively.
-- **Capability flags:** `AppBoxKitMediaCaptureService.hasCamera` (false on the iOS
+  sealed `ArxaKitMediaCaptureResult` (`ArxaKitMediaCaptured` / `ArxaKitMediaCaptureCancelled` /
+  `ArxaKitMediaCapturePermissionDenied` / `ArxaKitMediaCaptureUnavailable` /
+  `ArxaKitMediaCaptureFailed`) so callers `switch` exhaustively.
+- **Capability flags:** `ArxaKitMediaCaptureService.hasCamera` (false on the iOS
   Simulator) lets UIs hide capture affordances that would fail.
 - **The recorder owns its clock:** `elapsed$` emits `Duration.zero` on start,
   ticks while recording, and emits `null` when idle — bind directly instead of
@@ -92,21 +92,21 @@ package.
 
 ### Testing
 
-`package:appbox_kit_media/appbox_kit_testing.dart` ships scriptable fakes —
-`FakeAppBoxKitMediaCaptureService`, `FakeAppBoxKitAudioRecorderService`, `FakeAppBoxKitAudioPlayerService`
-(and `FakeAppBoxKitCapturedMedia`) — with canned files, scripted denial/failure, and
+`package:arxa_kit_media/arxa_kit_testing.dart` ships scriptable fakes —
+`FakeArxaKitMediaCaptureService`, `FakeArxaKitAudioRecorderService`, `FakeArxaKitAudioPlayerService`
+(and `FakeArxaKitCapturedMedia`) — with canned files, scripted denial/failure, and
 stream-driving helpers (`driveElapsed`, `drivePosition`, `driveState`, …). No
 plugins or MethodChannels required.
 
 
 ### Features
 
-<Checklist id="media-features" items={[{"id": "media-feat-0", "label": "`AppBoxKitCapturedMedia` \u2014 abstract class"}, {"id": "media-feat-1", "label": "`AppBoxKitXFileCapturedMedia` \u2014 class"}, {"id": "media-feat-2", "label": "`AppBoxKitMediaCaptureResult` \u2014 class"}, {"id": "media-feat-3", "label": "`AppBoxKitMediaCaptured` \u2014 class"}, {"id": "media-feat-4", "label": "`AppBoxKitMediaCaptureCancelled` \u2014 class"}, {"id": "media-feat-5", "label": "`AppBoxKitMediaCapturePermissionDenied` \u2014 class"}, {"id": "media-feat-6", "label": "`AppBoxKitMediaCaptureUnavailable` \u2014 class"}, {"id": "media-feat-7", "label": "`AppBoxKitMediaCaptureFailed` \u2014 class"}, {"id": "media-feat-8", "label": "`AppBoxKitMediaCaptureService` \u2014 abstract class"}, {"id": "media-feat-9", "label": "`AppBoxKitImagePickerMediaCaptureService` \u2014 class"}, {"id": "media-feat-10", "label": "`AppBoxKitMediaSource` \u2014 enum"}, {"id": "media-feat-11", "label": "`AppBoxKitVideoPlayerService` \u2014 abstract class"}]} />
+<Checklist id="media-features" items={[{"id": "media-feat-0", "label": "`ArxaKitCapturedMedia` \u2014 abstract class"}, {"id": "media-feat-1", "label": "`ArxaKitXFileCapturedMedia` \u2014 class"}, {"id": "media-feat-2", "label": "`ArxaKitMediaCaptureResult` \u2014 class"}, {"id": "media-feat-3", "label": "`ArxaKitMediaCaptured` \u2014 class"}, {"id": "media-feat-4", "label": "`ArxaKitMediaCaptureCancelled` \u2014 class"}, {"id": "media-feat-5", "label": "`ArxaKitMediaCapturePermissionDenied` \u2014 class"}, {"id": "media-feat-6", "label": "`ArxaKitMediaCaptureUnavailable` \u2014 class"}, {"id": "media-feat-7", "label": "`ArxaKitMediaCaptureFailed` \u2014 class"}, {"id": "media-feat-8", "label": "`ArxaKitMediaCaptureService` \u2014 abstract class"}, {"id": "media-feat-9", "label": "`ArxaKitImagePickerMediaCaptureService` \u2014 class"}, {"id": "media-feat-10", "label": "`ArxaKitMediaSource` \u2014 enum"}, {"id": "media-feat-11", "label": "`ArxaKitVideoPlayerService` \u2014 abstract class"}]} />
 
 
 ### Decisions / ADRs
 
-This kit is pure ports plus backing plugins: it declares no dependency on `stacked`, `stacked_services`, or any other `appbox_kit` package, so apps depend on it but never the reverse. Capture, recording, and playback layer onto mature, narrowly-scoped plugins (`image_picker`, `record`, `just_audio`) so the kit owns no codec or platform glue of its own and plugin types never cross a port. Music and video playback are deliberately absorbed here rather than split into separate `appbox_kit_music` / `appbox_kit_video` kits, keeping the media surface in one package and leaving `AppBoxKitVideoPlayerService` and `AppBoxKitMediaEditingService` as phase-2A stubs to fill in against the existing seams.
+This kit is pure ports plus backing plugins: it declares no dependency on `stacked`, `stacked_services`, or any other `arxa_kit` package, so apps depend on it but never the reverse. Capture, recording, and playback layer onto mature, narrowly-scoped plugins (`image_picker`, `record`, `just_audio`) so the kit owns no codec or platform glue of its own and plugin types never cross a port. Music and video playback are deliberately absorbed here rather than split into separate `arxa_kit_music` / `arxa_kit_video` kits, keeping the media surface in one package and leaving `ArxaKitVideoPlayerService` and `ArxaKitMediaEditingService` as phase-2A stubs to fill in against the existing seams.
 
 <!-- kb:begin -->
 ### References
@@ -120,17 +120,17 @@ Official docs and tooling:
 - [stacked_cli (pub.dev)](https://pub.dev/packages/stacked_cli) — Scaffolding CLI for new Stacked apps/views/services.
 - [Flutter — official documentation](https://docs.flutter.dev) — Framework docs, platform integration, performance.
 - [Dart — official documentation](https://dart.dev) — Language tour, async, package ecosystem.
-- [Dart & Flutter MCP server (official)](https://dart.dev/tools/mcp-server) — Ships with the Dart SDK (dart mcp-server). Exposes analyzer diagnostics, pub, tests, and live Flutter app introspection via DTD. Wired in appbox_kit/.mcp.json.
+- [Dart & Flutter MCP server (official)](https://dart.dev/tools/mcp-server) — Ships with the Dart SDK (dart mcp-server). Exposes analyzer diagnostics, pub, tests, and live Flutter app introspection via DTD. Wired in arxa_kit/.mcp.json.
 
 Kit-specific:
 
 - [Flutter API reference](https://api.flutter.dev) — Full widget/framework API. The source of truth for Flutter classes.
 - [Flutter cookbook](https://docs.flutter.dev/cookbook) — Recipes for common Flutter tasks.
-- [record (pub.dev)](https://pub.dev/packages/record) — record — backing dependency of appbox_kit_media.
-- [just_audio (pub.dev)](https://pub.dev/packages/just_audio) — just_audio — backing dependency of appbox_kit_media.
-- [image_picker (pub.dev)](https://pub.dev/packages/image_picker) — image_picker — backing dependency of appbox_kit_media.
-- [video_player (pub.dev)](https://pub.dev/packages/video_player) — video_player — backing dependency of appbox_kit_media.
-- [path_provider (pub.dev)](https://pub.dev/packages/path_provider) — path_provider — backing dependency of appbox_kit_media.
+- [record (pub.dev)](https://pub.dev/packages/record) — record — backing dependency of arxa_kit_media.
+- [just_audio (pub.dev)](https://pub.dev/packages/just_audio) — just_audio — backing dependency of arxa_kit_media.
+- [image_picker (pub.dev)](https://pub.dev/packages/image_picker) — image_picker — backing dependency of arxa_kit_media.
+- [video_player (pub.dev)](https://pub.dev/packages/video_player) — video_player — backing dependency of arxa_kit_media.
+- [path_provider (pub.dev)](https://pub.dev/packages/path_provider) — path_provider — backing dependency of arxa_kit_media.
 <!-- kb:end -->
 
 <QuestionForm id="open-questions" questions={[

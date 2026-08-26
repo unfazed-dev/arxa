@@ -1,10 +1,10 @@
 /// A widget is a reusable UI piece composed by views. It receives data via
-/// constructor params or [AppBoxKitStreamBuilder] bindings and renders its
+/// constructor params or [ArxaKitStreamBuilder] bindings and renders its
 /// slice of the surface — it holds no business logic and never decides when
 /// an action runs.
 ///
 /// This is the user interface for a shared credential text field — a thin
-/// pass-through to [AppBoxKitNativeTextField]. Value-based (onChanged), never
+/// pass-through to [ArxaKitNativeTextField]. Value-based (onChanged), never
 /// controller-based: credential capture is never-prefill.
 ///
 /// Requirements:
@@ -19,7 +19,7 @@
 library;
 
 import 'package:flutter/material.dart';
-import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
+import 'package:arxa_kit_ui_library/arxa_kit_ui_library.dart';
 
 class ShowcaseNotesAuthTextFieldWidget extends StatelessWidget {
   const ShowcaseNotesAuthTextFieldWidget({
@@ -39,7 +39,7 @@ class ShowcaseNotesAuthTextFieldWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return AppBoxKitNativeTextField(
+    return ArxaKitNativeTextField(
       onChanged: onChanged,
       placeholder: placeholder,
       keyboardType: keyboardType,

@@ -1,8 +1,8 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "https://appbox.dev/schemas/feature-recipe.schema.json",
-  "title": "AppBox feature-recipe path/naming manifest",
-  "description": "Q8 SSOT schema. Validates feature-recipe.manifest.json — the shared path/naming contract loaded by appbox-designer and appbox-scaffolder. Machine-readable so the golden-expansion probe can diff a produced tree against an expansion instead of a prose reading.",
+  "$id": "https://arxa.dev/schemas/feature-recipe.schema.json",
+  "title": "Arxa feature-recipe path/naming manifest",
+  "description": "Q8 SSOT schema. Validates feature-recipe.manifest.json — the shared path/naming contract loaded by arxa-designer and arxa-scaffolder. Machine-readable so the golden-expansion probe can diff a produced tree against an expansion instead of a prose reading.",
   "type": "object",
   "required": ["manifestVersion", "structureContract", "tokens", "ownership", "frontmatterKinds", "artifactTypes", "kitCommonImports", "goldenExpansionProbe"],
   "additionalProperties": true,

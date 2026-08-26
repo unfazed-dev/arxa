@@ -63,7 +63,7 @@ them against a **developer-controlled widget catalog**. Key APIs (verbatim):
   integrate with any LLM that can generate structured JSON output."
   Documented paths: Firebase AI Logic (happy path), A2A server via
   `genui_a2a`, or "build your own" (`onSend` + any streaming HTTP client —
-  Ollama, llama.cpp, appboxd).
+  Ollama, llama.cpp, arxa).
 - No official local-LLM adapter ships. (UNVERIFIED: third-party ones.)
 
 ## Platforms
@@ -79,13 +79,13 @@ Core `genui` pulls `audioplayers`, `video_player`, `url_launcher`,
   overview, components, get-started, input & events.
 - Repo `examples/`: `simple_chat` (default catalog, AI surfaces interleaved
   in the message list) and **`verdure` — Flutter client + Python A2A server
-  over localhost: the exact topology appbox ↔ appboxd would use.**
+  over localhost: the exact topology arxa ↔ arxa would use.**
 - Repo `dev_tools/`: `catalog_gallery`, `composer`.
 - A2UI repo: protocol spec + Lit/Angular/React renderers.
 
-## Fit for appbox
+## Fit for arxa
 
-- appboxd can be the A2UI server: call the LLM itself and relay chunks, or
+- arxa can be the A2UI server: call the LLM itself and relay chunks, or
   expose enough A2A for `A2uiAgentConnector` (verdure pattern). No cloud.
 - We build: the domain catalog (stage cards, charts, gate prompts, log
   viewers — none ship), the LLM bridge, and the system-prompt engineering.
@@ -113,7 +113,7 @@ real — macOS + web, local canned A2UI stream, basic + custom catalog:
   `flutter build web` ✓ (wasm dry-run ok). Media-plugin weight does not
   break either build.
 - Mock seam confirmed: `A2uiTransportAdapter(onSend:)` + `addChunk()` —
-  **this is the appboxd injection point**. 18-char mid-token chunks
+  **this is the arxa injection point**. 18-char mid-token chunks
   reassemble correctly; `SurfaceController` buffers updates for
   not-yet-created surfaces.
 - Custom `CatalogItem` with `S.object` schema + `{path:}` DataModel binding
@@ -130,8 +130,8 @@ real — macOS + web, local canned A2UI stream, basic + custom catalog:
 - Costs: ~65–70 extra transitive packages (audioplayers/video_player/
   url_launcher are compile-time deps even unused; `asNoAssetCatalog()`
   trims catalog items, not native deps); custom schemas need a direct
-  `json_schema_builder` dep; appbox's macOS entitlements lack
-  `com.apple.security.network.client` — required the day appboxd is reached
+  `json_schema_builder` dep; arxa's macOS entitlements lack
+  `com.apple.security.network.client` — required the day arxa is reached
   over HTTP, localhost included.
 - Still unknown after spike: iOS/Android builds, `genui_a2a`/
   `A2uiAgentConnector`, real-LLM structured-output reliability (that last

@@ -2,7 +2,7 @@
 // thread, the attach sheet flow, the tap-to-toggle voice flow (real kit
 // audio service, faked at the port), and the live thread (typing indicator +
 // fake auto-reply). The keyboard-survives-action-tap regression itself is
-// pinned at the kit level (appbox_kit_native_input_bar_test.dart); these pin
+// pinned at the kit level (arxa_kit_native_input_bar_test.dart); these pin
 // the showcase wiring on top of it.
 //
 // Record UX is the tap-toggle voice idiom: the trailing action is a NATIVE
@@ -21,44 +21,44 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:m3e_collection/m3e_collection.dart' show IconButtonM3E;
-import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
-import 'package:appbox_kit_ui_library/appbox_kit_testing.dart';
-import 'package:appbox_kit_media/appbox_kit_media.dart';
-import 'package:appbox_kit_media/appbox_kit_testing.dart';
-import 'package:appbox_kit_showcase_app/ui/views/showcase_profile_shell/showcase_components/showcase_components_view.dart';
+import 'package:arxa_kit_ui_library/arxa_kit_ui_library.dart';
+import 'package:arxa_kit_ui_library/arxa_kit_testing.dart';
+import 'package:arxa_kit_media/arxa_kit_media.dart';
+import 'package:arxa_kit_media/arxa_kit_testing.dart';
+import 'package:arxa_kit_showcase_app/ui/views/showcase_profile_shell/showcase_components/showcase_components_view.dart';
 
 import 'helpers.dart';
 
 void main() {
   setUpAll(registerKitTestServices);
-  tearDownAll(() => appBoxKitLocator.reset());
+  tearDownAll(() => arxaKitLocator.reset());
 
   setUp(() {
-    AppBoxKitPlatform.override =
-        const AppBoxKitPlatformOverride(isAndroid: true);
+    ArxaKitPlatform.override =
+        const ArxaKitPlatformOverride(isAndroid: true);
   });
-  tearDown(AppBoxKitPlatform.reset);
+  tearDown(ArxaKitPlatform.reset);
 
   // The recorder is faked at the kit port (behavior-TDD canon): the VM runs
   // the REAL permission/start/stop/cancel flow against it, only the plugin is
   // absent. Re-registered per test so scriptable state never leaks across.
-  late FakeAppBoxKitAudioRecorderService recorder;
-  late FakeAppBoxKitNotificationService notifications;
+  late FakeArxaKitAudioRecorderService recorder;
+  late FakeArxaKitNotificationService notifications;
 
   setUp(() {
-    recorder = FakeAppBoxKitAudioRecorderService();
-    if (appBoxKitLocator.isRegistered<AppBoxKitAudioRecorderService>()) {
-      appBoxKitLocator.unregister<AppBoxKitAudioRecorderService>();
+    recorder = FakeArxaKitAudioRecorderService();
+    if (arxaKitLocator.isRegistered<ArxaKitAudioRecorderService>()) {
+      arxaKitLocator.unregister<ArxaKitAudioRecorderService>();
     }
-    appBoxKitLocator.registerSingleton<AppBoxKitAudioRecorderService>(recorder);
+    arxaKitLocator.registerSingleton<ArxaKitAudioRecorderService>(recorder);
 
     // Kit testing rule: the notification fake registered AS the service type,
     // so the widget's permission-denied toast lands where the test reads it.
-    if (appBoxKitLocator.isRegistered<AppBoxKitNotificationService>()) {
-      appBoxKitLocator.unregister<AppBoxKitNotificationService>();
+    if (arxaKitLocator.isRegistered<ArxaKitNotificationService>()) {
+      arxaKitLocator.unregister<ArxaKitNotificationService>();
     }
-    appBoxKitLocator.registerSingleton<AppBoxKitNotificationService>(
-        notifications = FakeAppBoxKitNotificationService());
+    arxaKitLocator.registerSingleton<ArxaKitNotificationService>(
+        notifications = FakeArxaKitNotificationService());
   });
 
   Future<void> pumpView(WidgetTester tester) async {
@@ -138,24 +138,24 @@ void main() {
       // into a same-tint panel.
       final Finder chipCard = find.ancestor(
         of: find.text('gallery-shot.png'),
-        matching: find.byType(AppBoxKitGlassCard),
+        matching: find.byType(ArxaKitGlassCard),
       );
       expect(
-        tester.widget<AppBoxKitGlassCard>(chipCard).wantNative,
+        tester.widget<ArxaKitGlassCard>(chipCard).wantNative,
         isFalse,
         reason: 'the chip renders the OPAQUE content-layer surface — '
             'real Liquid Glass is pinned chrome, and its tint stays '
             'translucent',
       );
       expect(
-        tester.widget<AppBoxKitGlassCard>(chipCard).opaqueGlass,
+        tester.widget<ArxaKitGlassCard>(chipCard).opaqueGlass,
         isTrue,
         reason: 'opaqueGlass is what makes the frosted tier a solid '
             'alpha-1.0 fill',
       );
       expect(
         find.descendant(
-          of: find.byType(AppBoxKitNativeInputBar),
+          of: find.byType(ArxaKitNativeInputBar),
           matching: find.text('gallery-shot.png'),
         ),
         findsOneWidget,
@@ -189,12 +189,12 @@ void main() {
       // The remove control is the chromeless (plain) icon button — no glass
       // circle inside the chip. Tapping it removes the pick.
       final Finder removeButton = find
-          .byWidgetPredicate((w) => w is AppBoxKitNativeIconButton && w.plain);
+          .byWidgetPredicate((w) => w is ArxaKitNativeIconButton && w.plain);
       expect(removeButton, findsOneWidget,
           reason: 'the chip remove action is a plain icon button');
       expect(
-        tester.widget<AppBoxKitNativeIconButton>(removeButton).glyph?.icon,
-        AppBoxKitGlyphs.close.icon,
+        tester.widget<ArxaKitNativeIconButton>(removeButton).glyph?.icon,
+        ArxaKitGlyphs.close.icon,
         reason: 'the plain action carries the close glyph',
       );
 
@@ -260,7 +260,7 @@ void main() {
       // floating row suffers the view-slicer artifact).
       expect(
         find.descendant(
-          of: find.byType(AppBoxKitNativeInputBar),
+          of: find.byType(ArxaKitNativeInputBar),
           matching: find.text('Cancel'),
         ),
         findsOneWidget,
@@ -269,7 +269,7 @@ void main() {
       );
       expect(
         find.descendant(
-          of: find.byType(AppBoxKitNativeInputBar),
+          of: find.byType(ArxaKitNativeInputBar),
           matching: find.text('0:00'),
         ),
         findsOneWidget,

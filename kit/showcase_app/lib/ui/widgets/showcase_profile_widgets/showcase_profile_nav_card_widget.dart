@@ -18,8 +18,8 @@
 library;
 
 import 'package:flutter/material.dart';
-import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
-import 'package:appbox_kit_showcase_app/ui/widgets/common/showcase_tabs_shared/widgets.dart';
+import 'package:arxa_kit_ui_library/arxa_kit_ui_library.dart';
+import 'package:arxa_kit_showcase_app/ui/widgets/common/showcase_tabs_shared/widgets.dart';
 
 class ShowcaseProfileNavCardWidget extends StatelessWidget {
   const ShowcaseProfileNavCardWidget({
@@ -35,15 +35,15 @@ class ShowcaseProfileNavCardWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return AppBoxKitGlassCard(
+    return ArxaKitGlassCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           ShowcaseSectionLabelWidget(title),
-          appBoxKitVerticalSpaceSmall,
+          arxaKitVerticalSpaceSmall,
           SizedBox(
             height: abxButtonHeightMedium,
-            child: AppBoxKitNativeButton(
+            child: ArxaKitNativeButton(
               label: buttonLabel,
               onPressed: () => context.router.pushNamed(routeName),
             ),
@@ -51,6 +51,6 @@ class ShowcaseProfileNavCardWidget extends StatelessWidget {
         ],
       ),
     );
-    // Edge treatment belongs to the enclosing AppBoxKitEdgeAwareListView.
+    // Edge treatment belongs to the enclosing ArxaKitEdgeAwareListView.
   }
 }

@@ -9,28 +9,28 @@
 // re-reads them, like every other Flutter-painted surface does.
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:appbox_kit_showcase_app/ui/widgets/common/showcase_tabs_shared/showcase_section_label_widget.dart';
-import 'package:appbox_kit_showcase_app/ui/widgets/showcase_home_widgets/showcase_snackbar_smoke_row_widget.dart';
-import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
-import 'package:appbox_kit_ui_library/appbox_kit_testing.dart';
+import 'package:arxa_kit_showcase_app/ui/widgets/common/showcase_tabs_shared/showcase_section_label_widget.dart';
+import 'package:arxa_kit_showcase_app/ui/widgets/showcase_home_widgets/showcase_snackbar_smoke_row_widget.dart';
+import 'package:arxa_kit_ui_library/arxa_kit_ui_library.dart';
+import 'package:arxa_kit_ui_library/arxa_kit_testing.dart';
 
 void main() {
   setUp(() {
     // Android tier override (repo pattern): no platform views headless. The
     // assertions target the colours the showcase widgets choose and forward,
     // which are tier-independent.
-    AppBoxKitPlatform.override =
-        const AppBoxKitPlatformOverride(isAndroid: true);
-    if (!appBoxKitLocator.isRegistered<AppBoxKitNotificationService>()) {
-      appBoxKitLocator.registerLazySingleton<AppBoxKitNotificationService>(
-          () => FakeAppBoxKitNotificationService());
+    ArxaKitPlatform.override =
+        const ArxaKitPlatformOverride(isAndroid: true);
+    if (!arxaKitLocator.isRegistered<ArxaKitNotificationService>()) {
+      arxaKitLocator.registerLazySingleton<ArxaKitNotificationService>(
+          () => FakeArxaKitNotificationService());
     }
   });
 
-  tearDown(AppBoxKitPlatform.reset);
+  tearDown(ArxaKitPlatform.reset);
 
-  final light = appBoxKitLightTheme();
-  final dark = appBoxKitDarkTheme();
+  final light = arxaKitLightTheme();
+  final dark = arxaKitDarkTheme();
 
   testWidgets(
       'profile-and-gallery-demos.gallery.browse-the-components-gallery — '
@@ -72,29 +72,29 @@ void main() {
         home: const Scaffold(body: ShowcaseSnackbarSmokeRowWidget()),
       ));
       return tester
-          .widgetList<AppBoxKitNativeIconButton>(
-              find.byType(AppBoxKitNativeIconButton))
+          .widgetList<ArxaKitNativeIconButton>(
+              find.byType(ArxaKitNativeIconButton))
           .map((button) => button.color)
           .toList();
     }
 
     expect(await pumpFor(light), [
-      AppBoxKitColors.muted,
-      AppBoxKitColors.good,
-      AppBoxKitColors.danger,
-      AppBoxKitColors.warn,
-      AppBoxKitColors.muted,
-      AppBoxKitColors.danger,
-      AppBoxKitColors.muted,
+      ArxaKitColors.muted,
+      ArxaKitColors.good,
+      ArxaKitColors.danger,
+      ArxaKitColors.warn,
+      ArxaKitColors.muted,
+      ArxaKitColors.danger,
+      ArxaKitColors.muted,
     ]);
     expect(await pumpFor(dark), [
-      AppBoxKitDarkColors.ink3,
-      AppBoxKitDarkColors.good,
-      AppBoxKitDarkColors.danger,
-      AppBoxKitDarkColors.warn,
-      AppBoxKitDarkColors.ink3,
-      AppBoxKitDarkColors.danger,
-      AppBoxKitDarkColors.ink3,
+      ArxaKitDarkColors.ink3,
+      ArxaKitDarkColors.good,
+      ArxaKitDarkColors.danger,
+      ArxaKitDarkColors.warn,
+      ArxaKitDarkColors.ink3,
+      ArxaKitDarkColors.danger,
+      ArxaKitDarkColors.ink3,
     ]);
   });
 }

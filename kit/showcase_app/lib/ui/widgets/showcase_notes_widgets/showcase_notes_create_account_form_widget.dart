@@ -1,5 +1,5 @@
 /// A widget is a reusable UI piece composed by views. It receives data via
-/// constructor params or [AppBoxKitStreamBuilder] bindings and renders its
+/// constructor params or [ArxaKitStreamBuilder] bindings and renders its
 /// slice of the surface — it holds no business logic and never decides when
 /// an action runs.
 ///
@@ -32,10 +32,10 @@
 library;
 
 import 'package:flutter/material.dart';
-import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
+import 'package:arxa_kit_ui_library/arxa_kit_ui_library.dart';
 
-import 'package:appbox_kit_showcase_app/ui/views/showcase_notes_shell/showcase_notes_create_account/showcase_notes_create_account_viewmodel.dart';
-import 'package:appbox_kit_showcase_app/ui/widgets/showcase_notes_widgets/widgets.dart';
+import 'package:arxa_kit_showcase_app/ui/views/showcase_notes_shell/showcase_notes_create_account/showcase_notes_create_account_viewmodel.dart';
+import 'package:arxa_kit_showcase_app/ui/widgets/showcase_notes_widgets/widgets.dart';
 
 class ShowcaseNotesCreateAccountFormWidget extends StatelessWidget {
   const ShowcaseNotesCreateAccountFormWidget({
@@ -58,48 +58,48 @@ class ShowcaseNotesCreateAccountFormWidget extends StatelessWidget {
           placeholder: 'Email',
           keyboardType: TextInputType.emailAddress,
         ),
-        appBoxKitVerticalSpaceSmall,
+        arxaKitVerticalSpaceSmall,
         ShowcaseNotesAuthTextFieldWidget(
           onChanged: (v) => vm.password = v,
           placeholder: 'Password',
           obscureText: true,
         ),
         // Streams-only: inline error binds the VM's errorMessage$; busy binds
-        // the sign-up op's AppBoxKitAction.state$ — no notifyListeners anywhere.
-        AppBoxKitStreamBuilder<String?>(
+        // the sign-up op's ArxaKitAction.state$ — no notifyListeners anywhere.
+        ArxaKitStreamBuilder<String?>(
           stream: vm.errorMessage$,
           builder: (context, errorMessage) => errorMessage == null
               ? const SizedBox.shrink()
               : ShowcaseNotesFormErrorRowWidget(message: errorMessage),
         ),
-        appBoxKitVerticalSpaceMedium,
-        AppBoxKitStreamBuilder<AppBoxKitActionState>(
+        arxaKitVerticalSpaceMedium,
+        ArxaKitStreamBuilder<ArxaKitActionState>(
           stream: vm.signUpState$,
           builder: (context, state) => Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               SizedBox(
                 height: abxButtonHeightMedium,
-                child: AppBoxKitNativeButton(
+                child: ArxaKitNativeButton(
                   label: 'Create Account',
-                  style: AppBoxKitButtonStyle.prominentGlass,
+                  style: ArxaKitButtonStyle.prominentGlass,
                   onPressed: state.busy
                       ? null
                       : () => vm.createAccount(vm.email, vm.password),
                 ),
               ),
-              appBoxKitVerticalSpaceSmall,
+              arxaKitVerticalSpaceSmall,
               SizedBox(
                 height: abxButtonHeightMedium,
-                child: AppBoxKitNativeButton(
+                child: ArxaKitNativeButton(
                   label: 'Back to Sign In',
-                  style: AppBoxKitButtonStyle.plain,
+                  style: ArxaKitButtonStyle.plain,
                   onPressed: state.busy ? null : onBackToSignIn,
                 ),
               ),
               if (state.busy) ...[
-                appBoxKitVerticalSpaceSmall,
-                const Center(child: AppBoxKitNativeLoadingIndicator(size: 20)),
+                arxaKitVerticalSpaceSmall,
+                const Center(child: ArxaKitNativeLoadingIndicator(size: 20)),
               ],
             ],
           ),

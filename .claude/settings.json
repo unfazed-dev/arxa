@@ -6,7 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"$CLAUDE_PROJECT_DIR/hooks/appbox-guard.js\"",
+            "command": "node \"$CLAUDE_PROJECT_DIR/hooks/arxa-guard.js\"",
             "timeout": 5
           }
         ]
@@ -18,7 +18,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"$CLAUDE_PROJECT_DIR/hooks/appbox-doc-health.js\"",
+            "command": "node \"$CLAUDE_PROJECT_DIR/hooks/arxa-doc-health.js\"",
             "timeout": 30
           }
         ]
@@ -29,7 +29,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"$CLAUDE_PROJECT_DIR/hooks/appbox-doc-enforce.js\" stop",
+            "command": "node \"$CLAUDE_PROJECT_DIR/hooks/arxa-doc-enforce.js\" stop",
             "timeout": 60
           }
         ]
@@ -40,7 +40,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"$CLAUDE_PROJECT_DIR/hooks/appbox-doc-enforce.js\" sessionstart",
+            "command": "node \"$CLAUDE_PROJECT_DIR/hooks/arxa-doc-enforce.js\" sessionstart",
             "timeout": 5
           }
         ]

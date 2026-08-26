@@ -1,15 +1,15 @@
 <Callout id="header" tone="info">
 
-# appbox_kit_auth — Per-Package Playbook
+# arxa_kit_auth — Per-Package Playbook
 
 
-`appbox_kit_auth` v**0.1.0** · `publish_to: 'none'` · status: **active**
+`arxa_kit_auth` v**0.1.0** · `publish_to: 'none'` · status: **active**
 
 
-**Role (one line):** API-first auth seam for appbox_kit apps — a AppBoxKitAuthService port (email/password + OAuth), typed AppBoxKitAuthResult with failure reasons, an in-memory default backend, and scriptable fakes.
+**Role (one line):** API-first auth seam for arxa_kit apps — a ArxaKitAuthService port (email/password + OAuth), typed ArxaKitAuthResult with failure reasons, an in-memory default backend, and scriptable fakes.
 
 
-**Scope of this document:** lets a human OR an LLM use, wire, and extend `appbox_kit_auth` **without reading its source**. The public surface below was extracted from the barrel; README content is folded into the narrative sections.
+**Scope of this document:** lets a human OR an LLM use, wire, and extend `arxa_kit_auth` **without reading its source**. The public surface below was extracted from the barrel; README content is folded into the narrative sections.
 
 
 ## Table of contents
@@ -22,16 +22,16 @@
 
 ### Overview & role
 
-API-first auth seam for appbox_kit apps — a AppBoxKitAuthService port (email/password + OAuth), typed AppBoxKitAuthResult with failure reasons, an in-memory default backend, and scriptable fakes. Seed-backend and native OAuth wiring are later phases.
+API-first auth seam for arxa_kit apps — a ArxaKitAuthService port (email/password + OAuth), typed ArxaKitAuthResult with failure reasons, an in-memory default backend, and scriptable fakes. Seed-backend and native OAuth wiring are later phases.
 
 
 ### Public surface
 
-Exported from `lib/appbox_kit_auth.dart`:
+Exported from `lib/arxa_kit_auth.dart`:
 
-<Table id="auth-api" columns={["Symbol", "Kind", "Defined in"]} rows={[["AppBoxKitOAuthProvider", "abstract interface class", "src/providers/appbox_kit_oauth_provider.dart"], ["AppBoxKitAppleSignInProvider", "class", "src/providers/apple/appbox_kit_apple_sign_in_provider.dart"], ["AppBoxKitGoogleSignInProvider", "class", "src/providers/google/appbox_kit_google_sign_in_provider.dart"], ["AppBoxKitSeedAuthBackend", "class", "src/backends/appbox_kit_seed_auth_backend.dart"], ["AppBoxKitAuthCredentials", "class", "src/models/appbox_kit_auth_credentials.dart"], ["AppBoxKitEmailPasswordCredentials", "class", "src/models/appbox_kit_auth_credentials.dart"], ["AppBoxKitAuthFailureReason", "enum", "src/models/appbox_kit_auth_failure.dart"], ["AppBoxKitAuthResult", "class", "src/models/appbox_kit_auth_result.dart"], ["AppBoxKitAuthSuccess", "class", "src/models/appbox_kit_auth_result.dart"], ["AppBoxKitAuthFailure", "class", "src/models/appbox_kit_auth_result.dart"], ["AppBoxKitAuthSession", "class", "src/models/appbox_kit_auth_session.dart"], ["AppBoxKitAuthUser", "class", "src/models/appbox_kit_auth_user.dart"], ["InMemoryAppBoxKitAuthService", "class", "src/service/appbox_kit_in_memory_auth_service.dart"], ["AppBoxKitAuthService", "abstract interface class", "src/service/appbox_kit_auth_service.dart"], ["AppBoxKitAccessPolicy", "class", "src/policy/appbox_kit_access_policy.dart"], ["AppBoxKitAccessDeniedError", "class", "src/policy/appbox_kit_access_policy.dart"], ["AppBoxKitCan", "class", "src/policy/appbox_kit_can.dart"]]} />
+<Table id="auth-api" columns={["Symbol", "Kind", "Defined in"]} rows={[["ArxaKitOAuthProvider", "abstract interface class", "src/providers/arxa_kit_oauth_provider.dart"], ["ArxaKitAppleSignInProvider", "class", "src/providers/apple/arxa_kit_apple_sign_in_provider.dart"], ["ArxaKitGoogleSignInProvider", "class", "src/providers/google/arxa_kit_google_sign_in_provider.dart"], ["ArxaKitSeedAuthBackend", "class", "src/backends/arxa_kit_seed_auth_backend.dart"], ["ArxaKitAuthCredentials", "class", "src/models/arxa_kit_auth_credentials.dart"], ["ArxaKitEmailPasswordCredentials", "class", "src/models/arxa_kit_auth_credentials.dart"], ["ArxaKitAuthFailureReason", "enum", "src/models/arxa_kit_auth_failure.dart"], ["ArxaKitAuthResult", "class", "src/models/arxa_kit_auth_result.dart"], ["ArxaKitAuthSuccess", "class", "src/models/arxa_kit_auth_result.dart"], ["ArxaKitAuthFailure", "class", "src/models/arxa_kit_auth_result.dart"], ["ArxaKitAuthSession", "class", "src/models/arxa_kit_auth_session.dart"], ["ArxaKitAuthUser", "class", "src/models/arxa_kit_auth_user.dart"], ["InMemoryArxaKitAuthService", "class", "src/service/arxa_kit_in_memory_auth_service.dart"], ["ArxaKitAuthService", "abstract interface class", "src/service/arxa_kit_auth_service.dart"], ["ArxaKitAccessPolicy", "class", "src/policy/arxa_kit_access_policy.dart"], ["ArxaKitAccessDeniedError", "class", "src/policy/arxa_kit_access_policy.dart"], ["ArxaKitCan", "class", "src/policy/arxa_kit_can.dart"]]} />
 
-Test doubles in `lib/appbox_kit_testing.dart`: `FakeAppBoxKitAuthService`.
+Test doubles in `lib/arxa_kit_testing.dart`: `FakeArxaKitAuthService`.
 
 Scripts and call-counts — tests never touch platform channels.
 
@@ -39,20 +39,20 @@ Scripts and call-counts — tests never touch platform channels.
 ### Usage & wiring
 
 ```dart
-import 'package:appbox_kit_auth/appbox_kit_auth.dart';
+import 'package:arxa_kit_auth/arxa_kit_auth.dart';
 
-final auth = InMemoryAppBoxKitAuthService();
+final auth = InMemoryArxaKitAuthService();
 
 auth.authStateChanges.listen((user) {
   // null = signed out (also how token-expiry surfaces).
 });
 
 final result = await auth.signIn(
-  const AppBoxKitEmailPasswordCredentials(email: 'a@b.com', password: 'hunter2'),
+  const ArxaKitEmailPasswordCredentials(email: 'a@b.com', password: 'hunter2'),
 );
 switch (result) {
-  case AppBoxKitAuthSuccess(:final user):    // signed in
-  case AppBoxKitAuthFailure(:final reason):  // branch on reason (userNotFound, …)
+  case ArxaKitAuthSuccess(:final user):    // signed in
+  case ArxaKitAuthFailure(:final reason):  // branch on reason (userNotFound, …)
 }
 ```
 
@@ -66,23 +66,23 @@ See `kit_matrix.md` for the full routing + dependency graph.
 
 ### Architecture
 
-`AppBoxKitAuthService` is the single port — an `abstract interface class` exposing `authStateChanges`, `currentUser`, `signUp`, `signIn`, `signInWithApple`, `signInWithGoogle`, `signOut`, and `dispose`; failures come back as typed `AppBoxKitAuthResult` rather than thrown exceptions (only programming errors like using a disposed service throw). `InMemoryAppBoxKitAuthService` is the sole concrete adapter today — a process-lifetime identity store with no persistence and no network — while `AppBoxKitSeedAuthBackend` and the `AppBoxKitOAuthProvider` stubs are ports that future backends compose behind the same service. Dependency direction is strictly inbound: the models (`AppBoxKitAuthUser`, `AppBoxKitAuthSession`, `AppBoxKitAuthResult`) and the port sit at the centre, the adapter depends on the port, and call sites (ViewModels) depend only on the port and never on a backend SDK.
+`ArxaKitAuthService` is the single port — an `abstract interface class` exposing `authStateChanges`, `currentUser`, `signUp`, `signIn`, `signInWithApple`, `signInWithGoogle`, `signOut`, and `dispose`; failures come back as typed `ArxaKitAuthResult` rather than thrown exceptions (only programming errors like using a disposed service throw). `InMemoryArxaKitAuthService` is the sole concrete adapter today — a process-lifetime identity store with no persistence and no network — while `ArxaKitSeedAuthBackend` and the `ArxaKitOAuthProvider` stubs are ports that future backends compose behind the same service. Dependency direction is strictly inbound: the models (`ArxaKitAuthUser`, `ArxaKitAuthSession`, `ArxaKitAuthResult`) and the port sit at the centre, the adapter depends on the port, and call sites (ViewModels) depend only on the port and never on a backend SDK.
 
 
 ### Gotchas
 
-No native platform setup is required today: the `AppBoxKitAppleSignInProvider` / `AppBoxKitGoogleSignInProvider` stubs throw `UnimplementedError`, so there are no iOS entitlements, `GoogleService-Info.plist`, or Android manifest keys to configure until the phase-later OAuth wiring lands. The main pitfall is treating `InMemoryAppBoxKitAuthService` as production-grade — passwords live in plaintext in memory and are lost on restart, and the README explicitly marks it a build-time convenience, not a security boundary (no real hashing, session persistence, RBAC, or account recovery). Watch the naming collision: `appbox_kit_data` also ships a `AppBoxKitAuthService` (a different, backend-coupled variant with `session$`/`currentSession`); the repo has zero co-imports today, but if a workspace ever imports both it must prefix-import (`as`) one of them — full reconciliation is a Phase-4 fold, not this package's job.
+No native platform setup is required today: the `ArxaKitAppleSignInProvider` / `ArxaKitGoogleSignInProvider` stubs throw `UnimplementedError`, so there are no iOS entitlements, `GoogleService-Info.plist`, or Android manifest keys to configure until the phase-later OAuth wiring lands. The main pitfall is treating `InMemoryArxaKitAuthService` as production-grade — passwords live in plaintext in memory and are lost on restart, and the README explicitly marks it a build-time convenience, not a security boundary (no real hashing, session persistence, RBAC, or account recovery). Watch the naming collision: `arxa_kit_data` also ships a `ArxaKitAuthService` (a different, backend-coupled variant with `session$`/`currentSession`); the repo has zero co-imports today, but if a workspace ever imports both it must prefix-import (`as`) one of them — full reconciliation is a Phase-4 fold, not this package's job.
 
 
 ### Testing
 
 ```dart
-import 'package:appbox_kit_auth/appbox_kit_testing.dart';
+import 'package:arxa_kit_auth/arxa_kit_testing.dart';
 
-final auth = FakeAppBoxKitAuthService(
+final auth = FakeArxaKitAuthService(
   scriptedResults: [
-    AppBoxKitAuthSuccess(AppBoxKitAuthSession(user: AppBoxKitAuthUser(id: 'u1', email: 'a@b.com'))),
-    const AppBoxKitAuthFailure(AppBoxKitAuthFailureReason.tokenExpired),
+    ArxaKitAuthSuccess(ArxaKitAuthSession(user: ArxaKitAuthUser(id: 'u1', email: 'a@b.com'))),
+    const ArxaKitAuthFailure(ArxaKitAuthFailureReason.tokenExpired),
   ],
 );
 
@@ -90,19 +90,19 @@ final auth = FakeAppBoxKitAuthService(
 auth.expireSession();               // emits signed-out on authStateChanges
 ```
 
-Factories: `FakeAppBoxKitAuthService.signedIn(user)`, `.signedOut()`,
-`.alwaysFails(reason)`. `FakeAppBoxKitAuthService.expiredSession(user)` builds an
-already-expired `AppBoxKitAuthSession` for `AppBoxKitAuthSession.isExpiredAt` assertions.
+Factories: `FakeArxaKitAuthService.signedIn(user)`, `.signedOut()`,
+`.alwaysFails(reason)`. `FakeArxaKitAuthService.expiredSession(user)` builds an
+already-expired `ArxaKitAuthSession` for `ArxaKitAuthSession.isExpiredAt` assertions.
 
 
 ### Features
 
-<Checklist id="auth-features" items={[{"id": "auth-feat-0", "label": "`AppBoxKitOAuthProvider` \u2014 abstract interface class"}, {"id": "auth-feat-1", "label": "`AppBoxKitAppleSignInProvider` \u2014 class"}, {"id": "auth-feat-2", "label": "`AppBoxKitGoogleSignInProvider` \u2014 class"}, {"id": "auth-feat-3", "label": "`AppBoxKitSeedAuthBackend` \u2014 class"}, {"id": "auth-feat-4", "label": "`AppBoxKitAuthCredentials` \u2014 class"}, {"id": "auth-feat-5", "label": "`AppBoxKitEmailPasswordCredentials` \u2014 class"}, {"id": "auth-feat-6", "label": "`AppBoxKitAuthFailureReason` \u2014 enum"}, {"id": "auth-feat-7", "label": "`AppBoxKitAuthResult` \u2014 class"}, {"id": "auth-feat-8", "label": "`AppBoxKitAuthSuccess` \u2014 class"}, {"id": "auth-feat-9", "label": "`AppBoxKitAuthFailure` \u2014 class"}, {"id": "auth-feat-10", "label": "`AppBoxKitAuthSession` \u2014 class"}, {"id": "auth-feat-11", "label": "`AppBoxKitAuthUser` \u2014 class"}]} />
+<Checklist id="auth-features" items={[{"id": "auth-feat-0", "label": "`ArxaKitOAuthProvider` \u2014 abstract interface class"}, {"id": "auth-feat-1", "label": "`ArxaKitAppleSignInProvider` \u2014 class"}, {"id": "auth-feat-2", "label": "`ArxaKitGoogleSignInProvider` \u2014 class"}, {"id": "auth-feat-3", "label": "`ArxaKitSeedAuthBackend` \u2014 class"}, {"id": "auth-feat-4", "label": "`ArxaKitAuthCredentials` \u2014 class"}, {"id": "auth-feat-5", "label": "`ArxaKitEmailPasswordCredentials` \u2014 class"}, {"id": "auth-feat-6", "label": "`ArxaKitAuthFailureReason` \u2014 enum"}, {"id": "auth-feat-7", "label": "`ArxaKitAuthResult` \u2014 class"}, {"id": "auth-feat-8", "label": "`ArxaKitAuthSuccess` \u2014 class"}, {"id": "auth-feat-9", "label": "`ArxaKitAuthFailure` \u2014 class"}, {"id": "auth-feat-10", "label": "`ArxaKitAuthSession` \u2014 class"}, {"id": "auth-feat-11", "label": "`ArxaKitAuthUser` \u2014 class"}]} />
 
 
 ### Decisions / ADRs
 
-The package is deliberately standalone: it depends on the Flutter SDK only, with no dependency on `stacked`, `stacked_services`, `appbox_kit`, or any app code, so the auth seam can be adopted (or swapped out) without pulling in the rest of the kit graph. OAuth backing SDKs are chosen but deferred — `sign_in_with_apple ^8.1.0` and `google_sign_in ^7.2.0` are the picked providers, kept as a non-breaking later add behind the `AppBoxKitOAuthProvider` port rather than a hard dependency today. The `AppBoxKitSeedAuthBackend` seam is held interface-clean on purpose: it will never import app code, and the host injects the operations it needs, so a real backend can land in Phase 4 without coupling this package to the host's identity layer.
+The package is deliberately standalone: it depends on the Flutter SDK only, with no dependency on `stacked`, `stacked_services`, `arxa_kit`, or any app code, so the auth seam can be adopted (or swapped out) without pulling in the rest of the kit graph. OAuth backing SDKs are chosen but deferred — `sign_in_with_apple ^8.1.0` and `google_sign_in ^7.2.0` are the picked providers, kept as a non-breaking later add behind the `ArxaKitOAuthProvider` port rather than a hard dependency today. The `ArxaKitSeedAuthBackend` seam is held interface-clean on purpose: it will never import app code, and the host injects the operations it needs, so a real backend can land in Phase 4 without coupling this package to the host's identity layer.
 
 <!-- kb:begin -->
 ### References
@@ -116,7 +116,7 @@ Official docs and tooling:
 - [stacked_cli (pub.dev)](https://pub.dev/packages/stacked_cli) — Scaffolding CLI for new Stacked apps/views/services.
 - [Flutter — official documentation](https://docs.flutter.dev) — Framework docs, platform integration, performance.
 - [Dart — official documentation](https://dart.dev) — Language tour, async, package ecosystem.
-- [Dart & Flutter MCP server (official)](https://dart.dev/tools/mcp-server) — Ships with the Dart SDK (dart mcp-server). Exposes analyzer diagnostics, pub, tests, and live Flutter app introspection via DTD. Wired in appbox_kit/.mcp.json.
+- [Dart & Flutter MCP server (official)](https://dart.dev/tools/mcp-server) — Ships with the Dart SDK (dart mcp-server). Exposes analyzer diagnostics, pub, tests, and live Flutter app introspection via DTD. Wired in arxa_kit/.mcp.json.
 <!-- kb:end -->
 
 <QuestionForm id="open-questions" questions={[

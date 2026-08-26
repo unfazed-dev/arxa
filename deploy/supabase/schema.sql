@@ -50,7 +50,7 @@ create policy "users read own machines" on machines
 
 
 -- ── Round 2 (2026-08-05): orgs, support, feedback, analytics, audit, chat ──
--- Decisions: docs/plans/appbox-data-model-decisions.md. Same rules as above:
+-- Decisions: docs/plans/arxa-data-model-decisions.md. Same rules as above:
 -- RLS read-own / read-own-org, ALL writes service-role-only (the Edge
 -- Functions, never the client) — the service role bypasses RLS.
 

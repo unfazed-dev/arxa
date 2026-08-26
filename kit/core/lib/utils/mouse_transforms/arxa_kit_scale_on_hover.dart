@@ -1,0 +1,38 @@
+import 'package:flutter/material.dart';
+
+class ArxaKitScaleOnHover extends StatefulWidget {
+  final double scale;
+  final Widget child;
+  // You can also pass the translation in here if you want to
+  const ArxaKitScaleOnHover({super.key, required this.child, this.scale = 1.1});
+
+  @override
+  State<ArxaKitScaleOnHover> createState() => _ScaleOnHoverState();
+}
+
+class _ScaleOnHoverState extends State<ArxaKitScaleOnHover> {
+  final scaleTransform = Matrix4.diagonal3Values(1.1, 1.1, 1.0);
+  final noScaleTransform = Matrix4.diagonal3Values(1.0, 1.0, 1.0);
+
+  bool _hovering = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return MouseRegion(
+      onEnter: (e) => _mouseEnter(true),
+      onExit: (e) => _mouseEnter(false),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 350),
+        curve: Curves.easeOutCirc,
+        transform: _hovering ? scaleTransform : noScaleTransform,
+        child: widget.child,
+      ),
+    );
+  }
+
+  void _mouseEnter(bool hover) {
+    setState(() {
+      _hovering = hover;
+    });
+  }
+}

@@ -1,5 +1,5 @@
 name: device_input_probe
-description: Real-touch device verification probe for the AppBoxKit native input composer.
+description: Real-touch device verification probe for the ArxaKit native input composer.
 publish_to: 'none'
 version: 1.0.0+1
 
@@ -10,9 +10,9 @@ dependencies:
   flutter:
     sdk: flutter
   cupertino_icons: ^1.0.8
-  appbox_kit_core:
+  arxa_kit_core:
     path: ../../core
-  appbox_kit_ui_library:
+  arxa_kit_ui_library:
     path: ../../ui_library
 
 dev_dependencies:

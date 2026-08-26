@@ -6,7 +6,7 @@
 # Usage: ./android_choreo.sh [serial] [shotsDir]
 set -u
 SER=${1:-emulator-5554}
-PKG=dev.appbox.device_input_probe
+PKG=dev.arxa.device_input_probe
 SHOTS=${2:-/tmp/probe_android_shots}
 mkdir -p "$SHOTS"
 ADB="adb -s $SER"

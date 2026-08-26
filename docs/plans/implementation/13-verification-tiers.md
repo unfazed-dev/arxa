@@ -50,7 +50,7 @@ that throws — which is Michelle's stated abandon condition.
       no device and no accounts, and it unblocks the seeded-data story the
       product promises.
 - [x] **13.8** Sequence the rest: ports for payments and auth → Stripe to
-      Tier 3 (appbox's own licensing needs it) → auth providers to Tier 3 →
+      Tier 3 (arxa's own licensing needs it) → auth providers to Tier 3 →
       maps and vercel last.
 
 ## Done-when

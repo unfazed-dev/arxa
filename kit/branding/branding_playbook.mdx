@@ -3,10 +3,10 @@
 # branding — Per-Package Playbook
 
 
-`appbox_kit_branding` v**0.1.0** · `publish_to: 'none'` · status: **active**
+`arxa_kit_branding` v**0.1.0** · `publish_to: 'none'` · status: **active**
 
 
-**Role (one line):** Reusable brand layer for appbox_kit apps.
+**Role (one line):** Reusable brand layer for arxa_kit apps.
 
 
 **Scope of this document:** lets a human OR an LLM use, wire, and extend `branding` **without reading its source**. The public surface below was extracted from the barrel; README content is folded into the narrative sections.
@@ -22,14 +22,14 @@
 
 ### Overview & role
 
-Reusable brand layer for `appbox_kit`-built apps. Ships **`AppBoxKitBrandSplash`** — a presentational splash widget (centered brand mark + a `Loading · N%` progress bar) that owns no routing or auth — plus a build-time codegen step (`tools/generate_branding.sh` + `templates/`) that emits the brand-icons-law launcher/splash configs from the app's own `assets/brand-icons/` master and — for legacy hosts carrying `app_colors.dart` — vendors the kit warm-neutral color ramp as `generated/brand_colors.dart` (kit-native hosts take colors from `appbox_kit_core`). Depends **only on Flutter**, so a kit-themed host and a custom-themed host both render correctly. Reach for it to give a scaffolded app a consistent splash + brand-color layer without coupling host views to the kit.
+Reusable brand layer for `arxa_kit`-built apps. Ships **`ArxaKitBrandSplash`** — a presentational splash widget (centered brand mark + a `Loading · N%` progress bar) that owns no routing or auth — plus a build-time codegen step (`tools/generate_branding.sh` + `templates/`) that emits the brand-icons-law launcher/splash configs from the app's own `assets/brand-icons/` master and — for legacy hosts carrying `app_colors.dart` — vendors the kit warm-neutral color ramp as `generated/brand_colors.dart` (kit-native hosts take colors from `arxa_kit_core`). Depends **only on Flutter**, so a kit-themed host and a custom-themed host both render correctly. Reach for it to give a scaffolded app a consistent splash + brand-color layer without coupling host views to the kit.
 
 
 ### Public surface
 
-Exported from `lib/appbox_kit_branding.dart`:
+Exported from `lib/arxa_kit_branding.dart`:
 
-<Table id="branding-api" columns={["Symbol", "Kind", "Defined in"]} rows={[["AppBoxKitBrandSplash", "class", "src/appbox_kit_startup_view.dart"]]} />
+<Table id="branding-api" columns={["Symbol", "Kind", "Defined in"]} rows={[["ArxaKitBrandSplash", "class", "src/arxa_kit_startup_view.dart"]]} />
 
 Scripts and call-counts — tests never touch platform channels.
 
@@ -40,7 +40,7 @@ Run the codegen from the monorepo (pure bash, no Flutter needed), then generate 
 
 ```sh
 # 1. emit brand_colors + icon/splash configs into the host app
-appbox_kit/branding/tools/generate_branding.sh /path/to/host_app
+arxa_kit/branding/tools/generate_branding.sh /path/to/host_app
 
 # 2. in the host: pull deps, then generate launcher icons + native splash
 cd /path/to/host_app
@@ -49,7 +49,7 @@ dart run flutter_launcher_icons
 dart run flutter_native_splash:create
 ```
 
-Wire it in the host: pass the local accent to the theme builder (`theme: kitLightTheme(accent: BrandColors.accent)` / `darkTheme: kitDarkTheme(accent: BrandColors.accent)`), render `AppBoxKitBrandSplash` from the app's `StartupView`, and drive the native to Flutter handoff with `FlutterNativeSplash.preserve()` in `main.dart` plus `FlutterNativeSplash.remove()` at the start of the startup view-model's `runStartupLogic` (see Gotchas).
+Wire it in the host: pass the local accent to the theme builder (`theme: kitLightTheme(accent: BrandColors.accent)` / `darkTheme: kitDarkTheme(accent: BrandColors.accent)`), render `ArxaKitBrandSplash` from the app's `StartupView`, and drive the native to Flutter handoff with `FlutterNativeSplash.preserve()` in `main.dart` plus `FlutterNativeSplash.remove()` at the start of the startup view-model's `runStartupLogic` (see Gotchas).
 
 
 ### Integration map
@@ -61,34 +61,34 @@ See `kit_matrix.md` for the full routing + dependency graph.
 
 ### Architecture
 
-`branding` is not a port/adapter kit — it is a **build-time generator plus a tiny presentational runtime**, in two independent halves. (1) `tools/generate_branding.sh` — an idempotent bash codegen (no Flutter needed) that resolves the brand master from `assets.manifest.json` `brandIcon` (or infers it in `assets/brand-icons/`), emits `flutter_launcher_icons.yaml` and `flutter_native_splash.yaml` into the host, rasterizes `assets/brand-icons/<base>-splash.png` at 4x `AppBoxKitBrandSplash.logoSize` plus the transparent 960px `<base>-splash-android12.png`, and — legacy hosts only (`app_colors.dart` present) — reads `kcPrimaryColor` and emits `generated/brand_colors.dart`. (2) `lib/src/appbox_kit_startup_view.dart` — the `AppBoxKitBrandSplash` widget the host's `StartupView` renders. Dependency direction is strictly **outbound**: the package depends only on Flutter and imports nothing from `appbox_kit` core, `stacked`, or `stacked_services`. The host's `ThemeData` styles `AppBoxKitBrandSplash`, and the theme builder (`kitLightTheme`/`kitDarkTheme`) stays imported via `package:ui_library` — never copied. Only the color *ramp* is vendored (a generated copy), so host views need no kit import for color values.
+`branding` is not a port/adapter kit — it is a **build-time generator plus a tiny presentational runtime**, in two independent halves. (1) `tools/generate_branding.sh` — an idempotent bash codegen (no Flutter needed) that resolves the brand master from `assets.manifest.json` `brandIcon` (or infers it in `assets/brand-icons/`), emits `flutter_launcher_icons.yaml` and `flutter_native_splash.yaml` into the host, rasterizes `assets/brand-icons/<base>-splash.png` at 4x `ArxaKitBrandSplash.logoSize` plus the transparent 960px `<base>-splash-android12.png`, and — legacy hosts only (`app_colors.dart` present) — reads `kcPrimaryColor` and emits `generated/brand_colors.dart`. (2) `lib/src/arxa_kit_startup_view.dart` — the `ArxaKitBrandSplash` widget the host's `StartupView` renders. Dependency direction is strictly **outbound**: the package depends only on Flutter and imports nothing from `arxa_kit` core, `stacked`, or `stacked_services`. The host's `ThemeData` styles `ArxaKitBrandSplash`, and the theme builder (`kitLightTheme`/`kitDarkTheme`) stays imported via `package:ui_library` — never copied. Only the color *ramp* is vendored (a generated copy), so host views need no kit import for color values.
 
 
 ### Gotchas
 
-- **Splash background = app surface, not the accent.** The native splash background is the kit surface (`#F5F0E8` light / `#1C1814` dark), emitted with `color` + `color_dark` so it follows the system theme and matches the in-Flutter `AppBoxKitBrandSplash` with no seam. An accent-colored splash clashed with the warm surface and could not go dark (the native splash renders before Flutter and cannot read `ThemeMode`).
-- **Logo size is a pipeline token.** `flutter_native_splash` renders `image:` at its **source** pixel dimensions (no upscale), so `generate_branding.sh` rasterizes a dedicated `splash_logo.png` at 4x `AppBoxKitBrandSplash.logoSize` (320px) via macOS `sips`. On non-macOS the fallback copies the full-res icon and the branding gate then **fails** on the oversize (no silent ship). `android_12.image` stays the full-res `icon.png` — the Android 12 splash icon is system-fixed (~240dp, masked).
+- **Splash background = app surface, not the accent.** The native splash background is the kit surface (`#F5F0E8` light / `#1C1814` dark), emitted with `color` + `color_dark` so it follows the system theme and matches the in-Flutter `ArxaKitBrandSplash` with no seam. An accent-colored splash clashed with the warm surface and could not go dark (the native splash renders before Flutter and cannot read `ThemeMode`).
+- **Logo size is a pipeline token.** `flutter_native_splash` renders `image:` at its **source** pixel dimensions (no upscale), so `generate_branding.sh` rasterizes a dedicated `splash_logo.png` at 4x `ArxaKitBrandSplash.logoSize` (320px) via macOS `sips`. On non-macOS the fallback copies the full-res icon and the branding gate then **fails** on the oversize (no silent ship). `android_12.image` stays the full-res `icon.png` — the Android 12 splash icon is system-fixed (~240dp, masked).
 - **Startup handoff.** The host calls `FlutterNativeSplash.preserve()` in `main.dart` and `FlutterNativeSplash.remove()` **first** in the startup view-model's `runStartupLogic` (post-first-frame). Removing after the loading delay keeps the native splash covering the in-Flutter progress bar. Because the host calls these runtime APIs, `flutter_native_splash` is a **regular** host dependency (it stays a `dev_dependency` here, used only for generation).
-- **Android desugaring.** A host that also wires `appbox_kit_notifications` (via `flutter_local_notifications`) must enable Android core-library desugaring in `android/app/build.gradle.kts`, or the build fails at `:app:checkDebugAarMetadata` (see the kit-scaffolder post-create Android patch).
+- **Android desugaring.** A host that also wires `arxa_kit_notifications` (via `flutter_local_notifications`) must enable Android core-library desugaring in `android/app/build.gradle.kts`, or the build fails at `:app:checkDebugAarMetadata` (see the kit-scaffolder post-create Android patch).
 
 
 ### Testing
 
-`branding` ships no runtime fakes — `AppBoxKitBrandSplash` is a pure presentational widget with no injected collaborators, so there is nothing to script. Its test seam is **`scripts/branding_gate.sh`**, a read-only assertion (scaffold sub-gate C) that fails loud if a host's generated brand layer drifts: it checks the brand-icons law (master + monochrome layer in `assets/brand-icons/`, launcher config mirroring `assets.manifest.json` `brandIcon`), that the native splash carries `color_dark` and uses the `<base>-splash.png` derivative at most 320px (4x `logoSize`), that android_12 uses the transparent 960px padded derivative with `icon_background_color(_dark)`, and — legacy hosts only — that the accent resolves from `app_colors.dart`, generated `brand_colors.dart` matches it, and the splash background is not the accent. Run it via `pipeline.sh gate scaffold` in consumer mode; it no-ops at the monorepo root (no app to brand).
+`branding` ships no runtime fakes — `ArxaKitBrandSplash` is a pure presentational widget with no injected collaborators, so there is nothing to script. Its test seam is **`scripts/branding_gate.sh`**, a read-only assertion (scaffold sub-gate C) that fails loud if a host's generated brand layer drifts: it checks the brand-icons law (master + monochrome layer in `assets/brand-icons/`, launcher config mirroring `assets.manifest.json` `brandIcon`), that the native splash carries `color_dark` and uses the `<base>-splash.png` derivative at most 320px (4x `logoSize`), that android_12 uses the transparent 960px padded derivative with `icon_background_color(_dark)`, and — legacy hosts only — that the accent resolves from `app_colors.dart`, generated `brand_colors.dart` matches it, and the splash background is not the accent. Run it via `pipeline.sh gate scaffold` in consumer mode; it no-ops at the monorepo root (no app to brand).
 
 
 ### Features
 
-<Checklist id="branding-features" items={[{"id": "branding-feat-0", "label": "`AppBoxKitBrandSplash` \u2014 class"}]} />
+<Checklist id="branding-features" items={[{"id": "branding-feat-0", "label": "`ArxaKitBrandSplash` \u2014 class"}]} />
 
 
 ### Decisions / ADRs
 
-- **Vendor the color ramp, don't import it (legacy hosts).** Kit-native hosts import colors from `appbox_kit_core`; a legacy host owns its brand colors locally (`generated/brand_colors.dart`) so host views need no `appbox_kit` import for color values; the accent comes from the host's own `app_colors.dart`, not the kit default. Regenerating each pipeline run keeps the vendored ramp drift-free with `appbox_kit_colors.dart` (which is never modified).
+- **Vendor the color ramp, don't import it (legacy hosts).** Kit-native hosts import colors from `arxa_kit_core`; a legacy host owns its brand colors locally (`generated/brand_colors.dart`) so host views need no `arxa_kit` import for color values; the accent comes from the host's own `app_colors.dart`, not the kit default. Regenerating each pipeline run keeps the vendored ramp drift-free with `arxa_kit_colors.dart` (which is never modified).
 - **Copy the ramp, not the theme builder.** `kitLightTheme`/`kitDarkTheme` stay imported from `package:ui_library`; the host passes its local accent in. Copying the builder would fork kit theming.
-- **`AppBoxKitBrandSplash`, not `StartupView`.** Named to avoid colliding with every Stacked app's own `StartupView` route.
+- **`ArxaKitBrandSplash`, not `StartupView`.** Named to avoid colliding with every Stacked app's own `StartupView` route.
 - **Splash background = surface, not accent.** Regression guard — the native splash renders before Flutter and cannot read `ThemeMode`, so an accent background clashed with the warm surface and never went dark.
-- **Standalone (Flutter-only).** Depending on nothing from the kit lets a kit-themed host and a custom-themed host both render `AppBoxKitBrandSplash` correctly.
+- **Standalone (Flutter-only).** Depending on nothing from the kit lets a kit-themed host and a custom-themed host both render `ArxaKitBrandSplash` correctly.
 
 <!-- kb:begin -->
 ### References
@@ -102,7 +102,7 @@ Official docs and tooling:
 - [stacked_cli (pub.dev)](https://pub.dev/packages/stacked_cli) — Scaffolding CLI for new Stacked apps/views/services.
 - [Flutter — official documentation](https://docs.flutter.dev) — Framework docs, platform integration, performance.
 - [Dart — official documentation](https://dart.dev) — Language tour, async, package ecosystem.
-- [Dart & Flutter MCP server (official)](https://dart.dev/tools/mcp-server) — Ships with the Dart SDK (dart mcp-server). Exposes analyzer diagnostics, pub, tests, and live Flutter app introspection via DTD. Wired in appbox_kit/.mcp.json.
+- [Dart & Flutter MCP server (official)](https://dart.dev/tools/mcp-server) — Ships with the Dart SDK (dart mcp-server). Exposes analyzer diagnostics, pub, tests, and live Flutter app introspection via DTD. Wired in arxa_kit/.mcp.json.
 <!-- kb:end -->
 
 <QuestionForm id="open-questions" questions={[

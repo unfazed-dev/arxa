@@ -102,13 +102,13 @@ used inside long scrolling lists… instead use them for static elements." [S]
 
 **We are violating that rule in exactly the frames the sweep flagged.** [V, local]
 `kit/showcase_app/lib/ui/views/showcase_search_shell/showcase_search/showcase_search_view.mobile.dart:42`
-returns an `AppBoxKitEdgeAwareListView`, which is a real `ListView`
-(`kit/ui_library/lib/widgets/appbox_kit_edge_aware_list_view.dart:85`). Its children include
-`showcase_search_filter_card_widget.dart:38,52` (`AppBoxKitNativeSlider`,
-`AppBoxKitNativeRangeSlider` — the RADIUS / PRICE RANGE card) and
-`showcase_search_options_section_widget.dart:33,41` (`AppBoxKitNativeSwitch` — the "Open now"
+returns an `ArxaKitEdgeAwareListView`, which is a real `ListView`
+(`kit/ui_library/lib/widgets/arxa_kit_edge_aware_list_view.dart:85`). Its children include
+`showcase_search_filter_card_widget.dart:38,52` (`ArxaKitNativeSlider`,
+`ArxaKitNativeRangeSlider` — the RADIUS / PRICE RANGE card) and
+`showcase_search_options_section_widget.dart:33,41` (`ArxaKitNativeSwitch` — the "Open now"
 rows). Both files carry the comment "Edge treatment belongs to the enclosing
-AppBoxKitEdgeAwareListView." So Defect A's sliders and switches are platform views scrolling
+ArxaKitEdgeAwareListView." So Defect A's sliders and switches are platform views scrolling
 inside a `ListView` — the vendor's documented "DO NOT", not a judgement call.
 
 **Ruled out for A:** flutter#**175048** ("BackdropFilter with ClipRRect leaks blur outside
@@ -242,8 +242,8 @@ types. Listed for completeness; fix 1 achieves the same end more cleanly.
 - **Registering `CNTabBarRouteObserver` / `CNSheetGeometryProbe` / `autoHideOnModal`.**
   The vendor calls these mandatory ("without it the dynamic z-order/halo containment never
   engages") [V], but **this repo already wires all three** — see
-  `kit/ui_library/test/kit/widgets/appbox_kit_tab_bar_single_hide_authority_test.dart`,
-  `.../appbox_kit_scroll_occlusion_gate_test.dart`, `.../appbox_kit_native_sheet_test.dart`.
+  `kit/ui_library/test/kit/widgets/arxa_kit_tab_bar_single_hide_authority_test.dart`,
+  `.../arxa_kit_scroll_occlusion_gate_test.dart`, `.../arxa_kit_native_sheet_test.dart`.
   Already done; not a candidate fix.
 - **Chasing flutter#175048.** Closed `r: fixed` and about blur escaping a clip, not text
   drops. [V] Also: the memory note tying it to scroll text-flicker is unsupported — fix the

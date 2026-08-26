@@ -1,9 +1,9 @@
 # Entitlement backend — deployment runbook
 
 Status: **hosted-half source code-complete, not deployed** (2026-08-05).
-The local half of D17/D18 — `appboxd/lib/entitlement.dart` (offline JWT
+The local half of D17/D18 — `arxa/lib/entitlement.dart` (offline JWT
 verification), the scaffold-boundary assertion in `scaffoldMain` +
-`scaffoldGate`, and `appbox entitlement status/verify` — is shipped, and the
+`scaffoldGate`, and `arxa entitlement status/verify` — is shipped, and the
 hosted half now exists as undeployed source under `deploy/supabase/`:
 
 | piece | file | state |
@@ -11,7 +11,7 @@ hosted half now exists as undeployed source under `deploy/supabase/`:
 | `/activate` + `DELETE /machines/:fpr` Edge Function | `deploy/supabase/functions/activate/index.ts` | code-complete; **not deployed, not run against a live Supabase** |
 | JWT minter (the exact token-contract code) | `deploy/supabase/functions/_shared/entitlement_jwt.ts` | code-complete; **locally cross-verified against the Dart verifier** (8/8 scenarios, `deploy/supabase/scripts/local_mint_check.mjs`) |
 | Schema (§2 tables + RLS policies) | `deploy/supabase/schema.sql` | code-complete; **not applied** to any project |
-| Round-2 schema extension (orgs/org_members, tickets, feedback, metadata-only analytics_events, audit_log, chat — `docs/plans/appbox-data-model-decisions.md`) | `deploy/supabase/schema.sql` | code-complete; **not applied** to any project; DDL + RLS verified against a scratch local Postgres |
+| Round-2 schema extension (orgs/org_members, tickets, feedback, metadata-only analytics_events, audit_log, chat — `docs/plans/arxa-data-model-decisions.md`) | `deploy/supabase/schema.sql` | code-complete; **not applied** to any project; DDL + RLS verified against a scratch local Postgres |
 | Production issuer keygen | `deploy/supabase/scripts/keygen.mjs` | code-complete; output goes to gitignored `deploy/supabase/secrets/` — **run it only at deploy time** |
 
 Remaining manual/deploy steps are collected in §9. Source of decisions:
@@ -19,8 +19,8 @@ Remaining manual/deploy steps are collected in §9. Source of decisions:
 
 The golden rule: **the client verifier is the authority on the token format.**
 Whatever this runbook and the deployed backend produce must verify against
-`Entitlement.verify` in `appboxd/lib/entitlement.dart` — when in doubt, mint a
-token and run `appbox entitlement verify <file>`.
+`Entitlement.verify` in `arxa/lib/entitlement.dart` — when in doubt, mint a
+token and run `arxa entitlement verify <file>`.
 
 ---
 
@@ -28,7 +28,7 @@ token and run `appbox entitlement verify <file>`.
 
 `POST /activate` returns a compact JWS (`header.payload.signature`, base64url —
 padded or unpadded both verify) cached by the client at
-`~/.appbox/entitlement.jwt`.
+`~/.arxa/entitlement.jwt`.
 
 **Header:**
 
@@ -55,11 +55,11 @@ they appear in the compact serialization. The verifier never re-encodes —
 whitespace or key-order changes between signing and caching break (or forge)
 nothing, because verification covers the cached bytes verbatim.
 
-**Signing key:** the appbox-owned Ed25519 issuer keypair. The public half is
+**Signing key:** the arxa-owned Ed25519 issuer keypair. The public half is
 embedded in the client as `Entitlement.publicKey`
-(`appboxd/lib/entitlement.dart`). **The private half must never enter this
+(`arxa/lib/entitlement.dart`). **The private half must never enter this
 repo.** What ships today is a DEV keypair (its private half lives in
-`appboxd/test/entitlement_fixture.dart`, marked dev-only) so the whole flow is
+`arxa/test/entitlement_fixture.dart`, marked dev-only) so the whole flow is
 exercisable; replace the constant with the production public key before the
 first paid release — nothing else in the verification path changes.
 
@@ -89,7 +89,7 @@ lowercase sha256 hex of the raw id string.
 read-own-rows RLS policies). Applying it to a project is a manual deploy step
 (§9). Three tables (D18), plus the round-2 extension (orgs, support,
 feedback, analytics, audit, chat — see
-`docs/plans/appbox-data-model-decisions.md`; not reproduced here). RLS: users
+`docs/plans/arxa-data-model-decisions.md`; not reproduced here). RLS: users
 read their own rows; **all writes are service-role-only** (the Edge Functions
 and the Stripe webhook, never the client).
 
@@ -147,7 +147,7 @@ node --experimental-strip-types deploy/supabase/scripts/local_mint_check.mjs
 ```
 
 mints tokens with the DEV keypair through the exact shared minter and runs the
-real client verifier (`appbox entitlement status/verify --token`) against
+real client verifier (`arxa entitlement status/verify --token`) against
 them — 8 scenarios (valid, grace, expired-past-grace, missing feature,
 wrong-machine, future nbf, tampered payload, wrong key), all matching the §1
 verdict table.
@@ -175,7 +175,7 @@ token):
    the issuer private key (Supabase secret, never in the repo).
 
 Response: `{ "token": "<compact JWS>" }`. The client writes it to
-`~/.appbox/entitlement.jwt`.
+`~/.arxa/entitlement.jwt`.
 
 Known abuse gap (carried from the plan's risks): the 3-seat cap with
 self-service deactivation is the only control; rapid activate/deactivate
@@ -185,11 +185,11 @@ Log activations; decide rate-limiting before launch, not after.
 ## 4. Auth flow (client → Supabase)
 
 - Desktop: Supabase Auth with **loopback-redirect PKCE**.
-- Mobile: `appbox://auth-callback` deep-link.
+- Mobile: `arxa://auth-callback` deep-link.
 - Headless/SSH: paste-a-code path against the same Edge Function router.
 - There is no Supabase device-code flow — documented gap, do not design
   against one.
-- `appbox login` (workstream 2) stores tokens in the OS keychain vault,
+- `arxa login` (workstream 2) stores tokens in the OS keychain vault,
   reusing D14's OAuth-first account-connection pattern. Not built yet; this
   runbook does not ship a client.
 
@@ -210,13 +210,13 @@ Log activations; decide rate-limiting before launch, not after.
 Already shipped locally: offline verification, machine binding, 30-day
 grace. Still to build (needs this backend): silent background refresh of the
 cached token inside its last 48h (Keygen's license-file model — no
-heartbeat), and `appbox login` itself. Refresh failures must be silent and
+heartbeat), and `arxa login` itself. Refresh failures must be silent and
 never destructive: a failed refresh leaves the cached token in place and the
 offline-verdict semantics decide.
 
 ## 7. Pre-ship obligations (from the plan's risks — owning these is part of deploy)
 
-- **Key management.** The issuer keypair is appbox's first owned trust
+- **Key management.** The issuer keypair is arxa's first owned trust
   surface: rotation procedure, compromise response, and uptime ownership
   named before the first paid release. Keygen is code-complete:
   `node deploy/supabase/scripts/keygen.mjs` writes the issuer JWK (chmod 600)
@@ -238,10 +238,10 @@ offline-verdict semantics decide.
 
 ## 8. What the old licence became
 
-The Ed25519 `licence.json` (P1/P2, `appbox-memory-and-payment.md`) is
+The Ed25519 `licence.json` (P1/P2, `arxa-memory-and-payment.md`) is
 **retired, not demoted, in the client**: `licence.dart`, `licence_tool.dart`,
-`watermark.dart`, the `appbox watermark` command, and the
-`APPBOX_DEV_LICENCE` bypass are deleted. The entitlement JWT IS the
+`watermark.dart`, the `arxa watermark` command, and the
+`ARXA_DEV_LICENCE` bypass are deleted. The entitlement JWT IS the
 signed+TTL offline-continuation artifact the plan demotes the licence to —
 nothing else issues or consumes licence files, so keeping the parser was dead
 code. The deploy gate keeps only its pipeline-state contract
@@ -256,7 +256,7 @@ human decisions, in order:
    `smjuargdrbpaptduqdgf`, wired via the repo-local MCP
    (`.kimi-code/mcp.json`).
 2. ~~**Apply the schema**~~ — DONE (2026-08-05): `deploy/supabase/schema.sql`
-   applied as migration `appbox_schema_rounds_1_and_2`; 13 tables + 13 RLS
+   applied as migration `arxa_schema_rounds_1_and_2`; 13 tables + 13 RLS
    policies verified live, and seeded (`deploy/supabase/seed.sql` — persona
    users, Totem Labs org with the full role matrix, Michelle individual;
    all seed users share the dev password recorded in the seed file header).
@@ -278,7 +278,7 @@ human decisions, in order:
    Until then the release-gate test MUST stay green — it is the tripwire.
 7. **Stripe** (§5): products/prices per tier, webhook endpoint writing
    `subscriptions`/`entitlements`. Not started.
-8. **Client auth + refresh** (§4, §6): `appbox login` (PKCE loopback),
+8. **Client auth + refresh** (§4, §6): `arxa login` (PKCE loopback),
    silent 48h refresh. Not started.
 9. **Pre-launch decisions** (§7): rotation/compromise ownership, rate-limit
    on activate/deactivate cycling, air-gapped buyers, Shorebird pricing.
@@ -294,8 +294,8 @@ Client IDs/secrets go NOWHERE in the repo.
 
 ### Google
 
-1. Google Cloud Console → create a project (e.g. "appbox") → APIs & Services
-   → OAuth consent screen: External, app name "appbox", Totem support email;
+1. Google Cloud Console → create a project (e.g. "arxa") → APIs & Services
+   → OAuth consent screen: External, app name "arxa", Totem support email;
    no extra scopes needed (email/profile are default).
 2. APIs & Services → Credentials → Create Credentials → OAuth client ID →
    type **Web application**. Authorized redirect URI: the callback URL above.
@@ -311,9 +311,9 @@ Requires a paid Apple Developer account (~USD 99/yr) — Sign in with Apple
 cannot be tested without one.
 
 1. developer.apple.com → Certificates, Identifiers & Profiles → Identifiers
-   → register an **App ID** for the appbox app (bundle id, e.g.
-   `dev.totemlabs.appbox`), enable "Sign in with Apple" on it.
-2. Register a **Services ID** (e.g. `dev.totemlabs.appbox.signin`) → enable
+   → register an **App ID** for the arxa app (bundle id, e.g.
+   `dev.totemlabs.arxa`), enable "Sign in with Apple" on it.
+2. Register a **Services ID** (e.g. `dev.totemlabs.arxa.signin`) → enable
    Sign in with Apple → Configure: domain `smjuargdrbpaptduqdgf.supabase.co`,
    return URL = the callback URL above.
 3. Create a Sign in with Apple **Key** (Keys → new key, enable the
@@ -328,7 +328,7 @@ cannot be tested without one.
 ### After both
 
 - The studio design's auth surface already renders provider buttons; wire the
-  real client calls when `appbox login` (§4) lands.
+  real client calls when `arxa login` (§4) lands.
 - Update the seeded auth users only if real OAuth logins should link to them
   (identity linking by email is on by default — a Google login with a seed
   email would attach to the seed user; use non-seed addresses for tests).

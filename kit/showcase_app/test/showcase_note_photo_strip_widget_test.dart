@@ -1,15 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:appbox_kit_showcase_app/app/app.locator.dart';
-import 'package:appbox_kit_showcase_app/data/models/showcase_notes_models/models.dart';
-import 'package:appbox_kit_showcase_app/enums/showcase_notes_enums/enums.dart';
-import 'package:appbox_kit_showcase_app/ui/views/showcase_notes_shell/showcase_note_editor/showcase_note_editor_viewmodel.dart';
-import 'package:appbox_kit_showcase_app/ui/widgets/showcase_notes_widgets/showcase_note_photo_strip_widget.dart';
+import 'package:arxa_kit_showcase_app/app/app.locator.dart';
+import 'package:arxa_kit_showcase_app/data/models/showcase_notes_models/models.dart';
+import 'package:arxa_kit_showcase_app/enums/showcase_notes_enums/enums.dart';
+import 'package:arxa_kit_showcase_app/ui/views/showcase_notes_shell/showcase_note_editor/showcase_note_editor_viewmodel.dart';
+import 'package:arxa_kit_showcase_app/ui/widgets/showcase_notes_widgets/showcase_note_photo_strip_widget.dart';
 
-import 'package:appbox_kit_core/platform/appbox_kit_platform.dart';
-import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart'
-    show AppBoxKitNativeIconButton, CNTabBarRouteObserver, StackedService;
+import 'package:arxa_kit_core/platform/arxa_kit_platform.dart';
+import 'package:arxa_kit_ui_library/arxa_kit_ui_library.dart'
+    show ArxaKitNativeIconButton, CNTabBarRouteObserver, StackedService;
 
 import 'helpers/test_helpers.dart';
 
@@ -25,7 +25,7 @@ void main() {
 
   setUp(() {
     registerServices();
-    registerAppBoxKitActionServices();
+    registerArxaKitActionServices();
     notes = getAndRegisterShowcaseNotesFacadeService();
   });
 
@@ -74,9 +74,9 @@ void main() {
       '[Photo display] — attach-a-photo-to-a-note — the lightbox presents from '
       'the root navigator over ALL chrome and brackets the shared modal depth '
       'while open', (tester) async {
-    AppBoxKitPlatform.override =
-        const AppBoxKitPlatformOverride(isAndroid: true);
-    addTearDown(AppBoxKitPlatform.reset);
+    ArxaKitPlatform.override =
+        const ArxaKitPlatformOverride(isAndroid: true);
+    addTearDown(ArxaKitPlatform.reset);
     when(() => notes.note$('n1')).thenAnswer((_) => Stream.value(null));
     when(() => notes.resolvePath(any())).thenAnswer((_) async => '/tmp/a1.jpg');
     final vm = ShowcaseNoteEditorViewModel(noteId: 'n1');
@@ -111,13 +111,13 @@ void main() {
     expect(CNTabBarRouteObserver.anyModalDepth.value, depthBefore + 1,
         reason: 'every kit sheet/dialog brackets anyModalDepth — without it '
             'native glass on the obscured page composites above the lightbox '
-            '(appbox_kit_native_sheet.dart:145-153)');
+            '(arxa_kit_native_sheet.dart:145-153)');
     expect(tester.getSize(find.byType(InteractiveViewer)),
         const Size(800, 600),
         reason: 'root-navigator presentation covers the shared chrome too; a '
             'nested presentation stops at the tab bar (64px shorter)');
 
-    await tester.tap(find.byType(AppBoxKitNativeIconButton));
+    await tester.tap(find.byType(ArxaKitNativeIconButton));
     await tester.pumpAndSettle();
     expect(CNTabBarRouteObserver.anyModalDepth.value, depthBefore,
         reason: 'the bracket unwinds on dismiss');

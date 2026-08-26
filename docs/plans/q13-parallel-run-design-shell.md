@@ -7,14 +7,14 @@ cutover. Deletion of the old shell is explicitly NOT in this run's scope.
 
 ## Verified ground truth (checked, not assumed)
 
-Substrate is **Hono JSX / TSX, server-rendered**, under `designs/appbox-studio/ui/`.
+Substrate is **Hono JSX / TSX, server-rendered**, under `designs/arxa-studio/ui/`.
 The Q11 Flutter goldens (`tool/spike-q11-shells/`) were the *scaffolder-side*
 proof; Q13 operates on the studio design and is probed via CDP.
 
 Hosted shells live **nested inside `main_shell`**, not at `views/` top level:
 
 ```
-designs/appbox-studio/ui/views/
+designs/arxa-studio/ui/views/
   app_shell/        startup, unknown, auth, splash, dashboard   (ceremony + hub)
   main_shell/       outer chrome; Base + header/footer panels
     build/ design/ intake/ scaffold/ shared/                    (hosted shells)
@@ -50,7 +50,7 @@ The three cutover units are therefore **chat, freeze, prototype**.
 
 ### 1. `inspectAttrs` is TWO different things — name collision, already in repo
 
-The normative JS form is `skills/appbox-designer/references/app-architecture.md`
+The normative JS form is `skills/arxa-designer/references/app-architecture.md`
 (§"Every surface stamps its inspect identity"), verbatim:
 
 ```js
@@ -65,7 +65,7 @@ export const inspectAttrs = {
 That is a **module-level exported const object, one per surface**. The decisions
 doc line 145 requires this JS form and the Dart shape stay **1:1**.
 
-But `designs/appbox-studio/ui/common/widgets/primitives.tsx` already defines
+But `designs/arxa-studio/ui/common/widgets/primitives.tsx` already defines
 `inspectAttrs` as a **function**, `(name, meta) => Record<string,string>`,
 producing `data-el` / `data-inspect-role|style|motion|fn` — **per widget**, and
 its own comment calls itself "the ONE source of widget inspect identity".
@@ -91,8 +91,8 @@ with Dart, this plan uses `nodeId`. Flagged to team-lead.
 
 ### 2. There is no existing feature-flag mechanism
 
-Grepped for `featureFlag`, `process.env`, `APPBOX_*` inside `designs/` — zero
-hits. `design_server.dart` reads env only for `PORT`, `HOST`, `APPBOX_PROJECT`.
+Grepped for `featureFlag`, `process.env`, `ARXA_*` inside `designs/` — zero
+hits. `design_server.dart` reads env only for `PORT`, `HOST`, `ARXA_PROJECT`.
 
 `activeShell` is the existing *shell selection* mechanism, but it selects which
 hosted shell renders — it is shell-level, whereas Q13 cutover is **per view**.
@@ -113,9 +113,9 @@ Flipping = add the view name; flipping back = remove it. Toggle, not revert.
 
 **The override must be request-level, not an env var.** Verified: probes
 *attach* to an already-running `design_server` — `probe_base.dart` resolves the
-target via `--base` / `--port` / `APPBOX_BASE` with a `4319` default and has no
+target via `--base` / `--port` / `ARXA_BASE` with a `4319` default and has no
 `Process.start`. So an env var set on the probe process never reaches the server
-process, and `APPBOX_ANATOMY_VIEWS` would silently do nothing at step 5.
+process, and `ARXA_ANATOMY_VIEWS` would silently do nothing at step 5.
 
 Dual-render therefore uses a **query-param selector** read by
 `routes.design.js` per request, e.g. `?abxShell=anatomy` / `?abxShell=legacy`,
@@ -164,15 +164,15 @@ the default when `?abxShell=` is absent.
 ## Constraints carried into every step
 
 - Layout values are kit constant names only: `abxPad*`, `abxGap*`,
-  `abxHug`/`abxFill`/`abxFixed`, `appBoxKitVerticalSpace*` /
-  `appBoxKitHorizontalSpace*`. A raw numeric literal where a kit constant
+  `abxHug`/`abxFill`/`abxFixed`, `arxaKitVerticalSpace*` /
+  `arxaKitHorizontalSpace*`. A raw numeric literal where a kit constant
   exists = FAIL.
 - All new constants carry the `abx` prefix; strings use `abxStr*`.
 - Vocabulary: hub > shell > view > widgets. No "surface/body/chrome/screen/
   page" in new user-facing or doc text, except the ratified `shell.surface`
   inspectAttrs spelling.
 - Anatomy vocabulary is closed at 1 member: `anatomy:view.body`.
-- Registry: `skills/appbox-scaffolder/kind-resolution.registry.json` v1.2.0.
+- Registry: `skills/arxa-scaffolder/kind-resolution.registry.json` v1.2.0.
 - Do not delete the old shell.
 
 ## Finding 3 — `nodeId` vs `anatomyNodeId` is not a conflict
@@ -180,7 +180,7 @@ the default when `?abxShell=` is absent.
 `app-architecture.md:184` settles it outright: "Dart spells this slot
 `anatomyNodeId`, JS spells it `nodeId` — **one slot, two spellings**." Both are
 ratified. The Q11 spike golden confirms the Dart side
-(`AppBoxKitInspectAttrs(screenId:, surfaceId:, anatomyNodeId:)`). TSX therefore
+(`ArxaKitInspectAttrs(screenId:, surfaceId:, anatomyNodeId:)`). TSX therefore
 uses `nodeId`; nothing to arbitrate.
 
 ## Finding 4 — the DOM spelling of the triple does not exist yet (BLOCKING step 5)
@@ -188,7 +188,7 @@ uses `nodeId`; nothing to arbitrate.
 `app-architecture.md:180` says the triple's presence "is mechanically enforced
 by the probe". It currently is not, and cannot be:
 
-- `probe_inspect.dart` (`appboxd/lib/probes/studio/`) parses only `data-el`,
+- `probe_inspect.dart` (`arxa/lib/probes/studio/`) parses only `data-el`,
   `data-inspect-role|style|fn`, `data-inspect-armed`, `data-id`. It never reads
   screen/surface/node identity.
 - No `data-screen-id` / `data-surface-id` / `data-node-id` exists anywhere in
@@ -279,7 +279,7 @@ byte-identical today), `abx` prefix retained, and request-level
 value is confirmed correct — wrong granularity, and it would widen a closed
 vocabulary.
 
-**One approved item is inert and must not be relied on:** `APPBOX_ANATOMY_VIEWS`
+**One approved item is inert and must not be relied on:** `ARXA_ANATOMY_VIEWS`
 as a *probe* override cannot work — probes attach to an already-running server
 (finding 2), so an env var in the probe process never reaches the renderer. It
 survives only as a *server-process* default, read at server start. The
@@ -712,7 +712,7 @@ server — not by reasoning about DOM equality.
 
 R4 above states the node vocabulary is "CLOSED at 1 member, registry v1.2.0".
 That was true when R4 was written and is **no longer accurate**. Source of
-truth: `.claude/skills/appbox-scaffolder/kind-resolution.registry.json` (byte
+truth: `.claude/skills/arxa-scaffolder/kind-resolution.registry.json` (byte
 -identical to the `.kimi-code/` copy, so the copy is not the divergence — R4
 is simply older than the ratification):
 
@@ -739,6 +739,6 @@ views. Read the set from the registry rather than inlining it; the registry's
 own rule is that widening the set "is a deliberate registry change with a
 version bump", never an improvisation to make a failing run pass.
 
-*Also measured:* `appboxd/lib/probes/studio/probe_inspect.dart` exists (26,750
+*Also measured:* `arxa/lib/probes/studio/probe_inspect.dart` exists (26,750
 bytes) but currently contains **no** reference to `registry`, `anatomy:`, or
 any node constant — the step-B extension is genuinely unstarted, not partial.

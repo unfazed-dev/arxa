@@ -1,10 +1,10 @@
 {
   "product": {
-    "value": "showcase_app — the appbox kit showcase: a real notes product (auth, notes CRUD, folders, search, media attachments) plus shell demos for every kit surface family",
+    "value": "showcase_app — the arxa kit showcase: a real notes product (auth, notes CRUD, folders, search, media attachments) plus shell demos for every kit surface family",
     "provenance": "founder"
   },
   "audience": {
-    "value": "When I evaluate the appbox kit, I want a working notes app and live shell demos in one target, so I can judge the kit on real product behavior rather than static mockups",
+    "value": "When I evaluate the arxa kit, I want a working notes app and live shell demos in one target, so I can judge the kit on real product behavior rather than static mockups",
     "provenance": "founder"
   },
   "appMustDo": {
@@ -37,7 +37,7 @@
     "provenance": "founder"
   },
   "brand": {
-    "value": "appbox kit showcase; neutral demo branding that defers to the kit theme",
+    "value": "arxa kit showcase; neutral demo branding that defers to the kit theme",
     "provenance": "founder"
   },
   "direction": {
@@ -277,7 +277,7 @@
   "personas": [
     {
       "name": "Kit evaluator",
-      "role": "engineer assessing the appbox kit for a client project",
+      "role": "engineer assessing the arxa kit for a client project",
       "goals": [
         "see real product behavior built from kit parts",
         "judge every shell family in one running target"

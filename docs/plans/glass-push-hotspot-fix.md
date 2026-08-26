@@ -3,7 +3,7 @@
 Goal: eliminate the one measured jank class — route push with in-scroll glass
 cards (`motion_push` worst raster frame 59.7ms, 2.9% > 16.7ms, see
 `docs/research/perf-measurement-native-coexistence.md`) — with a REUSABLE
-appbox primitive, so any route full of glass can be pushed clean.
+arxa primitive, so any route full of glass can be pushed clean.
 
 Advisor consult: skipped (no API key configured — standing protocol), decided
 on device evidence.
@@ -38,7 +38,7 @@ what remains.
 Lives in `kit/ui_library`; law doc gets the rule; a widget test pins the
 mechanism. Candidates:
 
-- `AppBoxKitGlassWarmup` — boot-time, self-removing (or kept, translated
+- `ArxaKitGlassWarmup` — boot-time, self-removing (or kept, translated
   100000px off-screen per law rule 8) 1-instance glass materializer.
 - Route-entrance staging scope consumed by the existing tier machinery
   (glass card & friends already resolve native-vs-Flutter tier), keyed off
@@ -53,7 +53,7 @@ Revert probe, clean build back on device.
 
 ## Outcome (2026-08-14) — DONE, warm-up branch taken
 
-Decomposition said first-push-only → `AppBoxKitGlassWarmup` shipped
+Decomposition said first-push-only → `ArxaKitGlassWarmup` shipped
 (ui_library, law rule 9). Two kinds needed warming for the Motion route:
 the surface container (glass card) and the switch; boot-visible kinds warm
 themselves. Verified over two relaunches: first push worst frame 11–12ms,

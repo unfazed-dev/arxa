@@ -1,7 +1,7 @@
 # The M3E law — Material 3 Expressive on Android, ratified
 
 **THE M3E law** (opened 2026-08-13, ratified alongside the liquid-glass law):
-single source of truth for how appbox apps render Android's Material 3
+single source of truth for how arxa apps render Android's Material 3
 Expressive tier — the first-class Android idiom, not a fallback. Sibling of
 the liquid-glass law (docs/liquid-glass-allowlist.md); same discipline:
 device evidence in, rules out, enforcement by gates + lint, never prose
@@ -22,15 +22,15 @@ it. Rules below are the current corpus.
    container on an internal Material whose shape token rounds the bar's
    corners — wrong at the screen edge. The kit makes the package container
    transparent and paints its own unrounded, theme-colored rectangle behind
-   it (`appbox_kit_native_app_bar.dart` M3E tier; same fix as
-   `AppBoxKitNativeTabBar._m3e`). Any new M3E chrome must repeat this shape
+   it (`arxa_kit_native_app_bar.dart` M3E tier; same fix as
+   `ArxaKitNativeTabBar._m3e`). Any new M3E chrome must repeat this shape
    discipline.
-2. **The tier gate is `wantNative && AppBoxKitPlatform.supportsComposeM3E`**
-   — the same two-way structural gate shape `AppBoxKitNativeTabBar`
+2. **The tier gate is `wantNative && ArxaKitPlatform.supportsComposeM3E`**
+   — the same two-way structural gate shape `ArxaKitNativeTabBar`
    established. Never key M3E rendering off bare `Platform.isAndroid`.
 3. **Chrome, where a design declares it, comes from the chrome scaffold.**
-   `AppBoxKitChromeScaffold` resolves the Android branch to the boxed
-   `AppBoxKitNativeAppBar` (→ `AppBarM3E`). Hand-assembled top chrome is a
+   `ArxaKitChromeScaffold` resolves the Android branch to the boxed
+   `ArxaKitNativeAppBar` (→ `AppBarM3E`). Hand-assembled top chrome is a
    law violation on this tier exactly as on the glass tier. Scope (ruling
    2026-08-13): this is an ASSEMBLY rule, not an inventory one — the
    designer's frozen anatomy decides whether a surface has top chrome at
@@ -64,7 +64,7 @@ it. Rules below are the current corpus.
 ## Sources
 
 m3e_collection package docs; Material 3 Expressive guidance (m3.material.io);
-kit sources: `appbox_kit_native_app_bar.dart` (M3E tier),
-`appbox_kit_native_tab_bar` `_m3e`, `M3ETheme`;
+kit sources: `arxa_kit_native_app_bar.dart` (M3E tier),
+`arxa_kit_native_tab_bar` `_m3e`, `M3ETheme`;
 docs/liquid-glass-allowlist.md (the sibling law whose structure this
 follows).

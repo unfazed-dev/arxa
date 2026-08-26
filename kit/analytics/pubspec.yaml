@@ -1,5 +1,5 @@
-name: appbox_kit_analytics
-description: Analytics port for appbox_kit apps — a backend-agnostic AppBoxKitAnalyticsService that fans a single event stream out to any number of registered backends, with a zero-dependency AppBoxKitDebugConsoleAnalyticsBackend shipped as the working default.
+name: arxa_kit_analytics
+description: Analytics port for arxa_kit apps — a backend-agnostic ArxaKitAnalyticsService that fans a single event stream out to any number of registered backends, with a zero-dependency ArxaKitDebugConsoleAnalyticsBackend shipped as the working default.
 version: 0.1.0
 publish_to: 'none'
 
@@ -7,7 +7,7 @@ environment:
   sdk: '>=3.0.3 <4.0.0'
 
 # NATIVE-FIRST / STANDALONE: this package intentionally depends on neither
-# appbox_kit (core), stacked, nor stacked_services. It is a pure port + a
+# arxa_kit (core), stacked, nor stacked_services. It is a pure port + a
 # zero-dep console backend. Real backends (Firebase / Amplitude / PostHog) are
 # file stubs that name their target package+version in a TODO — they are NOT
 # wired as dependencies here, so this package's dep graph stays minimal and

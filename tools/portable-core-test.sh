@@ -12,14 +12,14 @@
 #
 # Suites: smoke pressure stress portability
 #
-# NOTE ON STREAMS: `appbox --help` writes to STDERR and produces zero bytes on
+# NOTE ON STREAMS: `arxa --help` writes to STDERR and produces zero bytes on
 # stdout (verified). Assertions about produced output therefore use a verb that
 # actually writes stdout, such as `design doctor`. Getting this backwards makes
 # a passing binary look broken.
 set -uo pipefail
 
 REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)"
-BIN="$REPO/.build/appbox"
+BIN="$REPO/.build/arxa"
 VERBOSE=0
 SUITES=()
 for a in "$@"; do
@@ -37,7 +37,7 @@ TMPD="$(mktemp -d)"
 trap 'rm -rf "$TMPD"; rm -f "$REPO"/hooks/.variant-*.js; restore_source' EXIT
 
 # The stale-detection tests must dirty a source file. Always put it back.
-TOUCHED="$REPO/appboxd/lib/harness.dart"
+TOUCHED="$REPO/arxa/lib/harness.dart"
 restore_source() {
   [ -n "${TOUCHED:-}" ] && git -C "$REPO" checkout -- "$TOUCHED" 2>/dev/null
   return 0
@@ -80,7 +80,7 @@ counter_check() { # <desc> <anchor> <repl> <control-json> <target-json> <want-va
   local desc="$1" anchor="$2" repl="$3" control="$4" target="$5" wv="$6" wc="$7"
   local v="$REPO/hooks/.variant-$$-$RANDOM.js" ec
 
-  if ! python3 - "$REPO/hooks/appbox-guard.js" "$v" "$anchor" "$repl" 2>"$TMPD/mut.err" <<'PY'
+  if ! python3 - "$REPO/hooks/arxa-guard.js" "$v" "$anchor" "$repl" 2>"$TMPD/mut.err" <<'PY'
 import sys, pathlib
 src_p, out_p, anchor, repl = sys.argv[1:5]
 src = pathlib.Path(src_p).read_text()
@@ -97,14 +97,14 @@ PY
   fi
 
   # ALIVENESS — the check whose absence produced the five false passes above.
-  echo "$control" | APPBOX_GUARD_MODE=using node "$v" >/dev/null 2>&1; ec=$?
+  echo "$control" | ARXA_GUARD_MODE=using node "$v" >/dev/null 2>&1; ec=$?
   if [ "$ec" != "2" ]; then
     bad "$desc" "variant is DEAD (control exited $ec, expected 2) — differential means nothing"; return
   fi
 
   local got_v got_c
-  echo "$target" | APPBOX_GUARD_MODE=using node "$v" >/dev/null 2>&1; got_v=$?
-  echo "$target" | APPBOX_GUARD_MODE=using node "$REPO/hooks/appbox-guard.js" >/dev/null 2>&1; got_c=$?
+  echo "$target" | ARXA_GUARD_MODE=using node "$v" >/dev/null 2>&1; got_v=$?
+  echo "$target" | ARXA_GUARD_MODE=using node "$REPO/hooks/arxa-guard.js" >/dev/null 2>&1; got_c=$?
   if [ "$got_v" = "$wv" ] && [ "$got_c" = "$wc" ]; then
     ok "$desc"
   else
@@ -112,7 +112,7 @@ PY
   fi
 }
 
-wrapper_path() { command -v appbox 2>/dev/null; }
+wrapper_path() { command -v arxa 2>/dev/null; }
 
 # Wall-clock a command in ms. Uses `/usr/bin/time -p` (reports seconds to 2dp)
 # rather than bracketing with two `python3 -c` calls — those measure python's
@@ -138,11 +138,11 @@ suite_smoke() {
   yes_ "install.sh --check runs clean" $?
   note "$(cat "$TMPD/check.out")"
 
-  if [ -x "$BIN" ]; then ok "AOT binary present at .build/appbox"; else
-    bad "AOT binary present at .build/appbox" "run ./install.sh first"; return; fi
+  if [ -x "$BIN" ]; then ok "AOT binary present at .build/arxa"; else
+    bad "AOT binary present at .build/arxa" "run ./install.sh first"; return; fi
 
   local w; w="$(wrapper_path)"
-  if [ -n "$w" ]; then ok "appbox resolves on PATH ($w)"; else bad "appbox resolves on PATH"; fi
+  if [ -n "$w" ]; then ok "arxa resolves on PATH ($w)"; else bad "arxa resolves on PATH"; fi
 
   # The binary must produce real stdout, from any cwd.
   local bytes; bytes=$(cd / && "$BIN" design doctor 2>/dev/null | wc -c | tr -d ' ')
@@ -156,18 +156,18 @@ suite_smoke() {
 
   # Cross-harness skill discovery: dsh scans .dsh/skills + .agents/skills and Pi
   # scans .pi/skills + .agents/skills; NEITHER scans .claude/skills. Without the
-  # .agents/skills link both harnesses see zero appbox skills — silently, since
+  # .agents/skills link both harnesses see zero arxa skills — silently, since
   # nothing errors. Pinned here because it is invisible until someone notices a
   # stage skill never loading.
   if [ -L "$REPO/.agents/skills" ] || [ -d "$REPO/.agents/skills" ]; then
     local n; n=$(ls -1 "$REPO/.agents/skills/" 2>/dev/null | wc -l | tr -d ' ')
     local direct; direct=$(ls -1 "$REPO/skills/" 2>/dev/null | wc -l | tr -d ' ')
     is "skills reachable via .agents/skills for dsh+Pi ($n)" "$n" "$direct"
-    [ -f "$REPO/.agents/skills/appbox-designer/SKILL.md" ] \
+    [ -f "$REPO/.agents/skills/arxa-designer/SKILL.md" ] \
       && ok "SKILL.md dir-form resolves through the link" \
       || bad "SKILL.md dir-form resolves through the link"
   else
-    bad ".agents/skills exists" "dsh and Pi would see ZERO appbox skills"
+    bad ".agents/skills exists" "dsh and Pi would see ZERO arxa skills"
   fi
 
   # Speed is functional, not cosmetic: hooks fire per tool call.
@@ -181,14 +181,14 @@ suite_smoke() {
 suite_pressure() {
   head_ "PRESSURE — the failure paths, deliberately provoked"
   local w; w="$(wrapper_path)"
-  if [ -z "$w" ]; then skip "pressure suite" "appbox not on PATH"; return; fi
+  if [ -z "$w" ]; then skip "pressure suite" "arxa not on PATH"; return; fi
 
-  # 1. Stale + APPBOX_FAST: must WARN on stderr, still run, exit 0, NOT compile.
+  # 1. Stale + ARXA_FAST: must WARN on stderr, still run, exit 0, NOT compile.
   touch "$TOUCHED"
   local err ec ms
-  ms=$(APPBOX_FAST=1 time_ms "$w" design doctor)
+  ms=$(ARXA_FAST=1 time_ms "$w" design doctor)
   touch "$TOUCHED"
-  err=$(APPBOX_FAST=1 "$w" design doctor 2>&1 >/dev/null); ec=$?
+  err=$(ARXA_FAST=1 "$w" design doctor 2>&1 >/dev/null); ec=$?
   if grep -q "STALE" <<<"$err"; then ok "stale+FAST warns on stderr"; else
     bad "stale+FAST warns on stderr" "stderr: ${err:0:120}"; fi
   is "stale+FAST still exits 0" "$ec" "0"
@@ -206,19 +206,19 @@ suite_pressure() {
   elif [ "$ms" -lt 300 ]; then ok "fast again after rebuild (${ms}ms)"
   else bad "fast again after rebuild" "${ms}ms"; fi
 
-  # 3. Missing binary + APPBOX_FAST: exit 127 loudly, never a silent no-op.
+  # 3. Missing binary + ARXA_FAST: exit 127 loudly, never a silent no-op.
   mv "$BIN" "$TMPD/stash"
-  err=$(APPBOX_FAST=1 "$w" design doctor 2>&1 >/dev/null); ec=$?
+  err=$(ARXA_FAST=1 "$w" design doctor 2>&1 >/dev/null); ec=$?
   is "missing+FAST exits 127" "$ec" "127"
   if grep -q "install.sh" <<<"$err"; then ok "missing+FAST names the fix"; else
     bad "missing+FAST names the fix" "stderr: ${err:0:120}"; fi
   mv "$TMPD/stash" "$BIN"
 
-  # 4. install.sh must refuse a directory that is not an app-box checkout.
+  # 4. install.sh must refuse a directory that is not an arxa checkout.
   mkdir -p "$TMPD/notrepo"; cp "$REPO/install.sh" "$TMPD/notrepo/"
   ( cd "$TMPD/notrepo" && sh ./install.sh >/dev/null 2>&1 ); ec=$?
-  if [ "$ec" -ne 0 ]; then ok "install.sh refuses a non-appbox dir (exit $ec)"; else
-    bad "install.sh refuses a non-appbox dir" "it exited 0"; fi
+  if [ "$ec" -ne 0 ]; then ok "install.sh refuses a non-arxa dir (exit $ec)"; else
+    bad "install.sh refuses a non-arxa dir" "it exited 0"; fi
 
   # 5. Idempotence: a second run must succeed and not change the wrapper.
   local before after
@@ -233,7 +233,7 @@ suite_pressure() {
 suite_stress() {
   head_ "STRESS — concurrency, the race that corrupts binaries"
   local w; w="$(wrapper_path)"
-  if [ -z "$w" ]; then skip "stress suite" "appbox not on PATH"; return; fi
+  if [ -z "$w" ]; then skip "stress suite" "arxa not on PATH"; return; fi
   local N=12
 
   # N concurrent invocations against a STALE binary: every one of them decides
@@ -261,8 +261,8 @@ suite_stress() {
   yes_ "binary intact and executable after the race" $?
 
   # No PID-temp files may be left behind.
-  local leaks; leaks=$(find "$REPO/.build" -name '.appbox.*' 2>/dev/null | wc -l | tr -d ' ')
-  is "no leftover .appbox.PID temp files" "$leaks" "0"
+  local leaks; leaks=$(find "$REPO/.build" -name '.arxa.*' 2>/dev/null | wc -l | tr -d ' ')
+  is "no leftover .arxa.PID temp files" "$leaks" "0"
 
   # Replacing the binary under a running process must not disturb that process
   # (rename swaps the directory entry; the running image keeps its inode).
@@ -301,7 +301,7 @@ suite_portability() {
   # yet committed looks like a pass.
   cp "$REPO/install.sh" "$C/install.sh"; chmod +x "$C/install.sh"
   mkdir -p "$C/hooks"; cp "$REPO"/hooks/*.js "$C/hooks/" 2>/dev/null
-  [ -f "$C/config/appbox.config.json" ]; yes_ "exported tree looks like a checkout" $?
+  [ -f "$C/config/arxa.config.json" ]; yes_ "exported tree looks like a checkout" $?
 
   if ! sh "$C/install.sh" --prefix "$P" >"$TMPD/inst.log" 2>&1; then
     bad "install.sh succeeds in the exported clone" "$(tail -3 "$TMPD/inst.log")"; return
@@ -309,19 +309,19 @@ suite_portability() {
   ok "install.sh succeeds in the exported clone"
 
   # The generated wrapper must point at the clone and mention no other checkout.
-  if grep -q "^REPO='$C'" "$P/appbox"; then ok "wrapper points at the clone"; else
-    bad "wrapper points at the clone" "$(grep '^REPO=' "$P/appbox")"; fi
-  if grep -q "$REPO" "$P/appbox"; then
-    bad "wrapper leaks the original checkout path" "$(grep -n "$REPO" "$P/appbox" | head -1)"
+  if grep -q "^REPO='$C'" "$P/arxa"; then ok "wrapper points at the clone"; else
+    bad "wrapper points at the clone" "$(grep '^REPO=' "$P/arxa")"; fi
+  if grep -q "$REPO" "$P/arxa"; then
+    bad "wrapper leaks the original checkout path" "$(grep -n "$REPO" "$P/arxa" | head -1)"
   else ok "wrapper does not leak the original checkout path"; fi
 
   # The clone must resolve ITS OWN designer assets, run from an unrelated cwd.
-  local miss; miss=$(cd / && "$P/appbox" design doctor 2>/dev/null | grep -c "MISS" || true)
+  local miss; miss=$(cd / && "$P/arxa" design doctor 2>/dev/null | grep -c "MISS" || true)
   is "clone resolves its own designer assets" "$miss" "0"
 
   # Independence: hide the original binary; the clone must be unaffected.
   mv "$BIN" "$TMPD/orig_stash" 2>/dev/null
-  ( cd / && "$P/appbox" design doctor >/dev/null 2>&1 ); local ec=$?
+  ( cd / && "$P/arxa" design doctor >/dev/null 2>&1 ); local ec=$?
   mv "$TMPD/orig_stash" "$BIN" 2>/dev/null
   is "clone works while the original binary is absent" "$ec" "0"
 
@@ -331,14 +331,14 @@ suite_portability() {
   # like it lives outside the repo and the write is silently ALLOWED — a
   # fail-open in the security path. Caught only by installing from an export
   # under $TMPDIR, so it is pinned here.
-  local logical="$TMPD/clone/appboxd/lib/regress.dart"   # unresolved /var/... form
+  local logical="$TMPD/clone/arxa/lib/regress.dart"   # unresolved /var/... form
   echo "{\"tool_name\":\"Write\",\"tool_input\":{\"file_path\":\"$logical\"}}" \
-    | APPBOX_GUARD_MODE=using node "$C/hooks/appbox-guard.js" >/dev/null 2>&1
+    | ARXA_GUARD_MODE=using node "$C/hooks/arxa-guard.js" >/dev/null 2>&1
   is "guard denies through a symlinked path prefix (fail-open regression)" "$?" "2"
 
   # And the physical form must deny too, so the fix did not just move the bug.
-  echo "{\"tool_name\":\"Write\",\"tool_input\":{\"file_path\":\"$C/appboxd/lib/regress.dart\"}}" \
-    | APPBOX_GUARD_MODE=using node "$C/hooks/appbox-guard.js" >/dev/null 2>&1
+  echo "{\"tool_name\":\"Write\",\"tool_input\":{\"file_path\":\"$C/arxa/lib/regress.dart\"}}" \
+    | ARXA_GUARD_MODE=using node "$C/hooks/arxa-guard.js" >/dev/null 2>&1
   is "guard denies through the physical path" "$?" "2"
 
   # ── scope is an ALLOWLIST (ratified 2026-08-21) ────────────────────────────
@@ -348,7 +348,7 @@ suite_portability() {
   # left open — and rather than a comment claiming they were checked against the
   # old code once, the counter_check block below RE-PROVES that on every run.
   guard_ec() { # <json> -> prints exit code
-    echo "$1" | APPBOX_GUARD_MODE=using node "$C/hooks/appbox-guard.js" >/dev/null 2>&1
+    echo "$1" | ARXA_GUARD_MODE=using node "$C/hooks/arxa-guard.js" >/dev/null 2>&1
     echo $?
   }
   wr() { echo "{\"tool_name\":\"Write\",\"tool_input\":{\"file_path\":\"$C/$1\"},\"cwd\":\"$C\"}"; }
@@ -358,12 +358,12 @@ suite_portability() {
   is "guard ALLOWS designs/"                            "$(guard_ec "$(wr designs/x/spec.json)")"  "0"
   is "guard ALLOWS logs/"                               "$(guard_ec "$(wr logs/run.log)")"         "0"
   # Holes the denylist left open — engine dirs it never named.
-  is "guard DENIES appbox-studio/ (denylist hole)"      "$(guard_ec "$(wr appbox-studio/lib/a.dart)")" "2"
+  is "guard DENIES arxa-studio/ (denylist hole)"      "$(guard_ec "$(wr arxa-studio/lib/a.dart)")" "2"
   is "guard DENIES deploy/ (denylist hole)"             "$(guard_ec "$(wr deploy/remote/x.sh)")"   "2"
   is "guard DENIES a repo-root file (denylist hole)"    "$(guard_ec "$(wr AGENTS.md)")"            "2"
   # Shell targets — where the inversion actually bites, and previously untested.
   is "guard ALLOWS shell redirect into logs/"           "$(guard_ec "$(sh_ 'echo x > logs/f.txt')")"          "0"
-  is "guard DENIES shell redirect into appbox-studio/"  "$(guard_ec "$(sh_ 'echo x > appbox-studio/f.txt')")" "2"
+  is "guard DENIES shell redirect into arxa-studio/"  "$(guard_ec "$(sh_ 'echo x > arxa-studio/f.txt')")" "2"
   # Non-literal extraction must not become a false refusal under the allowlist:
   # writeTargets() drops metacharacter candidates. Without that filter these deny.
   is "guard ALLOWS an unexpanded \$VAR redirect"        "$(guard_ec "$(sh_ 'echo x > \\\"\$OUT\\\"')")"       "0"
@@ -388,15 +388,15 @@ suite_portability() {
   wrR(){ echo "{\"tool_name\":\"Write\",\"tool_input\":{\"file_path\":\"$REPO/$1\"},\"cwd\":\"$REPO\"}"; }
   sh_R(){ echo "{\"tool_name\":\"Bash\",\"tool_input\":{\"command\":\"$1\"},\"cwd\":\"$REPO\"}"; }
   local W_CTL S_CTL
-  W_CTL="$(wrR appboxd/lib/ctl.dart)"
-  S_CTL="$(sh_R 'echo x > appboxd/ctl.dart')"
+  W_CTL="$(wrR arxa/lib/ctl.dart)"
+  S_CTL="$(sh_R 'echo x > arxa/ctl.dart')"
 
   # 1. allowlist vs denylist. Control may be Write-shaped: the mutation is in
   #    isProtected(), which every payload reaches.
-  counter_check "counter: denylist WOULD allow appbox-studio/ (allowlist is load-bearing)" \
+  counter_check "counter: denylist WOULD allow arxa-studio/ (allowlist is load-bearing)" \
     "return !WRITABLE.includes(top); // root files (top === the filename) are engine too" \
-    "return ['appboxd','kit','pipeline','gates','tools','skills','config','hooks','harness'].includes(top);" \
-    "$W_CTL" "$(wrR appbox-studio/lib/a.dart)" 0 2
+    "return ['arxa','kit','pipeline','gates','tools','skills','config','hooks','harness'].includes(top);" \
+    "$W_CTL" "$(wrR arxa-studio/lib/a.dart)" 0 2
 
   # 2. metacharacter filter. Control MUST be shell-shaped — writeTargets()
   #    returns at the WRITE_TOOLS branch and never reaches the mutated code, so

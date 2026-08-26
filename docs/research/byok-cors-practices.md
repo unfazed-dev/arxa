@@ -1,4 +1,4 @@
-# BYOK CORS Practices — Research for appbox studio (hosted web)
+# BYOK CORS Practices — Research for arxa studio (hosted web)
 
 Date checked: 2026-08-04. Question: for a hosted web app where users supply their own LLM API key, should we call providers directly from the browser (CORS) or relay through a same-origin server proxy?
 
@@ -56,7 +56,7 @@ No single product was found that documents *exactly* "direct-call Anthropic, pro
 
 Use a hybrid: call Anthropic directly from the browser with `anthropic-dangerous-direct-browser-access: true`, since it's the only provider with a documented, supported browser-CORS opt-in built for exactly this BYOK use case. For every other provider in scope (OpenAI, Gemini, DeepSeek, Moonshot/Kimi, Z.ai), route through a same-origin, non-persistent streaming passthrough proxy — a thin server endpoint that accepts the user's key + request per-call, forwards it, streams the response back, and never writes the key to disk, logs, or a database. This mirrors Google AI Studio's own exported-app architecture for Gemini and is one of the three sanctioned patterns in community BYOK reference implementations.
 
-For key storage on the client: hold the key in memory for the session (a JS variable/store, not `localStorage`) where feasible; if persistence across reloads is wanted, `sessionStorage` is the least-bad browser-storage option per OWASP guidance, with `localStorage` avoided given XSS-exfiltration risk. Because appbox is hosted (not user-self-hosted like LibreChat), a compromised proxy is a shared-infrastructure risk — keep the proxy stateless and redact keys from all logging/error-reporting paths, and surface each provider's own scoping controls (Anthropic workspace spend caps, OpenAI project spend limits, Gemini key restrictions) to users as an additional compensating control.
+For key storage on the client: hold the key in memory for the session (a JS variable/store, not `localStorage`) where feasible; if persistence across reloads is wanted, `sessionStorage` is the least-bad browser-storage option per OWASP guidance, with `localStorage` avoided given XSS-exfiltration risk. Because arxa is hosted (not user-self-hosted like LibreChat), a compromised proxy is a shared-infrastructure risk — keep the proxy stateless and redact keys from all logging/error-reporting paths, and surface each provider's own scoping controls (Anthropic workspace spend caps, OpenAI project spend limits, Gemini key restrictions) to users as an additional compensating control.
 
 ## Flags — could not verify
 
@@ -64,7 +64,7 @@ For key storage on the client: hold the key in memory for the session (a JS vari
 - **UNVERIFIED**: Moonshot/Kimi (`api.moonshot.ai`) CORS header behavior — no official statement found either way.
 - **UNVERIFIED**: Z.ai (`api.z.ai`) CORS header behavior — no official statement found either way.
 - **UNVERIFIED**: Whether OpenAI's `dangerouslyAllowBrowser` SDK flag actually succeeds against `api.openai.com` in practice (i.e., whether the *server* sends permissive CORS headers when that flag is set client-side, or whether the flag only suppresses the SDK's own guard while the server still 403s/blocks). Evidence gathered points to the latter (no documented server-side CORS allowance), but no explicit first-party statement was found confirming the server-side behavior either way.
-- Note on recency: Google's Gemini "Standard API key" deprecation (rejected outright starting September 2026) is close enough to the current date (2026-08-04) that if appbox ships Gemini BYOK support, key-restriction/auth-key migration guidance should be re-checked at ship time.
+- Note on recency: Google's Gemini "Standard API key" deprecation (rejected outright starting September 2026) is close enough to the current date (2026-08-04) that if arxa ships Gemini BYOK support, key-restriction/auth-key migration guidance should be re-checked at ship time.
 
 ## Empirical verification (2026-08-03, live preflight tests)
 

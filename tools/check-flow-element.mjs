@@ -15,7 +15,7 @@
 import assert from 'node:assert/strict';
 // v1 import BY DESIGN — see the note in check-flow-guard.mjs: the flow-edit
 // services exist only in the v1 design (retained reference).
-import { rewire, moveMemory } from '../designs/appbox-studio/services/facades/design_facade.js';
+import { rewire, moveMemory } from '../designs/arxa-studio/services/facades/design_facade.js';
 
 let n = 0;
 const check = (name, fn) => { fn(); n += 1; console.log(`  ok  ${name}`); };

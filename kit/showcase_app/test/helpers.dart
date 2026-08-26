@@ -5,16 +5,16 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:appbox_kit_showcase_app/app/app.locator.dart' show setupLocator;
-import 'package:appbox_kit_showcase_app/app/app.router.dart';
-import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
-import 'package:appbox_kit_data/appbox_kit_data.dart';
-import 'package:appbox_kit_showcase_app/app/app_data.dart';
-import 'package:appbox_kit_showcase_app/services/showcase_notes_services/facades/showcase_notes_facade_service.dart';
+import 'package:arxa_kit_showcase_app/app/app.locator.dart' show setupLocator;
+import 'package:arxa_kit_showcase_app/app/app.router.dart';
+import 'package:arxa_kit_ui_library/arxa_kit_ui_library.dart';
+import 'package:arxa_kit_data/arxa_kit_data.dart';
+import 'package:arxa_kit_showcase_app/app/app_data.dart';
+import 'package:arxa_kit_showcase_app/services/showcase_notes_services/facades/showcase_notes_facade_service.dart';
 
 /// Package-asset keys map straight onto this package's source tree.
-class DiskAssetReader implements AppBoxKitAssetReader {
-  static const _prefix = 'packages/appbox_kit_showcase_app/';
+class DiskAssetReader implements ArxaKitAssetReader {
+  static const _prefix = 'packages/arxa_kit_showcase_app/';
   @override
   Future<String> readString(String path) async {
     final stripped =
@@ -28,28 +28,28 @@ class DiskAssetReader implements AppBoxKitAssetReader {
 /// services, same wiring as `main()`.
 Future<void> registerKitTestServices() async {
   await setupLocator(stackedRouter: stackedRouter);
-  setupAppBoxKitUiServices();
+  setupArxaKitUiServices();
 }
 
-/// Boots appbox_kit_data off the bundled fixtures (seed backend, fake auth).
+/// Boots arxa_kit_data off the bundled fixtures (seed backend, fake auth).
 Future<void> initShowcase({bool signedIn = false}) async {
   await AppData.initialize(
-    config: const AppBoxKitDataConfig(
-      backend: AppBoxKitDataBackend.seed,
-      auth: AppBoxKitAuthConfig(fakeUsersAsset: AppData.fakeUsersAsset),
+    config: const ArxaKitDataConfig(
+      backend: ArxaKitDataBackend.seed,
+      auth: ArxaKitAuthConfig(fakeUsersAsset: AppData.fakeUsersAsset),
     ),
     assetReader: DiskAssetReader(),
   );
   if (signedIn) await signInEvan();
 }
 
-Future<void> signInEvan() => appBoxKitLocator<ShowcaseNotesFacadeService>()
+Future<void> signInEvan() => arxaKitLocator<ShowcaseNotesFacadeService>()
     .auth
     .signInWithEmailPassword(email: 'evan@seed.local', password: 'x');
 
 Future<void> teardownShowcase() async {
-  AppBoxKitData.resetForTesting();
-  await appBoxKitLocator.reset();
+  ArxaKitData.resetForTesting();
+  await arxaKitLocator.reset();
 }
 
 /// Router futures only complete when their route pops — never await them
@@ -70,7 +70,7 @@ Future<StackedRouterWeb> bootShell(WidgetTester tester) async {
   addTearDown(tester.view.resetPhysicalSize);
   addTearDown(tester.view.resetDevicePixelRatio);
   final router = StackedRouterWeb();
-  appBoxKitLocator<RouterService>().setRouter(router);
+  arxaKitLocator<RouterService>().setRouter(router);
   await tester.pumpWidget(
     MaterialApp.router(
       // Boot straight into the shell — ShowcaseStartupView (the app's real initial

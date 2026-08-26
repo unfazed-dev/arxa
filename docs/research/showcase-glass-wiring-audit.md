@@ -1,7 +1,7 @@
 # Showcase glass / native-chrome wiring audit
 
 **Scope:** how `kit/showcase_app` wires native Liquid Glass chrome from the vendored
-`kit/ui_library/vendor/cupertino_native_better` fork and the appbox kit widgets.
+`kit/ui_library/vendor/cupertino_native_better` fork and the arxa kit widgets.
 **Method:** static read of the tree at `HEAD = 34c53b0`. Diagnosis only — no fixes, no edits.
 **Caveat:** the `rewire-*` agents are refactoring the vendor concurrently in separate
 worktrees. Every line number below is from this checkout at `34c53b0` and may drift.
@@ -15,16 +15,16 @@ composition, i.e. a real native view composited **above** the Flutter scene.
 
 | Surface | Kit widget | Vendor view | Mounted at |
 |---|---|---|---|
-| Tab bar | `AppBoxKitNativeTabBar` → `CNTabBar` | `CupertinoNativeTabBar` | `appbox_kit_tab_bar.dart:100-123` |
-| Glass card | `AppBoxKitGlassCard` → `CNGlassEffect` | glass container | `appbox_kit_glass_card.dart:66-73` |
-| Icon button | `AppBoxKitNativeIconButton` → `CNButton.icon` | button | `appbox_kit_native_icon_button.dart:80-100` |
-| Button / CTA | `AppBoxKitNativeButton` → `CNButton` | button | `appbox_kit_native_button.dart:92` |
-| FAB | `AppBoxKitNativeFab` → `CNButton` (prominentGlass) | button | `appbox_kit_native_fab.dart:96-105` |
-| Split button | `AppBoxKitNativeSplitButton` | button | `appbox_kit_native_split_button.dart:133-142` |
-| Popup menu | `AppBoxKitNativePopupMenu` → `CNPopupMenuButton` | popup menu | `appbox_kit_native_popup_menu.dart:199` (gated at `:198`) |
-| Segmented control | `AppBoxKitNativeSegmentedControl` → `CNSegmentedControl` | segmented control | `appbox_kit_native_segmented_control.dart:62` |
-| Toolbar | `AppBoxKitNativeToolbar` | buttons ×N | `appbox_kit_native_toolbar.dart:150-159` |
-| FAB menu | `AppBoxKitNativeFabMenu` | buttons ×N | `appbox_kit_native_fab_menu.dart:176` |
+| Tab bar | `ArxaKitNativeTabBar` → `CNTabBar` | `CupertinoNativeTabBar` | `arxa_kit_tab_bar.dart:100-123` |
+| Glass card | `ArxaKitGlassCard` → `CNGlassEffect` | glass container | `arxa_kit_glass_card.dart:66-73` |
+| Icon button | `ArxaKitNativeIconButton` → `CNButton.icon` | button | `arxa_kit_native_icon_button.dart:80-100` |
+| Button / CTA | `ArxaKitNativeButton` → `CNButton` | button | `arxa_kit_native_button.dart:92` |
+| FAB | `ArxaKitNativeFab` → `CNButton` (prominentGlass) | button | `arxa_kit_native_fab.dart:96-105` |
+| Split button | `ArxaKitNativeSplitButton` | button | `arxa_kit_native_split_button.dart:133-142` |
+| Popup menu | `ArxaKitNativePopupMenu` → `CNPopupMenuButton` | popup menu | `arxa_kit_native_popup_menu.dart:199` (gated at `:198`) |
+| Segmented control | `ArxaKitNativeSegmentedControl` → `CNSegmentedControl` | segmented control | `arxa_kit_native_segmented_control.dart:62` |
+| Toolbar | `ArxaKitNativeToolbar` | buttons ×N | `arxa_kit_native_toolbar.dart:150-159` |
+| FAB menu | `ArxaKitNativeFabMenu` | buttons ×N | `arxa_kit_native_fab_menu.dart:176` |
 | Glass button group | `CNGlassButtonGroup` | group | `glass_button_group.dart:263-278` |
 
 **Creation / disposal triggers.** A platform view is created when its subtree is first
@@ -41,8 +41,8 @@ main.dart → MaterialApp.router (navigatorObservers: () => [CNTransitionObserve
     → ShowcaseApplicationTabHostWidget            showcase_application_hub_view.mobile.dart:36
       → StackedTabsRouter.builder                 showcase_application_tab_host_widget.dart:33
         → Scaffold(extendBody: true)                                            :40
-           body:   AppBoxKitAnimatedTabStack(children: 4 tab shells)            :56
-           bottomNavigationBar: AppBoxKitNativeTabBar                           :66
+           body:   ArxaKitAnimatedTabStack(children: 4 tab shells)            :56
+           bottomNavigationBar: ArxaKitNativeTabBar                           :66
 ```
 
 ---
@@ -76,9 +76,9 @@ The work redone on each of those swaps is not trivial. `iconDataToImageBytes`
 density buckets via `rootBundle.load` (`:132-139`); `rootBundle` caches bytes, so the
 repeat cost there is the async hop rather than I/O.
 
-### 2a. `AppBoxKitNativeIconButton` never takes the cheap SF-Symbol path
+### 2a. `ArxaKitNativeIconButton` never takes the cheap SF-Symbol path
 
-`appbox_kit_native_icon_button.dart:89` passes `customIcon: icon` **unconditionally**,
+`arxa_kit_native_icon_button.dart:89` passes `customIcon: icon` **unconditionally**,
 including when `sfSymbol != null` (which it null-guards two lines earlier at `:82`).
 `CNButton`'s documented priority is `imageAsset > customIcon > icon`, so a non-null
 `customIcon` **shadows** the SF Symbol and forces the `button.dart:412` rasterisation
@@ -87,11 +87,11 @@ branch every time.
 This is a deviation from the library's own established guard, not an ambiguity. Three
 sibling call sites get it right, one with an explicit warning comment:
 
-- `appbox_kit_native_fab.dart:96` — `final customIcon = sfSymbol == null ? icon : null;`
+- `arxa_kit_native_fab.dart:96` — `final customIcon = sfSymbol == null ? icon : null;`
   preceded by `:80-81` *"Avoids customIcon shadowing the native glyph (CNButton priority:
   imageAsset > customIcon > icon)."*
-- `appbox_kit_native_split_button.dart:133` — `customIcon: sfSymbol == null ? icon : null`
-- `appbox_kit_native_toolbar.dart:150,159` — same guard
+- `arxa_kit_native_split_button.dart:133` — `customIcon: sfSymbol == null ? icon : null`
+- `arxa_kit_native_toolbar.dart:150,159` — same guard
 
 **Severity: high.** Icon buttons are the most numerous native surface in the app (app-bar
 trailing actions, snackbar row, cards), and every one of them pays PNG rasterisation plus
@@ -152,13 +152,13 @@ nested router.
 Two consequences:
 
 1. **A push inside the Notes tab increments the global counter.**
-   `AppBoxKitNativeChromeGate._applyVisibility` hides on
+   `ArxaKitNativeChromeGate._applyVisibility` hides on
    `CNTransitionObserver.activeTransitions.value > 0`
-   (`appbox_kit_native_chrome_gate.dart:186-187`) with **no mount-scope guard whatsoever**
+   (`arxa_kit_native_chrome_gate.dart:186-187`) with **no mount-scope guard whatsoever**
    — note the contrast with the modal check on the same line pair, which *does* compare
    against the `_mountDepth` snapshot taken at `:136`. So an in-tab push hides the chrome
    of **every gated surface in the whole app**, across all four tabs, including the tab bar
-   (`appbox_kit_tab_bar.dart:100`).
+   (`arxa_kit_tab_bar.dart:100`).
 
 2. **The native suppression calls can desync.** The `_transitionCount == 1` guard at
    `transition_observer.dart:106` that fires `CupertinoNativePlatform.instance.beginTransition()`
@@ -181,7 +181,7 @@ different timing and no coordination:
 
 | # | Mechanism | Signal | Visual |
 |---|---|---|---|
-| 1 | `AppBoxKitNativeChromeGate` | global `activeTransitions > 0` | fade + scale 0.95→1.0, 160 ms out / 180 ms in (`chrome_gate.dart:190-206, 237-246`) |
+| 1 | `ArxaKitNativeChromeGate` | global `activeTransitions > 0` | fade + scale 0.95→1.0, 160 ms out / 180 ms in (`chrome_gate.dart:190-206, 237-246`) |
 | 2 | `CNTabBar._modalUp` | `anyModalDepth > 0` | returns bare `SizedBox` — **instant hard cut**, no animation (`tab_bar.dart:536-542`) |
 | 3 | `CNTabBar._pageTransitioning` | route `secondaryAnimation` status | `IndexedStack` swap to `SizedBox` (`tab_bar.dart:566-575`) |
 
@@ -196,17 +196,17 @@ racing an instant swap (path 2) produces **fade-then-pop**.
 > `if (widget.fade)`; `fade` defaults to `false` and the sole production call site never sets
 > it, so they are dead at runtime. `20616f2` added no fade — it changed cover geometry. The
 > comments and the code agree. The one *live* unconditional fade over platform views is
-> `appbox_kit_native_chrome_gate.dart:252-254`, which remains `unknown` pending a device
+> `arxa_kit_native_chrome_gate.dart:252-254`, which remains `unknown` pending a device
 > trace. Full verdict + evidence: `docs/plans/glass-chrome-root-cause-fixes.md`, section
 > "§3d verdict + C5 landing".
 
 `showcase_application_tab_host_widget.dart:53-54` states the tab transition is
 *"slide-only: fade ghosts platform views on native-chrome tabs (flutter#24164/#148639)"*.
-The implementation it names does fade: `appbox_kit_animated_tab_stack.dart:277` and `:281`
+The implementation it names does fade: `arxa_kit_animated_tab_stack.dart:277` and `:281`
 wrap the exiting and incoming layers in `FadeTransition`. The file's own doc at `:60`
 repeats the warning against opacity-animating platform-view subtrees.
 
-`appbox_kit_native_chrome_gate.dart:239-245` likewise wraps native chrome in
+`arxa_kit_native_chrome_gate.dart:239-245` likewise wraps native chrome in
 `FadeTransition` + `ScaleTransition`, while its doc at `:72` concedes opacity is only
 *"reliably"* applied to platform views under hybrid composition and the scale is not.
 
@@ -234,7 +234,7 @@ talks to the native side:
   `CupertinoTabBarPlatformView.swift` (`:224, :357, :692, :804, :946, :950, :954`) to style
   the **tab bar**. Nothing in the list/content path uses it.
 
-`AppBoxKitScrollEdgeEffect` (`appbox_kit_scroll_edge_effect.dart:108-192`) is a
+`ArxaKitScrollEdgeEffect` (`arxa_kit_scroll_edge_effect.dart:108-192`) is a
 **Flutter-side emulation**: it listens to the enclosing `ScrollPosition`
 (`:118-121`), and `_recompute` (`:133-166`) calls `viewport.getOffsetToReveal(...)` (`:153-155`)
 per scroll notification to derive a coverage fraction `t`, then paints its own
@@ -285,9 +285,9 @@ The extension is attached at 10 showcase call sites. Two matter most:
   `.scrollEdgeEffect()` (top) then `.scrollEdgeEffect(edge: bottom, …)` — inside a lazy
   builder, per group `i`. Two nested threshold flips per row, so a crossing can remount
   through two layers.
-- **`showcase_split_button_card_widget.dart:53`** wraps an `AppBoxKitGlassCard`
-  (`LiquidGlassContainer`, a platform view — `appbox_kit_glass_card.dart:67`) containing an
-  `AppBoxKitNativeSplitButton` (`CNButton` — `:30`). Both are platform views, both under the
+- **`showcase_split_button_card_widget.dart:53`** wraps an `ArxaKitGlassCard`
+  (`LiquidGlassContainer`, a platform view — `arxa_kit_glass_card.dart:67`) containing an
+  `ArxaKitNativeSplitButton` (`CNButton` — `:30`). Both are platform views, both under the
   flip.
 
 Also worth noting: `Opacity` and `ImageFiltered` are Flutter-layer operations, and under iOS
@@ -320,7 +320,7 @@ first-load flicker, independent of §2.
 
 ### 4g. The per-scroll-frame cost (secondary)
 
-`AppBoxKitScrollOcclusionGate` (`appbox_kit_scroll_occlusion_gate.dart:131-134, 147-179`) is
+`ArxaKitScrollOcclusionGate` (`arxa_kit_scroll_occlusion_gate.dart:131-134, 147-179`) is
 a separate widget with the same listener shape, driving alpha rather than tree shape. Its
 `_recompute` calls `getOffsetToReveal` (`:166`) per scroll notification — a render-tree walk
 per tick — then quantises to 1/50 and `setState`s on change (`:174-178`). The quantisation
@@ -338,17 +338,17 @@ only from discrete callbacks (`:875-887`) and search-controller changes (`:481-4
 
 **Platform views alive on the home screen — corrected.** An earlier revision of this
 document said eight. That was wrong, and the reason is worth recording:
-**the `AppBoxKitNative*` prefix is a naming convention, not a platform-view marker.**
+**the `ArxaKitNative*` prefix is a naming convention, not a platform-view marker.**
 Verified per widget:
 
 | Widget | Platform view? | Evidence |
 |---|---|---|
-| `AppBoxKitGlassCard` ×2 | **yes** — `LiquidGlassContainer` | `appbox_kit_glass_card.dart:67` |
-| `AppBoxKitNativeSplitButton` | **yes** — `CNButton` | `appbox_kit_native_split_button.dart:133` |
-| `AppBoxKitNativeIconButton` | **yes** — `CNButton.icon` | `appbox_kit_native_icon_button.dart:81` |
-| `AppBoxKitNativeButton` | **yes** — `CNButton` | `appbox_kit_native_button.dart:92` |
-| `AppBoxKitNativeProgress` ×2 | **no** — `CupertinoActivityIndicator` | `appbox_kit_native_progress.dart:85`; zero `CN*` matches in file |
-| `AppBoxKitNativeLoadingIndicator` | **no** — `CupertinoActivityIndicator` / `LoadingIndicatorM3E` | `appbox_kit_native_loading_indicator.dart:1-3,59` |
+| `ArxaKitGlassCard` ×2 | **yes** — `LiquidGlassContainer` | `arxa_kit_glass_card.dart:67` |
+| `ArxaKitNativeSplitButton` | **yes** — `CNButton` | `arxa_kit_native_split_button.dart:133` |
+| `ArxaKitNativeIconButton` | **yes** — `CNButton.icon` | `arxa_kit_native_icon_button.dart:81` |
+| `ArxaKitNativeButton` | **yes** — `CNButton` | `arxa_kit_native_button.dart:92` |
+| `ArxaKitNativeProgress` ×2 | **no** — `CupertinoActivityIndicator` | `arxa_kit_native_progress.dart:85`; zero `CN*` matches in file |
+| `ArxaKitNativeLoadingIndicator` | **no** — `CupertinoActivityIndicator` / `LoadingIndicatorM3E` | `arxa_kit_native_loading_indicator.dart:1-3,59` |
 
 So **five** platform views in `showcase_home_widgets/`, not eight — plus app-bar chrome, the
 tab bar, and the segmented control in
@@ -356,7 +356,7 @@ tab bar, and the segmented control in
 (outside the globbed directory because it is shared across tabs). No screen total is claimed.
 
 **Multiplied across tabs.** `app.dart:4` documents `StackedTabsRouter` as an
-`IndexedStack` where *"every stack stays alive"*, and `appbox_kit_animated_tab_stack.dart:239`
+`IndexedStack` where *"every stack stays alive"*, and `arxa_kit_animated_tab_stack.dart:239`
 keeps visited tabs mounted via `Offstage`. Offstage children are not painted but **are not
 unmounted**, so their platform views stay allocated. After visiting all four tabs, every
 tab's native views are alive simultaneously.
@@ -364,7 +364,7 @@ tab's native views are alive simultaneously.
 Because the chrome gate's transition check is global (§3b), a single route transition
 anywhere fires `setState` in **every** gate across **all** tabs at once.
 
-**Undisposed `CurvedAnimation`.** `appbox_kit_native_chrome_gate.dart:228-232` constructs a
+**Undisposed `CurvedAnimation`.** `arxa_kit_native_chrome_gate.dart:228-232` constructs a
 `CurvedAnimation` with a non-null `reverseCurve` inside `build()` and never disposes it.
 Flutter ≥3.22 flags exactly this shape, because a `CurvedAnimation` with a `reverseCurve`
 registers a status listener on its parent. Each rebuild would then add another listener to
@@ -417,7 +417,7 @@ in that pass, which is why there are six.
    `nested_router.dart:93` · `stacked_tabs_router.dart:132`.
    → **tab bar disappears during transitions, returns on settle.**
 
-4. **`AppBoxKitNativeIconButton:89` passes `customIcon` unconditionally**, shadowing the SF
+4. **`ArxaKitNativeIconButton:89` passes `customIcon` unconditionally**, shadowing the SF
    Symbol and forcing the rasterisation branch on the app's most numerous native surface —
    while `fab.dart:96`, `split_button.dart:133` and `toolbar.dart:150` all guard it.
    → **flicker + slow.** Highest-leverage single-line finding; it converts the §1 cost from
@@ -446,14 +446,14 @@ it would remain after the cluster is addressed.
 
 - Notes children are nested routes; the tab bar sits above the navigated subtree and does
   **not** structurally unmount (§3a).
-- Tab bar icons use `CNSymbol(t.sfSymbol)` (`appbox_kit_tab_bar.dart:104`), so the tab bar
+- Tab bar icons use `CNSymbol(t.sfSymbol)` (`arxa_kit_tab_bar.dart:104`), so the tab bar
   itself avoids the rasterisation pipeline entirely.
 - No per-frame method-channel traffic on the scroll or transition paths (§4).
 - **Scroll-edge sends nothing to native** — no `invokeMethod` for scroll/edge/obscure exists;
   `scrollEdgeAppearance` is used only for the tab bar in `CupertinoTabBarPlatformView.swift`,
   never for list content (§4a).
 - No SVG re-rasterisation path in the icon pipeline (§5).
-- `AppBoxKitNativeProgress` and `AppBoxKitNativeLoadingIndicator` are **not** platform
+- `ArxaKitNativeProgress` and `ArxaKitNativeLoadingIndicator` are **not** platform
   views despite the `Native` prefix (§5 table) — do not count them as glass surfaces.
 
 ## Not verified

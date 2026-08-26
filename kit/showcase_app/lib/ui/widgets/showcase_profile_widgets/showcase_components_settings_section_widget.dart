@@ -4,7 +4,7 @@
 /// places it owns the data.
 ///
 /// This is the user interface for the grouped-list demo — a settings-style
-/// AppBoxKitListSection of tiles that toast their title on tap.
+/// ArxaKitListSection of tiles that toast their title on tap.
 ///
 /// Requirements:
 /// 1. [Grouped list] — browse-the-components-gallery
@@ -17,35 +17,35 @@
 library;
 
 import 'package:flutter/material.dart';
-import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
+import 'package:arxa_kit_ui_library/arxa_kit_ui_library.dart';
 
 class ShowcaseComponentsSettingsSectionWidget extends StatelessWidget {
   const ShowcaseComponentsSettingsSectionWidget({super.key});
 
   static void _toast(BuildContext context, String message) =>
-      appBoxKitLocator<AppBoxKitNotificationService>()
+      arxaKitLocator<ArxaKitNotificationService>()
           .show(message, context: context);
 
   @override
   Widget build(BuildContext context) {
-    return AppBoxKitListSection(
+    return ArxaKitListSection(
       header: 'Settings',
       children: [
-        AppBoxKitListTile(
-          glyph: AppBoxKitGlyphs.person,
+        ArxaKitListTile(
+          glyph: ArxaKitGlyphs.person,
           title: 'Account',
           trailingValue: 'Evan',
           showChevron: true,
           onTap: () => _toast(context, 'Account'),
         ),
-        AppBoxKitListTile(
-          glyph: AppBoxKitGlyphs.lock,
+        ArxaKitListTile(
+          glyph: ArxaKitGlyphs.lock,
           title: 'Privacy',
           showChevron: true,
           onTap: () => _toast(context, 'Privacy'),
         ),
-        AppBoxKitListTile(
-          glyph: AppBoxKitGlyphs.alerts,
+        ArxaKitListTile(
+          glyph: ArxaKitGlyphs.alerts,
           title: 'Notifications',
           trailingValue: 'On',
           showChevron: true,

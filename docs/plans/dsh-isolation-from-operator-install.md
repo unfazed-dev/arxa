@@ -258,8 +258,8 @@ Why the value is missing, confirmed by reading both packages:
   site, and it reads `.env` layers from DSH_HOME and cwd — nothing else.
 - No `!js` YAML tag is defined anywhere in the installed tree, and there is no
   leading-`!` command convention in dsh (the only `startsWith("!")` is glob
-  negation in `dsh-tool-fs-search`). The `!appbox credentials exec …` form in
-  arxa's settings is an appbox mechanism, not a dsh one.
+  negation in `dsh-tool-fs-search`). The `!arxa credentials exec …` form in
+  arxa's settings is an arxa mechanism, not a dsh one.
 
 **Proven by single-variable test.** Same config, same version, same command,
 with a throwaway dummy value exported:

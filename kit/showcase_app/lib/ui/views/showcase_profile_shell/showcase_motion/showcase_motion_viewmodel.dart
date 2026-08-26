@@ -33,10 +33,10 @@
 /// History: git log --follow -- kit/showcase_app/lib/ui/views/showcase_profile_shell/showcase_motion/showcase_motion_viewmodel.dart
 library;
 
-import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
-import 'package:appbox_kit_motion/appbox_kit_motion.dart';
+import 'package:arxa_kit_ui_library/arxa_kit_ui_library.dart';
+import 'package:arxa_kit_motion/arxa_kit_motion.dart';
 
-import 'package:appbox_kit_showcase_app/enums/showcase_profile_enums/enums.dart';
+import 'package:arxa_kit_showcase_app/enums/showcase_profile_enums/enums.dart';
 
 class ShowcaseMotionViewModel extends BaseViewModel {
   // ── Initial state ─────────────────────────────────────────────────────────
@@ -50,8 +50,8 @@ class ShowcaseMotionViewModel extends BaseViewModel {
   bool get enabled => _enabled;
 
   /// [1. Preset selection][2. Master switch] The active spec: selected preset +
-  /// master switch. Feeds every [AppBoxKitMotionScope] on the demo surface.
-  AppBoxKitMotionSpec get spec => ShowcaseMotionPreset.values[_presetIndex].spec
+  /// master switch. Feeds every [ArxaKitMotionScope] on the demo surface.
+  ArxaKitMotionSpec get spec => ShowcaseMotionPreset.values[_presetIndex].spec
       .copyWith(enabled: _enabled);
 
   // ── Actions ───────────────────────────────────────────────────────────────

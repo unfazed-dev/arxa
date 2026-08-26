@@ -81,7 +81,7 @@ Every surface is a function of `role × state × params.branch` — p2 even ship
 `capture_design` has no notion of which branch is *the* composition, so it took a
 subtree and emitted it confidently.
 
-This is the finding that matters for appbox. It is not a bug in either system —
+This is the finding that matters for arxa. It is not a bug in either system —
 it is two incompatible models of what "a design surface" is:
 
 - **flutter-crew:** one component → one composition → one view. Deterministic
@@ -89,7 +89,7 @@ it is two incompatible models of what "a design surface" is:
 - **stacked_kit:** one surface → a frozen *rendered* HTML per branch, and a model
   reads it. Handles branching, at the cost of all determinism.
 
-Neither is right. appbox wants the frozen-HTML-per-branch input (stacked_kit's
+Neither is right. arxa wants the frozen-HTML-per-branch input (stacked_kit's
 `surfaces/*.html`, already branch-resolved) fed into a *deterministic* translator
 (flutter-crew's `generate_view`). The frozen surface HTML is precisely the artifact
 that makes branch-awareness unnecessary — the branch is resolved at freeze time.

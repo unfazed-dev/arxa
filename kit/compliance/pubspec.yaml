@@ -1,4 +1,4 @@
-name: appbox_kit_compliance
+name: arxa_kit_compliance
 description: Standalone port for legal/compliance surfaces — a versioned KitComplianceDocument registry, KitConsentStore-backed consent tracking with a typed KitConsentStatus, a pure KitConsentGate, and a KitLicensesService over Flutter's LicenseRegistry. Zero third-party runtime dependencies.
 version: 0.1.0
 publish_to: 'none'

@@ -13,7 +13,7 @@
 library;
 
 import 'package:flutter/material.dart';
-import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
+import 'package:arxa_kit_ui_library/arxa_kit_ui_library.dart';
 
 class ShowcaseGlassCtaButtonWidget extends StatelessWidget {
   const ShowcaseGlassCtaButtonWidget({super.key});
@@ -22,12 +22,12 @@ class ShowcaseGlassCtaButtonWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     return SizedBox(
       height: abxButtonHeightMedium,
-      child: AppBoxKitNativeButton(
+      child: ArxaKitNativeButton(
         label: 'Glass CTA',
-        glyph: AppBoxKitGlyphs.star,
-        onPressed: () => appBoxKitLocator<AppBoxKitNotificationService>().show(
+        glyph: ArxaKitGlyphs.star,
+        onPressed: () => arxaKitLocator<ArxaKitNotificationService>().show(
             'native button tapped',
-            position: AppBoxKitToastPosition.bottom,
+            position: ArxaKitToastPosition.bottom,
             context: context),
       ),
     );

@@ -11,10 +11,10 @@ debug run mode, iPhone iOS 26, idle-on-launch-screen, scope = diagnose + fix.
 
 1. **Perpetual indeterminate spinners on the idle home surface** — the
    mechanism. `showcase_progress_loading_card_widget.dart` mounted
-   `AppBoxKitNativeProgress.circular()` + `AppBoxKitNativeLoadingIndicator`
+   `ArxaKitNativeProgress.circular()` + `ArxaKitNativeLoadingIndicator`
    (both → Flutter `CupertinoActivityIndicator` on iOS) with **no bound**.
    The home list is a non-lazy `ListView(children:)`
-   (`appbox_kit_edge_aware_list_view.dart:149`), so both spinners tick from
+   (`arxa_kit_edge_aware_list_view.dart:149`), so both spinners tick from
    launch, forever, at the display rate.
 2. **120 Hz** — `CADisableMinimumFrameDurationOnPhone=true`
    (`ios/Runner/Info.plist:5`) doubles the tick rate (120 frames/s of
@@ -43,7 +43,7 @@ debug run mode, iPhone iOS 26, idle-on-launch-screen, scope = diagnose + fix.
 
 `showcase_progress_loading_card_widget.dart` — the indeterminate demos now
 spin for a 5 s demo window on appearance, then freeze under
-`TickerMode(enabled: false)`; a `Replay` button (`AppBoxKitNativeButton`,
+`TickerMode(enabled: false)`; a `Replay` button (`ArxaKitNativeButton`,
 plain style) restarts the window. Determinate bar unchanged (static).
 Tests: `test/showcase_progress_loading_idle_test.dart` — iOS 26 glass tier
 auto-stop + fallback-tier replay, both citing `[Progress demo]`.
@@ -69,15 +69,15 @@ auto-stop + fallback-tier replay, both citing `[Progress demo]`.
 
 Symptom: native liquid glass jitters/flickers while scrolling. Root cause
 (systematic-debugging, evidence: `LiquidGlassContainerView.swift`,
-`appbox_kit_edge_aware_list_view.dart:110-122`, M5 harness): in-scroll glass
+`arxa_kit_edge_aware_list_view.dart:110-122`, M5 harness): in-scroll glass
 cards are UiKitViews the engine detaches/re-adds at the paint-cull boundary
 — the top edge has overdraw headroom, the trailing edge does not — and every
 live glass view is composited per scroll frame. The law's own remedy applied:
 deselect ladder step 1 (docs/liquid-glass-allowlist.md, ruling 4) —
-`AppBoxKitGlassCard` demotes to the frosted tier inside Scrollables
+`ArxaKitGlassCard` demotes to the frosted tier inside Scrollables
 (`Scrollable.maybeOf(context) != null`); opaque fill under `opaqueGlass` =
 zero blur, zero platform views in the scroll. Chrome/controls stay native.
-Tests: `appbox_kit_glass_card_test.dart` (in-scroll frosted / out-of-scroll
+Tests: `arxa_kit_glass_card_test.dart` (in-scroll frosted / out-of-scroll
 native), M5 vacuity control re-scoped to CN controls. Pending: device
 confirmation; next ladder rung = toolbar if artifacts persist.
 
@@ -87,7 +87,7 @@ confirmation; next ladder rung = toolbar if artifacts persist.
   claims from debug runs are unmeasurable-by-confound.
 - **TickerMode for the hub's keep-alive stacks**: the `StackedTabsRouter`
   IndexedStack (`app.dart:30`) never mutes covered tabs' tickers — latent;
-  the in-view `AppBoxKitAnimatedTabStack` muting was APPLIED in the
+  the in-view `ArxaKitAnimatedTabStack` muting was APPLIED in the
   gap-closure pass and home's spinner demo is bounded to a 5s window, so no
   perpetual animator lives covered today.
 - **`RepaintBoundary` coverage still thin** (one landed on the conversation
@@ -124,12 +124,12 @@ Every perpetual-work class swept across `kit/showcase_app/lib` +
 
 ### Gap closure (2026-08-27, second pass — all addressed)
 
-- **Tab ticker muting — FIXED.** `appbox_kit_animated_tab_stack.dart`: every
+- **Tab ticker muting — FIXED.** `arxa_kit_animated_tab_stack.dart`: every
   hidden tab is now wrapped in `TickerMode(enabled: i == _currentIndex)` in
   BOTH hiding modes (Offstage and iOS alpha/translate); the exit slot stays
   unwrapped so the leaving tab ticks through its exit, then mutes on
   completion. Red-first tests in
-  `kit/ui_library/test/appbox_kit_animated_tab_stack_test.dart`
+  `kit/ui_library/test/arxa_kit_animated_tab_stack_test.dart`
   (`kit.ui_library.animated-tab-stack` — iOS cross-cut + animated tier).
   The alpha/translate platform-view containment idiom is untouched.
 - **Typing indicator — HARDENED.**
@@ -141,8 +141,8 @@ Every perpetual-work class swept across `kit/showcase_app/lib` +
 - **xcscheme — STRIPPED.** `enableGPUValidationMode` removed from
   Runner.xcscheme (Xcode-attached runs no longer pay Metal validation).
 - **Addressed by decision note, not code** (design decisions, not defects):
-  snackbar scrim σ20 (`appbox_kit_snackbar_setup.dart:50`, transient,
-  non-iOS-26 tiers), sheet σ30 opt-out (`appbox_kit_native_sheet.dart:381`,
+  snackbar scrim σ20 (`arxa_kit_snackbar_setup.dart:50`, transient,
+  non-iOS-26 tiers), sheet σ30 opt-out (`arxa_kit_native_sheet.dart:381`,
   zero callers), scroll-edge animated sigma (tier-gated, identity at rest),
   and the iOS 26 GlassCard→native-glass default (ADR 0010 owns the tier
   split; flip only if a post-fix profile-mode device run still shows
@@ -158,13 +158,13 @@ Every perpetual-work class swept across `kit/showcase_app/lib` +
 
 ### Latent blur exposures (glass audit — none active on the launch surface today)
 
-- `appbox_kit_scroll_edge_effect.dart:211,300` — the only *animated* sigma,
+- `arxa_kit_scroll_edge_effect.dart:211,300` — the only *animated* sigma,
   driven per scroll frame, wrapped 2× per list child app-wide. Mitigated
   (tier-gated off on iOS 26, identity layer at rest, 1/50 quantization) but
   the first place to look if long frosted-tier lists ever run hot.
-- `appbox_kit_snackbar_setup.dart:50` — full-screen σ20 BackdropFilter scrim
+- `arxa_kit_snackbar_setup.dart:50` — full-screen σ20 BackdropFilter scrim
   for a snackbar's whole lifetime on non-iOS-26 tiers.
-- `appbox_kit_native_sheet.dart:381` — full-screen σ30 blur if any caller
+- `arxa_kit_native_sheet.dart:381` — full-screen σ30 blur if any caller
   passes `opaqueGlass: false` (none do today); keep callers opaque.
 
 ## Fourth pass — whole-app leftover sweep (2026-08-27, four parallel audits)
@@ -190,12 +190,12 @@ law-pending), 33 NOTE**.
   dispose). Pin: `showcase_note_editor_viewmodel_test.dart`
   (`notes.attach-a-photo-to-a-note — resolvePath memoizes per attachment id`).
 - **Drawer glassPeek blurred over the UiKitView scene** —
-  `appbox_kit_drawer.dart`'s default variant used the σ20 frosted branch over
+  `arxa_kit_drawer.dart`'s default variant used the σ20 frosted branch over
   a host page that hosts native glass on iOS 26 (BackdropFilter cannot sample
   platform views, flutter#175048). Now tier-gated: `platformViewSafe` +
   opaque tint on `supportsLiquidGlass` (sheet/dialog recipe); the blur stays
   below the tier where it IS the material. Pins:
-  `appbox_kit_drawer_test.dart` (both directions).
+  `arxa_kit_drawer_test.dart` (both directions).
 
 ### Law-pending (deliberately NOT fixed)
 
@@ -205,7 +205,7 @@ law-pending), 33 NOTE**.
 
 ### Unverified residuals (device run decides)
 
-- `AppBoxKitGlassWarmup` keeps one offscreen `LiquidGlassContainer` + a
+- `ArxaKitGlassWarmup` keeps one offscreen `LiquidGlassContainer` + a
   `CNSwitch` translated 100000px off-screen for the app's lifetime (deliberate
   first-push materialization fix). Whether offscreen hybrid-composition views
   still cost per-frame compositing is unknown — residual suspect #1 if idle
@@ -213,11 +213,11 @@ law-pending), 33 NOTE**.
 
 ### Seen and deliberately left (NOTEs of record)
 
-- `appbox_kit_overlay_extension.dart:346-355,496` — `.withOverlay()` defaults
+- `arxa_kit_overlay_extension.dart:346-355,496` — `.withOverlay()` defaults
   `isBlurred: true` (σ10–σ60) with ZERO call sites today; it becomes a
   blur-over-platform-views violation the day it is used. Before its first
   caller: flip the default to false or rebuild on
-  `AppBoxKitFrostedSurface(platformViewSafe:)`.
+  `ArxaKitFrostedSurface(platformViewSafe:)`.
 - `showcase_notes_folder_view.mobile.dart:148-179` — note GROUPS build lazily
   (SliverList.builder) but each group eagerly inflates all rows; fine at seed
   scale, flatten rows into the sliver itemBuilder if folders grow.
@@ -251,7 +251,7 @@ never mis-rendering or overlapping other widgets. Two parallel audits
 
 ### Already true (verified, no change)
 
-- Every modal sheet in the app rides `appBoxKitShowSheet` with
+- Every modal sheet in the app rides `arxaKitShowSheet` with
   `opaqueGlass: true` (opaque `platformViewSafe` base); zero stock
   `showModalBottomSheet`, zero `opaqueGlass: false` callers. All sheet
   content verified wired (the resizable-sheet slider drives the
@@ -260,11 +260,11 @@ never mis-rendering or overlapping other widgets. Two parallel audits
 ### Fixed (behavior-TDD, red-first)
 
 - **Prompt dialog blurred over native buttons** —
-  `appbox_kit_ask_surfaces.dart`'s iOS tier wrapped its body in the default
+  `arxa_kit_ask_surfaces.dart`'s iOS tier wrapped its body in the default
   σ20 BackdropFilter while hosting two CN platform-view buttons
   (flutter#175048 hazard + last translucent kit dialog). Now
   `platformViewSafe: true` + opaque tint, the alert-dialog recipe. Pin:
-  `appbox_kit_notification_ask_test.dart` (`kit.ui-library.ask-surfaces —
+  `arxa_kit_notification_ask_test.dart` (`kit.ui-library.ask-surfaces —
   the prompt dialog panel is opaque and platform-view-safe`).
 - **Photo lightbox bypassed the kit presentation path** —
   `showcase_note_photo_strip_widget.dart` showed a raw `showDialog` on the
@@ -279,7 +279,7 @@ never mis-rendering or overlapping other widgets. Two parallel audits
   overlaid the body's top-right corner with no reserved inset (victim: the
   resizable demo's percent label). The body now reserves the button's zone
   (`_clearOfClose`, 52px less the grabber's 20 when drawn). Pin:
-  `appbox_kit_native_sheet_test.dart` (content.top ≥ button.bottom).
+  `arxa_kit_native_sheet_test.dart` (content.top ≥ button.bottom).
 - **Close-button luminance** — glass labels were measured washed out on the
   opaque sheet base (iOS 26.5 simulator, 2026-08-16, recorded in
   `showcase_components_input_bar_widget.dart:8-11`). The xmark now uses the
@@ -292,7 +292,7 @@ never mis-rendering or overlapping other widgets. Two parallel audits
 
 ### Docs/config drift repaired
 
-`appBoxKitShowNativeSheet` → `appBoxKitShowSheet` in `COMPONENTS.md`, the
+`arxaKitShowNativeSheet` → `arxaKitShowSheet` in `COMPONENTS.md`, the
 usage appendix (×3), the review gate's fix-hint (`gates/review/review.dart`),
 and `PLAYBOOK.md`; the sheet's stale "no app registers
 CNTabBarRouteObserver" comment premise corrected (the showcase app does —
@@ -307,7 +307,7 @@ double-bump unwinds cleanly via the zero-clamp).
 
 ### Sheet NOTEs of record (audited, deliberately left)
 
-- `appbox_kit_native_sheet.dart` `factor == null` branch is unreachable
+- `arxa_kit_native_sheet.dart` `factor == null` branch is unreachable
   (unsized callers ride `_FixedHeight(0.56)`); kept as defensive shape, now
   consistent with the clearance wiring.
 - Unpinned-but-stable branches: the σ30 `opaqueGlass: false` opt-out (zero
@@ -317,11 +317,11 @@ double-bump unwinds cleanly via the zero-clamp).
   `showOverlay: false` host-page glass stays tappable beneath the sheet's
   clear area (every current caller uses the default `showOverlay: true`,
   where the dim barrier covers it).
-- `AppBoxKitBottomSheetService` silently drops stacked's `enableDrag`/
+- `ArxaKitBottomSheetService` silently drops stacked's `enableDrag`/
   `isScrollControlled`/`barrierColor` knobs (zero direct callers in the
   showcase; map honestly or `debugPrint` when a caller next needs them).
 - Glass-in-scrollable vendor contract now documented on
-  `appBoxKitShowSheet`'s dartdoc (scrolling bodies use `wantNative: false`
+  `arxaKitShowSheet`'s dartdoc (scrolling bodies use `wantNative: false`
   controls).
 - Close-button clearance shipped as content padding (`_clearOfClose`); the
   structural alternative — moving the button in-flow into a chrome row with
@@ -371,7 +371,7 @@ gate/ladder-only).
 
 ### The global mechanisms (kit)
 
-1. **Auto-opaque law** — `AppBoxKitFrostedSurface` takes the no-saveLayer
+1. **Auto-opaque law** — `ArxaKitFrostedSurface` takes the no-saveLayer
    branch for ANY fully opaque tint (rule 13's rationale codified; opacity
    is a mode switch — never animate tint alpha across 1.0).
 2. **Modal auto-bracket** — verified pre-existing:
@@ -379,11 +379,11 @@ gate/ladder-only).
    `showDialog` self-brackets wherever the observer is registered (root +
    nested tab routers via `inheritNavigatorObservers` default). Explicit
    kit marks stay as defense-in-depth (Overlay entries). New pin:
-   appbox_kit_native_modal_observer_test. Stale doctrine comments
+   arxa_kit_native_modal_observer_test. Stale doctrine comments
    corrected (photo strip, gate hint).
-3. **`AppBoxKitGlassLuminance`** — InheritedWidget; every frosted surface
-   publishes `opaque` + `brightness`; `AppBoxKitNativeButton` /
-   `AppBoxKitNativeIconButton` demote `glass` → `gray` + on-surface
+3. **`ArxaKitGlassLuminance`** — InheritedWidget; every frosted surface
+   publishes `opaque` + `brightness`; `ArxaKitNativeButton` /
+   `ArxaKitNativeIconButton` demote `glass` → `gray` + on-surface
    monochrome symbol ink on a bright opaque base. No scope → theme scaffold
    background decides (covers bare-Scaffold surfaces like the auth panel).
    Dark opaque keeps glass; prominentGlass never demotes;

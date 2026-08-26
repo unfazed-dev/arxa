@@ -1,15 +1,15 @@
 <Callout id="header" tone="info">
 
-# appbox_kit_i18n — Per-Package Playbook
+# arxa_kit_i18n — Per-Package Playbook
 
 
-`appbox_kit_i18n` v**0.1.0** · `publish_to: 'none'` · status: **active**
+`arxa_kit_i18n` v**0.1.0** · `publish_to: 'none'` · status: **active**
 
 
-**Role (one line):** Locale machinery for appbox_kit apps — a AppBoxKitLanguage value type, a persisted system+override locale model (AppBoxKitI18n extends ChangeNotifier for live switching), intl-backed date/number/currency formatting, placeholder-parity checking, and an LLM locale directive for generative UI.
+**Role (one line):** Locale machinery for arxa_kit apps — a ArxaKitLanguage value type, a persisted system+override locale model (ArxaKitI18n extends ChangeNotifier for live switching), intl-backed date/number/currency formatting, placeholder-parity checking, and an LLM locale directive for generative UI.
 
 
-**Scope of this document:** lets a human OR an LLM use, wire, and extend `appbox_kit_i18n` **without reading its source**. The public surface below was extracted from the barrel; README content is folded into the narrative sections.
+**Scope of this document:** lets a human OR an LLM use, wire, and extend `arxa_kit_i18n` **without reading its source**. The public surface below was extracted from the barrel; README content is folded into the narrative sections.
 
 
 ## Table of contents
@@ -22,16 +22,16 @@
 
 ### Overview & role
 
-Locale machinery for appbox_kit apps — a AppBoxKitLanguage value type, a persisted system+override locale model (AppBoxKitI18n extends ChangeNotifier for live switching), intl-backed date/number/currency formatting, placeholder-parity checking, and an LLM locale directive for generative UI. Standalone capability kit; no dependency on appbox_kit core. Translation strings are deliberately NOT codegen'd here — apps own their gen-l10n output.
+Locale machinery for arxa_kit apps — a ArxaKitLanguage value type, a persisted system+override locale model (ArxaKitI18n extends ChangeNotifier for live switching), intl-backed date/number/currency formatting, placeholder-parity checking, and an LLM locale directive for generative UI. Standalone capability kit; no dependency on arxa_kit core. Translation strings are deliberately NOT codegen'd here — apps own their gen-l10n output.
 
 
 ### Public surface
 
-Exported from `lib/appbox_appbox_kit_i18n.dart`:
+Exported from `lib/arxa_arxa_kit_i18n.dart`:
 
-<Table id="i18n-api" columns={["Symbol", "Kind", "Defined in"]} rows={[["AppBoxKitI18n", "class", "src/appbox_kit_i18n.dart"], ["AppBoxKitLanguage", "class", "src/appbox_kit_language.dart"], ["AppBoxKitLocaleStore", "abstract interface class", "src/appbox_kit_locale_store.dart"], ["SharedPreferencesAppBoxKitLocaleStore", "class", "src/appbox_kit_locale_store.dart"]]} />
+<Table id="i18n-api" columns={["Symbol", "Kind", "Defined in"]} rows={[["ArxaKitI18n", "class", "src/arxa_kit_i18n.dart"], ["ArxaKitLanguage", "class", "src/arxa_kit_language.dart"], ["ArxaKitLocaleStore", "abstract interface class", "src/arxa_kit_locale_store.dart"], ["SharedPreferencesArxaKitLocaleStore", "class", "src/arxa_kit_locale_store.dart"]]} />
 
-Test doubles in `lib/appbox_kit_testing.dart`: `FakeAppBoxKitLocaleStore`.
+Test doubles in `lib/arxa_kit_testing.dart`: `FakeArxaKitLocaleStore`.
 
 Scripts and call-counts — tests never touch platform channels.
 
@@ -42,13 +42,13 @@ Register in the locator at startup and wire `MaterialApp`:
 
 ```dart
 // main.dart — create once, load the persisted override before runApp.
-final store = await SharedPreferencesAppBoxKitLocaleStore.create();
-final i18n = AppBoxKitI18n(
+final store = await SharedPreferencesArxaKitLocaleStore.create();
+final i18n = ArxaKitI18n(
   store: store,
   systemLocale: WidgetsBinding.instance.platformDispatcher.locale,
 );
 await i18n.load();
-locator.registerSingleton<AppBoxKitI18n>(i18n);
+locator.registerSingleton<ArxaKitI18n>(i18n);
 
 // MaterialApp — listen so the app rebuilds live on setLocale().
 MaterialApp(
@@ -94,7 +94,7 @@ final systemPrompt = '${i18n.llmLocaleDirective()}\n\n$restOfPrompt';
 
 ```yaml
 dependencies:
-  appbox_kit_i18n:
+  arxa_kit_i18n:
     path: ../i18n
 ```
 
@@ -110,13 +110,13 @@ See `kit_matrix.md` for the full routing + dependency graph.
 
 Three small pieces, one dependency direction (service → port → plugin):
 
-- `AppBoxKitLanguage` — a pure value type: BCP-47 `tag` plus English/native display
-  names. The static `AppBoxKitLanguage.supported` table ships `en` + `pl`;
+- `ArxaKitLanguage` — a pure value type: BCP-47 `tag` plus English/native display
+  names. The static `ArxaKitLanguage.supported` table ships `en` + `pl`;
   `byTag` falls back to the base subtag (`'pl-PL'` → `'pl'`).
-- `AppBoxKitLocaleStore` — the persistence port (`read`/`write`/`clear` of a single
-  override tag). `SharedPreferencesAppBoxKitLocaleStore` is the shipped adapter,
+- `ArxaKitLocaleStore` — the persistence port (`read`/`write`/`clear` of a single
+  override tag). `SharedPreferencesArxaKitLocaleStore` is the shipped adapter,
   over a `SharedPreferencesWithCache` scoped to the `'locale'` key.
-- `AppBoxKitI18n` — the service the app holds. It resolves the effective locale
+- `ArxaKitI18n` — the service the app holds. It resolves the effective locale
   (persisted override → system locale → English), extends `ChangeNotifier`
   so `MaterialApp` rebuilds live on `setLocale`/`clearOverride`, and formats
   dates/numbers/currencies through `intl` in the effective locale. It also
@@ -126,7 +126,7 @@ Three small pieces, one dependency direction (service → port → plugin):
 The kit never sees translation strings: ARB files and gen-l10n
 `AppLocalizations` live in the app, which also owns the wiring
 (`MaterialApp.locale`, delegates, supported locales). No kit depends on
-`appbox_kit_core` or `stacked` — the app registers `AppBoxKitI18n` in its own
+`arxa_kit_core` or `stacked` — the app registers `ArxaKitI18n` in its own
 locator.
 
 
@@ -140,7 +140,7 @@ locator.
 - **Translation strings live in the app.** The kit has no ARB/codegen; it
   expects the app's gen-l10n delegates to sit next to the
   `flutter_localizations` delegates.
-- **`SharedPreferencesAppBoxKitLocaleStore.create()` is async** — create it once
+- **`SharedPreferencesArxaKitLocaleStore.create()` is async** — create it once
   before `runApp`, not per viewmodel.
 - **The LLM directive is a prompt block, not a translator** — it steers the
   model to answer in `languageNameEn`/`languageNameNative`, preserve
@@ -150,19 +150,19 @@ locator.
 
 ### Testing
 
-`appbox_kit_i18n` ships `lib/appbox_kit_testing.dart`.
+`arxa_kit_i18n` ships `lib/arxa_kit_testing.dart`.
 
 
 ### Features
 
-<Checklist id="i18n-features" items={[{"id": "i18n-feat-0", "label": "`AppBoxKitI18n` \u2014 class"}, {"id": "i18n-feat-1", "label": "`AppBoxKitLanguage` \u2014 class"}, {"id": "i18n-feat-2", "label": "`AppBoxKitLocaleStore` \u2014 abstract interface class"}, {"id": "i18n-feat-3", "label": "`SharedPreferencesAppBoxKitLocaleStore` \u2014 class"}]} />
+<Checklist id="i18n-features" items={[{"id": "i18n-feat-0", "label": "`ArxaKitI18n` \u2014 class"}, {"id": "i18n-feat-1", "label": "`ArxaKitLanguage` \u2014 class"}, {"id": "i18n-feat-2", "label": "`ArxaKitLocaleStore` \u2014 abstract interface class"}, {"id": "i18n-feat-3", "label": "`SharedPreferencesArxaKitLocaleStore` \u2014 class"}]} />
 
 
 ### Decisions / ADRs
 
 - **Standalone (no kit edges).** Follows the star-topology default:
-  persistence sits behind the `AppBoxKitLocaleStore` port and the app binds it —
-  the kit never imports `appbox_kit_core` or `stacked`.
+  persistence sits behind the `ArxaKitLocaleStore` port and the app binds it —
+  the kit never imports `arxa_kit_core` or `stacked`.
 - **No codegen in the kit.** Translation strings are app content, not kit
   machinery: ARB files and gen-l10n output stay in the app, keeping the kit
   generic over any locale set. The kit supplies resolution, persistence,
@@ -170,7 +170,7 @@ locator.
 - **`intl: any`, never pinned.** The version is SDK-pinned through
   `flutter_localizations`; pinning it in the kit would conflict at
   `pub get`.
-- **English default + Polish at launch, generic table.** `AppBoxKitLanguage.supported`
+- **English default + Polish at launch, generic table.** `ArxaKitLanguage.supported`
   ships `en` + `pl` because those are the launch locales; lookup is
   tag-based with base-subtag fallback, so adding a locale is a table entry
   plus the app's ARB file — no kit change.
@@ -187,13 +187,13 @@ Official docs and tooling:
 - [stacked_cli (pub.dev)](https://pub.dev/packages/stacked_cli) — Scaffolding CLI for new Stacked apps/views/services.
 - [Flutter — official documentation](https://docs.flutter.dev) — Framework docs, platform integration, performance.
 - [Dart — official documentation](https://dart.dev) — Language tour, async, package ecosystem.
-- [Dart & Flutter MCP server (official)](https://dart.dev/tools/mcp-server) — Ships with the Dart SDK (dart mcp-server). Exposes analyzer diagnostics, pub, tests, and live Flutter app introspection via DTD. Wired in appbox_kit/.mcp.json.
+- [Dart & Flutter MCP server (official)](https://dart.dev/tools/mcp-server) — Ships with the Dart SDK (dart mcp-server). Exposes analyzer diagnostics, pub, tests, and live Flutter app introspection via DTD. Wired in arxa_kit/.mcp.json.
 
 Kit-specific:
 
-- [flutter_localizations (pub.dev)](https://pub.dev/packages/flutter_localizations) — flutter_localizations — backing dependency of appbox_kit_i18n.
-- [intl (pub.dev)](https://pub.dev/packages/intl) — intl — backing dependency of appbox_kit_i18n.
-- [shared_preferences (pub.dev)](https://pub.dev/packages/shared_preferences) — shared_preferences — backing dependency of appbox_kit_i18n.
+- [flutter_localizations (pub.dev)](https://pub.dev/packages/flutter_localizations) — flutter_localizations — backing dependency of arxa_kit_i18n.
+- [intl (pub.dev)](https://pub.dev/packages/intl) — intl — backing dependency of arxa_kit_i18n.
+- [shared_preferences (pub.dev)](https://pub.dev/packages/shared_preferences) — shared_preferences — backing dependency of arxa_kit_i18n.
 <!-- kb:end -->
 
 <QuestionForm id="open-questions" questions={[

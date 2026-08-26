@@ -15,13 +15,13 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart'
+import 'package:arxa_kit_ui_library/arxa_kit_ui_library.dart'
     show
-        AppBoxKitNativeAppBar,
-        AppBoxKitNativeTabBar,
-        AppBoxKitNativeInputBar,
-        AppBoxKitNativeFabMenu,
-        AppBoxKitBottomEdgeScrim;
+        ArxaKitNativeAppBar,
+        ArxaKitNativeTabBar,
+        ArxaKitNativeInputBar,
+        ArxaKitNativeFabMenu,
+        ArxaKitBottomEdgeScrim;
 
 import 'helpers.dart';
 
@@ -39,21 +39,21 @@ void main() {
     final router = await bootShell(tester);
 
     // Baseline is Home, not the profile root: `/profile` overflows 92px in
-    // AppBoxKitNativeToolbar at phone width (pre-existing, verified against a
+    // ArxaKitNativeToolbar at phone width (pre-existing, verified against a
     // probe that never enters Components) and would fail this test for an
     // unrelated reason.
     unawaited(router.navigateNamed('/home'));
     await settle(tester);
-    expect(find.byType(AppBoxKitNativeTabBar), findsOneWidget,
+    expect(find.byType(ArxaKitNativeTabBar), findsOneWidget,
         reason: 'anti-vacuous: the tab bar must be up before we navigate, '
             'or the assertion below proves nothing');
 
     unawaited(router.navigateNamed('/profile/components'));
     await settle(tester);
 
-    expect(find.byType(AppBoxKitNativeInputBar), findsOneWidget,
+    expect(find.byType(ArxaKitNativeInputBar), findsOneWidget,
         reason: 'Components pins the message dock as Scaffold.bottomSheet');
-    expect(find.byType(AppBoxKitNativeTabBar), findsNothing,
+    expect(find.byType(ArxaKitNativeTabBar), findsNothing,
         reason: 'two bars on the same pixels is the bug — the shared tab bar '
             'yields the slot to the route that pinned its own');
 
@@ -62,7 +62,7 @@ void main() {
     // runs to the physical bottom edge; the 64pt tab-bar lift it used to
     // carry would leave it stranded above dead space.
     expect(
-      tester.getRect(find.byType(AppBoxKitNativeInputBar)).bottom,
+      tester.getRect(find.byType(ArxaKitNativeInputBar)).bottom,
       closeTo(
           tester.view.physicalSize.height / tester.view.devicePixelRatio, 0.5),
       reason: 'the dock must sit on the bottom edge once the tab bar is gone',
@@ -97,7 +97,7 @@ void main() {
     unawaited(router.navigateNamed('/profile/components'));
     await settle(tester);
 
-    final Finder bar = find.byType(AppBoxKitNativeInputBar);
+    final Finder bar = find.byType(ArxaKitNativeInputBar);
     final MediaQueryData mq = MediaQuery.of(tester.element(bar));
     expect(mq.padding.bottom, 34,
         reason: 'the inset must survive both Scaffolds to reach the dock');
@@ -118,7 +118,7 @@ void main() {
     // route is no longer a descendant of it — the FAB is gone here and the
     // overlap it guarded is structurally impossible rather than merely
     // measured. Pinning the absence keeps the guard non-vacuous.
-    expect(find.byType(AppBoxKitNativeFabMenu), findsNothing,
+    expect(find.byType(ArxaKitNativeFabMenu), findsNothing,
         reason: 'a pushed route carries only its own chrome — a gallery FAB '
             'here means the shell-level wrapper came back and it will sit over '
             "the composer's trailing mic again");
@@ -147,18 +147,18 @@ void main() {
     unawaited(router.navigateNamed('/profile/components'));
     await settle(tester);
 
-    expect(find.byType(AppBoxKitNativeInputBar), findsOneWidget,
+    expect(find.byType(ArxaKitNativeInputBar), findsOneWidget,
         reason: 'anti-vacuous: Components must actually be up');
 
     Finder barTitled(String title) => find.byWidgetPredicate(
-        (w) => w is AppBoxKitNativeAppBar && w.title == title);
+        (w) => w is ArxaKitNativeAppBar && w.title == title);
 
     expect(barTitled('Components'), findsOneWidget,
         reason: "the pushed route keeps its own 'Components' bar");
-    expect(barTitled('AppBox Showcase'), findsNothing,
-        reason: "the gallery's 'AppBox Showcase' bar belongs to the tab ROOT; "
+    expect(barTitled('Arxa Showcase'), findsNothing,
+        reason: "the gallery's 'Arxa Showcase' bar belongs to the tab ROOT; "
             'finding it here is the double-bar stack the ruling removed');
-    expect(find.byType(AppBoxKitNativeFabMenu), findsNothing,
+    expect(find.byType(ArxaKitNativeFabMenu), findsNothing,
         reason: 'the gallery FAB is part of that same tab-root chrome');
   }, timeout: const Timeout(Duration(minutes: 2)));
 
@@ -170,14 +170,14 @@ void main() {
 
     unawaited(router.navigateNamed('/profile/components'));
     await settle(tester);
-    expect(find.byType(AppBoxKitNativeTabBar), findsNothing);
+    expect(find.byType(ArxaKitNativeTabBar), findsNothing);
 
     // Components is still mounted in the profile tab's stack (the tab bodies
     // live in an IndexedStack) — only the ACTIVE tab's top route may decide.
     unawaited(router.navigateNamed('/home'));
     await settle(tester);
 
-    expect(find.byType(AppBoxKitNativeTabBar), findsOneWidget,
+    expect(find.byType(ArxaKitNativeTabBar), findsOneWidget,
         reason: 'a mounted-but-inactive Components must not hold the dock; '
             'that cross-tab leak is C2 and it strands the user with no tabs');
   }, timeout: const Timeout(Duration(minutes: 2)));
@@ -196,16 +196,16 @@ void main() {
 
     unawaited(router.navigateNamed('/home'));
     await settle(tester);
-    expect(find.byType(AppBoxKitBottomEdgeScrim), findsOneWidget,
+    expect(find.byType(ArxaKitBottomEdgeScrim), findsOneWidget,
         reason: 'anti-vacuous: the bottom-edge dissolve must be up under the '
             'shared tab bar, or the yield below proves nothing');
 
     unawaited(router.navigateNamed('/profile/components'));
     await settle(tester);
 
-    expect(find.byType(AppBoxKitNativeInputBar), findsOneWidget,
+    expect(find.byType(ArxaKitNativeInputBar), findsOneWidget,
         reason: 'anti-vacuous: Components must be up');
-    expect(find.byType(AppBoxKitBottomEdgeScrim), findsNothing,
+    expect(find.byType(ArxaKitBottomEdgeScrim), findsNothing,
         reason: 'the scrim must yield the edge with the tab bar — one dock, '
             'one bottom-edge treatment, both owned by whichever bar is '
             'actually there');

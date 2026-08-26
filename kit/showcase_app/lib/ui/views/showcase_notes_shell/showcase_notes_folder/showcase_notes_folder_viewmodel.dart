@@ -59,19 +59,19 @@
 /// History: git log --follow -- kit/showcase_app/lib/ui/views/showcase_notes_shell/showcase_notes_folder/showcase_notes_folder_viewmodel.dart
 library;
 
-import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
+import 'package:arxa_kit_ui_library/arxa_kit_ui_library.dart';
 
-import 'package:appbox_kit_showcase_app/data/models/showcase_notes_models/models.dart';
-import 'package:appbox_kit_showcase_app/enums/showcase_notes_enums/enums.dart';
-import 'package:appbox_kit_showcase_app/services/showcase_notes_services/facades/showcase_notes_facade_service.dart';
+import 'package:arxa_kit_showcase_app/data/models/showcase_notes_models/models.dart';
+import 'package:arxa_kit_showcase_app/enums/showcase_notes_enums/enums.dart';
+import 'package:arxa_kit_showcase_app/services/showcase_notes_services/facades/showcase_notes_facade_service.dart';
 
-class ShowcaseNotesFolderViewModel extends AppBoxKitViewModel {
+class ShowcaseNotesFolderViewModel extends ArxaKitViewModel {
   // ── Setup ──────────────────────────────────────────────────────────────────
 
   ShowcaseNotesFolderViewModel({required this.folderKey});
 
   final String folderKey;
-  final _service = appBoxKitLocator<ShowcaseNotesFacadeService>();
+  final _service = arxaKitLocator<ShowcaseNotesFacadeService>();
 
   // ── Initial state ─────────────────────────────────────────────────────────
 

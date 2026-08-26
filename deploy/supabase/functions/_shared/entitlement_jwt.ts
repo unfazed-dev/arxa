@@ -4,7 +4,7 @@
 // the exact same code runs in the Supabase Edge Runtime (Deno) AND in the
 // local Node harness (deploy/supabase/scripts/local_mint_check.mjs), which
 // cross-checks its output against the Dart verifier
-// (`appbox entitlement verify`, appboxd/lib/entitlement.dart).
+// (`arxa entitlement verify`, arxa/lib/entitlement.dart).
 //
 // Token contract (docs/plans/entitlement-backend-runbook.md §1 — the client
 // verifier is the authority):

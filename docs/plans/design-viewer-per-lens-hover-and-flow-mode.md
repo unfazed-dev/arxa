@@ -4,15 +4,15 @@ Status: planned, not implemented. Written 2026-08-02.
 
 Supersedes the "live mode" tile tool.
 
-**Read alongside this:** `skills/appbox-designer/DESIGN-ARCHITECTURE.md`
+**Read alongside this:** `skills/arxa-designer/DESIGN-ARCHITECTURE.md`
 §"The output triad: views / flows / proto" (lines 81-110) and
-`designs/appbox-studio/ui/common/_integration_viewer.md` (the `v` contract).
+`designs/arxa-studio/ui/common/_integration_viewer.md` (the `v` contract).
 
 **Do NOT read `docs/plans/canvas-redesign-contract.md`** — its own line 3 marks it
 *Superseded (2026-07-30)*: it describes the retired rail/mini-rail chrome and a
 dropped `prototype` viewer mode, and says "do not implement against it". Two
 in-repo comments still point at it as canon —
-`designs/appbox-studio/ui/common/design_viewer.html:25` ("Canon markup:
+`designs/arxa-studio/ui/common/design_viewer.html:25` ("Canon markup:
 canvas-redesign-contract.md §3") and `mini_panel.html:16` ("v.miniPanel shape
 (canvas-redesign-contract.md §1/§3)"). Those pointers are stale and are part of
 the docs slice below.
@@ -27,7 +27,7 @@ Three findings reshaped it.
 
 ### 1. Flow-linked navigation already exists
 
-`~/.appbox/projects/portalo/design/surfaces/auth.html:2` states it in its own
+`~/.arxa/projects/portalo/design/surfaces/auth.html:2` states it in its own
 header comment: *"the primary CTA is the flow edge (next.to = home)"*. Line 22:
 
 ```html
@@ -44,7 +44,7 @@ So "make flow mode follow the flow" is not new machinery. The navigation works.
 
 ### 2. Flow triggers are prose, and only *sometimes* name an element
 
-`~/.appbox/projects/portalo/intake/flows.json` edges carry `{from, to, trigger,
+`~/.arxa/projects/portalo/intake/flows.json` edges carry `{from, to, trigger,
 action}`. All nine edges are `action: "push"`. The triggers:
 
 ```
@@ -83,7 +83,7 @@ this file.
 
 ### 3. The real defect: `nextEdge` is not scoped by flow
 
-`designs/appbox-studio/services/repositories/project_repository.js:46-57`:
+`designs/arxa-studio/services/repositories/project_repository.js:46-57`:
 
 ```js
 export const nextEdge = (screenId) => {
@@ -174,7 +174,7 @@ intercepts a click on an element that matches a flow edge, suppresses the
 in-frame navigation, posts the new step, and triggers the parent re-swap.
 
 **This is not free, and an earlier draft of this plan understated it.** ADR-0002
-(`skills/appbox-designer/docs/adr/0002-zero-custom-client-js-boundary.md`) ends
+(`skills/arxa-designer/docs/adr/0002-zero-custom-client-js-boundary.md`) ends
 its amendment section with: *"A new runtime enters only as a new named, vendored,
 documented island amending this ADR."* A flow-walk island is a **new** island, so
 it requires an ADR-0002 amendment — the same ceremony the media (2026-07-31) and
@@ -200,7 +200,7 @@ at all, but it is not "tapping Continue" — so it is the fallback, not the plan
 ## Slices
 
 1. **Per-lens hover toolbars** — split `tileTools` in
-   `designs/appbox-studio/ui/common/design_viewer.html`. Drop the live/flow tool
+   `designs/arxa-studio/ui/common/design_viewer.html`. Drop the live/flow tool
    from the views branch entirely.
 2. **Rename live → flow mode** — `v.live` → flow/step state, `liveHref` /
    `liveCloseHref`, `.is-live`, `dv-live-close`, i18n keys
@@ -210,20 +210,20 @@ at all, but it is not "tapping Continue" — so it is the fallback, not the plan
    `flowId` from viewer state through `build_facade.js:301`. Add `step` to the
    viewer state the control hrefs echo (`setViewer`, `build_facade.js:308`).
 4. **Flow edge `element` field** — optional, joins to existing `data-el` values.
-   Touches the intake schema/generator, `appboxd/lib/emit_structure.dart`
-   validation (flows.json edges over registry ids), the `appbox-story-mapper`
+   Touches the intake schema/generator, `arxa/lib/emit_structure.dart`
+   validation (flows.json edges over registry ids), the `arxa-story-mapper`
    skill that authors flows, and the portalo fixtures.
    **Fixtures are generated — edit the seed and re-run the generator, never the
    fixture.**
-5. **Update the appbox mechanisms** — the real list, from the canon audit:
-   - `skills/appbox-designer/DESIGN-ARCHITECTURE.md` §output-triad — the
+5. **Update the arxa mechanisms** — the real list, from the canon audit:
+   - `skills/arxa-designer/DESIGN-ARCHITECTURE.md` §output-triad — the
      "projection, never navigable" framing (lines 83, 94, 105).
-   - `skills/appbox-designer/docs/adr/0002-zero-custom-client-js-boundary.md` —
+   - `skills/arxa-designer/docs/adr/0002-zero-custom-client-js-boundary.md` —
      an amendment for the flow-walk island.
-   - `designs/appbox-studio/ui/common/_integration_viewer.md` — the `v` contract.
-   - `docs/appbox-system-map.md` §5 "viewer: one SSOT" — the mermaid currently
+   - `designs/arxa-studio/ui/common/_integration_viewer.md` — the `v` contract.
+   - `docs/arxa-system-map.md` §5 "viewer: one SSOT" — the mermaid currently
      annotates proto's edges as clickable nav and flows' as not.
-   - `skills/appbox-story-mapper` — it authors flows; the `element` field is new.
+   - `skills/arxa-story-mapper` — it authors flows; the `element` field is new.
    - **Stale pointers to retire:** `design_viewer.html:25` and
      `mini_panel.html:16` both cite the superseded canvas-redesign-contract.
    - `docs/INDEX.md` needs nothing — it is a pure directory index.

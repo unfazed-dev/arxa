@@ -12,7 +12,7 @@ Two front ends, **one engine**:
 | surface | who | when |
 |---|---|---|
 | **wizard UI** in the desktop app | Michelle, and Evan with a client in the room | guided, step by step, resumable |
-| **`appbox-intake` phase** (headless) | agents, harness invocation, re-runs | scripted or re-derived |
+| **`arxa-intake` phase** (headless) | agents, harness invocation, re-runs | scripted or re-derived |
 
 Both write the same artefacts. The wizard is a **view over the phase**, not a
 parallel implementation — if the two can disagree, this plan has failed.
@@ -32,7 +32,7 @@ unavoidable, **mark it** — the same discipline as the playbook generator's
       three things the app must do, existing systems, **targets**, brand,
       constraints, out-of-scope. Every field records **who supplied it**:
       `client`, `founder`, or `inferred`.
-- [x] **10.2** Implement the engine in `skills/appbox-intake/` — questions,
+- [x] **10.2** Implement the engine in `skills/arxa-intake/` — questions,
       validation, and artefact emission. **No UI code here.**
 - [x] **10.3** Emit `docs/design/brief.md` from the schema, with every
       `inferred` field visibly marked in the output.

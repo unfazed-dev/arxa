@@ -1,8 +1,8 @@
 # Moodboard — Lexend typography (superfamily cuts for display / body / UI)
 
-Slice: type direction for **appbox** — one superfamily that covers display, body, and UI-label roles while reinforcing "calm, warm, readable" (Lexend was literally engineered for reading proficiency).
+Slice: type direction for **arxa** — one superfamily that covers display, body, and UI-label roles while reinforcing "calm, warm, readable" (Lexend was literally engineered for reading proficiency).
 
-Captured 2026-07-28 with the appbox lens. Freshness: **🔥** current · **🌡️** canonical.
+Captured 2026-07-28 with the arxa lens. Freshness: **🔥** current · **🌡️** canonical.
 
 ---
 
@@ -13,7 +13,7 @@ Captured 2026-07-28 with the appbox lens. Freshness: **🔥** current · **🌡�
 The official superfamily site (Bonnie Shaver-Troup / Thomas Jockin / Superunion): the full expansion ladder **Deca → Exa → Giga → Mega → Peta → Tera → Zetta**, plus the research story — Lexend's expanded forms measurably improve reading fluency, and the variable font's `wght` axis covers 100–900.
 
 - **Steal:**
-  - The **rationale as brand copy**: "change the way the world reads" — appbox can honestly claim its typeface is chosen for reduced eye fatigue during long build-watch sessions.
+  - The **rationale as brand copy**: "change the way the world reads" — arxa can honestly claim its typeface is chosen for reduced eye fatigue during long build-watch sessions.
   - The **expansion ladder itself is the display system**: pick the width per role instead of reaching for a second family.
   - Variable-font delivery: one file, `wght` 100–900 — cheap to ship, fine-grained weight control for hierarchy-without-color.
 - **Why it fits:** a dev tool whose core activity is *reading* (logs, diffs, chat) benefits from a face designed for exactly that; "calm" is a documented property of the design, not a vibe.

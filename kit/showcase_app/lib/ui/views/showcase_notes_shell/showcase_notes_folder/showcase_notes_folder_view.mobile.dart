@@ -1,5 +1,5 @@
 /// A view composes adaptive primitives from the kit's native family and binds
-/// the viewmodel's streams with [AppBoxKitStreamBuilder], calling the viewmodel's
+/// the viewmodel's streams with [ArxaKitStreamBuilder], calling the viewmodel's
 /// actions on user input. It never contains business logic — every decision
 /// lives in the viewmodel, and only the subtree bound to a changed stream
 /// redraws.
@@ -54,13 +54,13 @@ library;
 
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:appbox_kit_motion/appbox_kit_motion.dart';
-import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
-import 'package:appbox_kit_showcase_app/ui/widgets/common/showcase_tabs_shared/widgets.dart';
-import 'package:appbox_kit_showcase_app/ui/widgets/showcase_notes_widgets/widgets.dart';
-import 'package:appbox_kit_showcase_app/data/models/showcase_notes_models/models.dart';
-import 'package:appbox_kit_showcase_app/enums/showcase_notes_enums/enums.dart';
-import 'package:appbox_kit_showcase_app/ui/views/showcase_notes_shell/showcase_notes_folder/showcase_notes_folder_viewmodel.dart';
+import 'package:arxa_kit_motion/arxa_kit_motion.dart';
+import 'package:arxa_kit_ui_library/arxa_kit_ui_library.dart';
+import 'package:arxa_kit_showcase_app/ui/widgets/common/showcase_tabs_shared/widgets.dart';
+import 'package:arxa_kit_showcase_app/ui/widgets/showcase_notes_widgets/widgets.dart';
+import 'package:arxa_kit_showcase_app/data/models/showcase_notes_models/models.dart';
+import 'package:arxa_kit_showcase_app/enums/showcase_notes_enums/enums.dart';
+import 'package:arxa_kit_showcase_app/ui/views/showcase_notes_shell/showcase_notes_folder/showcase_notes_folder_viewmodel.dart';
 
 class ShowcaseNotesFolderViewMobile
     extends ViewModelWidget<ShowcaseNotesFolderViewModel> {
@@ -72,8 +72,8 @@ class ShowcaseNotesFolderViewMobile
 
     final actions = [
       if (viewModel.isTrash)
-        AppBoxKitNativeIconButton(
-          glyph: AppBoxKitGlyphs.delete,
+        ArxaKitNativeIconButton(
+          glyph: ArxaKitGlyphs.delete,
           color: theme.colorScheme.error,
           onPressed: viewModel.confirmEmptyTrash,
         ),
@@ -81,16 +81,16 @@ class ShowcaseNotesFolderViewMobile
 
     // Streams-only: title$ feeds the app bar (a rename lands in place),
     // groups$ feeds the list — the viewmodel holds no relay fields.
-    return AppBoxKitStreamBuilder<String>(
+    return ArxaKitStreamBuilder<String>(
       stream: viewModel.title$,
       builder: (context, title) => Scaffold(
-        // THE one app bar — AppBoxKitNativeAppBar in Scaffold.appBar (never a sliver,
+        // THE one app bar — ArxaKitNativeAppBar in Scaffold.appBar (never a sliver,
         // never a stock AppBar) — with the explicit back button + (trash-only)
         // empty-trash action riding on it.
-        appBar: AppBoxKitNativeAppBar(
+        appBar: ArxaKitNativeAppBar(
           title: title,
-          leading: AppBoxKitNativeIconButton(
-            glyph: AppBoxKitGlyphs.back,
+          leading: ArxaKitNativeIconButton(
+            glyph: ArxaKitGlyphs.back,
             onPressed: () => context.popRoute(),
           ),
           actions: actions,
@@ -102,14 +102,14 @@ class ShowcaseNotesFolderViewMobile
           // the floating tab bar; clearance lives in the trailing padding.
           top: false,
           bottom: false,
-          child: AppBoxKitStreamBuilder<List<ShowcaseNoteGroup>>(
+          child: ArxaKitStreamBuilder<List<ShowcaseNoteGroup>>(
             stream: viewModel.groups$,
             builder: (context, groups) =>
-                // AppBoxKitMotionScope establishes the choreography boundary — group
+                // ArxaKitMotionScope establishes the choreography boundary — group
                 // rows below register with .wake(order: i) and rise in on the
                 // shared spec's stagger ramp (spec-owned tokens; no local
                 // durations).
-                AppBoxKitMotionScope(
+                ArxaKitMotionScope(
               child: Column(
                 children: [
                   // Fixed search chrome — pinned under the app bar OUTSIDE the
@@ -122,7 +122,7 @@ class ShowcaseNotesFolderViewMobile
                     Padding(
                       padding: const EdgeInsets.symmetric(
                           horizontal: abxSize16, vertical: abxSize8),
-                      child: AppBoxKitNativeSearchBar(
+                      child: ArxaKitNativeSearchBar(
                         hint: 'Search',
                         onChanged: viewModel.setQuery,
                       ),
@@ -148,7 +148,7 @@ class ShowcaseNotesFolderViewMobile
                     // outside the scrollable, so its occlusion is explicit. An
                     // item added here inherits both instead of having to
                     // remember them.
-                    AppBoxKitEdgeAwareSliverList(
+                    ArxaKitEdgeAwareSliverList(
                       bottomOcclusion: kShowcaseTabBarBlockHeight,
                       padding: EdgeInsets.fromLTRB(
                           abxSize16,
@@ -164,12 +164,12 @@ class ShowcaseNotesFolderViewMobile
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               ShowcaseSectionLabelWidget(group.label),
-                              appBoxKitVerticalSpaceSmall,
+                              arxaKitVerticalSpaceSmall,
                               // The kit's grouped-inset section owns the group
                               // card + hairline dividers (replacing the app's
                               // hand-rolled NotesSection); margin zero — the
                               // enclosing SliverPadding already insets 16.
-                              AppBoxKitListSection(
+                              ArxaKitListSection(
                                 margin: EdgeInsets.zero,
                                 children: [
                                   for (final note in group.notes)
@@ -204,17 +204,17 @@ class ShowcaseNotesFolderViewMobile
         ),
         floatingActionButton: viewModel.isTrash
             ? null
-            : AppBoxKitNativeFabMenu(
-                glyph: AppBoxKitGlyphs.add,
+            : ArxaKitNativeFabMenu(
+                glyph: ArxaKitGlyphs.add,
                 items: [
-                  const AppBoxKitMenuItem(
-                      label: 'New Note', glyph: AppBoxKitGlyphs.compose),
+                  const ArxaKitMenuItem(
+                      label: 'New Note', glyph: ArxaKitGlyphs.compose),
                   for (final action in ShowcaseQuickAction.values)
-                    AppBoxKitMenuItem(
+                    ArxaKitMenuItem(
                       label: action.label,
                       glyph: switch (action) {
-                        ShowcaseQuickAction.camera => AppBoxKitGlyphs.camera,
-                        ShowcaseQuickAction.mic => AppBoxKitGlyphs.mic,
+                        ShowcaseQuickAction.camera => ArxaKitGlyphs.camera,
+                        ShowcaseQuickAction.mic => ArxaKitGlyphs.mic,
                       },
                     ),
                 ],

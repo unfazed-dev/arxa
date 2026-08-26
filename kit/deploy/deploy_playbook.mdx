@@ -1,15 +1,15 @@
 <Callout id="header" tone="info">
 
-# appbox_kit_deploy — Per-Package Playbook
+# arxa_kit_deploy — Per-Package Playbook
 
 
-`appbox_kit_deploy` v**0.1.0** · `publish_to: 'none'` · status: **active**
+`arxa_kit_deploy` v**0.1.0** · `publish_to: 'none'` · status: **active**
 
 
-**Role (one line):** Deploy port for appbox_kit apps — a process-runner port with wired fastlane, shorebird, Vercel, and Cloudflare Pages/Workers targets, so release automation is testable without shelling out.
+**Role (one line):** Deploy port for arxa_kit apps — a process-runner port with wired fastlane, shorebird, Vercel, and Cloudflare Pages/Workers targets, so release automation is testable without shelling out.
 
 
-**Scope of this document:** lets a human OR an LLM use, wire, and extend `appbox_kit_deploy` **without reading its source**. The public surface below was extracted from the barrel; README content is folded into the narrative sections.
+**Scope of this document:** lets a human OR an LLM use, wire, and extend `arxa_kit_deploy` **without reading its source**. The public surface below was extracted from the barrel; README content is folded into the narrative sections.
 
 
 ## Table of contents
@@ -22,16 +22,16 @@
 
 ### Overview & role
 
-Deploy port for appbox_kit apps — a process-runner port with
+Deploy port for arxa_kit apps — a process-runner port with
 
 
 ### Public surface
 
-Exported from `lib/appbox_kit_deploy.dart`:
+Exported from `lib/arxa_kit_deploy.dart`:
 
-<Table id="deploy-api" columns={["Symbol", "Kind", "Defined in"]} rows={[["AppBoxKitDeployService", "class", "src/appbox_kit_deploy_service.dart"], ["AppBoxKitDeployTarget", "abstract interface class", "src/appbox_kit_deploy_target.dart"], ["AppBoxKitCloudflarePagesTarget", "class", "src/targets/appbox_kit_cloudflare_pages_target.dart"], ["AppBoxKitCloudflareWorkersTarget", "class", "src/targets/appbox_kit_cloudflare_workers_target.dart"], ["AppBoxKitFastlaneTarget", "class", "src/targets/appbox_kit_fastlane_target.dart"], ["AppBoxKitShorebirdMode", "enum", "src/targets/appbox_kit_shorebird_target.dart"], ["AppBoxKitShorebirdTarget", "class", "src/targets/appbox_kit_shorebird_target.dart"], ["AppBoxKitVercelTarget", "class", "src/targets/appbox_kit_vercel_target.dart"], ["AppBoxKitDeployConfig", "class", "src/models/appbox_kit_deploy_config.dart"], ["AppBoxKitDoctorCheck", "class", "src/models/appbox_kit_deploy_result.dart"], ["AppBoxKitDeployResult", "class", "src/models/appbox_kit_deploy_result.dart"], ["AppBoxKitProcessResult", "class", "src/process/appbox_kit_process_runner.dart"], ["AppBoxKitProcessRunner", "abstract interface class", "src/process/appbox_kit_process_runner.dart"], ["AppBoxKitIoProcessRunner", "class", "src/process/appbox_kit_process_runner.dart"]]} />
+<Table id="deploy-api" columns={["Symbol", "Kind", "Defined in"]} rows={[["ArxaKitDeployService", "class", "src/arxa_kit_deploy_service.dart"], ["ArxaKitDeployTarget", "abstract interface class", "src/arxa_kit_deploy_target.dart"], ["ArxaKitCloudflarePagesTarget", "class", "src/targets/arxa_kit_cloudflare_pages_target.dart"], ["ArxaKitCloudflareWorkersTarget", "class", "src/targets/arxa_kit_cloudflare_workers_target.dart"], ["ArxaKitFastlaneTarget", "class", "src/targets/arxa_kit_fastlane_target.dart"], ["ArxaKitShorebirdMode", "enum", "src/targets/arxa_kit_shorebird_target.dart"], ["ArxaKitShorebirdTarget", "class", "src/targets/arxa_kit_shorebird_target.dart"], ["ArxaKitVercelTarget", "class", "src/targets/arxa_kit_vercel_target.dart"], ["ArxaKitDeployConfig", "class", "src/models/arxa_kit_deploy_config.dart"], ["ArxaKitDoctorCheck", "class", "src/models/arxa_kit_deploy_result.dart"], ["ArxaKitDeployResult", "class", "src/models/arxa_kit_deploy_result.dart"], ["ArxaKitProcessResult", "class", "src/process/arxa_kit_process_runner.dart"], ["ArxaKitProcessRunner", "abstract interface class", "src/process/arxa_kit_process_runner.dart"], ["ArxaKitIoProcessRunner", "class", "src/process/arxa_kit_process_runner.dart"]]} />
 
-Test doubles in `lib/appbox_kit_testing.dart`: `ScriptedAppBoxKitProcessRunner`.
+Test doubles in `lib/arxa_kit_testing.dart`: `ScriptedArxaKitProcessRunner`.
 
 Scripts and call-counts — tests never touch platform channels.
 
@@ -39,15 +39,15 @@ Scripts and call-counts — tests never touch platform channels.
 ### Usage & wiring
 
 ```dart
-import 'package:appbox_kit_deploy/appbox_kit_deploy.dart';
+import 'package:arxa_kit_deploy/arxa_kit_deploy.dart';
 
-const runner = AppBoxKitIoProcessRunner();
-final service = AppBoxKitDeployService(targets: [
-  const AppBoxKitShorebirdTarget(runner, mode: AppBoxKitShorebirdMode.release),
-  const AppBoxKitCloudflarePagesTarget(runner),
+const runner = ArxaKitIoProcessRunner();
+final service = ArxaKitDeployService(targets: [
+  const ArxaKitShorebirdTarget(runner, mode: ArxaKitShorebirdMode.release),
+  const ArxaKitCloudflarePagesTarget(runner),
 ]);
 
-final config = AppBoxKitDeployConfig(
+final config = ArxaKitDeployConfig(
   projectName: 'showcase',
   flutterVersion: '3.24.0',
   dartDefines: {'ENV': 'prod'},
@@ -58,8 +58,8 @@ final checks = await service.doctor(config);   // preflight
 final result = await service.deployTo('cloudflare-pages', config);
 ```
 
-CLI: `dart run appbox_kit_deploy doctor` /
-`dart run appbox_kit_deploy deploy cloudflare-pages --project-name=showcase`.
+CLI: `dart run arxa_kit_deploy doctor` /
+`dart run arxa_kit_deploy deploy cloudflare-pages --project-name=showcase`.
 
 
 ### Integration map
@@ -71,37 +71,37 @@ See `kit_matrix.md` for the full routing + dependency graph.
 
 ### Architecture
 
-`AppBoxKitDeployService` is a facade holding a name-indexed map of `AppBoxKitDeployTarget`s: `doctor(config)` fans out to every registered target, while `deployTo(name, config)` routes to a single target by key (throwing `ArgumentError` for an unknown name). Each target implements the `AppBoxKitDeployTarget` interface and depends only on the `AppBoxKitProcessRunner` port — never on `dart:io` directly — so `AppBoxKitIoProcessRunner` is the production adapter and `ScriptedAppBoxKitProcessRunner` is the test double. Dependency direction is strictly inbound and standalone: `AppBoxKitDeployConfig` flows in, `AppBoxKitDeployResult` / `AppBoxKitDoctorCheck` flow out, and the package pulls in no `flutter`, `stacked`, or `appbox_kit` dependency.
+`ArxaKitDeployService` is a facade holding a name-indexed map of `ArxaKitDeployTarget`s: `doctor(config)` fans out to every registered target, while `deployTo(name, config)` routes to a single target by key (throwing `ArgumentError` for an unknown name). Each target implements the `ArxaKitDeployTarget` interface and depends only on the `ArxaKitProcessRunner` port — never on `dart:io` directly — so `ArxaKitIoProcessRunner` is the production adapter and `ScriptedArxaKitProcessRunner` is the test double. Dependency direction is strictly inbound and standalone: `ArxaKitDeployConfig` flows in, `ArxaKitDeployResult` / `ArxaKitDoctorCheck` flow out, and the package pulls in no `flutter`, `stacked`, or `arxa_kit` dependency.
 
 
 ### Gotchas
 
-The external CLIs (`flutter`, `bundle`/`fastlane`, `shorebird`, `wrangler`, `vercel`) must be on `PATH` — `AppBoxKitIoProcessRunner` shells out with `runInShell: true`, and a missing binary surfaces as `exitCode: 127` (caught from `ProcessException`) rather than a thrown Dart error. Secrets and tokens are passed via `AppBoxKitDeployConfig.environment` (e.g. `CLOUDFLARE_API_TOKEN`, `VERCEL_TOKEN`) and forwarded to each subprocess; they are never hard-coded. Two target-specific pitfalls: `AppBoxKitVercelTarget` runs `flutter build web --release` then `vercel deploy build/web --prod --yes` — Vercel CLI v55+ tightened non-interactive project linking, so pin a CLI major version (`doctor` reports `vercel --version`) and set `VERCEL_ORG_ID` / `VERCEL_PROJECT_ID` to link non-interactively — and `AppBoxKitCloudflareWorkersTarget` runs `wrangler deploy` with no flutter build step, reading the Worker's own `wrangler.toml` from `workingDirectory` (failing with `ok: false` when it is null) and needing `CLOUDFLARE_API_TOKEN` + `CLOUDFLARE_ACCOUNT_ID`. Real tool failures do not throw — targets return `AppBoxKitDeployResult(ok: false, failureReason: ...)`. Note: the README lists no native permission or manifest keys, because this package orchestrates CLIs rather than shipping a platform plugin — iOS/Android signing, shorebird app IDs, and lane-specific credentials live in the host app and its fastlane configuration.
+The external CLIs (`flutter`, `bundle`/`fastlane`, `shorebird`, `wrangler`, `vercel`) must be on `PATH` — `ArxaKitIoProcessRunner` shells out with `runInShell: true`, and a missing binary surfaces as `exitCode: 127` (caught from `ProcessException`) rather than a thrown Dart error. Secrets and tokens are passed via `ArxaKitDeployConfig.environment` (e.g. `CLOUDFLARE_API_TOKEN`, `VERCEL_TOKEN`) and forwarded to each subprocess; they are never hard-coded. Two target-specific pitfalls: `ArxaKitVercelTarget` runs `flutter build web --release` then `vercel deploy build/web --prod --yes` — Vercel CLI v55+ tightened non-interactive project linking, so pin a CLI major version (`doctor` reports `vercel --version`) and set `VERCEL_ORG_ID` / `VERCEL_PROJECT_ID` to link non-interactively — and `ArxaKitCloudflareWorkersTarget` runs `wrangler deploy` with no flutter build step, reading the Worker's own `wrangler.toml` from `workingDirectory` (failing with `ok: false` when it is null) and needing `CLOUDFLARE_API_TOKEN` + `CLOUDFLARE_ACCOUNT_ID`. Real tool failures do not throw — targets return `ArxaKitDeployResult(ok: false, failureReason: ...)`. Note: the README lists no native permission or manifest keys, because this package orchestrates CLIs rather than shipping a platform plugin — iOS/Android signing, shorebird app IDs, and lane-specific credentials live in the host app and its fastlane configuration.
 
 
 ### Testing
 
 ```dart
-import 'package:appbox_kit_deploy/appbox_kit_testing.dart';
+import 'package:arxa_kit_deploy/arxa_kit_testing.dart';
 
-final runner = ScriptedAppBoxKitProcessRunner(script: {
-  'flutter build web': AppBoxKitProcessResult(exitCode: 1, stderr: 'boom'),
+final runner = ScriptedArxaKitProcessRunner(script: {
+  'flutter build web': ArxaKitProcessResult(exitCode: 1, stderr: 'boom'),
 });
 // runner.commandsRun / workingDirectories / environments record each call.
 ```
 
 Targets never throw on tool failure — they return
-`AppBoxKitDeployResult(ok: false, failureReason: ...)`.
+`ArxaKitDeployResult(ok: false, failureReason: ...)`.
 
 
 ### Features
 
-<Checklist id="deploy-features" items={[{"id": "deploy-feat-0", "label": "`AppBoxKitDeployService` \u2014 class"}, {"id": "deploy-feat-1", "label": "`AppBoxKitDeployTarget` \u2014 abstract interface class"}, {"id": "deploy-feat-2", "label": "`AppBoxKitCloudflarePagesTarget` \u2014 class"}, {"id": "deploy-feat-2b", "label": "`AppBoxKitCloudflareWorkersTarget` \u2014 class"}, {"id": "deploy-feat-3", "label": "`AppBoxKitFastlaneTarget` \u2014 class"}, {"id": "deploy-feat-4", "label": "`AppBoxKitShorebirdMode` \u2014 enum"}, {"id": "deploy-feat-5", "label": "`AppBoxKitShorebirdTarget` \u2014 class"}, {"id": "deploy-feat-6", "label": "`AppBoxKitVercelTarget` \u2014 class"}, {"id": "deploy-feat-7", "label": "`AppBoxKitDeployConfig` \u2014 class"}, {"id": "deploy-feat-8", "label": "`AppBoxKitDoctorCheck` \u2014 class"}, {"id": "deploy-feat-9", "label": "`AppBoxKitDeployResult` \u2014 class"}, {"id": "deploy-feat-10", "label": "`AppBoxKitProcessResult` \u2014 class"}, {"id": "deploy-feat-11", "label": "`AppBoxKitProcessRunner` \u2014 abstract interface class"}]} />
+<Checklist id="deploy-features" items={[{"id": "deploy-feat-0", "label": "`ArxaKitDeployService` \u2014 class"}, {"id": "deploy-feat-1", "label": "`ArxaKitDeployTarget` \u2014 abstract interface class"}, {"id": "deploy-feat-2", "label": "`ArxaKitCloudflarePagesTarget` \u2014 class"}, {"id": "deploy-feat-2b", "label": "`ArxaKitCloudflareWorkersTarget` \u2014 class"}, {"id": "deploy-feat-3", "label": "`ArxaKitFastlaneTarget` \u2014 class"}, {"id": "deploy-feat-4", "label": "`ArxaKitShorebirdMode` \u2014 enum"}, {"id": "deploy-feat-5", "label": "`ArxaKitShorebirdTarget` \u2014 class"}, {"id": "deploy-feat-6", "label": "`ArxaKitVercelTarget` \u2014 class"}, {"id": "deploy-feat-7", "label": "`ArxaKitDeployConfig` \u2014 class"}, {"id": "deploy-feat-8", "label": "`ArxaKitDoctorCheck` \u2014 class"}, {"id": "deploy-feat-9", "label": "`ArxaKitDeployResult` \u2014 class"}, {"id": "deploy-feat-10", "label": "`ArxaKitProcessResult` \u2014 class"}, {"id": "deploy-feat-11", "label": "`ArxaKitProcessRunner` \u2014 abstract interface class"}]} />
 
 
 ### Decisions / ADRs
 
-`kit_matrix.md` sets "standalone by default" as the project-wide rule — new kits depend on neither `appbox_kit`, `stacked`, nor `stacked_services` — and records `appbox_kit_deploy` as `{role: deploy-tooling, deps_kit: [], backing: []}`. Deploy takes that stance furthest: zero kit dependencies and zero backing Dart packages, because it shells out to external CLIs through the `AppBoxKitProcessRunner` port instead of binding their SDKs. That port is the load-bearing decision — it keeps the package pure Dart (runnable as `dart run appbox_kit_deploy`), and lets every command shape be asserted with `ScriptedAppBoxKitProcessRunner` so CI needs no Flutter/fastlane/shorebird toolchain installed.
+`kit_matrix.md` sets "standalone by default" as the project-wide rule — new kits depend on neither `arxa_kit`, `stacked`, nor `stacked_services` — and records `arxa_kit_deploy` as `{role: deploy-tooling, deps_kit: [], backing: []}`. Deploy takes that stance furthest: zero kit dependencies and zero backing Dart packages, because it shells out to external CLIs through the `ArxaKitProcessRunner` port instead of binding their SDKs. That port is the load-bearing decision — it keeps the package pure Dart (runnable as `dart run arxa_kit_deploy`), and lets every command shape be asserted with `ScriptedArxaKitProcessRunner` so CI needs no Flutter/fastlane/shorebird toolchain installed.
 
 <!-- kb:begin -->
 ### References
@@ -115,7 +115,7 @@ Official docs and tooling:
 - [stacked_cli (pub.dev)](https://pub.dev/packages/stacked_cli) — Scaffolding CLI for new Stacked apps/views/services.
 - [Flutter — official documentation](https://docs.flutter.dev) — Framework docs, platform integration, performance.
 - [Dart — official documentation](https://dart.dev) — Language tour, async, package ecosystem.
-- [Dart & Flutter MCP server (official)](https://dart.dev/tools/mcp-server) — Ships with the Dart SDK (dart mcp-server). Exposes analyzer diagnostics, pub, tests, and live Flutter app introspection via DTD. Wired in appbox_kit/.mcp.json.
+- [Dart & Flutter MCP server (official)](https://dart.dev/tools/mcp-server) — Ships with the Dart SDK (dart mcp-server). Exposes analyzer diagnostics, pub, tests, and live Flutter app introspection via DTD. Wired in arxa_kit/.mcp.json.
 <!-- kb:end -->
 
 <QuestionForm id="open-questions" questions={[

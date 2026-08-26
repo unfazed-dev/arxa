@@ -9,13 +9,13 @@ keyboard.
 ## 1. The FAB moved — regression from the tab-bar yield
 
 **Root cause.** The FAB's clearance never came from the tab bar being a *bar*.
-`AppBoxKitExtendBodyFabLift` mirrors the `extendBody`-injected bar height into
+`ArxaKitExtendBodyFabLift` mirrors the `extendBody`-injected bar height into
 `viewPadding.bottom`; `FloatingActionButtonLocation` derives `safeMargin` from
 `minViewPadding.bottom` (`floating_action_button_location.dart:566`). Remove
 the bar and that band disappears, so the FAB dropped ~80pt onto the composer.
 
 **Dead end worth recording.** The first fix was a kit
-`AppBoxKitFabAboveDock` — a `FloatingActionButtonLocation` overriding
+`ArxaKitFabAboveDock` — a `FloatingActionButtonLocation` overriding
 Material's deliberate half-straddle (`fabY = min(fabY, contentBottom -
 sheetHeight - fabHeight / 2)`, `:577-579`). It was written, tested, wired, and
 **measured to do nothing**: the composer is a `bottomSheet` on the *Components*
@@ -68,7 +68,7 @@ too (`media_query.dart:946-951`), which is why nothing downstream could recover
 it.
 
 > **Correction.** An intermediate fix changed the kit's
-> `AppBoxKitNativeInputBar` to pad by `max(viewInsets.bottom,
+> `ArxaKitNativeInputBar` to pad by `max(viewInsets.bottom,
 > viewPadding.bottom)` instead of a `SafeArea`, on the premise that
 > `viewPadding` survives ancestor consumption. It does not — `removePadding`
 > reduces both. That change was measured to have no effect and was reverted;
@@ -98,7 +98,7 @@ was never called from Dart.
   for the unmount-while-focused path. One variable, not a registry: only one
   field can hold the keyboard. No listeners, so it cannot notify mid-build —
   the hazard fixed earlier in `modal-depth-notify-during-build.md`.
-- `AppBoxKitDismissKeyboard` (kit) — the app-wide lever, wrapped once around
+- `ArxaKitDismissKeyboard` (kit) — the app-wide lever, wrapped once around
   the app in `main.dart`. Fires **both** paths.
 - `context.dismissKeyboard()` — the imperative extension. Noted because the ask
   was for "an extension": an `extension on BuildContext` cannot *install*
@@ -143,7 +143,7 @@ so the tab bar exercised is the fallback, not `CNTabBar`.
 **not** added, because measuring showed it was already covered and would have
 been the weaker of the two mechanisms:
 
-- `AppBoxKitDismissKeyboard` listens on `onPointerDown`, and a drag begins with
+- `ArxaKitDismissKeyboard` listens on `onPointerDown`, and a drag begins with
   a pointer-down — so scrolling any list already dismisses, app-wide, on both
   tiers. Tested: the drag dismisses **and** the list still scrolls.
 - The built-in would not be equivalent. `Scrollable`'s onDrag calls

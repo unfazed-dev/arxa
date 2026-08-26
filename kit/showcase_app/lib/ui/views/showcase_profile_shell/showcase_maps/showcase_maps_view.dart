@@ -4,7 +4,7 @@
 /// viewmodel for another and this file stays unchanged.
 ///
 /// This is the user interface for the maps demo — the plugin-neutral
-/// AppBoxKitMapView on OpenStreetMap by default (no key), flipping to Mapbox
+/// ArxaKitMapView on OpenStreetMap by default (no key), flipping to Mapbox
 /// raster tiles when a public token is dart-defined. The tablet and desktop
 /// variants reuse the mobile surface (the map fills any form factor).
 ///
@@ -39,18 +39,18 @@ library;
 
 import 'package:flutter/material.dart';
 import 'package:responsive_builder/responsive_builder.dart';
-import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
+import 'package:arxa_kit_ui_library/arxa_kit_ui_library.dart';
 
-import 'package:appbox_kit_showcase_app/ui/views/showcase_profile_shell/showcase_maps/showcase_maps_view.desktop.dart';
-import 'package:appbox_kit_showcase_app/ui/views/showcase_profile_shell/showcase_maps/showcase_maps_view.tablet.dart';
-import 'package:appbox_kit_showcase_app/ui/views/showcase_profile_shell/showcase_maps/showcase_maps_view.mobile.dart';
-import 'package:appbox_kit_showcase_app/ui/views/showcase_profile_shell/showcase_maps/showcase_maps_viewmodel.dart';
+import 'package:arxa_kit_showcase_app/ui/views/showcase_profile_shell/showcase_maps/showcase_maps_view.desktop.dart';
+import 'package:arxa_kit_showcase_app/ui/views/showcase_profile_shell/showcase_maps/showcase_maps_view.tablet.dart';
+import 'package:arxa_kit_showcase_app/ui/views/showcase_profile_shell/showcase_maps/showcase_maps_view.mobile.dart';
+import 'package:arxa_kit_showcase_app/ui/views/showcase_profile_shell/showcase_maps/showcase_maps_viewmodel.dart';
 
 class ShowcaseMapsView extends StackedView<ShowcaseMapsViewModel> {
   const ShowcaseMapsView({super.key});
 
   /// Identity stamped at emit time (Q12 triple).
-  static const AppBoxKitInspectAttrs inspectAttrs = AppBoxKitInspectAttrs(
+  static const ArxaKitInspectAttrs inspectAttrs = ArxaKitInspectAttrs(
     screenId: 'showcase.maps',
     surfaceId: 'surface.profile.maps',
     anatomyNodeId: 'anatomy:view.body',

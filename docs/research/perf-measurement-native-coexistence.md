@@ -55,7 +55,7 @@ scrolling — if it's ever felt on device, the lever is warming/staging the
 pushed route's glass, not demoting in-scroll content. No action required at
 current scale.
 
-## Follow-up 2026-08-14 — push hotspot FIXED (`AppBoxKitGlassWarmup`)
+## Follow-up 2026-08-14 — push hotspot FIXED (`ArxaKitGlassWarmup`)
 
 Decomposition probe (3 repeated Motion pushes per app launch, same rig,
 plan: `docs/plans/glass-push-hotspot-fix.md`) proved the jank is
@@ -76,6 +76,6 @@ steady pushes (the stray 18.6ms on a *third* push is the ambient noise
 floor, not first-push structure). Kinds already on the boot screen (glass
 buttons, segmented) never needed warming — warm-up is per kind, per process.
 
-Fix shipped: `AppBoxKitGlassWarmup` (ui_library), wrapping the showcase tab
-host with `alsoWarm: [AppBoxKitNativeSwitch]`. Law rule 9. The warm views
+Fix shipped: `ArxaKitGlassWarmup` (ui_library), wrapping the showcase tab
+host with `alsoWarm: [ArxaKitNativeSwitch]`. Law rule 9. The warm views
 sit 100000px off-screen per rule 8, kept mounted, ignore pointer/semantics.

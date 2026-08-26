@@ -45,9 +45,9 @@ library;
 
 import 'dart:async';
 
-import 'package:appbox_kit_media/appbox_kit_media.dart';
-import 'package:appbox_kit_showcase_app/data/models/showcase_composer_models/models.dart';
-import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
+import 'package:arxa_kit_media/arxa_kit_media.dart';
+import 'package:arxa_kit_showcase_app/data/models/showcase_composer_models/models.dart';
+import 'package:arxa_kit_ui_library/arxa_kit_ui_library.dart';
 
 /// Fixed fake timestamps for the seeded thread (stable across pumps/tests).
 final _seedDay = DateTime(2026, 8, 16, 9, 41);
@@ -104,10 +104,10 @@ const _minRecording = Duration(seconds: 1);
 /// of accepting a second tap mid-flight.
 enum ShowcaseComposerRecorderPhase { idle, starting, recording }
 
-class ShowcaseComponentsViewModel extends AppBoxKitViewModel {
+class ShowcaseComponentsViewModel extends ArxaKitViewModel {
   ShowcaseComponentsViewModel() {
     // Bridge the recorder's broadcast streams into seeded subjects so the
-    // view binds with AppBoxKitStreamBuilder without a loading flash (the
+    // view binds with ArxaKitStreamBuilder without a loading flash (the
     // notes adapter bridges the same streams the same way).
     listen(
       'conversation.record.elapsed',
@@ -124,8 +124,8 @@ class ShowcaseComponentsViewModel extends AppBoxKitViewModel {
   /// The kit audio service (record plugin → AVAudioRecorder/AudioRecord),
   /// registered in the app locator under its interface — the same service
   /// the notes shell records voice memos with.
-  final AppBoxKitAudioRecorderService _recorder =
-      appBoxKitLocator<AppBoxKitAudioRecorderService>();
+  final ArxaKitAudioRecorderService _recorder =
+      arxaKitLocator<ArxaKitAudioRecorderService>();
 
   final BehaviorSubject<List<ShowcaseComposerMessageModel>> _messages =
       BehaviorSubject<List<ShowcaseComposerMessageModel>>.seeded(_seedMessages);

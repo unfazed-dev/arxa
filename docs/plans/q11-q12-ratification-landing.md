@@ -65,7 +65,7 @@ the scaffolder.
 
 ## Flagged, not fixed
 
-- `skills/appbox-designer/references/showcase-anatomy.md:140` asserts
+- `skills/arxa-designer/references/showcase-anatomy.md:140` asserts
   "Closed at registry v1.0.0 (Q7); resolver-reachable at v1.1.0 … All 15
   kinds". The registry version bump for the anatomy vocabulary stales that
   line. Designer-owned prose; scaffolder owns the registry. Flagged per the

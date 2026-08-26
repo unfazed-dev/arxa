@@ -17,14 +17,14 @@
 /// History: git log --follow -- kit/showcase_app/lib/ui/widgets/showcase_startup_widgets/showcase_startup_loading_widget.dart
 library;
 
-import 'package:appbox_kit_showcase_app/ui/common/appbox_kit_app_strings.dart'
+import 'package:arxa_kit_showcase_app/ui/common/arxa_kit_app_strings.dart'
     show abxStrStartupAppTitle;
-import 'package:appbox_kit_showcase_app/ui/common/appbox_kit_assets.dart'
+import 'package:arxa_kit_showcase_app/ui/common/arxa_kit_assets.dart'
     show abxImgBrandIcon;
-import 'package:appbox_kit_showcase_app/ui/common/appbox_kit_ui_helpers.dart'
-    show appBoxKitVerticalSpaceLarge, appBoxKitVerticalSpaceMedium;
-import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart'
-    show AppBoxKitNativeLoadingIndicator;
+import 'package:arxa_kit_showcase_app/ui/common/arxa_kit_ui_helpers.dart'
+    show arxaKitVerticalSpaceLarge, arxaKitVerticalSpaceMedium;
+import 'package:arxa_kit_ui_library/arxa_kit_ui_library.dart'
+    show ArxaKitNativeLoadingIndicator;
 import 'package:flutter/material.dart';
 
 class ShowcaseStartupLoadingWidget extends StatelessWidget {
@@ -42,17 +42,17 @@ class ShowcaseStartupLoadingWidget extends StatelessWidget {
               width: 80,
               height: 80,
             ),
-            appBoxKitVerticalSpaceMedium,
+            arxaKitVerticalSpaceMedium,
             const Text(
               abxStrStartupAppTitle,
               textAlign: TextAlign.center,
               style: TextStyle(fontSize: 40, fontWeight: FontWeight.w900),
             ),
-            appBoxKitVerticalSpaceLarge,
+            arxaKitVerticalSpaceLarge,
             // The boot spinner wears the brand accent: colorScheme.primary IS
-            // the accent — appBoxKitLightTheme/appBoxKitDarkTheme map it there
+            // the accent — arxaKitLightTheme/arxaKitDarkTheme map it there
             // (moss in this app).
-            AppBoxKitNativeLoadingIndicator(
+            ArxaKitNativeLoadingIndicator(
               size: 40,
               color: Theme.of(context).colorScheme.primary,
             ),

@@ -13,26 +13,26 @@ Glass `CNButton` platform views inside scrollables lose their glass material
 while their labels keep painting:
 
 - **Notes auth view** (`showcase_notes_auth_view.mobile.dart:167-194`): three
-  `AppBoxKitNativeButton(style: glass)` pills in a `SingleChildScrollView` lose
+  `ArxaKitNativeButton(style: glass)` pills in a `SingleChildScrollView` lose
   glass near the bottom tab bar on scroll return. No app-side hider is in the
   wrapper chain (verified — no edge effect, no gate, no occlusion). Standing
   suspects: the never-unwrapped `.wake()` `SlideTransition`
-  (`appbox_kit_wake.dart:88-96`), the unconditional `ClipRect`
+  (`arxa_kit_wake.dart:88-96`), the unconditional `ClipRect`
   (`vendor .../button.dart:694`), and glass-sampling-glass under the tab bar.
 - **Profile shell** (`showcase_profile_view.mobile.dart:62`): the edge-aware
-  list's uniform `Opacity` fade (`appbox_kit_scroll_edge_effect.dart:211,228`)
+  list's uniform `Opacity` fade (`arxa_kit_scroll_edge_effect.dart:211,228`)
   computes fade fraction over the **whole card's** height (`:172-174`), so a
   pill near a card's top dims while still ~88px clear of the tab bar; glass
   reads as gone at ~0.77 alpha while text stays readable.
 
-The kit already outlaws the pattern: `appbox_kit_scroll_edge_effect.dart:62-68`
+The kit already outlaws the pattern: `arxa_kit_scroll_edge_effect.dart:62-68`
 — "Platform-view glass does not belong inside a scrollable at all under the
 tier split." Apple (WWDC25 sessions 284/356) and Flutter (issues #103014,
 #107486, #86787, #78205) both put glass in persistent chrome only.
 
 ## Decision (user-approved)
 
-Enforce the tier split mechanically: any `AppBoxKitNativeButton` that finds
+Enforce the tier split mechanically: any `ArxaKitNativeButton` that finds
 itself inside a scrollable auto-demotes to the vendor's existing Flutter
 Cupertino fallback tier (`_buildCupertinoFallback`, the same path iOS < 26
 uses). No call-site changes; chrome outside scrollables keeps real glass.
@@ -46,7 +46,7 @@ correct — do not touch.
 1. Vendor local patch (`cupertino_native_better/lib/components/button.dart`):
    `CNButtonConfig.preferFlutterTier` (default false); `build()` treats it as
    `shouldUseNative &&= !preferFlutterTier`.
-2. Kit (`appbox_kit_native_button.dart`): pass
+2. Kit (`arxa_kit_native_button.dart`): pass
    `preferFlutterTier: Scrollable.maybeOf(context) != null`.
 
 ## Verification

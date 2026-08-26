@@ -1,9 +1,9 @@
--- Seed data for the appbox Supabase project (dev/dogfood only — NEVER prod).
+-- Seed data for the arxa Supabase project (dev/dogfood only — NEVER prod).
 -- Persona-shaped: Totem Labs org (Evan owner+staff, support admin+staff,
 -- billing, member) exercising the full role matrix; Michelle as an
 -- individual-tier buyer. Placeholder emails, one shared dev password.
 --
---   ALL seed users sign in with password:  Appbox-Seed-2026!
+--   ALL seed users sign in with password:  Arxa-Seed-2026!
 --
 -- Apply: paste into the SQL editor, or `psql ... -f seed.sql`, or the MCP
 -- execute_sql. Idempotent: seed rows are deleted by id/email first.
@@ -26,7 +26,7 @@ insert into auth.users (
 )
 select
   u.id, '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated',
-  u.email, crypt('Appbox-Seed-2026!', gen_salt('bf')),
+  u.email, crypt('Arxa-Seed-2026!', gen_salt('bf')),
   now(), now(), now(),
   '{"provider":"email","providers":["email"]}'::jsonb,
   jsonb_build_object('full_name', u.full_name),

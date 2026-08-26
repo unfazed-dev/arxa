@@ -1,8 +1,8 @@
 # Moodboard — Progressive disclosure & calm UI (one thing at a time)
 
-Slice: layout behavior for **appbox**'s redesign — the previous design failed on information overload/paralysis; this slice is the antidote pattern library: focus modes, card stacks, spacious empty states, depth-on-demand.
+Slice: layout behavior for **arxa**'s redesign — the previous design failed on information overload/paralysis; this slice is the antidote pattern library: focus modes, card stacks, spacious empty states, depth-on-demand.
 
-Captured 2026-07-28 with the appbox lens. Freshness: **🔥** current · **🌡️** canonical.
+Captured 2026-07-28 with the arxa lens. Freshness: **🔥** current · **🌡️** canonical.
 
 ---
 
@@ -14,7 +14,7 @@ The canonical "dim the rest" interface: **Focus Mode** fades everything except t
 
 - **Steal:**
   - **Focus Mode as a first-class verb**: when a user opens a run or a gate card, *dim every other element* — the thread, the nav, other cards. Attention is a resource the UI manages explicitly.
-  - **Syntax/level-based dimming** (current paragraph bright, rest at ~40%): for appbox, the active pipeline stage is bright; completed/queued stages recede.
+  - **Syntax/level-based dimming** (current paragraph bright, rest at ~40%): for arxa, the active pipeline stage is bright; completed/queued stages recede.
   - Chrome-free mode: everything hides except content and one escape affordance.
 - **Why it fits:** this is the single most direct cure for "where do I look?" paralysis — the answer becomes mechanical: the bright thing.
 
@@ -28,7 +28,7 @@ Docs/cards app with a warm-neutral, paper-adjacent aesthetic: content lives on *
   - **Card as the unit of everything**: each response, document, or result is a card on a calm background — directly applicable to GenUI response cards.
   - **Progressive nesting**: cards open into pages, pages into sub-pages; the top level stays sparse.
   - Warm off-whites + soft shadows: depth via elevation, not borders — quieter than hairline-heavy UIs.
-- **Why it fits:** appbox's generative answers (run summaries, gate results) are documents; Craft shows how documents-in-cards stay calm at scale.
+- **Why it fits:** arxa's generative answers (run summaries, gate results) are documents; Craft shows how documents-in-cards stay calm at scale.
 
 ## 3. Raycast — https://www.raycast.com · 🔥
 
@@ -40,7 +40,7 @@ A whole pro tool inside **one centered floating window**: a single input, a shor
   - **One window, one list**: complexity lives behind the input, not in panels — the UI is empty until asked.
   - **Action panel pattern**: contextual actions revealed by shortcut/hotkey on the *selected* item — no per-row button clutter.
   - Ranking + grouping in a single flat list ("suggestions" over "recents") beats multi-pane navigation.
-- **Why it fits:** appbox's chat composer is philosophically the same object — one input that summons arbitrary depth; Raycast proves pros accept this as the *primary* interface.
+- **Why it fits:** arxa's chat composer is philosophically the same object — one input that summons arbitrary depth; Raycast proves pros accept this as the *primary* interface.
 
 ## 4. Amie — https://amie.so · 🌡️
 
@@ -50,7 +50,7 @@ Calendar/todos app with a soft warm-neutral palette, pill-shaped UI, and a **pro
 
 - **Steal:**
   - **Warm neutrals in a data-adjacent app**: proof that schedules/lists (structured, dry data) feel friendly on cream/sand backgrounds with pill radii.
-  - **Stack-of-cards day flow**: chronological items as spaced cards, current/next emphasized, future faded — maps to appbox's run timeline.
+  - **Stack-of-cards day flow**: chronological items as spaced cards, current/next emphasized, future faded — maps to arxa's run timeline.
   - Playful-but-quiet iconography: small warm accents guide the eye without badges screaming.
 - **Why it fits:** the emotional register (soft, warm, unhurried) over structured dev data is precisely the genui-calm-warm target.
 

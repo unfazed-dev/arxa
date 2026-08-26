@@ -1,8 +1,8 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "$id": "pipeline/state/targets.derivation.json",
-  "title": "appbox target derivation table",
-  "description": "DATA, not code (R3; architecture §11). One entry per platform target -> the viewports it implies + the platform ceremonies the scaffold must emit. Adding a target is a data edit: append an entry here, nothing in gate code changes. Viewport NAMES reference config/appbox.config.json viewports (the widths live there, NEVER here). Ceremony 'checks' are path/key specs the coverage gate (C5) asserts against the app root; absence fails the gate naming the missing file (6.8). 'inherits' pulls a parent's viewports AND ceremonies before this entry's own.",
+  "title": "arxa target derivation table",
+  "description": "DATA, not code (R3; architecture §11). One entry per platform target -> the viewports it implies + the platform ceremonies the scaffold must emit. Adding a target is a data edit: append an entry here, nothing in gate code changes. Viewport NAMES reference config/arxa.config.json viewports (the widths live there, NEVER here). Ceremony 'checks' are path/key specs the coverage gate (C5) asserts against the app root; absence fails the gate naming the missing file (6.8). 'inherits' pulls a parent's viewports AND ceremonies before this entry's own.",
   "type": "object",
   "required": ["targets"],
   "additionalProperties": false,

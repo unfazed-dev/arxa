@@ -1,5 +1,5 @@
-name: appbox_kit_forms
-description: Stacked form management for appbox_kit apps — typed field/form controllers (pristine/dirty/validating/valid/invalid) with sync + async validation, a composable validator library, and code-first error mapping for i18n. Integrates with Stacked's form generator conventions.
+name: arxa_kit_forms
+description: Stacked form management for arxa_kit apps — typed field/form controllers (pristine/dirty/validating/valid/invalid) with sync + async validation, a composable validator library, and code-first error mapping for i18n. Integrates with Stacked's form generator conventions.
 version: 0.1.0
 publish_to: 'none'
 

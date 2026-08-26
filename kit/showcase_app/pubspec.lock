@@ -73,154 +73,154 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "8.0.3"
-  appbox_kit_analytics:
+  arxa_kit_analytics:
     dependency: "direct main"
     description:
       path: "../analytics"
       relative: true
     source: path
     version: "0.1.0"
-  appbox_kit_auth:
+  arxa_kit_auth:
     dependency: "direct main"
     description:
       path: "../auth"
       relative: true
     source: path
     version: "0.1.0"
-  appbox_kit_bluetooth:
+  arxa_kit_bluetooth:
     dependency: "direct main"
     description:
       path: "../bluetooth"
       relative: true
     source: path
     version: "0.1.0"
-  appbox_kit_compliance:
+  arxa_kit_compliance:
     dependency: "direct main"
     description:
       path: "../compliance"
       relative: true
     source: path
     version: "0.1.0"
-  appbox_kit_core:
+  arxa_kit_core:
     dependency: "direct main"
     description:
       path: "../core"
       relative: true
     source: path
     version: "0.1.0"
-  appbox_kit_data:
+  arxa_kit_data:
     dependency: "direct main"
     description:
       path: "../data"
       relative: true
     source: path
     version: "0.1.0"
-  appbox_kit_deploy:
+  arxa_kit_deploy:
     dependency: "direct main"
     description:
       path: "../deploy"
       relative: true
     source: path
     version: "0.1.0"
-  appbox_kit_documents:
+  arxa_kit_documents:
     dependency: "direct main"
     description:
       path: "../documents"
       relative: true
     source: path
     version: "0.1.0"
-  appbox_kit_forms:
+  arxa_kit_forms:
     dependency: "direct main"
     description:
       path: "../forms"
       relative: true
     source: path
     version: "0.1.0"
-  appbox_kit_haptics:
+  arxa_kit_haptics:
     dependency: "direct main"
     description:
       path: "../haptics"
       relative: true
     source: path
     version: "0.1.0"
-  appbox_kit_i18n:
+  arxa_kit_i18n:
     dependency: "direct main"
     description:
       path: "../i18n"
       relative: true
     source: path
     version: "0.1.0"
-  appbox_kit_maps:
+  arxa_kit_maps:
     dependency: "direct main"
     description:
       path: "../maps"
       relative: true
     source: path
     version: "0.1.0"
-  appbox_kit_media:
+  arxa_kit_media:
     dependency: "direct main"
     description:
       path: "../media"
       relative: true
     source: path
     version: "0.1.0"
-  appbox_kit_motion:
+  arxa_kit_motion:
     dependency: "direct main"
     description:
       path: "../motion"
       relative: true
     source: path
     version: "0.1.0"
-  appbox_kit_notifications:
+  arxa_kit_notifications:
     dependency: "direct main"
     description:
       path: "../notifications"
       relative: true
     source: path
     version: "0.1.0"
-  appbox_kit_payments:
+  arxa_kit_payments:
     dependency: "direct main"
     description:
       path: "../payments"
       relative: true
     source: path
     version: "0.1.0"
-  appbox_kit_permissions:
+  arxa_kit_permissions:
     dependency: "direct main"
     description:
       path: "../permissions"
       relative: true
     source: path
     version: "0.1.0"
-  appbox_kit_security:
+  arxa_kit_security:
     dependency: "direct main"
     description:
       path: "../security"
       relative: true
     source: path
     version: "0.1.0"
-  appbox_kit_state:
+  arxa_kit_state:
     dependency: "direct main"
     description:
       path: "../state"
       relative: true
     source: path
     version: "0.1.0"
-  appbox_kit_support:
+  arxa_kit_support:
     dependency: "direct main"
     description:
       path: "../support"
       relative: true
     source: path
     version: "0.1.0"
-  appbox_kit_ui_library:
+  arxa_kit_ui_library:
     dependency: "direct main"
     description:
       path: "../ui_library"
       relative: true
     source: path
     version: "0.1.0"
-  appbox_kit_wifi:
+  arxa_kit_wifi:
     dependency: "direct main"
     description:
       path: "../wifi"

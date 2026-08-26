@@ -23,7 +23,7 @@ does not support that:
 |---|---|
 | `writeFlows` ×4 `design_facade`, ×2 `intake_facade` | 4 in `design_facade`; **0** in `intake_facade` (it calls `writeProjectFixture` directly — 2 sites) |
 | those sites overwrite | all 6 are **read-modify-write** on the current file — none clobber |
-| — | the **only** clobbering write is `IntakeEngine.emit` (`intake_cli.dart:132`), reachable only from `appbox intake emit`. The studio never shells out to it. |
+| — | the **only** clobbering write is `IntakeEngine.emit` (`intake_cli.dart:132`), reachable only from `arxa intake emit`. The studio never shells out to it. |
 
 So there is no clobber in the studio. There is a **drift**: the studio writes
 `flows.json` and never writes back to `answers.json`, so the two files have
@@ -73,7 +73,7 @@ reimplementation of emit rules. No second validator.**
 | 4 | `design_facade.js:790` | `removeFromFlow` |
 | 5 | `intake_facade.js:~610` | `confirmFlowProvenance` |
 | 6 | `intake_facade.js:~620` | `confirmAllFlows` |
-| 7 | **`appboxd/lib/intake.dart:1031`** | **`IntakeEngine.confirmFlow`** — writes `flows.json` only. Under D4 this makes `appbox intake flows confirm` turn the gate red. Dual-write here too. |
+| 7 | **`arxa/lib/intake.dart:1031`** | **`IntakeEngine.confirmFlow`** — writes `flows.json` only. Under D4 this makes `arxa intake flows confirm` turn the gate red. Dual-write here too. |
 
 Site 7 was not in #30's list and is the one a Dart-side reader would miss.
 
@@ -120,7 +120,7 @@ Side effect worth having: it closes a pre-existing dead-end. A flow at 0 edges
 can never be refilled today, because `appendTo` bails on `!chain.length`. Under
 this guard that state becomes unreachable rather than needing a repair path.
 
-## D4 — one check in `appbox gate intake`
+## D4 — one check in `arxa gate intake`
 
 `gate_intake.dart` (323 lines) already resolves both project paths and already
 takes `--project`. It does **not** read `flows.json` at all. That gap is the
@@ -149,13 +149,13 @@ Compare parsed structures.
 So the check goes red on real data on its first run, then green after the repair.
 That is proof the check works, not just that it compiles.
 
-**Repair scope is one project.** `~/.appbox/projects/` holds `foxglove-demo` and
+**Repair scope is one project.** `~/.arxa/projects/` holds `foxglove-demo` and
 `portalo`; only portalo has both files. One `POST /__project_write` of
-`answers.json` with the flows array back-propagated. **No new `appbox intake
+`answers.json` with the flows array back-propagated. **No new `arxa intake
 adopt` command.**
 
 Direction: **`flows.json` → `answers.json`**. `flows.json` is the newer truth
-(corrected chain, `element`, both toasts). Running `appbox intake emit` to
+(corrected chain, `element`, both toasts). Running `arxa intake emit` to
 reconcile would revert all of it — the exact destruction #30 was opened about.
 
 ## D5 — the auth edge: `flows.json` wins whole
@@ -237,7 +237,7 @@ call at `:32`, so the topbar *is* inside that fragment and disabled state does
 update for free. But "enabled after an edit" passes even when the state is
 stale — assert **disabled after undoing back to an empty stack** as well.
 
-**Delete `is-danger`.** `grep is-danger designs/appbox-studio/assets/css/*.css`
+**Delete `is-danger`.** `grep is-danger designs/arxa-studio/assets/css/*.css`
 returns zero hits — the template branches on a class that styles nothing.
 Neither undo nor redo is destructive. Delete the branch rather than invent a
 destructive action to justify it.
@@ -305,7 +305,7 @@ C-level coverage is ~150 annotations × 4 attributes ≈ 600 hand-written
 attributes for portalo alone. Enforce-only makes every future surface ~4× the
 markup.
 
-`appbox-designer` emits `data-el` + `data-inspect-role` + `-style` + `-fn`
+`arxa-designer` emits `data-el` + `data-inspect-role` + `-style` + `-fn`
 deterministically from tag, text and class; hand-authored values win where
 present; lint verifies.
 
@@ -341,7 +341,7 @@ loading+error · `orders` empty.
 **Decision: a query param on the existing surface** — `product.html?state=loading`
 swaps the affected regions.
 
-**This is a universal appbox-designer rule, not a portalo repair.** Every app
+**This is a universal arxa-designer rule, not a portalo repair.** Every app
 the designer produces must render every state its registry declares. That makes
 it three artefacts, not one:
 
@@ -518,7 +518,7 @@ Note the correction this supersedes: narrowing `kind` to `success|info` was
 argument only held for the edge axis, and the real defect it exposed was the
 missing action, not the enum.
 
-## D19 — the appbox error manager (HTML+JS and Dart/Flutter)
+## D19 — the arxa error manager (HTML+JS and Dart/Flutter)
 
 **Most of the Flutter half already exists** — this is a consolidation and a
 taxonomy, not a green-field build.
@@ -550,8 +550,8 @@ Two real gaps found:
 
 Scope, since "related actors" is broad: the manager is a **published contract**
 (placement taxonomy + the human-message rule + the kind enum) that
-`appbox-designer` emits against, `appbox-lint` enforces, `appbox-scaffolder`
-and `appbox-builder` consume via the kits, and `appbox-reviewer`/`appbox-tester`
+`arxa-designer` emits against, `arxa-lint` enforces, `arxa-scaffolder`
+and `arxa-builder` consume via the kits, and `arxa-reviewer`/`arxa-tester`
 check. `kit/core` already owns *"error/theme services"* and `kit/state` owns
 *"async state vocabulary (idle/loading/error); retry policy"* — the kit update
 is to expose them against the written taxonomy, not to invent a service.
@@ -609,11 +609,11 @@ are corrected in place; recorded here so the corrections aren't re-litigated.
 
 D10/D11 make the designer contractually responsible for placing loading /
 error / retry / toast automatically in every app it designs. That contract now
-has a lint (`design_tools.dart`), a written taxonomy (appbox-designer), and a
+has a lint (`design_tools.dart`), a written taxonomy (arxa-designer), and a
 Flutter renderer (`blueprint.dart`) — **but no emission point**:
 
 - `blueprint.dart:2715` `_tplView` emits only
-  `body: const Center(child: Text(name))` behind `@appbox-extension-point` +
+  `body: const Center(child: Text(name))` behind `@arxa-extension-point` +
   `TODO(builder)`.
 - `_tplViewModel` emits a bare `BaseViewModel` with **no `refresh` method**, so
   a generated retry button has nothing to call.
@@ -685,14 +685,14 @@ both were plausible and both were refuted by cheap evidence.
   simply too narrow, which is the failure mode that method invites.*
 
 **THE EVIDENCE BELOW IS COMPROMISED — read this first.** Every probe in
-`tools/` resolves its target as `process.env.APPBOX_BASE || 'http://localhost:4319'`
+`tools/` resolves its target as `process.env.ARXA_BASE || 'http://localhost:4319'`
 and **none of them reads `process.argv`**. So every `--port NNNN` passed while
 investigating this was a silent no-op, and runs believed to be hitting isolated
 cold-booted servers were hitting the shared long-lived 4319 instead. The
 "cold boot, 1 failure in 6" figure — the single fact that discriminated between
 the two hypotheses — cannot be trusted. **Root cause is therefore UNPROVEN, not
 settled.** It is recorded below because the reasoning is sound *if* the
-measurement holds; it must be re-measured with `APPBOX_BASE` set explicitly and
+measurement holds; it must be re-measured with `ARXA_BASE` set explicitly and
 the resolved base printed before any conclusion is drawn from it.
 
 What survives regardless, because it is a property of the code rather than of
@@ -851,11 +851,11 @@ fall back to, blanking the pane.
   absent here.** `~/.agents/skills/consultant/` does not exist at all (exit
   127), so the mandatory `gate skill` check could not run. However the thing it
   protects against — editing a symlinked copy while the real source goes stale
-  — cannot occur for this skill: no `~/.agents/skills/appbox-designer` is
+  — cannot occur for this skill: no `~/.agents/skills/arxa-designer` is
   registered, and the only related entry is a stale
-  `~/.agents/skills/app-box-designer` (hyphenated) pointing at
-  `…/app-box/skills/app-box-designer`, a path that does not exist either — the
-  repo's real directory is `skills/appbox-designer`, unhyphenated. With no
+  `~/.agents/skills/arxa-designer` (hyphenated) pointing at
+  `…/arxa/skills/arxa-designer`, a path that does not exist either — the
+  repo's real directory is `skills/arxa-designer`, unhyphenated. With no
   fan-out, the working tree is trivially the only copy. Two follow-ups: restore
   the `consultant` script, and delete the broken hyphenated symlink before it
   misleads something.
@@ -985,7 +985,7 @@ are **three** generators, and `genericHead` is the least important of them:
 | `generate_view.genericHead` | design-composition views (CLI only) | `isBusy` only |
 
 ADR-0003 ("no async without a busy/error surface") was stated in
-`appbox-builder/SKILL.md` **and in a comment inside the ViewModel blueprint
+`arxa-builder/SKILL.md` **and in a comment inside the ViewModel blueprint
 generates** — and produced by nothing. Every screen began life violating a
 contract that no check enforced.
 
@@ -1259,8 +1259,8 @@ clean.
 
 ## #62 is closed in practice: probes run against a disposable copy
 
-`~/.appbox/projects/portalo-probe`, a `cp -R` of the real project, served on a
-second port; `resolveBase()` already honours `APPBOX_BASE`, so no probe changed.
+`~/.arxa/projects/portalo-probe`, a `cp -R` of the real project, served on a
+second port; `resolveBase()` already honours `ARXA_BASE`, so no probe changed.
 Across four probe runs (one solo, three concurrent, three more neutered) the
 real `portalo/intake/flows.json` stayed `5a9426d5…` — byte-identical. This is
 the mechanism #62 asked for; what remains is making it the default rather than
@@ -1269,7 +1269,7 @@ a thing the operator remembers to do.
 ## Two errors of mine, both caught by checking at the layer of the claim
 
 **The #53 test instruction was unactionable.** I told the user to compare timers
-across two browser profiles. `appbox-studio` contains zero timers — `/timer` is
+across two browser profiles. `arxa-studio` contains zero timers — `/timer` is
 the *hello-hda* fixture's route. The fix is real and Dart-proven; the observation
 recipe was fiction. A fix being correct says nothing about whether the
 instructions for seeing it are.

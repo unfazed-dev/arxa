@@ -23,8 +23,8 @@ library;
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
-import 'package:appbox_kit_showcase_app/ui/widgets/common/showcase_tabs_shared/widgets.dart';
+import 'package:arxa_kit_ui_library/arxa_kit_ui_library.dart';
+import 'package:arxa_kit_showcase_app/ui/widgets/common/showcase_tabs_shared/widgets.dart';
 
 class ShowcaseProgressLoadingCardWidget extends StatefulWidget {
   const ShowcaseProgressLoadingCardWidget({super.key});
@@ -42,7 +42,7 @@ class _ShowcaseProgressLoadingCardWidgetState
   bool _spinning = true;
 
   // A one-shot view-local demo timer — not an async op, so the
-  // AppBoxKitAction convention (no bare Timer debounces) does not apply.
+  // ArxaKitAction convention (no bare Timer debounces) does not apply.
   Timer? _idleTimer;
 
   @override
@@ -71,10 +71,10 @@ class _ShowcaseProgressLoadingCardWidgetState
 
   @override
   Widget build(BuildContext context) {
-    // Edge treatment belongs to the enclosing AppBoxKitEdgeAwareListView. The
+    // Edge treatment belongs to the enclosing ArxaKitEdgeAwareListView. The
     // old "content-only" carve-out here is exactly why the buttons/segmented
     // demos above went untreated.
-    return AppBoxKitGlassCard(
+    return ArxaKitGlassCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -83,31 +83,31 @@ class _ShowcaseProgressLoadingCardWidgetState
               const ShowcaseSectionLabelWidget('Progress & loading'),
               const Spacer(),
               if (!_spinning)
-                AppBoxKitNativeButton(
-                  style: AppBoxKitButtonStyle.plain,
+                ArxaKitNativeButton(
+                  style: ArxaKitButtonStyle.plain,
                   label: 'Replay',
                   onPressed: _replay,
                 ),
             ],
           ),
-          appBoxKitVerticalSpaceSmall,
+          arxaKitVerticalSpaceSmall,
           Row(
             children: [
               Expanded(
                 // ponytail: determinate 0.6 shows the fill; indeterminate
                 // circular animates; loading indicator is the 3rd tier.
-                child: AppBoxKitNativeProgress.linear(value: 0.6),
+                child: ArxaKitNativeProgress.linear(value: 0.6),
               ),
-              appBoxKitHorizontalSpaceSmall,
+              arxaKitHorizontalSpaceSmall,
               // The perpetual animators live under one TickerMode: muted they
               // hold their last frame and schedule nothing.
               TickerMode(
                 enabled: _spinning,
                 child: Row(
                   children: [
-                    AppBoxKitNativeProgress.circular(), // factory, not const-able
-                    appBoxKitHorizontalSpaceSmall,
-                    const AppBoxKitNativeLoadingIndicator(size: 32),
+                    ArxaKitNativeProgress.circular(), // factory, not const-able
+                    arxaKitHorizontalSpaceSmall,
+                    const ArxaKitNativeLoadingIndicator(size: 32),
                   ],
                 ),
               ),

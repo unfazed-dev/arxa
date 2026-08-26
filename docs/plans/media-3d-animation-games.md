@@ -1,38 +1,38 @@
 # Media, 3D, animation & games — rename, designer islands, smoke screens
 
 > **Superseded (2026-08-02):** the graphics-demo "Portalo" this plan built was
-> replaced by the ecommerce Portalo project in `~/.appbox/projects/portalo/`
-> (post flows/.appbox refactor, commits 3f60a48…c70ea8e), and the `/media/*`
+> replaced by the ecommerce Portalo project in `~/.arxa/projects/portalo/`
+> (post flows/.arxa refactor, commits 3f60a48…c70ea8e), and the `/media/*`
 > routes it cites no longer exist. Kept as history; do not follow its routes
 > or screen inventory.
 
 **Status:** **COMPLETE** (2026-07-31). Settled with the operator 2026-07-31;
 landed in commit d327c60. Three JS-runtime sub-steps (2.2, 4.6, 5.6 — the
 serve.test.mjs / lint.mjs edits) were superseded by the Dart port in 4f9c458.
-**Inputs:** [`../VOCABULARY.md`](../VOCABULARY.md) (appbox lens entry) ·
-[`../../appboxd/README.md`](../../appboxd/README.md) (appbox-tools-first rule) ·
-[`../../skills/appbox-designer/docs/adr/0002-zero-custom-client-js-boundary.md`](../../skills/appbox-designer/docs/adr/0002-zero-custom-client-js-boundary.md).
+**Inputs:** [`../VOCABULARY.md`](../VOCABULARY.md) (arxa lens entry) ·
+[`../../arxa/README.md`](../../arxa/README.md) (arxa-tools-first rule) ·
+[`../../skills/arxa-designer/docs/adr/0002-zero-custom-client-js-boundary.md`](../../skills/arxa-designer/docs/adr/0002-zero-custom-client-js-boundary.md).
 
 ## Goal
 
-Prove the appbox pipeline's media/3D/animation/games free space end to end in
-the design shell: rename the product dirs to `appbox-studio`, make named
+Prove the arxa pipeline's media/3D/animation/games free space end to end in
+the design shell: rename the product dirs to `arxa-studio`, make named
 islands a first-class designer-skill architecture (3D model viewer, dotLottie,
 Lottie, Rive, three.js, playable game), vendor one free example asset per
-runtime, and ship six mobile-first smoke screens verified with the **appbox
+runtime, and ship six mobile-first smoke screens verified with the **arxa
 lens** at the viewport ladder (390/744/1280).
 
 ## Architecture
 
-- **Rename (product only).** `appbox/` → `appbox-studio/`, `designs/appbox/` →
-  `designs/appbox-studio/`. Pipeline-level names stay: `appboxd/`,
-  `config/appbox.config.json`, `config/kit-registry.json`, `appbox_kit_*`,
-  `skills/appbox-*` / `.kimi-code/skills/appbox-*` names, the `appbox/structure@1`
-  schema id, the concept "appbox pipeline".
+- **Rename (product only).** `arxa/` → `arxa-studio/`, `designs/arxa/` →
+  `designs/arxa-studio/`. Pipeline-level names stay: `arxa/`,
+  `config/arxa.config.json`, `config/kit-registry.json`, `arxa_kit_*`,
+  `skills/arxa-*` / `.kimi-code/skills/arxa-*` names, the `arxa/structure@1`
+  schema id, the concept "arxa pipeline".
 - **Islands (ADR-0002 amendment).** The zero-ad-hoc-client-JS boundary stands;
   the "one named island" clause becomes "named islands only, enumerated in the
   contract". Third-party runtimes are vendored into
-  `skills/appbox-designer/runtime/vendor/` (SRI-pinned, `manifest.json` +
+  `skills/arxa-designer/runtime/vendor/` (SRI-pinned, `manifest.json` +
   `SRI.md`, like htmx today); first-party glue islands are dependency-free
   data-attribute scripts next to them (`canvas.js` precedent — no SRI, no
   globals, re-arm on `htmx:load`). Served at `/assets/vendor/*` by
@@ -44,8 +44,8 @@ lens** at the viewport ladder (390/744/1280).
   Interactivity: htmx fragment swaps where declarative works (dotLottie
   play/pause, model-viewer auto-rotate), island-bound controls where it
   doesn't (Rive state-machine inputs, three.js toggles, the game).
-- **Verification.** appbox lens only — `appboxd/lib/lens.dart` over
-  `appboxd/lib/cdp.dart` (headless Chrome via CDP; console/page errors
+- **Verification.** arxa lens only — `arxa/lib/lens.dart` over
+  `arxa/lib/cdp.dart` (headless Chrome via CDP; console/page errors
   auto-fail). This plan extends `cdp.dart` with input driving
   (`Input.dispatchKeyEvent` / `Input.dispatchMouseEvent`) and adds a
   `tool/lens_check.dart` driver. Never probe-runner; never
@@ -56,17 +56,17 @@ lens** at the viewport ladder (390/744/1280).
 Hono + htmx 2.0.10 (server-rendered MVVM, Nunjucks) · vendored
 `@google/model-viewer` 4.3.1, `@lottiefiles/dotlottie-wc` 0.9.24 (+
 `@lottiefiles/dotlottie-web` 0.78.2 WASM), `@lottiefiles/lottie-player`
-2.0.12, `@rive-app/canvas-single` 2.39.1, `three` 0.185.1 · Dart `appboxd`
-(CDP/lens) · Flutter app `appbox-studio` (Stacked).
+2.0.12, `@rive-app/canvas-single` 2.39.1, `three` 0.185.1 · Dart `arxa`
+(CDP/lens) · Flutter app `arxa-studio` (Stacked).
 
 ## Global constraints
 
 - **No git commits, ever, in this plan.** `git mv` stages moves; committing is
   the user's call afterwards (repo rule: no git mutations without explicit
   user approval).
-- **Canonical skill copy is `skills/appbox-designer/`** (git-tracked). The
+- **Canonical skill copy is `skills/arxa-designer/`** (git-tracked). The
   live mirror the design's `serve.mjs` actually executes is
-  `.kimi-code/skills/appbox-designer/` (untracked). Every task that edits a
+  `.kimi-code/skills/arxa-designer/` (untracked). Every task that edits a
   file under `skills/` ends by copying that file to the same relative path
   under `.kimi-code/skills/`. Runtime commands in this plan invoke the
   `.kimi-code/` copy (that is what the design itself uses); edits happen in
@@ -74,21 +74,21 @@ Hono + htmx 2.0.10 (server-rendered MVVM, Nunjucks) · vendored
 - **Zero ad-hoc client JS.** No `<script>` blocks in templates, no `hx-on:*`,
   no `js:`-prefixed attributes, no `[expr]` trigger filters. All client code
   lives in `runtime/vendor/` and loads via `<script src="/assets/vendor/…">`.
-  `node .kimi-code/skills/appbox-designer/runtime/lint.mjs designs/appbox-studio`
+  `node .kimi-code/skills/arxa-designer/runtime/lint.mjs designs/arxa-studio`
   must stay clean after every screen task.
 - **Frozen artifacts stay untouched:** `docs/design/brief.md`,
   `docs/design/story-map.json`, `docs/moodboards/*` (preserve-by-default;
-  probe-runner mentions were reworded to the appbox lens by the 2026-07-31
+  probe-runner mentions were reworded to the arxa lens by the 2026-07-31
   retirement sweep — see Follow-up work).
 - **Historical documents stay untouched:** `archives/**`, superseded plans and
   research reports (`docs/plans/architecture.md`,
   `docs/plans/consolidate-one-app-plus-daemon.md`,
   `docs/plans/design-shell-canvas-redesign.md`,
-  `docs/plans/appbox-dart-only-tooling.md`, `docs/plans/implementation/*`,
+  `docs/plans/arxa-dart-only-tooling.md`, `docs/plans/implementation/*`,
   `docs/research/*`, `tools/phase5_kit_copy.sh`). They are records, not living
-  docs; their `appbox`/`designs/appbox-app` mentions are historical.
-- **Generated files stay untouched:** `appbox-studio/macos/Flutter/ephemeral/**`,
-  `appbox-studio/build/**`, `appbox-studio/.dart_tool/**`.
+  docs; their `arxa`/`designs/arxa-app` mentions are historical.
+- **Generated files stay untouched:** `arxa-studio/macos/Flutter/ephemeral/**`,
+  `arxa-studio/build/**`, `arxa-studio/.dart_tool/**`.
 - **Vendored libraries:** pinned versions only, sha384 SRI computed locally
   (`openssl dgst -sha384 -binary <file> | openssl base64 -A`), recorded in
   `manifest.json` + `SRI.md`, licences recorded in `THIRD-PARTY-NOTICES.md`.
@@ -103,7 +103,7 @@ Moves only; reference edits are Task 2.
 
 **Interfaces**
 - Consumes: nothing (first task).
-- Produces: `appbox-studio/` and `designs/appbox-studio/` on disk, staged in
+- Produces: `arxa-studio/` and `designs/arxa-studio/` on disk, staged in
   the git index; nothing referencing them updated yet (repo is expected to be
   red until Task 2 finishes).
 
@@ -111,31 +111,31 @@ Moves only; reference edits are Task 2.
 
 - [x] 1.1 Move the Flutter app:
   ```sh
-  cd /Volumes/developer_ssd/Developer/totem_labs/app-box
-  git mv appbox appbox-studio
-  git mv designs/appbox designs/appbox-studio
+  cd /Volumes/developer_ssd/Developer/totem_labs/arxa
+  git mv arxa arxa-studio
+  git mv designs/arxa designs/arxa-studio
   git status --short | head -20
   ```
-  Expected: `R  appbox/... -> appbox-studio/...` and
-  `R  designs/appbox/... -> designs/appbox-studio/...` rename entries.
-- [x] 1.2 Rename the Dart package in `appbox-studio/pubspec.yaml:1`: change
-  `name: appbox` to `name: appbox_studio`, and in line 2 change the
-  description's leading `appbox —` to `appbox-studio —`.
+  Expected: `R  arxa/... -> arxa-studio/...` and
+  `R  designs/arxa/... -> designs/arxa-studio/...` rename entries.
+- [x] 1.2 Rename the Dart package in `arxa-studio/pubspec.yaml:1`: change
+  `name: arxa` to `name: arxa_studio`, and in line 2 change the
+  description's leading `arxa —` to `arxa-studio —`.
 - [x] 1.3 Rewrite all package imports:
   ```sh
-  cd /Volumes/developer_ssd/Developer/totem_labs/app-box
-  grep -rl "package:appbox/" appbox-studio/lib appbox-studio/test \
-    | xargs sed -i '' 's|package:appbox/|package:appbox_studio/|g'
-  grep -rc "package:appbox/" appbox-studio/lib appbox-studio/test | grep -v ':0' || echo "imports clean"
+  cd /Volumes/developer_ssd/Developer/totem_labs/arxa
+  grep -rl "package:arxa/" arxa-studio/lib arxa-studio/test \
+    | xargs sed -i '' 's|package:arxa/|package:arxa_studio/|g'
+  grep -rc "package:arxa/" arxa-studio/lib arxa-studio/test | grep -v ':0' || echo "imports clean"
   ```
   Expected: `imports clean` (32 files / 84 imports rewritten).
-- [x] 1.4 Update product display names: `appbox-studio/web/manifest.json:2-3`
-  (`"name": "appbox"` → `"name": "appbox-studio"`, same for `"short_name"`)
-  and `appbox-studio/android/app/src/main/AndroidManifest.xml:13`
-  (`android:label="appbox"` → `android:label="appbox-studio"`).
+- [x] 1.4 Update product display names: `arxa-studio/web/manifest.json:2-3`
+  (`"name": "arxa"` → `"name": "arxa-studio"`, same for `"short_name"`)
+  and `arxa-studio/android/app/src/main/AndroidManifest.xml:13`
+  (`android:label="arxa"` → `android:label="arxa-studio"`).
 - [x] 1.5 Verify the app still analyzes and tests green:
   ```sh
-  cd /Volumes/developer_ssd/Developer/totem_labs/app-box/appbox-studio
+  cd /Volumes/developer_ssd/Developer/totem_labs/arxa/arxa-studio
   flutter pub get && flutter test
   ```
   Expected: `All tests passed!`
@@ -145,98 +145,98 @@ Moves only; reference edits are Task 2.
 ## Task 2: Sweep every reference to the old paths
 
 Enumerated exhaustively — this list, not "grep and fix". The `$schema` value
-`appbox/structure@1` (in `designs/appbox-studio/structure.json:2`,
-`designs/appbox-studio/services/repositories/files_repository.js:56`, and
-emitted by `skills/appbox-scaffolder/scaffold.py:600`) is a **format
+`arxa/structure@1` (in `designs/arxa-studio/structure.json:2`,
+`designs/arxa-studio/services/repositories/files_repository.js:56`, and
+emitted by `skills/arxa-scaffolder/scaffold.py:600`) is a **format
 identifier, pipeline-level: it stays**.
 
 **Interfaces**
 - Consumes: Task 1's moved trees.
-- Produces: a grep-clean repo (against the list below), green `appboxd` tests,
-  green designer-runtime serve test, a servable `designs/appbox-studio`.
+- Produces: a grep-clean repo (against the list below), green `arxa` tests,
+  green designer-runtime serve test, a servable `designs/arxa-studio`.
 
 ### Steps
 
-- [x] 2.1 `appboxd` — pipeline code pointing at the design dir. Edit:
-  - `appboxd/bin/appbox.dart:515` — `designDir ??= 'designs/appbox';` →
-    `'designs/appbox-studio'`
-  - `appboxd/lib/gate_freeze.dart:50` — `const designRel = 'designs/appbox';`
-    → `'designs/appbox-studio'`
-  - `appboxd/lib/gate_structure.dart:20` — same const, same change
-  - `appboxd/lib/gates.dart:44-45` — `'$appRoot/designs/appbox'` and
-    `'$repoRoot/designs/appbox'` → append `-studio` to both
-  - `appboxd/lib/gate_coverage.dart:75` — comment mention → `designs/appbox-studio`
-  - `appboxd/lib/config.dart:28` — `p.join(repoRoot, 'appbox', 'build', 'web')`
-    → `p.join(repoRoot, 'appbox-studio', 'build', 'web')`
-- [x] 2.2 Designer runtime serve test — `skills/appbox-designer/runtime/serve.test.mjs` (superseded by Dart port):
-  line 22 repo-root anchor `path.join(ROOT, 'designs', 'appbox', 'app.routes.js')`
-  → `'designs', 'appbox-studio', 'app.routes.js'`; line 18-19 comment →
-  `designs/appbox-studio`; line 25 error string → `designs/appbox-studio`;
-  line 115 `start(['designs/appbox', …])` → `'designs/appbox-studio'`;
-  lines 84, 101, 120 bare design name `'appbox'` → `'appbox-studio'`.
-  Then mirror: `cp skills/appbox-designer/runtime/serve.test.mjs .kimi-code/skills/appbox-designer/runtime/serve.test.mjs`.
+- [x] 2.1 `arxa` — pipeline code pointing at the design dir. Edit:
+  - `arxa/bin/arxa.dart:515` — `designDir ??= 'designs/arxa';` →
+    `'designs/arxa-studio'`
+  - `arxa/lib/gate_freeze.dart:50` — `const designRel = 'designs/arxa';`
+    → `'designs/arxa-studio'`
+  - `arxa/lib/gate_structure.dart:20` — same const, same change
+  - `arxa/lib/gates.dart:44-45` — `'$appRoot/designs/arxa'` and
+    `'$repoRoot/designs/arxa'` → append `-studio` to both
+  - `arxa/lib/gate_coverage.dart:75` — comment mention → `designs/arxa-studio`
+  - `arxa/lib/config.dart:28` — `p.join(repoRoot, 'arxa', 'build', 'web')`
+    → `p.join(repoRoot, 'arxa-studio', 'build', 'web')`
+- [x] 2.2 Designer runtime serve test — `skills/arxa-designer/runtime/serve.test.mjs` (superseded by Dart port):
+  line 22 repo-root anchor `path.join(ROOT, 'designs', 'arxa', 'app.routes.js')`
+  → `'designs', 'arxa-studio', 'app.routes.js'`; line 18-19 comment →
+  `designs/arxa-studio`; line 25 error string → `designs/arxa-studio`;
+  line 115 `start(['designs/arxa', …])` → `'designs/arxa-studio'`;
+  lines 84, 101, 120 bare design name `'arxa'` → `'arxa-studio'`.
+  Then mirror: `cp skills/arxa-designer/runtime/serve.test.mjs .kimi-code/skills/arxa-designer/runtime/serve.test.mjs`.
 - [x] 2.3 Repo docs:
   - `THIRD-PARTY-NOTICES.md:98` — heading `Lexend fonts
-    (`designs/appbox/assets/fonts/`)` → `designs/appbox-studio/assets/fonts/`
+    (`designs/arxa/assets/fonts/`)` → `designs/arxa-studio/assets/fonts/`
   - `THIRD-PARTY-NOTICES.md:104` — inventory path →
-    `designs/appbox-studio/assets/fonts/FONTS.md`
-  - `docs/INDEX.md:54` — `` `appbox/lib/security/` `` →
-    `` `appbox-studio/lib/security/` ``; `` `appbox/` not yet scaffolded from
-    `designs/appbox/` `` → `` `appbox-studio/` … from `designs/appbox-studio/` ``
-  - `docs/INDEX.md:55` — `` `appbox/` is the hand-bootstrapped shell `` →
-    `` `appbox-studio/` is the hand-bootstrapped shell ``
-- [x] 2.4 Design-internal path strings (inside `designs/appbox-studio/`):
+    `designs/arxa-studio/assets/fonts/FONTS.md`
+  - `docs/INDEX.md:54` — `` `arxa/lib/security/` `` →
+    `` `arxa-studio/lib/security/` ``; `` `arxa/` not yet scaffolded from
+    `designs/arxa/` `` → `` `arxa-studio/` … from `designs/arxa-studio/` ``
+  - `docs/INDEX.md:55` — `` `arxa/` is the hand-bootstrapped shell `` →
+    `` `arxa-studio/` is the hand-bootstrapped shell ``
+- [x] 2.4 Design-internal path strings (inside `designs/arxa-studio/`):
   - `services/repositories/files_repository.js:113-114` — the two embedded
-    keys `'designs/appbox/models/design_model/design_seed.en.json'` and
-    `'designs/appbox/models/design_model/run.json'` → `designs/appbox-studio/…`
+    keys `'designs/arxa/models/design_model/design_seed.en.json'` and
+    `'designs/arxa/models/design_model/run.json'` → `designs/arxa-studio/…`
   - `models/design_model/design_seed.en.json:338`,
     `models/design_model/design_seed.pl.json:338`,
     `models/design_model/run.en.json:404`,
     `models/design_model/run.pl.json:404`,
     `models/design_model/run.json:404` — `"path"` values →
-    `designs/appbox-studio/models/design_model/<same filename>`
+    `designs/arxa-studio/models/design_model/<same filename>`
   - `models/design_model/design_seed.en.json:342` and
     `models/design_model/run.en.json:342/408`-style cross references — every
-    `"path"` value in these five files that starts `designs/appbox/` gets
-    `designs/appbox-studio/` (10 values total across the 5 files; verify with
-    `grep -n 'designs/appbox/' designs/appbox-studio/models` → no output)
-  - `l10n/README.md` — the one `designs/appbox` mention →
-    `designs/appbox-studio`
+    `"path"` value in these five files that starts `designs/arxa/` gets
+    `designs/arxa-studio/` (10 values total across the 5 files; verify with
+    `grep -n 'designs/arxa/' designs/arxa-studio/models` → no output)
+  - `l10n/README.md` — the one `designs/arxa` mention →
+    `designs/arxa-studio`
   - `ui/views/main_shell/intake/_integration_intake.md:78` — regenerate
-    command path → `designs/appbox-studio/…`
+    command path → `designs/arxa-studio/…`
   - `ui/views/main_shell/design/_integration_design.md:44,94,98` — three
-    `designs/appbox/…` code paths → `designs/appbox-studio/…`
+    `designs/arxa/…` code paths → `designs/arxa-studio/…`
 - [x] 2.5 Design-internal project name — the design describes the renamed
-  product. In each of these 15 JSON files change `"project": "appbox"` to
-  `"project": "appbox-studio"`:
+  product. In each of these 15 JSON files change `"project": "arxa"` to
+  `"project": "arxa-studio"`:
   `models/intake_model/intake.json`, `intake.en.json`, `intake.pl.json`,
   `intake_seed.en.json`, `intake_seed.pl.json`;
   `models/design_model/run.json`, `run.en.json`, `run.pl.json`,
   `design_seed.en.json`, `design_seed.pl.json`;
   `models/build_model/run.json`, `run.en.json`, `run.pl.json`,
   `build_seed.en.json`, `build_seed.pl.json` (all under
-  `designs/appbox-studio/`).
+  `designs/arxa-studio/`).
   ```sh
-  cd /Volumes/developer_ssd/Developer/totem_labs/app-box/designs/appbox-studio
-  grep -rl '"project": "appbox"' models | xargs sed -i '' 's/"project": "appbox"/"project": "appbox-studio"/g'
+  cd /Volumes/developer_ssd/Developer/totem_labs/arxa/designs/arxa-studio
+  grep -rl '"project": "arxa"' models | xargs sed -i '' 's/"project": "arxa"/"project": "arxa-studio"/g'
   ```
 - [x] 2.6 Grep-clean check (the whole point of the enumerated list):
   ```sh
-  cd /Volumes/developer_ssd/Developer/totem_labs/app-box
-  grep -rn 'designs/appbox\b' --exclude-dir=.git --exclude-dir=node_modules \
+  cd /Volumes/developer_ssd/Developer/totem_labs/arxa
+  grep -rn 'designs/arxa\b' --exclude-dir=.git --exclude-dir=node_modules \
     --exclude-dir=archives --exclude-dir=.kimi-code . \
-    | grep -v 'designs/appbox-studio' | grep -v 'designs/appbox-app'
+    | grep -v 'designs/arxa-studio' | grep -v 'designs/arxa-app'
   ```
   Expected output: only the historical documents named in Global constraints
   (`docs/plans/*`, `docs/research/*`) — nothing else.
 - [x] 2.7 Green checks:
   ```sh
-  cd /Volumes/developer_ssd/Developer/totem_labs/app-box/appboxd && dart test
-  node /Volumes/developer_ssd/Developer/totem_labs/app-box/.kimi-code/skills/appbox-designer/runtime/serve.test.mjs
+  cd /Volumes/developer_ssd/Developer/totem_labs/arxa/arxa && dart test
+  node /Volumes/developer_ssd/Developer/totem_labs/arxa/.kimi-code/skills/arxa-designer/runtime/serve.test.mjs
   ```
   Expected: all dart tests pass; serve test prints its checklist ending with
   all `ok` lines, exit 0.
-- [x] 2.8 Serve smoke: `node designs/appbox-studio/serve.mjs --port 4399 --no-watch &`,
+- [x] 2.8 Serve smoke: `node designs/arxa-studio/serve.mjs --port 4399 --no-watch &`,
   then `curl -sf -o /dev/null -w '%{http_code}\n' http://localhost:4399/dashboard`
   → `200`; `kill %1`.
 
@@ -246,14 +246,14 @@ identifier, pipeline-level: it stays**.
 
 **Interfaces**
 - Consumes: nothing but network access. Independent of Tasks 1-2.
-- Produces: 7 new vendored files in `skills/appbox-designer/runtime/vendor/`
+- Produces: 7 new vendored files in `skills/arxa-designer/runtime/vendor/`
   (+ mirror), updated `manifest.json`, `SRI.md`, `THIRD-PARTY-NOTICES.md`.
 
 ### Steps
 
 - [x] 3.1 Download the pinned builds:
   ```sh
-  cd /Volumes/developer_ssd/Developer/totem_labs/app-box/skills/appbox-designer/runtime/vendor
+  cd /Volumes/developer_ssd/Developer/totem_labs/arxa/skills/arxa-designer/runtime/vendor
   curl -sfLO https://unpkg.com/@google/model-viewer@4.3.1/dist/model-viewer.min.js
   curl -sfLO https://unpkg.com/@lottiefiles/dotlottie-wc@0.9.24/dist/dotlottie-wc.js
   curl -sfL -o dotlottie-player.wasm https://unpkg.com/@lottiefiles/dotlottie-web@0.78.2/dist/dotlottie-player.wasm
@@ -289,13 +289,13 @@ identifier, pipeline-level: it stays**.
   done
   ```
   Append one entry per file to
-  `skills/appbox-designer/runtime/vendor/manifest.json` (same shape as the
+  `skills/arxa-designer/runtime/vendor/manifest.json` (same shape as the
   existing entries: `file`, `package`, `version`, `integrity`; packages
   `@google/model-viewer` 4.3.1, `@lottiefiles/dotlottie-wc` 0.9.24,
   `@lottiefiles/dotlottie-web` 0.78.2 (file `dotlottie-player.wasm`),
   `@lottiefiles/lottie-player` 2.0.12, `@rive-app/canvas-single` 2.39.1,
   `three` 0.185.1 (two file entries)), and one table row per file to
-  `skills/appbox-designer/runtime/vendor/SRI.md`.
+  `skills/arxa-designer/runtime/vendor/SRI.md`.
 - [x] 3.4 Record licences — resolve from the registry, not memory (the
   repo's own rule in THIRD-PARTY-NOTICES):
   ```sh
@@ -306,21 +306,21 @@ identifier, pipeline-level: it stays**.
   done
   ```
   Then extend the vendor table in `THIRD-PARTY-NOTICES.md` (section
-  ``skills/appbox-designer/runtime/vendor/``) with the 7 files and the
+  ``skills/arxa-designer/runtime/vendor/``) with the 7 files and the
   resolved licences (expected: model-viewer Apache-2.0; dotlottie-wc,
   dotlottie-web, lottie-player, canvas-single, three all MIT — record what
   npm actually says).
 - [x] 3.5 Mirror everything:
   ```sh
-  cd /Volumes/developer_ssd/Developer/totem_labs/app-box
+  cd /Volumes/developer_ssd/Developer/totem_labs/arxa
   for f in model-viewer.min.js dotlottie-wc.js dotlottie-player.wasm lottie-player.js rive.js three.module.min.js three.core.min.js manifest.json SRI.md; do
-    cp "skills/appbox-designer/runtime/vendor/$f" ".kimi-code/skills/appbox-designer/runtime/vendor/$f"
+    cp "skills/arxa-designer/runtime/vendor/$f" ".kimi-code/skills/arxa-designer/runtime/vendor/$f"
   done
   ```
 - [x] 3.6 Serve check (runtime serves vendor statically — no router change):
   ```sh
-  cd /Volumes/developer_ssd/Developer/totem_labs/app-box
-  node designs/appbox-studio/serve.mjs --port 4399 --no-watch &
+  cd /Volumes/developer_ssd/Developer/totem_labs/arxa
+  node designs/arxa-studio/serve.mjs --port 4399 --no-watch &
   sleep 2
   for f in model-viewer.min.js dotlottie-wc.js dotlottie-player.wasm lottie-player.js rive.js three.module.min.js three.core.min.js; do
     printf '%s %s\n' "$f" "$(curl -sf -o /dev/null -w '%{http_code}' "http://localhost:4399/assets/vendor/$f")"
@@ -334,7 +334,7 @@ identifier, pipeline-level: it stays**.
 ## Task 4: Author the first-party islands
 
 Four data-attribute islands, `canvas.js` shape (IIFE or module, no globals,
-re-arm on `htmx:load`). All live in `skills/appbox-designer/runtime/vendor/`.
+re-arm on `htmx:load`). All live in `skills/arxa-designer/runtime/vendor/`.
 
 **Interfaces**
 - Consumes: Task 3's vendored runtimes.
@@ -343,7 +343,7 @@ re-arm on `htmx:load`). All live in `skills/appbox-designer/runtime/vendor/`.
 
 ### Steps
 
-- [x] 4.1 Create `skills/appbox-designer/runtime/vendor/dotlottie_island.js`:
+- [x] 4.1 Create `skills/arxa-designer/runtime/vendor/dotlottie_island.js`:
   ```js
   /* dotlottie_island.js — named island (ADR-0002 islands amendment).
      Imports the dotLottie web component and pins its WASM to the vendored
@@ -354,7 +354,7 @@ re-arm on `htmx:load`). All live in `skills/appbox-designer/runtime/vendor/`.
   import { setWasmUrl } from './dotlottie-wc.js';
   setWasmUrl('/assets/vendor/dotlottie-player.wasm');
   ```
-- [x] 4.2 Create `skills/appbox-designer/runtime/vendor/rive_island.js`:
+- [x] 4.2 Create `skills/arxa-designer/runtime/vendor/rive_island.js`:
   ```js
   /* rive_island.js — named island (ADR-0002 islands amendment).
      Data-attribute init for Rive .riv assets; global `rive` comes from the
@@ -424,7 +424,7 @@ re-arm on `htmx:load`). All live in `skills/appbox-designer/runtime/vendor/`.
     document.body.addEventListener('htmx:load', arm);
   })();
   ```
-- [x] 4.3 Create `skills/appbox-designer/runtime/vendor/three_island.js`:
+- [x] 4.3 Create `skills/arxa-designer/runtime/vendor/three_island.js`:
   ```js
   /* three_island.js — named island (ADR-0002 islands amendment), ES module.
      Renders the one demo scene into any <div data-three-scene="orbit-demo">.
@@ -495,7 +495,7 @@ re-arm on `htmx:load`). All live in `skills/appbox-designer/runtime/vendor/`.
   arm();
   document.body.addEventListener('htmx:load', arm);
   ```
-- [x] 4.4 Create `skills/appbox-designer/runtime/vendor/game_island.js`:
+- [x] 4.4 Create `skills/arxa-designer/runtime/vendor/game_island.js`:
   ```js
   /* game_island.js — named island (ADR-0002 islands amendment).
      "Dungeon Dash": an 11×11 top-down grid walker on a canvas, drawn with
@@ -597,17 +597,17 @@ re-arm on `htmx:load`). All live in `skills/appbox-designer/runtime/vendor/`.
   ```
 - [x] 4.5 Mirror the four islands:
   ```sh
-  cd /Volumes/developer_ssd/Developer/totem_labs/app-box
+  cd /Volumes/developer_ssd/Developer/totem_labs/arxa
   for f in dotlottie_island.js rive_island.js three_island.js game_island.js; do
-    cp "skills/appbox-designer/runtime/vendor/$f" ".kimi-code/skills/appbox-designer/runtime/vendor/$f"
+    cp "skills/arxa-designer/runtime/vendor/$f" ".kimi-code/skills/arxa-designer/runtime/vendor/$f"
   done
   ```
 - [x] 4.6 Extend the runtime serve test (TDD-ish: the runtime's own test
-  file is its check) (superseded by Dart port). In `skills/appbox-designer/runtime/serve.test.mjs`,
+  file is its check) (superseded by Dart port). In `skills/arxa-designer/runtime/serve.test.mjs`,
   after the legacy-path check (line ~117), add:
   ```js
   // --- named islands are served (ADR-0002 islands amendment) ----------------
-  const isl = await start(['designs/appbox-studio', '--port', '4373']);
+  const isl = await start(['designs/arxa-studio', '--port', '4373']);
   for (const f of ['model-viewer.min.js', 'dotlottie-wc.js', 'dotlottie-player.wasm',
                    'lottie-player.js', 'rive.js', 'three.module.min.js', 'three.core.min.js',
                    'dotlottie_island.js', 'rive_island.js', 'three_island.js', 'game_island.js']) {
@@ -617,7 +617,7 @@ re-arm on `htmx:load`). All live in `skills/appbox-designer/runtime/vendor/`.
   await waitFor(() => dead('http://localhost:4373/'));
   ```
   Mirror the file (`cp` to `.kimi-code/…`), then run:
-  `node .kimi-code/skills/appbox-designer/runtime/serve.test.mjs` — expected:
+  `node .kimi-code/skills/arxa-designer/runtime/serve.test.mjs` — expected:
   all checks ok, exit 0. (Read the file's `get`/`start` helpers first and
   match their exact signatures — they are defined at the top of the same
   file.)
@@ -638,7 +638,7 @@ exception" to "no ad-hoc client JS; named islands only". Edit the canonical
 
 ### Steps
 
-- [x] 5.1 `skills/appbox-designer/SKILL.md`:
+- [x] 5.1 `skills/arxa-designer/SKILL.md`:
   - Line 6 (frontmatter description): replace
     `JavaScript (one named island exception: canvas.js, pan/zoom for the` /
     following line with `JavaScript — named islands only: reusable, vendored,
@@ -652,7 +652,7 @@ exception" to "no ad-hoc client JS; named islands only". Edit the canonical
     inspect.js, dotlottie_island.js, rive_island.js, three_island.js,
     game_island.js). Anything outside that registry is banned and linted.`
   - Line 98: change `(zero-custom-JS)` to `(no-ad-hoc-JS / named-islands)`.
-- [x] 5.2 `skills/appbox-designer/CONTEXT.md`:
+- [x] 5.2 `skills/arxa-designer/CONTEXT.md`:
   - Line 3: replace `zero custom client-side JavaScript` with `no ad-hoc
     client-side JavaScript (named islands only)`.
   - Line 72-73 `Client-JS-Free` entry: append after the existing text:
@@ -660,7 +660,7 @@ exception" to "no ad-hoc client JS; named islands only". Edit the canonical
     are the only permitted extension: third-party declarative web components
     and first-party data-attribute init modules, all loaded from
     /assets/vendor/.`
-- [x] 5.3 `skills/appbox-designer/system-prompt.md`:
+- [x] 5.3 `skills/arxa-designer/system-prompt.md`:
   - Line 44: replace `zero custom client-side JavaScript` with `no ad-hoc
     client-side JavaScript (named islands only, ADR-0002 islands amendment)`.
   - Line 63: replace the parenthetical `(the only <script> tags allowed
@@ -681,7 +681,7 @@ exception" to "no ad-hoc client JS; named islands only". Edit the canonical
     plus the rive/three vendored runtimes the islands drive). No other
     first-party script, ever; new runtimes enter only as a new named,
     vendored, documented island.`
-- [x] 5.4 `skills/appbox-designer/docs/adr/0002-zero-custom-client-js-boundary.md`:
+- [x] 5.4 `skills/arxa-designer/docs/adr/0002-zero-custom-client-js-boundary.md`:
   append a new paragraph at the end:
   ```md
   **Amendment (2026-07-31) — the media islands.** The island registry grows
@@ -700,7 +700,7 @@ exception" to "no ad-hoc client JS; named islands only". Edit the canonical
   `allowEval:false` + the vendor-path lint. A new runtime enters only as a
   new named, vendored, documented island amending this ADR.
   ```
-- [x] 5.5 `skills/appbox-designer/runtime/README.md`:
+- [x] 5.5 `skills/arxa-designer/runtime/README.md`:
   - Lines 152-155: replace `(`<script src="/assets/vendor/canvas.js" defer>` —
     ADR-0002's one first-party` / `…exception…)` phrasing with `the deferred
     island tags — the named islands of ADR-0002's amendments, loaded from
@@ -710,13 +710,13 @@ exception" to "no ad-hoc client JS; named islands only". Edit the canonical
     amendment …)` with `plus the named islands of ADR-0002's amendments
     (first-party data-attribute islands and third-party declarative web
     components, all vendored in runtime/vendor/)`.
-- [x] 5.6 `skills/appbox-designer/runtime/lint.mjs` line 2 header comment (superseded by Dart port):
+- [x] 5.6 `skills/arxa-designer/runtime/lint.mjs` line 2 header comment (superseded by Dart port):
   replace `// Zero-custom-client-JS lint (ADR-0002).` with
   `// No-ad-hoc-client-JS lint (ADR-0002 + islands amendments). Named islands
   // pass because every allowlisted script loads from /assets/vendor/.`
   (No rule change: the existing vendor-path allowlist already admits the
   islands; anything else still fails.)
-- [x] 5.7 `skills/appbox-designer/DESIGN-ARCHITECTURE.md`: after the Client-JS
+- [x] 5.7 `skills/arxa-designer/DESIGN-ARCHITECTURE.md`: after the Client-JS
   passage at line 74 (`…so the Client-JS-Free rule is untouched.`), append:
   `The same holds for the named media islands (ADR-0002's 2026-07-31
   amendment): 3D, animation and game runtimes are vendored web components or
@@ -724,44 +724,44 @@ exception" to "no ad-hoc client JS; named islands only". Edit the canonical
   script.`
 - [x] 5.8 Mirror every edited file:
   ```sh
-  cd /Volumes/developer_ssd/Developer/totem_labs/app-box
+  cd /Volumes/developer_ssd/Developer/totem_labs/arxa
   for f in SKILL.md CONTEXT.md system-prompt.md DESIGN-ARCHITECTURE.md \
            docs/adr/0002-zero-custom-client-js-boundary.md runtime/README.md runtime/lint.mjs; do
-    cp "skills/appbox-designer/$f" ".kimi-code/skills/appbox-designer/$f"
+    cp "skills/arxa-designer/$f" ".kimi-code/skills/arxa-designer/$f"
   done
   ```
 - [x] 5.9 Lint still clean + docs consistent:
   ```sh
-  node .kimi-code/skills/appbox-designer/runtime/lint.mjs designs/appbox-studio
-  grep -rn 'one named island\|single first-party exception\|ONE first-party island' skills/appbox-designer --include='*.md' --include='*.mjs'
+  node .kimi-code/skills/arxa-designer/runtime/lint.mjs designs/arxa-studio
+  grep -rn 'one named island\|single first-party exception\|ONE first-party island' skills/arxa-designer --include='*.md' --include='*.mjs'
   ```
   Expected: `lint clean: …`; grep returns nothing (no stale singleton-island
   wording left).
 
 ---
 
-## Task 6: Extend the appbox lens with input driving (TDD)
+## Task 6: Extend the arxa lens with input driving (TDD)
 
-The lens lacks the verbs the game screen needs. Per the appbox-tools-first
-rule, extend `appboxd` — never reach for archived tooling.
+The lens lacks the verbs the game screen needs. Per the arxa-tools-first
+rule, extend `arxa` — never reach for archived tooling.
 
 **Interfaces**
 - Consumes: nothing from earlier tasks (independent; may run parallel).
 - Produces: `CdpSession.key()` / `CdpSession.click()` in
-  `appboxd/lib/cdp.dart`; new driver `appboxd/tool/lens_check.dart`; new test
-  `appboxd/test/lens_input_test.dart`.
+  `arxa/lib/cdp.dart`; new driver `arxa/tool/lens_check.dart`; new test
+  `arxa/test/lens_input_test.dart`.
 
 ### Steps
 
 - [x] 6.1 Write the failing test first —
-  `appboxd/test/lens_input_test.dart`:
+  `arxa/test/lens_input_test.dart`:
   ```dart
   // Lens input driving — proves Input.dispatchKeyEvent / dispatchMouseEvent
   // reach the page (the game-screen verification path).
   import 'dart:async';
   import 'dart:io';
 
-  import 'package:appboxd/cdp.dart';
+  import 'package:arxa/cdp.dart';
   import 'package:test/test.dart';
 
   Future<(HttpServer, String)> bootInputServer() async {
@@ -821,10 +821,10 @@ rule, extend `appboxd` — never reach for archived tooling.
     });
   }
   ```
-  Run `cd appboxd && dart test test/lens_input_test.dart` — expected:
+  Run `cd arxa && dart test test/lens_input_test.dart` — expected:
   COMPILE ERROR (`key`/`click` undefined). Red confirmed.
 - [x] 6.2 Add the two methods to the `CdpSession` class in
-  `appboxd/lib/cdp.dart` (immediately after `screenshot()`, ~line 378):
+  `arxa/lib/cdp.dart` (immediately after `screenshot()`, ~line 378):
   ```dart
   /// Dispatch a key press (down + up) via Input.dispatchKeyEvent.
   /// Supports arrows, Enter, Escape, Space and single characters.
@@ -860,15 +860,15 @@ rule, extend `appboxd` — never reach for archived tooling.
   ```
 - [x] 6.3 Re-run `dart test test/lens_input_test.dart` — expected: 2 passed.
   Then the full suite: `dart test` — all green.
-- [x] 6.4 Create the check driver `appboxd/tool/lens_check.dart`:
+- [x] 6.4 Create the check driver `arxa/tool/lens_check.dart`:
   ```dart
-  // appbox lens check driver: navigate, assert, optionally drive input,
+  // arxa lens check driver: navigate, assert, optionally drive input,
   // screenshot. Console/page errors are always a failure (lens doctrine).
   // Usage: dart run tool/lens_check.dart <url> <out.png> [width] [height] [settleMs]
   //        [--selector=<css>] [--press=<Key>]... [--expect=<js-expr>]
   import 'dart:io';
 
-  import 'package:appboxd/cdp.dart';
+  import 'package:arxa/cdp.dart';
 
   String? _flag(List<String> argv, String name) {
     final hit = argv.where((a) => a.startsWith('--$name='));
@@ -940,10 +940,10 @@ rule, extend `appboxd` — never reach for archived tooling.
   ```
 - [x] 6.5 Driver smoke against the live design:
   ```sh
-  cd /Volumes/developer_ssd/Developer/totem_labs/app-box
-  node designs/appbox-studio/serve.mjs --port 4399 --no-watch &
+  cd /Volumes/developer_ssd/Developer/totem_labs/arxa
+  node designs/arxa-studio/serve.mjs --port 4399 --no-watch &
   sleep 2
-  cd appboxd && dart run tool/lens_check.dart http://localhost:4399/dashboard /tmp/lens-dash.png 390 844 2000 --selector='main'
+  cd arxa && dart run tool/lens_check.dart http://localhost:4399/dashboard /tmp/lens-dash.png 390 844 2000 --selector='main'
   cd .. && kill %1
   ```
   Expected: `lens check ok: … -> /tmp/lens-dash.png (390x844)`, and the PNG
@@ -958,15 +958,15 @@ reachable on 2026-07-31; licences recorded below from the sources named.
 
 **Interfaces**
 - Consumes: Task 1's renamed design dir.
-- Produces: `designs/appbox-studio/assets/media/` (5 assets + Kenney tiles),
+- Produces: `designs/arxa-studio/assets/media/` (5 assets + Kenney tiles),
   `assets/media/MEDIA.md` manifest, `THIRD-PARTY-NOTICES.md` media section.
 
 ### Steps
 
 - [x] 7.1 Download:
   ```sh
-  cd /Volumes/developer_ssd/Developer/totem_labs/app-box
-  M=designs/appbox-studio/assets/media
+  cd /Volumes/developer_ssd/Developer/totem_labs/arxa
+  M=designs/arxa-studio/assets/media
   mkdir -p "$M/kenney"
   curl -sfL -o "$M/boombox.glb" \
     https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/main/2.0/BoomBox/glTF-Binary/BoomBox.glb
@@ -993,7 +993,7 @@ reachable on 2026-07-31; licences recorded below from the sources named.
   as `KENNEY-LICENSE.txt`.
 - [x] 7.2 Validate the payloads:
   ```sh
-  M=designs/appbox-studio/assets/media
+  M=designs/arxa-studio/assets/media
   head -c4 "$M/boombox.glb"; echo            # expected: glTF
   python3 -c "import json;json.load(open('$M/lottie_logo.json'));print('lottie json ok')"
   unzip -l "$M/dotlottie-demo.lottie" | head -5   # a .lottie is a zip
@@ -1005,11 +1005,11 @@ reachable on 2026-07-31; licences recorded below from the sources named.
   in Task 14 is its proof).
 - [x] 7.3 Record hashes for the manifest:
   ```sh
-  M=designs/appbox-studio/assets/media
+  M=designs/arxa-studio/assets/media
   shasum -a 256 "$M/boombox.glb" "$M/off_road_car.riv" "$M/lottie_logo.json" \
     "$M/dotlottie-demo.lottie" "$M/kenney/tile_0000.png" "$M/kenney/tile_0084.png" "$M/kenney/tile_0085.png"
   ```
-- [x] 7.4 Write `designs/appbox-studio/assets/media/MEDIA.md` (per-file
+- [x] 7.4 Write `designs/arxa-studio/assets/media/MEDIA.md` (per-file
   inventory, `assets/fonts/FONTS.md` precedent), one row per file with these
   columns filled from the downloads above: file · source URL (exact URLs from
   step 7.1) · author/publisher · licence · sha256 (from step 7.3) · notes.
@@ -1026,11 +1026,11 @@ reachable on 2026-07-31; licences recorded below from the sources named.
   ```md
   ---
 
-  ## Example media assets (`designs/appbox-studio/assets/media/`)
+  ## Example media assets (`designs/arxa-studio/assets/media/`)
 
   One example asset per island runtime, each free for commercial use.
   Per-file inventory with source URLs and sha256 hashes:
-  `designs/appbox-studio/assets/media/MEDIA.md`.
+  `designs/arxa-studio/assets/media/MEDIA.md`.
 
   | file | source | licence |
   |---|---|---|
@@ -1059,14 +1059,14 @@ Shared plumbing for the six screens; no screen content yet.
 
 ### Steps
 
-- [x] 8.1 `designs/appbox-studio/ui/common/base.html`: insert
+- [x] 8.1 `designs/arxa-studio/ui/common/base.html`: insert
   `{% block head_extra %}{% endblock %}` on its own line immediately before
   `</head>` (after line 25, the `appshell.css` link). Per-screen island tags
   and the scoped stylesheet load through this block — never globally.
-- [x] 8.2 Create `designs/appbox-studio/assets/css/media.css`. Convention for
+- [x] 8.2 Create `designs/arxa-studio/assets/css/media.css`. Convention for
   this and every new file the screen tasks add: carry the repo's standard
-  provenance header (`<!-- appbox:provenance … -->` as in
-  `ui/common/base.html:2-5` for .html, `// appbox:provenance …` as in
+  provenance header (`<!-- arxa:provenance … -->` as in
+  `ui/common/base.html:2-5` for .html, `// arxa:provenance …` as in
   `app.routes.js:1-4` for .js), matching the neighboring files.
   ```css
   /* Media lab — smoke screens for the named islands (3D/animation/game). */
@@ -1086,7 +1086,7 @@ Shared plumbing for the six screens; no screen content yet.
   .media-dpad [data-game-move='right'] { grid-area: r; }
   .media-dpad button { min-height: 48px; }
   ```
-- [x] 8.3 Create `designs/appbox-studio/ui/views/app_shell/routes.media.js`:
+- [x] 8.3 Create `designs/arxa-studio/ui/views/app_shell/routes.media.js`:
   ```js
   // Media-lab routes — one smoke screen per named island runtime.
   import * as rive from './media/rive/rive_viewmodel.js';
@@ -1107,11 +1107,11 @@ Shared plumbing for the six screens; no screen content yet.
     ['GET', '/media/game', game.page],
   ];
   ```
-- [x] 8.4 `designs/appbox-studio/app.routes.js`: add
+- [x] 8.4 `designs/arxa-studio/app.routes.js`: add
   `import mediaRoutes from './ui/views/app_shell/routes.media.js';` after the
   line importing `appRoutes` (line 10), and `...mediaRoutes,` after
   `...appRoutes,` (line 26).
-- [x] 8.5 `designs/appbox-studio/structure.json`: append six entries to the
+- [x] 8.5 `designs/arxa-studio/structure.json`: append six entries to the
   `screens` array (before the closing `]`), following the existing shape
   (`surface: null` — smoke screens are not scaffolder surfaces):
   ```json
@@ -1171,35 +1171,35 @@ Shared plumbing for the six screens; no screen content yet.
         "deps": []
       }
   ```
-  Validate: `python3 -c "import json;json.load(open('designs/appbox-studio/structure.json'));print('structure.json ok')"`.
-- [x] 8.6 L10n keys — append to `designs/appbox-studio/l10n/app_en.arb`
+  Validate: `python3 -c "import json;json.load(open('designs/arxa-studio/structure.json'));print('structure.json ok')"`.
+- [x] 8.6 L10n keys — append to `designs/arxa-studio/l10n/app_en.arb`
   immediately before the closing `}` (add a comma after the previously-last
   entry so the file stays valid JSON):
   ```json
     "media.eyebrow": "Media lab",
     "media.action.play": "Play",
     "media.action.pause": "Pause",
-    "media.rive.pageTitle": "appbox studio — Rive",
+    "media.rive.pageTitle": "arxa studio — Rive",
     "media.rive.title": "Rive",
     "media.rive.lede": "State-machine animation — play/pause and fire inputs.",
     "media.rive.inputsAria": "State machine inputs",
-    "media.lottie.pageTitle": "appbox studio — Lottie",
+    "media.lottie.pageTitle": "arxa studio — Lottie",
     "media.lottie.title": "Lottie",
     "media.lottie.lede": "Lottie JSON with the player's built-in controls.",
-    "media.dotlottie.pageTitle": "appbox studio — dotLottie",
+    "media.dotlottie.pageTitle": "arxa studio — dotLottie",
     "media.dotlottie.title": "dotLottie",
     "media.dotlottie.lede": "A .lottie bundle; play and pause swap server-side.",
-    "media.model3d.pageTitle": "appbox studio — 3D model",
+    "media.model3d.pageTitle": "arxa studio — 3D model",
     "media.model3d.title": "3D model",
     "media.model3d.lede": "GLB in the model-viewer — drag to orbit.",
     "media.model3d.action.rotateOn": "Auto-rotate on",
     "media.model3d.action.rotateOff": "Auto-rotate off",
-    "media.scene3d.pageTitle": "appbox studio — 3D scene",
+    "media.scene3d.pageTitle": "arxa studio — 3D scene",
     "media.scene3d.title": "three.js scene",
     "media.scene3d.lede": "A custom three.js scene with island-bound toggles.",
     "media.scene3d.action.rotate": "Toggle rotation",
     "media.scene3d.action.wireframe": "Toggle wireframe",
-    "media.game.pageTitle": "appbox studio — Game",
+    "media.game.pageTitle": "arxa studio — Game",
     "media.game.title": "Dungeon Dash",
     "media.game.lede": "Collect the gems. Arrow keys / WASD or the pad.",
     "media.game.hint": "Arrow keys / WASD move; the pad works too.",
@@ -1208,33 +1208,33 @@ Shared plumbing for the six screens; no screen content yet.
     "media.game.move.left": "Move left",
     "media.game.move.right": "Move right"
   ```
-- [x] 8.6b The same keys in `designs/appbox-studio/l10n/app_pl.arb` (same
+- [x] 8.6b The same keys in `designs/arxa-studio/l10n/app_pl.arb` (same
   append procedure), with these exact Polish values:
   ```json
     "media.eyebrow": "Laboratorium mediów",
     "media.action.play": "Odtwarzaj",
     "media.action.pause": "Pauza",
-    "media.rive.pageTitle": "appbox studio — Rive",
+    "media.rive.pageTitle": "arxa studio — Rive",
     "media.rive.title": "Rive",
     "media.rive.lede": "Animacja maszyny stanów — odtwarzaj, wstrzymuj i wyzwalaj wejścia.",
     "media.rive.inputsAria": "Wejścia maszyny stanów",
-    "media.lottie.pageTitle": "appbox studio — Lottie",
+    "media.lottie.pageTitle": "arxa studio — Lottie",
     "media.lottie.title": "Lottie",
     "media.lottie.lede": "Lottie JSON z wbudowanymi kontrolkami odtwarzacza.",
-    "media.dotlottie.pageTitle": "appbox studio — dotLottie",
+    "media.dotlottie.pageTitle": "arxa studio — dotLottie",
     "media.dotlottie.title": "dotLottie",
     "media.dotlottie.lede": "Pakiet .lottie; odtwarzanie i pauza podmieniane po stronie serwera.",
-    "media.model3d.pageTitle": "appbox studio — Model 3D",
+    "media.model3d.pageTitle": "arxa studio — Model 3D",
     "media.model3d.title": "Model 3D",
     "media.model3d.lede": "GLB w model-viewer — przeciągnij, aby obracać.",
     "media.model3d.action.rotateOn": "Włącz auto-obrót",
     "media.model3d.action.rotateOff": "Wyłącz auto-obrót",
-    "media.scene3d.pageTitle": "appbox studio — Scena 3D",
+    "media.scene3d.pageTitle": "arxa studio — Scena 3D",
     "media.scene3d.title": "Scena three.js",
     "media.scene3d.lede": "Własna scena three.js z przełącznikami podpiętymi w wyspę.",
     "media.scene3d.action.rotate": "Przełącz obrót",
     "media.scene3d.action.wireframe": "Przełącz szkielet",
-    "media.game.pageTitle": "appbox studio — Gra",
+    "media.game.pageTitle": "arxa studio — Gra",
     "media.game.title": "Dungeon Dash",
     "media.game.lede": "Zbierz klejnoty. Strzałki / WASD albo pad.",
     "media.game.hint": "Strzałki / WASD poruszają; pad też działa.",
@@ -1244,16 +1244,16 @@ Shared plumbing for the six screens; no screen content yet.
     "media.game.move.right": "Ruch w prawo"
   ```
   Validate both files:
-  `python3 -c "import json;json.load(open('designs/appbox-studio/l10n/app_en.arb'));json.load(open('designs/appbox-studio/l10n/app_pl.arb'));print('arb json ok')"`.
+  `python3 -c "import json;json.load(open('designs/arxa-studio/l10n/app_en.arb'));json.load(open('designs/arxa-studio/l10n/app_pl.arb'));print('arb json ok')"`.
 - [x] 8.7 Regenerate the pseudo-locale and confirm key parity:
   ```sh
-  cd /Volumes/developer_ssd/Developer/totem_labs/app-box
-  node .kimi-code/skills/appbox-designer/runtime/pseudolocalize.mjs designs/appbox-studio
+  cd /Volumes/developer_ssd/Developer/totem_labs/arxa
+  node .kimi-code/skills/arxa-designer/runtime/pseudolocalize.mjs designs/arxa-studio
   python3 - <<'EOF'
   import json
-  en = set(json.load(open('designs/appbox-studio/l10n/app_en.arb')))
+  en = set(json.load(open('designs/arxa-studio/l10n/app_en.arb')))
   for loc in ('pl', 'qps-ploc'):
-      keys = set(json.load(open(f'designs/appbox-studio/l10n/app_{loc}.arb')))
+      keys = set(json.load(open(f'designs/arxa-studio/l10n/app_{loc}.arb')))
       missing = [k for k in en - keys if not k.startswith('@')]
       assert not missing, f'{loc} missing: {missing}'
   print('arb parity ok')
@@ -1272,7 +1272,7 @@ Shared plumbing for the six screens; no screen content yet.
 
 ### Steps
 
-- [x] 9.1 Create `designs/appbox-studio/ui/views/app_shell/media/rive/rive_viewmodel.js`:
+- [x] 9.1 Create `designs/arxa-studio/ui/views/app_shell/media/rive/rive_viewmodel.js`:
   ```js
   export const surfaceId = 'app.mediaRive';
 
@@ -1280,7 +1280,7 @@ Shared plumbing for the six screens; no screen content yet.
 
   export const page = (c, h) => h.render(c, VIEW, { activeShell: 'app' });
   ```
-- [x] 9.2 Create `designs/appbox-studio/ui/views/app_shell/media/rive/rive_view.html`:
+- [x] 9.2 Create `designs/arxa-studio/ui/views/app_shell/media/rive/rive_view.html`:
   ```html
   {% extends "ui/views/main_shell/main_shell_view.html" %}
   {% block title %}{{ t('media.rive.pageTitle') }}{% endblock %}
@@ -1305,9 +1305,9 @@ Shared plumbing for the six screens; no screen content yet.
   ```
 - [x] 9.3 Check:
   ```sh
-  cd /Volumes/developer_ssd/Developer/totem_labs/app-box
-  node .kimi-code/skills/appbox-designer/runtime/lint.mjs designs/appbox-studio
-  node designs/appbox-studio/serve.mjs --port 4399 --no-watch &
+  cd /Volumes/developer_ssd/Developer/totem_labs/arxa
+  node .kimi-code/skills/arxa-designer/runtime/lint.mjs designs/arxa-studio
+  node designs/arxa-studio/serve.mjs --port 4399 --no-watch &
   sleep 2
   curl -sf http://localhost:4399/media/rive | grep -c 'data-rive-canvas'
   kill %1
@@ -1325,7 +1325,7 @@ Shared plumbing for the six screens; no screen content yet.
 
 ### Steps
 
-- [x] 10.1 Create `designs/appbox-studio/ui/views/app_shell/media/lottie/lottie_viewmodel.js`:
+- [x] 10.1 Create `designs/arxa-studio/ui/views/app_shell/media/lottie/lottie_viewmodel.js`:
   ```js
   export const surfaceId = 'app.mediaLottie';
 
@@ -1333,7 +1333,7 @@ Shared plumbing for the six screens; no screen content yet.
 
   export const page = (c, h) => h.render(c, VIEW, { activeShell: 'app' });
   ```
-- [x] 10.2 Create `designs/appbox-studio/ui/views/app_shell/media/lottie/lottie_view.html`:
+- [x] 10.2 Create `designs/arxa-studio/ui/views/app_shell/media/lottie/lottie_view.html`:
   ```html
   {% extends "ui/views/main_shell/main_shell_view.html" %}
   {% block title %}{{ t('media.lottie.pageTitle') }}{% endblock %}
@@ -1369,7 +1369,7 @@ Shared plumbing for the six screens; no screen content yet.
 
 ### Steps
 
-- [x] 11.1 Create `designs/appbox-studio/ui/views/app_shell/media/dotlottie/dotlottie_viewmodel.js`:
+- [x] 11.1 Create `designs/arxa-studio/ui/views/app_shell/media/dotlottie/dotlottie_viewmodel.js`:
   ```js
   export const surfaceId = 'app.mediaDotlottie';
 
@@ -1383,7 +1383,7 @@ Shared plumbing for the six screens; no screen content yet.
   export const stage = (c, h) =>
     h.render(c, `${VIEW}#stage`, { playing: c.req.query('play') !== '0' });
   ```
-- [x] 11.2 Create `designs/appbox-studio/ui/views/app_shell/media/dotlottie/dotlottie_view.html`:
+- [x] 11.2 Create `designs/arxa-studio/ui/views/app_shell/media/dotlottie/dotlottie_view.html`:
   ```html
   {% extends "ui/views/main_shell/main_shell_view.html" %}
   {% block title %}{{ t('media.dotlottie.pageTitle') }}{% endblock %}
@@ -1426,7 +1426,7 @@ Shared plumbing for the six screens; no screen content yet.
 
 ### Steps
 
-- [x] 12.1 Create `designs/appbox-studio/ui/views/app_shell/media/model3d/model3d_viewmodel.js`:
+- [x] 12.1 Create `designs/arxa-studio/ui/views/app_shell/media/model3d/model3d_viewmodel.js`:
   ```js
   export const surfaceId = 'app.mediaModel3d';
 
@@ -1441,7 +1441,7 @@ Shared plumbing for the six screens; no screen content yet.
   export const stage = (c, h) =>
     h.render(c, `${VIEW}#stage`, { playing: c.req.query('rotate') !== '0' });
   ```
-- [x] 12.2 Create `designs/appbox-studio/ui/views/app_shell/media/model3d/model3d_view.html`:
+- [x] 12.2 Create `designs/arxa-studio/ui/views/app_shell/media/model3d/model3d_view.html`:
   ```html
   {% extends "ui/views/main_shell/main_shell_view.html" %}
   {% block title %}{{ t('media.model3d.pageTitle') }}{% endblock %}
@@ -1481,7 +1481,7 @@ Shared plumbing for the six screens; no screen content yet.
 
 ### Steps
 
-- [x] 13.1 Create `designs/appbox-studio/ui/views/app_shell/media/scene3d/scene3d_viewmodel.js`:
+- [x] 13.1 Create `designs/arxa-studio/ui/views/app_shell/media/scene3d/scene3d_viewmodel.js`:
   ```js
   export const surfaceId = 'app.mediaScene3d';
 
@@ -1489,7 +1489,7 @@ Shared plumbing for the six screens; no screen content yet.
 
   export const page = (c, h) => h.render(c, VIEW, { activeShell: 'app' });
   ```
-- [x] 13.2 Create `designs/appbox-studio/ui/views/app_shell/media/scene3d/scene3d_view.html`:
+- [x] 13.2 Create `designs/arxa-studio/ui/views/app_shell/media/scene3d/scene3d_view.html`:
   ```html
   {% extends "ui/views/main_shell/main_shell_view.html" %}
   {% block title %}{{ t('media.scene3d.pageTitle') }}{% endblock %}
@@ -1524,7 +1524,7 @@ Shared plumbing for the six screens; no screen content yet.
 
 ### Steps
 
-- [x] 14.1 Create `designs/appbox-studio/ui/views/app_shell/media/game/game_viewmodel.js`:
+- [x] 14.1 Create `designs/arxa-studio/ui/views/app_shell/media/game/game_viewmodel.js`:
   ```js
   export const surfaceId = 'app.mediaGame';
 
@@ -1532,7 +1532,7 @@ Shared plumbing for the six screens; no screen content yet.
 
   export const page = (c, h) => h.render(c, VIEW, { activeShell: 'app' });
   ```
-- [x] 14.2 Create `designs/appbox-studio/ui/views/app_shell/media/game/game_view.html`:
+- [x] 14.2 Create `designs/arxa-studio/ui/views/app_shell/media/game/game_view.html`:
   ```html
   {% extends "ui/views/main_shell/main_shell_view.html" %}
   {% block title %}{{ t('media.game.pageTitle') }}{% endblock %}
@@ -1563,28 +1563,28 @@ Shared plumbing for the six screens; no screen content yet.
 
 ## Task 15: Lens verification at the viewport ladder
 
-The release bar for the whole plan. appbox lens only.
+The release bar for the whole plan. arxa lens only.
 
 **Interfaces**
 - Consumes: Tasks 1-14 (everything).
-- Produces: 18 evidence PNGs in `designs/appbox-studio/evidence/media/`
+- Produces: 18 evidence PNGs in `designs/arxa-studio/evidence/media/`
   (6 screens × 3 rungs), each passing the per-screen bar below; a final
-  green run of lint + serve.test + appboxd tests.
+  green run of lint + serve.test + arxa tests.
 
 ### Steps
 
 - [x] 15.1 Boot the design (leave running for the whole task):
   ```sh
-  cd /Volumes/developer_ssd/Developer/totem_labs/app-box
-  node designs/appbox-studio/serve.mjs --port 4319 --no-watch &
+  cd /Volumes/developer_ssd/Developer/totem_labs/arxa
+  node designs/arxa-studio/serve.mjs --port 4319 --no-watch &
   sleep 2
   ```
 - [x] 15.2 Capture every screen at every rung. Run this matrix from
-  `appboxd/` (heights pair with widths per the viewport ladder:
+  `arxa/` (heights pair with widths per the viewport ladder:
   390×844, 744×1133, 1280×832; settle 3500ms so WASM/GLB/rive load):
   ```sh
-  cd /Volumes/developer_ssd/Developer/totem_labs/app-box/appboxd
-  E=../designs/appbox-studio/evidence/media
+  cd /Volumes/developer_ssd/Developer/totem_labs/arxa/arxa
+  E=../designs/arxa-studio/evidence/media
   for W in 390 744 1280; do
     case $W in 390) H=844;; 744) H=1133;; 1280) H=832;; esac
     dart run tool/lens_check.dart "http://localhost:4319/media/rive"      "$E/rive-$W.png"      $W $H 3500 --selector='[data-rive-canvas]'   --expect="document.querySelector('[data-rive]').dataset.riveReady==='true'"
@@ -1618,11 +1618,11 @@ The release bar for the whole plan. appbox lens only.
   this — a green exit code with a blank canvas is a fail.
 - [x] 15.5 Final green run + shutdown:
   ```sh
-  cd /Volumes/developer_ssd/Developer/totem_labs/app-box
-  node .kimi-code/skills/appbox-designer/runtime/lint.mjs designs/appbox-studio
-  node .kimi-code/skills/appbox-designer/runtime/serve.test.mjs
-  (cd appboxd && dart test)
-  (cd appbox-studio && flutter test)
+  cd /Volumes/developer_ssd/Developer/totem_labs/arxa
+  node .kimi-code/skills/arxa-designer/runtime/lint.mjs designs/arxa-studio
+  node .kimi-code/skills/arxa-designer/runtime/serve.test.mjs
+  (cd arxa && dart test)
+  (cd arxa-studio && flutter test)
   kill %1
   ```
   Expected: lint clean; serve test all ok; all dart tests pass; all Flutter
@@ -1639,16 +1639,16 @@ The release bar for the whole plan. appbox lens only.
   `model_viewer_plus` / `three_js` / `flutter_scene` (flagged) / Flame +
   `flame_3d` (flagged). This plan's islands and smoke screens are the design
   evidence those kits freeze against.
-- **Frozen artifacts reworded to the appbox lens (2026-07-31):** `docs/design/brief.md`,
-  `docs/design/story-map.json`, `docs/moodboards/*` predated the appbox lens
+- **Frozen artifacts reworded to the arxa lens (2026-07-31):** `docs/design/brief.md`,
+  `docs/design/story-map.json`, `docs/moodboards/*` predated the arxa lens
   doctrine; the probe-runner retirement sweep reworded them to name the
-  appbox lens.
+  arxa lens.
 - **Historical plan/research docs** (`docs/plans/architecture.md`,
   `consolidate-one-app-plus-daemon.md`, `docs/research/*`) still say
-  `appbox/` — records, deliberately not rewritten.
-- **UI copy** still titles the product "appbox" (`l10n/app_*.arb`
+  `arxa/` — records, deliberately not rewritten.
+- **UI copy** still titles the product "arxa" (`l10n/app_*.arb`
   `dash.pageTitle`, `splash.pageTitle`) — a brand decision, separate from the
   directory/package rename.
-- **`appbox lens` CLI verb**: `tool/lens_shot.dart` / `tool/lens_check.dart`
-  are drivers until a proper `appbox lens` subcommand lands in
-  `appboxd/bin/appbox.dart`.
+- **`arxa lens` CLI verb**: `tool/lens_shot.dart` / `tool/lens_check.dart`
+  are drivers until a proper `arxa lens` subcommand lands in
+  `arxa/bin/arxa.dart`.

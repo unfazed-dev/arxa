@@ -1,16 +1,16 @@
 #!/usr/bin/env bash
 # ⚠️ SUPERSEDED (2026-07-31, commit 4f9c458): this bash freeze gate is
-# superseded by the Dart freeze gate — `dart run bin/appbox.dart gate freeze`
-# (or `appbox gate freeze`) in appboxd/ (appboxd/lib/gate_freeze.dart).
+# superseded by the Dart freeze gate — `dart run bin/arxa.dart gate freeze`
+# (or `arxa gate freeze`) in arxa/ (arxa/lib/gate_freeze.dart).
 # Retained for reference only; it is silently broken because its htmx path
-# uses the archived skills/appbox-designer/runtime/serve.mjs (render_htmx.mjs).
+# uses the archived skills/arxa-designer/runtime/serve.mjs (render_htmx.mjs).
 #
 # freeze.sh — the FREEZE / PROTOTYPE gate (plan 04.1): the render half of the
 # vendored freeze_design.sh, after the structure checks were split out to the
 # structure gate's own folder. Asserts the frozen inputs are present AND that
 # every surface renders clean at every DERIVED width — the viewport set implied
 # by --targets via pipeline/state/targets.derivation.json (6.4). Widths come
-# ONLY from config/appbox.config.json (R3); there are no viewport literals here.
+# ONLY from config/arxa.config.json (R3); there are no viewport literals here.
 #
 # Targets (6.2/6.3): pass --targets ios,android explicitly for a deterministic
 # gate/golden run; with no flag, targets are read from pipeline state (the live
@@ -36,7 +36,7 @@
 #     tokens.json design-system.md exclusions.json direction-approved.md
 #     brand-spec.md structure.json surfaces/*.html (>=1)
 #
-#   htmx producer (appbox-designer):
+#   htmx producer (arxa-designer):
 #     app.routes.js structure.json models/screens_model/registry.json
 #     ui/views/**/*_view.html (>=1) — Jinja templates served dynamically
 #
@@ -91,12 +91,12 @@ set +e
 # Targets live in STATE for a live run (6.2); gate + golden runs pass them
 # explicitly so the snapshot is deterministic — ambient state in a
 # reproducibility run is the stale-green defect (6.3).
-APPBOX_TARGETS=""
+ARXA_TARGETS=""
 APPROVE=0
 APP="$PWD"
 while [ $# -gt 0 ]; do
   case "$1" in
-    --targets) APPBOX_TARGETS="$2"; shift 2 ;;
+    --targets) ARXA_TARGETS="$2"; shift 2 ;;
     --approve) APPROVE=1; shift ;;
     --*) echo "FAIL: unknown flag: $1" >&2; exit 2 ;;
     *) APP="$1"; shift ;;
@@ -110,21 +110,21 @@ esac
 DESIGN="$APP/$DESIGN_REL"
 EVIDENCE="$APP/.kit/state/prototype/evidence"
 GATE_ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
-CONFIG="$GATE_ROOT/config/appbox.config.json"
+CONFIG="$GATE_ROOT/config/arxa.config.json"
 DERIVATION="$GATE_ROOT/pipeline/state/targets.derivation.json"
 
 # resolve targets: explicit flag, else ambient pipeline state (6.2)
-if [ -z "$APPBOX_TARGETS" ]; then
-  APPBOX_TARGETS="$(state_targets 2>/dev/null | paste -sd ',' -)"
+if [ -z "$ARXA_TARGETS" ]; then
+  ARXA_TARGETS="$(state_targets 2>/dev/null | paste -sd ',' -)"
 fi
-if [ -z "$APPBOX_TARGETS" ]; then
+if [ -z "$ARXA_TARGETS" ]; then
   echo "FAIL: no --targets given and no targets in pipeline state — pass --targets explicitly (6.3); a reproducibility run that reads ambient state is the stale-green defect" >&2
   exit 1
 fi
 
 # derive the ordered viewport set (names) for these targets from the derivation
 # table + config. Widths come ONLY from config (R3); never literals here.
-DERIVED_VPS="$(python3 - "$APPBOX_TARGETS" "$DERIVATION" "$CONFIG" <<'PY'
+DERIVED_VPS="$(python3 - "$ARXA_TARGETS" "$DERIVATION" "$CONFIG" <<'PY'
 import json,sys
 targets=[t for t in sys.argv[1].split(',') if t]
 tbl=json.load(open(sys.argv[2]))["targets"]
@@ -150,7 +150,7 @@ PY
 case "$DERIVED_VPS" in
   FAIL:*) echo "$DERIVED_VPS" >&2; exit 1 ;;
 esac
-[ -z "$DERIVED_VPS" ] && { echo "FAIL: could not derive viewports from targets ($APPBOX_TARGETS)" >&2; exit 1; }
+[ -z "$DERIVED_VPS" ] && { echo "FAIL: could not derive viewports from targets ($ARXA_TARGETS)" >&2; exit 1; }
 
 F=0
 fail(){ echo "FAIL: $1" >&2; F=$((F+1)); sarif_result "freeze" "error" "$DESIGN_REL" "$1"; }
@@ -215,7 +215,7 @@ fi
 # existing stamp; `--approve` mints it at the END of the gate, only after every
 # check has passed (a broken design cannot be approved).
 APPROVAL_LOCK="$DESIGN/approval.lock"
-LOCK_HASH="$(python3 - "$DESIGN" "$APPBOX_TARGETS" "$PRODUCER" <<'PY'
+LOCK_HASH="$(python3 - "$DESIGN" "$ARXA_TARGETS" "$PRODUCER" <<'PY'
 import sys,hashlib,glob,os,json
 design,targets,producer=sys.argv[1],sys.argv[2],sys.argv[3]
 h=hashlib.sha256()
@@ -242,7 +242,7 @@ print(h.hexdigest())
 PY
 )"
 if [ -f "$APPROVAL_LOCK" ]; then
-  stale="$(python3 - "$APPROVAL_LOCK" "$APPBOX_TARGETS" "$LOCK_HASH" <<'PY'
+  stale="$(python3 - "$APPROVAL_LOCK" "$ARXA_TARGETS" "$LOCK_HASH" <<'PY'
 import json,sys
 lock=json.load(open(sys.argv[1])); cur=set(t for t in sys.argv[2].split(',') if t)
 if set(lock.get("targets",[]))!=cur:
@@ -252,12 +252,12 @@ elif lock.get("inputsHash")!=sys.argv[3]:
 PY
 )"
   if [ -n "$stale" ]; then
-    fail "approval STALE — $stale; the frozen design no longer covers the deliverable. Re-approve: freeze.sh --targets $APPBOX_TARGETS --approve"
+    fail "approval STALE — $stale; the frozen design no longer covers the deliverable. Re-approve: freeze.sh --targets $ARXA_TARGETS --approve"
   else
-    ok "approval: $DESIGN_REL/approval.lock valid (targets=$APPBOX_TARGETS)"
+    ok "approval: $DESIGN_REL/approval.lock valid (targets=$ARXA_TARGETS)"
   fi
 else
-  echo "  (approval: no $DESIGN_REL/approval.lock — run 'freeze.sh --targets $APPBOX_TARGETS --approve' to mint the stamp)"
+  echo "  (approval: no $DESIGN_REL/approval.lock — run 'freeze.sh --targets $ARXA_TARGETS --approve' to mint the stamp)"
 fi
 
 # ---- 2/3. vocab + exclusions (stacked_kit only) ----
@@ -388,7 +388,7 @@ fi
 # targets (6.4); widths come ONLY from config (R3), never literals.
 if [ "${FREEZE_RENDER:-}" = skip ]; then
   echo "  (render pass SKIPPED — FREEZE_RENDER=skip; hermetic/non-browser runs only)"
-  echo "  (derived widths for targets [$APPBOX_TARGETS]: $DERIVED_VPS)"
+  echo "  (derived widths for targets [$ARXA_TARGETS]: $DERIVED_VPS)"
 else
   mkdir -p "$EVIDENCE"
   if [ "$PRODUCER" = htmx ]; then
@@ -402,7 +402,7 @@ else
       echo "  the htmx producer is served and rendered by Node; install Node, or FREEZE_RENDER=skip for a hermetic run" >&2
       exit 2
     fi
-    RUNTIME="$GATE_ROOT/skills/appbox-designer/runtime"
+    RUNTIME="$GATE_ROOT/skills/arxa-designer/runtime"
     SERVE_MJS="$RUNTIME/serve.mjs"
     RENDER_DRIVER="$(cd "$(dirname "$0")" && pwd)/render_htmx.mjs"
     # Locale dimension (3b's render half): when the design carries l10n/, every
@@ -507,13 +507,13 @@ fi
 # Every check above passed, so the design as it stands NOW is the approved one.
 # Bind it: sha256 of the whole design tree (gates/_common/design_hash.sh) into
 # state.designHash; structure/scaffold/coverage re-check it and fail if the
-# design moved (§6). Writes only to a LIVE state (APPBOX_STATE / run.state.json)
+# design moved (§6). Writes only to a LIVE state (ARXA_STATE / run.state.json)
 # — the tracked seed default.state.json is read-only (state_set refuses it).
 DESIGN_HASH="$(bash "$GATE_COMMON/design_hash.sh" "$DESIGN")"
 if state_set designHash "$DESIGN_HASH"; then
   ok "designHash: recorded ${DESIGN_HASH:0:12}… in pipeline state (§6 — downstream gates fail if the design moves)"
 else
-  echo "  (designHash: no live pipeline state — hash not recorded; set APPBOX_STATE or create pipeline/state/run.state.json)"
+  echo "  (designHash: no live pipeline state — hash not recorded; set ARXA_STATE or create pipeline/state/run.state.json)"
 fi
 
 # ---- mint the approval stamp only once every check has passed (6.7) --------
@@ -521,14 +521,14 @@ fi
 # for THESE targets." It cannot stamp a design that fails freeze, so it runs
 # after all checks pass. A later normal run re-validates the stamp (block 1b).
 if [ "$APPROVE" = 1 ]; then
-  python3 - "$APPROVAL_LOCK" "$APPBOX_TARGETS" "$LOCK_HASH" <<'PY'
+  python3 - "$APPROVAL_LOCK" "$ARXA_TARGETS" "$LOCK_HASH" <<'PY'
 import json,sys,datetime
 json.dump({"targets":sorted(t for t in sys.argv[2].split(',') if t),
            "inputsHash":sys.argv[3],
            "approvedAt":datetime.datetime.now(datetime.timezone.utc).isoformat()},
           open(sys.argv[1],"w"),indent=2)
 PY
-  ok "approval: stamped $DESIGN_REL/approval.lock (targets=$APPBOX_TARGETS, inputsHash=${LOCK_HASH:0:12}…)"
+  ok "approval: stamped $DESIGN_REL/approval.lock (targets=$ARXA_TARGETS, inputsHash=${LOCK_HASH:0:12}…)"
   echo "freeze: APPROVED — $DESIGN_REL stamped (all checks passed)."
   exit 0
 fi

@@ -5,7 +5,7 @@ Supersedes: `widget-editing-autolayout-and-manager.md` § "Components-container 
 
 ## Requirement (operator's intent)
 
-Every screen designed by appbox ships with a slider panel hidden at the **back** of the screen. The screen is the main, always-visible item. A hover-revealed top bar on the screen (pill icon buttons, per Image #7) carries an icon toggle that smoothly animates the panel out from behind the screen — card-scoped reveal-drawer/off-canvas pattern — until it sits beside the screen (Image #4 end state; Image #5 is a look reference for the composer section only). The panel has 3 tabs:
+Every screen designed by arxa ships with a slider panel hidden at the **back** of the screen. The screen is the main, always-visible item. A hover-revealed top bar on the screen (pill icon buttons, per Image #7) carries an icon toggle that smoothly animates the panel out from behind the screen — card-scoped reveal-drawer/off-canvas pattern — until it sits beside the screen (Image #4 end state; Image #5 is a look reference for the composer section only). The panel has 3 tabs:
 
 - **Composer** — the existing composer made reusable (thread-style UI incl. chat input), scoped to this screen and its widgets.
 - **Tools** — specifics of only the selected widget, with all details, editable on the spot.

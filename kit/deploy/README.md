@@ -1,10 +1,10 @@
-# appbox_kit_deploy
+# arxa_kit_deploy
 
-Deploy port for appbox_kit apps. External CLIs run through a
-`AppBoxKitProcessRunner` port, so every command shape is unit-tested with
-`ScriptedAppBoxKitProcessRunner` — no toolchain needed in CI.
+Deploy port for arxa_kit apps. External CLIs run through a
+`ArxaKitProcessRunner` port, so every command shape is unit-tested with
+`ScriptedArxaKitProcessRunner` — no toolchain needed in CI.
 
-Pure Dart and standalone: no flutter, stacked, or appbox_kit dependency.
+Pure Dart and standalone: no flutter, stacked, or arxa_kit dependency.
 
 ## Targets
 
@@ -17,7 +17,7 @@ Pure Dart and standalone: no flutter, stacked, or appbox_kit dependency.
 | `cloudflare-workers` | `wrangler deploy` (from the working directory's `wrangler.toml`) | **Wired** |
 | `vercel` | `flutter build web --release` → `vercel deploy build/web --prod --yes` | **Wired** |
 
-`vercel` reads `VERCEL_TOKEN` from `AppBoxKitDeployConfig.environment`. Vercel CLI
+`vercel` reads `VERCEL_TOKEN` from `ArxaKitDeployConfig.environment`. Vercel CLI
 v55+ tightened non-interactive project linking — pin a CLI major version
 (`doctor` reports `vercel --version`) and set `VERCEL_ORG_ID` /
 `VERCEL_PROJECT_ID` to link non-interactively.
@@ -30,15 +30,15 @@ null.
 ## Usage
 
 ```dart
-import 'package:appbox_kit_deploy/appbox_kit_deploy.dart';
+import 'package:arxa_kit_deploy/arxa_kit_deploy.dart';
 
-const runner = AppBoxKitIoProcessRunner();
-final service = AppBoxKitDeployService(targets: [
-  const AppBoxKitShorebirdTarget(runner, mode: AppBoxKitShorebirdMode.release),
-  const AppBoxKitCloudflarePagesTarget(runner),
+const runner = ArxaKitIoProcessRunner();
+final service = ArxaKitDeployService(targets: [
+  const ArxaKitShorebirdTarget(runner, mode: ArxaKitShorebirdMode.release),
+  const ArxaKitCloudflarePagesTarget(runner),
 ]);
 
-final config = AppBoxKitDeployConfig(
+final config = ArxaKitDeployConfig(
   projectName: 'showcase',
   flutterVersion: '3.24.0',
   dartDefines: {'ENV': 'prod'},
@@ -49,29 +49,29 @@ final checks = await service.doctor(config);   // preflight
 final result = await service.deployTo('cloudflare-pages', config);
 ```
 
-CLI: `dart run appbox_kit_deploy doctor` /
-`dart run appbox_kit_deploy deploy cloudflare-pages --project-name=showcase`.
+CLI: `dart run arxa_kit_deploy doctor` /
+`dart run arxa_kit_deploy deploy cloudflare-pages --project-name=showcase`.
 
 ## Testing
 
 ```dart
-import 'package:appbox_kit_deploy/appbox_kit_testing.dart';
+import 'package:arxa_kit_deploy/arxa_kit_testing.dart';
 
-final runner = ScriptedAppBoxKitProcessRunner(script: {
-  'flutter build web': AppBoxKitProcessResult(exitCode: 1, stderr: 'boom'),
+final runner = ScriptedArxaKitProcessRunner(script: {
+  'flutter build web': ArxaKitProcessResult(exitCode: 1, stderr: 'boom'),
 });
 // runner.commandsRun / workingDirectories / environments record each call.
 ```
 
 Targets never throw on tool failure — they return
-`AppBoxKitDeployResult(ok: false, failureReason: ...)`.
+`ArxaKitDeployResult(ok: false, failureReason: ...)`.
 
 ## Live smoke
 
 `test/live_smoke_test.dart` is an opt-in harness that proves the CLI + token
 path against the real providers. Without credentials every test skips, so CI
 is unaffected. To run it, set the tokens (via
-`appbox credentials set VERCEL_TOKEN` + re-export, or directly):
+`arxa credentials set VERCEL_TOKEN` + re-export, or directly):
 
 ```sh
 export VERCEL_TOKEN=…                       # vercel
@@ -82,7 +82,7 @@ dart test test/live_smoke_test.dart
 
 Per target it asserts `doctor()` is all-ok, then does a REAL deploy of a tiny
 fixture — preview/non-prod only: vercel without `--prod`, Pages to a
-throwaway `appbox-smoke-<timestamp>` project on a `smoke-preview` branch, and
+throwaway `arxa-smoke-<timestamp>` project on a `smoke-preview` branch, and
 an unrouted Worker. These create real preview deployments on your account —
 delete them afterwards in the Vercel / Cloudflare dashboard (vercel preview
 deployments and workers are both deletable).

@@ -3,14 +3,14 @@
 // The two auth branches are deliberately BAR-LESS Scaffolds — no floating
 // chrome, so nothing carries the status-bar dissolve for them and their hero
 // heading garbles with the clock / Dynamic Island. Each one therefore mounts
-// AppBoxKitTopEdgeScrim itself.
+// ArxaKitTopEdgeScrim itself.
 //
 // This is a SOURCE scan, in the same idiom as the kit's liquid-glass law
 // gate, and it is honest about what it proves: that the wiring is still
 // present at both call sites, not that it renders correctly. Pumping the view
 // for real needs the auth/session/router service stack; the visual contract
 // (ramp geometry, opacity, pointer transparency) is pinned where the widget
-// lives, in appbox_kit_native_floating_bar_test.
+// lives, in arxa_kit_native_floating_bar_test.
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
@@ -27,7 +27,7 @@ void main() {
 
     // Two branches: the create-account panel and the sign-in panel.
     expect(
-      RegExp(r'AppBoxKitTopEdgeScrim\(').allMatches(src).length,
+      RegExp(r'ArxaKitTopEdgeScrim\(').allMatches(src).length,
       2,
       reason: 'the auth and create-account branches are both bar-less and '
           'both need the scrim — losing one silently restores the '
@@ -39,7 +39,7 @@ void main() {
     // background wash over a heading that never scrolls — trading a garbling
     // bug for a washed-out one.
     expect(
-      RegExp(r'AppBoxKitTopEdgeScrim\(fadeExtent: abxSize24\)')
+      RegExp(r'ArxaKitTopEdgeScrim\(fadeExtent: abxSize24\)')
           .allMatches(src)
           .length,
       2,

@@ -14,12 +14,12 @@ recorded anywhere in the repo, and nothing the repo ships sets
 `camera-orbit`, `max-camera-orbit`, or `skybox-image` — so no reachable scene
 even enters the regime where the value acts.
 
-Reproduce: `cd appboxd && dart run tool/model_viewer_farplane_probe.dart`
+Reproduce: `cd arxa && dart run tool/model_viewer_farplane_probe.dart`
 (works from either disk state — it derives the missing arm).
 
 ## What was claimed
 
-`skills/appbox-designer/runtime/vendor/model-viewer.min.js` carries one local
+`skills/arxa-designer/runtime/vendor/model-viewer.min.js` carries one local
 edit, found uncommitted on 2026-08-21 and preserved in `de28917a`:
 
 ```js
@@ -71,7 +71,7 @@ precision.
 
 ## Measurement
 
-`boombox.glb` (11 MB, `designs/appbox-studio/assets/media/`), 390×390, both
+`boombox.glb` (11 MB, `designs/arxa-studio/assets/media/`), 390×390, both
 arms rendered from the same vendored bundle with only the multiplier swapped,
 each captured through `settleForCapture`. Pixel diff against 152,100 pixels:
 
@@ -120,7 +120,7 @@ but it does assume `d ≤ M`, which `camera-controls` enforces.
 Revert to upstream `1`. The patch has no mechanism by which it can prevent the
 symptom recorded for it, and the only measured effect is a rendering
 regression. It is a one-line change to `vendorPatches` in
-`appboxd/lib/design_tools.dart` plus `dart run tool/regen_vendor_docs.dart`.
+`arxa/lib/design_tools.dart` plus `dart run tool/regen_vendor_docs.dart`.
 
 Not done unilaterally: someone applied this deliberately, and the possibility
 that they were looking at a scene this probe cannot construct is worth one

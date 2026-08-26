@@ -32,9 +32,9 @@
 library;
 
 import 'package:flutter/material.dart';
-import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
-import 'package:appbox_kit_showcase_app/enums/showcase_profile_enums/enums.dart';
-import 'package:appbox_kit_showcase_app/ui/views/showcase_profile_shell/showcase_motion/showcase_motion_viewmodel.dart';
+import 'package:arxa_kit_ui_library/arxa_kit_ui_library.dart';
+import 'package:arxa_kit_showcase_app/enums/showcase_profile_enums/enums.dart';
+import 'package:arxa_kit_showcase_app/ui/views/showcase_profile_shell/showcase_motion/showcase_motion_viewmodel.dart';
 
 class ShowcaseMotionSpecControlsWidget extends StatelessWidget {
   const ShowcaseMotionSpecControlsWidget({required this.viewModel, super.key});
@@ -45,14 +45,14 @@ class ShowcaseMotionSpecControlsWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        AppBoxKitNativeSegmentedControl(
+        ArxaKitNativeSegmentedControl(
           segments: [
             for (final preset in ShowcaseMotionPreset.values) preset.label
           ],
           selectedIndex: viewModel.presetIndex,
           onChanged: viewModel.setPreset,
         ),
-        appBoxKitVerticalSpaceSmall,
+        arxaKitVerticalSpaceSmall,
         Row(
           children: [
             Expanded(
@@ -61,7 +61,7 @@ class ShowcaseMotionSpecControlsWidget extends StatelessWidget {
                 style: Theme.of(context).textTheme.bodyMedium,
               ),
             ),
-            AppBoxKitNativeSwitch(
+            ArxaKitNativeSwitch(
               value: viewModel.enabled,
               onChanged: viewModel.setEnabled,
               semanticLabel: 'Motion enabled',

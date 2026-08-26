@@ -6,8 +6,8 @@ files. It does NOT replace `flutter analyze` (compile/types) or `flutter run`
 (perceptual checks); it catches the kit-specific slop the compiler accepts but
 the design contract forbids.
 
-Runs via `appbox gate review` → `gates/review/review.dart`, dispatched by
-`appboxd/lib/gate_runner.dart` like the other gates. Emits JSON (`--json`).
+Runs via `arxa gate review` → `gates/review/review.dart`, dispatched by
+`arxa/lib/gate_runner.dart` like the other gates. Emits JSON (`--json`).
 
 ## Asserts (per `*_view.dart`)
 

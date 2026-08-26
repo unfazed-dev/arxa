@@ -299,7 +299,7 @@ applied after the Phase 3 commit.
 ## Denominator: verified, and one refinement
 
 `38 screens / 21 non-null surface` checked against the **authored**
-`designs/appbox-studio/models/screens_model/registry.json` (not `structure.json`,
+`designs/arxa-studio/models/screens_model/registry.json` (not `structure.json`,
 which sits next to it and would have been the layer error). Confirmed: 38 total,
 21 non-null, 17 null. Both scaffold entries carry surfaces
 (`main_shell_scaffold_picker_view`, `main_shell_scaffold_run_view`).
@@ -348,8 +348,8 @@ distinction is the whole meaning of the phrase.
 **The guard is uncommitted.** `git status` shows:
 
 ```
- M designs/appbox-studio/ui/views/main_shell/scaffold/_shared.html   <- the guard
- M designs/appbox-studio/ui/views/main_shell/scaffold/routes.scaffold.js
+ M designs/arxa-studio/ui/views/main_shell/scaffold/_shared.html   <- the guard
+ M designs/arxa-studio/ui/views/main_shell/scaffold/routes.scaffold.js
 ?? docs/plans/composer-action-integrity.md
 ?? docs/plans/scaffold-shell-spine-verification.md
 ```
@@ -532,7 +532,7 @@ one of the four surfaces, and only an explicit failure keeps that visible.
 
 **1. A predicted blind spot, measured, and empty.** `git grep` cannot see
 untracked files, and three `docs/plans/` files are untracked — including the two
-active Phase 3 docs. So picker's directory sweep for `appbox/lib` citations had a
+active Phase 3 docs. So picker's directory sweep for `arxa/lib` citations had a
 structural blind spot covering our own current work. I predicted a miss. Measured:
 `git grep` and plain `grep` return byte-identical results; neither untracked doc
 contains the string. Their claim is correct as stated.
@@ -657,7 +657,7 @@ Build is the concrete case that separates them: `loop_view.html:86` mounts
 `no-form` is exactly the silent skip the constraint exists to prevent.
 
 **Third instance of one failure mode, now worth naming as a rule.** Within this
-thread: picker searched a fictional `appbox/` (the directory is `appboxd/`) and
+thread: picker searched a fictional `arxa/` (the directory is `arxa/`) and
 read 0 hits as absence; I predicted an actionless `showArtifact` from structure;
 and `/build/loop` 404ed because it was never a route. All three are the same
 error at different layers — **a zero from an unverified address is not a
@@ -684,7 +684,7 @@ non-empty render is unprobed because it needs a seeded run fixture (build's lane
 
 ## The two-checkout hazard — a false-citation generator
 
-Verifying their line numbers, I ran `cd <main-repo>/designs/appbox-studio 2>/dev/null || cd <worktree>/...`.
+Verifying their line numbers, I ran `cd <main-repo>/designs/arxa-studio 2>/dev/null || cd <worktree>/...`.
 **The main path exists**, so the fallback never fired and I read the wrong copy:
 
 ```
@@ -949,7 +949,7 @@ is load-bearing on someone else's decision, measure it yourself.* I had a
 one-command way to do that and cited instead.
 
 **Operational note, paid for.** My first attempt aborted between apply and revert
-(`appbox` is not on `PATH`; the entrypoint is `dart appboxd/bin/appbox.dart design
+(`arxa` is not on `PATH`; the entrypoint is `dart arxa/bin/arxa.dart design
 serve`). That left my file modified *and* the shared `:4319` server down for two
 teammates. Any measurement that mutates a file must put the restore in a `finally`
 that also relaunches the server, and must verify both — as the corrected run does,
@@ -1110,20 +1110,20 @@ only artifact here that can answer "how did I find it."
 
 ## Instance 15 — three subcommands, three argument conventions, one silent shape
 
-`appbox` resolves its design argument differently per subcommand. This has now
+`arxa` resolves its design argument differently per subcommand. This has now
 cost time in three lanes, so it is worth stating exactly:
 
 | invocation | correct form | wrong form does |
 |---|---|---|
-| `design serve` | design **name** (`appbox-studio`) | — |
-| `design selftest` | artifact **dir** (`designs/appbox-studio`) | name → `PathNotFoundException`, exit 255 |
-| `design lint` | artifact **dir** | name → lints the *unrelated* top-level `appbox-studio/`, reports a real-looking failure |
+| `design serve` | design **name** (`arxa-studio`) | — |
+| `design selftest` | artifact **dir** (`designs/arxa-studio`) | name → `PathNotFoundException`, exit 255 |
+| `design lint` | artifact **dir** | name → lints the *unrelated* top-level `arxa-studio/`, reports a real-looking failure |
 | `emit structure` | **top-level**, `--design-dir <dir>` | `design emit structure <dir>` → help text, exit 2 |
 
 run-screen's "the correct invocation needs the design name" is true of `serve`
 and false of the other three; I generalised it and lost a gate run to that.
 
-The dangerous one is `design lint appbox-studio`: it does not fail, it succeeds
+The dangerous one is `design lint arxa-studio`: it does not fail, it succeeds
 against the wrong directory and emits `non-vendor <script> tag` — a plausible,
 specific, entirely false lint failure. That is the same shape as Instance 11's
 false-citation generator: **a wrong path that returns plausible content is worse
@@ -1139,7 +1139,7 @@ discarded the exit code I was claiming to measure.
 Re-run without the pipe: real exit 0, 37 lines, `passed 25, failed 0, skipped 0
 of 25`. So the artifact-dir form was correct all along and **the 25/25 baseline
 in the escalation is verified, not an artifact of a bad invocation.** My only
-error was `appbox/` for `appboxd/`, which fails loudly.
+error was `arxa/` for `arxa/`, which fails loudly.
 
 Rule this adds to the sweep: *never read `$?` through a pipe.* It silently
 substitutes the wrong process's verdict, which is this document's entire subject.

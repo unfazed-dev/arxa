@@ -69,7 +69,7 @@ The fork contract has two halves: **WHY** the patch exists (the root `pubspec.ya
   </div>
   <div class="diagram-arrow">↓ wrapped by</div>
   <div class="diagram-box" data-rough>
-    <div class="diagram-pill">appbox_kit</div>
+    <div class="diagram-pill">arxa_kit</div>
     <div class="diagram-muted">Kit* wrappers</div>
   </div>
 </div>
@@ -196,7 +196,7 @@ The barrel `lib/navigation_rail_m3e.dart` exports 10 symbols. The fork only chan
 
 <Callout id="navrail-wiring-callout" tone="info">
 
-Hosts almost never import `package:navigation_rail_m3e/...` directly. The fork is pulled in **transitively** via `m3e_collection` (the umbrella that re-exports every M3E widget), and most apps reach it through `appbox_kit`'s `Kit*` wrappers. The root `dependency_overrides` `path:` entry is the only thing that activates the patch — `m3e_collection`'s own version constraint is unchanged. The fork also has cross-deps on three sibling M3E forks/packages: `fab_m3e ^0.1.1`, `icon_button_m3e ^0.2.1`, `button_m3e ^0.1.1` (which is why `pubspec.lock` is committed here).
+Hosts almost never import `package:navigation_rail_m3e/...` directly. The fork is pulled in **transitively** via `m3e_collection` (the umbrella that re-exports every M3E widget), and most apps reach it through `arxa_kit`'s `Kit*` wrappers. The root `dependency_overrides` `path:` entry is the only thing that activates the patch — `m3e_collection`'s own version constraint is unchanged. The fork also has cross-deps on three sibling M3E forks/packages: `fab_m3e ^0.1.1`, `icon_button_m3e ^0.2.1`, `button_m3e ^0.1.1` (which is why `pubspec.lock` is committed here).
 
 </Callout>
 
@@ -216,7 +216,7 @@ Hosts almost never import `package:navigation_rail_m3e/...` directly. The fork i
   </div>
   <div class="diagram-arrow">re-exports</div>
   <div class="diagram-box" data-rough>
-    <div class="diagram-pill">appbox_kit</div>
+    <div class="diagram-pill">arxa_kit</div>
     <div class="diagram-muted">Kit* wrappers</div>
   </div>
   <div class="diagram-box" data-rough>
@@ -281,7 +281,7 @@ The reverse curve is `_expandCurve.flipped`, NOT `_expandCurve`. A straight time
 
 <Callout id="navrail-gotcha-no-test" tone="risk">
 
-This is the **only one of the four forks with no `test/`**. Re-syncs and edits are uninsured — every change must be smoke-tested manually in the consuming showcase (`appbox_kit_showcase`). Adding a `test/navigation_rail_m3e_test.dart` that asserts the Stack-of-two-layouts structure and the corner.full indicator is the single highest-value investment.
+This is the **only one of the four forks with no `test/`**. Re-syncs and edits are uninsured — every change must be smoke-tested manually in the consuming showcase (`arxa_kit_showcase`). Adding a `test/navigation_rail_m3e_test.dart` that asserts the Stack-of-two-layouts structure and the corner.full indicator is the single highest-value investment.
 
 </Callout>
 
@@ -300,7 +300,7 @@ When bumping upstream (`fab_m3e`, `navigation_rail_m3e`, `split_button_m3e`, or 
 3. **Diff** each patched file against the new upstream release of the same path. For this fork, that is four files: `navigation_rail_m3e_widget.dart`, `rail_item_button_m3e.dart`, `rail_tokens_adapter.dart`, `rail_theme.dart`.
 4. **Re-apply** each `// Patched (vendored fork)` / `// Fork patch:` / `// PATCH` block by hand. Do NOT copy upstream over the fork blindly — the markers are your only map of what to preserve.
 5. **Update** the root `pubspec.yaml` override comment if the WHY or the patched-file list changed.
-6. **Run** the fork's `flutter test` in `packages/<name>/` (this fork has none — extra reason to add one), then run the consuming showcase (`appbox_kit_showcase`) to confirm the patched behaviour still renders.
+6. **Run** the fork's `flutter test` in `packages/<name>/` (this fork has none — extra reason to add one), then run the consuming showcase (`arxa_kit_showcase`) to confirm the patched behaviour still renders.
 
 ### Override hygiene (shared)
 

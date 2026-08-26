@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-#  branding/tools/generate_branding.sh — vendoring codegen for a appbox_kit host app.
+#  branding/tools/generate_branding.sh — vendoring codegen for a arxa_kit host app.
 #
 #  Emits into <host_app>:
 #    -  flutter_launcher_icons.yaml   (brand-icons law: assets/brand-icons/ master)
@@ -7,7 +7,7 @@
 #    -  assets/brand-icons/<base>-splash.png            (320px logo raster)
 #    -  assets/brand-icons/<base>-splash-android12.png  (334px logo on transparent 960px canvas)
 #    -  lib/ui/common/generated/brand_colors.dart       (LEGACY hosts only — kit-native
-#       hosts get colors from appbox_kit_core; emitted only when
+#       hosts get colors from arxa_kit_core; emitted only when
 #       lib/ui/common/app_colors.dart exists to supply kcPrimaryColor)
 #
 #  Brand-icon resolution (ratified law, 2026-08-09): the app owns its master in
@@ -104,7 +104,7 @@ if [[ -f "$APP_COLORS" ]]; then
   sed -e "s/{{ACCENT_ARGB}}/$ACCENT_ARGB/g" "$TPL/brand_colors.dart.tmpl" > "$GENERATED_DIR/brand_colors.dart"
   echo "emit: $GENERATED_DIR/brand_colors.dart (legacy host)"
 else
-  echo "skip: brand_colors.dart (kit-native host — colors come from appbox_kit_core)"
+  echo "skip: brand_colors.dart (kit-native host — colors come from arxa_kit_core)"
 fi
 
 echo "emit: $HOST/flutter_launcher_icons.yaml (master: $ICON)"

@@ -6,7 +6,7 @@
 # Usage: ./ios_choreo.sh [UDID] [BUNDLE]
 set -u
 UDID=${1:-A52F8736-4F84-408E-9916-07EA78D411FA}
-BUNDLE=${2:-dev.appbox.deviceInputProbe}
+BUNDLE=${2:-dev.arxa.deviceInputProbe}
 SHOTS=/tmp/probe_ios_shots
 mkdir -p "$SHOTS"
 

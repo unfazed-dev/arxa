@@ -1809,7 +1809,7 @@ class CNTabBarRouteObserver extends NavigatorObserver {
 /// notifies synchronously, so that bump marks every listener dirty mid-build.
 ///
 /// Listeners here call `setState`: `CNTextField` (`text_field.dart:194-195`),
-/// `ModalHideMixin`, `AppBoxKitNativeChromeGate`, `AppBoxKitScrollOcclusionGate`.
+/// `ModalHideMixin`, `ArxaKitNativeChromeGate`, `ArxaKitScrollOcclusionGate`.
 /// Any of them mounted on the *host* page was built earlier in the same frame,
 /// and dirtying an already-built widget is illegal — the framework throws
 /// `setState() or markNeedsBuild() called during build`. On device that
@@ -1818,7 +1818,7 @@ class CNTabBarRouteObserver extends NavigatorObserver {
 ///
 /// [value] still updates **synchronously**, so a gate reading it in its own
 /// `initState` still snapshots the bumped depth as its mount baseline — the
-/// behaviour `appBoxKitShowNativeDialog` depends on. Only the *notification*
+/// behaviour `arxaKitShowNativeDialog` depends on. Only the *notification*
 /// waits for the end of the frame, and only when the change arrives mid-build;
 /// a bump from a tap handler or an async gap notifies immediately as before.
 class _ModalDepthNotifier extends ChangeNotifier implements ValueListenable<int> {

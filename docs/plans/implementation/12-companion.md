@@ -10,7 +10,7 @@ Design: §15. Research:
 
 ## Steps
 
-- [ ] **12.1** Scaffold the companion **through appbox's own pipeline** from
+- [ ] **12.1** Scaffold the companion **through arxa's own pipeline** from
       the design produced in plan 14. This is the mobile half of the designer
       proof — do not hand-build it.
       *(env-blocked: plan 14 not done; this run built the minimal surface in
@@ -20,14 +20,14 @@ Design: §15. Research:
       ```xml
       <key>NSLocalNetworkUsageDescription</key>
       <string>Used to find your desktop app on this network for pairing.</string>
-      <key>NSBonjourServices</key><array><string>_appbox._tcp</string></array>
+      <key>NSBonjourServices</key><array><string>_arxa._tcp</string></array>
       ```
       *(in `companion/ios/Runner/Info.plist`; on-device verify env-blocked.)*
 - [x] **12.3** Implement QR pairing. The payload carries `host`, `port`, a
       **short-lived nonce**, and the **fingerprint of the desktop's ephemeral
       TLS key**. The companion **pins that fingerprint**.
       *(built in `companion/lib/pairing/`: `QrPayload` (host/port/nonce/fp,
-      versioned appbox-pair scheme), `Fingerprint.ofSpki` (SHA-256 SPKI pin),
+      versioned arxa-pair scheme), `Fingerprint.ofSpki` (SHA-256 SPKI pin),
       `CertPin.validate` (constant-time pin check — the MITM defense). 20 unit
       tests incl. R5 negatives (replay, stale nonce, MITM key mismatch, bad
       port/version). analyze clean, test 38/38. On-device camera scan + live TLS
@@ -69,7 +69,7 @@ Design: §15. Research:
       `lib/prototype/prototype_session.dart` + `lib/ui/prototype_view.dart`;
       the "command the desktop to start" half needs the paired channel and is
       env-blocked.)*
-- [x] **12.8** Implement the **floating draggable FAB**: appbox controls, stop
+- [x] **12.8** Implement the **floating draggable FAB**: arxa controls, stop
       server, back to the companion.
       *(`lib/widgets/channel_fab.dart` — Stop + Back controls.)*
 - [x] **12.9** The FAB **carries channel state** (live / reconnecting / dead)

@@ -1,0 +1,165 @@
+<Callout id="header" tone="info">
+# arxa-scaffolder — Per-Skill Playbook
+
+`arxa-scaffolder` · status: **active**
+
+**Role (one line):** turn a FROZEN `structure.json` + target set into the per-surface Flutter file set the coverage gate asserts — form factors follow targets, never empty.
+
+**Scope of this document:** lets a human OR an LLM drive the scaffold engine without reading the skill source. Folded from `SKILL.md`.
+
+**Pipeline position:** stage 3 — upstream `arxa-designer` (FROZEN `structure.json` + targets); downstream `arxa-builder` (fills stubs, wires `deps`); the scaffold/coverage gates assert the output. Full chain, stage numbers, per-stage artifacts: `docs/research/pipeline-map.md` §1.
+
+## Table of contents
+
+0. Header & TOC · 1. Overview & role · 2. Inputs · 3. Procedure · 4. Outputs · 5. Rules · 6. References
+
+</Callout>
+
+### Overview & role
+
+The scaffolder PRODUCES the tree the gates ASSERT (architecture §16). The structure gate checks the authored layer against `structure.json`; the coverage gate checks the scaffolded layer against `structure.json` + targets. This skill is the missing producer between them — the one the P14 dogfood named (14.8 / honest-bar #2): until it existed, no tool turned a frozen design into the Flutter file set, so "scaffold D1" and "coverage of D1" had no target. It is the inverse of the structure gate: where that gate asserts the tree matches the registry, the scaffolder emits that tree. It emits STRUCTURE only — minimal valid Dart skeletons carrying the class name the builder (plan 08) implements; the widget bodies are not this skill's concern.
+
+### Inputs
+
+- A **frozen** `structure.json` at `<design-dir>/structure.json` (produced by `tools/emit_structure`; the scaffold reads it as frozen input and never re-derives structure).
+- A **target set** (`--targets macos`, or `ios,android`, or `web`, …) — explicit, never ambient. Every target must have an entry in `pipeline/state/targets.derivation.json`.
+- The derivation table (`pipeline/state/targets.derivation.json`) and config viewports (`config/arxa.config.json`) — the source of factor names and ordering (P06/R3). The scaffold reads these; it does not hardcode them.
+- The designer's **materialized anatomy** plus the **registry version**, carried in an immutable run artifact (Q10). `structure.json` is that frozen artifact's structural face; the versioned source of truth upstream is `intake/registry.json`. The scaffolder never re-reads live intake mid-run and never invents scope — a flow needing something the registry does not declare is a design defect to report, not a branch to invent.
+- `kit/showcase_app/feature-recipe.manifest.json` (Q8, schema alongside it) and `skills/arxa-scaffolder/kind-resolution.registry.json` (Q7) — different homes, both **shared verbatim with `arxa-designer`** so the two skills' outputs converge on one tree. The manifest sits showcase-adjacent because it is derived from that tree; the kind registry is scaffolder-owned vocabulary and stays in the skill.
+
+### Contracts this playbook defers to
+
+| Concern | SSOT | Rule in one line |
+|---|---|---|
+| Paths & names | `kit/showcase_app/feature-recipe.manifest.json` | `kit/showcase_app/lib` is the contract, not an example. |
+| Kind → widget | `skills/arxa-scaffolder/kind-resolution.registry.json` | Unresolvable kind FAILS loudly; no silent `Container()`. |
+| Design vocabulary | `kit/core/lib/common/` | Import it; generating a local `*_colors.dart` is a FAIL. |
+| Frontmatter | `skills/arxa-builder/BUILDER_playbook.mdx` → *File structure* | Locked section order, bare `library;` terminator. |
+| Decisions | `docs/plans/designer-scaffolder-grill-decisions.md` | Q1–Q15, locked; wins over every summary. |
+
+Mode is **transliteration by default** (Q2): carry the anatomy across one-to-one. Transformation is opt-in and each applied rule is recorded in the run artifact — an unrecorded transformation is indistinguishable from a bug.
+
+### Procedure
+
+Confirm the design is frozen (`arxa emit structure --check` in sync). Scaffold, naming targets explicitly: `arxa emit scaffold --design-dir <design> --app-root <app> --targets macos` (the Dart port of the archived `scaffold.py`). `--targets` is required (or `ARXA_TARGETS` env); the scaffold never reads ambient pipeline state for targets (the stale-green defect, §16). Widths and factor names come from the derivation table + config, never literals (R3). Verify drift after a registry edit with `--check`: it regenerates the expected set in memory and diffs against disk, naming any missing factor file, stale manifest, or hand-edited dir — the same file set `gates/coverage` (C1) walks. Hand the scaffolded tree to `arxa-builder` for the widget bodies; the coverage gate then asserts the scaffolded layer.
+
+### Outputs
+
+Per frozen surface (those with `surface` non-null in `structure.json`), under `<app-root>/lib/ui/views/<shellDir>/<shell>_<short>/`: `_view.dart` + one `_view.<factor>.dart` per **derived** factor + `_viewmodel.dart`. `macos` → 3 files/surface (desktop only); `ios,android` → 4 (mobile+tablet); `web` → 5. Excluded surfaces (`surface:null`) are not scaffolded. Plus `lib/ui/views/.shell-structure.json` — the manifest the coverage gate reads (`selfContained` + the `{shellDir: {surfaceId: dir}}` map). The directory name is `<shell>_<short>` from the registry id (the stable key, §18), recorded because the coverage gate refuses to guess it.
+
+**l10n layer (optional):** when the design carries `l10n/app_<locale>.arb` catalogs, they are copied verbatim into `lib/l10n/`, a fixed-contract `l10n.yaml` (`arb-dir: lib/l10n`, `template-arb-file: app_en.arb`, `nullable-getter: false`) is written at the app root, and the manifest gains `"l10n": {"arbDir": "lib/l10n", "locales": [...]}` for gates to read. `--check` asserts the catalog file set + `l10n.yaml` match the design. A design without `l10n/` emits no l10n artifacts (backward compat). A missing `app_en.arb` template fails loudly — the yaml contract is fixed.
+
+### Rules
+
+Form factors follow targets — never emit an empty `.mobile`/`.tablet` to satisfy a count; that is the stale-green pattern §16 exists to kill (the self-test guards it). Never hardcode widths or factors — they come from the derivation table + config (P06/R3); adding a target is a data edit, not a code change here. Never read targets from ambient state — pass `--targets` explicitly. Never edit scaffolded Dart directly — edit the authored layer, re-freeze, re-scaffold, or the drift check dies. Treat stub bodies as unfinished — the builder replaces them. Keep `arxa emit scaffold --self-test` (and `arxa/test/scaffold_test.dart`) green when you change the engine; it is the proof the guardrail holds (negatively: missing structure.json, surface with no viewmodel, wrong file count, unknown target, dir collision; positively: macos→desktop only with no empty factors).
+
+### Emitted file structure (semantic frontmatter)
+
+Every scaffolded file starts with `library;` and a placeholder `///` doc comment that the builder fills in. The stub is a skeleton; the builder replaces the placeholder with the full five-part spine (layer intro → role paragraph → requirements → relationships → history) per `BUILDER_playbook.mdx → File structure`.
+
+**Per-kind stub headers (what the scaffold emits):**
+
+- **ViewModel:** `/// <Layer intro: actions in, streams out, never touches the view>` + `library;` + imports + `class … extends ArxaKitViewModel { // ── Setup ── }`
+- **View:** `/// <Layer intro: composes primitives, binds VM streams>` + `library;` + imports + class
+- **Widget:** same pattern as view.
+- **Service (facade/adapter/repository):** `/// <Role opener: front door / bridge to device / store>` + `library;` + imports + class.
+- **Model:** `/// <Role paragraph>` + `library;` (light variant — no diagram).
+
+**Body section markers (locked order per kind):**
+
+| Kind | Separators |
+|---|---|
+| viewmodel | `// ── Setup ──` / Initial state / Streams / Commands / Actions / Side effects / Cleanup |
+| facade | `// ── Setup ──` / Initial state / Streams / Writes / Reads / Cleanup |
+| adapter | `// ── Setup ──` / Initial state / Streams / Actions / Cleanup |
+| repository | `// ── Setup ──` / Reads / Writes / Cleanup |
+| views/widgets | no invented sections — natural build order |
+
+The scaffold emits only the `// ── Setup ──` marker in the stub; the builder adds the rest as it fills the body. Empty sections are omitted — a VM with no hub commands has no Commands section.
+
+See `skills/arxa-builder/BUILDER_playbook.mdx → File structure (semantic frontmatter)` for the full grammar, and `kit/showcase_app/.../showcase_note_editor_viewmodel.dart` for the reference implementation.
+
+### Chrome resolution — the design decides existence (2026-08-13)
+
+Top chrome is not scaffolded by default and never by the platform laws. The
+DESIGN decides whether a surface has it: arxa-designer freezes the
+structure/anatomy, the scaffolder resolves that declaration per surface
+through the appbar kind in `kind-resolution.registry.json`, and builds it to
+the target's standard with native UI wherever applicable. The scaffolder
+never synthesizes an appbar an anatomy did not declare.
+
+| Surface, as the design declares it | Resolves to |
+|---|---|
+| Shell / tab-root top chrome | `shell` variant → `ArxaKitChromeScaffold` |
+| Pushed surface, native glass in its scroll | `ArxaKitChromeScaffold` with `leading` (back) |
+| Pushed surface, Flutter-only scroll | bare `ArxaKitNativeAppBar` |
+| No top chrome declared | nothing — bar-less is lawful output, not a coverage gap |
+
+Chrome is PER SURFACE. Never emit chrome on a surface that hosts a nested
+router such that pushed routes inherit it — that is the double-bar stack the
+lint law pass flags. Per target: iOS/macOS follow the liquid-glass law,
+Android the M3E law, web/desktop their own conventions.
+
+<!-- kb:begin -->
+### Ownership & regeneration (Q9)
+
+Manifest-declared per artifact type. **Scaffolder-owned** files are regenerated every
+run, byte-identical on unchanged inputs — a hand edit is drift and `--check` fails it.
+**User-owned** files (views, viewmodels, widgets, services) are stubbed once and then
+belong to the builder; regeneration never clobbers them.
+
+That requires a persisted baseline: the first scaffold writes
+`pipeline/state/scaffold-baseline.json` recording the registry version, the run
+artifact id, the target set, and a content hash per emitted file. The divergence gate
+checks user-owned files against it, and a 3-way merge uses it as the common ancestor.
+Without a baseline, "don't clobber" degrades into "never update" and the scaffold rots.
+
+Shared join points — bucket barrels, `app/app.router.dart`, `app/app.locator.dart`,
+`lib/ui/views/.shell-structure.json` — regenerate deterministically, additive-only.
+
+### Identity stamping (Q12)
+
+Every emitted view and widget carries `screenId` / `surfaceId` / `anatomyNodeId`,
+stamped at emit time from the frozen artifact (the `--track-widget-creation` trick).
+Studio inspect reads the triple and nothing else — no DOM heuristics — so inspect mode
+survives regeneration by construction. Showcase carries none today; this is a new
+obligation on emitted output.
+
+### Verdicts (Q11)
+
+**Five** locked verdicts, one probe, existing `ProbeReport`/`ProbeTarget` plumbing:
+
+1. Golden expansion — the tree matches the Q8 manifest expansion exactly.
+2. `dart analyze` clean.
+3. Second run byte-identical — **transliteration output only** (Q2↔Q11). Transformation
+   output is pinned by its frozen run artifact and the non-clobber rule instead.
+4. Identity coverage — every emitted surface carries `inspectAttrs`.
+5. Frontmatter/comment conventions present (Q5, mechanically enforced).
+
+Kit-only vocabulary is an always-on emit-time invariant, not a verdict.
+
+The spike runs after both skills are refactored and produces five shells — startup,
+unknown, auth, application + design — plus the splashscreen (not a shell: mobile splash
+surface, brand logo only). `auth`, `design`, `splashscreen` are absent from showcase and
+expand from the manifest exactly like synthetic `payments`; showcase corroborates
+application/startup/unknown.
+
+Showcase itself must pass expansion (modulo recorded `exemptions[]`). If it doesn't,
+the manifest is wrong — not the showcase.
+
+### References
+
+- **Platform laws (2026-08-13):** `docs/liquid-glass-allowlist.md` (THE
+  liquid-glass law) and `docs/m3e-law.md`. The laws constrain how chrome is
+  ASSEMBLED; the design decides whether a surface has chrome at all — see
+  *Chrome resolution* above for the per-surface table this section's rules
+  apply to. Scaffold-relevant consequence: where the design declares
+  shell/tab-root top chrome it resolves through the appbar kind's `shell`
+  variant → `ArxaKitChromeScaffold` (the laws' reuse unit; runtime tier
+  branch inside). Since the floating-back-affordance ruling (2026-08-13)
+  the scaffold takes `leading`, so pushed routes with in-scroll native
+  glass resolve through it too; bare bars are for Flutter-only-scroll
+  pushed routes; a surface designed without top chrome gets none. Emitting
+  `Scaffold.appBar` beside in-scroll native glass is a law violation the
+  lint law pass flags, as is chrome on a surface hosting a nested router.
+<!-- kb:end -->

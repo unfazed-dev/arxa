@@ -6,7 +6,7 @@ unverified is flagged **[uncertain]**.
 ## Summary
 
 The desired flow — *email in → detect accounts → create them → sign in → sync repo →
-provision Supabase project* — breaks at one line: **appbox can never create a GitHub or
+provision Supabase project* — breaks at one line: **arxa can never create a GitHub or
 Supabase account, and can never answer "does this email have an account?"** Neither
 platform exposes signup over an API. GitHub's `POST /admin/users` is GitHub Enterprise
 Server, site-admin-only; SCIM is Enterprise Managed Users only. Supabase's Management API
@@ -14,7 +14,7 @@ has no user resource.
 
 Existence-by-email is deliberately unavailable: GitHub search matches only *public* email
 and forbids domain search; Supabase has no lookup. Reframe: **the OAuth authorize redirect
-*is* the existence check** — the provider's screen offers sign-in *or* sign-up and appbox
+*is* the existence check** — the provider's screen offers sign-in *or* sign-up and arxa
 never learns which branch ran. That is the privacy-correct outcome.
 
 Two further ceilings sit just below account creation. **Neither platform lets a
@@ -22,7 +22,7 @@ third-party app create an *organization* on a user's behalf**: Supabase's OAuth 
 lists `Organizations / Write` as **N/A**, and github.com's REST orgs reference has no
 create endpoint. A brand-new user therefore lands in the dashboard at least once.
 
-Everything after that is automatable. Appbox holds a **delegated token, not a session**:
+Everything after that is automatable. Arxa holds a **delegated token, not a session**:
 repo create + push via GitHub REST/MCP, project create + migrations via Supabase Management
 API or its hosted MCP server. The email field is a workspace label, not a provisioning
 input.
@@ -119,14 +119,14 @@ precedence over other configuration. **No account-creation toolset exists.**
   There is no grantable write scope for organizations, so an OAuth2 token — the only auth
   mode appropriate for end users — **cannot create an org**. `POST /v1/organizations` is
   reachable only with a PAT, i.e. only for your own account. Practical consequence: a
-  brand-new Supabase user must create their first organization in the dashboard; appbox
+  brand-new Supabase user must create their first organization in the dashboard; arxa
   then reads it via `list_organizations` and creates projects inside it
   (`Projects / Write` → *"Create a project"* **is** grantable).
   <https://supabase.com/docs/guides/integrations/build-a-supabase-oauth-integration/oauth-scopes>
 - **Project creation:** `POST /v1/projects`, required body `name`, `db_pass`,
   `organization_slug` (`organization_id` and `region` are now **Deprecated**; use
   `region_selection`). Response `201` returns `{ id, ref, organization_slug, status }` with
-  `status: "INACTIVE"` — provisioning is **asynchronous**, so appbox must poll before
+  `status: "INACTIVE"` — provisioning is **asynchronous**, so arxa must poll before
   running migrations. <https://supabase.com/docs/reference/api/v1-create-a-project>
 
 ### Auth
@@ -136,7 +136,7 @@ Two options, both requiring an existing Supabase user:
 1. **PAT** (`sbp_…`) — long-lived, *"carry the same privileges as your user account"*.
    Fine for the developer's own automation, wrong for end users.
 2. **OAuth2** — *"generate tokens on behalf of a Supabase user… Tokens generated via OAuth2
-   are short-lived and tied to specific scopes."* This is the correct mode for appbox.
+   are short-lived and tied to specific scopes."* This is the correct mode for arxa.
    Flow: register an OAuth app under an org's **OAuth Apps** tab, redirect to
    `https://api.supabase.com/v1/oauth/authorize` with `client_id`, `redirect_uri`,
    `response_type=code`, `state` (`redirect_uri` + `state` ≤ 4kB), **PKCE `S256` strongly
@@ -153,7 +153,7 @@ using `X-RateLimit-Reset`.
 ### Existence by email
 
 No endpoint. Same reframe as GitHub — the authorize redirect handles both sign-in and
-sign-up and appbox never learns which happened.
+sign-up and arxa never learns which happened.
 
 ### Official Supabase MCP server
 
@@ -183,7 +183,7 @@ limit access to your own projects rather than customers'. Branching is a paid fe
 Do not try to detect-then-create. Replace it with a **consent handoff** that is
 simultaneously the existence check:
 
-1. **Browser present (appbox desktop/web):** OAuth authorization-code + PKCE, one button
+1. **Browser present (arxa desktop/web):** OAuth authorization-code + PKCE, one button
    per provider ("Connect GitHub", "Connect Supabase" — Supabase publishes brand assets and
    asks for a *Connect Supabase* button). The provider's page offers sign-in **or** sign-up;
    a brand-new user completes signup inline and lands back on your `redirect_uri` with a
@@ -194,7 +194,7 @@ simultaneously the existence check:
    power-user path.
 3. **Repo access scoping:** prefer a **GitHub App installation flow** over an OAuth app —
    the user picks *which* repositories the app may touch, tokens are short-lived, and
-   revocation is a single click. This matters because appbox writes code into repos.
+   revocation is a single click. This matters because arxa writes code into repos.
 4. **Email field's real job:** label the workspace / prefill the provider's signup form via
    `login=` (GitHub `authorize` accepts a `login` hint). Never present it as "we'll make you
    an account".
@@ -212,7 +212,7 @@ simultaneously the existence check:
 | Token storage | OS-keychain vault is right. Store **refresh tokens** and mint short-lived access tokens; Supabase OAuth tokens are documented as short-lived and scope-bound, and GitHub App user access tokens are short-lived with refresh (**[uncertain — the exact 8-hour figure was not re-verified; read the token-expiry doc before hard-coding it]**). Never persist a Supabase PAT on a user's behalf — it is account-equivalent. |
 | Blast radius | Supabase PAT = full account. GitHub classic PAT = all repos. Prefer GitHub App installation tokens (per-repo) and Supabase OAuth scopes. |
 | MCP + write scopes | Both vendors warn about prompt injection. GitHub ships **content sanitization by default** and a `--lockdown-mode` that suppresses content from authors without push access in public repos; Supabase names injection its primary vector and recommends read-only + project-scoping + manual tool-call approval. |
-| Appbox-specific | Content pulled from an issue/PR/DB row can reach the agent. If appbox drives these servers, run GitHub read paths in read-only/lockdown, keep write tools on an explicit, non-agent code path (direct REST call from appbox, not a tool the model can choose), and gate `create_project` behind `get_cost`/`confirm_cost` — it spends the user's money. |
+| Arxa-specific | Content pulled from an issue/PR/DB row can reach the agent. If arxa drives these servers, run GitHub read paths in read-only/lockdown, keep write tools on an explicit, non-agent code path (direct REST call from arxa, not a tool the model can choose), and gate `create_project` behind `get_cost`/`confirm_cost` — it spends the user's money. |
 | Revocation | Surface a "Disconnect" that deletes the keychain entry **and** calls the provider revoke endpoint; a deleted local token that is still live upstream is a silent liability. |
 
 ## Feasibility table
@@ -224,11 +224,11 @@ simultaneously the existence check:
 | Check Supabase account exists by email | **No** | no endpoint | same |
 | Create GitHub account | **Impossible** | `POST /admin/users` is GHES site-admin only; SCIM is EMU only | user signs up on GitHub's page inside the OAuth redirect |
 | Create Supabase account | **Impossible** | no Management API resource | user signs up inside Supabase's authorize screen |
-| "Sign them in" | **Reframe** — appbox gets a *delegated token*, not a session | OAuth code+PKCE / GitHub device flow | PAT paste (power user) |
+| "Sign them in" | **Reframe** — arxa gets a *delegated token*, not a session | OAuth code+PKCE / GitHub device flow | PAT paste (power user) |
 | Create GitHub org | **No** | github.com orgs REST has no create endpoint (List/Get/Update/Delete only) | not needed — repos live in the user's personal namespace |
 | Create repo at intake | Yes | `create_repository` (MCP) or `POST /user/repos`; scope `repo` | — |
 | Push project files | Yes | Git Data API or `git push` over HTTPS w/ token; MCP `create_or_update_file` for single files | — |
-| Create Supabase org | **No, for end users** | `POST /v1/organizations` exists but `Organizations / Write` scope is **N/A** — PAT-only | user creates first org in dashboard; appbox reads it via `list_organizations` |
+| Create Supabase org | **No, for end users** | `POST /v1/organizations` exists but `Organizations / Write` scope is **N/A** — PAT-only | user creates first org in dashboard; arxa reads it via `list_organizations` |
 | Create Supabase project at kit-pick | Yes | `POST /v1/projects` (`name`, `db_pass`, `organization_slug`) or MCP `create_project`; poll until `status` leaves `INACTIVE` | — |
 | Run migrations | Yes | Supabase MCP `apply_migration` / CLI `db push` | — |
 
@@ -239,7 +239,7 @@ simultaneously the existence check:
    kit runtime.
 2. **Cost consent.** `create_project` bills the user's org. `get_cost` → user confirm →
    `confirm_cost` must be a real UI gate, not an agent decision.
-3. **Rate limits.** 120/min per user per scope; the Supabase MCP server and appbox's own
+3. **Rate limits.** 120/min per user per scope; the Supabase MCP server and arxa's own
    Management API calls share the user's budget.
 4. **Deprecation drift.** `organization_id`, `region`, `plan`, `kps_enabled` are marked
    Deprecated on `POST /v1/projects` — pin to `organization_slug` + `region_selection`.

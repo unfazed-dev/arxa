@@ -2,21 +2,21 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
-import 'package:appbox_kit_ui_library/appbox_kit_testing.dart';
-import 'package:appbox_kit_data/appbox_kit_data.dart';
-import 'package:appbox_kit_showcase_app/app/app_data.dart';
-import 'package:appbox_kit_showcase_app/data/models/showcase_notes_models/models.dart';
-import 'package:appbox_kit_showcase_app/services/showcase_notes_services/facades/showcase_notes_facade_service.dart';
-import 'package:appbox_kit_showcase_app/services/showcase_notes_services/repositories/showcase_notes_repository_service.dart';
+import 'package:arxa_kit_ui_library/arxa_kit_ui_library.dart';
+import 'package:arxa_kit_ui_library/arxa_kit_testing.dart';
+import 'package:arxa_kit_data/arxa_kit_data.dart';
+import 'package:arxa_kit_showcase_app/app/app_data.dart';
+import 'package:arxa_kit_showcase_app/data/models/showcase_notes_models/models.dart';
+import 'package:arxa_kit_showcase_app/services/showcase_notes_services/facades/showcase_notes_facade_service.dart';
+import 'package:arxa_kit_showcase_app/services/showcase_notes_services/repositories/showcase_notes_repository_service.dart';
 
 /// End-to-end wiring check: every seed user, signed in through the REAL auth
 /// entry points (email/password, Google, Apple), must see exactly the notes
 /// the shipped fixtures assign them. Expected counts are computed from the
 /// fixture JSON itself — not hardcoded — so this fails if seeding, owner
 /// canonicalization, or auth resolution ever drift apart.
-class _DiskAssetReader implements AppBoxKitAssetReader {
-  static const _prefix = 'packages/appbox_kit_showcase_app/';
+class _DiskAssetReader implements ArxaKitAssetReader {
+  static const _prefix = 'packages/arxa_kit_showcase_app/';
 
   @override
   Future<String> readString(String path) async {
@@ -50,29 +50,29 @@ void main() {
     }
 
     // The kit's own setup registers Talker + the stacked UI service bases.
-    setupAppBoxKitUiServices();
-    appBoxKitLocator
-      ..registerLazySingleton(() => AppBoxKitErrorService())
+    setupArxaKitUiServices();
+    arxaKitLocator
+      ..registerLazySingleton(() => ArxaKitErrorService())
       // Fake: the real service's CNToast path needs a mounted navigator
       // context, which a data-layer suite doesn't have.
-      ..registerLazySingleton<AppBoxKitNotificationService>(
-          () => FakeAppBoxKitNotificationService())
+      ..registerLazySingleton<ArxaKitNotificationService>(
+          () => FakeArxaKitNotificationService())
       ..registerLazySingleton<ShowcaseNotesRepositoryService>(
           () => ShowcaseNotesRepositoryService())
       ..registerLazySingleton<ShowcaseNotesFacadeService>(
           () => ShowcaseNotesFacadeService());
 
     await AppData.initialize(
-      config: const AppBoxKitDataConfig(
-        backend: AppBoxKitDataBackend.seed,
-        auth: AppBoxKitAuthConfig(fakeUsersAsset: AppData.fakeUsersAsset),
+      config: const ArxaKitDataConfig(
+        backend: ArxaKitDataBackend.seed,
+        auth: ArxaKitAuthConfig(fakeUsersAsset: AppData.fakeUsersAsset),
       ),
       assetReader: _DiskAssetReader(),
     );
-    notes = appBoxKitLocator<ShowcaseNotesFacadeService>();
+    notes = arxaKitLocator<ShowcaseNotesFacadeService>();
   });
 
-  Future<ShowcaseNotesOverview> overviewFor(AppBoxKitAuthSession session) =>
+  Future<ShowcaseNotesOverview> overviewFor(ArxaKitAuthSession session) =>
       notes.overview$(session.user.id).first;
 
   test('fixture sanity: every seed user owns at least one live note', () {

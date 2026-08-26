@@ -3,7 +3,7 @@
          image_picker's intent, which needs no Android permission here. -->
     <uses-permission android:name="android.permission.RECORD_AUDIO"/>
     <application
-        android:label="AppBox Showcase"
+        android:label="Arxa Showcase"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher"
         android:enableOnBackInvokedCallback="true">

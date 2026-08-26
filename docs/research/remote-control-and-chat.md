@@ -1,6 +1,6 @@
 # Remote control, device preview, and the chat surface
 
-Research for: an iOS companion that pairs to the desktop app by QR, so appbox
+Research for: an iOS companion that pairs to the desktop app by QR, so arxa
 can be driven remotely — and an industry-standard LLM chat inside the desktop
 app.
 
@@ -47,7 +47,7 @@ attacker's session. Reported mitigations:
 | Biometric/PIN before approving | blocks opportunistic physical access |
 | Treat numeric pairing-code fallback as high risk | it is the weaker path |
 
-**appbox's case is materially easier and should stay that way.** Pairing is
+**arxa's case is materially easier and should stay that way.** Pairing is
 **LAN-local, with no cloud relay** — so the phishing shape above (a public web
 client whose QR can be lifted) does not exist unless we build it. Concretely:
 
@@ -68,7 +68,7 @@ with `NSNetServicesErrorCode: -72008`:
 <key>NSLocalNetworkUsageDescription</key>
 <string>Used to find your desktop app on this network for pairing.</string>
 <key>NSBonjourServices</key>
-<array><string>_appbox._tcp</string></array>
+<array><string>_arxa._tcp</string></array>
 ```
 
 This is precisely the *platform-conditional ceremony* §11 argued for: a value
@@ -96,12 +96,12 @@ one registry the model sees.
 |---|---|
 | `chat-mcp` (Electron, BYO key) | dynamic provider config for anything OpenAI-SDK-compatible; UI extractable for web so desktop and web share interaction logic |
 | RecurseChat | per-server **connection-state visualisation**; imports Claude Desktop config |
-| Azure MCP CLI Client | JSON-config schema registration; **interactive vs batch mode split** — directly relevant to appbox being both a GUI and a harness plugin |
+| Azure MCP CLI Client | JSON-config schema registration; **interactive vs batch mode split** — directly relevant to arxa being both a GUI and a harness plugin |
 | Cherry Studio / LM Studio / Kiln | multi-provider + local-model coverage |
 
 **🌡️ The scaling problem to plan for now: tool-context bloat.** As users add
 servers, the combined registry eats the context window. One approach in the
-wild is an MCP proxy filtering tool exposure with local embeddings. appbox is
+wild is an MCP proxy filtering tool exposure with local embeddings. arxa is
 especially exposed here because the pipeline itself wants to be a tool surface.
 
 ## 🔥 BYO-key credential storage — CLOSED

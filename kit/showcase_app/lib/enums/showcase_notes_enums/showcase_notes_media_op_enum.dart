@@ -1,6 +1,6 @@
-/// The media adapter's hardware/IO ops — `.name` is the AppBoxKitAction hub
+/// The media adapter's hardware/IO ops — `.name` is the ArxaKitAction hub
 /// key (per-entity ops build dynamic keys from it: `playback.<id>`), [error]
-/// is the error-snackbar copy for the op's AppBoxKitAction fallback.
+/// is the error-snackbar copy for the op's ArxaKitAction fallback.
 enum ShowcaseNotesMediaOp {
   pickPhoto('Could not add photo'),
   startRecording('Could not start recording'),

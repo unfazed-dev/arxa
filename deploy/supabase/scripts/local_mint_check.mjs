@@ -3,13 +3,13 @@
 // tokens the shipped Dart verifier accepts. No Supabase, no network: the
 // shared minter (functions/_shared/entitlement_jwt.ts — the exact code the
 // Edge Function imports) signs tokens with the DEV keypair, and
-// `appbox entitlement status/verify --token <file>` (the real client
-// verifier, appboxd/lib/entitlement.dart) judges them.
+// `arxa entitlement status/verify --token <file>` (the real client
+// verifier, arxa/lib/entitlement.dart) judges them.
 //
 //   node --experimental-strip-types deploy/supabase/scripts/local_mint_check.mjs
 //
 // Exit 0 = every scenario's Dart verdict matches the expectation.
-// The DEV keypair is a test fixture (appboxd/test/entitlement_fixture.dart),
+// The DEV keypair is a test fixture (arxa/test/entitlement_fixture.dart),
 // not a secret; using it proves byte-contract compatibility with the public
 // key embedded in the client today. The production path differs ONLY in the
 // JWK passed to mintEntitlementJwt.
@@ -27,10 +27,10 @@ import {
 } from '../functions/_shared/entitlement_jwt.ts';
 
 const repoRoot = join(dirname(fileURLToPath(import.meta.url)), '..', '..', '..');
-const appboxd = join(repoRoot, 'appboxd');
+const arxa = join(repoRoot, 'arxa');
 const DAY = 86400;
 
-// DEV keypair — matches Entitlement.publicKey (appboxd/lib/entitlement.dart)
+// DEV keypair — matches Entitlement.publicKey (arxa/lib/entitlement.dart)
 // and the fixture seed. TEST FIXTURE ONLY, never the production key.
 const DEV_JWK = JSON.stringify({
   kty: 'OKP',
@@ -43,7 +43,7 @@ function hexToB64url(hex) {
   return Buffer.from(hex, 'hex').toString('base64url');
 }
 
-// Mirror of Entitlement.machineFingerprint (appboxd/lib/entitlement.dart):
+// Mirror of Entitlement.machineFingerprint (arxa/lib/entitlement.dart):
 // sha256 hex of the raw per-OS machine id. Fails loudly when undeterminable.
 function machineFingerprint() {
   let raw = null;
@@ -70,8 +70,8 @@ function machineFingerprint() {
 function dartEntitlement(sub, args, tokenFile) {
   const res = spawnSync(
     'dart',
-    ['run', 'bin/appbox.dart', 'entitlement', sub, ...args, tokenFile],
-    { cwd: appboxd, encoding: 'utf8' },
+    ['run', 'bin/arxa.dart', 'entitlement', sub, ...args, tokenFile],
+    { cwd: arxa, encoding: 'utf8' },
   );
   if (res.error) throw res.error;
   const line = res.stdout.trim().split('\n').find((l) => l.startsWith('{'));
@@ -81,7 +81,7 @@ function dartEntitlement(sub, args, tokenFile) {
 
 let failures = 0;
 function check(name, token, { exit, status, verifyStatus }) {
-  const tmp = join(tmpdir(), `appbox-ent-${process.pid}-${Math.random().toString(36).slice(2)}.jwt`);
+  const tmp = join(tmpdir(), `arxa-ent-${process.pid}-${Math.random().toString(36).slice(2)}.jwt`);
   writeFileSync(tmp, token);
   try {
     const s = dartEntitlement('status', ['--token'], tmp);

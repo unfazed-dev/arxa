@@ -70,7 +70,7 @@ The fork contract has two halves: **WHY** the patch exists (the root `pubspec.ya
   </div>
   <div class="diagram-arrow">↓ wrapped by</div>
   <div class="diagram-box" data-rough>
-    <div class="diagram-pill">appbox_kit</div>
+    <div class="diagram-pill">arxa_kit</div>
     <div class="diagram-node">Kit* wrappers</div>
   </div>
 </div>
@@ -202,7 +202,7 @@ The barrel `lib/split_button_m3e.dart` exports three files. `SplitButtonM3E` is 
 
 <Callout id="split-wiring-callout" tone="info">
 
-Hosts almost never import `package:split_button_m3e/...` directly. The fork is pulled in **transitively** via `m3e_collection` (the umbrella that re-exports every M3E widget), and most apps reach it through `appbox_kit`'s `Kit*` wrappers (e.g. `KitNativePopupMenu`). The root `dependency_overrides` `path:` entry is the only thing that activates the patch — `m3e_collection`'s own version constraint is unchanged.
+Hosts almost never import `package:split_button_m3e/...` directly. The fork is pulled in **transitively** via `m3e_collection` (the umbrella that re-exports every M3E widget), and most apps reach it through `arxa_kit`'s `Kit*` wrappers (e.g. `KitNativePopupMenu`). The root `dependency_overrides` `path:` entry is the only thing that activates the patch — `m3e_collection`'s own version constraint is unchanged.
 
 </Callout>
 
@@ -222,7 +222,7 @@ Hosts almost never import `package:split_button_m3e/...` directly. The fork is p
   </div>
   <div class="diagram-arrow">↓ re-exports</div>
   <div class="diagram-box" data-rough>
-    <div class="diagram-pill">appbox_kit</div>
+    <div class="diagram-pill">arxa_kit</div>
     <div class="diagram-node">KitNativePopupMenu + Kit* wrappers</div>
   </div>
   <div class="diagram-arrow">↓ fork activated by override</div>
@@ -294,7 +294,7 @@ When bumping upstream (`fab_m3e`, `navigation_rail_m3e`, `split_button_m3e`, or 
 3. **Diff** each patched file against the new upstream release of the same path.
 4. **Re-apply** each `// Patched (vendored fork)` / `// Fork patch:` / `// PATCH` block by hand. Do NOT copy upstream over the fork blindly — the markers are your only map of what to preserve.
 5. **Update** the root `pubspec.yaml` override comment if the WHY or the patched-file list changed.
-6. **Run** the fork's `flutter test` in `packages/<name>/`, then run the consuming showcase (`appbox_kit_showcase`) to confirm the patched behaviour still renders.
+6. **Run** the fork's `flutter test` in `packages/<name>/`, then run the consuming showcase (`arxa_kit_showcase`) to confirm the patched behaviour still renders.
 
 ### Override hygiene (shared)
 

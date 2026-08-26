@@ -10,9 +10,9 @@ the mobile-device splash surface, brand logo only). **One probe, five verdicts**
 
 ## Where the plumbing actually is (verified)
 
-- `appboxd/lib/probes/probe_base.dart` — `Probe`, `ProbeReport`, `ProbeContext`, `ProbeTarget`.
-- `appboxd/lib/probes/probe_cli.dart` — runner.
-- `appboxd/lib/probes/registry.dart` — `const List<Probe> kProbes`; registration = one import +
+- `arxa/lib/probes/probe_base.dart` — `Probe`, `ProbeReport`, `ProbeContext`, `ProbeTarget`.
+- `arxa/lib/probes/probe_cli.dart` — runner.
+- `arxa/lib/probes/registry.dart` — `const List<Probe> kProbes`; registration = one import +
   one entry, in run order (documented at line 5).
 - Suites: `kSuiteContract` / `kSuiteStudio`; probe files live in `contract/` and `studio/`.
 
@@ -57,7 +57,7 @@ reads the manifest rather than hardcoding expectations.
 | 1 | Golden tree matches manifest expansion | Both directions: every `pathTemplate`×`nameTemplate` expansion exists, **and** every golden file is accounted for by some template. One-way is not a match. |
 | 2 | `dart analyze` clean | Run in `golden/`. Emit `analysis_options.yaml` mirroring `kit/showcase_app` — `flutter_lints` as a dev dep with no options file means the lints never run, and the verdict would be weaker than the showcase's own bar. |
 | 3 | Second run byte-identical | Transliterator twice from frozen input; SHA-256 per file; excludes pub artifacts. |
-| 4 | Every emitted surface carries `inspectAttrs` | Scoped by the manifest, not by guesswork: artifact types declare `inspectAttrs: true` (shell-view, shell-view-factor, surface-view, surface-view-factor) or `false` (viewmodels). Verdict = for every artifact of a true-type, the (screenId, surfaceId, anatomy-node id) triple is present. Triple must **resolve**, not merely be present — anatomy-node id checked against the node set in `skills/appbox-designer/references/showcase-anatomy.md`. |
+| 4 | Every emitted surface carries `inspectAttrs` | Scoped by the manifest, not by guesswork: artifact types declare `inspectAttrs: true` (shell-view, shell-view-factor, surface-view, surface-view-factor) or `false` (viewmodels). Verdict = for every artifact of a true-type, the (screenId, surfaceId, anatomy-node id) triple is present. Triple must **resolve**, not merely be present — anatomy-node id checked against the node set in `skills/arxa-designer/references/showcase-anatomy.md`. |
 | 5 | Frontmatter/comment conventions | Artifact types declare `frontmatter: full`; Q5's normative rules enforced against those files. |
 
 Splashscreen: it is not a shell, but it **is** a surface, and it expands as a `surface-view`
@@ -70,7 +70,7 @@ Splashscreen: it is not a shell, but it **is** a surface, and it expands as a `s
 `dependency_overrides` (`win32: ^6.0.1`, `device_info_plus: ^13.0.0`, `package_info_plus: ^10.0.0`)
 and its own comment states: *"Host apps depending on this package need the same three overrides in
 their own pubspec (pub overrides don't propagate)."* Without them `flutter pub get` fails version
-solving — appwrite's graph pins win32 5.x while `appbox_kit_core → talker_flutter → share_plus 13`
+solving — appwrite's graph pins win32 5.x while `arxa_kit_core → talker_flutter → share_plus 13`
 needs win32 ^6. With them replicated: exit 0, 170 dependencies.
 
 This is a scaffolder obligation that is **not** currently expressed in the Q8 manifest or either
@@ -82,7 +82,7 @@ silently tests less than it appears to.
 
 ## Run 1 — actual verdicts
 
-`appbox design probe q11-shells` (offline, browserless, no server contact). 1 PASS, 4 BLOCKED/FAIL.
+`arxa design probe q11-shells` (offline, browserless, no server contact). 1 PASS, 4 BLOCKED/FAIL.
 That ratio is the honest state, not a shortfall to be tuned away.
 
 - **V1 PASS** — showcase, 7 shells / 13 surfaces, bidirectional, `unexplained=0 missing=0`.
@@ -101,7 +101,7 @@ That ratio is the honest state, not a shortfall to be tuned away.
 
 ## Run 2 — the spike tree exists; all five verdicts report
 
-Emitter + transliterator built, golden tree committed. `appbox design probe q11-shells`,
+Emitter + transliterator built, golden tree committed. `arxa design probe q11-shells`,
 still offline and browserless. **Zero skips, zero BLOCKED.** 6 PASS, 1 FAIL.
 
 - **V1 PASS** (showcase, unchanged) + **V1b PASS** — spike tree, 5 shells / 8 surfaces,
@@ -220,9 +220,9 @@ the task and misattributes the cause.
 Everything below was the spike's one genuinely open question. All of it has landed; V4 is no longer
 unratified and V5 is green by fix, not by weakening.
 
-- **(a) shape + vocabulary.** `AppBoxKitInspectAttrs` is the Dart triple in kit core; the
+- **(a) shape + vocabulary.** `ArxaKitInspectAttrs` is the Dart triple in kit core; the
   anatomy-node vocabulary is a **CLOSED** set at
-  `skills/appbox-scaffolder/kind-resolution.registry.json#/anatomyNodes` (registry **v1.2.0**),
+  `skills/arxa-scaffolder/kind-resolution.registry.json#/anatomyNodes` (registry **v1.2.0**),
   currently one member, `anatomy:view.body`, with a stated failure contract.
 - **(b) showcase BACK-STAMPED, not exempted.** All **20** showcase view files carry the triple.
   Showcase is normative for identity like everything else; SKILL.md:270's exemption note is gone and

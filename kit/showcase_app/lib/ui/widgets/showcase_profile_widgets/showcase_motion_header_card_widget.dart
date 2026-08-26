@@ -17,7 +17,7 @@
 library;
 
 import 'package:flutter/material.dart';
-import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
+import 'package:arxa_kit_ui_library/arxa_kit_ui_library.dart';
 
 /// Header card explaining the route-driven wake demo.
 class ShowcaseMotionHeaderCardWidget extends StatelessWidget {
@@ -25,7 +25,7 @@ class ShowcaseMotionHeaderCardWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return AppBoxKitGlassCard(
+    return ArxaKitGlassCard(
       child: Padding(
         padding: const EdgeInsets.all(abxSize16),
         child: Text(

@@ -1,15 +1,15 @@
 <Callout id="header" tone="info">
 
-# appbox_kit_haptics — Per-Package Playbook
+# arxa_kit_haptics — Per-Package Playbook
 
 
-`appbox_kit_haptics` v**0.1.0** · `publish_to: 'none'` · status: **active**
+`arxa_kit_haptics` v**0.1.0** · `publish_to: 'none'` · status: **active**
 
 
-**Role (one line):** Device haptic feedback for Stacked apps — a reactive AppBoxKitHapticService (RxDart streams, persisted enable state, device-capability checking) over the haptic_feedback package, plus a withHapticFeedback() widget extension.
+**Role (one line):** Device haptic feedback for Stacked apps — a reactive ArxaKitHapticService (RxDart streams, persisted enable state, device-capability checking) over the haptic_feedback package, plus a withHapticFeedback() widget extension.
 
 
-**Scope of this document:** lets a human OR an LLM use, wire, and extend `appbox_kit_haptics` **without reading its source**. The public surface below was extracted from the barrel; README content is folded into the narrative sections.
+**Scope of this document:** lets a human OR an LLM use, wire, and extend `arxa_kit_haptics` **without reading its source**. The public surface below was extracted from the barrel; README content is folded into the narrative sections.
 
 
 ## Table of contents
@@ -22,16 +22,16 @@
 
 ### Overview & role
 
-Device haptic feedback for Stacked apps — a reactive AppBoxKitHapticService (RxDart streams, persisted enable state, device-capability checking) over the haptic_feedback package, plus a withHapticFeedback() widget extension. Standalone capability kit; no dependency on appbox_kit core.
+Device haptic feedback for Stacked apps — a reactive ArxaKitHapticService (RxDart streams, persisted enable state, device-capability checking) over the haptic_feedback package, plus a withHapticFeedback() widget extension. Standalone capability kit; no dependency on arxa_kit core.
 
 
 ### Public surface
 
-Exported from `lib/appbox_kit_haptics.dart`:
+Exported from `lib/arxa_kit_haptics.dart`:
 
-<Table id="haptics-api" columns={["Symbol", "Kind", "Defined in"]} rows={[["AppBoxKitHapticService", "class", "src/appbox_kit_haptic_service.dart"]]} />
+<Table id="haptics-api" columns={["Symbol", "Kind", "Defined in"]} rows={[["ArxaKitHapticService", "class", "src/arxa_kit_haptic_service.dart"]]} />
 
-Test doubles in `lib/appbox_kit_testing.dart`: `FakeAppBoxKitHapticService`.
+Test doubles in `lib/arxa_kit_testing.dart`: `FakeArxaKitHapticService`.
 
 Scripts and call-counts — tests never touch platform channels.
 
@@ -39,13 +39,13 @@ Scripts and call-counts — tests never touch platform channels.
 ### Usage & wiring
 
 ```dart
-import 'package:appbox_kit_haptics/appbox_kit_haptics.dart';
+import 'package:arxa_kit_haptics/arxa_kit_haptics.dart';
 
 // 1. Register in your app (Stacked @StackedApp dependencies or setupLocator):
-//    LazySingleton(classType: AppBoxKitHapticService)
+//    LazySingleton(classType: ArxaKitHapticService)
 
 // 2. Drive it from a view model:
-final haptics = appBoxKitLocator<AppBoxKitHapticService>();
+final haptics = arxaKitLocator<ArxaKitHapticService>();
 await haptics.initialize();          // reads canVibrate + persisted enable state
 await haptics.triggerSuccessHaptic();
 
@@ -63,22 +63,22 @@ See `kit_matrix.md` for the full routing + dependency graph.
 
 ### Architecture
 
-`appbox_kit_haptics` never imports `appbox_kit`. The allowed direction is the
-reverse: `appbox_kit` core (or any app) may take a path dependency on this kit.
+`arxa_kit_haptics` never imports `arxa_kit`. The allowed direction is the
+reverse: `arxa_kit` core (or any app) may take a path dependency on this kit.
 
 
 ### Gotchas
 
-No platform-specific permissions or manifest keys are documented at the kit level — device vibration capability is inherited from the underlying `haptic_feedback` package. The service gates every trigger on `canVibrate` plus the `SharedPreferences`-persisted enable flag, so unsupported devices silently no-op rather than throwing. Maintenance risk is concentrated in three backing packages (`haptic_feedback`, `rxdart`, `shared_preferences`) which must stay version-aligned with `stacked`/`stacked_shared`. Because the extension resolves the service through the shared `StackedLocator.instance`, `AppBoxKitHapticService` must be registered before any `.withHapticFeedback()` call or the gesture will fail to find a service.
+No platform-specific permissions or manifest keys are documented at the kit level — device vibration capability is inherited from the underlying `haptic_feedback` package. The service gates every trigger on `canVibrate` plus the `SharedPreferences`-persisted enable flag, so unsupported devices silently no-op rather than throwing. Maintenance risk is concentrated in three backing packages (`haptic_feedback`, `rxdart`, `shared_preferences`) which must stay version-aligned with `stacked`/`stacked_shared`. Because the extension resolves the service through the shared `StackedLocator.instance`, `ArxaKitHapticService` must be registered before any `.withHapticFeedback()` call or the gesture will fail to find a service.
 
 
 ### Testing
 
 ```dart
-import 'package:appbox_kit_haptics/appbox_kit_testing.dart';
+import 'package:arxa_kit_haptics/arxa_kit_testing.dart';
 
-final fake = FakeAppBoxKitHapticService(canVibrate: false); // unsupported device
-locator.registerSingleton<AppBoxKitHapticService>(fake);
+final fake = FakeArxaKitHapticService(canVibrate: false); // unsupported device
+locator.registerSingleton<ArxaKitHapticService>(fake);
 // ... exercise UI ...
 expect(fake.triggeredHaptics, isEmpty); // no-op on unsupported device
 ```
@@ -86,12 +86,12 @@ expect(fake.triggeredHaptics, isEmpty); // no-op on unsupported device
 
 ### Features
 
-<Checklist id="haptics-features" items={[{"id": "haptics-feat-0", "label": "`AppBoxKitHapticService` \u2014 class"}]} />
+<Checklist id="haptics-features" items={[{"id": "haptics-feat-0", "label": "`ArxaKitHapticService` \u2014 class"}]} />
 
 
 ### Decisions / ADRs
 
-appbox_kit_haptics is a phase 2B extraction: it was pulled out of `appbox_kit` core as a standalone capability kit so haptic feedback can be consumed without dragging in core's UI/navigation surface. It chose `haptic_feedback` as its backing SDK (single-purpose device haptics only — explicitly not a general vibration/notification-sound library), layered with `rxdart` for reactive state streams and `shared_preferences` for the persisted enable flag. The hard rule is that `appbox_kit_haptics` never imports `appbox_kit`; the dependency direction is strictly reversed, and the extension resolves through `StackedLocator.instance` to stay portable across Stacked apps.
+arxa_kit_haptics is a phase 2B extraction: it was pulled out of `arxa_kit` core as a standalone capability kit so haptic feedback can be consumed without dragging in core's UI/navigation surface. It chose `haptic_feedback` as its backing SDK (single-purpose device haptics only — explicitly not a general vibration/notification-sound library), layered with `rxdart` for reactive state streams and `shared_preferences` for the persisted enable flag. The hard rule is that `arxa_kit_haptics` never imports `arxa_kit`; the dependency direction is strictly reversed, and the extension resolves through `StackedLocator.instance` to stay portable across Stacked apps.
 
 <!-- kb:begin -->
 ### References
@@ -105,13 +105,13 @@ Official docs and tooling:
 - [stacked_cli (pub.dev)](https://pub.dev/packages/stacked_cli) — Scaffolding CLI for new Stacked apps/views/services.
 - [Flutter — official documentation](https://docs.flutter.dev) — Framework docs, platform integration, performance.
 - [Dart — official documentation](https://dart.dev) — Language tour, async, package ecosystem.
-- [Dart & Flutter MCP server (official)](https://dart.dev/tools/mcp-server) — Ships with the Dart SDK (dart mcp-server). Exposes analyzer diagnostics, pub, tests, and live Flutter app introspection via DTD. Wired in appbox_kit/.mcp.json.
+- [Dart & Flutter MCP server (official)](https://dart.dev/tools/mcp-server) — Ships with the Dart SDK (dart mcp-server). Exposes analyzer diagnostics, pub, tests, and live Flutter app introspection via DTD. Wired in arxa_kit/.mcp.json.
 
 Kit-specific:
 
-- [haptic_feedback (pub.dev)](https://pub.dev/packages/haptic_feedback) — haptic_feedback — backing dependency of appbox_kit_haptics.
-- [rxdart (pub.dev)](https://pub.dev/packages/rxdart) — rxdart — backing dependency of appbox_kit_haptics.
-- [shared_preferences (pub.dev)](https://pub.dev/packages/shared_preferences) — shared_preferences — backing dependency of appbox_kit_haptics.
+- [haptic_feedback (pub.dev)](https://pub.dev/packages/haptic_feedback) — haptic_feedback — backing dependency of arxa_kit_haptics.
+- [rxdart (pub.dev)](https://pub.dev/packages/rxdart) — rxdart — backing dependency of arxa_kit_haptics.
+- [shared_preferences (pub.dev)](https://pub.dev/packages/shared_preferences) — shared_preferences — backing dependency of arxa_kit_haptics.
 <!-- kb:end -->
 
 <QuestionForm id="open-questions" questions={[

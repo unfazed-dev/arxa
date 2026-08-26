@@ -11,7 +11,7 @@ Chain:
 1. GetX 4.7.3 mounts dim as the **child** of the `BackdropFilter` inside the
    same `overlayBlur > 0` entry (`snackbar_controller.dart:184-210`) — dim
    visible proves sigma 20 was mounted and active.
-2. `appBoxKitWithNativeChromeHidden` bumps `anyModalDepth`, but every in-page CN
+2. `arxaKitWithNativeChromeHidden` bumps `anyModalDepth`, but every in-page CN
    component defaults `autoHideOnModal: false` (vendor `modal_hide_mixin.dart`,
    deliberate post-Issue-#53 containment). Only the tab bar destroy-hides.
 3. Mounted mid-page `UiKitView`s slice the scene; a Flutter `BackdropFilter`
@@ -21,7 +21,7 @@ Chain:
 
 ## Fix (advisor-confirmed, option B)
 
-Tier-split the scrim. On `AppBoxKitPlatform.supportsLiquidGlass`:
+Tier-split the scrim. On `ArxaKitPlatform.supportsLiquidGlass`:
 
 - Kit-owned root-overlay entry inserted **before** the GetX entries:
   full-screen `LiquidGlassContainer` (`CNGlassEffect.regular`, `rect`) with the
@@ -41,13 +41,13 @@ Tier-split the scrim. On `AppBoxKitPlatform.supportsLiquidGlass`:
 
 ## Touch points
 
-- `kit/ui_library/lib/utils/appbox_kit_native_overlay.dart` — scrim entry +
+- `kit/ui_library/lib/utils/arxa_kit_native_overlay.dart` — scrim entry +
   extended wrapper param.
-- `kit/ui_library/lib/services/notifications/appbox_kit_notification_service.dart`
+- `kit/ui_library/lib/services/notifications/arxa_kit_notification_service.dart`
   — pass overlay + tier flag.
-- `kit/ui_library/lib/utils/kit_action/appbox_kit_snackbar_setup.dart` —
+- `kit/ui_library/lib/utils/kit_action/arxa_kit_snackbar_setup.dart` —
   tier-gated `scrimBlur`.
-- `kit/ui_library/test/kit/utils/appbox_kit_native_overlay_test.dart` —
+- `kit/ui_library/test/kit/utils/arxa_kit_native_overlay_test.dart` —
   insert/remove balance incl. throw path; scrim composition (glass below dim).
 - `kit/core/NATIVE_COMPONENTS.md` — ADR 0010 second amendment note.
 

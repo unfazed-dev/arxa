@@ -1,17 +1,17 @@
 # freeze
 
 > **⚠️ SUPERSEDED (2026-07-31, commit 4f9c458).** This bash gate is superseded
-> by the Dart freeze gate — `dart run bin/appbox.dart gate freeze` (or `appbox
-> gate freeze`) in `appboxd/` (`appboxd/lib/gate_freeze.dart`). It is retained
+> by the Dart freeze gate — `dart run bin/arxa.dart gate freeze` (or `arxa
+> gate freeze`) in `arxa/` (`arxa/lib/gate_freeze.dart`). It is retained
 > for reference only and is silently broken: its htmx path shells out to the
-> archived `skills/appbox-designer/runtime/serve.mjs` via `render_htmx.mjs`,
+> archived `skills/arxa-designer/runtime/serve.mjs` via `render_htmx.mjs`,
 > which no longer exists. Do not run it; run the Dart gate.
 
 The FREEZE / PROTOTYPE gate. Asserts the frozen design inputs are present, the
 design-approval stamp is valid, and every surface renders clean at **every
 derived viewport** — the width set implied by `--targets` via
 `pipeline/state/targets.derivation.json` (6.4). Widths come ONLY from
-`config/appbox.config.json`; there are no viewport literals in the gate.
+`config/arxa.config.json`; there are no viewport literals in the gate.
 
 Split out of the vendored `freeze_design.sh` (plan 03) along the render/structure
 seam: freeze owns *inputs + render + approval*; the structure gate owns the
@@ -26,10 +26,10 @@ root (htmx) vs `surfaces/*.html` + `tokens.json` (stacked_kit):
   `exclusions.json`, `direction-approved.md`, `brand-spec.md`, `structure.json`,
   `surfaces/*.html`. Rendered as files (each `surfaces/*.html` opened directly)
   via `uv run --with playwright`.
-- **htmx producer (appbox-designer)** — frozen inputs `app.routes.js`,
+- **htmx producer (arxa-designer)** — frozen inputs `app.routes.js`,
   `structure.json`, the registry it points at, and `ui/views/**/*_view.html`.
   The views are Jinja templates, so they are **served by the designer's Node
-  prototype server** (`skills/appbox-designer/runtime/serve.mjs`, loopback,
+  prototype server** (`skills/arxa-designer/runtime/serve.mjs`, loopback,
   OS-assigned port) and rendered via the runtime's Playwright
   (`render_htmx.mjs`). P09: the designer legitimately requires Node, so a
   dev-time gate MAY use it. Vocab/exclusions are N/A (no `tokens.json`); the

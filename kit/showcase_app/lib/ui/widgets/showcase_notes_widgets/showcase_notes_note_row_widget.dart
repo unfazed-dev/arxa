@@ -1,5 +1,5 @@
 /// A widget is a reusable UI piece composed by views. It receives data via
-/// constructor params or [AppBoxKitStreamBuilder] bindings and renders its
+/// constructor params or [ArxaKitStreamBuilder] bindings and renders its
 /// slice of the surface — it holds no business logic and never decides when
 /// an action runs.
 ///
@@ -39,9 +39,9 @@
 library;
 
 import 'package:flutter/material.dart';
-import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
-import 'package:appbox_kit_showcase_app/data/models/showcase_notes_models/models.dart';
-import 'package:appbox_kit_showcase_app/ui/views/showcase_notes_shell/showcase_notes_folder/showcase_notes_folder_viewmodel.dart';
+import 'package:arxa_kit_ui_library/arxa_kit_ui_library.dart';
+import 'package:arxa_kit_showcase_app/data/models/showcase_notes_models/models.dart';
+import 'package:arxa_kit_showcase_app/ui/views/showcase_notes_shell/showcase_notes_folder/showcase_notes_folder_viewmodel.dart';
 
 class ShowcaseNotesNoteRowWidget extends StatelessWidget {
   const ShowcaseNotesNoteRowWidget({
@@ -76,10 +76,10 @@ class ShowcaseNotesNoteRowWidget extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: abxSize20),
         child: Icon(
           isTrash
-              ? AppBoxKitGlyphs.restore.icon
+              ? ArxaKitGlyphs.restore.icon
               : (note.pinned
-                  ? AppBoxKitGlyphs.unpin.icon
-                  : AppBoxKitGlyphs.pin.icon),
+                  ? ArxaKitGlyphs.unpin.icon
+                  : ArxaKitGlyphs.pin.icon),
           color: isTrash
               ? theme.colorScheme.onTertiary
               : theme.colorScheme.onPrimary,
@@ -90,7 +90,7 @@ class ShowcaseNotesNoteRowWidget extends StatelessWidget {
         alignment: Alignment.centerRight,
         padding: const EdgeInsets.symmetric(horizontal: abxSize20),
         child:
-            Icon(AppBoxKitGlyphs.delete.icon, color: theme.colorScheme.onError),
+            Icon(ArxaKitGlyphs.delete.icon, color: theme.colorScheme.onError),
       ),
       confirmDismiss: (direction) async {
         if (isTrash) {
@@ -112,7 +112,7 @@ class ShowcaseNotesNoteRowWidget extends StatelessWidget {
       // docs/plans/notes-shell-abxaction-adoption.md, decision 4): its ink
       // painted over the native Liquid Glass tab chrome on long-press-style
       // holds.
-      child: AppBoxKitPressable(
+      child: ArxaKitPressable(
         onTap: () => context.router.pushNamed('note/${note.id}'),
         child: Padding(
           padding: const EdgeInsets.symmetric(
@@ -132,13 +132,13 @@ class ShowcaseNotesNoteRowWidget extends StatelessWidget {
                     ),
                   ),
                   if (note.pinned) ...[
-                    appBoxKitHorizontalSpaceTiny,
-                    Icon(AppBoxKitGlyphs.pin.icon,
+                    arxaKitHorizontalSpaceTiny,
+                    Icon(ArxaKitGlyphs.pin.icon,
                         size: abxSize14, color: theme.colorScheme.primary),
                   ],
                 ],
               ),
-              appBoxKitVerticalSpaceTiny,
+              arxaKitVerticalSpaceTiny,
               Text(
                 '${formatDate(note.updatedAt)}  ${note.snippet}',
                 maxLines: 1,

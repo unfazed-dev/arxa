@@ -18,13 +18,13 @@
 library;
 
 import 'package:flutter/material.dart';
-import 'package:appbox_kit_motion/appbox_kit_motion.dart';
-import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
+import 'package:arxa_kit_motion/arxa_kit_motion.dart';
+import 'package:arxa_kit_ui_library/arxa_kit_ui_library.dart';
 
 class ShowcaseMotionDragScrubCardWidget extends StatefulWidget {
   const ShowcaseMotionDragScrubCardWidget({required this.spec, super.key});
 
-  final AppBoxKitMotionSpec spec;
+  final ArxaKitMotionSpec spec;
 
   @override
   State<ShowcaseMotionDragScrubCardWidget> createState() =>
@@ -34,11 +34,11 @@ class ShowcaseMotionDragScrubCardWidget extends StatefulWidget {
 class _ShowcaseMotionDragScrubCardState
     extends State<ShowcaseMotionDragScrubCardWidget>
     with SingleTickerProviderStateMixin {
-  // The drawer-settle preset, passed explicitly so the demo names AppBoxKitSprings
+  // The drawer-settle preset, passed explicitly so the demo names ArxaKitSprings
   // (it is also the driver's default).
-  late final AppBoxKitGestureDriver _driver = AppBoxKitGestureDriver(
+  late final ArxaKitGestureDriver _driver = ArxaKitGestureDriver(
     vsync: this,
-    settleSpring: AppBoxKitSprings.snappy,
+    settleSpring: ArxaKitSprings.snappy,
   );
 
   @override
@@ -49,7 +49,7 @@ class _ShowcaseMotionDragScrubCardState
 
   Widget _chip(BuildContext context, String label, int order) => Expanded(
         // Same Expanded-inside-wake rule as ShowcaseMotionManualReplayCardWidget.
-        child: AppBoxKitGlassCard(
+        child: ArxaKitGlassCard(
           child: Padding(
             padding: const EdgeInsets.symmetric(vertical: abxSize16),
             child: Center(
@@ -76,7 +76,7 @@ class _ShowcaseMotionDragScrubCardState
               _driver.scrubBy(details.primaryDelta! / extent),
           onHorizontalDragEnd: (details) =>
               _driver.settle(velocity: (details.primaryVelocity ?? 0) / extent),
-          child: AppBoxKitGlassCard(
+          child: ArxaKitGlassCard(
             child: Padding(
               padding: const EdgeInsets.all(abxSize16),
               child: Column(
@@ -85,10 +85,10 @@ class _ShowcaseMotionDragScrubCardState
                   Text(
                     'Drag this card horizontally: the drag scrubs the scope '
                     '0→1, release settles to the nearest end with '
-                    'AppBoxKitSprings.snappy (re-grab mid-settle just works).',
+                    'ArxaKitSprings.snappy (re-grab mid-settle just works).',
                     style: Theme.of(context).textTheme.bodyMedium,
                   ),
-                  appBoxKitVerticalSpaceSmall,
+                  arxaKitVerticalSpaceSmall,
                   // Scrub handle — its position IS the driver value.
                   Container(
                     height: 32,
@@ -114,16 +114,16 @@ class _ShowcaseMotionDragScrubCardState
                       ),
                     ),
                   ),
-                  appBoxKitVerticalSpaceSmall,
-                  AppBoxKitMotionScope(
+                  arxaKitVerticalSpaceSmall,
+                  ArxaKitMotionScope(
                     driver: _driver,
                     spec: widget.spec,
                     child: Row(
                       children: <Widget>[
                         _chip(context, 'One', 0),
-                        appBoxKitHorizontalSpace(abxSize16 / 2),
+                        arxaKitHorizontalSpace(abxSize16 / 2),
                         _chip(context, 'Two', 1),
-                        appBoxKitHorizontalSpace(abxSize16 / 2),
+                        arxaKitHorizontalSpace(abxSize16 / 2),
                         _chip(context, 'Three', 2),
                       ],
                     ),

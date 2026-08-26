@@ -1,5 +1,5 @@
 /// A view composes adaptive primitives from the kit's native family and binds
-/// the viewmodel's streams with [AppBoxKitStreamBuilder], calling the viewmodel's
+/// the viewmodel's streams with [ArxaKitStreamBuilder], calling the viewmodel's
 /// actions on user input. It never contains business logic — every decision
 /// lives in the viewmodel, and only the subtree bound to a changed stream
 /// redraws.
@@ -41,26 +41,26 @@
 library;
 
 import 'package:flutter/material.dart';
-import 'package:appbox_kit_data/appbox_kit_data.dart' show AppBoxKitAuthSession;
-import 'package:appbox_kit_motion/appbox_kit_motion.dart';
-import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
-import 'package:appbox_kit_showcase_app/data/models/showcase_notes_models/models.dart';
-import 'package:appbox_kit_showcase_app/enums/showcase_notes_enums/enums.dart';
-import 'package:appbox_kit_showcase_app/ui/views/showcase_notes_shell/showcase_notes_auth/showcase_notes_auth_view.dart';
-import 'package:appbox_kit_showcase_app/ui/views/showcase_notes_shell/showcase_notes_create_account/showcase_notes_create_account_view.dart';
-import 'package:appbox_kit_showcase_app/ui/widgets/common/showcase_tabs_shared/widgets.dart';
-import 'package:appbox_kit_showcase_app/ui/widgets/showcase_notes_widgets/widgets.dart';
-import 'package:appbox_kit_showcase_app/ui/views/showcase_notes_shell/showcase_notes/showcase_notes_viewmodel.dart';
+import 'package:arxa_kit_data/arxa_kit_data.dart' show ArxaKitAuthSession;
+import 'package:arxa_kit_motion/arxa_kit_motion.dart';
+import 'package:arxa_kit_ui_library/arxa_kit_ui_library.dart';
+import 'package:arxa_kit_showcase_app/data/models/showcase_notes_models/models.dart';
+import 'package:arxa_kit_showcase_app/enums/showcase_notes_enums/enums.dart';
+import 'package:arxa_kit_showcase_app/ui/views/showcase_notes_shell/showcase_notes_auth/showcase_notes_auth_view.dart';
+import 'package:arxa_kit_showcase_app/ui/views/showcase_notes_shell/showcase_notes_create_account/showcase_notes_create_account_view.dart';
+import 'package:arxa_kit_showcase_app/ui/widgets/common/showcase_tabs_shared/widgets.dart';
+import 'package:arxa_kit_showcase_app/ui/widgets/showcase_notes_widgets/widgets.dart';
+import 'package:arxa_kit_showcase_app/ui/views/showcase_notes_shell/showcase_notes/showcase_notes_viewmodel.dart';
 
 class ShowcaseNotesViewMobile extends ViewModelWidget<ShowcaseNotesViewModel> {
   const ShowcaseNotesViewMobile({super.key});
 
   @override
   Widget build(BuildContext context, ShowcaseNotesViewModel viewModel) {
-    // Streams-only: every live value binds via AppBoxKitStreamBuilder — session
+    // Streams-only: every live value binds via ArxaKitStreamBuilder — session
     // gates auth-vs-folders, showCreateAccount picks the signed-out panel,
     // overview/admin drive the list. The viewmodel holds no relay fields.
-    return AppBoxKitStreamBuilder<AppBoxKitAuthSession?>(
+    return ArxaKitStreamBuilder<ArxaKitAuthSession?>(
       stream: viewModel.session$,
       builder: (context, session) {
         // Signed out: the tab root IS the auth surface — no gate card, no
@@ -68,13 +68,13 @@ class ShowcaseNotesViewMobile extends ViewModelWidget<ShowcaseNotesViewModel> {
         // place. The create-account panel is the same in-place swap, owned by
         // the VM so the choice survives the transient views rebuilding.
         if (session == null) {
-          return AppBoxKitStreamBuilder<bool>(
+          return ArxaKitStreamBuilder<bool>(
             stream: viewModel.showCreateAccount$,
             builder: (context, showCreateAccount) {
               // Bar-less by design — the auth panel IS the tab root, with no
               // chrome to inset against. That leaves its heading riding the
               // status-bar zone, so it takes the top-edge scrim on its own
-              // (the same one AppBoxKitFloatingChrome carries); the scrim is
+              // (the same one ArxaKitFloatingChrome carries); the scrim is
               // positioned, not self-sizing, hence the explicit Positioned.
               if (showCreateAccount) {
                 return Scaffold(
@@ -91,7 +91,7 @@ class ShowcaseNotesViewMobile extends ViewModelWidget<ShowcaseNotesViewModel> {
                         // the scrim is fully clear exactly where the resting
                         // hero starts: it dissolves whatever scrolls up into
                         // the status band without washing the static heading.
-                        child: AppBoxKitTopEdgeScrim(fadeExtent: abxSize24),
+                        child: ArxaKitTopEdgeScrim(fadeExtent: abxSize24),
                       ),
                     ],
                   ),
@@ -111,7 +111,7 @@ class ShowcaseNotesViewMobile extends ViewModelWidget<ShowcaseNotesViewModel> {
                       // the scrim is fully clear exactly where the resting
                       // hero starts: it dissolves whatever scrolls up into
                       // the status band without washing the static heading.
-                      child: AppBoxKitTopEdgeScrim(fadeExtent: abxSize24),
+                      child: ArxaKitTopEdgeScrim(fadeExtent: abxSize24),
                     ),
                   ],
                 ),
@@ -120,22 +120,22 @@ class ShowcaseNotesViewMobile extends ViewModelWidget<ShowcaseNotesViewModel> {
           );
         }
 
-        // Shell/tab-root chrome resolves through AppBoxKitChromeScaffold per
+        // Shell/tab-root chrome resolves through ArxaKitChromeScaffold per
         // docs/liquid-glass-allowlist.md — it picks the boxed app bar or the
         // native floating bar per runtime tier; hosts never assemble chrome.
-        return AppBoxKitChromeScaffold(
+        return ArxaKitChromeScaffold(
           title: 'Folders',
           actions: [
-            AppBoxKitNativeIconButton(
-              glyph: AppBoxKitGlyphs.newFolder,
+            ArxaKitNativeIconButton(
+              glyph: ArxaKitGlyphs.newFolder,
               onPressed: viewModel.createFolderWithPrompt,
             ),
-            AppBoxKitNativePopupMenu(
-              glyph: AppBoxKitGlyphs.more,
+            ArxaKitNativePopupMenu(
+              glyph: ArxaKitGlyphs.more,
               items: const [
-                AppBoxKitMenuItem(
+                ArxaKitMenuItem(
                   label: 'Sign Out',
-                  glyph: AppBoxKitGlyphs.signOut,
+                  glyph: ArxaKitGlyphs.signOut,
                   isDestructive: true,
                 ),
               ],
@@ -153,14 +153,14 @@ class ShowcaseNotesViewMobile extends ViewModelWidget<ShowcaseNotesViewModel> {
             // instead of insetting the whole viewport (which produces a hard cut).
             top: false,
             bottom: false,
-            child: AppBoxKitStreamBuilder<ShowcaseNotesOverview?>(
+            child: ArxaKitStreamBuilder<ShowcaseNotesOverview?>(
               stream: viewModel.overview$,
               builder: (context, overview) {
                 if (overview == null) {
                   // Signed in, first overview emission pending.
-                  return const Center(child: AppBoxKitNativeLoadingIndicator());
+                  return const Center(child: ArxaKitNativeLoadingIndicator());
                 }
-                return AppBoxKitStreamBuilder<ShowcaseNotesAdminOverview?>(
+                return ArxaKitStreamBuilder<ShowcaseNotesAdminOverview?>(
                   stream: viewModel.adminOverview$,
                   builder: (context, admin) => _foldersScrollView(
                       context, viewModel, session, overview, admin),
@@ -178,12 +178,12 @@ class ShowcaseNotesViewMobile extends ViewModelWidget<ShowcaseNotesViewModel> {
   Widget _foldersScrollView(
     BuildContext context,
     ShowcaseNotesViewModel viewModel,
-    AppBoxKitAuthSession session,
+    ArxaKitAuthSession session,
     ShowcaseNotesOverview overview,
     ShowcaseNotesAdminOverview? admin,
   ) {
     final theme = Theme.of(context);
-    return AppBoxKitMotionScope(
+    return ArxaKitMotionScope(
       child: CustomScrollView(
         slivers: [
           // Account subtitle — a thin sliver at the top of the list. Its top
@@ -225,11 +225,11 @@ class ShowcaseNotesViewMobile extends ViewModelWidget<ShowcaseNotesViewModel> {
   ) {
     final theme = Theme.of(context);
 
-    Widget allNotesSection() => AppBoxKitListSection(
+    Widget allNotesSection() => ArxaKitListSection(
           margin: EdgeInsets.zero,
           children: [
             ShowcaseNotesRowWidget(
-              glyph: AppBoxKitGlyphs.notes,
+              glyph: ArxaKitGlyphs.notes,
               label: 'All Notes',
               trailingCount: overview.allCount,
               onTap: () => context.router
@@ -238,7 +238,7 @@ class ShowcaseNotesViewMobile extends ViewModelWidget<ShowcaseNotesViewModel> {
           ],
         );
 
-    Widget foldersSection() => AppBoxKitListSection(
+    Widget foldersSection() => ArxaKitListSection(
           margin: EdgeInsets.zero,
           children: [
             for (final folder in overview.folders)
@@ -251,11 +251,11 @@ class ShowcaseNotesViewMobile extends ViewModelWidget<ShowcaseNotesViewModel> {
           ],
         );
 
-    Widget trashSection() => AppBoxKitListSection(
+    Widget trashSection() => ArxaKitListSection(
           margin: EdgeInsets.zero,
           children: [
             ShowcaseNotesRowWidget(
-              glyph: AppBoxKitGlyphs.delete,
+              glyph: ArxaKitGlyphs.delete,
               label: 'Recently Deleted',
               trailingCount: overview.trashCount,
               onTap: () => context.router
@@ -276,7 +276,7 @@ class ShowcaseNotesViewMobile extends ViewModelWidget<ShowcaseNotesViewModel> {
           sliver: SliverToBoxAdapter(
             child: section
                 .scrollEdgeEffect(
-                  edge: AppBoxKitScrollEdge.bottom,
+                  edge: ArxaKitScrollEdge.bottom,
                   occlusionPadding: kShowcaseTabBarBlockHeight,
                 )
                 .wake(order: index),
@@ -286,7 +286,7 @@ class ShowcaseNotesViewMobile extends ViewModelWidget<ShowcaseNotesViewModel> {
     // Admin-only: every folder across every owner, read-only. Rendered as one
     // more grouped section in the same stagger ramp — presence of the data
     // (adminOverview != null) is the only gate, the view adds no role logic.
-    Widget adminSection() => AppBoxKitListSection(
+    Widget adminSection() => ArxaKitListSection(
           margin: EdgeInsets.zero,
           children: [
             for (final folder in admin!.folders)

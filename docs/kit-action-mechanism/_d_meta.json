@@ -3,10 +3,10 @@
   "designSystems": [],
   "primaryDesignSystem": null,
   "assets": {
-    "AppBoxKitAction Mechanism": {
+    "ArxaKitAction Mechanism": {
       "versions": [
         {
-          "path": "AppBoxKitAction Mechanism.html",
+          "path": "ArxaKitAction Mechanism.html",
           "createdAt": "2026-08-06T15:50:13.052Z",
           "status": "needs-review"
         }

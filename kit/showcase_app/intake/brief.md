@@ -1,19 +1,19 @@
-# showcase_app — the appbox kit showcase: a real notes product (auth, notes CRUD, folders, search, media attachments) plus shell demos for every kit surface family — design brief
+# showcase_app — the arxa kit showcase: a real notes product (auth, notes CRUD, folders, search, media attachments) plus shell demos for every kit surface family — design brief
 
-> Emitted by appbox-intake from elicited answers.
+> Emitted by arxa-intake from elicited answers.
 > **Intake elicits; it does not generate** (architecture §22).
 > Fields marked **[inferred]** were not stated by the client and MUST
 > be confirmed before design consumes this brief.
 
 ## Product
 
-showcase_app — the appbox kit showcase: a real notes product (auth, notes CRUD, folders, search, media attachments) plus shell demos for every kit surface family
+showcase_app — the arxa kit showcase: a real notes product (auth, notes CRUD, folders, search, media attachments) plus shell demos for every kit surface family
 
 _provenance: founder_
 
 ## Audience
 
-When I evaluate the appbox kit, I want a working notes app and live shell demos in one target, so I can judge the kit on real product behavior rather than static mockups
+When I evaluate the arxa kit, I want a working notes app and live shell demos in one target, so I can judge the kit on real product behavior rather than static mockups
 
 _provenance: founder_
 
@@ -50,7 +50,7 @@ _provenance: founder_
 
 ## Brand
 
-appbox kit showcase; neutral demo branding that defers to the kit theme
+arxa kit showcase; neutral demo branding that defers to the kit theme
 
 _provenance: founder_
 

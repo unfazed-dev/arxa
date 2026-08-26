@@ -1,16 +1,16 @@
 # Third-party notices
 
-appbox incorporates third-party software. Their licence terms are reproduced
+arxa incorporates third-party software. Their licence terms are reproduced
 below and continue to apply to the incorporated portions.
 
 ---
 
-## `skills/appbox-designer`
+## `skills/arxa-designer`
 
-`skills/appbox-designer` is a fork of an MIT-licensed design skill. The
+`skills/arxa-designer` is a fork of an MIT-licensed design skill. The
 upstream copyright notice and permission notice are reproduced here in full, as
 the licence requires. The same `LICENSE` file is also retained inside
-`skills/appbox-designer/`.
+`skills/arxa-designer/`.
 
 > MIT License
 >
@@ -49,11 +49,11 @@ historical reference.
 
 ---
 
-## `skills/appbox-designer/runtime/vendor/`
+## `skills/arxa-designer/runtime/vendor/`
 
 Client libraries served to prototypes, vendored and SRI-pinned. Packages and
 versions below are read from
-[`runtime/vendor/manifest.json`](skills/appbox-designer/runtime/vendor/manifest.json),
+[`runtime/vendor/manifest.json`](skills/arxa-designer/runtime/vendor/manifest.json),
 which also carries the SRI hashes.
 
 | file | package | version | licence |
@@ -80,7 +80,7 @@ pinned version. (`model-viewer.min.js` carried a local far-plane change from
 what it was applied for — see
 `docs/research/model-viewer-far-plane-verification.md`; the file is back at
 the pristine 4.3.1 bytes.) If a local patch is ever added via the
-`vendorPatches` registry in `appboxd/lib/design_tools.dart`, a test fails
+`vendorPatches` registry in `arxa/lib/design_tools.dart`, a test fails
 until the file is named here — Apache-2.0 §4(b) style prominent notice — so
 this section cannot go stale silently.
 
@@ -91,7 +91,7 @@ from the registry rather than from memory. The `licence` column records values
 resolved via the script below; `—` marks legacy entries not cached there:
 
 ```sh
-cd skills/appbox-designer/runtime/vendor
+cd skills/arxa-designer/runtime/vendor
 python3 -c "import json;[print(e['package'], e['version']) for e in json.load(open('manifest.json'))]" \
   | while read -r p v; do echo "$p@$v: $(npm view "$p@$v" license 2>/dev/null)"; done
 ```
@@ -101,7 +101,7 @@ python3 -c "import json;[print(e['package'], e['version']) for e in json.load(op
 ## Runtime dependencies
 
 Installed from npm at setup, not vendored. See
-`skills/appbox-designer/runtime/package.json`.
+`skills/arxa-designer/runtime/package.json`.
 
 Licences below were **read from each installed package's `package.json`** on
 2026-07-27, not recalled:
@@ -114,22 +114,22 @@ Licences below were **read from each installed package's `package.json`** on
 
 ---
 
-## Lexend fonts (`designs/appbox-studio/assets/fonts/`)
+## Lexend fonts (`designs/arxa-studio/assets/fonts/`)
 
 The Lexend superfamily (Lexend, Lexend Giga, Lexend Deca) by Thomas Jockin /
 Font Bureau, vendored as woff2 from fonts.gstatic.com on 2026-07-28. Published
 under the **SIL Open Font License 1.1** — free to use, embed, and redistribute.
 License text: https://openfontlicense.org. Per-file inventory:
-`designs/appbox-studio/assets/fonts/FONTS.md`.
+`designs/arxa-studio/assets/fonts/FONTS.md`.
 
 ---
 
-## `skills/appbox-story-mapper`
+## `skills/arxa-story-mapper`
 
-`skills/appbox-story-mapper` is an MIT-licensed story-mapping skill, adapted
-for appbox. The upstream copyright notice and permission notice are reproduced
+`skills/arxa-story-mapper` is an MIT-licensed story-mapping skill, adapted
+for arxa. The upstream copyright notice and permission notice are reproduced
 here in full, as the licence requires. The same `LICENSE.txt` file is also
-retained inside `skills/appbox-story-mapper/`.
+retained inside `skills/arxa-story-mapper/`.
 
 > MIT License
 >
@@ -154,22 +154,22 @@ retained inside `skills/appbox-story-mapper/`.
 > SOFTWARE.
 
 **What was changed in the adaptation.** The skill was renamed
-(`story-map-builder` → `appbox-story-mapper`) and scoped into the pipeline as
-the pre-design elicitation step feeding `appbox-designer` directly.
+(`story-map-builder` → `arxa-story-mapper`) and scoped into the pipeline as
+the pre-design elicitation step feeding `arxa-designer` directly.
 `generate_story_map.py` gained `--data-out`, `--brief-out` and `--self-test`:
 the brief emission (Epic → shell, Feature → surface, all-`wont` → out-of-scope,
 per-surface MoSCoW/release rollups as table columns) produces the surface table
 the intake traceability gate (plan 10.6; since ported to pure Dart —
-`appbox gate intake`, `appboxd/lib/gate_intake.dart`) traces against. The HTML
+`arxa gate intake`, `arxa/lib/gate_intake.dart`) traces against. The HTML
 story map and all original features are unchanged.
 
 ---
 
-## Example media assets (`designs/appbox-studio/assets/media/`)
+## Example media assets (`designs/arxa-studio/assets/media/`)
 
 One example asset per island runtime, each free for commercial use.
 Per-file inventory with source URLs and sha256 hashes:
-`designs/appbox-studio/assets/media/MEDIA.md`.
+`designs/arxa-studio/assets/media/MEDIA.md`.
 
 | file | source | licence |
 |---|---|---|

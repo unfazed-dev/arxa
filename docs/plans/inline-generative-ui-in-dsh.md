@@ -28,7 +28,7 @@ hardcoded switch?") drove the investigation and is answered in section B.
    the design panel.
 
 2. **Out of scope here:** the existing `arxa-design-panel` overlay (that is a
-   dock, not inline), and any change to appbox engine verbs. This plan covers
+   dock, not inline), and any change to arxa engine verbs. This plan covers
    the *harness rendering seam* only.
 
 ---
@@ -188,7 +188,7 @@ at the dispatch site, not from doc strings.
       sandbox surface at all. Its JSON is deliberately **flat and streaming**
       so an LLM can build a UI incrementally rather than having to emit perfect
       JSON in one shot. Reference renderers exist for Angular, Flutter, Lit and
-      Markdown — the Flutter one is of independent interest to appbox.
+      Markdown — the Flutter one is of independent interest to arxa.
 
 16c. **The synthesis: one lookup path, two renderers.** These are not
     competing choices to pick between, they are the two ends of a trust axis,
@@ -426,10 +426,10 @@ at the dispatch site, not from doc strings.
     React in `shell.overlay`; the same catalogue renderers drop straight in.
 
 35. **Can it be live-streaming per rung? Not today, and the blocker is in
-    appbox, not arxa.** `appbox design serve` has **no server→browser push
+    arxa, not arxa.** `arxa design serve` has **no server→browser push
     channel of any kind** — verified absence, not an unchecked assumption: no
     `text/event-stream`, no `EventSource`, no `WebSocketTransformer` anywhere
-    in `appboxd/lib` outside `cdp.dart` and `lens/` (which talk to Chrome, not
+    in `arxa/lib` outside `cdp.dart` and `lens/` (which talk to Chrome, not
     to a client). Reload is server-side only: a file watcher
     (`design_server.dart:891-906`) debounces 200 ms into `_scheduleReload()`
     (`:867-875`) and re-imports the artifact modules cache-busted in the same
@@ -467,9 +467,9 @@ at the dispatch site, not from doc strings.
     artifact + port.
 
 39. **`kit/genui_bridge` already implements A2UI v0.9 in Dart** — envelope
-    (`appbox_kit_a2ui_message.dart`, version pinned `v0.9`), a chunk-boundary-safe
+    (`arxa_kit_a2ui_message.dart`, version pinned `v0.9`), a chunk-boundary-safe
     incremental parser tested down to one byte at a time, and OpenAI/Anthropic
-    SSE adapters. It has **zero dependents**: nothing in `appboxd` imports it,
+    SSE adapters. It has **zero dependents**: nothing in `arxa` imports it,
     and it lives in the `kit/` layer aimed at *generated Flutter apps rendering
     gen-UI at runtime*, not at the designer producing a design. Reusing it for
     the panel is a real port, not a wire-up — but it is why stage 2's payload
@@ -481,7 +481,7 @@ at the dispatch site, not from doc strings.
 27. Which three components seed the Stage 2 catalogue? (Proposed: viewport
     ladder, choice/confirm row, structured diff.)
 28. Does arxa want Stage 4 at all, or is standards-compatibility a distraction
-    from the appbox/lens work? Stage 4 is the largest and the only one with an
+    from the arxa/lens work? Stage 4 is the largest and the only one with an
     upstream dependency.
 29. Layer B's `store?: H` seat on `register` was not investigated; it is
     page-lifetime, not disk, so it does not change decision 9 — but it may
@@ -502,7 +502,7 @@ cross-origin endpoint, and opening it meant looking at what was already open.
         POST /__project_write   Origin: https://evil.example
         -> 200 {"ok":true,"path":"PWNED.js"}
 
-    The file landed in `~/.appbox/projects/portalo/` (deleted immediately
+    The file landed in `~/.arxa/projects/portalo/` (deleted immediately
     after; the proof was run against a scratch artifact but `__project_write`
     is confined to the *project* dir, which is the live one). `GET /__projects`
     with `Host: evil.example.com` also answered 200 — the DNS-rebinding path.
@@ -510,7 +510,7 @@ cross-origin endpoint, and opening it meant looking at what was already open.
     what makes the no-preflight form work. The written file is later imported
     by the worker.
 
-47. **`appboxd/lib/design_server/browser_trust.dart`** — three layers, in the
+47. **`arxa/lib/design_server/browser_trust.dart`** — three layers, in the
     order a request meets them:
     * **Host allowlist**, every request, `421` on a miss. Loopback names
       (`localhost`, `127.0.0.0/8`, `::1`, and `*.localhost` per RFC 6761),
@@ -519,7 +519,7 @@ cross-origin endpoint, and opening it meant looking at what was already open.
       1.24.0 — same shape, same server class).
     * **Fetch-metadata / Origin check**, `403`, on every state-changing method
       AND every `/__*` path whatever the method (the resource-isolation policy
-      from OWASP's XS-Leaks sheet — `GET /__projects` enumerates ~/.appbox and
+      from OWASP's XS-Leaks sheet — `GET /__projects` enumerates ~/.arxa and
       has no business answering a cross-site page). Artifact files and the
       design's own GET routes stay unguarded so the panel iframe and a
       hand-typed `http://127.0.0.1:4319/` need zero configuration.
@@ -572,7 +572,7 @@ cross-origin endpoint, and opening it meant looking at what was already open.
     real cross-origin subscriber; `Host: evil.example.com` -> 421; the
     cross-site `__project_write` -> 403 with no file on disk; an
     un-allowlisted origin -> 403; `GET /`, `GET /__routes` and a cross-site
-    iframe GET all still 200. `appbox design probe all` -> 10/16, and the
+    iframe GET all still 200. `arxa design probe all` -> 10/16, and the
     discriminator is that the serve log recorded **zero** refusals: the six
     failures are unfinished spike work ("BLOCKED: no emitted tree") and
     inspector probes expecting a different project fixture, none of them the
@@ -598,14 +598,14 @@ cross-origin endpoint, and opening it meant looking at what was already open.
 55. **Amendment to 53 — the flag is no longer per-serve.** 53's clause "the
     design server must be started with `--trusted-origin …`" is struck; the
     rest of 53 stands, including the refusal to hardcode arxa's origin into
-    the engine. `appbox design serve` now also reads
-    `~/.appbox/trusted-origins` (one origin per line, `#` comments,
+    the engine. `arxa design serve` now also reads
+    `~/.arxa/trusted-origins` (one origin per line, `#` comments,
     `92b869ac`), and `bin/arxa.mjs` registers its own origin there at boot
     (`arxa-studio` `7ce8562`). The engine still knows nothing about arxa — it
     reads a file; arxa writes to it. Machine-scoped, because "this laptop's
     studio may subscribe" is a fact about the laptop, not about whichever
     client repo the design happens to live in — which is also why it is NOT
-    in `config/appbox.config.json`, the pipeline's SSOT.
+    in `config/arxa.config.json`, the pipeline's SSOT.
     * A line that does not parse as `scheme://host` is dropped and named on
       stderr. Left in, it would pass `normalizeOrigin`'s raw fallback, match
       nothing, and be indistinguishable from "the flag didn't work".
@@ -642,7 +642,7 @@ cross-origin endpoint, and opening it meant looking at what was already open.
       would read as a broken stream.
 
 57. **The iframe never worked, and no test could have caught it.** Every
-    cross-origin iframe of `appbox design serve` was refused — the design panel
+    cross-origin iframe of `arxa design serve` was refused — the design panel
     and the `gen_ui` RungLadder alike, both blank. The header doing it,
     `X-Frame-Options: SAMEORIGIN`, appears in no source file in this repo:
     `dart:io` puts it in `HttpServer.defaultResponseHeaders` by its own
@@ -664,7 +664,7 @@ cross-origin endpoint, and opening it meant looking at what was already open.
     the posture. `frame-ancestors` is Baseline since 2018 and header-only
     (it is ignored in a `<meta>`).
     * The allowlist mirrors `originAllowed`: one operator lever
-      (`~/.appbox/trusted-origins` + `--trusted-origin`) now governs both who
+      (`~/.arxa/trusted-origins` + `--trusted-origin`) now governs both who
       may call us and who may frame us.
     * Set on `defaultResponseHeaders` at the bind site, not in `_handle`, so a
       route that returns early cannot ship a document without the policy.
@@ -749,7 +749,7 @@ cross-origin endpoint, and opening it meant looking at what was already open.
     remove them.** The bars showing in the ladder's mobile/tablet rungs and in
     the design panel belong to the framed document's own inner scrollers (the
     artifact's carousels and overflow panes), which is cross-origin: neither
-    consumer can reach its stylesheets. So `appbox design serve` injects
+    consumer can reach its stylesheets. So `arxa design serve` injects
     `*{scrollbar-width:none}` + `*::-webkit-scrollbar{width:0;height:0}` into
     full HTML documents, alongside the islands-eager loader it already injects.
     Scrolling is untouched; only the bar is hidden.
@@ -800,7 +800,7 @@ cross-origin endpoint, and opening it meant looking at what was already open.
 69. **What ships instead: an accent outline glow on a surface still filling in.**
     Not a placeholder during reasoning — no card exists then (see 68). The
     window that IS real is the iframe boot: a RungLadder frames a live
-    `appbox design serve`, which takes seconds. The frame box glows until its
+    `arxa design serve`, which takes seconds. The frame box glows until its
     iframe fires `load`, and the whole card glows until the call settles. The
     ring is a masked `conic-gradient` swept by an `@property`-registered angle
     — a plain custom property is a *string* to the animation engine and would
@@ -885,7 +885,7 @@ cross-origin endpoint, and opening it meant looking at what was already open.
     from the freshly AOT-compiled binary on port 4399 emitted
     `frame-ancestors 'self' http://127.0.0.1:4399 http://localhost:4399
     http://arxa.studio.localhost:7891`, confirming both that the token is
-    gone and that `~/.appbox/trusted-origins` still supplies the studio, so a
+    gone and that `~/.arxa/trusted-origins` still supplies the studio, so a
     restart cannot silently un-frame the panel.
 
 76. **An operator-supplied IPv6 origin is deliberately NOT filtered out of
@@ -897,9 +897,9 @@ cross-origin endpoint, and opening it meant looking at what was already open.
     calls the worst an allowlist can have. `browser_trust_test.dart` asserts
     the pass-through so nobody "hardens" it into silence.
 
-    Note for future debugging: `.build/appbox` is an AOT binary. A Dart change
-    needs a recompile, and the `appbox` wrapper does that automatically only
-    when invoked as `appbox` — relaunching the raw `.build/appbox` path
+    Note for future debugging: `.build/arxa` is an AOT binary. A Dart change
+    needs a recompile, and the `arxa` wrapper does that automatically only
+    when invoked as `arxa` — relaunching the raw `.build/arxa` path
     re-execs the old image and the fix appears not to work.
 
 77. **Decision 74 is reversed: every rung gets its own live document.** 74 made

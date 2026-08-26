@@ -1,4 +1,4 @@
-# No-reload interaction in appbox + generated designs
+# No-reload interaction in arxa + generated designs
 
 Status: **Lever 1 landed 2026-08-02.** Levers 2 and 3 specified, not started.
 
@@ -62,7 +62,7 @@ to maintain.
 ## Lever 1 — morph swaps (LANDED)
 
 - **Vendored `idiomorph@0.7.4`** (`dist/idiomorph-ext.min.js`, core + htmx
-  extension in one file) through the sanctioned `appbox design vendor-fetch`
+  extension in one file) through the sanctioned `arxa design vendor-fetch`
   path, SRI-pinned in `manifest.json` + `SRI.md`.
 - **Loaded in `base.html`** after htmx, with `hx-ext="…,morph"` on `<body>`.
   Passes all four ADR-0002 lint rules unchanged — it is a vendored `<script>`
@@ -261,10 +261,10 @@ survives, proving a same-document swap rather than a full load.
 ### Original Lever 3 specification (superseded by the above)
 
 Independent of Levers 1–2, and the half that answers "reusable in the designs
-appbox-designer generates."
+arxa-designer generates."
 
 `screen_stub_view.html` loads **no htmx at all**, and portalo's surfaces
-(`~/.appbox/projects/portalo/design/surfaces/*.html`) navigate with plain
+(`~/.arxa/projects/portalo/design/surfaces/*.html`) navigate with plain
 `<a href>`. So every click inside a prototype is a full document load of the
 iframe — a white flash per interaction, independent of the studio bug.
 
@@ -287,8 +287,8 @@ core team's own discussion on it is unresolved. ADR-0003 chose it deliberately;
 confirm it still holds for iframe-hosted screens before propagating it to every
 generated design.
 
-**This lever edits `skills/appbox-designer/` — the verified SSOT** (the server
-serves `/assets/vendor/` from there; `.kimi-code/skills/appbox-designer/` is a
+**This lever edits `skills/arxa-designer/` — the verified SSOT** (the server
+serves `/assets/vendor/` from there; `.kimi-code/skills/arxa-designer/` is a
 gitignored byte-identical copy). Do not edit the copy.
 
 ## Reusable rule this establishes

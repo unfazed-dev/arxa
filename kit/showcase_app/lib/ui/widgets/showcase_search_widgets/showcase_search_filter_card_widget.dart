@@ -13,9 +13,9 @@
 library;
 
 import 'package:flutter/material.dart';
-import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
-import 'package:appbox_kit_showcase_app/ui/views/showcase_search_shell/showcase_search/showcase_search_viewmodel.dart';
-import 'package:appbox_kit_showcase_app/ui/widgets/common/showcase_tabs_shared/widgets.dart';
+import 'package:arxa_kit_ui_library/arxa_kit_ui_library.dart';
+import 'package:arxa_kit_showcase_app/ui/views/showcase_search_shell/showcase_search/showcase_search_viewmodel.dart';
+import 'package:arxa_kit_showcase_app/ui/widgets/common/showcase_tabs_shared/widgets.dart';
 
 class ShowcaseSearchFilterCardWidget extends StatelessWidget {
   const ShowcaseSearchFilterCardWidget({super.key, required this.viewModel});
@@ -24,7 +24,7 @@ class ShowcaseSearchFilterCardWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return AppBoxKitGlassCard(
+    return ArxaKitGlassCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -35,7 +35,7 @@ class ShowcaseSearchFilterCardWidget extends StatelessWidget {
               ShowcaseValueChipWidget(viewModel.radius.toStringAsFixed(2)),
             ],
           ),
-          AppBoxKitNativeSlider(
+          ArxaKitNativeSlider(
             value: viewModel.radius,
             divisions: 10,
             onChanged: viewModel.setRadius,
@@ -46,8 +46,8 @@ class ShowcaseSearchFilterCardWidget extends StatelessWidget {
           // per slice since PR #54010) — the slab/dropped-label signature.
           // The spacer paints nothing and creates no slice; the price label
           // therefore sits BELOW its slider. See docs/plans/clip-0813-fix-plan.md.
-          appBoxKitVerticalSpaceSmall,
-          AppBoxKitNativeRangeSlider(
+          arxaKitVerticalSpaceSmall,
+          ArxaKitNativeRangeSlider(
             values: RangeValues(viewModel.priceStart, viewModel.priceEnd),
             onChanged: (RangeValues v) => viewModel.setPrice(v.start, v.end),
           ),
@@ -62,6 +62,6 @@ class ShowcaseSearchFilterCardWidget extends StatelessWidget {
         ],
       ),
     );
-    // Edge treatment belongs to the enclosing AppBoxKitEdgeAwareListView.
+    // Edge treatment belongs to the enclosing ArxaKitEdgeAwareListView.
   }
 }

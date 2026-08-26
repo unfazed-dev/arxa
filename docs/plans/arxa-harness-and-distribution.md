@@ -36,7 +36,7 @@ skipped (no API key), recorded per convention.
    no engine picker or multiplex surface in the product.
 4. **The harness keeps dsh's base UI** (chat composer, model picker,
    session side panel) and grows by plugins. Engines keep their native
-   LLM-provider plumbing; API keys centralize in the `appbox credentials`
+   LLM-provider plumbing; API keys centralize in the `arxa credentials`
    vault.
 5. **Home: separate repo** at
    `/Volumes/developer_ssd/Developer/totem_labs/arxa-harness` (clean fork
@@ -164,10 +164,10 @@ skipped (no API key), recorded per convention.
      into compiled verbs over time; the surgical-lens program already
      moves this way.
 
-## E. Naming — appbox → arxa
+## E. Naming — arxa → arxa
 
 10. **arxa is the product and brand** (arxa, arxa Studio, arxa harness);
-    **appbox remains the engine name** for now. Staged rename: brand-level
+    **arxa remains the engine name** for now. Staged rename: brand-level
     immediately; the full rename (binary, skills, repo, docs) is its own
     workstream **gated on harness validation** — executed as one
     deliberate pass, never piecemeal. Before anything outward-facing: name
@@ -208,7 +208,7 @@ skipped (no API key), recorded per convention.
     stage resumes its session with the stage skill and the project's
     memory slice injected.
 15. **Design panel** (plugin): iframe over the existing
-    `appbox design serve` with live reload while the designer streams, and
+    `arxa design serve` with live reload while the designer streams, and
     a rung switcher rendering the viewport ladder (390×844 / 744×1133 /
     1280×832). Direct manipulation: hit-test regions via their `arxa-*`
     identity, drag handles that **snap to the design-token scale**, and
@@ -244,13 +244,13 @@ skipped (no API key), recorded per convention.
 - Buyer model access (BYO API key vs metered gateway) — product-horizon
   pricing question; reopens D-series.
 - Pi inside the product installer — dogfooding evidence (decision 8).
-- Full appbox→arxa rename pass — gated on harness validation
+- Full arxa→arxa rename pass — gated on harness validation
   (decision 10).
 
 ## Amendment 2026-08-21 — H1 built; three assumptions corrected by evidence
 
 H1 is **implemented and tested** (`install.sh`, `tools/portable-core-test.sh`,
-`hooks/appbox-guard.js`, `harness/`). Building it falsified three things this
+`hooks/arxa-guard.js`, `harness/`). Building it falsified three things this
 plan asserted. Corrections, with the evidence that forced them:
 
 1. **There is no dsh Claude-hooks bridge.** Decision 12's "dsh hook bridge
@@ -293,19 +293,19 @@ Two further findings that reshape later workstreams:
   per tool call is unusable at 1.4s. `install.sh` therefore compiles by default,
   and the binary must live **inside** the checkout or the designer silently
   loses its runtime assets (`scriptRepoRoot()` walks up from the executable).
-- **No per-tool-call policy verb exists in the engine.** Every `appbox gate`
+- **No per-tool-call policy verb exists in the engine.** Every `arxa gate`
   subcommand is a stage-level batch check, so H5's "tool-call interception
   shelling to the engine for verdicts" had nothing to call. Rather than invent
   one, the guard enforces an already-ratified rule that genuinely needs
   per-call granularity — rust-port-closure decision 12, "using-sessions never
-  write into appbox". An engine verdict verb remains **unbuilt**; add it only
+  write into arxa". An engine verdict verb remains **unbuilt**; add it only
   when a policy needs engine state.
 
 4. **dsh never scans `.claude/skills`** — its roots are `<root>/.dsh/skills`,
    `<root>/.agents/skills`, `customSkillDirs`, `~/.dsh/skills`,
    `~/.agents/skills` (`dsh-skill-filesystem/lib/index.js:150`); Pi scans
    `.pi/skills` + `.agents/skills`. The repo reached Claude Code through
-   `.claude/skills -> ../skills`, so **dsh and Pi were seeing zero appbox
+   `.claude/skills -> ../skills`, so **dsh and Pi were seeing zero arxa
    skills**. Fixed by a committed `.agents/skills -> skills` symlink, which
    serves both. Regression-pinned in the portable-core suite.
 5. **dsh CAN drive Anthropic models — H1's open auth item is answered.**
@@ -336,10 +336,10 @@ Two further findings that reshape later workstreams:
 raised here was put to the operator and settled by neither ratifying nor
 narrowing it, but by inverting the list.
 
-The original denylist mirrored `appbox-doc-enforce.js`'s source set — nine dirs
-(`appboxd kit pipeline gates tools skills config hooks harness`; this document
+The original denylist mirrored `arxa-doc-enforce.js`'s source set — nine dirs
+(`arxa kit pipeline gates tools skills config hooks harness`; this document
 previously said eight, a miscount). Auditing the checkout showed that of its 18
-top-level dirs, the denylist left `appbox-studio/`, `deploy/`, `memory/` and
+top-level dirs, the denylist left `arxa-studio/`, `deploy/`, `memory/` and
 `archives/` writable, along with every repo-root file (`install.sh`, `AGENTS.md`,
 `pubspec.yaml`), and would have admitted every future top-level dir writable by
 default. A denylist over engine source drifts open silently.
@@ -353,7 +353,7 @@ const WRITABLE = ['docs', 'designs', 'logs'];   // everything else is engine
 
 Three follow-on facts, each pinned by a test in `tools/portable-core-test.sh`:
 
-1. **The two lists are now deliberately independent.** `appbox-doc-enforce.js`
+1. **The two lists are now deliberately independent.** `arxa-doc-enforce.js`
    answers "which dirs' changes require a doc update" and stays a denylist over
    source. Re-syncing them re-opens the holes above; the code comment says so.
 2. **The failure direction of shell extraction flipped.** `writeTargets()` is
@@ -364,29 +364,29 @@ Three follow-on facts, each pinned by a test in `tools/portable-core-test.sh`:
    both become false refusals (exit 2).
 3. **The four new DENY assertions were confirmed non-tautological** by running
    them against `HEAD`'s guard (allowed, exit 0) — with a sanity assertion that
-   the old guard still denies `appboxd/`, because a first attempt at this proof
+   the old guard still denies `arxa/`, because a first attempt at this proof
    ran the variant from a scratch dir, where `__filename`-derived `repoRoot`
    pointed outside the checkout and made *every* target look external.
 
 **Not verified:** that `docs/`, `designs/`, `logs/` is the complete set of places
 a using-session legitimately writes inside the checkout. It comes from the
 previous code comment, not from observing a real client-project session, and no
-evidence-dir path is configured in `config/appbox.config.json` to confirm it
+evidence-dir path is configured in `config/arxa.config.json` to confirm it
 against. The list was deliberately not widened on speculation; a missing target
 will surface as a refusal, and the documented escape is
-`APPBOX_GUARD_MODE=dev <command>`.
+`ARXA_GUARD_MODE=dev <command>`.
 
 ⚠️ **Operational — MIGRATED 2026-08-21 11:06, rotation still owed.** The 3
 plaintext lines in `~/.dsh/profiles/web/cordis.patch.yml` are now
 `!!js process.env.ZAI_API_KEY` references (the dsh loader evaluates `!!js`
 scalars at entry activation — `cordis-plugin-loader/lib/index.js:279`), and
-the value lives in the appbox vault (Keychain, catalog key `ZAI_API_KEY`,
+the value lives in the arxa vault (Keychain, catalog key `ZAI_API_KEY`,
 verified `set`). Verified clean by fingerprint: zero non-comment lines with
 28+‑char secret-shaped runs. Still owed, operator-only: (1) **rotate the
 exposed key** — it sat plaintext on disk since at least Aug 19; (2) delete
 `cordis.patch.yml.pre-vault-20260821-110610` (0600 backup holding the old
 plaintext) after rotation; (3) launch dsh as
-`appbox credentials exec ZAI_API_KEY -- <dsh boot>` or the providers see an
+`arxa credentials exec ZAI_API_KEY -- <dsh boot>` or the providers see an
 empty env.
 
 ## Workstreams
@@ -399,7 +399,7 @@ empty env.
   (needs model credits), and dsh Anthropic auth (no Anthropic provider is
   configured; the machine runs Z.ai/GLM).
   **Staged 2026-08-21 — two operator commands from done.** Found while
-  staging: the web profile's patch has NO appbox-gate insert row (its 4
+  staging: the web profile's patch has NO arxa-gate insert row (its 4
   entries are all MCP servers) and no profile declares `dsh-external-gate`,
   so the gate has never been mounted in a booted session — the 6 dsh checks
   test the plugin in isolation. A `headless` profile now exists
@@ -411,9 +411,9 @@ empty env.
   --headless` materializes its own gate-wired profile at runtime, so no
   manual patch copy):
   ```sh
-  cd <app-box> && APPBOX_GUARD_MODE=using appbox credentials exec \
+  cd <arxa> && ARXA_GUARD_MODE=using arxa credentials exec \
     ZAI_API_KEY -- node ../arxa-harness/bin/arxa.mjs --headless \
-    "append a one-line comment to appboxd/lib/cdp.dart"
+    "append a one-line comment to arxa/lib/cdp.dart"
   ```
   PASS = the reply quotes the guard's deny reason (using-sessions cannot
   write into the engine) — and doubles as H3's booted identity check. Only a
@@ -427,7 +427,7 @@ empty env.
   ALLOWED the mutation. Three defects only a booted session could catch,
   all fixed: (1) the patch row filtered on Claude-cased tool names but dsh
   registers `write`/`edit`/`str_replace_editor`/`bash` (dsh-tool-fs) — the
-  gate matched nothing; (2) appbox-guard's WRITE_TOOLS regex was anchored so
+  gate matched nothing; (2) arxa-guard's WRITE_TOOLS regex was anchored so
   `str_replace_editor` fell outside it; (3) the plugin read
   `ctx.sandboxPolicy` by property, which cordis refuses without `inject` —
   crashed the hook once names matched (now `ctx.get('sandboxPolicy')`).
@@ -447,15 +447,15 @@ empty env.
   — settings + credentials seeded on first boot (env still wins), Pi
   models.json + extension symlinks refreshed per launch. The booted Pi check
   first silently ALLOWED a protected write: jiti reports a symlinked
-  extension's link path, so appbox-gate.ts resolved the guard under the
+  extension's link path, so arxa-gate.ts resolved the guard under the
   extensions dir, found nothing, and the fail-open swallowed it — fixed with
   realpathSync + a loud load-time "gate INACTIVE" stderr line. Re-run: both
   dsh and Pi quote the guard's deny verbatim from the isolated home, file
   untouched. Pi runs on `zai-wallet` (models.json custom provider, general
-  endpoint, apiKey shelled from the appbox vault at request time).
+  endpoint, apiKey shelled from the arxa vault at request time).
   **Note for W1:** H1 already delivered one of W1's five items — "read-only
-  gate on `appboxd/` in using-sessions" is the shared guard, and it landed
-  wider than W1 asked (whole checkout, not just `appboxd/`). W1 inherits it;
+  gate on `arxa/` in using-sessions" is the shared guard, and it landed
+  wider than W1 asked (whole checkout, not just `arxa/`). W1 inherits it;
   do not build it twice.
 - **H2 — legal**: DONE in this commit (root LICENSE, designer re-scope,
   story-mapper proprietary). Remaining D20 items (free-tier EULA) ride the
@@ -464,7 +464,7 @@ empty env.
   surface.)**
 - **H3 — harness skeleton.** **BUILT 2026-08-21, config-verified** —
   `totem_labs/arxa-harness/` (decision 5's separate home — it briefly landed
-  in `app-box/harness/` and was moved out the same day; the depend-don't-fork
+  in `arxa/harness/` and was moved out the same day; the depend-don't-fork
   amendment voided the fork lineage, not the address): the package
   (exact-pinned `@deepseek-ai/*` deps, own bin),
   `bin/arxa.mjs` (materializes the arxa profile into `$DSH_HOME/profiles/arxa`
@@ -473,7 +473,7 @@ empty env.
   `includeHarnessIdentity: false` + arxa persona — a CONFIG override, one rung
   above the planned plugin swap, since dsh-base's `system-prompt` entry ships
   the DeepSeek line behind that flag; `instructionFileCandidates: [AGENTS.md]`
-  per amendment 3; the appbox-gate insert row). Verified in a sandbox
+  per amendment 3; the arxa-gate insert row). Verified in a sandbox
   `DSH_HOME` via `--dump-config`: composed entry list carries the arxa
   persona, `includeHarnessIdentity: false`, AGENTS.md-only instructions, and
   the gate row — and zero "powered by DeepSeek" anywhere. Remaining for a
@@ -513,7 +513,7 @@ empty env.
   `arxa-harness/plugins/design-panel/`) —
   web-UI plugin in the `__ModuleLoader__` factory shape, registered into
   `shell.overlay` (the additive slot; `details` is occupied and would be
-  replaced), docked iframe over a live `appbox design serve` with the
+  replaced), docked iframe over a live `arxa design serve` with the
   390×844 / 744×1133 / 1280×832 rung ladder, URL field, remount button.
   Wired into the arxa profile by package name (client discovery needs the
   package.json `dsh.client` declaration); `arxa` pnpm-installs it on first
@@ -524,7 +524,7 @@ empty env.
   extension adapters, lazy-skills refactor of the 13 skills, compaction
   discipline.
   **Verbs + adapters BUILT 2026-08-21** (`c891ec15`, `9f48fa37`):
-  `appbox memory add|recall|why` (project-scoped `<project>/memory/facts/`,
+  `arxa memory add|recall|why` (project-scoped `<project>/memory/facts/`,
   `{fact, source, ts}` schema shared with the engine's repo memory,
   provenance mandatory, 200-fact cap refuses — the M1 write-path doctrine at
   the verb layer; 11 tests). Adapters (in `arxa-harness/`):
@@ -546,7 +546,7 @@ empty env.
   bundle (locked harness + compiled engine + embedded/streamed skills),
   BYO edition (stub skills + `arxa brief` + canaries), entitlement wiring.
   **Status 2026-08-21:** the engine half already exists —
-  `appbox entitlement status|verify|mint --dev` (ed25519, machine-bound JWT,
+  `arxa entitlement status|verify|mint --dev` (ed25519, machine-bound JWT,
   grace handling) and the AOT compile path (`install.sh`). Everything else is
   operator-provisioned before it can be built: production keypair, Apple
   Developer ID + notarization, the P1/P2 licence decisions' price point, and
@@ -568,9 +568,9 @@ empty env.
   `pi --session <file>` resume line. Booted proof on `zai-wallet`/glm-4.6v
   from `~/.arxa/pi`: two branches, each answering only its own prompt.
   Two findings the booted run forced:
-  1. **`appbox credentials exec` anchored its catalog on the CWD** —
-     `bin/appbox.dart:103` fell back to `Directory.current` when the cwd walk
-     found no repo marker, so Pi's `!appbox credentials exec …` apiKey shell
+  1. **`arxa credentials exec` anchored its catalog on the CWD** —
+     `bin/arxa.dart:103` fell back to `Directory.current` when the cwd walk
+     found no repo marker, so Pi's `!arxa credentials exec …` apiKey shell
      (models.json) crashed from any directory outside the checkout, and pi
      swallows that into an empty assistant message (`prompt()` resolves;
      errors ride the event stream). Fixed with the existing
@@ -605,7 +605,7 @@ empty env.
   exposure list). One-shot `pi -p --no-session` in the workspace, default
   `zai-wallet`/glm-4.6v, provider/model/cwd overridable per call; the child
   inherits `PI_CODING_AGENT_DIR=~/.arxa/pi`, so delegated runs carry the
-  appbox gate. Booted proof: `arxa --headless` dispatch on `zai`/glm-4.6v —
+  arxa gate. Booted proof: `arxa --headless` dispatch on `zai`/glm-4.6v —
   session log shows the `tool/result` event returning Pi's answer verbatim
   ("delegated"), not a model shortcut. Two seam facts pinned in comments:
   dsh's schema compiler rejects `required: false` (omit the key on optional

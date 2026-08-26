@@ -22,8 +22,8 @@
 library;
 
 import 'package:flutter/material.dart';
-import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
-import 'package:appbox_kit_showcase_app/ui/views/showcase_search_shell/showcase_search_shell_viewmodel.dart';
+import 'package:arxa_kit_ui_library/arxa_kit_ui_library.dart';
+import 'package:arxa_kit_showcase_app/ui/views/showcase_search_shell/showcase_search_shell_viewmodel.dart';
 
 class ShowcaseSearchShellViewMobile
     extends ViewModelWidget<ShowcaseSearchShellViewModel> {

@@ -1,5 +1,5 @@
-// Device-verification probe for the AppBoxKit native input composer
-// (AppBoxKitNativeInputBar) and native text field (AppBoxKitNativeTextField).
+// Device-verification probe for the ArxaKit native input composer
+// (ArxaKitNativeInputBar) and native text field (ArxaKitNativeTextField).
 //
 // WHY THIS APP EXISTS (measured 2026-08): the `integration_test` harness does
 // NOT deliver real touches to platform views — synthetic tester pointers never
@@ -21,7 +21,7 @@
 // pixels on Android (logical * devicePixelRatio).
 import 'dart:io';
 
-import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
+import 'package:arxa_kit_ui_library/arxa_kit_ui_library.dart';
 import 'package:flutter/material.dart';
 
 void main() => runApp(const ProbeApp());
@@ -287,7 +287,7 @@ class _ProbeScreenState extends State<ProbeScreen> {
               if (_pairVisible)
                 Padding(
                   padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-                  child: AppBoxKitNativeTextField(
+                  child: ArxaKitNativeTextField(
                     key: _field2Key,
                     controller: controller2,
                     hintText: 'Second native field',
@@ -295,14 +295,14 @@ class _ProbeScreenState extends State<ProbeScreen> {
                 ),
               Builder(
                 key: _fieldKey,
-                builder: (_) => AppBoxKitNativeInputBar(
+                builder: (_) => ArxaKitNativeInputBar(
                   controller: controller,
                   hintText: 'Message',
                   // P11's real target: a bar action whose tap must NOT dismiss.
                   leading: [
-                    AppBoxKitNativeIconButton(
+                    ArxaKitNativeIconButton(
                       key: _addKey,
-                      glyph: AppBoxKitGlyphs.add,
+                      glyph: ArxaKitGlyphs.add,
                       onPressed: () {},
                     ),
                   ],

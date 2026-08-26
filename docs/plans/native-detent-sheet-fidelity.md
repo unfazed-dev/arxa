@@ -2,7 +2,7 @@
 
 ## Problem
 
-`appBoxKitShowSheet` on iOS presents through `CNBottomSheet.showCupertino` →
+`arxaKitShowSheet` on iOS presents through `CNBottomSheet.showCupertino` →
 `_CNDimmedSheetRoute extends CupertinoSheetRoute`: a **full-height** stacked-card
 sheet. On device (clip 07-32-07) it reads as a flat, edge-to-edge dark page — no
 rounded card, no system material, no grabber, no visible parent. The reference
@@ -45,7 +45,7 @@ one that can host kit bodies) and fix its **presentation model** to reproduce
    - Reuse `CNSheetGeometryProbe` so `topModalRect` publishes the true card
      rect and native widgets under the sheet gate correctly.
 2. **Wire `CNBottomSheet.showCupertino`** to the detent route (params:
-   `detents`, keep existing surface); `appBoxKitShowSheet` iOS branch defaults
+   `detents`, keep existing surface); `arxaKitShowSheet` iOS branch defaults
    to medium-detent presentation.
 3. **Verify**: build to device, re-record, compare against reference frames
    (card top edge, corners, grabber, material, dim) before declaring done.

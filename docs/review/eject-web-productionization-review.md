@@ -45,7 +45,7 @@ the seams.
 
 - **P1 — freeze gate broken for TSX designs.** `gate_freeze.dart:278-283`
   requires `ui/views/**/*_view.html`; zero exist post-migration →
-  `appbox gate freeze` fails. Also `_inputsHash` (:331-340) folds
+  `arxa gate freeze` fails. Also `_inputsHash` (:331-340) folds
   `*_view.html` bytes into the approval stamp — with zero matches the view
   layer silently drops out of freeze invalidation. (Scaffolder inputs
   themselves are intact: `scaffold.dart`/`emit_structure.dart` never read
@@ -131,7 +131,7 @@ devDependencies; stale source `render.tsx` (overwritten every eject);
 unpinned `npx esbuild` shell-outs; CLI help missing `--target`/`--kits`;
 provenance HTML comment lost in TSX output; stale comments
 (`worker.dart:132,154`, `design_server.dart:4`, `emit_structure.dart:570`,
-`docs/appbox-system-map.md:144`); no `.tsx` lint fixtures / no
+`docs/arxa-system-map.md:144`); no `.tsx` lint fixtures / no
 `generateRenderTsx` unit tests.
 
 ## Optimizations (approved for the fix pass)
@@ -155,7 +155,7 @@ provenance HTML comment lost in TSX output; stale comments
 
 1. Commit reviewed state before fixes (done).
 2. Fix scope = everything, including docs rewrite and project-overlay
-   single-sourcing (touches `~/.appbox` projects — regenerate, never
+   single-sourcing (touches `~/.arxa` projects — regenerate, never
    hand-edit).
 3. Both artifacts move to htmx 4 (studio migrates off 2.0.10; restore
    hello-hda's dropped config intent — `allowEval:false` equivalent,

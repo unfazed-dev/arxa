@@ -1,2 +1,2 @@
-/// The startup viewmodel's AppBoxKitAction hub keys (`.name` is the key).
+/// The startup viewmodel's ArxaKitAction hub keys (`.name` is the key).
 enum ShowcaseStartupOp { boot }

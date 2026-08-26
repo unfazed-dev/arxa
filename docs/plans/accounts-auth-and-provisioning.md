@@ -51,7 +51,7 @@ Neither GitHub nor Supabase exposes signup or existence-by-email over an API —
 lookup at all. The fix is not detect-then-create, it's a consent handoff that doubles as
 the existence check: one "Connect GitHub" / "Connect Supabase" button per provider,
 routing through the provider's own OAuth authorize screen, which offers sign-in *or*
-sign-up — appbox never learns which branch ran, and does not need to. The email field is
+sign-up — arxa never learns which branch ran, and does not need to. The email field is
 never framed as "we'll make you an account"; it's a workspace label / `login=` prefill
 hint on GitHub's authorize URL.
 
@@ -81,7 +81,7 @@ below).
 **2. OAuth connections per provider (D14).**
 - **GitHub:** prefer a GitHub App installation flow over a classic OAuth app — it gives
   per-repository user-controlled scoping, short-lived tokens, and one-click revocation,
-  which matters because appbox writes code into these repos. Fall back to the OAuth web
+  which matters because arxa writes code into these repos. Fall back to the OAuth web
   app flow if no App is registered yet (open question: no GitHub App exists in this repo
   today — registering one is a prerequisite task, not covered here). Device flow for
   headless hosts per above.
@@ -109,10 +109,10 @@ below).
 **Prompt injection is the primary risk**, not a secondary concern — Supabase names it
 their #1 attack vector for MCP-style tool use, and GitHub ships content sanitization by
 default plus a `--lockdown-mode` that suppresses untrusted-author content in public repos.
-Appbox-specific consequence: content pulled from an issue, PR, or DB row can reach the
+Arxa-specific consequence: content pulled from an issue, PR, or DB row can reach the
 agent. Mitigations: run any GitHub read paths in read-only/lockdown mode; and — per D14's
 "write-scoped MCP tools stay human-gated" — keep `create_repository`, `create_project`,
-and push operations off any path the model can choose. These are direct calls from appbox
+and push operations off any path the model can choose. These are direct calls from arxa
 code, never tools exposed for agent selection.
 
 **Key custody boundaries.** OS-keychain vault for refresh tokens only. Never a Supabase

@@ -1,0 +1,14 @@
+{
+  "url": "http://localhost:4319/workspace/plans?state=free",
+  "rungs": [
+    {
+      "name": "expanded",
+      "width": 1280,
+      "height": 832,
+      "consoleErrors": 0,
+      "overflow": false,
+      "clean": true,
+      "png": "../designs/arxa-studio/evidence/plans-paywall/plans-free-clickable/expanded_1280.png"
+    }
+  ]
+}

@@ -1,7 +1,7 @@
-diff --git a/designs/appbox-studio/ui/views/main_shell/scaffold/_shared.html b/designs/appbox-studio/ui/views/main_shell/scaffold/_shared.html
+diff --git a/designs/arxa-studio/ui/views/main_shell/scaffold/_shared.html b/designs/arxa-studio/ui/views/main_shell/scaffold/_shared.html
 index e0aeacc..d4dcc58 100644
---- a/designs/appbox-studio/ui/views/main_shell/scaffold/_shared.html
-+++ b/designs/appbox-studio/ui/views/main_shell/scaffold/_shared.html
+--- a/designs/arxa-studio/ui/views/main_shell/scaffold/_shared.html
++++ b/designs/arxa-studio/ui/views/main_shell/scaffold/_shared.html
 @@ -50,11 +50,29 @@
  </div>
  {% endmacro %}

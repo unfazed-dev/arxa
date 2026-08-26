@@ -1,6 +1,6 @@
-name: appbox_kit_media
+name: arxa_kit_media
 description: >-
-  Media kit for appbox_kit apps — "pixels and sound, in and out": camera and
+  Media kit for arxa_kit apps — "pixels and sound, in and out": camera and
   photo-library capture, audio recording, and audio + video playback exposed
   as framework-free ports over native-backed plugins. Music and video playback
   are absorbed here; there are no separate music/video kits.
@@ -25,7 +25,7 @@ dependencies:
   # Temp-file fallback for recordings when the caller passes no explicit path.
   path_provider: ^2.1.5
 
-# Deliberately NOT depended on: stacked / stacked_services / appbox_kit. This
+# Deliberately NOT depended on: stacked / stacked_services / arxa_kit. This
 # kit is pure ports + backing plugins — apps depend on it, never the reverse.
 
 dev_dependencies:

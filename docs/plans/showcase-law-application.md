@@ -7,7 +7,7 @@ session by explicit user instruction.
 ## Baseline
 
 Compliant already: the gallery chrome (`showcase_gallery_chrome_widget.dart` →
-`AppBoxKitChromeScaffold`) and the three tab-root lists under it
+`ArxaKitChromeScaffold`) and the three tab-root lists under it
 (home/search/profile `*_view.mobile.dart`, `extendBehindTopBar: true`).
 
 Non-compliant surface: six files still assemble their own `appBar:`:
@@ -25,7 +25,7 @@ Non-compliant surface: six files still assemble their own `appBar:`:
   route; native glass in scroll content; scrollable type; law-pass greps 1/2/4 over
   showcase lib; routing map (which views sit under the gallery chrome).
 - **S2 Migrate (parallel agents, clustered by shell)** — shell/tab roots →
-  `AppBoxKitChromeScaffold`; their lists → `AppBoxKitEdgeAwareListView` with
+  `ArxaKitChromeScaffold`; their lists → `ArxaKitEdgeAwareListView` with
   `extendBehindTopBar: true` + `MediaQuery.paddingOf(context).top` padding. Pushed
   routes: lawful boxed bar stays IF no native glass rides the scroll; otherwise demote
   the in-scroll glass per the informed allowlist or record `// glass-law-exempt:`.
@@ -36,7 +36,7 @@ Non-compliant surface: six files still assemble their own `appBar:`:
 ## Survey verdicts (S1, agent law-survey, 2026-08-13)
 
 - Notes shell returns a bare NestedRouter (no gallery chrome) — the tab root view
-  migrates to `AppBoxKitChromeScaffold` at the VIEW level ("Folders" title), which
+  migrates to `ArxaKitChromeScaffold` at the VIEW level ("Folders" title), which
   also avoids handing folder/editor the gallery double-bar stack. Bar-less auth
   branches are lawful and stay untouched.
 - Folder view (#2): lawful as-is (boxed bar + Flutter-only scroll; pinned search
@@ -56,7 +56,7 @@ Non-compliant surface: six files still assemble their own `appBar:`:
 ## S2 assignments
 
 - fix-notes-root → #1 chrome-scaffold migration. DONE (analyzer clean, 14/14).
-- fix-components → #4 rule 5 fixed (`AppBoxKitNativeInputBar.wantNative: false`,
+- fix-components → #4 rule 5 fixed (`ArxaKitNativeInputBar.wantNative: false`,
   icon buttons stay native per the rule 5 carve-out); rule 4 correctly REFUSED —
   see correction below. DONE otherwise (6/6).
   [SUPERSEDED 2026-08: the field's rule-5 demotion was reversed when the native
@@ -69,7 +69,7 @@ Non-compliant surface: six files still assemble their own `appBar:`:
   spec-controls segmented control); rule 4 refused likewise. DONE (2/2).
 - Inline → #3 exemption comment (done).
 
-## Correction (S2): AppBoxKitNativeAppBar is Flutter-drawn
+## Correction (S2): ArxaKitNativeAppBar is Flutter-drawn
 
 Both fix agents independently established the brief's premise wrong: the boxed
 bar renders CupertinoNavigationBar (pure Flutter; law §1 row agrees), so
@@ -80,13 +80,13 @@ flash class. Rule 4 therefore stayed open on components + motion.
 
 Chosen over exemption and over demoting §2-allowlisted buttons. Work:
 
-1. Agent kit-leading-slot: `leading` slot on AppBoxKitNativeFloatingBar (does
+1. Agent kit-leading-slot: `leading` slot on ArxaKitNativeFloatingBar (does
    NOT tuck under minimize — back stays reachable, Apple parity; hides under
-   hide) + `leading`/`bottomSheet` on AppBoxKitChromeScaffold (boxed tier:
+   hide) + `leading`/`bottomSheet` on ArxaKitChromeScaffold (boxed tier:
    `automaticallyImplyLeading: false`); doc comments updated (pushed-route
    scoping superseded); tests; full ui_library suite.
 2. Re-task fix-components / fix-motion: migrate their views to
-   AppBoxKitChromeScaffold(leading: back) with full-bleed bodies →
+   ArxaKitChromeScaffold(leading: back) with full-bleed bodies →
    `extendBehindTopBar: true` now lawful + glass-tier top padding.
 3. Follow-through: law §1 table row for the scaffold's leading, registry note
    ("bare widget for pushed routes" is superseded), gate/docs/tests, commit.
@@ -121,7 +121,7 @@ search bar / sliders / switches / toolbar render clean in scroll. Defects:
   active Search (probe-confirmed paint order), matching "Search broken /
   Profile fine"; the same file's doc block records device ghosts from exactly
   this leak. Fallback suspect: Search is the only tab whose topmost content
-  child is a native platform view (AppBoxKitNativeSearchBar), fitting "pill
+  child is a native platform view (ArxaKitNativeSearchBar), fitting "pill
   wins the z-fight exactly while a native view passes beneath it".
   DEVICE EXPERIMENTS to attribute (next run): (a) visit Notes, return to
   Profile — ordering predicts Profile's pill now vanishes at rest; (b) Home
@@ -204,7 +204,7 @@ in session scratchpad `clip2132/`). 22 frames @4fps:
 - Device-verified with the same driven rubber-band: pill present at rest,
   through the full held overscroll, and over passing content. ui_library
   suite 356 green incl. new anchor pin in the bar test.
-- Every consumer of AppBoxKitChromeScaffold inherits the fix (all four
+- Every consumer of ArxaKitChromeScaffold inherits the fix (all four
   shells + pushed routes); law rule 7 records the anchor requirement for
   any future floating Flutter chrome.
 
@@ -243,7 +243,7 @@ worse: every tab now carries a stationary anchor platform view.
 Fix (law rule 8): hidden tabs additionally ride Transform.translate(100000, 0)
 — transform is the only mutator the slicer's geometry respects; set constancy
 preserved (no detach/re-materialize). One edit in the shared
-appbox_kit_animated_tab_stack.dart; every view in every shell inherits.
+arxa_kit_animated_tab_stack.dart; every view in every shell inherits.
 Device-verified with the same driven scroll: all labels complete in every
 mid-scroll frame. Falsified en route: FLTDisablePartialRepaint (reverted — the
 remaining dim in-card label copies survive full repaints; they are liquid-glass

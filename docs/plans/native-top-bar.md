@@ -20,14 +20,14 @@ trail.
 
 Glass tier (iOS 26) only; every other tier keeps today's `Scaffold.appBar`.
 
-1. **Kit widget `AppBoxKitNativeFloatingBar`** — a floating bar row inside
+1. **Kit widget `ArxaKitNativeFloatingBar`** — a floating bar row inside
    `SafeArea`: title in a native glass capsule (`LiquidGlassContainer`,
    vendor: native glass UIView background + Flutter child on top) and the
    existing native glass action buttons. Block height constant
-   `kAppBoxKitFloatingBarBlockHeight = 44 + abxGap8`. Because the bar is the
+   `kArxaKitFloatingBarBlockHeight = 44 + abxGap8`. Because the bar is the
    LAST thing painted, its platform view composites above every platform
    view in the scrolled content — the tab-bar lifecycle, applied to the top.
-2. **Gallery chrome branches on `AppBoxKitPlatform.supportsLiquidGlass`**:
+2. **Gallery chrome branches on `ArxaKitPlatform.supportsLiquidGlass`**:
    glass tier = `Scaffold(appBar: null)` + `Stack[full-bleed child,
    floating bar]`, with the child's `MediaQuery.padding.top` raised by the
    bar block so nested-route Scaffolds (components/motion/maps) inset
@@ -46,7 +46,7 @@ a frame, but content can no longer garble with bar chrome.
 
 ## Steps
 
-1. Kit: `appbox_kit_native_floating_bar.dart` + barrel export + widget test.
+1. Kit: `arxa_kit_native_floating_bar.dart` + barrel export + widget test.
 2. Showcase: tier branch in `showcase_gallery_chrome_widget.dart`.
 3. Showcase: top-padding change in home/search/profile mobile views.
 4. Docs: allowlist §1 + rule 4 addendum; this plan.
@@ -55,8 +55,8 @@ a frame, but content can no longer garble with bar chrome.
 
 ## Step 2 — scroll behaviors (ratified: Apple-style minimize)
 
-`AppBoxKitFloatingChrome` now owns the Stack + MediaQuery raise + scroll
-wiring, with `AppBoxKitFloatingBarBehavior`: `pinned` (static, default),
+`ArxaKitFloatingChrome` now owns the Stack + MediaQuery raise + scroll
+wiring, with `ArxaKitFloatingBarBehavior`: `pinned` (static, default),
 `minimize` (actions slide off the trailing edge, title pill stays — the
 iOS 26 tab-bar minimize, gallery's choice), `hide` (whole bar slides off
 the top). All motion is SLIDE, never fade (composition rule 1), and the
@@ -65,4 +65,4 @@ re-materializes glass (clip 13-53-b). Restore on scroll-back or at the
 top; the top-restore only fires on update/end notifications so it cannot
 undo the direction notification that starts a scroll-away (pixels == 0 at
 drag start). Pinned by the floating-chrome group in
-appbox_kit_native_floating_bar_test.
+arxa_kit_native_floating_bar_test.

@@ -2,7 +2,7 @@
 /// widgets out via `build`. It never owns business logic.
 ///
 /// This is the user interface for the chrome every widget-gallery TAB ROOT
-/// shares — the 'AppBox Showcase' app bar (search shortcut + overflow menu) and
+/// shares — the 'Arxa Showcase' app bar (search shortcut + overflow menu) and
 /// the compose floating-action-button menu. Chrome is per-surface: each tab
 /// ROOT view puts its own body inside this widget, and the shell above it is a
 /// bare nested router. A route pushed on top of a tab root therefore renders
@@ -24,9 +24,9 @@ library;
 
 import 'package:flutter/foundation.dart' show defaultTargetPlatform;
 import 'package:flutter/material.dart';
-import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
+import 'package:arxa_kit_ui_library/arxa_kit_ui_library.dart';
 
-import 'package:appbox_kit_showcase_app/enums/showcase_application_enums/enums.dart';
+import 'package:arxa_kit_showcase_app/enums/showcase_application_enums/enums.dart';
 
 class ShowcaseGalleryChromeWidget extends StatelessWidget {
   const ShowcaseGalleryChromeWidget({required this.child, super.key});
@@ -35,21 +35,21 @@ class ShowcaseGalleryChromeWidget extends StatelessWidget {
   List<Widget> _actions(BuildContext context) {
     final tabsRouter = context.tabsRouter;
     return [
-      AppBoxKitNativeIconButton(
-        glyph: AppBoxKitGlyphs.search,
+      ArxaKitNativeIconButton(
+        glyph: ArxaKitGlyphs.search,
         onPressed: () => tabsRouter.setActiveIndex(ShowcaseTab.search.index),
       ),
-      AppBoxKitNativePopupMenu(
-        glyph: AppBoxKitGlyphs.more,
+      ArxaKitNativePopupMenu(
+        glyph: ArxaKitGlyphs.more,
         items: const [
-          AppBoxKitMenuItem(label: 'Refresh', glyph: AppBoxKitGlyphs.refresh),
-          AppBoxKitMenuItem(label: 'Settings', glyph: AppBoxKitGlyphs.settings),
-          AppBoxKitMenuItem(
+          ArxaKitMenuItem(label: 'Refresh', glyph: ArxaKitGlyphs.refresh),
+          ArxaKitMenuItem(label: 'Settings', glyph: ArxaKitGlyphs.settings),
+          ArxaKitMenuItem(
               label: 'Sign out',
-              glyph: AppBoxKitGlyphs.signOut,
+              glyph: ArxaKitGlyphs.signOut,
               isDestructive: true),
         ],
-        onSelect: (item) => appBoxKitLocator<AppBoxKitNotificationService>()
+        onSelect: (item) => arxaKitLocator<ArxaKitNotificationService>()
             .show(item.label, context: context),
       ),
     ];
@@ -62,10 +62,10 @@ class ShowcaseGalleryChromeWidget extends StatelessWidget {
     // widget, not here. Behavior stays the device-ratified full minimize
     // (2026-08-13). This widget is the dogfood consumer the law's plan
     // names; hand-assembling chrome here again is a law violation.
-    return AppBoxKitChromeScaffold(
-      title: 'AppBox Showcase',
+    return ArxaKitChromeScaffold(
+      title: 'Arxa Showcase',
       actions: _actions(context),
-      behavior: AppBoxKitFloatingBarBehavior.minimize,
+      behavior: ArxaKitFloatingBarBehavior.minimize,
       body: child,
       // The FAB is scoped to the tab root that mounts this chrome. A pushed
       // route (Components and its composer dock, Motion, Maps) is no longer a
@@ -76,17 +76,17 @@ class ShowcaseGalleryChromeWidget extends StatelessWidget {
       // widget.
       floatingActionButton: SizedBox(
         height: defaultTargetPlatform == TargetPlatform.android ? 280 : null,
-        child: AppBoxKitNativeFabMenu(
-          glyph: AppBoxKitGlyphs.add,
+        child: ArxaKitNativeFabMenu(
+          glyph: ArxaKitGlyphs.add,
           items: const [
-            AppBoxKitMenuItem(
-                label: 'New post', glyph: AppBoxKitGlyphs.compose),
-            AppBoxKitMenuItem(
-                label: 'New photo', glyph: AppBoxKitGlyphs.camera),
-            AppBoxKitMenuItem(
-                label: 'New event', glyph: AppBoxKitGlyphs.newEvent),
+            ArxaKitMenuItem(
+                label: 'New post', glyph: ArxaKitGlyphs.compose),
+            ArxaKitMenuItem(
+                label: 'New photo', glyph: ArxaKitGlyphs.camera),
+            ArxaKitMenuItem(
+                label: 'New event', glyph: ArxaKitGlyphs.newEvent),
           ],
-          onSelect: (item) => appBoxKitLocator<AppBoxKitNotificationService>()
+          onSelect: (item) => arxaKitLocator<ArxaKitNotificationService>()
               .show(item.label, context: context),
         ),
       ),

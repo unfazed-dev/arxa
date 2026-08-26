@@ -5,12 +5,12 @@
 cleanup) merged as `7babc79` (probes 15/15 — explode/screen-composer deleted,
 coverage migrated to flowwalk/shell-chrome/widget-tools/reveal-drawer).
 Plan-level definition of done below is met; this file is kept as the record.
-Follow-ups handed to the operator: real `~/.appbox/projects/portalo` carries a
+Follow-ups handed to the operator: real `~/.arxa/projects/portalo` carries a
 stale qps-ploc fixture (regenerate via `design pseudolocalize` + the project's
 generator, as was done for the Inc-5 disposable); stray `inc5-portalo` project
-dir in `~/.appbox/projects/` is leftover clutter, safe to remove.
+dir in `~/.arxa/projects/` is leftover clutter, safe to remove.
 
-Session date: 2026-08-04. Repo: `/Volumes/developer_ssd/Developer/totem_labs/app-box`, branch `master`.
+Session date: 2026-08-04. Repo: `/Volumes/developer_ssd/Developer/totem_labs/arxa`, branch `master`.
 
 ## Authority
 
@@ -31,11 +31,11 @@ Task tracker: task #4 (in_progress) tracks the whole plan.
 
 ## Landed surfaces the next increments build on
 
-- Composer macro: `designs/appbox-studio/ui/views/main_shell/shared/widgets/composer.html` — `field(c, scope='')`, id suffix `--<scope>`, `data-composer-scope`, `c.swapTarget` (default `#panels`), `c.undoHref`/`c.redoHref`.
+- Composer macro: `designs/arxa-studio/ui/views/main_shell/shared/widgets/composer.html` — `field(c, scope='')`, id suffix `--<scope>`, `data-composer-scope`, `c.swapTarget` (default `#panels`), `c.undoHref`/`c.redoHref`.
 - Drawer: `.dv-reveal` wrapper per views-lens screen card in `shared/widgets/design_viewer.html`; aside `#dv-drawer-<slug>`; 3 tabs (Composer live; Tools/Logic placeholders); scope `drawer-<slug>`.
-- Behavior island: `skills/appbox-designer/runtime/vendor/reveal.js` (ESC close, focus in/out, `aria-expanded`).
+- Behavior island: `skills/arxa-designer/runtime/vendor/reveal.js` (ESC close, focus in/out, `aria-expanded`).
 - Server: `GET /design/drawer/:screen` (state/tab in session `d.drawer`); drawer swaps answer `#drawerSwap` fragment; drawer undo/redo carry `?drawer=<id>` (+ `?screen=<id>` on send).
-- Probes: `appboxd/lib/probes/studio/probe_reveal_drawer.dart` + `registry.dart`.
+- Probes: `arxa/lib/probes/studio/probe_reveal_drawer.dart` + `registry.dart`.
 
 ## Remaining increments (execute in order, one worktree subagent each)
 
@@ -48,9 +48,9 @@ Delete the components container UI and its now-dead routes/templates/CSS/l10n ke
 ## Non-negotiable gates (every increment)
 
 1. `dart analyze` clean; ADR-0002 lint, W1–W6 gate, check-wiring clean.
-2. Disposable project serve + `appbox design probe all` — **wait for process exit, read per-probe verdicts; never grep "ALL PASSED"**. Zero new FAILs vs 15/15 baseline; prove any FAIL pre-existing on a clean master disposable copy before more edits.
+2. Disposable project serve + `arxa design probe all` — **wait for process exit, read per-probe verdicts; never grep "ALL PASSED"**. Zero new FAILs vs 15/15 baseline; prove any FAIL pre-existing on a clean master disposable copy before more edits.
 3. DOM checks via ctx_execute (dual/multi drawer instances ⇒ zero duplicate ids).
-4. Kill servers, remove `~/.appbox/projects/portalo-*` disposables; tree clean.
+4. Kill servers, remove `~/.arxa/projects/portalo-*` disposables; tree clean.
 5. l10n: new strings into `app_en.arb` + `app_pl.arb` + `app_qps-ploc.arb` (pseudolocale convention; hand-insert values, revert regenerator churn).
 6. Commits: single line, no author mentions.
 

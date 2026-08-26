@@ -1,0 +1,801 @@
+{
+ "registryVersion": "1.0.0",
+ "status": "PINNED 2026-08-16 — amended same day: the intake and design stages are the v1 loop ports (8 item-engine steps + prototype/chat/freeze), replacing the invented single-surface shells",
+ "app": "studio",
+ "vocabulary": "shell > view > widgets; the hub is the routed root frame (/) hosting the stage shells (header, tabbar, rail chrome + body outlet); ceremony shells route bare",
+ "_comment": [
+  "Single authoring surface per DESIGN-ARCHITECTURE registry canon: composers write this,",
+  "the designer consumes it; models/screens_model/registry.json is a derived projection.",
+  "Widget `kind` values come from the closed vocabulary in",
+  "skills/arxa-designer/starter-partials/widgets/ (15 kinds, registry v1.3.0);",
+  "`composedFrom` declares a recipe where no single kind realises the widget;",
+  "`presentation` marks island-realised surfaces with no kit widget. Resolves F4.",
+  "VISUAL PARITY LAW: v1 (designs/arxa-studio/) is candidates-only for STRUCTURE",
+  "(never copy file layout) but is the established VISUAL design SSOT — theme,",
+  "per-view layout and component appearance carry over; each entry's `design.visualSource`",
+  "cites the v1 view it restructures. Deviations are findings, not silent redesigns."
+ ],
+ "seed": {
+  "stages": [
+   {
+    "id": "startup",
+    "labelKey": "stageStartup",
+    "consumes": "arxa.config.json",
+    "produces": "session"
+   },
+   {
+    "id": "auth",
+    "labelKey": "stageAuth",
+    "consumes": "session",
+    "produces": "credentials"
+   },
+   {
+    "id": "intake",
+    "labelKey": "stageIntake",
+    "consumes": "brief + brand assets",
+    "produces": "intake/registry.json"
+   },
+   {
+    "id": "design",
+    "labelKey": "stageDesign",
+    "consumes": "intake/registry.json",
+    "produces": "design artifact"
+   }
+  ],
+  "portalo": "simulated design content for the design shell canvas — Portalo is NOT a studio shell; assets under assets/portalo/"
+ },
+ "entries": [
+  {
+   "id": "studio_application_hub.hub",
+   "shell": "studio_application_hub",
+   "shellKind": "hub",
+   "label": "Studio",
+   "labelKey": "appTitle",
+   "surface": "studio_application_hub_view",
+   "route": "/",
+   "requiresAuth": false,
+   "widgets": [
+    {
+     "name": "header",
+     "composedFrom": [
+      "appbar"
+     ],
+     "note": "hub-owned brand + project chip + locale/prefs; hosted shells receive it through their header_panel"
+    },
+    {
+     "name": "tabbar",
+     "composedFrom": [
+      "tabs"
+     ],
+     "note": "compact-rung navigation over the hosted stages (entries carrying `tab` in this registry); hub-owned"
+    },
+    {
+     "name": "rail",
+     "composedFrom": [
+      "list-row"
+     ],
+     "note": "expanded-rung navigation; same destinations as the tabbar; hub-owned"
+    },
+    {
+     "name": "footer_panel",
+     "composedFrom": [
+      "list-row"
+     ],
+     "note": "root-rendered once outside the rungs; a hosted shell feeds the body or the panel does not render"
+    }
+   ],
+   "design": {
+    "visualSource": "designs/arxa-studio/ui/views/app_shell (v1 app frame)",
+    "instruction": "the routed root: / renders the hub chrome with the default hosted stage (studio_dashboard_shell.studio_dashboard) in the body outlet. Boot-guarded per R3 (docs/plans/studio-v2-boot-sequence-wiring.md): an un-booted session redirects to /startup?to=<target>; ceremony shells are exempt"
+   }
+  },
+  {
+   "id": "studio_dashboard_shell.studio_dashboard",
+   "shell": "studio_dashboard_shell",
+   "shellKind": "shell",
+   "label": "Dashboard",
+   "labelKey": "stageDashboard",
+   "surface": "studio_dashboard_view",
+   "route": "/dashboard",
+   "requiresAuth": false,
+   "widgets": [
+    {
+     "name": "header_panel",
+     "composedFrom": [
+      "appbar"
+     ],
+     "note": "shell-owned panel hosting hub-hosted header widget; body-only <nav> strip, no single kind realises it"
+    },
+    {
+     "name": "footer_panel",
+     "composedFrom": [
+      "list-row"
+     ],
+     "note": "shell-owned body-only strip; body is the caller's content (e.g. the timeline <ol>)"
+    },
+    {
+     "name": "main_panel",
+     "composedFrom": [
+      "tabs"
+     ],
+     "note": "hosts gate strip + project grid + stats + wizard entry; own chrome is the per-shell segmented panel bar (tabs) — hosted widgets carry their own recipes"
+    },
+    {
+     "name": "gate_strip",
+     "composedFrom": [
+      "card"
+     ],
+     "note": "needs-you gates; each names project + stage, decision is a manual POST"
+    },
+    {
+     "name": "project_grid",
+     "composedFrom": [
+      "card"
+     ],
+     "note": "v1 project tiles; `current` is data from the seed, never inferred"
+    },
+    {
+     "name": "stats_row",
+     "composedFrom": [
+      "card"
+     ]
+    },
+    {
+     "name": "pairing_modal",
+     "kind": "modal"
+    },
+    {
+     "name": "wizard",
+     "composedFrom": [
+      "form-field",
+      "cta-link"
+     ]
+    }
+   ],
+   "design": {
+    "visualSource": "designs/arxa-studio/ui/views/app_shell/dashboard (v1 dashboard)",
+    "instruction": "v1 established look: theme tokens via abx* constants, gate cards, project tiles with stats; restructure, do not redesign"
+   },
+   "tab": 1
+  },
+  {
+   "id": "studio_startup_shell.startup",
+   "shell": "studio_startup_shell",
+   "shellKind": "ceremony",
+   "role": "startup",
+   "label": "Startup",
+   "labelKey": "stageStartup",
+   "surface": "studio_startup_view",
+   "route": "/startup",
+   "requiresAuth": false,
+   "widgets": [
+    {
+     "name": "boot_checklist",
+     "composedFrom": [
+      "list-row"
+     ],
+     "note": "landed/ready state rendered before approving — no animation until per-shell approval judged"
+    },
+    {
+     "name": "proceed_trigger",
+     "kind": "cta-link"
+    }
+   ],
+   "design": {
+    "visualSource": "designs/arxa-studio/ui (startup/splash)",
+    "instruction": "splashscreen is NOT a shell — mobile splash surface + brand logo only"
+   }
+  },
+  {
+   "id": "studio_startup_shell.splash",
+   "shell": "studio_startup_shell",
+   "shellKind": "ceremony",
+   "role": "splash",
+   "label": "Splash",
+   "labelKey": "splashTitle",
+   "surface": "studio_splash_view",
+   "route": "/splash",
+   "requiresAuth": false,
+   "widgets": [],
+   "design": {
+    "visualSource": "designs/arxa-studio/ui/views/app_shell/splash (v1 splash surface)",
+    "instruction": "splashscreen is a SURFACE, not a shell (Q-v2-1): brand wordmark only, mobile-first, no chrome; satisfies the roster law's splash role"
+   }
+  },
+  {
+   "id": "studio_unknown_shell.unknown",
+   "shell": "studio_unknown_shell",
+   "shellKind": "ceremony",
+   "role": "unknown",
+   "label": "Unknown",
+   "labelKey": "stageUnknown",
+   "surface": "studio_unknown_view",
+   "route": "/unknown",
+   "requiresAuth": false,
+   "widgets": [
+    {
+     "name": "unknown_notice",
+     "kind": "empty-state"
+    }
+   ],
+   "design": {
+    "visualSource": "designs/arxa-studio/ui (unknown/error surface)",
+    "instruction": "ceremony shell; cutover per Q-v2-5 behind user validation"
+   }
+  },
+  {
+   "id": "studio_auth_shell.auth",
+   "shell": "studio_auth_shell",
+   "shellKind": "ceremony",
+   "role": "access",
+   "label": "Auth",
+   "labelKey": "stageAuth",
+   "surface": "studio_auth_view",
+   "route": "/auth",
+   "requiresAuth": false,
+   "widgets": [
+    {
+     "name": "credential_form",
+     "composedFrom": [
+      "form-field",
+      "cta-link"
+     ]
+    }
+   ],
+   "design": {
+    "visualSource": "designs/arxa-studio/ui (auth views)",
+    "instruction": "consumes session, produces credentials; per-shell manual trigger to proceed"
+   }
+  },
+  {
+   "id": "studio_intake_shell.studio_intake_interview",
+   "shell": "studio_intake_shell",
+   "shellKind": "working",
+   "label": "Interview",
+   "labelKey": "intake.interview.pageTitle",
+   "surface": "studio_intake_interview_view",
+   "route": "/intake",
+   "requiresAuth": true,
+   "widgets": [
+    {
+     "name": "composer_panel",
+     "composedFrom": [
+      "form-field"
+     ],
+     "note": "the chat rail, always in the current step context (v1 loop port)"
+    },
+    {
+     "name": "main_panel",
+     "composedFrom": [
+      "tabs"
+     ],
+     "note": "the step stage: one item at a time, the item-strip, the step foot (v1 loop port)"
+    },
+    {
+     "name": "activity_panel",
+     "kind": "panel-activity",
+     "note": "thread / artifacts / files views carousel (v1 loop port)"
+    },
+    {
+     "name": "timeline",
+     "composedFrom": [
+      "list-row"
+     ],
+     "note": "the footer timeline: the whole journey at a glance"
+    },
+    {
+     "name": "mode_cards",
+     "composedFrom": [
+      "card"
+     ],
+     "note": "the depth choice: simple / normal / advanced banks"
+    }
+   ],
+   "design": {
+    "visualSource": "designs/arxa-studio/ui/views/main_shell/intake/interview (v1 intake loop, ported verbatim)",
+    "instruction": "v1 item-engine step ported verbatim (visual parity law): the three-panel loop (composer | main stage | activity) with the read-only timeline footer; the step surface renders once — its htmx swap targets are id anchors"
+   },
+   "tab": 2
+  },
+  {
+   "id": "studio_intake_shell.studio_intake_personas",
+   "shell": "studio_intake_shell",
+   "shellKind": "working",
+   "label": "Personas",
+   "labelKey": "intake.personas.pageTitle",
+   "surface": "studio_intake_personas_view",
+   "route": "/intake/personas",
+   "requiresAuth": true,
+   "widgets": [
+    {
+     "name": "composer_panel",
+     "composedFrom": [
+      "form-field"
+     ],
+     "note": "the chat rail, always in the current step context (v1 loop port)"
+    },
+    {
+     "name": "main_panel",
+     "composedFrom": [
+      "tabs"
+     ],
+     "note": "the step stage: one item at a time, the item-strip, the step foot (v1 loop port)"
+    },
+    {
+     "name": "activity_panel",
+     "kind": "panel-activity",
+     "note": "thread / artifacts / files views carousel (v1 loop port)"
+    },
+    {
+     "name": "timeline",
+     "composedFrom": [
+      "list-row"
+     ],
+     "note": "the footer timeline: the whole journey at a glance"
+    },
+    {
+     "name": "item_cards",
+     "composedFrom": [
+      "card"
+     ],
+     "note": "persona prefill cards with provenance chips"
+    }
+   ],
+   "design": {
+    "visualSource": "designs/arxa-studio/ui/views/main_shell/intake/personas (v1 intake loop, ported verbatim)",
+    "instruction": "v1 item-engine step ported verbatim (visual parity law): the three-panel loop (composer | main stage | activity) with the read-only timeline footer; the step surface renders once — its htmx swap targets are id anchors"
+   }
+  },
+  {
+   "id": "studio_intake_shell.studio_intake_surfaces",
+   "shell": "studio_intake_shell",
+   "shellKind": "working",
+   "label": "Surfaces",
+   "labelKey": "intake.surfaces.pageTitle",
+   "surface": "studio_intake_surfaces_view",
+   "route": "/intake/surfaces",
+   "requiresAuth": true,
+   "widgets": [
+    {
+     "name": "composer_panel",
+     "composedFrom": [
+      "form-field"
+     ],
+     "note": "the chat rail, always in the current step context (v1 loop port)"
+    },
+    {
+     "name": "main_panel",
+     "composedFrom": [
+      "tabs"
+     ],
+     "note": "the step stage: one item at a time, the item-strip, the step foot (v1 loop port)"
+    },
+    {
+     "name": "activity_panel",
+     "kind": "panel-activity",
+     "note": "thread / artifacts / files views carousel (v1 loop port)"
+    },
+    {
+     "name": "timeline",
+     "composedFrom": [
+      "list-row"
+     ],
+     "note": "the footer timeline: the whole journey at a glance"
+    },
+    {
+     "name": "item_cards",
+     "composedFrom": [
+      "card"
+     ],
+     "note": "surface-group prefill cards with provenance chips"
+    }
+   ],
+   "design": {
+    "visualSource": "designs/arxa-studio/ui/views/main_shell/intake/surfaces (v1 intake loop, ported verbatim)",
+    "instruction": "v1 item-engine step ported verbatim (visual parity law): the three-panel loop (composer | main stage | activity) with the read-only timeline footer; the step surface renders once — its htmx swap targets are id anchors"
+   }
+  },
+  {
+   "id": "studio_intake_shell.studio_intake_flows",
+   "shell": "studio_intake_shell",
+   "shellKind": "working",
+   "label": "Flows",
+   "labelKey": "intake.flows.pageTitle",
+   "surface": "studio_intake_flows_view",
+   "route": "/intake/flows",
+   "requiresAuth": true,
+   "widgets": [
+    {
+     "name": "composer_panel",
+     "composedFrom": [
+      "form-field"
+     ],
+     "note": "the chat rail, always in the current step context (v1 loop port)"
+    },
+    {
+     "name": "main_panel",
+     "composedFrom": [
+      "tabs"
+     ],
+     "note": "the step stage: one item at a time, the item-strip, the step foot (v1 loop port)"
+    },
+    {
+     "name": "activity_panel",
+     "kind": "panel-activity",
+     "note": "thread / artifacts / files views carousel (v1 loop port)"
+    },
+    {
+     "name": "timeline",
+     "composedFrom": [
+      "list-row"
+     ],
+     "note": "the footer timeline: the whole journey at a glance"
+    },
+    {
+     "name": "item_cards",
+     "composedFrom": [
+      "card"
+     ],
+     "note": "flow prefill cards over the screen registry"
+    }
+   ],
+   "design": {
+    "visualSource": "designs/arxa-studio/ui/views/main_shell/intake/flows (v1 intake loop, ported verbatim)",
+    "instruction": "v1 item-engine step ported verbatim (visual parity law): the three-panel loop (composer | main stage | activity) with the read-only timeline footer; the step surface renders once — its htmx swap targets are id anchors"
+   }
+  },
+  {
+   "id": "studio_intake_shell.studio_intake_mapping",
+   "shell": "studio_intake_shell",
+   "shellKind": "working",
+   "label": "Story Map",
+   "labelKey": "intake.mapping.pageTitle",
+   "surface": "studio_intake_mapping_view",
+   "route": "/intake/map",
+   "requiresAuth": true,
+   "widgets": [
+    {
+     "name": "composer_panel",
+     "composedFrom": [
+      "form-field"
+     ],
+     "note": "the chat rail, always in the current step context (v1 loop port)"
+    },
+    {
+     "name": "main_panel",
+     "composedFrom": [
+      "tabs"
+     ],
+     "note": "the step stage: one item at a time, the item-strip, the step foot (v1 loop port)"
+    },
+    {
+     "name": "activity_panel",
+     "kind": "panel-activity",
+     "note": "thread / artifacts / files views carousel (v1 loop port)"
+    },
+    {
+     "name": "timeline",
+     "composedFrom": [
+      "list-row"
+     ],
+     "note": "the footer timeline: the whole journey at a glance"
+    },
+    {
+     "name": "story_map",
+     "composedFrom": [
+      "card"
+     ],
+     "note": "the Epic-Feature-Story map artifact with approve gate"
+    }
+   ],
+   "design": {
+    "visualSource": "designs/arxa-studio/ui/views/main_shell/intake/mapping (v1 intake loop, ported verbatim)",
+    "instruction": "v1 item-engine step ported verbatim (visual parity law): the three-panel loop (composer | main stage | activity) with the read-only timeline footer; the step surface renders once — its htmx swap targets are id anchors"
+   }
+  },
+  {
+   "id": "studio_intake_shell.studio_intake_direction",
+   "shell": "studio_intake_shell",
+   "shellKind": "working",
+   "label": "Direction",
+   "labelKey": "intake.direction.pageTitle",
+   "surface": "studio_intake_direction_view",
+   "route": "/intake/direction",
+   "requiresAuth": true,
+   "widgets": [
+    {
+     "name": "composer_panel",
+     "composedFrom": [
+      "form-field"
+     ],
+     "note": "the chat rail, always in the current step context (v1 loop port)"
+    },
+    {
+     "name": "main_panel",
+     "composedFrom": [
+      "tabs"
+     ],
+     "note": "the step stage: one item at a time, the item-strip, the step foot (v1 loop port)"
+    },
+    {
+     "name": "activity_panel",
+     "kind": "panel-activity",
+     "note": "thread / artifacts / files views carousel (v1 loop port)"
+    },
+    {
+     "name": "timeline",
+     "composedFrom": [
+      "list-row"
+     ],
+     "note": "the footer timeline: the whole journey at a glance"
+    },
+    {
+     "name": "item_cards",
+     "composedFrom": [
+      "card"
+     ],
+     "note": "adjectives / avoids / references cards"
+    }
+   ],
+   "design": {
+    "visualSource": "designs/arxa-studio/ui/views/main_shell/intake/direction (v1 intake loop, ported verbatim)",
+    "instruction": "v1 item-engine step ported verbatim (visual parity law): the three-panel loop (composer | main stage | activity) with the read-only timeline footer; the step surface renders once — its htmx swap targets are id anchors"
+   }
+  },
+  {
+   "id": "studio_intake_shell.studio_intake_brief",
+   "shell": "studio_intake_shell",
+   "shellKind": "working",
+   "label": "Brief",
+   "labelKey": "intake.brief.pageTitle",
+   "surface": "studio_intake_brief_view",
+   "route": "/intake/brief",
+   "requiresAuth": true,
+   "widgets": [
+    {
+     "name": "composer_panel",
+     "composedFrom": [
+      "form-field"
+     ],
+     "note": "the chat rail, always in the current step context (v1 loop port)"
+    },
+    {
+     "name": "main_panel",
+     "composedFrom": [
+      "tabs"
+     ],
+     "note": "the step stage: one item at a time, the item-strip, the step foot (v1 loop port)"
+    },
+    {
+     "name": "activity_panel",
+     "kind": "panel-activity",
+     "note": "thread / artifacts / files views carousel (v1 loop port)"
+    },
+    {
+     "name": "timeline",
+     "composedFrom": [
+      "list-row"
+     ],
+     "note": "the footer timeline: the whole journey at a glance"
+    },
+    {
+     "name": "brief_artifact",
+     "composedFrom": [
+      "card"
+     ],
+     "note": "the design brief artifact with the approval gate"
+    }
+   ],
+   "design": {
+    "visualSource": "designs/arxa-studio/ui/views/main_shell/intake/brief (v1 intake loop, ported verbatim)",
+    "instruction": "v1 item-engine step ported verbatim (visual parity law): the three-panel loop (composer | main stage | activity) with the read-only timeline footer; the step surface renders once — its htmx swap targets are id anchors"
+   }
+  },
+  {
+   "id": "studio_intake_shell.studio_intake_moodboard",
+   "shell": "studio_intake_shell",
+   "shellKind": "working",
+   "label": "Moodboard",
+   "labelKey": "intake.moodboard.pageTitle",
+   "surface": "studio_intake_moodboard_view",
+   "route": "/intake/moodboard",
+   "requiresAuth": true,
+   "widgets": [
+    {
+     "name": "composer_panel",
+     "composedFrom": [
+      "form-field"
+     ],
+     "note": "the chat rail, always in the current step context (v1 loop port)"
+    },
+    {
+     "name": "main_panel",
+     "composedFrom": [
+      "tabs"
+     ],
+     "note": "the step stage: one item at a time, the item-strip, the step foot (v1 loop port)"
+    },
+    {
+     "name": "activity_panel",
+     "kind": "panel-activity",
+     "note": "thread / artifacts / files views carousel (v1 loop port)"
+    },
+    {
+     "name": "timeline",
+     "composedFrom": [
+      "list-row"
+     ],
+     "note": "the footer timeline: the whole journey at a glance"
+    },
+    {
+     "name": "moodboard",
+     "composedFrom": [
+      "card"
+     ],
+     "note": "reference boards and shots"
+    }
+   ],
+   "design": {
+    "visualSource": "designs/arxa-studio/ui/views/main_shell/intake/moodboard (v1 intake loop, ported verbatim)",
+    "instruction": "v1 item-engine step ported verbatim (visual parity law): the three-panel loop (composer | main stage | activity) with the read-only timeline footer; the step surface renders once — its htmx swap targets are id anchors"
+   }
+  },
+  {
+   "id": "studio_design_shell.studio_design_prototype",
+   "shell": "studio_design_shell",
+   "shellKind": "working",
+   "label": "Prototype",
+   "labelKey": "design.prototype.pageTitle",
+   "surface": "studio_design_prototype_view",
+   "route": "/design",
+   "requiresAuth": true,
+   "widgets": [
+    {
+     "name": "design_viewer",
+     "presentation": "canvas island (runtime/vendor canvas.js + drag.js + reveal.js) — no kit widget realises it",
+     "note": "the project screens as live iframes; flows, tile toolbars, the reveal drawer"
+    },
+    {
+     "name": "composer_panel",
+     "composedFrom": [
+      "form-field"
+     ],
+     "note": "the design chat rail with pinned context chips"
+    },
+    {
+     "name": "main_panel",
+     "composedFrom": [
+      "tabs"
+     ],
+     "note": "the viewer canvas stage (prototype) / the chat thread (chat) / the freeze trace (freeze)"
+    },
+    {
+     "name": "activity_panel",
+     "kind": "panel-activity",
+     "note": "thread / artifacts / files / inspector views"
+    },
+    {
+     "name": "timeline",
+     "composedFrom": [
+      "list-row"
+     ],
+     "note": "the footer timeline"
+    },
+    {
+     "name": "inspector_pane",
+     "composedFrom": [
+      "tabs",
+      "form-field"
+     ],
+     "note": "the element inspector (the activity panel 4th view + the unlock flow)"
+    }
+   ],
+   "design": {
+    "visualSource": "designs/arxa-studio/ui/views/main_shell/design/prototype (v1 design loop, ported verbatim)",
+    "instruction": "v1 design loop ported verbatim (visual parity law): designed-app content is Portalo (seed.portalo); the surface renders once — islands and htmx targets are id-anchored"
+   },
+   "tab": 3
+  },
+  {
+   "id": "studio_design_shell.studio_design_chat",
+   "shell": "studio_design_shell",
+   "shellKind": "working",
+   "label": "Chat",
+   "labelKey": "design.chat.pageTitle",
+   "surface": "studio_design_chat_view",
+   "route": "/design/chat",
+   "requiresAuth": true,
+   "widgets": [
+    {
+     "name": "design_viewer",
+     "presentation": "canvas island (runtime/vendor canvas.js + drag.js + reveal.js) — no kit widget realises it",
+     "note": "the project screens as live iframes; flows, tile toolbars, the reveal drawer"
+    },
+    {
+     "name": "composer_panel",
+     "composedFrom": [
+      "form-field"
+     ],
+     "note": "the design chat rail with pinned context chips"
+    },
+    {
+     "name": "main_panel",
+     "composedFrom": [
+      "tabs"
+     ],
+     "note": "the viewer canvas stage (prototype) / the chat thread (chat) / the freeze trace (freeze)"
+    },
+    {
+     "name": "activity_panel",
+     "kind": "panel-activity",
+     "note": "thread / artifacts / files / inspector views"
+    },
+    {
+     "name": "timeline",
+     "composedFrom": [
+      "list-row"
+     ],
+     "note": "the footer timeline"
+    }
+   ],
+   "design": {
+    "visualSource": "designs/arxa-studio/ui/views/main_shell/design/chat (v1 design loop, ported verbatim)",
+    "instruction": "v1 design loop ported verbatim (visual parity law): designed-app content is Portalo (seed.portalo); the surface renders once — islands and htmx targets are id-anchored"
+   }
+  },
+  {
+   "id": "studio_design_shell.studio_design_freeze",
+   "shell": "studio_design_shell",
+   "shellKind": "working",
+   "label": "Freeze",
+   "labelKey": "design.freeze.pageTitle",
+   "surface": "studio_design_freeze_view",
+   "route": "/design/freeze",
+   "requiresAuth": true,
+   "widgets": [
+    {
+     "name": "design_viewer",
+     "presentation": "canvas island (runtime/vendor canvas.js + drag.js + reveal.js) — no kit widget realises it",
+     "note": "the project screens as live iframes; flows, tile toolbars, the reveal drawer"
+    },
+    {
+     "name": "composer_panel",
+     "composedFrom": [
+      "form-field"
+     ],
+     "note": "the design chat rail with pinned context chips"
+    },
+    {
+     "name": "main_panel",
+     "composedFrom": [
+      "tabs"
+     ],
+     "note": "the viewer canvas stage (prototype) / the chat thread (chat) / the freeze trace (freeze)"
+    },
+    {
+     "name": "activity_panel",
+     "kind": "panel-activity",
+     "note": "thread / artifacts / files / inspector views"
+    },
+    {
+     "name": "timeline",
+     "composedFrom": [
+      "list-row"
+     ],
+     "note": "the footer timeline"
+    },
+    {
+     "name": "freeze_trace",
+     "composedFrom": [
+      "card"
+     ],
+     "note": "the frozen manifest trace + recheck + the approval gate"
+    }
+   ],
+   "design": {
+    "visualSource": "designs/arxa-studio/ui/views/main_shell/design/freeze (v1 design loop, ported verbatim)",
+    "instruction": "v1 design loop ported verbatim (visual parity law): designed-app content is Portalo (seed.portalo); the surface renders once — islands and htmx targets are id-anchored"
+   }
+  }
+ ]
+}

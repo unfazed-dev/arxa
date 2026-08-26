@@ -1,7 +1,7 @@
 [
   {
     "name": "Kit evaluator",
-    "role": "engineer assessing the appbox kit for a client project",
+    "role": "engineer assessing the arxa kit for a client project",
     "goals": [
       "see real product behavior built from kit parts",
       "judge every shell family in one running target"

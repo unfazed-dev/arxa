@@ -1,0 +1,69 @@
+/* arxa · fonts — the [data-font] menu: role variables only, no @font-face.
+   Families arrive from the Google Fonts CDN: base.tsx emits two preconnects
+   and ONE css2 stylesheet link naming every family listed below with explicit
+   weight ranges (law: DESIGN-ARCHITECTURE.md "Fonts (Google Fonts by name)").
+   The design vendors no font binaries — assets/fonts/ exists only when intake
+   uploads a custom brand font ("source": "file" in assets.manifest.json), and
+   the scaffolder mirrors the split: google_fonts package for named families,
+   a real pubspec fonts: block only for that upload case.
+
+   The #app[data-font=...] entries below are the family SSOT for this design.
+   Add a family by adding its [data-font] block here AND its family param to
+   the css2 link in base.tsx — the two lists must stay 1:1, and the manifest's
+   font roles must name families from this set so the scaffolded app requests
+   exactly what the design showed.
+
+   The menu works through FOUR variables rather than by restating font-family
+   on every component — a bare [data-font] rule would have re-skinned body
+   copy and left every heading and chip on Lexend, so components read
+   var(--font-*) and switching a font is one variable swap:
+
+     --font-ui       body copy, controls, everything unmarked
+     --font-display  the shell's large type (was 'Lexend Giga')
+     --font-label    chips, tabs, section labels (was 'Lexend Deca')
+     --font-mono     code, log timestamps (only the `mono` family changes it)
+
+   Scope note: [data-font] sits on #app, the same element that carries
+   data-theme and data-accent — one token scope, one specificity model
+   (#app[data-font=...] beats the :root defaults the way #app[data-theme] does).
+   body keeps a literal Lexend stack as the pre-boot fallback: it is the one
+   element OUTSIDE #app, so it cannot read a variable set on #app. */
+
+/* ---------- defaults = the `lexend` menu entry ----------
+   Kept at :root so anything rendered outside #app (modal.html, the widget
+   primitives gallery) still resolves the variables instead of inheriting an
+   unset value and falling back to Times. */
+:root {
+  --font-ui: 'Lexend', -apple-system, "PingFang SC", "Noto Sans SC", sans-serif;
+  --font-display: 'Lexend Giga', 'Lexend', sans-serif;
+  --font-label: 'Lexend Deca', 'Lexend', sans-serif;
+  --font-mono: ui-monospace, "SF Mono", monospace;
+}
+
+/* #app carries the choice, exactly as it carries data-theme / data-accent. */
+#app { font-family: var(--font-ui); }
+
+#app[data-font="lexend"] {
+  --font-ui: 'Lexend', -apple-system, "PingFang SC", "Noto Sans SC", sans-serif;
+  --font-display: 'Lexend Giga', 'Lexend', sans-serif;
+  --font-label: 'Lexend Deca', 'Lexend', sans-serif;
+  --font-mono: ui-monospace, "SF Mono", monospace;
+}
+#app[data-font="grotesk"] {
+  --font-ui: 'Space Grotesk', -apple-system, "PingFang SC", "Noto Sans SC", sans-serif;
+  --font-display: 'Space Grotesk', sans-serif;
+  --font-label: 'Space Grotesk', sans-serif;
+  --font-mono: ui-monospace, "SF Mono", monospace;
+}
+#app[data-font="lora"] {
+  --font-ui: 'Lora', Georgia, "Songti SC", serif;
+  --font-display: 'Lora', Georgia, serif;
+  --font-label: 'Lora', Georgia, serif;
+  --font-mono: ui-monospace, "SF Mono", monospace;
+}
+#app[data-font="mono"] {
+  --font-ui: 'JetBrains Mono', ui-monospace, "SF Mono", monospace;
+  --font-display: 'JetBrains Mono', ui-monospace, monospace;
+  --font-label: 'JetBrains Mono', ui-monospace, monospace;
+  --font-mono: 'JetBrains Mono', ui-monospace, "SF Mono", monospace;
+}

@@ -1,0 +1,42 @@
+<Callout id="header" tone="info">
+# arxa-cicd — Per-Skill Playbook
+
+`arxa-cicd` · status: **active**
+
+**Role (one line):** stand up CI/CD for any project — grill the decisions first (deliverable, repo shape, stack, visibility, runner, gates, trunk, agent letter, CD timing), then generate the one-root check script, GitHub Actions workflow, runner setup and branch protection; wire `arxa gate --all` for arxa-built targets, never duplicate a validator.
+
+**Scope of this document:** lets a human OR an LLM wire a pipeline without reading the skill source. Folded from `SKILL.md`.
+
+**Pipeline position:** cross-cutting stage 10 — not a build stage, but the frame the build grows inside: day-zero bootstrap (or adopt of existing CI + report-only PR sweep) wrapping ALL stages’ gates (`arxa gate --all`); upstream `arxa-orchestrator` (stage Ø), downstream every stage skill + the halting deploy gate. Full chain, stage numbers, per-stage artifacts: `docs/research/pipeline-map.md` §1.
+
+## Table of contents
+
+0. Header & TOC · 1. Overview & role · 2. Inputs · 3. Procedure · 4. Outputs · 5. Rules · 6. References
+
+</Callout>
+
+### Overview & role
+
+Pipelines rot fastest at the decision layer: an agent that guesses visibility, runner, or trunk policy builds a contract nobody agreed to. This skill grills the decisions — one question per turn, each option carrying a recommendation and its tradeoff in one sentence — then generates exactly what was agreed. Facts discoverable from the environment (git remote? gh auth? existing workflow?) are looked up, never asked. First walked end-to-end on the energize engagement (2026-08-16); generalized from the t3ci analysis of arxa's own CI.
+
+### Inputs
+
+The decision tree, in dependency order — every later answer depends on earlier ones: 1. Deliverable (marketing site / app / ops tool / docs-only → code gates or doc gates). 2. Repo shape (monorepo vs per-deliverable; business-domain dirs, no `apps/` cargo-cult). 3. Stack (designer artifact htmx+Dart vs Flutter vs foreign — picks gate commands, runner OS, caching). 4. Hosting & visibility (**private vs public** — self-hosted runners ONLY on private repos). 5. Runner (self-hosted Mac: zero minutes, warm caches, queues when the machine sleeps; ubuntu-latest; hybrid). 6. Day-one gates (analyze + test + commit-convention behind ONE root command; commit convention REQUIRED at day one for zero-history repos). 7. Trunk & protection (rename master→main before first push; required checks = real job names; `strict: true`; reviews only when a team exists; no force-push/delete). 8. Agent letter (AGENTS.md naming THIS repo's real commands; model-routing table EMPTY until the project's audit fills it). 9. CD timing (defer until a deployable artifact + target exist).
+
+### Procedure
+
+Grill the nine decisions into `docs/ci/decisions.md` (inside the organized `docs/ci/` folder — create it, and `docs/`, if absent) — the table IS the shared understanding; confirm it before generating anything. Generate `scripts/check.sh` (`set -uo pipefail`, cd to repo root, fvm PATH injection when present, "green by absence" skip for empty areas, commit gate printing each BAD subject with `git rev-list --no-merges`). Generate `.github/workflows/ci.yml` — `on: push [main] + pull_request`, concurrency `ci-${{ github.ref }}` + `cancel-in-progress`, one job per area each a single `scripts/check.sh <area>` call, `timeout-minutes` ALWAYS, self-hosted labels `[self-hosted, macOS, ARM64]` or `ubuntu-latest` + setup actions + cache, convention job with `fetch-depth: 0` checking `origin/main..HEAD` on PRs / `HEAD` on pushes. Run the first run green (`gh run watch`) BEFORE the protection PUT. Then runner + protection: per-repo registration (`~/actions-runner-<repo>`, never shared), `svc.sh` service, then the idempotent `gh api …/branches/main/protection --method PUT` with `strict: true`, contexts = exact job names. Hand off: agent work flows builder → tester → reviewer inside this pipeline; PRs through file-pr → babysit-pr; deploys halt at the deployer's approval gate. MODES: bootstrap (no CI yet — valid at day zero, before `arxa-intake`) vs adopt (CI exists — audit it against the guardrail list, move/fold any `ci-setup.md`-style record into `docs/ci/`, then run the PR sweep: `gh pr list` → per PR read title/body/diff + `gh pr checks` + local `scripts/check.sh` reproduction for red checks → one report-only feedback: green merge-ready · red+local-green = CI divergence · red+local-red = real defect routed to the owning stage skill · queued = runner asleep, wake it, never fix code). PR STAGE TAGS: generate `.github/pull_request_template.md` (stage/agent field) + the `[abx-<skill-name>]` title convention (multi-tag = stages touched, first = primary), checked warn-not-fail until bedded in — one SSOT tag table emitted into docs/ci/decisions.md, template footer, and the check allowlist. EXPLAINER: emit `docs/ci/explainer.html` from `references/ci-explainer.html` (fill every {{TOKEN}} from ci-decisions.md + the generated workflow; BOTH versions always written — plain-language default view for non-technical readers + full technical version, toggled by a native HTML checkbox, zero JS; regenerate on any decision/job change; docs/ci/decisions.md stays the SSOT — adopt mode emits it from the audited state).
+
+### Outputs
+
+One organized folder `docs/ci/` — created first even when no `docs/` exists — holding `decisions.md` (the decision record), `setup.md` (runner recipe detail + the solo loop), `explainer.html`; plus `scripts/check.sh` (the one-root-check — local green = CI green), `.github/workflows/ci.yml`, branch protection via `gh api` + the solo loop `scripts/check.sh` → `gh pr create --fill` → `gh pr checks --watch` → `gh pr merge --squash --auto`), the agent letter, and — for arxa-built targets — jobs that run `arxa gate --all` in dependency order, `.github/pull_request_template.md` + the `[abx-<skill-name>]` tag map (bootstrap mode; adopt mode emits the audit + PR-sweep report instead), with `docs/ci/explainer.html` in the same folder — one document, two readings, both always written: plain-language default + technical toggle via native checkbox, zero JS; derived from docs/ci/decisions.md, regenerated on decision/job change.
+
+### Rules
+
+Elicit, never assume — every unasked decision becomes a wrong default enforced by protection. Self-hosted runner on a public repo: categorical no. No job without `timeout-minutes`. If a gate exists, wire it (`arxa gate arch/tests/lens/docs`, `arxa deploy doctor` then HALT — CI can never mint the approval token); re-implementing a validator is the reviewer's anti-doctrine. Protection enabled only AFTER a watched green run — never lock a red trunk. Delete from `contexts` any job you rename and re-run the PUT — a stale context bricks merges. `check.sh` exits 0 on a fresh empty repo ("green by absence"), and `arxa`'s exit 2 (env/not-applicable) is a SKIP, not a failure. A queued-but-not-running job is NEVER "fixed" by changing code — the runner is asleep (babysit-pr owns the call). Failure modes this skill exists to prevent: confident pipeline fiction (never ran), advisory drift (merges mean nothing), infra-as-code-red, and overbuild — the scope ceiling applies to pipelines.
+
+<!-- kb:begin -->
+### References
+- t3ci analysis + the energize engagement (2026-08-16) — the improvement list this skill embodies; `git log` of `.github/workflows/` in arxa for the worked example.
+- `arxa gate --all` (`arxa/bin/arxa.dart`) — the suite runner wired for arxa-built targets. `skills/arxa-reviewer/SKILL.md` — the "wire, never duplicate" doctrine. `skills/arxa-deployer/SKILL.md` — the approval gate CI halts at.
+<!-- kb:end -->

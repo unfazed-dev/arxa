@@ -1,5 +1,5 @@
 /// A widget is a reusable UI piece composed by views. It receives data via
-/// constructor params or [AppBoxKitStreamBuilder] bindings and renders its
+/// constructor params or [ArxaKitStreamBuilder] bindings and renders its
 /// slice of the surface — it holds no business logic and never decides when
 /// an action runs.
 ///
@@ -19,9 +19,9 @@
 library;
 
 import 'package:flutter/material.dart';
-import 'package:appbox_kit_showcase_app/ui/common/appbox_kit_app_constants.dart';
-import 'package:appbox_kit_showcase_app/ui/common/appbox_kit_glyphs.dart';
-import 'package:appbox_kit_showcase_app/ui/common/appbox_kit_ui_helpers.dart';
+import 'package:arxa_kit_showcase_app/ui/common/arxa_kit_app_constants.dart';
+import 'package:arxa_kit_showcase_app/ui/common/arxa_kit_glyphs.dart';
+import 'package:arxa_kit_showcase_app/ui/common/arxa_kit_ui_helpers.dart';
 
 class ShowcaseNotesFormErrorRowWidget extends StatelessWidget {
   const ShowcaseNotesFormErrorRowWidget({super.key, required this.message});
@@ -36,9 +36,9 @@ class ShowcaseNotesFormErrorRowWidget extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(AppBoxKitGlyphs.error.icon,
+          Icon(ArxaKitGlyphs.error.icon,
               size: abxSize18, color: theme.colorScheme.error),
-          appBoxKitHorizontalSpaceSmall,
+          arxaKitHorizontalSpaceSmall,
           Expanded(
             child: Text(
               message,

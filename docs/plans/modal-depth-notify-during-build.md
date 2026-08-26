@@ -15,8 +15,8 @@ was: Builder)
 
 ## Root cause
 
-`AppBoxKitFrostedAlertDialog` brackets its own lifetime, bumping the shared depth
-from `initState` (`appbox_kit_native_dialog.dart:180`) and releasing it in
+`ArxaKitFrostedAlertDialog` brackets its own lifetime, bumping the shared depth
+from `initState` (`arxa_kit_native_dialog.dart:180`) and releasing it in
 `dispose`. That is the right place for a bracket — it is the only pairing that
 survives every exit path — but **the framework runs `initState` during the build
 phase**.
@@ -29,12 +29,12 @@ listeners call `setState`:
 |---|---|
 | `CNTextField` | `text_field.dart:194-195` |
 | `ModalHideMixin` | `modal_hide_mixin.dart:83` |
-| `AppBoxKitNativeChromeGate` | `appbox_kit_native_chrome_gate.dart:234` |
-| `AppBoxKitScrollOcclusionGate` | `appbox_kit_scroll_occlusion_gate.dart:118` |
+| `ArxaKitNativeChromeGate` | `arxa_kit_native_chrome_gate.dart:234` |
+| `ArxaKitScrollOcclusionGate` | `arxa_kit_scroll_occlusion_gate.dart:118` |
 
 Any of them mounted on the **host page** was built earlier in the same frame, and
 dirtying an already-built widget is illegal — the framework throws. The showcase's
-Components view has exactly that: an `AppBoxKitNativeInputBar` wrapping a
+Components view has exactly that: an `ArxaKitNativeInputBar` wrapping a
 `CNTextField`, sitting on the page the dialog opens over.
 
 **Pre-existing, not a regression.** The listener arrived in `1357b39` and the
@@ -49,13 +49,13 @@ One change at the choke point rather than a guard on each listener:
 
 - updates `value` **synchronously**, so a gate reading it in its own `initState`
   still snapshots the bumped depth as its mount baseline — the behaviour
-  `appBoxKitShowNativeDialog` relies on and documents; and
+  `arxaKitShowNativeDialog` relies on and documents; and
 - defers `notifyListeners()` to a post-frame callback **only** when the change
   lands during `SchedulerPhase.persistentCallbacks`, coalescing several bumps in
   one frame into a single notification.
 
 A bump from a tap handler or after an async gap — the common path, since both
-`appBoxKitShowSheet` and `appBoxKitShowNativeDialog` mark *before* pushing —
+`arxaKitShowSheet` and `arxaKitShowNativeDialog` mark *before* pushing —
 notifies immediately, exactly as before. `dispose` is covered by the same path,
 which matters because unmount runs in the build phase too.
 
@@ -64,13 +64,13 @@ three in the observer's own route bumps that the first pass missed.
 
 ## Consequence worth knowing
 
-A host embedding `AppBoxKitFrostedAlertDialog` directly (stacked `DialogService`,
+A host embedding `ArxaKitFrostedAlertDialog` directly (stacked `DialogService`,
 `popOnAction: false`) has no preceding mark, so its listeners now react one frame
 later. One frame of native chrome staying visible, against a hard crash.
 
 ## Verification
 
-`appbox_kit_native_dialog_test.dart` records `SchedulerBinding.schedulerPhase` at
+`arxa_kit_native_dialog_test.dart` records `SchedulerBinding.schedulerPhase` at
 every notification and asserts none arrives during `persistentCallbacks`. It is
 phrased against the phase rather than by mounting a `CNTextField` because the
 widget at fault is a `UiKitView` that cannot render headless, and the defect is
@@ -80,7 +80,7 @@ Mutation-checked: forcing synchronous notification fails the test. It also
 asserts the notification is not merely *absent* (`phases, isNotEmpty`), so a
 change that stopped moving the depth entirely cannot pass it vacuously.
 
-`appbox_kit_native_overlay_test.dart` gained
+`arxa_kit_native_overlay_test.dart` gained
 `TestWidgetsFlutterBinding.ensureInitialized()`: its plain `test()`s now reach a
 scheduler lookup, and Flutter's own error text prescribes exactly that. No
 assertion changed — outside a frame the phase is `idle`, so those tests still

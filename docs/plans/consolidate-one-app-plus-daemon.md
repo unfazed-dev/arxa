@@ -1,6 +1,6 @@
-# Consolidation — one appbox app + daemon
+# Consolidation — one arxa app + daemon
 
-> **Note (2026-07):** probe-runner is superseded by the appbox lens (`appboxd/lib/lens.dart`, skill `skills/appbox-lens`); the `## probe-runner` section and probe-runner mentions below are historical.
+> **Note (2026-07):** probe-runner is superseded by the arxa lens (`arxa/lib/lens.dart`, skill `skills/arxa-lens`); the `## probe-runner` section and probe-runner mentions below are historical.
 
 **Status:** planned, **not started**. Documentation only; no implementation has
 been done. Settled in the consolidation grill, 2026-07-28.
@@ -14,16 +14,16 @@ been done. Settled in the consolidation grill, 2026-07-28.
 
 ## The shape
 
-appbox becomes **one product, one codebase, four shells**, plus a daemon:
+arxa becomes **one product, one codebase, four shells**, plus a daemon:
 
 | piece | what it is |
 |---|---|
-| `appbox/` | one Stacked Flutter app — `stacked create app appbox --template=web --platforms=web,macos,ios,android`. Runner folders + locator/router skeleton; **the pipeline owns everything in `lib/ui/**` from then on** (the honest bootstrap — plan 12.1 finally done properly) |
-| `appboxd/` | new pure-Dart daemon: executes pipeline phases/gates, holds credentials in the OS vault, serves the web builder UI, brokers the client channel. Runs on macOS/Windows/Linux |
+| `arxa/` | one Stacked Flutter app — `stacked create app arxa --template=web --platforms=web,macos,ios,android`. Runner folders + locator/router skeleton; **the pipeline owns everything in `lib/ui/**` from then on** (the honest bootstrap — plan 12.1 finally done properly) |
+| `arxa/` | new pure-Dart daemon: executes pipeline phases/gates, holds credentials in the OS vault, serves the web builder UI, brokers the client channel. Runs on macOS/Windows/Linux |
 | shells | web (browser, the universal builder UI), macOS (native shell embedding the daemon — the zero-friction .dmg install), iOS, Android |
 
 **Full parity, literal, from R1.** There is no "remote app" and no "companion" —
-every shell is appbox with every surface. The viewport ladder already designs
+every shell is arxa with every surface. The viewport ladder already designs
 each surface at 390/744/1280 from targets alone, so parity is the pipeline's
 natural output, not extra work. Phone-specific capabilities (push, biometric
 approval, QR camera scan, widgets) are features under the epics, not a
@@ -34,7 +34,7 @@ separate app.
 1. **Scope** — the story map covers the whole consolidated app. Archived
    designs (`archives/design-v1|v2`) are dead context; `docs/` plans and
    research remain current.
-2. **Web** — the web build is the full builder, because appbox must work on
+2. **Web** — the web build is the full builder, because arxa must work on
    any desktop OS (macOS/Windows/Linux). A browser can't execute the pipeline
    (`dart:io Process`), so the daemon is a forced consequence, not a choice.
 3. **Host** — daemon + web everywhere; the native macOS shell survives as the
@@ -57,7 +57,7 @@ separate app.
    other screens dim; per-message per-screen checkpoints with rendered
    before/after, never diffs. Research: `design.chat` stories 2.4–2.10.
 8. **Preview** — rendered design only (htmx); no built-binary install on
-   devices. Built-app screenshots are captured by appbox itself
+   devices. Built-app screenshots are captured by arxa itself
    (probe-runner) for the flows canvas.
 9. **Releases** — R1 Dogfood (39 stories), R2 Anywhere (6), R3 Delight (1) +
    `access.remote` should/R2 ×2 — see `docs/design/story-map.json`.
@@ -102,7 +102,7 @@ the native shell.
 
 ## probe-runner
 
-`~/.claude/skills/probe-runner` (already appbox-tester's smoke/visual runner)
+`~/.claude/skills/probe-runner` (already arxa-tester's smoke/visual runner)
 becomes the capture + fidelity engine: `design_golden` / `color_assert` /
 `skeleton_diff` / `pixdiff` as **deterministic design↔built gates** in the
 build loop (story 3.7), and `flutter_shot` / `*_shot` / `flutter_skeleton` as
@@ -118,7 +118,7 @@ on it: still too dense. Dashboards are out; **GenUI-style conversation-driven
 composition** is in — surfaces render contextual cards/charts on demand
 instead of presenting everything at once. Consequences:
 
-- The appbox primitives layer (`appbox/lib/ui/primitives.dart`) grows a
+- The arxa primitives layer (`arxa/lib/ui/primitives.dart`) grows a
   **genui kit**: a catalog of composable components (cards, charts, gate
   prompts, stage timelines) that a conversation/surface layer renders on
   demand — aligned with Flutter's `genui` package where its surface/catalog
@@ -131,7 +131,7 @@ instead of presenting everything at once. Consequences:
 an agent: getting *any* LLM to reliably emit valid A2UI JSON is the reusable
 hard part, so the bridge is **integrated into the kit itself**, not a
 separate product. One kit family, two layers — the split exists only
-because appboxd is pure Dart (dart:io, no Flutter) and is where the LLM
+because arxa is pure Dart (dart:io, no Flutter) and is where the LLM
 call lives in the A2UI topology:
 
 - `genui_bridge` — **pure Dart, zero Flutter imports**, the importable core:
@@ -149,26 +149,26 @@ call lives in the A2UI topology:
   - Emits genui's four verbs (`createSurface`, `updateComponents`,
     `updateDataModel`, `deleteSurface`); pinned against the experimental
     0.x API with one adapter seam for renames.
-  - Consumers: appboxd (server-side A2UI producer) and any Dart/Flutter
+  - Consumers: arxa (server-side A2UI producer) and any Dart/Flutter
     app doing client-side BYO-key.
 - `kit_genui` — the Flutter layer on top of the bridge: the reusable
   catalog widgets the basic catalog lacks (charts, markdown text, form
   cards), warm Lexend theming hooks, `Surface` host scaffolding. App-domain
-  items (build-stage card, gate prompt, deploy status) stay in appbox —
+  items (build-stage card, gate prompt, deploy status) stay in arxa —
   the kit carries only what a second app would reuse verbatim.
 
 ## Dogfood sequencing
 
-1. `stacked create app appbox --template=web --platforms=web,macos,ios,android`
+1. `stacked create app arxa --template=web --platforms=web,macos,ios,android`
    (by hand, once — the bootstrap).
-2. `docs/design/brief.md` → `appbox-moodboarder` fans out per-epic reference
+2. `docs/design/brief.md` → `arxa-moodboarder` fans out per-epic reference
    gathering and captures screenshots into `docs/moodboards/` (orchestrator's
-   first run: the three appbox boards themselves).
-3. brief + moodboards → `appbox-designer` produces the whole-app design
+   first run: the three arxa boards themselves).
+3. brief + moodboards → `arxa-designer` produces the whole-app design
    (D: 18 surfaces from the brief's table, every viewport derived).
 4. Freeze → scaffold through the pipeline → build with gates → the
-   consolidated app is the R1 dogfood: appbox designed and built by appbox.
-5. `appboxd/` grows alongside as the orchestration home for `pipeline.sh` +
+   consolidated app is the R1 dogfood: arxa designed and built by arxa.
+5. `arxa/` grows alongside as the orchestration home for `pipeline.sh` +
    `gates/` + `tools/`.
 
 **The website is a separate design track.** E9 (`website.*`, 4 surfaces) is in
@@ -194,8 +194,8 @@ the product's UI lives and how clients reach the daemon**, nothing else.
 - The stacked shell's emitted structure vs the scaffolder's expectations
   (locator/router vs emitted surfaces) needs one reconciliation pass when the
   shell exists.
-- appbox macOS entitlements lack `com.apple.security.network.client` — add to
-  both `macos/Runner/*.entitlements` the day appboxd is reached over HTTP,
+- arxa macOS entitlements lack `com.apple.security.network.client` — add to
+  both `macos/Runner/*.entitlements` the day arxa is reached over HTTP,
   localhost included (genui spike finding, 2026-07-29).
 - `genui` pulls ~65–70 transitive packages incl. unused media plugins;
   shedding them needs a genui fork/PR — accept for now, revisit if web bundle

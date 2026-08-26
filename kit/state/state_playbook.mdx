@@ -1,15 +1,15 @@
 <Callout id="header" tone="info">
 
-# appbox_kit_state — Per-Package Playbook
+# arxa_kit_state — Per-Package Playbook
 
 
-`appbox_kit_state` v**0.1.0** · `publish_to: 'none'` · status: **active**
+`arxa_kit_state` v**0.1.0** · `publish_to: 'none'` · status: **active**
 
 
-**Role (one line):** Pure-Dart async state vocabulary for appbox_kit apps — a sealed AppBoxKitState (idle/pending/loading/success/error) with when/map combinators, a AppBoxKitStateNotifier (current value + broadcast stream) with a guarded track helper, and a legal-transition matrix.
+**Role (one line):** Pure-Dart async state vocabulary for arxa_kit apps — a sealed ArxaKitState (idle/pending/loading/success/error) with when/map combinators, a ArxaKitStateNotifier (current value + broadcast stream) with a guarded track helper, and a legal-transition matrix.
 
 
-**Scope of this document:** lets a human OR an LLM use, wire, and extend `appbox_kit_state` **without reading its source**. The public surface below was extracted from the barrel; README content is folded into the narrative sections.
+**Scope of this document:** lets a human OR an LLM use, wire, and extend `arxa_kit_state` **without reading its source**. The public surface below was extracted from the barrel; README content is folded into the narrative sections.
 
 
 ## Table of contents
@@ -22,26 +22,26 @@
 
 ### Overview & role
 
-Pure-Dart async state vocabulary for appbox_kit apps — a sealed AppBoxKitState (idle/pending/loading/success/error) with when/map combinators, a AppBoxKitStateNotifier (current value + broadcast stream) with a guarded track helper, and a legal-transition matrix. Zero Flutter dependency.
+Pure-Dart async state vocabulary for arxa_kit apps — a sealed ArxaKitState (idle/pending/loading/success/error) with when/map combinators, a ArxaKitStateNotifier (current value + broadcast stream) with a guarded track helper, and a legal-transition matrix. Zero Flutter dependency.
 
 
 ### Public surface
 
-Exported from `lib/appbox_kit_state.dart`:
+Exported from `lib/arxa_kit_state.dart`:
 
-<Table id="state-api" columns={["Symbol", "Kind", "Defined in"]} rows={[["AppBoxKitRetryPolicy", "class", "retry/appbox_kit_retry_policy.dart"], ["AppBoxKitFailure", "class", "state/appbox_kit_failure.dart"], ["AppBoxKitFailureCode", "class", "state/appbox_kit_failure.dart"], ["AppBoxKitState", "class", "state/appbox_kit_state.dart"], ["AppBoxKitIdle", "class", "state/appbox_kit_state.dart"], ["AppBoxKitPending", "class", "state/appbox_kit_state.dart"], ["AppBoxKitLoading", "class", "state/appbox_kit_state.dart"], ["AppBoxKitSuccess", "class", "state/appbox_kit_state.dart"], ["AppBoxKitError", "class", "state/appbox_kit_state.dart"], ["AppBoxKitStateNotifier", "class", "state/appbox_kit_state_notifier.dart"], ["AppBoxKitStateTransition", "class", "state/appbox_kit_state_transition.dart"], ["AppBoxKitStatePersistence", "abstract interface class", "persistence/appbox_kit_state_persistence.dart"], ["AppBoxKitNoStatePersistence", "class", "persistence/appbox_kit_state_persistence.dart"]]} />
+<Table id="state-api" columns={["Symbol", "Kind", "Defined in"]} rows={[["ArxaKitRetryPolicy", "class", "retry/arxa_kit_retry_policy.dart"], ["ArxaKitFailure", "class", "state/arxa_kit_failure.dart"], ["ArxaKitFailureCode", "class", "state/arxa_kit_failure.dart"], ["ArxaKitState", "class", "state/arxa_kit_state.dart"], ["ArxaKitIdle", "class", "state/arxa_kit_state.dart"], ["ArxaKitPending", "class", "state/arxa_kit_state.dart"], ["ArxaKitLoading", "class", "state/arxa_kit_state.dart"], ["ArxaKitSuccess", "class", "state/arxa_kit_state.dart"], ["ArxaKitError", "class", "state/arxa_kit_state.dart"], ["ArxaKitStateNotifier", "class", "state/arxa_kit_state_notifier.dart"], ["ArxaKitStateTransition", "class", "state/arxa_kit_state_transition.dart"], ["ArxaKitStatePersistence", "abstract interface class", "persistence/arxa_kit_state_persistence.dart"], ["ArxaKitNoStatePersistence", "class", "persistence/arxa_kit_state_persistence.dart"]]} />
 
-Test doubles in `lib/appbox_kit_testing.dart`: `AppBoxKitStateRecorder`, `AppBoxKitScriptedStateNotifier`.
+Test doubles in `lib/arxa_kit_testing.dart`: `ArxaKitStateRecorder`, `ArxaKitScriptedStateNotifier`.
 
 Scripts and call-counts — tests never touch platform channels.
 
 
 ### Usage & wiring
 
-Add the package via a path dependency (`appbox_kit_state: path: ../state`) and import `package:appbox_kit_state/appbox_kit_state.dart`. There is no locator or `@StackedApp` registration step — `appbox_kit_state` is pure Dart with zero Flutter dependency, so a `AppBoxKitStateNotifier` is constructed directly rather than resolved through `StackedLocator`. The minimal usage drives a notifier with `track` and observes `stream`:
+Add the package via a path dependency (`arxa_kit_state: path: ../state`) and import `package:arxa_kit_state/arxa_kit_state.dart`. There is no locator or `@StackedApp` registration step — `arxa_kit_state` is pure Dart with zero Flutter dependency, so a `ArxaKitStateNotifier` is constructed directly rather than resolved through `StackedLocator`. The minimal usage drives a notifier with `track` and observes `stream`:
 
 ```dart
-final notifier = AppBoxKitStateNotifier<Profile>();
+final notifier = ArxaKitStateNotifier<Profile>();
 await notifier.track(repository.loadProfile()); // loading → success/error
 notifier.stream.listen((state) => /* rebuild */);
 notifier.state;     // synchronous current value
@@ -57,40 +57,40 @@ See `kit_matrix.md` for the full routing + dependency graph.
 
 ### Architecture
 
-The package is a single inward-facing vocabulary: a sealed `AppBoxKitState<T>` (idle/pending/loading/success/error) with `when`/`map` combinators sits at the core, wrapped by `AppBoxKitStateNotifier<T>`, which holds the current state and a broadcast `StreamController`. Two static collaborators govern behavior — `AppBoxKitStateTransition` (a legal-transition matrix queried by an assertion inside `emit`) and `AppBoxKitFailure` (the normalized error shape carried by `AppBoxKitError`, where `AppBoxKitFailure.from` absorbs any thrown object). Two ports are stubbed for later phases: `AppBoxKitStatePersistence<T>` hydrates terminal state across launches (with `AppBoxKitNoStatePersistence` as the no-op default), and `AppBoxKitRetryPolicy` is a testable value object whose `track` integration is scheduled. Dependency direction points strictly inward to `dart:async` plus `meta` — no Flutter, no cross-kit imports.
+The package is a single inward-facing vocabulary: a sealed `ArxaKitState<T>` (idle/pending/loading/success/error) with `when`/`map` combinators sits at the core, wrapped by `ArxaKitStateNotifier<T>`, which holds the current state and a broadcast `StreamController`. Two static collaborators govern behavior — `ArxaKitStateTransition` (a legal-transition matrix queried by an assertion inside `emit`) and `ArxaKitFailure` (the normalized error shape carried by `ArxaKitError`, where `ArxaKitFailure.from` absorbs any thrown object). Two ports are stubbed for later phases: `ArxaKitStatePersistence<T>` hydrates terminal state across launches (with `ArxaKitNoStatePersistence` as the no-op default), and `ArxaKitRetryPolicy` is a testable value object whose `track` integration is scheduled. Dependency direction points strictly inward to `dart:async` plus `meta` — no Flutter, no cross-kit imports.
 
 
 ### Gotchas
 
-There is no platform setup — `appbox_kit_state` is pure Dart with no native channels, permissions, or manifest keys. The broadcast `stream` does not replay the current value on subscribe; read `state` synchronously to get it. `emit` no-ops when the next state compares equal (every case implements value equality), and a transition outside `AppBoxKitStateTransition`'s matrix trips an assertion in debug only — it is still applied in release, so illegal sequences never crash production but will silently slip past in tests unless `guardTransitions` is left on. In tests, drain the broadcast queue with `await Future<void>.delayed(Duration.zero)` before asserting a recorded sequence, and always call `dispose()` to close the controller.
+There is no platform setup — `arxa_kit_state` is pure Dart with no native channels, permissions, or manifest keys. The broadcast `stream` does not replay the current value on subscribe; read `state` synchronously to get it. `emit` no-ops when the next state compares equal (every case implements value equality), and a transition outside `ArxaKitStateTransition`'s matrix trips an assertion in debug only — it is still applied in release, so illegal sequences never crash production but will silently slip past in tests unless `guardTransitions` is left on. In tests, drain the broadcast queue with `await Future<void>.delayed(Duration.zero)` before asserting a recorded sequence, and always call `dispose()` to close the controller.
 
 
 ### Testing
 
-`package:appbox_kit_state/appbox_kit_testing.dart` provides:
+`package:arxa_kit_state/arxa_kit_testing.dart` provides:
 
-- **`AppBoxKitStateRecorder<T>`** — subscribes to a notifier and records the emitted
+- **`ArxaKitStateRecorder<T>`** — subscribes to a notifier and records the emitted
   sequence for `expect(recorder.states, [...])` (leans on value equality).
-- **`AppBoxKitScriptedStateNotifier<T>`** — bypasses the guard so tests can push
+- **`ArxaKitScriptedStateNotifier<T>`** — bypasses the guard so tests can push
   illegal or repeated sequences via `script` / `scriptAll`.
 
 ```dart
-final notifier = AppBoxKitStateNotifier<int>();
-final recorder = AppBoxKitStateRecorder<int>(notifier);
+final notifier = ArxaKitStateNotifier<int>();
+final recorder = ArxaKitStateRecorder<int>(notifier);
 await notifier.track(Future.value(42));
 await Future<void>.delayed(Duration.zero); // drain the broadcast queue
-expect(recorder.states, const [AppBoxKitIdle<int>(), AppBoxKitLoading<int>(), AppBoxKitSuccess<int>(42)]);
+expect(recorder.states, const [ArxaKitIdle<int>(), ArxaKitLoading<int>(), ArxaKitSuccess<int>(42)]);
 ```
 
 
 ### Features
 
-<Checklist id="state-features" items={[{"id": "state-feat-0", "label": "`AppBoxKitRetryPolicy` \u2014 class"}, {"id": "state-feat-1", "label": "`AppBoxKitFailure` \u2014 class"}, {"id": "state-feat-2", "label": "`AppBoxKitFailureCode` \u2014 class"}, {"id": "state-feat-3", "label": "`AppBoxKitState` \u2014 class"}, {"id": "state-feat-4", "label": "`AppBoxKitIdle` \u2014 class"}, {"id": "state-feat-5", "label": "`AppBoxKitPending` \u2014 class"}, {"id": "state-feat-6", "label": "`AppBoxKitLoading` \u2014 class"}, {"id": "state-feat-7", "label": "`AppBoxKitSuccess` \u2014 class"}, {"id": "state-feat-8", "label": "`AppBoxKitError` \u2014 class"}, {"id": "state-feat-9", "label": "`AppBoxKitStateNotifier` \u2014 class"}, {"id": "state-feat-10", "label": "`AppBoxKitStateTransition` \u2014 class"}, {"id": "state-feat-11", "label": "`AppBoxKitStatePersistence` \u2014 abstract interface class"}]} />
+<Checklist id="state-features" items={[{"id": "state-feat-0", "label": "`ArxaKitRetryPolicy` \u2014 class"}, {"id": "state-feat-1", "label": "`ArxaKitFailure` \u2014 class"}, {"id": "state-feat-2", "label": "`ArxaKitFailureCode` \u2014 class"}, {"id": "state-feat-3", "label": "`ArxaKitState` \u2014 class"}, {"id": "state-feat-4", "label": "`ArxaKitIdle` \u2014 class"}, {"id": "state-feat-5", "label": "`ArxaKitPending` \u2014 class"}, {"id": "state-feat-6", "label": "`ArxaKitLoading` \u2014 class"}, {"id": "state-feat-7", "label": "`ArxaKitSuccess` \u2014 class"}, {"id": "state-feat-8", "label": "`ArxaKitError` \u2014 class"}, {"id": "state-feat-9", "label": "`ArxaKitStateNotifier` \u2014 class"}, {"id": "state-feat-10", "label": "`ArxaKitStateTransition` \u2014 class"}, {"id": "state-feat-11", "label": "`ArxaKitStatePersistence` \u2014 abstract interface class"}]} />
 
 
 ### Decisions / ADRs
 
-The package is deliberately standalone: its only backing dependency is `meta` (for `@immutable`/`@protected`), with everything else drawn from `dart:async`. It exists to be the *intended* common async-state vocabulary that the other kits' ports converge on — but that unification is a documented later phase, so there are no cross-kit imports today and each kit still ships its own typed results. Choosing pure Dart (zero Flutter) keeps the vocabulary usable inside services and ViewModels without a Flutter binding, and makes the `AppBoxKitStateRecorder` / `AppBoxKitScriptedStateNotifier` tests in `appbox_kit_testing.dart` plain `package:test` suites. The transition guard is debug-asserted rather than runtime-enforced so release builds never crash on an unexpected sequence.
+The package is deliberately standalone: its only backing dependency is `meta` (for `@immutable`/`@protected`), with everything else drawn from `dart:async`. It exists to be the *intended* common async-state vocabulary that the other kits' ports converge on — but that unification is a documented later phase, so there are no cross-kit imports today and each kit still ships its own typed results. Choosing pure Dart (zero Flutter) keeps the vocabulary usable inside services and ViewModels without a Flutter binding, and makes the `ArxaKitStateRecorder` / `ArxaKitScriptedStateNotifier` tests in `arxa_kit_testing.dart` plain `package:test` suites. The transition guard is debug-asserted rather than runtime-enforced so release builds never crash on an unexpected sequence.
 
 <!-- kb:begin -->
 ### References
@@ -104,7 +104,7 @@ Official docs and tooling:
 - [stacked_cli (pub.dev)](https://pub.dev/packages/stacked_cli) — Scaffolding CLI for new Stacked apps/views/services.
 - [Flutter — official documentation](https://docs.flutter.dev) — Framework docs, platform integration, performance.
 - [Dart — official documentation](https://dart.dev) — Language tour, async, package ecosystem.
-- [Dart & Flutter MCP server (official)](https://dart.dev/tools/mcp-server) — Ships with the Dart SDK (dart mcp-server). Exposes analyzer diagnostics, pub, tests, and live Flutter app introspection via DTD. Wired in appbox_kit/.mcp.json.
+- [Dart & Flutter MCP server (official)](https://dart.dev/tools/mcp-server) — Ships with the Dart SDK (dart mcp-server). Exposes analyzer diagnostics, pub, tests, and live Flutter app introspection via DTD. Wired in arxa_kit/.mcp.json.
 
 Kit-specific:
 
