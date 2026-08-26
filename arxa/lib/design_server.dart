@@ -162,6 +162,7 @@ class _ServeArgs {
   bool noWatch = false;
   bool worker = false;
   bool dial = true;
+  bool help = false;
   String? project;
   // Repeatable. Env fallbacks so a long-lived studio server can be configured
   // once instead of on every relaunch.
@@ -271,6 +272,8 @@ _ServeArgs _parseArgs(List<String> args) {
       a.trustedHosts.addAll(_splitList(s.substring(15)));
     } else if (s.startsWith('--trusted-origin=')) {
       a.trustedOrigins.addAll(_splitList(s.substring(17)));
+    } else if (s == '--help' || s == '-h') {
+      a.help = true;
     } else if (s.startsWith('--')) {
       a.error = 'unknown flag: $s';
       return a;
@@ -1674,20 +1677,30 @@ class DesignServer {
 }
 
 // ── the CLI entry ────────────────────────────────────────────────────────
+/// The serve usage text. Shared so `--help` and a missing target cannot drift.
+String _serveUsage() =>
+    'Usage: arxa design serve <artifact-dir|design-name> '
+    '[--port N] [--host H] [--json] [--no-watch] [--no-dial]\n'
+    '       [--trusted-host NAME]…   extra Host names to answer to\n'
+    '       [--trusted-origin URL]…  origins allowed to call /__* '
+    'cross-origin (e.g. a studio panel)\n'
+    '       …or list them one per line in '
+    '${p.join(arxaHome(), kTrustedOriginsFile)}';
+
 Future<int> designServe(List<String> args) async {
   final a = _parseArgs(args);
+  // Asked-for help is not misuse: stdout, exit 0. It used to reach the
+  // unknown-flag catch-all and answer "unknown flag: --help" on stderr.
+  if (a.help) {
+    stdout.writeln(_serveUsage());
+    return 0;
+  }
   if (a.error != null) {
     stderr.writeln(a.error);
     return _exitUsage;
   }
   if (a.target == null) {
-    stderr.writeln('Usage: arxa design serve <artifact-dir|design-name> '
-        '[--port N] [--host H] [--json] [--no-watch] [--no-dial]\n'
-        '       [--trusted-host NAME]…   extra Host names to answer to\n'
-        '       [--trusted-origin URL]…  origins allowed to call /__* '
-        'cross-origin (e.g. a studio panel)\n'
-        '       …or list them one per line in '
-        '${p.join(arxaHome(), kTrustedOriginsFile)}');
+    stderr.writeln(_serveUsage());
     return _exitUsage;
   }
   if (a.port < 0 || a.port > 65535) {
