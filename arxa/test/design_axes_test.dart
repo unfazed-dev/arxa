@@ -1,7 +1,7 @@
 // design_axes_test.dart — the axes plane's pure machinery: declaration
 // parsing, precedence (override > published > shipped default), and the
 // serve-time rewrite. The wire half (adapter, auth, SSE) lives in
-// design_dial_serve_test.dart; the pixels are the lens's job.
+// arxa_dial_serve_test.dart; the pixels are the lens's job.
 import 'package:arxa/design_axes.dart';
 import 'package:test/test.dart';
 

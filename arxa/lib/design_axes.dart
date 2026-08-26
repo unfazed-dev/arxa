@@ -15,7 +15,7 @@
 /// no-confusion law, research-backed: Storybook globals ride the URL;
 /// CMS preview bars mark non-published state persistently).
 ///
-/// Storage: Supabase (design_dial_axes keyed by the design's registered
+/// Storage: Supabase (arxa_dial_axes keyed by the design's registered
 /// id — project/artifact identity, never a bare basename: two clients
 /// both shipping a design/ dir must not collide) behind the same
 /// stale-while-revalidate + socket-timeout discipline as pins (the
@@ -271,7 +271,7 @@ class SupabaseAxesStore implements AxesStore {
     // is deterministic (the row provably exists - that is why we got
     // the 409); the only race is two first-boots inserting at once, and
     // the loser lands in the GET.
-    final response = await _request('POST', 'design_dial_designs', body: {
+    final response = await _request('POST', 'arxa_dial_designs', body: {
       'project': project,
       'artifact': artifact,
       if (author != null) 'author_email': author!.email,
@@ -283,7 +283,7 @@ class SupabaseAxesStore implements AxesStore {
     if (response.statusCode == 409) {
       final get = await _request(
           'GET',
-          'design_dial_designs?project=eq.${Uri.encodeComponent(project)}'
+          'arxa_dial_designs?project=eq.${Uri.encodeComponent(project)}'
               '&artifact=eq.${Uri.encodeComponent(artifact)}'
               '&select=id');
       final getText = await utf8.decoder.bind(get).join();
@@ -319,7 +319,7 @@ class SupabaseAxesStore implements AxesStore {
   Future<AxesPick?> _fetch() async {
     final designId = await _ensureDesignId();
     final response = await _request(
-        'GET', 'design_dial_axes?design_id=eq.$designId&select=style,theme');
+        'GET', 'arxa_dial_axes?design_id=eq.$designId&select=style,theme');
     final text = await utf8.decoder.bind(response).join();
     if (response.statusCode >= 300) {
       throw StateError('axes read failed (${response.statusCode}): $text');
@@ -361,7 +361,7 @@ class SupabaseAxesStore implements AxesStore {
   @override
   Future<void> save(AxesPick pick) async {
     final designId = await _ensureDesignId();
-    final response = await _request('POST', 'design_dial_axes', body: {
+    final response = await _request('POST', 'arxa_dial_axes', body: {
       'design_id': designId,
       'style': pick.style,
       'theme': pick.theme,

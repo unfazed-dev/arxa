@@ -144,7 +144,7 @@ class DialPin {
   /// The strokes the author drew while placing this pin (locked 2026-08-23:
   /// drawings attach to pins — the pub.dev feedback model; a drawing
   /// never exists standalone. MemoryDialStore carries it on the pin;
-  /// SupabaseDialStore persists it as a design_dial_drawings row (1:1,
+  /// SupabaseDialStore persists it as a arxa_dial_drawings row (1:1,
   /// storage amendment 2026-08-23). Shape: strokes → points → [x, y] page
   /// coordinates. Null when the pin carries no drawing.
   final List<List<List<double>>>? drawing;
@@ -511,7 +511,7 @@ class MemoryDialStore implements DialStore {
 }
 
 /// PostgREST against the operator-owned central project. Table shapes are
-/// the migration in supabase/migrations/20260823_design_dial.sql — keep them
+/// the migration in supabase/migrations/20260823_arxa_dial.sql — keep them
 /// in lockstep. One HttpClient per store; no pooling beyond dart:io's own.
 class SupabaseDialStore implements DialStore {
   SupabaseDialStore({
@@ -651,7 +651,7 @@ class SupabaseDialStore implements DialStore {
         'updated_at': p.updatedAt,
       };
 
-  /// The embedded design_dial_drawings row: a one-to-one object when
+  /// The embedded arxa_dial_drawings row: a one-to-one object when
   /// PostgREST detects the unique FK, a list when it doesn't, null when the
   /// pin carries no drawing. Returns the strokes payload for asDrawing.
   static Object? _embeddedStrokes(Object? v) {
@@ -662,7 +662,7 @@ class SupabaseDialStore implements DialStore {
 
   static DialPin _pinFromRow(Map<String, dynamic> r, [List<DialReply>? rp]) =>
       DialPin(
-        drawing: asDrawing(_embeddedStrokes(r['design_dial_drawings'])),
+        drawing: asDrawing(_embeddedStrokes(r['arxa_dial_drawings'])),
         id: r['id'] as String,
         artifact: r['artifact'] as String,
         guestId: r['guest_id'] as String?,
@@ -702,7 +702,7 @@ class SupabaseDialStore implements DialStore {
       for (final r in rows)
         _pinFromRow(r as Map<String, dynamic>, [
           for (final rr
-              in (r['design_dial_replies'] as List? ?? const []))
+              in (r['arxa_dial_replies'] as List? ?? const []))
             _replyFromRow(rr as Map<String, dynamic>),
         ]),
     ];
@@ -716,9 +716,9 @@ class SupabaseDialStore implements DialStore {
 
   @override
   Future<List<DialPin>> listPins(String artifact, {String? route}) async {
-    var q = 'design_dial_pins?artifact=eq.${Uri.encodeComponent(artifact)}'
+    var q = 'arxa_dial_pins?artifact=eq.${Uri.encodeComponent(artifact)}'
         '&order=created_at.asc'
-        '&select=*,design_dial_replies(*),design_dial_drawings(strokes)';
+        '&select=*,arxa_dial_replies(*),arxa_dial_drawings(strokes)';
     if (route != null) q += '&route=eq.${Uri.encodeComponent(route)}';
     final key = '$artifact|${route ?? ''}';
     final at = _pinsCacheAt[key];
@@ -752,16 +752,16 @@ class SupabaseDialStore implements DialStore {
 
   @override
   Future<DialPin> createPin(DialPin pin) async {
-    await _req('POST', 'design_dial_pins',
+    await _req('POST', 'arxa_dial_pins',
         body: _pinRow(pin), extraHeaders: {'Prefer': 'return=minimal'});
     final drawing = pin.drawing;
     if (drawing != null) {
-      final res = await _req('POST', 'design_dial_drawings',
+      final res = await _req('POST', 'arxa_dial_drawings',
           body: {'pin_id': pin.id, 'strokes': drawing},
           extraHeaders: {'Prefer': 'return=minimal'});
       if (res.statusCode >= 400) {
         throw StateError(
-            'design_dial_drawings insert failed: HTTP ${res.statusCode}');
+            'arxa_dial_drawings insert failed: HTTP ${res.statusCode}');
       }
     }
     _invalidatePins();
@@ -773,8 +773,8 @@ class SupabaseDialStore implements DialStore {
     final now = DateTime.now().toUtc().toIso8601String();
     final res = await _req(
         'PATCH',
-        'design_dial_pins?id=eq.${Uri.encodeComponent(id)}'
-        '&select=*,design_dial_drawings(strokes)',
+        'arxa_dial_pins?id=eq.${Uri.encodeComponent(id)}'
+        '&select=*,arxa_dial_drawings(strokes)',
         body: {'status': status.wire, 'updated_at': now},
         extraHeaders: {'Prefer': 'return=representation'});
     final rows = jsonDecode(await res.transform(utf8.decoder).join()) as List;
@@ -797,7 +797,7 @@ class SupabaseDialStore implements DialStore {
       guestId: guestId,
       guestEmail: guestEmail,
     );
-    final res = await _req('POST', 'design_dial_replies',
+    final res = await _req('POST', 'arxa_dial_replies',
         body: {
           'id': reply.id,
           'pin_id': pinId,
@@ -818,7 +818,7 @@ class SupabaseDialStore implements DialStore {
   @override
   Future<String> mintShareLink(String artifact, Duration ttl) async {
     final raw = _mintToken();
-    await _req('POST', 'design_dial_share_links',
+    await _req('POST', 'arxa_dial_share_links',
         body: {
           'token_hash': _hashToken(raw),
           'artifact': artifact,
@@ -832,13 +832,13 @@ class SupabaseDialStore implements DialStore {
   Future<ShareLinkGrant?> resolveShareLink(String token) async {
     final res = await _req(
         'GET',
-        'design_dial_share_links?token_hash=eq.${_hashToken(token)}'
+        'arxa_dial_share_links?token_hash=eq.${_hashToken(token)}'
             '&select=artifact,expires_at,guest_id,'
-            'design_dial_guests(email,display_name)');
+            'arxa_dial_guests(email,display_name)');
     final rows = jsonDecode(await res.transform(utf8.decoder).join()) as List;
     if (rows.isEmpty) return null;
     final row = rows.first as Map<String, dynamic>;
-    final guest = row['design_dial_guests'];
+    final guest = row['arxa_dial_guests'];
     final guestMap = guest is Map ? guest as Map<String, dynamic> : null;
     final grant = ShareLinkGrant(
       artifact: row['artifact'] as String,
@@ -871,7 +871,7 @@ class SupabaseDialStore implements DialStore {
     // is deterministic (the row provably exists - that is why we got
     // the 409); the only race is two first-boots inserting at once, and
     // the loser lands in the GET.
-    final response = await _req('POST', 'design_dial_designs', body: {
+    final response = await _req('POST', 'arxa_dial_designs', body: {
       'project': p,
       'artifact': _artifactName,
       if (author != null) 'author_email': author!.email,
@@ -883,7 +883,7 @@ class SupabaseDialStore implements DialStore {
     if (response.statusCode == 409) {
       final get = await _req(
           'GET',
-          'design_dial_designs?project=eq.${Uri.encodeComponent(p)}'
+          'arxa_dial_designs?project=eq.${Uri.encodeComponent(p)}'
               '&artifact=eq.${Uri.encodeComponent(_artifactName)}'
               '&select=id');
       final getText = await utf8.decoder.bind(get).join();
@@ -943,7 +943,7 @@ class SupabaseDialStore implements DialStore {
     final name = displayName?.trim() ?? '';
     // Upsert on (design_id, email): re-minting for the same person converges
     // on their existing row instead of forking identity.
-    final res = await _req('POST', 'design_dial_guests', body: {
+    final res = await _req('POST', 'arxa_dial_guests', body: {
       'id': dialNewId(),
       'design_id': designId,
       'email': email,
@@ -962,7 +962,7 @@ class SupabaseDialStore implements DialStore {
     final guestRow = rows.first as Map<String, dynamic>;
     final guest = _guestFromRow(guestRow, 1);
     final raw = _mintToken();
-    await _req('POST', 'design_dial_share_links',
+    await _req('POST', 'arxa_dial_share_links',
         body: {
           'token_hash': _hashToken(raw),
           'artifact': artifact,
@@ -979,8 +979,8 @@ class SupabaseDialStore implements DialStore {
     bind(artifact);
     final designId = await _ensureDesignId();
     final res = await _req('GET',
-        'design_dial_guests?design_id=eq.$designId&select=*,'
-        'design_dial_share_links(token_hash,expires_at)&order=created_at.asc');
+        'arxa_dial_guests?design_id=eq.$designId&select=*,'
+        'arxa_dial_share_links(token_hash,expires_at)&order=created_at.asc');
     final text = await utf8.decoder.bind(res).join();
     if (res.statusCode >= 300) {
       throw StateError('guest list failed (${res.statusCode}): $text');
@@ -992,7 +992,7 @@ class SupabaseDialStore implements DialStore {
         if (row is Map<String, dynamic>)
           _guestFromRow(
               row,
-              _liveLinks(row['design_dial_share_links'])),
+              _liveLinks(row['arxa_dial_share_links'])),
     ];
   }
 
@@ -1018,7 +1018,7 @@ class SupabaseDialStore implements DialStore {
     bind(artifact);
     final designId = await _ensureDesignId();
     final find = await _req('GET',
-        'design_dial_guests?design_id=eq.$designId&email=eq.${Uri.encodeComponent(email)}'
+        'arxa_dial_guests?design_id=eq.$designId&email=eq.${Uri.encodeComponent(email)}'
             '&select=*');
     final findText = await utf8.decoder.bind(find).join();
     if (find.statusCode >= 300) {
@@ -1029,15 +1029,15 @@ class SupabaseDialStore implements DialStore {
     final guest = _guestFromRow(found.first as Map<String, dynamic>, 0);
     // The PII path, in order: scrub the email copy off surviving feedback,
     // then delete the row (links cascade, pins/replies keep guest_id=null).
-    await _req('PATCH', 'design_dial_pins?guest_id=eq.${guest.id}',
+    await _req('PATCH', 'arxa_dial_pins?guest_id=eq.${guest.id}',
         body: {'guest_email': null},
         extraHeaders: {'Prefer': 'return=minimal'});
-    await _req('PATCH', 'design_dial_replies?guest_id=eq.${guest.id}',
+    await _req('PATCH', 'arxa_dial_replies?guest_id=eq.${guest.id}',
         body: {'guest_email': null},
         extraHeaders: {'Prefer': 'return=minimal'});
     _invalidatePins();
     await _req('DELETE',
-        'design_dial_guests?id=eq.${guest.id}',
+        'arxa_dial_guests?id=eq.${guest.id}',
         extraHeaders: {'Prefer': 'return=minimal'});
     return guest;
   }

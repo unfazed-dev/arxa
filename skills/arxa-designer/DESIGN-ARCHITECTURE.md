@@ -111,7 +111,7 @@ once (probes, guest previewing) > the published store pick > the shipped
 default. Authors publish via `POST /__dial/axes` (author-only); guest
 flips ride the URL override with a persistent previewing-not-published
 badge and never touch the store — the URL is the receipt. Storage is the
-`designs` + `design_dial_axes` Supabase tables keyed by project/artifact
+`designs` + `arxa_dial_axes` Supabase tables keyed by project/artifact
 identity (never a basename — two clients both shipping `design/` must
 not collide) behind the pins' stale-while-revalidate discipline, with an
 honest per-process memory fallback. `--no-dial` kills axes with the dial.
@@ -120,7 +120,7 @@ honest per-process memory fallback. `--no-dial` kills axes with the dial.
 
 Client review links are **personal bearer tokens, never anonymous**. The
 author registers the reviewer's email BEFORE the link exists (Comments
-slide, *Client access*): POST /__dial/guests upserts a design_dial_guests
+slide, *Client access*): POST /__dial/guests upserts a arxa_dial_guests
 row on (design, email), mints the token, and stores only its sha256 beside
 the guest id. The URL is the credential — anyone holding it acts as that
 guest, which is exactly why attribution is **by construction**: pins and

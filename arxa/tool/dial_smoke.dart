@@ -904,14 +904,14 @@ Future<void> _cleanup() async {
 
   if (_createdPinIds.isNotEmpty) {
     final ids = _createdPinIds.map((i) => '%22$i%22').join(',');
-    await del('design_dial_drawings', 'pin_id=in.($ids)');
-    await del('design_dial_replies', 'pin_id=in.($ids)');
-    await del('design_dial_pins', 'id=in.($ids)');
+    await del('arxa_dial_drawings', 'pin_id=in.($ids)');
+    await del('arxa_dial_replies', 'pin_id=in.($ids)');
+    await del('arxa_dial_pins', 'id=in.($ids)');
   }
   if (_shareToken != null) {
     // the table stores token_hash = sha256(token), never the raw token
     final digest = sha256.convert(ascii.encode(_shareToken!)).toString(); // matches _hashToken in arxa_dial.dart
-    await del('design_dial_share_links', 'token_hash=eq.$digest');
+    await del('arxa_dial_share_links', 'token_hash=eq.$digest');
   }
   http.close();
 }

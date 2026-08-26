@@ -1,4 +1,4 @@
-// design_dial_serve_test.dart — the Arxa Dial's SERVER half, end to end:
+// arxa_dial_serve_test.dart — the Arxa Dial's SERVER half, end to end:
 // a real DesignServer (hello-hda fixture, real worker) proving that
 //   - every full HTML page carries the dial (config + island script),
 //   - --no-dial / dial:false pages do NOT,
