@@ -30,6 +30,7 @@ import 'dart:io';
 import 'package:path/path.dart' as p;
 
 import 'project.dart' show arxaHome;
+import 'repo_project.dart' show repoMarkerFile, warnLegacyMarker;
 
 /// The axis-value law: lowercase url-safe ids, bounded length. Shared by
 /// the declaration parser, the serve-time override, and the POST route.
@@ -82,7 +83,7 @@ class ArtifactMarker {
 ArtifactMarker? resolveArtifactMarker(String artifactDir) {
   var dir = Directory(p.absolute(artifactDir));
   while (true) {
-    final markerFile = File(p.join(dir.path, 'arxa.json'));
+    final markerFile = File(p.join(dir.path, repoMarkerFile));
     if (markerFile.existsSync()) {
       try {
         final parsed = jsonDecode(markerFile.readAsStringSync());
@@ -99,7 +100,13 @@ ArtifactMarker? resolveArtifactMarker(String artifactDir) {
       return null;
     }
     final parent = dir.parent;
-    if (parent.path == dir.path) return null;
+    if (parent.path == dir.path) {
+      // Silent unless a pre-rename appbox.json actually sits there: the dial
+      // going axis-less because of a stale marker should not look identical
+      // to an artifact that legitimately has none.
+      warnLegacyMarker(artifactDir);
+      return null;
+    }
     dir = parent;
   }
 }

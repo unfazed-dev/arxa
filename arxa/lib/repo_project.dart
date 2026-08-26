@@ -76,7 +76,7 @@ RepoProject? findRepoProject([String? from]) {
     }
     final parent = Directory(dir).parent.path;
     if (parent == dir) {
-      _warnLegacyMarker(from); // resolved to nothing — say why, if we can
+      warnLegacyMarker(from); // resolved to nothing — say why, if we can
       return null; // filesystem root
     }
     dir = parent;
@@ -102,7 +102,10 @@ String? findLegacyMarkerDir([String? from]) {
 /// stale marker should not produce one line per call.
 final _legacyWarned = <String>{};
 
-void _warnLegacyMarker(String? from) {
+/// One line, once per dir, naming a stale pre-rename marker as the reason a
+/// walk-up resolved to nothing. Safe to call on every miss: it stays silent
+/// unless a [legacyMarkerFile] actually sits there without a [repoMarkerFile].
+void warnLegacyMarker(String? from) {
   final dir = findLegacyMarkerDir(from);
   if (dir == null || !_legacyWarned.add(dir)) return;
   stderr.writeln(
