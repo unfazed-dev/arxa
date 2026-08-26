@@ -168,6 +168,14 @@ Full inventory + behavior laws: component-craft.md §inventory and
     bottom capsule over scrolling content (iPhone); medium = capsule at the
     TOP under the app bar with icon-beside-label (iPad, June-2026 ed.);
     heights and margins are our capsule idiom, Apple publishes no px.
+    **The markup opts in by name:** that medium-rung swap is `.navbar--top`
+    on the bar — family-23 inner vocabulary, named in the SSOT alongside
+    `.navbar` and `.nb` (`component-craft.md` row 24). It turns the `.nb`
+    items row-wise with a **7px** gap:
+    `.navbar--top .nb { flex-direction: row; gap: 7px; }` (reference impl:
+    energize `studio/design/ui/styles/common/families.css`). Without that
+    class on the artifact, this rule is describable but NOT implementable —
+    the same opt-in-by-name contract `.sp`/`.appmenu` follow above.
   - **At expanded the rail gives way to the sidebar.** Glass maps rungs to
     platforms — compact iOS, medium iPadOS, expanded macOS — and macOS's
     primary navigation is a sidebar. HIG "Sidebars": ≤ 2 levels of hierarchy,
