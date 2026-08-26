@@ -20,6 +20,7 @@ library;
 import 'dart:io';
 
 import 'package:appboxd/cdp.dart';
+import 'package:appboxd/design_dial.dart';
 import 'package:appboxd/design_server.dart';
 import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
@@ -61,11 +62,13 @@ void main() {
       // The parent's port is only known now, so the allowlist is built here —
       // the same lever an operator pulls with ~/.appbox/trusted-origins.
       allowed = await DesignServer.start(
+          dialStore: MemoryDialStore(),
           artifactDir: _fixture,
           port: 0,
           noWatch: true,
           trustedOrigins: [parentOrigin]);
       refused = await DesignServer.start(
+          dialStore: MemoryDialStore(),
           artifactDir: _fixture, port: 0, noWatch: true);
 
       // What the design's own page calls itself, read straight off the wire.

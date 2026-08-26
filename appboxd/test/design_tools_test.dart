@@ -11,6 +11,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:path/path.dart' as p;
+import 'package:appboxd/design_dial.dart';
 import 'package:appboxd/design_server.dart';
 import 'package:appboxd/design_tools.dart';
 import 'package:appboxd/design_cli.dart';
@@ -1517,6 +1518,7 @@ void copyFixtureTree(Directory src, Directory dst) {
       await designEject([ejectFixture, out.path]);
 
       final srv = await DesignServer.start(
+        dialStore: MemoryDialStore(),
         artifactDir: out.path,
         port: 0,
         noWatch: true,

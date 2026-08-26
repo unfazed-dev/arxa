@@ -29,6 +29,7 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:appboxd/design_dial.dart';
 import 'package:appboxd/design_server.dart';
 import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
@@ -82,7 +83,8 @@ void main() {
     setUp(() async {
       tmp = (await Directory.systemTemp.createTemp('worker-death-')).path;
       await _copyDir(_fixture, tmp);
-      srv = await DesignServer.start(artifactDir: tmp, port: 0);
+      srv = await DesignServer.start(
+          dialStore: MemoryDialStore(), artifactDir: tmp, port: 0);
     });
 
     tearDown(() async {

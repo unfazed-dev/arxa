@@ -529,4 +529,157 @@ void main() {
       http.close();
     });
   });
+
+  // ── The quiet-mirror branch (design_server.dart, 2026-08-26) ────────────
+  //
+  // A sandboxed gen_ui frame posts an opaque origin: the browser sends either
+  // NO Origin header or the literal string "null". The trust guard refuses
+  // both, but a REFUSAL is worse than useless for a read — Chrome console-logs
+  // every non-2xx fetch and JS cannot suppress it, so a 403 here spams the
+  // operator's console on every mirror frame. GETs are therefore softened to
+  // 200 {"mirror":true}. Writes are NOT: the softening is the whole security
+  // question, so the PUT case below is the one that must never regress.
+  group('opaque-origin reads are mirrored, writes are still refused', () {
+    late DesignServer mirrorSrv;
+    late String mirrorBase;
+    late Directory mirrorHome;
+
+    setUpAll(() async {
+      mirrorHome = Directory.systemTemp.createTempSync('dial-mirror-draft');
+      mirrorSrv = await DesignServer.start(
+          artifactDir: _fixture,
+          noWatch: true,
+          dialStore: MemoryDialStore(),
+          draftStore:
+              DraftFileStore(artifactDir: _fixture, home: mirrorHome.path));
+      mirrorBase = 'http://127.0.0.1:${mirrorSrv.port}';
+    });
+
+    tearDownAll(() async {
+      await mirrorSrv.stop();
+      if (mirrorHome.existsSync()) mirrorHome.deleteSync(recursive: true);
+    });
+
+    /// Like [_req], but hands back the CORS header too — the mirror answer is
+    /// only useful to a frame if it carries `Access-Control-Allow-Origin`.
+    Future<(int, String, String?)> reqWithCors(String method, String url,
+        {Map<String, String>? headers}) async {
+      final http = HttpClient();
+      final req = await http.openUrl(method, Uri.parse(url));
+      headers?.forEach((k, v) => req.headers.set(k, v));
+      final res = await req.close();
+      final text = await res.transform(utf8.decoder).join();
+      final cors = res.headers.value('Access-Control-Allow-Origin');
+      http.close();
+      return (res.statusCode, text, cors);
+    }
+
+    // Both legs of `originHeader == null || originHeader == 'null'`. They are
+    // genuinely different wire shapes: a no-cors GET omits Origin entirely,
+    // while a CORS-mode GET from a sandboxed frame sends the four characters
+    // n-u-l-l. Testing one would leave the other free to regress.
+    test('a GET with NO Origin header is mirrored, not refused', () async {
+      final (status, body, cors) = await reqWithCors(
+          'GET', '$mirrorBase/__dial/draft',
+          headers: {'Sec-Fetch-Site': 'cross-site', 'Sec-Fetch-Dest': 'empty'});
+      expect(status, 200, reason: 'an opaque-origin read must not 4xx — a '
+          'non-2xx is console-logged by Chrome and cannot be suppressed');
+      expect(body, contains('"mirror":true'));
+      expect(cors, '*', reason: 'without ACAO the frame cannot read the answer');
+    });
+
+    test('a GET with the literal Origin "null" is mirrored too', () async {
+      final (status, body, cors) = await reqWithCors(
+          'GET', '$mirrorBase/__dial/draft',
+          headers: {
+            'Origin': 'null',
+            'Sec-Fetch-Site': 'cross-site',
+            'Sec-Fetch-Dest': 'empty'
+          });
+      expect(status, 200);
+      expect(body, contains('"mirror":true'));
+      expect(cors, '*');
+    });
+
+    // The security invariant. If this ever goes green on a 200, the softening
+    // has leaked from reads into writes and any sandboxed frame on the machine
+    // can mutate the operator's draft.
+    test('a WRITE from an opaque origin is still refused', () async {
+      for (final method in ['PUT', 'POST']) {
+        final (status, body, cors) = await reqWithCors(
+            method, '$mirrorBase/__dial/draft',
+            headers: {
+              'Origin': 'null',
+              'Sec-Fetch-Site': 'cross-site',
+              'Sec-Fetch-Dest': 'empty'
+            });
+        expect(status, 403, reason: '$method from an opaque origin was not '
+            'refused — the GET-only softening has leaked into writes');
+        expect(body, isNot(contains('"mirror":true')));
+        expect(cors, isNull, reason: 'a refusal must not hand out CORS access');
+      }
+    });
+  });
+
+  // ── Regression guard for the fix that pinned 16 call sites ──────────────
+  //
+  // `DesignServer.start` builds its dial store from ~/.appbox/supabase when
+  // the caller passes none (design_server.dart, the `..dialStore = dialStore ??
+  // SupabaseDialStore.fromConfig(...)` cascade). That default is right for a
+  // real server and wrong for a test: on any machine with credentials on disk,
+  // an unpinned test server holds a service-key client — full RLS bypass —
+  // against the shared client-facing project. Nothing today drives traffic
+  // through it, so this never fired; the first test that touches a /__dial
+  // route would be the one that discovers it, by writing to production.
+  //
+  // Pinning is the fix and this is what keeps it pinned.
+  group('no test may build a live dial store', () {
+    test('every DesignServer.start in test/ passes dialStore', () {
+      // Span-based, not line-based: a correctly pinned call routinely puts
+      // `dialStore:` several lines below the opening call, so a
+      // line-oriented grep would flag every multi-line call in this very file.
+      final offenders = <String>[];
+      for (final f in Directory('test')
+          .listSync()
+          .whereType<File>()
+          .where((f) => f.path.endsWith('_test.dart'))) {
+        final src = f.readAsStringSync();
+        // Split so the pattern cannot match its own source: this file is in
+        // the scanned set, and a whole literal here would flag the guard.
+        final call = RegExp('DesignServer' r'\.start\(');
+        for (final m in call.allMatches(src)) {
+          var i = m.end - 1, depth = 0;
+          while (i < src.length) {
+            final c = src[i];
+            if (c == '(') {
+              depth++;
+            } else if (c == ')') {
+              depth--;
+              if (depth == 0) break;
+            } else if (c == '"' || c == "'") {
+              final q = c;
+              i++;
+              while (i < src.length && src[i] != q) {
+                if (src[i] == r'\') i++;
+                i++;
+              }
+            }
+            i++;
+          }
+          // An unbalanced span means the match was prose, not a call (a
+          // comment naming the method). Skip it rather than crashing: a guard
+          // that throws hides the offender list it exists to print.
+          if (i >= src.length) continue;
+          if (!src.substring(m.end, i).contains('dialStore')) {
+            final line = '\n'.allMatches(src.substring(0, m.start)).length + 1;
+            offenders.add('${p.basename(f.path)}:$line');
+          }
+        }
+      }
+      expect(offenders, isEmpty,
+          reason: 'these DesignServer.start calls fall back to the real '
+              'Supabase dial store — add `dialStore: MemoryDialStore()`:\n'
+              '  ${offenders.join('\n  ')}');
+    });
+  });
 }

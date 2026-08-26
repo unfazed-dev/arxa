@@ -9,6 +9,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:appboxd/design_dial.dart';
 import 'package:appboxd/design_server.dart';
 import 'package:appboxd/design_server/worker.dart'
     show bundleBuildCount, findWorkerAssetsDir, packageDirFromScript;
@@ -226,7 +227,10 @@ void main() {
         // await expectLater holds holder open for the duration of the bind
         // attempt (closing it early would free the port and let bind succeed).
         await expectLater(
-          DesignServer.start(artifactDir: _fixture, port: holder.port),
+          DesignServer.start(
+              dialStore: MemoryDialStore(),
+              artifactDir: _fixture,
+              port: holder.port),
           throwsA(isA<SocketException>()),
         );
       } finally {
@@ -305,8 +309,11 @@ void main() {
         () async {
       final rel = p.relative(_fixture);
       expect(p.isRelative(rel), isTrue, reason: 'the test needs a relative form');
-      final s =
-          await DesignServer.start(artifactDir: rel, port: 0, noWatch: true);
+      final s = await DesignServer.start(
+          dialStore: MemoryDialStore(),
+          artifactDir: rel,
+          port: 0,
+          noWatch: true);
       try {
         expect(s.artifactDir, p.normalize(_fixture));
         final routes = await _get('${s.url}app.routes.js');
@@ -328,7 +335,8 @@ void main() {
     setUpAll(() async {
       tempDir = (await Directory.systemTemp.createTemp('design-server-test-')).path;
       await _copyDir(_fixture, tempDir);
-      srv = await DesignServer.start(artifactDir: tempDir, port: 0);
+      srv = await DesignServer.start(
+          dialStore: MemoryDialStore(), artifactDir: tempDir, port: 0);
     });
 
     tearDownAll(() async {
@@ -619,6 +627,7 @@ void main() {
       // noWatch: the reload under test is triggered explicitly, so the file
       // watcher would only add nondeterminism.
       srv = await DesignServer.start(
+          dialStore: MemoryDialStore(),
           artifactDir: tmp.path, port: 0, noWatch: true);
       base = srv.url.substring(0, srv.url.length - 1);
     });
@@ -704,6 +713,7 @@ void main() {
       await _copyDir(_fixture, tmp2.path);
       await _widenBootWindow(tmp2.path);
       final s = await DesignServer.start(
+          dialStore: MemoryDialStore(),
           artifactDir: tmp2.path,
           port: 0,
           noWatch: true,
@@ -740,6 +750,7 @@ void main() {
           '${await view.readAsString()}\nexport const Broken = () => (<div>{oops</div>);\n');
       // Boot must SURVIVE a broken bundle — the error rides the 5xx surface.
       srv = await DesignServer.start(
+          dialStore: MemoryDialStore(),
           artifactDir: tmp.path, port: 0, noWatch: true);
     });
     tearDownAll(() async {
@@ -781,6 +792,7 @@ void main() {
       tmp = await Directory.systemTemp.createTemp('design-bundles-');
       await _copyDir(_fixture, tmp.path);
       srv = await DesignServer.start(
+          dialStore: MemoryDialStore(),
           artifactDir: tmp.path, port: 0, noWatch: true);
     });
     tearDownAll(() async {
@@ -822,7 +834,8 @@ void main() {
     setUpAll(() async {
       tmp = await Directory.systemTemp.createTemp('design-err-');
       await _copyDir(_fixture, tmp.path);
-      srv = await DesignServer.start(artifactDir: tmp.path, port: 0);
+      srv = await DesignServer.start(
+          dialStore: MemoryDialStore(), artifactDir: tmp.path, port: 0);
       // srv.url ends in '/' — a second one would make the path '//…', which
       // matches no route and lands in the 404 branch instead of the one
       // under test.
@@ -998,6 +1011,7 @@ void main() {
       // The real studio design, not a fixture: the wiring only matters if
       // the shipped artifact's surface actually renders through it.
       srv = await DesignServer.start(
+          dialStore: MemoryDialStore(),
           artifactDir: p.absolute('../designs/appbox-studio'),
           port: 0,
           noWatch: true);
@@ -1042,7 +1056,8 @@ void main() {
     test('8: stop() releases the port (rebind succeeds)', () async {
       final tmp = await Directory.systemTemp.createTemp('design-stop-');
       await _copyDir(_fixture, tmp.path);
-      final s = await DesignServer.start(artifactDir: tmp.path, port: 0);
+      final s = await DesignServer.start(
+          dialStore: MemoryDialStore(), artifactDir: tmp.path, port: 0);
       final port = s.port;
       await s.stop();
       // The port must be free again.
@@ -1067,6 +1082,7 @@ void main() {
           (await Directory.systemTemp.createTemp('design-events-test-')).path;
       await _copyDir(_fixture, tempDir);
       srv = await DesignServer.start(
+        dialStore: MemoryDialStore(),
         artifactDir: tempDir,
         port: 0,
         trustedOrigins: const [panel],
