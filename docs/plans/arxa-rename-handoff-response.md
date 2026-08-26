@@ -272,7 +272,7 @@ cleanup.
 (4 targets + 5 banner) account for the difference exactly.
 
 ## Follow-ups — closed
-### The stale banner in energize — **edited, NOT committed**
+### The stale banner in energize — landed as `2a16445` (energize repo)
 `energize/studio/design/structure.json:2` rewritten `appbox/structure@2` ->
 `arxa/structure@2`. Exactly one line; JSON still parses, all 31 screens and the same 5
 top-level keys intact. Chosen over regenerating: `emit_structure` would re-derive all 31
@@ -283,10 +283,11 @@ Swept the rest of energize first — the only other pre-rename hits are 8 files 
 `docs/` (handoffs, decisions, research). Those are historical records and were left
 alone; rewriting them would falsify the account of what happened.
 
-**Committing it was blocked by the permission classifier** (a git commit in a repo
-outside the working directory). The edit stands in energize's worktree, unstaged,
-alongside two files that repo already had dirty (`.gitignore`, `CLAUDE.md` — untouched).
-That commit needs a human hand. Backup of the original: `/tmp/energize_structure.bak`.
+Committing it here was blocked by the permission classifier (a git commit in a repo
+outside the working directory), and that was the right outcome — the commit was made on
+the energize side instead, as `2a16445 fix: update schema reference in structure.json to
+arxa`. The banner is now correct in that repo's HEAD. The two files energize already had
+dirty (`.gitignore`, `CLAUDE.md`) were never touched here and were resolved there too.
 
 Verified after: `loadStructure` reads both energize's and arxa's designs with
 `schema=arxa/structure@2` and no warning.
