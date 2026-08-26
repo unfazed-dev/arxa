@@ -20,6 +20,11 @@ import 'package:path/path.dart' as p;
 import 'intake.dart' show feedbackKinds, surfaceStates;
 import 'scaffold.dart' show findRepoRoot;
 
+/// The document's `$schema` stamp (emitted at `:462`). Provenance and version
+/// only — NO runtime consumer validates it on the way back IN, so bumping it
+/// rejects no old document and gates no new one. The literal is pinned by
+/// `test/scaffold_test.dart`; that test, not a reader, is what makes a silent
+/// bump fail. Give it teeth only by adding a reader that asserts on it.
 const banner = 'arxa/structure@2';
 
 // ── structure@2 ───────────────────────────────────────────────────────────
