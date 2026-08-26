@@ -100,7 +100,19 @@ int scaffoldMain(List<String> args) {
   }
 
   final ar = appRoot ?? Platform.environment['ARXA_APP'] ?? '.';
+  // A wrong root here is not a degraded run, it is a WRONG one: the derivation
+  // table and the engine config would be read out of whatever repo cwd happens
+  // to sit in. The walk-up used to substitute cwd silently, so running this from
+  // a client checkout resolved that client repo as arxa's root and surfaced much
+  // later as an unhandled file-not-found inside the emit. Fail where the cause is.
   final repoRoot = findRepoRoot(Directory.current.path);
+  if (repoRoot == null) {
+    stderr.writeln('arxa emit scaffold: no config/arxa.config.json above '
+        '${Directory.current.path} — not an arxa repo checkout. The engine '
+        'config and the target-derivation table live in the arxa repo; run '
+        'this from inside it.');
+    return 2;
+  }
   final derivationPath = '$repoRoot/pipeline/state/targets.derivation.json';
   final configPath = '$repoRoot/config/arxa.config.json';
 
