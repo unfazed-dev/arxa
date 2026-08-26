@@ -44,6 +44,23 @@ src-tauri/binaries/arxa-studio-aarch64-apple-darwin
 (Tauri resolves `binaries/arxa` + current target triple at bundle time; a
 missing binary fails the bundle, not `cargo check`.)
 
+### Local dev-grade `arxa-studio` sidecar (current state)
+
+The `arxa-studio-aarch64-apple-darwin` sidecar on this machine is a **dev-grade
+wrapper script**, not a true single binary: a `#!/bin/sh` exec of the local
+Node (nvm v24.19.0, falling back to `command -v node`) running the absolute
+path to this machine's `arxa-studio/bin/arxa-studio.mjs`. It works when
+spawned by the installed `.app`, but it depends on the local checkout and
+node_modules staying in place.
+
+Why not a single binary yet: `bin/arxa-studio.mjs` is a launcher that spawns a
+second Node process on `@deepseek-ai/dsh/lib/bin.js` (with the loopback patch
+`--import`), and dsh loads its plugin tree dynamically from node_modules via
+the cordis plugin loader — `bun build --compile` bundles only the launcher
+(1 module) and produces a broken artifact. **Release CI must replace this
+wrapper** with a real packaging step that bundles dsh + plugins (or ships a
+pinned node + node_modules payload).
+
 ## Develop / verify
 
 `tauri-build` verifies sidecar paths at **compile** time, so create local stub
