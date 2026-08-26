@@ -27,9 +27,10 @@ String stageReadme(String stage, String kind, String name) {
 }
 
 const _intake = '''
-This stage holds the intake chain: `answers.json`, `brief.md`,
+This stage holds the intake chain: `answers.json`, `brief.md`, `prd.md`,
 `registry.json`, `flows.json`, `personas.json`, `direction.json`,
-`moodboard.json`, plus the story-map outputs.
+`moodboard.json`, `decisions.json` + the `adr/` directory, plus the
+story-map outputs.
 
 What starts it: a client conversation (the `arxa-intake` skill elicits
 requirements; `arxa-story-mapper` emits the brief). The answers are the
