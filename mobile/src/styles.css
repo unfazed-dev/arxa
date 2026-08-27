@@ -64,3 +64,36 @@ button {
 .error {
   color: #d4183d;
 }
+
+button.link {
+  display: block;
+  margin: 0.75rem auto 0;
+  padding: 0.25rem;
+  background: none;
+  color: var(--muted);
+  text-decoration: underline;
+  font-size: 0.85rem;
+}
+
+#manual-form {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: center;
+  margin-top: 0.75rem;
+}
+
+#manual-form[hidden] {
+  display: none;
+}
+
+#manual-form input {
+  font: inherit;
+  flex: 1;
+  min-width: 0;
+  max-width: 18rem;
+  padding: 0.6rem 0.75rem;
+  border-radius: 0.75rem;
+  border: 1px solid var(--muted);
+  background: var(--bg);
+  color: var(--fg);
+}

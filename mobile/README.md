@@ -43,15 +43,30 @@ npx tauri android dev
 
 Host-side sanity check without mobile toolchains: `cargo check` inside `src-tauri/`.
 
-## Seams (deliberately not built)
+## Seams
 
-- **iroh P2P transport (M1)** — `src-tauri/src/connection.rs` is the seam. The
-  command surface (`connection_status`, `begin_pairing`) is the fixed contract;
-  stub bodies get replaced by an embedded iroh endpoint.
-- **QR pairing (M2)** — desktop mints the QR; the mobile "Scan QR to pair" button is
-  a stub that returns a not-implemented error.
-- **Full studio surface (M4)** — once connected, `main.js` navigates the webview to
-  the engine-served `studio_url` (same pattern as desktop). Currently always unset.
+Protocol contract: `docs/plans/mobile-pairing-transport.md` (repo root). Ticket
+`arxa-pair:<base32(json)>` with `{ "node": <iroh endpoint ticket>, "token": <hex> }`
+(RFC 4648 base32, uppercase, no padding); ALPN `arxa/studio/0`; `AUTH <token>\n`
+as the first frame on **every** stream, desktop replies `OK\n`; authed streams
+carry raw HTTP/1.1.
+
+- **iroh P2P transport (M1) — WIRED.** `src-tauri/src/connection.rs`: parses the
+  ticket, dials the desktop over iroh (`iroh` 1.x + `iroh-tickets`), proves the
+  token on a handshake stream, then serves `studio_url` through a loopback TCP
+  proxy on `127.0.0.1:<random port>` that opens one fresh authed iroh stream per
+  TCP connection. Pairing (peer ticket + session token) persists as
+  `pairing.json` in the Tauri app data dir — local-only storage — and startup
+  silently reconnects before falling back to NotPaired. The command surface
+  (`connection_status`, `begin_pairing(ticket)`) stays the fixed contract.
+- **QR pairing (M2) — WIRED.** Desktop mints the QR; "Scan QR to pair" uses
+  `tauri-plugin-barcode-scanner` (mobile targets only, capability
+  `capabilities/mobile.json`) and hands the decoded `arxa-pair:...` string to
+  `begin_pairing`. An "enter code manually" paste fallback covers dev/host runs
+  where no camera exists.
+- **Full studio surface (M4) — WIRED.** `main.js` polls `connection_status`
+  every 2s; once `connected` it navigates the webview to the engine-served
+  `studio_url` (same pattern as desktop).
 - **Push (M7)** — cairn-pushd token registration via `cairn_tauri`, wired into the
   connection layer later.
 - **Online-only v1 (M8)** — no offline cache; the app is a thin shell over the
