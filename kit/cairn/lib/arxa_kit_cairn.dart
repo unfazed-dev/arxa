@@ -18,5 +18,5 @@
 ///   auth service, never from the environment.
 library;
 
-// Phase 3+ exports land here (config, backend plugin, repository, emitter).
 // Nothing from cairn_flutter is re-exported except through kit types.
+export 'config/arxa_kit_cairn_config.dart';
