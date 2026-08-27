@@ -72,7 +72,13 @@ pub fn init(app: &AppHandle) {
     let env_path = data_dir.join(PUSHD_ENV_FILE);
     let env = ensure_env_file(&env_path);
     let bind = env_value(&env, "CAIRN_PUSHD_BIND").unwrap_or_else(|| DEFAULT_BIND.to_string());
+    // The BEARER the daemon expects is the SECRET only —
+    // CAIRN_PUSHD_API_KEYS is `tenant:secret[:role]` and the daemon hashes
+    // the presented string against the stored secret digest (verified
+    // live against cairn-pushd: whole-string bearer -> 401, secret -> 200).
     let api_key = env_value(&env, "CAIRN_PUSHD_API_KEYS")
+        .and_then(|raw| raw.split(',').next().map(str::to_string))
+        .and_then(|first| first.split(':').nth(1).map(str::to_string))
         .unwrap_or_default();
 
     let state = PushdState {
