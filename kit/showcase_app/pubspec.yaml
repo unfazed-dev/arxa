@@ -18,6 +18,10 @@ dependencies:
     path: ../ui_library
   arxa_kit_data:
     path: ../data
+  # The cairn backend (localOnly/sync/supabaseBridge) — selected at boot via
+  # --dart-define=ARXA_CAIRN_MODE=…; see AppData.defaultConfig.
+  arxa_kit_cairn:
+    path: ../cairn
   # Device haptics — extracted from arxa_kit core (phase 2B).
   arxa_kit_haptics:
     path: ../haptics

@@ -5,7 +5,7 @@ import 'package:arxa_kit_core/arxa_kit_locator.dart';
 import 'package:arxa_kit_data/arxa_kit_data.dart';
 import 'package:arxa_kit_notifications/arxa_kit_testing.dart';
 
-import '../support/fake_cairn_engine.dart';
+import 'package:arxa_kit_cairn/arxa_kit_cairn_testing.dart';
 import '../support/post_harness.dart';
 
 /// Push (phase 4g): cairn push sits BEHIND the kit/notifications seam — the

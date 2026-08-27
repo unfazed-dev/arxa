@@ -7,7 +7,7 @@ import 'package:cairn_flutter/cairn_flutter.dart';
 import 'package:arxa_kit_cairn/arxa_kit_cairn.dart';
 import 'package:arxa_kit_data/arxa_kit_data.dart';
 
-import 'fake_cairn_engine.dart';
+import 'package:arxa_kit_cairn/arxa_kit_cairn_testing.dart';
 
 typedef PostsHarness = ({
   CairnKitRepository<Post> repo,

@@ -19,12 +19,12 @@ dependencies:
   arxa_kit_notifications:
     path: ../notifications
   # D1 — full-SHA git pin, bumped deliberately (see README "Pin discipline").
-  # d6e3de9 = cairn main after 0b (CairnDatabase.local, D2) + the
-  # AttachmentDatabase barrel export the storage wiring needs.
+  # 93b93b8 = cairn main after 0b (CairnDatabase.local, D2) + the
+  # AttachmentDatabase / CairnEngine barrel exports the testing surface needs.
   cairn_flutter:
     git:
       url: https://github.com/unfazed-dev/cairn.git
-      ref: d6e3de9dc6af5fbaf479485998ff1a041db83bc8
+      ref: 93b93b8efaa5ca628d0c2f5b8e842151ab72d122
       path: sdk/cairn_flutter
 
   # Default sqliteDir resolution (app-support directory).

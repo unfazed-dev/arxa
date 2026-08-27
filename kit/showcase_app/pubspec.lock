@@ -126,6 +126,13 @@ packages:
       relative: true
     source: path
     version: "0.1.0"
+  arxa_kit_cairn:
+    dependency: "direct main"
+    description:
+      path: "../cairn"
+      relative: true
+    source: path
+    version: "0.1.0"
   arxa_kit_compliance:
     dependency: "direct main"
     description:
@@ -299,6 +306,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "4.0.7"
+  build_cli_annotations:
+    dependency: transitive
+    description:
+      name: build_cli_annotations
+      sha256: e563c2e01de8974566a1998410d3f6f03521788160a02503b0b1f1a46c7b3d95
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.1.1"
   build_config:
     dependency: transitive
     description:
@@ -355,6 +370,15 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.1.2"
+  cairn_flutter:
+    dependency: transitive
+    description:
+      path: "sdk/cairn_flutter"
+      ref: "93b93b8efaa5ca628d0c2f5b8e842151ab72d122"
+      resolved-ref: "93b93b8efaa5ca628d0c2f5b8e842151ab72d122"
+      url: "https://github.com/unfazed-dev/cairn.git"
+    source: git
+    version: "0.2.0-dev.1"
   characters:
     dependency: transitive
     description:
@@ -864,6 +888,22 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.0.35"
+  flutter_rust_bridge:
+    dependency: transitive
+    description:
+      name: flutter_rust_bridge
+      sha256: d9d819e3f39efe08a68309ff7cadc9d8bcfd65d86319e0c5735cd4f4fee16c4a
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.13.0-beta.5"
+  flutter_rust_bridge_hooks:
+    dependency: transitive
+    description:
+      name: flutter_rust_bridge_hooks
+      sha256: "33f96e930af9016405f519696574f6fcb96ec37a515188d1da484fa81f9a90f7"
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.13.0-beta.5"
   flutter_secure_storage:
     dependency: transitive
     description:
@@ -1548,6 +1588,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.0.5"
+  native_toolchain_rust:
+    dependency: transitive
+    description:
+      name: native_toolchain_rust
+      sha256: faa57d2258a3b0fd2a634054f54e4496c9fcbd971977e7d2b7e6916d56892857
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.0.4+0"
   navigation_bar_m3e:
     dependency: transitive
     description:
@@ -2374,6 +2422,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.11.1"
+  toml:
+    dependency: transitive
+    description:
+      name: toml
+      sha256: "35a35f782228656a2af31e8c73d1353cc4ef3d683fd68af1111b44631879c05e"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.18.0"
   toolbar_m3e:
     dependency: "direct overridden"
     description:

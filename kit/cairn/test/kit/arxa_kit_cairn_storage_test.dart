@@ -7,7 +7,7 @@ import 'package:arxa_kit_cairn/arxa_kit_cairn.dart';
 import 'package:arxa_kit_core/arxa_kit_locator.dart';
 import 'package:arxa_kit_data/arxa_kit_data.dart';
 
-import '../support/fake_cairn_engine.dart';
+import 'package:arxa_kit_cairn/arxa_kit_cairn_testing.dart';
 import '../support/post_harness.dart';
 
 /// The storage service (phase 4f): `ArxaKitCairnStorageService` maps the

@@ -2,7 +2,7 @@ import 'package:cairn_flutter/cairn_flutter.dart';
 import 'package:arxa_kit_cairn/arxa_kit_cairn.dart';
 import 'package:arxa_kit_data/arxa_kit_testing.dart';
 
-import '../support/fake_cairn_engine.dart';
+import 'package:arxa_kit_cairn/arxa_kit_cairn_testing.dart';
 
 /// Phase 5a: the cross-backend repository behavior contract (extracted from
 /// kit/data's seed suite into `arxa_kit_testing.dart`) running against

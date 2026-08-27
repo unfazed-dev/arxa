@@ -15,7 +15,7 @@ library;
 import 'dart:async';
 import 'dart:convert';
 
-import 'package:cairn_flutter/src/engine.dart';
+import 'package:cairn_flutter/cairn_flutter.dart';
 
 /// One recorded CRDT verb call (the real engine applies CRDT merge semantics;
 /// the fake records delegation and enforces the tagged-table gate).
