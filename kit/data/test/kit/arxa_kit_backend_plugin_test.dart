@@ -1,0 +1,145 @@
+import 'package:flutter_test/flutter_test.dart';
+import 'package:arxa_kit_core/arxa_kit_locator.dart';
+import 'package:arxa_kit_data/arxa_kit_data.dart';
+import 'package:arxa_kit_data/arxa_kit_testing.dart';
+
+/// The `ArxaKitDataBackend.plugin` seam (phase 1 of the cairn kit chain):
+/// kit/data cannot name cairn types (no optional deps in Dart), so a backend
+/// that ships outside this package plugs in through [ArxaKitBackendPlugin].
+///
+/// Branches under test:
+/// - `validate()` fails loudly — naming the missing plugin — when the backend
+///   is `plugin` but no plugin was provided (same contract as the supabase /
+///   appwrite credential checks).
+/// - `ArxaKitData.initialize` hands the plugin the config, the entity
+///   registrations, and the SAME `ArxaKitIdService` / `ArxaKitSchemaRegistry`
+///   instances it registered into the shared arxaKitLocator — the plugin builds
+///   its repositories on exactly the services every other backend gets.
+/// - A repository the plugin registers during `initialize` resolves from the
+///   arxaKitLocator and round-trips a row (the seam is real, not decorative).
+class _TestEntity {
+  final String id;
+  final String name;
+
+  const _TestEntity({required this.id, required this.name});
+}
+
+final _schema = ArxaKitTableSchema(
+  table: 'test_entities',
+  columns: const [ArxaKitColumn.id(), ArxaKitColumn('name', ArxaKitColumnType.text)],
+);
+
+final _registration = ArxaKitEntityRegistration<_TestEntity>(
+  schema: _schema,
+  fromJson: (json) => _TestEntity(
+    id: json['id'] as String,
+    name: json['name'] as String,
+  ),
+  toJson: (e) => {'id': e.id, 'name': e.name},
+);
+
+/// A plugin double that records what `initialize` received and registers a
+/// [FakeArxaKitRepository] the way a real out-of-package backend would.
+class _RecordingPlugin implements ArxaKitBackendPlugin {
+  ArxaKitDataConfig? receivedConfig;
+  List<ArxaKitEntityRegistration<dynamic>>? receivedEntities;
+  ArxaKitIdService? receivedIdService;
+  ArxaKitSchemaRegistry? receivedRegistry;
+  int disposeCallCount = 0;
+
+  @override
+  String get name => 'recording';
+
+  @override
+  Future<void> initialize(
+    ArxaKitDataConfig config,
+    List<ArxaKitEntityRegistration<dynamic>> entities,
+    ArxaKitIdService idService,
+    ArxaKitSchemaRegistry registry,
+  ) async {
+    receivedConfig = config;
+    receivedEntities = entities;
+    receivedIdService = idService;
+    receivedRegistry = registry;
+    arxaKitLocator.registerLazySingleton<ArxaKitRepository<_TestEntity>>(
+      () => FakeArxaKitRepository<_TestEntity>(
+        registration: _registration,
+        idService: idService,
+      ),
+    );
+  }
+
+  @override
+  Future<void> dispose() async {
+    disposeCallCount++;
+  }
+}
+
+void main() {
+  tearDown(() {
+    ArxaKitData.resetForTesting();
+    arxaKitLocator.reset();
+  });
+
+  test('kit.data.backend-plugin — validate fails loudly, naming the missing plugin, when backend is plugin but none was provided', () {
+    // given
+    const config = ArxaKitDataConfig(backend: ArxaKitDataBackend.plugin);
+
+    // when / then
+    expect(
+      () => config.validate(),
+      throwsA(
+        isA<StateError>().having(
+          (e) => e.message,
+          'message',
+          allOf(contains('plugin'), contains('ArxaKitBackendPlugin')),
+        ),
+      ),
+    );
+  });
+
+  test('kit.data.backend-plugin — initialize hands the plugin the config, entities, and the locator-registered id service + schema registry', () async {
+    // given
+    final plugin = _RecordingPlugin();
+
+    // when
+    await ArxaKitData.initialize(
+      config: ArxaKitDataConfig(
+        backend: ArxaKitDataBackend.plugin,
+        plugin: plugin,
+      ),
+      entities: [_registration],
+    );
+
+    // then
+    expect(plugin.receivedConfig?.backend, ArxaKitDataBackend.plugin);
+    expect(plugin.receivedEntities, hasLength(1));
+    expect(
+      plugin.receivedIdService,
+      same(arxaKitLocator<ArxaKitIdService>()),
+      reason: 'the plugin builds on the same id service every backend gets',
+    );
+    expect(
+      plugin.receivedRegistry,
+      same(arxaKitLocator<ArxaKitSchemaRegistry>()),
+    );
+  });
+
+  test('kit.data.backend-plugin — a repository the plugin registers resolves from arxaKitLocator and round-trips a row', () async {
+    // given
+    await ArxaKitData.initialize(
+      config: ArxaKitDataConfig(
+        backend: ArxaKitDataBackend.plugin,
+        plugin: _RecordingPlugin(),
+      ),
+      entities: [_registration],
+    );
+
+    // when
+    final repo = arxaKitLocator<ArxaKitRepository<_TestEntity>>();
+    await repo.upsert(const _TestEntity(id: 'e-1', name: 'Alpha'));
+
+    // then
+    expect((await repo.getById('e-1'))!.name, 'Alpha');
+  });
+}

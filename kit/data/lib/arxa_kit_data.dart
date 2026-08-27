@@ -39,6 +39,7 @@ import 'storage/supabase/arxa_kit_supabase_storage_service.dart';
 // Entry point & config
 export 'config/arxa_kit_data_config.dart';
 export 'config/arxa_kit_seed_profile.dart';
+export 'config/arxa_kit_backend_plugin.dart';
 
 // Assets (AssetBundle inversion: pure-Dart port + Flutter adapter)
 export 'assets/arxa_kit_asset_reader.dart';
@@ -155,6 +156,12 @@ class ArxaKitData {
         await _initializeSupabase(config, entities, idService);
       case ArxaKitDataBackend.appwrite:
         await _initializeAppwrite(config, entities, idService);
+      case ArxaKitDataBackend.plugin:
+        // The plugin runs AFTER the IdService/SchemaRegistry registrations
+        // above and receives those same instances — it registers its
+        // repositories into the shared arxaKitLocator exactly like a built-in
+        // backend (see ArxaKitBackendPlugin).
+        await config.plugin!.initialize(config, entities, idService, registry);
     }
   }
 

@@ -55,6 +55,14 @@ class ArxaKitDataSeeder {
           await _pushAppwrite(config, schema, rows.values.toList());
         case ArxaKitDataBackend.seed:
           break; // unreachable — guarded above
+        case ArxaKitDataBackend.plugin:
+          // kit/data cannot push to a backend it cannot name — the plugin's
+          // package owns its seeding story (cairn: fixtures flow through its
+          // repositories' ordinary upserts).
+          throw StateError(
+            'ArxaKitDataSeeder.push does not know how to seed the plugin '
+            'backend ("${config.plugin!.name}") — seed through the plugin package.',
+          );
       }
     }
   }
