@@ -26,7 +26,15 @@ CAIRN_DEV_JWT_SECRET="arxa-kit-cairn-local-live-dev-secret-do-not-use-in-product
 CAIRN_PG_URL="postgresql://cairn:cairn@localhost:5433/cairn"
 CAIRN_PUBLICATION="cairn_pub_arxa_kit"
 CAIRN_SLOT="cairn_slot_arxa_kit"
-CAIRN_TENANT_COLUMN="user_id"
+
+# NO tenant scoping on purpose: cairn's server-side CRDT merge paths
+# (or_set_merge / counter_merge) are no-tenant only — with a tenant column
+# configured, a CRDT write falls through to the clobber path, which treats the
+# CRDT payload's keys as column names and fails ("db error" — no `entries`
+# column). cairn-infra write_back.rs: "tenant + OR-set → clobber… the
+# tenant-scoped merge is deferred to the fixture that needs it". Empty string
+# disables scoping even under supabase-jwt auth (cairn-server main.rs:495).
+CAIRN_TENANT_COLUMN=""
 
 # The tables the live sync test drives — dedicated single-tier CRDT tables,
 # matching the engine's truth: a tagged table's WHOLE row payload is the CRDT

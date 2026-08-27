@@ -56,17 +56,25 @@ docker exec cairn-postgres pg_isready -U cairn -d cairn >/dev/null 2>&1 \
   || { echo "postgres did not become ready in 60s"; exit 1; }
 
 echo "== 3/7: live-test tables =="
+# REPLICA IDENTITY FULL: without it live DELETEs carry only PK columns and
+# tenant-scoped delete fan-out is silently dropped (the server's own boot
+# check names this fix verbatim). Dedicated CRDT tables carry only the pk +
+# the jsonb payload column — no tenant column (see live_env.sh).
+# The pk columns are `uuid`, not `text`: cairn's write-back binds any
+# UUID-parsable pk as SqlValue::Uuid (write_back.rs from_scalar), and the
+# kit's canonical ids ARE v5 UUIDs — a text column fails the bind with
+# "error serializing parameter 0".
 docker exec -i cairn-postgres psql -U cairn -d cairn -v ON_ERROR_STOP=1 <<'SQL'
 CREATE TABLE IF NOT EXISTS kit_live_counters (
-  id text primary key,
-  user_id text not null,
+  id uuid primary key,
   value jsonb
 );
 CREATE TABLE IF NOT EXISTS kit_live_orsets (
-  id text primary key,
-  user_id text not null,
+  id uuid primary key,
   tags jsonb
 );
+ALTER TABLE kit_live_counters REPLICA IDENTITY FULL;
+ALTER TABLE kit_live_orsets REPLICA IDENTITY FULL;
 SQL
 echo "  ✓ kit_live_counters + kit_live_orsets present"
 
@@ -92,7 +100,6 @@ echo "== 4/7: cairn init =="
   --publication "$CAIRN_PUBLICATION" \
   --slot "$CAIRN_SLOT" \
   --bind "$CAIRN_BIND")
-
 echo "== 5/7: dev JWT secret + CRDT column declarations =="
 if ! grep -q '^CAIRN_SUPABASE_JWT_SECRET=' "$CAIRN_STATE_DIR/.env" 2>/dev/null; then
   echo "CAIRN_SUPABASE_JWT_SECRET=$CAIRN_DEV_JWT_SECRET" >> "$CAIRN_STATE_DIR/.env"
@@ -110,11 +117,16 @@ done
 echo "  ✓ .env: jwt secret + counter[$CAIRN_COUNTER_COLUMNS] or-set[$CAIRN_OR_SET_COLUMNS]"
 
 echo "== 6/7: cairn dev =="
+# cairn dev builds an EXPLICIT env whitelist for the cairn-server child
+# (cairn-cli config.rs server_env) and the CRDT vars aren't in it — but
+# tokio Command::env inherits the parent environment, so exporting them here
+# carries them through. (Upstream candidate: forward them in server_env.)
+export CAIRN_COUNTER_COLUMNS CAIRN_OR_SET_COLUMNS
 if [ -f "$CAIRN_DEV_PID_FILE" ] && kill -0 "$(cat "$CAIRN_DEV_PID_FILE")" 2>/dev/null; then
   echo "  already running (pid $(cat "$CAIRN_DEV_PID_FILE"))"
 else
   (cd "$CAIRN_STATE_DIR" && nohup "$CAIRN_BIN" dev \
-    > "$CAIRN_DEV_LOG" 2>&1 &
+    > "$CAIRN_DEV_LOG" 2>&1 < /dev/null &
     echo $! > "$CAIRN_DEV_PID_FILE")
   echo "  started (pid $(cat "$CAIRN_DEV_PID_FILE")); waiting for $CAIRN_HEALTH_URL ..."
   ready=""
