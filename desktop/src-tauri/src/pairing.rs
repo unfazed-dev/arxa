@@ -198,12 +198,17 @@ pub fn init(app: &AppHandle, engine_hp: String) {
 /// Verify the `AUTH` token for `remote`. Returns true when authorized,
 /// promoting a live single-use ticket into a stored session token.
 fn authorize(inner: &Inner, remote: &str, token: &str, persist_hex: &str) -> bool {
+    // NOTE: closing without `OK\n` is the revocation signal — mobile deletes
+    // its stored pairing on it. So this function must only return false for a
+    // genuinely wrong/expired token, never for an internal error: poisoned
+    // locks are recovered (into_inner) rather than failing verification.
+
     // 1. Active single-use ticket → consume + promote (first pairing).
     let promoted = {
-        let mut guard = match inner.active.lock() {
-            Ok(g) => g,
-            Err(_) => return false,
-        };
+        let mut guard = inner
+            .active
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner());
         match guard.as_ref() {
             Some(t) if t.token == token && t.minted_at.elapsed() < TICKET_TTL => {
                 guard.take();
@@ -213,7 +218,11 @@ fn authorize(inner: &Inner, remote: &str, token: &str, persist_hex: &str) -> boo
         }
     };
     if promoted {
-        if let Ok(mut peers) = inner.peers.lock() {
+        {
+            let mut peers = inner
+                .peers
+                .lock()
+                .unwrap_or_else(|poisoned| poisoned.into_inner());
             peers.retain(|p| p.node_id != remote);
             let label = format!("Mobile device {}", &remote[..remote.len().min(8)]);
             peers.push(PairedPeer {
@@ -230,12 +239,9 @@ fn authorize(inner: &Inner, remote: &str, token: &str, persist_hex: &str) -> boo
     inner
         .peers
         .lock()
-        .map(|peers| {
-            peers
-                .iter()
-                .any(|p| p.node_id == remote && p.session_token == token)
-        })
-        .unwrap_or(false)
+        .unwrap_or_else(|poisoned| poisoned.into_inner())
+        .iter()
+        .any(|p| p.node_id == remote && p.session_token == token)
 }
 
 /// One authed stream: read `AUTH <token>\n`, reply `OK\n`, then pipe raw
