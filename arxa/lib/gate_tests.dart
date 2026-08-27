@@ -31,10 +31,13 @@ import 'dart:io';
 import 'package:arxa/gates.dart';
 import 'package:arxa/project.dart';
 
-/// A test invocation, per T1: test(, testWidgets(, or blocTest(. The word
+/// A test invocation, per T1: test(, testWidgets(, blocTest(, or a shared
+/// contract-runner call (`run…Contract(` — e.g. runArxaKitRepositoryContract,
+/// which parameterizes a whole named suite behind a backend factory). The word
 /// boundary keeps `latest(`-style coincidences out; alternation order matters
 /// not — backtracking tries the longer spellings.
-final _invocationRe = RegExp(r'\b(?:test|testWidgets|blocTest)\s*\(');
+final _invocationRe =
+    RegExp(r'\b(?:test|testWidgets|blocTest|run\w*Contract)\s*\(');
 
 /// Priorities that MUST be covered by a named test (MoSCoW).
 const _coveredPriorities = {'must', 'should'};
@@ -197,8 +200,8 @@ GateResult testsGate(GateContext ctx, {String? project}) {
     for (final f in testFiles) {
       if (!_invocationRe.hasMatch(testTexts[f.path]!)) {
         fail('empty test stub (T1): ${_rel(f.path, app)} — no test( / '
-            'testWidgets( / blocTest( invocation; a stub file is a promise, '
-            'not coverage');
+            'testWidgets( / blocTest( / run…Contract( invocation; a stub '
+            'file is a promise, not coverage');
         t1Bad++;
       }
       if (_emptyGroupRe.hasMatch(testTexts[f.path]!)) {

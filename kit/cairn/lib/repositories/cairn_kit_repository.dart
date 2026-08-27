@@ -4,7 +4,9 @@
 /// Mapping onto the cairn surface (structured predicates only — never raw
 /// SQL, so there is no view-name collapse and no outbox foot-gun):
 /// - getById → `Collection.fetchById`; getAll/watchAll → `Collection.getAll` /
-///   `.watch` with [Where]/[Order] composed from [ArxaKitQuery];
+///   `.watch` with [Where] composed from [ArxaKitQuery] (ordering + limit for
+///   ordered reads are client-side — the contract's nulls-last rule is not
+///   expressible in cairn's `Order`/SQL, see [_orderAndLimit]);
 /// - upsert → `Collection.upsertRow` (the atlet-proven per-row
 ///   `write(op: 'upsert')` shape); upsertMany → `writeBatch` (local-atomic
 ///   outbox entry — NOT a server transaction, per ADR-0032 T3);
@@ -19,6 +21,7 @@
 /// normalized against the kit schema before the entity codec ever sees them.
 library;
 
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:cairn_flutter/cairn_flutter.dart';
@@ -65,18 +68,26 @@ class CairnKitRepository<E> implements ArxaKitRepository<E>, ArxaKitCrdtCapable 
   @override
   Future<List<E>> getAll([ArxaKitQuery query = const ArxaKitQuery()]) {
     final canonical = _idService.canonicalizeQuery(_schema, query);
-    return _collection.getAll(
-      where: _where(canonical),
-      orderBy: _orders(canonical),
-      limit: canonical.limit,
-    );
+    if (canonical.orderBy == null) {
+      return _collection.getAll(
+        where: _where(canonical),
+        limit: canonical.limit,
+      );
+    }
+    // Ordered reads sort (and limit) CLIENT-SIDE after the SQL filter: the
+    // kit contract sorts nulls last in BOTH directions, but cairn's Order has
+    // no NULLS LAST and SQLite's default pushes them first on ASC — the SQL
+    // layer cannot express the contract.
+    return _collection
+        .getAll(where: _where(canonical))
+        .then((rows) => _orderAndLimit(rows, canonical));
   }
 
   @override
   Stream<E?> watchById(String id) {
     final canonical = _idService.canonicalId(_table, id);
     return _prepend(
-      _collection.fetchById(canonical),
+      () => _collection.fetchById(canonical),
       () => _collection.watchOne(canonical),
     ).distinct(_sameEntity);
   }
@@ -85,27 +96,94 @@ class CairnKitRepository<E> implements ArxaKitRepository<E>, ArxaKitCrdtCapable 
   Stream<List<E>> watchAll([ArxaKitQuery query = const ArxaKitQuery()]) {
     final canonical = _idService.canonicalizeQuery(_schema, query);
     final where = _where(canonical);
-    final orders = _orders(canonical);
+    if (canonical.orderBy == null) {
+      return _prepend(
+        () => _collection.getAll(where: where, limit: canonical.limit),
+        () => _collection.watch(where: where, limit: canonical.limit),
+      ).distinct(_sameRows);
+    }
     return _prepend(
-      _collection.getAll(where: where, orderBy: orders, limit: canonical.limit),
-      () => _collection.watch(
-          where: where, orderBy: orders, limit: canonical.limit),
+      () => _collection
+          .getAll(where: where)
+          .then((rows) => _orderAndLimit(rows, canonical)),
+      () => _collection
+          .watch(where: where)
+          .map((rows) => _orderAndLimit(rows, canonical)),
     ).distinct(_sameRows);
   }
 
-  /// Prepends a one-shot current-state snapshot to a live stream.
+  /// The contract's ordering: nulls LAST regardless of direction (the sign
+  /// flip only applies between two present, comparable values) — mirrors
+  /// `ArxaKitSeedRepository._compareRows` exactly.
+  List<E> _orderAndLimit(List<E> rows, ArxaKitQuery query) {
+    final orderBy = query.orderBy!;
+    final sorted = List.of(rows)
+      ..sort((a, b) => _compareEntities(a, b, orderBy, query.descending));
+    final limit = query.limit;
+    return limit != null && sorted.length > limit
+        ? sorted.sublist(0, limit)
+        : sorted;
+  }
+
+  int _compareEntities(E a, E b, String field, bool descending) {
+    final av = _registration.toJson(a)[field];
+    final bv = _registration.toJson(b)[field];
+    if (av == null && bv == null) return 0;
+    if (av == null) return 1;
+    if (bv == null) return -1;
+    var cmp = 0;
+    if (av is Comparable) {
+      try {
+        cmp = av.compareTo(bv);
+      } catch (_) {
+        cmp = 0; // incomparable types tie, mirroring the seed engine
+      }
+    }
+    return descending ? -cmp : cmp;
+  }
+
+  /// Prepends a one-shot current-state snapshot to a live stream, WITHOUT
+  /// opening a subscription window: the live pump subscribes at listen time
+  /// (its emissions buffer while the snapshot is in flight) and the snapshot
+  /// future is issued first, so pending live states are never older than the
+  /// snapshot they follow.
   ///
-  /// Every listener gets the current set immediately, then live change ticks.
-  /// cairn's hot pump replays its latest tick only on a 0→1 listener
-  /// transition, so a listener mounting inside a cancel/re-subscribe window
-  /// would otherwise sit empty until the next write — this snapshot closes
-  /// that window. The pump re-queries CURRENT state per tick (never deltas),
-  /// so nothing is lost; consecutive identical emissions (the snapshot vs the
-  /// pump's own first emission) are collapsed by the `distinct` the callers
-  /// chain on.
-  Stream<T> _prepend<T>(Future<T> snapshot, Stream<T> Function() live) async* {
-    yield await snapshot;
-    yield* live();
+  /// Why eager: cairn's pump only re-queries on engine ticks, and a tick
+  /// fired while NO listener is attached is gone — a write landing between
+  /// `watchAll()`'s call and the pump's subscription would be invisible until
+  /// the next write. Buffering closes that window; consecutive duplicates
+  /// (snapshot vs the pump's own first emission) are collapsed by the
+  /// `distinct` the callers chain on.
+  Stream<T> _prepend<T>(Future<T> Function() snapshot, Stream<T> Function() live) {
+    late StreamController<T> out;
+    StreamSubscription<T>? liveSub;
+    var snapshotDone = false;
+    final pending = <T>[];
+    out = StreamController<T>(
+      onListen: () {
+        final snap = snapshot();
+        liveSub = live().listen((event) {
+          if (snapshotDone) {
+            out.add(event);
+          } else {
+            pending.add(event);
+          }
+        }, onError: out.addError);
+        snap.then((value) {
+          snapshotDone = true;
+          out.add(value);
+          for (final event in pending) {
+            out.add(event);
+          }
+          pending.clear();
+        }, onError: (Object e, StackTrace st) {
+          snapshotDone = true;
+          out.addError(e, st);
+        });
+      },
+      onCancel: () => liveSub?.cancel(),
+    );
+    return out.stream;
   }
 
   /// Wire-shape equality for `distinct` — the same codec-independent
@@ -285,11 +363,5 @@ class CairnKitRepository<E> implements ArxaKitRepository<E>, ArxaKitCrdtCapable 
         },
     ];
     return leaves.length == 1 ? leaves.single : Where.and(leaves);
-  }
-
-  List<Order>? _orders(ArxaKitQuery query) {
-    final orderBy = query.orderBy;
-    if (orderBy == null) return null;
-    return [query.descending ? Order.desc(orderBy) : Order.asc(orderBy)];
   }
 }

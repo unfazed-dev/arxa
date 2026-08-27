@@ -83,6 +83,19 @@ void main() {
       expect(r.passed, isTrue, reason: detailsOf(r));
     });
 
+    test('a shared contract-runner invocation satisfies T1', () {
+      // The cross-backend repository contract (runArxaKitRepositoryContract)
+      // parameterizes a whole suite behind a repo factory — the file carries
+      // coverage through the runner, not a literal test( call.
+      write('test/contract_test.dart',
+          "// covers notes.folders.create-folder\n"
+          "void main() { runArxaKitRepositoryContract(suite: 's', "
+          "makeRepo: () async => throw UnimplementedError(), "
+          "idService: ArxaKitIdService()); }\n");
+      final r = run();
+      expect(r.passed, isTrue, reason: detailsOf(r));
+    });
+
     test('an empty stub fails and names the file', () {
       plantPassingTestFile();
       write('test/empty_stub_test.dart', '// TODO: write these tests\n');
