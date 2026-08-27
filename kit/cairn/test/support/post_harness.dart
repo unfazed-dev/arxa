@@ -15,16 +15,18 @@ typedef PostsHarness = ({
   ArxaKitIdService ids,
 });
 
+const postRegistration = ArxaKitEntityRegistration<Post>(
+  schema: postSchema,
+  fromJson: Post.fromJson,
+  toJson: Post.toRow,
+);
+
 Future<PostsHarness> bootstrapPostsForTest({
   Set<String> orSetTables = const {},
   Set<String> counterTables = const {},
   String? Function()? userIdProvider,
 }) async {
-  const registration = ArxaKitEntityRegistration<Post>(
-    schema: postSchema,
-    fromJson: Post.fromJson,
-    toJson: Post.toRow,
-  );
+  const registration = postRegistration;
   final engine = FakeCairnEngine();
   // Test seams from cairn_flutter — the pure-Dart path engine.dart documents.
   // ignore: invalid_use_of_visible_for_testing_member

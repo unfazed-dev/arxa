@@ -19,6 +19,8 @@
 library;
 
 // Nothing from cairn_flutter is re-exported except through kit types.
+export 'arxa_kit_cairn_backend.dart';
+export 'auth/arxa_kit_cairn_auth_service.dart';
 export 'config/arxa_kit_cairn_config.dart';
 export 'emitters/cairn_schema_emitter.dart';
 export 'repositories/arxa_kit_crdt_capable.dart';

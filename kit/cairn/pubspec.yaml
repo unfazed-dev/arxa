@@ -22,6 +22,11 @@ dependencies:
       ref: a25dafe6c8d62bb0db6ef5b717f2f7fdd4aaffe3
       path: sdk/cairn_flutter
 
+  # Default sqliteDir resolution (app-support directory).
+  path_provider: ^2.1.5
+  # supabaseBridge mode: session tokens + the double-init probe.
+  supabase_flutter: ^2.16.0
+
 # Same rationale as kit/data: appwrite's transitive graph (via arxa_kit_data)
 # pins win32 5.x while arxa_kit → talker_flutter → share_plus 13 needs win32 ^6,
 # and `flutter test` on a desktop host compiles device_info_plus's Windows
