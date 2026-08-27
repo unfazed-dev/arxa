@@ -1,0 +1,20 @@
+[package]
+name = "arxa-mobile"
+version = "0.1.0"
+description = "Arxa Studio mobile shell (iOS + Android)"
+edition = "2021"
+
+[lib]
+name = "arxa_mobile_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+# ponytail: iroh lands here as a direct dependency once the phone<->Mac transport
+# is implemented (decision M1). Keep it out until then — no speculative deps.
