@@ -14,8 +14,13 @@ dependencies:
     path: ../core
   arxa_kit_data:
     path: ../data
+  # Push sits behind this seam: the bridge consumes tokenStream/currentToken;
+  # the provider rail (FCM/APNs) stays app-side. No Firebase dep in the kit.
+  arxa_kit_notifications:
+    path: ../notifications
   # D1 — full-SHA git pin, bumped deliberately (see README "Pin discipline").
-  # a25dafe = cairn main after 0b: includes CairnDatabase.local (D2).
+  # d6e3de9 = cairn main after 0b (CairnDatabase.local, D2) + the
+  # AttachmentDatabase barrel export the storage wiring needs.
   cairn_flutter:
     git:
       url: https://github.com/unfazed-dev/cairn.git

@@ -23,6 +23,7 @@ export 'arxa_kit_cairn_backend.dart';
 export 'auth/arxa_kit_cairn_auth_service.dart';
 export 'config/arxa_kit_cairn_config.dart';
 export 'emitters/cairn_schema_emitter.dart';
+export 'push/arxa_kit_cairn_push_bridge.dart';
 export 'repositories/arxa_kit_crdt_capable.dart';
 export 'repositories/cairn_kit_repository.dart';
 export 'storage/arxa_kit_cairn_storage_service.dart';
