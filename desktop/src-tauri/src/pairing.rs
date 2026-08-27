@@ -23,7 +23,7 @@ use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
 use data_encoding::{BASE32_NOPAD, HEXLOWER};
 use iroh::endpoint::presets;
-use iroh::{Endpoint, SecretKey};
+use iroh::{Endpoint, EndpointAddr, SecretKey};
 use iroh_tickets::endpoint::EndpointTicket;
 use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Manager, State};
@@ -72,8 +72,139 @@ struct Inner {
     engine_hp: String,
 }
 
-/// Managed Tauri state wrapper.
+/// Managed Tauri state wrapper — and the headless core of this module.
+///
+/// Every wire-facing operation (load, mint, serve, revoke) is a method here so
+/// that the pairing conformance test (`tests/pairing_conformance.rs`) can drive
+/// the real code with an injected endpoint instead of a GUI app. The Tauri
+/// commands below are thin wrappers over the same methods.
+#[derive(Clone)]
 pub struct Pairing(Arc<Inner>);
+
+impl Pairing {
+    /// Build the pairing core over `store_path`, restoring previously paired
+    /// devices, and bridging authed streams to the engine at `engine_hp`.
+    ///
+    /// Returns the core plus the endpoint secret key to bind with (restored
+    /// from the store, or freshly generated and written back) and its hex
+    /// encoding, which `serve` needs to re-persist the store after a pairing.
+    pub fn load(store_path: PathBuf, engine_hp: String) -> (Self, SecretKey, String) {
+        let store = load_store(&store_path);
+        // Stable endpoint identity across restarts, otherwise the EndpointAddr a
+        // phone stored from its QR would go stale on every desktop relaunch.
+        let secret = store
+            .secret_key_hex
+            .as_deref()
+            .and_then(|h| HEXLOWER.decode(h.as_bytes()).ok())
+            .and_then(|b| <[u8; 32]>::try_from(b.as_slice()).ok())
+            .map(|b| SecretKey::from_bytes(&b))
+            .unwrap_or_else(SecretKey::generate);
+        let secret_hex = HEXLOWER.encode(&secret.to_bytes());
+        let inner = Arc::new(Inner {
+            endpoint: Mutex::new(None),
+            active: Mutex::new(None),
+            peers: Mutex::new(store.peers),
+            store_path,
+            engine_hp,
+        });
+        // Write the store back immediately so the secret key survives even if
+        // the user never pairs a device this session.
+        persist(&inner, &secret_hex);
+        (Pairing(inner), secret, secret_hex)
+    }
+
+    /// Publish the bound endpoint (so `pairing_begin` can mint against it) and
+    /// run the accept loop until the endpoint stops accepting.
+    pub async fn serve(&self, endpoint: Endpoint, secret_hex: String) {
+        let inner = self.0.clone();
+        if let Ok(mut guard) = inner.endpoint.lock() {
+            guard.replace(endpoint.clone());
+        }
+        while let Some(incoming) = endpoint.accept().await {
+            let inner = inner.clone();
+            let persist_hex = secret_hex.clone();
+            // `tokio::spawn` picks up the ambient runtime, which in the app is
+            // exactly the `tauri::async_runtime` this loop was spawned onto.
+            tokio::spawn(async move {
+                let conn = match incoming.await {
+                    Ok(c) => c,
+                    Err(e) => {
+                        eprintln!("[arxa-desktop] pairing conn failed: {e}");
+                        return;
+                    }
+                };
+                let remote = conn.remote_id().to_string();
+                // Each stream is one authed bridge session; a device opens as
+                // many as its loopback proxy needs.
+                loop {
+                    match conn.accept_bi().await {
+                        Ok((send, recv)) => {
+                            let inner = inner.clone();
+                            let remote = remote.clone();
+                            let persist_hex = persist_hex.clone();
+                            tokio::spawn(async move {
+                                if let Err(e) =
+                                    handle_stream(inner, remote, persist_hex, send, recv).await
+                                {
+                                    eprintln!("[arxa-desktop] pairing stream: {e}");
+                                }
+                            });
+                        }
+                        Err(_) => break, // connection closed
+                    }
+                }
+            });
+        }
+    }
+
+    /// Mint a fresh single-use ticket advertising `addr`, replacing any ticket
+    /// currently on display. Returns the `arxa-pair:` string and its expiry.
+    ///
+    /// The address is a parameter rather than read off the endpoint so tests
+    /// can pin a loopback-only address; the encoded bytes are identical either
+    /// way.
+    pub fn mint_ticket_for(&self, addr: EndpointAddr) -> (String, u64) {
+        let inner = &self.0;
+        // 32 random bytes; a freshly generated key is a CSPRNG draw.
+        let token = HEXLOWER.encode(&SecretKey::generate().to_bytes());
+        let expires_at_ms = now_ms() + TICKET_TTL.as_millis() as u64;
+        if let Ok(mut guard) = inner.active.lock() {
+            guard.replace(ActiveTicket {
+                token: token.clone(),
+                minted_at: Instant::now(),
+                expires_at_ms,
+            });
+        }
+        let node_ticket = EndpointTicket::new(addr).to_string();
+        let json = serde_json::json!({ "node": node_ticket, "token": token }).to_string();
+        let ticket = format!("arxa-pair:{}", BASE32_NOPAD.encode(json.as_bytes()));
+        (ticket, expires_at_ms)
+    }
+
+    /// EndpointIds of the devices currently holding a session token.
+    pub fn paired_ids(&self) -> Vec<String> {
+        self.0
+            .peers
+            .lock()
+            .map(|peers| peers.iter().map(|p| p.node_id.clone()).collect())
+            .unwrap_or_default()
+    }
+
+    /// Unpair a device: its session token stops working immediately, so the
+    /// next stream it opens is closed without an `OK\n`.
+    pub fn revoke(&self, node_id: &str) -> Result<(), String> {
+        let inner = &self.0;
+        {
+            let mut peers = inner.peers.lock().map_err(|_| "state poisoned")?;
+            peers.retain(|p| p.node_id != node_id);
+        }
+        let secret_hex = load_store(&inner.store_path)
+            .secret_key_hex
+            .unwrap_or_default();
+        persist(inner, &secret_hex);
+        Ok(())
+    }
+}
 
 fn now_ms() -> u64 {
     SystemTime::now()
@@ -117,32 +248,9 @@ pub fn init(app: &AppHandle, engine_hp: String) {
         return;
     }
     let store_path = data_dir.join(STORE_FILE);
-    let store = load_store(&store_path);
+    let (pairing, secret, secret_hex) = Pairing::load(store_path, engine_hp);
+    app.manage(pairing.clone());
 
-    // Stable endpoint identity across restarts, otherwise the EndpointAddr a
-    // phone stored from its QR would go stale on every desktop relaunch.
-    let secret = store
-        .secret_key_hex
-        .as_deref()
-        .and_then(|h| HEXLOWER.decode(h.as_bytes()).ok())
-        .and_then(|b| <[u8; 32]>::try_from(b.as_slice()).ok())
-        .map(|b| SecretKey::from_bytes(&b))
-        .unwrap_or_else(SecretKey::generate);
-    let secret_hex = HEXLOWER.encode(&secret.to_bytes());
-
-    let inner = Arc::new(Inner {
-        endpoint: Mutex::new(None),
-        active: Mutex::new(None),
-        peers: Mutex::new(store.peers),
-        store_path,
-        engine_hp,
-    });
-    // Write the store back immediately so the secret key survives even if the
-    // user never pairs a device this session.
-    persist(&inner, &secret_hex);
-    app.manage(Pairing(inner.clone()));
-
-    let persist_hex = secret_hex.clone();
     tauri::async_runtime::spawn(async move {
         let endpoint = match Endpoint::builder(presets::N0)
             .secret_key(secret)
@@ -156,42 +264,7 @@ pub fn init(app: &AppHandle, engine_hp: String) {
                 return;
             }
         };
-        if let Ok(mut guard) = inner.endpoint.lock() {
-            guard.replace(endpoint.clone());
-        }
-        while let Some(incoming) = endpoint.accept().await {
-            let inner = inner.clone();
-            let persist_hex = persist_hex.clone();
-            tauri::async_runtime::spawn(async move {
-                let conn = match incoming.await {
-                    Ok(c) => c,
-                    Err(e) => {
-                        eprintln!("[arxa-desktop] pairing conn failed: {e}");
-                        return;
-                    }
-                };
-                let remote = conn.remote_id().to_string();
-                // Each stream is one authed bridge session; a device opens as
-                // many as its loopback proxy needs.
-                loop {
-                    match conn.accept_bi().await {
-                        Ok((send, recv)) => {
-                            let inner = inner.clone();
-                            let remote = remote.clone();
-                            let persist_hex = persist_hex.clone();
-                            tauri::async_runtime::spawn(async move {
-                                if let Err(e) =
-                                    handle_stream(inner, remote, persist_hex, send, recv).await
-                                {
-                                    eprintln!("[arxa-desktop] pairing stream: {e}");
-                                }
-                            });
-                        }
-                        Err(_) => break, // connection closed
-                    }
-                }
-            });
-        }
+        pairing.serve(endpoint, secret_hex).await;
     });
 }
 
@@ -430,20 +503,7 @@ pub fn pairing_begin(state: State<'_, Pairing>) -> Result<BeginResponse, String>
         .and_then(|g| g.clone())
         .ok_or("pairing endpoint is still starting - try again in a moment")?;
 
-    // 32 random bytes; a freshly generated key is a CSPRNG draw.
-    let token = HEXLOWER.encode(&SecretKey::generate().to_bytes());
-    let expires_at_ms = now_ms() + TICKET_TTL.as_millis() as u64;
-    if let Ok(mut guard) = inner.active.lock() {
-        guard.replace(ActiveTicket {
-            token: token.clone(),
-            minted_at: Instant::now(),
-            expires_at_ms,
-        });
-    }
-
-    let node_ticket = EndpointTicket::new(endpoint.addr()).to_string();
-    let json = serde_json::json!({ "node": node_ticket, "token": token }).to_string();
-    let ticket = format!("arxa-pair:{}", BASE32_NOPAD.encode(json.as_bytes()));
+    let (ticket, expires_at_ms) = state.mint_ticket_for(endpoint.addr());
 
     let code = qrcode::QrCode::new(ticket.as_bytes()).map_err(|e| format!("qr encode: {e}"))?;
     let qr_svg = code
@@ -511,14 +571,5 @@ pub fn pairing_status(state: State<'_, Pairing>) -> StatusResponse {
 /// Unpair a device: its session token stops working immediately.
 #[tauri::command]
 pub fn pairing_revoke(state: State<'_, Pairing>, node_id: String) -> Result<(), String> {
-    let inner = &state.0;
-    {
-        let mut peers = inner.peers.lock().map_err(|_| "state poisoned")?;
-        peers.retain(|p| p.node_id != node_id);
-    }
-    let secret_hex = load_store(&inner.store_path)
-        .secret_key_hex
-        .unwrap_or_default();
-    persist(inner, &secret_hex);
-    Ok(())
+    state.revoke(&node_id)
 }

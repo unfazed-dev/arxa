@@ -50,7 +50,7 @@ const RECONNECT_DIAL_ATTEMPTS: u32 = 5;
 
 type DynErr = Box<dyn std::error::Error + Send + Sync>;
 
-#[derive(Serialize, Clone, Copy, PartialEq, Eq)]
+#[derive(Serialize, Clone, Copy, PartialEq, Eq, Debug)]
 #[serde(rename_all = "snake_case")]
 pub enum ConnectionState {
     NotPaired,
@@ -68,15 +68,37 @@ pub struct ConnectionStatus {
 
 /// Ticket payload — also the on-disk persistence shape (`pairing.json`).
 #[derive(Serialize, Deserialize, Clone)]
-struct Pairing {
+pub struct Pairing {
     /// iroh endpoint ticket string for the desktop peer.
-    node: String,
+    pub node: String,
     /// Auth token, sent as `AUTH <token>\n` on every stream. Kept as the
     /// long-lived session token after the first successful pairing.
-    token: String,
+    pub token: String,
 }
 
-struct Shared {
+/// Where a session persists (or forgets) the pairing it is driving.
+///
+/// Split out from `AppHandle` so the pairing conformance test can run the real
+/// `run_session` loop headlessly and observe that an auth rejection really does
+/// clear the stored pairing. The app always uses [`AppPairingStore`].
+pub trait PairingStore: Send + Sync + 'static {
+    fn store(&self, pairing: &Pairing) -> Result<(), String>;
+    fn forget(&self);
+}
+
+/// The shipped store: local-only JSON in the Tauri app data dir.
+struct AppPairingStore(AppHandle);
+
+impl PairingStore for AppPairingStore {
+    fn store(&self, pairing: &Pairing) -> Result<(), String> {
+        store_pairing(&self.0, pairing)
+    }
+    fn forget(&self) {
+        forget_pairing(&self.0)
+    }
+}
+
+pub struct Shared {
     state: ConnectionState,
     studio_url: Option<String>,
     /// Bumped on every (re)pairing so stale session tasks stop writing state.
@@ -93,11 +115,32 @@ impl Default for Shared {
     }
 }
 
-type SharedHandle = Arc<Mutex<Shared>>;
+pub type SharedHandle = Arc<Mutex<Shared>>;
 
 #[derive(Default)]
 pub struct ConnectionManager {
     inner: SharedHandle,
+}
+
+impl ConnectionManager {
+    /// Snapshot of the state the frontend polls (`connection_status`).
+    pub fn status(&self) -> ConnectionStatus {
+        let s = self.inner.lock().expect("connection state poisoned");
+        ConnectionStatus {
+            state: s.state,
+            studio_url: s.studio_url.clone(),
+        }
+    }
+
+    /// Handle the session tasks write state through.
+    pub fn shared(&self) -> SharedHandle {
+        self.inner.clone()
+    }
+
+    /// Open a new pairing attempt, superseding any session still running.
+    pub fn begin_epoch(&self) -> u64 {
+        begin_epoch(&self.inner)
+    }
 }
 
 /// Writes state iff `epoch` is still current; returns false when superseded.
@@ -126,11 +169,7 @@ fn begin_epoch(shared: &SharedHandle) -> u64 {
 
 #[tauri::command]
 pub fn connection_status(mgr: State<'_, ConnectionManager>) -> ConnectionStatus {
-    let s = mgr.inner.lock().expect("connection state poisoned");
-    ConnectionStatus {
-        state: s.state,
-        studio_url: s.studio_url.clone(),
-    }
+    mgr.status()
 }
 
 /// Invoked with the scanned/pasted pairing code (decision M2). Validates the
@@ -165,7 +204,7 @@ pub fn attempt_reconnect(app: &AppHandle) {
 // Ticket parsing
 // ---------------------------------------------------------------------------
 
-fn parse_ticket(raw: &str) -> Result<Pairing, String> {
+pub fn parse_ticket(raw: &str) -> Result<Pairing, String> {
     let payload = raw
         .trim()
         .strip_prefix(TICKET_PREFIX)
@@ -189,7 +228,8 @@ fn parse_ticket(raw: &str) -> Result<Pairing, String> {
 // Session driving
 // ---------------------------------------------------------------------------
 
-enum SessionError {
+#[derive(Debug)]
+pub enum SessionError {
     /// Reached the desktop but it refused the token — stored pairing is dead.
     AuthRejected(String),
     /// Could not reach the desktop (network / relay / timeout) — retryable.
@@ -204,29 +244,35 @@ fn spawn_session(
     max_dial_attempts: u32,
 ) {
     tauri::async_runtime::spawn(async move {
-        run_session(app, shared, epoch, pairing, max_dial_attempts).await;
+        let endpoint = match Endpoint::bind(presets::N0).await {
+            Ok(ep) => ep,
+            Err(e) => {
+                eprintln!("arxa-mobile: iroh endpoint bind failed: {e}");
+                set_state(&shared, epoch, ConnectionState::NotPaired, None);
+                return;
+            }
+        };
+        let store: Arc<dyn PairingStore> = Arc::new(AppPairingStore(app));
+        run_session(store, shared, epoch, pairing, max_dial_attempts, endpoint).await;
     });
 }
 
-async fn run_session(
-    app: AppHandle,
+/// Drive one pairing to completion on `endpoint`: dial, auth, serve the
+/// loopback proxy, redial on link loss, and give up to `NotPaired` on auth
+/// rejection or after `max_dial_attempts` unreachable dials. Consumes the
+/// endpoint (it is closed on the way out).
+pub async fn run_session(
+    store: Arc<dyn PairingStore>,
     shared: SharedHandle,
     epoch: u64,
     pairing: Pairing,
     max_dial_attempts: u32,
+    endpoint: Endpoint,
 ) {
     // Already validated in parse_ticket / stored form; bail defensively.
     let ticket: EndpointTicket = match pairing.node.parse() {
         Ok(t) => t,
         Err(_) => {
-            set_state(&shared, epoch, ConnectionState::NotPaired, None);
-            return;
-        }
-    };
-    let endpoint = match Endpoint::bind(presets::N0).await {
-        Ok(ep) => ep,
-        Err(e) => {
-            eprintln!("arxa-mobile: iroh endpoint bind failed: {e}");
             set_state(&shared, epoch, ConnectionState::NotPaired, None);
             return;
         }
@@ -240,7 +286,7 @@ async fn run_session(
         match establish(&endpoint, &ticket, &pairing.token).await {
             Ok(conn) => {
                 attempts = 0;
-                if let Err(e) = store_pairing(&app, &pairing) {
+                if let Err(e) = store.store(&pairing) {
                     eprintln!("arxa-mobile: could not persist pairing: {e}");
                 }
                 let (port, proxy) = match start_proxy(conn.clone(), pairing.token.clone()).await {
@@ -263,7 +309,7 @@ async fn run_session(
             }
             Err(SessionError::AuthRejected(msg)) => {
                 eprintln!("arxa-mobile: desktop rejected pairing token: {msg}");
-                forget_pairing(&app);
+                store.forget();
                 set_state(&shared, epoch, ConnectionState::NotPaired, None);
                 break;
             }
@@ -282,7 +328,7 @@ async fn run_session(
 }
 
 /// Dial the desktop and prove the token on a handshake stream.
-async fn establish(
+pub async fn establish(
     endpoint: &Endpoint,
     ticket: &EndpointTicket,
     token: &str,
@@ -316,19 +362,24 @@ async fn auth_stream(conn: &Connection, token: &str) -> Result<(), DynErr> {
 // Loopback proxy (M4): TCP on 127.0.0.1 <-> one iroh stream per connection
 // ---------------------------------------------------------------------------
 
-async fn start_proxy(
+/// Bind the loopback proxy and serve it until the handle is aborted. Returns
+/// the port `studio_url` is built from.
+///
+/// `tokio::spawn` here picks up the ambient runtime, which in the app is
+/// exactly the `tauri::async_runtime` the caller was spawned onto.
+pub async fn start_proxy(
     conn: Connection,
     token: String,
-) -> std::io::Result<(u16, tauri::async_runtime::JoinHandle<()>)> {
+) -> std::io::Result<(u16, tokio::task::JoinHandle<()>)> {
     let listener = TcpListener::bind(("127.0.0.1", 0)).await?;
     let port = listener.local_addr()?.port();
-    let handle = tauri::async_runtime::spawn(async move {
+    let handle = tokio::spawn(async move {
         loop {
             match listener.accept().await {
                 Ok((tcp, _peer)) => {
                     let conn = conn.clone();
                     let token = token.clone();
-                    tauri::async_runtime::spawn(async move {
+                    tokio::spawn(async move {
                         if let Err(e) = bridge(conn, token, tcp).await {
                             eprintln!("arxa-mobile: proxied stream ended: {e}");
                         }

@@ -20,7 +20,7 @@ use tauri::Manager;
 use tauri_plugin_shell::process::CommandChild;
 use tauri_plugin_shell::ShellExt;
 
-mod pairing;
+pub mod pairing;
 
 /// Default address of the locally served studio UI (D30). The canonical
 /// origin everywhere arxa is used (README/grill-decisions): `*.localhost`
