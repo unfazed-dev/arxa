@@ -20,17 +20,21 @@ use tauri::Manager;
 use tauri_plugin_shell::process::CommandChild;
 use tauri_plugin_shell::ShellExt;
 
-/// Default address of the locally served studio UI (D30).
-const DEFAULT_STUDIO_URL: &str = "http://localhost:7891";
+/// Default address of the locally served studio UI (D30). The canonical
+/// origin everywhere arxa is used (README/grill-decisions): `*.localhost`
+/// resolves to loopback at the OS getaddrinfo layer (verified), so the TCP
+/// probe, the webview, and the browser all agree on one origin — mixing in
+/// `127.0.0.1` would split sessionStorage/presence state across origins.
+const DEFAULT_STUDIO_URL: &str = "http://arxa.studio.localhost:7891";
 
 /// The child server process, present only when THIS app instance spawned it.
 /// `None` means an external owner (launchd / dev server) is serving the port
 /// and we must not manage — let alone kill — anything.
 struct SpawnedServer(Mutex<Option<CommandChild>>);
 
-/// Resolve the studio server URL. Overridable via `ARXA_STUDIO_URL` so dev
-/// setups (e.g. `arxa.studio.localhost:7891`) and future config files can
-/// point the shell elsewhere without a rebuild.
+/// Resolve the studio server URL. Overridable via `ARXA_STUDIO_URL` so
+/// non-standard setups and future config files can point the shell
+/// elsewhere without a rebuild.
 #[tauri::command]
 fn studio_url() -> String {
     std::env::var("ARXA_STUDIO_URL")
