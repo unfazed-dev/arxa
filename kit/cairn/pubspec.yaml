@@ -1,0 +1,38 @@
+name: arxa_kit_cairn
+description: Cairn backend for arxa_kit apps — owns the cairn_flutter import so apps never touch cairn directly. Plugs into kit/data through ArxaKitBackendPlugin with localOnly / sync / supabaseBridge modes, CRDT-capable repositories, and schema emitters.
+version: 0.1.0
+publish_to: 'none'
+
+environment:
+  # cairn_flutter's floor; pairing verified on Flutter 3.44.9.
+  sdk: ^3.12.0
+
+dependencies:
+  flutter:
+    sdk: flutter
+  arxa_kit_core:
+    path: ../core
+  arxa_kit_data:
+    path: ../data
+  # D1 — full-SHA git pin, bumped deliberately (see README "Pin discipline").
+  # a25dafe = cairn main after 0b: includes CairnDatabase.local (D2).
+  cairn_flutter:
+    git:
+      url: https://github.com/unfazed-dev/cairn.git
+      ref: a25dafe6c8d62bb0db6ef5b717f2f7fdd4aaffe3
+      path: sdk/cairn_flutter
+
+# Same rationale as kit/data: appwrite's transitive graph (via arxa_kit_data)
+# pins win32 5.x while arxa_kit → talker_flutter → share_plus 13 needs win32 ^6,
+# and `flutter test` on a desktop host compiles device_info_plus's Windows
+# implementation. Pub overrides don't propagate, so each depending package
+# restates them.
+dependency_overrides:
+  win32: ^6.0.1
+  device_info_plus: ^13.0.0
+  package_info_plus: ^10.0.0
+
+dev_dependencies:
+  flutter_lints: ^6.0.0
+  flutter_test:
+    sdk: flutter
