@@ -20,6 +20,8 @@ use tauri::Manager;
 use tauri_plugin_shell::process::CommandChild;
 use tauri_plugin_shell::ShellExt;
 
+mod pairing;
+
 /// Default address of the locally served studio UI (D30). The canonical
 /// origin everywhere arxa is used (README/grill-decisions): `*.localhost`
 /// resolves to loopback at the OS getaddrinfo layer (verified), so the TCP
@@ -41,6 +43,51 @@ fn studio_url() -> String {
         .ok()
         .filter(|v| !v.trim().is_empty())
         .unwrap_or_else(|| DEFAULT_STUDIO_URL.to_string())
+}
+
+/// Open (or focus) the small "Pair mobile device" window served from the
+/// bundled frontend (`pair.html`). Invoked from the menu and the launch page.
+#[tauri::command]
+fn open_pairing_window(app: tauri::AppHandle) -> Result<(), String> {
+    if let Some(win) = app.get_webview_window("pair") {
+        return win.set_focus().map_err(|e| e.to_string());
+    }
+    tauri::WebviewWindowBuilder::new(
+        &app,
+        "pair",
+        tauri::WebviewUrl::App("pair.html".into()),
+    )
+    .title("Pair Mobile Device")
+    .inner_size(420.0, 620.0)
+    .resizable(false)
+    .build()
+    .map(|_| ())
+    .map_err(|e| e.to_string())
+}
+
+/// Append a "Devices → Pair Mobile Device…" entry to the default app menu.
+#[cfg(desktop)]
+fn install_pairing_menu(app: &tauri::AppHandle) {
+    use tauri::menu::{Menu, MenuItem, SubmenuBuilder};
+    let build = || -> tauri::Result<()> {
+        let pair_item =
+            MenuItem::with_id(app, "pair-mobile", "Pair Mobile Device…", true, None::<&str>)?;
+        let devices = SubmenuBuilder::new(app, "Devices").item(&pair_item).build()?;
+        let menu = Menu::default(app)?;
+        menu.append(&devices)?;
+        app.set_menu(menu)?;
+        app.on_menu_event(|app, event| {
+            if event.id() == "pair-mobile" {
+                if let Err(e) = open_pairing_window(app.clone()) {
+                    eprintln!("[arxa-desktop] pair window: {e}");
+                }
+            }
+        });
+        Ok(())
+    };
+    if let Err(e) = build() {
+        eprintln!("[arxa-desktop] pairing menu install failed: {e}");
+    }
 }
 
 /// Extract `host:port` from the studio URL (scheme/path stripped, default
@@ -206,7 +253,13 @@ pub fn run() {
         }))
         .plugin(tauri_plugin_shell::init())
         .manage(SpawnedServer(Mutex::new(None)))
-        .invoke_handler(tauri::generate_handler![studio_url])
+        .invoke_handler(tauri::generate_handler![
+            studio_url,
+            open_pairing_window,
+            pairing::pairing_begin,
+            pairing::pairing_status,
+            pairing::pairing_revoke
+        ])
         .setup(|app| {
             #[cfg(desktop)]
             {
@@ -215,6 +268,10 @@ pub fn run() {
                 check_for_updates(app.handle());
             }
             let url = studio_url();
+            // Mobile pairing: iroh endpoint + bridge to the engine server.
+            pairing::init(app.handle(), studio_host_port(&url));
+            #[cfg(desktop)]
+            install_pairing_menu(app.handle());
             // Rider 1: probe before spawn. An externally owned server (launchd
             // on the dev machine) always wins; we only self-heal a closed port
             // for public installs that have no service manager.

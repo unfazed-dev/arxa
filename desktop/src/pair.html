@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Pair Mobile Device</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="pair">
+      <h1>Pair a mobile device</h1>
+      <p id="pair-status">Preparing pairing code…</p>
+      <div id="qr" class="qr" aria-label="Pairing QR code"></div>
+      <p id="countdown" class="hint"></p>
+      <button id="regen" type="button" hidden>Generate new code</button>
+      <section class="devices">
+        <h2>Paired devices</h2>
+        <ul id="device-list"><li class="hint">None yet.</li></ul>
+      </section>
+    </main>
+    <script src="pair.js"></script>
+  </body>
+</html>
