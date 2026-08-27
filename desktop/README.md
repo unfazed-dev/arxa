@@ -177,10 +177,44 @@ node desktop/scripts/make-update-manifest.mjs --check latest.json
 Upload `latest.json` to `{BASE}/desktop/{channel}/{target}/{arch}/latest.json`
 and the archive to the `url` the manifest points at.
 
+## Release CI
+
+`.github/workflows/desktop-release.yml` runs on `studio-v*` tag pushes
+(macos-14, aarch64-apple-darwin only for now — Windows/x64 would slot in as a
+build-matrix entry). It builds both sidecars, runs `tauri build` with
+`createUpdaterArtifacts`, and publishes to the **public**
+[`unfazed-dev/arxa-releases`](https://github.com/unfazed-dev/arxa-releases) repo:
+
+- bundle assets (`.app.tar.gz` + `.sig`, `.dmg`) as GitHub Release assets on tag `studio-v<version>`
+- `desktop/{channel}/{target}/{arch}/latest.json` committed to `main`, served via
+  `https://raw.githubusercontent.com/unfazed-dev/arxa-releases/main` — the
+  updater endpoint configured in `src-tauri/tauri.conf.json`. The manifest's
+  bundle `url` points at the Release asset (passed with `--url`);
+  `ARXA_UPDATE_BASE_URL` overrides the manifest base for other hosting.
+
+Signing/notarization happen inside `tauri build`: Tauri codesigns when
+`APPLE_SIGNING_IDENTITY` is set and notarizes (notarytool) when the
+`APPLE_ID`/`APPLE_PASSWORD`/`APPLE_TEAM_ID` trio is set. Absent notary secrets
+⇒ signed-but-unnotarized build (warning, not failure); absent cert ⇒ ad-hoc
+signature. `scripts/sign-and-notarize.sh` remains the local/manual path.
+
+### Required repository secrets (arxa repo)
+
+| Secret | Contents / how to create |
+|---|---|
+| `TAURI_SIGNING_PRIVATE_KEY` | **Required.** Contents of `~/.arxa/updater/arxa-updater.key` (paste the file's text). Never commit the key file. |
+| `TAURI_SIGNING_PRIVATE_KEY_PASSWORD` | Password for that key (empty/omit if none was set). |
+| `GH_RELEASES_TOKEN` | **Required.** PAT (classic `repo` scope, or fine-grained with Contents read/write on `arxa-releases`) used to create Releases and push manifests cross-repo. |
+| `ARXA_STUDIO_CHECKOUT_TOKEN` | PAT with read access to the private `unfazed-dev/arxa-studio` repo (engine sidecar source). |
+| `APPLE_CERTIFICATE_P12` | Base64 of the Developer ID Application cert+key: `base64 -i cert.p12 \| pbcopy` (export from Keychain Access with a password). Optional — absent ⇒ ad-hoc signing. |
+| `APPLE_CERTIFICATE_PASSWORD` | Password chosen when exporting the `.p12`. |
+| `APPLE_SIGNING_IDENTITY` | e.g. `Developer ID Application: <name> (<team id>)` — must match the imported cert. |
+| `APPLE_ID` | Apple ID email for notarization. Optional — absent ⇒ notarization skipped. |
+| `APPLE_APP_PASSWORD` | App-specific password for that Apple ID (appleid.apple.com → App-Specific Passwords). |
+| `APPLE_TEAM_ID` | Developer team id (e.g. `43GNRCGQXQ`). |
+
 ## Remaining work (tracked in arxa-studio docs/plans/desktop-shell-scaffold.md)
 
 - real icon assets (`icons/icon.png` is a solid-color placeholder; `.icns`/`.ico` set still needed)
-- sidecar injection step in the release pipeline (build itself is solved: `arxa-studio/scripts/pack-sidecar.mjs`; CI just runs it per target)
 - shell should optionally auto-spawn the `arxa-studio` sidecar on launch
-- update-endpoint hosting (auto-update is wired; base URL is a placeholder — release-CI decision)
-- notarization credentials (`notarytool store-credentials arxa-notary`, see above) — signing itself is done
+- notarization credentials (see "Release CI" secrets) — signing itself is done

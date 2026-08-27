@@ -16,20 +16,25 @@
 //     }
 //   }
 //
-// BASE_URL is a placeholder (updates.arxa.invalid) until release hosting is
-// decided — see desktop/README.md.
+// Hosting (D21 resolved): manifests live on the public arxa-releases repo's
+// main branch, served via raw.githubusercontent.com; bundle archives are
+// GitHub Release assets, so their full URL is passed with --url. Override the
+// manifest base with ARXA_UPDATE_BASE_URL — see desktop/README.md "Release CI".
 //
 // Usage:
 //   node make-update-manifest.mjs --bundle <path/to/Arxa Studio.app.tar.gz> \
 //     [--sig <path>] [--version 0.1.0] [--channel stable] \
-//     [--target darwin] [--arch aarch64] [--notes "..."] [--out latest.json]
+//     [--target darwin] [--arch aarch64] [--notes "..."] \
+//     [--url <https bundle download url>] [--out latest.json]
 //   node make-update-manifest.mjs --check <latest.json>   # validate only
 
 import { readFileSync, writeFileSync, existsSync } from "node:fs";
 import { basename, join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 
-const BASE_URL = "https://updates.arxa.invalid"; // placeholder, not real hosting
+const BASE_URL =
+  process.env.ARXA_UPDATE_BASE_URL ??
+  "https://raw.githubusercontent.com/unfazed-dev/arxa-releases/main";
 
 function parseArgs(argv) {
   const args = {};
@@ -95,7 +100,7 @@ const manifest = {
   platforms: {
     [`${target}-${arch}`]: {
       signature: readFileSync(sigPath, "utf8").trim(),
-      url: `${BASE_URL}/desktop/${channel}/artifacts/${version}/${encodeURIComponent(basename(args.bundle))}`,
+      url: args.url ?? `${BASE_URL}/desktop/${channel}/artifacts/${version}/${encodeURIComponent(basename(args.bundle))}`,
     },
   },
 };
