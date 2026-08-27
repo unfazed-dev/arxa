@@ -9,6 +9,8 @@ fn main() {
         tauri_build::Attributes::new().app_manifest(tauri_build::AppManifest::new().commands(&[
             "studio_url",
             "open_pairing_window",
+            "report_theme",
+            "get_theme",
             "pairing_begin",
             "pairing_status",
             "pairing_revoke",

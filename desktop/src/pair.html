@@ -10,7 +10,15 @@
     <main class="pair">
       <h1>Pair a mobile device</h1>
       <p id="pair-status">Preparing pairing code…</p>
-      <div id="qr" class="qr" aria-label="Pairing QR code"></div>
+      <div id="qr-wrap" class="qr-wrap">
+        <!-- Logo is minted into the QR SVG by the shell (module-grid excavation),
+             not overlaid here — see pairing.rs render_qr_svg_with_logo. -->
+        <div id="qr" class="qr" aria-label="Pairing QR code"></div>
+      </div>
+      <div id="code-row" class="code-row" hidden>
+        <code id="code-text" class="code-text" title="Pairing code for manual entry"></code>
+        <button id="copy-code" type="button">Copy code</button>
+      </div>
       <p id="countdown" class="hint"></p>
       <button id="regen" type="button" hidden>Generate new code</button>
       <section class="devices">

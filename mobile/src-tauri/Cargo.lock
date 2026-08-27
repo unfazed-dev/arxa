@@ -110,6 +110,7 @@ dependencies = [
  "data-encoding",
  "iroh",
  "iroh-tickets",
+ "libc",
  "serde",
  "serde_json",
  "tauri",

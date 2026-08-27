@@ -5,7 +5,8 @@
 //!   no padding) where json = `{"node": <iroh EndpointTicket>, "token": <32-byte hex>}`.
 //!   Single-use, 10-minute expiry, minted per QR display.
 //! - Transport: iroh bidirectional streams, ALPN `arxa/studio/0`.
-//! - First frame from phone: `AUTH <token>\n`; we reply `OK\n` or close.
+//! - First frame from phone: `AUTH <token> [device-name]\n` (name optional,
+//!   rest-of-line); we reply `OK\n` or close.
 //! - After auth the stream carries raw HTTP/1.1, piped to the local engine
 //!   HTTP server (same host:port the shell itself probes). The desktop side
 //!   rewrites each request's `Host` header to the engine host:port (agreed
@@ -268,9 +269,35 @@ pub fn init(app: &AppHandle, engine_hp: String) {
     });
 }
 
+/// Strip control chars, cap length, and drop empty/placeholder names so a
+/// phone can never inject garbage into the paired-devices list.
+fn sanitize_label(raw: &str) -> Option<String> {
+    let cleaned: String = raw
+        .chars()
+        .filter(|c| !c.is_control())
+        .take(64)
+        .collect::<String>()
+        .trim()
+        .to_string();
+    if cleaned.is_empty() || cleaned.eq_ignore_ascii_case("localhost") {
+        None
+    } else {
+        Some(cleaned)
+    }
+}
+
 /// Verify the `AUTH` token for `remote`. Returns true when authorized,
-/// promoting a live single-use ticket into a stored session token.
-fn authorize(inner: &Inner, remote: &str, token: &str, persist_hex: &str) -> bool {
+/// promoting a live single-use ticket into a stored session token. `label`
+/// is the phone's self-reported device name; when present it names the peer
+/// on first pairing and refreshes the stored name on reconnect (device
+/// renames propagate).
+fn authorize(
+    inner: &Inner,
+    remote: &str,
+    token: &str,
+    label: Option<&str>,
+    persist_hex: &str,
+) -> bool {
     // NOTE: closing without `OK\n` is the revocation signal — mobile deletes
     // its stored pairing on it. So this function must only return false for a
     // genuinely wrong/expired token, never for an internal error: poisoned
@@ -297,7 +324,9 @@ fn authorize(inner: &Inner, remote: &str, token: &str, persist_hex: &str) -> boo
                 .lock()
                 .unwrap_or_else(|poisoned| poisoned.into_inner());
             peers.retain(|p| p.node_id != remote);
-            let label = format!("Mobile device {}", &remote[..remote.len().min(8)]);
+            let label = label
+                .map(str::to_string)
+                .unwrap_or_else(|| format!("Mobile device {}", &remote[..remote.len().min(8)]));
             peers.push(PairedPeer {
                 node_id: remote.to_string(),
                 session_token: token.to_string(),
@@ -308,17 +337,40 @@ fn authorize(inner: &Inner, remote: &str, token: &str, persist_hex: &str) -> boo
         persist(inner, persist_hex);
         return true;
     }
-    // 2. Stored session token bound to this EndpointId (reconnect).
-    inner
-        .peers
-        .lock()
-        .unwrap_or_else(|poisoned| poisoned.into_inner())
-        .iter()
-        .any(|p| p.node_id == remote && p.session_token == token)
+    // 2. Stored session token bound to this EndpointId (reconnect). A fresh
+    // self-reported name replaces the stored label (persist only on change —
+    // this runs on every proxied stream).
+    let (authed, label_changed) = {
+        let mut peers = inner
+            .peers
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner());
+        match peers
+            .iter_mut()
+            .find(|p| p.node_id == remote && p.session_token == token)
+        {
+            Some(p) => {
+                let changed = match label {
+                    Some(l) if p.label != l => {
+                        p.label = l.to_string();
+                        true
+                    }
+                    _ => false,
+                };
+                (true, changed)
+            }
+            None => (false, false),
+        }
+    };
+    if label_changed {
+        persist(inner, persist_hex);
+    }
+    authed
 }
 
-/// One authed stream: read `AUTH <token>\n`, reply `OK\n`, then pipe raw
-/// bytes to/from a fresh TCP connection to the engine HTTP server.
+/// One authed stream: read `AUTH <token> [device-name]\n`, reply `OK\n`,
+/// then pipe raw bytes to/from a fresh TCP connection to the engine HTTP
+/// server.
 async fn handle_stream(
     inner: Arc<Inner>,
     remote: String,
@@ -342,11 +394,18 @@ async fn handle_stream(
         }
     }
     let line = String::from_utf8_lossy(&line);
-    let token = match line.strip_prefix("AUTH ") {
+    let rest = match line.strip_prefix("AUTH ") {
         Some(t) => t.trim_end_matches('\r').trim(),
         None => return Err("malformed auth frame".into()),
     };
-    if !authorize(&inner, &remote, token, &persist_hex) {
+    // `AUTH <token> [device-name]` — the token never contains spaces, so
+    // everything after the first space is the phone's self-reported name
+    // (optional: older clients send the bare-token form).
+    let (token, label) = match rest.split_once(' ') {
+        Some((t, l)) => (t, sanitize_label(l)),
+        None => (rest, None),
+    };
+    if !authorize(&inner, &remote, token, label.as_deref(), &persist_hex) {
         // Contract: bad/expired token → close without replying.
         return Err(format!("rejected token from {remote}"));
     }
@@ -513,18 +572,178 @@ pub fn pairing_begin(state: State<'_, Pairing>) -> Result<BeginResponse, String>
 
     let (ticket, expires_at_ms) = state.mint_ticket_for(endpoint.addr());
 
-    let code = qrcode::QrCode::new(ticket.as_bytes()).map_err(|e| format!("qr encode: {e}"))?;
-    let qr_svg = code
-        .render::<qrcode::render::svg::Color>()
-        .min_dimensions(240, 240)
-        .quiet_zone(true)
-        .build();
+    // EcLevel::Q (25% damage tolerance), not H: the ticket payload is long
+    // (iroh node ticket + token), and H would push the QR several versions
+    // denser — smaller modules hurt cameras more than the extra tolerance
+    // helps the ~5% of modules the logo well excavates.
+    let code = qrcode::QrCode::with_error_correction_level(ticket.as_bytes(), qrcode::EcLevel::Q)
+        .map_err(|e| format!("qr encode: {e}"))?;
+    let qr_svg = render_qr_svg_with_logo(&code);
 
     Ok(BeginResponse {
         ticket,
         qr_svg,
         expires_at_ms,
     })
+}
+
+/// The arxa brand mark, emitted as inline SVG content (1024x1024 viewBox).
+const BRAND_MARK_1024: &str = concat!(
+    r##"<path d="M391.437 195.736C445.636 104.088 578.25 104.088 632.448 195.736L922.178 685.662C977.368 778.988 910.095 896.926 801.672 896.926H222.214C113.791 896.926 46.518 778.988 101.708 685.662L391.437 195.736Z" fill="url(#qrlogo_grad)"/>"##,
+    r##"<path d="M381.907 718.494L314.406 832.413H272.492C208.932 832.413 165.181 775.677 173.312 718.491L381.907 718.494ZM850.647 718.502C858.771 775.684 815.022 832.413 751.466 832.413H439.174L506.675 718.496L850.647 718.502ZM797.076 613.222L569.057 613.218L683.065 420.814L797.076 613.222ZM425.948 277.272C464.679 211.908 559.279 211.907 598.01 277.271L620.681 315.531L444.29 613.215L226.887 613.212L425.948 277.272Z" fill="#0EE4E0"/>"##,
+    r##"<defs><linearGradient id="qrlogo_grad" x1="511.943" y1="127" x2="511.943" y2="896.926" gradientUnits="userSpaceOnUse"><stop stop-color="#0EBAE4"/><stop offset="1" stop-color="#08336F"/></linearGradient></defs>"##,
+);
+
+/// Module-count width (side) of the excavated center well for a symbol of
+/// `w` modules: ~22% of the symbol width, parity-matched to `w` so the well
+/// centers exactly on the module grid.
+fn well_side(w: i32) -> i32 {
+    let mut well = ((w as f64) * 0.24).round() as i32;
+    if well % 2 != w % 2 {
+        well += 1;
+    }
+    well
+}
+
+/// Render the QR to SVG with the brand logo minted into it, per QR-logo best
+/// practice: instead of overlaying artwork on finished modules, a centered,
+/// module-grid-aligned square well (~22% of symbol width ≈ 5% of area, well
+/// inside EcLevel::Q's 25% tolerance) is excavated from the data area — the
+/// finder/timing patterns at the edges are untouched — and the mark is drawn
+/// inside that well with a 1-module clear margin. The logo is part of the
+/// minted SVG itself, so every re-mint carries it by construction.
+fn render_qr_svg_with_logo(code: &qrcode::QrCode) -> String {
+    use qrcode::types::Color;
+
+    let w = code.width() as i32;
+    let colors = code.to_colors();
+    const QUIET: i32 = 4; // ISO 18004 quiet zone, in modules
+    let total = w + 2 * QUIET;
+
+    let well = well_side(w);
+    let start = (w - well) / 2;
+    let end = start + well;
+
+    // One path, one rect per dark module outside the well.
+    let mut d = String::with_capacity(colors.len() * 12);
+    for y in 0..w {
+        for x in 0..w {
+            let in_well = x >= start && x < end && y >= start && y < end;
+            if !in_well && colors[(y * w + x) as usize] == Color::Dark {
+                d.push_str(&format!("M{} {}h1v1h-1z", x + QUIET, y + QUIET));
+            }
+        }
+    }
+
+    // Frame: a thin black rounded-corner border just inside the well edge,
+    // leaving a ~half-module white gap to the surrounding data modules so the
+    // frame never merges with them optically. Drawn with the same ink as the
+    // modules so it reads as part of the code, not a sticker.
+    let frame_inset = 0.5f64;
+    let frame_stroke = 0.45f64;
+    let frame_origin = (start + QUIET) as f64 + frame_inset + frame_stroke / 2.0;
+    let frame_size = well as f64 - 2.0 * (frame_inset + frame_stroke / 2.0);
+    let frame_radius = 1.2f64;
+
+    // Logo box: inside the frame with a small breathing margin.
+    let logo_margin = frame_inset + frame_stroke + 0.55;
+    let logo_origin = (start + QUIET) as f64 + logo_margin;
+    let logo_size = well as f64 - 2.0 * logo_margin;
+
+    // Upscale so the shell renders it crisply at >= 240 px.
+    let scale = (240 + total - 1) / total;
+    let dim = total * scale;
+
+    format!(
+        concat!(
+            r#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {t} {t}" width="{dim}" height="{dim}" shape-rendering="crispEdges">"#,
+            r##"<rect width="{t}" height="{t}" fill="#fff"/>"##,
+            r##"<path d="{d}" fill="#000"/>"##,
+            r##"<rect x="{fo}" y="{fo}" width="{fs}" height="{fs}" rx="{fr}" fill="none" stroke="#000" stroke-width="{fw}" shape-rendering="auto"/>"##,
+            r#"<svg x="{lo}" y="{lo}" width="{ls}" height="{ls}" viewBox="0 0 1024 1024" shape-rendering="auto">{mark}</svg>"#,
+            r#"</svg>"#
+        ),
+        t = total,
+        dim = dim,
+        d = d,
+        fo = frame_origin,
+        fs = frame_size,
+        fr = frame_radius,
+        fw = frame_stroke,
+        lo = logo_origin,
+        ls = logo_size,
+        mark = BRAND_MARK_1024,
+    )
+}
+
+#[cfg(test)]
+mod qr_logo_tests {
+    use super::*;
+
+    /// Worst-case decode check: rasterize the module matrix with the entire
+    /// excavated well painted DARK (harsher than the real logo, which sits on
+    /// a white well) and require a clean round-trip decode at EcLevel::Q.
+    #[test]
+    fn excavated_qr_still_decodes() {
+        // Representative long payload (~300 bytes, like an iroh ticket + token).
+        let payload: String = std::iter::repeat("nodeadbeefcafe0123456789")
+            .take(13)
+            .collect::<String>();
+        let code =
+            qrcode::QrCode::with_error_correction_level(payload.as_bytes(), qrcode::EcLevel::Q)
+                .expect("encode");
+        let w = code.width() as i32;
+        let colors = code.to_colors();
+        let well = well_side(w);
+        let start = (w - well) / 2;
+        let end = start + well;
+
+        const S: i32 = 8; // px per module
+        const QUIET: i32 = 4;
+        let total = (w + 2 * QUIET) * S;
+        let img = |px: usize, py: usize| -> u8 {
+            let x = (px as i32) / S - QUIET;
+            let y = (py as i32) / S - QUIET;
+            if x < 0 || y < 0 || x >= w || y >= w {
+                return 255; // quiet zone
+            }
+            let in_well = x >= start && x < end && y >= start && y < end;
+            if in_well {
+                return 0; // worst case: logo region fully dark
+            }
+            match colors[(y * w + x) as usize] {
+                qrcode::types::Color::Dark => 0,
+                qrcode::types::Color::Light => 255,
+            }
+        };
+        let mut prepared = rqrr::PreparedImage::prepare_from_greyscale(
+            total as usize,
+            total as usize,
+            img,
+        );
+        let grids = prepared.detect_grids();
+        assert_eq!(grids.len(), 1, "QR grid not detected");
+        let (_meta, content) = grids[0].decode().expect("decode");
+        assert_eq!(content, payload, "excavated QR must round-trip its payload");
+    }
+
+    #[test]
+    fn well_stays_within_q_budget_and_off_finders() {
+        for w in [21i32, 45, 77, 89, 105] {
+            let well = well_side(w);
+            // parity match => exact centering
+            assert_eq!(well % 2, w % 2);
+            // area excavated stays under half of Q's 25% tolerance
+            let frac = (well * well) as f64 / (w * w) as f64;
+            assert!(frac < 0.125, "well too large: {frac} at w={w}");
+            // A centered well can never reach the corner finder patterns;
+            // the binding constraint is the timing pattern at row/col 6.
+            let start = (w - well) / 2;
+            let end = start + well;
+            assert!(start > 6, "well touches timing pattern at w={w}");
+            assert!(end < w - 6, "well touches timing pattern at w={w}");
+        }
+    }
 }
 
 #[derive(Serialize)]

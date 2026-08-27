@@ -7,7 +7,8 @@
 //!   case-insensitive. With iroh 1.x the "NodeAddr ticket" of the plan is an
 //!   `iroh_tickets::endpoint::EndpointTicket` (NodeAddr was renamed EndpointAddr).
 //! - **Transport**: iroh bidirectional streams, ALPN `arxa/studio/0`. The first
-//!   frame from the phone on EVERY stream is `AUTH <token>\n`; the desktop
+//!   frame from the phone on EVERY stream is `AUTH <token> <device-name>\n`
+//!   (name = rest of line, used for the desktop's device list); the desktop
 //!   replies `OK\n` or closes the stream.
 //! - **M4 delivery**: after auth a stream carries raw HTTP/1.1. A loopback TCP
 //!   proxy on `127.0.0.1:<random port>` opens one fresh iroh stream per accepted
@@ -345,10 +346,129 @@ pub async fn establish(
     }
 }
 
-/// Opens a stream and performs the `AUTH <token>\n` -> `OK\n` exchange.
+/// Best-effort user-visible device name, sent alongside AUTH so the desktop
+/// can list "iPhone 15 Pro" instead of a node-id stub. Layered fallback:
+/// hostname (minus any `.local` suffix) when it is meaningful, else the
+/// real hardware marketing name from `sysctl hw.machine` (iOS), else a
+/// per-platform generic. Computed once — it is sent on every stream.
+///
+/// NOTE: the user-assigned name ("Evan's iPhone") is deliberately hidden by
+/// iOS 16+ — UIDevice.name and gethostname both return a generic "iPhone"
+/// unless the app carries Apple's approval-gated entitlement
+/// `com.apple.developer.device-information.user-assigned-device-name`.
+/// Until that grant exists, the model marketing name is the truthful
+/// maximum an app can report.
+fn device_label() -> &'static str {
+    static LABEL: std::sync::OnceLock<String> = std::sync::OnceLock::new();
+    LABEL.get_or_init(|| {
+        let fallback = if cfg!(target_os = "ios") {
+            "iPhone"
+        } else if cfg!(target_os = "android") {
+            "Android device"
+        } else {
+            "Mobile device"
+        };
+        let mut buf = [0u8; 256];
+        let hostname = unsafe {
+            if libc::gethostname(buf.as_mut_ptr() as *mut libc::c_char, buf.len()) == 0 {
+                std::ffi::CStr::from_bytes_until_nul(&buf)
+                    .ok()
+                    .and_then(|c| c.to_str().ok())
+                    .map(|s| s.trim_end_matches(".local").trim().to_string())
+            } else {
+                None
+            }
+        };
+        match hostname {
+            Some(h)
+                if !h.is_empty()
+                    && !h.eq_ignore_ascii_case("localhost")
+                    && !h.eq_ignore_ascii_case("iphone") =>
+            {
+                // AUTH is a single-line frame — the name must never smuggle
+                // in a newline; the desktop also sanitizes on its side.
+                h.chars().filter(|c| !c.is_control()).take(64).collect()
+            }
+            _ => ios_model_name().unwrap_or_else(|| fallback.to_string()),
+        }
+    })
+}
+
+/// `sysctl hw.machine` → "iPhone16,1" → "iPhone 15 Pro". Returns None off
+/// iOS, on the simulator (where hw.machine is the host arch), or on sysctl
+/// failure.
+#[cfg(target_os = "ios")]
+fn ios_model_name() -> Option<String> {
+    let key = std::ffi::CString::new("hw.machine").ok()?;
+    let ident = unsafe {
+        let mut len: libc::size_t = 0;
+        if libc::sysctlbyname(
+            key.as_ptr(),
+            std::ptr::null_mut(),
+            &mut len,
+            std::ptr::null_mut(),
+            0,
+        ) != 0
+            || len == 0
+        {
+            return None;
+        }
+        let mut buf = vec![0u8; len];
+        if libc::sysctlbyname(
+            key.as_ptr(),
+            buf.as_mut_ptr() as *mut libc::c_void,
+            &mut len,
+            std::ptr::null_mut(),
+            0,
+        ) != 0
+        {
+            return None;
+        }
+        std::ffi::CStr::from_bytes_until_nul(&buf)
+            .ok()?
+            .to_str()
+            .ok()?
+            .to_string()
+    };
+    // Marketing names for recent identifiers; unknown-but-real identifiers
+    // pass through raw ("iPhone19,1" still beats "iPhone").
+    let name = match ident.as_str() {
+        "iPhone14,2" => "iPhone 13 Pro",
+        "iPhone14,3" => "iPhone 13 Pro Max",
+        "iPhone14,4" => "iPhone 13 mini",
+        "iPhone14,5" => "iPhone 13",
+        "iPhone14,6" => "iPhone SE (3rd gen)",
+        "iPhone14,7" => "iPhone 14",
+        "iPhone14,8" => "iPhone 14 Plus",
+        "iPhone15,2" => "iPhone 14 Pro",
+        "iPhone15,3" => "iPhone 14 Pro Max",
+        "iPhone15,4" => "iPhone 15",
+        "iPhone15,5" => "iPhone 15 Plus",
+        "iPhone16,1" => "iPhone 15 Pro",
+        "iPhone16,2" => "iPhone 15 Pro Max",
+        "iPhone17,1" => "iPhone 16 Pro",
+        "iPhone17,2" => "iPhone 16 Pro Max",
+        "iPhone17,3" => "iPhone 16",
+        "iPhone17,4" => "iPhone 16 Plus",
+        "iPhone17,5" => "iPhone 16e",
+        other if other.starts_with("iPhone") || other.starts_with("iPad") => other,
+        _ => return None, // simulator/host arch — not a device identifier
+    };
+    Some(name.to_string())
+}
+
+#[cfg(not(target_os = "ios"))]
+fn ios_model_name() -> Option<String> {
+    None
+}
+
+/// Opens a stream and performs the `AUTH <token> <device-name>\n` -> `OK\n`
+/// exchange.
 async fn auth_stream(conn: &Connection, token: &str) -> Result<(), DynErr> {
     let (mut send, mut recv) = conn.open_bi().await?;
-    send.write_all(format!("AUTH {token}\n").as_bytes()).await?;
+    let name = device_label();
+    send.write_all(format!("AUTH {token} {name}\n").as_bytes())
+        .await?;
     let mut ok = [0u8; 3];
     recv.read_exact(&mut ok).await?;
     if &ok != b"OK\n" {
@@ -399,7 +519,9 @@ async fn bridge(conn: Connection, token: String, mut tcp: TcpStream) -> Result<(
     let (mut send, mut recv) = conn.open_bi().await?;
     // AUTH is the first frame on every stream (plan contract); consume the
     // desktop's OK before piping raw HTTP/1.1 bytes.
-    send.write_all(format!("AUTH {token}\n").as_bytes()).await?;
+    let name = device_label();
+    send.write_all(format!("AUTH {token} {name}\n").as_bytes())
+        .await?;
     let mut ok = [0u8; 3];
     recv.read_exact(&mut ok).await?;
     if &ok != b"OK\n" {
