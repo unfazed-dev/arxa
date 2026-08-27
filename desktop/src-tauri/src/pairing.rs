@@ -421,6 +421,14 @@ where
                 if lower.starts_with("host:") {
                     head.push(format!("Host: {engine_hp}\r\n").into_bytes());
                     continue;
+                } else if lower.starts_with("origin:") {
+                    // The engine's /api gate requires Origin host == Host header
+                    // (dsh isTrustedApiRequest). The phone's page origin is its
+                    // local proxy (http://127.0.0.1:<port>), so without this
+                    // rewrite every WebSocket downlink 403s and the UI boots
+                    // empty. Rewrite Origin to match the rewritten Host.
+                    head.push(format!("Origin: http://{engine_hp}\r\n").into_bytes());
+                    continue;
                 } else if let Some(v) = lower.strip_prefix("content-length:") {
                     content_length = v.trim().parse().unwrap_or(0);
                 } else if let Some(v) = lower.strip_prefix("transfer-encoding:") {
