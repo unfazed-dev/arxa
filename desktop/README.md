@@ -44,22 +44,43 @@ src-tauri/binaries/arxa-studio-aarch64-apple-darwin
 (Tauri resolves `binaries/arxa` + current target triple at bundle time; a
 missing binary fails the bundle, not `cargo check`.)
 
-### Local dev-grade `arxa-studio` sidecar (current state)
+### `arxa-studio` sidecar: real single executable (self-extracting)
 
-The `arxa-studio-aarch64-apple-darwin` sidecar on this machine is a **dev-grade
-wrapper script**, not a true single binary: a `#!/bin/sh` exec of the local
-Node (nvm v24.19.0, falling back to `command -v node`) running the absolute
-path to this machine's `arxa-studio/bin/arxa-studio.mjs`. It works when
-spawned by the installed `.app`, but it depends on the local checkout and
-node_modules staying in place.
+The `arxa-studio-aarch64-apple-darwin` sidecar is a **real Mach-O arm64 single
+executable** (~141 MB), built by `arxa-studio/scripts/pack-sidecar.mjs`:
 
-Why not a single binary yet: `bin/arxa-studio.mjs` is a launcher that spawns a
-second Node process on `@deepseek-ai/dsh/lib/bin.js` (with the loopback patch
-`--import`), and dsh loads its plugin tree dynamically from node_modules via
-the cordis plugin loader — `bun build --compile` bundles only the launcher
-(1 module) and produces a broken artifact. **Release CI must replace this
-wrapper** with a real packaging step that bundles dsh + plugins (or ships a
-pinned node + node_modules payload).
+```sh
+cd ../arxa-studio && node scripts/pack-sidecar.mjs   # writes desktop/src-tauri/binaries/arxa-studio-<triple>
+```
+
+How it works: naive `bun build --compile` of `bin/arxa-studio.mjs` cannot work
+— the launcher spawns a second Node process on `@deepseek-ai/dsh/lib/bin.js`
+(with the loopback `--import` patch), and dsh loads its plugin tree by name at
+runtime through the cordis plugin loader, invisible to any bundler (the
+earlier attempt bundled exactly 1 module and broke; node SEA and deno compile
+hit the same wall, plus `process.execPath` inside a compiled binary is the
+binary itself, so the child spawn would recurse). The pack script therefore
+builds a small bun-compiled **self-extracting** entry that embeds a tar.gz
+payload — the arxa-studio runtime tree (bin + node_modules + plugins +
+profile + pi), the sibling `arxa/harness/pi/arxa-gate.ts`, and a pinned real
+Node binary (v24.19.0). On first run it extracts once to
+`$ARXA_HOME/engine/<payload-sha12>/` (atomic tmp+rename), then execs the
+extracted node on the extracted launcher; later runs skip extraction. The
+launcher detects `bin/packed.json` (written only by the pack script) and
+copies plugins into the profile instead of requiring pnpm — end-user machines
+need **no node, pnpm, nvm, or checkout**.
+
+Verified empirically: binary run from `/tmp` with a fresh `ARXA_HOME` boots
+the dsh server and serves HTTP 200 (`--port 7912 --no-open`, app HTML ~20 KB),
+and exits cleanly leaving no listener. Old `engine/<sha>` dirs are not
+auto-pruned (an older running app may still use one) — safe to delete by hand.
+
+Gotcha: bun 1.3.4's `--outfile` silently writes a 0-byte file when the target
+is on a different filesystem than its temp dir; the pack script compiles to
+the workdir and copies to the destination.
+
+Release CI needs only: checkout both repos, `npm install` in arxa-studio, run
+the pack script per target, drop the binary in `binaries/` (still gitignored).
 
 ## Develop / verify
 
@@ -159,7 +180,7 @@ and the archive to the `url` the manifest points at.
 ## Remaining work (tracked in arxa-studio docs/plans/desktop-shell-scaffold.md)
 
 - real icon assets (`icons/icon.png` is a solid-color placeholder; `.icns`/`.ico` set still needed)
-- sidecar injection step in the release pipeline
+- sidecar injection step in the release pipeline (build itself is solved: `arxa-studio/scripts/pack-sidecar.mjs`; CI just runs it per target)
 - shell should optionally auto-spawn the `arxa-studio` sidecar on launch
 - update-endpoint hosting (auto-update is wired; base URL is a placeholder — release-CI decision)
 - notarization credentials (`notarytool store-credentials arxa-notary`, see above) — signing itself is done
