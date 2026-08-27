@@ -126,6 +126,74 @@ fn kill_spawned(app: &tauri::AppHandle) {
     let _ = child.kill();
 }
 
+/// Default update channel (D21: stable/beta channels). Overridable via
+/// `ARXA_UPDATE_CHANNEL` (e.g. `beta`) without a rebuild; the configured
+/// endpoint in tauri.conf.json is the `stable` channel.
+const DEFAULT_UPDATE_CHANNEL: &str = "stable";
+
+/// Launch-time update check (D21). Non-blocking (spawned on the async
+/// runtime) and silent on failure — the shell must never refuse to start
+/// because the update endpoint is unreachable or unhosted. A downloaded
+/// update is staged by the updater and applies on next launch; we never
+/// force a restart.
+#[cfg(desktop)]
+fn check_for_updates(app: &tauri::AppHandle) {
+    use tauri_plugin_updater::UpdaterExt;
+
+    let handle = app.clone();
+    tauri::async_runtime::spawn(async move {
+        let channel = std::env::var("ARXA_UPDATE_CHANNEL")
+            .ok()
+            .filter(|c| !c.trim().is_empty())
+            .unwrap_or_else(|| DEFAULT_UPDATE_CHANNEL.to_string());
+        let mut builder = handle.updater_builder();
+        if channel != DEFAULT_UPDATE_CHANNEL {
+            // Swap the channel segment of the configured endpoint layout:
+            // .../desktop/{channel}/{{target}}/{{arch}}/latest.json
+            let endpoint = format!(
+                "https://updates.arxa.invalid/desktop/{channel}/{{{{target}}}}/{{{{arch}}}}/latest.json"
+            );
+            match endpoint.parse() {
+                Ok(url) => match builder.endpoints(vec![url]) {
+                    Ok(b) => builder = b,
+                    Err(e) => {
+                        eprintln!("[arxa-desktop] update endpoint rejected: {e}");
+                        return;
+                    }
+                },
+                Err(e) => {
+                    eprintln!("[arxa-desktop] bad update channel {channel:?}: {e}");
+                    return;
+                }
+            }
+        }
+        let updater = match builder.build() {
+            Ok(u) => u,
+            Err(e) => {
+                eprintln!("[arxa-desktop] updater unavailable: {e}");
+                return;
+            }
+        };
+        match updater.check().await {
+            Ok(Some(update)) => {
+                eprintln!(
+                    "[arxa-desktop] update {} available on {channel} - downloading",
+                    update.version
+                );
+                match update.download_and_install(|_, _| {}, || {}).await {
+                    Ok(()) => eprintln!(
+                        "[arxa-desktop] update installed - applies on next launch"
+                    ),
+                    Err(e) => eprintln!("[arxa-desktop] update install failed: {e}"),
+                }
+            }
+            Ok(None) => {}
+            // Unreachable endpoint / no hosting yet: log and move on.
+            Err(e) => eprintln!("[arxa-desktop] update check skipped: {e}"),
+        }
+    });
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -140,6 +208,12 @@ pub fn run() {
         .manage(SpawnedServer(Mutex::new(None)))
         .invoke_handler(tauri::generate_handler![studio_url])
         .setup(|app| {
+            #[cfg(desktop)]
+            {
+                app.handle()
+                    .plugin(tauri_plugin_updater::Builder::new().build())?;
+                check_for_updates(app.handle());
+            }
             let url = studio_url();
             // Rider 1: probe before spawn. An externally owned server (launchd
             // on the dev machine) always wins; we only self-heal a closed port

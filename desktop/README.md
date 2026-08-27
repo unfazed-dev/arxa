@@ -109,17 +109,57 @@ To make `tauri build` sign directly (per v2.tauri.app distribute/sign/macos):
 export `APPLE_SIGNING_IDENTITY="Developer ID Application: EVAN F PIERRE LOUIS (43GNRCGQXQ)"`
 plus the `APPLE_ID`/`APPLE_PASSWORD`/`APPLE_TEAM_ID` trio before building — no
 config change needed for the identity. For Tauri to apply the sidecar
-entitlements at bundle time, `tauri.conf.json` will additionally need
-(not yet applied — conf file owned by another workstream):
+entitlements at bundle time, `tauri.conf.json` sets (applied):
 
 ```json
 "bundle": { "macOS": { "entitlements": "../entitlements.plist" } }
 ```
+
+## Auto-update (tauri-plugin-updater, D21)
+
+The shell checks for updates on launch: non-blocking, silent on failure — an
+unreachable endpoint never stops the app from starting. A found update is
+downloaded, signature-verified, and staged; it applies on the next launch.
+
+- Channels (D21): `stable` (default) and `beta`. Override at runtime with
+  `ARXA_UPDATE_CHANNEL=beta` — no rebuild needed.
+- Endpoint layout (static JSON, channel-aware):
+  `{BASE}/desktop/{channel}/{target}/{arch}/latest.json`
+  with bundle archives under `{BASE}/desktop/{channel}/artifacts/{version}/`.
+- **`https://updates.arxa.invalid` is a deliberate placeholder.** No hosting
+  exists yet; picking real hosting (bucket/CDN/worker) is a release-CI
+  decision. Until then the launch check logs "update check skipped" and the
+  app runs normally.
+
+### Update signing (minisign-style, separate from Apple codesigning above)
+
+`bundle.createUpdaterArtifacts: true` makes `tauri build` emit an update
+archive + `.sig` per bundle. Updates are only accepted if signed by the
+keypair whose **public key** is committed in
+`tauri.conf.json > plugins.updater.pubkey`.
+
+- Private key (never commit it): `~/.arxa/updater/arxa-updater.key`
+  (mode 600, generated with `tauri signer generate`, empty password).
+- To sign a build: `TAURI_SIGNING_PRIVATE_KEY_PATH=~/.arxa/updater/arxa-updater.key tauri build`
+- Losing the private key means shipped apps can never be updated again —
+  release CI must vault it.
+
+### Publishing a release manifest
+
+```sh
+node desktop/scripts/make-update-manifest.mjs \
+  --bundle "target/release/bundle/macos/Arxa Studio.app.tar.gz" \
+  --channel stable                    # writes + self-validates latest.json
+node desktop/scripts/make-update-manifest.mjs --check latest.json
+```
+
+Upload `latest.json` to `{BASE}/desktop/{channel}/{target}/{arch}/latest.json`
+and the archive to the `url` the manifest points at.
 
 ## Remaining work (tracked in arxa-studio docs/plans/desktop-shell-scaffold.md)
 
 - real icon assets (`icons/icon.png` is a solid-color placeholder; `.icns`/`.ico` set still needed)
 - sidecar injection step in the release pipeline
 - shell should optionally auto-spawn the `arxa-studio` sidecar on launch
-- auto-update
+- update-endpoint hosting (auto-update is wired; base URL is a placeholder — release-CI decision)
 - notarization credentials (`notarytool store-credentials arxa-notary`, see above) — signing itself is done

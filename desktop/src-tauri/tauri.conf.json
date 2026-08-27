@@ -36,6 +36,18 @@
       "icons/icon.icns",
       "icons/icon.ico",
       "icons/icon.png"
-    ]
+    ],
+    "createUpdaterArtifacts": true,
+    "macOS": {
+      "entitlements": "../entitlements.plist"
+    }
+  },
+  "plugins": {
+    "updater": {
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDNGODRCMjg2NDZBQjQxMjQKUldRa1FhdEdocktFUDkyUjJwL1pPQ3hRdWVaWEFYYzl1TzR3YU05VVNTQXZTUGs1bDRRKzk5RWUK",
+      "endpoints": [
+        "https://updates.arxa.invalid/desktop/stable/{{target}}/{{arch}}/latest.json"
+      ]
+    }
   }
 }
