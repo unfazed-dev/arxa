@@ -177,6 +177,14 @@ node desktop/scripts/make-update-manifest.mjs --check latest.json
 Upload `latest.json` to `{BASE}/desktop/{channel}/{target}/{arch}/latest.json`
 and the archive to the `url` the manifest points at.
 
+## Local release builds
+
+Use `scripts/build-release.sh` instead of calling `npx tauri build` directly —
+it exports `TAURI_SIGNING_PRIVATE_KEY` from `~/.arxa/updater/arxa-updater.key`
+(passwordless; override path via `TAURI_SIGNING_PRIVATE_KEY_FILE`) so the
+updater `.app.tar.gz` gets its `.sig`. Without it, `createUpdaterArtifacts`
+warns "A public key has been found, but no private key" and skips signing.
+
 ## Release CI
 
 `.github/workflows/desktop-release.yml` runs on `studio-v*` tag pushes
