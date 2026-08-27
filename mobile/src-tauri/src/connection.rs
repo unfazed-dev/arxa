@@ -298,6 +298,12 @@ pub async fn run_session(
                         break;
                     }
                 };
+                // M7 (plan track B3): register this device's push token over
+                // the tunnel at (re)connect time. Non-fatal on every failure
+                // path — an older desktop closes the PUSH stream as a
+                // malformed AUTH, and a PUSH-stream close is NEVER the
+                // revocation signal (only an AUTH-stream close is).
+                register_push_over_tunnel(&conn, &pairing.token).await;
                 let url = format!("http://127.0.0.1:{port}/");
                 if !set_state(&shared, epoch, ConnectionState::Connected, Some(url)) {
                     proxy.abort();
@@ -326,6 +332,49 @@ pub async fn run_session(
         }
     }
     endpoint.close().await;
+}
+
+/// The device's push token, set by the frontend once the OS push plugin
+/// provides one (`set_push_token` invoke). None until then — registration
+/// is skipped silently on every reconnect until a token exists.
+static PUSH_TOKEN: std::sync::RwLock<Option<(String, String)>> = std::sync::RwLock::new(None);
+
+/// Frontend-facing seam (M7): remember the OS push token; registration
+/// rides the current connection immediately when one is live and every
+/// reconnect thereafter (token refreshes arrive at arbitrary times).
+#[tauri::command]
+pub fn set_push_token(platform: String, token: String) {
+    if let Ok(mut guard) = PUSH_TOKEN.write() {
+        guard.replace((platform, token));
+    }
+}
+
+/// Send `PUSH <session-token> <platform> <push-token>\n` on a fresh stream
+/// and expect `OK\n`. Every failure is logged and swallowed: registration
+/// must never destabilize the session.
+async fn register_push_over_tunnel(conn: &Connection, session_token: &str) {
+    let Some((platform, token)) = PUSH_TOKEN.read().ok().and_then(|g| g.clone()) else {
+        return;
+    };
+    match timeout(AUTH_TIMEOUT, async {
+        let (mut send, mut recv) = conn.open_bi().await?;
+        send.write_all(format!("PUSH {session_token} {platform} {token}\n").as_bytes())
+            .await?;
+        let _ = send.finish();
+        let mut ok = [0u8; 3];
+        recv.read_exact(&mut ok).await?;
+        if &ok == b"OK\n" {
+            Ok::<(), DynErr>(())
+        } else {
+            Err(format!("unexpected PUSH reply: {ok:?}").into())
+        }
+    })
+    .await
+    {
+        Ok(Ok(())) => {}
+        Ok(Err(e)) => eprintln!("arxa-mobile: push registration not accepted: {e}"),
+        Err(_) => eprintln!("arxa-mobile: push registration timed out"),
+    }
 }
 
 /// Dial the desktop and prove the token on a handshake stream.

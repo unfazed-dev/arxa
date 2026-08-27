@@ -46,6 +46,13 @@ pub struct PairedPeer {
     session_token: String,
     label: String,
     created_at: u64,
+    /// The device's push token (FCM registration token / APNs device
+    /// token), registered over the tunnel at pair time (M7). Absent for
+    /// devices that never sent one (older mobile builds, push declined).
+    #[serde(default)]
+    push_platform: Option<String>,
+    #[serde(default)]
+    push_token: Option<String>,
 }
 
 /// On-disk shape: the endpoint's stable secret key plus paired devices.
@@ -71,6 +78,11 @@ struct Inner {
     store_path: PathBuf,
     /// `host:port` of the local engine HTTP server the bridge forwards to.
     engine_hp: String,
+    /// How to reach a supervised cairn-pushd (M7). Attached by
+    /// pushd::init after this state exists; `None` = push not wired
+    /// (no binary, spawn failed) — registration still persists to
+    /// pairing.json and re-registers whenever a pushd appears.
+    pushd: Mutex<Option<crate::pushd::PushdHandle>>,
 }
 
 /// Managed Tauri state wrapper — and the headless core of this module.
@@ -107,6 +119,7 @@ impl Pairing {
             peers: Mutex::new(store.peers),
             store_path,
             engine_hp,
+            pushd: Mutex::new(None),
         });
         // Write the store back immediately so the secret key survives even if
         // the user never pairs a device this session.
@@ -204,6 +217,80 @@ impl Pairing {
             .unwrap_or_default();
         persist(inner, &secret_hex);
         Ok(())
+    }
+
+    /// Store a device's push token (the PUSH-stream registration path, M7).
+    /// Returns Ok(false) when the (peer, session token) pair is not a
+    /// currently-paired binding — the caller closes the stream without
+    /// `OK\n`'ing, same contract as a failed AUTH.
+    pub fn set_push_token(
+        &self,
+        remote: &str,
+        session_token: &str,
+        platform: &str,
+        push_token: &str,
+    ) -> Result<bool, String> {
+        let inner = &self.0;
+        let changed = {
+            let mut peers = inner.peers.lock().map_err(|_| "state poisoned")?;
+            match peers
+                .iter_mut()
+                .find(|p| p.node_id == remote && p.session_token == session_token)
+            {
+                Some(p) => {
+                    let same = p.push_platform.as_deref() == Some(platform)
+                        && p.push_token.as_deref() == Some(push_token);
+                    if !same {
+                        p.push_platform = Some(platform.to_string());
+                        p.push_token = Some(push_token.to_string());
+                        true
+                    } else {
+                        false
+                    }
+                }
+                None => return Ok(false),
+            }
+        };
+        if changed {
+            let secret_hex = load_store(&inner.store_path)
+                .secret_key_hex
+                .unwrap_or_default();
+            persist(inner, &secret_hex);
+        }
+        Ok(true)
+    }
+
+    /// Attach the supervised pushd's reachability (bind + bearer key) so
+    /// PUSH registrations can forward into its registry (M7). Called by
+    /// pushd::init once it knows where the daemon lives.
+    pub fn attach_pushd(&self, handle: crate::pushd::PushdHandle) {
+        let _ = self
+            .0
+            .pushd
+            .lock()
+            .map(|mut guard| guard.replace(handle));
+    }
+
+    /// Every stored device push token: (node_id, platform, token). pushd's
+    /// SQLite registry is disposable; THIS is the durable source of truth —
+    /// the supervisor re-registers the full set whenever pushd (re)starts.
+    pub fn device_push_tokens(&self) -> Vec<(String, String, String)> {
+        self.0
+            .peers
+            .lock()
+            .map(|peers| {
+                peers
+                    .iter()
+                    .filter_map(|p| {
+                        Some((
+                            p.node_id.clone(),
+                            p.push_platform.clone()?,
+                            p.push_token.clone()?,
+                        ))
+                    })
+                    .collect()
+            })
+            .unwrap_or_default()
     }
 }
 
@@ -332,6 +419,8 @@ fn authorize(
                 session_token: token.to_string(),
                 label,
                 created_at: now_ms(),
+                push_platform: None,
+                push_token: None,
             });
         }
         persist(inner, persist_hex);
@@ -394,6 +483,49 @@ async fn handle_stream(
         }
     }
     let line = String::from_utf8_lossy(&line);
+    // M7 push registration (plan track B3): `PUSH <session-token>
+    // <platform> <push-token>\n` on its own stream — the phone sends it
+    // right after a successful AUTH'd connection, so an OLD desktop (which
+    // never sees this frame) is unaffected: it closes the stream as a
+    // malformed AUTH, and the phone treats a PUSH-stream close as benign,
+    // NEVER as the revocation signal (that is an AUTH-stream-only contract).
+    if let Some(rest) = line.strip_prefix("PUSH ") {
+        let rest = rest.trim_end_matches('\r').trim();
+        let mut parts = rest.split(' ');
+        let (Some(session), Some(platform), Some(push_token), None) =
+            (parts.next(), parts.next(), parts.next(), parts.next())
+        else {
+            return Err("malformed PUSH frame".into());
+        };
+        let pairing = Pairing(inner.clone());
+        let accepted = pairing
+            .set_push_token(&remote, session, platform, push_token)
+            .map_err(|e| format!("push store: {e}"))?;
+        if !accepted {
+            // Unknown binding — same no-reply close as a failed AUTH.
+            return Err(format!("rejected PUSH from {remote}"));
+        }
+        // Best-effort forward into pushd's registry; the durable record is
+        // pairing.json (the supervisor re-registers on every pushd boot),
+        // so a down daemon is not an error — just a deferred registration.
+        let pushd = inner
+            .pushd
+            .lock()
+            .unwrap_or_else(|p| p.into_inner())
+            .clone();
+        if let Some(h) = pushd {
+            if let Err(e) =
+                crate::pushd::register_token_blocking(&h.bind, &h.key, platform, push_token, &remote)
+            {
+                eprintln!("[arxa-desktop] push token forward to pushd deferred: {e}");
+            }
+        }
+        send.write_all(b"OK\n")
+            .await
+            .map_err(|e| format!("push ack: {e}"))?;
+        let _ = send.finish();
+        return Ok(());
+    }
     let rest = match line.strip_prefix("AUTH ") {
         Some(t) => t.trim_end_matches('\r').trim(),
         None => return Err("malformed auth frame".into()),

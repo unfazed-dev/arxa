@@ -21,6 +21,7 @@ use tauri_plugin_shell::process::CommandChild;
 use tauri_plugin_shell::ShellExt;
 
 pub mod pairing;
+pub mod pushd;
 
 /// Default address of the locally served studio UI (D30). The canonical
 /// origin everywhere arxa is used (README/grill-decisions): `*.localhost`
@@ -315,6 +316,9 @@ pub fn run() {
             pairing::init(app.handle(), studio_host_port(&url));
             #[cfg(desktop)]
             install_pairing_menu(app.handle());
+            // M7: the push sidecar (cairn-pushd) beside the engine — probe,
+            // spawn, and publish its reachability to the pairing state.
+            pushd::init(app.handle());
             // Rider 1: probe before spawn. An externally owned server (launchd
             // on the dev machine) always wins; we only self-heal a closed port
             // for public installs that have no service manager.
@@ -370,6 +374,7 @@ pub fn run() {
         .run(|app, event| {
             if let tauri::RunEvent::Exit = event {
                 kill_spawned(app);
+                pushd::kill_spawned(app);
             }
         });
 }

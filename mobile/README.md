@@ -67,8 +67,16 @@ carry raw HTTP/1.1.
 - **Full studio surface (M4) — WIRED.** `main.js` polls `connection_status`
   every 2s; once `connected` it navigates the webview to the engine-served
   `studio_url` (same pattern as desktop).
-- **Push (M7)** — cairn-pushd token registration via `cairn_tauri`, wired into the
-  connection layer later.
+- **Push (M7) — WIRED (registration half).** After every successful connect,
+  the connection layer sends `PUSH <session-token> <platform> <token>\n` on
+  its own iroh stream; the desktop stores it in `pairing.json` and forwards
+  it into its supervised cairn-pushd. The frontend provides the token via
+  the `set_push_token(platform, token)` invoke. REMAINING SEAM: the OS push
+  plugin that mints FCM/APNs tokens inside a Tauri mobile app — until it
+  lands, `set_push_token` is never called and registration is a no-op (the
+  older-desktop compat story: a PUSH-stream close is never the revocation
+  signal). cairn-server-side doorbell registration (`register_push_token`
+  via cairn_tauri) belongs to cairn-syncing apps, not this shell (M8).
 - **Online-only v1 (M8)** — no offline cache; the app is a thin shell over the
   engine-served UI.
 - **OTA web assets** — will use `tauri-plugin-ota-self-update` later; deliberately
