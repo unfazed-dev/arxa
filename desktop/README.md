@@ -73,9 +73,53 @@ cargo check          # compile-verifies the shell (no bundling needed)
 cargo tauri dev      # run the shell (requires tauri-cli; expects studio server or shows wait screen)
 ```
 
+## Code signing & notarization (macOS)
+
+Identity (in this machine's keychain):
+`Developer ID Application: EVAN F PIERRE LOUIS (43GNRCGQXQ)`.
+
+Sign a built `.app` (or `.dmg`) after the fact:
+
+```sh
+desktop/scripts/sign-and-notarize.sh "/path/to/Arxa Studio.app"   # sign + notarize + staple
+desktop/scripts/sign-and-notarize.sh --sign-only "/path/to/Arxa Studio.app"
+```
+
+What it does: signs every Mach-O sidecar in `Contents/MacOS` with the hardened
+runtime and `desktop/entitlements.plist` (`allow-jit` +
+`allow-unsigned-executable-memory` — the production subset of Node's own
+`tools/osx-entitlements.plist`; needed by node/bun sidecars, harmless for the
+Dart AOT `arxa`), gives script sidecars a plain signature (codesign treats
+anything in `Contents/MacOS` as nested code), signs the bundle, verifies with
+`codesign --verify --deep --strict`, then submits via `notarytool --wait`,
+staples, and checks `spctl -a -vv`. Idempotent (`--force` re-signs).
+
+Env overrides: `SIGN_IDENTITY`, `ENTITLEMENTS`, `NOTARY_PROFILE`
+(default `arxa-notary`), or `APPLE_ID`/`APPLE_PASSWORD`/`APPLE_TEAM_ID`.
+
+**Notarization credentials are NOT yet configured** — one-time setup:
+
+```sh
+xcrun notarytool store-credentials arxa-notary \
+  --apple-id <your-apple-id-email> --team-id 43GNRCGQXQ \
+  --password <app-specific-password>   # create at https://support.apple.com/en-ca/HT204397
+```
+
+To make `tauri build` sign directly (per v2.tauri.app distribute/sign/macos):
+export `APPLE_SIGNING_IDENTITY="Developer ID Application: EVAN F PIERRE LOUIS (43GNRCGQXQ)"`
+plus the `APPLE_ID`/`APPLE_PASSWORD`/`APPLE_TEAM_ID` trio before building — no
+config change needed for the identity. For Tauri to apply the sidecar
+entitlements at bundle time, `tauri.conf.json` will additionally need
+(not yet applied — conf file owned by another workstream):
+
+```json
+"bundle": { "macOS": { "entitlements": "../entitlements.plist" } }
+```
+
 ## Remaining work (tracked in arxa-studio docs/plans/desktop-shell-scaffold.md)
 
 - real icon assets (`icons/icon.png` is a solid-color placeholder; `.icns`/`.ico` set still needed)
 - sidecar injection step in the release pipeline
 - shell should optionally auto-spawn the `arxa-studio` sidecar on launch
-- auto-update, code signing / notarization
+- auto-update
+- notarization credentials (`notarytool store-credentials arxa-notary`, see above) — signing itself is done
