@@ -21,6 +21,31 @@ const postRegistration = ArxaKitEntityRegistration<Post>(
   toJson: Post.toRow,
 );
 
+/// A minimal posts registration (id + title only, no CRDT flags) — for tests
+/// whose behavior doesn't involve the CRDT columns, so the emitted schema and
+/// the triple-consistency gate stay out of the way.
+const plainPostRegistration = ArxaKitEntityRegistration<Post>(
+  schema: ArxaKitTableSchema(
+    table: 'posts',
+    columns: [
+      ArxaKitColumn.id(),
+      ArxaKitColumn('title', ArxaKitColumnType.text),
+    ],
+  ),
+  fromJson: plainPostFromJson,
+  toJson: plainPostToRow,
+);
+
+Post plainPostFromJson(Map<String, dynamic> json) => Post(
+      id: json['id'] as String,
+      title: json['title'] as String,
+      likes: 0,
+      score: 0,
+      published: false,
+    );
+
+Map<String, dynamic> plainPostToRow(Post p) => {'id': p.id, 'title': p.title};
+
 Future<PostsHarness> bootstrapPostsForTest({
   Set<String> orSetTables = const {},
   Set<String> counterTables = const {},

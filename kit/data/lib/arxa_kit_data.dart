@@ -81,6 +81,9 @@ export 'seeding/arxa_kit_data_seeder.dart';
 // Facades
 export 'facades/arxa_kit_data_facade.dart';
 
+// Blob-storage seam (backends register into the locator; apps name the type)
+export 'storage/arxa_kit_storage_service.dart';
+
 // Emitters (pure Dart — safe in `dart run` tools)
 export 'emitters/arxa_kit_supabase_sql_emitter.dart';
 export 'emitters/arxa_kit_supabase_seed_emitter.dart';

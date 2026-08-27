@@ -258,8 +258,9 @@ class FakeCairnEngine implements CairnEngine {
 
   // ── The composed-SQL evaluator ─────────────────────────────────────────────
   //
-  // Parses exactly what `CairnDatabase._composeQuery` + `Where.toSql` emit:
-  //   SELECT * FROM <view> [WHERE <expr>] [ORDER BY <col> ASC|DESC, …] [LIMIT n]
+  // Parses exactly what `CairnDatabase._composeQuery` + `Where.toSql` emit,
+  // plus the attachments driver's projection queries (attachments.dart pump):
+  //   SELECT * | <col>, … FROM <view> [WHERE <expr>] [ORDER BY …] [LIMIT n]
   // with <expr> leaves `col <op> lit`, `col IN (…)`, `col IS [NOT] NULL`,
   // fully-parenthesized AND/OR junctions, and `(NOT x)`. Anything outside that
   // grammar throws — the fake never silently accepts SQL the adapter would
@@ -267,7 +268,7 @@ class FakeCairnEngine implements CairnEngine {
 
   List<Map<String, dynamic>> _evaluate(String sql) {
     final parser = _SqlParser(sql);
-    final table = parser.parseFrom();
+    final (table, projection) = parser.parseSelectFrom();
     final where = parser.parseWhere();
     final orders = parser.parseOrderBy();
     final limit = parser.parseLimit();
@@ -285,8 +286,19 @@ class FakeCairnEngine implements CairnEngine {
     if (limit != null && limit >= 0 && rows.length > limit) {
       rows = rows.sublist(0, limit);
     }
+    if (projection != null) {
+      rows = [
+        for (final row in rows)
+          {for (final column in projection) column: row[column]},
+      ];
+    }
     return rows;
   }
+
+  /// The raw stored rows for [table] (decoded write payloads — NOT the
+  /// view-encoded serving shape), for test assertions on what landed.
+  List<Map<String, dynamic>> rowsFor(String table) =>
+      [for (final row in (_store[table] ?? const {}).values) Map.of(row)];
 
   int _compareValues(Object? a, Object? b) {
     if (a == null && b == null) return 0;
@@ -374,11 +386,22 @@ class _SqlParser {
   bool _peek(String token) =>
       _pos < _tokens.length && _tokens[_pos] == token;
 
-  String parseFrom() {
+  /// Parses `SELECT * FROM t` or `SELECT col, … FROM t`. Returns the table
+  /// and the projection (null = all columns).
+  (String, List<String>?) parseSelectFrom() {
     _expect('SELECT');
-    _expect('*');
+    List<String>? projection;
+    if (_peek('*')) {
+      _next();
+    } else {
+      projection = [_next()];
+      while (_peek(',')) {
+        _next();
+        projection.add(_next());
+      }
+    }
     _expect('FROM');
-    return _next();
+    return (_next(), projection);
   }
 
   bool Function(Map<String, dynamic> row)? parseWhere() {

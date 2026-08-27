@@ -174,7 +174,7 @@ void main() {
             backend: ArxaKitDataBackend.plugin,
             plugin: backend,
           ),
-          entities: const [_plainRegistration],
+          entities: const [plainPostRegistration],
         );
 
         // Then the opener saw the sync URL and the provider's token
@@ -199,7 +199,7 @@ void main() {
               backend: ArxaKitDataBackend.plugin,
               plugin: backend,
             ),
-            entities: const [_plainRegistration],
+            entities: const [plainPostRegistration],
           ),
           throwsA(isA<StateError>().having(
               (e) => e.message, 'message', contains('ARXA_CAIRN_URL'))),
@@ -226,7 +226,7 @@ void main() {
             backend: ArxaKitDataBackend.plugin,
             plugin: backend,
           ),
-          entities: const [_plainRegistration],
+          entities: const [plainPostRegistration],
         );
 
         // When dispose runs twice
@@ -256,7 +256,7 @@ void main() {
             backend: ArxaKitDataBackend.plugin,
             plugin: backend,
           ),
-          entities: const [_plainRegistration],
+          entities: const [plainPostRegistration],
         );
 
         // Then the gate resolves — a local database has no first sync to await
@@ -317,25 +317,3 @@ Future<CairnDatabase> _unusedOpener(
 ) =>
     throw StateError('the opener must not run in this test');
 
-/// A minimal second entity for tests that don't exercise CRDT columns.
-const _plainRegistration = ArxaKitEntityRegistration<Post>(
-  schema: ArxaKitTableSchema(
-    table: 'posts',
-    columns: [
-      ArxaKitColumn.id(),
-      ArxaKitColumn('title', ArxaKitColumnType.text),
-    ],
-  ),
-  fromJson: _plainFromJson,
-  toJson: _plainToRow,
-);
-
-Post _plainFromJson(Map<String, dynamic> json) => Post(
-      id: json['id'] as String,
-      title: json['title'] as String,
-      likes: 0,
-      score: 0,
-      published: false,
-    );
-
-Map<String, dynamic> _plainToRow(Post p) => {'id': p.id, 'title': p.title};

@@ -19,6 +19,8 @@
 /// arxaKitLocator exactly like kit/data's built-in backends.
 library;
 
+import 'dart:io';
+
 import 'package:flutter/foundation.dart';
 import 'package:cairn_flutter/cairn_flutter.dart';
 import 'package:arxa_kit_core/arxa_kit_locator.dart';
@@ -30,6 +32,7 @@ import 'auth/arxa_kit_cairn_auth_service.dart';
 import 'config/arxa_kit_cairn_config.dart';
 import 'emitters/cairn_schema_emitter.dart';
 import 'repositories/cairn_kit_repository.dart';
+import 'storage/arxa_kit_cairn_storage_service.dart';
 
 /// How the plugin opens its database — injectable in tests so the whole
 /// wiring runs without the native library. [token] is the resolved bearer
@@ -46,28 +49,47 @@ class ArxaKitCairnBackend implements ArxaKitBackendPlugin {
   /// dart-define surface is the only env contract apps ever see.
   ArxaKitCairnBackend({
     ArxaKitCairnConfig? config,
-    Future<String?> Function()? tokenProvider,
-    String? Function()? userIdProvider,
+    this.tokenProvider,
+    this.userIdProvider,
+    this.storage = false,
+    this.storageAdapter,
+    this.storageBlobStore,
+    this.storageUrlFor,
     @visibleForTesting ArxaKitCairnOpenDatabase? openDatabase,
   })  : _config = config ?? ArxaKitCairnConfig.fromEnvironment(),
-        // Private named parameters can't be initializing formals — ignore.
-        // ignore: prefer_initializing_formals
-        _tokenProvider = tokenProvider,
-        // ignore: prefer_initializing_formals
-        _userIdProvider = userIdProvider,
         _openDatabaseOverride = openDatabase;
 
   final ArxaKitCairnConfig _config;
 
   /// `sync` mode only: the host-supplied bearer token (agency deployments).
-  final Future<String?> Function()? _tokenProvider;
+  final Future<String?> Function()? tokenProvider;
 
   /// Tenant-table stamping hook — see [CairnKitRepository].
-  final String? Function()? _userIdProvider;
+  final String? Function()? userIdProvider;
+
+  /// Opt-in blob storage over cairn attachments (ADR-0034). When true, the
+  /// attachments metadata table is appended to the emitted schema and an
+  /// `ArxaKitStorageService` lands in the locator.
+  final bool storage;
+
+  /// The remote blob plane. Required in `sync` mode; `supabaseBridge` wires
+  /// [ArxaKitCairnSupabaseBucketAdapter] and `localOnly` wires
+  /// [ArxaKitCairnLocalOnlyAdapter] when omitted.
+  final AttachmentStorageAdapter? storageAdapter;
+
+  /// The local blob cache. Defaults to a [LocalFileBlobStore] at
+  /// `<sqlite dir>/cairn_blobs`; injectable for tests and custom caches.
+  final BlobStore? storageBlobStore;
+
+  /// `getUrl` override (CDN, signed-URL service, …). `supabaseBridge`
+  /// defaults to Supabase's public URL; without any callback the service
+  /// falls back to `data:` URLs from the local blob (seed-backend parity).
+  final String Function(String bucket, String path)? storageUrlFor;
 
   final ArxaKitCairnOpenDatabase? _openDatabaseOverride;
 
   CairnDatabase? _db;
+  Attachments? _attachments;
 
   /// The opened database, once [initialize] has run. Exposed for the kit's
   /// own services (storage, push) — apps should not need it.
@@ -92,14 +114,22 @@ class ArxaKitCairnBackend implements ArxaKitBackendPlugin {
     _config.validate();
     final schemas = [for (final e in entities) e.schema];
     _validateCrdtConsistency(schemas);
+    if (storage) _validateStorage(schemas);
 
     if (_config.mode == ArxaKitCairnMode.supabaseBridge) {
       await _ensureSupabase(config);
     }
 
-    final schema = CairnSchemaEmitter().schemaFor(schemas);
+    var schema = CairnSchemaEmitter().schemaFor(schemas);
+    if (storage) {
+      // The driver writes its metadata rows like any business write — the
+      // table must be declared (subscribed) exactly like the app's own.
+      schema = CairnSchema(
+        tables: [...schema.tables, CairnSchemaEmitter.attachmentsTable()],
+      );
+    }
     final token = switch (_config.mode) {
-      ArxaKitCairnMode.sync => await _tokenProvider?.call(),
+      ArxaKitCairnMode.sync => await tokenProvider?.call(),
       _ => null,
     };
     final open = _openDatabaseOverride ?? _openDefault;
@@ -130,11 +160,15 @@ class ArxaKitCairnBackend implements ArxaKitBackendPlugin {
             idService: idService,
             orSetTables: _config.orSetTables ?? const {},
             counterTables: _config.counterTables ?? const {},
-            userIdProvider: _userIdProvider,
+            userIdProvider: userIdProvider,
           ),
         );
         return null;
       });
+    }
+
+    if (storage) {
+      await _registerStorage(db);
     }
   }
 
@@ -146,9 +180,76 @@ class ArxaKitCairnBackend implements ArxaKitBackendPlugin {
   Future<void> dispose() async {
     final db = _db;
     if (db == null) return; // idempotent
+    _attachments?.stop();
+    _attachments = null;
     _db = null;
     await db.close();
   }
+
+  /// Storage pre-open validation: the metadata table name must not collide
+  /// with an app entity (the driver would fight the app's writes), and
+  /// `sync` mode needs a host-supplied [storageAdapter] — the blob plane is
+  /// the app's bucket, which the kit cannot guess.
+  void _validateStorage(List<ArxaKitTableSchema> schemas) {
+    for (final schema in schemas) {
+      if (schema.table == AttachmentSchema.table) {
+        throw StateError(
+          'ArxaKitCairnBackend: storage is enabled but entity '
+          '"${schema.table}" squats the attachments metadata table — rename '
+          'the entity (the cairn driver owns that table, ADR-0034).',
+        );
+      }
+    }
+    if (_config.mode == ArxaKitCairnMode.sync && storageAdapter == null) {
+      throw StateError(
+        'ArxaKitCairnBackend: storage in sync mode requires a host-supplied '
+        'storageAdapter (the remote blob plane is the app\'s bucket). '
+        'supabaseBridge wires Supabase automatically; localOnly needs none.',
+      );
+    }
+  }
+
+  /// Builds the attachments driver (its blob-store wipe self-registers as a
+  /// sign-out hook) and registers the kit storage seam into the locator.
+  Future<void> _registerStorage(CairnDatabase db) async {
+    final blobStore = storageBlobStore ??
+        LocalFileBlobStore(Directory('${await _resolveDir()}/cairn_blobs'));
+    final adapter = storageAdapter ??
+        switch (_config.mode) {
+          ArxaKitCairnMode.localOnly => const ArxaKitCairnLocalOnlyAdapter(),
+          ArxaKitCairnMode.supabaseBridge => ArxaKitCairnSupabaseBucketAdapter(
+              client: sb.Supabase.instance.client,
+            ),
+          // _validateStorage already failed this branch loudly.
+          ArxaKitCairnMode.sync => throw StateError('unreachable'),
+        };
+    final attachments = db.attachments(adapter: adapter, blobStore: blobStore);
+    _attachments = attachments;
+    // The self-driving pump only matters with a server; localOnly's driver
+    // never goes online, so starting its timer would be pure churn.
+    if (_config.mode != ArxaKitCairnMode.localOnly) {
+      attachments.start();
+    }
+    arxaKitLocator.registerLazySingleton<ArxaKitStorageService>(
+      () => ArxaKitCairnStorageService(
+        attachments: attachments,
+        blobStore: blobStore,
+        publicUrlFor: storageUrlFor ?? _defaultUrlFor(),
+      ),
+    );
+  }
+
+  String Function(String bucket, String path)? _defaultUrlFor() =>
+      switch (_config.mode) {
+        ArxaKitCairnMode.supabaseBridge => (bucket, path) => sb
+            .Supabase.instance.client.storage
+            .from(bucket)
+            .getPublicUrl(path),
+        _ => null,
+      };
+
+  Future<String> _resolveDir() async => _config.sqliteDirOverride ??
+      (await getApplicationSupportDirectory()).path;
 
   /// Triple consistency, client side: schema `crdt:` flags and the config's
   /// table sets must agree exactly, or CRDT verbs would clobber on one side
@@ -221,8 +322,7 @@ class ArxaKitCairnBackend implements ArxaKitBackendPlugin {
     CairnSchema schema,
     String? token,
   ) async {
-    final dir = config.sqliteDirOverride ??
-        (await getApplicationSupportDirectory()).path;
+    final dir = await _resolveDir();
     switch (config.mode) {
       case ArxaKitCairnMode.localOnly:
         return CairnDatabase.local(

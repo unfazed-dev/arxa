@@ -13,6 +13,24 @@ import 'package:cairn_flutter/cairn_flutter.dart';
 import 'package:arxa_kit_data/arxa_kit_data.dart';
 
 class CairnSchemaEmitter {
+  /// The attachments metadata table (ADR-0034) as a client schema declaration.
+  /// The backend appends this to the emitted schema when storage is enabled —
+  /// apps never declare it by hand. Column names mirror cairn's
+  /// `AttachmentSchema` contract exactly; `size`/`timestamp` are INTEGER,
+  /// everything else TEXT.
+  static CairnTable attachmentsTable() => const CairnTable(
+        name: AttachmentSchema.table,
+        primaryKey: [AttachmentSchema.colId],
+        columns: [
+          CairnColumn.text(AttachmentSchema.colId),
+          CairnColumn.text(AttachmentSchema.colFilename),
+          CairnColumn.integer(AttachmentSchema.colSize),
+          CairnColumn.text(AttachmentSchema.colMediaType),
+          CairnColumn.text(AttachmentSchema.colState),
+          CairnColumn.integer(AttachmentSchema.colTimestamp),
+        ],
+      );
+
   /// The cairn client schema for [schemas] — one [CairnTable] per kit table,
   /// `id` as the primary key, each column mapped to the affinity the WS2
   /// read-views actually serve (the views are `json_extract` projections:
@@ -49,7 +67,14 @@ class CairnSchemaEmitter {
   /// operator pastes into the cairn server's environment. Deterministic:
   /// both declarations are always present (empty when no column is flagged),
   /// entries sorted so a diff between generations shows exactly what changed.
-  String emitServerCrdtEnv(List<ArxaKitTableSchema> schemas) {
+  ///
+  /// [includeAttachments] appends the write-allowlist reminder for the
+  /// attachments metadata table — blob metadata writes go through the same
+  /// outbox as business writes, so the server must accept them.
+  String emitServerCrdtEnv(
+    List<ArxaKitTableSchema> schemas, {
+    bool includeAttachments = false,
+  }) {
     final counters = <String>[];
     final orSets = <String>[];
     for (final schema in schemas) {
@@ -71,6 +96,9 @@ class CairnSchemaEmitter {
         '# Must match the client config (ArxaKitCairnConfig.orSetTables /\n'
         '# .counterTables) and the schema crdt flags exactly.\n'
         'CAIRN_COUNTER_COLUMNS=${counters.join(',')}\n'
-        'CAIRN_OR_SET_COLUMNS=${orSets.join(',')}\n';
+        'CAIRN_OR_SET_COLUMNS=${orSets.join(',')}\n'
+        '${includeAttachments ? '# Storage is enabled: attachment metadata writes go through the\n'
+            '# same outbox as business writes — the server write allowlist\n'
+            '# CAIRN_WRITE_TABLES must include: attachments\n' : ''}';
   }
 }

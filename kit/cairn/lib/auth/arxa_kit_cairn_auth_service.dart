@@ -10,40 +10,39 @@ import 'package:arxa_kit_data/arxa_kit_data.dart';
 
 class ArxaKitCairnAuthService implements ArxaKitAuthService {
   ArxaKitCairnAuthService({
-    required ArxaKitAuthService inner,
-    required Future<void> Function() dbSignOut,
-    // Private named parameters can't be initializing formals — ignore.
-    // ignore: prefer_initializing_formals
-  })  : _inner = inner,
-        // ignore: prefer_initializing_formals
-        _dbSignOut = dbSignOut;
+    required this.inner,
+    required this.dbSignOut,
+  });
 
-  final ArxaKitAuthService _inner;
-  final Future<void> Function() _dbSignOut;
+  /// The wrapped service (kit/data's Supabase auth in the wired backend).
+  final ArxaKitAuthService inner;
 
-  @override
-  Stream<ArxaKitAuthSession?> get session$ => _inner.session$;
+  /// `CairnDatabase.signOut` — runs BEFORE [inner]'s signOut.
+  final Future<void> Function() dbSignOut;
 
   @override
-  ArxaKitAuthSession? get currentSession => _inner.currentSession;
+  Stream<ArxaKitAuthSession?> get session$ => inner.session$;
+
+  @override
+  ArxaKitAuthSession? get currentSession => inner.currentSession;
 
   @override
   Future<ArxaKitAuthSession> signUpWithEmailPassword({
     required String email,
     required String password,
   }) =>
-      _inner.signUpWithEmailPassword(email: email, password: password);
+      inner.signUpWithEmailPassword(email: email, password: password);
 
   @override
   Future<ArxaKitAuthSession> signInWithEmailPassword({
     required String email,
     required String password,
   }) =>
-      _inner.signInWithEmailPassword(email: email, password: password);
+      inner.signInWithEmailPassword(email: email, password: password);
 
   @override
   Future<void> requestOtp({String? email, String? phone}) =>
-      _inner.requestOtp(email: email, phone: phone);
+      inner.requestOtp(email: email, phone: phone);
 
   @override
   Future<ArxaKitAuthSession> confirmOtp({
@@ -51,24 +50,24 @@ class ArxaKitCairnAuthService implements ArxaKitAuthService {
     String? phone,
     required String code,
   }) =>
-      _inner.confirmOtp(email: email, phone: phone, code: code);
+      inner.confirmOtp(email: email, phone: phone, code: code);
 
   @override
-  Future<ArxaKitAuthSession> signInWithGoogle() => _inner.signInWithGoogle();
+  Future<ArxaKitAuthSession> signInWithGoogle() => inner.signInWithGoogle();
 
   @override
-  Future<ArxaKitAuthSession> signInWithApple() => _inner.signInWithApple();
+  Future<ArxaKitAuthSession> signInWithApple() => inner.signInWithApple();
 
   @override
-  Future<ArxaKitAuthSession> signInAnonymously() => _inner.signInAnonymously();
+  Future<ArxaKitAuthSession> signInAnonymously() => inner.signInAnonymously();
 
   /// cairn first, Supabase second — see the library doc.
   @override
   Future<void> signOut() async {
-    await _dbSignOut();
-    await _inner.signOut();
+    await dbSignOut();
+    await inner.signOut();
   }
 
   @override
-  Future<void> dispose() => _inner.dispose();
+  Future<void> dispose() => inner.dispose();
 }
