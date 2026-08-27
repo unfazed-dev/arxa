@@ -24,6 +24,17 @@ enum ArxaKitColumnType {
   reference,
 }
 
+/// The CRDT merge tier of a column, when the backend supports one (cairn).
+///
+/// `null` (the default) means per-field last-writer-wins. A flagged column
+/// MERGES instead: `counter` columns converge concurrent +/- adjustments
+/// (PN-Counter), `orSet` columns converge concurrent set additions
+/// (add-wins OR-set). The flag is inert on every other backend — the
+/// Supabase/Appwrite emitters ignore it; `arxa_kit_cairn`'s emitter turns it
+/// into the matching `CAIRN_COUNTER_COLUMNS` / `CAIRN_OR_SET_COLUMNS` server
+/// declaration so client, server, and schema cannot drift silently.
+enum ArxaKitCrdtTier { counter, orSet }
+
 class ArxaKitColumn {
   final String name;
   final ArxaKitColumnType type;
@@ -32,11 +43,15 @@ class ArxaKitColumn {
   /// Target table name; required iff [type] is [ArxaKitColumnType.reference].
   final String? references;
 
+  /// CRDT merge tier (cairn only — see [ArxaKitCrdtTier]); `null` = LWW.
+  final ArxaKitCrdtTier? crdt;
+
   const ArxaKitColumn(
     this.name,
     this.type, {
     this.nullable = false,
     this.references,
+    this.crdt,
   })  : assert(
           (type == ArxaKitColumnType.reference) == (references != null),
           'references must be set exactly when type is reference',
