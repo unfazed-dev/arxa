@@ -12,5 +12,5 @@
     ]
   },
   "windows": ["main"],
-  "permissions": ["core:default"]
+  "permissions": ["core:default", "allow-open-pairing-window"]
 }

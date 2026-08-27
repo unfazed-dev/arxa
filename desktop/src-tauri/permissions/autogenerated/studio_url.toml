@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-studio-url"
+description = "Enables the studio_url command without any pre-configured scope."
+commands.allow = ["studio_url"]
+
+[[permission]]
+identifier = "deny-studio-url"
+description = "Denies the studio_url command without any pre-configured scope."
+commands.deny = ["studio_url"]
