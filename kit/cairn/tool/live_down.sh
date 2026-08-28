@@ -6,6 +6,7 @@
 
 set -euo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")"
+# shellcheck source=./live_env.sh
 source ./live_env.sh
 
 # `cargo run` backgrounded with `&` records cargo's own pid, not the
@@ -24,7 +25,7 @@ if [ -f "$CAIRN_DEV_PID_FILE" ]; then
   if kill -0 "$pid" 2>/dev/null; then
     echo "stopping cairn dev (pid $pid) and its process tree..."
     kill_tree "$pid"
-    for i in $(seq 1 20); do
+    for _ in $(seq 1 20); do
       kill -0 "$pid" 2>/dev/null || break
       sleep 0.5
     done

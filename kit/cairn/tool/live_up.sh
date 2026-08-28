@@ -21,6 +21,7 @@
 
 set -euo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")"
+# shellcheck source=./live_env.sh
 source ./live_env.sh
 
 echo "== 1/7: preflight =="
@@ -117,11 +118,10 @@ done
 echo "  ✓ .env: jwt secret + counter[$CAIRN_COUNTER_COLUMNS] or-set[$CAIRN_OR_SET_COLUMNS]"
 
 echo "== 6/7: cairn dev =="
-# cairn dev builds an EXPLICIT env whitelist for the cairn-server child
-# (cairn-cli config.rs server_env) and the CRDT vars aren't in it — but
-# tokio Command::env inherits the parent environment, so exporting them here
-# carries them through. (Upstream candidate: forward them in server_env.)
-export CAIRN_COUNTER_COLUMNS CAIRN_OR_SET_COLUMNS
+# Since cairn 78fb2c4, `cairn dev` forwards CAIRN_COUNTER_COLUMNS /
+# CAIRN_OR_SET_COLUMNS from .env to the cairn-server child itself
+# (push_crdt_columns_env in dev.rs) — the step-5 reconcile loop above is the
+# single source of truth; no export trick needed here anymore.
 if [ -f "$CAIRN_DEV_PID_FILE" ] && kill -0 "$(cat "$CAIRN_DEV_PID_FILE")" 2>/dev/null; then
   echo "  already running (pid $(cat "$CAIRN_DEV_PID_FILE"))"
 else

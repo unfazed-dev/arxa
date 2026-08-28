@@ -166,5 +166,27 @@ void main() {
         expect(config.counterTables, {'likes'});
       },
     );
+
+    test(
+      'kit.cairn.config — a table in BOTH tier sets is rejected at validate',
+      () {
+        // Given a config tagging the same table as counter AND or-set — the
+        // engine's rule is "a table MUST NOT be in both" (or-set wins the
+        // first branch checked, silently dropping the counter tag), so the
+        // kit fails loudly instead
+        const config = ArxaKitCairnConfig(
+          orSetTables: {'posts'},
+          counterTables: {'posts'},
+        );
+
+        // Then validate names the table and both fields
+        expect(
+          config.validate,
+          throwsA(isA<StateError>()
+              .having((e) => e.message, 'message', contains('posts'))
+              .having((e) => e.message, 'message', contains('counterTables'))),
+        );
+      },
+    );
   });
 }

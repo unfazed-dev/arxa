@@ -21,6 +21,46 @@ const postRegistration = ArxaKitEntityRegistration<Post>(
   toJson: Post.toRow,
 );
 
+/// Counter-tier registration: table `counter_posts` carries the counter-flagged
+/// `likes` column. The engine merges one CRDT tier per table, so the harness
+/// keeps counter and or-set fixtures on separate tables.
+const counterPostRegistration = ArxaKitEntityRegistration<Post>(
+  schema: counterPostSchema,
+  fromJson: counterPostFromJson,
+  toJson: counterPostToRow,
+);
+
+/// Or-set-tier registration: table `orset_posts` carries the or-set-flagged
+/// `tags` column.
+const orSetPostRegistration = ArxaKitEntityRegistration<Post>(
+  schema: orSetPostSchema,
+  fromJson: orSetPostFromJson,
+  toJson: orSetPostToRow,
+);
+
+Post counterPostFromJson(Map<String, dynamic> json) => Post(
+      id: json['id'] as String,
+      title: json['title'] as String,
+      likes: json['likes'] as int,
+      score: 0,
+      published: false,
+    );
+
+Map<String, dynamic> counterPostToRow(Post p) =>
+    {'id': p.id, 'title': p.title, 'likes': p.likes};
+
+Post orSetPostFromJson(Map<String, dynamic> json) => Post(
+      id: json['id'] as String,
+      title: json['title'] as String,
+      likes: 0,
+      score: 0,
+      published: false,
+      tags: (json['tags'] as List<dynamic>?)?.cast<String>(),
+    );
+
+Map<String, dynamic> orSetPostToRow(Post p) =>
+    {'id': p.id, 'title': p.title, 'tags': p.tags};
+
 /// A minimal posts registration (id + title only, no CRDT flags) — for tests
 /// whose behavior doesn't involve the CRDT columns, so the emitted schema and
 /// the triple-consistency gate stay out of the way.
@@ -47,11 +87,11 @@ Post plainPostFromJson(Map<String, dynamic> json) => Post(
 Map<String, dynamic> plainPostToRow(Post p) => {'id': p.id, 'title': p.title};
 
 Future<PostsHarness> bootstrapPostsForTest({
+  ArxaKitEntityRegistration<Post> registration = postRegistration,
   Set<String> orSetTables = const {},
   Set<String> counterTables = const {},
   String? Function()? userIdProvider,
 }) async {
-  const registration = postRegistration;
   final engine = FakeCairnEngine();
   // Test seams from cairn_flutter — the pure-Dart path engine.dart documents.
   // ignore: invalid_use_of_visible_for_testing_member
@@ -63,7 +103,7 @@ Future<PostsHarness> bootstrapPostsForTest({
   // ignore: invalid_use_of_visible_for_testing_member
   final db = await CairnDatabase.localForTest(
     cairn,
-    CairnSchemaEmitter().schemaFor(const [postSchema]),
+    CairnSchemaEmitter().schemaFor([registration.schema]),
   );
   final ids = ArxaKitIdService();
   return (
@@ -80,21 +120,42 @@ Future<PostsHarness> bootstrapPostsForTest({
   );
 }
 
+/// The full posts entity — deliberately plain (no crdt flags): the engine
+/// merges one CRDT tier per table, so CRDT fixtures live on the dedicated
+/// `counter_posts` / `orset_posts` tables below.
 const postSchema = ArxaKitTableSchema(
   table: 'posts',
   columns: [
     ArxaKitColumn.id(),
     ArxaKitColumn('title', ArxaKitColumnType.text),
-    ArxaKitColumn('likes', ArxaKitColumnType.integer,
-        crdt: ArxaKitCrdtTier.counter),
+    ArxaKitColumn('likes', ArxaKitColumnType.integer),
     ArxaKitColumn('score', ArxaKitColumnType.real),
     ArxaKitColumn('published', ArxaKitColumnType.boolean),
     ArxaKitColumn('createdAt', ArxaKitColumnType.timestamptz, nullable: true),
-    ArxaKitColumn('tags', ArxaKitColumnType.jsonb,
-        nullable: true, crdt: ArxaKitCrdtTier.orSet),
+    ArxaKitColumn('tags', ArxaKitColumnType.jsonb, nullable: true),
     ArxaKitColumn('author', ArxaKitColumnType.reference,
         nullable: true, references: 'users'),
     ArxaKitColumn('user_id', ArxaKitColumnType.text, nullable: true),
+  ],
+);
+
+const counterPostSchema = ArxaKitTableSchema(
+  table: 'counter_posts',
+  columns: [
+    ArxaKitColumn.id(),
+    ArxaKitColumn('title', ArxaKitColumnType.text),
+    ArxaKitColumn('likes', ArxaKitColumnType.integer,
+        crdt: ArxaKitCrdtTier.counter),
+  ],
+);
+
+const orSetPostSchema = ArxaKitTableSchema(
+  table: 'orset_posts',
+  columns: [
+    ArxaKitColumn.id(),
+    ArxaKitColumn('title', ArxaKitColumnType.text),
+    ArxaKitColumn('tags', ArxaKitColumnType.jsonb,
+        nullable: true, crdt: ArxaKitCrdtTier.orSet),
   ],
 );
 

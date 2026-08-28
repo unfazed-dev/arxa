@@ -91,6 +91,10 @@ class ArxaKitCairnConfig {
 
   /// Throws [StateError] — naming the exact missing define — when the selected
   /// mode is missing its requirements (mirrors kit/data's credential checks).
+  ///
+  /// Also rejects a table tagged into BOTH CRDT tier sets: the engine merges
+  /// one CRDT tier per table (or-set wins the first branch checked, silently
+  /// dropping the counter tag), so a dual tag is always a misconfiguration.
   void validate() {
     switch (mode) {
       case ArxaKitCairnMode.localOnly:
@@ -103,6 +107,16 @@ class ArxaKitCairnConfig {
             'set the ARXA_CAIRN_URL dart-define.',
           );
         }
+    }
+    final dual = (orSetTables ?? const <String>{})
+        .intersection(counterTables ?? const <String>{});
+    if (dual.isNotEmpty) {
+      throw StateError(
+        'ArxaKitCairnConfig: ${dual.join(', ')} appear(s) in BOTH orSetTables '
+        'and counterTables — the engine merges one CRDT tier per table '
+        '(or-set wins, silently dropping the counter tag); tag each table '
+        'with exactly one tier.',
+      );
     }
   }
 }

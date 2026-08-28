@@ -77,17 +77,31 @@ class CairnSchemaEmitter {
   }) {
     final counters = <String>[];
     final orSets = <String>[];
+    final counterTables = <String>{};
+    final orSetTables = <String>{};
     for (final schema in schemas) {
       for (final column in schema.columns) {
         switch (column.crdt) {
           case ArxaKitCrdtTier.counter:
             counters.add('${schema.table}:${column.name}');
+            counterTables.add(schema.table);
           case ArxaKitCrdtTier.orSet:
             orSets.add('${schema.table}:${column.name}');
+            orSetTables.add(schema.table);
           case null:
             break;
         }
       }
+    }
+    final dual = counterTables.intersection(orSetTables);
+    if (dual.isNotEmpty) {
+      throw StateError(
+        'CairnSchemaEmitter: table "${dual.first}" is flagged for BOTH tiers '
+        '— the engine merges one CRDT tier per table (or-set wins the first '
+        'branch checked, silently dropping the counter tag), so emitting '
+        'this env would bake in a misconfiguration; tag each table with '
+        'exactly one tier.',
+      );
     }
     counters.sort();
     orSets.sort();
@@ -95,6 +109,14 @@ class CairnSchemaEmitter {
         'Do not edit by hand.\n'
         '# Must match the client config (ArxaKitCairnConfig.orSetTables /\n'
         '# .counterTables) and the schema crdt flags exactly.\n'
+        '# Server DDL prerequisites (cairn write-back binds these exactly):\n'
+        '# - pk columns must be `uuid`, not `text` — write_back from_scalar\n'
+        '#   binds UUID-parsable pks as SqlValue::Uuid; kit canonical ids are\n'
+        '#   v5 UUIDs, so a text pk fails the bind with "error serializing\n'
+        '#   parameter 0".\n'
+        '# - every synced table needs ALTER TABLE <t> REPLICA IDENTITY FULL —\n'
+        '#   else live DELETEs carry only PK columns and delete fan-out is\n'
+        '#   silently dropped (the server boot check names this fix verbatim).\n'
         'CAIRN_COUNTER_COLUMNS=${counters.join(',')}\n'
         'CAIRN_OR_SET_COLUMNS=${orSets.join(',')}\n'
         '${includeAttachments ? '# Storage is enabled: attachment metadata writes go through the\n'

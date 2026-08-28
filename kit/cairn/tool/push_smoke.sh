@@ -61,6 +61,7 @@ APP_PID=""
 
 skip() { printf "  ${YELLOW}SKIP${RESET}  %s\n" "$1"; exit 0; }
 
+# shellcheck disable=SC2329  # invoked indirectly: `trap cleanup EXIT` below
 cleanup() {
   if [ -n "$APP_PID" ]; then kill "$APP_PID" 2>/dev/null; fi
   if [ -n "$SERVER_PID" ]; then
@@ -170,7 +171,7 @@ psql_exec "CREATE TABLE $TABLE (
   id uuid PRIMARY KEY,
   user_id text NOT NULL,
   note text);" >/dev/null \
-  || { printf "  ${RED}FAIL${RESET}  could not create $TABLE\n"; exit 1; }
+  || { printf "  %sFAIL%s  could not create %s\n" "$RED" "$RESET" "$TABLE"; exit 1; }
 psql_exec "ALTER TABLE $TABLE REPLICA IDENTITY FULL;" >/dev/null
 psql_exec "CREATE PUBLICATION $PUB FOR TABLE $TABLE;" >/dev/null
 psql_exec "SELECT pg_drop_replication_slot('$SLOT') FROM pg_replication_slots WHERE slot_name='$SLOT';" >/dev/null
@@ -191,10 +192,13 @@ psql_exec "TRUNCATE cairn_push_tokens;" >/dev/null 2>&1 || true
 # The JWT secret is the kit live harness's dev secret, read out of
 # tool/live_env.sh in a subshell (its `set -euo pipefail` stays in there) so
 # this script and tool/mint_jwt.sh can never drift apart.
+# shellcheck source=./live_env.sh
 JWT_SECRET="$(source "$SCRIPT_DIR/live_env.sh" >/dev/null 2>&1; printf '%s' "${CAIRN_DEV_JWT_SECRET:-}")"
 [ -n "$JWT_SECRET" ] || skip "could not read CAIRN_DEV_JWT_SECRET from tool/live_env.sh"
 
-printf "  starting cairn-server (cargo run, log: $SERVER_LOG)…\n"
+printf "  starting cairn-server (cargo run, log: %s)…\n" "$SERVER_LOG"
+# shellcheck disable=SC2031  # CAIRN_REPO_ROOT's "subshell modification" is the
+# deliberate $()-scoped source above — the line-41 assignment is what stands.
 (
   cd "$CAIRN_REPO_ROOT" || exit 1
   CAIRN_BIND="$BIND:$PORT" \
@@ -222,14 +226,14 @@ for _ in $(seq 1 90); do
   # curl only here; failures are the normal "not up yet".
   if curl -sf "http://127.0.0.1:$PORT/healthz" >/dev/null 2>&1; then break; fi
   if ! kill -0 "$SERVER_PID" 2>/dev/null; then
-    printf "  ${RED}FAIL${RESET}  cairn-server exited early (log: $SERVER_LOG)\n"
+    printf "  %sFAIL%s  cairn-server exited early (log: %s)\n" "$RED" "$RESET" "$SERVER_LOG"
     tail -5 "$SERVER_LOG"
     exit 1
   fi
   sleep 1
 done
 curl -sf "http://127.0.0.1:$PORT/healthz" >/dev/null 2>&1 \
-  || { printf "  ${RED}FAIL${RESET}  cairn-server never became healthy (log: $SERVER_LOG)\n"; exit 1; }
+  || { printf "  %sFAIL%s  cairn-server never became healthy (log: %s)\n" "$RED" "$RESET" "$SERVER_LOG"; exit 1; }
 
 sent_before="$(curl -s "http://127.0.0.1:$PORT/metrics" | awk '/^cairn_push_sent_total/ {print $2; exit}')"
 sent_before="${sent_before:-0}"
@@ -241,6 +245,7 @@ SMOKE_TOKEN="$("$SCRIPT_DIR/mint_jwt.sh" "$SMOKE_USER")"
 
 printf "  running kit push smoke on %s [%s] (log: $APP_LOG)…\n" "$DEVICE_MODE" "$DEVICE_ID"
 prep_device
+# shellcheck disable=SC2086  # FLUTTER_TEST_EXTRA_ARGS: intentional word splitting (may hold "--publish-port N")
 ( cd "$APP_DIR" && flutter pub get >/dev/null 2>&1 && \
   flutter test integration_test/push_smoke_test.dart -d "$DEVICE_ID" \
     $FLUTTER_TEST_EXTRA_ARGS \
@@ -259,7 +264,7 @@ for _ in $(seq 1 600); do
   sleep 1
 done
 if [ -z "$ready" ]; then
-  printf "  ${RED}FAIL${RESET}  app never reached PUSH_SMOKE_READY (log: $APP_LOG)\n"
+  printf "  %sFAIL%s  app never reached PUSH_SMOKE_READY (log: %s)\n" "$RED" "$RESET" "$APP_LOG"
   tail -20 "$APP_LOG"
   wait "$APP_PID" 2>/dev/null
   exit 1
@@ -269,7 +274,7 @@ printf "  device ready (user=%s) — inserting the triggering row…\n" "$SMOKE_
 # ---- 6. trigger: server-side row change (the push-worthy commit) ------------
 psql_exec "INSERT INTO $TABLE (id, user_id, note)
   VALUES (gen_random_uuid(), '$SMOKE_USER', 'kit push smoke $(date +%s)');" >/dev/null \
-  || { printf "  ${RED}FAIL${RESET}  row insert failed\n"; exit 1; }
+  || { printf "  %sFAIL%s  row insert failed\n" "$RED" "$RESET"; exit 1; }
 
 # ---- 7. assert the rail fired (server metrics) ------------------------------
 sent_after=""
@@ -280,7 +285,7 @@ for _ in $(seq 1 90); do
   sleep 1
 done
 if [ "$sent_after" -le "$sent_before" ] 2>/dev/null; then
-  printf "  ${RED}FAIL${RESET}  cairn_push_sent_total did not move ($sent_before → $sent_after)\n"
+  printf "  %sFAIL%s  cairn_push_sent_total did not move (%s → %s)\n" "$RED" "$RESET" "$sent_before" "$sent_after"
   curl -s "http://127.0.0.1:$PORT/metrics" | grep '^cairn_push_' || true
   tail -10 "$SERVER_LOG"
   exit 1
@@ -292,9 +297,9 @@ wait "$APP_PID"
 APP_STATUS=$?
 if [ $APP_STATUS -eq 0 ] && grep -q 'PUSH_SMOKE_RECEIVED' "$APP_LOG"; then
   grep -o 'PUSH_SMOKE_RECEIVED.*' "$APP_LOG" | head -1 | sed 's/^/  device: /'
-  printf "  ${GREEN}PASS${RESET}  real-rail FCM doorbell: PG row → cairn-server → FCM → device\n"
+  printf "  %sPASS%s  real-rail FCM doorbell: PG row → cairn-server → FCM → device\n" "$GREEN" "$RESET"
   exit 0
 fi
-printf "  ${RED}FAIL${RESET}  device leg (exit=$APP_STATUS, log: $APP_LOG)\n"
+printf "  %sFAIL%s  device leg (exit=%s, log: %s)\n" "$RED" "$RESET" "$APP_STATUS" "$APP_LOG"
 grep -E 'PUSH_SMOKE_(READY|TIMEOUT)' "$APP_LOG" | head -5 || true
 exit 1

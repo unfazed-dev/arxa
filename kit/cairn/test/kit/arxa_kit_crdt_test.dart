@@ -22,8 +22,8 @@ void main() {
       () async {
         // Given a cairn-backed repository resolved through the port type
         final h = await bootstrapPostsForTest(
-          orSetTables: {'posts'},
-          counterTables: {'posts'},
+          registration: counterPostRegistration,
+          counterTables: {'counter_posts'},
         );
         final ArxaKitRepository<Post> port = h.repo;
 
@@ -36,7 +36,10 @@ void main() {
       'kit.cairn.crdt — adjustCounter routes by sign with the canonical pk',
       () async {
         // Given a counter-tagged table with one row
-        final h = await bootstrapPostsForTest(counterTables: {'posts'});
+        final h = await bootstrapPostsForTest(
+          registration: counterPostRegistration,
+          counterTables: {'counter_posts'},
+        );
         final stored = await h.repo.upsert(
           const Post(
             id: 'p-1',
@@ -64,7 +67,10 @@ void main() {
       'kit.cairn.crdt — a zero delta writes nothing',
       () async {
         // Given a counter-tagged table
-        final h = await bootstrapPostsForTest(counterTables: {'posts'});
+        final h = await bootstrapPostsForTest(
+          registration: counterPostRegistration,
+          counterTables: {'counter_posts'},
+        );
 
         // When a zero adjustment is requested
         await (h.repo as ArxaKitCrdtCapable).adjustCounter('p-1', 0);
@@ -79,7 +85,10 @@ void main() {
       'kit.cairn.crdt — or-set verbs delegate table, canonical pk and element',
       () async {
         // Given an or-set-tagged table
-        final h = await bootstrapPostsForTest(orSetTables: {'posts'});
+        final h = await bootstrapPostsForTest(
+          registration: orSetPostRegistration,
+          orSetTables: {'orset_posts'},
+        );
         final crdt = h.repo as ArxaKitCrdtCapable;
 
         // When an element is added and removed by seed key
@@ -87,7 +96,7 @@ void main() {
         await crdt.orSetRemove('p-1', 'urgent');
 
         // Then the engine saw both with the canonical pk
-        final pk = h.ids.canonicalId('posts', 'p-1');
+        final pk = h.ids.canonicalId('orset_posts', 'p-1');
         expect(h.engine.orSetAddCalls.single.pk, pk);
         expect(h.engine.orSetAddCalls.single.value, 'urgent');
         expect(h.engine.orSetRemoveCalls.single.pk, pk);

@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Shared constants for the arxa_kit_cairn "local live" harness. Sourced by the
 # other tool/live_*.sh scripts — not meant to be run directly.
+# shellcheck disable=SC2034  # constants are consumed by the SOURCING scripts
 #
 # "Local live" stands in for a deployed cairn sync server: real cairn-server +
 # real docker Postgres + real HS256 JWTs signed with the dev secret below. Same
@@ -27,13 +28,13 @@ CAIRN_PG_URL="postgresql://cairn:cairn@localhost:5433/cairn"
 CAIRN_PUBLICATION="cairn_pub_arxa_kit"
 CAIRN_SLOT="cairn_slot_arxa_kit"
 
-# NO tenant scoping on purpose: cairn's server-side CRDT merge paths
-# (or_set_merge / counter_merge) are no-tenant only — with a tenant column
-# configured, a CRDT write falls through to the clobber path, which treats the
-# CRDT payload's keys as column names and fails ("db error" — no `entries`
-# column). cairn-infra write_back.rs: "tenant + OR-set → clobber… the
-# tenant-scoped merge is deferred to the fixture that needs it". Empty string
-# disables scoping even under supabase-jwt auth (cairn-server main.rs:495).
+# NO tenant scoping on purpose — but the reason changed with cairn 4428575:
+# tenant-scoped CRDT merge now EXISTS (e2e_pg-tested in cairn-infra's
+# e2e_pg_writeback.rs). The blocker is that the tenant STAMP is unconditional
+# once a tenant column is configured: mixing global + tenant-scoped tables on
+# one server then breaks global-table writes. These live tables are global
+# CRDT tables, so no tenant column here. Empty string disables scoping even
+# under supabase-jwt auth (cairn-server main.rs).
 CAIRN_TENANT_COLUMN=""
 
 # The tables the live sync test drives — dedicated single-tier CRDT tables,

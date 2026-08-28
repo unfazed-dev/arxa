@@ -17,19 +17,19 @@ import 'package:arxa_kit_data/arxa_kit_data.dart';
 ///   CAIRN_COUNTER_COLUMNS / CAIRN_OR_SET_COLUMNS snippet; unflagged schemas
 ///   emit both envs empty.
 void main() {
+  // Plain (no crdt flags) — the affinity-mapping fixture. The engine merges
+  // one CRDT tier per table, so flagged fixtures below are single-tier.
   const posts = ArxaKitTableSchema(
     table: 'posts',
     columns: [
       ArxaKitColumn.id(),
       ArxaKitColumn('title', ArxaKitColumnType.text),
       ArxaKitColumn('body', ArxaKitColumnType.text, nullable: true),
-      ArxaKitColumn('likes', ArxaKitColumnType.integer,
-          crdt: ArxaKitCrdtTier.counter),
+      ArxaKitColumn('likes', ArxaKitColumnType.integer),
       ArxaKitColumn('score', ArxaKitColumnType.real),
       ArxaKitColumn('published', ArxaKitColumnType.boolean),
       ArxaKitColumn('createdAt', ArxaKitColumnType.timestamptz),
-      ArxaKitColumn('tags', ArxaKitColumnType.jsonb, nullable: true,
-          crdt: ArxaKitCrdtTier.orSet),
+      ArxaKitColumn('tags', ArxaKitColumnType.jsonb, nullable: true),
       ArxaKitColumn('author', ArxaKitColumnType.reference,
           references: 'users'),
     ],
@@ -37,6 +37,23 @@ void main() {
   const users = ArxaKitTableSchema(
     table: 'users',
     columns: [ArxaKitColumn.id(), ArxaKitColumn('name', ArxaKitColumnType.text)],
+  );
+  // Single-tier flagged fixtures — one table per tier.
+  const counterPosts = ArxaKitTableSchema(
+    table: 'posts',
+    columns: [
+      ArxaKitColumn.id(),
+      ArxaKitColumn('likes', ArxaKitColumnType.integer,
+          crdt: ArxaKitCrdtTier.counter),
+    ],
+  );
+  const orSetBoards = ArxaKitTableSchema(
+    table: 'boards',
+    columns: [
+      ArxaKitColumn.id(),
+      ArxaKitColumn('tags', ArxaKitColumnType.jsonb,
+          nullable: true, crdt: ArxaKitCrdtTier.orSet),
+    ],
   );
 
   group('kit.cairn.emitter', () {
@@ -71,13 +88,14 @@ void main() {
     test(
       'kit.cairn.emitter — flagged columns become table:column server env entries',
       () {
-        // When the server declaration is emitted for the flagged schema
-        final snippet = CairnSchemaEmitter().emitServerCrdtEnv(const [posts]);
+        // When the server declaration is emitted for single-tier flagged schemas
+        final snippet = CairnSchemaEmitter()
+            .emitServerCrdtEnv(const [counterPosts, orSetBoards]);
 
         // Then it is stamped generated and lists each tier's table:column pairs
         expect(snippet, contains('Do not edit by hand'));
         expect(snippet, contains('CAIRN_COUNTER_COLUMNS=posts:likes'));
-        expect(snippet, contains('CAIRN_OR_SET_COLUMNS=posts:tags'));
+        expect(snippet, contains('CAIRN_OR_SET_COLUMNS=boards:tags'));
       },
     );
 
@@ -91,6 +109,34 @@ void main() {
         // output — a diff shows exactly what changed between generations)
         expect(snippet, contains('CAIRN_COUNTER_COLUMNS=\n'));
         expect(snippet, contains('CAIRN_OR_SET_COLUMNS=\n'));
+      },
+    );
+
+    test(
+      'kit.cairn.emitter — a table flagged with both tiers refuses to emit server env',
+      () {
+        // Given one table carrying a counter column AND an or-set column —
+        // the server would check or-set first and silently never merge the
+        // counter, so generation fails loudly instead of emitting a
+        // misconfiguration
+        const dual = ArxaKitTableSchema(
+          table: 'dual',
+          columns: [
+            ArxaKitColumn.id(),
+            ArxaKitColumn('n', ArxaKitColumnType.integer,
+                crdt: ArxaKitCrdtTier.counter),
+            ArxaKitColumn('tags', ArxaKitColumnType.jsonb,
+                nullable: true, crdt: ArxaKitCrdtTier.orSet),
+          ],
+        );
+
+        // Then emitServerCrdtEnv names the table and the rule
+        expect(
+          () => CairnSchemaEmitter().emitServerCrdtEnv(const [dual]),
+          throwsA(isA<StateError>()
+              .having((e) => e.message, 'message', contains('dual'))
+              .having((e) => e.message, 'message', contains('one CRDT tier'))),
+        );
       },
     );
   });

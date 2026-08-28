@@ -9,6 +9,7 @@
 
 set -euo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")"
+# shellcheck source=./live_env.sh
 source ./live_env.sh
 
 sub="${1:?usage: mint_jwt.sh <sub>}"

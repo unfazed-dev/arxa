@@ -35,10 +35,7 @@ void main() {
         final engine = FakeCairnEngine();
         CairnSchema? openedSchema;
         final backend = ArxaKitCairnBackend(
-          config: const ArxaKitCairnConfig(
-            orSetTables: {'posts'},
-            counterTables: {'posts'},
-          ),
+          config: const ArxaKitCairnConfig(),
           openDatabase: (config, schema, token) async {
             openedSchema = schema;
             // ignore: invalid_use_of_visible_for_testing_member
@@ -84,7 +81,7 @@ void main() {
     test(
       'kit.cairn.backend — a schema crdt flag missing from config fails at boot naming the field',
       () async {
-        // Given the posts schema (likes=counter, tags=orSet) but an EMPTY
+        // Given the counter_posts schema (likes=counter) but an EMPTY
         // config — the flags and the config disagree
         final backend = ArxaKitCairnBackend(
           config: const ArxaKitCairnConfig(),
@@ -98,7 +95,7 @@ void main() {
               backend: ArxaKitDataBackend.plugin,
               plugin: backend,
             ),
-            entities: const [postRegistration],
+            entities: const [counterPostRegistration],
           ),
           throwsA(isA<StateError>().having(
               (e) => e.message, 'message', contains('counterTables'))),
@@ -110,26 +107,14 @@ void main() {
       'kit.cairn.backend — a config crdt table without a schema flag fails at boot',
       () async {
         // Given a config tagging a table the schema never flags
-        final backend = ArxaKitCairnBackend(
-          config: const ArxaKitCairnConfig(
-            orSetTables: {'posts'},
-            counterTables: {'posts'},
-          ),
-          openDatabase: _unusedOpener,
-        );
-
-        // The schema flags BOTH tiers on posts, so this config is consistent
-        // — but tag a table the schema doesn't flag and boot must fail
         final inconsistent = ArxaKitCairnBackend(
           config: const ArxaKitCairnConfig(
-            orSetTables: {'posts', 'comments'},
-            counterTables: {'posts'},
+            orSetTables: {'comments'},
           ),
           openDatabase: _unusedOpener,
         );
 
-        // Then: the consistent one boots (proven by the first test's shape),
-        // the inconsistent one names the unflagged table
+        // Then boot fails naming the unflagged table
         await expectLater(
           ArxaKitData.initialize(
             config: ArxaKitDataConfig(
@@ -141,8 +126,8 @@ void main() {
           throwsA(isA<StateError>()
               .having((e) => e.message, 'message', contains('comments'))),
         );
-        // (the consistent backend is exercised by the round-trip test above)
-        expect(backend.name, 'cairn');
+        // (a consistent config boots — proven by the round-trip test above)
+        expect(inconsistent.name, 'cairn');
       },
     );
 
@@ -265,14 +250,58 @@ void main() {
     );
 
     test(
+      'kit.cairn.backend — a table flagged with BOTH crdt tiers fails at boot naming the table',
+      () async {
+        // Given an entity whose schema carries counter AND or-set flags on
+        // one table — the engine's rule is "a table MUST NOT be in both"
+        // (or-set wins the first branch checked, silently dropping the
+        // counter tag), so the kit fails loudly instead of booting a lie
+        const dualSchema = ArxaKitTableSchema(
+          table: 'dual',
+          columns: [
+            ArxaKitColumn.id(),
+            ArxaKitColumn('n', ArxaKitColumnType.integer,
+                crdt: ArxaKitCrdtTier.counter),
+            ArxaKitColumn('tags', ArxaKitColumnType.jsonb,
+                nullable: true, crdt: ArxaKitCrdtTier.orSet),
+          ],
+        );
+        final backend = ArxaKitCairnBackend(
+          config: const ArxaKitCairnConfig(
+            orSetTables: {'dual'},
+            counterTables: {'dual'},
+          ),
+          openDatabase: _unusedOpener,
+        );
+
+        // Then initialize refuses to boot, naming the table and the rule
+        await expectLater(
+          ArxaKitData.initialize(
+            config: ArxaKitDataConfig(
+              backend: ArxaKitDataBackend.plugin,
+              plugin: backend,
+            ),
+            entities: const [
+              ArxaKitEntityRegistration<Post>(
+                schema: dualSchema,
+                fromJson: Post.fromJson,
+                toJson: Post.toRow,
+              ),
+            ],
+          ),
+          throwsA(isA<StateError>()
+              .having((e) => e.message, 'message', contains('dual'))
+              .having((e) => e.message, 'message', contains('one CRDT tier'))),
+        );
+      },
+    );
+
+    test(
       'kit.cairn.backend — the userIdProvider stamps through the wired repository',
       () async {
         // Given a plugin with a tenant id provider
         final backend = ArxaKitCairnBackend(
-          config: const ArxaKitCairnConfig(
-            orSetTables: {'posts'},
-            counterTables: {'posts'},
-          ),
+          config: const ArxaKitCairnConfig(),
           userIdProvider: () => 'tenant-7',
           openDatabase: (config, schema, token) async {
             // ignore: invalid_use_of_visible_for_testing_member
