@@ -18,6 +18,15 @@ dependencies:
     path: ../ui_library
   arxa_kit_data:
     path: ../data
+  # The cairn backend (localOnly/sync/supabaseBridge) — selected at boot via
+  # --dart-define=ARXA_CAIRN_MODE=…; see AppData.defaultConfig.
+  arxa_kit_cairn:
+    path: ../cairn
+  # PUSH SMOKE (5d): the real-rail FCM leg, atlet-parity pins. Only
+  # integration_test/push_smoke_test.dart calls Firebase.initializeApp — a
+  # config-less build (no google-services.json) stays green.
+  firebase_core: ^4.13.0
+  firebase_messaging: ^16.5.0
   # Device haptics — extracted from arxa_kit core (phase 2B).
   arxa_kit_haptics:
     path: ../haptics

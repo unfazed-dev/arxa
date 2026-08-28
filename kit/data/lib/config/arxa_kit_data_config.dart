@@ -5,10 +5,20 @@
 /// registered — nothing else in the app changes when the backend changes.
 library;
 
+import 'arxa_kit_backend_plugin.dart';
 import 'arxa_kit_seed_profile.dart';
 
 /// Which storage engine the app reads and writes through.
-enum ArxaKitDataBackend { seed, supabase, appwrite }
+enum ArxaKitDataBackend {
+  seed,
+  supabase,
+  appwrite,
+
+  /// An out-of-package backend plugged in through [ArxaKitDataConfig.plugin]
+  /// (see `ArxaKitBackendPlugin`) — e.g. `arxa_kit_cairn`. kit/data holds no
+  /// dependency on the plugin's package; it only drives the seam.
+  plugin,
+}
 
 /// How the seed backend persists between launches.
 enum ArxaKitSeedPersistenceMode {
@@ -69,6 +79,10 @@ class ArxaKitDataConfig {
   final ArxaKitSupabaseConfig? supabase;
   final ArxaKitAppwriteConfig? appwrite;
 
+  /// The out-of-package backend to boot; required iff [backend] is
+  /// [ArxaKitDataBackend.plugin]. See `ArxaKitBackendPlugin`.
+  final ArxaKitBackendPlugin? plugin;
+
   /// Only meaningful when [backend] is [ArxaKitDataBackend.seed].
   final ArxaKitSeedPersistenceMode seedPersistence;
 
@@ -88,6 +102,7 @@ class ArxaKitDataConfig {
     this.backend = ArxaKitDataBackend.supabase,
     this.supabase,
     this.appwrite,
+    this.plugin,
     this.seedPersistence = ArxaKitSeedPersistenceMode.none,
     this.seedProfile,
     this.auth,
@@ -107,6 +122,12 @@ class ArxaKitDataConfig {
         if (appwrite == null) {
           throw StateError(
             'ArxaKitDataConfig: backend is appwrite but no ArxaKitAppwriteConfig was provided.',
+          );
+        }
+      case ArxaKitDataBackend.plugin:
+        if (plugin == null) {
+          throw StateError(
+            'ArxaKitDataConfig: backend is plugin but no ArxaKitBackendPlugin was provided.',
           );
         }
       case ArxaKitDataBackend.seed:

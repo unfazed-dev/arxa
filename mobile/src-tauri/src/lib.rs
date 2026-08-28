@@ -1,4 +1,4 @@
-mod connection;
+pub mod connection;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -7,6 +7,7 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             connection::connection_status,
             connection::begin_pairing,
+            connection::set_push_token,
         ])
         .setup(|app| {
             // Silent reconnect from stored pairing (Connecting until it

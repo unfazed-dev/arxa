@@ -43,3 +43,7 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Push smoke (5d) — operator-owned Firebase config, never committed
+android/app/google-services.json
+ios/Runner/GoogleService-Info.plist

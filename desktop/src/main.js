@@ -32,7 +32,6 @@ async function isReachable(url) {
 (async () => {
   const url = await resolveStudioUrl();
   const status = document.getElementById("status");
-  document.getElementById("hint").textContent = `Starting ${url}`;
 
   let attempts = 0;
   const tick = async () => {

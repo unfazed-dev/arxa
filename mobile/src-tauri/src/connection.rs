@@ -7,7 +7,8 @@
 //!   case-insensitive. With iroh 1.x the "NodeAddr ticket" of the plan is an
 //!   `iroh_tickets::endpoint::EndpointTicket` (NodeAddr was renamed EndpointAddr).
 //! - **Transport**: iroh bidirectional streams, ALPN `arxa/studio/0`. The first
-//!   frame from the phone on EVERY stream is `AUTH <token>\n`; the desktop
+//!   frame from the phone on EVERY stream is `AUTH <token> <device-name>\n`
+//!   (name = rest of line, used for the desktop's device list); the desktop
 //!   replies `OK\n` or closes the stream.
 //! - **M4 delivery**: after auth a stream carries raw HTTP/1.1. A loopback TCP
 //!   proxy on `127.0.0.1:<random port>` opens one fresh iroh stream per accepted
@@ -50,7 +51,7 @@ const RECONNECT_DIAL_ATTEMPTS: u32 = 5;
 
 type DynErr = Box<dyn std::error::Error + Send + Sync>;
 
-#[derive(Serialize, Clone, Copy, PartialEq, Eq)]
+#[derive(Serialize, Clone, Copy, PartialEq, Eq, Debug)]
 #[serde(rename_all = "snake_case")]
 pub enum ConnectionState {
     NotPaired,
@@ -68,15 +69,37 @@ pub struct ConnectionStatus {
 
 /// Ticket payload — also the on-disk persistence shape (`pairing.json`).
 #[derive(Serialize, Deserialize, Clone)]
-struct Pairing {
+pub struct Pairing {
     /// iroh endpoint ticket string for the desktop peer.
-    node: String,
+    pub node: String,
     /// Auth token, sent as `AUTH <token>\n` on every stream. Kept as the
     /// long-lived session token after the first successful pairing.
-    token: String,
+    pub token: String,
 }
 
-struct Shared {
+/// Where a session persists (or forgets) the pairing it is driving.
+///
+/// Split out from `AppHandle` so the pairing conformance test can run the real
+/// `run_session` loop headlessly and observe that an auth rejection really does
+/// clear the stored pairing. The app always uses [`AppPairingStore`].
+pub trait PairingStore: Send + Sync + 'static {
+    fn store(&self, pairing: &Pairing) -> Result<(), String>;
+    fn forget(&self);
+}
+
+/// The shipped store: local-only JSON in the Tauri app data dir.
+struct AppPairingStore(AppHandle);
+
+impl PairingStore for AppPairingStore {
+    fn store(&self, pairing: &Pairing) -> Result<(), String> {
+        store_pairing(&self.0, pairing)
+    }
+    fn forget(&self) {
+        forget_pairing(&self.0)
+    }
+}
+
+pub struct Shared {
     state: ConnectionState,
     studio_url: Option<String>,
     /// Bumped on every (re)pairing so stale session tasks stop writing state.
@@ -93,11 +116,32 @@ impl Default for Shared {
     }
 }
 
-type SharedHandle = Arc<Mutex<Shared>>;
+pub type SharedHandle = Arc<Mutex<Shared>>;
 
 #[derive(Default)]
 pub struct ConnectionManager {
     inner: SharedHandle,
+}
+
+impl ConnectionManager {
+    /// Snapshot of the state the frontend polls (`connection_status`).
+    pub fn status(&self) -> ConnectionStatus {
+        let s = self.inner.lock().expect("connection state poisoned");
+        ConnectionStatus {
+            state: s.state,
+            studio_url: s.studio_url.clone(),
+        }
+    }
+
+    /// Handle the session tasks write state through.
+    pub fn shared(&self) -> SharedHandle {
+        self.inner.clone()
+    }
+
+    /// Open a new pairing attempt, superseding any session still running.
+    pub fn begin_epoch(&self) -> u64 {
+        begin_epoch(&self.inner)
+    }
 }
 
 /// Writes state iff `epoch` is still current; returns false when superseded.
@@ -126,11 +170,7 @@ fn begin_epoch(shared: &SharedHandle) -> u64 {
 
 #[tauri::command]
 pub fn connection_status(mgr: State<'_, ConnectionManager>) -> ConnectionStatus {
-    let s = mgr.inner.lock().expect("connection state poisoned");
-    ConnectionStatus {
-        state: s.state,
-        studio_url: s.studio_url.clone(),
-    }
+    mgr.status()
 }
 
 /// Invoked with the scanned/pasted pairing code (decision M2). Validates the
@@ -165,7 +205,7 @@ pub fn attempt_reconnect(app: &AppHandle) {
 // Ticket parsing
 // ---------------------------------------------------------------------------
 
-fn parse_ticket(raw: &str) -> Result<Pairing, String> {
+pub fn parse_ticket(raw: &str) -> Result<Pairing, String> {
     let payload = raw
         .trim()
         .strip_prefix(TICKET_PREFIX)
@@ -189,7 +229,8 @@ fn parse_ticket(raw: &str) -> Result<Pairing, String> {
 // Session driving
 // ---------------------------------------------------------------------------
 
-enum SessionError {
+#[derive(Debug)]
+pub enum SessionError {
     /// Reached the desktop but it refused the token — stored pairing is dead.
     AuthRejected(String),
     /// Could not reach the desktop (network / relay / timeout) — retryable.
@@ -204,29 +245,35 @@ fn spawn_session(
     max_dial_attempts: u32,
 ) {
     tauri::async_runtime::spawn(async move {
-        run_session(app, shared, epoch, pairing, max_dial_attempts).await;
+        let endpoint = match Endpoint::bind(presets::N0).await {
+            Ok(ep) => ep,
+            Err(e) => {
+                eprintln!("arxa-mobile: iroh endpoint bind failed: {e}");
+                set_state(&shared, epoch, ConnectionState::NotPaired, None);
+                return;
+            }
+        };
+        let store: Arc<dyn PairingStore> = Arc::new(AppPairingStore(app));
+        run_session(store, shared, epoch, pairing, max_dial_attempts, endpoint).await;
     });
 }
 
-async fn run_session(
-    app: AppHandle,
+/// Drive one pairing to completion on `endpoint`: dial, auth, serve the
+/// loopback proxy, redial on link loss, and give up to `NotPaired` on auth
+/// rejection or after `max_dial_attempts` unreachable dials. Consumes the
+/// endpoint (it is closed on the way out).
+pub async fn run_session(
+    store: Arc<dyn PairingStore>,
     shared: SharedHandle,
     epoch: u64,
     pairing: Pairing,
     max_dial_attempts: u32,
+    endpoint: Endpoint,
 ) {
     // Already validated in parse_ticket / stored form; bail defensively.
     let ticket: EndpointTicket = match pairing.node.parse() {
         Ok(t) => t,
         Err(_) => {
-            set_state(&shared, epoch, ConnectionState::NotPaired, None);
-            return;
-        }
-    };
-    let endpoint = match Endpoint::bind(presets::N0).await {
-        Ok(ep) => ep,
-        Err(e) => {
-            eprintln!("arxa-mobile: iroh endpoint bind failed: {e}");
             set_state(&shared, epoch, ConnectionState::NotPaired, None);
             return;
         }
@@ -240,7 +287,7 @@ async fn run_session(
         match establish(&endpoint, &ticket, &pairing.token).await {
             Ok(conn) => {
                 attempts = 0;
-                if let Err(e) = store_pairing(&app, &pairing) {
+                if let Err(e) = store.store(&pairing) {
                     eprintln!("arxa-mobile: could not persist pairing: {e}");
                 }
                 let (port, proxy) = match start_proxy(conn.clone(), pairing.token.clone()).await {
@@ -251,6 +298,12 @@ async fn run_session(
                         break;
                     }
                 };
+                // M7 (plan track B3): register this device's push token over
+                // the tunnel at (re)connect time. Non-fatal on every failure
+                // path — an older desktop closes the PUSH stream as a
+                // malformed AUTH, and a PUSH-stream close is NEVER the
+                // revocation signal (only an AUTH-stream close is).
+                register_push_over_tunnel(&conn, &pairing.token).await;
                 let url = format!("http://127.0.0.1:{port}/");
                 if !set_state(&shared, epoch, ConnectionState::Connected, Some(url)) {
                     proxy.abort();
@@ -263,7 +316,7 @@ async fn run_session(
             }
             Err(SessionError::AuthRejected(msg)) => {
                 eprintln!("arxa-mobile: desktop rejected pairing token: {msg}");
-                forget_pairing(&app);
+                store.forget();
                 set_state(&shared, epoch, ConnectionState::NotPaired, None);
                 break;
             }
@@ -281,8 +334,51 @@ async fn run_session(
     endpoint.close().await;
 }
 
+/// The device's push token, set by the frontend once the OS push plugin
+/// provides one (`set_push_token` invoke). None until then — registration
+/// is skipped silently on every reconnect until a token exists.
+static PUSH_TOKEN: std::sync::RwLock<Option<(String, String)>> = std::sync::RwLock::new(None);
+
+/// Frontend-facing seam (M7): remember the OS push token; registration
+/// rides the current connection immediately when one is live and every
+/// reconnect thereafter (token refreshes arrive at arbitrary times).
+#[tauri::command]
+pub fn set_push_token(platform: String, token: String) {
+    if let Ok(mut guard) = PUSH_TOKEN.write() {
+        guard.replace((platform, token));
+    }
+}
+
+/// Send `PUSH <session-token> <platform> <push-token>\n` on a fresh stream
+/// and expect `OK\n`. Every failure is logged and swallowed: registration
+/// must never destabilize the session.
+async fn register_push_over_tunnel(conn: &Connection, session_token: &str) {
+    let Some((platform, token)) = PUSH_TOKEN.read().ok().and_then(|g| g.clone()) else {
+        return;
+    };
+    match timeout(AUTH_TIMEOUT, async {
+        let (mut send, mut recv) = conn.open_bi().await?;
+        send.write_all(format!("PUSH {session_token} {platform} {token}\n").as_bytes())
+            .await?;
+        let _ = send.finish();
+        let mut ok = [0u8; 3];
+        recv.read_exact(&mut ok).await?;
+        if &ok == b"OK\n" {
+            Ok::<(), DynErr>(())
+        } else {
+            Err(format!("unexpected PUSH reply: {ok:?}").into())
+        }
+    })
+    .await
+    {
+        Ok(Ok(())) => {}
+        Ok(Err(e)) => eprintln!("arxa-mobile: push registration not accepted: {e}"),
+        Err(_) => eprintln!("arxa-mobile: push registration timed out"),
+    }
+}
+
 /// Dial the desktop and prove the token on a handshake stream.
-async fn establish(
+pub async fn establish(
     endpoint: &Endpoint,
     ticket: &EndpointTicket,
     token: &str,
@@ -299,10 +395,129 @@ async fn establish(
     }
 }
 
-/// Opens a stream and performs the `AUTH <token>\n` -> `OK\n` exchange.
+/// Best-effort user-visible device name, sent alongside AUTH so the desktop
+/// can list "iPhone 15 Pro" instead of a node-id stub. Layered fallback:
+/// hostname (minus any `.local` suffix) when it is meaningful, else the
+/// real hardware marketing name from `sysctl hw.machine` (iOS), else a
+/// per-platform generic. Computed once — it is sent on every stream.
+///
+/// NOTE: the user-assigned name ("Evan's iPhone") is deliberately hidden by
+/// iOS 16+ — UIDevice.name and gethostname both return a generic "iPhone"
+/// unless the app carries Apple's approval-gated entitlement
+/// `com.apple.developer.device-information.user-assigned-device-name`.
+/// Until that grant exists, the model marketing name is the truthful
+/// maximum an app can report.
+fn device_label() -> &'static str {
+    static LABEL: std::sync::OnceLock<String> = std::sync::OnceLock::new();
+    LABEL.get_or_init(|| {
+        let fallback = if cfg!(target_os = "ios") {
+            "iPhone"
+        } else if cfg!(target_os = "android") {
+            "Android device"
+        } else {
+            "Mobile device"
+        };
+        let mut buf = [0u8; 256];
+        let hostname = unsafe {
+            if libc::gethostname(buf.as_mut_ptr() as *mut libc::c_char, buf.len()) == 0 {
+                std::ffi::CStr::from_bytes_until_nul(&buf)
+                    .ok()
+                    .and_then(|c| c.to_str().ok())
+                    .map(|s| s.trim_end_matches(".local").trim().to_string())
+            } else {
+                None
+            }
+        };
+        match hostname {
+            Some(h)
+                if !h.is_empty()
+                    && !h.eq_ignore_ascii_case("localhost")
+                    && !h.eq_ignore_ascii_case("iphone") =>
+            {
+                // AUTH is a single-line frame — the name must never smuggle
+                // in a newline; the desktop also sanitizes on its side.
+                h.chars().filter(|c| !c.is_control()).take(64).collect()
+            }
+            _ => ios_model_name().unwrap_or_else(|| fallback.to_string()),
+        }
+    })
+}
+
+/// `sysctl hw.machine` → "iPhone16,1" → "iPhone 15 Pro". Returns None off
+/// iOS, on the simulator (where hw.machine is the host arch), or on sysctl
+/// failure.
+#[cfg(target_os = "ios")]
+fn ios_model_name() -> Option<String> {
+    let key = std::ffi::CString::new("hw.machine").ok()?;
+    let ident = unsafe {
+        let mut len: libc::size_t = 0;
+        if libc::sysctlbyname(
+            key.as_ptr(),
+            std::ptr::null_mut(),
+            &mut len,
+            std::ptr::null_mut(),
+            0,
+        ) != 0
+            || len == 0
+        {
+            return None;
+        }
+        let mut buf = vec![0u8; len];
+        if libc::sysctlbyname(
+            key.as_ptr(),
+            buf.as_mut_ptr() as *mut libc::c_void,
+            &mut len,
+            std::ptr::null_mut(),
+            0,
+        ) != 0
+        {
+            return None;
+        }
+        std::ffi::CStr::from_bytes_until_nul(&buf)
+            .ok()?
+            .to_str()
+            .ok()?
+            .to_string()
+    };
+    // Marketing names for recent identifiers; unknown-but-real identifiers
+    // pass through raw ("iPhone19,1" still beats "iPhone").
+    let name = match ident.as_str() {
+        "iPhone14,2" => "iPhone 13 Pro",
+        "iPhone14,3" => "iPhone 13 Pro Max",
+        "iPhone14,4" => "iPhone 13 mini",
+        "iPhone14,5" => "iPhone 13",
+        "iPhone14,6" => "iPhone SE (3rd gen)",
+        "iPhone14,7" => "iPhone 14",
+        "iPhone14,8" => "iPhone 14 Plus",
+        "iPhone15,2" => "iPhone 14 Pro",
+        "iPhone15,3" => "iPhone 14 Pro Max",
+        "iPhone15,4" => "iPhone 15",
+        "iPhone15,5" => "iPhone 15 Plus",
+        "iPhone16,1" => "iPhone 15 Pro",
+        "iPhone16,2" => "iPhone 15 Pro Max",
+        "iPhone17,1" => "iPhone 16 Pro",
+        "iPhone17,2" => "iPhone 16 Pro Max",
+        "iPhone17,3" => "iPhone 16",
+        "iPhone17,4" => "iPhone 16 Plus",
+        "iPhone17,5" => "iPhone 16e",
+        other if other.starts_with("iPhone") || other.starts_with("iPad") => other,
+        _ => return None, // simulator/host arch — not a device identifier
+    };
+    Some(name.to_string())
+}
+
+#[cfg(not(target_os = "ios"))]
+fn ios_model_name() -> Option<String> {
+    None
+}
+
+/// Opens a stream and performs the `AUTH <token> <device-name>\n` -> `OK\n`
+/// exchange.
 async fn auth_stream(conn: &Connection, token: &str) -> Result<(), DynErr> {
     let (mut send, mut recv) = conn.open_bi().await?;
-    send.write_all(format!("AUTH {token}\n").as_bytes()).await?;
+    let name = device_label();
+    send.write_all(format!("AUTH {token} {name}\n").as_bytes())
+        .await?;
     let mut ok = [0u8; 3];
     recv.read_exact(&mut ok).await?;
     if &ok != b"OK\n" {
@@ -316,19 +531,24 @@ async fn auth_stream(conn: &Connection, token: &str) -> Result<(), DynErr> {
 // Loopback proxy (M4): TCP on 127.0.0.1 <-> one iroh stream per connection
 // ---------------------------------------------------------------------------
 
-async fn start_proxy(
+/// Bind the loopback proxy and serve it until the handle is aborted. Returns
+/// the port `studio_url` is built from.
+///
+/// `tokio::spawn` here picks up the ambient runtime, which in the app is
+/// exactly the `tauri::async_runtime` the caller was spawned onto.
+pub async fn start_proxy(
     conn: Connection,
     token: String,
-) -> std::io::Result<(u16, tauri::async_runtime::JoinHandle<()>)> {
+) -> std::io::Result<(u16, tokio::task::JoinHandle<()>)> {
     let listener = TcpListener::bind(("127.0.0.1", 0)).await?;
     let port = listener.local_addr()?.port();
-    let handle = tauri::async_runtime::spawn(async move {
+    let handle = tokio::spawn(async move {
         loop {
             match listener.accept().await {
                 Ok((tcp, _peer)) => {
                     let conn = conn.clone();
                     let token = token.clone();
-                    tauri::async_runtime::spawn(async move {
+                    tokio::spawn(async move {
                         if let Err(e) = bridge(conn, token, tcp).await {
                             eprintln!("arxa-mobile: proxied stream ended: {e}");
                         }
@@ -348,7 +568,9 @@ async fn bridge(conn: Connection, token: String, mut tcp: TcpStream) -> Result<(
     let (mut send, mut recv) = conn.open_bi().await?;
     // AUTH is the first frame on every stream (plan contract); consume the
     // desktop's OK before piping raw HTTP/1.1 bytes.
-    send.write_all(format!("AUTH {token}\n").as_bytes()).await?;
+    let name = device_label();
+    send.write_all(format!("AUTH {token} {name}\n").as_bytes())
+        .await?;
     let mut ok = [0u8; 3];
     recv.read_exact(&mut ok).await?;
     if &ok != b"OK\n" {

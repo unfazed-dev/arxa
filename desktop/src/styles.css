@@ -1,16 +1,52 @@
+/* Shared styles for the desktop shell's own pages (wait + pair windows).
+   Design language = arxa studio's (see arxa-studio/plugins/brand): every
+   surface is the accent washed into a neutral gray ladder via
+   color-mix(in oklab, ACC 10%, gray) and the accent is moss #0EBAE4 — the
+   exact formulas the dsh web app uses, so shell windows read as the same
+   product in both the light (white) and dark themes. */
 :root {
   color-scheme: light dark;
-  --fg: #1a1a1a;
-  --muted: #6b7280;
-  --accent: #4f46e5;
+  --acc: #0EBAE4;
+  --bg: color-mix(in oklab, var(--acc) 10%, rgb(250, 250, 250));
+  --surface: color-mix(in oklab, var(--acc) 10%, rgb(254, 254, 254));
+  --border: color-mix(in oklab, var(--acc) 10%, rgb(230, 230, 230));
+  --fg: color-mix(in oklab, var(--acc) 10%, rgb(27, 27, 27));
+  --muted: color-mix(in oklab, var(--acc) 10%, rgb(100, 100, 100));
+  --accent: var(--acc);
+  --accent-down: color-mix(in oklab, var(--acc) 72%, black);
 }
+/* System dark applies only until the studio reports its own theme (pair.js
+   sets data-theme from the shell's theme relay — the studio toggle wins over
+   the OS setting, exactly like the main window). */
 @media (prefers-color-scheme: dark) {
-  :root { --fg: #e5e7eb; --muted: #9ca3af; }
+  :root:not([data-theme="light"]) {
+    --bg: color-mix(in oklab, var(--acc) 10%, rgb(27, 27, 27));
+    --surface: color-mix(in oklab, var(--acc) 10%, rgb(35, 35, 35));
+    --border: color-mix(in oklab, var(--acc) 10%, rgb(53, 53, 53));
+    --fg: color-mix(in oklab, var(--acc) 10%, rgb(238, 238, 238));
+    --muted: color-mix(in oklab, var(--acc) 10%, rgb(156, 156, 156));
+  }
 }
+:root[data-theme="light"] { color-scheme: light; }
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: color-mix(in oklab, var(--acc) 10%, rgb(27, 27, 27));
+  --surface: color-mix(in oklab, var(--acc) 10%, rgb(35, 35, 35));
+  --border: color-mix(in oklab, var(--acc) 10%, rgb(53, 53, 53));
+  --fg: color-mix(in oklab, var(--acc) 10%, rgb(238, 238, 238));
+  --muted: color-mix(in oklab, var(--acc) 10%, rgb(156, 156, 156));
+}
+
+/* Author display rules (e.g. .code-row's flex) would otherwise override the
+   UA's [hidden] { display: none } — that is exactly the bug that left an
+   empty code pill + Copy button visible after a successful pairing. */
+[hidden] { display: none !important; }
+
 * { box-sizing: border-box; margin: 0; }
 body {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   color: var(--fg);
+  background: var(--bg);
   display: grid;
   place-items: center;
   min-height: 100vh;
@@ -33,25 +69,75 @@ p { color: var(--muted); font-size: 0.95rem; }
 
 /* Pair-mobile-device window (pair.html) */
 .pair { text-align: center; max-width: 24rem; padding: 1.5rem; }
+.pair .qr-wrap {
+  position: relative;
+  width: fit-content;
+  margin: 1rem auto 0;
+}
 .pair .qr {
   display: grid;
   place-items: center;
-  margin: 1rem auto 0;
   min-height: 240px;
+  min-width: 240px;
 }
-.pair .qr svg { background: #fff; border-radius: 8px; padding: 8px; }
+/* The brand mark is minted into the QR SVG itself by the shell
+   (module-grid excavation in pairing.rs) — no overlay element here. */
+.pair .qr svg {
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 10px;
+}
+/* Pill metrics = the dsh settings-row button (arxa-pairing's PairDeviceRow:
+   height 36px, radius = height/2, 14px type) so both sides of the pairing
+   flow speak one design language. */
 .pair button {
   margin-top: 0.75rem;
-  padding: 0.4rem 0.9rem;
+  height: 36px;
+  padding: 0 18px;
   font: inherit;
+  font-size: 14px;
+  line-height: 22px;
+  font-weight: 500;
   color: #fff;
   background: var(--accent);
   border: none;
-  border-radius: 6px;
+  border-radius: 999px;
   cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
+.pair button:hover { background: var(--accent-down); }
 .pair button:disabled { opacity: 0.5; cursor: default; }
-.devices { margin-top: 1.5rem; text-align: left; }
+.pair .code-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+.pair .code-text {
+  flex: 1;
+  font-family: ui-monospace, monospace;
+  font-size: 0.7rem;
+  text-align: left;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding: 0.4rem 0.5rem;
+  color: var(--muted);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  user-select: all;
+}
+.pair .code-row button { margin-top: 0; flex-shrink: 0; }
+.devices {
+  margin-top: 1.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border);
+  text-align: left;
+}
 .devices h2 { font-size: 0.95rem; font-weight: 600; margin-bottom: 0.4rem; }
 .devices ul { list-style: none; padding: 0; }
 .devices li {
@@ -59,8 +145,30 @@ p { color: var(--muted); font-size: 0.95rem; }
   align-items: center;
   justify-content: space-between;
   gap: 0.5rem;
-  padding: 0.35rem 0;
+  padding: 0.4rem 0;
   font-size: 0.9rem;
-  color: var(--muted);
 }
-.devices li button { margin-top: 0; padding: 0.2rem 0.6rem; font-size: 0.8rem; }
+.devices .device-name { color: var(--fg); }
+.devices .device-id {
+  font-family: ui-monospace, monospace;
+  font-size: 0.72rem;
+  color: var(--muted);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 0.1rem 0.35rem;
+  margin-left: 0.45rem;
+}
+.devices li .grow { flex: 1; text-align: left; }
+.devices li button {
+  margin-top: 0;
+  height: 28px;
+  padding: 0 12px;
+  font-size: 12px;
+  color: var(--fg);
+  background: var(--surface);
+  border: 1px solid var(--border);
+}
+.devices li button:hover {
+  background: var(--border);
+}

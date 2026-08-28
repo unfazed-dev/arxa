@@ -20,7 +20,8 @@ use tauri::Manager;
 use tauri_plugin_shell::process::CommandChild;
 use tauri_plugin_shell::ShellExt;
 
-mod pairing;
+pub mod pairing;
+pub mod pushd;
 
 /// Default address of the locally served studio UI (D30). The canonical
 /// origin everywhere arxa is used (README/grill-decisions): `*.localhost`
@@ -43,6 +44,46 @@ fn studio_url() -> String {
         .ok()
         .filter(|v| !v.trim().is_empty())
         .unwrap_or_else(|| DEFAULT_STUDIO_URL.to_string())
+}
+
+/// Live theme as last reported by the studio webview (arxa-pairing's client
+/// half watches the accent swatch + dark toggle). Shell-owned windows (pair)
+/// render on a different origin than the studio, so they can't read the
+/// studio's localStorage/body attributes — this relay is how they stay on the
+/// SAME tokens instead of drifting into a hardcoded copy.
+#[derive(Clone, serde::Serialize, serde::Deserialize)]
+struct Theme {
+    accent: Option<String>,
+    dark: bool,
+}
+struct ThemeState(Mutex<Option<Theme>>);
+
+/// Called by the studio page (remote origin — granted in
+/// capabilities/remote-studio.json) on load and on every accent/dark change.
+/// Caches for late-opening windows and broadcasts to already-open ones.
+#[tauri::command]
+fn report_theme(
+    app: tauri::AppHandle,
+    state: tauri::State<ThemeState>,
+    accent: Option<String>,
+    dark: bool,
+) {
+    use tauri::Emitter as _;
+    // Only a literal #rrggbb reaches CSS — the value crosses a trust boundary
+    // (remote page → shell window style attribute).
+    let accent = accent.filter(|v| {
+        v.len() == 7 && v.starts_with('#') && v[1..].chars().all(|c| c.is_ascii_hexdigit())
+    });
+    let theme = Theme { accent, dark };
+    *state.0.lock().unwrap() = Some(theme.clone());
+    let _ = app.emit("arxa://theme", theme);
+}
+
+/// Read the cached theme — pair.js calls this on boot so a window opened
+/// after a theme change starts correct instead of waiting for the next event.
+#[tauri::command]
+fn get_theme(state: tauri::State<ThemeState>) -> Option<Theme> {
+    state.0.lock().unwrap().clone()
 }
 
 /// Open (or focus) the small "Pair mobile device" window served from the
@@ -253,9 +294,12 @@ pub fn run() {
         }))
         .plugin(tauri_plugin_shell::init())
         .manage(SpawnedServer(Mutex::new(None)))
+        .manage(ThemeState(Mutex::new(None)))
         .invoke_handler(tauri::generate_handler![
             studio_url,
             open_pairing_window,
+            report_theme,
+            get_theme,
             pairing::pairing_begin,
             pairing::pairing_status,
             pairing::pairing_revoke
@@ -272,6 +316,9 @@ pub fn run() {
             pairing::init(app.handle(), studio_host_port(&url));
             #[cfg(desktop)]
             install_pairing_menu(app.handle());
+            // M7: the push sidecar (cairn-pushd) beside the engine — probe,
+            // spawn, and publish its reachability to the pairing state.
+            pushd::init(app.handle());
             // Rider 1: probe before spawn. An externally owned server (launchd
             // on the dev machine) always wins; we only self-heal a closed port
             // for public installs that have no service manager.
@@ -327,6 +374,7 @@ pub fn run() {
         .run(|app, event| {
             if let tauri::RunEvent::Exit = event {
                 kill_spawned(app);
+                pushd::kill_spawned(app);
             }
         });
 }

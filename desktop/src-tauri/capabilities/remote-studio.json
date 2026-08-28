@@ -1,0 +1,16 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "remote-studio",
+  "description": "The main window renders the studio from a remote localhost origin (studio_url). Remote pages get no IPC by default in Tauri v2, so this capability grants that origin core IPC access — enough for shell actions invoked from the studio UI (e.g. the settings 'Pair a device' button calling open_pairing_window). Scoped to the main window and localhost origins only; no shell/sidecar or updater permissions are exposed to the remote page.",
+  "local": false,
+  "remote": {
+    "urls": [
+      "http://arxa.studio.localhost:*",
+      "http://*.localhost:*",
+      "http://localhost:*",
+      "http://127.0.0.1:*"
+    ]
+  },
+  "windows": ["main"],
+  "permissions": ["core:default", "allow-open-pairing-window", "allow-report-theme"]
+}

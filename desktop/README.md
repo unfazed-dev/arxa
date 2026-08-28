@@ -177,6 +177,14 @@ node desktop/scripts/make-update-manifest.mjs --check latest.json
 Upload `latest.json` to `{BASE}/desktop/{channel}/{target}/{arch}/latest.json`
 and the archive to the `url` the manifest points at.
 
+## Local release builds
+
+Use `scripts/build-release.sh` instead of calling `npx tauri build` directly —
+it exports `TAURI_SIGNING_PRIVATE_KEY` from `~/.arxa/updater/arxa-updater.key`
+(passwordless; override path via `TAURI_SIGNING_PRIVATE_KEY_FILE`) so the
+updater `.app.tar.gz` gets its `.sig`. Without it, `createUpdaterArtifacts`
+warns "A public key has been found, but no private key" and skips signing.
+
 ## Release CI
 
 `.github/workflows/desktop-release.yml` runs on `studio-v*` tag pushes
@@ -218,3 +226,38 @@ signature. `scripts/sign-and-notarize.sh` remains the local/manual path.
 - real icon assets (`icons/icon.png` is a solid-color placeholder; `.icns`/`.ico` set still needed)
 - shell should optionally auto-spawn the `arxa-studio` sidecar on launch
 - notarization credentials (see "Release CI" secrets) — signing itself is done
+
+
+## Push sidecar (M7 — cairn-pushd supervision)
+
+The shell supervises the push daemon beside the engine (decision M7, cairn
+plan track B3): probe a healthy daemon at boot, spawn one if none is running
+(probe-before-spawn — an externally owned pushd always wins), kill only the
+child we spawned on exit. No binary found means no push this session — the
+studio keeps working; nothing about the daemon is load-bearing for the UI.
+
+### The credentials keystore (track B4: operator-owned, never the repo)
+
+`<app-local-data-dir>/pushd.env` — KEY=VALUE lines. The shell owns exactly
+three keys (`CAIRN_PUSHD_BIND`, `CAIRN_PUSHD_DB`, `CAIRN_PUSHD_API_KEYS`,
+created on first run, file mode 0600) and preserves every other line
+verbatim. Rail credentials are the operator's to place:
+
+    cairn push init --fcm --fcm-credentials-json <service-account.json> \
+        --env-file "<app-local-data-dir>/pushd.env"
+
+(or `--apns --apns-key-p8 ... --apns-key-id ... --apns-team-id ...
+--apns-bundle-id ...`; `cairn push check` validates the same file). The
+file is local-only: credentials never enter the repo, the engine, or any
+Arxa Digital Solutions database (M6 ownership rule). Free users get the
+identical path — the daemon runs on their Mac beside the engine.
+
+### Token registration
+
+Phones register their OS push token over the iroh tunnel at QR-pair time
+(`PUSH <session-token> <platform> <token>\n` on its own stream, ACKed with
+`OK\n`). Durable record: `pairing.json` (the daemon's SQLite registry is
+disposable; the supervisor re-registers every stored token whenever the
+daemon (re)starts). The mobile frontend hands the token to the shell via the
+`set_push_token` invoke — the OS push plugin (FCM/APNs) is the remaining
+mobile-side seam, documented in `mobile/README.md`.

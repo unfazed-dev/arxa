@@ -29,6 +29,9 @@
       "icons/icon.icns",
       "icons/icon.ico",
       "icons/icon.png"
-    ]
+    ],
+    "iOS": {
+      "developmentTeam": "43GNRCGQXQ"
+    }
   }
 }

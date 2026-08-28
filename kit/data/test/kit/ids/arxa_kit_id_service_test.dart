@@ -63,7 +63,7 @@ void main() {
       );
     });
 
-    test('kit.data.id-service — invalid namespace throws in the constructor', () {
+    test('kit.data.id-service — an invalid namespace is rejected up front', () {
       expect(
         () => ArxaKitIdService(namespace: 'not-a-uuid'),
         throwsArgumentError,

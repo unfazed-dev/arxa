@@ -6,6 +6,12 @@
   "permissions": [
     "core:default",
     "updater:default",
+    "allow-studio-url",
+    "allow-open-pairing-window",
+    "allow-get-theme",
+    "allow-pairing-begin",
+    "allow-pairing-status",
+    "allow-pairing-revoke",
     {
       "identifier": "shell:allow-execute",
       "allow": [

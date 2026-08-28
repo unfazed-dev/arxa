@@ -7,6 +7,7 @@ import WorkspaceShellView from '../workspace_shell_view.tsx';
 import LangSwitcher from '../../../common/lang_switcher.tsx';
 import Icon from '../../../../runtime/icon.tsx';
 import { inspectAttrs, Label, Heading, Txt } from '../../../common/widgets/primitives.tsx';
+import { raw } from 'hono/utils/html';
 
 type TFn = (key: string, vars?: Record<string, unknown>) => unknown;
 
@@ -78,6 +79,31 @@ const SettingsView: FC<SettingsViewProps> = (props) => {
       <Label name="workspace-settings:eyebrow" class="eyebrow">{translate('settings.eyebrow') as string}</Label>
       <Heading name="workspace-settings:title" level={1} class="display">{translate('settings.title') as string}</Heading>
       <Txt name="workspace-settings:lede" class="muted">{translate('settings.lede') as string}</Txt>
+
+      {/* General — desktop-shell actions. Server-rendered hidden: pairing
+          lives in the Tauri shell (open_pairing_window), so the inline script
+          reveals the section only when the page runs inside the desktop
+          webview (window.__TAURI__ present). In a plain browser the section
+          never appears — the studio must stay fully usable without it. */}
+      <section class="settings-section" id="settings-general" hidden>
+        <Heading name="workspace-settings:general-h" level={2}>{translate('settings.generalH') as string}</Heading>
+        <Txt name="workspace-settings:general-note" class="settings-note">{translate('settings.generalNote') as string}</Txt>
+        <button type="button" class="ghost" id="pair-device" {...inspectAttrs('workspace-settings:pair-device', { role: 'action' })}>
+          {translate('settings.pairDevice') as string} <Icon name="arrow-right" size={14} />
+        </button>
+        {raw(`<script>(function () {
+  var tauri = window.__TAURI__;
+  var section = document.getElementById('settings-general');
+  var btn = document.getElementById('pair-device');
+  if (!tauri || !tauri.core || !section || !btn) return;
+  section.hidden = false;
+  btn.addEventListener('click', function () {
+    tauri.core.invoke('open_pairing_window').catch(function (e) {
+      console.error('pair window:', e);
+    });
+  });
+})();</script>`)}
+      </section>
 
       <section class="settings-section">
         <Heading name="workspace-settings:appearance-h" level={2}>{translate('settings.appearanceH') as string}</Heading>

@@ -33,6 +33,23 @@ class ArxaKitDataSeeder {
       );
     }
 
+    if (config.backend == ArxaKitDataBackend.plugin) {
+      // kit/data cannot push to a backend it cannot name — a plugin that owns
+      // its seeding story implements ArxaKitPluginSeeder and push delegates
+      // (cairn: fixtures flow through its repositories' ordinary upserts).
+      // NB: the two plugin interfaces are unrelated types, so `is` does not
+      // promote — the if-case binds the seeder view explicitly.
+      if (config.plugin case final ArxaKitPluginSeeder seeder) {
+        await seeder.seedFixtures(fixtureAssets, assetReader: assetReader);
+        return;
+      }
+      throw StateError(
+        'ArxaKitDataSeeder.push does not know how to seed the plugin '
+        'backend ("${config.plugin!.name}") — the plugin does not implement '
+        'ArxaKitPluginSeeder; seed through the plugin package.',
+      );
+    }
+
     final tables = await ArxaKitFixtureLoader(
       idService: _idService,
       assetReader: assetReader ?? const ArxaKitRootBundleAssetReader(),
@@ -54,7 +71,8 @@ class ArxaKitDataSeeder {
         case ArxaKitDataBackend.appwrite:
           await _pushAppwrite(config, schema, rows.values.toList());
         case ArxaKitDataBackend.seed:
-          break; // unreachable — guarded above
+        case ArxaKitDataBackend.plugin:
+          break; // unreachable — handled above
       }
     }
   }

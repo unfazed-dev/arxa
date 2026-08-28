@@ -4,6 +4,16 @@ plugins {
     id("dev.flutter.flutter-gradle-plugin")
 }
 
+// PUSH SMOKE (5d): google-services only when the operator dropped
+// android/app/google-services.json (never committed — operator-owned).
+// Without it Firebase.initializeApp() is never called (only
+// integration_test/push_smoke_test.dart calls it), so a config-less build
+// stays green. NB: projectDir-anchored — a bare File("...") resolves against
+// the gradle daemon's CWD and silently skips the plugin.
+if (File(projectDir, "google-services.json").exists()) {
+    apply(plugin = "com.google.gms.google-services")
+}
+
 android {
     namespace = "com.arxakit.arxa_kit_showcase_app"
     compileSdk = flutter.compileSdkVersion

@@ -39,6 +39,7 @@ import 'storage/supabase/arxa_kit_supabase_storage_service.dart';
 // Entry point & config
 export 'config/arxa_kit_data_config.dart';
 export 'config/arxa_kit_seed_profile.dart';
+export 'config/arxa_kit_backend_plugin.dart';
 
 // Assets (AssetBundle inversion: pure-Dart port + Flutter adapter)
 export 'assets/arxa_kit_asset_reader.dart';
@@ -76,9 +77,13 @@ export 'repositories/appwrite/arxa_kit_appwrite_repository.dart';
 // Seeding
 export 'seeding/arxa_kit_fixture_loader.dart';
 export 'seeding/arxa_kit_data_seeder.dart';
+export 'seeding/arxa_kit_plugin_seeder.dart';
 
 // Facades
 export 'facades/arxa_kit_data_facade.dart';
+
+// Blob-storage seam (backends register into the locator; apps name the type)
+export 'storage/arxa_kit_storage_service.dart';
 
 // Emitters (pure Dart — safe in `dart run` tools)
 export 'emitters/arxa_kit_supabase_sql_emitter.dart';
@@ -155,6 +160,22 @@ class ArxaKitData {
         await _initializeSupabase(config, entities, idService);
       case ArxaKitDataBackend.appwrite:
         await _initializeAppwrite(config, entities, idService);
+      case ArxaKitDataBackend.plugin:
+        // The plugin runs AFTER the IdService/SchemaRegistry registrations
+        // above and receives those same instances — it registers its
+        // repositories into the shared arxaKitLocator exactly like a built-in
+        // backend (see ArxaKitBackendPlugin). It also receives the seeding
+        // inputs; what seeding means is the plugin package's call (a
+        // local-first backend may auto-seed, a server-bound one exposes
+        // ArxaKitPluginSeeder for operators).
+        await config.plugin!.initialize(
+          config,
+          entities,
+          idService,
+          registry,
+          fixtureAssets: fixtureAssets,
+          assetReader: reader,
+        );
     }
   }
 
