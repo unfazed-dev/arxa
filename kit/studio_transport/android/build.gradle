@@ -1,0 +1,38 @@
+// Builds the Rust crate for Android via cargokit (invoked from the Flutter
+// Android build). NDK caveat: see README "Android: 16 KB pages / NDK".
+group = "com.arxa.kit.studio_transport"
+version = "1.0"
+
+buildscript {
+    repositories {
+        google()
+        mavenCentral()
+    }
+    dependencies {
+        classpath("com.android.tools.build:gradle:8.7.0")
+    }
+}
+
+rootProject.allprojects {
+    repositories {
+        google()
+        mavenCentral()
+    }
+}
+
+apply plugin: "com.android.library"
+
+android {
+    namespace = "com.arxa.kit.studio_transport"
+    compileSdk = 36
+
+    defaultConfig {
+        minSdk = 23
+    }
+}
+
+apply from: "../cargokit/gradle/plugin.gradle"
+cargokit {
+    manifestDir = "../../rust"
+    libname = "arxa_studio_transport"
+}

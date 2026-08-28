@@ -1,0 +1,9 @@
+include: package:flutter_lints/flutter.yaml
+
+analyzer:
+  exclude:
+    # flutter_rust_bridge codegen output — not hand-maintained.
+    - lib/src/rust/**
+    # vendored build tooling with its own package context — not part of this
+    # package's Dart surface.
+    - cargokit/**

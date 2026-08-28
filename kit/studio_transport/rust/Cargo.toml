@@ -1,0 +1,32 @@
+[package]
+name = "arxa_studio_transport"
+version = "0.1.0"
+edition = "2021"
+description = "iroh-backed pairing transport for arxa studio — ported from arxa/mobile (Tauri) connection.rs, exposed to Dart via flutter_rust_bridge v2."
+publish = false
+
+[lib]
+# "lib" so `cargo test` links the crate; cdylib (Android) + staticlib (iOS/macOS)
+# are what cargokit ships.
+crate-type = ["cdylib", "staticlib", "lib"]
+
+[dependencies]
+# Pinned to match the installed flutter_rust_bridge_codegen (v2.13.0-beta.5) —
+# codegen and runtime crate versions must agree.
+flutter_rust_bridge = "=2.13.0-beta.5"
+
+# Phone <-> Mac transport — same pins as the Tauri scaffold this crate ports
+# (arxa/mobile/src-tauri). Contract: docs/plans/mobile-flutter-migration-spec.md.
+iroh = "1.1"
+iroh-tickets = "1"
+data-encoding = "2.11"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+libc = "0.2" # gethostname / sysctlbyname → self-reported device name in the AUTH frame
+tokio = { version = "1", features = ["net", "io-util", "rt-multi-thread", "time", "macros", "sync"] }
+
+
+[lints.rust]
+# `frb_expand` is a cfg the flutter_rust_bridge macro probes for; register it
+# so rustc's unexpected_cfgs lint stays quiet.
+unexpected_cfgs = { level = "warn", check-cfg = ["cfg(frb_expand)"] }

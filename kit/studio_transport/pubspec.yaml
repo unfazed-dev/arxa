@@ -1,0 +1,28 @@
+name: arxa_kit_studio_transport
+description: iroh-backed pairing transport for arxa studio mobile — QR pairing, AUTH handshake, loopback HTTP proxy, push relay, reconnect state machine. Rust core (port of arxa/mobile's Tauri connection.rs) bound via flutter_rust_bridge v2 + cargokit.
+version: 0.1.0
+publish_to: 'none'
+
+environment:
+  sdk: ^3.12.0
+
+dependencies:
+  flutter:
+    sdk: flutter
+  # Must match rust/Cargo.toml's flutter_rust_bridge pin and the codegen version.
+  flutter_rust_bridge: 2.13.0-beta.5
+
+dev_dependencies:
+  flutter_lints: ^6.0.0
+  flutter_test:
+    sdk: flutter
+
+flutter:
+  plugin:
+    platforms:
+      android:
+        ffiPlugin: true
+      ios:
+        ffiPlugin: true
+      macos:
+        ffiPlugin: true
