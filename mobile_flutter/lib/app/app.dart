@@ -1,6 +1,7 @@
 import 'package:arxa_kit_notifications/arxa_kit_notifications.dart';
 import 'package:arxa_kit_ui_library/arxa_kit_ui_library.dart';
 
+import 'package:arxa_studio_mobile/services/iroh_transport_service.dart';
 import 'package:arxa_studio_mobile/services/push_token_service.dart';
 import 'package:arxa_studio_mobile/services/transport_service.dart';
 import 'package:arxa_studio_mobile/ui/views/approvals_shell/approvals_list/approvals_list_view.dart';
@@ -23,9 +24,10 @@ import 'package:arxa_studio_mobile/ui/views/studio_shell/studio_session/studio_s
   ],
   dependencies: [
     LazySingleton(classType: RouterService),
-    // The iroh-backed transport replaces the fake behind the same interface
-    // (clean seam — the real one arrives from another workstream).
-    LazySingleton(classType: FakeTransportService, asType: TransportService),
+    // Real iroh-backed transport (arxa_kit_studio_transport) behind the same
+    // interface; tests re-register FakeTransportService or inject
+    // MockStudioTransport.connect via the StudioConnect seam.
+    LazySingleton(classType: IrohTransportService, asType: TransportService),
     // Push seam: FCM backend by default; tests swap in
     // FakeArxaKitNotificationsService from arxa_kit_notifications/testing.
     LazySingleton(

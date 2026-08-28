@@ -29,6 +29,11 @@ dependencies:
   # match showcase_app (config-less build stays green — no google-services.json).
   arxa_kit_notifications:
     path: ../kit/notifications
+  # Real iroh transport (FRB-backed). Imported ONLY behind the
+  # TransportService seam (services/iroh_transport_service.dart); tests use
+  # its exported MockStudioTransport/MockStudioSession — no native build.
+  arxa_kit_studio_transport:
+    path: ../kit/studio_transport
   firebase_core: ^4.13.0
   firebase_messaging: ^16.5.0
   uuid: ^4.5.3

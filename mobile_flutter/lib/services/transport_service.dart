@@ -29,6 +29,10 @@ abstract class TransportService {
   /// Unpair: drop stored NodeId + session token; callers also trigger the
   /// kit sign-out hook (auto-deregisters the push token).
   Future<void> unpair();
+
+  /// Redial after the app returns to the foreground (iOS suspends QUIC in
+  /// the background). No-op when there is no live session.
+  Future<void> resume();
   Future<void> dispose();
 }
 
@@ -87,6 +91,14 @@ class FakeTransportService implements TransportService {
   @override
   Future<void> unpair() async {
     _emit(const ArxaConnectionStatus(ArxaConnectionState.notPaired));
+  }
+
+  /// [resume] calls, for foreground-redial wiring tests.
+  int resumeCount = 0;
+
+  @override
+  Future<void> resume() async {
+    resumeCount += 1;
   }
 
   @override

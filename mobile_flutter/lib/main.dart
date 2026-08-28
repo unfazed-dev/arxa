@@ -6,13 +6,27 @@ import 'package:arxa_studio_mobile/l10n/app_localizations.dart';
 import 'app/app.locator.dart';
 import 'app/app_data.dart';
 import 'app/kit_platform_router.dart';
+import 'services/transport_service.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await setupLocator();
   await AppData.initialize();
   setupArxaKitUiServices();
+  // iOS suspends QUIC in the background — redial the studio link whenever
+  // the app returns to the foreground (no-op without a live session).
+  WidgetsBinding.instance.addObserver(TransportLifecycleObserver());
   runApp(const ArxaStudioMobileApp());
+}
+
+/// Calls [TransportService.resume] on every return to the foreground.
+class TransportLifecycleObserver with WidgetsBindingObserver {
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      locator<TransportService>().resume();
+    }
+  }
 }
 
 class ArxaStudioMobileApp extends StatelessWidget {

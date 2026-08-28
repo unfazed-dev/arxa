@@ -131,6 +131,13 @@ packages:
       relative: true
     source: path
     version: "0.1.0"
+  arxa_kit_studio_transport:
+    dependency: "direct main"
+    description:
+      path: "../kit/studio_transport"
+      relative: true
+    source: path
+    version: "0.1.0"
   arxa_kit_ui_library:
     dependency: "direct main"
     description:
