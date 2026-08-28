@@ -222,6 +222,16 @@ class CdpClient {
       // Fewer GUI resources initialized at launch → less macOS app activation.
       '--no-startup-window',
       '--hide-scrollbars',
+      // Browser-wide UA override, opt-in via env (same opt-in style as
+      // --visible riding LensSession). Exists for surfaces that gate on the
+      // UA — e.g. arxa-studio's waiting-page referee parks any plain-browser
+      // tab while the desktop shell is alive; ARXA_LENS_UA="… ArxaShell/1.0"
+      // makes the lens render the real shell surface instead of the parked
+      // card. A flag (not CDP Network.setUserAgentOverride) so every tab in
+      // the launched browser inherits it, daemon guests included.
+      if (Platform.environment['ARXA_LENS_UA'] case final ua?
+          when ua.isNotEmpty)
+        '--user-agent=$ua',
       ...extraArgs,
     ];
 
