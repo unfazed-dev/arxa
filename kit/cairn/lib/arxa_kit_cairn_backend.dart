@@ -46,7 +46,7 @@ typedef ArxaKitCairnOpenDatabase = Future<CairnDatabase> Function(
   String? token,
 );
 
-class ArxaKitCairnBackend implements ArxaKitBackendPlugin {
+class ArxaKitCairnBackend implements ArxaKitBackendPlugin, ArxaKitPluginSeeder {
   /// [config] defaults to [ArxaKitCairnConfig.fromEnvironment] — the
   /// dart-define surface is the only env contract apps ever see.
   ArxaKitCairnBackend({
@@ -105,6 +105,8 @@ class ArxaKitCairnBackend implements ArxaKitBackendPlugin {
   Attachments? _attachments;
   ArxaKitCairnPushBridge? _pushBridge;
   String? _openedToken;
+  ArxaKitIdService? _idService;
+  ArxaKitSchemaRegistry? _registry;
 
   /// The opened database, once [initialize] has run. Exposed for the kit's
   /// own services (storage, push) — apps should not need it.
@@ -124,13 +126,17 @@ class ArxaKitCairnBackend implements ArxaKitBackendPlugin {
     ArxaKitDataConfig config,
     List<ArxaKitEntityRegistration<dynamic>> entities,
     ArxaKitIdService idService,
-    ArxaKitSchemaRegistry registry,
-  ) async {
+    ArxaKitSchemaRegistry registry, {
+    List<String> fixtureAssets = const [],
+    ArxaKitAssetReader? assetReader,
+  }) async {
     _config.validate();
     final schemas = [for (final e in entities) e.schema];
     _validateCrdtConsistency(schemas);
     if (storage) _validateStorage(schemas);
     if (_config.push) _validatePush();
+    _idService = idService;
+    _registry = registry;
 
     if (_config.mode == ArxaKitCairnMode.supabaseBridge) {
       await _ensureSupabase(config);
@@ -152,6 +158,14 @@ class ArxaKitCairnBackend implements ArxaKitBackendPlugin {
     final db = await open(_config, schema, token);
     _db = db;
     _openedToken = token;
+
+    // localOnly has no server to seed from — bundled fixtures boot the
+    // content at initialize, seed-backend parity. Server modes NEVER
+    // auto-seed: server-bound writes per boot are the operator's call
+    // (ArxaKitDataSeeder.push → seedFixtures below).
+    if (_config.mode == ArxaKitCairnMode.localOnly && fixtureAssets.isNotEmpty) {
+      await seedFixtures(fixtureAssets, assetReader: assetReader);
+    }
 
     // Auth seam: supabaseBridge registers kit/data's Supabase auth service
     // (kit/data owns auth) decorated so sign-out wipes cairn FIRST.
@@ -197,6 +211,64 @@ class ArxaKitCairnBackend implements ArxaKitBackendPlugin {
       );
       _pushBridge = bridge;
       await bridge.attach();
+    }
+  }
+
+  /// Seeds bundled fixtures into the local database — in server modes the
+  /// rows then flow upstream through the ordinary outbox, so this is the
+  /// operator action `ArxaKitDataSeeder.push` delegates to.
+  ///
+  /// Always-upsert: canonical ids are deterministic (ADR-0001), so re-seeding
+  /// heals deleted rows and never duplicates. Refused for CRDT-tagged tables:
+  /// a plain upsert would clobber merge state — seed those through
+  /// [ArxaKitCrdtCapable] verbs instead.
+  @override
+  Future<void> seedFixtures(
+    List<String> fixtureAssets, {
+    ArxaKitAssetReader? assetReader,
+  }) async {
+    final db = _db;
+    final idService = _idService;
+    final registry = _registry;
+    if (db == null || idService == null || registry == null) {
+      throw StateError('ArxaKitCairnBackend.initialize has not run');
+    }
+    final tables = await ArxaKitFixtureLoader(
+      idService: idService,
+      assetReader: assetReader ?? const ArxaKitRootBundleAssetReader(),
+    ).load(
+      assetPaths: fixtureAssets,
+      schemasByTable: registry.schemasByTable,
+    );
+
+    final crdtTables = <String>{
+      ...?_config.orSetTables,
+      ...?_config.counterTables,
+    };
+    for (final entry in tables.entries) {
+      final table = entry.key;
+      if (crdtTables.contains(table)) {
+        throw StateError(
+          'ArxaKitCairnBackend.seedFixtures: table "$table" is CRDT-tagged — '
+          'a plain fixture upsert would clobber merge state; seed CRDT tables '
+          'through the ArxaKitCrdtCapable verbs instead.',
+        );
+      }
+      if (entry.value.isEmpty) continue;
+      final idColumn = registry.schemasByTable[table]!.idColumn.name;
+      final collection = db.collection<Map<String, dynamic>>(
+        table: table,
+        fromRow: (row) => row,
+      );
+      await collection.writeBatch([
+        for (final row in entry.value.values)
+          CairnWrite(
+            table: table,
+            op: 'upsert',
+            pk: row[idColumn]!.toString(),
+            payload: row,
+          ),
+      ]);
     }
   }
 
@@ -336,6 +408,15 @@ class ArxaKitCairnBackend implements ArxaKitBackendPlugin {
             break;
         }
       }
+    }
+    final dual = flaggedCounters.intersection(flaggedOrSets);
+    if (dual.isNotEmpty) {
+      throw StateError(
+        'ArxaKitCairnBackend: table "${dual.first}" carries counter-flagged '
+        'AND or-set-flagged columns — the engine merges one CRDT tier per '
+        'table (or-set wins the first branch checked, silently dropping the '
+        'counter tag); tag each table with exactly one tier.',
+      );
     }
     void check(String field, Set<String> flagged, Set<String> configured) {
       for (final table in flagged.difference(configured)) {

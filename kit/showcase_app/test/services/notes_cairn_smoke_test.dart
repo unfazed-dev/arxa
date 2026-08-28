@@ -13,6 +13,8 @@ import 'package:arxa_kit_showcase_app/services/showcase_notes_services/adapters/
 import 'package:arxa_kit_showcase_app/services/showcase_notes_services/facades/showcase_notes_facade_service.dart';
 import 'package:arxa_kit_showcase_app/services/showcase_notes_services/repositories/showcase_notes_repository_service.dart';
 
+import '../helpers.dart';
+
 class _MockMediaAdapter extends Mock
     implements ShowcaseNotesMediaAdapterService {}
 
@@ -22,9 +24,9 @@ class _MockMediaAdapter extends Mock
 /// models, codecs, facade ops, watch streams — is the app's own, untouched.
 ///
 /// Mirror of notes_facade_test.dart's boot, with ONLY the backend swapped at
-/// AppData.initialize's config parameter. Fixtures are not seeded under the
-/// plugin backend (kit/data loads them only for seed) — the suite creates the
-/// rows it reads, and stays order-independent by only mutating its own.
+/// AppData.initialize's config parameter. localOnly auto-seeds the bundled
+/// fixtures at boot (seed-backend parity) — the suite stays order-independent
+/// by only ever mutating/asserting the rows it creates itself.
 void main() {
   late ShowcaseNotesFacadeService notes;
 
@@ -58,6 +60,9 @@ void main() {
           openDatabase: cairnLocalOpenForTest(engine),
         ),
       ),
+      // rootBundle needs a widget binding the smoke doesn't have — read the
+      // bundled fixtures straight off disk like the seed-backend mirror does.
+      assetReader: DiskAssetReader(),
     );
     notes = arxaKitLocator<ShowcaseNotesFacadeService>();
   });

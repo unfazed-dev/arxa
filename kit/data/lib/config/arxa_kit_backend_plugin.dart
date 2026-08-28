@@ -1,3 +1,4 @@
+import '../assets/arxa_kit_asset_reader.dart';
 import '../ids/arxa_kit_id_service.dart';
 import '../models/arxa_kit_entity_registration.dart';
 import '../schema/arxa_kit_schema_registry.dart';
@@ -35,12 +36,19 @@ abstract interface class ArxaKitBackendPlugin {
   /// own section — e.g. `ArxaKitAuthConfig` — from it); [entities] are the
   /// declared registrations; [idService] and [registry] are the instances
   /// already registered in the locator.
+  ///
+  /// [fixtureAssets] and [assetReader] are the same seeding inputs the caller
+  /// gave `ArxaKitData.initialize` — the plugin decides what seeding means
+  /// for its backend (a local-first backend may auto-seed; a server-bound one
+  /// exposes it as an operator action via `ArxaKitPluginSeeder`).
   Future<void> initialize(
     ArxaKitDataConfig config,
     List<ArxaKitEntityRegistration<dynamic>> entities,
     ArxaKitIdService idService,
-    ArxaKitSchemaRegistry registry,
-  );
+    ArxaKitSchemaRegistry registry, {
+    List<String> fixtureAssets = const [],
+    ArxaKitAssetReader? assetReader,
+  });
 
   /// Release connections and streams. The host owns the call (kit/data has no
   /// dispose lifecycle); implementations must be idempotent.

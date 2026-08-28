@@ -45,6 +45,8 @@ class _RecordingPlugin implements ArxaKitBackendPlugin {
   List<ArxaKitEntityRegistration<dynamic>>? receivedEntities;
   ArxaKitIdService? receivedIdService;
   ArxaKitSchemaRegistry? receivedRegistry;
+  List<String>? receivedFixtureAssets;
+  ArxaKitAssetReader? receivedAssetReader;
   int disposeCallCount = 0;
 
   @override
@@ -55,12 +57,16 @@ class _RecordingPlugin implements ArxaKitBackendPlugin {
     ArxaKitDataConfig config,
     List<ArxaKitEntityRegistration<dynamic>> entities,
     ArxaKitIdService idService,
-    ArxaKitSchemaRegistry registry,
-  ) async {
+    ArxaKitSchemaRegistry registry, {
+    List<String> fixtureAssets = const [],
+    ArxaKitAssetReader? assetReader,
+  }) async {
     receivedConfig = config;
     receivedEntities = entities;
     receivedIdService = idService;
     receivedRegistry = registry;
+    receivedFixtureAssets = fixtureAssets;
+    receivedAssetReader = assetReader;
     arxaKitLocator.registerLazySingleton<ArxaKitRepository<_TestEntity>>(
       () => FakeArxaKitRepository<_TestEntity>(
         registration: _registration,
@@ -72,6 +78,25 @@ class _RecordingPlugin implements ArxaKitBackendPlugin {
   @override
   Future<void> dispose() async {
     disposeCallCount++;
+  }
+}
+
+/// A plugin double that also implements the optional seeding capability —
+/// the seam `ArxaKitDataSeeder.push` delegates through when the plugin's
+/// package owns its writes.
+class _SeedablePlugin extends _RecordingPlugin implements ArxaKitPluginSeeder {
+  int seedCallCount = 0;
+  List<String>? seededFixtureAssets;
+  ArxaKitAssetReader? seededAssetReader;
+
+  @override
+  Future<void> seedFixtures(
+    List<String> fixtureAssets, {
+    ArxaKitAssetReader? assetReader,
+  }) async {
+    seedCallCount++;
+    seededFixtureAssets = fixtureAssets;
+    seededAssetReader = assetReader;
   }
 }
 
@@ -141,5 +166,77 @@ void main() {
 
     // then
     expect((await repo.getById('e-1'))!.name, 'Alpha');
+  });
+
+  test('kit.data.backend-plugin — initialize hands the plugin the fixture assets and asset reader', () async {
+    // given
+    final plugin = _RecordingPlugin();
+    final reader = ArxaKitMemoryAssetReader({
+      'assets/seed/test_entities.json': '[]',
+    });
+
+    // when
+    await ArxaKitData.initialize(
+      config: ArxaKitDataConfig(
+        backend: ArxaKitDataBackend.plugin,
+        plugin: plugin,
+      ),
+      entities: [_registration],
+      fixtureAssets: const ['assets/seed/test_entities.json'],
+      assetReader: reader,
+    );
+
+    // then the plugin received the SAME seeding inputs the caller gave
+    expect(plugin.receivedFixtureAssets, ['assets/seed/test_entities.json']);
+    expect(plugin.receivedAssetReader, same(reader));
+  });
+
+  test('kit.data.backend-plugin — the seeder delegates to a plugin implementing ArxaKitPluginSeeder', () async {
+    // given a plugin with the seeding capability
+    final plugin = _SeedablePlugin();
+    await ArxaKitData.initialize(
+      config: ArxaKitDataConfig(
+        backend: ArxaKitDataBackend.plugin,
+        plugin: plugin,
+      ),
+      entities: [_registration],
+    );
+
+    // when the operator pushes fixtures
+    final reader = ArxaKitMemoryAssetReader({
+      'assets/seed/test_entities.json': '[]',
+    });
+    await ArxaKitDataSeeder().push(
+      fixtureAssets: const ['assets/seed/test_entities.json'],
+      assetReader: reader,
+    );
+
+    // then the plugin owned the seeding — kit/data never names its types
+    expect(plugin.seedCallCount, 1);
+    expect(plugin.seededFixtureAssets, ['assets/seed/test_entities.json']);
+    expect(plugin.seededAssetReader, same(reader));
+  });
+
+  test('kit.data.backend-plugin — the seeder still refuses a plugin without the seeding capability', () async {
+    // given a plugin that does NOT implement ArxaKitPluginSeeder
+    await ArxaKitData.initialize(
+      config: ArxaKitDataConfig(
+        backend: ArxaKitDataBackend.plugin,
+        plugin: _RecordingPlugin(),
+      ),
+      entities: [_registration],
+    );
+
+    // when / then push fails loudly naming the plugin
+    await expectLater(
+      ArxaKitDataSeeder().push(
+        fixtureAssets: const ['assets/seed/test_entities.json'],
+        assetReader: ArxaKitMemoryAssetReader({
+          'assets/seed/test_entities.json': '[]',
+        }),
+      ),
+      throwsA(isA<StateError>().having(
+          (e) => e.message, 'message', contains('recording'))),
+    );
   });
 }

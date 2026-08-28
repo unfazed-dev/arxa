@@ -77,6 +77,7 @@ export 'repositories/appwrite/arxa_kit_appwrite_repository.dart';
 // Seeding
 export 'seeding/arxa_kit_fixture_loader.dart';
 export 'seeding/arxa_kit_data_seeder.dart';
+export 'seeding/arxa_kit_plugin_seeder.dart';
 
 // Facades
 export 'facades/arxa_kit_data_facade.dart';
@@ -163,8 +164,18 @@ class ArxaKitData {
         // The plugin runs AFTER the IdService/SchemaRegistry registrations
         // above and receives those same instances — it registers its
         // repositories into the shared arxaKitLocator exactly like a built-in
-        // backend (see ArxaKitBackendPlugin).
-        await config.plugin!.initialize(config, entities, idService, registry);
+        // backend (see ArxaKitBackendPlugin). It also receives the seeding
+        // inputs; what seeding means is the plugin package's call (a
+        // local-first backend may auto-seed, a server-bound one exposes
+        // ArxaKitPluginSeeder for operators).
+        await config.plugin!.initialize(
+          config,
+          entities,
+          idService,
+          registry,
+          fixtureAssets: fixtureAssets,
+          assetReader: reader,
+        );
     }
   }
 

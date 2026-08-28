@@ -38,8 +38,10 @@ class AppData {
   /// flutter run --dart-define=ARXA_CAIRN_MODE=local
   /// ```
   ///
-  /// Note: with the plugin backend the bundled fixtures are not (yet) seeded
-  /// and auth is app-side in localOnly/sync — the cairn boot starts empty.
+  /// Note: under the plugin backend, localOnly auto-seeds the bundled
+  /// fixtures at boot (seed-backend parity); server modes take them only via
+  /// `ArxaKitDataSeeder.push` — an explicit operator action. Auth is app-side
+  /// in localOnly/sync.
   static ArxaKitDataConfig defaultConfig() {
     const cairnMode = String.fromEnvironment('ARXA_CAIRN_MODE');
     if (cairnMode.isNotEmpty) {
