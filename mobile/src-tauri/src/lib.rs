@@ -20,6 +20,19 @@ pub fn run() {
     #[cfg(any(target_os = "android", target_os = "ios"))]
     let builder = builder.plugin(tauri_plugin_barcode_scanner::init());
 
+    // M7 seam: OS push token source (APNs device token / FCM registration
+    // token). Foreground presentation is silent — when the app is open the
+    // studio UI is already live, so a banner would be pure interruption;
+    // backgrounded/locked delivery bypasses this and shows natively.
+    #[cfg(any(target_os = "android", target_os = "ios"))]
+    let builder = builder.plugin(
+        tauri_plugin_mobile_push::Builder::new()
+            .ios_foreground_presentation(
+                tauri_plugin_mobile_push::ForegroundPresentationOptions::silent(),
+            )
+            .build(),
+    );
+
     builder
         .run(tauri::generate_context!())
         .expect("error while running arxa studio mobile");

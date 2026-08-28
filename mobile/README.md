@@ -67,16 +67,27 @@ carry raw HTTP/1.1.
 - **Full studio surface (M4) — WIRED.** `main.js` polls `connection_status`
   every 2s; once `connected` it navigates the webview to the engine-served
   `studio_url` (same pattern as desktop).
-- **Push (M7) — WIRED (registration half).** After every successful connect,
-  the connection layer sends `PUSH <session-token> <platform> <token>\n` on
-  its own iroh stream; the desktop stores it in `pairing.json` and forwards
-  it into its supervised cairn-pushd. The frontend provides the token via
-  the `set_push_token(platform, token)` invoke. REMAINING SEAM: the OS push
-  plugin that mints FCM/APNs tokens inside a Tauri mobile app — until it
-  lands, `set_push_token` is never called and registration is a no-op (the
-  older-desktop compat story: a PUSH-stream close is never the revocation
-  signal). cairn-server-side doorbell registration (`register_push_token`
-  via cairn_tauri) belongs to cairn-syncing apps, not this shell (M8).
+- **Push (M7) — WIRED (token minting + registration).** The OS push plugin
+  (`tauri-plugin-mobile-push` 0.1.4, mobile targets only, capability
+  `capabilities/mobile.json`) mints the APNs device token (iOS) / FCM
+  registration token (Android); `main.js` hands it to Rust via
+  `set_push_token(platform, token)` with cairn-push's vocabulary
+  (`apns`/`fcm`). After every successful connect, the connection layer sends
+  `PUSH <session-token> <platform> <token>\n` on its own iroh stream; the
+  desktop stores it in `pairing.json` and forwards it into its supervised
+  cairn-pushd. Token rotation (`token-received` event) updates the stored
+  token and rides the next reconnect's PUSH frame — mid-session re-send is
+  deliberately not wired (rotation is rare; every app launch re-registers).
+  Foreground presentation is silent: the studio UI is already live when the
+  app is open. OPERATOR SEAM: real delivery needs (a) Android —
+  `google-services.json` dropped into `gen/android/app/` (the gradle
+  google-services plugin activates only when the file exists; without it the
+  build stays green and token minting fails soft), and (b) iOS — a
+  provisioning profile with Push Notifications on
+  (`aps-environment=development` is in the entitlements; flip to
+  `production` for TestFlight). cairn-server-side doorbell registration
+  (`register_push_token` via cairn_tauri) belongs to cairn-syncing apps,
+  not this shell (M8).
 - **Online-only v1 (M8)** — no offline cache; the app is a thin shell over the
   engine-served UI.
 - **OTA web assets** — will use `tauri-plugin-ota-self-update` later; deliberately

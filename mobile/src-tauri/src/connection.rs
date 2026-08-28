@@ -339,9 +339,10 @@ pub async fn run_session(
 /// is skipped silently on every reconnect until a token exists.
 static PUSH_TOKEN: std::sync::RwLock<Option<(String, String)>> = std::sync::RwLock::new(None);
 
-/// Frontend-facing seam (M7): remember the OS push token; registration
-/// rides the current connection immediately when one is live and every
-/// reconnect thereafter (token refreshes arrive at arbitrary times).
+/// Frontend-facing seam (M7): remember the OS push token. Registration
+/// rides the NEXT (re)connect's PUSH frame — this command never touches a
+/// live session, so a mid-session token rotation takes effect at the next
+/// reconnect (rotation is rare; every app launch re-registers anyway).
 #[tauri::command]
 pub fn set_push_token(platform: String, token: String) {
     if let Ok(mut guard) = PUSH_TOKEN.write() {

@@ -114,3 +114,45 @@ document.getElementById("manual-form").addEventListener("submit", async (ev) => 
 
 refresh();
 setInterval(refresh, 2000);
+
+// ── OS push token (M7 seam) ──────────────────────────────────────────────
+// Mint the APNs/FCM device token via tauri-plugin-mobile-push and hand it
+// to Rust (`set_push_token`); the connection layer then sends the PUSH
+// frame over the pairing tunnel at (re)connect time. Token values follow
+// cairn-push's Platform vocabulary: "apns" (iOS) / "fcm" (Android).
+// Desktop/dev-browser: no OS rail exists — skipped by design.
+
+function pushPlatform() {
+  const ua = navigator.userAgent;
+  if (/iPhone|iPad|iPod/.test(ua)) return "apns";
+  if (/Android/.test(ua)) return "fcm";
+  return null;
+}
+
+async function registerOsPush() {
+  const platform = pushPlatform();
+  const core = window.__TAURI__?.core;
+  if (!platform || !core?.invoke) return;
+  try {
+    const { granted } = await core.invoke("plugin:mobile-push|request_permission");
+    if (!granted) return;
+    const { token } = await core.invoke("plugin:mobile-push|get_token");
+    if (token) await core.invoke("set_push_token", { platform, token });
+    // APNs refresh / FCM rotation: stash the new token; it rides the next
+    // (re)connect's PUSH frame (mid-session re-send is deliberately not
+    // wired — rotation is rare and every app launch re-registers).
+    if (core.addPluginListener) {
+      core.addPluginListener("mobile-push", "token-received", (event) => {
+        const t = event?.payload?.token;
+        if (t) core.invoke("set_push_token", { platform, token: t });
+      });
+    }
+  } catch (e) {
+    // Expected until the operator drops in google-services.json (Android)
+    // or a provisioning profile with Push Notifications (iOS) — push stays
+    // off, sync is unaffected. Never escalate to the pairing UI.
+    console.warn("arxa-mobile: push token minting skipped:", e);
+  }
+}
+
+registerOsPush();

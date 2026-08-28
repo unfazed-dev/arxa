@@ -1,8 +1,16 @@
 {
   "$schema": "../gen/schemas/mobile-schema.json",
   "identifier": "mobile-scanner",
-  "description": "QR pairing (decision M2): camera barcode scanning, mobile targets only.",
-  "windows": ["main"],
-  "platforms": ["android", "iOS"],
-  "permissions": ["barcode-scanner:default"]
+  "description": "Mobile targets: QR camera scanning (M2) + OS push token minting (M7).",
+  "windows": [
+    "main"
+  ],
+  "platforms": [
+    "android",
+    "iOS"
+  ],
+  "permissions": [
+    "barcode-scanner:default",
+    "mobile-push:default"
+  ]
 }

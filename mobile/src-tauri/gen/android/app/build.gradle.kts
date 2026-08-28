@@ -69,3 +69,12 @@ dependencies {
 }
 
 apply(from = "tauri.build.gradle.kts")
+
+// FCM push (M7): tauri-plugin-mobile-push brings firebase-messaging
+// transitively; the google-services plugin only ACTIVATES FCM once the
+// operator drops a Firebase project's google-services.json next to this
+// file. Without it the build stays green and push token minting fails
+// soft at runtime (logged, sync unaffected).
+if (file("google-services.json").exists()) {
+    apply(plugin = "com.google.gms.google-services")
+}
