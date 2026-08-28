@@ -1,0 +1,94 @@
+import 'dart:async';
+
+/// Connection lifecycle — mirrors the Tauri scaffold's `ConnectionStatus`
+/// states (mobile/src/main.js): not-paired -> scanning -> pairing ->
+/// connecting -> connected.
+enum ArxaConnectionState { notPaired, scanning, pairing, connecting, connected }
+
+class ArxaConnectionStatus {
+  const ArxaConnectionStatus(this.state, {this.studioUrl, this.error});
+  final ArxaConnectionState state;
+
+  /// Loopback URL of the local proxy once connected —
+  /// `http://127.0.0.1:<port>/`. Port is owned by the transport.
+  final Uri? studioUrl;
+  final String? error;
+}
+
+/// The transport seam. Port of the Tauri invoke surface
+/// (`connection_status()`, `begin_pairing(ticket)`,
+/// `set_push_token(platform, token)` — lib.rs:7-10). The real implementation
+/// (iroh-backed, owns the loopback proxy) arrives from another workstream;
+/// everything app-side depends only on this interface.
+abstract class TransportService {
+  ArxaConnectionStatus get current;
+  Stream<ArxaConnectionStatus> get status;
+  Future<void> beginPairing(String ticket);
+  Future<void> setPushToken(String platform, String token);
+
+  /// Unpair: drop stored NodeId + session token; callers also trigger the
+  /// kit sign-out hook (auto-deregisters the push token).
+  Future<void> unpair();
+  Future<void> dispose();
+}
+
+/// In-memory fake: accepts any non-empty ticket, walks
+/// pairing -> connecting -> connected on a short timer and serves a fixed
+/// loopback port. Replaced by the iroh transport behind the same interface.
+class FakeTransportService implements TransportService {
+  FakeTransportService({this.port = 45890});
+
+  final int port;
+  final _controller = StreamController<ArxaConnectionStatus>.broadcast();
+  ArxaConnectionStatus _current =
+      const ArxaConnectionStatus(ArxaConnectionState.notPaired);
+  String? _pushPlatform;
+  String? _pushToken;
+
+  Uri get _studioUrl => Uri.parse('http://127.0.0.1:$port/');
+
+  @override
+  ArxaConnectionStatus get current => _current;
+
+  @override
+  Stream<ArxaConnectionStatus> get status => _controller.stream;
+
+  void _emit(ArxaConnectionStatus s) {
+    _current = s;
+    if (!_controller.isClosed) _controller.add(s);
+  }
+
+  @override
+  Future<void> beginPairing(String ticket) async {
+    if (ticket.trim().isEmpty) {
+      _emit(const ArxaConnectionStatus(ArxaConnectionState.notPaired,
+          error: 'Empty pairing ticket'));
+      return;
+    }
+    _emit(const ArxaConnectionStatus(ArxaConnectionState.pairing));
+    await Future<void>.delayed(const Duration(milliseconds: 400));
+    _emit(const ArxaConnectionStatus(ArxaConnectionState.connecting));
+    await Future<void>.delayed(const Duration(milliseconds: 400));
+    _emit(ArxaConnectionStatus(ArxaConnectionState.connected,
+        studioUrl: _studioUrl));
+  }
+
+  @override
+  Future<void> setPushToken(String platform, String token) async {
+    _pushPlatform = platform;
+    _pushToken = token;
+  }
+
+  /// Test hook — what the fake last received.
+  (String, String)? get lastPushToken => _pushPlatform == null
+      ? null
+      : (_pushPlatform!, _pushToken!);
+
+  @override
+  Future<void> unpair() async {
+    _emit(const ArxaConnectionStatus(ArxaConnectionState.notPaired));
+  }
+
+  @override
+  Future<void> dispose() async => _controller.close();
+}

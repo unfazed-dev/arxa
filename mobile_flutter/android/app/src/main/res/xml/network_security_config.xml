@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Loopback-only cleartext: the studio session webview loads the local
+     transport proxy at http://127.0.0.1:<port>/. Everything else stays
+     cleartext-forbidden (the platform default this config re-asserts). -->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="false"/>
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="false">127.0.0.1</domain>
+    </domain-config>
+</network-security-config>

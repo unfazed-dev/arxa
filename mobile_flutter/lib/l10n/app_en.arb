@@ -1,0 +1,23 @@
+{
+  "appTitle": "Arxa Studio",
+  "pairingScanTitle": "Pair with Arxa Studio",
+  "pairingManualHint": "Or paste a pairing ticket",
+  "connectingPairing": "Pairing…",
+  "connectingConnecting": "Connecting…",
+  "connectingConnected": "Connected",
+  "connectingWaiting": "Waiting…",
+  "connectingFailed": "Could not connect to the studio.",
+  "tryAgain": "Try again",
+  "pushTitle": "Get approval requests as notifications",
+  "pushBody": "Arxa Studio can notify you when a session needs your approval. You can change this later in Settings.",
+  "pushAllow": "Allow notifications",
+  "pushSkip": "Not now",
+  "studioNotConnected": "Not connected — pair first.",
+  "settingsOpen": "Settings",
+  "approvalsTitle": "Approvals",
+  "approvalsEmpty": "No pending approvals.",
+  "settingsTitle": "Settings",
+  "settingsUnpair": "Unpair from studio",
+  "settingsUnpairSubtitle": "Removes this device and stops notifications.",
+  "errorGeneric": "Something went wrong loading this screen."
+}

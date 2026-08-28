@@ -1,0 +1,39 @@
+{
+  "selfContained": [
+    "approvals_shell",
+    "pairing_shell",
+    "settings_shell",
+    "studio_shell"
+  ],
+  "surfaces": {
+    "approvals_shell": {
+      "approvals_shell_approvals_view": "approvals_list"
+    },
+    "pairing_shell": {
+      "pairing_shell_pairing_scan_view": "pairing_scan",
+      "pairing_shell_connecting_view": "pairing_connecting",
+      "pairing_shell_push_permission_view": "pairing_push_permission"
+    },
+    "settings_shell": {
+      "settings_shell_settings_view": "settings_home"
+    },
+    "studio_shell": {
+      "studio_shell_studio_session_view": "studio_session"
+    }
+  },
+  "factors": [
+    "mobile",
+    "tablet"
+  ],
+  "targets": [
+    "ios",
+    "android"
+  ],
+  "notes": "scaffolded by arxa-scaffolder from a frozen structure.json; targets=[ios,android] -> form factors [mobile, tablet]; dir=<shell>_<short> from the registry id (the stable key, §18). Widget bodies are the builder's job (plan 08).",
+  "l10n": {
+    "arbDir": "lib/l10n",
+    "locales": [
+      "en"
+    ]
+  }
+}

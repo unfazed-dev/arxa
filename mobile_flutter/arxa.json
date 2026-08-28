@@ -1,0 +1,11 @@
+{
+  "name": "arxa-studio-mobile",
+  "kind": "app",
+  "targets": [
+    "ios",
+    "android"
+  ],
+  "locales": [
+    "en"
+  ]
+}
