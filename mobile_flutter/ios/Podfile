@@ -1,7 +1,7 @@
 # CocoaPods fallback for plugins without Swift Package Manager support
 # (native_deps gate: firebase_messaging_web). SPM remains the primary
 # integration; Flutter runs both side by side during the SPM migration.
-platform :ios, '13.0'
+platform :ios, '15.0'
 
 ENV['COCOAPODS_DISABLE_STATS'] = 'true'
 

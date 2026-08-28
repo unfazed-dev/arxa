@@ -1,0 +1,22 @@
+PODS:
+  - arxa_kit_studio_transport (0.1.0):
+    - Flutter
+  - Flutter (1.0.0)
+
+DEPENDENCIES:
+  - arxa_kit_studio_transport (from `.symlinks/plugins/arxa_kit_studio_transport/ios`)
+  - Flutter (from `Flutter`)
+
+EXTERNAL SOURCES:
+  arxa_kit_studio_transport:
+    :path: ".symlinks/plugins/arxa_kit_studio_transport/ios"
+  Flutter:
+    :path: Flutter
+
+SPEC CHECKSUMS:
+  arxa_kit_studio_transport: aed09632907aceea94c269ea7c6dddab3f826811
+  Flutter: cabc95a1d2626b1b06e7179b784ebcf0c0cde467
+
+PODFILE CHECKSUM: 39152c5190049db2e3be9b5965d8063e34d27216
+
+COCOAPODS: 1.16.2

@@ -1,5 +1,8 @@
 import 'dart:async';
 
+import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart'
+    show ExternalLibrary;
+
 import 'rust/api.dart' as rust;
 import 'rust/frb_generated.dart';
 
@@ -44,7 +47,15 @@ class StudioTransport {
   /// (e.g. in `main()`) to front-load the cost.
   static Future<void> init() async {
     if (_initialized) return;
-    await RustLib.init();
+    try {
+      await RustLib.init();
+    } on Object {
+      // iOS links the Rust core statically (podspec -force_load) — there is
+      // no .framework to dlopen, so resolve the FRB symbols from the app
+      // process itself instead.
+      await RustLib.init(
+          externalLibrary: ExternalLibrary.process(iKnowHowToUseIt: true));
+    }
     _initialized = true;
   }
 

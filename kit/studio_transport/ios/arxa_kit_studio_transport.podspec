@@ -32,4 +32,11 @@ Pod::Spec.new do |s|
     # app, so force-load keeps the FRB entry points alive.
     'OTHER_LDFLAGS' => '-force_load ${BUILT_PRODUCTS_DIR}/libarxa_studio_transport.a',
   }
+  # pod_target_xcconfig only affects the pod target, and a static-lib pod has
+  # no link step of its own — the flag above never reached the app link, so
+  # the Rust archive was silently dropped (dlopen then failed at runtime).
+  # user_target_xcconfig propagates to the app target's final link.
+  s.user_target_xcconfig = {
+    'OTHER_LDFLAGS' => '-force_load ${PODS_CONFIGURATION_BUILD_DIR}/arxa_kit_studio_transport/libarxa_studio_transport.a',
+  }
 end

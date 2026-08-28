@@ -113,11 +113,23 @@ class IrohTransportService implements TransportService {
   }
 
   Future<void> _teardownSession() async {
-    await _statusSub?.cancel();
+    // Cancelling the FRB-backed status stream (and closing a revoked session)
+    // has been observed to never complete, which wedged every subsequent
+    // beginPairing() behind this await. Bound both so teardown always ends.
+    final sub = _statusSub;
     _statusSub = null;
+    if (sub != null) {
+      await sub
+          .cancel()
+          .timeout(const Duration(seconds: 2), onTimeout: () {});
+    }
     final session = _session;
     _session = null;
-    await session?.close();
+    if (session != null) {
+      await session
+          .close()
+          .timeout(const Duration(seconds: 2), onTimeout: () {});
+    }
   }
 
   @override
