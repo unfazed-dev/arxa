@@ -1,0 +1,17 @@
+{
+  "url": "http://arxa.studio.localhost:7891",
+  "states": [
+    {
+      "selector": "button.VOzbGW_trigger",
+      "action": "click",
+      "before": "532d4d9f28e0c3be",
+      "after": "532d4d9f28e0c3be",
+      "changed": false,
+      "diffPixels": 0,
+      "transition": null,
+      "consoleErrors": [],
+      "error": "element not found"
+    }
+  ],
+  "certified": true
+}

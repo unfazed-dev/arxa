@@ -1,0 +1,56 @@
+{
+  "url": "http://arxa.studio.localhost:7891",
+  "rungs": [
+    {
+      "name": "compact",
+      "width": 390,
+      "height": 844,
+      "consoleErrors": 0,
+      "overflow": false,
+      "settled": true,
+      "settleMs": 2042,
+      "clean": true,
+      "png": "/Volumes/developer_ssd/Developer/totem_labs/arxa/mobile_flutter/evidence/lens-smoke-2026-08-29/web-main/compact_390.png",
+      "uniformPct": "67.0",
+      "uniformColor": [
+        27,
+        35,
+        38
+      ]
+    },
+    {
+      "name": "medium",
+      "width": 744,
+      "height": 1133,
+      "consoleErrors": 1,
+      "overflow": false,
+      "settled": true,
+      "settleMs": 1978,
+      "clean": false,
+      "png": "/Volumes/developer_ssd/Developer/totem_labs/arxa/mobile_flutter/evidence/lens-smoke-2026-08-29/web-main/medium_744.png",
+      "uniformPct": "99.4",
+      "uniformColor": [
+        16,
+        16,
+        20
+      ]
+    },
+    {
+      "name": "expanded",
+      "width": 1280,
+      "height": 832,
+      "consoleErrors": 1,
+      "overflow": false,
+      "settled": true,
+      "settleMs": 1965,
+      "clean": false,
+      "png": "/Volumes/developer_ssd/Developer/totem_labs/arxa/mobile_flutter/evidence/lens-smoke-2026-08-29/web-main/expanded_1280.png",
+      "uniformPct": "99.5",
+      "uniformColor": [
+        16,
+        16,
+        20
+      ]
+    }
+  ]
+}

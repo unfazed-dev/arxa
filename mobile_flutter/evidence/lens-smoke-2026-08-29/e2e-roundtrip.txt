@@ -1,0 +1,8 @@
+# E2E smoke proof — 2026-08-29
+AUTH: connected; host paired_ids=["edbd131f29a7268a08b218c70fdab687c0d1cbb19e862c094edcca54f36ded04"]
+proxy: http://127.0.0.1:49229/ → HTTP 200, 21081 bytes (studio web UI html)
+status trail:
+flutter: E2E-STATUS: ArxaConnectionState.pairing err=null url=null
+flutter: E2E-STATUS: ArxaConnectionState.connecting err=null url=null
+flutter: E2E-STATUS: ArxaConnectionState.connecting err=null url=null
+flutter: E2E-STATUS: ArxaConnectionState.connected err=null url=http://127.0.0.1:49229/
