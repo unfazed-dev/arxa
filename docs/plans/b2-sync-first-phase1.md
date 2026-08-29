@@ -57,10 +57,10 @@
 
 **Interfaces:**
 - Consumes: admin auth pattern from `admin_auth.rs` (`CAIRN_ADMIN_TOKEN`), `MirrorHandle` from Task 1.
-- Produces: `POST /ingest` body `{"events": [{"table", "op": "upsert"|"delete", "pk", "payload", "source_seq"}]}` → `202 {"accepted": N}`; each event LSN-stamped by the server (monotonic counter, starts at 1 per boot).
+- Produces: `POST /ingest` body `{"events": [{"table", "op": "upsert"|"delete", "pk", "payload", "source_seq"}]}` → `200 {"accepted": N, "lsns": [...]}` (server-stamped, monotonic; one allocator shared with snapshot bands); each event LSN-stamped by the server (monotonic counter, starts at 1 per boot).
 
 **Steps:**
-- [ ] Failing route tests: 401 without/with wrong token; 202 + events observable in the `MirrorHandle` on happy path; malformed body → 400.
+- [ ] Failing route tests: 401 without/with wrong token; 200 + events observable in the `MirrorHandle` on happy path; malformed body → 400.
 - [ ] Implement handler + server-side LSN counter (`AtomicU64`).
 - [ ] Green, `make ci`.
 
@@ -113,7 +113,7 @@
 
 **Steps:**
 - [ ] Script (rig-only, /tmp): boot sidecar + pushd; `POST /ingest` two approval rows; subscribe as a WS client; assert both rows arrive as snapshot + a third posted after subscribe arrives live; assert the push rail fires via pushd receipts (silent payload, phase-2 shape).
-- [ ] Record evidence in this file (bottom section).
+- [x] FIRST LEG DONE (2026-08-30, real binary): cairn-server with CAIRN_REPLICATOR=mirror + CAIRN_ADMIN_TOKEN boots /healthz live; POST /ingest (upsert a1, upsert a2, delete a2) -> 200 accepted:3 lsns:[1,2,3] monotonic; wrong bearer -> 401; invalid table -> 400 events[0] message; instance WITHOUT the token -> 404 not-found (fail-closed, PUT /rules shape). Remaining leg: a live WS subscriber asserting snapshot + live delivery.
 
 **Phase 1b (hand-off, NOT this plan's execution):** engine mirror-out writer (arxa-studio plugins/approvals → POST /ingest on every fold); mobile `ARXA_CAIRN_MODE=sync` pointed at the sidecar through an engine reverse-proxy route over the existing tunnel (offline reads come from local SQLite either way); visible→silent doorbell swap with collapse_key.
 
