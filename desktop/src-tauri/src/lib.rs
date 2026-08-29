@@ -322,7 +322,9 @@ pub fn run() {
             // Rider 1: probe before spawn. An externally owned server (launchd
             // on the dev machine) always wins; we only self-heal a closed port
             // for public installs that have no service manager.
+            eprintln!("[arxa-desktop] probe {} reachable={}", url, server_reachable(&url));
             if !server_reachable(&url) {
+                eprintln!("[arxa-desktop] spawning engine sidecar");
                 match app
                     .shell()
                     .sidecar("arxa-studio")
@@ -330,6 +332,7 @@ pub fn run() {
                     .and_then(|c| c.spawn())
                 {
                     Ok((_rx, child)) => {
+                        eprintln!("[arxa-desktop] engine sidecar spawned");
                         if let Ok(mut guard) = app.state::<SpawnedServer>().0.lock() {
                             guard.replace(child);
                         }
@@ -354,13 +357,58 @@ pub fn run() {
                 let watch_url = url.clone();
                 std::thread::spawn(move || {
                     let mut was_up = false;
+                    let mut ever_up = false;
+                    let mut down_ticks: u32 = 0;
                     loop {
                         std::thread::sleep(Duration::from_secs(2));
                         let up = server_reachable(&watch_url);
+                        if up {
+                            ever_up = true;
+                            down_ticks = 0;
+                        } else {
+                            down_ticks += 1;
+                        }
                         if was_up && !up {
                             eprintln!("[arxa-desktop] server lost - showing waiting page");
                             if let Some(mut win) = handle.get_webview_window("main") {
                                 let _ = win.navigate(home.clone());
+                            }
+                        }
+                        // Self-heal (Rider 1's stated intent, previously absent):
+                        // when THIS app owns the server (SpawnedServer is Some)
+                        // and a previously-up engine stays down for ~6s, respawn
+                        // the sidecar instead of polling a corpse forever. A slow
+                        // FIRST boot never triggers this — ever_up only latches
+                        // after one successful reach — so extraction time cannot
+                        // double-spawn. An externally owned server (guard None)
+                        // is never managed from here.
+                        if !up && ever_up && down_ticks >= 3 {
+                            let owned = handle
+                                .state::<SpawnedServer>()
+                                .0
+                                .lock()
+                                .map(|g| g.is_some())
+                                .unwrap_or(false);
+                            if owned {
+                                match handle
+                                    .shell()
+                                    .sidecar("arxa-studio")
+                                    .map(|c| c.args(["--no-open"]))
+                                    .and_then(|c| c.spawn())
+                                {
+                                    Ok((_rx, child)) => {
+                                        eprintln!("[arxa-desktop] engine respawned");
+                                        if let Ok(mut guard) =
+                                            handle.state::<SpawnedServer>().0.lock()
+                                        {
+                                            guard.replace(child);
+                                        }
+                                        down_ticks = 0;
+                                    }
+                                    Err(e) => {
+                                        eprintln!("[arxa-desktop] engine respawn failed: {e}")
+                                    }
+                                }
                             }
                         }
                         was_up = up;
