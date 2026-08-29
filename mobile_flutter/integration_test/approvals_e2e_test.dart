@@ -257,6 +257,36 @@ void main() {
     await tester.pump(const Duration(seconds: 1));
     await pairThroughUi(tester);
 
+    // CELLULAR variant: the operator flips Wi-Fi off inside this window;
+    // from here everything rides the iroh tunnel (relay-traversing) + APNs.
+    if (const bool.fromEnvironment('CELLULAR')) {
+      debugPrint('CELLULAR: FLIP WI-FI OFF NOW — Control Center → Wi-Fi — resuming in 5 min');
+      await Future<void>.delayed(const Duration(seconds: 300));
+      // The iroh tunnel must re-dial over the cellular relay; wait until a
+      // cheap tunnel round-trip succeeds (up to 3 min) before resuming.
+      var reconnected = false;
+      // resume() supersedes the in-flight dial (fresh epoch), so re-issue it
+      // RARELY — each budget needs ~50s of room to dial over the relay.
+      for (var attempt = 0; attempt < 90 && !reconnected; attempt++) {
+        try {
+          final t = locator<TransportService>().current.studioUrl;
+          if (t == null) throw StateError('no tunnel yet');
+          await tunnelJson('GET', t, '/__arxa/approvals');
+          reconnected = true;
+          debugPrint('CELLULAR: tunnel re-established after $attempt probes');
+        } catch (_) {
+          if (attempt % 10 == 0) {
+            debugPrint('CELLULAR: issuing resume at attempt $attempt');
+            try { await locator<TransportService>().resume(); } catch (_) {}
+          } else {
+            debugPrint('CELLULAR: tunnel not ready (attempt $attempt)');
+          }
+          await Future<void>.delayed(const Duration(seconds: 5));
+        }
+      }
+      if (!reconnected) fail('CELLULAR: tunnel never re-established over cellular');
+    }
+
     // 1. Permission + the REAL APNs token. First run ever shows the OS
     //    dialog — tap Allow on the phone. The bridge registers the token
     //    over the tunnel (PUSH frame → pairing.json → pushd /v1/tokens).
