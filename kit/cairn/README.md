@@ -36,15 +36,28 @@ only the pin and this section.
 
 `cairn_flutter` is git-pinned by **full SHA** in `pubspec.yaml`:
 
-- Current pin: `d6e3de9dc6af5fbaf479485998ff1a041db83bc8` — cairn `main`
-  including `CairnDatabase.local` (0b) and the `AttachmentDatabase` barrel
-  export (the only public `Attachments` construction path). Flip to the
-  `v0.2.0` tag as a one-line bump when cairn cuts it (no git tag has ever
-  carried cairn_flutter; `v0.1.0` predates `sdk/`).
+- Current pin: `ed5205f5abfcdeae20401da6e6d30cf0ed45f881` — cairn `main`
+  carrying sessionless `CairnDatabase.supabase` open, tenant-scoped CRDT
+  merge, and the boot-time tenant-column audit. Flip to the `v0.2.0` tag as
+  a one-line bump when cairn cuts it (no git tag has ever carried
+  cairn_flutter; `v0.1.0` predates `sdk/`).
 - Bumps are deliberate, never casual. Each bump records, in the commit message:
   1. what changed in cairn's `hook/` (native build surface),
   2. the flutter_rust_bridge pin,
   3. prebuilt-artifact availability (the zero-toolchain gate above).
+
+  The "Current pin" line above rides the SAME commit as the pubspec bump — a
+  README/pubspec mismatch is a bump bug (it happened once: this line sat at
+  `d6e3de9` while the pubspec had already moved to `ed5205f5`).
+- Pin history (trio verified against cairn git, 2026-08-29 — every pin is an
+  ancestor of cairn's public `main`; the unpushed-SHA risk never bit):
+
+  | date | pin | carried | `hook/` changes | FRB pin | prebuilt URLs |
+  |---|---|---|---|---|---|
+  | 2026-08-27 | `a25dafe6` | initial — D1's `fa1c5840` + ADR-0041 doc + `CairnDatabase.local` (0b landed upstream first) | — | `2.13.0-beta.5` | all 7 empty |
+  | 2026-08-28 | `d6e3de9` | `AttachmentDatabase` barrel export | none | `2.13.0-beta.5` | all 7 empty |
+  | 2026-08-28 | `93b93b8` | `CairnEngine` seam barrel export | none | `2.13.0-beta.5` | all 7 empty |
+  | 2026-08-28 | `ed5205f5` | sessionless supabase open, tenant-scoped CRDT merge, `cairn dev` CRDT env forwarding | none | `2.13.0-beta.5` | all 7 empty |
 
 ## Storage (opt-in)
 
