@@ -265,3 +265,54 @@ D-numbers untouched to avoid colliding with the parallel org-model-v2 track)
 - Wording trap to reconcile: M4 says "not a web wrapper" while the
   delivery contract mandates the webview session surface — reword M4 to
   "webview for online surfaces, native for pairing/push/offline".
+
+## FOLLOW-UPS 2026-08-30 (overnight) — zombie heal LANDED, cold-start lesson, B2 plan
+
+### 3b-follow-up. Zombie-link self-heal — LANDED (arxa main `f537e755`)
+- The memo-3b OWED fix: `ApprovalsRepository.refresh()` on a
+  transport-level failure while PAIRED now heals once —
+  `TransportService.resume()` → bounded wait (20s) for a fresh
+  `connected` status → retry the pull exactly once; rethrows the
+  original error when unpaired (nothing to heal), when the status
+  stream closes without reconnecting, or when the wait times out; a
+  retry that still fails propagates its own error.
+- Enabling half (same commit): `ApprovalsApiClient._json` now wraps
+  `IOException`/`TimeoutException` as `ApprovalsOfflineException(cause)`
+  — the zombie's raw `HttpException("Connection closed before full
+  header")` previously escaped even the viewmodel's
+  `on ApprovalsOfflineException` catch, so the inline offline copy
+  never showed. One exception vocabulary end to end (D62).
+- TDD: 7 new repository tests (heal succeeds / gives up after one
+  retry / rethrows on a never-returning tunnel / no heal when unpaired
+  / no heal on a 5xx) + 2 api-client tests (real socket-refused →
+  offline type). 51/51 green, analyzer clean.
+
+### Cold-start tap on device — IN PROGRESS; harness lesson recorded
+- The killed-app tap test REQUIRES a release (AOT) build: a debug (JIT)
+  Flutter iOS build cannot cold-launch standalone — after killing the
+  app, tapping its icon/notification hangs on the splash forever
+  (no VM to serve the kernel). First attempt used `flutter run
+  --debug` and hit exactly that; the tap DID arrive while the app was
+  dead (receipts seq 55-63, one send + 8 coalesced, delivered) but the
+  app could not open. Release build installed; run to conclude.
+- Every `flutter run` reinstall wipes the on-phone pairing — budget a
+  fresh QR scan per install (pairhost with the same store + fresh
+  ticket; `segno` renders the QR).
+
+### Parked items — M4 reworded; task-tap stays parked
+- M4 reworded in arxa-studio `docs/plans/mobile-grill-decisions.md`
+  (commit `a5882a0`, NOT pushed — the operator's master had 11 unpushed
+  commits; push rides their next push). "Webview for online surfaces,
+  native for pairing/push/offline" now matches the delivery contract.
+- Task-tap deep-link: assessment re-confirmed — `routeForTap` sends
+  task taps to the startup route; correct until a task surface exists.
+
+### B2 sync-first phase 1 — PLANNED, first seam in
+- Plan: `docs/plans/b2-sync-first-phase1.md` (seam map argued from
+  cairn main.rs/ports.rs/fanout.rs/pushd.rs line numbers). Ingest
+  decision: channel-fed `MirrorReplicator` + admin-gated `POST /ingest`
+  — NOT WS write-back (needs PG), NOT desktop Postgres (ops-heavy).
+- First seam LANDED in cairn: `MirrorHandle`/`MirrorReplicator`
+  (channel-fed `ReplicatorStream` + in-memory snapshot buffer with
+  fail-closed tenant scoping) + the `crate::ident` lift the snapshot
+  module's own note asked for. 7 tests green; full gate concluding.
