@@ -13,6 +13,7 @@ import 'data/approvals/approval.dart';
 import 'data/approvals/approvals_api_client.dart';
 import 'data/approvals/approvals_repository.dart';
 import 'services/app_notifications_backend.dart';
+import 'services/tap_routing.dart';
 import 'services/transport_service.dart';
 
 Future<void> main() async {
@@ -35,14 +36,34 @@ Future<void> main() async {
   // iOS; elsewhere this is a no-op.
   final notifications = locator<ArxaKitNotificationsService>();
   if (notifications is AppNotificationsBackend) {
-    notifications.apns?.taps.listen((_) {
-      locator<RouterService>().replaceWith(ApprovalsListViewRoute());
-    });
+    notifications.apns?.taps.listen(_routeTap);
   }
   // iOS suspends QUIC in the background — redial the studio link whenever
   // the app returns to the foreground (no-op without a live session).
   WidgetsBinding.instance.addObserver(TransportLifecycleObserver());
   runApp(const ArxaStudioMobileApp());
+}
+
+/// Routes a notification tap by its push class: 'task:*' collapse keys land
+/// on the studio root, everything else keeps the approvals deep link.
+///
+/// Cold-start ordering: the drained tap can arrive before the first frame
+/// mounts the navigator, so wait for the router's navigator context before
+/// replacing the route (navigating an unbuilt navigator throws).
+Future<void> _routeTap(Map<String, dynamic> tap) async {
+  final navigator = kitPlatformRouter.navigatorKey;
+  while (navigator.currentContext == null) {
+    await Future<void>.delayed(const Duration(milliseconds: 50));
+  }
+  switch (routeForTap(tap['collapseKey'] as String?)) {
+    case TapRoute.studioRoot:
+      // ponytail: 'studio root' = the '/' startup route the app lands on at
+      // launch (PairingScanViewRoute); if a dedicated studio home route
+      // lands, repoint this single case.
+      locator<RouterService>().replaceWith(PairingScanViewRoute());
+    case TapRoute.approvals:
+      locator<RouterService>().replaceWith(ApprovalsListViewRoute());
+  }
 }
 
 /// Calls [TransportService.resume] on every return to the foreground.
