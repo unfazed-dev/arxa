@@ -13,6 +13,10 @@ import 'package:flutter/services.dart';
 class ApnsNotificationsBackend implements ArxaKitNotificationsService {
   ApnsNotificationsBackend() {
     _channel.setMethodCallHandler(_onNativeCall);
+    // Cold-start drain: a tap that cold-launched the app was buffered
+    // native-side (Dart had no handler yet → the live 'event' got a null
+    // reply). Read-and-clear it once the handler above is live.
+    unawaited(_drainPendingTap());
     // ponytail: token rotation is POLLED (5s, distinct), not event-pushed —
     // an APNs device token is stable for an installed build; a native event
     // channel is the upgrade if mid-session rotation ever matters.
@@ -26,6 +30,7 @@ class ApnsNotificationsBackend implements ArxaKitNotificationsService {
   final _tokens = StreamController<ArxaKitPushToken>.broadcast();
   Timer? _poll;
   String? _lastEmitted;
+  String? _lastTapId;
 
   /// Notification taps (native didReceive): route to the approvals shell.
   Stream<Map<String, dynamic>> get taps => _taps.stream;
@@ -34,7 +39,7 @@ class ApnsNotificationsBackend implements ArxaKitNotificationsService {
     if (call.method != 'event') return null;
     final args = (call.arguments as Map?)?.cast<String, dynamic>() ?? const <String, dynamic>{};
     if (args['type'] == 'tap') {
-      _taps.add(args);
+      _emitTap(args);
       return null;
     }
     // willPresent: the system presented a push while foregrounded — the
@@ -145,7 +150,27 @@ class ApnsNotificationsBackend implements ArxaKitNotificationsService {
       return await _channel.invokeMethod<T>(method, arguments);
     } on PlatformException {
       return null;
+    } on MissingPluginException {
+      return null;
     }
+  }
+
+  Future<void> _drainPendingTap() async {
+    final tap = await _invoke<Map<dynamic, dynamic>>('pendingTap');
+    if (tap == null) return;
+    _emitTap(tap.cast<String, dynamic>());
+  }
+
+  /// Emits a tap, deduped by requestId: on cold start BOTH the live
+  /// 'event' and the drain can carry the same buffered notification —
+  /// the first emission wins, the repeat is dropped.
+  void _emitTap(Map<String, dynamic> tap) {
+    final id = tap['requestId'] as String?;
+    if (id != null) {
+      if (_lastTapId == id) return;
+      _lastTapId = id;
+    }
+    _taps.add(tap);
   }
 
   Future<ArxaKitPushToken?> _nativeToken() async {

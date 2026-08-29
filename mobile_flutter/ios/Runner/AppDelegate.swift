@@ -47,15 +47,20 @@ import UserNotifications
 ///   Dart→native: initialize (no-op), requestPermission {alert,badge,sound},
 ///     permissionStatus, getToken, getRegistrationError, setBadgeCount
 ///     {count}, clearBadge, showLocalNotification {id,title,body,payload,
-///     badge}, cancel {id}, cancelAll
+///     badge}, cancel {id}, cancelAll, pendingTap (read-and-clear)
 ///   native→Dart: 'event' {type: willPresent|tap, title, body, category,
-///     userInfo}
+///     requestId, collapseKey?, userInfo}
 final class ApnsBridge: NSObject, UNUserNotificationCenterDelegate {
   static let channelName = "arxa/apns"
 
   private var channel: FlutterMethodChannel?
   fileprivate(set) var deviceToken: Data?
   fileprivate(set) var registrationError: String?
+
+  /// The latest tap, buffered BEFORE the channel invoke so a cold launch
+  /// (Dart handler not yet registered → null reply) can still drain it via
+  /// the 'pendingTap' method (read-and-clear).
+  fileprivate(set) var pendingTap: [String: Any]?
 
   /// The APNs device token as lowercase hex (the wire form cairn-push's
   /// registry stores; same encoding APNs debugging docs use).
@@ -120,6 +125,10 @@ final class ApnsBridge: NSObject, UNUserNotificationCenterDelegate {
       center.removePendingNotificationRequests(withIdentifiers: [id])
       center.removeDeliveredNotifications(withIdentifiers: [id])
       result(nil)
+    case "pendingTap":
+      let tap = pendingTap
+      pendingTap = nil
+      result(tap)
     case "cancelAll":
       let center = UNUserNotificationCenter.current()
       center.removeAllPendingNotificationRequests()
@@ -151,7 +160,7 @@ final class ApnsBridge: NSObject, UNUserNotificationCenterDelegate {
     willPresent notification: UNNotification,
     withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void
   ) {
-    sendEvent(type: "willPresent", content: notification.request.content)
+    sendEvent(type: "willPresent", notification: notification)
     // D65 copy presents even while the app is foregrounded — the approvals
     // loop's whole point is catching the owner mid-app.
     completionHandler([.banner, .badge, .sound])
@@ -162,19 +171,34 @@ final class ApnsBridge: NSObject, UNUserNotificationCenterDelegate {
     didReceive response: UNNotificationResponse,
     withCompletionHandler completionHandler: @escaping () -> Void
   ) {
-    sendEvent(type: "tap", content: response.notification.request.content)
+    sendEvent(type: "tap", notification: response.notification)
     completionHandler()
   }
 
-  private func sendEvent(type: String, content: UNNotificationContent) {
+  private func sendEvent(type: String, notification: UNNotification) {
+    let content = notification.request.content
     var payload: [String: Any] = [
       "type": type,
       "title": content.title,
       "body": content.body,
       "category": content.categoryIdentifier,
+      // Dedupe key for the Dart drain (cold start may deliver both the
+      // live event AND the drained pendingTap for the same notification).
+      "requestId": notification.request.identifier,
     ]
+    // Task-tap routing: the push class rides the collapse key — thread id
+    // first, else the aps dict cairn-push fills in.
+    let aps = content.userInfo["aps"] as? [String: Any]
+    let collapseKey = content.threadIdentifier.isEmpty
+      ? aps?["collapse-id"] as? String : content.threadIdentifier
+    if let collapseKey, !collapseKey.isEmpty {
+      payload["collapseKey"] = collapseKey
+    }
     if !content.userInfo.isEmpty {
       payload["userInfo"] = content.userInfo
+    }
+    if type == "tap" {
+      pendingTap = payload
     }
     channel?.invokeMethod("event", arguments: payload)
   }
