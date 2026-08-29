@@ -11,6 +11,13 @@
       "http://127.0.0.1:*"
     ]
   },
-  "windows": ["main"],
-  "permissions": ["core:default", "allow-open-pairing-window", "allow-report-theme"]
+  "windows": [
+    "main"
+  ],
+  "permissions": [
+    "core:default",
+    "allow-open-pairing-window",
+    "allow-report-theme",
+    "dialog:allow-open"
+  ]
 }

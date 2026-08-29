@@ -293,6 +293,10 @@ pub fn run() {
             }
         }))
         .plugin(tauri_plugin_shell::init())
+        // Native folder locator for the create-organisation modal: the studio
+        // page (remote origin) calls window.__TAURI__.dialog.open through the
+        // global API; the remote-studio capability scopes it to dialog:allow-open.
+        .plugin(tauri_plugin_dialog::init())
         .manage(SpawnedServer(Mutex::new(None)))
         .manage(ThemeState(Mutex::new(None)))
         .invoke_handler(tauri::generate_handler![
