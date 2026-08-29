@@ -3,11 +3,18 @@
 - **Date:** 2026-08-29 · **Status:** B1 mechanism SHIPPED same-day — the
   caller exists as `plugins/push-doorbell` in arxa-studio (`5973a7f`:
   gated by literal `ARXA_DOORBELL_PUSH=true`, never throws, 7-check
-  selftest riding `scripts/ci.mjs`). The approval *event* is now SPECCED
-  by the approvals-loop grill (arxa-studio grill decisions D60–D68,
-  2026-08-29): derived projection over dsh pending interactions, engine
-  HTTP over the tunnel both ways, new `plugins/approvals` owns the call
-  site, phone-demo closes done (D68). Not yet built.
+  selftest riding `scripts/ci.mjs`). The approval *event* is BUILT (2026-08-29):
+  arxa-studio `ef8102a` — `plugins/approvals` (projection over the
+  apiProxy mux stream, `/__arxa/approvals` list + decide routes,
+  doorbell call site; 12th CI suite green) and arxa `e3f32e57` — the
+  mobile data slice (cairn-shaped entity + tunnel client + repository;
+  approvals_shell live; analyze clean, 38 tests). CLOSING CONDITION
+  (D68, the ADR-0041 D5 pattern with teeth): the owner demonstrates the
+  full loop on the physical phone — boot the studio (first live boot
+  also proves the profile row + launcher copies), pair, arm
+  `ARXA_DOORBELL_PUSH=true`, raise a pending question in a session,
+  assert buzz → approvals_shell lists it → answer on the phone → the
+  agent unblocks. Dark-gated off-default until then.
 - **Context:** the push rail is built and green end-to-end *except the trigger*:
   tokens are minted on-device (M7, tauri-plugin-mobile-push), registered over
   the pairing tunnel and re-registered on pushd restart (`pushd.rs`,
