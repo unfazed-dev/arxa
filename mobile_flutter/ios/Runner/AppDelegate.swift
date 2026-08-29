@@ -162,8 +162,12 @@ final class ApnsBridge: NSObject, UNUserNotificationCenterDelegate {
   ) {
     sendEvent(type: "willPresent", notification: notification)
     // D65 copy presents even while the app is foregrounded — the approvals
-    // loop's whole point is catching the owner mid-app.
-    completionHandler([.banner, .badge, .sound])
+    // loop's whole point is catching the owner mid-app. The .list option is
+    // what keeps it in Notification Center / the lock-screen list
+    // afterwards; banner-only flashed and vanished (2026-08-29: foreground
+    // pushes never persisted, background/closed delivery always did — which
+    // masked this as a "cellular" issue when it was presentation-path only).
+    completionHandler([.banner, .list, .badge, .sound])
   }
 
   func userNotificationCenter(

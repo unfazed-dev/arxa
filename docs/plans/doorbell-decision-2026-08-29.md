@@ -217,6 +217,34 @@ at REAL APNs — no stub anywhere in the delivery path:
   passed end-to-end. Lesson: on USB stay attached through the flip — USB
   survives the interface change; detach only for wireless-debug runs.
 
+### 3b. Notification persistence — FIXED (2026-08-29 night): foreground
+### pushes lacked .list; verified green on cellular
+- REPORT: "the notification is not staying in my lock screen notification
+  area like it did when on wifi".
+- ROOT CAUSE: not cellular at all — a presentation-path issue masked by app
+  state. AppDelegate willPresent (app FOREGROUND) completed with
+  [.banner, .badge, .sound]; .list is the option that puts a notification
+  in Notification Center / the lock-screen list. Foreground pushes flashed
+  and vanished. Background/closed delivery (system-presented — the earlier
+  Wi-Fi observations) always persists, which framed the bug as
+  "wifi vs cellular" when it was "foreground vs background".
+- FIX: completionHandler([.banner, .list, .badge, .sound]) — one line.
+- VERIFIED on cellular (owner-observed): raise via engine seam while the
+  phone is mobile-data-only, app foreground → banner arrives → STAYS in
+  Notification Center after sliding away. (pushd receipt seq 54,
+  approval-requested, delivered.)
+- OWED (separate bug this hunt surfaced): intermittent zombie link after a
+  mid-session Wi-Fi→cellular handoff. Evidence: during a late flip, the
+  relay session dropped (pairhost: "uplink: connection lost") while the
+  phone's conn.closed() never fired — the transport's closed-only healing
+  can't see it, and every tunnel request fails fast from then on
+  ("Connection closed before full header"). iroh keepalives are already on
+  (endpoint/quic.rs sets keep_alive_interval + max_idle_timeout), so the
+  heal belongs app-side: on a transport-level refresh failure,
+  ApprovalsRepository should issue TransportService.resume() and retry
+  once (pull-based v1 already documents refresh triggers; production heals
+  on app-foreground only today).
+
 ### 4. B2 sync-first decision — DECIDED (recorded here; arxa-studio
 D-numbers untouched to avoid colliding with the parallel org-model-v2 track)
 - Purpose: BOTH — silent doorbell AND an offline browse projection.
