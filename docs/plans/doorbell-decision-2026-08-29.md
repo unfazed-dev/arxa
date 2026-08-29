@@ -26,9 +26,8 @@
   racing Deny refused 409 (first-claimant), 25 refreshes/108ms, 60
   parallel engine GETs all-200/41ms, and the doorbell POSTing a stub pushd
   with the exact cairn-push contract (content-free D65 copy,
-  collapse_key=approval:<id>). STILL OPEN for the physical phone: the real
-  APNs/FCM buzz and cellular pairing — the seam replaces the question
-  SOURCE, not the rail delivery.
+  collapse_key=approval:<id>). The physical-phone leg is CLOSED TOO —
+  2026-08-29, same day: see the PHONE LEG COMPLETE record at the bottom.
 - **Context:** the push rail is built and green end-to-end *except the trigger*:
   tokens are minted on-device (M7, tauri-plugin-mobile-push), registered over
   the pairing tunnel and re-registered on pushd restart (`pushd.rs`,
@@ -106,3 +105,50 @@ double-notifying.
   keeps the payload cairn-shaped so this stays a transport swap.
 - The kit README paragraph (A) — trivial, can ride any kit commit.
   UNDECIDED rider for the approvals slice (grill D68 open items).
+
+## PHONE LEG COMPLETE (2026-08-29) — D68's closing condition MET
+
+The full loop ran green on the owner's physical iPhone 15 (iOS 26.6,
+wireless-tethered, dev-signed team 43GNRCGQXQ), with the pushd rail pointed
+at REAL APNs — no stub anywhere in the delivery path:
+
+- **Rail:** cairn-pushd (release build) with the operator's APNs key
+  (AuthKey_A5PQD8FHNS.p8, key-id A5PQD8FHNS, team 43GNRCGQXQ, bundle
+  solutions.arxadigital.arxa.mobile, CAIRN_APNS_SANDBOX=1 for the
+  development-signed build — creds live in pushd.env beside the store,
+  per the B4 operator-owned rule; never the repo).
+- **Phone half (new code):** aps-environment=development entitlement
+  (Runner.entitlements), a raw-APNs native bridge in AppDelegate
+  (bidirectional arxa/apns channel: permission, token mint, foreground
+  presentation, tap events — no Firebase in the path), an app-owned
+  ApnsNotificationsBackend behind the kit's notifications port
+  (platform-selected by AppNotificationsBackend so stacked regeneration
+  cannot revert it), and buzz-tap deep-linking to the approvals shell.
+- **Harness fix found by the field run:** pairhost never attached the
+  pushd handle, so PUSH registrations landed in pairing.json but NOT in
+  the daemon's registry — the doorbell send 404'd (token unknown to
+  pushd). pairhost now reads pushd.env from its store dir and calls
+  attach_pushd, exactly as the Tauri shell does.
+- **The loop (PHASE=phone in the integration test, self-contained — it
+  raises its own pending through the tunnel):** pair over LAN →
+  permission authorized → APNs device token minted on-hardware and
+  registered through the tunnel → seam raise against a live idle agent →
+  **doorbell → cairn-pushd → api.sandbox.push.apple.com → BUZZ** —
+  title 'Approval needed', body 'Open Arxa Studio on your phone to
+  review.' asserted in-app off the native willPresent event →
+  approvals card → Approve tapped on the phone → the ask resolved
+  engine-side: AGENT UNBLOCKED [{answers:[{id:q1, selected:[Approve]}]}].
+  Final line: 00:25 +4: All tests passed!
+- **Delivery evidence (pushd /v1/receipts):** three consecutive
+  approval-requested sends outcome:"delivered" at provider_ts 10:10:53Z
+  and 10:14:58Z, with duplicate rings for the same approval coalesced
+  by collapse_key — D66's coalescing proven against the live provider,
+  not a mock.
+- Owner interactions during the run (honest ledger): one Xcode Apple-ID
+  sign-in (no accounts were configured on the Mac) and one Allow tap on
+  the permission dialog. Everything else was automated.
+- **Still owner-flavored, deliberately:** the phone was on Wi-Fi; the
+  cellular-pairing variant (phone off-Wi-Fi, relay-traversing dial) is a
+  coverage nicety, not a rail unknown — iroh NAT traversal is the same
+  code path. The dark gate ARXA_DOORBELL_PUSH=true STAYS off-default by
+  design (arming is an operator choice, ADR-0041 D5).
