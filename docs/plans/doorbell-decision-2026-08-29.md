@@ -15,6 +15,20 @@
   `ARXA_DOORBELL_PUSH=true`, raise a pending question in a session,
   assert buzz → approvals_shell lists it → answer on the phone → the
   agent unblocks. Dark-gated off-default until then.
+
+  SIMULATOR LEG COMPLETE (2026-08-29, iPhone 16 Pro sim, commits arxa
+  `d38de882` + arxa-studio `6c75add`): the whole loop ran green on-sim —
+  real pairing via a headless pairhost harness (desktop/src-tauri/examples/
+  pairhost.rs: the real pairing.rs core, consume+expiry ticket re-mint),
+  live tunnel, approvals card from a REAL user-questions ask (gated test
+  seam `ARXA_APPROVALS_TEST_SEAM`, no LLM — the zai key was
+  429-insufficient-balance), phone Approve resolving the ask engine-side,
+  racing Deny refused 409 (first-claimant), 25 refreshes/108ms, 60
+  parallel engine GETs all-200/41ms, and the doorbell POSTing a stub pushd
+  with the exact cairn-push contract (content-free D65 copy,
+  collapse_key=approval:<id>). STILL OPEN for the physical phone: the real
+  APNs/FCM buzz and cellular pairing — the seam replaces the question
+  SOURCE, not the rail delivery.
 - **Context:** the push rail is built and green end-to-end *except the trigger*:
   tokens are minted on-device (M7, tauri-plugin-mobile-push), registered over
   the pairing tunnel and re-registered on pushd restart (`pushd.rs`,
