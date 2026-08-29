@@ -36,10 +36,12 @@ only the pin and this section.
 
 `cairn_flutter` is git-pinned by **full SHA** in `pubspec.yaml`:
 
-- Current pin: `ed5205f5abfcdeae20401da6e6d30cf0ed45f881` — cairn `main`
-  carrying sessionless `CairnDatabase.supabase` open, tenant-scoped CRDT
-  merge, and the boot-time tenant-column audit. Flip to the `v0.2.0` tag as
-  a one-line bump when cairn cuts it (no git tag has ever carried
+- Current pin: `42148877b7626c98353c1735ac849bf8aaa52233` — cairn `main`
+  carrying ADR-0041 accepted + D6/D7/D8: the iroh transport (off-default),
+  the SDK `iroh` cargo feature with build-hook opt-in
+  (`CAIRN_FLUTTER_CARGO_FEATURES`), the `CAIRN_IROH_RELAY_URL` self-host
+  seam, and `iroh://` acceptance in `CairnConfig`. Flip to the `v0.2.0` tag
+  as a one-line bump when cairn cuts it (no git tag has ever carried
   cairn_flutter; `v0.1.0` predates `sdk/`).
 - Bumps are deliberate, never casual. Each bump records, in the commit message:
   1. what changed in cairn's `hook/` (native build surface),
@@ -58,6 +60,7 @@ only the pin and this section.
   | 2026-08-28 | `d6e3de9` | `AttachmentDatabase` barrel export | none | `2.13.0-beta.5` | all 7 empty |
   | 2026-08-28 | `93b93b8` | `CairnEngine` seam barrel export | none | `2.13.0-beta.5` | all 7 empty |
   | 2026-08-28 | `ed5205f5` | sessionless supabase open, tenant-scoped CRDT merge, `cairn dev` CRDT env forwarding | none | `2.13.0-beta.5` | all 7 empty |
+  | 2026-08-29 | `4214887` | ADR-0041 accepted + D6/D7/D8 (iroh transport off-default, SDK `iroh` feature, relay self-host seam) | `build.dart` +15/−1 (`CAIRN_FLUTTER_CARGO_FEATURES` opt-in) | `2.13.0-beta.5` | all 7 empty |
 
 ## Storage (opt-in)
 

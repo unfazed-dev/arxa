@@ -144,8 +144,8 @@ packages:
     dependency: "direct main"
     description:
       path: "sdk/cairn_flutter"
-      ref: ed5205f5abfcdeae20401da6e6d30cf0ed45f881
-      resolved-ref: ed5205f5abfcdeae20401da6e6d30cf0ed45f881
+      ref: "42148877b7626c98353c1735ac849bf8aaa52233"
+      resolved-ref: "42148877b7626c98353c1735ac849bf8aaa52233"
       url: "https://github.com/unfazed-dev/cairn.git"
     source: git
     version: "0.2.0-dev.1"

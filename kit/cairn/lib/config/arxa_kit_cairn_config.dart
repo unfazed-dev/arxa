@@ -11,10 +11,10 @@
 /// ```
 ///
 /// `ARXA_CAIRN_URL` also accepts an `iroh://…?ticket=…` dial URL (cairn
-/// ADR-0041 preview) once the cairn pin carries D7 (`4214887` or later —
-/// NOT the current `ed5205f5` pin) AND the app source-builds the native
-/// library with `CAIRN_FLUTTER_CARGO_FEATURES=iroh`; prebuilt binaries never
-/// carry it. Until then ws/wss is the only working transport.
+/// ADR-0041 preview): the kit's pin carries the D7 SDK support as of
+/// 2026-08-29 (`4214887`), and the app must source-build the native
+/// library with `CAIRN_FLUTTER_CARGO_FEATURES=iroh` — prebuilt binaries
+/// never carry it. ws/wss remains the default transport.
 ///
 /// Tokens are NEVER env: `supabaseBridge` pulls session JWTs from kit/data's
 /// `ArxaKitAuthService`; `sync` takes a host-supplied token-provider callback
