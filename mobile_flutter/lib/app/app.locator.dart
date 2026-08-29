@@ -8,10 +8,10 @@
 // ignore_for_file: public_member_api_docs, implementation_imports, depend_on_referenced_packages
 
 import 'package:arxa_kit_notifications/src/arxa_kit_notifications_service.dart';
-import 'package:arxa_kit_notifications/src/backends/arxa_kit_fcm_push_backend.dart';
 import 'package:stacked_services/src/navigation/router_service.dart';
 import 'package:stacked_shared/stacked_shared.dart';
 
+import '../services/app_notifications_backend.dart';
 import '../services/iroh_transport_service.dart';
 import '../services/push_token_service.dart';
 import '../services/transport_service.dart';
@@ -31,7 +31,7 @@ Future<void> setupLocator(
   locator.registerLazySingleton(() => RouterService());
   locator.registerLazySingleton<TransportService>(() => IrohTransportService());
   locator.registerLazySingleton<ArxaKitNotificationsService>(
-      () => ArxaKitFcmPushBackend());
+      () => AppNotificationsBackend());
   locator.registerLazySingleton(() => PushTokenService());
   if (stackedRouter == null) {
     throw Exception(
