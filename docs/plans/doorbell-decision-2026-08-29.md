@@ -3,10 +3,11 @@
 - **Date:** 2026-08-29 · **Status:** B1 mechanism SHIPPED same-day — the
   caller exists as `plugins/push-doorbell` in arxa-studio (`5973a7f`:
   gated by literal `ARXA_DOORBELL_PUSH=true`, never throws, 7-check
-  selftest riding `scripts/ci.mjs`). Still open: the approval *event* —
-  no engine code raises approval-requested yet, so the library has no call
-  site until the approvals feature lands (mobile `approvals_shell` is its
-  placeholder).
+  selftest riding `scripts/ci.mjs`). The approval *event* is now SPECCED
+  by the approvals-loop grill (arxa-studio grill decisions D60–D68,
+  2026-08-29): derived projection over dsh pending interactions, engine
+  HTTP over the tunnel both ways, new `plugins/approvals` owns the call
+  site, phone-demo closes done (D68). Not yet built.
 - **Context:** the push rail is built and green end-to-end *except the trigger*:
   tokens are minted on-device (M7, tauri-plugin-mobile-push), registered over
   the pairing tunnel and re-registered on pushd restart (`pushd.rs`,
@@ -76,8 +77,11 @@ double-notifying.
 
 ## Open items for the owner
 
-- Notification copy ownership: who templates approval text (engine-side, per
-  ADR-0038 §2).
+- ~~Notification copy ownership~~ — RESOLVED (grill D65): engine-side
+  caller, fixed generic English, content-free; the summary rides the
+  tunnel, never the rail.
 - Whether the desktop ever hosts/embeds cairn-server (the B2 enabler) — a
-  separate architectural decision, explicitly not this one.
+  separate architectural decision, explicitly not this one. Grill D61
+  keeps the payload cairn-shaped so this stays a transport swap.
 - The kit README paragraph (A) — trivial, can ride any kit commit.
+  UNDECIDED rider for the approvals slice (grill D68 open items).
