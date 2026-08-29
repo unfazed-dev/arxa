@@ -61,6 +61,22 @@ class AppLocalizationsEn extends AppLocalizations {
   String get approvalsEmpty => 'No pending approvals.';
 
   @override
+  String get approvalsNotConnected =>
+      'Not connected — pair with the studio to load approvals.';
+
+  @override
+  String get approvalsSend => 'Send answer';
+
+  @override
+  String get approvalsAnsweredElsewhere => 'Already answered elsewhere.';
+
+  @override
+  String get approvalsCustomHint => 'Type your answer';
+
+  @override
+  String get approvalsCustomOptionalHint => 'Add a note (optional)';
+
+  @override
   String get settingsTitle => 'Settings';
 
   @override

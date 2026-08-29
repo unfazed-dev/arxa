@@ -1,3 +1,4 @@
+import 'package:arxa_kit_data/arxa_kit_data.dart';
 import 'package:arxa_kit_ui_library/arxa_kit_ui_library.dart';
 import 'package:flutter/material.dart';
 
@@ -6,20 +7,25 @@ import 'package:arxa_studio_mobile/l10n/app_localizations.dart';
 import 'app/app.locator.dart';
 import 'app/app_data.dart';
 import 'app/kit_platform_router.dart';
+import 'data/approvals/approval.dart';
+import 'data/approvals/approvals_api_client.dart';
+import 'data/approvals/approvals_repository.dart';
 import 'services/transport_service.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await setupLocator(stackedRouter: kitPlatformRouter);
-  // lens-smoke unblock (2026-08-29): CairnDatabase.local throws with zero
-  // declared entities ("Entities land with the approvals data slice"), which
-  // aborted main() before runApp. Shell surfaces don't touch the data layer
-  // yet, so log-and-continue until the approvals slice registers entities.
-  try {
-    await AppData.initialize();
-  } catch (e) {
-    debugPrint('AppData.initialize failed (known scaffold gap): $e');
-  }
+  // Approvals slice (grill D60–D68): boot the cairn-backed data layer with
+  // the Approval entity, then expose its repository behind the tunnel
+  // client. Loud on purpose (D62): a boot failure crashes visibly rather
+  // than silently degrading the approvals shell.
+  await AppData.initialize();
+  locator.registerLazySingleton(
+    () => ApprovalsRepository(
+      cache: arxaKitLocator<ArxaKitRepository<Approval>>(),
+      api: ApprovalsApiClient(transport: locator<TransportService>()),
+    ),
+  );
   setupArxaKitUiServices();
   // iOS suspends QUIC in the background — redial the studio link whenever
   // the app returns to the foreground (no-op without a live session).

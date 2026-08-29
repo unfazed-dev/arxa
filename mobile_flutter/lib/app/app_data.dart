@@ -1,6 +1,8 @@
 import 'package:arxa_kit_cairn/arxa_kit_cairn.dart';
 import 'package:arxa_kit_data/arxa_kit_data.dart';
 
+import '../data/approvals/approval.dart';
+
 /// Data-layer boot. Called once from `main()` after `setupLocator()`.
 ///
 /// Cairn is the v1 backend (settled decision) — no seed fallback.
@@ -18,12 +20,14 @@ class AppData {
         ),
       );
 
-  /// Entities land with the approvals data slice (spec: approvals data via
-  /// arxa kit cairn); nothing to register at scaffold stage.
+  /// The approvals data slice (grill D60–D68): the Approval entity is the
+  /// phone's cairn-backed local projection of the engine's pending
+  /// questions — wire-shaped as the future cairn row (D61), so the B2 sync
+  /// swap changes transport, not model.
   static Future<void> initialize({ArxaKitDataConfig? config}) async {
     await ArxaKitData.initialize(
       config: config ?? defaultConfig(),
-      entities: const [],
+      entities: const [approvalEntityRegistration],
       fixtureAssets: const [],
     );
   }

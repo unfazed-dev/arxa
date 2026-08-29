@@ -196,6 +196,36 @@ abstract class AppLocalizations {
   /// **'No pending approvals.'**
   String get approvalsEmpty;
 
+  /// No description provided for @approvalsNotConnected.
+  ///
+  /// In en, this message translates to:
+  /// **'Not connected — pair with the studio to load approvals.'**
+  String get approvalsNotConnected;
+
+  /// No description provided for @approvalsSend.
+  ///
+  /// In en, this message translates to:
+  /// **'Send answer'**
+  String get approvalsSend;
+
+  /// No description provided for @approvalsAnsweredElsewhere.
+  ///
+  /// In en, this message translates to:
+  /// **'Already answered elsewhere.'**
+  String get approvalsAnsweredElsewhere;
+
+  /// No description provided for @approvalsCustomHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Type your answer'**
+  String get approvalsCustomHint;
+
+  /// No description provided for @approvalsCustomOptionalHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a note (optional)'**
+  String get approvalsCustomOptionalHint;
+
   /// No description provided for @settingsTitle.
   ///
   /// In en, this message translates to:
