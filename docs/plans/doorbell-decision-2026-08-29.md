@@ -155,3 +155,71 @@ at REAL APNs — no stub anywhere in the delivery path:
   coverage nicety, not a rail unknown — iroh NAT traversal is the same
   code path. The dark gate ARXA_DOORBELL_PUSH=true STAYS off-default by
   design (arming is an operator choice, ADR-0041 D5).
+
+## FOLLOW-UPS 2026-08-29 (evening) — 1+2 landed, 3 found a real bug, 4 decided
+
+### 1. Cold-start tap drain + task-tap routing — LANDED (arxa main)
+- `a86ba6c4`: ApnsBridge buffers `pendingTap` (read-and-clear channel
+  method), stamps `requestId`; Dart drains after handler registration and
+  dedupes by requestId (covers the drain/live race on cold launch).
+- `1aee8bdb`: `collapseKey` plumbed (threadIdentifier →
+  `aps['collapse-id']` fallback); pure `routeForTap()`: `task*` → startup
+  route, else approvals. ponytail: task taps land on '/'
+  (PairingScanViewRoute) — no task surface exists yet.
+- 44/44 unit tests, analyzer clean. OWED: killed-app cold-start tap on a
+  physical device.
+
+### 2. Task-complete/failed doorbell class — LANDED (arxa-studio `6083d93`)
+- `plugins/approvals` `foldJobsFrame()` consumes `session/jobs` frames on
+  the SAME mux the approvals path already used (JobView statuses;
+  completed → finished, failed+killed → failed; first-sight per id per
+  process). Same dark gate, POST, bearer. Content-free copy: 'Task
+  finished' / 'Task failed' + 'Open Arxa Studio to see the result.';
+  `collapse_key` task:<id>; category task. Selftests green (10 + 4 blocks).
+- Observed quirk during the rig run: a re-raise of an ANSWERED session's
+  ask (same approval id) at a relay-transition moment was correctly
+  coalesced by the first-sight set — no buzz, no send. Collapse discipline
+  held.
+
+### 3. Cellular field variant — HARNESS LANDED; LOOP BLOCKED ON A KIT BUG
+- Harness (arxa main, this commit): `PHASE=phone` +
+  `--dart-define=CELLULAR=true` inserts a 5-min flip window after pairing,
+  then a patient reconnect gate: probe every 5s;
+  `TransportService.resume()` re-issued at most every ~50s — resume()
+  supersedes the in-flight dial (fresh epoch), so tight resumes starve it.
+- FINDING: the tunnel does NOT re-establish across a Wi-Fi→cellular
+  transition. Evidence across 4 runs: 180+ dials (5-dial budgets × spaced
+  resumes), USB-attached live console shows every attempt fail fast; the
+  pairhost relay uplink was healthy throughout (rotations normal);
+  meanwhile a direct pushd `/v1/send` to the phone's token over the same
+  cellular link returned `outcome:"delivered"` (receipt seq 21, push_id
+  17b483d1-…) AND the owner confirmed the banner with the app CLOSED. So:
+  cellular data ✓, APNs ✓, background delivery ✓ — the only broken link is
+  the kit transport's redial (kit/studio_transport): `run_session` gives up
+  after RECONNECT_DIAL_ATTEMPTS=5 × 3s backoff and `resume()` re-spawns it,
+  yet no redial lands across the interface change (candidates: relay
+  reachability from the cellular endpoint, per-spawn `Endpoint::bind`,
+  dial timeouts vs the relay handshake).
+- OWED: the cellular variant goes green the moment the kit redial is
+  fixed — the harness is committed and waiting.
+
+### 4. B2 sync-first decision — DECIDED (recorded here; arxa-studio
+D-numbers untouched to avoid colliding with the parallel org-model-v2 track)
+- Purpose: BOTH — silent doorbell AND an offline browse projection.
+- Scope: full mirror is the TARGET (orgs/folders/projects/memberships,
+  then sessions, then the rest); the approvals table is phase 1.
+- Writer: MIRROR-OUT. The studio engine is the single writer; cairn is a
+  read-model replica ("mobile's projection of the tree", D46/M7-M8; D32
+  BYO wire contract). Producers stay engine-side.
+- Transport: SIDECAR cairn-server supervised by the Tauri shell (the
+  pushd precedent), engine mirrors out over localhost. Embed in-process
+  only if perf later demands it.
+- Surfaces: the dsh WEBVIEW stays the phone's online browse surface (the
+  full studio); cairn serves offline browse + the silent doorbell
+  (wake-and-sync, render from local SQLite — the atlet pattern). Visible
+  wake remains for approvals until B2 lands; the silent doorbell replaces
+  it for sync-covered events; collapse_key keeps the swap from
+  double-notifying.
+- Wording trap to reconcile: M4 says "not a web wrapper" while the
+  delivery contract mandates the webview session surface — reword M4 to
+  "webview for online surfaces, native for pairing/push/offline".
