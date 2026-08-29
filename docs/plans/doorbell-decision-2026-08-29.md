@@ -1,6 +1,12 @@
 # Doorbell decision — what calls pushd's `POST /v1/send`
 
-- **Date:** 2026-08-29 · **Status:** draft, owner decision pending
+- **Date:** 2026-08-29 · **Status:** B1 mechanism SHIPPED same-day — the
+  caller exists as `plugins/push-doorbell` in arxa-studio (`5973a7f`:
+  gated by literal `ARXA_DOORBELL_PUSH=true`, never throws, 7-check
+  selftest riding `scripts/ci.mjs`). Still open: the approval *event* —
+  no engine code raises approval-requested yet, so the library has no call
+  site until the approvals feature lands (mobile `approvals_shell` is its
+  placeholder).
 - **Context:** the push rail is built and green end-to-end *except the trigger*:
   tokens are minted on-device (M7, tauri-plugin-mobile-push), registered over
   the pairing tunnel and re-registered on pushd restart (`pushd.rs`,
