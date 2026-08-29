@@ -103,8 +103,11 @@ double-notifying.
 - Whether the desktop ever hosts/embeds cairn-server (the B2 enabler) — a
   separate architectural decision, explicitly not this one. Grill D61
   keeps the payload cairn-shaped so this stays a transport swap.
-- The kit README paragraph (A) — trivial, can ride any kit commit.
-  UNDECIDED rider for the approvals slice (grill D68 open items).
+- ~~The kit README paragraph (A)~~ — RESOLVED 2026-08-29: "The push
+  pattern" paragraph now lives in kit/cairn's README Push section
+  (silent wake → read-after-sync → render from local sqlite; content
+  never touches the rail; collapse_key keeps a later sync-only
+  transition from double-notifying).
 
 ## PHONE LEG COMPLETE (2026-08-29) — D68's closing condition MET
 

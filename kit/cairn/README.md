@@ -112,3 +112,14 @@ non-fatal and retries on the next attach/refresh. Requires the
   **sync-only** (the WS connection is the doorbell).
 - Push is a doorbell, not a data channel: payloads carry at most
   `{table, lsn}`; row data always arrives over the sync connection.
+
+**The push pattern** (server topology with cairn-server in path): the
+server fires a *silent* doorbell — `PushNotifier::notify` in the fan-out
+loop, matched offline subscriptions only, `{table, lsn}` payload, no
+text — the device wakes, the background isolate cold-opens the same
+sqlite, `waitForFirstSync()` pulls the rows, and the UI renders from the
+local store. Read AFTER sync, never from the payload; notification text
+is the app backend's own caller-side concern (`/v1/send` `Visible`),
+never the kit's. When a sync-covered surface also wants a visible wake
+(today: arxa approvals), keep both on one `collapse_key` so the
+transition to sync-only doorbells never double-notifies.
