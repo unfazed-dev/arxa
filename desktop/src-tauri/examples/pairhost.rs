@@ -9,6 +9,12 @@
 //! Usage:
 //!   cargo run --example pairhost -- <engine host:port> [advertise ip] [store dir]
 //!
+//!   ARXA_PAIRHOST_RELAY=1 opts into the n0 relays: minted tickets then carry
+//!   a Relay transport so a phone OFF the LAN (cellular) can dial. Default is
+//!   relay-less — sim and host are adjacent, and a LAN IP is unroutable
+//!   off-network (2026-08-29 D68 cellular loop: every dial timed out against
+//!   a relay-less ticket).
+//!
 //! Prints `TICKET <arxa-pair:...>` on boot and again for every stdin line
 //! (tickets are single-use; repeat pairings mint fresh ones). Runs until
 //! stdin closes or the process is killed.
@@ -89,10 +95,16 @@ async fn main() {
         eprintln!("[pairhost] pushd forward wired: {bind}");
     }
 
-    // Bind every interface (the sim dials the advertised LAN IP); no relays —
-    // sim and host are adjacent, no n0 infrastructure needed or wanted.
-    let endpoint = Endpoint::builder(presets::Minimal)
-        .relay_mode(RelayMode::Disabled)
+    // Bind every interface (the sim dials the advertised LAN IP). Relays off
+    // by default — sim and host are adjacent, no n0 infrastructure needed;
+    // ARXA_PAIRHOST_RELAY=1 turns them on for the off-network (cellular) leg.
+    let with_relay = std::env::var("ARXA_PAIRHOST_RELAY").as_deref() == Ok("1");
+    let builder = if with_relay {
+        Endpoint::builder(presets::N0)
+    } else {
+        Endpoint::builder(presets::Minimal).relay_mode(RelayMode::Disabled)
+    };
+    let endpoint = builder
         .alpns(vec![ALPN.to_vec()])
         .secret_key(secret)
         .bind_addr("0.0.0.0:0")
@@ -115,7 +127,25 @@ async fn main() {
         .expect("an IPv4 socket")
         .port();
     let sock = std::net::SocketAddr::new(advertise, port);
-    let addr = EndpointAddr::from_parts(endpoint.id(), [TransportAddr::Ip(sock)]);
+    let mut addrs = vec![TransportAddr::Ip(sock)];
+    if with_relay {
+        // Wait for the n0 relay handshake so the ticket truly carries a
+        // reachable path; without it a cellular phone has no route at all.
+        match tokio::time::timeout(std::time::Duration::from_secs(30), endpoint.online()).await {
+            Ok(()) => {
+                if let Some(relay) = endpoint.addr().relay_urls().next() {
+                    eprintln!("[pairhost] relay path advertised: {relay}");
+                    addrs.push(TransportAddr::Relay(relay.clone()));
+                }
+            }
+            Err(_) => {
+                eprintln!(
+                    "[pairhost] WARNING: relay handshake timed out; ticket is LAN-only                      (off-network reconnects will fail)"
+                );
+            }
+        }
+    }
+    let addr = EndpointAddr::from_parts(endpoint.id(), addrs);
 
     let ticket_path = store_dir.join("ticket.txt");
     let mint = || {

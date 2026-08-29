@@ -156,7 +156,7 @@ at REAL APNs — no stub anywhere in the delivery path:
   code path. The dark gate ARXA_DOORBELL_PUSH=true STAYS off-default by
   design (arming is an operator choice, ADR-0041 D5).
 
-## FOLLOW-UPS 2026-08-29 (evening) — 1+2 landed, 3 found a real bug, 4 decided
+## FOLLOW-UPS 2026-08-29 (evening) — 1+2+3 landed (3 was a rig bug, not a kit bug), 4 decided
 
 ### 1. Cold-start tap drain + task-tap routing — LANDED (arxa main)
 - `a86ba6c4`: ApnsBridge buffers `pendingTap` (read-and-clear channel
@@ -181,27 +181,41 @@ at REAL APNs — no stub anywhere in the delivery path:
   coalesced by the first-sight set — no buzz, no send. Collapse discipline
   held.
 
-### 3. Cellular field variant — HARNESS LANDED; LOOP BLOCKED ON A KIT BUG
-- Harness (arxa main, this commit): `PHASE=phone` +
+### 3. Cellular field variant — GREEN (2026-08-29 late evening). Root cause
+### was the RIG's relay-less tickets; pairhost fixed; kit exonerated
+- Harness (arxa main, `20c7589e`): `PHASE=phone` +
   `--dart-define=CELLULAR=true` inserts a 5-min flip window after pairing,
   then a patient reconnect gate: probe every 5s;
   `TransportService.resume()` re-issued at most every ~50s — resume()
   supersedes the in-flight dial (fresh epoch), so tight resumes starve it.
-- FINDING: the tunnel does NOT re-establish across a Wi-Fi→cellular
-  transition. Evidence across 4 runs: 180+ dials (5-dial budgets × spaced
-  resumes), USB-attached live console shows every attempt fail fast; the
-  pairhost relay uplink was healthy throughout (rotations normal);
-  meanwhile a direct pushd `/v1/send` to the phone's token over the same
-  cellular link returned `outcome:"delivered"` (receipt seq 21, push_id
-  17b483d1-…) AND the owner confirmed the banner with the app CLOSED. So:
-  cellular data ✓, APNs ✓, background delivery ✓ — the only broken link is
-  the kit transport's redial (kit/studio_transport): `run_session` gives up
-  after RECONNECT_DIAL_ATTEMPTS=5 × 3s backoff and `resume()` re-spawns it,
-  yet no redial lands across the interface change (candidates: relay
-  reachability from the cellular endpoint, per-spawn `Endpoint::bind`,
-  dial timeouts vs the relay handshake).
-- OWED: the cellular variant goes green the moment the kit redial is
-  fixed — the harness is committed and waiting.
+- (Superseded diagnosis: the first loop blamed the kit transport's redial.
+  The isolation had a hole — "pairhost relay healthy" was checked from the
+  Mac, ON the LAN. See below.)
+- ROOT CAUSE: the D68 rig's pairhost minted RELAY-LESS tickets.
+  `examples/pairhost.rs` binds `presets::Minimal` +
+  `RelayMode::Disabled` (deliberate for sim adjacency) and advertised ONLY
+  `TransportAddr::Ip(<LAN IP>)`. A private LAN IP is unroutable from a
+  carrier network, so over cellular EVERY dial — however patient — must
+  time out; the 180+ failures were the ticket, not the kit. The production
+  desktop pairing core uses `presets::N0` (relays on, pairing.rs:343) and
+  was never affected.
+- FIX (this commit): `ARXA_PAIRHOST_RELAY=1` opts pairhost into the n0
+  relays — it waits for the relay handshake and mints tickets carrying
+  `TransportAddr::Relay` alongside the LAN IP. Flag unset = unchanged
+  relay-less behavior for sims. kit/studio_transport needed NO changes:
+  given a relayed ticket the transport auto-redialed over cellular by
+  itself, no resume() required.
+- GREEN RUN: pair over Wi-Fi → flip Wi-Fi off → gate prints "tunnel
+  re-established after 0 probes" (the transport re-dialed through
+  usw1-1.relay.n0.iroh.link during the window on its own) → APNs token
+  registered over the cellular tunnel → raise → doorbell delivered ~3s
+  (pushd receipts seq 26-28, coalesced) → buzz → card → "Approve" → agent
+  unblocked: `05:28 +4: All tests passed!`
+- Run discipline: run #1 after the fix stalled post-raise while the
+  console was DETACHED (logs lost; a detached integration-test app exiting
+  only proves the test FINISHED, not how). Rerun #2 attached over USB
+  passed end-to-end. Lesson: on USB stay attached through the flip — USB
+  survives the interface change; detach only for wireless-debug runs.
 
 ### 4. B2 sync-first decision — DECIDED (recorded here; arxa-studio
 D-numbers untouched to avoid colliding with the parallel org-model-v2 track)
