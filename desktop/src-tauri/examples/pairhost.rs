@@ -16,6 +16,7 @@
 use std::path::PathBuf;
 
 use arxa_desktop_lib::pairing::{Pairing, ALPN};
+use arxa_desktop_lib::pushd::PushdHandle;
 use iroh::endpoint::presets;
 use iroh::{Endpoint, EndpointAddr, RelayMode, TransportAddr};
 
@@ -34,6 +35,27 @@ fn lan_ip() -> Option<std::net::IpAddr> {
         }
     }
     None
+}
+
+/// Parse CAIRN_PUSHD_BIND + the first CAIRN_PUSHD_API_KEYS secret from a
+/// pushd.env-style KEY=VALUE file. Absent file or missing keys → None
+/// (push stays unwired, as before).
+fn read_pushd_env(path: std::path::PathBuf) -> Option<(String, String)> {
+    let text = std::fs::read_to_string(path).ok()?;
+    let mut bind = None;
+    let mut key = None;
+    for line in text.lines() {
+        let t = line.trim();
+        if let Some(v) = t.strip_prefix("CAIRN_PUSHD_BIND=") {
+            bind = Some(v.trim().to_string());
+        } else if let Some(v) = t.strip_prefix("CAIRN_PUSHD_API_KEYS=") {
+            let first = v.split(',').next().unwrap_or("").trim();
+            if let Some((_, secret)) = first.split_once(':') {
+                key = Some(secret.trim_end_matches(":rail").to_string());
+            }
+        }
+    }
+    Some((bind?, key?))
 }
 
 #[tokio::main]
@@ -55,6 +77,17 @@ async fn main() {
 
     let (pairing, secret, secret_hex) =
         Pairing::load(store_dir.join("pairing.json"), engine_hp.clone());
+
+    // D68 phone leg: wire the PUSH-forward exactly as the Tauri shell does
+    // (pairing.rs skips the forward when no pushd handle is attached — a
+    // token that lands in pairing.json but never in the daemon's registry
+    // sends 404 at /v1/send). pushd.env beside the store is the operator's
+    // credential file: bind + the first tenant:secret key, same pick as the
+    // engine's doorbell (push-doorbell/lib/index.js apiKeyFromEnv).
+    if let Some((bind, key)) = read_pushd_env(store_dir.join("pushd.env")) {
+        pairing.attach_pushd(PushdHandle { bind: bind.clone(), key });
+        eprintln!("[pairhost] pushd forward wired: {bind}");
+    }
 
     // Bind every interface (the sim dials the advertised LAN IP); no relays —
     // sim and host are adjacent, no n0 infrastructure needed or wanted.
