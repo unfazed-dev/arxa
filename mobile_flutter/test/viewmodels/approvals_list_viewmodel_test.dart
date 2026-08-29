@@ -15,6 +15,9 @@ class _FakeRepository implements ApprovalsRepository {
   (String, List<ApprovalAnswer>)? lastDecided;
 
   @override
+  Duration get healWait => const Duration(seconds: 20);
+
+  @override
   Future<List<Approval>> list() async => rows;
 
   @override

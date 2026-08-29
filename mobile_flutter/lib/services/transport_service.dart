@@ -99,6 +99,10 @@ class FakeTransportService implements TransportService {
   @override
   Future<void> resume() async {
     resumeCount += 1;
+    // Model the redial: a resume of a connected fake re-announces connected
+    // (the real transport walks reconnecting -> connected on a fresh epoch),
+    // so heal logic waiting for re-establishment completes here.
+    if (_current.state == ArxaConnectionState.connected) _emit(_current);
   }
 
   @override

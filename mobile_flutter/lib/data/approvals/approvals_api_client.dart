@@ -10,17 +10,28 @@
 // avoids a new dependency for two JSON calls (the studioUrl base comes
 // from the TransportService — no tunnel, no calls).
 
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
 import '../../services/transport_service.dart';
 import 'approval.dart';
 
-/// The tunnel is down (no studioUrl): D62's loud inline failure — callers
-/// surface 'reconnect to act', never queue.
+/// The tunnel is down or unusable — no loopback URL, or the request failed
+/// at the transport level (socket refused, connection closed mid-response,
+/// timeout — the zombie-link failure mode). D62's loud inline failure:
+/// callers surface 'reconnect to act', never queue.
 class ApprovalsOfflineException implements Exception {
+  ApprovalsOfflineException([this.cause]);
+
+  /// The underlying transport error, when there was one (null when the
+  /// tunnel was simply not connected). Diagnostics only.
+  final Object? cause;
+
   @override
-  String toString() => 'not connected to the studio';
+  String toString() => cause == null
+      ? 'not connected to the studio'
+      : 'not connected to the studio ($cause)';
 }
 
 /// The engine refused the decision (409): someone answered first (first
@@ -70,24 +81,35 @@ class ApprovalsApiClient {
       {Map<String, dynamic>? body}) async {
     final base = _base;
     if (base == null) throw ApprovalsOfflineException();
-    final request = await _httpClient.openUrl(method, base.resolve(path))
-        .timeout(const Duration(seconds: 10));
-    request.headers.set('accept', 'application/json');
-    if (body != null) {
-      final encoded = jsonEncode(body);
-      request.headers.set('content-type', 'application/json');
-      request.headers.contentLength = utf8.encode(encoded).length;
-      request.write(encoded);
+    try {
+      final request = await _httpClient.openUrl(method, base.resolve(path))
+          .timeout(const Duration(seconds: 10));
+      request.headers.set('accept', 'application/json');
+      if (body != null) {
+        final encoded = jsonEncode(body);
+        request.headers.set('content-type', 'application/json');
+        request.headers.contentLength = utf8.encode(encoded).length;
+        request.write(encoded);
+      }
+      final response =
+          await request.close().timeout(const Duration(seconds: 10));
+      final text = await response.transform(utf8.decoder).join();
+      if (response.statusCode == 409) {
+        throw ApprovalsConflictException(
+            (jsonDecode(text)['error'] as String?) ?? 'not-pending');
+      }
+      if (response.statusCode != 200) {
+        throw ApprovalsRemoteException(response.statusCode, text);
+      }
+      return jsonDecode(text) as Map<String, dynamic>;
+    } on IOException catch (e) {
+      // Refused/unreachable socket, connection closed mid-response — the
+      // zombie link fails exactly here, fast, on every request.
+      throw ApprovalsOfflineException(e);
+    } on TimeoutException catch (e) {
+      throw ApprovalsOfflineException(e);
     }
-    final response = await request.close().timeout(const Duration(seconds: 10));
-    final text = await response.transform(utf8.decoder).join();
-    if (response.statusCode == 409) {
-      throw ApprovalsConflictException(
-          (jsonDecode(text)['error'] as String?) ?? 'not-pending');
-    }
-    if (response.statusCode != 200) {
-      throw ApprovalsRemoteException(response.statusCode, text);
-    }
-    return jsonDecode(text) as Map<String, dynamic>;
+    // Non-IO errors stay loud and raw: a malformed engine body (FormatException)
+    // is an engine bug, not an offline phone.
   }
 }
