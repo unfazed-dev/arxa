@@ -426,19 +426,24 @@ fn authorize(
         persist(inner, persist_hex);
         return true;
     }
-    // 2. Stored session token bound to this EndpointId (reconnect). A fresh
-    // self-reported name replaces the stored label (persist only on change —
-    // this runs on every proxied stream).
+    // 2. Stored session token (reconnect). The token is the credential: the
+    // phone's iroh node id is ephemeral across cold starts (fresh endpoint
+    // each launch), so binding the session to (node_id, token) rejected every
+    // legitimate resume. Match on the token alone and refresh the stored
+    // node_id (2026-08-30 cold-start bug). A fresh self-reported name replaces
+    // the stored label (persist only on change — this runs on every proxied
+    // stream).
     let (authed, label_changed) = {
         let mut peers = inner
             .peers
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner());
-        match peers
-            .iter_mut()
-            .find(|p| p.node_id == remote && p.session_token == token)
-        {
+        match peers.iter_mut().find(|p| p.session_token == token) {
             Some(p) => {
+                if p.node_id != remote {
+                    // Same credential, new endpoint (phone cold start).
+                    p.node_id = remote.to_string();
+                }
                 let changed = match label {
                     Some(l) if p.label != l => {
                         p.label = l.to_string();
@@ -702,7 +707,14 @@ pub fn pairing_begin(state: State<'_, Pairing>) -> Result<BeginResponse, String>
         .and_then(|g| g.clone())
         .ok_or("pairing endpoint is still starting - try again in a moment")?;
 
-    let (ticket, expires_at_ms) = state.mint_ticket_for(endpoint.addr());
+    // [pairhost] diagnostic: what does this ticket actually advertise?
+    let addr = endpoint.addr();
+    let relay_seen = addr.relay_urls().next().map(|r| r.to_string());
+    match &relay_seen {
+        Some(relay) => eprintln!("[pairhost] MINT relay={relay}"),
+        None => eprintln!("[pairhost] MINT WARNING: no relay in addr - ticket is LAN-only"),
+    }
+    let (ticket, expires_at_ms) = state.mint_ticket_for(addr);
 
     // EcLevel::Q (25% damage tolerance), not H: the ticket payload is long
     // (iroh node ticket + token), and H would push the QR several versions
