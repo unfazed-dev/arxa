@@ -17,6 +17,9 @@ class ApnsNotificationsBackend implements ArxaKitNotificationsService {
     // native-side (Dart had no handler yet → the live 'event' got a null
     // reply). Read-and-clear it once the handler above is live.
     unawaited(_drainPendingTap());
+    // Same discipline for a silent doorbell wake that cold-launched us
+    // (B2 phase-1b): drain, emit, and acknowledge to iOS.
+    unawaited(_drainPendingSilentWake());
     // ponytail: token rotation is POLLED (5s, distinct), not event-pushed —
     // an APNs device token is stable for an installed build; a native event
     // channel is the upgrade if mid-session rotation ever matters.
@@ -28,6 +31,7 @@ class ApnsNotificationsBackend implements ArxaKitNotificationsService {
   final _messages = StreamController<ArxaKitRemoteMessage>.broadcast();
   final _taps = StreamController<Map<String, dynamic>>.broadcast();
   final _tokens = StreamController<ArxaKitPushToken>.broadcast();
+  final _silentWakes = StreamController<Map<String, dynamic>>.broadcast();
   Timer? _poll;
   String? _lastEmitted;
   String? _lastTapId;
@@ -35,11 +39,20 @@ class ApnsNotificationsBackend implements ArxaKitNotificationsService {
   /// Notification taps (native didReceive): route to the approvals shell.
   Stream<Map<String, dynamic>> get taps => _taps.stream;
 
+  /// Silent (content-available) doorbell wakes (B2 phase-1b): the app was
+  /// woken by APNs in the background — resume the tunnel and let sync + the
+  /// doorbell do their work, then acknowledge via [completeSilentWake].
+  Stream<Map<String, dynamic>> get silentWakes => _silentWakes.stream;
+
   Future<dynamic> _onNativeCall(MethodCall call) async {
     if (call.method != 'event') return null;
     final args = (call.arguments as Map?)?.cast<String, dynamic>() ?? const <String, dynamic>{};
     if (args['type'] == 'tap') {
       _emitTap(args);
+      return null;
+    }
+    if (args['type'] == 'silentWake') {
+      _silentWakes.add(args);
       return null;
     }
     // willPresent: the system presented a push while foregrounded — the
@@ -117,6 +130,9 @@ class ApnsNotificationsBackend implements ArxaKitNotificationsService {
     });
   }
 
+  /// Tell iOS the silent wake's work is done (frees the ~30s fetch budget).
+  Future<void> completeSilentWake() => _invoke<void>('silentWakeDone');
+
   @override
   Future<void> cancel(int id) async => _invoke<void>('cancel', {'id': id});
 
@@ -136,6 +152,7 @@ class ApnsNotificationsBackend implements ArxaKitNotificationsService {
     await _messages.close();
     await _taps.close();
     await _tokens.close();
+    await _silentWakes.close();
   }
 
   static ArxaKitNotificationAuthorization _auth(String? raw) => switch (raw) {
@@ -159,6 +176,15 @@ class ApnsNotificationsBackend implements ArxaKitNotificationsService {
     final tap = await _invoke<Map<dynamic, dynamic>>('pendingTap');
     if (tap == null) return;
     _emitTap(tap.cast<String, dynamic>());
+  }
+
+  /// Drain a silent wake that cold-launched the app: emit for the listeners
+  /// (main resumes the tunnel on it) and acknowledge the fetch to iOS.
+  Future<void> _drainPendingSilentWake() async {
+    final pending = await _invoke<bool>('pendingSilentWake');
+    if (pending != true) return;
+    _silentWakes.add(const {'type': 'silentWake'});
+    await completeSilentWake();
   }
 
   /// Emits a tap, deduped by requestId: on cold start BOTH the live

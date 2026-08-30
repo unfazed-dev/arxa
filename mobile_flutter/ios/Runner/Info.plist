@@ -49,6 +49,15 @@
 	</dict>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<!-- B2 phase-1b (the visible→silent swap): silent (content-available)
+	     doorbells must be able to WAKE the app — APNs hands the app ~30s of
+	     background runtime, during which Dart resumes the tunnel, syncs the
+	     mirror, and raises the collapsed local doorbell. Without this mode
+	     a silent push is dropped at the OS for a killed/suspended app. -->
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>remote-notification</string>
+	</array>
 	<key>UILaunchStoryboardName</key>
 	<string>LaunchScreen</string>
 	<key>UIMainStoryboardFile</key>

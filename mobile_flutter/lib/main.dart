@@ -58,6 +58,13 @@ Future<void> main() async {
   final notifications = locator<ArxaKitNotificationsService>();
   if (notifications is AppNotificationsBackend) {
     notifications.apns?.taps.listen(_routeTap);
+    // The silent doorbell wake (B2 phase-1b): APNs woke the app in the
+    // background — bring the tunnel up (sync + the doorbell react
+    // downstream), then free the fetch budget.
+    notifications.apns?.silentWakes.listen((wake) async {
+      await locator<TransportService>().resume();
+      unawaited(notifications.apns?.completeSilentWake() ?? Future<void>.value());
+    });
   }
   // iOS suspends QUIC in the background — redial the studio link whenever
   // the app returns to the foreground (no-op without a live session).

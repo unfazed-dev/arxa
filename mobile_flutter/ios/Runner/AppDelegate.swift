@@ -36,6 +36,22 @@ import UserNotifications
   ) {
     apns.registrationError = error.localizedDescription
   }
+
+  // B2 phase-1b (the visible→silent swap): a silent (content-available)
+  // doorbell may WAKE the app (remote-notification background mode). Only
+  // content-available pushes are ours; anything else defers to super.
+  override func application(
+    _ application: UIApplication,
+    didReceiveRemoteNotification userInfo: [AnyHashable: Any],
+    fetchCompletionHandler completionHandler: @escaping (UIBackgroundFetchResult) -> Void
+  ) {
+    let aps = userInfo["aps"] as? [String: Any]
+    if (aps?["content-available"] as? Int) == 1 {
+      apns.handleSilentWake(userInfo, completionHandler)
+      return
+    }
+    super.application(application, didReceiveRemoteNotification: userInfo, fetchCompletionHandler: completionHandler)
+  }
 }
 
 /// Raw-APNs bridge (D68 phone leg): mints the device token, asks permission,
@@ -61,6 +77,12 @@ final class ApnsBridge: NSObject, UNUserNotificationCenterDelegate {
   /// (Dart handler not yet registered → null reply) can still drain it via
   /// the 'pendingTap' method (read-and-clear).
   fileprivate(set) var pendingTap: [String: Any]?
+
+  /// A silent doorbell wake is pending Dart handling (same cold-launch
+  /// buffering discipline as the tap). Drained via 'pendingSilentWake'
+  /// (read-and-clear); finished via 'silentWakeDone'.
+  fileprivate(set) var pendingSilentWake = false
+  private var pendingWakeCompletions: [(UIBackgroundFetchResult) -> Void] = []
 
   /// The APNs device token as lowercase hex (the wire form cairn-push's
   /// registry stores; same encoding APNs debugging docs use).
@@ -129,6 +151,13 @@ final class ApnsBridge: NSObject, UNUserNotificationCenterDelegate {
       let tap = pendingTap
       pendingTap = nil
       result(tap)
+    case "pendingSilentWake":
+      let pending = pendingSilentWake
+      pendingSilentWake = false
+      result(pending)
+    case "silentWakeDone":
+      completeOneSilentWake(.newData)
+      result(nil)
     case "cancelAll":
       let center = UNUserNotificationCenter.current()
       center.removeAllPendingNotificationRequests()
@@ -151,6 +180,30 @@ final class ApnsBridge: NSObject, UNUserNotificationCenterDelegate {
       }
       reply(status)
     }
+  }
+
+  // MARK: - Silent doorbell wake (B2 phase-1b)
+
+  /// A content-available push woke the app: hand the wake to Dart (the
+  /// tunnel resume + sync + local doorbell live there) and keep the fetch
+  /// completion for Dart's 'silentWakeDone' — with a bounded native
+  /// fallback so iOS is never left waiting past its ~30s budget.
+  func handleSilentWake(
+    _ userInfo: [AnyHashable: Any],
+    _ completionHandler: @escaping (UIBackgroundFetchResult) -> Void
+  ) {
+    pendingWakeCompletions.append(completionHandler)
+    pendingSilentWake = true
+    channel?.invokeMethod("event", arguments: ["type": "silentWake", "userInfo": userInfo])
+    DispatchQueue.main.asyncAfter(deadline: .now() + 20) { [weak self] in
+      self?.completeOneSilentWake(.noData)
+    }
+  }
+
+  private func completeOneSilentWake(_ result: UIBackgroundFetchResult) {
+    guard !pendingWakeCompletions.isEmpty else { return }
+    let handler = pendingWakeCompletions.removeFirst()
+    handler(result)
   }
 
   // MARK: - UNUserNotificationCenterDelegate
