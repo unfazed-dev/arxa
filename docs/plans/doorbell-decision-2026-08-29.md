@@ -316,3 +316,35 @@ D-numbers untouched to avoid colliding with the parallel org-model-v2 track)
   (channel-fed `ReplicatorStream` + in-memory snapshot buffer with
   fail-closed tenant scoping) + the `crate::ident` lift the snapshot
   module's own note asked for. 7 tests green; full gate concluding.
+
+### Task 5 LANDED + rig-rebuild ledger (2026-08-30 morning)
+- `desktop/src-tauri/src/cairn_server.rs` (arxa `3897dde0`): the B2 mirror
+  sidecar, supervised exactly like pushd — probe-then-spawn on
+  127.0.0.1:8190, `cairn-server.env` keystore (0600; owned keys BIND /
+  SYNC_AUTH=none / REPLICATOR=mirror / ADMIN_TOKEN ≥32), discovery
+  CAIRN_CAIRN_SERVER_BIN → ~/.cargo/bin → PATH, kill-only-own-child on
+  exit, pushd.env read for the CAIRN_PUSH_REMOTE_* rail forward (phase 1b
+  silent doorbell; plain secret is correct for registered-token sends).
+  3/3 tests, clippy clean; plan Task 5 ticked (`5be849d3`). Remaining
+  phase-1 leg: Task 6's live WS subscriber.
+- Overnight reboot killed the whole rig (harness jobs, /tmp/arxa-d68,
+  arxa target/). Rebuild recipe that worked, with the four traps that
+  cost the morning:
+  (1) the studio launcher HARD-STOPS when DSH_HOME leaks in from a parent
+  dsh session — relaunch `env -u DSH_HOME` (its own isolation guard, by
+  design);
+  (2) arxa's Rust manifest is desktop/src-tauri/Cargo.toml, NOT the repo
+  root (arxa is a Flutter repo — `cargo build` at root finds nothing);
+  (3) background processes started from an agent shell die with it unless
+  `nohup … & disown`-ed, and a FIFO stdin needs its `sleep infinity >
+  fifo` holder started in the SAME call or the reader blocks forever on
+  open (silent — no log line, no process);
+  (4) pyenv 3.13 segno 1.6.6 has no `__main__` — `python3 -m segno`
+  fails; use the library API (`segno.make(t).save(path, scale=8)`).
+- Push-side facts re-verified live on rebuild: pushd envs are
+  CAIRN_PUSHD_BIND/DB/API_KEYS + CAIRN_APNS_KEY_P8 (path ok)/KEY_ID/
+  TEAM_ID/BUNDLE_ID/SANDBOX=1; the engine doorbell reads pushd.env +
+  pairing.json from ARXA_APP_DATA_DIR (overrides ARXA_PUSHD_URL/KEY);
+  the approvals test seam answers GET /__arxa/approvals/__test_raised
+  and the raise shape is {sessionId, questions:[{id,question,header,
+  options:[{label,description}]}]} with Origin http://127.0.0.1:7899.
