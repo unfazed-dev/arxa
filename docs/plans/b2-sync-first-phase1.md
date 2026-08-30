@@ -112,7 +112,7 @@
 ### Task 6: rig demonstration (verification, no new product code)
 
 **Steps:**
-- [ ] Script (rig-only, /tmp): boot sidecar + pushd; `POST /ingest` two approval rows; subscribe as a WS client; assert both rows arrive as snapshot + a third posted after subscribe arrives live; assert the push rail fires via pushd receipts (silent payload, phase-2 shape).
+- [x] WS LEG DONE (2026-08-30, real binary, `/tmp/arxa-d68/task6_ws.sh`): ingest 2 upserts pre-subscribe → subscriber sees BOTH inside snapshot_begin/snapshot_end (batched array frame); post-subscribe a3 arrives LIVE with its ingest LSN (5); the rules gate needed a throwaway approvals rules file (silent 1008 close otherwise). Wire facts recorded in cairn ADR-0042. Remaining sub-leg: push-rail-via-receipts — needs the phone's registered token, rides the cold-start tap-test rig (phase-2 silent shape).
 - [x] FIRST LEG DONE (2026-08-30, real binary): cairn-server with CAIRN_REPLICATOR=mirror + CAIRN_ADMIN_TOKEN boots /healthz live; POST /ingest (upsert a1, upsert a2, delete a2) -> 200 accepted:3 lsns:[1,2,3] monotonic; wrong bearer -> 401; invalid table -> 400 events[0] message; instance WITHOUT the token -> 404 not-found (fail-closed, PUT /rules shape). Remaining leg: a live WS subscriber asserting snapshot + live delivery.
 
 **Phase 1b (hand-off, NOT this plan's execution):** engine mirror-out writer (arxa-studio plugins/approvals → POST /ingest on every fold); mobile `ARXA_CAIRN_MODE=sync` pointed at the sidecar through an engine reverse-proxy route over the existing tunnel (offline reads come from local SQLite either way); visible→silent doorbell swap with collapse_key.
