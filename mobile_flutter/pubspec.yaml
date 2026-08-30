@@ -34,6 +34,10 @@ dependencies:
   # its exported MockStudioTransport/MockStudioSession — no native build.
   arxa_kit_studio_transport:
     path: ../kit/studio_transport
+  # Cold-start pairing resume: stores the scanned pairing payload so the
+  # transport can re-dial the desktop (session-token reuse) after a full
+  # process restart. Already in the dependency tree transitively.
+  shared_preferences: ^2.5.3
   firebase_core: ^4.13.0
   firebase_messaging: ^16.5.0
   uuid: ^4.5.3

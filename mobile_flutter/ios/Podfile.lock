@@ -14,7 +14,7 @@ EXTERNAL SOURCES:
     :path: Flutter
 
 SPEC CHECKSUMS:
-  arxa_kit_studio_transport: aed09632907aceea94c269ea7c6dddab3f826811
+  arxa_kit_studio_transport: 4775621e78385b778bdefdba80a1c420b85f21fc
   Flutter: cabc95a1d2626b1b06e7179b784ebcf0c0cde467
 
 PODFILE CHECKSUM: 39152c5190049db2e3be9b5965d8063e34d27216

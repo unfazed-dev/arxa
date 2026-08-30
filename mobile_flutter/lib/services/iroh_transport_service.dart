@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:arxa_kit_studio_transport/arxa_kit_studio_transport.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'transport_service.dart';
 
@@ -63,9 +64,20 @@ class IrohTransportService implements TransportService {
       _emit(ArxaConnectionStatus(ArxaConnectionState.notPaired,
           error: e.message.isEmpty ? 'Malformed pairing code' : e.message));
       return;
+    } on Object {
+      // Dial failed (desktop unreachable, relay down). Without this emit the
+      // status would sit on 'pairing' forever and listeners would never
+      // leave the connecting/session screens.
+      _emit(const ArxaConnectionStatus(ArxaConnectionState.notPaired,
+          error: 'Could not reach the studio — scan a new QR code'));
+      return;
     }
     _session = session;
     _statusSub = session.status.listen(_onSessionStatus);
+    // Persist the payload for cold-start resume: the desktop accepts the
+    // pairing token for reconnects (authorize step 2), so re-running this
+    // payload after a process restart restores the link silently.
+    unawaited(_persistPayload(ticket));
     // Re-hand the stored token to the fresh session (once per session — the
     // transport itself re-sends it on every reconnect from here on).
     final platform = _pushPlatform;
@@ -86,6 +98,8 @@ class IrohTransportService implements TransportService {
             studioUrl:
                 port == null ? null : Uri.parse('http://127.0.0.1:$port/')));
       case StudioSessionStatus.revoked:
+        // The desktop killed this token — a stored payload is now useless.
+        unawaited(_wipePayload());
         _emit(const ArxaConnectionStatus(ArxaConnectionState.notPaired,
             error: 'Pairing revoked by the desktop — scan a new QR code'));
       case StudioSessionStatus.disconnected:
@@ -104,12 +118,68 @@ class IrohTransportService implements TransportService {
   }
 
   @override
-  Future<void> resume() async => _session?.resume();
+  Future<void> resume() async {
+    final session = _session;
+    if (session != null) {
+      await session.resume();
+      return;
+    }
+    // Cold start: no live session in this process. Re-run the stored
+    // pairing payload — the desktop's authorize step 2 accepts the pairing
+    // token for reconnects, so this restores the link with no user action.
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final payload = prefs.getString(storedPayloadKey);
+      if (payload != null && payload.isNotEmpty) {
+        await beginPairing(payload);
+      }
+    } on Object {
+      // Storage trouble at boot must never crash the app.
+    }
+  }
 
   @override
   Future<void> unpair() async {
     await _teardownSession();
+    await _wipePayload();
     _emit(const ArxaConnectionStatus(ArxaConnectionState.notPaired));
+  }
+
+  /// The scanned `arxa-pair:` payload, kept so [resume] can restore the
+  /// pairing after a full process restart. Public (with [hasStoredPairing])
+  /// so main() can pick the startup route without a second copy of the key.
+  static const storedPayloadKey = 'pairing.studio_payload_v1';
+
+  /// Whether a pairing payload is stored. main() reads this before runApp
+  /// to land paired users straight in the studio instead of flashing the
+  /// QR scanner while the cold-start resume dials.
+  static Future<bool> hasStoredPairing() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final payload = prefs.getString(storedPayloadKey);
+      return payload != null && payload.isNotEmpty;
+    } on Object {
+      return false;
+    }
+  }
+
+  Future<void> _persistPayload(String payload) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(storedPayloadKey, payload);
+    } on Object {
+      // Storage failure must never break an in-flight pairing.
+    }
+  }
+
+  Future<void> _wipePayload() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove(storedPayloadKey);
+    } on Object {
+      // Nothing to do — a leftover payload is harmless (desktop still
+      // validates it against its peer table).
+    }
   }
 
   Future<void> _teardownSession() async {
