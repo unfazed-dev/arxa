@@ -20,6 +20,7 @@ use tauri::Manager;
 use tauri_plugin_shell::process::CommandChild;
 use tauri_plugin_shell::ShellExt;
 
+pub mod cairn_server;
 pub mod pairing;
 pub mod pushd;
 
@@ -323,6 +324,9 @@ pub fn run() {
             // M7: the push sidecar (cairn-pushd) beside the engine — probe,
             // spawn, and publish its reachability to the pairing state.
             pushd::init(app.handle());
+            // B2 (ADR-0042): the cairn-server mirror sidecar beside pushd -
+            // probe, spawn, loopback 8190; the engine mirrors out over /ingest.
+            cairn_server::init(app.handle());
             // Rider 1: probe before spawn. An externally owned server (launchd
             // on the dev machine) always wins; we only self-heal a closed port
             // for public installs that have no service manager.
@@ -427,6 +431,7 @@ pub fn run() {
             if let tauri::RunEvent::Exit = event {
                 kill_spawned(app);
                 pushd::kill_spawned(app);
+                cairn_server::kill_spawned(app);
             }
         });
 }

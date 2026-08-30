@@ -250,7 +250,7 @@ fn ensure_env_file(path: &Path) -> Vec<(String, String)> {
 
 /// 32 random bytes hex — a freshly generated iroh SecretKey is a CSPRNG
 /// draw (same trick pairing.rs uses for its tickets).
-fn new_secret() -> String {
+pub(crate) fn new_secret() -> String {
     HEXLOWER.encode(&iroh::SecretKey::generate().to_bytes())
 }
 
