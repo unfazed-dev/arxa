@@ -123,6 +123,8 @@
 - [x] SDK: REST base keeps the sync-URL path prefix (cairn fabc1a1) so proxied /schema + /push-tokens stay reachable; kit pin bumped (arxa f7bb9b2f).
 - [x] Mobile boot decision: stored pairing → wait ≤18s for the tunnel → bootstrap → SYNC (push on), else localOnly (arxa cf29faf5; 60 tests green). Runtime URL beats dart-defines — the proxy port only exists at runtime.
 - [x] Wire proof (rig /tmp/arxa-d68/phase1b_ws.mjs): bearer subscribe → snapshot carrying a pre-ingested row (batched array frame, hex payload decodes to the approval JSON) → live delivery of a mid-session ingest — ALL GREEN.
+- [x] Doorbell chain server-side, LIVE (2026-08-31): tenant-wide hints were unreachable in bearer mode — tenant_col was gated to supabase-jwt, so the fully-offline branch had no tenant source (cairn c4f0071: resolve_tenant_col allows bearer; CAIRN_TENANT_COLUMN=org_id on the rig). Mirror rows must carry org_id=local (future mirror-out writer contract). Verified: POST /push-tokens 204 (bearer) → ingest → receipt seq 6 outcome=delivered, metadata {account: local, lsn, table}.
+- [x] Presence semantics confirmed: sends suppress while the device's sync session is online — silent APNs wake for killed/backgrounded phones only, sync delivers the rest. Exactly the visible→silent swap shape.
 - [ ] Phone-in-hand leg: the app installed (build 08:51) and its tunnel proven up (pairing.json touched 08:53 — token re-hand), but that arrival was outside the boot's 18s window → localOnly for that boot; a foregrounded unlocked boot re-engages sync. Then: registration receipt + doorbell.
 - [ ] Mirror-out writer + phone-local doorbell (collapse keys): B3-gated (owner decision on the notification surface).
 
