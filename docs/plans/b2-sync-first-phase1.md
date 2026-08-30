@@ -103,9 +103,9 @@
 - Produces: a supervised `cairn-server` on `127.0.0.1:8190` with `CAIRN_SYNC_AUTH=none` (loopback-only posture), `CAIRN_REPLICATOR=mirror`, push env forwarded to the pushd rail.
 
 **Steps:**
-- [ ] Failing tests: env-file shape + chmod; binary discovery order (temp dirs); externally-owned daemon wins (health pass → no spawn).
-- [ ] Implement module; wire init/exit.
-- [ ] `cargo check` + clippy clean; manual rig boot.
+- [x] Failing tests first: env-file shape + 0600 chmod assert; binary discovery order (pure fn, override→cargo→PATH); push-rail secret-only read. 3/3 green (commit 3897dde0).
+- [x] Implemented; wired init + exit beside pushd (lib.rs mod decl, init at the pushd::init site, kill_spawned in RunEvent::Exit).
+- [x] cargo check + clippy clean on the module (pre-existing lib.rs:381 unused_mut left alone); rig boot = Task 6.
 
 **Commit:** `feat(desktop): cairn-server sidecar — probe-then-spawn supervision`
 
