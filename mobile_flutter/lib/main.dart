@@ -23,11 +23,20 @@ import 'services/transport_service.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await setupLocator(stackedRouter: kitPlatformRouter);
+  // Cold start: kick the resume BEFORE the data boot — the B2 phase-1b
+  // sync bootstrap (below) rides the link the resume establishes.
+  unawaited(locator<TransportService>().resume());
   // Approvals slice (grill D60–D68): boot the cairn-backed data layer with
   // the Approval entity, then expose its repository behind the tunnel
   // client. Loud on purpose (D62): a boot failure crashes visibly rather
-  // than silently degrading the approvals shell.
-  await AppData.initialize();
+  // than silently degrading the approvals shell. With a stored pairing the
+  // boot waits bounded for the tunnel and opens SYNC against the desktop's
+  // mirror through the engine's cairn proxy (B2 phase-1b); anything else
+  // boots localOnly (offline reads come from local SQLite either way).
+  await AppData.initialize(
+    transport: locator<TransportService>(),
+    notifications: locator<ArxaKitNotificationsService>(),
+  );
   locator.registerLazySingleton(
     () => ApprovalsRepository(
       cache: arxaKitLocator<ArxaKitRepository<Approval>>(),
@@ -45,9 +54,6 @@ Future<void> main() async {
   // iOS suspends QUIC in the background — redial the studio link whenever
   // the app returns to the foreground (no-op without a live session).
   WidgetsBinding.instance.addObserver(TransportLifecycleObserver());
-  // Cold start: with no live session, resume() re-runs the stored pairing
-  // payload — the link comes back before the first frame, no user action.
-  unawaited(locator<TransportService>().resume());
   // Theme accent (desktop-driven): seed from the last synced value, then
   // follow the engine's choice on every connect while the app runs.
   final accentSync = AccentSync(locator<TransportService>());
