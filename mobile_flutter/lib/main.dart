@@ -14,6 +14,7 @@ import 'app/kit_platform_router.dart';
 import 'data/approvals/approval.dart';
 import 'data/approvals/approvals_api_client.dart';
 import 'data/approvals/approvals_repository.dart';
+import 'services/accent_sync.dart';
 import 'services/app_notifications_backend.dart';
 import 'services/iroh_transport_service.dart';
 import 'services/tap_routing.dart';
@@ -47,11 +48,16 @@ Future<void> main() async {
   // Cold start: with no live session, resume() re-runs the stored pairing
   // payload — the link comes back before the first frame, no user action.
   unawaited(locator<TransportService>().resume());
+  // Theme accent (desktop-driven): seed from the last synced value, then
+  // follow the engine's choice on every connect while the app runs.
+  final accentSync = AccentSync(locator<TransportService>());
+  await accentSync.loadCached();
+  accentSync.listen();
   // Startup route is state-aware: a stored pairing payload means the resume
   // above restores the link — land straight in the studio session instead
   // of flashing the QR scanner (the old '/' default) on every cold start.
   final startsInStudio = await IrohTransportService.storedPairingExists();
-  runApp(ArxaStudioMobileApp(startsInStudio: startsInStudio));
+  runApp(ArxaStudioMobileApp(startsInStudio: startsInStudio, accentSync: accentSync));
 }
 
 /// Routes a notification tap by its push class: 'task:*' collapse keys land
@@ -86,21 +92,30 @@ class TransportLifecycleObserver with WidgetsBindingObserver {
 }
 
 class ArxaStudioMobileApp extends StatelessWidget {
-  const ArxaStudioMobileApp({required this.startsInStudio, super.key});
+  const ArxaStudioMobileApp({
+    required this.startsInStudio,
+    required this.accentSync,
+    super.key,
+  });
 
   /// main() read the stored pairing payload: true opens the studio session
   /// (the boot resume brings the link up in place), false opens the scanner.
   final bool startsInStudio;
 
+  /// The desktop-driven accent — rebuilds the MaterialApp when it changes.
+  final AccentSync accentSync;
+
   @override
   Widget build(BuildContext context) {
-    return MaterialApp.router(
+    return ValueListenableBuilder<Color?>(
+      valueListenable: accentSync.accent,
+      builder: (context, accent, _) => MaterialApp.router(
       onGenerateTitle: (context) => AppLocalizations.of(context).appTitle,
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
       debugShowCheckedModeBanner: false,
-      theme: arxaKitLightTheme(),
-      darkTheme: arxaKitDarkTheme(),
+      theme: arxaKitLightTheme(accent: accent ?? ArxaKitColors.accent),
+      darkTheme: arxaKitDarkTheme(accent: accent ?? ArxaKitColors.accent),
       themeMode: ThemeMode.system,
       routerDelegate: kitPlatformRouter.delegate(
         initialRoutes: [
@@ -114,6 +129,7 @@ class ArxaStudioMobileApp extends StatelessWidget {
       // OS back gesture (Android predictive back) must reach the stacked
       // router explicitly under the routerDelegate API.
       backButtonDispatcher: RootBackButtonDispatcher(),
+      ),
     );
   }
 }

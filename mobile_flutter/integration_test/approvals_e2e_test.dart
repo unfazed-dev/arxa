@@ -34,6 +34,7 @@ import 'package:arxa_studio_mobile/data/approvals/approval.dart';
 import 'package:arxa_studio_mobile/data/approvals/approvals_api_client.dart';
 import 'package:arxa_studio_mobile/data/approvals/approvals_repository.dart';
 import 'package:arxa_studio_mobile/main.dart';
+import 'package:arxa_studio_mobile/services/accent_sync.dart';
 import 'package:arxa_studio_mobile/services/push_token_service.dart';
 import 'package:arxa_studio_mobile/services/transport_service.dart';
 
@@ -158,9 +159,16 @@ Future<void> openApprovals(WidgetTester tester) async {
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
+  /// The e2e app has no accent source wired — the theme keeps the kit
+  /// default (the sync service is a main()-side concern).
+  Widget app() => ArxaStudioMobileApp(
+        startsInStudio: false,
+        accentSync: AccentSync(FakeTransportService()),
+      );
+
   testWidgets('smoke: boot, pair, approvals shell live', (tester) async {
     await bootRealApp();
-    await tester.pumpWidget(const ArxaStudioMobileApp(startsInStudio: false));
+    await tester.pumpWidget(app());
     await tester.pump(const Duration(seconds: 1));
 
     await pairThroughUi(tester);
@@ -177,7 +185,7 @@ void main() {
     // in-test (below) — pre-raised cards would never appear here.
     if (phase == 'smoke' || phase == 'phone') return;
     await bootRealApp();
-    await tester.pumpWidget(const ArxaStudioMobileApp(startsInStudio: false));
+    await tester.pumpWidget(app());
     await tester.pump(const Duration(seconds: 1));
     await pairThroughUi(tester);
     await openApprovals(tester);
@@ -253,7 +261,7 @@ void main() {
       (tester) async {
     if (phase != 'phone') return;
     await bootRealApp();
-    await tester.pumpWidget(const ArxaStudioMobileApp(startsInStudio: false));
+    await tester.pumpWidget(app());
     await tester.pump(const Duration(seconds: 1));
     await pairThroughUi(tester);
 
