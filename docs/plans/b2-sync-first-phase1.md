@@ -117,6 +117,14 @@
 - [x] FIRST LEG DONE (2026-08-30, real binary): cairn-server with CAIRN_REPLICATOR=mirror + CAIRN_ADMIN_TOKEN boots /healthz live; POST /ingest (upsert a1, upsert a2, delete a2) -> 200 accepted:3 lsns:[1,2,3] monotonic; wrong bearer -> 401; invalid table -> 400 events[0] message; instance WITHOUT the token -> 404 not-found (fail-closed, PUT /rules shape). Remaining leg: a live WS subscriber asserting snapshot + live delivery.
 
 **Phase 1b (hand-off, NOT this plan's execution):** engine mirror-out writer (arxa-studio plugins/approvals → POST /ingest on every fold); mobile `ARXA_CAIRN_MODE=sync` pointed at the sidecar through an engine reverse-proxy route over the existing tunnel (offline reads come from local SQLite either way); visible→silent doorbell swap with collapse_key.
+**Phase 1b progress (2026-08-31, follow-on session):**
+- [x] Engine reverse-proxy route: plugins/approvals hosts `/__cairn` (prefix HTTP) + `/__cairn/sync` (raw WS-upgrade splice) → the mirror's CAIRN_BIND, plus `/__arxa/cairn-sync` handing the sync bearer to paired phones (ARXA_CAIRN_SYNC_TOKEN override → cairn-server.env keystore). arxa-studio 1f1304c; deployed payload a9efd0cfc82d; 14 arxa-studio CI suites green.
+- [x] Server auth: CAIRN_SYNC_AUTH=bearer (cairn 6ce0c97, ADR-0010 addendum) — anonymous refused 401, one shared secret → one fixed principal, so push registration sticks; all-mode rules + keystore live on the personal rig (mirror relaunched with bearer auth).
+- [x] SDK: REST base keeps the sync-URL path prefix (cairn fabc1a1) so proxied /schema + /push-tokens stay reachable; kit pin bumped (arxa f7bb9b2f).
+- [x] Mobile boot decision: stored pairing → wait ≤18s for the tunnel → bootstrap → SYNC (push on), else localOnly (arxa cf29faf5; 60 tests green). Runtime URL beats dart-defines — the proxy port only exists at runtime.
+- [x] Wire proof (rig /tmp/arxa-d68/phase1b_ws.mjs): bearer subscribe → snapshot carrying a pre-ingested row (batched array frame, hex payload decodes to the approval JSON) → live delivery of a mid-session ingest — ALL GREEN.
+- [ ] Phone-in-hand leg: the app installed (build 08:51) and its tunnel proven up (pairing.json touched 08:53 — token re-hand), but that arrival was outside the boot's 18s window → localOnly for that boot; a foregrounded unlocked boot re-engages sync. Then: registration receipt + doorbell.
+- [ ] Mirror-out writer + phone-local doorbell (collapse keys): B3-gated (owner decision on the notification surface).
 
 ## Phase-1 design decisions pinned here (argued, not re-litigated)
 
