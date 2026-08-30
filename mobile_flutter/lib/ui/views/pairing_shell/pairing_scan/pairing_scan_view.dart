@@ -48,5 +48,8 @@ class PairingScanView extends StackedView<PairingScanViewModel> {
   }
 
   @override
+  void onViewModelReady(PairingScanViewModel viewModel) => viewModel.start();
+
+  @override
   PairingScanViewModel viewModelBuilder(context) => PairingScanViewModel();
 }

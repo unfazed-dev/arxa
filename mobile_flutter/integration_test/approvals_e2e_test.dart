@@ -160,7 +160,7 @@ void main() {
 
   testWidgets('smoke: boot, pair, approvals shell live', (tester) async {
     await bootRealApp();
-    await tester.pumpWidget(const ArxaStudioMobileApp());
+    await tester.pumpWidget(const ArxaStudioMobileApp(startsInStudio: false));
     await tester.pump(const Duration(seconds: 1));
 
     await pairThroughUi(tester);
@@ -177,7 +177,7 @@ void main() {
     // in-test (below) — pre-raised cards would never appear here.
     if (phase == 'smoke' || phase == 'phone') return;
     await bootRealApp();
-    await tester.pumpWidget(const ArxaStudioMobileApp());
+    await tester.pumpWidget(const ArxaStudioMobileApp(startsInStudio: false));
     await tester.pump(const Duration(seconds: 1));
     await pairThroughUi(tester);
     await openApprovals(tester);
@@ -253,7 +253,7 @@ void main() {
       (tester) async {
     if (phase != 'phone') return;
     await bootRealApp();
-    await tester.pumpWidget(const ArxaStudioMobileApp());
+    await tester.pumpWidget(const ArxaStudioMobileApp(startsInStudio: false));
     await tester.pump(const Duration(seconds: 1));
     await pairThroughUi(tester);
 

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:arxa_kit_data/arxa_kit_data.dart';
 import 'package:arxa_kit_notifications/arxa_kit_notifications.dart';
 import 'package:arxa_kit_ui_library/arxa_kit_ui_library.dart';
@@ -13,6 +15,7 @@ import 'data/approvals/approval.dart';
 import 'data/approvals/approvals_api_client.dart';
 import 'data/approvals/approvals_repository.dart';
 import 'services/app_notifications_backend.dart';
+import 'services/iroh_transport_service.dart';
 import 'services/tap_routing.dart';
 import 'services/transport_service.dart';
 
@@ -41,7 +44,14 @@ Future<void> main() async {
   // iOS suspends QUIC in the background — redial the studio link whenever
   // the app returns to the foreground (no-op without a live session).
   WidgetsBinding.instance.addObserver(TransportLifecycleObserver());
-  runApp(const ArxaStudioMobileApp());
+  // Cold start: with no live session, resume() re-runs the stored pairing
+  // payload — the link comes back before the first frame, no user action.
+  unawaited(locator<TransportService>().resume());
+  // Startup route is state-aware: a stored pairing payload means the resume
+  // above restores the link — land straight in the studio session instead
+  // of flashing the QR scanner (the old '/' default) on every cold start.
+  final startsInStudio = await IrohTransportService.hasStoredPairing();
+  runApp(ArxaStudioMobileApp(startsInStudio: startsInStudio));
 }
 
 /// Routes a notification tap by its push class: 'task:*' collapse keys land
@@ -57,10 +67,9 @@ Future<void> _routeTap(Map<String, dynamic> tap) async {
   }
   switch (routeForTap(tap['collapseKey'] as String?)) {
     case TapRoute.studioRoot:
-      // ponytail: 'studio root' = the '/' startup route the app lands on at
-      // launch (PairingScanViewRoute); if a dedicated studio home route
-      // lands, repoint this single case.
-      locator<RouterService>().replaceWith(PairingScanViewRoute());
+      // The studio session view is the paired home: it waits for the boot
+      // resume to bring the link up when the tap arrives on a cold start.
+      locator<RouterService>().replaceWith(StudioSessionViewRoute());
     case TapRoute.approvals:
       locator<RouterService>().replaceWith(ApprovalsListViewRoute());
   }
@@ -77,7 +86,11 @@ class TransportLifecycleObserver with WidgetsBindingObserver {
 }
 
 class ArxaStudioMobileApp extends StatelessWidget {
-  const ArxaStudioMobileApp({super.key});
+  const ArxaStudioMobileApp({required this.startsInStudio, super.key});
+
+  /// main() read the stored pairing payload: true opens the studio session
+  /// (the boot resume brings the link up in place), false opens the scanner.
+  final bool startsInStudio;
 
   @override
   Widget build(BuildContext context) {
@@ -89,7 +102,14 @@ class ArxaStudioMobileApp extends StatelessWidget {
       theme: arxaKitLightTheme(),
       darkTheme: arxaKitDarkTheme(),
       themeMode: ThemeMode.system,
-      routerDelegate: kitPlatformRouter.delegate(),
+      routerDelegate: kitPlatformRouter.delegate(
+        initialRoutes: [
+          if (startsInStudio)
+            StudioSessionViewRoute()
+          else
+            PairingScanViewRoute(),
+        ],
+      ),
       routeInformationParser: kitPlatformRouter.defaultRouteParser(),
       // OS back gesture (Android predictive back) must reach the stacked
       // router explicitly under the routerDelegate API.

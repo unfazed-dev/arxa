@@ -1,4 +1,6 @@
 // arxa-builder: deps wire (pairing facade -> TransportService seam).
+import 'dart:async';
+
 import 'package:arxa_kit_ui_library/arxa_kit_ui_library.dart'
     show BaseViewModel, RouterService;
 
@@ -11,6 +13,25 @@ class PairingScanViewModel extends BaseViewModel {
   final _router = locator<RouterService>();
 
   bool _submitted = false;
+  StreamSubscription<ArxaConnectionStatus>? _statusSub;
+
+  /// Cold-start resume restores the link in the background while this screen
+  /// is up; a user with a live (or restoring) link belongs in the studio,
+  /// not in front of the scanner.
+  void start() {
+    _statusSub = _transport.status.listen((s) {
+      if (s.state == ArxaConnectionState.connected) _enterStudio();
+    });
+    if (_transport.current.state == ArxaConnectionState.connected) {
+      _enterStudio();
+    }
+  }
+
+  void _enterStudio() {
+    if (_submitted) return;
+    _submitted = true;
+    _router.replaceWith(StudioSessionViewRoute());
+  }
 
   /// One ticket per scan session — mobile_scanner fires repeatedly on the
   /// same code; first hit wins. Also the manual-entry submit path.
@@ -25,4 +46,10 @@ class PairingScanViewModel extends BaseViewModel {
   }
 
   Future<void> refresh() async {}
+
+  @override
+  void dispose() {
+    _statusSub?.cancel();
+    super.dispose();
+  }
 }

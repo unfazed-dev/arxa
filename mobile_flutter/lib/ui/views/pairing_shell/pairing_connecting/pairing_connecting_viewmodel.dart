@@ -22,9 +22,22 @@ class PairingConnectingViewModel extends BaseViewModel {
   void start() {
     _sub = _transport.status.listen((s) {
       notifyListeners();
-      if (s.state == ArxaConnectionState.connected) _handoff();
+      if (s.state == ArxaConnectionState.connected) {
+        _handoff();
+      } else if (s.state == ArxaConnectionState.notPaired && s.error != null) {
+        // Pairing failed or was revoked — never spin forever; the failure
+        // branch renders on the way out and the user lands back on the
+        // scanner.
+        _leave();
+      }
     });
     if (state == ArxaConnectionState.connected) _handoff();
+  }
+
+  void _leave() {
+    if (_handedOff) return;
+    _handedOff = true;
+    _router.back();
   }
 
   void _handoff() {
@@ -34,7 +47,9 @@ class PairingConnectingViewModel extends BaseViewModel {
     _router.replaceWith(PairingPushPermissionViewRoute());
   }
 
-  Future<void> refresh() async {}
+  /// Try Again — the ticket is single-use and consumed; a retry means a
+  /// fresh scan.
+  Future<void> refresh() async => _leave();
 
   @override
   void dispose() {
