@@ -65,6 +65,12 @@ class AppLocalizationsEn extends AppLocalizations {
       'Not connected — pair with the studio to load approvals.';
 
   @override
+  String get approvalsPairCta => 'Scan to pair';
+
+  @override
+  String get approvalsOpenStudio => 'Open studio';
+
+  @override
   String get approvalsSend => 'Send answer';
 
   @override

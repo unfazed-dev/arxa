@@ -4,7 +4,7 @@
 // get a field; one Submit answers the whole batch (the engine validates
 // exactly that shape).
 import 'package:arxa_kit_ui_library/arxa_kit_ui_library.dart'
-    show ArxaKitNativeAppBar, StackedView;
+    show ArxaKitGlyphs, ArxaKitNativeAppBar, ArxaKitNativeIconButton, StackedView;
 import 'package:flutter/material.dart';
 
 import 'package:arxa_studio_mobile/l10n/app_localizations.dart';
@@ -20,18 +20,41 @@ class ApprovalsListView extends StackedView<ApprovalsListViewModel> {
       BuildContext context, ApprovalsListViewModel viewModel, Widget? child) {
     final l10n = AppLocalizations.of(context);
     return Scaffold(
-      appBar: ArxaKitNativeAppBar(title: l10n.approvalsTitle),
+      appBar: ArxaKitNativeAppBar(
+        title: l10n.approvalsTitle,
+        actions: [
+          // The studio session is the paired home; this is the way back from
+          // the approvals deep link (both the offline and list states).
+          Tooltip(
+            message: l10n.approvalsOpenStudio,
+            child: ArxaKitNativeIconButton(
+              glyph: ArxaKitGlyphs.home,
+              onPressed: viewModel.goToStudio,
+            ),
+          ),
+        ],
+      ),
       body: viewModel.approvals.isEmpty
           ? Center(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(l10n.approvalsEmpty),
-                  if (viewModel.loadError == ApprovalsError.offline)
+                  if (viewModel.loadError == ApprovalsError.offline) ...[
                     Padding(
                       padding: const EdgeInsets.only(top: 8),
                       child: Text(l10n.approvalsNotConnected),
                     ),
+                    if (viewModel.needsPairing)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 16),
+                        child: FilledButton.icon(
+                          onPressed: viewModel.goToPairing,
+                          icon: const Icon(Icons.qr_code_scanner),
+                          label: Text(l10n.approvalsPairCta),
+                        ),
+                      ),
+                  ],
                 ],
               ),
             )
@@ -55,8 +78,11 @@ class ApprovalsListView extends StackedView<ApprovalsListViewModel> {
   ApprovalsListViewModel viewModelBuilder(context) => ApprovalsListViewModel();
 
   @override
-  void onViewModelReady(ApprovalsListViewModel viewModel) =>
-      viewModel.refresh();
+  void onViewModelReady(ApprovalsListViewModel viewModel) {
+    viewModel
+      ..listenTransport()
+      ..refresh();
+  }
 }
 
 /// One pending approval: summary line + every question with its options

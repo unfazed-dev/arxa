@@ -87,6 +87,9 @@ class _SilentTransport implements TransportService {
   Stream<ArxaConnectionStatus> get status => const Stream.empty();
 
   @override
+  Future<bool> hasStoredPairing() async => true;
+
+  @override
   Future<void> beginPairing(String ticket) async {}
 
   @override

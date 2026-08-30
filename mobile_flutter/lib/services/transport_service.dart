@@ -33,6 +33,10 @@ abstract class TransportService {
   /// Redial after the app returns to the foreground (iOS suspends QUIC in
   /// the background). No-op when there is no live session.
   Future<void> resume();
+
+  /// Whether a pairing payload is stored — the retry seam's way to tell
+  /// "dial again" from "nothing stored, scan a fresh QR".
+  Future<bool> hasStoredPairing();
   Future<void> dispose();
 }
 
@@ -96,13 +100,30 @@ class FakeTransportService implements TransportService {
   /// [resume] calls, for foreground-redial wiring tests.
   int resumeCount = 0;
 
+  /// Whether a stored pairing exists — models the persisted payload;
+  /// [resume] walks connecting -> connected only when set.
+  bool storedPairing = false;
+
+  @override
+  Future<bool> hasStoredPairing() async => storedPairing;
+
   @override
   Future<void> resume() async {
     resumeCount += 1;
     // Model the redial: a resume of a connected fake re-announces connected
     // (the real transport walks reconnecting -> connected on a fresh epoch),
     // so heal logic waiting for re-establishment completes here.
-    if (_current.state == ArxaConnectionState.connected) _emit(_current);
+    if (_current.state == ArxaConnectionState.connected) {
+      _emit(_current);
+      return;
+    }
+    // Model the cold-start dial (the retry path): a stored payload walks
+    // connecting -> connected; without one, resume stays a no-op.
+    if (!storedPairing) return;
+    _emit(const ArxaConnectionStatus(ArxaConnectionState.connecting));
+    await Future<void>.delayed(const Duration(milliseconds: 50));
+    _emit(ArxaConnectionStatus(ArxaConnectionState.connected,
+        studioUrl: _studioUrl));
   }
 
   @override

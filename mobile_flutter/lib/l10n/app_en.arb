@@ -17,6 +17,8 @@
   "approvalsTitle": "Approvals",
   "approvalsEmpty": "No pending approvals.",
   "approvalsNotConnected": "Not connected — pair with the studio to load approvals.",
+  "approvalsPairCta": "Scan to pair",
+  "approvalsOpenStudio": "Open studio",
   "approvalsSend": "Send answer",
   "approvalsAnsweredElsewhere": "Already answered elsewhere.",
   "approvalsCustomHint": "Type your answer",

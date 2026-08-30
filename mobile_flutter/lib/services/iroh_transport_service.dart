@@ -152,8 +152,15 @@ class IrohTransportService implements TransportService {
 
   /// Whether a pairing payload is stored. main() reads this before runApp
   /// to land paired users straight in the studio instead of flashing the
-  /// QR scanner while the cold-start resume dials.
-  static Future<bool> hasStoredPairing() async {
+  /// QR scanner while the cold-start resume dials. (The instance member of
+  /// the same contract is the TransportService seam — Dart forbids a static
+  /// and an instance member sharing a name, so the static carries -Exists.)
+  static Future<bool> storedPairingExists() => _readStoredPairing();
+
+  @override
+  Future<bool> hasStoredPairing() => _readStoredPairing();
+
+  static Future<bool> _readStoredPairing() async {
     try {
       final prefs = await SharedPreferences.getInstance();
       final payload = prefs.getString(storedPayloadKey);

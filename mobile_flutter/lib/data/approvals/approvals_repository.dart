@@ -66,6 +66,10 @@ class ApprovalsRepository {
     if (remote.isNotEmpty) await _cache.upsertMany(remote);
   }
 
+  /// The transport seam for reactive screens (auto-refresh on the
+  /// connected announcement, redial kicks on a failed pull).
+  TransportService get transport => _api.transport;
+
   /// Zombie-link heal (memo 3b): the session can look connected while the
   /// loopback proxy fails fast on every request. Resume the transport, wait
   /// bounded for it to re-announce connected, and retry the pull exactly
@@ -75,9 +79,16 @@ class ApprovalsRepository {
   Future<List<Approval>> _healedList(ApprovalsOfflineException failure) async {
     final transport = _api.transport;
     if (transport.current.studioUrl == null) throw failure;
-    // Subscribe BEFORE resuming so a fast re-announce is not missed. A
-    // stream that closes without reconnecting (disposed transport) simply
-    // never completes the wait — the timeout then rethrows the original.
+    if (!await _resumeAndWait()) throw failure;
+    return _api.list();
+  }
+
+  /// Resume the transport and wait bounded for it to re-announce connected.
+  /// Subscribes BEFORE resuming so a fast re-announce is not missed. A
+  /// stream that closes without reconnecting (disposed transport) simply
+  /// never completes the wait — the timeout reports false.
+  Future<bool> _resumeAndWait() async {
+    final transport = _api.transport;
     final reconnected = Completer<void>();
     final sub = transport.status.listen((s) {
       if (s.state == ArxaConnectionState.connected && !reconnected.isCompleted) {
@@ -87,12 +98,12 @@ class ApprovalsRepository {
     try {
       await transport.resume();
       await reconnected.future.timeout(healWait);
+      return true;
     } on TimeoutException {
-      throw failure;
+      return false;
     } finally {
       await sub.cancel();
     }
-    return _api.list();
   }
 
   /// Answer a pending approval on the engine; on acceptance the cached row

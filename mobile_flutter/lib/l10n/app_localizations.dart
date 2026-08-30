@@ -202,6 +202,18 @@ abstract class AppLocalizations {
   /// **'Not connected — pair with the studio to load approvals.'**
   String get approvalsNotConnected;
 
+  /// No description provided for @approvalsPairCta.
+  ///
+  /// In en, this message translates to:
+  /// **'Scan to pair'**
+  String get approvalsPairCta;
+
+  /// No description provided for @approvalsOpenStudio.
+  ///
+  /// In en, this message translates to:
+  /// **'Open studio'**
+  String get approvalsOpenStudio;
+
   /// No description provided for @approvalsSend.
   ///
   /// In en, this message translates to:

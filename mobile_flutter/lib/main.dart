@@ -50,7 +50,7 @@ Future<void> main() async {
   // Startup route is state-aware: a stored pairing payload means the resume
   // above restores the link — land straight in the studio session instead
   // of flashing the QR scanner (the old '/' default) on every cold start.
-  final startsInStudio = await IrohTransportService.hasStoredPairing();
+  final startsInStudio = await IrohTransportService.storedPairingExists();
   runApp(ArxaStudioMobileApp(startsInStudio: startsInStudio));
 }
 
