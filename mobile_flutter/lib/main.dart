@@ -15,6 +15,7 @@ import 'data/approvals/approval.dart';
 import 'data/approvals/approvals_api_client.dart';
 import 'data/approvals/approvals_repository.dart';
 import 'services/accent_sync.dart';
+import 'services/sync_doorbell.dart';
 import 'services/app_notifications_backend.dart';
 import 'services/iroh_transport_service.dart';
 import 'services/tap_routing.dart';
@@ -43,6 +44,13 @@ Future<void> main() async {
       api: ApprovalsApiClient(transport: locator<TransportService>()),
     ),
   );
+  // The phone-local doorbell (B2 phase-1b): sync feeds the cache; one local
+  // notification per newly-synced pending approval, collapsed per id. The
+  // silent APNs wake + this = the visible→silent swap's phone half.
+  SyncDoorbell(
+    locator<ApprovalsRepository>(),
+    locator<ArxaKitNotificationsService>(),
+  ).listen();
   setupArxaKitUiServices();
   // D68: a buzz tap deep-links the approvals shell (native didReceive →
   // channel 'tap' event → stacked router). The APNs backend exists only on
