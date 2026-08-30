@@ -19,13 +19,14 @@ dependencies:
   arxa_kit_notifications:
     path: ../notifications
   # D1 — full-SHA git pin, bumped deliberately (see README "Pin discipline").
-  # ed5205f = cairn main with the kit-live-harvest fixes on top of 93b93b8:
-  # sessionless CairnDatabase.supabase() open, tenant-scoped CRDT merge
-  # (e2e_pg-tested), and `cairn dev` forwarding the CRDT env vars from .env.
+  # fabc1a1 = cairn main with the REST-base prefix fix (deriveHttpBase keeps
+  # the sync URL's path directory, so a proxied /sync keeps /schema and
+  # /push-tokens reachable — B2 phase-1b tunnel proxy) on top of the D7
+  # iroh-dial support (4214887).
   cairn_flutter:
     git:
       url: https://github.com/unfazed-dev/cairn.git
-      ref: 42148877b7626c98353c1735ac849bf8aaa52233
+      ref: fabc1a163953c27aba33617dae72e704bcef4e11
       path: sdk/cairn_flutter
 
   # Default sqliteDir resolution (app-support directory).
