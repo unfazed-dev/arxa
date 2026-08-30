@@ -38,5 +38,12 @@ Pod::Spec.new do |s|
   # user_target_xcconfig propagates to the app target's final link.
   s.user_target_xcconfig = {
     'OTHER_LDFLAGS' => '-force_load ${PODS_CONFIGURATION_BUILD_DIR}/arxa_kit_studio_transport/libarxa_studio_transport.a',
+    # Release/profile links run -Xlinker -dead_strip. Nothing in the app
+    # references the FRB entry points statically (they are dlsym'd at
+    # runtime), so dead stripping deleted the entire force-loaded Rust
+    # core from device builds: RustLib.init then failed and the mobile
+    # pairing flow spun forever (2026-08-30, verified via nm/strings on
+    # the linked Runner). Keep the archive's bytes alive.
+    'DEAD_CODE_STRIPPING' => 'NO',
   }
 end
