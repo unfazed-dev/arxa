@@ -6,6 +6,7 @@
 // that came back late is found without user action.
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:arxa_kit_ui_library/arxa_kit_ui_library.dart';
 import 'package:arxa_studio_mobile/app/app.locator.dart';
 import 'package:arxa_studio_mobile/app/app.router.dart';
@@ -108,24 +109,39 @@ class ApprovalsListViewModel extends BaseViewModel {
   }
 
   /// Answer one approval. Returns true when accepted; false when refused
-  /// (someone answered first) or offline — the view surfaces which, and a
-  /// refresh follows either way.
+  /// (someone answered first), refused by the engine, or offline — the view
+  /// surfaces which, and a refresh follows either way. Never throws: the
+  /// card's busy state clears on EVERY outcome (a throw here would freeze
+  /// the submit spinner).
   Future<bool> decide(Approval approval, List<ApprovalAnswer> answers) async {
     await _dataReady();
     _decidingId = approval.id;
     notifyListeners();
+    var accepted = false;
     try {
       await _repository.decide(approval.id, answers);
-      return true;
+      accepted = true;
     } on ApprovalsConflictException {
-      return false;
+      accepted = false;
+    } on ApprovalsRemoteException catch (e) {
+      _error = ApprovalsError.offline;
+      debugPrint('[approvals] decide refused by engine: ${e.status} ${e.body}');
+      accepted = false;
     } on ApprovalsOfflineException {
       _error = ApprovalsError.offline;
-      return false;
+      accepted = false;
     } finally {
       _decidingId = null;
-      await refresh();
+      // The follow-up refresh must never reject decide() itself — the card
+      // clears its busy state on this future resolving, whatever the refresh
+      // outcome is.
+      try {
+        await refresh();
+      } on Object catch (e) {
+        debugPrint('[approvals] post-decide refresh failed: $e');
+      }
     }
+    return accepted;
   }
 
   @override

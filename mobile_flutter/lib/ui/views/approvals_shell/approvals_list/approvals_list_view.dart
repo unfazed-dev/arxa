@@ -171,14 +171,22 @@ class _ApprovalCardState extends State<_ApprovalCard> {
               : _customFor(question).text,
         ),
     ];
-    final accepted = await widget.onDecide(answers);
-    if (!mounted) return;
-    setState(() {
-      _sending = false;
-      if (!accepted) {
-        _refused = AppLocalizations.of(context).approvalsAnsweredElsewhere;
+    // Never let a throw past the await: _sending must clear on EVERY
+    // outcome or the submit spinner freezes (VM.decide already never
+    // throws — this is belt-and-braces for the contract).
+    var accepted = false;
+    try {
+      accepted = await widget.onDecide(answers);
+    } finally {
+      if (mounted) {
+        setState(() {
+          _sending = false;
+          if (!accepted) {
+            _refused = AppLocalizations.of(context).approvalsAnsweredElsewhere;
+          }
+        });
       }
-    });
+    }
   }
 
   @override
