@@ -133,13 +133,13 @@ void main() {
     expect((await repo.list()).map((a) => a.id), ['kept', 'new']);
   });
 
-  test('list sorts oldest first', () async {
+  test('list sorts newest first — the live question is what the owner needs on top', () async {
     final cache = _FakeCache()
       ..rows['late'] = _approval('late', raisedAt: 20)
       ..rows['early'] = _approval('early', raisedAt: 10);
     final repo = ApprovalsRepository(cache: cache, api: _FakeApi(const []));
 
-    expect((await repo.list()).map((a) => a.id), ['early', 'late']);
+    expect((await repo.list()).map((a) => a.id), ['late', 'early']);
   });
 
   test('refresh offline keeps the cached list for reading', () async {

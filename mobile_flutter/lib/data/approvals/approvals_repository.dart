@@ -36,17 +36,19 @@ class ApprovalsRepository {
   /// dial budget (5 attempts x 3s backoff) with margin.
   final Duration healWait;
 
-  /// Cached approvals, oldest first (the projection — safe to read offline).
+  /// Cached approvals, NEWEST first (the projection — safe to read offline;
+  /// the live question is what the owner needs to see first, not the backlog).
   Future<List<Approval>> list() async {
     final all = await _cache.getAll();
-    all.sort((a, b) => a.raisedAt.compareTo(b.raisedAt));
+    all.sort((a, b) => b.raisedAt.compareTo(a.raisedAt));
     return all;
   }
 
-  /// Live view of the cache for later reactive wiring.
+  /// Live view of the cache for later reactive wiring (newest first, same
+  /// as [list]).
   Stream<List<Approval>> watch() => _cache
       .watchAll()
-      .map((rows) => rows..sort((a, b) => a.raisedAt.compareTo(b.raisedAt)));
+      .map((rows) => rows..sort((a, b) => b.raisedAt.compareTo(a.raisedAt)));
 
   /// Pull the engine's list and reconcile the cache. Throws
   /// [ApprovalsOfflineException] when the tunnel is unusable (after one
