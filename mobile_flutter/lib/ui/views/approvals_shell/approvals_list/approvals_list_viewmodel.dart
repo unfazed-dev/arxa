@@ -41,6 +41,10 @@ class ApprovalsListViewModel extends BaseViewModel {
   ApprovalsError? get loadError => _error;
   ApprovalsError? _error;
 
+  /// Why sync is off (the boot fell back to localOnly) — the view surfaces
+  /// it so the owner sees WHY, not just that nothing syncs.
+  String? get bootError => AppData.lastBootError;
+
   /// The approval id whose decision POST is in flight (disables its UI).
   String? get decidingId => _decidingId;
   String? _decidingId;
