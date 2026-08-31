@@ -75,9 +75,11 @@ class ArxaKitCairnPushBridge {
     _sub = notifications.tokenStream.listen(
       (token) => unawaited(_forward(token)),
     );
+    // 10s > the APNs backend's own 8s poll window: the probe outlives the
+    // backend's bounded poll yet still can never wedge the boot.
     final current = await notifications
         .currentToken()
-        .timeout(const Duration(seconds: 5), onTimeout: () => null);
+        .timeout(const Duration(seconds: 10), onTimeout: () => null);
     if (current != null) await _forward(current);
   }
 
