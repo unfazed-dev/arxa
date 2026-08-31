@@ -40,6 +40,12 @@ class AppData {
   /// boot never crashes a locator lookup.
   static final Completer<void> ready = Completer<void>();
 
+  /// The sync boot's failure, when it fell back to localOnly — surfaced in
+  /// the approvals shell so the owner sees WHY sync is off (release builds
+  /// drop debugPrint). Null when sync booted or localOnly was the decision
+  /// (not a failure).
+  static String? lastBootError;
+
   /// The bootstrap route's HTTP timeout — the engine answers from local
   /// files only; anything slower is treated as not configured.
   static const _bootstrapTimeout = Duration(seconds: 5);
@@ -89,7 +95,8 @@ class AppData {
     } on Object catch (e) {
       // The sync connect failed on-device (native dial, schema, storage):
       // localOnly fallback keeps the approvals loop alive over pulls; sync
-      // retries on the next boot.
+      // retries on the next boot. Surface it — release builds drop logs.
+      lastBootError = e.toString();
       debugPrint('[arxa-boot] sync mode failed, falling back to localOnly: $e');
       await _boot(defaultConfig());
     }
