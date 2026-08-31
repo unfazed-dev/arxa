@@ -60,8 +60,44 @@ class AppData {
     TransportService? transport,
     ArxaKitNotificationsService? notifications,
   }) async {
+    // Explicit config (tests, agency dart-defines): boot it verbatim —
+    // loud on purpose (D62).
+    if (config != null) {
+      await _boot(config);
+      return;
+    }
+    // Runtime sync decision (B2 phase-1b): try SYNC when the tunnel and
+    // bootstrap come up; on ANY failure fall back to localOnly so the app
+    // stays fully usable over pulls — the sync miss is diagnosable
+    // separately and retried on the next boot.
+    final sync = transport == null
+        ? null
+        : await resolveSyncConfig(transport, notifications: notifications);
+    if (sync == null) {
+      await _boot(defaultConfig());
+      return;
+    }
+    try {
+      await _boot(ArxaKitDataConfig(
+        backend: ArxaKitDataBackend.plugin,
+        plugin: ArxaKitCairnBackend(
+          config: sync.config,
+          tokenProvider: sync.token,
+          notifications: notifications,
+        ),
+      ));
+    } on Object catch (e) {
+      // The sync connect failed on-device (native dial, schema, storage):
+      // localOnly fallback keeps the approvals loop alive over pulls; sync
+      // retries on the next boot.
+      debugPrint('[arxa-boot] sync mode failed, falling back to localOnly: $e');
+      await _boot(defaultConfig());
+    }
+  }
+
+  static Future<void> _boot(ArxaKitDataConfig config) async {
     await ArxaKitData.initialize(
-      config: config ?? await bootConfig(transport, notifications: notifications),
+      config: config,
       entities: const [approvalEntityRegistration, taskEntityRegistration],
       fixtureAssets: const [],
     );
