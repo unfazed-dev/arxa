@@ -108,6 +108,10 @@ class StudioSessionViewModel extends BaseViewModel {
   Future<void> openSettings() =>
       _router.navigateTo(SettingsHomeViewRoute());
 
+  /// The approvals shell (B2 phase-1b): the bell lands here so the owner can
+  /// review pending asks without leaving the session (back returns here).
+  Future<void> openApprovals() => _router.navigateTo(ApprovalsListViewRoute());
+
   Future<void> refresh() async {
     _loadSucceeded();
     controller = null;

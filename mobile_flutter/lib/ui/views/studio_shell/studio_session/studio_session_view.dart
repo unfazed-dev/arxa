@@ -23,6 +23,10 @@ class StudioSessionView extends StackedView<StudioSessionViewModel> {
         title: l10n.appTitle,
         actions: [
           ArxaKitNativeIconButton(
+            glyph: ArxaKitGlyphs.alerts,
+            onPressed: viewModel.openApprovals,
+          ),
+          ArxaKitNativeIconButton(
             glyph: ArxaKitGlyphs.settings,
             onPressed: viewModel.openSettings,
           ),
