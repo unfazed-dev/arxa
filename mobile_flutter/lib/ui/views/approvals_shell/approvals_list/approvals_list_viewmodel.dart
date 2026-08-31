@@ -9,6 +9,7 @@ import 'dart:async';
 import 'package:arxa_kit_ui_library/arxa_kit_ui_library.dart';
 import 'package:arxa_studio_mobile/app/app.locator.dart';
 import 'package:arxa_studio_mobile/app/app.router.dart';
+import 'package:arxa_studio_mobile/app/app_data.dart';
 
 import '../../../../data/approvals/approval.dart';
 import '../../../../data/approvals/approvals_api_client.dart';
@@ -19,10 +20,17 @@ import '../../../../services/transport_service.dart';
 enum ApprovalsError { offline, remote }
 
 class ApprovalsListViewModel extends BaseViewModel {
-  ApprovalsListViewModel([ApprovalsRepository? repository])
-      : _repository = repository ?? locator<ApprovalsRepository>();
+  ApprovalsListViewModel([
+    ApprovalsRepository? repository,
+    Future<void> Function()? dataReady,
+  ])  : _repository = repository ?? locator<ApprovalsRepository>(),
+        _dataReady = dataReady ?? (() => AppData.ready.future);
 
   final ApprovalsRepository _repository;
+
+  /// The data boot runs in the BACKGROUND (B2 phase-1b: it waits up to 90s
+  /// for the tunnel so sync can engage); every repository touch gates on it.
+  final Future<void> Function() _dataReady;
 
   List<Approval> get approvals => _approvals;
   List<Approval> _approvals = const [];
@@ -67,6 +75,7 @@ class ApprovalsListViewModel extends BaseViewModel {
   void goToStudio() => _router.navigateTo(StudioSessionViewRoute());
 
   Future<void> refresh() async {
+    await _dataReady();
     try {
       await _repository.refresh();
       _error = null;
@@ -98,6 +107,7 @@ class ApprovalsListViewModel extends BaseViewModel {
   /// (someone answered first) or offline — the view surfaces which, and a
   /// refresh follows either way.
   Future<bool> decide(Approval approval, List<ApprovalAnswer> answers) async {
+    await _dataReady();
     _decidingId = approval.id;
     notifyListeners();
     try {

@@ -110,12 +110,12 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   test('starts with no pending approvals', () {
-    expect(ApprovalsListViewModel(_FakeRepository()).approvals, isEmpty);
+    expect(ApprovalsListViewModel(_FakeRepository(), () => Future.value()).approvals, isEmpty);
   });
 
   test('refresh loads the repository list', () async {
     final repo = _FakeRepository()..rows = [_pending];
-    final viewModel = ApprovalsListViewModel(repo);
+    final viewModel = ApprovalsListViewModel(repo, () => Future.value());
 
     await viewModel.refresh();
 
@@ -127,7 +127,7 @@ void main() {
     final repo = _FakeRepository()
       ..rows = [_pending]
       ..refreshError = ApprovalsOfflineException();
-    final viewModel = ApprovalsListViewModel(repo);
+    final viewModel = ApprovalsListViewModel(repo, () => Future.value());
 
     await viewModel.refresh();
 
@@ -139,7 +139,7 @@ void main() {
     final repo = _FakeRepository()..rows = [_pending];
     final transport = _PokeTransport();
     repo.transportField = transport;
-    final viewModel = ApprovalsListViewModel(repo);
+    final viewModel = ApprovalsListViewModel(repo, () => Future.value());
 
     viewModel.listenTransport();
     transport.emit(ArxaConnectionStatus(ArxaConnectionState.connected,
@@ -154,7 +154,7 @@ void main() {
     final repo = _FakeRepository()..refreshError = ApprovalsOfflineException();
     final transport = _PokeTransport()..stored = true;
     repo.transportField = transport;
-    final viewModel = ApprovalsListViewModel(repo);
+    final viewModel = ApprovalsListViewModel(repo, () => Future.value());
 
     await viewModel.refresh();
 
@@ -168,7 +168,7 @@ void main() {
     final repo = _FakeRepository()..refreshError = ApprovalsOfflineException();
     final transport = _PokeTransport()..stored = false;
     repo.transportField = transport;
-    final viewModel = ApprovalsListViewModel(repo);
+    final viewModel = ApprovalsListViewModel(repo, () => Future.value());
 
     await viewModel.refresh();
 
@@ -181,7 +181,7 @@ void main() {
     final repo = _FakeRepository()..refreshError = ApprovalsOfflineException();
     final transport = _PokeTransport()..stored = false;
     repo.transportField = transport;
-    final viewModel = ApprovalsListViewModel(repo);
+    final viewModel = ApprovalsListViewModel(repo, () => Future.value());
     await viewModel.refresh();
     expect(viewModel.needsPairing, isTrue);
 
@@ -196,7 +196,7 @@ void main() {
 
   test('decide accepted: answer posts and the approval leaves the list', () async {
     final repo = _FakeRepository()..rows = [_pending];
-    final viewModel = ApprovalsListViewModel(repo);
+    final viewModel = ApprovalsListViewModel(repo, () => Future.value());
     await viewModel.refresh();
 
     final accepted = await viewModel.decide(_pending, const [
@@ -212,7 +212,7 @@ void main() {
     final repo = _FakeRepository()
       ..rows = [_pending]
       ..decideError = ApprovalsConflictException('not-pending');
-    final viewModel = ApprovalsListViewModel(repo);
+    final viewModel = ApprovalsListViewModel(repo, () => Future.value());
     await viewModel.refresh();
 
     final accepted = await viewModel.decide(_pending, const [

@@ -24,38 +24,42 @@ import 'services/transport_service.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await setupLocator(stackedRouter: kitPlatformRouter);
-  // Cold start: kick the resume BEFORE the data boot — the B2 phase-1b
-  // sync bootstrap (below) rides the link the resume establishes.
+  // Cold start: kick the resume FIRST — everything downstream (the studio
+  // view, the sync decision) rides the link it establishes.
   unawaited(locator<TransportService>().resume());
-  // Approvals slice (grill D60–D68): boot the cairn-backed data layer with
-  // the Approval entity, then expose its repository behind the tunnel
-  // client. Loud on purpose (D62): a boot failure crashes visibly rather
-  // than silently degrading the approvals shell. With a stored pairing the
-  // boot waits bounded for the tunnel and opens SYNC against the desktop's
-  // mirror through the engine's cairn proxy (B2 phase-1b); anything else
-  // boots localOnly (offline reads come from local SQLite either way).
-  await AppData.initialize(
-    transport: locator<TransportService>(),
-    notifications: locator<ArxaKitNotificationsService>(),
+  // Approvals slice (grill D60–D68) + B2 phase-1b: the data boot runs in
+  // the BACKGROUND — the app renders the studio session immediately (it
+  // needs no data layer), and the boot waits a generous window for the
+  // tunnel: when the phone's dial lands (observed ~80s through the relay)
+  // the data layer engages SYNC against the desktop mirror; a timeout or
+  // unpaired install falls back to localOnly. The approvals shell gates
+  // on AppData.ready, so a late boot never crashes a locator lookup.
+  final notifications = locator<ArxaKitNotificationsService>();
+  unawaited(
+    AppData.initialize(
+      transport: locator<TransportService>(),
+      notifications: notifications,
+    ).then((_) {
+      locator.registerLazySingleton(
+        () => ApprovalsRepository(
+          cache: arxaKitLocator<ArxaKitRepository<Approval>>(),
+          api: ApprovalsApiClient(transport: locator<TransportService>()),
+        ),
+      );
+      // The phone-local doorbell (B2 phase-1b): sync feeds the cache; one
+      // local notification per newly-synced pending approval, collapsed
+      // per id. The silent APNs wake + this = the visible→silent swap's
+      // phone half.
+      SyncDoorbell(
+        locator<ApprovalsRepository>(),
+        locator<ArxaKitNotificationsService>(),
+      ).listen();
+    }),
   );
-  locator.registerLazySingleton(
-    () => ApprovalsRepository(
-      cache: arxaKitLocator<ArxaKitRepository<Approval>>(),
-      api: ApprovalsApiClient(transport: locator<TransportService>()),
-    ),
-  );
-  // The phone-local doorbell (B2 phase-1b): sync feeds the cache; one local
-  // notification per newly-synced pending approval, collapsed per id. The
-  // silent APNs wake + this = the visible→silent swap's phone half.
-  SyncDoorbell(
-    locator<ApprovalsRepository>(),
-    locator<ArxaKitNotificationsService>(),
-  ).listen();
   setupArxaKitUiServices();
   // D68: a buzz tap deep-links the approvals shell (native didReceive →
   // channel 'tap' event → stacked router). The APNs backend exists only on
   // iOS; elsewhere this is a no-op.
-  final notifications = locator<ArxaKitNotificationsService>();
   if (notifications is AppNotificationsBackend) {
     notifications.apns?.taps.listen(_routeTap);
     // The silent doorbell wake (B2 phase-1b): APNs woke the app in the

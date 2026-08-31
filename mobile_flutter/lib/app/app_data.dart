@@ -27,11 +27,17 @@ class AppData {
   AppData._();
 
   /// How long the sync boot waits for the first connected announcement
-  /// before falling back to localOnly. Covers the transport's reconnect
-  /// dial budget (5 x 3s) with margin; a desktop that is simply DOWN costs
-  /// the full window on a cold start — the honest price of syncing at all.
+  /// before falling back to localOnly. Generous on purpose: the wait runs
+  /// in the BACKGROUND (the app renders the studio session immediately —
+  /// it needs no data layer), so a slow phone dial (observed ~80s through
+  /// the relay on iOS) still lands in sync instead of missing the window.
   /// Mutable for tests.
-  static Duration syncBootWait = const Duration(seconds: 18);
+  static Duration syncBootWait = const Duration(seconds: 90);
+
+  /// Completes when the data layer is booted — sync OR localOnly fallback.
+  /// Views/viewmodels that touch repositories await this so a late data
+  /// boot never crashes a locator lookup.
+  static final Completer<void> ready = Completer<void>();
 
   /// The bootstrap route's HTTP timeout — the engine answers from local
   /// files only; anything slower is treated as not configured.
@@ -58,6 +64,7 @@ class AppData {
       entities: const [approvalEntityRegistration],
       fixtureAssets: const [],
     );
+    if (!ready.isCompleted) ready.complete();
   }
 
   /// The boot decision (B2 phase-1b) — sync when pairing + tunnel + engine
