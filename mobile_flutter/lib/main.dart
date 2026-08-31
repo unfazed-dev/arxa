@@ -14,6 +14,7 @@ import 'app/kit_platform_router.dart';
 import 'data/approvals/approval.dart';
 import 'data/approvals/approvals_api_client.dart';
 import 'data/approvals/approvals_repository.dart';
+import 'data/tasks/task.dart';
 import 'services/accent_sync.dart';
 import 'services/sync_doorbell.dart';
 import 'services/app_notifications_backend.dart';
@@ -46,6 +47,12 @@ Future<void> main() async {
           api: ApprovalsApiClient(transport: locator<TransportService>()),
         ),
       );
+      // Task completions doorbell the same way (B3: everything the session
+      // tools trigger rides the phone rail).
+      TaskDoorbell(
+        arxaKitLocator<ArxaKitRepository<Task>>(),
+        notifications,
+      ).listen();
       // The phone-local doorbell (B2 phase-1b): sync feeds the cache; one
       // local notification per newly-synced pending approval, collapsed
       // per id. The silent APNs wake + this = the visible→silent swap's

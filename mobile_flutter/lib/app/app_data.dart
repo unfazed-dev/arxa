@@ -8,6 +8,7 @@ import 'package:arxa_kit_notifications/arxa_kit_notifications.dart';
 import 'package:flutter/foundation.dart';
 
 import '../data/approvals/approval.dart';
+import '../data/tasks/task.dart';
 import '../services/transport_service.dart';
 
 /// Data-layer boot. Called once from `main()` after `setupLocator()`.
@@ -61,7 +62,7 @@ class AppData {
   }) async {
     await ArxaKitData.initialize(
       config: config ?? await bootConfig(transport, notifications: notifications),
-      entities: const [approvalEntityRegistration],
+      entities: const [approvalEntityRegistration, taskEntityRegistration],
       fixtureAssets: const [],
     );
     if (!ready.isCompleted) ready.complete();
