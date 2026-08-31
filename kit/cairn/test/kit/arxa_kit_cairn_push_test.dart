@@ -280,6 +280,46 @@ void main() {
         expect(registered, hasLength(1));
       },
     );
+
+    test(
+      'kit.cairn.push — a push-enabled open initializes the notifications seam (the token mint)',
+      () async {
+        // Given a sync-mode backend with push over a fresh seam (B2 phase-1b
+        // live finding: nothing else in a server-mode boot calls initialize —
+        // iOS never mints a device token, the bridge attaches to a stream
+        // that never fires, and the session registers no push target).
+        final notifications = FakeArxaKitNotificationsService();
+        final backend = ArxaKitCairnBackend(
+          config: const ArxaKitCairnConfig(
+            mode: ArxaKitCairnMode.sync,
+            syncUrl: 'wss://sync.example.com/sync',
+            push: true,
+          ),
+          tokenProvider: () async => 'host-jwt-mint',
+          notifications: notifications,
+          pushRegister: (_, _) async {},
+          openDatabase: (config, schema, token) async {
+            // ignore: invalid_use_of_visible_for_testing_member
+            final cairn = Cairn.withEngine(FakeCairnEngine());
+            // ignore: invalid_use_of_visible_for_testing_member
+            return CairnDatabase.localForTest(cairn, schema);
+          },
+        );
+
+        // When kit/data initializes
+        await ArxaKitData.initialize(
+          config: ArxaKitDataConfig(
+            backend: ArxaKitDataBackend.plugin,
+            plugin: backend,
+          ),
+          entities: const [plainPostRegistration],
+        );
+
+        // Then the seam was initialized — the provider rail's cue to mint
+        expect(notifications.initializeCount, 1);
+        await backend.dispose();
+      },
+    );
   });
 }
 

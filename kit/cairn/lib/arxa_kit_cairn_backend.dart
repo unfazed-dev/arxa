@@ -215,6 +215,13 @@ class ArxaKitCairnBackend implements ArxaKitBackendPlugin, ArxaKitPluginSeeder {
     }
 
     if (_config.push) {
+      // The notifications service's initialize is what asks the provider rail
+      // to mint its device token (iOS: registerForRemoteNotifications).
+      // Nothing else in a server-mode boot calls it — without this line the
+      // bridge below attaches to a tokenStream that never fires, and the
+      // session registers no push target (B2 phase-1b live finding: mints
+      // only ever happened through the pairing screen's permission ask).
+      await notifications!.initialize();
       // Attach AFTER the engine start — the SDK deregisters session tokens on
       // sign-out, so every (re-)open must re-register (atlet checklist).
       final bridge = ArxaKitCairnPushBridge(

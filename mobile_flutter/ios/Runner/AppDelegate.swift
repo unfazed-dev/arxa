@@ -103,6 +103,12 @@ final class ApnsBridge: NSObject, UNUserNotificationCenterDelegate {
     switch call.method {
     case "initialize":
       // Channel handler binding is the only native state; already done.
+      // Token minting needs NO user permission — only the entitlement — so
+      // register right here: an unprompted boot used to never mint, leaving
+      // the doorbell targetless until some permission ask happened to run.
+      DispatchQueue.main.async {
+        UIApplication.shared.registerForRemoteNotifications()
+      }
       result(nil)
     case "requestPermission":
       var options = UNAuthorizationOptions()
