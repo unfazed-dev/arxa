@@ -1,10 +1,6 @@
-# design-system — pairing_shell_push_permission_view
+# design-system — code_shell (shell)
 
 > arxa-scaffolder: STRUCTURE ONLY. The builder (plan 08) fills the real intent.
-
-- **surface:** `pairing_shell_push_permission_view`  (pairing.push_permission)
-- **shell:**  pairing_shell
-- **derived form factors:** mobile, tablet
 
 ## Palette
 
@@ -45,4 +41,4 @@ block chooses the FACE only, never the size.
 ## Forbidden
 - `Icons.*` (use `ArxaKitGlyphs.*`)
 - ad-hoc `Color(0x…)` (use `ArxaKitColors.*`)
-- stock `ElevatedButton`/`FilledButton`/`TextButton` CTAs (use `ArxaKitNativeButton`)
+- stock CTA buttons (use `ArxaKitNativeButton`)

@@ -1,9 +1,9 @@
-# design-system — pairing_shell_push_permission_view
+# design-system — code_shell_sessions_view
 
 > arxa-scaffolder: STRUCTURE ONLY. The builder (plan 08) fills the real intent.
 
-- **surface:** `pairing_shell_push_permission_view`  (pairing.push_permission)
-- **shell:**  pairing_shell
+- **surface:** `code_shell_sessions_view`  (code.sessions)
+- **shell:**  code_shell
 - **derived form factors:** mobile, tablet
 
 ## Palette

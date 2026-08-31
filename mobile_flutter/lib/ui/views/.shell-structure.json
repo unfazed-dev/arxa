@@ -1,6 +1,7 @@
 {
   "selfContained": [
     "approvals_shell",
+    "code_shell",
     "pairing_shell",
     "settings_shell",
     "studio_shell"
@@ -8,6 +9,10 @@
   "surfaces": {
     "approvals_shell": {
       "approvals_shell_approvals_view": "approvals_list"
+    },
+    "code_shell": {
+      "code_shell_sessions_view": "code_sessions",
+      "code_shell_conversation_view": "code_conversation"
     },
     "pairing_shell": {
       "pairing_shell_pairing_scan_view": "pairing_scan",

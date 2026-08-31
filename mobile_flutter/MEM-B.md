@@ -5,7 +5,7 @@
 ## Build
 - targets: ios, android
 - derived form factors: mobile, tablet
-- surfaces scaffolded: 6 (pairing_shell_pairing_scan_view, pairing_shell_connecting_view, pairing_shell_push_permission_view, studio_shell_studio_session_view, approvals_shell_approvals_view, settings_shell_settings_view)
+- surfaces scaffolded: 8 (pairing_shell_pairing_scan_view, pairing_shell_connecting_view, pairing_shell_push_permission_view, studio_shell_studio_session_view, approvals_shell_approvals_view, settings_shell_settings_view, code_shell_sessions_view, code_shell_conversation_view)
 
 ## Pipeline state
 - no recorded stage runs (pipeline/state/scorecard.jsonl absent)
