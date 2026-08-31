@@ -63,12 +63,21 @@ class ArxaKitCairnPushBridge {
 
   /// Registers the currently-held token (if any) and forwards every future
   /// refresh. Idempotent: re-attaching replaces the subscription.
+  ///
+  /// The current-token probe is bounded: some providers only resolve after
+  /// the OS's remote-registration callback fires, which iOS can defer or
+  /// throttle indefinitely — an unbounded await here would wedge the whole
+  /// data-layer boot (initialize awaits attach). A hung answer degrades to
+  /// null and the [tokenStream] subscription carries the registration
+  /// whenever the token does arrive.
   Future<void> attach() async {
     await _sub?.cancel();
     _sub = notifications.tokenStream.listen(
       (token) => unawaited(_forward(token)),
     );
-    final current = await notifications.currentToken();
+    final current = await notifications
+        .currentToken()
+        .timeout(const Duration(seconds: 5), onTimeout: () => null);
     if (current != null) await _forward(current);
   }
 
