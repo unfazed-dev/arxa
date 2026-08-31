@@ -159,6 +159,18 @@ class ArxaKitCairnBackend implements ArxaKitBackendPlugin, ArxaKitPluginSeeder {
     _db = db;
     _openedToken = token;
 
+    // Server modes must SUBSCRIBE before any watch/write is legal — and the
+    // subscription is what starts the sync session (the connect-time URL
+    // alone never dials; the SDK docs are explicit: subscribe starts the
+    // actual session). localOnly already subscribed every declared table in
+    // the local-open path (then paused the loop), so it must not re-subscribe.
+    if (_config.mode != ArxaKitCairnMode.localOnly) {
+      await db.subscribeTables([
+        for (final e in entities) CairnTableSub(name: e.schema.table),
+        if (storage) CairnTableSub(name: AttachmentSchema.table),
+      ]);
+    }
+
     // localOnly has no server to seed from — bundled fixtures boot the
     // content at initialize, seed-backend parity. Server modes NEVER
     // auto-seed: server-bound writes per boot are the operator's call
