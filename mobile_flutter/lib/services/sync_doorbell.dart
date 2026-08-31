@@ -8,6 +8,7 @@
 // copy (D60–D68 discipline — the engine's copy never rides the local rail).
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:arxa_kit_data/arxa_kit_data.dart';
 import 'package:arxa_kit_notifications/arxa_kit_notifications.dart';
 
@@ -30,11 +31,15 @@ class SyncDoorbell {
   /// Arm once; the cache watch fires on sync applies AND pull
   /// reconciliations — both arrival paths ring through the same dedupe.
   void listen() {
-    _sub ??= _repository.watch().listen(_onRows);
+    _sub ??= _repository.watch().listen(_onRows,
+        onError: (Object e, StackTrace st) =>
+            debugPrint('[doorbell] stream error: $e'));
   }
 
   void _onRows(List<Approval> rows) {
-    final pending = rows.where((a) => a.status == 'pending');
+    final pending = rows.where((a) => a.status == 'pending').toList();
+    debugPrint('[doorbell] emission: rows=${rows.length} pending=${pending.length} '
+        'seeded=$_seeded known=${_doorbelled.length}');
     if (!_seeded) {
       _doorbelled.addAll(pending.map((a) => a.id));
       _seeded = true;
@@ -51,6 +56,7 @@ class SyncDoorbell {
   /// SAME id replace (collapse) rather than stack, belt-and-braces against
   /// a process-lifetime dedupe miss.
   Future<void> _buzz(Approval approval) {
+    debugPrint('[doorbell] buzzing ${approval.id}');
     return _notifications.showLocalNotification(ArxaKitLocalNotification(
       id: approval.id.hashCode & 0x7fffffff,
       title: _title,
