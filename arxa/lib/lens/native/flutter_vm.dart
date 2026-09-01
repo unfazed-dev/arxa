@@ -118,6 +118,19 @@ class FlutterVm {
     });
   }
 
+  /// VM-native screenshot RPC (profile builds; what `flutter screenshot`
+    /// uses) -> PNG bytes. Falls back to the debug-only service extension.
+  Future<List<int>> deviceScreenshot() async {
+    try {
+      final r = await rpc('screenshot', {'silent': true});
+      final b64 = r['screenshot'] as String?;
+      if (b64 != null) return base64Decode(b64);
+    } on LensVmException catch (_) {
+      // fall through to the service extension
+    }
+    return screenshot();
+  }
+
   /// ext.flutter.screenshot (debug/profile builds only) -> PNG bytes.
   Future<List<int>> screenshot() async {
     final r = await callServiceExtension('ext.flutter.screenshot');
@@ -154,6 +167,17 @@ class FlutterVm {
       'expression': expression,
     });
     return r['valueAsString'] ?? r;
+  }
+
+  /// arxa's app-side capture rail (ext.arxa.shot — see the app's
+    /// shot_extension.dart): a PNG of the whole app, profile-capable.
+  Future<List<int>> arxaShot() async {
+    final r = await callServiceExtension('ext.arxa.shot');
+    final b64 = r['shot'] as String?;
+    if (b64 == null) {
+      throw LensVmException('ext.arxa.shot returned no shot');
+    }
+    return base64Decode(b64);
   }
 
   Future<void> dispose() async {
