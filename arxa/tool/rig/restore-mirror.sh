@@ -14,12 +14,13 @@ KS="$HOME/Library/Application Support/solutions.arxadigital.arxa/cairn-server.en
 LOG=/tmp/cairn-mirror.log
 [ -f "$KS" ] || { echo "keystore missing: $KS"; exit 1; }
 
-# Export the keystore (KEY=VALUE lines). Tokens are hex/base64url-safe, so
-# shell sourcing is unambiguous; a malformed line fails loudly on its own.
-set -a
-# shellcheck disable=SC1090
-source "$KS"
-set +a
+# Export the keystore KEY=VALUE lines WITHOUT sourcing: values may contain
+# shell metacharacters (CAIRN_PUSH_TABLES carries an unquoted ';'), which
+# `source` would execute. Split on the FIRST '=' and export the pair whole.
+while IFS='=' read -r k v; do
+  case "$k" in ''|'#'*) continue ;; esac
+  [ -n "$v" ] && export "$k=$v"
+done < "$KS"
 export CAIRN_BIND=127.0.0.1:8190
 
 pkill -f 'cargo/bin/cairn-server' 2>/dev/null || true
