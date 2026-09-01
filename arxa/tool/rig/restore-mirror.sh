@@ -23,6 +23,22 @@ while IFS='=' read -r k v; do
 done < "$KS"
 export CAIRN_BIND=127.0.0.1:8190
 
+# Push delegation (RemoteNotifier -> cairn-pushd) is the rig posture: the
+# keystore does not carry it, so default the URL and derive the KEY from the
+# pushd keystore's tenant:key list (first entry's secret). Without this the
+# server boots the embedded PushRouter with NO rail credentials — doorbells
+# would silently fail.
+export CAIRN_PUSH_REMOTE_URL="${CAIRN_PUSH_REMOTE_URL:-http://127.0.0.1:8090}"
+if [ -z "${CAIRN_PUSH_REMOTE_KEY:-}" ]; then
+  PD="$HOME/Library/Application Support/solutions.arxadigital.arxa/pushd.env"
+  if [ -f "$PD" ]; then
+    KEYS=$(grep '^CAIRN_PUSHD_API_KEYS=' "$PD" | cut -d= -f2-)
+    FIRST=${KEYS%%,*}
+    export CAIRN_PUSH_REMOTE_KEY=${FIRST#*:}
+  fi
+fi
+[ -n "${CAIRN_PUSH_REMOTE_KEY:-}" ] || { echo 'no CAIRN_PUSH_REMOTE_KEY (pushd.env missing?) — doorbells will not fire'; }
+
 pkill -f 'cargo/bin/cairn-server' 2>/dev/null || true
 sleep 1
 nohup "$HOME/.cargo/bin/cairn-server" >"$LOG" 2>&1 &
