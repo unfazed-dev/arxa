@@ -273,13 +273,28 @@ human decisions, in order:
    verified against the production public key with the repo's own ed25519 —
    and the dev-key client correctly rejects the prod token (`bad signature`)
    until step 6.
-6. **Dev key swap** (§7): replace `Entitlement.publicKey` with the printed
-   production hex, delete `mint --dev`, flip `test/release_gate_test.dart`.
-   Until then the release-gate test MUST stay green — it is the tripwire.
-7. **Stripe** (§5): products/prices per tier, webhook endpoint writing
-   `subscriptions`/`entitlements`. Not started.
-8. **Client auth + refresh** (§4, §6): `arxa login` (PKCE loopback),
-   silent 48h refresh. Not started.
+6. ~~**Dev key swap** (§7)~~ — **DONE 2026-08-26**: `Entitlement.publicKey`
+   carries the production hex `15b672f3…e768` (re-verified 2026-09-01
+   against the gitignored issuer JWK's public half), the `mint --dev` path
+   is deleted, and `test/release_gate_test.dart` is FLIPPED — it now
+   asserts the embedded key is production, never dev, and passes. Dogfooding
+   goes through the live `/activate`.
+7. **Stripe** (§5) — **code-complete 2026-09-01**: the webhook Edge Function
+   exists (`deploy/supabase/functions/stripe-webhook/` + its README):
+   signature-verified (timing-safe HMAC, 5-min replay window), the only
+   writer of `subscriptions`/`entitlements`, idempotent upserts, tier from
+   the price `lookup_key`. REMAINING (operator, dashboard-only):
+   products/prices with `pro`/`scale` lookup_keys, the webhook endpoint +
+   `STRIPE_WEBHOOK_SECRET`, deploy with `--no-verify-jwt` — exact steps in
+   the function's README.
+8. ~~**Client auth + refresh** (§4, §6)~~ — **DONE** (as-built differs from
+   the plan, deliberately): `arxa login` ships as email+password against
+   Supabase auth (`loginMain`, session persisted at `~/.arxa/session.json`),
+   NOT PKCE loopback — password auth against the existing Supabase project
+   made the loopback OAuth dance unnecessary for v1. Silent refresh is
+   implemented (`lib/entitlement_refresh.dart`: refresh_token grant,
+   opportunistic window, failure never destructive). OAuth providers
+   (Google/Apple, §10) remain the dashboard-manual follow-up.
 9. **Pre-launch decisions** (§7): rotation/compromise ownership, rate-limit
    on activate/deactivate cycling, air-gapped buyers, Shorebird pricing.
 
