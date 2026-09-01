@@ -13,6 +13,16 @@ Decisions D1–D5 recorded below are binding. Several facts in the previous revi
 were falsified against the repos and are corrected here. **Zero code written this
 session — awaiting owner review before execution.**
 
+> **UPDATE 2026-09-01 — SHIPPED.** The review landed and the kit is built and live:
+> `kit/cairn` carries the backend plugin, config/env, schema emitters, push seam and
+> repositories (`lib/{arxa_kit_cairn_backend,arxa_kit_cairn_testing}.dart` +
+> `lib/{auth,config,emitters,push,repositories}/`), the D4 live-proof harness
+> (`tool/live_up.sh`, `live_down.sh`, `live_env.sh`, `mint_jwt.sh`, `push_smoke.sh`),
+> and it powers arxa studio mobile — `ArxaKitCairnConfig.fromEnvironment`, sync-boot
+> on pairing (arxa `cf29faf5`), localOnly fallback (`2b2dd95e`), notifications-seam
+> init on push-enabled opens (`796d7432`). The D1–D5 block below is the decision
+> record, not the current state.
+
 ## Decisions (2026-08-27 grilling session — binding)
 
 **D1 — git pin.** Push cairn's 8 unpushed local commits (main → `fa1c5840`), then pin
