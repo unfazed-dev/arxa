@@ -128,7 +128,12 @@
 - [x] Silent-send wire fact: /v1/send silent payload is `{silent: {table, lsn}}` with lsn a decimal STRING (deny_unknown_fields; a numeric lsn is a 400). Live: accepted → APNs receipt seq 7 delivered.
 - [x] Presence semantics confirmed: sends suppress while the device's sync session is online — silent APNs wake for killed/backgrounded phones only, sync delivers the rest. Exactly the visible→silent swap shape.
 - [ ] Phone-in-hand leg: the app installed (build 08:51) and its tunnel proven up (pairing.json touched 08:53 — token re-hand), but that arrival was outside the boot's 18s window → localOnly for that boot; a foregrounded unlocked boot re-engages sync. Then: registration receipt + doorbell.
-- [ ] Mirror-out writer + phone-local doorbell (collapse keys): B3-gated (owner decision on the notification surface).
+  - 2026-09-01 evidence: token registered + rail live all day (receipts seq→161 delivered, latest token ea319dc05f…; decide-loop resolved; zombie persisted 30min; smoke-rounds 4/5). Remaining: one owner in-hand demo on the sync-booted phone — background it, raise an ask via the test seam, buzz → approvals_shell renders from SQLite.
+- [x] Mirror-out writer + phone-local doorbell (collapse keys): B3-gated (owner decision on the notification surface).
+  - B3 RESOLVED — owner GO 2026-09-01 ("it should be all").
+  - Engine writer BUILT, DEPLOYED, and verified live this session: the running engine payload (288d78577b52) carries `postMirrorOut` (approvals upserts + terminal tasks), gated `ARXA_MIRROR_OUT=true` via env-or-keystore (keystore carries it); mirror boots under the "engine mirror-out via POST /ingest" banner; live probe accepted at LSN 2731 (probe row cleaned at 2732). Body shape `{events:[{table, op, row|pk}]}` matches `ingest.rs` exactly.
+  - Phone-local doorbell: `CAIRN_PUSH_TABLES='approvals:silent;tasks:silent'` live on the rig; silent-wake phone plumbing landed (arxa 6685eda7); presence semantics confirmed (online sessions suppress sends). The visible B1 push retires once the owner demo proves silent-wake → sync → render; until then both ride their own keys (no double-notify by construction — silent wakes never render).
+  - Client-side churn closed at the source of the noise: cairn `e8f4e7a` — server flags allowlist/payload rejections `"retryable":false`; the client dead-letters on the FIRST rejection instead of 50 (the mirror-live log's endless `code_sessions`/`approvals` retry loop). Full-mirror for sessions/messages (phone goes watch-only) remains the named future phase; until then their REST cache-upserts apply optimistically and cost one rejection each.
 
 ## Phase-1 design decisions pinned here (argued, not re-litigated)
 
