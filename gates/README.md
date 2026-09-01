@@ -19,11 +19,19 @@ gates/<name>/
 
 ## The gates
 
-The gates are Dart. Eleven live in `arxa/lib/gate_*.dart` (intake, freeze,
-structure, scaffold, coverage, memory, advertise, native_deps, lens, deploy,
-tests),
+The gates are Dart. Thirteen live in `arxa/lib/gate_*.dart` — in `gateOrder`
+sequence: intake, freeze, structure, kind_registry, scaffold, fidelity,
+coverage, tests, memory, advertise, native_deps, lens, deploy —
 orchestrated by `arxa/lib/gate_runner.dart`; the review gate is
-`gates/review/review.dart`, dispatched the same way. Run them from `arxa/`:
+`gates/review/review.dart`, dispatched the same way, giving fourteen entries in
+`gateOrder` total.
+
+Note: `gate_design_styles.dart` and `gate_design_widgets.dart` share the
+`gate_` prefix but are **not** pipeline gates — they are design-time checks
+called from `design_tools.dart` / `design_annotate.dart` / `design_selftest.dart`
+and never appear in `gateOrder`.
+
+Run them from `arxa/`:
 
 ```sh
 dart run bin/arxa.dart gate <name>   # or: arxa gate <name>
