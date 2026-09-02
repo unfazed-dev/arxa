@@ -208,15 +208,12 @@ Everything below was observed, not assumed.
 - Also cleaned: 15 `~/.claude/ide/*.lock` files naming the old paths, all with
   dead pids, removed. `cairn/target/.rustc_info.json` (embedded old path)
   removed; cargo regenerates it.
-- **Still cwd-rooted in the `.bak` dirs (cwd only, no files open, harmless
-  until Phase D rm):** `iproxy` 2472/2474 and `adb` 81666 in
-  `arxa.bak-2026-09-02/mobile_flutter`, and the harness `sbx` daemon 11313
-  (+ `tail` 11314) in `arxa-studio.bak-2026-09-02`. Killing them was blocked
-  by the session's permission classifier, so it was not done. Before Phase D,
-  from a plain terminal: `adb kill-server; kill 2472 2474 11313 11314; cd
-  /Volumes/business_ssd/arxa_digital_solutions/arxa/mobile_flutter && adb
-  start-server` — iproxy and sbx respawn on demand. Then
-  `lsof -Fn | grep -c bak-2026-09-02` must be 0.
+- Last processes cwd-rooted in the `.bak` dirs — `iproxy` 2472/2474, `adb`
+  81666 (`arxa.bak/mobile_flutter`) and the harness `sbx` 11313 + `tail`
+  11314 (`arxa-studio.bak`) — killed with user approval; adb restarted (cwd
+  now the Flutter SDK dir). `lsof -Fn | grep -c bak-2026-09-02` → 0. Nothing
+  on this machine references the old trees any more except the deliberate
+  `~/.claude.json` / `~/.claude/projects` copies kept for Phase D.
 
 ## Phase D — after 7 days (≥ 2026-09-09)
 
