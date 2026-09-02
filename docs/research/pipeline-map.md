@@ -208,7 +208,7 @@ REJECT rewinds FSM to design"| p3`).
   (no CI — grill + generate) and **adopt** (CI exists — audit against the
   guardrail list + a report-only PR sweep: read PRs, `gh pr checks`, reproduce
   red checks locally, one feedback report; never bot-comments, never merges).
-  Also generates the PR stage convention: `[abx-<skill-name>]` title tags +
+  Also generates the PR stage convention: `[arxa-<skill-name>]` title tags +
   `.github/pull_request_template.md`, warn-not-fail until bedded in.
 - Grills nine CI decisions in dependency order (deliverable → repo shape →
   stack → visibility → runner → gates → trunk → agent letter → CD timing) into

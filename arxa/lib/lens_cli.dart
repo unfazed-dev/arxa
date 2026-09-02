@@ -47,8 +47,9 @@ Web verbs (CDP — each captures at a viewport; console/page errors auto-fail):
                                       Network trace (per-request records)
   color <url> <hex> [w] [h] [--region=x,y,w,h] [--threshold=5] [--out=path]
                                       Region color assert (ΔE2000 <= threshold)
-  record <url> <out.mp4> [seconds] [fps] [w] [h]
-                                      Screencast → mp4 (needs ffmpeg)
+  record <url> <out.mp4> [seconds] [fps] [w] [h] [--pre=<js>]
+                                      Screencast → mp4 (needs ffmpeg);
+                                      --pre evaluates JS after settle, pre-roll
   burst <url> <out-dir> [count] [intervalMs] [w] [h]
                                       Rapid screenshot burst → PNG frames
   click-burst <url> <out-dir> <selector> [count] [intervalMs] [w] [h] [--settle=Ms]
@@ -699,7 +700,8 @@ Future<int> _flipbook(_Args a) async {
 
 Future<int> _record(_Args a) async {
   if (a.positional.length < 2) {
-    return _usageErr('record <url> <out.mp4> [seconds] [fps] [w] [h]');
+    return _usageErr(
+        'record <url> <out.mp4> [seconds] [fps] [w] [h] [--pre=<js>]');
   }
   try {
     await recordVideo(
@@ -709,6 +711,7 @@ Future<int> _record(_Args a) async {
       height: a.intAt(5, 844),
       seconds: a.intAt(2, 5),
       fps: a.intAt(3, 15),
+      preScript: a.value('pre'),
     );
     stdout.writeln('lens record: ${a.positional[0]} -> ${a.positional[1]}');
     return 0;

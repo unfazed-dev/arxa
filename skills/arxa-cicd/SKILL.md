@@ -1,6 +1,6 @@
 ---
 name: arxa-cicd
-description: "Use when CI/CD must be stood up for any project — day zero or existing repo. Bootstrap mode grills the CI decisions first (visibility, runner, gates, trunk, protection, CD timing), then generates the one-root check script, workflow, PR template with [abx-<skill-name>] stage tags, runner setup and branch protection; green by absence from day zero. Adopt mode (CI already exists, e.g. a client repo) audits it against the guardrail list and sweeps the PRs — reads each PR, checks verdicts, reproduces red checks locally, reports merge-ready vs divergence vs runner-asleep; report-only, never bots or merges. Trigger on set up CI/CD, wire the pipeline, protect the branch, add a runner, check the PRs, adopt existing CI. Wires arxa gate --all for arxa-built targets; never duplicates validators."
+description: "Use when CI/CD must be stood up for any project — day zero or existing repo. Bootstrap mode grills the CI decisions first (visibility, runner, gates, trunk, protection, CD timing), then generates the one-root check script, workflow, PR template with [arxa-<skill-name>] stage tags, runner setup and branch protection; green by absence from day zero. Adopt mode (CI already exists, e.g. a client repo) audits it against the guardrail list and sweeps the PRs — reads each PR, checks verdicts, reproduces red checks locally, reports merge-ready vs divergence vs runner-asleep; report-only, never bots or merges. Trigger on set up CI/CD, wire the pipeline, protect the branch, add a runner, check the PRs, adopt existing CI. Wires arxa gate --all for arxa-built targets; never duplicates validators."
 ---
 
 # arxa-cicd — elicit the decisions, then wire the pipeline
@@ -45,7 +45,7 @@ Platform-fixed paths stay where they must live: `scripts/check.sh`
 branch protection (`gh api`), — for arxa-built targets —
 jobs that run `arxa gate --all` in dependency order, plus
 `.github/pull_request_template.md` (the stage/agent field) and the
-`[abx-<skill-name>]` PR-title tag map (one SSOT table emitted into
+`[arxa-<skill-name>]` PR-title tag map (one SSOT table emitted into
 docs/ci/decisions.md, the template footer, and the title-check allowlist),
 and `docs/ci/explainer.html` — the human-browsable explanation page for
 the pipeline, zero-JS self-contained HTML generated from the template
@@ -117,6 +117,6 @@ approval gate. This skill's output is the pipeline they run inside.
 
 - [`references/decision-grill.md`](references/decision-grill.md) — step 1, the 9-question decision tree (deliverable, repo shape, stack, hosting/visibility, runner, day-one gates, trunk/protection, agent letter, CD timing). Load during bootstrap mode, before generating anything.
 - [`references/generation-templates.md`](references/generation-templates.md) — steps 2–4: the check-script rules, the self-hosted/GitHub-hosted workflow YAML + explainer.html emission, and the branch-protection `gh api` call. Load while generating bootstrap artifacts.
-- [`references/pr-process.md`](references/pr-process.md) — steps 6–7: PR stage tagging (`[abx-<skill-name>]` convention, template, SSOT tag map) and the adopt-mode PR sweep (report-only triage of green/CI-divergence/real-defect/runner-asleep). Load when wiring PR conventions or running an adopt-mode sweep.
+- [`references/pr-process.md`](references/pr-process.md) — steps 6–7: PR stage tagging (`[arxa-<skill-name>]` convention, template, SSOT tag map) and the adopt-mode PR sweep (report-only triage of green/CI-divergence/real-defect/runner-asleep). Load when wiring PR conventions or running an adopt-mode sweep.
 - [`references/ci-explainer.html`](references/ci-explainer.html) — the zero-JS dual-reading HTML template filled by step 3. Load when generating or regenerating `docs/ci/explainer.html`.
 - [`CICD_playbook.mdx`](CICD_playbook.mdx) — the folded canon for this phase; consult for deeper background beyond this skill's law.

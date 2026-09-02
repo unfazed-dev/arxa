@@ -212,6 +212,7 @@ Future<void> recordVideo(
   int seconds = 5,
   int fps = 15,
   int settleMs = 1500,
+  String? preScript,
   ProcessRunner runner = const RealProcessRunner(),
   String ffmpeg = 'ffmpeg',
 }) async {
@@ -230,6 +231,10 @@ Future<void> recordVideo(
     await tab.enable();
     await tab.setViewport(width, height);
     await tab.navigateAndSettle(url, settleMs: settleMs);
+
+    // Pre-roll hook: drive the page into the state under investigation
+    // (toggles, persisted-pref simulation) AFTER settle, BEFORE the cast.
+    if (preScript != null) await tab.evaluate(preScript);
 
     final cast = await tab.screencast(format: 'jpeg', quality: 85);
     final frames = <List<int>>[];

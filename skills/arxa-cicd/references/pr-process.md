@@ -4,14 +4,14 @@
 
 Every PR names its stage/agent, in title AND summary:
 
-- **Title:** `[abx-<skill-name>]` prefix — `[abx-designer][abx-scaffolder] home
+- **Title:** `[arxa-<skill-name>]` prefix — `[arxa-designer][arxa-scaffolder] home
   shell`. Multiple tags = the stages touched; the FIRST is the primary stage.
-  Full skill names, no abbreviations: `abx-orchestrator, abx-intake,
-  abx-story-mapper, abx-moodboarder, abx-designer, abx-scaffolder,
-  abx-builder, abx-tester, abx-reviewer, abx-deployer, abx-lens, abx-lint,
-  abx-cicd`.
+  Full skill names, no abbreviations: `arxa-orchestrator, arxa-intake,
+  arxa-story-mapper, arxa-moodboarder, arxa-designer, arxa-scaffolder,
+  arxa-builder, arxa-tester, arxa-reviewer, arxa-deployer, arxa-lens, arxa-lint,
+  arxa-cicd`.
 - **Summary:** generate `.github/pull_request_template.md` with a
-  `Pipeline stage / agent:` field (the `[abx-…]` tag + the full skill name).
+  `Pipeline stage / agent:` field (the `[arxa-…]` tag + the full skill name).
 - **Check:** a `pr-title` area in `check.sh` + the workflow validates the
   prefix against the tag map. **Warn-not-fail at first** — print the expected
 tag and exit 0; flip to strict once the convention beds in. The flip is a
@@ -31,7 +31,7 @@ report to the operator, per PR:
 - **red + local green** → CI divergence (flaky runner, cache, env) — never
   “fix” code to match CI.
 - **red + local red** → real defect; name the owning stage skill (the
-  `[abx-…]` tag or the diff says which) and route it there.
+  `[arxa-…]` tag or the diff says which) and route it there.
 - **queued / not running** → the runner is asleep; wake it — a queued job
   is NEVER fixed by changing code (babysit-pr owns this discipline).
 
