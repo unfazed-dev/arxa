@@ -86,11 +86,43 @@ Functional (break on move):
   `~/.kimi-code/skills/arxa-*`, `~/.agents/skills.shared`).
 - Docker compose working dir label (recreate).
 
+Found by scanning the *copies* after A.4 (2026-09-02), fix in Phase B:
+- arxa `mobile_flutter/ios/.symlinks/plugins/{arxa_kit_studio_transport,integration_test,cupertino_native_better}`
+  and `kit/showcase_app/ios/.symlinks/plugins/{integration_test,cupertino_native_better}` —
+  gitignored, CocoaPods-generated. `arxa_kit_studio_transport` points into the
+  **old** arxa (`/Volumes/developer_ssd/.../arxa/kit/studio_transport/`) and will
+  silently build against the old copy until Phase D breaks it → in the new
+  arxa run `flutter pub get && (cd ios && pod install)` in both `mobile_flutter`
+  and `kit/showcase_app`. `integration_test` → fvm SDK on developer_ssd, which
+  is not moving (stays valid). showcase_app `cupertino_native_better` →
+  `totem_labs/app-box/...` was already broken before the move (not ours).
+- arxa-studio `.claude/settings.local.json` — permission allowlist entries with
+  absolute `/Volumes/developer_ssd/.../{arxa,arxa-studio}/docs` paths → sed to
+  the new prefix (gitignored, so no commit).
+- cairn `.claude/skills/consultant -> /Volumes/developer_ssd/consultant/skills/consultant`
+  (retired skill; resolves today, dies in Phase D) and
+  `.claude/skills/probe-runner -> ~/.agents/skills/probe-runner` (already
+  broken) → delete both symlinks.
+- Nothing inside any `.git/` (config, worktrees, modules, hooks) references
+  the old volume. No submodules. All gitignored secrets/config (`.env`,
+  `local.properties`, `google-services.json`, `GoogleService-Info.plist`,
+  studio `keys/*.pem`, cairn `.env`) are present in the copies.
+
 Prose only (inert, fix opportunistically): ~28 mentions across arxa
 `docs/plans/*.md`; cairn docs (6 files); arxa `docs/plans/widget-panel-vocabulary-reconciliation.md:111`
 and `inspector-everything-as-widgets.md:21` reference `~/.agents/...` skill paths.
 
 ## Phase A — prepare and copy (this session, old paths still live)
+
+Progress 2026-09-02: A.1 done (arxa `59f6817b`; cairn committed by its own
+session, `aa6626e`). A.2 done (4 locked studio worktrees unlocked + removed,
+branches deleted, both repos show 1 worktree). A.3 done (rsync 3.5.0 via
+brew, target created, 184 GiB free). A.4 done (rc=0 ×3, 55 s, ~3.4 GB; the
+3 tracked files under `designs/arxa-studio/ui/views/main_shell/build/loop/`
+were dropped by `--exclude=build` and re-synced with `--files-from`; status
+now identical). **A.5 waiting on user freeze** — a second Claude session
+(pid 58458) is still committing in arxa-studio and VS Code has helpers
+inside all three repos. User said "hold" at ~10:40.
 
 A.1 Commit WIP
 ```sh
@@ -147,6 +179,25 @@ done
 ```
 Anything other than clean fsck + identical status + identical HEAD stops the
 move here. Old dirs are untouched at this point, so stopping is free.
+
+A.6b Extended checks (advisor, 2026-09-02) — HEAD+fsck+status only prove the
+object store and tracked files. Also, per repo:
+```sh
+# every ref, not just HEAD (branches, tags, stash)
+diff <(git -C $old for-each-ref) <(git -C $new for-each-ref) && echo "refs identical"
+diff <(git -C $old stash list) <(git -C $new stash list) && echo "stash identical"
+# checksum-mode dry run with the same excludes: expect ZERO lines. Catches
+# gitignored-but-essential files and anything captured mid-write in A.4 whose
+# size+mtime now match so the final pass skipped it. Reads both SSDs fully.
+/opt/homebrew/bin/rsync -rcn --itemize-changes --delete $EX $old/ $new/ | grep -v '/$' | head
+# quiescence before the final pass
+ls $old/.git/index.lock $old/.git/objects/pack/tmp_pack_* 2>/dev/null   # expect nothing
+lsof +D $old/.git 2>/dev/null | wc -l                                      # expect 0
+```
+Advisor also suggested renaming the old dirs (`arxa → arxa.old`) right after
+A.7 so any stale process or session pointing at the old path fails loudly
+during the 7-day window instead of diverging silently. That touches the
+sources (Rollback contract) — **user decision, not done by default.**
 
 A.7 Re-point skill symlinks **before** the new session starts (otherwise the
 new session loads skills from the old copy)
