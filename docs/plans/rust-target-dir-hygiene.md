@@ -128,7 +128,14 @@ still find their artifacts.
     exists (40.9 MB) and `-o` received the copy. cargo-ndk unaffected.
   - Sweep hook: fires on first shell start, not on the second (stamp).
     Whole-dir version tested with a planted idle workspace dir (removed)
-    next to the live ones (kept) — see log line in the summary.
+    next to the live ones (kept, 36694 files before/after, Android
+    `libsqlite3-sys/out/bindgen.rs` intact).
+  - **The one per-file run (16:28, 3 MiB) did break the cairn desktop
+    build**: `cargo build` failed with "couldn't read
+    …/libsqlite3-sys-4aa77a1ad947ba1b/out/bindgen.rs". Cargo does not
+    self-heal missing build-script outputs. Repaired with
+    `cargo clean -p libsqlite3-sys && cargo build`. This is the concrete
+    reason the sweep is whole-dir only.
   - `native_toolchain_rust` / Flutter build not exercised end-to-end this
     session; it passes an explicit `--target-dir`, which `build-dir` does not
     override, so no change in behaviour is expected.
