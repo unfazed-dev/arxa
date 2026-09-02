@@ -175,6 +175,35 @@ mv /Volumes/developer_ssd/Developer/cairn                  /Volumes/developer_ss
 - Re-run the B.5 smoke checks. Anything that now fails was a missed old-path
   reference — fix it in the new tree, do not restore the old dir.
 
+## Phase C — done (2026-09-02, same session)
+
+Everything below was observed, not assumed.
+
+- Pre-rename: no VS Code window on the old paths (`workspace.json` grep = 0;
+  the 29 `workspaceStorage` hits are history only). Only cwd-holders were
+  `iproxy` ×2 and the `adb` server (device tooling, no files open). The one
+  write-mode handle was `diskimages-helper` 72543 on a stale Tauri bundle DMG
+  (`arxa/desktop/src-tauri/target/.../rw.72300.Arxa Studio_0.1.0_aarch64.dmg`,
+  mounted at `/Volumes/dmg.GTdpHV`) — `hdiutil detach /dev/disk11s1`, then
+  lsof write-mode = 0. New trees: `.git` is a dir, `git worktree list` = 1
+  each, no `developer_ssd` refs in `.git/config`, `.dart_tool`, `Podfile.lock`,
+  `*.xcconfig`, `.env*`, `.vscode`.
+- Renamed (mv, no symlinks): `totem_labs/arxa` → `arxa.bak-2026-09-02` (53G),
+  `totem_labs/arxa-studio` → `arxa-studio.bak-2026-09-02` (577M),
+  `Developer/cairn` → `cairn.bak-2026-09-02` (63G). Old paths no longer exist.
+- Post-rename smoke: cairn `cargo check --workspace` Finished; studio still
+  serving 7951 and a fresh `--no-open` boot serves on 7960; `flutter analyze`
+  mobile_flutter — No issues found (4.6 s). `lsof` shows 0 processes with
+  anything open under the `.bak` dirs; 8190/8090 answer. New HEADs clean:
+  arxa `848bcf07`, arxa-studio `c971f5a`, cairn `a7cfe54`.
+- Fixed after the sweep: `~/.claude/settings.json` "Trusted repo" line pointed
+  at the old arxa-studio path → new path. `~/.claude.json` intentionally keeps
+  the 3 old-path project entries next to the 3 new ones (Step 0 duplicated
+  them; drop the old ones in Phase D).
+- Not this reorg's problem, left alone: 30 dangling symlinks in
+  `~/.claude/skills` all target `~/.agents/skills.shared/*` or
+  `~/.hermes/skills/*` (never under `developer_ssd`).
+
 ## Phase D — after 7 days (≥ 2026-09-09)
 
 - `rm -rf` the three `.bak-2026-09-02` dirs (frees ~110 GB on developer_ssd).
