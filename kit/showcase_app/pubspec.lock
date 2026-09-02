@@ -382,8 +382,8 @@ packages:
     dependency: transitive
     description:
       path: "sdk/cairn_flutter"
-      ref: ed5205f5abfcdeae20401da6e6d30cf0ed45f881
-      resolved-ref: ed5205f5abfcdeae20401da6e6d30cf0ed45f881
+      ref: fabc1a163953c27aba33617dae72e704bcef4e11
+      resolved-ref: fabc1a163953c27aba33617dae72e704bcef4e11
       url: "https://github.com/unfazed-dev/cairn.git"
     source: git
     version: "0.2.0-dev.1"
