@@ -25,8 +25,15 @@ _Avoid_: the dsh fork, the app
 **Engine**:
 The compiled pipeline binary and its verbs — the layer that owns gates,
 entitlement, memory, and artifacts. Harnesses invoke it; it outlives any
-harness.
+harness. Runs on the customer's machine, never hosted (D98).
 _Avoid_: CLI (ambiguous), backend
+
+**Kit**:
+The template library the engine scaffolds from (`kit/`: core, data,
+ui_library, tools, showcase). Delivered separately from the engine — from
+a signed static bucket, cached locally, some kits paid — never compiled
+into the engine binary.
+_Avoid_: assets, templates folder, bundle
 
 **Stub skill**:
 A shipped SKILL.md that is only a shell: it fetches its methodology body
@@ -39,6 +46,62 @@ The harness side panel: Clients → project → pipeline stages, rendered from
 the engine's project registry and gate status. Sessions attach to a
 client + stage, never float free.
 _Avoid_: workspace, session list
+
+### Money and entitlement
+
+**Merchant of record**:
+The third party (Paddle) that sells to the customer in its own name —
+collects payment, applies VAT/GST, issues invoices and refunds — and pays
+arxa out. The only place money moves.
+_Avoid_: payment gateway, Stripe (not the current provider)
+
+**Entitlement**:
+A fact in arxa.dev's ledger that an account holds a right — a kit tier, a
+seat in an org — because the merchant of record reported a purchase.
+Never money, never customer data.
+_Avoid_: licence (that is the token), subscription (that is Paddle's word)
+
+**Entitlement token**:
+The signed, time-limited proof of an account's entitlements that the
+engine verifies offline. Carries the claims; is not the source of them.
+_Avoid_: licence key, API key
+
+**Agency mode**:
+The Studio with its business sections unlocked by an `agency` claim in the
+entitlement token. Not a separate product, build, or install.
+_Avoid_: the Agency app, Agency edition
+
+**Org**:
+A company's paid group inside arxa.dev: one owner (the buying account),
+members, and a seat count. Holds membership only — the company's business
+data stays on its own machines.
+_Avoid_: team (used loosely in the harness), tenant, workspace
+
+**Seat**:
+One unit of an org's subscription quantity, occupied by one member.
+Holding a seat is what puts `agency` into that member's token.
+
+**Pro**:
+The per-developer-seat entitlement that unlocks scaffold and every stage
+after it. The free tier ends where Pro begins.
+_Avoid_: premium, paid plan (Scale and Agency are also paid)
+
+**Scale**:
+The per-org entitlement priced on app-fleet volume — released apps and
+OTA installs — with unlimited seats. Never priced per head.
+_Avoid_: team plan, business plan
+
+**Agency** (as a product):
+The per-member-seat entitlement for Agency mode, bought by an org owner.
+Sits beside Pro and Scale, not above them; either can add it.
+_Avoid_: Scale (a different product), enterprise
+
+**Viewer**:
+A free, strictly read-only org member — a client or stakeholder — who can
+read approvals, invoices and project status but cannot approve, comment,
+upload or edit. Holds no Seat; never counted in the subscription
+quantity. Client sign-off uses a per-item approval link, not this role.
+_Avoid_: guest, client user, free seat (a Viewer holds no seat)
 
 ### Seeing (lens)
 
