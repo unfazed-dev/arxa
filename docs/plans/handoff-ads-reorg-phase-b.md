@@ -202,7 +202,21 @@ Everything below was observed, not assumed.
   them; drop the old ones in Phase D).
 - Not this reorg's problem, left alone: 30 dangling symlinks in
   `~/.claude/skills` all target `~/.agents/skills.shared/*` or
-  `~/.hermes/skills/*` (never under `developer_ssd`).
+  `~/.hermes/skills/*` (never under `developer_ssd`). 37 `.dart_tool/
+  package_config.json` in arxa mention `developer_ssd` only via the Flutter
+  SDK at `/Volumes/developer_ssd/dev/fvm/versions` — 0 reference the old trees.
+- Also cleaned: 15 `~/.claude/ide/*.lock` files naming the old paths, all with
+  dead pids, removed. `cairn/target/.rustc_info.json` (embedded old path)
+  removed; cargo regenerates it.
+- **Still cwd-rooted in the `.bak` dirs (cwd only, no files open, harmless
+  until Phase D rm):** `iproxy` 2472/2474 and `adb` 81666 in
+  `arxa.bak-2026-09-02/mobile_flutter`, and the harness `sbx` daemon 11313
+  (+ `tail` 11314) in `arxa-studio.bak-2026-09-02`. Killing them was blocked
+  by the session's permission classifier, so it was not done. Before Phase D,
+  from a plain terminal: `adb kill-server; kill 2472 2474 11313 11314; cd
+  /Volumes/business_ssd/arxa_digital_solutions/arxa/mobile_flutter && adb
+  start-server` — iproxy and sbx respawn on demand. Then
+  `lsof -Fn | grep -c bak-2026-09-02` must be 0.
 
 ## Phase D — after 7 days (≥ 2026-09-09)
 
