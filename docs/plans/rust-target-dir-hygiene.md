@@ -63,10 +63,14 @@ directory to sweep through `cargo metadata` → `target_directory`, which under
 build-dir it errors (`manifest path .../Cargo.toml does not exist`);
 `--recursive` finds no projects. Uninstalled.
 
-Replacement: `~/Library/Scripts/cargo-build-sweep.sh` — plain
-`find -mindepth 3 -type f -mtime +7 -delete` + empty-dir cleanup, logs
-freed/remaining MiB, exits non-zero if the volume is missing or unreadable.
-Cargo's fingerprint step checks outputs exist, so a pruned rlib just rebuilds.
+Replacement: `~/Library/Scripts/cargo-build-sweep.sh` — for each
+`cargo-build/xx/<hash>/` workspace dir, `rm -rf` the **whole dir** if no file
+in it was modified in the last 14 days; never delete single files. Logs
+dirs removed + freed/remaining MiB, exits non-zero if the volume is missing
+or unreadable. (First version was a per-file `find -mtime +7 -delete`;
+rejected after advisor review — Cargo re-checks missing rlibs but not
+build-script `out/` files, and the first run already hit 3 MiB of
+fresh-but-old-mtime files.)
 
 Trigger: **not launchd.** A launchd agent was built, loaded and kicked with a
 planted stale file: exit 0, log showed `find: … Operation not permitted`,
@@ -122,10 +126,9 @@ still find their artifacts.
     harness's expected path
     `sdk/cairn_kotlin/target/aarch64-linux-android/debug/libcairn_kotlin.so`
     exists (40.9 MB) and `-o` received the copy. cargo-ndk unaffected.
-  - Sweep hook: first shell start wrote
-    `sweep >7d: 3 MiB freed, 3856 MiB remain` to the log; second start did
-    not re-run. (The 3 MiB were files Cargo wrote with preserved old mtimes;
-    harmless, they rebuild.)
+  - Sweep hook: fires on first shell start, not on the second (stamp).
+    Whole-dir version tested with a planted idle workspace dir (removed)
+    next to the live ones (kept) — see log line in the summary.
   - `native_toolchain_rust` / Flutter build not exercised end-to-end this
     session; it passes an explicit `--target-dir`, which `build-dir` does not
     override, so no change in behaviour is expected.
