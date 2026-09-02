@@ -1,6 +1,6 @@
 # ADS re-org: move arxa, arxa-studio, cairn to business_ssd
 
-Status: PLANNED — awaiting go for Phase A
+Status: Phase A done (2026-09-02, `4bd78e7f`); Phase B done (2026-09-02 — arxa `c9810ff3`,`7569123b`; arxa-studio `ddd9a47`,`c971f5a`; cairn `a7cfe54`; daemons + docker restarted from the new paths; see `handoff-ads-reorg-phase-b.md` "Phase B — done"). Next: Phase C cutover.
 Date: 2026-09-02
 Audit inputs: `docs/research/ads-reorg/{arxa,arxa-studio,cairn}-audit.md`
 

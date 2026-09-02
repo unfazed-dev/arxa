@@ -13,6 +13,10 @@ replacement). Audits: `docs/research/ads-reorg/{arxa,arxa-studio,cairn}-audit.md
 | arxa-studio | `/Volumes/developer_ssd/Developer/totem_labs/arxa-studio` | `/Volumes/business_ssd/arxa_digital_solutions/arxa-studio` | `ed1ec3c` |
 | cairn | `/Volumes/developer_ssd/Developer/cairn` | `/Volumes/business_ssd/arxa_digital_solutions/cairn` | `12e7a2c` |
 
+**After Phase B (2026-09-02):** old trees frozen at arxa `11f5c14e`, studio
+`ed1ec3c`, cairn `12e7a2c` (clean). New trees at arxa `7569123b`, studio
+`c971f5a`, cairn `a7cfe54`, all pushed 0/0. See "Phase B — done" below.
+
 - `git status --porcelain`, `for-each-ref`, stash list, `fsck` identical old vs
   new for all three. All pushed to origin (arxa `main` 0/0, studio and cairn
   pushed by the user).
@@ -110,6 +114,51 @@ B.5 Smoke checks, one per repo, from the new paths: arxa
 --no-open` boots and serves; cairn `cargo check --workspace`.
 
 B.6 Update this file and the plan: mark Phase B done with the commit hashes.
+
+## Phase B — done (2026-09-02, session cwd = new arxa)
+
+Everything below was observed, not assumed.
+
+- B.1 daemons: killed 42160 45200 53840 9259 9546. Restarted with the exact
+  old env (replayed from `ps -E` of the old pids; both `Application Support`
+  paths verified) and cwd = new **arxa** (that is what the old ones used, not
+  cairn): `cairn-server` pid 42833 → 127.0.0.1:8190, `cairn-pushd` pid 42835 →
+  127.0.0.1:8090, studio pid 45796/45867 → 127.0.0.1:7951 (dsh bin under the
+  new `arxa-studio/node_modules`). Logs now in `~/Library/Logs/arxa/*.log`
+  (old ones were writing into `~/.Trash/`). `/tmp/wkwtest/serve5.mjs` (9919)
+  not restarted. No LaunchAgent exists for any of these — after a reboot,
+  start them by hand with the same env (`CAIRN_*`/`ARXA_*` vars listed in the
+  "Handoff snapshot" of the master plan).
+- Docker: `docker compose -p docker up -d --force-recreate` from the new
+  `cairn/docker`; container `3d0c8c50cec3`, `pg-init` bind now under
+  business_ssd, `docker_pgdata` intact (24 public tables).
+- B.2 commits: cairn `a7cfe54` (3 e2e scripts → `git rev-parse`, dead skill
+  symlinks removed); arxa-studio `ddd9a47` (`profile/cordis.patch.yml`) and
+  `c971f5a` (`profile/agent-presets/arxa/agent.cordis.yml:82,299` — missed by
+  the audit); arxa `c9810ff3` (`harness/headless-profile/cordis.patch.yml:9,11`
+  — also missed). `git grep 'developer_ssd/Developer'` outside docs/plans,
+  archives, benches/results, designs, evidence: empty in all three.
+  `arxa-studio/.claude/settings.local.json` allowlist sed'ed (gitignored).
+- B.3: 35 skill symlinks relinked, 0 still point at the old tree;
+  `consult.sh gate skill arxa-intake` resolves SSOT to the new path.
+- B.4: `npm ci` in arxa-studio and arxa (copies exclude `node_modules`; the
+  studio refuses to fall back to `~/.dsh`, so this is mandatory — the original
+  B list missed it). `flutter pub get` + `pod install` in `mobile_flutter`
+  and `kit/showcase_app` — needed `mkdir -p build/ios/SourcePackages` first
+  (rsync in the firebase_messaging pod hook is not recursive). Then
+  `flutter build ios --config-only` in both, because `ios/Flutter/
+  Generated.xcconfig` still had `FLUTTER_APPLICATION_PATH` on the old tree.
+  All `ios/.symlinks/plugins/*` now resolve under business_ssd. Side effect
+  committed as arxa `7569123b`: showcase_app `pubspec.lock` moved
+  `cairn_flutter` `ed5205f`→`fabc1a1` (mobile_flutter already pinned that)
+  and SwiftPM `Package.resolved` refreshed.
+- B.5: `flutter analyze` mobile_flutter — no issues; studio serves 7951;
+  `cargo check --workspace` cairn — Finished, 0 warnings (cold, 54 s).
+- Write-gap check (rsync `--update -n`, old → new, regenerables excluded):
+  only `arxa/.claude-flow/sessions/undefined.json` differs (mtime only).
+- Still rooted in the old trees: context-mode `sbx daemon` 11313 (harness
+  sandbox, cwd old arxa-studio, restarts on its own) and IDE pids
+  2472/2474/81666. Harmless for Phase C; they hold no write handles.
 
 ## Phase C — cutover (same session)
 
