@@ -34,6 +34,14 @@ dependencies:
   # its exported MockStudioTransport/MockStudioSession — no native build.
   arxa_kit_studio_transport:
     path: ../kit/studio_transport
+  # Composer context picking: the kit's capture service (image_picker) plus
+  # the system document picker and the recent-photos grid.
+  arxa_kit_media:
+    path: ../kit/media
+  image_picker: ^1.2.3
+  share_plus: ^13.3.0
+  file_picker: ^12.1.2
+  photo_manager: ^3.12.0
   # Cold-start pairing resume: stores the scanned pairing payload so the
   # transport can re-dial the desktop (session-token reuse) after a full
   # process restart. Already in the dependency tree transitively.

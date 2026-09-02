@@ -1,17 +1,16 @@
-// arxa-scaffolder: mobile layout skeleton. STRUCTURE ONLY — builder fills this.
-//   surface:       code_shell_sessions_view
-//   comp:          CodeSessionsViewMobile
-//   factor:        mobile   (derived from targets=[ios,android])
+// arxa-builder: LIVE — mobile layout of the code sessions list.
+import 'package:arxa_kit_ui_library/arxa_kit_ui_library.dart' show ViewModelWidget;
 import 'package:flutter/material.dart';
-import 'package:stacked/stacked.dart';
 
+import 'code_sessions_body.dart';
 import 'code_sessions_viewmodel.dart';
 
 class CodeSessionsViewMobile extends ViewModelWidget<CodeSessionsViewModel> {
-  const CodeSessionsViewMobile({super.key});
+  const CodeSessionsViewMobile({super.key, required this.viewModel});
+
+  final CodeSessionsViewModel viewModel;
 
   @override
-  Widget build(context, viewModel) => const Scaffold(
-        body: Center(child: Text('code.sessions · mobile')),
-      );
+  Widget build(context, _) =>
+      CodeSessionsBody(key: key, viewModel: viewModel);
 }

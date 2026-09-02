@@ -6,6 +6,8 @@ import 'package:arxa_studio_mobile/services/iroh_transport_service.dart';
 import 'package:arxa_studio_mobile/services/push_token_service.dart';
 import 'package:arxa_studio_mobile/services/transport_service.dart';
 import 'package:arxa_studio_mobile/ui/views/approvals_shell/approvals_list/approvals_list_view.dart';
+import 'package:arxa_studio_mobile/ui/views/code_shell/code_conversation/code_conversation_view.dart';
+import 'package:arxa_studio_mobile/ui/views/code_shell/code_sessions/code_sessions_view.dart';
 import 'package:arxa_studio_mobile/ui/views/pairing_shell/pairing_connecting/pairing_connecting_view.dart';
 import 'package:arxa_studio_mobile/ui/views/pairing_shell/pairing_scan/pairing_scan_view.dart';
 import 'package:arxa_studio_mobile/ui/views/pairing_shell/pairing_push_permission/pairing_push_permission_view.dart';
@@ -14,6 +16,8 @@ import 'package:arxa_studio_mobile/ui/views/studio_shell/studio_session/studio_s
 
 /// Routes mirror design/structure.json (frozen). Pairing scan is initial;
 /// studio session is the webview handoff; approvals is notification-driven.
+/// The code shell (sessions + per-session conversation) hangs off the
+/// studio session's app bar.
 @StackedApp(
   routes: [
     AdaptiveRoute(page: PairingScanView, initial: true),
@@ -22,6 +26,8 @@ import 'package:arxa_studio_mobile/ui/views/studio_shell/studio_session/studio_s
     AdaptiveRoute(page: StudioSessionView),
     AdaptiveRoute(page: ApprovalsListView),
     AdaptiveRoute(page: SettingsHomeView),
+    AdaptiveRoute(page: CodeSessionsView),
+    AdaptiveRoute(page: CodeConversationView),
   ],
   dependencies: [
     LazySingleton(classType: RouterService),

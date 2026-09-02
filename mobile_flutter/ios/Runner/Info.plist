@@ -76,7 +76,9 @@
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
 	<key>NSCameraUsageDescription</key>
-	<string>Arxa Studio uses the camera to scan the pairing QR code shown by your studio.</string>
+	<string>Arxa Studio uses the camera to scan the pairing QR code shown by your studio and to shoot photos you attach to a conversation.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Arxa Studio shows your recent photos so you can attach one to a conversation.</string>
 	<key>NSAppTransportSecurity</key>
 	<dict>
 		<!-- Loopback-only cleartext: the studio session webview loads the local

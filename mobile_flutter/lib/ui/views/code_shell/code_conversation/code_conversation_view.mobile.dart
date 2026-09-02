@@ -1,17 +1,17 @@
-// arxa-scaffolder: mobile layout skeleton. STRUCTURE ONLY — builder fills this.
-//   surface:       code_shell_conversation_view
-//   comp:          CodeConversationViewMobile
-//   factor:        mobile   (derived from targets=[ios,android])
+// arxa-builder: LIVE — mobile layout of the conversation.
+import 'package:arxa_kit_ui_library/arxa_kit_ui_library.dart' show ViewModelWidget;
 import 'package:flutter/material.dart';
-import 'package:stacked/stacked.dart';
 
+import 'code_conversation_body.dart';
 import 'code_conversation_viewmodel.dart';
 
-class CodeConversationViewMobile extends ViewModelWidget<CodeConversationViewModel> {
-  const CodeConversationViewMobile({super.key});
+class CodeConversationViewMobile
+    extends ViewModelWidget<CodeConversationViewModel> {
+  const CodeConversationViewMobile({super.key, required this.viewModel});
+
+  final CodeConversationViewModel viewModel;
 
   @override
-  Widget build(context, viewModel) => const Scaffold(
-        body: Center(child: Text('code.conversation · mobile')),
-      );
+  Widget build(context, _) =>
+      CodeConversationBody(key: key, viewModel: viewModel);
 }

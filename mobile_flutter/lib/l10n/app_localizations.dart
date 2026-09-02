@@ -261,6 +261,108 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Something went wrong loading this screen.'**
   String get errorGeneric;
+
+  /// No description provided for @codeSessionsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Code sessions'**
+  String get codeSessionsTitle;
+
+  /// No description provided for @codeSessionsEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No code sessions yet.'**
+  String get codeSessionsEmpty;
+
+  /// No description provided for @codeSessionsNotConnected.
+  ///
+  /// In en, this message translates to:
+  /// **'Not connected — pair with the studio to load sessions.'**
+  String get codeSessionsNotConnected;
+
+  /// No description provided for @codeSessionsPairCta.
+  ///
+  /// In en, this message translates to:
+  /// **'Scan to pair'**
+  String get codeSessionsPairCta;
+
+  /// No description provided for @codeFilterAll.
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get codeFilterAll;
+
+  /// No description provided for @codeFilterBlocked.
+  ///
+  /// In en, this message translates to:
+  /// **'Blocked'**
+  String get codeFilterBlocked;
+
+  /// No description provided for @codeFilterInProgress.
+  ///
+  /// In en, this message translates to:
+  /// **'In progress'**
+  String get codeFilterInProgress;
+
+  /// No description provided for @codeFilterDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Done'**
+  String get codeFilterDone;
+
+  /// No description provided for @codeConversationTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Conversation'**
+  String get codeConversationTitle;
+
+  /// No description provided for @codeConversationEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No messages yet.'**
+  String get codeConversationEmpty;
+
+  /// No description provided for @codeConversationOffline.
+  ///
+  /// In en, this message translates to:
+  /// **'Not connected — messages can\'t reach the studio.'**
+  String get codeConversationOffline;
+
+  /// No description provided for @codeComposerHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Add feedback...'**
+  String get codeComposerHint;
+
+  /// No description provided for @codeSend.
+  ///
+  /// In en, this message translates to:
+  /// **'Send'**
+  String get codeSend;
+
+  /// No description provided for @codeJustNow.
+  ///
+  /// In en, this message translates to:
+  /// **'now'**
+  String get codeJustNow;
+
+  /// No description provided for @codeMinutesAgo.
+  ///
+  /// In en, this message translates to:
+  /// **'{n}m ago'**
+  String codeMinutesAgo(int n);
+
+  /// No description provided for @codeHoursAgo.
+  ///
+  /// In en, this message translates to:
+  /// **'{n}h ago'**
+  String codeHoursAgo(int n);
+
+  /// No description provided for @codeDaysAgo.
+  ///
+  /// In en, this message translates to:
+  /// **'{n}d ago'**
+  String codeDaysAgo(int n);
 }
 
 class _AppLocalizationsDelegate

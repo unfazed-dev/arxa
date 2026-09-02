@@ -8,6 +8,7 @@ import 'package:arxa_kit_notifications/arxa_kit_notifications.dart';
 import 'package:flutter/foundation.dart';
 
 import '../data/approvals/approval.dart';
+import '../data/conversation/conversation.dart';
 import '../data/tasks/task.dart';
 import '../services/transport_service.dart';
 
@@ -105,7 +106,12 @@ class AppData {
   static Future<void> _boot(ArxaKitDataConfig config) async {
     await ArxaKitData.initialize(
       config: config,
-      entities: const [approvalEntityRegistration, taskEntityRegistration],
+      entities: const [
+        approvalEntityRegistration,
+        taskEntityRegistration,
+        sessionEntityRegistration,
+        messageEntityRegistration,
+      ],
       fixtureAssets: const [],
     );
     if (!ready.isCompleted) ready.complete();

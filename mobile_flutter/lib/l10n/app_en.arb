@@ -26,5 +26,43 @@
   "settingsTitle": "Settings",
   "settingsUnpair": "Unpair from studio",
   "settingsUnpairSubtitle": "Removes this device and stops notifications.",
-  "errorGeneric": "Something went wrong loading this screen."
+  "errorGeneric": "Something went wrong loading this screen.",
+  "codeSessionsTitle": "Code sessions",
+  "codeSessionsEmpty": "No code sessions yet.",
+  "codeSessionsNotConnected": "Not connected — pair with the studio to load sessions.",
+  "codeSessionsPairCta": "Scan to pair",
+  "codeFilterAll": "All",
+  "codeFilterBlocked": "Blocked",
+  "codeFilterInProgress": "In progress",
+  "codeFilterDone": "Done",
+  "codeConversationTitle": "Conversation",
+  "codeConversationEmpty": "No messages yet.",
+  "codeConversationOffline": "Not connected — messages can't reach the studio.",
+  "codeComposerHint": "Add feedback...",
+  "codeSend": "Send",
+  "codeJustNow": "now",
+  "codeMinutesAgo": "{n}m ago",
+  "@codeMinutesAgo": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "codeHoursAgo": "{n}h ago",
+  "@codeHoursAgo": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "codeDaysAgo": "{n}d ago",
+  "@codeDaysAgo": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  }
 }

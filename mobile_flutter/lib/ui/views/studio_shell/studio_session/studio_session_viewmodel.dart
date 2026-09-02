@@ -112,6 +112,11 @@ class StudioSessionViewModel extends BaseViewModel {
   /// review pending asks without leaving the session (back returns here).
   Future<void> openApprovals() => _router.navigateTo(ApprovalsListViewRoute());
 
+  /// The code shell (sessions list): the folder lands here so the owner can
+  /// browse code sessions without leaving the session (back returns here).
+  Future<void> openCodeSessions() =>
+      _router.navigateTo(CodeSessionsViewRoute());
+
   Future<void> refresh() async {
     _loadSucceeded();
     controller = null;

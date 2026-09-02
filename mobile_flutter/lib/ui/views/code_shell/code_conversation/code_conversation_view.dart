@@ -1,54 +1,45 @@
-// arxa-scaffolder: surface skeleton. STRUCTURE ONLY — the builder fills this.
-//   surface:       code_shell_conversation_view
-//   comp:          CodeConversationView
-//   id:            code.conversation
-//   shell:         code_shell
-//   targets:       [ios,android] -> derived form factors [mobile, tablet]
-//   deps (builder wires): services/facades/conversation_facade.js, services/facades/approvals_facade.js
-// The widget tree and the form-factor switch are the builder's job (plan 08).
+// arxa-builder: LIVE — one session's conversation, composing the
+// form-factor siblings (mobile / tablet) over the shared body. The
+// sessionId route arg picks the transcript.
+import 'package:arxa_kit_ui_library/arxa_kit_ui_library.dart'
+    show ArxaKitNativeAppBar, StackedView;
 import 'package:flutter/material.dart';
-import 'package:stacked/stacked.dart';
 
+import 'package:arxa_studio_mobile/l10n/app_localizations.dart';
+
+import 'code_conversation_view.mobile.dart';
+import 'code_conversation_view.tablet.dart';
 import 'code_conversation_viewmodel.dart';
 
 class CodeConversationView extends StackedView<CodeConversationViewModel> {
-  const CodeConversationView({super.key});
+  const CodeConversationView({required this.sessionId, super.key});
+
+  /// The dsh session whose transcript this view shows (route arg).
+  final String sessionId;
 
   @override
   Widget builder(
       BuildContext context, CodeConversationViewModel viewModel, Widget? child) {
-    // ADR-0003: no async without a busy/error surface. Emitted here so the
-    // mandate has an emission point rather than only a comment (task #43).
-    // No empty state: this skeleton binds no collection, and a generated
-    // `isEmpty` over nothing is a check that can only ever pass.
-    if (viewModel.isBusy) {
-      return const Scaffold(
-          body: Center(child: CircularProgressIndicator()));
-    }
-    if (viewModel.hasError) {
-      // A sentence, never viewModel.modelError — the raw object leaks
-      // internals and reads as a crash. Log it; show this.
-      return Scaffold(
-        body: Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Text('Something went wrong loading this screen.'),
-              const SizedBox(height: 12),
-              FilledButton(
-                onPressed: viewModel.refresh,
-                child: const Text('Try again'),
-              ),
-            ],
-          ),
-        ),
-      );
-    }
-    return const Scaffold(
-      body: Center(child: Text('code.conversation')),
+    final l10n = AppLocalizations.of(context);
+    return Scaffold(
+      appBar: ArxaKitNativeAppBar(title: l10n.codeConversationTitle),
+      body: MediaQuery.sizeOf(context).width >= 600
+          ? CodeConversationViewTablet(
+              key: const ValueKey('tablet'), viewModel: viewModel)
+          : CodeConversationViewMobile(
+              key: const ValueKey('mobile'), viewModel: viewModel),
     );
   }
 
   @override
-  CodeConversationViewModel viewModelBuilder(context) => CodeConversationViewModel();
+  void onViewModelReady(CodeConversationViewModel viewModel) {
+    viewModel
+      ..listenTransport()
+      ..listenLive()
+      ..refresh();
+  }
+
+  @override
+  CodeConversationViewModel viewModelBuilder(context) =>
+      CodeConversationViewModel(sessionId);
 }

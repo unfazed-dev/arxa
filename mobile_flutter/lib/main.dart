@@ -14,13 +14,19 @@ import 'app/kit_platform_router.dart';
 import 'data/approvals/approval.dart';
 import 'data/approvals/approvals_api_client.dart';
 import 'data/approvals/approvals_repository.dart';
+import 'data/conversation/conversation.dart';
+import 'data/conversation/conversation_api_client.dart';
+import 'data/conversation/conversation_repository.dart';
 import 'data/tasks/task.dart';
 import 'services/accent_sync.dart';
 import 'services/sync_doorbell.dart';
 import 'services/app_notifications_backend.dart';
 import 'services/iroh_transport_service.dart';
 import 'services/tap_routing.dart';
+import 'services/shot_extension.dart';
 import 'services/transport_service.dart';
+
+import 'ui/app_transitions.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -45,6 +51,15 @@ Future<void> main() async {
         () => ApprovalsRepository(
           cache: arxaKitLocator<ArxaKitRepository<Approval>>(),
           api: ApprovalsApiClient(transport: locator<TransportService>()),
+        ),
+      );
+      // The code-shell slice (sessions + transcripts), same pattern as the
+      // approvals repository: kit caches + the tunnel client.
+      locator.registerLazySingleton(
+        () => ConversationRepository(
+          sessionCache: arxaKitLocator<ArxaKitRepository<CodeSession>>(),
+          messageCache: arxaKitLocator<ArxaKitRepository<ConversationMessage>>(),
+          api: ConversationApiClient(transport: locator<TransportService>()),
         ),
       );
       // Task completions doorbell the same way (B3: everything the session
@@ -89,6 +104,8 @@ Future<void> main() async {
   // above restores the link — land straight in the studio session instead
   // of flashing the QR scanner (the old '/' default) on every cold start.
   final startsInStudio = await IrohTransportService.storedPairingExists();
+  // TEMPORARY diagnostic rail — see shot_extension.dart. REMOVE with it.
+  ShotExtension.register(ArxaStudioMobileApp._appShotKey);
   runApp(ArxaStudioMobileApp(startsInStudio: startsInStudio, accentSync: accentSync));
 }
 
@@ -124,6 +141,9 @@ class TransportLifecycleObserver with WidgetsBindingObserver {
 }
 
 class ArxaStudioMobileApp extends StatelessWidget {
+  /// TEMPORARY diagnostic rail — see shot_extension.dart. REMOVE with it.
+  static final GlobalKey _appShotKey = GlobalKey();
+
   const ArxaStudioMobileApp({
     required this.startsInStudio,
     required this.accentSync,
@@ -141,13 +161,18 @@ class ArxaStudioMobileApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return ValueListenableBuilder<Color?>(
       valueListenable: accentSync.accent,
-      builder: (context, accent, _) => MaterialApp.router(
+      // TEMPORARY diagnostic rail boundary — see shot_extension.dart.
+      builder: (context, accent, _) => RepaintBoundary(
+        key: _appShotKey,
+        child: MaterialApp.router(
       onGenerateTitle: (context) => AppLocalizations.of(context).appTitle,
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
       debugShowCheckedModeBanner: false,
-      theme: arxaKitLightTheme(accent: accent ?? ArxaKitColors.accent),
-      darkTheme: arxaKitDarkTheme(accent: accent ?? ArxaKitColors.accent),
+      theme: arxaKitLightTheme(accent: accent ?? ArxaKitColors.accent)
+          .copyWith(pageTransitionsTheme: arxaNoPushTransitionsTheme),
+      darkTheme: arxaKitDarkTheme(accent: accent ?? ArxaKitColors.accent)
+          .copyWith(pageTransitionsTheme: arxaNoPushTransitionsTheme),
       themeMode: ThemeMode.system,
       routerDelegate: kitPlatformRouter.delegate(
         initialRoutes: [
@@ -161,6 +186,7 @@ class ArxaStudioMobileApp extends StatelessWidget {
       // OS back gesture (Android predictive back) must reach the stacked
       // router explicitly under the routerDelegate API.
       backButtonDispatcher: RootBackButtonDispatcher(),
+      ),
       ),
     );
   }

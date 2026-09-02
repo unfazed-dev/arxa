@@ -94,4 +94,63 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get errorGeneric => 'Something went wrong loading this screen.';
+
+  @override
+  String get codeSessionsTitle => 'Code sessions';
+
+  @override
+  String get codeSessionsEmpty => 'No code sessions yet.';
+
+  @override
+  String get codeSessionsNotConnected =>
+      'Not connected — pair with the studio to load sessions.';
+
+  @override
+  String get codeSessionsPairCta => 'Scan to pair';
+
+  @override
+  String get codeFilterAll => 'All';
+
+  @override
+  String get codeFilterBlocked => 'Blocked';
+
+  @override
+  String get codeFilterInProgress => 'In progress';
+
+  @override
+  String get codeFilterDone => 'Done';
+
+  @override
+  String get codeConversationTitle => 'Conversation';
+
+  @override
+  String get codeConversationEmpty => 'No messages yet.';
+
+  @override
+  String get codeConversationOffline =>
+      'Not connected — messages can\'t reach the studio.';
+
+  @override
+  String get codeComposerHint => 'Add feedback...';
+
+  @override
+  String get codeSend => 'Send';
+
+  @override
+  String get codeJustNow => 'now';
+
+  @override
+  String codeMinutesAgo(int n) {
+    return '${n}m ago';
+  }
+
+  @override
+  String codeHoursAgo(int n) {
+    return '${n}h ago';
+  }
+
+  @override
+  String codeDaysAgo(int n) {
+    return '${n}d ago';
+  }
 }
