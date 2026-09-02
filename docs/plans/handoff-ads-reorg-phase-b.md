@@ -215,11 +215,23 @@ Everything below was observed, not assumed.
   on this machine references the old trees any more except the deliberate
   `~/.claude.json` / `~/.claude/projects` copies kept for Phase D.
 
-## Phase D — after 7 days (≥ 2026-09-09)
+## Phase D — DONE early (2026-09-02, user chose not to wait the 7 days)
 
-- `rm -rf` the three `.bak-2026-09-02` dirs (frees ~110 GB on developer_ssd).
-- Delete the old `~/.claude/projects/-Volumes-developer-ssd-…` dirs and the
-  old keys in `~/.claude.json`.
+Preflight before deleting (all passed): 0 processes / 0 `lsof` handles / 0
+symlinks referencing the `.bak` dirs; every old branch was either identical
+in the new tree or the new tree was ahead of it (`main` 11f5c14e→95e9b8d8,
+cairn `main` 12e7a2c→a7cfe54, studio `master` ed1ec3c→c971f5a); stash lists
+identical; all three new trees clean and in sync with origin.
+
+- `rm -rf` of `arxa.bak-2026-09-02` (53G), `arxa-studio.bak-2026-09-02`
+  (577M), `cairn.bak-2026-09-02` (63G) — exit 0, none remain.
+  developer_ssd free space 13G → 126G.
+- `~/.claude.json`: the 3 old-path `projects` keys removed (backup at
+  `~/.claude.json.bak-phaseD-2026-09-02`, delete whenever). The 3 old
+  `~/.claude/projects/-Volumes-developer-ssd-…` dirs removed; the 3 new
+  `-Volumes-business-ssd-arxa-digital-solutions-*` dirs untouched.
+
+Reorg complete. No rollback path remains — the new trees are the only copies.
 
 ## Rollback (any time before Phase D)
 
