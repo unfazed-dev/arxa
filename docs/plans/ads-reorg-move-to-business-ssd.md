@@ -120,9 +120,23 @@ branches deleted, both repos show 1 worktree). A.3 done (rsync 3.5.0 via
 brew, target created, 184 GiB free). A.4 done (rc=0 ×3, 55 s, ~3.4 GB; the
 3 tracked files under `designs/arxa-studio/ui/views/main_shell/build/loop/`
 were dropped by `--exclude=build` and re-synced with `--files-from`; status
-now identical). **A.5 waiting on user freeze** — a second Claude session
-(pid 58458) is still committing in arxa-studio and VS Code has helpers
-inside all three repos. User said "hold" at ~10:40.
+now identical). A.5 done ~12:00 after user stopped the studio session and closed VS Code on
+studio/cairn (arxa's window stayed open — it hosts this session; verified
+harmless by the checksum dry-run). Final `--delete` pass rc=0 ×3. A.6 + A.6b
+all green per repo: HEAD, `status --porcelain`, `for-each-ref`, stash list
+identical; fsck clean; checksum dry-run residue = only symlink skips and
+`.git/index` (git rewrites it on a new volume). Final HEADs: arxa
+`ecbbd060`+this commit, arxa-studio `ed1ec3c`, cairn `12e7a2c`, all 0/0 vs
+origin. A.7 done: 26 skill symlinks re-pointed to business_ssd (both the
+`totem_labs` and `Developer/cairn` prefixes), 0 still old, 7 kept (point at
+other developer_ssd trees, e.g. app-box). 70 dangling links under
+`~/.claude/skills`/`~/.agents/skills.shared` were already dangling
+(targets in dead `~/.hermes/skills` / `~/.agents/skills.shared` trees) —
+not touched, not ours.
+
+Still running from the OLD arxa cwd at handoff, restart from the new path in
+Phase B: `cairn-server` (pid 42160), `cairn-pushd` (pid 45200), studio
+`node` server (pid 53840), `iproxy`/`adb` device tooling.
 
 A.1 Commit WIP
 ```sh
@@ -342,3 +356,39 @@ Caveat: the B.9 fix commits exist only in the new copy — before rolling back,
 - Pruning `archives/spikes/` (1.7G tracked history) from arxa.
 - Rewriting inert prose paths in plans.
 - The ~3G of unexplained cache under cairn `sdk/` (audit uncertainty).
+
+## Handoff snapshot — end of Phase A (2026-09-02)
+
+Live processes with cwd inside the OLD repos at handoff (leave running; Phase B restarts them from the new path **first**, before any edits, because they may write state into the old tree):
+
+```
+pid=1382 cwd=totem_labs/arxa 
+pid=1383 cwd=totem_labs/arxa 
+pid=1384 cwd=totem_labs/arxa 
+pid=2472 cwd=totem_labs/arxa/mobile_flutter 01-11:36:11 /Volumes/developer_ssd/dev/fvm/versions/stable/bin/cache/artifacts/libusbmuxd/iproxy 56872:62990 --udid 00008120-000424D20AC3601
+pid=2474 cwd=totem_labs/arxa/mobile_flutter 01-11:36:10 /Volumes/developer_ssd/dev/fvm/versions/stable/bin/cache/artifacts/libusbmuxd/iproxy 56874:62990 --udid 00008120-000424D20AC3601
+pid=42160 cwd=totem_labs/arxa 19:27:32 /Users/unfazed-mac/.cargo/bin/cairn-server
+pid=45200 cwd=totem_labs/arxa 19:27:06 /Users/unfazed-mac/.cargo/bin/cairn-pushd
+pid=53840 cwd=totem_labs/arxa-studio 20:00:08 node /tmp/wkwtest/serve5.mjs
+pid=55010 cwd=totem_labs/arxa 03:20:02 claude
+pid=81666 cwd=totem_labs/arxa/mobile_flutter 01-23:03:27 adb -L tcp:5037 fork-server server --reply-fd 4
+pid=9259 cwd=totem_labs/arxa-studio 01:58:27 node bin/arxa-studio.mjs --no-open
+pid=9546 cwd=totem_labs/arxa-studio 01:58:25 /Users/unfazed-mac/.nvm/versions/node/v24.19.0/bin/node --import file:///Volumes/developer_ssd/Developer/totem_labs/arxa-studio/bin
+```
+
+Files open for write inside the old trees by those daemons:
+```
+(end)
+```
+
+Launchers that reference the old paths (would respawn from the old tree after Phase D):
+```
+-- ~/Library/LaunchAgents:
+-- crontab:
+-- shell rc (~/.zshrc ~/.zprofile ~/.zshenv):
+-- docker containers (working_dir label):
+cairn-postgres /Volumes/developer_ssd/Developer/cairn/docker
+-- pm2:
+(pm2 not installed)
+(end)
+```
