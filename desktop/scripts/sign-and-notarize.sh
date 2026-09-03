@@ -10,6 +10,14 @@
 #   ENTITLEMENTS    entitlements plist for JIT sidecars (default: desktop/entitlements.plist)
 #   NOTARY_PROFILE  notarytool keychain profile name (default: arxa-notary)
 #   APPLE_ID / APPLE_PASSWORD / APPLE_TEAM_ID  — used if NOTARY_PROFILE absent
+#   UPDATER_KEY     tauri updater private key (default: ~/.arxa/updater/arxa-updater.key)
+#   TAURI_CLI       tauri cli spec for npx (default: @tauri-apps/cli@2.11.4)
+#
+# After notarizing a .app this ALSO rebuilds and re-signs the updater
+# artifact (<App>.app.tar.gz) beside it, because that tarball is produced by
+# `tauri build` BEFORE the staple exists — without this step, notarizing
+# improves only the copy you install by hand, never the one an auto-update
+# delivers. Missing key or missing tarball warns and continues.
 #
 # Idempotent: re-signing with --force is safe to repeat.
 
@@ -20,6 +28,8 @@ SIGN_IDENTITY="${SIGN_IDENTITY:-$DEFAULT_IDENTITY}"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ENTITLEMENTS="${ENTITLEMENTS:-$SCRIPT_DIR/../entitlements.plist}"
 NOTARY_PROFILE="${NOTARY_PROFILE:-arxa-notary}"
+UPDATER_KEY="${UPDATER_KEY:-$HOME/.arxa/updater/arxa-updater.key}"
+TAURI_CLI="${TAURI_CLI:-@tauri-apps/cli@2.11.4}"
 
 SIGN_ONLY=0
 if [[ "${1:-}" == "--sign-only" ]]; then SIGN_ONLY=1; shift; fi
@@ -107,6 +117,33 @@ notarize() {
   xcrun stapler staple "$target"
 }
 
+# The updater artifact is built from the app BEFORE it is stapled, so the
+# .tar.gz an auto-update installs would carry an un-stapled bundle even after
+# a successful notarization here. Stapling is what lets Gatekeeper approve
+# OFFLINE; without it an updated app depends on reaching Apple at launch. So
+# rebuild the tarball from the stapled bundle and re-sign it with the updater
+# key — otherwise notarizing the .app silently improves only the copy you
+# install by hand, never the one your users receive.
+refresh_updater_artifact() {
+  local app="$1" dir tarball
+  dir="$(cd "$(dirname "$app")" && pwd)"
+  tarball="$dir/$(basename "$app").tar.gz"
+  if [[ ! -f "$tarball" ]]; then
+    info "no updater artifact beside the app — nothing to refresh"
+    return 0
+  fi
+  if [[ ! -f "$UPDATER_KEY" ]]; then
+    echo "WARNING: updater key not found ($UPDATER_KEY)." >&2
+    echo "WARNING: $tarball still contains the PRE-staple app." >&2
+    return 0
+  fi
+  info "Rebuilding the updater artifact from the STAPLED app"
+  ( cd "$dir" && tar -czf "$(basename "$tarball")" "$(basename "$app")" )
+  info "Re-signing the updater artifact"
+  npx --yes "$TAURI_CLI" signer sign -f "$UPDATER_KEY" -p "" "$tarball"
+  info "Updater artifact refreshed: $tarball"
+}
+
 case "$TARGET" in
   *.app) sign_app "$TARGET" ;;
   *.dmg)
@@ -122,6 +159,9 @@ else
   notarize "$TARGET"
   info "Gatekeeper assessment"
   spctl -a -vv --type exec "$TARGET" || die "spctl rejected $TARGET"
+  if [[ "$TARGET" == *.app ]]; then
+    refresh_updater_artifact "$TARGET"
+  fi
 fi
 
 info "Done: $TARGET"
