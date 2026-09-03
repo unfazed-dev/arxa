@@ -378,7 +378,7 @@ pub fn run() {
                         }
                         if was_up && !up {
                             eprintln!("[arxa-desktop] server lost - showing waiting page");
-                            if let Some(mut win) = handle.get_webview_window("main") {
+                            if let Some(win) = handle.get_webview_window("main") {
                                 let _ = win.navigate(home.clone());
                             }
                         }
