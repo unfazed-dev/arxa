@@ -161,7 +161,12 @@ keypair whose **public key** is committed in
 
 - Private key (never commit it): `~/.arxa/updater/arxa-updater.key`
   (mode 600, generated with `tauri signer generate`, empty password).
-- To sign a build: `TAURI_SIGNING_PRIVATE_KEY_PATH=~/.arxa/updater/arxa-updater.key tauri build`
+- To sign a build: `TAURI_SIGNING_PRIVATE_KEY=~/.arxa/updater/arxa-updater.key tauri build`
+  (the var is `TAURI_SIGNING_PRIVATE_KEY`, NOT `..._PATH` — it takes either the
+  key itself or a path to it. Verified against @tauri-apps/cli 2.11.4 on
+  2026-09-03: the `_PATH` spelling is ignored and the build fails at the very
+  end with "A public key has been found, but no private key", AFTER both
+  bundles are already written, so it looks like a success until the last line.)
 - Losing the private key means shipped apps can never be updated again —
   release CI must vault it.
 
