@@ -692,3 +692,108 @@ decision is therefore two layers, not one invented from nothing:
 `design patch` is now unblocked and is what this section always said it would
 be the day the answer existed: a thin structured-patch verb over
 `/__project_write`, after emit-time stamping lands in the artifact generator.
+
+## Amendment 2026-09-05 — the update strategy: two clocks, one version
+
+Grill session (Q1–Q10) + adversarial web cross-check (four research
+agents, decisions D1–D10 rated STANDARD / DIVERGENT-BUT-DEFENSIBLE /
+RISKY). ADR-0002 records the shape; this section is the decision log.
+Context: dsh `next` = `0.1.2-rc.1` (2026-09-03); arxa-studio pins
+`0.1.1-rc.2` (188 family packages + 3 `0.1.1` stragglers in the lockfile —
+the bump changeset reconciles those deliberately). Verified trap: `latest`
+dist-tag for most `@deepseek-ai/*` packages points at `0.0.1-rc.1`
+(months stale); only `next` is current. "Pinned to the latest of DSH"
+therefore NEVER means npm-`latest`; it means the team's tracking
+discipline.
+
+1. **Two clocks (D1, STANDARD).** The team tracks dsh `next`; users
+   receive only frozen, tested arxa studio releases in which the platform
+   pin is invisible (React-canary doctrine; semver §4). "Latest" is a
+   property of the team's tracking, never of a user install.
+2. **Tracking policy (D2, DEFENSIBLE — named aggressive).** Automated
+   lockstep bump PR for EVERY `next` move (all pins + lockfile, one
+   commit, Renovate-style grouped; alpha builds never enter the repo).
+   Canary CI job boots the studio against `alpha` — early warning only,
+   and per React's canary contract, filing upstream bugs for what it
+   finds is part of the job. Max lag: one `next` release behind without a
+   documented hold. This is stricter than documented industry lag (VS
+   Code lags Electron majors for months); it is justified here because
+   patch drift grows with lag, and it is a policy choice, not a default.
+3. **The gate (D3, STANDARD + two amendments).** T1 CI: `npm ci` +
+   preset/isolation checks + headless boot + tripwires. T2 merge gate:
+   browser-rendered boot proof — extended to a **WKWebView proof via
+   WebdriverIO's Tauri service** (Chrome proves Chromium; the product
+   ships WKWebView) and **behavioral contract tests** (golden IPC shapes,
+   boot-log snapshots): green CI cannot see semantic drift on a 0.x
+   platform. T3 stable gate: the bump rides a beta-channel release ~1
+   week + one booted-DENY proof; a human presses the stable button (DORA
+   preserves human sign-off for near-irreversible releases; a signed
+   desktop release on an auto-updater is one).
+4. **Release unit (D4, STANDARD).** One atomic signed/notarized bundle:
+   shell + studio server + platform pin + engine. No sidecar-only
+   updates (Tauri cannot). Kits stay on the ADR-0001 signed-bucket lane.
+   Consequence owned: no delta updates — bundle size is a budgeted
+   number.
+5. **Update UX (D5, STANDARD + one amendment).** Launch + ~24h silent
+   checks; staged download; non-modal in-app "arxa studio X ready —
+   restart to update" badge; arxa-authored What's New; never mandatory,
+   never blocks startup; manual-download fallback. Amendment:
+   **install-on-quit** — agent sessions stay open for days and would
+   otherwise never patch (update starvation).
+6. **Bridge doctrine (D8, rung c REBUILT).** Hold by default; bridges
+   must carry an upstream issue link, a removal condition ("delete when
+   dsh ≥ X"), and DEP-3-style headers (Origin/Forwarded/Bug/
+   Applied-Upstream/Last-Update); re-review at every bump PR plus a
+   max-hold clock (forced re-review every N weeks) so holds cannot become
+   silent version debt. The patch mechanism is **npm ≥12 native patching**
+   (`npm patch`, `patchedDependencies`, unified diffs, lockfile content
+   hash — install-time hard failure, `npm ci` rejects relax flags,
+   orphan patches caught; node 24.19 qualifies, toolchain upgrade only).
+   Custom `registerHooks` needle-patching (loopback-localhost-patch.mjs)
+   is demoted to last resort — kept only where a file diff cannot express
+   the patch (e.g. length-preserved patching of served static assets).
+   Fork stays banned by default with one documented escape valve
+   (consequential change + upstream refuses it + npm:`github:`/`file:`
+   override as the vehicle).
+7. **Feed and channels (D6/D7, DEFENSIBLE).** R2 primary serving
+   `desktop/{channel}/{target}/{arch}/latest.json`, `max-age ≤ 300s`,
+   artifacts immutable, CDN error pages never 200; existing GitHub raw
+   repo as fallback endpoint. Verified in updater.rs: first 200+valid
+   JSON wins (stale primary masks fallback), and a 200-with-garbage body
+   aborts with no failover — cache discipline is load-bearing. Rollout:
+   time-ladder first (beta T+0, stable T+N with N ≥ worst-case
+   bug-discovery window); percentage cohorting via a Worker later.
+   Channels: stable + beta via endpoint swap; one shared minisign key
+   (the de-facto norm) — acceptable only while beta signing is
+   protected exactly like stable; per-channel keys cost nothing but ops
+   discipline. The `updates.arxa.invalid` beta placeholder is replaced by
+   the real R2 path. Kill-switch/rollback script written BEFORE the first
+   incident: Tauri refuses downgrades, so recovery = shipping a higher
+   version; script it now.
+8. **Attribution (D9, STANDARD).** Product surface shows only the arxa
+   studio version. A credits/accreditation page — a cordis client plugin
+   in the studio UI, well-designed and conforming to the plugin-UI
+   conventions — lists every third-party component (name, version,
+   license, upstream link) generated from a machine-readable inventory;
+   it is the only place the platform pin is user-visible, and it
+   auto-attaches to bug reports. ALL license texts ship (MIT, Apache-2.0
+   NOTICE, BSD, OFL fonts), not MIT-only; a CI gate fails on copyleft
+   entering the closed-source bundle (VS Code's ThirdPartyNotices.txt is
+   the precedent; per-ecosystem generators merged into one inventory is
+   current best practice — no canonical cross-ecosystem tool exists).
+9. **Key custody (D10, STANDARD + hardening).** The minisign private key
+   moves out of `~/.arxa/updater/` into a protected CI environment (not
+   bare repo secrets readable by every run), one offline encrypted
+   backup, third-party actions pinned by SHA. Rotation runbook written in
+   advance: minisign has no revocation, runtime pubkey override is
+   Rust-only, old key retained until the fleet migrates; leak response =
+   transition release + manual-download fallback (precedent: qwen-code
+   PR #8511 rotated a lost Tauri key this way, Aug 2026).
+
+**Follow-on work items surfaced by the cross-check** (not yet built):
+WKWebView boot gate in CI; behavioral contract tests; install-on-quit;
+bundle-size budget; npm 12 toolchain upgrade + migration of the loopback
+patch to `npm patch`; DEP-3 headers on all bridges; max-hold clock;
+kill-switch script; R2 feed + real beta endpoint; credits plugin +
+license inventory + copyleft gate; protected-environment key migration +
+rotation runbook; alpha-canary upstream-bug-filing duty.

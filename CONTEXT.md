@@ -16,11 +16,12 @@ rename.
 _Avoid_: using arxa and arxa interchangeably
 
 **Arxa harness**:
-The dedicated agent harness forked from DeepSeek Harness (dsh), rebranded,
-grown by plugins. Ships in three flavors: Studio (locked, buyers),
+The dedicated agent harness composed from DeepSeek Harness (dsh) npm
+packages — depended on exactly, never forked — rebranded by plugins and
+profile patches. Ships in three flavors: Studio (locked, buyers),
 BYO-harness edition (their CLI, our binary + stub skills), operator build
 (open).
-_Avoid_: the dsh fork, the app
+_Avoid_: the dsh fork (superseded 2026-08-21), the app
 
 **Engine**:
 The compiled pipeline binary and its verbs — the layer that owns gates,
@@ -46,6 +47,29 @@ The harness side panel: Clients → project → pipeline stages, rendered from
 the engine's project registry and gate status. Sessions attach to a
 client + stage, never float free.
 _Avoid_: workspace, session list
+
+### Shipping and updates
+
+**Platform pin**:
+The exact `@deepseek-ai/*` version set frozen inside an arxa studio
+release, chosen by the arxa team — never a range, never user-visible as a
+version. "Latest" describes the team's tracking discipline, not a property
+of any user install.
+_Avoid_: dsh version (user-facing sense), dependency range
+
+**Credits page**:
+The in-app accreditation surface listing every third-party component arxa
+ships — name, version, license, upstream link — generated from a
+machine-readable inventory. The only place the platform pin is
+user-visible.
+_Avoid_: about page, legal page
+
+**Bridge**:
+A local, temporary carry over an upstream (dsh) gap — a config patch, an
+npm override, or an install-time patch — that must carry an upstream issue
+link and a removal condition, and is re-reviewed at every bump. The
+default answer to upstream breakage is holding the pin, not bridging.
+_Avoid_: fork, fix (a bridge is not a fix; it has an expiry)
 
 ### Money and entitlement
 
