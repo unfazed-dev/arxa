@@ -27,9 +27,11 @@ env:
 jobs:
   release:
     runs-on: [self-hosted, macOS, ARM64, arxa]
-    # D10 (key custody): the two TAURI_SIGNING_* secrets live in this
-    # protected GitHub environment (tag-policy-restricted studio-v* /
-    # studio-beta-v*), not as bare repo secrets readable by every run.
+    # D10 (key custody): the TAURI_SIGNING_PRIVATE_KEY secret lives in this
+    # GitHub environment (secrets visible only to jobs that declare it), not
+    # as a bare repo secret readable by every run. Deployment tag policies
+    # (studio-v* / studio-beta-v*) are intended but blocked on the private
+    # repo's Free plan — see docs/ci/release-ops.md.
     # Repo-level GH_RELEASES_TOKEN and ARXA_STUDIO_CHECKOUT_TOKEN stay
     # repo-level — environment jobs can still read repo secrets.
     environment: release

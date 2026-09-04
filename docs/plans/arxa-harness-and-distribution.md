@@ -790,10 +790,31 @@ discipline.
    transition release + manual-download fallback (precedent: qwen-code
    PR #8511 rotated a lost Tauri key this way, Aug 2026).
 
-**Follow-on work items surfaced by the cross-check** (not yet built):
-WKWebView boot gate in CI; behavioral contract tests; install-on-quit;
-bundle-size budget; npm 12 toolchain upgrade + migration of the loopback
-patch to `npm patch`; DEP-3 headers on all bridges; max-hold clock;
-kill-switch script; R2 feed + real beta endpoint; credits plugin +
-license inventory + copyleft gate; protected-environment key migration +
-rotation runbook; alpha-canary upstream-bug-filing duty.
+**Follow-on work items surfaced by the cross-check** — status after the
+first implementation pass (2026-09-05, the 0.1.2-rc.1 bump wave):
+
+- **WKWebView boot gate in CI — BUILT.** `desktop/e2e` + `desktop-gate.yml`
+  (@wdio/tauri-service embedded provider behind the `wdio` cargo feature;
+  verified green locally and on the self-hosted runner).
+- **Behavioral contract tests — BUILT.** arxa-studio
+  `scripts/dsh-contract-check.mjs` (lockstep + import surface + no-override)
+  in `npm test`.
+- **Kill-switch script — BUILT.** `desktop/scripts/kill-switch.sh`.
+- **R2 feed — PATH BUILT, bucket pending.** `publish-feed.mjs` + optional
+  release-CI step; the one-time R2 enable + bucket create is the operator's
+  dashboard action (checklist in `docs/ci/release-ops.md`).
+- **Real beta endpoint — BUILT.** `lib.rs` derives any channel from the
+  configured endpoint list; `studio-beta-v*` tag lane live in release CI.
+- **Protected-environment key migration + rotation runbook — BUILT.**
+  `release` environment holds `TAURI_SIGNING_PRIVATE_KEY` (repo-level copies
+  deleted); tag policies blocked by the private-repo Free plan (documented);
+  rotation transition procedure in `docs/ci/release-ops.md`. Local-key
+  retirement checklist: after the first CI-signed release verifies against
+  the embedded pubkey, keep one encrypted offline copy and delete
+  `~/.arxa/updater/arxa-updater.key` from the dev machine.
+- **Rollback runbook — BUILT** (`docs/ci/release-ops.md`: ship-higher
+  doctrine, feed kill, blast radius).
+- Still open: install-on-quit; bundle-size budget; npm 12 toolchain upgrade
+  + migration of the loopback patch to `npm patch`; DEP-3 headers on all
+  bridges; max-hold clock; credits plugin + license inventory + copyleft
+  gate; alpha-canary upstream-bug-filing duty.
