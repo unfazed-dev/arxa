@@ -330,14 +330,21 @@ fn check_for_updates(app: &tauri::AppHandle) {
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    tauri::Builder::default()
-        // Rider 3: second launch focuses the existing window; it never gets a
-        // chance to probe-and-spawn a duplicate server.
-        .plugin(tauri_plugin_single_instance::init(|app, _argv, _cwd| {
-            if let Some(win) = app.get_webview_window("main") {
-                let _ = win.set_focus();
-            }
-        }))
+    let builder = tauri::Builder::default();
+    // Rider 3 (stable builds): a second launch focuses the existing window;
+    // it never gets a chance to probe-and-spawn a duplicate server.
+    // DISABLED in gate builds (`wdio` feature): the self-hosted gate runner
+    // shares the machine with the operator's real install, and this rider
+    // makes a second launch focus the FIRST instance and exit 0 — the
+    // gate's own hermetic launch would surrender to the production app
+    // before the WebDriver server ever came up.
+    #[cfg(not(feature = "wdio"))]
+    let builder = builder.plugin(tauri_plugin_single_instance::init(|app, _argv, _cwd| {
+        if let Some(win) = app.get_webview_window("main") {
+            let _ = win.set_focus();
+        }
+    }));
+    let builder = builder
         .plugin(tauri_plugin_shell::init())
         // Native folder locator for the create-organisation modal: the studio
         // page (remote origin) calls window.__TAURI__.dialog.open through the
@@ -469,7 +476,21 @@ pub fn run() {
                 });
             }
             Ok(())
-        })
+        });
+
+    // WKWebView boot gate (D3 tiered gate, update-strategy amendment
+    // 2026-09-05): register the WebdriverIO plugins ONLY in gate builds.
+    // The compile switch is this cargo feature (release never sets it); the
+    // runtime switch is the wdio capability file desktop/e2e ships, which
+    // the gate build copies into capabilities/ (gitignored there) — an
+    // unknown-permission capability would fail a build that lacks the
+    // plugin, so the two switches cannot drift apart silently.
+    #[cfg(feature = "wdio")]
+    let builder = builder
+        .plugin(tauri_plugin_wdio_webdriver::init())
+        .plugin(tauri_plugin_wdio::init());
+
+    builder
         .build(tauri::generate_context!())
         .expect("error while building arxa desktop shell")
         .run(|app, event| {

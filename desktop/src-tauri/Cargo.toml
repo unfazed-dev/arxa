@@ -34,7 +34,18 @@ rqrr = "0.8"
 arxa-mobile = { path = "../../mobile/src-tauri" }
 tokio = { version = "1", features = ["rt-multi-thread"] }
 
-# Auto-update (desktop only — the updater plugin does not support mobile).
+# Auto-update (desktop only — the updater plugin does not support mobile),
+# and the WKWebView boot gate (D3 tiered gate, update-strategy amendment
+# 2026-09-05): WebdriverIO's embedded WebDriver server + wdio bridge plugin,
+# compiled ONLY behind `--features wdio` (desktop/e2e drives it; the release
+# pipeline never sets the feature, so no WebDriver surface ships in a signed
+# build). macOS note: there is NO standalone WKWebView WebDriver — the
+# embedded server inside the app is the only macOS route (@wdio/tauri-service).
 [target.'cfg(any(target_os = "macos", windows, target_os = "linux"))'.dependencies]
 tauri-plugin-updater = "2"
+tauri-plugin-wdio-webdriver = { version = "1", optional = true }
+tauri-plugin-wdio = { version = "1", optional = true }
+
+[features]
+wdio = ["dep:tauri-plugin-wdio-webdriver", "dep:tauri-plugin-wdio"]
 

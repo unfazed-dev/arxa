@@ -1,0 +1,65 @@
+# WKWebView boot gate (D3 tiered gate, update-strategy amendment
+# 2026-09-05) — the machine gate that answers "does the desktop shell still
+# boot and render in the REAL WKWebView" for every desktop/** change and
+# every dsh bump PR, BEFORE a human looks at a release.
+#
+# What it proves: the shell window opens, the bundled waiting page renders
+# (title, brand logo, status line) inside macOS's WKWebView — driven through
+# @wdio/tauri-service's embedded WebDriver provider, compiled in behind the
+# `wdio` cargo feature (release builds never set it).
+# What it deliberately does NOT prove: the engine boot (arxa-studio's
+# engine-boot-smoke owns that — here the sidecars are stubs) and the full
+# studio UI (needs a real engine; follow-on when the gate earns trust).
+name: desktop-boot-gate
+
+on:
+  pull_request:
+    paths: ["desktop/**"]
+  workflow_dispatch:
+
+jobs:
+  wkwebview-boot:
+    runs-on: [self-hosted, macOS, ARM64, arxa]
+    timeout-minutes: 30
+    steps:
+      - name: Checkout arxa
+        uses: actions/checkout@v4
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-apple-darwin
+
+      - name: Cache cargo
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            desktop/src-tauri/target
+          key: desktop-gate-cargo-${{ runner.os }}-${{ hashFiles('desktop/src-tauri/Cargo.lock') }}
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Stub sidecars (the shell is the unit under test)
+        run: bash desktop/scripts/dev-stub-sidecars.sh
+
+      - name: Gate capability (copied in — never ships)
+        run: cp desktop/e2e/capabilities/wdio.json desktop/src-tauri/capabilities/wdio-e2e.json
+
+      - name: Build debug shell with the wdio feature
+        working-directory: desktop/src-tauri
+        run: cargo build --features wdio
+
+      - name: WKWebView boot gate
+        working-directory: desktop/e2e
+        run: |
+          npm install --no-audit --no-fund
+          # Hermetic: point the shell at a dead port so it stays on its own
+          # bundled waiting page — even on the self-hosted runner, where the
+          # operator's real engine may be live on :7891 (Rider 1 would
+          # otherwise connect the gate to it).
+          ARXA_STUDIO_URL=http://arxa-gate.localhost:1 npx wdio run wdio.conf.js

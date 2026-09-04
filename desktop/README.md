@@ -94,6 +94,15 @@ cargo check          # compile-verifies the shell (no bundling needed)
 cargo tauri dev      # run the shell (requires tauri-cli; expects studio server or shows wait screen)
 ```
 
+### WKWebView boot gate (desktop/e2e)
+
+Every `desktop/**` PR also runs `desktop-boot-gate` (`.github/workflows/
+desktop-gate.yml`): WebdriverIO drives the REAL WKWebView through the
+embedded WebDriver provider — compiled in behind `cargo build --features
+wdio`, never in release builds. See `desktop/e2e/README.md`. That is the D3
+tiered gate's desktop rung: shell boots + waiting page renders, with stub
+sidecars (the engine's own boot is arxa-studio's `npm run smoke`).
+
 ## Code signing & notarization (macOS)
 
 Identity (in this machine's keychain):

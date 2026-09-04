@@ -1,0 +1,6 @@
+{
+  "identifier": "wdio-e2e",
+  "description": "WKWebView boot gate (D3): wdio plugin permissions. Gate builds copy this file into src-tauri/capabilities/wdio-e2e.json (gitignored there); it is never committed under src-tauri/ and never present in release builds, whose compile lacks the wdio feature and would reject the unknown permission.",
+  "windows": ["main"],
+  "permissions": ["wdio:default"]
+}
