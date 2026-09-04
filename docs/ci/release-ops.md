@@ -152,11 +152,23 @@ D21 follow-on, not built).
 
 ## Protected environment "release"
 
-A GitHub Actions environment that holds the two `TAURI_SIGNING_*` secrets;
-the release job declares `environment: release`, so those secrets are
-injected only into environment-scoped runs, and the environment's
-deployment tag policy (`studio-v*`, `studio-beta-v*`) restricts which refs
-may deploy. `GH_RELEASES_TOKEN` and `ARXA_STUDIO_CHECKOUT_TOKEN` stay
+A GitHub Actions environment that holds the `TAURI_SIGNING_PRIVATE_KEY`
+secret; the release job declares `environment: release`, so the key is
+injected only into environment-scoped runs. Created 2026-09-05 (measured
+state):
+
+- Environment `release` exists; `TAURI_SIGNING_PRIVATE_KEY` lives in it
+  (empty password — the workflow's env mapping coerces the absent password
+  secret to the empty string, which is the key's actual password; see
+  docs/ci/self-hosted-runners.md).
+- **Deployment tag policies are NOT enforceable yet**: the API returns 404
+  for them on a private repo without GitHub Pro (same Free-plan wall as
+  branch protection). The isolation property (secrets visible only to jobs
+  that declare the environment) holds regardless — only desktop-release.yml
+  declares it. Revisit when the repo goes public or the plan upgrades; the
+  intended policies are `studio-v*` and `studio-beta-v*`, type tag.
+- The old repo-level `TAURI_SIGNING_*` secrets were deleted after the
+  environment copy was set — one home, not two. `GH_RELEASES_TOKEN` and `ARXA_STUDIO_CHECKOUT_TOKEN` stay
 repo-level (they protect different, broader things and are fine as repo
 secrets).
 
