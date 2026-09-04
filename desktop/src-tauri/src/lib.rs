@@ -216,15 +216,16 @@ fn kill_spawned(app: &tauri::AppHandle) {
 }
 
 /// Default update channel (D21: stable/beta channels). Overridable via
-/// `ARXA_UPDATE_CHANNEL` (e.g. `beta`) without a rebuild; the configured
-/// endpoint in tauri.conf.json is the `stable` channel.
+/// `ARXA_UPDATE_CHANNEL` (e.g. `beta`) without a rebuild; the endpoints
+/// configured in tauri.conf.json point at the `stable` channel, and
+/// `check_for_updates` swaps the channel segment for anything else.
 const DEFAULT_UPDATE_CHANNEL: &str = "stable";
 
-/// Launch-time update check (D21). Non-blocking (spawned on the async
-/// runtime) and silent on failure — the shell must never refuse to start
-/// because the update endpoint is unreachable or unhosted. A downloaded
-/// update is staged by the updater and applies on next launch; we never
-/// force a restart.
+/// Launch-time update check (D21 channels, D6 endpoint failover).
+/// Non-blocking (spawned on the async runtime) and silent on failure — the
+/// shell must never refuse to start because the update endpoint is
+/// unreachable or unhosted. A downloaded update is staged by the updater
+/// and applies on next launch; we never force a restart.
 #[cfg(desktop)]
 fn check_for_updates(app: &tauri::AppHandle) {
     use tauri_plugin_updater::UpdaterExt;
@@ -237,21 +238,65 @@ fn check_for_updates(app: &tauri::AppHandle) {
             .unwrap_or_else(|| DEFAULT_UPDATE_CHANNEL.to_string());
         let mut builder = handle.updater_builder();
         if channel != DEFAULT_UPDATE_CHANNEL {
-            // Swap the channel segment of the configured endpoint layout:
-            // .../desktop/{channel}/{{target}}/{{arch}}/latest.json
-            let endpoint = format!(
-                "https://updates.arxa.invalid/desktop/{channel}/{{{{target}}}}/{{{{arch}}}}/latest.json"
-            );
-            match endpoint.parse() {
-                Ok(url) => match builder.endpoints(vec![url]) {
-                    Ok(b) => builder = b,
+            // Non-stable channel (D21): serve it from the SAME endpoints
+            // configured in tauri.conf.json (plugins.updater.endpoints) with
+            // the /stable/ segment swapped for /{channel}/ — no hardcoded
+            // URL. The configured list is ordered failover (D6: R2 primary
+            // first, raw.githubusercontent.com fallback — the updater fails
+            // over ONLY on non-2xx and the first 200 + valid manifest wins),
+            // so the whole list travels through the swap, order intact.
+            //
+            // tauri::Config.plugins is a newtype map of serde_json values.
+            let stable_seg = format!("/{DEFAULT_UPDATE_CHANNEL}/");
+            let channel_seg = format!("/{channel}/");
+            let swapped: Vec<String> = handle
+                .config()
+                .plugins
+                .0
+                .get("updater")
+                .and_then(|u| u.get("endpoints"))
+                .and_then(|e| e.as_array())
+                .map(|endpoints| {
+                    endpoints.iter().filter_map(|v| v.as_str()).map(|url| {
+                        if url.contains(&stable_seg) {
+                            url.replace(&stable_seg, &channel_seg)
+                        } else {
+                            // Endpoint outside the channel layout — pass it
+                            // through unchanged rather than guessing where a
+                            // channel segment would sit.
+                            eprintln!(
+                                "[arxa-desktop] update endpoint {url:?} has no {stable_seg} segment - using it as configured"
+                            );
+                            url.to_string()
+                        }
+                    }).collect()
+                })
+                .unwrap_or_default();
+            if swapped.is_empty() {
+                eprintln!(
+                    "[arxa-desktop] no updater endpoints configured - cannot swap in channel {channel:?}, skipping update check"
+                );
+                return;
+            }
+            // Parse inline so the element type is fixed by builder.endpoints()
+            // (tauri-plugin-updater's own Url) instead of naming the url crate
+            // here. Parsing leaves {{target}}/{{arch}} percent-encoded; the
+            // updater substitutes BOTH the encoded and raw placeholder forms
+            // at check time (verified against tauri-plugin-updater 2.10.1).
+            let urls: Vec<_> = swapped
+                .iter()
+                .filter_map(|s| match s.parse() {
+                    Ok(url) => Some(url),
                     Err(e) => {
-                        eprintln!("[arxa-desktop] update endpoint rejected: {e}");
-                        return;
+                        eprintln!("[arxa-desktop] malformed update endpoint {s:?}: {e}");
+                        None
                     }
-                },
+                })
+                .collect();
+            match builder.endpoints(urls) {
+                Ok(b) => builder = b,
                 Err(e) => {
-                    eprintln!("[arxa-desktop] bad update channel {channel:?}: {e}");
+                    eprintln!("[arxa-desktop] update endpoint rejected: {e}");
                     return;
                 }
             }

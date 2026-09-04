@@ -147,10 +147,11 @@ downloaded, signature-verified, and staged; it applies on the next launch.
 - Endpoint layout (static JSON, channel-aware):
   `{BASE}/desktop/{channel}/{target}/{arch}/latest.json`
   with bundle archives under `{BASE}/desktop/{channel}/artifacts/{version}/`.
-- **`https://updates.arxa.invalid` is a deliberate placeholder.** No hosting
-  exists yet; picking real hosting (bucket/CDN/worker) is a release-CI
-  decision. Until then the launch check logs "update check skipped" and the
-  app runs normally.
+- Beta endpoints are **derived, not hardcoded**: `check_for_updates` in
+  `src-tauri/src/lib.rs` swaps the `/stable/` segment in the endpoints
+  CONFIGURED in `tauri.conf.json`, preserving their order — D6 endpoint
+  failover (R2 primary + raw GitHub fallback once R2 is live; failover only
+  on non-2xx, first 200+valid wins).
 
 ### Update signing (minisign-style, separate from Apple codesigning above)
 
@@ -192,13 +193,15 @@ warns "A public key has been found, but no private key" and skips signing.
 
 ## Release CI
 
-`.github/workflows/desktop-release.yml` runs on `studio-v*` tag pushes
-(macos-14, aarch64-apple-darwin only for now — Windows/x64 would slot in as a
-build-matrix entry). It builds both sidecars, runs `tauri build` with
-`createUpdaterArtifacts`, and publishes to the **public**
+`.github/workflows/desktop-release.yml` runs on `studio-v*` (stable) and
+`studio-beta-v*` (beta) tag pushes — the D21 channel ladder (self-hosted
+macOS ARM64 runner, aarch64-apple-darwin only for now — Windows/x64 would
+slot in as a build-matrix entry). It builds both sidecars, runs `tauri build`
+with `createUpdaterArtifacts`, and publishes to the **public**
 [`unfazed-dev/arxa-releases`](https://github.com/unfazed-dev/arxa-releases) repo:
 
-- bundle assets (`.app.tar.gz` + `.sig`, `.dmg`) as GitHub Release assets on tag `studio-v<version>`
+- bundle assets (`.app.tar.gz` + `.sig`, `.dmg`) as GitHub Release assets **on
+  the triggering tag** (`studio-v<version>` / `studio-beta-v<version>`)
 - `desktop/{channel}/{target}/{arch}/latest.json` committed to `main`, served via
   `https://raw.githubusercontent.com/unfazed-dev/arxa-releases/main` — the
   updater endpoint configured in `src-tauri/tauri.conf.json`. The manifest's
@@ -211,7 +214,27 @@ Signing/notarization happen inside `tauri build`: Tauri codesigns when
 ⇒ signed-but-unnotarized build (warning, not failure); absent cert ⇒ ad-hoc
 signature. `scripts/sign-and-notarize.sh` remains the local/manual path.
 
-### Required repository secrets (arxa repo)
+The job declares `environment: release` (D10 key custody): the two
+`TAURI_SIGNING_*` secrets live in that **protected GitHub environment**
+(tag-policy-restricted to `studio-v*` / `studio-beta-v*`), not as bare repo
+secrets readable by every run. The local `~/.arxa/updater/arxa-updater.key`
+is the offline backup, not a release build input.
+
+**Optional R2 publish (D6):** when repo secret `CLOUDFLARE_API_TOKEN` exists
+(R2-edit token — the bucket is NOT created yet), the workflow mirrors
+`latest.json` to the R2 feed bucket via `desktop/scripts/publish-feed.mjs`
+(`Cache-Control: public, max-age=300`; bucket name from variable
+`R2_FEED_BUCKET`, default `arxa-releases`). Once the bucket is live, the R2
+URL becomes the FIRST updater endpoint with raw.githubusercontent.com kept as
+fallback. Absent secret ⇒ the step warns and skips.
+
+Runbook (channel ladder, rollback, kill switch, key rotation, R2 flip
+checklist): **`docs/ci/release-ops.md`**.
+
+### Required secrets (arxa repo)
+
+`TAURI_SIGNING_*` live in the protected `release` environment (D10); the rest
+are repo-level.
 
 | Secret | Contents / how to create |
 |---|---|

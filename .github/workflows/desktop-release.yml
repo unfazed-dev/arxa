@@ -1,11 +1,13 @@
-# Desktop release CI — builds the Arxa Studio Tauri shell on studio-v* tags and
-# publishes auto-update artifacts to the public unfazed-dev/arxa-releases repo:
+# Desktop release CI — builds the Arxa Studio Tauri shell on studio-v* (stable)
+# and studio-beta-v* (beta) tags (D21 channel ladder) and publishes auto-update
+# artifacts to the public unfazed-dev/arxa-releases repo:
 #   - bundle assets (.app.tar.gz + .sig, .dmg) on a GitHub Release
 #   - desktop/{channel}/{target}/{arch}/latest.json committed to main
 #     (served via raw.githubusercontent.com — the updater endpoint in
 #     desktop/src-tauri/tauri.conf.json)
 #
-# Required secrets are documented in desktop/README.md ("Release CI").
+# Required secrets are documented in desktop/README.md ("Release CI") and the
+# runbook is docs/ci/release-ops.md.
 # Notarization is optional: absent notary secrets yield a signed-but-unnotarized
 # build instead of a failure. macOS aarch64 only for now — a Windows/x64 lane
 # would slot in as a build matrix entry (target triple + runner + bundle paths).
@@ -13,18 +15,24 @@ name: desktop-release
 
 on:
   push:
-    tags: ["studio-v*"]
+    tags: ["studio-v*", "studio-beta-v*"]
 
 env:
   TARGET_TRIPLE: aarch64-apple-darwin
   TAURI_TARGET: darwin
   TAURI_ARCH: aarch64
-  CHANNEL: stable
+  CHANNEL: stable # default only — the "Derive channel" step writes the real one per tag
   RELEASES_REPO: unfazed-dev/arxa-releases
 
 jobs:
   release:
     runs-on: [self-hosted, macOS, ARM64, arxa]
+    # D10 (key custody): the two TAURI_SIGNING_* secrets live in this
+    # protected GitHub environment (tag-policy-restricted studio-v* /
+    # studio-beta-v*), not as bare repo secrets readable by every run.
+    # Repo-level GH_RELEASES_TOKEN and ARXA_STUDIO_CHECKOUT_TOKEN stay
+    # repo-level — environment jobs can still read repo secrets.
+    environment: release
     steps:
       - name: Checkout arxa
         uses: actions/checkout@v4
@@ -37,6 +45,25 @@ jobs:
           repository: unfazed-dev/arxa-studio
           token: ${{ secrets.ARXA_STUDIO_CHECKOUT_TOKEN }}
           path: arxa-studio
+
+      - name: Derive channel and version from tag
+        run: |
+          # D21: studio-v* -> stable, studio-beta-v* -> beta. Written to
+          # GITHUB_ENV so every later step's $CHANNEL/$VERSION follows the lane.
+          case "${GITHUB_REF_NAME}" in
+            studio-beta-v*)
+              echo "CHANNEL=beta" >> "$GITHUB_ENV"
+              echo "VERSION=${GITHUB_REF_NAME#studio-beta-v}" >> "$GITHUB_ENV"
+              ;;
+            studio-v*)
+              echo "CHANNEL=stable" >> "$GITHUB_ENV"
+              echo "VERSION=${GITHUB_REF_NAME#studio-v}" >> "$GITHUB_ENV"
+              ;;
+            *)
+              echo "::error::unexpected tag ${GITHUB_REF_NAME} (want studio-v* or studio-beta-v*)"
+              exit 1
+              ;;
+          esac
 
       - name: Guard required secrets
         env:
@@ -130,8 +157,7 @@ jobs:
 
       - name: Stage assets and generate latest.json
         run: |
-          VERSION="${GITHUB_REF_NAME#studio-v}"
-          echo "VERSION=$VERSION" >> "$GITHUB_ENV"
+          # VERSION/CHANNEL come from the "Derive channel and version" step.
           BUNDLE_DIR="arxa/desktop/src-tauri/target/${TARGET_TRIPLE}/release/bundle"
           ASSET="Arxa-Studio-${VERSION}-${TARGET_TRIPLE}.app.tar.gz"
           echo "ASSET=$ASSET" >> "$GITHUB_ENV"
@@ -140,7 +166,10 @@ jobs:
           cp "$BUNDLE_DIR/macos/Arxa Studio.app.tar.gz.sig" "staging/$ASSET.sig"
           DMG="$(find "$BUNDLE_DIR/dmg" -maxdepth 1 -name '*.dmg' 2>/dev/null | head -1)"
           if [ -n "$DMG" ]; then cp "$DMG" "staging/Arxa-Studio-${VERSION}-${TARGET_TRIPLE}.dmg"; fi
-          URL="https://github.com/${RELEASES_REPO}/releases/download/studio-v${VERSION}/${ASSET}"
+          # Release tag = the triggering tag itself (studio-v1.2.3 /
+          # studio-beta-v1.2.3-beta.1) — reconstructing "studio-v${VERSION}"
+          # would mint a mismatched tag inside arxa-releases on beta lanes.
+          URL="https://github.com/${RELEASES_REPO}/releases/download/${GITHUB_REF_NAME}/${ASSET}"
           node arxa/desktop/scripts/make-update-manifest.mjs \
             --bundle "staging/$ASSET" --sig "staging/$ASSET.sig" \
             --version "$VERSION" --channel "$CHANNEL" \
@@ -155,7 +184,7 @@ jobs:
           ASSETS=(staging/"$ASSET" staging/"$ASSET".sig)
           DMG="$(find staging -maxdepth 1 -name '*.dmg' | head -1)"
           if [ -n "$DMG" ]; then ASSETS+=("$DMG"); fi
-          gh release create "studio-v${VERSION}" \
+          gh release create "$GITHUB_REF_NAME" \
             --repo "$RELEASES_REPO" \
             --title "Arxa Studio ${VERSION}" \
             --notes "Arxa Studio ${VERSION} (${CHANNEL}, ${TARGET_TRIPLE})" \
@@ -175,3 +204,23 @@ jobs:
           git add "desktop/${CHANNEL}/${TAURI_TARGET}/${TAURI_ARCH}/latest.json"
           git commit -m "chore: publish ${CHANNEL} ${TAURI_TARGET}/${TAURI_ARCH} manifest for ${VERSION}"
           git push origin HEAD:main
+
+      # D6 (R2 primary + GitHub raw fallback): optional mirror of the manifest
+      # to the R2 feed bucket. Once the bucket is live, the R2 URL becomes the
+      # FIRST entry in tauri.conf.json plugins.updater.endpoints with the
+      # raw.githubusercontent.com URL kept second as fallback — do NOT flip
+      # that until the bucket exists. Setup + flip checklist:
+      # docs/ci/release-ops.md#r2-feed.
+      - name: Publish latest.json to R2 feed (optional)
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          if [ -z "${{ secrets.CLOUDFLARE_API_TOKEN }}" ]; then
+            echo "::warning::CLOUDFLARE_API_TOKEN not set — skipping R2 publish (feed stays GitHub-raw only)"
+            exit 0
+          fi
+          node arxa/desktop/scripts/publish-feed.mjs \
+            --manifest staging/latest.json \
+            --channel "$CHANNEL" \
+            --target "$TAURI_TARGET" --arch "$TAURI_ARCH" \
+            --bucket "${{ vars.R2_FEED_BUCKET || 'arxa-releases' }}"

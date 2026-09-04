@@ -37,6 +37,13 @@ When arxa scaffolds CI workflows for a user's app, the generated workflow MUST:
 
 ## Secrets gotchas (learned the hard way)
 
-- `TAURI_SIGNING_PRIVATE_KEY` (`~/.arxa/updater/arxa-updater.key`) has an **empty password**. `TAURI_SIGNING_PRIVATE_KEY_PASSWORD` must be set to the empty string — any other value fails the build with `incorrect updater private key password`.
+- `TAURI_SIGNING_PRIVATE_KEY` lives in the protected **`release` GitHub
+  environment** on the arxa repo (D10 — not a bare repo secret readable by
+  every run); the workflow's `environment: release` is what gates exposure.
+  The key (`~/.arxa/updater/arxa-updater.key`, never committed) has an
+  **empty password**, and that local file is now the **offline backup only**
+  — not a release build input. `TAURI_SIGNING_PRIVATE_KEY_PASSWORD` must be
+  set to the empty string — any other value fails the build with
+  `incorrect updater private key password`.
 - One updater keypair is shared by arxa and arxa-studio; secrets are set per-repo on both.
 - Moving a release tag: tag-triggered runs use the workflow file **at the tag's commit** — re-point the tag after workflow edits.
