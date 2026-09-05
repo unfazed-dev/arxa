@@ -12,6 +12,10 @@
 export const config = {
   runner: 'local',
   specs: ['./specs/**/*.js'],
+  // auth.spec.js needs the fake engine from run-auth-gate.mjs (wdio.auth.conf.js);
+  // specs/real-engine/ needs a live engine (wdio.real.conf.js). Against this
+  // suite's dead ARXA_STUDIO_URL they fail by construction, so keep them out.
+  exclude: ['./specs/auth.spec.js', './specs/real-engine/**/*.js'],
   maxInstances: 1,
   capabilities: [{}],
   services: [

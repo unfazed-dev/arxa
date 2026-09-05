@@ -4,7 +4,9 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "gate": "ARXA_STUDIO_URL=http://arxa-gate.localhost:1 wdio run wdio.conf.js"
+    "gate": "ARXA_STUDIO_URL=http://arxa-gate.localhost:1 wdio run wdio.conf.js",
+    "gate:auth": "node run-auth-gate.mjs",
+    "gate:real": "wdio run wdio.real.conf.js"
   },
   "devDependencies": {
     "@wdio/cli": "^9.31.5",

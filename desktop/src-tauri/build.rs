@@ -8,6 +8,7 @@ fn main() {
     tauri_build::try_build(
         tauri_build::Attributes::new().app_manifest(tauri_build::AppManifest::new().commands(&[
             "studio_url",
+            "open_studio",
             "open_pairing_window",
             "report_theme",
             "get_theme",

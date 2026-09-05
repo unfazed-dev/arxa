@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-open-studio"
+description = "Enables the open_studio command without any pre-configured scope."
+commands.allow = ["open_studio"]
+
+[[permission]]
+identifier = "deny-open-studio"
+description = "Denies the open_studio command without any pre-configured scope."
+commands.deny = ["open_studio"]

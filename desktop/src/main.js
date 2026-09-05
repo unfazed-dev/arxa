@@ -36,7 +36,19 @@ async function isReachable(url) {
   let attempts = 0;
   const tick = async () => {
     if (await isReachable(url)) {
-      window.location.replace(url);
+      // The navigation MUST be app-initiated: WKWebView drops the
+      // BrowserAuth exchange cookie when the 303 answers a cross-site JS
+      // navigation from this bundled page (tauri.localhost → studio
+      // origin), which parks the window on the 401 hint forever — the
+      // 2026-09-05 lockout, pinned by desktop/e2e's auth gate. The Rust
+      // side recomputes the tokenized studio URL itself. The location
+      // fallback only fires outside Tauri (plain browser), where a typed
+      // or clicked navigation is first-party anyway.
+      try {
+        await window.__TAURI__.core.invoke("open_studio");
+      } catch {
+        window.location.replace(url);
+      }
       return;
     }
     attempts += 1;

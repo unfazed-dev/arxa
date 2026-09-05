@@ -39,12 +39,130 @@ struct SpawnedServer(Mutex<Option<CommandChild>>);
 /// Resolve the studio server URL. Overridable via `ARXA_STUDIO_URL` so
 /// non-standard setups and future config files can point the shell
 /// elsewhere without a rebuild.
-#[tauri::command]
-fn studio_url() -> String {
+fn raw_studio_url() -> String {
     std::env::var("ARXA_STUDIO_URL")
         .ok()
         .filter(|v| !v.trim().is_empty())
         .unwrap_or_else(|| DEFAULT_STUDIO_URL.to_string())
+}
+
+/// The engine's BrowserAuth launch token (dsh 0.1.2-rc.1), published to
+/// $DSH_HOME/desktop-session.json by the profile's arxa-desktop-session
+/// plugin at every engine boot. The webview has no human to click the
+/// printed `dsh web:` URL, so the shell reads the per-boot token here and
+/// lets the waiting page navigate tokenized once — the 303 exchange mints
+/// the 30-day signed cookie on this authority (the token itself is
+/// authority-agnostic; the cookie binds at mint). ARXA_DSH_HOME overrides
+/// the home for gates and sandboxes. A missing or unreadable file degrades
+/// to the pre-publisher behaviour: navigate clean, see the engine's 401
+/// hint — never something worse.
+fn session_token() -> Option<String> {
+    let home = std::env::var("ARXA_DSH_HOME")
+        .ok()
+        .filter(|v| !v.trim().is_empty())
+        .map(std::path::PathBuf::from)
+        .or_else(|| {
+            std::env::var("HOME")
+                .ok()
+                .map(|h| std::path::PathBuf::from(h).join(".arxa").join("dsh"))
+        })?;
+    let body = std::fs::read_to_string(home.join("desktop-session.json")).ok()?;
+    serde_json::from_str::<serde_json::Value>(&body)
+        .ok()?
+        .get("token")?
+        .as_str()
+        .map(str::to_owned)
+}
+
+/// The studio URL as the webview should load it: the launch token attached
+/// whenever the engine has published one. Read fresh on every invocation —
+/// the waiting page re-invokes after every engine respawn, and a reboot
+/// means a new token. An ARXA_STUDIO_URL that already carries `token=`
+/// wins as-is (manual override beats the file).
+#[tauri::command]
+fn studio_url() -> String {
+    let base = raw_studio_url();
+    if base.contains("token=") {
+        return base;
+    }
+    match session_token() {
+        Some(token) => format!("{}/?token={}", base.trim_end_matches('/'), token),
+        None => base,
+    }
+}
+
+/// Dev-only trace for the auth-gate flow (the app's stderr does not reach
+/// the gate runner; eprintln vanishes under LaunchServices too).
+fn auth_trace(msg: &str) {
+    use std::io::Write;
+    if let Ok(mut f) = std::fs::OpenOptions::new()
+        .create(true)
+        .append(true)
+        .open("/tmp/arxa-open-studio.trace")
+    {
+        let _ = writeln!(f, "{msg}");
+    }
+}
+
+/// App-initiated navigation to the (tokenized) studio URL, in two steps.
+///
+/// Step 1 (exchange): navigate to the tokenized URL — the engine's 303
+/// mints the 30-day cookie. Step 2 (land): once the address has settled
+/// on the clean root, navigate to it once more, token-free. Step 2 is
+/// load-bearing, not cosmetic: WKWebView STORES the exchange cookie but
+/// never SENDS it inside the exchange's own navigation chain
+/// (SameSite=Strict withholds it while the chain was initiated from this
+/// shell — proven by the e2e auth gate, 2026-09-05: the exchange chain
+/// lands on the 401 hint with `cookie=no`, then a fresh first-party
+/// navigation sends `cookie=yes` and renders the app). Without step 2 the
+/// window parks on the 401 text with a valid cookie sitting in the store.
+#[tauri::command]
+fn open_studio(app: tauri::AppHandle) {
+    let tokenized = studio_url();
+    let clean = format!("{}/", raw_studio_url().trim_end_matches('/'));
+    auth_trace(&format!(
+        "open_studio: tokenized={} clean={}",
+        tokenized.contains("token="),
+        clean
+    ));
+    let Ok(url) = tauri::Url::parse(&tokenized) else {
+        auth_trace("open_studio: tokenized URL did not parse");
+        return;
+    };
+    let Some(win) = app.get_webview_window("main") else {
+        auth_trace("open_studio: no main window");
+        return;
+    };
+    let nav = win.navigate(url);
+    auth_trace(&format!("open_studio: navigate#1 err={}", nav.is_err()));
+    if tokenized == clean {
+        return; // no token published — single navigation is all there is
+    }
+    std::thread::spawn(move || {
+        // Condition-based, not a fixed sleep: the exchange chain settles
+        // on the clean root only after the 303 round-trip.
+        for i in 0..80 {
+            std::thread::sleep(Duration::from_millis(250));
+            let Ok(current) = win.url() else {
+                auth_trace("open_studio: win.url() failed — thread exits");
+                return;
+            };
+            if i == 0 || i == 79 {
+                auth_trace(&format!("open_studio: poll[{i}] url={}", current.as_str()));
+            }
+            if current.as_str() == clean {
+                match tauri::Url::parse(&clean) {
+                    Ok(clean_url) => {
+                        let err = win.navigate(clean_url).is_err();
+                        auth_trace(&format!("open_studio: navigate#2 (clean) err={err}"));
+                    }
+                    Err(_) => auth_trace("open_studio: clean URL did not parse"),
+                }
+                return;
+            }
+        }
+        auth_trace("open_studio: poll budget exhausted without settling on the clean root");
+    });
 }
 
 /// Live theme as last reported by the studio webview (arxa-pairing's client
@@ -354,6 +472,7 @@ pub fn run() {
         .manage(ThemeState(Mutex::new(None)))
         .invoke_handler(tauri::generate_handler![
             studio_url,
+            open_studio,
             open_pairing_window,
             report_theme,
             get_theme,
@@ -368,7 +487,9 @@ pub fn run() {
                     .plugin(tauri_plugin_updater::Builder::new().build())?;
                 check_for_updates(app.handle());
             }
-            let url = studio_url();
+            // Probing, pairing and logs use the RAW url — the token belongs
+            // only in the webview-facing command, never in log lines.
+            let url = raw_studio_url();
             // Mobile pairing: iroh endpoint + bridge to the engine server.
             pairing::init(app.handle(), studio_host_port(&url));
             #[cfg(desktop)]
