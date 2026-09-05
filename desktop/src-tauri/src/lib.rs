@@ -141,14 +141,47 @@ fn open_studio(app: tauri::AppHandle) {
     std::thread::spawn(move || {
         // Condition-based, not a fixed sleep: the exchange chain settles
         // on the clean root only after the 303 round-trip.
-        for i in 0..80 {
+        //
+        // Token rotation (2026-09-05 blank-screen-on-install): the engine
+        // starts LISTENING before its arxa-desktop-session plugin publishes
+        // the new boot's token, and the waiting page's no-cors probe counts
+        // any answer — even the 401 — as "up". So the first navigation can
+        // carry the PREVIOUS boot's token, which the engine rejects, and
+        // the window parks on the 401 text. While unsettled, re-read the
+        // session file every tick; when the published token differs from
+        // the one we navigated with, navigate again with the fresh one.
+        let mut navigated_token = tokenized
+            .split("token=")
+            .nth(1)
+            .map(str::to_owned)
+            .unwrap_or_default();
+        const BUDGET: usize = 120; // 30s — covers a slow first engine boot
+        for i in 0..BUDGET {
             std::thread::sleep(Duration::from_millis(250));
             let Ok(current) = win.url() else {
                 auth_trace("open_studio: win.url() failed — thread exits");
                 return;
             };
-            if i == 0 || i == 79 {
+            if i == 0 || i == BUDGET - 1 {
                 auth_trace(&format!("open_studio: poll[{i}] url={}", current.as_str()));
+            }
+            if current.as_str() != clean {
+                if let Some(fresh) = session_token() {
+                    if fresh != navigated_token {
+                        let retok = format!("{}?token={}", clean, fresh);
+                        match tauri::Url::parse(&retok) {
+                            Ok(u) => {
+                                let err = win.navigate(u).is_err();
+                                auth_trace(&format!(
+                                    "open_studio: token rotated at poll[{i}] — renavigate err={err}"
+                                ));
+                                navigated_token = fresh;
+                            }
+                            Err(_) => auth_trace("open_studio: rotated URL did not parse"),
+                        }
+                        continue;
+                    }
+                }
             }
             if current.as_str() == clean {
                 match tauri::Url::parse(&clean) {
