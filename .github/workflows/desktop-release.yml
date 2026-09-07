@@ -129,7 +129,7 @@ jobs:
         # that cannot boot its own engine stops here instead of shipping.
         working-directory: arxa-studio
         env:
-          ARXA_SMOKE_LAUNCHER: ${{ github.workspace }}/arxa/desktop/src-tauri/binaries/arxa-studio-aarch64-apple-darwin
+          ARXA_SMOKE_LAUNCHER: ${{ github.workspace }}/arxa/desktop/src-tauri/binaries/arxa-studio-${{ env.TARGET_TRIPLE }}
           # A lane of our own: the self-hosted runner often has the operator's
           # real engine on the smoke default (7919).
           ARXA_SMOKE_PORT: "7931"
