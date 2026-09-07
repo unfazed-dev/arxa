@@ -224,13 +224,11 @@ fn open_studio(app: tauri::AppHandle) {
                 }
             }
             if current.as_str() == clean {
-                match tauri::Url::parse(&clean) {
-                    Ok(clean_url) => {
-                        let err = win.navigate(clean_url).is_err();
-                        auth_trace(&format!("open_studio: navigate#2 (clean) err={err}"));
-                    }
-                    Err(_) => auth_trace("open_studio: clean URL did not parse"),
-                }
+                // The 303 exchange already landed the window on the clean
+                // root with the cookie minted; re-navigating here reloaded
+                // the whole studio a second time on every boot (2026-09-07
+                // trace: only the second load ever painted, ~1s later).
+                auth_trace(&format!("open_studio: settled on clean root at poll[{i}]"));
                 return;
             }
         }

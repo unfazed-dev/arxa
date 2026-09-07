@@ -38,7 +38,7 @@ async function isReachable(url) {
 // app loading (2026-09-07). /__arxa/ready answers 200 once the studio's org
 // shell is loaded, 503 while it is still booting. An older studio has no such
 // route: a 404 or a CORS failure reads as "unknown", and the port poll stands.
-const READY_CAP = 150; // 30s at 200ms
+const READY_CAP = 50; // 10s at 200ms
 let readyNote = "";
 async function isReady(url) {
   try {
@@ -48,7 +48,11 @@ async function isReady(url) {
     return true; // 200, or a studio without the route
   } catch (e) {
     readyNote = "err:" + String(e && e.message || e).slice(0, 40);
-    return true; // no CORS on the answer = older studio; the port poll decided
+    // Verified 2026-09-07: the route answers WITH a CORS header, but the
+    // engine's 404 before the sidebar registers it has none, so WebKit
+    // throws "Load failed". That is "not yet", not "ready" — keep waiting;
+    // READY_CAP bounds the wait for a studio that never grows the route.
+    return false;
   }
 }
 // Boot trace (2026-09-07): the shell has no log of its own, so the tick that
