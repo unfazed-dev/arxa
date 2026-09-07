@@ -29,13 +29,32 @@ async function isReachable(url) {
   }
 }
 
+// The port answering is not the app being ready: the studio opens its port
+// BEFORE its plugins finish applying, so navigating then shows the user the
+// app loading (2026-09-07). /__arxa/ready answers 200 once the studio's org
+// shell is loaded, 503 while it is still booting. An older studio has no such
+// route: a 404 or a CORS failure reads as "unknown", and the port poll stands.
+const READY_CAP = 30;
+async function isReady(url) {
+  try {
+    const res = await fetch(url.replace(/\/?(\?.*)?$/, "") + "/__arxa/ready", { cache: "no-store" });
+    if (res.status === 503) return false;
+    return true; // 200, or a studio without the route
+  } catch {
+    return true; // no CORS on the answer = older studio; the port poll decided
+  }
+}
+
 (async () => {
   const url = await resolveStudioUrl();
   const status = document.getElementById("status");
 
   let attempts = 0;
+  let readyPolls = 0;
   const tick = async () => {
-    if (await isReachable(url)) {
+    // Reachable but not ready: keep the splash up to READY_CAP more ticks, then
+    // open anyway rather than hang on a studio that never flips its flag.
+    if (await isReachable(url) && (readyPolls++ >= READY_CAP || await isReady(url))) {
       // The navigation MUST be app-initiated: WKWebView drops the
       // BrowserAuth exchange cookie when the 303 answers a cross-site JS
       // navigation from this bundled page (tauri.localhost → studio
