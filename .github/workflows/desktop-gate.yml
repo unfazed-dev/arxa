@@ -63,3 +63,52 @@ jobs:
           # operator's real engine may be live on :7891 (Rider 1 would
           # otherwise connect the gate to it).
           ARXA_STUDIO_URL=http://arxa-gate.localhost:1 npx wdio run wdio.conf.js
+
+  linux-engine-unit:
+    # The systemd unit renderer had no gate anywhere: engine_unit.rs is
+    # #[cfg(target_os = "linux")], so the macOS job above can never run its
+    # tests, and `cargo build` does not run tests at all. This runs them in the
+    # Arch container the Linux dev loop uses — the harness lives in arxa-studio
+    # (scripts/linux/), so both repos are checked out as siblings the way
+    # run-container.sh expects.
+    #
+    # Sidecars are STUBBED inside the container (a CI checkout has no monaco
+    # dist): cargo needs files at the externalBin paths, not working engines.
+    # The real packed artifact is gated on the release path instead.
+    runs-on: [self-hosted, macOS, ARM64, arxa]
+    timeout-minutes: 60
+    steps:
+      - name: Checkout arxa
+        uses: actions/checkout@v4
+        with:
+          path: arxa
+
+      - name: Checkout arxa-studio (the container harness)
+        uses: actions/checkout@v4
+        with:
+          repository: unfazed-dev/arxa-studio
+          token: ${{ secrets.ARXA_STUDIO_CHECKOUT_TOKEN }}
+          path: arxa-studio
+
+      - name: Docker available
+        # Docker Desktop is not a service on this runner; skip loudly rather
+        # than fail the build when it is not up.
+        id: docker
+        run: |
+          if docker info >/dev/null 2>&1; then echo "up=yes" >> "$GITHUB_OUTPUT"
+          else echo "up=no" >> "$GITHUB_OUTPUT"; echo "::warning::Docker is not running — the systemd unit tests did not execute"; fi
+
+      - name: Build the Arch image
+        if: steps.docker.outputs.up == 'yes'
+        working-directory: arxa-studio
+        run: docker build -f scripts/linux/Dockerfile.arch -t arxa-arch:arm64 scripts/linux
+
+      - name: cargo build + engine_unit tests on Arch
+        if: steps.docker.outputs.up == 'yes'
+        working-directory: arxa-studio
+        env:
+          # Its own work volume: the runner is also the operator's dev machine,
+          # and a CI rsync must not land in the middle of a local bring-up.
+          # The cargo/registry volumes are shared on purpose (build cache).
+          VOLUME: arxa-ci-work-arm64
+        run: ./scripts/linux/run-container.sh shell

@@ -107,11 +107,33 @@ jobs:
           mkdir -p ../desktop/src-tauri/binaries
           dart compile exe bin/arxa.dart -o "../desktop/src-tauri/binaries/arxa-${TARGET_TRIPLE}"
 
+      - name: Build the artifact viewer's monaco bundle
+        # A separate npm root whose dist/ is gitignored, so a fresh checkout has
+        # none — and pack-sidecar REFUSES to pack a viewer that cannot open a
+        # file. Must run before the sidecar build, not after.
+        working-directory: arxa-studio/plugins/artifact-viewer/lib/monaco-build
+        run: |
+          npm ci --no-audit --no-fund
+          npm run build
+
       - name: Build engine sidecar (pack-sidecar.mjs)
         working-directory: arxa-studio
         run: |
           npm install --no-audit --no-fund
           node scripts/pack-sidecar.mjs --out "$GITHUB_WORKSPACE/arxa/desktop/src-tauri/binaries/arxa-studio-${TARGET_TRIPLE}"
+
+      - name: Packed engine boot smoke (the artifact that ships)
+        # The same gate arxa-studio runs on its checkout, pointed at the PACKED
+        # binary: extraction, the pinned node, the payload's plugin tree and the
+        # profile rows all have to work for this to answer 200 HTML. A release
+        # that cannot boot its own engine stops here instead of shipping.
+        working-directory: arxa-studio
+        env:
+          ARXA_SMOKE_LAUNCHER: ${{ github.workspace }}/arxa/desktop/src-tauri/binaries/arxa-studio-aarch64-apple-darwin
+          # A lane of our own: the self-hosted runner often has the operator's
+          # real engine on the smoke default (7919).
+          ARXA_SMOKE_PORT: "7931"
+        run: npm run smoke
 
       - name: Import Developer ID certificate
         env:
