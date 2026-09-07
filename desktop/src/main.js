@@ -8,7 +8,11 @@
 // The URL comes from the Rust side (ARXA_STUDIO_URL override or the
 // canonical default http://arxa.studio.localhost:7891).
 
-const POLL_INTERVAL_MS = 1000;
+// 200ms, not 1000: on the 2026-09-07 boot the studio was ready at +2.1s and
+// this page still sat on the splash for most of a second waiting for its
+// next tick. Two polls (port, then ready) each paid that. Attempt counts
+// below are scaled so the status copy flips at the same wall-clock moments.
+const POLL_INTERVAL_MS = 200;
 
 async function resolveStudioUrl() {
   try {
@@ -34,7 +38,7 @@ async function isReachable(url) {
 // app loading (2026-09-07). /__arxa/ready answers 200 once the studio's org
 // shell is loaded, 503 while it is still booting. An older studio has no such
 // route: a 404 or a CORS failure reads as "unknown", and the port poll stands.
-const READY_CAP = 30;
+const READY_CAP = 150; // 30s at 200ms
 async function isReady(url) {
   try {
     const res = await fetch(url.replace(/\/?(\?.*)?$/, "") + "/__arxa/ready", { cache: "no-store" });
@@ -74,9 +78,9 @@ async function isReady(url) {
     // First moments: launch copy. If the server still isn't up after a few
     // seconds (or died mid-session and the watchdog sent us back here),
     // switch to honest reconnect copy rather than pretending to launch.
-    if (attempts === 5) {
+    if (attempts === 25) {
       status.textContent = "Getting things ready…";
-    } else if (attempts === 15) {
+    } else if (attempts === 75) {
       status.textContent = "Reconnecting…";
     }
     setTimeout(tick, POLL_INTERVAL_MS);
