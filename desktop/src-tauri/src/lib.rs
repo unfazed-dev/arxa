@@ -780,9 +780,22 @@ pub fn run() {
         .setup(|app| {
             #[cfg(desktop)]
             {
-                app.handle()
-                    .plugin(tauri_plugin_updater::Builder::new().build())?;
-                check_for_updates(app.handle());
+                // NOT fatal. The updater only supports AppImage on Linux, so a
+                // binary installed any other way (a pacman package, a plain
+                // `cargo build` during development) fails to register it — and
+                // a `?` here turned that into "Failed to setup app: Permission
+                // denied" with no window at all (Arch, 2026-09-07). An app that
+                // cannot check for updates still runs; one that will not start
+                // is useless.
+                match app
+                    .handle()
+                    .plugin(tauri_plugin_updater::Builder::new().build())
+                {
+                    Ok(()) => check_for_updates(app.handle()),
+                    Err(e) => eprintln!(
+                        "[arxa-desktop] updater unavailable ({e}) - continuing without update checks"
+                    ),
+                }
             }
             // Probing, pairing and logs use the RAW url — the token belongs
             // only in the webview-facing command, never in log lines.
