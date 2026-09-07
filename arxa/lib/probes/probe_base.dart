@@ -214,7 +214,7 @@ DisposableVerdict disposableVerdict(
         '       here risks the exact corruption this guard exists to stop.\n'
         '       Make a disposable copy and serve THAT on a spare port:\n'
         '         cp -R ~/.arxa/projects/$boundProject ~/.arxa/projects/$boundProject-probe\n'
-        '         dart run arxa/bin/arxa.dart design serve designs/arxa-studio-v2 --project $boundProject-probe --port 4330\n'
+        '         dart run arxa/bin/arxa.dart design serve designs/arxa-studio --project $boundProject-probe --port 4330\n'
         '       then run this probe with --base http://localhost:4330\n'
         '       (boundProject is fixed at boot and belongs to this process\n'
         '       alone, so --project is fine here — nothing to get out of\n'

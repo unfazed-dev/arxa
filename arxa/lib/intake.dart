@@ -1412,15 +1412,14 @@ String defaultRegistryOut() {
   final root = repoRoot();
   // Same canonical default as GateContext.studioDesignDir (gates.dart) —
   // deliberately NOT imported from there (see the doc above); keep in step.
-  // v2 design (canonical): intake/registry.json is the single AUTHORING
-  // surface (composers write it; models/screens_model/registry.json is a
-  // derived projection) — the intake emitter is a composer, so its output
-  // lands at the authoring surface, never the projection (the v1 clobber
-  // path). v1 trees keep the legacy models/screens_model behavior.
+  // A v2-shaped tree (intake/registry.json is the AUTHORING surface,
+  // models/screens_model/registry.json a derived projection) still wins when
+  // one is present — arxa's own v2 tree was archived 2026-09-07, but scaffolded
+  // client trees keep that shape. v1 trees keep the legacy projection path.
   var designRoot = '$root/designs/arxa-studio-v2';
   var rel = 'intake/registry.json';
   if (!Directory(designRoot).existsSync()) {
-    // v1 tree (retained reference): registry under models/screens_model.
+    // v1 tree (arxa's own, and the legacy shape): under models/screens_model.
     designRoot = '$root/designs/arxa-studio';
     rel = 'models/screens_model/registry.json';
   }

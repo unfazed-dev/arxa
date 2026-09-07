@@ -14,6 +14,15 @@ these directories are historical and intentionally left as-is.
   Archived 2026-07-29 in `857f64f` when the chat-centric contract won.
   Superseded by `docs/intake/` (story map, 101 stories).
 
+- **arxa-studio-v2/** — the studio's own v2 design tree (hub-hosted stage
+  shells, stacked MVVM) that replaced v1 as the canonical studio design on
+  2026-08-16. Archived 2026-09-07: arxa studio is now a fork of dsh, so the
+  studio no longer designs itself through the design tool. `designs/arxa-studio`
+  (v1) stays in-tree as the design arxa's own gates, probes and flow-services
+  parity suite run against. Plans written against v2 — studio-v2-boot-sequence-wiring,
+  studio-v2-emit-blockers, inspector-*, screen-vocabulary-identifier-rename,
+  provenance-routed-text-editing — are superseded by the dsh fork.
+
 - **design-v1/** — first-pass design docs (brief, personas, journeys, flows).
   Archived 2026-07-28 in `6530bb9`. Superseded by design-v2, which was itself
   later superseded by `docs/intake/`.

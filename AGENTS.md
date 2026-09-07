@@ -30,9 +30,9 @@
 
 - `~/.arxa` holds **user projects only** (`~/.arxa/projects/<name>/`,
   with `intake/`, `design/`, `build/`, `settings/` shell dirs). The studio's
-  own design stays in the repo (`designs/arxa-studio-v2` — the hub-hosted
-  stage-shell design that replaced v1 on 2026-08-16; v1 remains in-tree as
-  the retained visual-parity reference and the flow-services parity suite).
+  own design stays in the repo (`designs/arxa-studio`). The v2 hub-hosted
+  stage-shell tree that replaced v1 on 2026-08-16 was archived on 2026-09-07
+  (`archives/arxa-studio-v2/`) when arxa studio became a dsh fork.
 - **Never hand-edit generated outputs.** A project's `intake/registry.json`
   and `intake/flows.json`, and the `run.*.json` / `app.*.json` fixtures, are
   generated — edit the seeds/answers (`answers.json`, `*_seed.<locale>.json`,

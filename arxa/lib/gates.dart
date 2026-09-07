@@ -31,11 +31,12 @@ class GateContext {
   final bool selfTest;
 
   /// The studio's own design, relative to the app/repo root. ONE canonical
-  /// default so emit verbs, gates and the intake output default cannot drift:
-  /// v2 (hub-hosted stage shells, stacked MVVM) replaced v1 as the studio
-  /// design on 2026-08-16; v1 stays in-tree as the retained visual-parity
-  /// reference (VISUAL PARITY LAW, designs/arxa-studio-v2/intake/registry.json).
-  static const studioDesignDir = 'designs/arxa-studio-v2';
+  /// default so emit verbs, gates and the intake output default cannot drift.
+  /// v2 was the studio design from 2026-08-16 until 2026-09-07, when arxa
+  /// studio became a dsh fork and the v2 tree was archived to
+  /// `archives/arxa-studio-v2/` (see archives/README.md). v1 stays in-tree as
+  /// the design these gates run against.
+  static const studioDesignDir = 'designs/arxa-studio';
 
   /// The `~/.arxa/projects/<name>` shell a gate should read instead of the
   /// studio's own design root. It lives on the context rather than as a named

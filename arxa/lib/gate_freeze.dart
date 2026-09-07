@@ -51,13 +51,13 @@ Future<GateResult> freezeGate(
 }) async {
   var designRel = GateContext.studioDesignDir;
   var designRoot = ctx.designRoot;
-  // v2 is canonical, but a tree planting only v1 (fixtures, the retained
-  // reference) freezes against what exists.
+  // A scaffolded v2-shaped tree freezes against itself when the canonical
+  // root is absent (arxa's own v2 tree was archived 2026-09-07).
   if (!Directory(designRoot).existsSync()) {
-    final legacy = p.join(p.dirname(designRoot), 'arxa-studio');
-    if (Directory(legacy).existsSync()) {
-      designRoot = legacy;
-      designRel = 'designs/arxa-studio';
+    final vtwo = p.join(p.dirname(designRoot), 'arxa-studio-v2');
+    if (Directory(vtwo).existsSync()) {
+      designRoot = vtwo;
+      designRel = 'designs/arxa-studio-v2';
     }
   }
   final details = <String>[];
