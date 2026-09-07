@@ -2,6 +2,14 @@
 //! (launchd, macOS), with the same four entry points so `lib.rs` does not care
 //! which one it is talking to.
 //!
+//! `KillMode=mixed`, not `process`: the launcher spawns the real dsh server as
+//! a grandchild, so killing only the main process leaves that grandchild
+//! holding port 7891 — systemd then logs "remains running after unit stopped"
+//! and every `Restart=always` attempt exits 1 against the port its own orphan
+//! still owns (observed on Omarchy, 2026-09-08). `mixed` sends SIGTERM to the
+//! launcher, which forwards it, and SIGKILL to whatever is left in the cgroup
+//! at `TimeoutStopSec`.
+//!
 //! `~/.config/systemd/user/arxa-engine.service` runs the bundled
 //! `arxa-studio --no-open` with `Restart=always`, so a crashed engine comes
 //! back without the shell relaunching. `ConditionPathExists` on the sidecar is
@@ -62,7 +70,7 @@ pub fn render(sidecar: &Path, log: &Path) -> String {
          ExecStart={s} --no-open\n\
          Restart=always\n\
          RestartSec=5\n\
-         KillMode=process\n\
+         KillMode=mixed\n\
          TimeoutStopSec=20\n\
          StandardOutput=append:{l}\n\
          StandardError=append:{l}\n\
@@ -158,6 +166,10 @@ mod tests {
         );
         assert!(unit.contains("ExecStart=/opt/arxa/arxa-studio --no-open"));
         assert!(unit.contains("Restart=always"));
+        // Never `process`: that orphans the dsh grandchild on the port and the
+        // restart loop then fights it (2026-09-08).
+        assert!(unit.contains("KillMode=mixed"));
+        assert!(!unit.contains("KillMode=process"));
         // The launchd KeepAlive.PathState counterpart: no binary, no restart loop.
         assert!(unit.contains("ConditionPathExists=/opt/arxa/arxa-studio"));
         assert!(unit.contains("WantedBy=default.target"));
@@ -170,16 +182,25 @@ mod tests {
     #[test]
     fn environment_values_are_quoted_and_escaped() {
         let line = env_line("ARXA_HOME", "/home/e/my \"odd\" dir\\x");
-        assert_eq!(line, "Environment=\"ARXA_HOME=/home/e/my \\\"odd\\\" dir\\\\x\"\n");
+        assert_eq!(
+            line,
+            "Environment=\"ARXA_HOME=/home/e/my \\\"odd\\\" dir\\\\x\"\n"
+        );
     }
 
     #[test]
     fn unit_path_prefers_xdg_config_home() {
         // Serialised implicitly: these two vars are only read here.
         std::env::set_var("XDG_CONFIG_HOME", "/tmp/xdg");
-        assert_eq!(unit_path().unwrap(), PathBuf::from("/tmp/xdg/systemd/user/arxa-engine.service"));
+        assert_eq!(
+            unit_path().unwrap(),
+            PathBuf::from("/tmp/xdg/systemd/user/arxa-engine.service")
+        );
         std::env::remove_var("XDG_CONFIG_HOME");
         std::env::set_var("HOME", "/home/e");
-        assert_eq!(unit_path().unwrap(), PathBuf::from("/home/e/.config/systemd/user/arxa-engine.service"));
+        assert_eq!(
+            unit_path().unwrap(),
+            PathBuf::from("/home/e/.config/systemd/user/arxa-engine.service")
+        );
     }
 }

@@ -839,8 +839,50 @@ fn check_for_updates(app: &tauri::AppHandle) {
     });
 }
 
+/// Which GDK backend to force, given an explicit override and whether the
+/// session offers Wayland. `None` means "leave whatever is already set".
+///
+/// Why this exists: the AppImage's linuxdeploy GTK hook runs
+/// `export GDK_BACKEND=x11` unconditionally before our process starts, so a
+/// user's own choice — Omarchy exports `wayland,x11,*` — is clobbered and we
+/// always land on XWayland. That matters because Wayland sessions commonly set
+/// an integer `GDK_SCALE` (Omarchy: 2) for HiDPI: on Wayland the compositor
+/// divides it back out via the surface's buffer scale, but under XWayland with
+/// `xwayland:force_zero_scaling` nothing does, so the whole UI — GTK chrome and
+/// webview alike — is drawn at twice the size (observed on Omarchy/Hyprland,
+/// 2026-09-08). Preferring Wayland when the session has one restores correct
+/// fractional scaling; `x11` stays in the list so GDK still falls back if the
+/// Wayland connection fails, and ARXA_GDK_BACKEND overrides the lot.
+#[cfg(target_os = "linux")]
+fn gdk_backend_for(explicit: Option<&str>, wayland_display: Option<&str>) -> Option<String> {
+    if let Some(v) = explicit {
+        if !v.trim().is_empty() {
+            return Some(v.trim().to_string());
+        }
+    }
+    match wayland_display {
+        Some(d) if !d.trim().is_empty() => Some("wayland,x11".to_string()),
+        _ => None,
+    }
+}
+
+/// Apply `gdk_backend_for` to the real environment. Must run before GTK is
+/// initialised, i.e. before the Tauri builder is run.
+#[cfg(target_os = "linux")]
+fn prefer_session_gdk_backend() {
+    let explicit = std::env::var("ARXA_GDK_BACKEND").ok();
+    let wayland = std::env::var("WAYLAND_DISPLAY").ok();
+    if let Some(backend) = gdk_backend_for(explicit.as_deref(), wayland.as_deref()) {
+        std::env::set_var("GDK_BACKEND", &backend);
+        eprintln!("[arxa-desktop] GDK_BACKEND={backend}");
+    }
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    // Before anything touches GTK.
+    #[cfg(target_os = "linux")]
+    prefer_session_gdk_backend();
     let builder = tauri::Builder::default();
     // Rider 3 (stable builds): a second launch focuses the existing window;
     // it never gets a chance to probe-and-spawn a duplicate server.
@@ -1139,6 +1181,29 @@ mod sidecar_tests {
         assert_ne!(a, b, "a replaced binary must not reuse the old stamp");
         assert!(file_stamp(&dir.join("absent")).is_none());
         std::fs::remove_dir_all(&dir).ok();
+    }
+
+    #[cfg(target_os = "linux")]
+    #[test]
+    fn gdk_backend_prefers_wayland_but_keeps_the_x11_fallback() {
+        // A Wayland session: override the hook's forced x11.
+        assert_eq!(
+            gdk_backend_for(None, Some("wayland-1")).as_deref(),
+            Some("wayland,x11")
+        );
+        // No Wayland (a real X session, or none): change nothing.
+        assert_eq!(gdk_backend_for(None, None), None);
+        assert_eq!(gdk_backend_for(None, Some("   ")), None);
+        // The escape hatch wins, even on Wayland.
+        assert_eq!(
+            gdk_backend_for(Some("x11"), Some("wayland-1")).as_deref(),
+            Some("x11")
+        );
+        // An empty override is not an override.
+        assert_eq!(
+            gdk_backend_for(Some(""), Some("wayland-1")).as_deref(),
+            Some("wayland,x11")
+        );
     }
 
     #[test]
