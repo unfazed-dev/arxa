@@ -35,6 +35,33 @@ const DEFAULT_STUDIO_URL: &str = "http://arxa.studio.localhost:7891";
 /// `None` means an external owner (launchd / dev server) is serving the port
 /// and we must not manage — let alone kill — anything.
 struct SpawnedServer(Mutex<Option<CommandChild>>);
+/// When THIS shell spawned the engine. `open_studio` refuses a session file
+/// older than this: on every measured boot (2026-09-07) the shell navigated
+/// with the PREVIOUS engine's token, watched it rotate 250ms later, and
+/// navigated again — a full second of double page load on the boot path.
+struct EngineSpawnedAt(Mutex<Option<std::time::SystemTime>>);
+
+fn session_file_path() -> Option<std::path::PathBuf> {
+    let home = std::env::var("ARXA_DSH_HOME")
+        .ok()
+        .filter(|v| !v.trim().is_empty())
+        .map(std::path::PathBuf::from)
+        .or_else(|| {
+            std::env::var("HOME")
+                .ok()
+                .map(|h| std::path::PathBuf::from(h).join(".arxa").join("dsh"))
+        })?;
+    Some(home.join("desktop-session.json"))
+}
+
+/// True once the session file was written after `since` (mtime, no parsing).
+fn session_file_newer_than(since: std::time::SystemTime) -> bool {
+    session_file_path()
+        .and_then(|p| std::fs::metadata(p).ok())
+        .and_then(|m| m.modified().ok())
+        .map(|t| t > since)
+        .unwrap_or(false)
+}
 
 /// Resolve the studio server URL. Overridable via `ARXA_STUDIO_URL` so
 /// non-standard setups and future config files can point the shell
@@ -118,6 +145,19 @@ fn auth_trace(msg: &str) {
 /// window parks on the 401 text with a valid cookie sitting in the store.
 #[tauri::command]
 fn open_studio(app: tauri::AppHandle) {
+    // Wait (≤3s) for the engine this shell spawned to publish ITS token;
+    // an externally owned engine (no spawn) is taken as-is.
+    let spawned_at = app
+        .try_state::<EngineSpawnedAt>()
+        .and_then(|s| s.0.lock().ok().and_then(|g| *g));
+    if let Some(since) = spawned_at {
+        let mut waited = 0;
+        while !session_file_newer_than(since) && waited < 12 {
+            std::thread::sleep(Duration::from_millis(250));
+            waited += 1;
+        }
+        auth_trace(&format!("open_studio: fresh-token wait polls={waited}"));
+    }
     let tokenized = studio_url();
     let clean = format!("{}/", raw_studio_url().trim_end_matches('/'));
     auth_trace(&format!(
@@ -502,6 +542,7 @@ pub fn run() {
         // global API; the remote-studio capability scopes it to dialog:allow-open.
         .plugin(tauri_plugin_dialog::init())
         .manage(SpawnedServer(Mutex::new(None)))
+        .manage(EngineSpawnedAt(Mutex::new(None)))
         .manage(ThemeState(Mutex::new(None)))
         .invoke_handler(tauri::generate_handler![
             studio_url,
@@ -549,6 +590,9 @@ pub fn run() {
                         eprintln!("[arxa-desktop] engine sidecar spawned");
                         if let Ok(mut guard) = app.state::<SpawnedServer>().0.lock() {
                             guard.replace(child);
+                        }
+                        if let Ok(mut guard) = app.state::<EngineSpawnedAt>().0.lock() {
+                            guard.replace(std::time::SystemTime::now());
                         }
                     }
                     Err(e) => {

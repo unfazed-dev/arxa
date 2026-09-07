@@ -39,14 +39,32 @@ async function isReachable(url) {
 // shell is loaded, 503 while it is still booting. An older studio has no such
 // route: a 404 or a CORS failure reads as "unknown", and the port poll stands.
 const READY_CAP = 150; // 30s at 200ms
+let readyNote = "";
 async function isReady(url) {
   try {
     const res = await fetch(url.replace(/\/?(\?.*)?$/, "") + "/__arxa/ready", { cache: "no-store" });
+    readyNote = "status" + res.status;
     if (res.status === 503) return false;
     return true; // 200, or a studio without the route
-  } catch {
+  } catch (e) {
+    readyNote = "err:" + String(e && e.message || e).slice(0, 40);
     return true; // no CORS on the answer = older studio; the port poll decided
   }
+}
+// Boot trace (2026-09-07): the shell has no log of its own, so the tick that
+// opens the studio posts its timeline to the engine's trace route. text/plain
+// keeps it a simple request — it reaches the engine even though this page's
+// origin cannot read the answer.
+const T0 = performance.now();
+const marks = [];
+const mark = (n) => marks.push(n + "=" + Math.round(performance.now() - T0));
+function postShellTrace(url) {
+  try {
+    fetch(url.replace(/\/?(\?.*)?$/, "") + "/__arxa/artifacts/trace", {
+      method: "POST", mode: "no-cors", keepalive: true, headers: { "content-type": "text/plain" },
+      body: JSON.stringify({ relPath: "shell", outcome: "open", totalMs: Math.round(performance.now() - T0), bundleWarm: true, marks: marks.join(" ") }),
+    }).catch(() => {});
+  } catch { /* trace only */ }
 }
 
 (async () => {
@@ -58,7 +76,12 @@ async function isReady(url) {
   const tick = async () => {
     // Reachable but not ready: keep the splash up to READY_CAP more ticks, then
     // open anyway rather than hang on a studio that never flips its flag.
-    if (await isReachable(url) && (readyPolls++ >= READY_CAP || await isReady(url))) {
+    const reachable = await isReachable(url);
+    if (reachable && marks.length === 0) mark("reachable");
+    if (reachable && (readyPolls++ >= READY_CAP || await isReady(url))) {
+      mark("ready(" + readyNote + ")");
+      mark("invoke");
+      postShellTrace(url);
       // The navigation MUST be app-initiated: WKWebView drops the
       // BrowserAuth exchange cookie when the 303 answers a cross-site JS
       // navigation from this bundled page (tauri.localhost → studio
