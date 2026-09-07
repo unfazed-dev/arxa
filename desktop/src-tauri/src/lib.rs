@@ -781,12 +781,14 @@ pub fn run() {
             #[cfg(desktop)]
             {
                 // NOT fatal. The updater only supports AppImage on Linux, so a
-                // binary installed any other way (a pacman package, a plain
-                // `cargo build` during development) fails to register it — and
-                // a `?` here turned that into "Failed to setup app: Permission
-                // denied" with no window at all (Arch, 2026-09-07). An app that
-                // cannot check for updates still runs; one that will not start
-                // is useless.
+                // binary installed any other way — a pacman package, a plain
+                // `cargo build` during development — can fail to register it,
+                // and a `?` here would take the whole app down with it. An app
+                // that cannot check for updates still runs; one that will not
+                // start is useless. (The Arch "Failed to setup app: Permission
+                // denied" of 2026-09-07 was a different fault — a root-owned
+                // ~/.local/share in the test container — but the `?` would have
+                // hidden the next one just as well.)
                 match app
                     .handle()
                     .plugin(tauri_plugin_updater::Builder::new().build())

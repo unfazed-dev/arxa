@@ -7,7 +7,9 @@
 # It packages an ALREADY BUILT tree — run these first, on the machine/arch you
 # are packaging for (the engine sidecar embeds the build host's node):
 #
-#   cd arxa-studio && npm ci && node scripts/pack-cli.mjs && node scripts/pack-sidecar.mjs
+#   cd arxa-studio && npm ci
+#   (cd plugins/artifact-viewer/lib/monaco-build && npm ci && npm run build)
+#   node scripts/pack-cli.mjs && node scripts/pack-sidecar.mjs
 #   cd ../arxa/desktop && npm run tauri build -- --bundles deb
 #
 # then: cd packaging && makepkg -si
