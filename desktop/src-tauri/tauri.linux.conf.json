@@ -1,0 +1,19 @@
+{
+  "bundle": {
+    "externalBin": [
+      "binaries/arxa"
+    ],
+    "linux": {
+      "appimage": {
+        "files": {
+          "/usr/libexec/arxa-studio/arxa-studio": "binaries/libexec/arxa-studio"
+        }
+      },
+      "deb": {
+        "files": {
+          "/usr/libexec/arxa-studio/arxa-studio": "binaries/libexec/arxa-studio"
+        }
+      }
+    }
+  }
+}

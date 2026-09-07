@@ -35,26 +35,28 @@ options=('!strip')  # the sidecar is a self-extracting bun binary; stripping bre
 
 _bin="${startdir}/../src-tauri/target/release"
 
-# LAYOUT IS NOT COSMETIC. src/lib.rs::sidecar_path() is
-#   dirname(current_exe()) / "arxa-studio"
-# — beside the executable, under the PLAIN name Tauri gives an externalBin at
-# bundle time (no target triple). So the shell must NOT be the thing called
-# /usr/bin/arxa-studio: it would resolve its own path as its engine and spawn
-# itself. Everything lives together in /usr/lib/arxa-studio; /usr/bin gets a
-# symlink, which is safe because current_exe() reads /proc/self/exe and so
-# resolves to the real file.
+# LAYOUT IS NOT COSMETIC. src/lib.rs::sidecar_path() looks for the engine at
+#   dirname(current_exe()) / "../libexec/arxa-studio/arxa-studio"
+# first, then beside the executable under the plain name. /usr/libexec is the
+# ONE Linux engine home (AppImage and deb put it there via
+# src-tauri/tauri.linux.conf.json): it is outside usr/bin and usr/lib, the two
+# trees linuxdeploy patchelfs when building the AppImage, and the self-
+# extracting engine does not survive that. The shell must also NOT be the thing
+# called /usr/bin/arxa-studio: it would resolve its own path as its engine and
+# spawn itself. So the shell lives in /usr/lib/arxa-studio and /usr/bin gets a
+# symlink, which is safe because current_exe() reads /proc/self/exe.
 package() {
   install -Dm755 "${_bin}/arxa-desktop" "${pkgdir}/usr/lib/${pkgname}/arxa-desktop"
 
-  # The two externalBin sidecars, renamed to the plain names the shell (and
-  # Tauri's own deb/AppImage layout) expect beside the executable.
   local triple
   case "$CARCH" in
     x86_64)  triple="x86_64-unknown-linux-gnu" ;;
     aarch64) triple="aarch64-unknown-linux-gnu" ;;
   esac
+  # The engine: /usr/libexec, same as the AppImage and deb layouts.
   install -Dm755 "${startdir}/../src-tauri/binaries/arxa-studio-${triple}" \
-    "${pkgdir}/usr/lib/${pkgname}/arxa-studio"
+    "${pkgdir}/usr/libexec/${pkgname}/arxa-studio"
+  # The arxa CLI: an externalBin, beside the shell under its plain name.
   install -Dm755 "${startdir}/../src-tauri/binaries/arxa-${triple}" \
     "${pkgdir}/usr/lib/${pkgname}/arxa"
 

@@ -116,13 +116,20 @@ fn engine_owner_path() -> Option<std::path::PathBuf> {
     session_file_path().map(|p| p.with_file_name("desktop-engine.json"))
 }
 
-/// The bundled engine launcher: Tauri places `externalBin` beside the app
-/// executable under its plain name.
+/// The bundled engine launcher. macOS bundles (and `tauri dev`) get it as an
+/// `externalBin` beside the app executable under its plain name. Linux ships
+/// it at `../libexec/arxa-studio/` instead — outside `usr/bin` and `usr/lib`,
+/// the two trees linuxdeploy patchelfs while building the AppImage, which this
+/// self-extracting binary does not survive (docs/plans/linux-omarchy-port.md).
+/// The relative path is the same from /usr/bin (deb, AppImage) and from
+/// /usr/lib/arxa-studio (PKGBUILD).
 fn sidecar_path() -> Option<std::path::PathBuf> {
-    std::env::current_exe()
-        .ok()?
-        .parent()
-        .map(|d| d.join("arxa-studio"))
+    let dir = std::env::current_exe().ok()?.parent()?.to_path_buf();
+    let libexec = dir.join("../libexec/arxa-studio/arxa-studio");
+    if libexec.is_file() {
+        return Some(libexec);
+    }
+    Some(dir.join("arxa-studio"))
 }
 
 /// Version key for "is the running engine this app's engine": the sidecar
