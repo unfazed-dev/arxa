@@ -7,8 +7,13 @@
 //! 1. Probe the studio port first — if something already serves it (launchd on
 //!    a dev machine, a hand-launched server), spawn NOTHING and never touch
 //!    that process. launchd stays the owner wherever it is installed.
-//! 2. Only a child THIS process spawned is killed on exit (SIGTERM, short
-//!    grace, then SIGKILL). We never kill a server we didn't start.
+//! 2. The engine THIS shell spawns OUTLIVES the shell (2026-09-07, startup
+//!    work): it runs detached in its own process group and its pid plus the
+//!    sidecar binary's mtime are recorded in `<dsh home>/desktop-engine.json`.
+//!    The next launch adopts a live engine from that record (page-only boot,
+//!    ~1s instead of ~2.7s) and restarts it only when the sidecar binary
+//!    changed (app update) or the operator picks Engine → Restart Engine.
+//!    We never kill a server we didn't start.
 //! 3. Single-instance guard: a second app launch focuses the first window
 //!    instead of racing it for the port.
 
@@ -17,8 +22,6 @@ use std::sync::Mutex;
 use std::time::Duration;
 
 use tauri::Manager;
-use tauri_plugin_shell::process::CommandChild;
-use tauri_plugin_shell::ShellExt;
 
 pub mod cairn_server;
 pub mod pairing;
@@ -31,10 +34,11 @@ pub mod pushd;
 /// `127.0.0.1` would split sessionStorage/presence state across origins.
 const DEFAULT_STUDIO_URL: &str = "http://arxa.studio.localhost:7891";
 
-/// The child server process, present only when THIS app instance spawned it.
-/// `None` means an external owner (launchd / dev server) is serving the port
-/// and we must not manage — let alone kill — anything.
-struct SpawnedServer(Mutex<Option<CommandChild>>);
+/// Pid of the engine this shell spawned or adopted from a previous run of
+/// itself (see the owner record). `None` means an external owner (launchd /
+/// dev server) is serving the port and we must not manage — let alone
+/// kill — anything.
+struct SpawnedServer(Mutex<Option<u32>>);
 /// When THIS shell spawned the engine. `open_studio` refuses a session file
 /// older than this: on every measured boot (2026-09-07) the shell navigated
 /// with the PREVIOUS engine's token, watched it rotate 250ms later, and
@@ -61,6 +65,115 @@ fn session_file_newer_than(since: std::time::SystemTime) -> bool {
         .and_then(|m| m.modified().ok())
         .map(|t| t > since)
         .unwrap_or(false)
+}
+
+/// Owner record of the persistent engine: `<dsh home>/desktop-engine.json`,
+/// `{ "pid": N, "stamp": "<sidecar mtime ms>" }`. Beside the session file so
+/// ARXA_DSH_HOME relocates both together.
+fn engine_owner_path() -> Option<std::path::PathBuf> {
+    session_file_path().map(|p| p.with_file_name("desktop-engine.json"))
+}
+
+/// The bundled engine launcher: Tauri places `externalBin` beside the app
+/// executable under its plain name.
+fn sidecar_path() -> Option<std::path::PathBuf> {
+    std::env::current_exe()
+        .ok()?
+        .parent()
+        .map(|d| d.join("arxa-studio"))
+}
+
+/// Version key for "is the running engine this app's engine": the sidecar
+/// binary's mtime. An app update replaces the binary; a payload sync into
+/// ~/.arxa/engine does not (use Engine → Restart Engine for that).
+fn sidecar_stamp() -> String {
+    sidecar_path()
+        .and_then(|p| std::fs::metadata(p).ok())
+        .and_then(|m| m.modified().ok())
+        .and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok())
+        .map(|d| d.as_millis().to_string())
+        .unwrap_or_default()
+}
+
+fn read_engine_owner() -> Option<(u32, String)> {
+    let body = std::fs::read_to_string(engine_owner_path()?).ok()?;
+    let v = serde_json::from_str::<serde_json::Value>(&body).ok()?;
+    let pid = v.get("pid")?.as_u64()? as u32;
+    let stamp = v.get("stamp")?.as_str()?.to_owned();
+    Some((pid, stamp))
+}
+
+fn write_engine_owner(pid: u32, stamp: &str) {
+    if let Some(p) = engine_owner_path() {
+        let body = serde_json::json!({ "pid": pid, "stamp": stamp }).to_string();
+        let _ = std::fs::write(&p, body);
+    }
+}
+
+/// True when `pid` is alive AND is an arxa-studio launcher — a recycled pid
+/// from a stale record must never be adopted or killed.
+#[cfg(unix)]
+fn pid_is_engine(pid: u32) -> bool {
+    std::process::Command::new("ps")
+        .args(["-o", "command=", "-p", &pid.to_string()])
+        .output()
+        .map(|o| String::from_utf8_lossy(&o.stdout).contains("arxa-studio"))
+        .unwrap_or(false)
+}
+#[cfg(not(unix))]
+fn pid_is_engine(_pid: u32) -> bool {
+    false
+}
+
+/// Spawn the engine launcher detached: own process group (so the shell
+/// plugin's exit hook and the shell's own death leave it alone), stdio to
+/// `<dsh home>/engine-stdio.log` (the launcher writes engine.log itself; this
+/// only catches a launcher that dies before it opens that file). A reaper
+/// thread waits on the child so a dead engine never lingers as a zombie
+/// that `ps` would still report alive.
+fn spawn_engine() -> Result<u32, String> {
+    let bin = sidecar_path().ok_or("no sidecar path")?;
+    let log = session_file_path()
+        .ok_or("no dsh home")?
+        .with_file_name("engine-stdio.log");
+    if let Some(dir) = log.parent() {
+        let _ = std::fs::create_dir_all(dir);
+    }
+    let out = std::fs::OpenOptions::new()
+        .create(true)
+        .append(true)
+        .open(&log)
+        .map_err(|e| e.to_string())?;
+    let err = out.try_clone().map_err(|e| e.to_string())?;
+    let mut cmd = std::process::Command::new(bin);
+    cmd.arg("--no-open")
+        .stdin(std::process::Stdio::null())
+        .stdout(out)
+        .stderr(err);
+    #[cfg(unix)]
+    {
+        use std::os::unix::process::CommandExt;
+        cmd.process_group(0);
+    }
+    let mut child = cmd.spawn().map_err(|e| e.to_string())?;
+    let pid = child.id();
+    write_engine_owner(pid, &sidecar_stamp());
+    std::thread::spawn(move || {
+        let _ = child.wait();
+    });
+    Ok(pid)
+}
+
+/// Poll until nothing accepts on the studio port (≤5s) — after killing an
+/// engine, before spawning its replacement, so the new one never hits
+/// EADDRINUSE against a socket still closing.
+fn wait_port_free(url: &str) {
+    for _ in 0..20 {
+        if !server_reachable(url) {
+            return;
+        }
+        std::thread::sleep(Duration::from_millis(250));
+    }
 }
 
 /// Resolve the studio server URL. Overridable via `ARXA_STUDIO_URL` so
@@ -304,14 +417,21 @@ fn install_pairing_menu(app: &tauri::AppHandle) {
         let pair_item =
             MenuItem::with_id(app, "pair-mobile", "Pair Mobile Device…", true, None::<&str>)?;
         let devices = SubmenuBuilder::new(app, "Devices").item(&pair_item).build()?;
+        let restart_item =
+            MenuItem::with_id(app, "restart-engine", "Restart Engine", true, None::<&str>)?;
+        let engine = SubmenuBuilder::new(app, "Engine").item(&restart_item).build()?;
         let menu = Menu::default(app)?;
         menu.append(&devices)?;
+        menu.append(&engine)?;
         app.set_menu(menu)?;
         app.on_menu_event(|app, event| {
             if event.id() == "pair-mobile" {
                 if let Err(e) = open_pairing_window(app.clone()) {
                     eprintln!("[arxa-desktop] pair window: {e}");
                 }
+            } else if event.id() == "restart-engine" {
+                let app = app.clone();
+                std::thread::spawn(move || restart_engine(&app));
             }
         });
         Ok(())
@@ -371,37 +491,81 @@ fn descendants(pid: u32) -> Vec<u32> {
     all
 }
 
-/// Rider 2: graceful shutdown of OUR child only — including its whole process
-/// tree. SIGTERM first so the engine can flush, short grace, then SIGKILL for
-/// stragglers. Errors are ignored — processes may have exited on their own.
+/// Graceful shutdown of an engine WE own — its whole process tree. SIGTERM
+/// first so the engine can flush, short grace, then SIGKILL for stragglers.
+/// The launcher runs in its own process group (spawn_engine), so the group
+/// signal covers grandchildren too; the descendant walk stays for an engine
+/// adopted from a shell that predates the group. Errors are ignored —
+/// processes may have exited on their own.
+#[cfg(unix)]
+fn kill_engine_tree(pid: u32) {
+    // Snapshot the tree BEFORE terminating the parent, otherwise the
+    // grandchildren are reparented to PID 1 and become unfindable.
+    let tree = descendants(pid);
+    let term = |p: &str, sig: &str| {
+        let _ = std::process::Command::new("kill")
+            .args([sig, "--", p])
+            .status();
+    };
+    let group = format!("-{pid}");
+    term(&group, "-TERM");
+    term(&pid.to_string(), "-TERM");
+    for p in &tree {
+        term(&p.to_string(), "-TERM");
+    }
+    std::thread::sleep(Duration::from_millis(1200));
+    term(&group, "-KILL");
+    for p in &tree {
+        term(&p.to_string(), "-KILL");
+    }
+}
+#[cfg(not(unix))]
+fn kill_engine_tree(_pid: u32) {}
+
+/// Stop the engine this shell owns (spawned or adopted). Not called on exit
+/// any more — the engine is meant to outlive the shell; this serves the
+/// version-mismatch restart at launch and Engine → Restart Engine.
 fn kill_spawned(app: &tauri::AppHandle) {
     let Some(state) = app.try_state::<SpawnedServer>() else {
         return;
     };
-    let Some(child) = state.0.lock().ok().and_then(|mut g| g.take()) else {
+    let Some(pid) = state.0.lock().ok().and_then(|mut g| g.take()) else {
         return;
     };
-    #[cfg(unix)]
-    {
-        let pid = child.pid();
-        // Snapshot the tree BEFORE terminating the parent, otherwise the
-        // grandchildren are reparented to PID 1 and become unfindable.
-        let tree = descendants(pid);
-        let term = |p: u32, sig: &str| {
-            let _ = std::process::Command::new("kill")
-                .args([sig, &p.to_string()])
-                .status();
-        };
-        term(pid, "-TERM");
-        for p in &tree {
-            term(*p, "-TERM");
-        }
-        std::thread::sleep(Duration::from_millis(1200));
-        for p in &tree {
-            term(*p, "-KILL");
-        }
+    kill_engine_tree(pid);
+    if let Some(p) = engine_owner_path() {
+        let _ = std::fs::remove_file(p);
     }
-    let _ = child.kill();
+}
+
+/// Engine → Restart Engine: kill the owned engine and spawn a fresh one.
+/// The watchdog sees the port drop, parks the window on the waiting page,
+/// and open_studio waits for the new engine's token (EngineSpawnedAt).
+fn restart_engine(app: &tauri::AppHandle) {
+    let owned = app
+        .state::<SpawnedServer>()
+        .0
+        .lock()
+        .map(|g| g.is_some())
+        .unwrap_or(false);
+    if !owned {
+        eprintln!("[arxa-desktop] restart engine: not ours (external owner) - refusing");
+        return;
+    }
+    kill_spawned(app);
+    wait_port_free(&raw_studio_url());
+    match spawn_engine() {
+        Ok(pid) => {
+            eprintln!("[arxa-desktop] engine restarted (pid {pid})");
+            if let Ok(mut g) = app.state::<SpawnedServer>().0.lock() {
+                g.replace(pid);
+            }
+            if let Ok(mut g) = app.state::<EngineSpawnedAt>().0.lock() {
+                g.replace(std::time::SystemTime::now());
+            }
+        }
+        Err(e) => eprintln!("[arxa-desktop] engine restart failed: {e}"),
+    }
 }
 
 /// Default update channel (D21: stable/beta channels). Overridable via
@@ -574,20 +738,35 @@ pub fn run() {
             cairn_server::init(app.handle());
             // Rider 1: probe before spawn. An externally owned server (launchd
             // on the dev machine) always wins; we only self-heal a closed port
-            // for public installs that have no service manager.
-            eprintln!("[arxa-desktop] probe {} reachable={}", url, server_reachable(&url));
-            if !server_reachable(&url) {
+            // for public installs that have no service manager. An engine a
+            // PREVIOUS run of this app left behind (owner record, pid alive,
+            // still an arxa-studio launcher) is adopted as ours — unless the
+            // sidecar binary changed underneath it (app update): then it is
+            // restarted so the page never runs against a stale engine.
+            let reachable = server_reachable(&url);
+            let owner = read_engine_owner().filter(|(pid, _)| pid_is_engine(*pid));
+            eprintln!("[arxa-desktop] probe {} reachable={} owner={:?}", url, reachable, owner);
+            let mut need_spawn = !reachable;
+            if let (true, Some((pid, stamp))) = (reachable, &owner) {
+                if *stamp == sidecar_stamp() {
+                    eprintln!("[arxa-desktop] adopting engine from previous run (pid {pid})");
+                    if let Ok(mut guard) = app.state::<SpawnedServer>().0.lock() {
+                        guard.replace(*pid);
+                    }
+                } else {
+                    eprintln!("[arxa-desktop] engine pid {pid} predates this app build - restarting it");
+                    kill_engine_tree(*pid);
+                    wait_port_free(&url);
+                    need_spawn = true;
+                }
+            }
+            if need_spawn {
                 eprintln!("[arxa-desktop] spawning engine sidecar");
-                match app
-                    .shell()
-                    .sidecar("arxa-studio")
-                    .map(|c| c.args(["--no-open"]))
-                    .and_then(|c| c.spawn())
-                {
-                    Ok((_rx, child)) => {
-                        eprintln!("[arxa-desktop] engine sidecar spawned");
+                match spawn_engine() {
+                    Ok(pid) => {
+                        eprintln!("[arxa-desktop] engine sidecar spawned (pid {pid})");
                         if let Ok(mut guard) = app.state::<SpawnedServer>().0.lock() {
-                            guard.replace(child);
+                            guard.replace(pid);
                         }
                         if let Ok(mut guard) = app.state::<EngineSpawnedAt>().0.lock() {
                             guard.replace(std::time::SystemTime::now());
@@ -646,18 +825,13 @@ pub fn run() {
                                 .map(|g| g.is_some())
                                 .unwrap_or(false);
                             if owned {
-                                match handle
-                                    .shell()
-                                    .sidecar("arxa-studio")
-                                    .map(|c| c.args(["--no-open"]))
-                                    .and_then(|c| c.spawn())
-                                {
-                                    Ok((_rx, child)) => {
-                                        eprintln!("[arxa-desktop] engine respawned");
+                                match spawn_engine() {
+                                    Ok(pid) => {
+                                        eprintln!("[arxa-desktop] engine respawned (pid {pid})");
                                         if let Ok(mut guard) =
                                             handle.state::<SpawnedServer>().0.lock()
                                         {
-                                            guard.replace(child);
+                                            guard.replace(pid);
                                         }
                                         down_ticks = 0;
                                     }
@@ -691,7 +865,8 @@ pub fn run() {
         .expect("error while building arxa desktop shell")
         .run(|app, event| {
             if let tauri::RunEvent::Exit = event {
-                kill_spawned(app);
+                // The engine deliberately survives (module doc, point 2);
+                // the next launch adopts it. pushd/cairn-server stay per-run.
                 pushd::kill_spawned(app);
                 cairn_server::kill_spawned(app);
             }
