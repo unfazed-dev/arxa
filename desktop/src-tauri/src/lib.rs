@@ -839,6 +839,64 @@ fn check_for_updates(app: &tauri::AppHandle) {
     });
 }
 
+/// Desktops whose window manager tiles and is driven by keybindings. There a
+/// client-side title bar is dead weight: on Omarchy/Hyprland its minimise and
+/// maximise buttons do nothing at all and only close works, so the strip costs
+/// vertical space and gives nothing back.
+#[cfg(target_os = "linux")]
+const TILING_DESKTOPS: [&str; 9] = [
+    "hyprland", "sway", "river", "niri", "wayfire", "i3", "qtile", "bspwm", "awesome",
+];
+
+/// Whether to keep window decorations. Floating desktops (GNOME, KDE, XFCE,
+/// Cinnamon, …) keep theirs — that is where close/minimise/maximise are the
+/// only way to manage a window. `ARXA_DECORATIONS=0|1` forces either way.
+///
+/// `tiling_socket` is "one of the tiling compositors' IPC sockets is in the
+/// environment", which is a stronger signal than the desktop name because it
+/// is set by the compositor itself.
+#[cfg(target_os = "linux")]
+fn wants_decorations(
+    explicit: Option<&str>,
+    tiling_socket: bool,
+    current_desktop: Option<&str>,
+) -> bool {
+    if let Some(v) = explicit {
+        let v = v.trim().to_ascii_lowercase();
+        if !v.is_empty() {
+            return !matches!(v.as_str(), "0" | "off" | "false" | "no");
+        }
+    }
+    if tiling_socket {
+        return false;
+    }
+    // XDG_CURRENT_DESKTOP is colon-separated ("Hyprland", "sway:wlroots").
+    let desktop = current_desktop.unwrap_or_default().to_ascii_lowercase();
+    !desktop
+        .split(':')
+        .any(|part| TILING_DESKTOPS.contains(&part.trim()))
+}
+
+/// Drop the title bar on tiling sessions. Runs once, at setup.
+#[cfg(target_os = "linux")]
+fn apply_linux_window_chrome(app: &tauri::AppHandle) {
+    let tiling_socket = ["HYPRLAND_INSTANCE_SIGNATURE", "SWAYSOCK", "NIRI_SOCKET"]
+        .iter()
+        .any(|k| std::env::var_os(k).is_some());
+    let explicit = std::env::var("ARXA_DECORATIONS").ok();
+    let desktop = std::env::var("XDG_CURRENT_DESKTOP").ok();
+    if wants_decorations(explicit.as_deref(), tiling_socket, desktop.as_deref()) {
+        return;
+    }
+    let Some(win) = app.get_webview_window("main") else {
+        return;
+    };
+    match win.set_decorations(false) {
+        Ok(()) => eprintln!("[arxa-desktop] tiling session: title bar off"),
+        Err(e) => eprintln!("[arxa-desktop] set_decorations(false) failed: {e}"),
+    }
+}
+
 /// Which GDK backend to force, given an explicit override and whether the
 /// session offers Wayland. `None` means "leave whatever is already set".
 ///
@@ -944,6 +1002,12 @@ pub fn run() {
             let url = raw_studio_url();
             // Mobile pairing: iroh endpoint + bridge to the engine server.
             pairing::init(app.handle(), studio_host_port(&url));
+            // The GTK menu bar's replacement on a tiling desktop is nothing
+            // at all: no title bar either (the user manages windows with the
+            // compositor's keybindings).
+            #[cfg(target_os = "linux")]
+            apply_linux_window_chrome(app.handle());
+
             // Not on Linux: `set_menu` there is an in-window GTK menubar
             // (macOS puts it in the system bar), so it eats a strip off the
             // top of the studio UI. Pairing stays reachable from the launch
@@ -1181,6 +1245,29 @@ mod sidecar_tests {
         assert_ne!(a, b, "a replaced binary must not reuse the old stamp");
         assert!(file_stamp(&dir.join("absent")).is_none());
         std::fs::remove_dir_all(&dir).ok();
+    }
+
+    #[cfg(target_os = "linux")]
+    #[test]
+    fn decorations_off_only_on_tiling_desktops() {
+        // Omarchy/Hyprland: socket present -> no title bar.
+        assert!(!wants_decorations(None, true, Some("Hyprland")));
+        // Name alone is enough when the socket is not visible to us.
+        assert!(!wants_decorations(None, false, Some("sway:wlroots")));
+        assert!(!wants_decorations(None, false, Some("niri")));
+        // Floating desktops keep their buttons — that is the only way to
+        // close a window there.
+        assert!(wants_decorations(None, false, Some("GNOME")));
+        assert!(wants_decorations(None, false, Some("KDE")));
+        assert!(wants_decorations(None, false, None));
+        // A desktop that merely CONTAINS a tiling name is not one of them.
+        assert!(wants_decorations(None, false, Some("swayish")));
+        // Explicit override wins in both directions.
+        assert!(wants_decorations(Some("1"), true, Some("Hyprland")));
+        assert!(!wants_decorations(Some("0"), false, Some("GNOME")));
+        assert!(!wants_decorations(Some("false"), false, Some("GNOME")));
+        // An empty override is not an override.
+        assert!(!wants_decorations(Some(" "), true, Some("Hyprland")));
     }
 
     #[cfg(target_os = "linux")]
