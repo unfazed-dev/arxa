@@ -9,8 +9,9 @@
 # Required secrets are documented in desktop/README.md ("Release CI") and the
 # runbook is docs/ci/release-ops.md.
 # Notarization is optional: absent notary secrets yield a signed-but-unnotarized
-# build instead of a failure. macOS aarch64 only for now — a Windows/x64 lane
-# would slot in as a build matrix entry (target triple + runner + bundle paths).
+# build instead of a failure. Two lanes: macOS aarch64 (self-hosted) and Linux
+# x86_64 (GitHub-hosted ubuntu-22.04 — the AppImage + .deb; see the
+# `release-linux` job). A Windows/x64 lane would slot in the same way.
 name: desktop-release
 
 on:
@@ -248,3 +249,161 @@ jobs:
             --channel "$CHANNEL" \
             --target "$TAURI_TARGET" --arch "$TAURI_ARCH" \
             --bucket "${{ vars.R2_FEED_BUCKET || 'arxa-releases' }}"
+
+  # Linux: AppImage (the updater artifact) + .deb, built on ubuntu-22.04 so the
+  # glibc floor is 2.35 (Tauri's own guidance: the build host's glibc is the
+  # floor for every user). The engine ships at /usr/libexec via
+  # desktop/src-tauri/tauri.linux.conf.json, NOT as an externalBin — linuxdeploy
+  # patchelfs everything under usr/bin and usr/lib and the bun-compiled engine
+  # does not survive that (arxa-studio docs/linux-support.md). Runs after the
+  # macOS job because that job CREATES the GitHub Release; this one uploads to
+  # it. arm64 Linux is built locally for now (arxa-studio
+  # scripts/linux/run-container.sh, DISTRO=ubuntu) — add an ubuntu-22.04-arm
+  # matrix entry once the repo's plan has that runner.
+  release-linux:
+    needs: release
+    runs-on: ubuntu-22.04
+    environment: release
+    env:
+      TARGET_TRIPLE: x86_64-unknown-linux-gnu
+      TAURI_TARGET: linux
+      TAURI_ARCH: x86_64
+    steps:
+      - name: Checkout arxa
+        uses: actions/checkout@v4
+        with:
+          path: arxa
+
+      - name: Checkout arxa-studio (engine, private)
+        uses: actions/checkout@v4
+        with:
+          repository: unfazed-dev/arxa-studio
+          token: ${{ secrets.ARXA_STUDIO_CHECKOUT_TOKEN }}
+          path: arxa-studio
+
+      - name: Derive channel and version from tag
+        run: |
+          case "${GITHUB_REF_NAME}" in
+            studio-beta-v*) echo "CHANNEL=beta" >> "$GITHUB_ENV"; echo "VERSION=${GITHUB_REF_NAME#studio-beta-v}" >> "$GITHUB_ENV" ;;
+            studio-v*)      echo "CHANNEL=stable" >> "$GITHUB_ENV"; echo "VERSION=${GITHUB_REF_NAME#studio-v}" >> "$GITHUB_ENV" ;;
+            *) echo "::error::unexpected tag ${GITHUB_REF_NAME}"; exit 1 ;;
+          esac
+
+      - name: Linux build deps (Tauri's ubuntu-22.04 list + what linuxdeploy-plugin-gtk shells out to)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            libwebkit2gtk-4.1-dev build-essential curl wget file patchelf libxdo-dev libssl-dev \
+            libayatana-appindicator3-dev librsvg2-dev libgtk-3-dev \
+            libgtk-3-bin libgdk-pixbuf2.0-bin libglib2.0-bin desktop-file-utils
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Setup Bun (pack-sidecar uses `bun build --compile`)
+        uses: oven-sh/setup-bun@v2
+
+      - name: Setup Dart
+        uses: dart-lang/setup-dart@v1
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache cargo
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            arxa/desktop/src-tauri/target
+          key: desktop-release-cargo-${{ runner.os }}-${{ hashFiles('arxa/desktop/src-tauri/Cargo.lock') }}
+
+      - name: Build CLI sidecar (dart compile exe)
+        working-directory: arxa/arxa
+        run: |
+          dart pub get
+          mkdir -p ../desktop/src-tauri/binaries
+          dart compile exe bin/arxa.dart -o "../desktop/src-tauri/binaries/arxa-${TARGET_TRIPLE}"
+
+      - name: Build the artifact viewer's monaco bundle
+        working-directory: arxa-studio/plugins/artifact-viewer/lib/monaco-build
+        run: |
+          npm ci --no-audit --no-fund
+          npm run build
+
+      - name: Build engine sidecar (pack-sidecar.mjs — also writes binaries/libexec/arxa-studio on Linux)
+        working-directory: arxa-studio
+        run: |
+          npm install --no-audit --no-fund
+          node scripts/pack-sidecar.mjs --out "$GITHUB_WORKSPACE/arxa/desktop/src-tauri/binaries/arxa-studio-${TARGET_TRIPLE}"
+          test -x "$GITHUB_WORKSPACE/arxa/desktop/src-tauri/binaries/libexec/arxa-studio"
+
+      - name: Packed engine boot smoke (the artifact that ships)
+        working-directory: arxa-studio
+        env:
+          ARXA_SMOKE_LAUNCHER: ${{ github.workspace }}/arxa/desktop/src-tauri/binaries/arxa-studio-${{ env.TARGET_TRIPLE }}
+        run: npm run smoke
+
+      - name: Build desktop shell (tauri build, appimage + deb, updater artifacts)
+        working-directory: arxa/desktop/src-tauri
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+          APPIMAGE_EXTRACT_AND_RUN: "1"
+        run: npx --yes @tauri-apps/cli@^2 build --bundles appimage deb
+
+      - name: Assert the AppDir layout (the bug that broke the first AppImage)
+        run: |
+          APPDIR="arxa/desktop/src-tauri/target/release/bundle/appimage/Arxa Studio.AppDir"
+          PACKED="arxa/desktop/src-tauri/binaries/arxa-studio-${TARGET_TRIPLE}"
+          [ ! -e "$APPDIR/usr/bin/arxa-studio" ] || { echo "::error::engine landed in usr/bin — linuxdeploy patched it"; exit 1; }
+          cmp "$PACKED" "$APPDIR/usr/libexec/arxa-studio/arxa-studio" || { echo "::error::engine in the AppDir is not byte-identical"; exit 1; }
+          # and the engine that is INSIDE the image boots
+          IMG="$(find arxa/desktop/src-tauri/target/release/bundle/appimage -maxdepth 1 -name '*.AppImage' | head -1)"
+          mkdir -p "$RUNNER_TEMP/x" && (cd "$RUNNER_TEMP/x" && "$GITHUB_WORKSPACE/$IMG" --appimage-extract > /dev/null)
+          (cd arxa-studio && ARXA_SMOKE_LAUNCHER="$RUNNER_TEMP/x/squashfs-root/usr/libexec/arxa-studio/arxa-studio" npm run smoke)
+
+      - name: Stage assets and generate latest.json
+        run: |
+          BUNDLE_DIR="arxa/desktop/src-tauri/target/release/bundle"
+          ASSET="Arxa-Studio-${VERSION}-${TARGET_TRIPLE}.AppImage"
+          echo "ASSET=$ASSET" >> "$GITHUB_ENV"
+          mkdir -p staging
+          IMG="$(find "$BUNDLE_DIR/appimage" -maxdepth 1 -name '*.AppImage' | head -1)"
+          cp "$IMG" "staging/$ASSET"
+          cp "$IMG.sig" "staging/$ASSET.sig"
+          DEB="$(find "$BUNDLE_DIR/deb" -maxdepth 1 -name '*.deb' | head -1)"
+          cp "$DEB" "staging/Arxa-Studio-${VERSION}-${TARGET_TRIPLE}.deb"
+          URL="https://github.com/${RELEASES_REPO}/releases/download/${GITHUB_REF_NAME}/${ASSET}"
+          node arxa/desktop/scripts/make-update-manifest.mjs \
+            --bundle "staging/$ASSET" --sig "staging/$ASSET.sig" \
+            --version "$VERSION" --channel "$CHANNEL" \
+            --target "$TAURI_TARGET" --arch "$TAURI_ARCH" \
+            --url "$URL" --out staging/latest.json
+          node arxa/desktop/scripts/make-update-manifest.mjs --check staging/latest.json
+
+      - name: Upload Linux assets to the GitHub Release (created by the macOS job)
+        env:
+          GH_TOKEN: ${{ secrets.GH_RELEASES_TOKEN }}
+        run: |
+          gh release upload "$GITHUB_REF_NAME" --repo "$RELEASES_REPO" --clobber \
+            staging/"$ASSET" staging/"$ASSET".sig staging/*.deb
+
+      - name: Push latest.json to arxa-releases main
+        env:
+          GH_TOKEN: ${{ secrets.GH_RELEASES_TOKEN }}
+        run: |
+          git clone --depth 1 "https://x-access-token:${GH_TOKEN}@github.com/${RELEASES_REPO}.git" releases
+          MANIFEST_DIR="releases/desktop/${CHANNEL}/${TAURI_TARGET}/${TAURI_ARCH}"
+          mkdir -p "$MANIFEST_DIR"
+          cp staging/latest.json "$MANIFEST_DIR/latest.json"
+          cd releases
+          git config user.name "arxa-release-bot"
+          git config user.email "noreply@arxadigital.solutions"
+          git add "desktop/${CHANNEL}/${TAURI_TARGET}/${TAURI_ARCH}/latest.json"
+          git commit -m "chore: publish ${CHANNEL} ${TAURI_TARGET}/${TAURI_ARCH} manifest for ${VERSION}"
+          # the macOS job pushed its manifest moments ago: rebase, never force
+          git pull --rebase origin main
+          git push origin HEAD:main
