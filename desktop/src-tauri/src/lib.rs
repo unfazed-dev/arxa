@@ -7,13 +7,14 @@
 //! 1. Probe the studio port first — if something already serves it (launchd on
 //!    a dev machine, a hand-launched server), spawn NOTHING and never touch
 //!    that process. launchd stays the owner wherever it is installed.
-//! 2. The engine THIS shell spawns OUTLIVES the shell (2026-09-07, startup
-//!    work): it runs detached in its own process group and its pid plus the
-//!    sidecar binary's mtime are recorded in `<dsh home>/desktop-engine.json`.
-//!    The next launch adopts a live engine from that record (page-only boot,
-//!    ~1s instead of ~2.7s) and restarts it only when the sidecar binary
-//!    changed (app update) or the operator picks Engine → Restart Engine.
-//!    We never kill a server we didn't start.
+//! 2. The engine OUTLIVES the shell (2026-09-07, startup work). On macOS the
+//!    shell installs a launchd agent (engine_agent) that keeps the bundled
+//!    sidecar alive — crash or quit, the next launch is page-only (~1s instead
+//!    of ~2.7s). Without launchctl it falls back to a detached spawn in its
+//!    own process group, recorded in `<dsh home>/desktop-engine.json` and
+//!    adopted by the next launch. Either way the engine is restarted only
+//!    when the sidecar binary changed (app update) or the operator picks
+//!    Engine → Restart Engine. We never kill a server we didn't start.
 //! 3. Single-instance guard: a second app launch focuses the first window
 //!    instead of racing it for the port.
 
@@ -24,6 +25,7 @@ use std::time::Duration;
 use tauri::Manager;
 
 pub mod cairn_server;
+pub mod engine_agent;
 pub mod pairing;
 pub mod pushd;
 
@@ -39,6 +41,9 @@ const DEFAULT_STUDIO_URL: &str = "http://arxa.studio.localhost:7891";
 /// dev server) is serving the port and we must not manage — let alone
 /// kill — anything.
 struct SpawnedServer(Mutex<Option<u32>>);
+/// True when launchd owns the engine (engine_agent): the shell then never
+/// spawns, respawns or kills it — restarts go through `launchctl kickstart`.
+struct AgentOwned(Mutex<bool>);
 /// When THIS shell spawned the engine. `open_studio` refuses a session file
 /// older than this: on every measured boot (2026-09-07) the shell navigated
 /// with the PREVIOUS engine's token, watched it rotate 250ms later, and
@@ -56,6 +61,13 @@ fn session_file_path() -> Option<std::path::PathBuf> {
                 .map(|h| std::path::PathBuf::from(h).join(".arxa").join("dsh"))
         })?;
     Some(home.join("desktop-session.json"))
+}
+
+/// mtime of the session file — changes exactly once per engine boot.
+fn session_file_mtime() -> Option<std::time::SystemTime> {
+    session_file_path()
+        .and_then(|p| std::fs::metadata(p).ok())
+        .and_then(|m| m.modified().ok())
 }
 
 /// True once the session file was written after `since` (mtime, no parsing).
@@ -542,6 +554,24 @@ fn kill_spawned(app: &tauri::AppHandle) {
 /// The watchdog sees the port drop, parks the window on the waiting page,
 /// and open_studio waits for the new engine's token (EngineSpawnedAt).
 fn restart_engine(app: &tauri::AppHandle) {
+    let agent = app
+        .state::<AgentOwned>()
+        .0
+        .lock()
+        .map(|g| *g)
+        .unwrap_or(false);
+    if agent {
+        match engine_agent::kickstart() {
+            Ok(()) => {
+                eprintln!("[arxa-desktop] engine kickstarted via launchd");
+                if let Ok(mut g) = app.state::<EngineSpawnedAt>().0.lock() {
+                    g.replace(std::time::SystemTime::now());
+                }
+            }
+            Err(e) => eprintln!("[arxa-desktop] engine kickstart failed: {e}"),
+        }
+        return;
+    }
     let owned = app
         .state::<SpawnedServer>()
         .0
@@ -704,6 +734,7 @@ pub fn run() {
         // global API; the remote-studio capability scopes it to dialog:allow-open.
         .plugin(tauri_plugin_dialog::init())
         .manage(SpawnedServer(Mutex::new(None)))
+        .manage(AgentOwned(Mutex::new(false)))
         .manage(EngineSpawnedAt(Mutex::new(None)))
         .manage(ThemeState(Mutex::new(None)))
         .invoke_handler(tauri::generate_handler![
@@ -736,46 +767,91 @@ pub fn run() {
             // B2 (ADR-0042): the cairn-server mirror sidecar beside pushd -
             // probe, spawn, loopback 8190; the engine mirrors out over /ingest.
             cairn_server::init(app.handle());
-            // Rider 1: probe before spawn. An externally owned server (launchd
-            // on the dev machine) always wins; we only self-heal a closed port
-            // for public installs that have no service manager. An engine a
-            // PREVIOUS run of this app left behind (owner record, pid alive,
-            // still an arxa-studio launcher) is adopted as ours — unless the
-            // sidecar binary changed underneath it (app update): then it is
-            // restarted so the page never runs against a stale engine.
+            // Rider 1: probe before spawn. A server nobody here started (a
+            // hand-launched engine, someone else's service) always wins and
+            // is never managed. Otherwise launchd owns the engine
+            // (engine_agent): install/refresh the agent, migrate a detached
+            // engine a previous shell build left behind, and kickstart when
+            // the sidecar binary changed (app update). If launchctl is not
+            // there, fall back to the detached spawn + adopt scheme.
             let reachable = server_reachable(&url);
-            let owner = read_engine_owner().filter(|(pid, _)| pid_is_engine(*pid));
-            eprintln!("[arxa-desktop] probe {} reachable={} owner={:?}", url, reachable, owner);
-            let mut need_spawn = !reachable;
-            if let (true, Some((pid, stamp))) = (reachable, &owner) {
-                if *stamp == sidecar_stamp() {
-                    eprintln!("[arxa-desktop] adopting engine from previous run (pid {pid})");
-                    if let Ok(mut guard) = app.state::<SpawnedServer>().0.lock() {
-                        guard.replace(*pid);
-                    }
-                } else {
-                    eprintln!("[arxa-desktop] engine pid {pid} predates this app build - restarting it");
-                    kill_engine_tree(*pid);
+            let owner = read_engine_owner();
+            let detached_pid = owner
+                .as_ref()
+                .map(|(pid, _)| *pid)
+                .filter(|pid| *pid != 0 && pid_is_engine(*pid));
+            let agent_loaded = engine_agent::loaded();
+            eprintln!(
+                "[arxa-desktop] probe {} reachable={} agent={} owner={:?}",
+                url, reachable, agent_loaded, owner
+            );
+            let stamp = sidecar_stamp();
+            let external = reachable && !agent_loaded && detached_pid.is_none();
+            let mut managed = false;
+            if external {
+                eprintln!("[arxa-desktop] external engine on the port - not managing it");
+            } else if let Some(bin) = sidecar_path() {
+                if let Some(pid) = detached_pid {
+                    eprintln!("[arxa-desktop] stopping detached engine pid {pid} - launchd takes over");
+                    kill_engine_tree(pid);
                     wait_port_free(&url);
-                    need_spawn = true;
+                }
+                let log = session_file_path()
+                    .map(|p| p.with_file_name("engine-stdio.log"))
+                    .unwrap_or_else(|| std::path::PathBuf::from("/dev/null"));
+                let updated = agent_loaded
+                    && owner.as_ref().map(|(_, s)| *s != stamp).unwrap_or(false);
+                let port_free = || !server_reachable(&url);
+                match engine_agent::ensure(&bin, &log, updated, &port_free) {
+                    Ok(started) => {
+                        eprintln!("[arxa-desktop] launchd agent ready (started={started})");
+                        write_engine_owner(0, &stamp);
+                        managed = true;
+                        if let Ok(mut guard) = app.state::<AgentOwned>().0.lock() {
+                            *guard = true;
+                        }
+                        if started {
+                            if let Ok(mut guard) = app.state::<EngineSpawnedAt>().0.lock() {
+                                guard.replace(std::time::SystemTime::now());
+                            }
+                        }
+                    }
+                    Err(e) => eprintln!("[arxa-desktop] launchd agent unavailable ({e}) - detached fallback"),
                 }
             }
-            if need_spawn {
-                eprintln!("[arxa-desktop] spawning engine sidecar");
-                match spawn_engine() {
-                    Ok(pid) => {
-                        eprintln!("[arxa-desktop] engine sidecar spawned (pid {pid})");
+            if !external && !managed {
+                let reachable = server_reachable(&url);
+                let mut need_spawn = !reachable;
+                if let (true, Some(pid), Some((_, owner_stamp))) = (reachable, detached_pid, &owner) {
+                    if *owner_stamp == stamp {
+                        eprintln!("[arxa-desktop] adopting engine from previous run (pid {pid})");
                         if let Ok(mut guard) = app.state::<SpawnedServer>().0.lock() {
                             guard.replace(pid);
                         }
-                        if let Ok(mut guard) = app.state::<EngineSpawnedAt>().0.lock() {
-                            guard.replace(std::time::SystemTime::now());
-                        }
+                    } else {
+                        eprintln!("[arxa-desktop] engine pid {pid} predates this app build - restarting it");
+                        kill_engine_tree(pid);
+                        wait_port_free(&url);
+                        need_spawn = true;
                     }
-                    Err(e) => {
-                        // Non-fatal: the waiting screen keeps polling, and a
-                        // manually started server still gets picked up.
-                        eprintln!("[arxa-desktop] sidecar spawn failed: {e}");
+                }
+                if need_spawn {
+                    eprintln!("[arxa-desktop] spawning engine sidecar");
+                    match spawn_engine() {
+                        Ok(pid) => {
+                            eprintln!("[arxa-desktop] engine sidecar spawned (pid {pid})");
+                            if let Ok(mut guard) = app.state::<SpawnedServer>().0.lock() {
+                                guard.replace(pid);
+                            }
+                            if let Ok(mut guard) = app.state::<EngineSpawnedAt>().0.lock() {
+                                guard.replace(std::time::SystemTime::now());
+                            }
+                        }
+                        Err(e) => {
+                            // Non-fatal: the waiting screen keeps polling, and a
+                            // manually started server still gets picked up.
+                            eprintln!("[arxa-desktop] sidecar spawn failed: {e}");
+                        }
                     }
                 }
             }
@@ -794,12 +870,34 @@ pub fn run() {
                     let mut was_up = false;
                     let mut ever_up = false;
                     let mut down_ticks: u32 = 0;
+                    // The engine rewrites the session file at every boot, so
+                    // a changed mtime while the page is up means the engine
+                    // restarted BETWEEN two ticks (launchd brings a crashed
+                    // engine back in ~1s; a kickstart is faster): the page's
+                    // socket reconnects silently and keeps running client
+                    // bundles the new engine no longer serves. Baseline on
+                    // the first tick that sees the port up — the file is
+                    // written before the engine listens — then any change
+                    // sends the window through the waiting page again.
+                    let mut token_seen: Option<std::time::SystemTime> = None;
                     loop {
                         std::thread::sleep(Duration::from_secs(2));
                         let up = server_reachable(&watch_url);
                         if up {
                             ever_up = true;
                             down_ticks = 0;
+                            let now = session_file_mtime();
+                            match token_seen {
+                                None => token_seen = now,
+                                Some(seen) if now.is_some() && now != Some(seen) => {
+                                    token_seen = now;
+                                    eprintln!("[arxa-desktop] engine restarted (new session token) - reloading");
+                                    if let Some(win) = handle.get_webview_window("main") {
+                                        let _ = win.navigate(home.clone());
+                                    }
+                                }
+                                _ => {}
+                            }
                         } else {
                             down_ticks += 1;
                         }
