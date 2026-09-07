@@ -10,9 +10,11 @@
 #   cd arxa-studio && npm ci
 #   (cd plugins/artifact-viewer/lib/monaco-build && npm ci && npm run build)
 #   node scripts/pack-cli.mjs && node scripts/pack-sidecar.mjs
-#   cd ../arxa/desktop && npm run tauri build -- --bundles deb
+#   cd ../arxa/desktop/src-tauri && cargo build --release
 #
-# then: cd packaging && makepkg -si
+# then: cd ../packaging && makepkg -si
+# (cargo build, not `tauri build` — package() takes target/release/arxa-desktop
+#  and the two binaries/ sidecars directly; no Tauri bundle is involved.)
 pkgname=arxa-studio
 pkgver=0.1.1
 pkgrel=1
@@ -33,19 +35,31 @@ options=('!strip')  # the sidecar is a self-extracting bun binary; stripping bre
 
 _bin="${startdir}/../src-tauri/target/release"
 
+# LAYOUT IS NOT COSMETIC. src/lib.rs::sidecar_path() is
+#   dirname(current_exe()) / "arxa-studio"
+# — beside the executable, under the PLAIN name Tauri gives an externalBin at
+# bundle time (no target triple). So the shell must NOT be the thing called
+# /usr/bin/arxa-studio: it would resolve its own path as its engine and spawn
+# itself. Everything lives together in /usr/lib/arxa-studio; /usr/bin gets a
+# symlink, which is safe because current_exe() reads /proc/self/exe and so
+# resolves to the real file.
 package() {
-  install -Dm755 "${_bin}/arxa-desktop" "${pkgdir}/usr/bin/arxa-studio"
+  install -Dm755 "${_bin}/arxa-desktop" "${pkgdir}/usr/lib/${pkgname}/arxa-desktop"
 
-  # The two externalBin sidecars, under the names Tauri resolves at runtime.
+  # The two externalBin sidecars, renamed to the plain names the shell (and
+  # Tauri's own deb/AppImage layout) expect beside the executable.
   local triple
   case "$CARCH" in
     x86_64)  triple="x86_64-unknown-linux-gnu" ;;
     aarch64) triple="aarch64-unknown-linux-gnu" ;;
   esac
   install -Dm755 "${startdir}/../src-tauri/binaries/arxa-studio-${triple}" \
-    "${pkgdir}/usr/lib/${pkgname}/arxa-studio-${triple}"
+    "${pkgdir}/usr/lib/${pkgname}/arxa-studio"
   install -Dm755 "${startdir}/../src-tauri/binaries/arxa-${triple}" \
-    "${pkgdir}/usr/lib/${pkgname}/arxa-${triple}"
+    "${pkgdir}/usr/lib/${pkgname}/arxa"
+
+  install -dm755 "${pkgdir}/usr/bin"
+  ln -s "/usr/lib/${pkgname}/arxa-desktop" "${pkgdir}/usr/bin/${pkgname}"
 
   install -Dm644 "${startdir}/../src-tauri/icons/128x128.png" \
     "${pkgdir}/usr/share/icons/hicolor/128x128/apps/${pkgname}.png"
