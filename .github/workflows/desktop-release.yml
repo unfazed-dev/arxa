@@ -376,6 +376,8 @@ jobs:
           cp "$IMG.sig" "staging/$ASSET.sig"
           DEB="$(find "$BUNDLE_DIR/deb" -maxdepth 1 -name '*.deb' | head -1)"
           cp "$DEB" "staging/Arxa-Studio-${VERSION}-${TARGET_TRIPLE}.deb"
+          # install.sh verifies <asset>.sha256 next to every Linux asset
+          (cd staging && for f in *.AppImage *.deb; do sha256sum "$f" > "$f.sha256"; done)
           URL="https://github.com/${RELEASES_REPO}/releases/download/${GITHUB_REF_NAME}/${ASSET}"
           node arxa/desktop/scripts/make-update-manifest.mjs \
             --bundle "staging/$ASSET" --sig "staging/$ASSET.sig" \
@@ -389,7 +391,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GH_RELEASES_TOKEN }}
         run: |
           gh release upload "$GITHUB_REF_NAME" --repo "$RELEASES_REPO" --clobber \
-            staging/"$ASSET" staging/"$ASSET".sig staging/*.deb
+            staging/"$ASSET" staging/"$ASSET".sig staging/*.deb staging/*.sha256
 
       - name: Push latest.json to arxa-releases main
         env:
@@ -399,10 +401,12 @@ jobs:
           MANIFEST_DIR="releases/desktop/${CHANNEL}/${TAURI_TARGET}/${TAURI_ARCH}"
           mkdir -p "$MANIFEST_DIR"
           cp staging/latest.json "$MANIFEST_DIR/latest.json"
+          # the curl | sh installer, served from the repo root
+          cp arxa/desktop/scripts/install.sh releases/install.sh
           cd releases
           git config user.name "arxa-release-bot"
           git config user.email "noreply@arxadigital.solutions"
-          git add "desktop/${CHANNEL}/${TAURI_TARGET}/${TAURI_ARCH}/latest.json"
+          git add "desktop/${CHANNEL}/${TAURI_TARGET}/${TAURI_ARCH}/latest.json" install.sh
           git commit -m "chore: publish ${CHANNEL} ${TAURI_TARGET}/${TAURI_ARCH} manifest for ${VERSION}"
           # the macOS job pushed its manifest moments ago: rebase, never force
           git pull --rebase origin main
