@@ -26,6 +26,36 @@ use tauri::Manager;
 
 pub mod cairn_server;
 pub mod engine_agent;
+#[cfg(target_os = "linux")]
+pub mod engine_unit;
+
+/// Whichever service manager supervises the engine on this platform: launchd on
+/// macOS, systemd --user on Linux, nothing anywhere else (the detached spawn
+/// then owns it, exactly as it did before either module existed). All three
+/// expose `loaded()`, `kickstart()` and `ensure()`, so the launch flow below is
+/// written once.
+#[cfg(target_os = "macos")]
+pub use engine_agent as supervisor;
+#[cfg(target_os = "linux")]
+pub use engine_unit as supervisor;
+#[cfg(not(any(target_os = "macos", target_os = "linux")))]
+pub mod supervisor {
+    use std::path::Path;
+    pub fn loaded() -> bool {
+        false
+    }
+    pub fn kickstart() -> Result<(), String> {
+        Err("no service manager on this platform".into())
+    }
+    pub fn ensure(
+        _sidecar: &Path,
+        _log: &Path,
+        _restart_wanted: bool,
+        _port_free: &dyn Fn() -> bool,
+    ) -> Result<bool, String> {
+        Err("no service manager on this platform".into())
+    }
+}
 pub mod pairing;
 pub mod pushd;
 
@@ -561,9 +591,9 @@ fn restart_engine(app: &tauri::AppHandle) {
         .map(|g| *g)
         .unwrap_or(false);
     if agent {
-        match engine_agent::kickstart() {
+        match supervisor::kickstart() {
             Ok(()) => {
-                eprintln!("[arxa-desktop] engine kickstarted via launchd");
+                eprintln!("[arxa-desktop] engine kickstarted via the service manager");
                 if let Ok(mut g) = app.state::<EngineSpawnedAt>().0.lock() {
                     g.replace(std::time::SystemTime::now());
                 }
@@ -780,7 +810,7 @@ pub fn run() {
                 .as_ref()
                 .map(|(pid, _)| *pid)
                 .filter(|pid| *pid != 0 && pid_is_engine(*pid));
-            let agent_loaded = engine_agent::loaded();
+            let agent_loaded = supervisor::loaded();
             eprintln!(
                 "[arxa-desktop] probe {} reachable={} agent={} owner={:?}",
                 url, reachable, agent_loaded, owner
@@ -792,7 +822,7 @@ pub fn run() {
                 eprintln!("[arxa-desktop] external engine on the port - not managing it");
             } else if let Some(bin) = sidecar_path() {
                 if let Some(pid) = detached_pid {
-                    eprintln!("[arxa-desktop] stopping detached engine pid {pid} - launchd takes over");
+                    eprintln!("[arxa-desktop] stopping detached engine pid {pid} - the service manager takes over");
                     kill_engine_tree(pid);
                     wait_port_free(&url);
                 }
@@ -802,9 +832,9 @@ pub fn run() {
                 let updated = agent_loaded
                     && owner.as_ref().map(|(_, s)| *s != stamp).unwrap_or(false);
                 let port_free = || !server_reachable(&url);
-                match engine_agent::ensure(&bin, &log, updated, &port_free) {
+                match supervisor::ensure(&bin, &log, updated, &port_free) {
                     Ok(started) => {
-                        eprintln!("[arxa-desktop] launchd agent ready (started={started})");
+                        eprintln!("[arxa-desktop] service manager ready (started={started})");
                         write_engine_owner(0, &stamp);
                         managed = true;
                         if let Ok(mut guard) = app.state::<AgentOwned>().0.lock() {
@@ -816,7 +846,7 @@ pub fn run() {
                             }
                         }
                     }
-                    Err(e) => eprintln!("[arxa-desktop] launchd agent unavailable ({e}) - detached fallback"),
+                    Err(e) => eprintln!("[arxa-desktop] service manager unavailable ({e}) - detached fallback"),
                 }
             }
             if !external && !managed {

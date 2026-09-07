@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=Arxa Studio
+Comment=The desktop shell for the arxa pipeline
+Exec=arxa-studio
+Icon=arxa-studio
+Terminal=false
+Categories=Development;IDE;
+StartupWMClass=arxa-desktop

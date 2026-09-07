@@ -1,0 +1,52 @@
+# Maintainer: Arxa Digital Solutions <dev@arxadigital.solutions>
+#
+# Arch/Omarchy package for the arxa studio desktop shell. Tauri does not
+# generate a PKGBUILD, so this one is maintained by hand alongside the AppImage
+# target in src-tauri/tauri.conf.json.
+#
+# It packages an ALREADY BUILT tree — run these first, on the machine/arch you
+# are packaging for (the engine sidecar embeds the build host's node):
+#
+#   cd arxa-studio && npm ci && node scripts/pack-cli.mjs && node scripts/pack-sidecar.mjs
+#   cd ../arxa/desktop && npm run tauri build -- --bundles deb
+#
+# then: cd packaging && makepkg -si
+pkgname=arxa-studio
+pkgver=0.1.1
+pkgrel=1
+pkgdesc="arxa studio — the desktop shell for the arxa pipeline"
+arch=('x86_64' 'aarch64')
+url="https://arxa.digital"
+license=('proprietary')
+# webkit2gtk-4.1 and gtk3 are the Tauri v2 runtime; zenity is the folder dialog
+# the sidebar shells (plugins/arxa-sidebar/lib/folder-picker.js) — without it
+# choosing an org root falls back to typing a path. libsecret + a running
+# Secret Service (gnome-keyring on Omarchy) hold the GitHub token; without one
+# the token lives in memory for the session only.
+depends=('webkit2gtk-4.1' 'gtk3' 'libsoup3' 'librsvg' 'zenity' 'libsecret' 'bubblewrap')
+optdepends=('gnome-keyring: persistent GitHub token storage via the Secret Service'
+            'git: repository features in the git card'
+            'xdg-desktop-portal-hyprland: native file dialogs under Hyprland')
+options=('!strip')  # the sidecar is a self-extracting bun binary; stripping breaks it
+
+_bin="${startdir}/../src-tauri/target/release"
+
+package() {
+  install -Dm755 "${_bin}/arxa-desktop" "${pkgdir}/usr/bin/arxa-studio"
+
+  # The two externalBin sidecars, under the names Tauri resolves at runtime.
+  local triple
+  case "$CARCH" in
+    x86_64)  triple="x86_64-unknown-linux-gnu" ;;
+    aarch64) triple="aarch64-unknown-linux-gnu" ;;
+  esac
+  install -Dm755 "${startdir}/../src-tauri/binaries/arxa-studio-${triple}" \
+    "${pkgdir}/usr/lib/${pkgname}/arxa-studio-${triple}"
+  install -Dm755 "${startdir}/../src-tauri/binaries/arxa-${triple}" \
+    "${pkgdir}/usr/lib/${pkgname}/arxa-${triple}"
+
+  install -Dm644 "${startdir}/../src-tauri/icons/128x128.png" \
+    "${pkgdir}/usr/share/icons/hicolor/128x128/apps/${pkgname}.png"
+  install -Dm644 "${startdir}/${pkgname}.desktop" \
+    "${pkgdir}/usr/share/applications/${pkgname}.desktop"
+}

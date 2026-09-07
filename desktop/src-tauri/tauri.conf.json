@@ -24,7 +24,12 @@
   },
   "bundle": {
     "active": true,
-    "targets": ["app", "dmg"],
+    "targets": [
+      "app",
+      "dmg",
+      "appimage",
+      "deb"
+    ],
     "externalBin": [
       "binaries/arxa-studio",
       "binaries/arxa"
@@ -40,6 +45,19 @@
     "createUpdaterArtifacts": true,
     "macOS": {
       "entitlements": "../entitlements.plist"
+    },
+    "linux": {
+      "deb": {
+        "depends": [
+          "libwebkit2gtk-4.1-0",
+          "libgtk-3-0",
+          "libayatana-appindicator3-1",
+          "zenity"
+        ]
+      },
+      "appimage": {
+        "bundleMediaFramework": false
+      }
     }
   },
   "plugins": {
