@@ -30,7 +30,6 @@ import 'package:arxa/cdp.dart';
 import 'package:arxa/crypto_aead.dart' as crypto;
 import 'package:arxa/gates.dart';
 import 'package:arxa/design_server.dart';
-import 'package:path/path.dart' as p;
 
 /// A derived viewport: a config name plus its width/height from config.
 class _Vp {
@@ -49,17 +48,11 @@ Future<GateResult> freezeGate(
   List<String>? targets,
   bool approve = false,
 }) async {
-  var designRel = GateContext.studioDesignDir;
-  var designRoot = ctx.designRoot;
-  // A scaffolded v2-shaped tree freezes against itself when the canonical
-  // root is absent (arxa's own v2 tree was archived 2026-09-07).
-  if (!Directory(designRoot).existsSync()) {
-    final vtwo = p.join(p.dirname(designRoot), 'arxa-studio-v2');
-    if (Directory(vtwo).existsSync()) {
-      designRoot = vtwo;
-      designRel = 'designs/arxa-studio-v2';
-    }
-  }
+  // One root: GateContext.studioDesignDir, which is the in-tree v1 design since
+  // the v2 tree was archived (2026-09-07). The v2→v1 fallback that used to sit
+  // here resolved to the same path afterwards, so it went.
+  const designRel = GateContext.studioDesignDir;
+  final designRoot = ctx.designRoot;
   final details = <String>[];
   var groupFails = 0;
 
