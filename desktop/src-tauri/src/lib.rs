@@ -123,13 +123,96 @@ fn engine_owner_path() -> Option<std::path::PathBuf> {
 /// self-extracting binary does not survive (docs/plans/linux-omarchy-port.md).
 /// The relative path is the same from /usr/bin (deb, AppImage) and from
 /// /usr/lib/arxa-studio (PKGBUILD).
-fn sidecar_path() -> Option<std::path::PathBuf> {
+fn bundled_sidecar_path() -> Option<std::path::PathBuf> {
     let dir = std::env::current_exe().ok()?.parent()?.to_path_buf();
     let libexec = dir.join("../libexec/arxa-studio/arxa-studio");
     if libexec.is_file() {
         return Some(libexec);
     }
     Some(dir.join("arxa-studio"))
+}
+
+/// Stable home of the engine binary when the shell itself is an AppImage:
+/// `<XDG_DATA_HOME>/arxa-studio/libexec/arxa-studio`, beside the `.stamp`
+/// recording which bundled binary it was copied from.
+fn stable_sidecar_dir() -> Option<std::path::PathBuf> {
+    let base = match std::env::var("XDG_DATA_HOME") {
+        Ok(v) if !v.trim().is_empty() => std::path::PathBuf::from(v),
+        _ => std::path::PathBuf::from(std::env::var("HOME").ok().filter(|h| !h.is_empty())?)
+            .join(".local")
+            .join("share"),
+    };
+    Some(base.join("arxa-studio").join("libexec"))
+}
+
+/// Identity of a bundled binary for the copy check: length + mtime, which is
+/// what changes when the user installs a new AppImage.
+fn file_stamp(p: &std::path::Path) -> Option<String> {
+    let m = std::fs::metadata(p).ok()?;
+    let ms = m
+        .modified()
+        .ok()?
+        .duration_since(std::time::UNIX_EPOCH)
+        .ok()?
+        .as_millis();
+    Some(format!("{}-{}", m.len(), ms))
+}
+
+/// Where the engine binary lives **for running purposes**.
+///
+/// An AppImage mounts itself at `/tmp/.mount_XXXXXX` and unmounts the moment
+/// the shell process exits. The engine deliberately outlives the shell (the
+/// detached spawn and the systemd unit both keep it up), and the engine binary
+/// is a `bun --compile` executable that mmaps its own payload out of its own
+/// file — so an engine still running from the mount takes **SIGBUS** as soon as
+/// the mount disappears, and a systemd unit that recorded a mount path can
+/// never start again (its `ConditionPathExists` names a directory that no
+/// longer exists). Copy it once to a stable per-user path and run that copy.
+///
+/// Not an AppImage (deb, PKGBUILD, dev) → the bundled path is already stable
+/// and is returned untouched.
+fn sidecar_path() -> Option<std::path::PathBuf> {
+    let bundled = bundled_sidecar_path()?;
+    if std::env::var_os("APPIMAGE").is_none() {
+        return Some(bundled);
+    }
+    let dir = stable_sidecar_dir()?;
+    let stable = dir.join("arxa-studio");
+    let marker = dir.join("arxa-studio.stamp");
+    let want = file_stamp(&bundled)?;
+    let have = std::fs::read_to_string(&marker).unwrap_or_default();
+    // Same bundled binary as last time: keep the existing copy, mtime and all,
+    // so `sidecar_stamp` stays put and the supervisor sees no phantom update.
+    if have.trim() == want && stable.is_file() {
+        return Some(stable);
+    }
+    std::fs::create_dir_all(&dir).ok()?;
+    let tmp = dir.join(format!("arxa-studio.tmp-{}", std::process::id()));
+    let _ = std::fs::remove_file(&tmp);
+    if let Err(e) = std::fs::copy(&bundled, &tmp) {
+        eprintln!("[arxa-desktop] engine copy out of the AppImage mount failed: {e}");
+        let _ = std::fs::remove_file(&tmp);
+        return Some(bundled);
+    }
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        let _ = std::fs::set_permissions(&tmp, std::fs::Permissions::from_mode(0o755));
+    }
+    if let Err(e) = std::fs::rename(&tmp, &stable) {
+        eprintln!(
+            "[arxa-desktop] engine install to {} failed: {e}",
+            stable.display()
+        );
+        let _ = std::fs::remove_file(&tmp);
+        return Some(bundled);
+    }
+    let _ = std::fs::write(&marker, format!("{want}\n"));
+    eprintln!(
+        "[arxa-desktop] engine copied out of the AppImage mount to {}",
+        stable.display()
+    );
+    Some(stable)
 }
 
 /// Version key for "is the running engine this app's engine": the sidecar
@@ -445,30 +528,36 @@ fn open_pairing_window(app: tauri::AppHandle) -> Result<(), String> {
     if let Some(win) = app.get_webview_window("pair") {
         return win.set_focus().map_err(|e| e.to_string());
     }
-    tauri::WebviewWindowBuilder::new(
-        &app,
-        "pair",
-        tauri::WebviewUrl::App("pair.html".into()),
-    )
-    .title("Pair Mobile Device")
-    .inner_size(420.0, 620.0)
-    .resizable(false)
-    .build()
-    .map(|_| ())
-    .map_err(|e| e.to_string())
+    tauri::WebviewWindowBuilder::new(&app, "pair", tauri::WebviewUrl::App("pair.html".into()))
+        .title("Pair Mobile Device")
+        .inner_size(420.0, 620.0)
+        .resizable(false)
+        .build()
+        .map(|_| ())
+        .map_err(|e| e.to_string())
 }
 
 /// Append a "Devices → Pair Mobile Device…" entry to the default app menu.
-#[cfg(desktop)]
+/// macOS (and Windows) only — see the call site for why Linux gets none.
+#[cfg(all(desktop, not(target_os = "linux")))]
 fn install_pairing_menu(app: &tauri::AppHandle) {
     use tauri::menu::{Menu, MenuItem, SubmenuBuilder};
     let build = || -> tauri::Result<()> {
-        let pair_item =
-            MenuItem::with_id(app, "pair-mobile", "Pair Mobile Device…", true, None::<&str>)?;
-        let devices = SubmenuBuilder::new(app, "Devices").item(&pair_item).build()?;
+        let pair_item = MenuItem::with_id(
+            app,
+            "pair-mobile",
+            "Pair Mobile Device…",
+            true,
+            None::<&str>,
+        )?;
+        let devices = SubmenuBuilder::new(app, "Devices")
+            .item(&pair_item)
+            .build()?;
         let restart_item =
             MenuItem::with_id(app, "restart-engine", "Restart Engine", true, None::<&str>)?;
-        let engine = SubmenuBuilder::new(app, "Engine").item(&restart_item).build()?;
+        let engine = SubmenuBuilder::new(app, "Engine")
+            .item(&restart_item)
+            .build()?;
         let menu = Menu::default(app)?;
         menu.append(&devices)?;
         menu.append(&engine)?;
@@ -590,6 +679,10 @@ fn kill_spawned(app: &tauri::AppHandle) {
 /// Engine → Restart Engine: kill the owned engine and spawn a fresh one.
 /// The watchdog sees the port drop, parks the window on the waiting page,
 /// and open_studio waits for the new engine's token (EngineSpawnedAt).
+// Reachable from the app menu, which Linux does not get (see the call site):
+// there the engine is a systemd user unit and `systemctl --user restart
+// arxa-engine.service` is the restart.
+#[cfg_attr(target_os = "linux", allow(dead_code))]
 fn restart_engine(app: &tauri::AppHandle) {
     let agent = app
         .state::<AgentOwned>()
@@ -735,9 +828,7 @@ fn check_for_updates(app: &tauri::AppHandle) {
                     update.version
                 );
                 match update.download_and_install(|_, _| {}, || {}).await {
-                    Ok(()) => eprintln!(
-                        "[arxa-desktop] update installed - applies on next launch"
-                    ),
+                    Ok(()) => eprintln!("[arxa-desktop] update installed - applies on next launch"),
                     Err(e) => eprintln!("[arxa-desktop] update install failed: {e}"),
                 }
             }
@@ -811,7 +902,13 @@ pub fn run() {
             let url = raw_studio_url();
             // Mobile pairing: iroh endpoint + bridge to the engine server.
             pairing::init(app.handle(), studio_host_port(&url));
-            #[cfg(desktop)]
+            // Not on Linux: `set_menu` there is an in-window GTK menubar
+            // (macOS puts it in the system bar), so it eats a strip off the
+            // top of the studio UI. Pairing stays reachable from the launch
+            // page's own button (open_pairing_window is a command); the
+            // engine restart is `systemctl --user restart arxa-engine.service`,
+            // which is what actually owns the engine on a systemd box.
+            #[cfg(all(desktop, not(target_os = "linux")))]
             install_pairing_menu(app.handle());
             // M7: the push sidecar (cairn-pushd) beside the engine — probe,
             // spawn, and publish its reachability to the pairing state.
@@ -1021,4 +1118,44 @@ pub fn run() {
                 cairn_server::kill_spawned(app);
             }
         });
+}
+
+#[cfg(test)]
+mod sidecar_tests {
+    use super::*;
+
+    /// The AppImage mount is ephemeral; the copy the engine actually runs from
+    /// must not be. Both halves of the copy check live here.
+    #[test]
+    fn file_stamp_tracks_a_replaced_binary() {
+        let dir = std::env::temp_dir().join(format!("arxa-stamp-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let f = dir.join("bin");
+        std::fs::write(&f, b"one").unwrap();
+        let a = file_stamp(&f).unwrap();
+        // A different length is a different binary, whatever the clock did.
+        std::fs::write(&f, b"one-longer").unwrap();
+        let b = file_stamp(&f).unwrap();
+        assert_ne!(a, b, "a replaced binary must not reuse the old stamp");
+        assert!(file_stamp(&dir.join("absent")).is_none());
+        std::fs::remove_dir_all(&dir).ok();
+    }
+
+    #[test]
+    fn stable_dir_is_under_xdg_data_home() {
+        std::env::set_var("XDG_DATA_HOME", "/tmp/xdg-data");
+        assert_eq!(
+            stable_sidecar_dir().unwrap(),
+            std::path::PathBuf::from("/tmp/xdg-data/arxa-studio/libexec")
+        );
+        std::env::remove_var("XDG_DATA_HOME");
+    }
+
+    /// Not an AppImage: the bundled path is already stable, so nothing is
+    /// copied and nothing is invented.
+    #[test]
+    fn without_appimage_the_bundled_path_is_used() {
+        std::env::remove_var("APPIMAGE");
+        assert_eq!(sidecar_path(), bundled_sidecar_path());
+    }
 }

@@ -200,6 +200,23 @@ it exports `TAURI_SIGNING_PRIVATE_KEY` from `~/.arxa/updater/arxa-updater.key`
 updater `.app.tar.gz` gets its `.sig`. Without it, `createUpdaterArtifacts`
 warns "A public key has been found, but no private key" and skips signing.
 
+## Linux: the engine never runs from the AppImage mount
+
+An AppImage mounts itself at `/tmp/.mount_XXXXXX` and unmounts when the shell
+process exits. The engine deliberately outlives the shell (detached spawn, or
+the `arxa-engine.service` user unit), and it is a `bun --compile` binary that
+mmaps its payload out of its own file — so an engine left running from the
+mount takes **SIGBUS** the moment the mount goes, and a systemd unit that
+recorded a mount path can never start again.
+
+`sidecar_path()` therefore copies the engine to
+`$XDG_DATA_HOME/arxa-studio/libexec/arxa-studio` (default
+`~/.local/share/…`) on the first launch of each new AppImage and runs that
+copy. A sibling `.stamp` file holds the bundled binary's length and mtime, so
+the copy happens once per app version, not once per launch — the engine's
+mtime stays put and the supervisor sees no phantom update. deb, PKGBUILD and
+dev runs already have a stable path and are untouched.
+
 ## Release CI
 
 `.github/workflows/desktop-release.yml` runs on `studio-v*` (stable) and
