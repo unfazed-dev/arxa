@@ -423,6 +423,8 @@ fn open_studio(app: tauri::AppHandle) {
     if tokenized == clean {
         return; // no token published — single navigation is all there is
     }
+    let handle = app.clone();
+    let started = std::time::SystemTime::now();
     std::thread::spawn(move || {
         // Condition-based, not a fixed sleep: the exchange chain settles
         // on the clean root only after the 303 round-trip.
@@ -441,6 +443,12 @@ fn open_studio(app: tauri::AppHandle) {
             .map(str::to_owned)
             .unwrap_or_default();
         const BUDGET: usize = 120; // 30s — covers a slow first engine boot
+                                   // How long a settled clean root may stay unidentified before the
+                                   // step-2 re-navigation fires (3s), and when to hand recovery to the
+                                   // watchdog after it (3× that, same anchor).
+        const IDENTIFY_GRACE_TICKS: usize = 12;
+        let mut clean_since: Option<usize> = None;
+        let mut relanded = false;
         for i in 0..BUDGET {
             std::thread::sleep(Duration::from_millis(250));
             let Ok(current) = win.url() else {
@@ -451,6 +459,7 @@ fn open_studio(app: tauri::AppHandle) {
                 auth_trace(&format!("open_studio: poll[{i}] url={}", current.as_str()));
             }
             if current.as_str() != clean {
+                clean_since = None;
                 if let Some(fresh) = session_token() {
                     if fresh != navigated_token {
                         let retok = format!("{}?token={}", clean, fresh);
@@ -467,14 +476,53 @@ fn open_studio(app: tauri::AppHandle) {
                         continue;
                     }
                 }
-            }
-            if current.as_str() == clean {
-                // The 303 exchange already landed the window on the clean
-                // root with the cookie minted; re-navigating here reloaded
-                // the whole studio a second time on every boot (2026-09-07
-                // trace: only the second load ever painted, ~1s later).
-                auth_trace(&format!("open_studio: settled on clean root at poll[{i}]"));
-                return;
+            } else {
+                // Settled on the clean root — which the 303 reaches whether
+                // the cookie rode or not. WKWebView withholds the freshly
+                // minted SameSite=Strict cookie inside the exchange's own
+                // navigation chain (the 2026-09-05 lockout; gate reproduction
+                // 2026-09-12: this branch returned at poll[0] while the page
+                // showed the 401 hint for 60s). So VERIFY, don't assume: the
+                // studio page identifies itself on load (report_theme); an
+                // unidentified clean root gets exactly one token-free
+                // first-party re-navigation — open_studio's original step 2,
+                // now conditional, so boots whose cookie rode pay nothing.
+                let identified = handle
+                    .try_state::<PageIdentified>()
+                    .and_then(|s| s.0.lock().ok().and_then(|g| *g))
+                    .map(|t| t > started)
+                    .unwrap_or(false);
+                if identified {
+                    auth_trace(&format!(
+                        "open_studio: studio identified on clean root at poll[{i}]"
+                    ));
+                    return;
+                }
+                match clean_since {
+                    None => clean_since = Some(i),
+                    Some(first) => {
+                        if !relanded && i - first >= IDENTIFY_GRACE_TICKS {
+                            relanded = true;
+                            match tauri::Url::parse(&clean) {
+                                Ok(u) => {
+                                    let err = win.navigate(u).is_err();
+                                    auth_trace(&format!(
+                                        "open_studio: clean root NOT identified at poll[{i}] — step-2 re-navigation err={err}"
+                                    ));
+                                }
+                                Err(_) => auth_trace("open_studio: step-2 URL did not parse"),
+                            }
+                        } else if relanded && i - first >= IDENTIFY_GRACE_TICKS * 3 {
+                            // The recovery navigation produced no identifying
+                            // page either — hand long-term recovery to the
+                            // watchdog rather than re-navigating in a loop.
+                            auth_trace(&format!(
+                                "open_studio: still unidentified after step-2 at poll[{i}] — watchdog owns recovery"
+                            ));
+                            return;
+                        }
+                    }
+                }
             }
         }
         auth_trace("open_studio: poll budget exhausted without settling on the clean root");
@@ -492,6 +540,12 @@ struct Theme {
     dark: bool,
 }
 struct ThemeState(Mutex<Option<Theme>>);
+/// When the studio page last identified itself to the shell. The remote page
+/// cannot be read from here (different origin), but arxa-pairing's theme
+/// relay invokes report_theme on EVERY studio load — and the engine's 401
+/// hint never invokes anything. open_studio's settle check treats a report
+/// newer than its own navigation as proof the landed page is the studio.
+struct PageIdentified(Mutex<Option<std::time::SystemTime>>);
 
 /// Called by the studio page (remote origin — granted in
 /// capabilities/remote-studio.json) on load and on every accent/dark change.
@@ -504,6 +558,15 @@ fn report_theme(
     dark: bool,
 ) {
     use tauri::Emitter as _;
+    // Any invoke from the remote page also IDENTIFIES it: open_studio's
+    // settle check waits for a report newer than its navigation, because
+    // the engine's 401 hint never calls into the shell. Stamped before
+    // validation — identity is not conditional on a valid accent.
+    if let Some(id) = app.try_state::<PageIdentified>() {
+        if let Ok(mut g) = id.0.lock() {
+            *g = Some(std::time::SystemTime::now());
+        }
+    }
     // Only a literal #rrggbb reaches CSS — the value crosses a trust boundary
     // (remote page → shell window style attribute).
     let accent = accent.filter(|v| {
@@ -965,6 +1028,7 @@ pub fn run() {
         .manage(AgentOwned(Mutex::new(false)))
         .manage(EngineSpawnedAt(Mutex::new(None)))
         .manage(ThemeState(Mutex::new(None)))
+        .manage(PageIdentified(Mutex::new(None)))
         .invoke_handler(tauri::generate_handler![
             studio_url,
             open_studio,
