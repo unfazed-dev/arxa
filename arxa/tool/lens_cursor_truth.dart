@@ -44,6 +44,8 @@ double contrast(List<int> a, List<int> b) {
   return (hi + 0.05) / (lo + 0.05);
 }
 
+// law parity (cursor.js mixAt): t is the fraction of the FIRST argument
+// (the stroke color) — the stuck blend is the exact paint, not a proxy.
 List<int> mixAt(List<int> a, List<int> b, double t) => [
   (a[0] * t + b[0] * (1 - t)).round(),
   (a[1] * t + b[1] * (1 - t)).round(),
@@ -121,7 +123,12 @@ Future<void> main(List<String> argv) async {
         function hx(c) { return '#' + c.map((v) => Math.round(v).toString(16).padStart(2, '0')).join(''); }
         const state = parse(dot.style.background) || parse(dot.style.backgroundColor);
         const belief = document.__arxaCursor || null;
-        const stackAll = document.elementsFromPoint(x, y).filter((e) => !(e.id && e.id.indexOf('cursor-') === 0));
+        // LOCK LAW v3.1: while sticking the law samples (and the ring is
+        // drawn) at the target's center — audit THAT position, not the
+        // pointer's, or a lock over a big button reads as a mismatch.
+        const lawX = belief && typeof belief.lawX === 'number' ? Math.max(0, Math.min(window.innerWidth - 1, Math.round(belief.lawX))) : x;
+        const lawY = belief && typeof belief.lawY === 'number' ? Math.max(0, Math.min(window.innerHeight - 1, Math.round(belief.lawY))) : y;
+        const stackAll = document.elementsFromPoint(lawX, lawY).filter((e) => !(e.id && e.id.indexOf('cursor-') === 0));
         // media veil: a video/img/canvas/SVG painting ABOVE the DOM surface
         // makes the rendered pixel CONTENT (footage/imagery/vector art —
         // the hiw zoom bloom is an SVG petal), not a paintable surface —
@@ -144,6 +151,8 @@ Future<void> main(List<String> argv) async {
           hidden: canvas.style.opacity === '0' || dot.style.opacity === '0',
           lawSurface: belief ? belief.surface : null,
           lawState: belief ? belief.state : null,
+          lawX,
+          lawY,
           sampled,
           veil,
           dump,
@@ -228,6 +237,11 @@ Future<void> main(List<String> argv) async {
           total++;
           final info = await tab.evaluate(moveJs(x, y), awaitPromise: true);
           if (info == null || info['state'] == null) continue;
+          // LOCK LAW v3.1: decode at the LAW position (lock target center
+          // while sticking) — the ring is drawn there, so that is the
+          // backdrop the floors must clear against.
+          final lx = ((info['lawX'] as num?) ?? x).toInt().clamp(0, width - 1);
+          final ly = ((info['lawY'] as num?) ?? y).toInt().clamp(0, vh - 1);
           final hidden = info['hidden'] == true;
           await tab.evaluate(hideJs, awaitPromise: true);
           final png = await tab.screenshot();
@@ -236,21 +250,21 @@ Future<void> main(List<String> argv) async {
           if (image.width < x + 1 || image.height < y + 1) { shotBad++; continue; }
           shotOk++;
           final offs = <List<int>>[
-            [x, y],
-            [(x + 24).clamp(0, image.width - 1), y],
-            [(x - 24).clamp(0, image.width - 1), y],
-            [x, (y + 24).clamp(0, image.height - 1)],
-            [x, (y - 24).clamp(0, image.height - 1)],
+            [lx, ly],
+            [(lx + 24).clamp(0, image.width - 1), ly],
+            [(lx - 24).clamp(0, image.width - 1), ly],
+            [lx, (ly + 24).clamp(0, image.height - 1)],
+            [lx, (ly - 24).clamp(0, image.height - 1)],
           ];
           final ring = <List<int>>[
-            [(x + 48).clamp(0, image.width - 1), y],
-            [(x - 48).clamp(0, image.width - 1), y],
-            [x, (y + 48).clamp(0, image.height - 1)],
-            [x, (y - 48).clamp(0, image.height - 1)],
-            [(x + 34).clamp(0, image.width - 1), (y + 34).clamp(0, image.height - 1)],
-            [(x - 34).clamp(0, image.width - 1), (y + 34).clamp(0, image.height - 1)],
-            [(x + 34).clamp(0, image.width - 1), (y - 34).clamp(0, image.height - 1)],
-            [(x - 34).clamp(0, image.width - 1), (y - 34).clamp(0, image.height - 1)],
+            [(lx + 48).clamp(0, image.width - 1), ly],
+            [(lx - 48).clamp(0, image.width - 1), ly],
+            [lx, (ly + 48).clamp(0, image.height - 1)],
+            [lx, (ly - 48).clamp(0, image.height - 1)],
+            [(lx + 34).clamp(0, image.width - 1), (ly + 34).clamp(0, image.height - 1)],
+            [(lx - 34).clamp(0, image.width - 1), (ly + 34).clamp(0, image.height - 1)],
+            [(lx + 34).clamp(0, image.width - 1), (ly - 34).clamp(0, image.height - 1)],
+            [(lx - 34).clamp(0, image.width - 1), (ly - 34).clamp(0, image.height - 1)],
           ];
           final samples = offs.map((o) {
             final p = image.getPixel(o[0], o[1]);
@@ -300,13 +314,60 @@ Future<void> main(List<String> argv) async {
             contentOverlap = stateVsSurface && surfaceInRing;
           }
           if (!ok && !hidden) {
-            final flag = veil ? 'NOTE(media)' : (contentOverlap ? 'NOTE(content)' : (okTol && surfaceAgrees ? 'NOTE(grain)' : 'FAIL'));
+            var flag = veil ? 'NOTE(media)' : (contentOverlap ? 'NOTE(content)' : (okTol && surfaceAgrees ? 'NOTE(grain)' : 'FAIL'));
+            var dotRs = dotR;
+            var idleRs = idleR;
+            var stuckRs = stuckR;
+            var pixelS = pixel;
+            var stateS = info['state'].toString();
+            var alphaS = alpha.toStringAsFixed(2);
+            var surfaceNoteS = surfaceNote;
+            var stackS = info['dump'].toString();
+            // settle-and-recheck (DOM-probe parity): a raw FAIL is
+            // re-parked once after a settle + 1px jiggle — Lenis eases
+            // and hover filter transitions strand stale states at the
+            // parked instant; only a FAIL that survives the settle counts.
+            if (flag == 'FAIL') {
+              await tab.evaluate('(async () => { await new Promise((r) => setTimeout(r, 300)); document.dispatchEvent(new MouseEvent("mousemove", { clientX: ' + (x + 1).toString() + ', clientY: y })); await new Promise((r) => setTimeout(r, 250)); return true; })()', awaitPromise: true);
+              final info2 = await tab.evaluate(moveJs(x, y), awaitPromise: true);
+              if (info2 != null && info2['state'] != null) {
+                await tab.evaluate(hideJs, awaitPromise: true);
+                final png2 = await tab.screenshot();
+                await tab.evaluate(showJs, awaitPromise: true);
+                final image2 = decodePng(png2);
+                final lx2 = ((info2['lawX'] as num?) ?? x).toInt().clamp(0, width - 1);
+                final ly2 = ((info2['lawY'] as num?) ?? y).toInt().clamp(0, vh - 1);
+                final samples2 = offs.map((o) {
+                  final px = image2.getPixel(o[0].clamp(0, image2.width - 1) == lx2 ? lx2 : o[0], ly2);
+                  return [px.r.toInt(), px.g.toInt(), px.b.toInt()];
+                }).toList();
+                // re-sample the median at the settled law position
+                final mid2 = image2.getPixel(lx2, ly2);
+                samples2[0] = [mid2.r.toInt(), mid2.g.toInt(), mid2.b.toInt()];
+                final pixel2 = median5(samples2);
+                final stateC2 = parseHex(info2['state'].toString());
+                final alpha2 = double.parse(info2['alpha'].toString());
+                final dotR2 = contrast(stateC2, pixel2);
+                final idleR2 = contrast(mixAt(stateC2, pixel2, 0.5), pixel2);
+                final stuckR2 = contrast(mixAt(stateC2, pixel2, alpha2), pixel2);
+                if (dotR2 >= 3.0 && stuckR2 >= 3.0 && idleR2 >= 2.0) {
+                  flag = 'NOTE(settled)';
+                }
+                dotRs = dotR2;
+                idleRs = idleR2;
+                stuckRs = stuckR2;
+                pixelS = pixel2;
+                stateS = info2['state'].toString();
+                alphaS = alpha2.toStringAsFixed(2);
+                stackS = info2['dump'].toString();
+              }
+            }
             final isFail = flag == 'FAIL';
             if (isFail) failures++;
             stdout.writeln(
-              pad(step[0] + ' @' + fx.toString() + ',' + fy.toString(), 40) + ' state ' + info['state'].toString() + ' a' + alpha.toStringAsFixed(2) + '  pixel [' + pixel.join(',') + ']' +
-              '  dot ' + dotR.toStringAsFixed(2) + ' idle ' + idleR.toStringAsFixed(2) + ' stuck ' + stuckR.toStringAsFixed(2) + surfaceNote + '  ' + flag);
-            stdout.writeln('    stack: ' + info['dump'].toString());
+              pad(step[0] + ' @' + fx.toString() + ',' + fy.toString(), 40) + ' state ' + stateS + ' a' + alphaS + '  pixel [' + pixelS.join(',') + ']' +
+              '  dot ' + dotRs.toStringAsFixed(2) + ' idle ' + idleRs.toStringAsFixed(2) + ' stuck ' + stuckRs.toStringAsFixed(2) + surfaceNoteS + '  ' + flag);
+            stdout.writeln('    stack: ' + stackS);
           }
         }
       }
