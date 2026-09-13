@@ -64,8 +64,9 @@ All runs from `mobile_flutter/`; `-d <device-id>` from `flutter devices`.
 | Leg | How |
 |---|---|
 | Pair | `flutter test integration_test/approvals_e2e_test.dart -d <device-id> --dart-define=PHASE=smoke --dart-define=TICKET_URL=http://<lan-ip>:8899/ticket.txt` — scan view renders, manual ticket pairs, connected state reached |
-| Reconnect | force-quit the app, toggle airplane mode, cold-restart the same run — persisted NodeId + session token must skip the QR and re-dial (`approvals_e2e_test.dart:312`; add `--dart-define=CELLULAR=true` for the relay route) |
-| Push registration | same run — real APNs/FCM token case (`approvals_e2e_test.dart:316+`); engine-side log must show `set_push_token` → `OK` |
+| Reconnect | force-quit the app, toggle airplane mode, cold-restart the same run — persisted NodeId + session token must skip the QR and re-dial (`approvals_e2e_test.dart:290-313`, the re-dial wait; `TransportService.resume()` at :306 reloads the persisted identity; add `--dart-define=CELLULAR=true` for the relay route) |
+| Push registration | same run — real APNs/FCM token case (`approvals_e2e_test.dart:319-336`); engine-side log must show `set_push_token` → `OK` |
+| Real-APNs doorbell (D68 phone leg) | `--dart-define=PHASE=phone` (`approvals_e2e_test.dart:268-275+`) against an engine booted with `ARXA_DOORBELL_PUSH=true` + `ARXA_APPROVALS_TEST_SEAM=true` and a REAL pushd holding the operator's `.p8` (`CAIRN_APNS_SANDBOX=1`, development-signed build): permission grant → APNs token mint → the buzz while backgrounded → list → decide → unblock, all on hardware |
 | Notification presentation + tap-through | raise an approval engine-side; notification presents with the app foregrounded AND backgrounded; tapping it opens the approvals route |
 | Approval decision | `--dart-define=PHASE=e2e` — list renders pendings, answer on-device, list empties, refused second answer surfaces the conflict |
 | Conversation send | with the tunnel up, send from the phone's conversation composer; confirm receipt engine-side |
@@ -88,7 +89,9 @@ flutter test integration_test/approvals_e2e_test.dart \
 ```
 
 `PHASE` = `smoke` (boot, pair, empty approvals state) · `e2e` (decisions +
-conflict) · `pressure` (rapid refresh + repeated conflicts).
+conflict) · `pressure` (rapid refresh + repeated conflicts) · `phone` (the
+real-APNs doorbell leg above — buzz, list, decide, unblock on hardware;
+needs the doorbell-enabled engine boot, never the simulator).
 
 ## Android APK leg
 
