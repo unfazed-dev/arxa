@@ -1,7 +1,11 @@
 // arxa-builder: LIVE — the code sessions list, composing the form-factor
 // siblings (mobile / tablet) over the shared body.
 import 'package:arxa_kit_ui_library/arxa_kit_ui_library.dart'
-    show ArxaKitGlyphs, ArxaKitNativeAppBar, ArxaKitNativeIconButton, StackedView;
+    show
+        ArxaKitGlyphs,
+        ArxaKitNativeAppBar,
+        ArxaKitNativeIconButton,
+        StackedView;
 import 'package:flutter/material.dart';
 
 import 'package:arxa_studio_mobile/l10n/app_localizations.dart';
@@ -15,7 +19,10 @@ class CodeSessionsView extends StackedView<CodeSessionsViewModel> {
 
   @override
   Widget builder(
-      BuildContext context, CodeSessionsViewModel viewModel, Widget? child) {
+    BuildContext context,
+    CodeSessionsViewModel viewModel,
+    Widget? child,
+  ) {
     final l10n = AppLocalizations.of(context);
     return Scaffold(
       appBar: ArxaKitNativeAppBar(
@@ -39,8 +46,14 @@ class CodeSessionsView extends StackedView<CodeSessionsViewModel> {
         ],
       ),
       body: MediaQuery.sizeOf(context).width >= 600
-          ? CodeSessionsViewTablet(key: const ValueKey('tablet'), viewModel: viewModel)
-          : CodeSessionsViewMobile(key: const ValueKey('mobile'), viewModel: viewModel),
+          ? CodeSessionsViewTablet(
+              key: const ValueKey('tablet'),
+              viewModel: viewModel,
+            )
+          : CodeSessionsViewMobile(
+              key: const ValueKey('mobile'),
+              viewModel: viewModel,
+            ),
     );
   }
 

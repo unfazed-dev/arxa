@@ -58,7 +58,8 @@ Future<void> main() async {
       locator.registerLazySingleton(
         () => ConversationRepository(
           sessionCache: arxaKitLocator<ArxaKitRepository<CodeSession>>(),
-          messageCache: arxaKitLocator<ArxaKitRepository<ConversationMessage>>(),
+          messageCache:
+              arxaKitLocator<ArxaKitRepository<ConversationMessage>>(),
           api: ConversationApiClient(transport: locator<TransportService>()),
         ),
       );
@@ -89,7 +90,9 @@ Future<void> main() async {
     // downstream), then free the fetch budget.
     notifications.apns?.silentWakes.listen((wake) async {
       await locator<TransportService>().resume();
-      unawaited(notifications.apns?.completeSilentWake() ?? Future<void>.value());
+      unawaited(
+        notifications.apns?.completeSilentWake() ?? Future<void>.value(),
+      );
     });
   }
   // iOS suspends QUIC in the background — redial the studio link whenever
@@ -106,7 +109,9 @@ Future<void> main() async {
   final startsInStudio = await IrohTransportService.storedPairingExists();
   // TEMPORARY diagnostic rail — see shot_extension.dart. REMOVE with it.
   ShotExtension.register(ArxaStudioMobileApp._appShotKey);
-  runApp(ArxaStudioMobileApp(startsInStudio: startsInStudio, accentSync: accentSync));
+  runApp(
+    ArxaStudioMobileApp(startsInStudio: startsInStudio, accentSync: accentSync),
+  );
 }
 
 /// Routes a notification tap by its push class: 'task:*' collapse keys land
@@ -165,28 +170,30 @@ class ArxaStudioMobileApp extends StatelessWidget {
       builder: (context, accent, _) => RepaintBoundary(
         key: _appShotKey,
         child: MaterialApp.router(
-      onGenerateTitle: (context) => AppLocalizations.of(context).appTitle,
-      localizationsDelegates: AppLocalizations.localizationsDelegates,
-      supportedLocales: AppLocalizations.supportedLocales,
-      debugShowCheckedModeBanner: false,
-      theme: arxaKitLightTheme(accent: accent ?? ArxaKitColors.accent)
-          .copyWith(pageTransitionsTheme: arxaNoPushTransitionsTheme),
-      darkTheme: arxaKitDarkTheme(accent: accent ?? ArxaKitColors.accent)
-          .copyWith(pageTransitionsTheme: arxaNoPushTransitionsTheme),
-      themeMode: ThemeMode.system,
-      routerDelegate: kitPlatformRouter.delegate(
-        initialRoutes: [
-          if (startsInStudio)
-            StudioSessionViewRoute()
-          else
-            PairingScanViewRoute(),
-        ],
-      ),
-      routeInformationParser: kitPlatformRouter.defaultRouteParser(),
-      // OS back gesture (Android predictive back) must reach the stacked
-      // router explicitly under the routerDelegate API.
-      backButtonDispatcher: RootBackButtonDispatcher(),
-      ),
+          onGenerateTitle: (context) => AppLocalizations.of(context).appTitle,
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          debugShowCheckedModeBanner: false,
+          theme: arxaKitLightTheme(
+            accent: accent ?? ArxaKitColors.accent,
+          ).copyWith(pageTransitionsTheme: arxaNoPushTransitionsTheme),
+          darkTheme: arxaKitDarkTheme(
+            accent: accent ?? ArxaKitColors.accent,
+          ).copyWith(pageTransitionsTheme: arxaNoPushTransitionsTheme),
+          themeMode: ThemeMode.system,
+          routerDelegate: kitPlatformRouter.delegate(
+            initialRoutes: [
+              if (startsInStudio)
+                StudioSessionViewRoute()
+              else
+                PairingScanViewRoute(),
+            ],
+          ),
+          routeInformationParser: kitPlatformRouter.defaultRouteParser(),
+          // OS back gesture (Android predictive back) must reach the stacked
+          // router explicitly under the routerDelegate API.
+          backButtonDispatcher: RootBackButtonDispatcher(),
+        ),
       ),
     );
   }

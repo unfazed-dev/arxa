@@ -31,15 +31,19 @@ class SyncDoorbell {
   /// Arm once; the cache watch fires on sync applies AND pull
   /// reconciliations — both arrival paths ring through the same dedupe.
   void listen() {
-    _sub ??= _repository.watch().listen(_onRows,
-        onError: (Object e, StackTrace st) =>
-            debugPrint('[doorbell] stream error: $e'));
+    _sub ??= _repository.watch().listen(
+      _onRows,
+      onError: (Object e, StackTrace st) =>
+          debugPrint('[doorbell] stream error: $e'),
+    );
   }
 
   void _onRows(List<Approval> rows) {
     final pending = rows.where((a) => a.status == 'pending').toList();
-    debugPrint('[doorbell] emission: rows=${rows.length} pending=${pending.length} '
-        'seeded=$_seeded known=${_doorbelled.length}');
+    debugPrint(
+      '[doorbell] emission: rows=${rows.length} pending=${pending.length} '
+      'seeded=$_seeded known=${_doorbelled.length}',
+    );
     if (!_seeded) {
       _doorbelled.addAll(pending.map((a) => a.id));
       _seeded = true;
@@ -57,12 +61,14 @@ class SyncDoorbell {
   /// a process-lifetime dedupe miss.
   Future<void> _buzz(Approval approval) {
     debugPrint('[doorbell] buzzing ${approval.id}');
-    return _notifications.showLocalNotification(ArxaKitLocalNotification(
-      id: approval.id.hashCode & 0x7fffffff,
-      title: _title,
-      body: _body,
-      payload: 'approval:${approval.id}',
-    ));
+    return _notifications.showLocalNotification(
+      ArxaKitLocalNotification(
+        id: approval.id.hashCode & 0x7fffffff,
+        title: _title,
+        body: _body,
+        payload: 'approval:${approval.id}',
+      ),
+    );
   }
 
   void dispose() {
@@ -101,12 +107,14 @@ class TaskDoorbell {
   }
 
   Future<void> _buzz(Task task) {
-    return _notifications.showLocalNotification(ArxaKitLocalNotification(
-      id: task.id.hashCode & 0x7fffffff,
-      title: task.isFailed ? 'Task failed' : 'Task finished',
-      body: 'Open Arxa Studio to see the result.',
-      payload: 'task:${task.id}',
-    ));
+    return _notifications.showLocalNotification(
+      ArxaKitLocalNotification(
+        id: task.id.hashCode & 0x7fffffff,
+        title: task.isFailed ? 'Task failed' : 'Task finished',
+        body: 'Open Arxa Studio to see the result.',
+        payload: 'task:${task.id}',
+      ),
+    );
   }
 
   void dispose() {

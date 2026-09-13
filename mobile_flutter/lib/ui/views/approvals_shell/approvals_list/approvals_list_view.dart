@@ -6,7 +6,11 @@
 // (lib/ui/widgets/approval_card.dart) — the conversation transcript
 // threads the same widget inline.
 import "package:arxa_kit_ui_library/arxa_kit_ui_library.dart"
-    show ArxaKitGlyphs, ArxaKitNativeAppBar, ArxaKitNativeIconButton, StackedView;
+    show
+        ArxaKitGlyphs,
+        ArxaKitNativeAppBar,
+        ArxaKitNativeIconButton,
+        StackedView;
 import "package:flutter/material.dart";
 
 import "package:arxa_studio_mobile/l10n/app_localizations.dart";
@@ -19,7 +23,10 @@ class ApprovalsListView extends StackedView<ApprovalsListViewModel> {
 
   @override
   Widget builder(
-      BuildContext context, ApprovalsListViewModel viewModel, Widget? child) {
+    BuildContext context,
+    ApprovalsListViewModel viewModel,
+    Widget? child,
+  ) {
     final l10n = AppLocalizations.of(context);
     final bootError = viewModel.bootError;
     return Scaffold(
@@ -46,10 +53,14 @@ class ApprovalsListView extends StackedView<ApprovalsListViewModel> {
               color: Theme.of(context).colorScheme.errorContainer,
               child: ListTile(
                 dense: true,
-                title: Text("Sync off",
-                    style: Theme.of(context).textTheme.labelLarge),
-                subtitle: Text(bootError,
-                    style: Theme.of(context).textTheme.bodySmall),
+                title: Text(
+                  "Sync off",
+                  style: Theme.of(context).textTheme.labelLarge,
+                ),
+                subtitle: Text(
+                  bootError,
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
               ),
             ),
           Expanded(
@@ -84,8 +95,7 @@ class ApprovalsListView extends StackedView<ApprovalsListViewModel> {
                       itemBuilder: (context, i) => ApprovalCard(
                         key: ValueKey(viewModel.approvals[i].id),
                         approval: viewModel.approvals[i],
-                        busy: viewModel.decidingId ==
-                            viewModel.approvals[i].id,
+                        busy: viewModel.decidingId == viewModel.approvals[i].id,
                         onDecide: (answers) =>
                             viewModel.decide(viewModel.approvals[i], answers),
                       ),

@@ -37,18 +37,20 @@ void main() {
       expect(t.current.studioUrl, Uri.parse('http://127.0.0.1:8080/'));
     });
 
-    test('reconnecting maps back to connecting and drops the studio URL',
-        () async {
-      await t.beginPairing('arxa-pair:abc');
-      await pump();
-      final session = mock.sessions.single;
-      session.emit(StudioSessionStatus.connected, proxyPort: 8080);
-      await pump();
-      session.emit(StudioSessionStatus.reconnecting);
-      await pump();
-      expect(t.current.state, ArxaConnectionState.connecting);
-      expect(t.current.studioUrl, isNull);
-    });
+    test(
+      'reconnecting maps back to connecting and drops the studio URL',
+      () async {
+        await t.beginPairing('arxa-pair:abc');
+        await pump();
+        final session = mock.sessions.single;
+        session.emit(StudioSessionStatus.connected, proxyPort: 8080);
+        await pump();
+        session.emit(StudioSessionStatus.reconnecting);
+        await pump();
+        expect(t.current.state, ArxaConnectionState.connecting);
+        expect(t.current.studioUrl, isNull);
+      },
+    );
 
     test('revoked maps to notPaired with an error', () async {
       await t.beginPairing('arxa-pair:abc');
@@ -68,8 +70,9 @@ void main() {
 
     test('a malformed pairing code surfaces as notPaired + error', () async {
       final failing = IrohTransportService(
-          connect: (payload, {deviceName}) =>
-              throw const FormatException('bad payload'));
+        connect: (payload, {deviceName}) =>
+            throw const FormatException('bad payload'),
+      );
       await failing.beginPairing('not-a-ticket');
       expect(failing.current.state, ArxaConnectionState.notPaired);
       expect(failing.current.error, 'bad payload');
@@ -90,18 +93,20 @@ void main() {
       expect(session.registeredPushTokens, [('apns', 'tok-1')]);
     });
 
-    test('stored push token is re-handed to each new session after re-pair',
-        () async {
-      await t.setPushToken('fcm', 'tok-2'); // before any session: stored only
-      await t.beginPairing('arxa-pair:first');
-      await pump();
-      expect(mock.sessions[0].registeredPushTokens, [('fcm', 'tok-2')]);
-      await t.beginPairing('arxa-pair:second'); // re-pair -> new session
-      await pump();
-      expect(mock.sessions, hasLength(2));
-      expect(mock.sessions[1].registeredPushTokens, [('fcm', 'tok-2')]);
-      expect(mock.sessions[0].closed, isTrue);
-    });
+    test(
+      'stored push token is re-handed to each new session after re-pair',
+      () async {
+        await t.setPushToken('fcm', 'tok-2'); // before any session: stored only
+        await t.beginPairing('arxa-pair:first');
+        await pump();
+        expect(mock.sessions[0].registeredPushTokens, [('fcm', 'tok-2')]);
+        await t.beginPairing('arxa-pair:second'); // re-pair -> new session
+        await pump();
+        expect(mock.sessions, hasLength(2));
+        expect(mock.sessions[1].registeredPushTokens, [('fcm', 'tok-2')]);
+        expect(mock.sessions[0].closed, isTrue);
+      },
+    );
 
     test('resume delegates to the live session (foreground redial)', () async {
       await t.resume(); // no session: no-op
@@ -111,38 +116,45 @@ void main() {
       expect(mock.sessions.single.resumeCount, 1);
     });
 
-    test('unpair closes the session and lands on notPaired without error',
-        () async {
-      await t.beginPairing('arxa-pair:abc');
-      await pump();
-      mock.sessions.single.emit(StudioSessionStatus.connected, proxyPort: 8080);
-      await pump();
-      await t.unpair();
-      await pump();
-      expect(mock.sessions.single.closed, isTrue);
-      expect(t.current.state, ArxaConnectionState.notPaired);
-      expect(t.current.error, isNull);
-      expect(t.current.studioUrl, isNull);
-    });
+    test(
+      'unpair closes the session and lands on notPaired without error',
+      () async {
+        await t.beginPairing('arxa-pair:abc');
+        await pump();
+        mock.sessions.single.emit(
+          StudioSessionStatus.connected,
+          proxyPort: 8080,
+        );
+        await pump();
+        await t.unpair();
+        await pump();
+        expect(mock.sessions.single.closed, isTrue);
+        expect(t.current.state, ArxaConnectionState.notPaired);
+        expect(t.current.error, isNull);
+        expect(t.current.studioUrl, isNull);
+      },
+    );
   });
 
   group('FakeTransportService', () {
-    test('walks pairing -> connecting -> connected and serves the loopback URL',
-        () async {
-      final t = FakeTransportService(port: 4567);
-      final seen = <ArxaConnectionState>[];
-      final sub = t.status.listen((s) => seen.add(s.state));
-      await t.beginPairing('ticket-1');
-      await Future<void>.delayed(Duration.zero); // let the stream deliver
-      expect(seen, [
-        ArxaConnectionState.pairing,
-        ArxaConnectionState.connecting,
-        ArxaConnectionState.connected,
-      ]);
-      expect(t.current.studioUrl, Uri.parse('http://127.0.0.1:4567/'));
-      await sub.cancel();
-      await t.dispose();
-    });
+    test(
+      'walks pairing -> connecting -> connected and serves the loopback URL',
+      () async {
+        final t = FakeTransportService(port: 4567);
+        final seen = <ArxaConnectionState>[];
+        final sub = t.status.listen((s) => seen.add(s.state));
+        await t.beginPairing('ticket-1');
+        await Future<void>.delayed(Duration.zero); // let the stream deliver
+        expect(seen, [
+          ArxaConnectionState.pairing,
+          ArxaConnectionState.connecting,
+          ArxaConnectionState.connected,
+        ]);
+        expect(t.current.studioUrl, Uri.parse('http://127.0.0.1:4567/'));
+        await sub.cancel();
+        await t.dispose();
+      },
+    );
 
     test('rejects an empty ticket without leaving notPaired', () async {
       final t = FakeTransportService();

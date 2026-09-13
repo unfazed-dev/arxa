@@ -12,7 +12,6 @@ class ApprovalsListViewTablet extends ViewModelWidget<ApprovalsListViewModel> {
   const ApprovalsListViewTablet({super.key});
 
   @override
-  Widget build(context, viewModel) => const Scaffold(
-        body: Center(child: Text('approvals.list · tablet')),
-      );
+  Widget build(context, viewModel) =>
+      const Scaffold(body: Center(child: Text('approvals.list · tablet')));
 }

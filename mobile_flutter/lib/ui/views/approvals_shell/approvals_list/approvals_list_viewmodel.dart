@@ -24,8 +24,8 @@ class ApprovalsListViewModel extends BaseViewModel {
   ApprovalsListViewModel([
     ApprovalsRepository? repository,
     Future<void> Function()? dataReady,
-  ])  : _repository = repository ?? locator<ApprovalsRepository>(),
-        _dataReady = dataReady ?? (() => AppData.ready.future);
+  ]) : _repository = repository ?? locator<ApprovalsRepository>(),
+       _dataReady = dataReady ?? (() => AppData.ready.future);
 
   final ApprovalsRepository _repository;
 

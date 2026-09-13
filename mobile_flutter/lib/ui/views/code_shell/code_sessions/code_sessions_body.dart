@@ -1,7 +1,8 @@
 // The code sessions body — shared by both form-factor siblings (mobile
 // full-bleed, tablet centered at a readable width). Filter chips, session
 // rows, pull-to-refresh, offline state with pairing/redial affordances.
-import 'package:arxa_kit_ui_library/arxa_kit_ui_library.dart' show ViewModelWidget;
+import 'package:arxa_kit_ui_library/arxa_kit_ui_library.dart'
+    show ViewModelWidget;
 import 'package:flutter/material.dart';
 
 import 'package:arxa_studio_mobile/l10n/app_localizations.dart';
@@ -82,8 +83,10 @@ class CodeSessionsBody extends ViewModelWidget<CodeSessionsViewModel> {
             color: Theme.of(context).colorScheme.errorContainer,
             child: ListTile(
               dense: true,
-              title: Text(l10n.codeSessionsNotConnected,
-                  style: Theme.of(context).textTheme.labelLarge),
+              title: Text(
+                l10n.codeSessionsNotConnected,
+                style: Theme.of(context).textTheme.labelLarge,
+              ),
             ),
           ),
         SizedBox(
@@ -141,10 +144,10 @@ class _SessionRow extends StatelessWidget {
     final theme = Theme.of(context);
     final subtitle = [
       if (session.project != null || session.workspace != null)
-        [session.project, session.workspace]
-            .whereType<String>()
-            .where((part) => part.isNotEmpty)
-            .join(' · '),
+        [
+          session.project,
+          session.workspace,
+        ].whereType<String>().where((part) => part.isNotEmpty).join(' · '),
       if (session.state != null && session.state!.isNotEmpty) session.state!,
       if (session.parkedReason != null) session.parkedReason!,
     ].where((part) => part.isNotEmpty).join(' — ');
@@ -157,8 +160,10 @@ class _SessionRow extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             if (subtitle.isNotEmpty) Text(subtitle),
-            Text(relativeTime(context, session.updatedAt),
-                style: theme.textTheme.labelSmall),
+            Text(
+              relativeTime(context, session.updatedAt),
+              style: theme.textTheme.labelSmall,
+            ),
           ],
         ),
         trailing: Row(

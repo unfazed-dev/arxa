@@ -27,8 +27,9 @@ class _FakeConversationRepository implements ConversationRepository {
 
   @override
   Future<({String kind, String text})> runCommand(
-          String sessionId, String line) async =>
-      (kind: 'success', text: '');
+    String sessionId,
+    String line,
+  ) async => (kind: 'success', text: '');
 
   @override
   Future<String> exportTranscript(String sessionId, String savePath) async =>
@@ -49,26 +50,33 @@ class _FakeConversationRepository implements ConversationRepository {
   Future<Map<String, dynamic>> models(String sessionId) async => const {};
 
   @override
-  Future<void> selectModel(String sessionId, String provider, String model) async {}
+  Future<void> selectModel(
+    String sessionId,
+    String provider,
+    String model,
+  ) async {}
 
   @override
   Future<void> setMode(String sessionId, String mode) async {}
 
   @override
   Future<Map<String, dynamic>> attachment(
-      String sessionId, String attachmentId) async =>
-      const {};
+    String sessionId,
+    String attachmentId,
+  ) async => const {};
 
   @override
-  Future<void> send(String sessionId, String text,
-      {String mode = 'queue',
-      List<({String mediaType, String data})> images = const []}) async {
+  Future<void> send(
+    String sessionId,
+    String text, {
+    String mode = 'queue',
+    List<({String mediaType, String data})> images = const [],
+  }) async {
     lastSent = (sessionId, text);
     lastImages = images;
   }
 
   List<({String mediaType, String data})> lastImages = const [];
-
 
   @override
   TransportService get transport => transportField;
@@ -128,7 +136,10 @@ class _FakeApprovalsRepository implements ApprovalsRepository {
   @override
   Future<void> decide(String id, List<ApprovalAnswer> answers) async {
     lastDecided = (id, answers);
-    rows = [for (final a in rows) if (a.id != id) a];
+    rows = [
+      for (final a in rows)
+        if (a.id != id) a,
+    ];
   }
 }
 
@@ -137,8 +148,9 @@ class _FakeApprovalsRepository implements ApprovalsRepository {
 class _PokeTransport implements TransportService {
   final _controller = StreamController<ArxaConnectionStatus>.broadcast();
 
-  ArxaConnectionStatus currentStatus =
-      const ArxaConnectionStatus(ArxaConnectionState.notPaired);
+  ArxaConnectionStatus currentStatus = const ArxaConnectionStatus(
+    ArxaConnectionState.notPaired,
+  );
   bool stored = true;
   int resumeCount = 0;
 
@@ -177,9 +189,7 @@ const _approval = Approval(
   sessionId: 's1',
   kind: 'approval',
   summary: 'Approve?',
-  questions: [
-    ApprovalQuestion(id: 'q1', question: 'Approve?'),
-  ],
+  questions: [ApprovalQuestion(id: 'q1', question: 'Approve?')],
   raisedAt: 1,
 );
 
@@ -200,8 +210,11 @@ void main() {
       'at': 9,
     });
     expect(tool.isTool, isTrue);
-    expect(tool.toolLabel, 'Ctx Batch Execute',
-        reason: 'snake_case tool names humanize for the row label');
+    expect(
+      tool.toolLabel,
+      'Ctx Batch Execute',
+      reason: 'snake_case tool names humanize for the row label',
+    );
     expect(tool.toolInput, '{ "commands": [] }');
     expect(tool.toolError, isTrue);
 
@@ -232,8 +245,11 @@ void main() {
 
   test('starts with an empty transcript', () {
     final viewModel = CodeConversationViewModel(
-        's1', _FakeConversationRepository(), _FakeApprovalsRepository(),
-        () => Future.value());
+      's1',
+      _FakeConversationRepository(),
+      _FakeApprovalsRepository(),
+      () => Future.value(),
+    );
     expect(viewModel.messages, isEmpty);
     expect(viewModel.pendingApprovals, isEmpty);
   });
@@ -243,14 +259,28 @@ void main() {
       ..transcripts = {
         's1': [
           const ConversationMessage(
-              id: 's1:2', seq: 2, sessionId: 's1', role: 'assistant', text: 'b'),
+            id: 's1:2',
+            seq: 2,
+            sessionId: 's1',
+            role: 'assistant',
+            text: 'b',
+          ),
           const ConversationMessage(
-              id: 's1:1', seq: 1, sessionId: 's1', role: 'user', text: 'a'),
+            id: 's1:1',
+            seq: 1,
+            sessionId: 's1',
+            role: 'user',
+            text: 'a',
+          ),
         ],
       };
     final approvals = _FakeApprovalsRepository();
-    final viewModel = CodeConversationViewModel('s1', repo, approvals,
-        () => Future.value());
+    final viewModel = CodeConversationViewModel(
+      's1',
+      repo,
+      approvals,
+      () => Future.value(),
+    );
 
     await viewModel.refresh();
 
@@ -263,22 +293,28 @@ void main() {
     final approvals = _FakeApprovalsRepository()
       ..rows = [
         const Approval(
-            id: 'mine',
-            sessionId: 's1',
-            kind: 'approval',
-            summary: 'mine',
-            questions: [],
-            raisedAt: 1),
+          id: 'mine',
+          sessionId: 's1',
+          kind: 'approval',
+          summary: 'mine',
+          questions: [],
+          raisedAt: 1,
+        ),
         const Approval(
-            id: 'other',
-            sessionId: 's2',
-            kind: 'approval',
-            summary: 'other',
-            questions: [],
-            raisedAt: 2),
+          id: 'other',
+          sessionId: 's2',
+          kind: 'approval',
+          summary: 'other',
+          questions: [],
+          raisedAt: 2,
+        ),
       ];
-    final viewModel = CodeConversationViewModel('s1', repo, approvals,
-        () => Future.value());
+    final viewModel = CodeConversationViewModel(
+      's1',
+      repo,
+      approvals,
+      () => Future.value(),
+    );
 
     await viewModel.refresh();
 
@@ -290,24 +326,39 @@ void main() {
       ..transcripts = {
         's1': [
           const ConversationMessage(
-              id: 's1:1', seq: 1, sessionId: 's1', role: 'user', text: 'hi'),
+            id: 's1:1',
+            seq: 1,
+            sessionId: 's1',
+            role: 'user',
+            text: 'hi',
+          ),
         ],
       };
     final viewModel = CodeConversationViewModel(
-        's1', repo, _FakeApprovalsRepository(), () => Future.value());
+      's1',
+      repo,
+      _FakeApprovalsRepository(),
+      () => Future.value(),
+    );
 
     final accepted = await viewModel.send('  hi  ');
 
     expect(accepted, isTrue);
-    expect(repo.lastSent, ('s1', 'hi'),
-        reason: 'the composer trims before posting');
+    expect(repo.lastSent, (
+      's1',
+      'hi',
+    ), reason: 'the composer trims before posting');
     expect(viewModel.messages.single.text, 'hi');
   });
 
   test('send with blank text is a no-op', () async {
     final repo = _FakeConversationRepository();
     final viewModel = CodeConversationViewModel(
-        's1', repo, _FakeApprovalsRepository(), () => Future.value());
+      's1',
+      repo,
+      _FakeApprovalsRepository(),
+      () => Future.value(),
+    );
 
     final accepted = await viewModel.send('   ');
 
@@ -321,63 +372,105 @@ void main() {
     // send() itself throws offline when the tunnel is down: model that by
     // making the transcript pull fail after the POST too.
     final viewModel = CodeConversationViewModel(
-        's1', repo, _FakeApprovalsRepository(), () => Future.value());
+      's1',
+      repo,
+      _FakeApprovalsRepository(),
+      () => Future.value(),
+    );
 
     final accepted = await viewModel.send('hello');
 
     expect(accepted, isTrue, reason: 'the POST succeeded; the refresh failed');
   });
 
-  test('offline refresh re-kicks the dial and keeps the cached transcript',
-      () async {
-    final repo = _FakeConversationRepository()
-      ..transcripts = {
-        's1': [
-          const ConversationMessage(
-              id: 's1:1', seq: 1, sessionId: 's1', role: 'user', text: 'a'),
-        ],
-      }
-      ..refreshError = ConversationOfflineException();
-    final transport = _PokeTransport()..stored = true;
-    repo.transportField = transport;
-    final viewModel = CodeConversationViewModel(
-        's1', repo, _FakeApprovalsRepository(), () => Future.value());
+  test(
+    'offline refresh re-kicks the dial and keeps the cached transcript',
+    () async {
+      final repo = _FakeConversationRepository()
+        ..transcripts = {
+          's1': [
+            const ConversationMessage(
+              id: 's1:1',
+              seq: 1,
+              sessionId: 's1',
+              role: 'user',
+              text: 'a',
+            ),
+          ],
+        }
+        ..refreshError = ConversationOfflineException();
+      final transport = _PokeTransport()..stored = true;
+      repo.transportField = transport;
+      final viewModel = CodeConversationViewModel(
+        's1',
+        repo,
+        _FakeApprovalsRepository(),
+        () => Future.value(),
+      );
 
-    await viewModel.refresh();
+      await viewModel.refresh();
 
-    expect(viewModel.loadError, CodeConversationError.offline);
-    expect(viewModel.messages.single.seq, 1,
-        reason: 'the cached transcript still renders');
-    expect(transport.resumeCount, 1, reason: 'a failed pull re-kicks the dial');
-  });
+      expect(viewModel.loadError, CodeConversationError.offline);
+      expect(
+        viewModel.messages.single.seq,
+        1,
+        reason: 'the cached transcript still renders',
+      );
+      expect(
+        transport.resumeCount,
+        1,
+        reason: 'a failed pull re-kicks the dial',
+      );
+    },
+  );
 
   test('connected announcement re-pulls automatically', () async {
     final repo = _FakeConversationRepository()
       ..transcripts = {
         's1': [
           const ConversationMessage(
-              id: 's1:1', seq: 1, sessionId: 's1', role: 'user', text: 'a'),
+            id: 's1:1',
+            seq: 1,
+            sessionId: 's1',
+            role: 'user',
+            text: 'a',
+          ),
         ],
       };
     final transport = _PokeTransport();
     repo.transportField = transport;
     final viewModel = CodeConversationViewModel(
-        's1', repo, _FakeApprovalsRepository(), () => Future.value());
+      's1',
+      repo,
+      _FakeApprovalsRepository(),
+      () => Future.value(),
+    );
 
     viewModel.listenTransport();
-    transport.emit(ArxaConnectionStatus(ArxaConnectionState.connected,
-        studioUrl: Uri.parse('http://127.0.0.1:45890/')));
+    transport.emit(
+      ArxaConnectionStatus(
+        ArxaConnectionState.connected,
+        studioUrl: Uri.parse('http://127.0.0.1:45890/'),
+      ),
+    );
     await pumpEventQueue();
 
-    expect(viewModel.messages.single.seq, 1,
-        reason: 'the tunnel coming up re-pulls the transcript');
+    expect(
+      viewModel.messages.single.seq,
+      1,
+      reason: 'the tunnel coming up re-pulls the transcript',
+    );
   });
 
   test('decide posts the answers and the approval leaves the thread', () async {
     final repo = _FakeConversationRepository();
     final approvals = _FakeApprovalsRepository()..rows = [_approval];
-    final viewModel = CodeConversationViewModel('s1', repo, approvals,
-        () => Future.value());
+    final viewModel = CodeConversationViewModel(
+      's1',
+      repo,
+      approvals,
+      () => Future.value(),
+    );
     await viewModel.refresh();
 
     final accepted = await viewModel.decide(_approval, const [

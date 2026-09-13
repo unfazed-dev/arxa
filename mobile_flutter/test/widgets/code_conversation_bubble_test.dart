@@ -14,7 +14,8 @@ import 'package:arxa_studio_mobile/l10n/app_localizations.dart';
 import 'package:arxa_studio_mobile/services/transport_service.dart';
 import 'package:arxa_studio_mobile/ui/views/code_shell/code_conversation/code_conversation_body.dart';
 import 'package:arxa_studio_mobile/ui/views/code_shell/code_conversation/code_conversation_viewmodel.dart';
-import 'package:arxa_kit_ui_library/arxa_kit_ui_library.dart' show ViewModelBuilder;
+import 'package:arxa_kit_ui_library/arxa_kit_ui_library.dart'
+    show ViewModelBuilder;
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lucide_flutter/lucide_flutter.dart';
@@ -51,25 +52,34 @@ class _FakeConversationRepository implements ConversationRepository {
   Future<List<EngineCommand>> commands(String sessionId) async => const [];
   @override
   Future<({String kind, String text})> runCommand(
-          String sessionId, String line) async =>
-      (kind: 'success', text: '');
+    String sessionId,
+    String line,
+  ) async => (kind: 'success', text: '');
   @override
   Future<String> exportTranscript(String sessionId, String savePath) async =>
       savePath;
   @override
   Future<Map<String, dynamic>> models(String sessionId) async => const {};
   @override
-  Future<void> selectModel(String sessionId, String provider, String model) async {}
+  Future<void> selectModel(
+    String sessionId,
+    String provider,
+    String model,
+  ) async {}
   @override
   Future<void> setMode(String sessionId, String mode) async {}
   @override
   Future<Map<String, dynamic>> attachment(
-          String sessionId, String attachmentId) async =>
-      const {};
+    String sessionId,
+    String attachmentId,
+  ) async => const {};
   @override
-  Future<void> send(String sessionId, String text,
-      {String mode = 'queue',
-      List<({String mediaType, String data})> images = const []}) async {}
+  Future<void> send(
+    String sessionId,
+    String text, {
+    String mode = 'queue',
+    List<({String mediaType, String data})> images = const [],
+  }) async {}
   @override
   Future<void> refreshSession(String sessionId) async {}
 }
@@ -112,38 +122,43 @@ class _FakeApprovalsRepository implements ApprovalsRepository {
 const _shortBubble = 'short bubble that fits on one line';
 
 Future<CodeConversationViewModel> _pump(
-    WidgetTester tester, _FakeConversationRepository repo) async {
+  WidgetTester tester,
+  _FakeConversationRepository repo,
+) async {
   final viewModel = CodeConversationViewModel(
-      's1', repo, _FakeApprovalsRepository(), () => Future.value());
-  await tester.pumpWidget(MaterialApp(
-    locale: const Locale('en'),
-    localizationsDelegates: AppLocalizations.localizationsDelegates,
-    supportedLocales: AppLocalizations.supportedLocales,
-    home: ViewModelBuilder<CodeConversationViewModel>.reactive(
-      viewModelBuilder: () => viewModel,
-      builder: (context, vm, child) => Scaffold(
-        body: CodeConversationBody(viewModel: vm),
+    's1',
+    repo,
+    _FakeApprovalsRepository(),
+    () => Future.value(),
+  );
+  await tester.pumpWidget(
+    MaterialApp(
+      locale: const Locale('en'),
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
+      home: ViewModelBuilder<CodeConversationViewModel>.reactive(
+        viewModelBuilder: () => viewModel,
+        builder: (context, vm, child) =>
+            Scaffold(body: CodeConversationBody(viewModel: vm)),
       ),
     ),
-  ));
+  );
   await viewModel.refresh();
   await tester.pump();
   return viewModel;
 }
 
-
 /// The transcript scrollable — the only one with real scrollable extent.
 Scrollable _transcriptScrollable(WidgetTester tester) {
-  return tester.allWidgets
-      .whereType<Scrollable>()
-      .firstWhere((s) => s.controller!.position.maxScrollExtent > 100);
+  return tester.allWidgets.whereType<Scrollable>().firstWhere(
+    (s) => s.controller!.position.maxScrollExtent > 100,
+  );
 }
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  testWidgets(
-      'a drag starting on a fitting bubble scrolls the transcript, never '
+  testWidgets('a drag starting on a fitting bubble scrolls the transcript, never '
       'the bubble itself', (tester) async {
     debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
     addTearDown(() => debugDefaultTargetPlatformOverride = null);
@@ -151,18 +166,24 @@ void main() {
       ..transcripts = {
         's1': [
           const ConversationMessage(
-              id: 's1:x', seq: 1, sessionId: 's1', role: 'user',
-              text: _shortBubble),
+            id: 's1:x',
+            seq: 1,
+            sessionId: 's1',
+            role: 'user',
+            text: _shortBubble,
+          ),
           // 8 rows: enough to overflow the viewport, few enough that a
           // -120 drag keeps the short bubble mounted (cacheExtent).
           for (var i = 0; i < 8; i++)
             ConversationMessage(
-                id: 's1:f$i',
-                seq: i + 2,
-                sessionId: 's1',
-                role: i.isEven ? 'assistant' : 'user',
-                text: 'filler message row number $i — enough rows that the '
-                    'transcript genuinely overflows and scrolls.'),
+              id: 's1:f$i',
+              seq: i + 2,
+              sessionId: 's1',
+              role: i.isEven ? 'assistant' : 'user',
+              text:
+                  'filler message row number $i — enough rows that the '
+                  'transcript genuinely overflows and scrolls.',
+            ),
         ],
       };
     await _pump(tester, repo);
@@ -173,25 +194,36 @@ void main() {
 
     // ~the drag minus touch slop; plain Text lets a hair more of the
     // drag through than SelectableText's recognizers did.
-    expect(transcript.pixels, closeTo(100, 3),
-        reason: 'the drag lands on the transcript, not the bubble (-120 minus touch slop)');
     expect(
-        find.descendant(
-            of: find.text(_shortBubble), matching: find.byType(Scrollable)),
-        findsNothing,
-        reason: 'a bubble is plain Text — no scrollable of its own exists');
+      transcript.pixels,
+      closeTo(100, 3),
+      reason:
+          'the drag lands on the transcript, not the bubble (-120 minus touch slop)',
+    );
+    expect(
+      find.descendant(
+        of: find.text(_shortBubble),
+        matching: find.byType(Scrollable),
+      ),
+      findsNothing,
+      reason: 'a bubble is plain Text — no scrollable of its own exists',
+    );
     debugDefaultTargetPlatformOverride = null;
   });
 
-  testWidgets(
-      'bubble text carries no editing or selection machinery at all',
-      (tester) async {
+  testWidgets('bubble text carries no editing or selection machinery at all', (
+    tester,
+  ) async {
     final repo = _FakeConversationRepository()
       ..transcripts = {
         's1': [
           const ConversationMessage(
-              id: 's1:x', seq: 1, sessionId: 's1', role: 'user',
-              text: _shortBubble),
+            id: 's1:x',
+            seq: 1,
+            sessionId: 's1',
+            role: 'user',
+            text: _shortBubble,
+          ),
         ],
       };
     await _pump(tester, repo);
@@ -204,72 +236,103 @@ void main() {
     // code_conversation_text_selection_test.dart.)
     expect(find.byType(SelectableText), findsNothing);
     expect(
-        find.descendant(
-            of: find.byType(ListView), matching: find.byType(EditableText)),
-        findsNothing);
+      find.descendant(
+        of: find.byType(ListView),
+        matching: find.byType(EditableText),
+      ),
+      findsNothing,
+    );
   });
 
-  testWidgets('attachment thumbnails keep the 16px screen inset',
-      (tester) async {
+  testWidgets('attachment thumbnails keep the 16px screen inset', (
+    tester,
+  ) async {
     const text = '[phone rail] attachment smoke test';
     final repo = _FakeConversationRepository()
       ..transcripts = {
         's1': [
           const ConversationMessage(
-              id: 's1:a', seq: 1, sessionId: 's1', role: 'user',
-              text: text,
-              images: ['att-1']),
+            id: 's1:a',
+            seq: 1,
+            sessionId: 's1',
+            role: 'user',
+            text: text,
+            images: ['att-1'],
+          ),
         ],
       };
     await _pump(tester, repo);
 
-    final screenRight = tester.view.physicalSize.width /
-        tester.view.devicePixelRatio;
+    final screenRight =
+        tester.view.physicalSize.width / tester.view.devicePixelRatio;
     final thumb = tester.getRect(find.byKey(const ValueKey('thumb-att-1')));
     final bubble = tester.getRect(find.text(text));
-    expect(thumb.right, closeTo(screenRight - 16, 0.5),
-        reason: 'thumbnails respect the same edge inset as the bubble');
-    expect(bubble.right, closeTo(screenRight - 16 - 12, 0.5),
-        reason: 'text sits inside the bubble: 16px inset + 12px padding');
+    expect(
+      thumb.right,
+      closeTo(screenRight - 16, 0.5),
+      reason: 'thumbnails respect the same edge inset as the bubble',
+    );
+    expect(
+      bubble.right,
+      closeTo(screenRight - 16 - 12, 0.5),
+      reason: 'text sits inside the bubble: 16px inset + 12px padding',
+    );
   });
 
   testWidgets(
-      'sheet text (thinking prose, tool mono blocks) refuses drag grabs — the sheet scroll is the only scroller',
-      (tester) async {
-    final repo = _FakeConversationRepository()
-      ..transcripts = {
-        's1': [
-          const ConversationMessage(
-              id: 's1:t', seq: 1, sessionId: 's1', role: 'assistant',
+    'sheet text (thinking prose, tool mono blocks) refuses drag grabs — the sheet scroll is the only scroller',
+    (tester) async {
+      final repo = _FakeConversationRepository()
+        ..transcripts = {
+          's1': [
+            const ConversationMessage(
+              id: 's1:t',
+              seq: 1,
+              sessionId: 's1',
+              role: 'assistant',
               kind: 'thinking',
-              text: 'A thinking paragraph long enough to matter.'),
-          const ConversationMessage(
-              id: 's1:r', seq: 2, sessionId: 's1', role: 'assistant',
+              text: 'A thinking paragraph long enough to matter.',
+            ),
+            const ConversationMessage(
+              id: 's1:r',
+              seq: 2,
+              sessionId: 's1',
+              role: 'assistant',
               kind: 'tool',
               toolName: 'read',
               toolInput: '{ "path": "x.ts" }',
-              text: 'the tool output line'),
-        ],
-      };
-    await _pump(tester, repo);
+              text: 'the tool output line',
+            ),
+          ],
+        };
+      await _pump(tester, repo);
 
-    Finder sheetEditableText() => find.descendant(
-        of: find.byType(BottomSheet), matching: find.byType(EditableText));
+      Finder sheetEditableText() => find.descendant(
+        of: find.byType(BottomSheet),
+        matching: find.byType(EditableText),
+      );
 
-    // The thinking sheet: its prose text is plain Text — no inner
-    // scrollable, no selection recognizers. The sheet's scroll view is
-    // the only scroller.
-    await tester.tap(find.text('Thought process'));
-    await tester.pumpAndSettle();
-    expect(sheetEditableText(), findsNothing,
-        reason: 'the sheet scroll view, not the text, owns the drag');
+      // The thinking sheet: its prose text is plain Text — no inner
+      // scrollable, no selection recognizers. The sheet's scroll view is
+      // the only scroller.
+      await tester.tap(find.text('Thought process'));
+      await tester.pumpAndSettle();
+      expect(
+        sheetEditableText(),
+        findsNothing,
+        reason: 'the sheet scroll view, not the text, owns the drag',
+      );
 
-    // Close via the sheet's X (lucide), then the tool sheet's mono blocks.
-    await tester.tap(find.byIcon(LucideIcons.x));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Ran Read'));
-    await tester.pumpAndSettle();
-    expect(sheetEditableText(), findsNothing,
-        reason: 'mono block text is plain Text and never grabs the drag');
-  });
+      // Close via the sheet's X (lucide), then the tool sheet's mono blocks.
+      await tester.tap(find.byIcon(LucideIcons.x));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Ran Read'));
+      await tester.pumpAndSettle();
+      expect(
+        sheetEditableText(),
+        findsNothing,
+        reason: 'mono block text is plain Text and never grabs the drag',
+      );
+    },
+  );
 }

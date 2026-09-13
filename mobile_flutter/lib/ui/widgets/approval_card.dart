@@ -27,6 +27,7 @@ class ApprovalCard extends StatefulWidget {
   @override
   State<ApprovalCard> createState() => _ApprovalCardState();
 }
+
 class _ApprovalCardState extends State<ApprovalCard> {
   final Map<String, Set<String>> _selected = {};
   final Map<String, TextEditingController> _custom = {};
@@ -55,8 +56,7 @@ class _ApprovalCardState extends State<ApprovalCard> {
         _customFor(question).text.trim().isNotEmpty;
   }
 
-  bool get _complete =>
-      widget.approval.questions.every(_answered) && !_sending;
+  bool get _complete => widget.approval.questions.every(_answered) && !_sending;
 
   Future<void> _submit() async {
     setState(() {
@@ -106,8 +106,10 @@ class _ApprovalCardState extends State<ApprovalCard> {
             if (_refused != null)
               Padding(
                 padding: const EdgeInsets.only(top: 4),
-                child: Text(_refused!,
-                    style: TextStyle(color: theme.colorScheme.error)),
+                child: Text(
+                  _refused!,
+                  style: TextStyle(color: theme.colorScheme.error),
+                ),
               ),
             for (final question in widget.approval.questions) ...[
               const SizedBox(height: 12),
@@ -123,23 +125,30 @@ class _ApprovalCardState extends State<ApprovalCard> {
                       FilterChip(
                         label: Text(option.label),
                         selected:
-                            _selected[question.id]?.contains(option.label) ?? false,
+                            _selected[question.id]?.contains(option.label) ??
+                            false,
                         onSelected: widget.busy || _sending
                             ? null
                             : (value) => setState(() {
-                                  final set = _selected.putIfAbsent(
-                                      question.id, () => <String>{});
-                                  if (question.multiSelect) {
-                                    value ? set.add(option.label) : set.remove(option.label);
-                                  } else {
-                                    set
-                                      ..clear()
-                                      ..addAll(value ? [option.label] : const <String>{});
-                                    if (value) {
-                                      _customFor(question).clear();
-                                    }
+                                final set = _selected.putIfAbsent(
+                                  question.id,
+                                  () => <String>{},
+                                );
+                                if (question.multiSelect) {
+                                  value
+                                      ? set.add(option.label)
+                                      : set.remove(option.label);
+                                } else {
+                                  set
+                                    ..clear()
+                                    ..addAll(
+                                      value ? [option.label] : const <String>{},
+                                    );
+                                  if (value) {
+                                    _customFor(question).clear();
                                   }
-                                }),
+                                }
+                              }),
                       ),
                   ],
                 ),

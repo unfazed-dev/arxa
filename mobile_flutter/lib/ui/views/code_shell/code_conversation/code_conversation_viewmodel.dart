@@ -34,10 +34,10 @@ class CodeConversationViewModel extends BaseViewModel {
     ApprovalsRepository? approvalsRepository,
     Future<void> Function()? dataReady,
     ConversationMedia? media,
-  ])  : _repository = repository ?? locator<ConversationRepository>(),
-        _approvals = approvalsRepository ?? locator<ApprovalsRepository>(),
-        _dataReady = dataReady ?? (() => AppData.ready.future),
-        media = media ?? ConversationMedia();
+  ]) : _repository = repository ?? locator<ConversationRepository>(),
+       _approvals = approvalsRepository ?? locator<ApprovalsRepository>(),
+       _dataReady = dataReady ?? (() => AppData.ready.future),
+       media = media ?? ConversationMedia();
 
   /// The dsh session this conversation shows (the route arg).
   final String sessionId;
@@ -169,10 +169,14 @@ class CodeConversationViewModel extends BaseViewModel {
     notifyListeners();
     var accepted = false;
     try {
-      await _repository.send(sessionId, trimmed,
-          images: [
-            for (final image in staged) (mediaType: image.mediaType, data: image.data),
-          ]);
+      await _repository.send(
+        sessionId,
+        trimmed,
+        images: [
+          for (final image in staged)
+            (mediaType: image.mediaType, data: image.data),
+        ],
+      );
       accepted = true;
       _error = null;
       _pendingImages = const [];
@@ -232,7 +236,8 @@ class CodeConversationViewModel extends BaseViewModel {
     _repository.startLive();
     _stalenessTimer = Timer.periodic(const Duration(seconds: 10), (_) {
       final last = _repository.lastLiveAt;
-      final stale = last == null ||
+      final stale =
+          last == null ||
           DateTime.now().difference(last) > const Duration(seconds: 25);
       if (stale) _queueRefresh();
     });
@@ -339,12 +344,14 @@ class CodeConversationViewModel extends BaseViewModel {
         final g = group as Map<String, dynamic>;
         for (final m in (g['models'] as List<dynamic>? ?? <dynamic>[])) {
           final model = m as Map<String, dynamic>;
-          rows.add(ModelOption(
-            provider: g['id'] as String? ?? '',
-            id: model['id'] as String? ?? '',
-            name: model['name'] as String? ?? model['id'] as String? ?? '',
-            groupName: g['name'] as String?,
-          ));
+          rows.add(
+            ModelOption(
+              provider: g['id'] as String? ?? '',
+              id: model['id'] as String? ?? '',
+              name: model['name'] as String? ?? model['id'] as String? ?? '',
+              groupName: g['name'] as String?,
+            ),
+          );
         }
       }
       _models = rows;
@@ -406,13 +413,16 @@ class CodeConversationViewModel extends BaseViewModel {
     } on Exception {
       return 'Could not read the picked image';
     }
-    if (bytes.lengthInBytes > _maxImageBytes) return 'Image is too large to send';
+    if (bytes.lengthInBytes > _maxImageBytes) {
+      return 'Image is too large to send';
+    }
     _pendingImages = [
       ..._pendingImages,
       PendingImage(
-          mediaType: mediaType,
-          data: base64Encode(bytes),
-          preview: file),
+        mediaType: mediaType,
+        data: base64Encode(bytes),
+        preview: file,
+      ),
     ];
     notifyListeners();
     return null;
@@ -436,11 +446,52 @@ class CodeConversationViewModel extends BaseViewModel {
       return (inline: null, error: await stageImage(file));
     }
     const textExts = {
-      'txt', 'md', 'markdown', 'json', 'yaml', 'yml', 'toml', 'xml', 'html',
-      'css', 'js', 'mjs', 'ts', 'tsx', 'jsx', 'dart', 'py', 'rb', 'go', 'rs',
-      'java', 'kt', 'swift', 'c', 'h', 'cpp', 'hpp', 'cs', 'sh', 'bash', 'zsh',
-      'fish', 'sql', 'proto', 'gradle', 'properties', 'csv', 'log', 'env',
-      'gitignore', 'lock', 'plist', 'arb', 'pubspec', 'gemspec', 'rake',
+      'txt',
+      'md',
+      'markdown',
+      'json',
+      'yaml',
+      'yml',
+      'toml',
+      'xml',
+      'html',
+      'css',
+      'js',
+      'mjs',
+      'ts',
+      'tsx',
+      'jsx',
+      'dart',
+      'py',
+      'rb',
+      'go',
+      'rs',
+      'java',
+      'kt',
+      'swift',
+      'c',
+      'h',
+      'cpp',
+      'hpp',
+      'cs',
+      'sh',
+      'bash',
+      'zsh',
+      'fish',
+      'sql',
+      'proto',
+      'gradle',
+      'properties',
+      'csv',
+      'log',
+      'env',
+      'gitignore',
+      'lock',
+      'plist',
+      'arb',
+      'pubspec',
+      'gemspec',
+      'rake',
     };
     final ext = file.path.split('.').last.toLowerCase();
     if (!textExts.contains(ext)) {
@@ -452,7 +503,8 @@ class CodeConversationViewModel extends BaseViewModel {
         return (inline: null, error: 'Text file is too large to attach');
       }
       return (
-        inline: '```$ext\n${utf8.decode(bytes, allowMalformed: true).trim()}\n```',
+        inline:
+            '```$ext\n${utf8.decode(bytes, allowMalformed: true).trim()}\n```',
         error: null,
       );
     } on Exception {

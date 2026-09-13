@@ -44,7 +44,10 @@ class _FakeRepository implements ApprovalsRepository {
     lastDecided = (id, answers);
     final error = decideError;
     if (error != null) throw error;
-    rows = [for (final a in rows) if (a.id != id) a];
+    rows = [
+      for (final a in rows)
+        if (a.id != id) a,
+    ];
   }
 }
 
@@ -53,8 +56,9 @@ class _FakeRepository implements ApprovalsRepository {
 class _PokeTransport implements TransportService {
   final _controller = StreamController<ArxaConnectionStatus>.broadcast();
 
-  ArxaConnectionStatus currentStatus =
-      const ArxaConnectionStatus(ArxaConnectionState.notPaired);
+  ArxaConnectionStatus currentStatus = const ArxaConnectionStatus(
+    ArxaConnectionState.notPaired,
+  );
   bool stored = true;
   int resumeCount = 0;
 
@@ -110,7 +114,10 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   test('starts with no pending approvals', () {
-    expect(ApprovalsListViewModel(_FakeRepository(), () => Future.value()).approvals, isEmpty);
+    expect(
+      ApprovalsListViewModel(_FakeRepository(), () => Future.value()).approvals,
+      isEmpty,
+    );
   });
 
   test('refresh loads the repository list', () async {
@@ -142,12 +149,19 @@ void main() {
     final viewModel = ApprovalsListViewModel(repo, () => Future.value());
 
     viewModel.listenTransport();
-    transport.emit(ArxaConnectionStatus(ArxaConnectionState.connected,
-        studioUrl: Uri.parse('http://127.0.0.1:45890/')));
+    transport.emit(
+      ArxaConnectionStatus(
+        ArxaConnectionState.connected,
+        studioUrl: Uri.parse('http://127.0.0.1:45890/'),
+      ),
+    );
     await pumpEventQueue();
 
-    expect(viewModel.approvals.single.id, 'a1',
-        reason: 'the tunnel coming up re-pulls the list with no user action');
+    expect(
+      viewModel.approvals.single.id,
+      'a1',
+      reason: 'the tunnel coming up re-pulls the list with no user action',
+    );
   });
 
   test('offline refresh re-kicks the dial when paired', () async {
@@ -158,8 +172,11 @@ void main() {
 
     await viewModel.refresh();
 
-    expect(transport.resumeCount, 1,
-        reason: 'a failed pull re-kicks the dial so a late desktop is found');
+    expect(
+      transport.resumeCount,
+      1,
+      reason: 'a failed pull re-kicks the dial so a late desktop is found',
+    );
     expect(viewModel.loadError, ApprovalsError.offline);
     expect(viewModel.needsPairing, isFalse);
   });
@@ -173,8 +190,11 @@ void main() {
     await viewModel.refresh();
 
     expect(viewModel.needsPairing, isTrue);
-    expect(transport.resumeCount, 0,
-        reason: 'resume is a no-op without a session — offer the scanner');
+    expect(
+      transport.resumeCount,
+      0,
+      reason: 'resume is a no-op without a session — offer the scanner',
+    );
   });
 
   test('a later successful refresh clears the pairing affordance', () async {
@@ -194,19 +214,22 @@ void main() {
     expect(viewModel.approvals.single.id, 'a1');
   });
 
-  test('decide accepted: answer posts and the approval leaves the list', () async {
-    final repo = _FakeRepository()..rows = [_pending];
-    final viewModel = ApprovalsListViewModel(repo, () => Future.value());
-    await viewModel.refresh();
+  test(
+    'decide accepted: answer posts and the approval leaves the list',
+    () async {
+      final repo = _FakeRepository()..rows = [_pending];
+      final viewModel = ApprovalsListViewModel(repo, () => Future.value());
+      await viewModel.refresh();
 
-    final accepted = await viewModel.decide(_pending, const [
-      ApprovalAnswer(questionId: 'q1', selected: ['Approve']),
-    ]);
+      final accepted = await viewModel.decide(_pending, const [
+        ApprovalAnswer(questionId: 'q1', selected: ['Approve']),
+      ]);
 
-    expect(accepted, isTrue);
-    expect(viewModel.approvals, isEmpty);
-    expect(repo.lastDecided?.$1, 'a1');
-  });
+      expect(accepted, isTrue);
+      expect(viewModel.approvals, isEmpty);
+      expect(repo.lastDecided?.$1, 'a1');
+    },
+  );
 
   test('decide conflict: reports answered elsewhere and refreshes', () async {
     final repo = _FakeRepository()
@@ -220,7 +243,10 @@ void main() {
     ]);
 
     expect(accepted, isFalse);
-    expect(viewModel.approvals.single.id, 'a1',
-        reason: 'the fake kept the row; the view surfaces answered-elsewhere');
+    expect(
+      viewModel.approvals.single.id,
+      'a1',
+      reason: 'the fake kept the row; the view surfaces answered-elsewhere',
+    );
   });
 }

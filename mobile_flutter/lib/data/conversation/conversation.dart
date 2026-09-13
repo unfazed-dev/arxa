@@ -43,6 +43,7 @@ class CodeSession {
 
   /// Epoch milliseconds — the list sorts newest-first on this.
   final int updatedAt;
+
   /// The "arxa-"-prefixed engine session id (e.g. "arxa-s-mtgtrrx8-8mrlsd").
   /// CONTRACT PIN: the transcript/send routes are keyed by THIS, not the
   /// sidebar row [id] — the engine 404s (session-not-found) on the bare id.
@@ -65,33 +66,33 @@ class CodeSession {
   }
 
   factory CodeSession.fromJson(Map<String, dynamic> json) => CodeSession(
-        id: json['id'] as String,
-        name: json['name'] as String?,
-        title: json['title'] as String?,
-        state: json['state'] as String?,
-        parkedReason: json['parkedReason'] as String?,
-        project: json['project'] as String?,
-        workspace: json['workspace'] as String?,
-        createdAt: (json['createdAt'] as num?)?.toInt() ?? 0,
-        updatedAt: (json['updatedAt'] as num?)?.toInt() ?? 0,
-        dshSessionId: json['dshSessionId'] as String?,
-        org: json['org'] as String?,
-        running: json['running'] == true,
-      );
+    id: json['id'] as String,
+    name: json['name'] as String?,
+    title: json['title'] as String?,
+    state: json['state'] as String?,
+    parkedReason: json['parkedReason'] as String?,
+    project: json['project'] as String?,
+    workspace: json['workspace'] as String?,
+    createdAt: (json['createdAt'] as num?)?.toInt() ?? 0,
+    updatedAt: (json['updatedAt'] as num?)?.toInt() ?? 0,
+    dshSessionId: json['dshSessionId'] as String?,
+    org: json['org'] as String?,
+    running: json['running'] == true,
+  );
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        if (name != null) 'name': name,
-        if (title != null) 'title': title,
-        if (state != null) 'state': state,
-        if (parkedReason != null) 'parkedReason': parkedReason,
-        if (project != null) 'project': project,
-        if (workspace != null) 'workspace': workspace,
-        'createdAt': createdAt,
-        'updatedAt': updatedAt,
-        if (dshSessionId != null) 'dshSessionId': dshSessionId,
-        if (org != null) 'org': org,
-      };
+    'id': id,
+    if (name != null) 'name': name,
+    if (title != null) 'title': title,
+    if (state != null) 'state': state,
+    if (parkedReason != null) 'parkedReason': parkedReason,
+    if (project != null) 'project': project,
+    if (workspace != null) 'workspace': workspace,
+    'createdAt': createdAt,
+    'updatedAt': updatedAt,
+    if (dshSessionId != null) 'dshSessionId': dshSessionId,
+    if (org != null) 'org': org,
+  };
 }
 
 /// One human command in the engine's registry — the studio composer's
@@ -112,11 +113,10 @@ class EngineCommand {
   final String? inputHint;
 
   factory EngineCommand.fromJson(Map<String, dynamic> json) => EngineCommand(
-        name: json['name'] as String,
-        description: json['description'] as String? ?? '',
-        inputHint:
-            (json['input'] as Map<String, dynamic>?)?['hint'] as String?,
-      );
+    name: json['name'] as String,
+    description: json['description'] as String? ?? '',
+    inputHint: (json['input'] as Map<String, dynamic>?)?['hint'] as String?,
+  );
 }
 
 /// One live push from the engine's SSE rail
@@ -229,13 +229,13 @@ class ConversationMessage {
   }
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'seq': seq,
-        'sessionId': sessionId,
-        'role': role,
-        'text': text,
-        'at': at,
-      };
+    'id': id,
+    'seq': seq,
+    'sessionId': sessionId,
+    'role': role,
+    'text': text,
+    'at': at,
+  };
 }
 
 /// The entity registrations the app passes to ArxaKitData.initialize —
@@ -263,20 +263,20 @@ const sessionEntityRegistration = ArxaKitEntityRegistration<CodeSession>(
 
 const messageEntityRegistration =
     ArxaKitEntityRegistration<ConversationMessage>(
-  schema: ArxaKitTableSchema(
-    table: 'code_messages',
-    columns: [
-      ArxaKitColumn.id(),
-      ArxaKitColumn('seq', ArxaKitColumnType.integer),
-      ArxaKitColumn('sessionId', ArxaKitColumnType.text),
-      ArxaKitColumn('role', ArxaKitColumnType.text),
-      ArxaKitColumn('text', ArxaKitColumnType.jsonb),
-      ArxaKitColumn('at', ArxaKitColumnType.integer),
-    ],
-  ),
-  fromJson: ConversationMessage.fromJson,
-  toJson: _messageToJson,
-);
+      schema: ArxaKitTableSchema(
+        table: 'code_messages',
+        columns: [
+          ArxaKitColumn.id(),
+          ArxaKitColumn('seq', ArxaKitColumnType.integer),
+          ArxaKitColumn('sessionId', ArxaKitColumnType.text),
+          ArxaKitColumn('role', ArxaKitColumnType.text),
+          ArxaKitColumn('text', ArxaKitColumnType.jsonb),
+          ArxaKitColumn('at', ArxaKitColumnType.integer),
+        ],
+      ),
+      fromJson: ConversationMessage.fromJson,
+      toJson: _messageToJson,
+    );
 
 // Tear-offs of instance members would not be const; top-level functions
 // keep the registrations const.

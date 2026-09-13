@@ -18,13 +18,15 @@ void main() {
     });
     tearDown(unregisterTestServices);
 
-    test('allow requests the OS permission then hands off to the session',
-        () async {
-      final vm = PairingPushPermissionViewModel();
-      await vm.allow();
-      expect(notifications.permissionRequests, hasLength(1));
-      verify(() => router.replaceWith(any())).called(1);
-    });
+    test(
+      'allow requests the OS permission then hands off to the session',
+      () async {
+        final vm = PairingPushPermissionViewModel();
+        await vm.allow();
+        expect(notifications.permissionRequests, hasLength(1));
+        verify(() => router.replaceWith(any())).called(1);
+      },
+    );
 
     test('skip hands off without asking the OS', () async {
       final vm = PairingPushPermissionViewModel();

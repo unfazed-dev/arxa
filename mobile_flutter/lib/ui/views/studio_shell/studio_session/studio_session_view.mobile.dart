@@ -12,7 +12,6 @@ class StudioSessionViewMobile extends ViewModelWidget<StudioSessionViewModel> {
   const StudioSessionViewMobile({super.key});
 
   @override
-  Widget build(context, viewModel) => const Scaffold(
-        body: Center(child: Text('studio.session · mobile')),
-      );
+  Widget build(context, viewModel) =>
+      const Scaffold(body: Center(child: Text('studio.session · mobile')));
 }

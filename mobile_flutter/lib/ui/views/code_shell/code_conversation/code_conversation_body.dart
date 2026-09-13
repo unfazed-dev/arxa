@@ -5,7 +5,8 @@ import 'dart:io' show File;
 import 'dart:typed_data';
 
 import 'package:image_picker/image_picker.dart' show XFile;
-import 'package:arxa_kit_ui_library/arxa_kit_ui_library.dart' show ViewModelWidget;
+import 'package:arxa_kit_ui_library/arxa_kit_ui_library.dart'
+    show ViewModelWidget;
 import 'package:flutter/material.dart';
 
 import 'package:lucide_flutter/lucide_flutter.dart';
@@ -33,8 +34,8 @@ class CodeConversationBody extends ViewModelWidget<CodeConversationViewModel> {
   @override
   Widget build(BuildContext context, _) {
     final l10n = AppLocalizations.of(context);
-    Widget transcript = viewModel.messages.isEmpty &&
-            viewModel.pendingApprovals.isEmpty
+    Widget transcript =
+        viewModel.messages.isEmpty && viewModel.pendingApprovals.isEmpty
         ? Center(
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -103,8 +104,10 @@ class CodeConversationBody extends ViewModelWidget<CodeConversationViewModel> {
             color: Theme.of(context).colorScheme.errorContainer,
             child: ListTile(
               dense: true,
-              title: Text(l10n.codeConversationOffline,
-                  style: Theme.of(context).textTheme.labelLarge),
+              title: Text(
+                l10n.codeConversationOffline,
+                style: Theme.of(context).textTheme.labelLarge,
+              ),
             ),
           ),
         Expanded(child: transcript),
@@ -148,10 +151,7 @@ class _MessageBubble extends StatelessWidget {
       // the text ('the text animates every time I scroll'). Text
       // carries no recognizers at all: the transcript owns every
       // gesture, and a hold-then-drag just scrolls.
-      child: Text(
-        message.text,
-        style: theme.textTheme.bodyMedium,
-      ),
+      child: Text(message.text, style: theme.textTheme.bodyMedium),
     );
     final thumbnails = [
       for (final attachmentId in message.images)
@@ -172,13 +172,20 @@ class _MessageBubble extends StatelessWidget {
             // live on the bubble Container only, so without this the
             // thumbnails sit flush against the screen edge.
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
-            child: Wrap(spacing: 6, alignment: WrapAlignment.end, children: thumbnails),
+            child: Wrap(
+              spacing: 6,
+              alignment: WrapAlignment.end,
+              children: thumbnails,
+            ),
           ),
           if (message.text.isNotEmpty) bubble,
         ],
       );
     }
-    return Align(alignment: alignRight ? Alignment.centerRight : Alignment.centerLeft, child: content);
+    return Align(
+      alignment: alignRight ? Alignment.centerRight : Alignment.centerLeft,
+      child: content,
+    );
   }
 }
 
@@ -199,7 +206,9 @@ class _AttachmentThumb extends StatefulWidget {
 }
 
 class _AttachmentThumbState extends State<_AttachmentThumb> {
-  late final Future<Uint8List?> _bytes = widget.attachmentBytes(widget.attachmentId);
+  late final Future<Uint8List?> _bytes = widget.attachmentBytes(
+    widget.attachmentId,
+  );
 
   @override
   Widget build(BuildContext context) {
@@ -215,10 +224,17 @@ class _AttachmentThumbState extends State<_AttachmentThumb> {
           builder: (context, snapshot) {
             final bytes = snapshot.data;
             if (bytes == null) {
-              return Icon(LucideIcons.imageOff,
-                  size: 22, color: Theme.of(context).colorScheme.onSurfaceVariant);
+              return Icon(
+                LucideIcons.imageOff,
+                size: 22,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              );
             }
-            return Image.memory(bytes, fit: BoxFit.cover, gaplessPlayback: true);
+            return Image.memory(
+              bytes,
+              fit: BoxFit.cover,
+              gaplessPlayback: true,
+            );
           },
         ),
       ),
@@ -240,7 +256,9 @@ Future<void> _showThoughtSheet(BuildContext context, String text) async {
 /// One tool execution: Input (the pretty arguments) + Output (the paired
 /// result, honest when the engine flagged it as an error or none arrived).
 Future<void> _showToolSheet(
-    BuildContext context, ConversationMessage message) async {
+  BuildContext context,
+  ConversationMessage message,
+) async {
   FocusManager.instance.primaryFocus?.unfocus();
   await _showSheet(context, message.toolLabel, [
     if (message.toolInput != null && message.toolInput!.isNotEmpty)
@@ -257,9 +275,10 @@ Future<void> _showToolSheet(
         child: Text(
           'No output was recorded.',
           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: Theme.of(context).brightness == Brightness.dark
-                  ? const Color(0xFF8E8E93)
-                  : const Color(0xFF98928A)),
+            color: Theme.of(context).brightness == Brightness.dark
+                ? const Color(0xFF8E8E93)
+                : const Color(0xFF98928A),
+          ),
         ),
       ),
   ]);
@@ -299,13 +318,14 @@ class _ExpandRow extends StatelessWidget {
               Icon(icon, size: 15, color: hint),
               const SizedBox(width: 8),
               Flexible(
-                child: Text(label,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: Theme.of(context)
-                        .textTheme
-                        .titleSmall
-                        ?.copyWith(color: hint)),
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleSmall?.copyWith(color: hint),
+                ),
               ),
               const SizedBox(width: 4),
               Icon(LucideIcons.chevronRight, size: 15, color: hint),
@@ -341,10 +361,9 @@ class _SheetProse extends StatelessWidget {
             // mid-scroll, no inner scrollable to grab the sheet's drag.
             Text(
               paragraph,
-              style: Theme.of(context)
-                  .textTheme
-                  .bodyMedium
-                  ?.copyWith(height: 1.5),
+              style: Theme.of(
+                context,
+              ).textTheme.bodyMedium?.copyWith(height: 1.5),
             ),
           ],
         ],
@@ -414,7 +433,10 @@ class _SheetMonoBlock extends StatelessWidget {
 /// card of option rows (icon, title, subtitle, check) — the Claude composer
 /// anatomy. Hides the keyboard on open; the CALLER re-focuses on close.
 Future<void> _showSheet(
-    BuildContext context, String title, List<Widget> children) async {
+  BuildContext context,
+  String title,
+  List<Widget> children,
+) async {
   await showModalBottomSheet<void>(
     context: context,
     isScrollControlled: true,
@@ -427,7 +449,8 @@ Future<void> _showSheet(
       return Container(
         margin: const EdgeInsets.all(12),
         constraints: BoxConstraints(
-            maxHeight: MediaQuery.of(sheetContext).size.height * 0.86),
+          maxHeight: MediaQuery.of(sheetContext).size.height * 0.86,
+        ),
         decoration: BoxDecoration(
           color: bg,
           borderRadius: BorderRadius.circular(28),
@@ -446,11 +469,11 @@ Future<void> _showSheet(
                   _SheetCloseButton(dark: dark),
                   Expanded(
                     child: Center(
-                      child: Text(title,
-                          style: Theme.of(sheetContext)
-                              .textTheme
-                              .titleLarge
-                              ?.copyWith(fontWeight: FontWeight.w700)),
+                      child: Text(
+                        title,
+                        style: Theme.of(sheetContext).textTheme.titleLarge
+                            ?.copyWith(fontWeight: FontWeight.w700),
+                      ),
                     ),
                   ),
                   const SizedBox(width: 44),
@@ -492,7 +515,8 @@ class _SheetCloseButton extends StatelessWidget {
         decoration: BoxDecoration(
           shape: BoxShape.circle,
           border: Border.all(
-              color: dark ? const Color(0xFF3A3A3C) : const Color(0xFFDDD9D0)),
+            color: dark ? const Color(0xFF3A3A3C) : const Color(0xFFDDD9D0),
+          ),
         ),
         child: const Icon(LucideIcons.x, size: 20),
       ),
@@ -516,8 +540,9 @@ Widget _sheetRow({
   final theme = Theme.of(context);
   final dark = theme.brightness == Brightness.dark;
   final divider = dark ? const Color(0xFF2C2C2E) : const Color(0xFFE7E4DC);
-  final subtitleColor =
-      dark ? const Color(0xFF98989F) : theme.colorScheme.onSurfaceVariant;
+  final subtitleColor = dark
+      ? const Color(0xFF98989F)
+      : theme.colorScheme.onSurfaceVariant;
   final checkColor = dark ? const Color(0xFF4A9EFF) : const Color(0xFFD97757);
   return Column(
     children: [
@@ -538,17 +563,28 @@ Widget _sheetRow({
                   children: [
                     Text(title, style: theme.textTheme.titleMedium),
                     if (subtitle != null)
-                      Text(subtitle, style: theme.textTheme.bodyMedium?.copyWith(color: subtitleColor)),
+                      Text(
+                        subtitle,
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: subtitleColor,
+                        ),
+                      ),
                   ],
                 ),
               ),
-              if (selected) Icon(LucideIcons.check, size: 22, color: checkColor),
+              if (selected)
+                Icon(LucideIcons.check, size: 22, color: checkColor),
             ],
           ),
         ),
       ),
       if (!isLast)
-        Divider(height: 1, thickness: 0.5, indent: dividerIndent, color: divider),
+        Divider(
+          height: 1,
+          thickness: 0.5,
+          indent: dividerIndent,
+          color: divider,
+        ),
     ],
   );
 }
@@ -556,18 +592,18 @@ Widget _sheetRow({
 /// Human label + glyph for a sandbox mode; 'Manual' is the neutral
 /// never-switched presentation (matches the studio composer's wording).
 String _modeLabel(String? mode) => switch (mode) {
-      'danger-full-access' => 'Full access',
-      'workspace-write' => 'Workspace write',
-      'read-only' => 'Read only',
-      _ => 'Manual',
-    };
+  'danger-full-access' => 'Full access',
+  'workspace-write' => 'Workspace write',
+  'read-only' => 'Read only',
+  _ => 'Manual',
+};
 
 IconData _modeIcon(String? mode) => switch (mode) {
-      'danger-full-access' => LucideIcons.hand,
-      'workspace-write' => LucideIcons.penLine,
-      'read-only' => LucideIcons.eye,
-      _ => LucideIcons.hand,
-    };
+  'danger-full-access' => LucideIcons.hand,
+  'workspace-write' => LucideIcons.penLine,
+  'read-only' => LucideIcons.eye,
+  _ => LucideIcons.hand,
+};
 
 /// The Claude-style composer: one rounded card, placeholder line on top,
 /// controls row below — attach circle, model pill, mode pill, spacer,
@@ -619,8 +655,7 @@ class _ComposerState extends State<_Composer> {
         _sheetRow(
           context: context,
           title: option.id,
-          subtitle:
-              option.groupName == null ? option.name : option.groupName!,
+          subtitle: option.groupName == null ? option.name : option.groupName!,
           selected: option.id == current,
           onTap: () {
             Navigator.pop(context);
@@ -643,14 +678,27 @@ class _ComposerState extends State<_Composer> {
   Future<void> _showModeMenu() async {
     FocusManager.instance.primaryFocus?.unfocus();
     final modes = <(String, String, String, IconData, Color)>[
-      ('read-only', 'Read only', 'The agent can look, but change nothing',
-          LucideIcons.eye, const Color(0xFF60A5FA)),
-      ('workspace-write', 'Workspace write',
-          'Changes stay inside the project workspace', LucideIcons.penLine,
-          const Color(0xFFA78BFA)),
-      ('danger-full-access', 'Full access',
-          'No sandbox — the agent acts with full permissions',
-          LucideIcons.hand, const Color(0xFFD97757)),
+      (
+        'read-only',
+        'Read only',
+        'The agent can look, but change nothing',
+        LucideIcons.eye,
+        const Color(0xFF60A5FA),
+      ),
+      (
+        'workspace-write',
+        'Workspace write',
+        'Changes stay inside the project workspace',
+        LucideIcons.penLine,
+        const Color(0xFFA78BFA),
+      ),
+      (
+        'danger-full-access',
+        'Full access',
+        'No sandbox — the agent acts with full permissions',
+        LucideIcons.hand,
+        const Color(0xFFD97757),
+      ),
     ];
     if (!mounted) return;
     final current = widget.viewModel.sessionMode;
@@ -680,28 +728,25 @@ class _ComposerState extends State<_Composer> {
   /// pickers. Text files come back inline; images stage as chips.
   Future<void> _showContextSheet() async {
     FocusManager.instance.primaryFocus?.unfocus();
-    await _showSheet(
-      context,
-      'Add context',
-      [
-        _AddContextSheet(
-          viewModel: widget.viewModel,
-          onInlineText: (block) {
-            final current = _controller.text;
-            _controller.text =
-                current.isEmpty ? '$block\n' : '$current\n$block\n';
-          },
-          onPickMode: () {
-            Navigator.pop(context);
-            _showModeMenu();
-          },
-          onPickModel: () {
-            Navigator.pop(context);
-            _showModelMenu();
-          },
-        ),
-      ],
-    );
+    await _showSheet(context, 'Add context', [
+      _AddContextSheet(
+        viewModel: widget.viewModel,
+        onInlineText: (block) {
+          final current = _controller.text;
+          _controller.text = current.isEmpty
+              ? '$block\n'
+              : '$current\n$block\n';
+        },
+        onPickMode: () {
+          Navigator.pop(context);
+          _showModeMenu();
+        },
+        onPickModel: () {
+          Navigator.pop(context);
+          _showModelMenu();
+        },
+      ),
+    ]);
     if (mounted) _focus.requestFocus();
   }
 
@@ -714,8 +759,9 @@ class _ComposerState extends State<_Composer> {
     final chipText = dark ? const Color(0xFFE8E8E6) : const Color(0xFF3D3D3A);
     final hint = dark ? const Color(0xFF8E8E93) : const Color(0xFF98928A);
     final canSend =
-        (_controller.text.trim().isNotEmpty || widget.viewModel.pendingImages.isNotEmpty) &&
-            !widget.viewModel.sending;
+        (_controller.text.trim().isNotEmpty ||
+            widget.viewModel.pendingImages.isNotEmpty) &&
+        !widget.viewModel.sending;
 
     return SafeArea(
       top: false,
@@ -727,7 +773,8 @@ class _ComposerState extends State<_Composer> {
             color: card,
             borderRadius: BorderRadius.circular(26),
             border: Border.all(
-                color: dark ? const Color(0xFF2C2C2E) : const Color(0xFFE3E0D8)),
+              color: dark ? const Color(0xFF2C2C2E) : const Color(0xFFE3E0D8),
+            ),
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -739,21 +786,22 @@ class _ComposerState extends State<_Composer> {
                 enabled: !widget.viewModel.sending,
                 maxLines: 3,
                 minLines: 1,
-                style: Theme.of(context)
-                    .textTheme
-                    .bodyLarge
-                    ?.copyWith(color: chipText),
+                style: Theme.of(
+                  context,
+                ).textTheme.bodyLarge?.copyWith(color: chipText),
                 decoration: InputDecoration(
                   isCollapsed: true,
                   border: InputBorder.none,
                   hintText: l10n.codeComposerHint,
-                  hintStyle: Theme.of(context).textTheme.bodyLarge
-                      ?.copyWith(color: hint),
+                  hintStyle: Theme.of(
+                    context,
+                  ).textTheme.bodyLarge?.copyWith(color: hint),
                 ),
                 onSubmitted: (_) => _send(),
                 // THE canonical dismiss: any tap outside the editable —
                 // transcript, app bar, edges.
-                onTapOutside: (_) => FocusManager.instance.primaryFocus?.unfocus(),
+                onTapOutside: (_) =>
+                    FocusManager.instance.primaryFocus?.unfocus(),
               ),
               if (widget.viewModel.pendingImages.isNotEmpty) ...[
                 const SizedBox(height: 10),
@@ -764,7 +812,8 @@ class _ComposerState extends State<_Composer> {
                     for (final staged in widget.viewModel.pendingImages)
                       _PendingImageChip(
                         image: staged,
-                        onRemove: () => widget.viewModel.removePendingImage(staged),
+                        onRemove: () =>
+                            widget.viewModel.removePendingImage(staged),
                       ),
                   ],
                 ),
@@ -880,8 +929,10 @@ class _Pill extends StatelessWidget {
     return Container(
       height: 40,
       padding: const EdgeInsets.symmetric(horizontal: 12),
-      decoration:
-          BoxDecoration(color: chip, borderRadius: BorderRadius.circular(20)),
+      decoration: BoxDecoration(
+        color: chip,
+        borderRadius: BorderRadius.circular(20),
+      ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -890,13 +941,14 @@ class _Pill extends StatelessWidget {
             const SizedBox(width: 6),
           ],
           Flexible(
-            child: Text(label,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: Theme.of(context)
-                    .textTheme
-                    .labelLarge
-                    ?.copyWith(color: chipText)),
+            child: Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: Theme.of(
+                context,
+              ).textTheme.labelLarge?.copyWith(color: chipText),
+            ),
           ),
         ],
       ),
@@ -921,8 +973,7 @@ class _PendingImageChip extends StatelessWidget {
           borderRadius: BorderRadius.circular(12),
           child: preview == null
               ? Container(width: 52, height: 52, color: const Color(0xFF2C2C2E))
-              : Image.file(preview,
-                  width: 52, height: 52, fit: BoxFit.cover),
+              : Image.file(preview, width: 52, height: 52, fit: BoxFit.cover),
         ),
         Positioned(
           top: -6,
@@ -973,8 +1024,8 @@ class _AddContextSheet extends StatefulWidget {
 class _AddContextSheetState extends State<_AddContextSheet> {
   bool _recentOpen = false;
   bool _commandsOpen = false;
-  late final Future<List<AssetEntity>> _recent =
-      widget.viewModel.media.recentPhotos();
+  late final Future<List<AssetEntity>> _recent = widget.viewModel.media
+      .recentPhotos();
 
   @override
   void initState() {
@@ -985,7 +1036,8 @@ class _AddContextSheetState extends State<_AddContextSheet> {
 
   void _toast(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(message), behavior: SnackBarBehavior.floating));
+      SnackBar(content: Text(message), behavior: SnackBarBehavior.floating),
+    );
   }
 
   /// Stage an image and close; a refused file toasts and stays open.
@@ -1065,8 +1117,7 @@ class _AddContextSheetState extends State<_AddContextSheet> {
           _RecentPhotoGrid(
             recent: _recent,
             originFile: media.originFile,
-            onPicked: (file) =>
-                _stage(Future.value(XFile(file.path))),
+            onPicked: (file) => _stage(Future.value(XFile(file.path))),
           ),
         const SizedBox(height: 12),
         _ContextRow(
@@ -1114,8 +1165,7 @@ class _CommandList extends StatelessWidget {
   final VoidCallback onPickMode;
   final VoidCallback onPickModel;
 
-  Future<void> _execute(
-      BuildContext context, EngineCommand command) async {
+  Future<void> _execute(BuildContext context, EngineCommand command) async {
     switch (command.name) {
       case 'permission':
         onPickMode();
@@ -1147,7 +1197,9 @@ class _CommandList extends StatelessWidget {
     final commands = <EngineCommand>[...viewModel.commands];
     if (!commands.any((c) => c.name == 'model')) {
       const row = EngineCommand(
-          name: 'model', description: 'Select the model for this conversation');
+        name: 'model',
+        description: 'Select the model for this conversation',
+      );
       final idx = commands.indexWhere((c) => c.name.compareTo('model') > 0);
       idx < 0 ? commands.add(row) : commands.insert(idx, row);
     }
@@ -1159,7 +1211,8 @@ class _CommandList extends StatelessWidget {
           child: Text(
             viewModel.commandBusy ? '…' : 'No commands available',
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: dark ? const Color(0xFF8E8E93) : const Color(0xFF98928A)),
+              color: dark ? const Color(0xFF8E8E93) : const Color(0xFF98928A),
+            ),
           ),
         ),
       );
@@ -1207,32 +1260,36 @@ class _CommandRow extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(children: [
-              Text('/${command.name}',
-                  style: Theme.of(context)
-                      .textTheme
-                      .titleSmall
-                      ?.copyWith(fontWeight: FontWeight.w700)),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(command.description,
+            Row(
+              children: [
+                Text(
+                  '/${command.name}',
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    command.description,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
-                    style: Theme.of(context)
-                        .textTheme
-                        .bodySmall
-                        ?.copyWith(color: hint)),
-              ),
-            ]),
-            if (command.inputHint != null &&
-                command.inputHint!.isNotEmpty)
+                    style: Theme.of(
+                      context,
+                    ).textTheme.bodySmall?.copyWith(color: hint),
+                  ),
+                ),
+              ],
+            ),
+            if (command.inputHint != null && command.inputHint!.isNotEmpty)
               Align(
                 alignment: Alignment.centerLeft,
-                child: Text(command.inputHint!,
-                    style: Theme.of(context)
-                        .textTheme
-                        .bodySmall
-                        ?.copyWith(color: hint)),
+                child: Text(
+                  command.inputHint!,
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodySmall?.copyWith(color: hint),
+                ),
               ),
           ],
         ),
@@ -1244,7 +1301,9 @@ class _CommandRow extends StatelessWidget {
 /// Ask for a command's free-text argument (`/feedback <text>`, `/goal` …).
 /// Returns the complete slash line, or null when cancelled.
 Future<String?> _promptCommandLine(
-    BuildContext context, EngineCommand command) async {
+  BuildContext context,
+  EngineCommand command,
+) async {
   final controller = TextEditingController();
   final line = await showDialog<String>(
     context: context,
@@ -1255,9 +1314,7 @@ Future<String?> _promptCommandLine(
         autofocus: true,
         maxLines: 3,
         minLines: 1,
-        decoration: const InputDecoration(
-          border: OutlineInputBorder(),
-        ),
+        decoration: const InputDecoration(border: OutlineInputBorder()),
       ),
       actions: [
         TextButton(
@@ -1265,8 +1322,10 @@ Future<String?> _promptCommandLine(
           child: const Text('Cancel'),
         ),
         TextButton(
-          onPressed: () => Navigator.pop(dialogContext,
-              '/${command.name} ${controller.text.trim()}'),
+          onPressed: () => Navigator.pop(
+            dialogContext,
+            '/${command.name} ${controller.text.trim()}',
+          ),
           child: const Text('Run'),
         ),
       ],
@@ -1307,11 +1366,12 @@ class _ContextRow extends StatelessWidget {
           children: [
             Icon(icon, size: 22, color: tint),
             const SizedBox(width: 12),
-            Text(label,
-                style: Theme.of(context)
-                    .textTheme
-                    .titleMedium
-                    ?.copyWith(color: tint)),
+            Text(
+              label,
+              style: Theme.of(
+                context,
+              ).textTheme.titleMedium?.copyWith(color: tint),
+            ),
           ],
         ),
       ),
@@ -1340,11 +1400,18 @@ class _ContextTile extends StatelessWidget {
       borderRadius: BorderRadius.circular(18),
       child: Container(
         height: 104,
-        decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(18)),
+        decoration: BoxDecoration(
+          color: color,
+          borderRadius: BorderRadius.circular(18),
+        ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, size: 26, color: Theme.of(context).colorScheme.onSurface),
+            Icon(
+              icon,
+              size: 26,
+              color: Theme.of(context).colorScheme.onSurface,
+            ),
             const SizedBox(height: 8),
             Text(label, style: Theme.of(context).textTheme.bodyLarge),
           ],
@@ -1378,20 +1445,25 @@ class _RecentPhotoGrid extends StatelessWidget {
           builder: (context, snapshot) {
             final assets = snapshot.data;
             if (assets == null) {
-              return const Center(child: CircularProgressIndicator(strokeWidth: 2));
+              return const Center(
+                child: CircularProgressIndicator(strokeWidth: 2),
+              );
             }
             if (assets.isEmpty) {
               return Center(
-                child: Text('No recent photos',
-                    style: Theme.of(context).textTheme.bodyMedium),
+                child: Text(
+                  'No recent photos',
+                  style: Theme.of(context).textTheme.bodyMedium,
+                ),
               );
             }
             return GridView.builder(
               physics: const ClampingScrollPhysics(),
               gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 4,
-                  mainAxisSpacing: 4,
-                  crossAxisSpacing: 4),
+                crossAxisCount: 4,
+                mainAxisSpacing: 4,
+                crossAxisSpacing: 4,
+              ),
               itemCount: assets.length,
               itemBuilder: (context, index) => _AssetThumb(
                 asset: assets[index],
@@ -1432,15 +1504,16 @@ class _AssetThumb extends StatelessWidget {
             final bytes = snapshot.data;
             if (bytes == null) {
               return ColoredBox(
-                  color: Theme.of(context)
-                      .colorScheme
-                      .surfaceContainerHighest);
+                color: Theme.of(context).colorScheme.surfaceContainerHighest,
+              );
             }
-            return Image.memory(bytes,
-                width: double.infinity,
-                height: double.infinity,
-                fit: BoxFit.cover,
-                gaplessPlayback: true);
+            return Image.memory(
+              bytes,
+              width: double.infinity,
+              height: double.infinity,
+              fit: BoxFit.cover,
+              gaplessPlayback: true,
+            );
           },
         ),
       ),
@@ -1480,9 +1553,11 @@ class _SendCircle extends StatelessWidget {
                   width: 16,
                   height: 16,
                   child: CircularProgressIndicator(
-                      strokeWidth: 2, color: Colors.white))
-              : const Icon(LucideIcons.arrowUp,
-                  size: 20, color: Colors.white),
+                    strokeWidth: 2,
+                    color: Colors.white,
+                  ),
+                )
+              : const Icon(LucideIcons.arrowUp, size: 20, color: Colors.white),
         ),
       ),
     );

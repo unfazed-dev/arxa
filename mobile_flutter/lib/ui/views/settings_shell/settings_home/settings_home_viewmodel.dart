@@ -14,9 +14,7 @@ class SettingsHomeViewModel extends BaseViewModel {
   final _router = locator<RouterService>();
 
   Future<void> unpair() async {
-    await runBusyFuture(
-      Future.wait([_push.detach(), _transport.unpair()]),
-    );
+    await runBusyFuture(Future.wait([_push.detach(), _transport.unpair()]));
     await _router.clearStackAndShow(PairingScanViewRoute());
   }
 

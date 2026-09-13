@@ -19,15 +19,22 @@ class CodeConversationView extends StackedView<CodeConversationViewModel> {
 
   @override
   Widget builder(
-      BuildContext context, CodeConversationViewModel viewModel, Widget? child) {
+    BuildContext context,
+    CodeConversationViewModel viewModel,
+    Widget? child,
+  ) {
     final l10n = AppLocalizations.of(context);
     return Scaffold(
       appBar: ArxaKitNativeAppBar(title: l10n.codeConversationTitle),
       body: MediaQuery.sizeOf(context).width >= 600
           ? CodeConversationViewTablet(
-              key: const ValueKey('tablet'), viewModel: viewModel)
+              key: const ValueKey('tablet'),
+              viewModel: viewModel,
+            )
           : CodeConversationViewMobile(
-              key: const ValueKey('mobile'), viewModel: viewModel),
+              key: const ValueKey('mobile'),
+              viewModel: viewModel,
+            ),
     );
   }
 

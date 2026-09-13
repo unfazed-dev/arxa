@@ -29,8 +29,9 @@ class _FakeRepository implements ConversationRepository {
 
   @override
   Future<({String kind, String text})> runCommand(
-          String sessionId, String line) async =>
-      (kind: 'success', text: '');
+    String sessionId,
+    String line,
+  ) async => (kind: 'success', text: '');
 
   @override
   Future<String> exportTranscript(String sessionId, String savePath) async =>
@@ -51,20 +52,28 @@ class _FakeRepository implements ConversationRepository {
   Future<Map<String, dynamic>> models(String sessionId) async => const {};
 
   @override
-  Future<void> selectModel(String sessionId, String provider, String model) async {}
+  Future<void> selectModel(
+    String sessionId,
+    String provider,
+    String model,
+  ) async {}
 
   @override
   Future<void> setMode(String sessionId, String mode) async {}
 
   @override
   Future<Map<String, dynamic>> attachment(
-          String sessionId, String attachmentId) async =>
-      const {};
+    String sessionId,
+    String attachmentId,
+  ) async => const {};
 
   @override
-  Future<void> send(String sessionId, String text,
-      {String mode = 'queue',
-      List<({String mediaType, String data})> images = const []}) async {}
+  Future<void> send(
+    String sessionId,
+    String text, {
+    String mode = 'queue',
+    List<({String mediaType, String data})> images = const [],
+  }) async {}
 
   @override
   TransportService get transport => transportField;
@@ -106,8 +115,9 @@ class _FakeRepository implements ConversationRepository {
 class _PokeTransport implements TransportService {
   final _controller = StreamController<ArxaConnectionStatus>.broadcast();
 
-  ArxaConnectionStatus currentStatus =
-      const ArxaConnectionStatus(ArxaConnectionState.notPaired);
+  ArxaConnectionStatus currentStatus = const ArxaConnectionStatus(
+    ArxaConnectionState.notPaired,
+  );
   bool stored = true;
   int resumeCount = 0;
 
@@ -141,64 +151,88 @@ class _PokeTransport implements TransportService {
   Future<void> dispose() async => _controller.close();
 }
 
-CodeSession _session(String id,
-        {String? parkedReason,
-        String? state,
-        int updatedAt = 0,
-        String? dshSessionId}) =>
-    CodeSession(
-        id: id,
-        title: id,
-        state: state,
-        parkedReason: parkedReason,
-        updatedAt: updatedAt,
-        dshSessionId: dshSessionId);
+CodeSession _session(
+  String id, {
+  String? parkedReason,
+  String? state,
+  int updatedAt = 0,
+  String? dshSessionId,
+}) => CodeSession(
+  id: id,
+  title: id,
+  state: state,
+  parkedReason: parkedReason,
+  updatedAt: updatedAt,
+  dshSessionId: dshSessionId,
+);
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  test('CodeSession json round-trips the dshSessionId (the transcript key)', () {
-    const dsh = 'arxa-s-mtgtrrx8-8mrlsd';
-    final session = CodeSession.fromJson({
-      'id': 's-mtgtrrx8-8mrlsd',
-      'title': 'fix the bug',
-      'state': 'running',
-      'dshSessionId': dsh,
-      'updatedAt': 5,
-    });
+  test(
+    'CodeSession json round-trips the dshSessionId (the transcript key)',
+    () {
+      const dsh = 'arxa-s-mtgtrrx8-8mrlsd';
+      final session = CodeSession.fromJson({
+        'id': 's-mtgtrrx8-8mrlsd',
+        'title': 'fix the bug',
+        'state': 'running',
+        'dshSessionId': dsh,
+        'updatedAt': 5,
+      });
 
-    expect(session.dshSessionId, dsh);
-    expect(session.toJson()['dshSessionId'], dsh,
-        reason: 'the conversation routes key on this form, not the row id');
-  });
+      expect(session.dshSessionId, dsh);
+      expect(
+        session.toJson()['dshSessionId'],
+        dsh,
+        reason: 'the conversation routes key on this form, not the row id',
+      );
+    },
+  );
 
   test('CodeSession running flag parses from the wire, never persists', () {
-    final session = CodeSession.fromJson(
-        {'id': 's-1', 'dshSessionId': 'arxa-s-1', 'running': true});
+    final session = CodeSession.fromJson({
+      'id': 's-1',
+      'dshSessionId': 'arxa-s-1',
+      'running': true,
+    });
     final idle = CodeSession.fromJson({'id': 's-2'});
 
-    expect(session.running, isTrue, reason: 'the live-turn flag rides fresh rows');
+    expect(
+      session.running,
+      isTrue,
+      reason: 'the live-turn flag rides fresh rows',
+    );
     expect(idle.running, isFalse);
-    expect(session.toJson().containsKey('running'), isFalse,
-        reason: 'transient — the cache keeps no running column');
+    expect(
+      session.toJson().containsKey('running'),
+      isFalse,
+      reason: 'transient — the cache keeps no running column',
+    );
   });
 
   test('starts with no sessions', () {
     expect(
-        CodeSessionsViewModel(_FakeRepository(), () => Future.value())
-            .sessions,
-        isEmpty);
+      CodeSessionsViewModel(_FakeRepository(), () => Future.value()).sessions,
+      isEmpty,
+    );
   });
 
   test('refresh loads the repository list', () async {
     final repo = _FakeRepository()
-      ..sessionRows = [_session('s1', updatedAt: 2), _session('s2', updatedAt: 5)];
+      ..sessionRows = [
+        _session('s1', updatedAt: 2),
+        _session('s2', updatedAt: 5),
+      ];
     final viewModel = CodeSessionsViewModel(repo, () => Future.value());
 
     await viewModel.refresh();
 
-    expect(viewModel.sessions.map((s) => s.id), ['s2', 's1'],
-        reason: 'the repository sorts newest-first by updatedAt');
+    expect(
+      viewModel.sessions.map((s) => s.id),
+      ['s2', 's1'],
+      reason: 'the repository sorts newest-first by updatedAt',
+    );
     expect(viewModel.loadError, isNull);
   });
 
@@ -266,8 +300,11 @@ void main() {
 
     await viewModel.refresh();
 
-    expect(transport.resumeCount, 1,
-        reason: 'a failed pull re-kicks the dial so a late desktop is found');
+    expect(
+      transport.resumeCount,
+      1,
+      reason: 'a failed pull re-kicks the dial so a late desktop is found',
+    );
     expect(viewModel.loadError, CodeSessionsError.offline);
     expect(viewModel.needsPairing, isFalse);
   });
@@ -282,8 +319,11 @@ void main() {
     await viewModel.refresh();
 
     expect(viewModel.needsPairing, isTrue);
-    expect(transport.resumeCount, 0,
-        reason: 'resume is a no-op without a session — offer the scanner');
+    expect(
+      transport.resumeCount,
+      0,
+      reason: 'resume is a no-op without a session — offer the scanner',
+    );
   });
 
   test('connected announcement re-pulls automatically', () async {
@@ -293,33 +333,49 @@ void main() {
     final viewModel = CodeSessionsViewModel(repo, () => Future.value());
 
     viewModel.listenTransport();
-    transport.emit(ArxaConnectionStatus(ArxaConnectionState.connected,
-        studioUrl: Uri.parse('http://127.0.0.1:45890/')));
+    transport.emit(
+      ArxaConnectionStatus(
+        ArxaConnectionState.connected,
+        studioUrl: Uri.parse('http://127.0.0.1:45890/'),
+      ),
+    );
     await pumpEventQueue();
 
-    expect(viewModel.sessions.single.id, 's1',
-        reason: 'the tunnel coming up re-pulls the list with no user action');
+    expect(
+      viewModel.sessions.single.id,
+      's1',
+      reason: 'the tunnel coming up re-pulls the list with no user action',
+    );
   });
 
-  test('a session ping re-pulls the list (reorder + running ride it)', () async {
-    final repo = _FakeRepository()..sessionRows = [_session('s1', updatedAt: 9)];
-    final viewModel = CodeSessionsViewModel(repo, () => Future.value());
-    viewModel.listenLive();
-    addTearDown(viewModel.dispose);
+  test(
+    'a session ping re-pulls the list (reorder + running ride it)',
+    () async {
+      final repo = _FakeRepository()
+        ..sessionRows = [_session('s1', updatedAt: 9)];
+      final viewModel = CodeSessionsViewModel(repo, () => Future.value());
+      viewModel.listenLive();
+      addTearDown(viewModel.dispose);
 
-    repo.emitLive(
-        const ConversationLiveEvent(type: 'session', sessionId: 'arxa-s1'));
-    // the 400ms live-refresh debounce must fire — poll, never a fixed sleep
-    // (a fixed delay flakes when the suite runs under load)
-    final deadline = DateTime.now().add(const Duration(seconds: 5));
-    while (viewModel.sessions.isEmpty && DateTime.now().isBefore(deadline)) {
-      await Future<void>.delayed(const Duration(milliseconds: 25));
-    }
+      repo.emitLive(
+        const ConversationLiveEvent(type: 'session', sessionId: 'arxa-s1'),
+      );
+      // the 400ms live-refresh debounce must fire — poll, never a fixed sleep
+      // (a fixed delay flakes when the suite runs under load)
+      final deadline = DateTime.now().add(const Duration(seconds: 5));
+      while (viewModel.sessions.isEmpty && DateTime.now().isBefore(deadline)) {
+        await Future<void>.delayed(const Duration(milliseconds: 25));
+      }
 
-    expect(viewModel.sessions.single.id, 's1',
-        reason: 'per-session pings refresh the list too — the updatedAt '
-            'reorder and the running flag turn over exactly at them');
-  });
+      expect(
+        viewModel.sessions.single.id,
+        's1',
+        reason:
+            'per-session pings refresh the list too — the updatedAt '
+            'reorder and the running flag turn over exactly at them',
+      );
+    },
+  );
 
   test('isRunning keys on the dsh session id (the flag namespace)', () {
     final repo = _FakeRepository()

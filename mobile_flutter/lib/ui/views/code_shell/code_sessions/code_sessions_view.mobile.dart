@@ -1,5 +1,6 @@
 // arxa-builder: LIVE — mobile layout of the code sessions list.
-import 'package:arxa_kit_ui_library/arxa_kit_ui_library.dart' show ViewModelWidget;
+import 'package:arxa_kit_ui_library/arxa_kit_ui_library.dart'
+    show ViewModelWidget;
 import 'package:flutter/material.dart';
 
 import 'code_sessions_body.dart';
@@ -11,6 +12,5 @@ class CodeSessionsViewMobile extends ViewModelWidget<CodeSessionsViewModel> {
   final CodeSessionsViewModel viewModel;
 
   @override
-  Widget build(context, _) =>
-      CodeSessionsBody(key: key, viewModel: viewModel);
+  Widget build(context, _) => CodeSessionsBody(key: key, viewModel: viewModel);
 }

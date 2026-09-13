@@ -18,13 +18,15 @@ void main() {
     });
     tearDown(unregisterTestServices);
 
-    test('a scanned ticket begins pairing and navigates to connecting',
-        () async {
-      final vm = PairingScanViewModel();
-      await vm.submitTicket('ticket-1');
-      expect(transport.current.state, ArxaConnectionState.connected);
-      verify(() => router.navigateTo(any())).called(1);
-    });
+    test(
+      'a scanned ticket begins pairing and navigates to connecting',
+      () async {
+        final vm = PairingScanViewModel();
+        await vm.submitTicket('ticket-1');
+        expect(transport.current.state, ArxaConnectionState.connected);
+        verify(() => router.navigateTo(any())).called(1);
+      },
+    );
 
     test('rapid duplicate detections submit only once', () async {
       final vm = PairingScanViewModel();

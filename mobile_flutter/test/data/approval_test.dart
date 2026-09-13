@@ -46,21 +46,28 @@ void main() {
     expect(
       schema.columns.map((c) => c.name),
       containsAll(const [
-        'id', 'session_id', 'kind', 'summary', 'questions', 'raised_at', 'status',
+        'id',
+        'session_id',
+        'kind',
+        'summary',
+        'questions',
+        'raised_at',
+        'status',
       ]),
     );
   });
 
   test('answers encode to the engine decide shape', () {
-    const answer = ApprovalAnswer(
-      questionId: 'q1',
-      selected: ['Approve'],
-    );
+    const answer = ApprovalAnswer(questionId: 'q1', selected: ['Approve']);
     expect(answer.toJson(), {
       'id': 'q1',
       'selected': ['Approve'],
     });
-    const custom = ApprovalAnswer(questionId: 'q2', selected: [], custom: ' later ');
+    const custom = ApprovalAnswer(
+      questionId: 'q2',
+      selected: [],
+      custom: ' later ',
+    );
     expect(custom.toJson(), {'id': 'q2', 'selected': [], 'custom': ' later '});
   });
 }

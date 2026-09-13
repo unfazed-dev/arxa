@@ -13,5 +13,6 @@ class ArxaKitPlatformRouter extends StackedRouterWeb
 }
 
 /// The single router instance, in place of the generated `stackedRouter`.
-final ArxaKitPlatformRouter kitPlatformRouter =
-    ArxaKitPlatformRouter(navigatorKey: StackedService.navigatorKey);
+final ArxaKitPlatformRouter kitPlatformRouter = ArxaKitPlatformRouter(
+  navigatorKey: StackedService.navigatorKey,
+);

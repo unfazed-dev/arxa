@@ -21,13 +21,11 @@ export 'conversation.dart' show ModelOption;
 
 class ConversationRepository {
   ConversationRepository({
-    required ArxaKitRepository<CodeSession> sessionCache,
-    required ArxaKitRepository<ConversationMessage> messageCache,
-    required ConversationApiClient api,
+    required this._sessionCache,
+    required this._messageCache,
+    required this._api,
     this.healWait = const Duration(seconds: 20),
-  })  : _sessionCache = sessionCache,
-        _messageCache = messageCache,
-        _api = api;
+  });
 
   final ArxaKitRepository<CodeSession> _sessionCache;
   final ArxaKitRepository<ConversationMessage> _messageCache;
@@ -81,8 +79,9 @@ class ConversationRepository {
   /// Execute one slash-command line; the command's own kind/text comes
   /// back (the engine registry answers — the line never reaches the model).
   Future<({String kind, String text})> runCommand(
-          String sessionId, String line) =>
-      _api.runCommand(sessionId, line);
+    String sessionId,
+    String line,
+  ) => _api.runCommand(sessionId, line);
 
   /// Download the transcript markdown to [savePath]; returns the path.
   Future<String> exportTranscript(String sessionId, String savePath) =>
@@ -101,9 +100,9 @@ class ConversationRepository {
   }
 
   /// Live views of the caches for reactive wiring (same sorts as above).
-  Stream<List<CodeSession>> watchSessions() => _sessionCache
-      .watchAll()
-      .map((rows) => rows..sort((a, b) => b.updatedAt.compareTo(a.updatedAt)));
+  Stream<List<CodeSession>> watchSessions() => _sessionCache.watchAll().map(
+    (rows) => rows..sort((a, b) => b.updatedAt.compareTo(a.updatedAt)),
+  );
 
   Stream<List<ConversationMessage>> watchTranscript(String sessionId) =>
       _messageCache.watchAll().map((rows) {
@@ -133,7 +132,9 @@ class ConversationRepository {
     final remoteById = {for (final session in remote) session.id: session};
     final cached = await _sessionCache.getAll();
     for (final stale in cached) {
-      if (!remoteById.containsKey(stale.id)) await _sessionCache.delete(stale.id);
+      if (!remoteById.containsKey(stale.id)) {
+        await _sessionCache.delete(stale.id);
+      }
     }
     if (remote.isNotEmpty) await _sessionCache.upsertMany(remote);
   }
@@ -183,7 +184,8 @@ class ConversationRepository {
     final transport = _api.transport;
     final reconnected = Completer<void>();
     final sub = transport.status.listen((s) {
-      if (s.state == ArxaConnectionState.connected && !reconnected.isCompleted) {
+      if (s.state == ArxaConnectionState.connected &&
+          !reconnected.isCompleted) {
         reconnected.complete();
       }
     });
@@ -201,9 +203,12 @@ class ConversationRepository {
   /// Send a prompt into a session (queued by default), then re-pull the
   /// transcript so the user bubble lands locally. A 409 propagates as
   /// [ConversationConflictException] — the session has no live agent.
-  Future<void> send(String sessionId, String text,
-      {String mode = 'queue',
-      List<({String mediaType, String data})> images = const []}) async {
+  Future<void> send(
+    String sessionId,
+    String text, {
+    String mode = 'queue',
+    List<({String mediaType, String data})> images = const [],
+  }) async {
     await _api.send(sessionId, text, mode: mode, images: images);
     await refreshSession(sessionId);
   }
@@ -211,6 +216,7 @@ class ConversationRepository {
   /// One stored image attachment ({ attachment, data: base64 }) — the raw
   /// engine answer; the UI decodes. Not cached: thumbnails are pull-per-view.
   Future<Map<String, dynamic>> attachment(
-          String sessionId, String attachmentId) =>
-      _healed(() => _api.attachment(sessionId, attachmentId));
+    String sessionId,
+    String attachmentId,
+  ) => _healed(() => _api.attachment(sessionId, attachmentId));
 }

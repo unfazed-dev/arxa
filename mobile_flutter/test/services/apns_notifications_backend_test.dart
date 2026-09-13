@@ -11,7 +11,8 @@ void main() {
 
   const channel = MethodChannel('arxa/apns');
   final codec = const StandardMethodCodec();
-  final messenger = TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
+  final messenger =
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
 
   // canned responses for Dart→native calls; default null (pendingTap absent).
   Object? Function(MethodCall)? dartToNative;
@@ -48,15 +49,16 @@ void main() {
   }
 
   test('constructor drains a canned pendingTap and emits on taps', () async {
-    dartToNative = (call) =>
-        call.method == 'pendingTap'
-            ? <String, dynamic>{'type': 'tap', 'requestId': 'r1', 'title': 'Buzz'}
-            : null;
+    dartToNative = (call) => call.method == 'pendingTap'
+        ? <String, dynamic>{'type': 'tap', 'requestId': 'r1', 'title': 'Buzz'}
+        : null;
 
     final backend = ApnsNotificationsBackend();
     addTearDown(backend.dispose);
     final taps = await collectTaps(
-        backend, () async => Future<void>.delayed(Duration.zero));
+      backend,
+      () async => Future<void>.delayed(Duration.zero),
+    );
 
     expect(taps, hasLength(1));
     expect(taps.single['requestId'], 'r1');
@@ -68,37 +70,40 @@ void main() {
     final backend = ApnsNotificationsBackend();
     addTearDown(backend.dispose);
     final taps = await collectTaps(
-        backend, () async => Future<void>.delayed(Duration.zero));
+      backend,
+      () async => Future<void>.delayed(Duration.zero),
+    );
 
     expect(taps, isEmpty);
   });
 
-  test('dedupe: same requestId twice emits once (drain + live event)', () async {
-    dartToNative = (call) =>
-        call.method == 'pendingTap'
-            ? <String, dynamic>{'type': 'tap', 'requestId': 'r1'}
-            : null;
+  test(
+    'dedupe: same requestId twice emits once (drain + live event)',
+    () async {
+      dartToNative = (call) => call.method == 'pendingTap'
+          ? <String, dynamic>{'type': 'tap', 'requestId': 'r1'}
+          : null;
 
-    final backend = ApnsNotificationsBackend();
-    addTearDown(backend.dispose);
-    final taps = <Map<String, dynamic>>[];
-    final sub = backend.taps.listen(taps.add);
-    // Let the constructor's drain land first, then the live 'event' racing
-    // in with the SAME notification id — only one emission may survive.
-    await Future<void>.delayed(Duration.zero);
-    await Future<void>.delayed(Duration.zero);
-    await deliverEvent(<String, dynamic>{'type': 'tap', 'requestId': 'r1'});
-    await sub.cancel();
+      final backend = ApnsNotificationsBackend();
+      addTearDown(backend.dispose);
+      final taps = <Map<String, dynamic>>[];
+      final sub = backend.taps.listen(taps.add);
+      // Let the constructor's drain land first, then the live 'event' racing
+      // in with the SAME notification id — only one emission may survive.
+      await Future<void>.delayed(Duration.zero);
+      await Future<void>.delayed(Duration.zero);
+      await deliverEvent(<String, dynamic>{'type': 'tap', 'requestId': 'r1'});
+      await sub.cancel();
 
-    expect(taps, hasLength(1));
-    expect(taps.single['requestId'], 'r1');
-  });
+      expect(taps, hasLength(1));
+      expect(taps.single['requestId'], 'r1');
+    },
+  );
 
   test('distinct requestIds both emit', () async {
-    dartToNative = (call) =>
-        call.method == 'pendingTap'
-            ? <String, dynamic>{'type': 'tap', 'requestId': 'r1'}
-            : null;
+    dartToNative = (call) => call.method == 'pendingTap'
+        ? <String, dynamic>{'type': 'tap', 'requestId': 'r1'}
+        : null;
 
     final backend = ApnsNotificationsBackend();
     addTearDown(backend.dispose);

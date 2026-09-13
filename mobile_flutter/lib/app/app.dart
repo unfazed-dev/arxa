@@ -39,8 +39,9 @@ import 'package:arxa_studio_mobile/ui/views/studio_shell/studio_session/studio_s
     // leg; FCM elsewhere); tests swap in FakeArxaKitNotificationsService
     // from arxa_kit_notifications/testing.
     LazySingleton(
-        classType: AppNotificationsBackend,
-        asType: ArxaKitNotificationsService),
+      classType: AppNotificationsBackend,
+      asType: ArxaKitNotificationsService,
+    ),
     LazySingleton(classType: PushTokenService),
   ],
 )

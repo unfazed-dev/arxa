@@ -40,8 +40,7 @@ class StudioSessionViewModel extends BaseViewModel {
         controller = null;
         _connectWebview();
         notifyListeners();
-      } else if (s.state == ArxaConnectionState.notPaired &&
-          s.error != null) {
+      } else if (s.state == ArxaConnectionState.notPaired && s.error != null) {
         _leaveForPairing();
       }
     });
@@ -105,8 +104,7 @@ class StudioSessionViewModel extends BaseViewModel {
     _loadRetries = 0;
   }
 
-  Future<void> openSettings() =>
-      _router.navigateTo(SettingsHomeViewRoute());
+  Future<void> openSettings() => _router.navigateTo(SettingsHomeViewRoute());
 
   /// The approvals shell (B2 phase-1b): the bell lands here so the owner can
   /// review pending asks without leaving the session (back returns here).

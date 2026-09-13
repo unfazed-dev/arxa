@@ -52,11 +52,9 @@ class AppData {
   static const _bootstrapTimeout = Duration(seconds: 5);
 
   static ArxaKitDataConfig defaultConfig() => ArxaKitDataConfig(
-        backend: ArxaKitDataBackend.plugin,
-        plugin: ArxaKitCairnBackend(
-          config: ArxaKitCairnConfig.fromEnvironment(),
-        ),
-      );
+    backend: ArxaKitDataBackend.plugin,
+    plugin: ArxaKitCairnBackend(config: ArxaKitCairnConfig.fromEnvironment()),
+  );
 
   /// The approvals data slice (grill D60–D68): the Approval entity is the
   /// phone's cairn-backed local projection of the engine's pending
@@ -85,14 +83,16 @@ class AppData {
       return;
     }
     try {
-      await _boot(ArxaKitDataConfig(
-        backend: ArxaKitDataBackend.plugin,
-        plugin: ArxaKitCairnBackend(
-          config: sync.config,
-          tokenProvider: sync.token,
-          notifications: notifications,
+      await _boot(
+        ArxaKitDataConfig(
+          backend: ArxaKitDataBackend.plugin,
+          plugin: ArxaKitCairnBackend(
+            config: sync.config,
+            tokenProvider: sync.token,
+            notifications: notifications,
+          ),
         ),
-      ));
+      );
     } on Object catch (e) {
       // The sync connect failed on-device (native dial, schema, storage):
       // localOnly fallback keeps the approvals loop alive over pulls; sync
@@ -142,8 +142,10 @@ class AppData {
   /// everything — a fresh install never waits — then the first connected
   /// announcement, then the engine's bootstrap bearer.
   @visibleForTesting
-  static Future<({ArxaKitCairnConfig config, Future<String?> Function() token})?>
-      resolveSyncConfig(
+  static Future<
+    ({ArxaKitCairnConfig config, Future<String?> Function() token})?
+  >
+  resolveSyncConfig(
     TransportService transport, {
     ArxaKitNotificationsService? notifications,
   }) async {
@@ -152,8 +154,9 @@ class AppData {
     if (studioUrl == null) return null;
     final token = await _bootstrapToken(studioUrl);
     if (token == null) return null;
-    final syncUrl =
-        studioUrl.replace(scheme: 'ws', path: '/__cairn/sync').toString();
+    final syncUrl = studioUrl
+        .replace(scheme: 'ws', path: '/__cairn/sync')
+        .toString();
     return (
       config: ArxaKitCairnConfig(
         mode: ArxaKitCairnMode.sync,
@@ -172,7 +175,8 @@ class AppData {
   /// fast announcement is never missed), else the next one, bounded by
   /// [syncBootWait]. Null = the tunnel never came up in time.
   static Future<Uri?> _firstConnectedStudioUrl(
-    TransportService transport,) async {
+    TransportService transport,
+  ) async {
     final announced = Completer<Uri?>();
     final sub = transport.status.listen((s) {
       if (!announced.isCompleted &&
@@ -204,8 +208,9 @@ class AppData {
     try {
       client = HttpClient();
       client.connectionTimeout = _bootstrapTimeout;
-      final request =
-          await client.getUrl(studioUrl.resolve('__arxa/cairn-sync'));
+      final request = await client.getUrl(
+        studioUrl.resolve('__arxa/cairn-sync'),
+      );
       final response = await request.close().timeout(_bootstrapTimeout);
       if (response.statusCode != 200) return null;
       final body = jsonDecode(await response.transform(utf8.decoder).join());

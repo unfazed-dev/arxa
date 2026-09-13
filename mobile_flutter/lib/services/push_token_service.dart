@@ -20,15 +20,15 @@ class PushTokenService {
   PushTokenService({
     ArxaKitNotificationsService? notifications,
     TransportService? transport,
-  })  : _notifications =
-            notifications ?? locator<ArxaKitNotificationsService>(),
-        _bridge = ArxaKitCairnPushBridge(
-          notifications:
-              notifications ?? locator<ArxaKitNotificationsService>(),
-          register: (platform, token) =>
-              (transport ?? locator<TransportService>())
-                  .setPushToken(platform, token),
-        );
+  }) : _notifications = notifications ?? locator<ArxaKitNotificationsService>(),
+       _bridge = ArxaKitCairnPushBridge(
+         notifications: notifications ?? locator<ArxaKitNotificationsService>(),
+         register: (platform, token) =>
+             (transport ?? locator<TransportService>()).setPushToken(
+               platform,
+               token,
+             ),
+       );
 
   final ArxaKitNotificationsService _notifications;
   final ArxaKitCairnPushBridge _bridge;

@@ -1,6 +1,7 @@
 // arxa-builder: LIVE — tablet layout of the code sessions list (centered
 // at a readable width).
-import 'package:arxa_kit_ui_library/arxa_kit_ui_library.dart' show ViewModelWidget;
+import 'package:arxa_kit_ui_library/arxa_kit_ui_library.dart'
+    show ViewModelWidget;
 import 'package:flutter/material.dart';
 
 import 'code_sessions_body.dart';

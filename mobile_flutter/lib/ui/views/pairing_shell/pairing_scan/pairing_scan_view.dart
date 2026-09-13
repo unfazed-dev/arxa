@@ -1,8 +1,11 @@
 // arxa-scaffolder surface: pairing_shell_pairing_scan_view (pairing.scan)
 // arxa-builder: camera QR scan (mobile_scanner) + manual ticket entry.
 import 'package:arxa_kit_ui_library/arxa_kit_ui_library.dart'
-    show ArxaKitNativeAppBar, ArxaKitNativeLoadingIndicator,
-        ArxaKitNativeTextField, StackedView;
+    show
+        ArxaKitNativeAppBar,
+        ArxaKitNativeLoadingIndicator,
+        ArxaKitNativeTextField,
+        StackedView;
 import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 
@@ -15,11 +18,15 @@ class PairingScanView extends StackedView<PairingScanViewModel> {
 
   @override
   Widget builder(
-      BuildContext context, PairingScanViewModel viewModel, Widget? child) {
+    BuildContext context,
+    PairingScanViewModel viewModel,
+    Widget? child,
+  ) {
     final l10n = AppLocalizations.of(context);
     if (viewModel.isBusy) {
       return const Scaffold(
-          body: Center(child: ArxaKitNativeLoadingIndicator()));
+        body: Center(child: ArxaKitNativeLoadingIndicator()),
+      );
     }
     return Scaffold(
       appBar: ArxaKitNativeAppBar(title: l10n.pairingScanTitle),

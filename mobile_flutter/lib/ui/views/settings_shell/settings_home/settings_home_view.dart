@@ -1,7 +1,10 @@
 // arxa-scaffolder surface: settings_shell_settings_view (settings.home)
 // arxa-builder: unpair (drops NodeId + session token, deregisters push).
 import 'package:arxa_kit_ui_library/arxa_kit_ui_library.dart'
-    show ArxaKitGlyphs, ArxaKitNativeAppBar, ArxaKitNativeLoadingIndicator,
+    show
+        ArxaKitGlyphs,
+        ArxaKitNativeAppBar,
+        ArxaKitNativeLoadingIndicator,
         StackedView;
 import 'package:flutter/material.dart';
 
@@ -14,11 +17,15 @@ class SettingsHomeView extends StackedView<SettingsHomeViewModel> {
 
   @override
   Widget builder(
-      BuildContext context, SettingsHomeViewModel viewModel, Widget? child) {
+    BuildContext context,
+    SettingsHomeViewModel viewModel,
+    Widget? child,
+  ) {
     final l10n = AppLocalizations.of(context);
     if (viewModel.isBusy) {
       return const Scaffold(
-          body: Center(child: ArxaKitNativeLoadingIndicator()));
+        body: Center(child: ArxaKitNativeLoadingIndicator()),
+      );
     }
     return Scaffold(
       appBar: ArxaKitNativeAppBar(title: l10n.settingsTitle),

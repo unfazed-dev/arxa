@@ -47,13 +47,16 @@ Approval approval(String id) => Approval(
 );
 
 void main() {
-  test('first emission seeds — an already-pending cache never buzzes', () async {
-    final repo = _FakeRepository()..emit([approval('a1'), approval('a2')]);
-    final notifications = FakeArxaKitNotificationsService();
-    SyncDoorbell(repo, notifications).listen();
-    await Future<void>.delayed(const Duration(milliseconds: 20));
-    expect(notifications.shown, isEmpty);
-  });
+  test(
+    'first emission seeds — an already-pending cache never buzzes',
+    () async {
+      final repo = _FakeRepository()..emit([approval('a1'), approval('a2')]);
+      final notifications = FakeArxaKitNotificationsService();
+      SyncDoorbell(repo, notifications).listen();
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+      expect(notifications.shown, isEmpty);
+    },
+  );
 
   test('a newly-synced pending id buzzes exactly once, content-free', () async {
     final repo = _FakeRepository();
@@ -72,26 +75,36 @@ void main() {
     // for the same id would REPLACE, never stack.
     repo.emit([approval('n1')]);
     await Future<void>.delayed(const Duration(milliseconds: 20));
-    expect(notifications.shown, hasLength(1), reason: 'known id never re-buzzes');
+    expect(
+      notifications.shown,
+      hasLength(1),
+      reason: 'known id never re-buzzes',
+    );
     doorbell.dispose();
   });
 
-  test('decided approvals leave quietly; a re-raised id buzzes again', () async {
-    final repo = _FakeRepository();
-    final notifications = FakeArxaKitNotificationsService();
-    final doorbell = SyncDoorbell(repo, notifications)..listen();
-    repo.emit([approval('x1')]); // seeds x1 as known
-    await Future<void>.delayed(const Duration(milliseconds: 20));
-    // Decided: the row leaves the projection — silence.
-    repo.emit(const []);
-    await Future<void>.delayed(const Duration(milliseconds: 20));
-    expect(notifications.shown, isEmpty);
-    // The engine may legitimately re-raise the same id later (a NEW ask
-    // reusing the rpc id is not this process's buzz) — still deduped.
-    repo.emit([approval('x1')]);
-    await Future<void>.delayed(const Duration(milliseconds: 20));
-    expect(notifications.shown, isEmpty,
-        reason: 'per-process dedupe is the contract; the wake is the APNs rail');
-    doorbell.dispose();
-  });
+  test(
+    'decided approvals leave quietly; a re-raised id buzzes again',
+    () async {
+      final repo = _FakeRepository();
+      final notifications = FakeArxaKitNotificationsService();
+      final doorbell = SyncDoorbell(repo, notifications)..listen();
+      repo.emit([approval('x1')]); // seeds x1 as known
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+      // Decided: the row leaves the projection — silence.
+      repo.emit(const []);
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+      expect(notifications.shown, isEmpty);
+      // The engine may legitimately re-raise the same id later (a NEW ask
+      // reusing the rpc id is not this process's buzz) — still deduped.
+      repo.emit([approval('x1')]);
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+      expect(
+        notifications.shown,
+        isEmpty,
+        reason: 'per-process dedupe is the contract; the wake is the APNs rail',
+      );
+      doorbell.dispose();
+    },
+  );
 }

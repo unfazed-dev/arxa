@@ -1,7 +1,10 @@
 // arxa-scaffolder surface: pairing_shell_connecting_view (pairing.connecting)
 // arxa-builder: connection-state surface; states mirror ConnectionStatus.
 import 'package:arxa_kit_ui_library/arxa_kit_ui_library.dart'
-    show ArxaKitNativeButton, ArxaKitNativeLoadingIndicator, StackedView,
+    show
+        ArxaKitNativeButton,
+        ArxaKitNativeLoadingIndicator,
+        StackedView,
         arxaKitVerticalSpaceSmall;
 import 'package:flutter/material.dart';
 
@@ -14,8 +17,11 @@ class PairingConnectingView extends StackedView<PairingConnectingViewModel> {
   const PairingConnectingView({super.key});
 
   @override
-  Widget builder(BuildContext context, PairingConnectingViewModel viewModel,
-      Widget? child) {
+  Widget builder(
+    BuildContext context,
+    PairingConnectingViewModel viewModel,
+    Widget? child,
+  ) {
     final l10n = AppLocalizations.of(context);
     final error = viewModel.connectionError;
     return Scaffold(

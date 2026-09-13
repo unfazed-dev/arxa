@@ -20,6 +20,7 @@ class Task {
   final String id;
   final String sessionId;
   final String label;
+
   /// 'completed' or 'failed' (killed folds into failed engine-side).
   final String status;
   final int raisedAt;
@@ -37,14 +38,14 @@ class Task {
   );
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'session_id': sessionId,
-        'kind': 'task',
-        'summary': label,
-        'status': status,
-        'raised_at': raisedAt,
-        'finished_at': finishedAt,
-      };
+    'id': id,
+    'session_id': sessionId,
+    'kind': 'task',
+    'summary': label,
+    'status': status,
+    'raised_at': raisedAt,
+    'finished_at': finishedAt,
+  };
 }
 
 /// The entity registration: the tasks table schema mirrors the row the

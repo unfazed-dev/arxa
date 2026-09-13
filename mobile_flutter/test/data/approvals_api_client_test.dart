@@ -9,26 +9,31 @@ import 'package:arxa_studio_mobile/services/transport_service.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  test('a connection-level failure surfaces as ApprovalsOfflineException',
-      () async {
-    // Connected fake serving a loopback port nobody listens on: the request
-    // fails at the socket layer, exactly like the zombie link.
-    final transport = FakeTransportService();
-    await transport.beginPairing('ticket');
-    final api = ApprovalsApiClient(transport: transport);
+  test(
+    'a connection-level failure surfaces as ApprovalsOfflineException',
+    () async {
+      // Connected fake serving a loopback port nobody listens on: the request
+      // fails at the socket layer, exactly like the zombie link.
+      final transport = FakeTransportService();
+      await transport.beginPairing('ticket');
+      final api = ApprovalsApiClient(transport: transport);
 
-    await expectLater(
-      () => api.list(),
-      throwsA(isA<ApprovalsOfflineException>()),
-    );
-  });
+      await expectLater(
+        () => api.list(),
+        throwsA(isA<ApprovalsOfflineException>()),
+      );
+    },
+  );
 
-  test('no tunnel (studioUrl null) stays the plain offline exception', () async {
-    final api = ApprovalsApiClient(transport: FakeTransportService());
+  test(
+    'no tunnel (studioUrl null) stays the plain offline exception',
+    () async {
+      final api = ApprovalsApiClient(transport: FakeTransportService());
 
-    await expectLater(
-      () => api.list(),
-      throwsA(isA<ApprovalsOfflineException>()),
-    );
-  });
+      await expectLater(
+        () => api.list(),
+        throwsA(isA<ApprovalsOfflineException>()),
+      );
+    },
+  );
 }

@@ -5,7 +5,8 @@ import 'package:arxa_studio_mobile/data/approvals/approvals_repository.dart';
 import 'package:arxa_studio_mobile/data/conversation/conversation.dart';
 import 'package:arxa_studio_mobile/data/conversation/conversation_media.dart';
 import 'package:arxa_studio_mobile/data/conversation/conversation_repository.dart';
-import 'package:arxa_kit_ui_library/arxa_kit_ui_library.dart' show ViewModelBuilder;
+import 'package:arxa_kit_ui_library/arxa_kit_ui_library.dart'
+    show ViewModelBuilder;
 import 'package:arxa_studio_mobile/l10n/app_localizations.dart';
 import 'package:arxa_studio_mobile/services/transport_service.dart';
 import 'package:arxa_studio_mobile/ui/views/code_shell/code_conversation/code_conversation_body.dart';
@@ -28,8 +29,13 @@ class _FakeConversationRepository implements ConversationRepository {
   Future<void> setMode(String sessionId, String mode) async {
     lastModeCall = (sessionId, mode);
   }
+
   @override
-  Future<void> selectModel(String sessionId, String provider, String model) async {
+  Future<void> selectModel(
+    String sessionId,
+    String provider,
+    String model,
+  ) async {
     lastSelectCall = (sessionId, provider, model);
   }
 
@@ -45,7 +51,9 @@ class _FakeConversationRepository implements ConversationRepository {
 
   @override
   Future<({String kind, String text})> runCommand(
-          String sessionId, String line) async {
+    String sessionId,
+    String line,
+  ) async {
     lastCommandLine = line;
     return (kind: 'success', text: 'Compacted 3 history items.');
   }
@@ -73,21 +81,27 @@ class _FakeConversationRepository implements ConversationRepository {
   @override
   Stream<List<CodeSession>> watchSessions() => const Stream.empty();
   @override
-  Future<List<ConversationMessage>> transcript(String sessionId) async => const [];
+  Future<List<ConversationMessage>> transcript(String sessionId) async =>
+      const [];
   @override
-  Stream<List<ConversationMessage>> watchTranscript(String sessionId) => const Stream.empty();
+  Stream<List<ConversationMessage>> watchTranscript(String sessionId) =>
+      const Stream.empty();
   @override
   Future<void> refreshSessions() async {}
   @override
   Future<void> refreshSession(String sessionId) async {}
   @override
-  Future<void> send(String sessionId, String text,
-          {String mode = 'queue',
-          List<({String mediaType, String data})> images = const []}) async {}
+  Future<void> send(
+    String sessionId,
+    String text, {
+    String mode = 'queue',
+    List<({String mediaType, String data})> images = const [],
+  }) async {}
   @override
   Future<Map<String, dynamic>> attachment(
-          String sessionId, String attachmentId) async =>
-      const {};
+    String sessionId,
+    String attachmentId,
+  ) async => const {};
 }
 
 class _NoTransport implements TransportService {
@@ -142,24 +156,28 @@ class _ScriptedMedia extends ConversationMedia {
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  testWidgets('the + opens the Add context sheet with wired tiles',
-      (tester) async {
+  testWidgets('the + opens the Add context sheet with wired tiles', (
+    tester,
+  ) async {
     final repo = _FakeConversationRepository();
-    final viewModel = CodeConversationViewModel('s1', repo,
-        _FakeApprovalsRepository(), () => Future.value(),
-        _ScriptedMedia(null));
-    await tester.pumpWidget(ViewModelBuilder<CodeConversationViewModel>.
-        reactive(
-          viewModelBuilder: () => viewModel,
-          builder: (context, vm, child) => MaterialApp(
-            locale: const Locale('en'),
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
-            supportedLocales: AppLocalizations.supportedLocales,
-            home: Scaffold(
-              body: CodeConversationBody(viewModel: vm),
-            ),
-          ),
-        ));
+    final viewModel = CodeConversationViewModel(
+      's1',
+      repo,
+      _FakeApprovalsRepository(),
+      () => Future.value(),
+      _ScriptedMedia(null),
+    );
+    await tester.pumpWidget(
+      ViewModelBuilder<CodeConversationViewModel>.reactive(
+        viewModelBuilder: () => viewModel,
+        builder: (context, vm, child) => MaterialApp(
+          locale: const Locale('en'),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(body: CodeConversationBody(viewModel: vm)),
+        ),
+      ),
+    );
 
     await tester.tap(find.byIcon(LucideIcons.plus));
     await tester.pumpAndSettle();
@@ -169,35 +187,46 @@ void main() {
     expect(find.text('Photos'), findsOneWidget);
     expect(find.text('Files'), findsOneWidget);
     expect(find.text('Show recent photos'), findsOneWidget);
-    expect(find.text('Connectors'), findsNothing,
-        reason: 'the sheet drops the connectors row');
+    expect(
+      find.text('Connectors'),
+      findsNothing,
+      reason: 'the sheet drops the connectors row',
+    );
   });
 
-  testWidgets('the + sheet lists the engine command palette and runs one',
-      (tester) async {
+  testWidgets('the + sheet lists the engine command palette and runs one', (
+    tester,
+  ) async {
     final repo = _FakeConversationRepository()
       ..palette = const [
-        EngineCommand(name: 'compact',
-            description: 'Compact older conversation history'),
-        EngineCommand(name: 'feedback',
-            description: 'record feedback about this session',
-            inputHint: '<text>'),
+        EngineCommand(
+          name: 'compact',
+          description: 'Compact older conversation history',
+        ),
+        EngineCommand(
+          name: 'feedback',
+          description: 'record feedback about this session',
+          inputHint: '<text>',
+        ),
       ];
-    final viewModel = CodeConversationViewModel('s1', repo,
-        _FakeApprovalsRepository(), () => Future.value(),
-        _ScriptedMedia(null));
-    await tester.pumpWidget(ViewModelBuilder<CodeConversationViewModel>.
-        reactive(
-          viewModelBuilder: () => viewModel,
-          builder: (context, vm, child) => MaterialApp(
-            locale: const Locale('en'),
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
-            supportedLocales: AppLocalizations.supportedLocales,
-            home: Scaffold(
-              body: CodeConversationBody(viewModel: vm),
-            ),
-          ),
-        ));
+    final viewModel = CodeConversationViewModel(
+      's1',
+      repo,
+      _FakeApprovalsRepository(),
+      () => Future.value(),
+      _ScriptedMedia(null),
+    );
+    await tester.pumpWidget(
+      ViewModelBuilder<CodeConversationViewModel>.reactive(
+        viewModelBuilder: () => viewModel,
+        builder: (context, vm, child) => MaterialApp(
+          locale: const Locale('en'),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(body: CodeConversationBody(viewModel: vm)),
+        ),
+      ),
+    );
 
     await tester.tap(find.byIcon(LucideIcons.plus));
     await tester.pumpAndSettle();
@@ -211,8 +240,11 @@ void main() {
     expect(find.text('Compact older conversation history'), findsOneWidget);
     expect(find.text('/feedback'), findsOneWidget);
     expect(find.text('<text>'), findsOneWidget);
-    expect(find.text('/model'), findsOneWidget,
-        reason: 'the model row is synthesized to match the studio list');
+    expect(
+      find.text('/model'),
+      findsOneWidget,
+      reason: 'the model row is synthesized to match the studio list',
+    );
 
     // Running a command rides the engine registry — the line lands on
     // the repository and the sheet closes with the result toast.
@@ -220,7 +252,10 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(repo.lastCommandLine, '/compact');
-    expect(find.text('Compacted 3 history items.'), findsOneWidget,
-        reason: 'the engine result text toasts verbatim');
+    expect(
+      find.text('Compacted 3 history items.'),
+      findsOneWidget,
+      reason: 'the engine result text toasts verbatim',
+    );
   });
 }

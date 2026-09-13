@@ -48,8 +48,9 @@ class FakeTransportService implements TransportService {
 
   final int port;
   final _controller = StreamController<ArxaConnectionStatus>.broadcast();
-  ArxaConnectionStatus _current =
-      const ArxaConnectionStatus(ArxaConnectionState.notPaired);
+  ArxaConnectionStatus _current = const ArxaConnectionStatus(
+    ArxaConnectionState.notPaired,
+  );
   String? _pushPlatform;
   String? _pushToken;
 
@@ -69,16 +70,24 @@ class FakeTransportService implements TransportService {
   @override
   Future<void> beginPairing(String ticket) async {
     if (ticket.trim().isEmpty) {
-      _emit(const ArxaConnectionStatus(ArxaConnectionState.notPaired,
-          error: 'Empty pairing ticket'));
+      _emit(
+        const ArxaConnectionStatus(
+          ArxaConnectionState.notPaired,
+          error: 'Empty pairing ticket',
+        ),
+      );
       return;
     }
     _emit(const ArxaConnectionStatus(ArxaConnectionState.pairing));
     await Future<void>.delayed(const Duration(milliseconds: 400));
     _emit(const ArxaConnectionStatus(ArxaConnectionState.connecting));
     await Future<void>.delayed(const Duration(milliseconds: 400));
-    _emit(ArxaConnectionStatus(ArxaConnectionState.connected,
-        studioUrl: _studioUrl));
+    _emit(
+      ArxaConnectionStatus(
+        ArxaConnectionState.connected,
+        studioUrl: _studioUrl,
+      ),
+    );
   }
 
   @override
@@ -88,9 +97,8 @@ class FakeTransportService implements TransportService {
   }
 
   /// Test hook — what the fake last received.
-  (String, String)? get lastPushToken => _pushPlatform == null
-      ? null
-      : (_pushPlatform!, _pushToken!);
+  (String, String)? get lastPushToken =>
+      _pushPlatform == null ? null : (_pushPlatform!, _pushToken!);
 
   @override
   Future<void> unpair() async {
@@ -122,8 +130,12 @@ class FakeTransportService implements TransportService {
     if (!storedPairing) return;
     _emit(const ArxaConnectionStatus(ArxaConnectionState.connecting));
     await Future<void>.delayed(const Duration(milliseconds: 50));
-    _emit(ArxaConnectionStatus(ArxaConnectionState.connected,
-        studioUrl: _studioUrl));
+    _emit(
+      ArxaConnectionStatus(
+        ArxaConnectionState.connected,
+        studioUrl: _studioUrl,
+      ),
+    );
   }
 
   @override
