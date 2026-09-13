@@ -1,0 +1,160 @@
+# Mobile release CI (skills/arxa-deployer) — PREPARE then HALT.
+#
+# This workflow NEVER publishes to a store. It builds release-shaped
+# artifacts, validates signing configuration, and stops at the human deploy
+# gate (HUMAN GATE 3: target + version + releasing account confirmed by a
+# person; `arxa deploy --approval` is human-supplied — CI cannot mint it).
+# The actual store lanes (`fastlane android beta|production`,
+# `fastlane ios beta|release` — see mobile_flutter/fastlane/Fastfile) are
+# OPERATOR-RUN after that approval. Distribution plan: M5 (TestFlight + Play
+# internal first, production behind the gate).
+#
+# Signing custody (no checked-in secrets):
+#   Android — android/key.properties (gitignored), written from repo secrets
+#   ANDROID_KEYSTORE_BASE64 / ANDROID_KEYSTORE_PASSWORD / ANDROID_KEY_ALIAS /
+#   ANDROID_KEY_PASSWORD when present. Absent → a DISPOSABLE test-only
+#   keystore is created inside the job, used for the release-shaped build,
+#   and destroyed with the workspace — it proves the pipeline shape, never
+#   masquerades as a release artifact (the AAB is stamped test-signed).
+#   iOS — match-owned (MATCH_GIT_URL secret + certificates); with no release
+#   identity (AXS-019 family) the job archives unsigned (no-codesign) and
+#   stops at doctor. Development signing is never substituted for a release
+#   claim.
+#
+# Required secrets are documented in docs/ci/setup.md.
+name: mobile-release
+
+on:
+  workflow_dispatch:
+  push:
+    tags: ["mobile-v*"]
+
+concurrency:
+  group: mobile-release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  android-release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    # Secret custody: signing secrets live in this environment, not as bare
+    # repo secrets (same pattern as desktop-release.yml's `environment:
+    # release`).
+    environment: mobile-release
+    steps:
+      - name: Checkout arxa
+        uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 3.44.9 # SSOT: mobile_flutter/.fvmrc
+          cache: true
+
+      - name: Signing inputs (presence only — never printed)
+        id: signing
+        working-directory: mobile_flutter/android
+        run: |
+          if [ -n "${ANDROID_KEYSTORE_BASE64:-}" ] && [ -n "${ANDROID_KEYSTORE_PASSWORD:-}" ] \
+            && [ -n "${ANDROID_KEY_ALIAS:-}" ] && [ -n "${ANDROID_KEY_PASSWORD:-}" ]; then
+            echo "${ANDROID_KEYSTORE_BASE64}" | base64 --decode > app/upload-keystore.jks
+            printf 'storeFile=upload-keystore.jks\nstorePassword=%s\nkeyAlias=%s\nkeyPassword=%s\n' \
+              "$ANDROID_KEYSTORE_PASSWORD" "$ANDROID_KEY_ALIAS" "$ANDROID_KEY_PASSWORD" > key.properties
+            echo "mode=release" >> "$GITHUB_OUTPUT"
+            echo "signing inputs: present (from secrets)"
+          else
+            # Disposable test-only keystore — created, used, destroyed with
+            # the workspace. Proves the release pipeline shape; the artifact
+            # is test-signed and labelled as such.
+            keytool -genkeypair -keystore app/test-upload.jks -alias arxa-test \
+              -keyalg RSA -keysize 2048 -validity 1 \
+              -storepass arxa-test-only -keypass arxa-test-only \
+              -dname "CN=arxa disposable test,O=Arxa Digital Solutions,C=AU"
+            printf 'storeFile=test-upload.jks\nstorePassword=arxa-test-only\nkeyAlias=arxa-test\nkeyPassword=arxa-test-only\n' > key.properties
+            echo "mode=test" >> "$GITHUB_OUTPUT"
+            echo "signing inputs: ABSENT — using a disposable test-only keystore (artifact is NOT release-signed)"
+          fi
+
+      - name: Build release-shaped AAB
+        working-directory: mobile_flutter
+        run: |
+          flutter build appbundle --release
+          ls -l build/app/outputs/bundle/release/*.aab
+
+      - name: Checksums + artifact
+        working-directory: mobile_flutter
+        run: |
+          aab=$(ls build/app/outputs/bundle/release/*.aab)
+          if [ "${{ steps.signing.outputs.mode }}" = "test" ]; then
+            mv "$aab" "${aab%.aab}.TEST-SIGNED.aab"
+            aab="${aab%.aab}.TEST-SIGNED.aab"
+          fi
+          shasum -a 256 "$aab" | tee "$(basename "$aab").sha256"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: android-release-shaped
+          path: mobile_flutter/build/app/outputs/bundle/release/*
+          if-no-files-found: error
+
+      - name: HALT — human deploy gate
+        run: |
+          echo "::notice::PREPARED and HALTED at the deploy gate."
+          echo "Artifact is built and checksummed; nothing has been uploaded to Play."
+          echo "To ship: a person confirms target+version+account (HUMAN GATE 3) and runs"
+          echo "  cd mobile_flutter && fastlane android beta      # Play internal track"
+          echo "  cd mobile_flutter && fastlane android production # Play production"
+          echo "CI never mints the approval token."
+
+  ios-release:
+    runs-on: [self-hosted, macOS, ARM64, arxa]
+    timeout-minutes: 60
+    environment: mobile-release
+    steps:
+      - name: Checkout arxa
+        uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 3.44.9 # SSOT: mobile_flutter/.fvmrc
+
+      - name: Signing contract (ids + team, from the committed project)
+        run: scripts/check.sh mobile-signing
+
+      - name: Release-identity doctor (presence only — never printed)
+        run: |
+          ready=1
+          [ -n "${MATCH_GIT_URL:-}" ] || { echo "match repo (MATCH_GIT_URL): ABSENT"; ready=0; }
+          if security find-identity -v -p codesigning 2>/dev/null | grep -q "iPhone Distribution"; then
+            echo "iPhone Distribution identity: present"
+          else
+            echo "iPhone Distribution identity: ABSENT (AXS-019 family — external)"
+            ready=0
+          fi
+          echo "release-identity-ready=$ready" >> "$GITHUB_ENV"
+
+      - name: Validate archive configuration (unsigned — never dev-signed)
+        working-directory: mobile_flutter
+        run: |
+          # No release identity ⇒ archive with codesigning OFF. This proves
+          # the Xcode project, pods and export configuration build to an
+          # archive shape; it is never presented as a signed release.
+          flutter build ios --release --no-codesign
+
+      - name: HALT — human deploy gate
+        run: |
+          echo "::notice::PREPARED and HALTED at the deploy gate (doctor stop)."
+          if [ "${release-identity-ready}" = "0" ]; then
+            echo "Release identity incomplete — TestFlight lane would fail at match."
+            echo "After the Apple credentials are provisioned (AXS-019), the same job"
+            echo "graduates to a signed archive without workflow changes."
+          fi
+          echo "Nothing has been uploaded to App Store Connect."
+          echo "To ship: a person confirms target+version+account (HUMAN GATE 3) and runs"
+          echo "  cd mobile_flutter && fastlane ios beta     # TestFlight"
+          echo "  cd mobile_flutter && fastlane ios release  # App Store"
+          echo "CI never mints the approval token."

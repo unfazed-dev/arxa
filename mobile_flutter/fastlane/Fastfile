@@ -1,0 +1,131 @@
+# Fastfile (skills/arxa-deployer) — store lanes for arxa studio mobile.
+#
+# LAW: the upload lanes below are OPERATOR-RUN. CI (.github/workflows/
+# mobile-release.yml) builds and validates, then HALTS at the human deploy
+# gate — HUMAN GATE 3 (target + version + releasing account confirmed by a
+# person). Nothing here mints that approval, and no secret is ever printed
+# or committed: Android signing comes from android/key.properties (gitignored,
+# CI writes it from secrets); iOS signing comes from match (MATCH_GIT_URL).
+#
+# Store listing locales ship in every launch locale (en + pl) once metadata
+# lanes exist — the metadata locales must match the app's ARB set.
+
+default_platform(:android)
+
+platform :android do
+  # ---- credential presence (fail CLEAR, print nothing secret) -------------
+  desc "Report signing/play credentials presence without printing values"
+  lane :doctor do
+    kp = File.expand_path("../android/key.properties", __dir__)
+    if File.exist?(kp)
+      props = File.read(kp)
+      keys = %w[storeFile storePassword keyAlias keyPassword]
+      missing = keys.reject { |k| props.match?(/^#{k}=/) }
+      UI.user_error!("android/key.properties present but missing: #{missing.join(', ')}") unless missing.empty?
+      UI.success("key.properties: present, all four inputs")
+    else
+      UI.message("key.properties: ABSENT (release builds will fail clearly)")
+    end
+    if ENV["PLAY_SERVICE_ACCOUNT_JSON"]
+      UI.success("Play service account: present")
+    else
+      UI.message("Play service account (PLAY_SERVICE_ACCOUNT_JSON): ABSENT")
+    end
+  end
+
+  private_lane :require_android_release_inputs do
+    kp = File.expand_path("../android/key.properties", __dir__)
+    UI.user_error!("android/key.properties absent — release builds refuse to sign " \
+      "(see ../docs/ci/setup.md; CI writes it from secrets)") unless File.exist?(kp)
+    UI.user_error!("PLAY_SERVICE_ACCOUNT_JSON unset — cannot upload to Play") unless ENV["PLAY_SERVICE_ACCOUNT_JSON"]
+  end
+
+  desc "Build the release-shaped AAB (no upload)"
+  lane :build do
+    sh("flutter", "build", "appbundle", "--release")
+  end
+
+  desc "Upload to Play internal track (M5: first distribution rung)"
+  lane :beta do
+    require_android_release_inputs
+    build
+    upload_to_play_store(
+      track: "internal",
+      aab: "build/app/outputs/bundle/release/app-release.aab",
+    )
+  end
+
+  desc "Upload to Play production (behind the human deploy gate)"
+  lane :production do
+    require_android_release_inputs
+    build
+    upload_to_play_store(
+      track: "production",
+      aab: "build/app/outputs/bundle/release/app-release.aab",
+    )
+  end
+end
+
+platform :ios do
+  # Export options are carried HERE, not in an ios/ExportOptions.plist —
+  # the committed Xcode tree needs no signing edits. aps-environment: the
+  # committed Runner.entitlements pins "development" (correct for
+  # dev-signed builds); the app-store export profile flips it to production
+  # at re-sign — verified in the release smoke, never by substituting a
+  # development signature for a release claim.
+  APP_STORE_EXPORT_OPTIONS = {
+    method: "app-store",
+    signingStyle: "manual", # match owns distribution certificates/profiles
+    teamID: "43GNRCGQXQ",
+  }.freeze
+
+  desc "Report Apple signing credentials presence without printing values"
+  lane :doctor do
+    if ENV["MATCH_GIT_URL"]
+      UI.success("match repo (MATCH_GIT_URL): present")
+    else
+      UI.message("match repo (MATCH_GIT_URL): ABSENT")
+    end
+    match_cert_count = Dir[File.expand_path("~/Library/MobileDevice/Provisioning Profiles/*.mobileprovision", Dir.home)].length
+    UI.message("local provisioning profiles: #{match_cert_count}")
+    UI.message("App Store Connect API key (APP_STORE_CONNECT_API_KEY_*): " \
+      "#{ENV['APP_STORE_CONNECT_API_KEY_KEY_ID'] ? 'present' : 'ABSENT'}")
+  end
+
+  private_lane :require_ios_release_inputs do
+    UI.user_error!("MATCH_GIT_URL unset — match cannot fetch distribution " \
+      "signing (see ../docs/ci/setup.md)") unless ENV["MATCH_GIT_URL"]
+    UI.user_error!("APP_STORE_CONNECT_API_KEY_KEY_ID unset — cannot upload to " \
+      "TestFlight/App Store") unless ENV["APP_STORE_CONNECT_API_KEY_KEY_ID"]
+  end
+
+  desc "Build an unsigned release archive (validation only — never a release claim)"
+  lane :validate do
+    sh("flutter", "build", "ios", "--release", "--no-codesign")
+    UI.success("archive shape validated (unsigned; no codesigning identity available)")
+  end
+
+  desc "Upload to TestFlight (M5: first distribution rung)"
+  lane :beta do
+    require_ios_release_inputs
+    match(type: "appstore", readonly: true)
+    gym(
+      workspace: "ios/Runner.xcworkspace",
+      scheme: "Runner",
+      export_options: APP_STORE_EXPORT_OPTIONS,
+    )
+    upload_to_testflight(skip_waiting_for_build_processing: true)
+  end
+
+  desc "Submit to App Store review"
+  lane :release do
+    require_ios_release_inputs
+    match(type: "appstore", readonly: true)
+    gym(
+      workspace: "ios/Runner.xcworkspace",
+      scheme: "Runner",
+      export_options: APP_STORE_EXPORT_OPTIONS,
+    )
+    deliver(submit_for_review: true, automatic_release: false)
+  end
+end

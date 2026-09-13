@@ -1,0 +1,10 @@
+# Matchfile (skills/arxa-deployer) — match storage is OPERATOR-OWNED.
+# The git URL is supplied via environment (never committed): a private repo
+# holding the distribution certificates/profiles. When unset, match fails
+# clearly; CI never needs it (the release workflow stops at doctor).
+git_url(ENV.fetch("MATCH_GIT_URL", ""))
+storage_mode("git")
+
+type("appstore") # default; lanes pin readonly at fetch time
+app_identifier(["solutions.arxadigital.arxa.mobile"])
+team_id("43GNRCGQXQ")

@@ -1,0 +1,92 @@
+# CI frame for the arxa monorepo — the skills/arxa-cicd check contract.
+#
+# Every job runs `scripts/check.sh <area>` VERBATIM: local green = CI green,
+# and no validator is duplicated in this file. The decisions live in
+# docs/ci/decisions.md (recorded 2026-09-14 from the mobile closeout brief —
+# this workflow is their enforcement, not their home).
+#
+# Runner policy (recorded): the gate lanes run on GitHub-hosted Ubuntu —
+# the mobile-gate exception to docs/ci/self-hosted-runners.md's all-self-hosted
+# rule; nothing in format/analyze/test or the Android build needs Apple
+# hardware, and queueing them behind the single macOS box would couple the
+# two platforms' availability. iOS lanes (archive/export, fastlane) live in
+# mobile-release.yml on the existing [self-hosted, macOS, ARM64, arxa] runner.
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  commits:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # Subject checks need the full PR range, not the merge commit.
+          fetch-depth: 0
+      - run: scripts/check.sh commits
+
+  pr-title:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      PR_TITLE: ${{ github.event.pull_request.title || '' }}
+    steps:
+      - uses: actions/checkout@v4
+      - run: scripts/check.sh pr-title
+
+  gates:
+    # The pipeline's own validators (`arxa gate --all`) — wrapped, never
+    # re-implemented here. Needs only the Dart SDK (bundled with the
+    # Flutter install); gate exit 2 (env/not-applicable) is a skip, not red.
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          # SSOT is mobile_flutter/.fvmrc; keep the two in sync.
+          flutter-version: 3.44.9
+          cache: true
+      - run: scripts/check.sh gates
+
+  mobile:
+    # The GitHub-hosted Ubuntu Android/mobile lane (recorded decision).
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 3.44.9 # SSOT: mobile_flutter/.fvmrc
+          cache: true
+      - run: scripts/check.sh mobile
+
+  mobile-signing:
+    # Pure file assertions (ids, gitignored signing inputs, no debug-key
+    # release) — no toolchain needed, so no setup steps.
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - run: scripts/check.sh mobile-signing
+
+  transport:
+    # kit/studio_transport: Dart tests + the Rust iroh transport (cargo).
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 3.44.9 # SSOT: mobile_flutter/.fvmrc
+          cache: true
+      - uses: dtolnay/rust-toolchain@stable
+      - run: scripts/check.sh transport
