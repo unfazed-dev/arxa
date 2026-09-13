@@ -86,8 +86,8 @@ platform :ios do
     else
       UI.message("match repo (MATCH_GIT_URL): ABSENT")
     end
-    match_cert_count = Dir[File.expand_path("~/Library/MobileDevice/Provisioning Profiles/*.mobileprovision", Dir.home)].length
-    UI.message("local provisioning profiles: #{match_cert_count}")
+    provisioning_profile_count = Dir[File.expand_path("~/Library/MobileDevice/Provisioning Profiles/*.mobileprovision", Dir.home)].length
+    UI.message("local provisioning profiles: #{provisioning_profile_count}")
     UI.message("App Store Connect API key (APP_STORE_CONNECT_API_KEY_*): " \
       "#{ENV['APP_STORE_CONNECT_API_KEY_KEY_ID'] ? 'present' : 'ABSENT'}")
   end

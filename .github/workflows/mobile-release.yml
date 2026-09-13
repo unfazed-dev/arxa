@@ -73,7 +73,7 @@ jobs:
             keytool -genkeypair -keystore app/test-upload.jks -alias arxa-test \
               -keyalg RSA -keysize 2048 -validity 1 \
               -storepass arxa-test-only -keypass arxa-test-only \
-              -dname "CN=arxa disposable test,O=Arxa Digital Solutions,C=AU"
+              -dname "CN=arxa disposable test,O=Arxa Digital Solutions"
             printf 'storeFile=test-upload.jks\nstorePassword=arxa-test-only\nkeyAlias=arxa-test\nkeyPassword=arxa-test-only\n' > key.properties
             echo "mode=test" >> "$GITHUB_OUTPUT"
             echo "signing inputs: ABSENT — using a disposable test-only keystore (artifact is NOT release-signed)"

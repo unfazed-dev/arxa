@@ -8,8 +8,9 @@
 // This is a config contract test: it pins the gradle file's shape so a
 // refactor cannot quietly reintroduce the debug-key fallback. The live
 // behavior (bundleRelease fails without key.properties, signs with a real
-// keystore when present) is exercised by the release smoke — see
-// evidence/release-smoke-2026-09-14.md.
+// keystore when present) is exercised by the release smoke — PENDING: an
+// external, credential-gated step owned by Task 16 that has not been run;
+// until its evidence lands, this contract test is the only guard.
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';

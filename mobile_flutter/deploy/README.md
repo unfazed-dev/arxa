@@ -34,6 +34,6 @@ never touched without an explicit go.
 - **OTA**: `../shorebird.yaml` is a dormant extension point (empty `app_id`)
   — the migration spec's distribution plan (M5) has no OTA rows; activation
   steps are in that file.
-- **Physical-device gates** (iPhone/APNs, Android/FCM/APK): a separate step
-  writes `physical-gates.md` with exact commands and redaction rules.
-
+- **Physical-device gates** (iPhone/APNs, Android/FCM/APK): see
+  `physical-gates.md` in this directory for exact commands and redaction
+  rules; execution is device-gated (Task 16).
