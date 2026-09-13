@@ -19,35 +19,52 @@ void main() {
   final text = gradle.join('\n');
   final gitignore = File('android/.gitignore').readAsLinesSync();
 
-  test('kit.mobile.release: application id stays solutions.arxadigital.arxa.mobile', () {
-    expect(text, contains('applicationId = "solutions.arxadigital.arxa.mobile"'));
-  });
+  test(
+    'kit.mobile.release: application id stays solutions.arxadigital.arxa.mobile',
+    () {
+      expect(
+        text,
+        contains('applicationId = "solutions.arxadigital.arxa.mobile"'),
+      );
+    },
+  );
 
-  test('kit.mobile.release: signing inputs come from gitignored key.properties', () {
-    expect(text, contains('rootProject.file("key.properties")'));
-    // All four inputs are checked before any is used — a half-written
-    // key.properties must not produce a half-signed build.
-    expect(
-      text,
-      contains('listOf("storeFile", "storePassword", "keyAlias", "keyPassword")'),
-    );
-    expect(gitignore, contains('key.properties'));
-  });
+  test(
+    'kit.mobile.release: signing inputs come from gitignored key.properties',
+    () {
+      expect(text, contains('rootProject.file("key.properties")'));
+      // All four inputs are checked before any is used — a half-written
+      // key.properties must not produce a half-signed build.
+      expect(
+        text,
+        contains(
+          'listOf("storeFile", "storePassword", "keyAlias", "keyPassword")',
+        ),
+      );
+      expect(gitignore, contains('key.properties'));
+    },
+  );
 
-  test('kit.mobile.release: release never unconditionally signs with the debug key', () {
-    // The pre-Task-12 shape was `signingConfig = signingConfigs.getByName("debug")`
-    // inside the release buildType — a store artifact signed with the debug
-    // key. It must not come back.
-    expect(text, isNot(contains('getByName("debug")')));
-    // The release config is wired only behind the readiness guard.
-    expect(text, contains('if (releaseSigningReady)'));
-  });
+  test(
+    'kit.mobile.release: release never unconditionally signs with the debug key',
+    () {
+      // The pre-Task-12 shape was `signingConfig = signingConfigs.getByName("debug")`
+      // inside the release buildType — a store artifact signed with the debug
+      // key. It must not come back.
+      expect(text, isNot(contains('getByName("debug")')));
+      // The release config is wired only behind the readiness guard.
+      expect(text, contains('if (releaseSigningReady)'));
+    },
+  );
 
-  test('kit.mobile.release: missing signing inputs fail a release build clearly', () {
-    expect(text, contains('GradleException'));
-    // The guard fires on packaging/bundling tasks, not on debug builds or
-    // plain configuration (`gradle help` must stay green without a keystore).
-    expect(text, contains('package'));
-    expect(text, contains('bundle'));
-  });
+  test(
+    'kit.mobile.release: missing signing inputs fail a release build clearly',
+    () {
+      expect(text, contains('GradleException'));
+      // The guard fires on packaging/bundling tasks, not on debug builds or
+      // plain configuration (`gradle help` must stay green without a keystore).
+      expect(text, contains('package'));
+      expect(text, contains('bundle'));
+    },
+  );
 }

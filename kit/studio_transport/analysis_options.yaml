@@ -7,3 +7,7 @@ analyzer:
     # vendored build tooling with its own package context — not part of this
     # package's Dart surface.
     - cargokit/**
+    - build/**
+    - android/**
+    - ios/**
+    - macos/**
