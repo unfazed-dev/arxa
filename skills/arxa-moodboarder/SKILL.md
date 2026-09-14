@@ -10,7 +10,7 @@ license: MIT
 
 ```
 story-mapper  →  moodboarder  →  arxa-designer
-                 (docs/moodboards/)
+                 (<app-dir>/moodboard/)
 ```
 
 Elicits **visual direction**, the same way the story-mapper elicits scope:
@@ -59,7 +59,15 @@ Repo-mode project (an `arxa.json` marker above cwd): boards at
   brief, the direction, and ONLY the selected references with their scores,
   and REFUSES to run while `selectionStatus` is not `approved`. On
   new-style records it also REFUSES while `suitorChoice` is absent, and
-  renders the chosen suitor (+ remixes) as the mandate's token spine.
+  renders the chosen suitor (+ remixes) as the mandate's token spine —
+  ACTUAL HEXES, not prose: each suitor's palette is the derived palette
+  object (`arxa palette derive` over its palette-credited reference), so
+  a remix clause like "palette from C" is a mechanical object swap.
+- The seeded five the designer receives are this audition's slot-fill
+  record: default slot = brandColors-derived → else the winning suitor
+  (remix applied) → else the Marine Blue fallback; slots 2–5 = the two
+  declined suitors' palettes → remaining selected references ranked by
+  weighted score → fallback-five backfill; swatch sets dedup throughout.
 - `arxa-designer`: consume the commission as a binding contract before
   authoring; the boards' "patterns this slice must have" lists remain the
   per-epic visual bar behind it.
@@ -68,15 +76,17 @@ Repo-mode project (an `arxa.json` marker above cwd): boards at
 
 - `references/gathering-capture.md` — load for step 2 (Gather): the subagent
   prompt template; and step 3 (Capture): arxa lens shot commands, viewport
-  args, and the shot filename convention.
+  args, the shot filename convention, and the two palette-derivation
+  inputs (reference URL / shot on disk) with their evidence landing.
 - `references/assembly-verify-score.md` — load for step 4 (Assemble): the
-  board doc format; step 5 (Verify): the runnable shot-resolution check; and
-  scoring references against the intake-derived rubric (including the
-  locked-criterion proof requirement).
+  board doc format; step 5 (Verify): the runnable shot- and
+  evidence-resolution check; and scoring references against the
+  intake-derived rubric (including the locked-criterion proof requirement).
 - `references/record-selection.md` — load when writing the moodboard into
   `intake/answers.json` and re-emitting, and when running the human
   selection gate (ranked references, the ≥3.5 proposal heuristic, token
-  extraction).
+  extraction with engine-derived palettes).
 - `references/suitors.md` — load when synthesizing the three candidate
   directions (the second human gate) after selection is `approved`: synthesis
-  rules, the primary/remix gate, and the suitor JSON shape.
+  rules, the derived palette object law, the primary/remix gate, and the
+  suitor JSON shape.

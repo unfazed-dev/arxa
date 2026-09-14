@@ -42,12 +42,13 @@ moodboarding — here we only take plain shots.
 | device-viewport shots (390/744) | pass the viewport as args: `… 390 844` / `… 744 1133` — references inform a full-parity app |
 | full-page (below the fold) | `lens_shot.dart … --full` — captures the whole scroll height |
 | computed design tokens | `arxa lens tokens <url>` → `extractTokens` (`arxa/lib/lens/tokens.dart`) — palette/type/radius measured from the live DOM; the verb the suitor evidence layer is built on |
+| derived palette (5 hexes + anchors + selection trail) | `arxa palette derive --from <input> --json` — the palette engine (`arxa/lib/palette_derive.dart`); the two moodboard-side inputs are below |
 
 ```bash
 # Per-slice isolation is built in: every `dart run` launches its own headless
 # Chrome with a throwaway temp profile and an ephemeral CDP port — slices can
 # run in parallel with no env juggling and no shared browser state.
-dart run arxa/tool/lens_shot.dart <url> docs/moodboards/shots/<slice>/<ref>__<screen>.png 390 844
+dart run arxa/tool/lens_shot.dart <url> moodboard/shots/<slice>/<ref>__<screen>.png 390 844
 ```
 
 **Never shoot the user's browser.** The lens always launches its own headless
@@ -55,9 +56,32 @@ Chrome (`--headless=new`, temp `--user-data-dir`, port 0 = ephemeral), so the
 user's tabs are never touched. Log the final URL + title as provenance per
 shot.
 
-- Output: `docs/moodboards/shots/<slice-slug>/<ref-slug>__<screen-slug>.png`
+- Output: `moodboard/shots/<slice-slug>/<ref-slug>__<screen-slug>.png`
   — lowercase ascii, double-underscore separators, numbered `__2` when one
   screen needs a second state.
 - Skip (and note) screens behind auth; never capture with credentials.
 - A failed capture is recorded as `_(capture failed: reason)_` in the doc —
   never a hotlinked URL silently substituted.
+
+## Palette derivation (the engine's two doors)
+
+Palette hexes on the record are DERIVED by the palette engine, not
+judged, wherever the reference is reachable. The engine takes exactly
+two moodboard-side inputs, both measured by construction:
+
+- **a reference URL** — `arxa palette derive --from <url> --json`: the
+  url adapter clusters the live page's lens tokens (extractTokens
+  clusters → select 5);
+- **a shot on disk** — `arxa palette derive --from <shot-path> --json`:
+  the image adapter runs the lens pixel probe over the PNG
+  (headless-Chrome canvas, zero native deps) and clusters its pixels.
+
+Write the `--json` output — swatch, anchors, and the selection trail
+(clusters, counts, source) — verbatim to
+`moodboard/evidence/<ref-slug>__palette.json` and cite it from the
+suitor or reference `evidence` list (kind `palette`). Per the
+evidence law the recorded `file` stays RELATIVE to
+`<app-dir>/moodboard/` (`evidence/<ref-slug>__palette.json`); the
+gate resolves it on disk, and an unresolved citation is a lie it
+catches. A reference with neither URL nor shot cannot feed the engine —
+palette there stays `judged`, the weaker evidence, flagged as such.

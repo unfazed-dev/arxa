@@ -63,6 +63,26 @@ reproducible — same artifact id, same bytes out.
 If a flow needs something the registry does not declare, that is a **design defect**
 to report, not a branch for you to invent.
 
+### The frozen palettes block (palette plane)
+
+When the design ships the palette plane (`docs/plans/arxa-palette-plane-universal.md`,
+Q8), the freeze threads the design's `palettes.json` **verbatim** into
+`structure.json["palettes"] = {default, palettes}` — the manifest's default id
+plus its entries, carried as frozen data. The scaffold reads the block; it never
+re-derives palettes and never re-reads the dial store.
+
+**Absent = no plane.** A pre-law `structure.json` has no `palettes` key and
+scaffolds exactly as before — the same optionality contract as `flows`,
+`theme` and `fonts` (absent, not empty). A missing block is never an error.
+
+At freeze time the freeze **WARNS — advisory, never blocks — when the dial
+store's published pick ≠ the manifest default** (the plan, Q8). The read is
+best-effort (it fires only when the store is configured; a store that cannot be
+read fails nothing) and read-only (the freeze never writes the store). The
+warning names both ids because the two diverge in meaning: the live artifact
+shows the published pick; the scaffolded app is built from the manifest
+default. It changes nothing the freeze writes.
+
 ## Procedure
 
 1. **Confirm the design is frozen.** `structure.json` must exist and be in sync
@@ -82,6 +102,14 @@ to report, not a branch for you to invent.
    targets happen to be in state is the stale-green defect (§16). Widths and
    factor names come from the derivation table + config, never literals (R3).
 
+   When the frozen `structure.json` carries the `palettes` block, the same run
+   also emits the app's Tier-1 color vocabulary — from the frozen **DEFAULT**
+   palette only (`references/data-vocabulary-assets.md`): each role anchor →
+   HCT tonal ramp → theme roles with APCA-picked on-colors, through the DTCG
+   path into `lib/ui/common/arxa_kit_app_colors.dart`. The other palettes ride
+   `structure.json` as audit trail only — apps never runtime-switch palettes
+   (that stays the style/theme axes' job).
+
 3. **Verify the tree matches** (drift check, e.g. after a registry edit):
    ```sh
    arxa emit scaffold \
@@ -89,7 +117,11 @@ to report, not a branch for you to invent.
    ```
    `--check` regenerates the expected set in memory and diffs against disk:
    a missing factor file, a stale manifest, or a hand-edited dir is named and
-   fails. This is the same file set `gates/coverage` (C1) walks.
+   fails. This is the same file set `gates/coverage` (C1) walks. When the
+   design carries the palettes block, the same discipline also re-renders the
+   expected color vocabulary from the frozen default's anchors and diffs it
+   against disk — a hand edit is drift and fails, named. The coverage gate
+   runs that assertion as its drift check (C6).
 
 4. **Hand off to the builder.** The scaffold is structure; `arxa-builder`
    implements the widget trees and wires services from the `deps` recorded in
@@ -121,6 +153,14 @@ no `.desktop`.
   missed handoff, not a scaffold defect.
 - **Editing scaffolded Dart directly.** That creates a second writer and the
   drift check dies. Edit the registry / authored layer, re-freeze, re-scaffold.
+- **Hand-editing the emitted color vocabulary.** `arxa_kit_app_colors.dart` is
+  scaffolder-owned: regenerated from the frozen default palette, byte-identical
+  on unchanged inputs. A hand edit is drift and the drift check fails it. Edit
+  the palette at the design, re-freeze, re-scaffold.
+- **Emitting from an alternate palette.** The vocabulary comes from the frozen
+  DEFAULT palette only — even when the dial store publishes a different pick
+  (the freeze's skew warning is the advisory that surfaces that divergence).
+  Alternates are audit trail, never app tokens.
 - **Reading targets from ambient state.** Pass `--targets` explicitly. A
   reproducibility run that inherits state targets is the stale-green pattern.
 
@@ -128,8 +168,8 @@ no `.desktop`.
 
 Load these situationally — they hold the detailed law, not the every-run path.
 
-- [`references/output-contract.md`](references/output-contract.md) — load when deciding exactly what files/dirs a scaffold run emits: the per-target file-count table, `.shell-structure.json`, l10n handling, dependency/native_deps boundaries, the `kit/showcase_app/lib` structure contract (Q1), and the per-surface desktop/mobile/tablet split (Q3).
-- [`references/data-vocabulary-assets.md`](references/data-vocabulary-assets.md) — load when touching seed data (Q4), the feature-recipe manifest (Q8), or the design-vocabulary/assets pipeline (Q6): fonts, brand icons, images, the web entrypoint, and layout-token rules.
+- [`references/output-contract.md`](references/output-contract.md) — load when deciding exactly what files/dirs a scaffold run emits: the per-target file-count table, `.shell-structure.json`, l10n handling, the palette vocabulary emission, dependency/native_deps boundaries, the `kit/showcase_app/lib` structure contract (Q1), and the per-surface desktop/mobile/tablet split (Q3).
+- [`references/data-vocabulary-assets.md`](references/data-vocabulary-assets.md) — load when touching seed data (Q4), the feature-recipe manifest (Q8), or the design-vocabulary/assets pipeline (Q6): palette-sourced Tier-1 colors, fonts, brand icons, images, the web entrypoint, and layout-token rules.
 - [`references/kind-resolution.md`](references/kind-resolution.md) — load when a design node's `kind` needs resolving to a kit widget (Q7), including the escape-hatch and `arxa gate kind_registry` validation.
-- [`references/contracts-and-verdicts.md`](references/contracts-and-verdicts.md) — load when checking frontmatter conventions (Q5), the scaffolder-owned vs user-owned generation gap (Q9), inspect-identity stamping (Q12), the five run verdicts (Q11), or the go_router route-table compile rules.
+- [`references/contracts-and-verdicts.md`](references/contracts-and-verdicts.md) — load when checking frontmatter conventions (Q5), the scaffolder-owned vs user-owned generation gap (Q9), inspect-identity stamping (Q12), the five run verdicts (Q11), the frozen palettes block with its skew warning and the coverage gate's drift check, or the go_router route-table compile rules.
 - [`references/upstream-integration.md`](references/upstream-integration.md) — load when reasoning about how registry patches arrive from upstream composers (Q14), what to report (Q15), or the studio design-shell parallel-run cutover (Q13).

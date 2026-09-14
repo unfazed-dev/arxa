@@ -27,11 +27,25 @@ it is the legacy fallback.
   main board was one premium-minimal direction three times — the rubric
   ranks references within a register; it cannot manufacture spread.)
 - Tokens are **lens-measured where the reference is publicly reachable**:
-  palette/type via `arxa lens tokens`, motion driver via two
-  settle-state captures or burst frames. Record each suitor's
-  `provenance` as `measured` (with `evidence` entries under
-  `moodboard/evidence/…`) or `judged` (memory-judgment, graded and
-  visible as such). Measured beats judged beats remembered.
+  type via `arxa lens tokens`, motion driver via two settle-state
+  captures or burst frames. Record each suitor's `provenance` as
+  `measured` (with `evidence` entries under `moodboard/evidence/…`)
+  or `judged` (memory-judgment, graded and visible as such). Measured
+  beats judged beats remembered.
+- `tokens.palette` is **not prose — it is a derived palette OBJECT**
+  `{name, swatch:[5 hexes], anchors:{dark,accent,field,beige,paper},
+  paletteSource, provenance, evidence}`, produced by RUNNING THE ENGINE
+  — `arxa palette derive --from <url|shot-path> --json` — over the ONE
+  reference the suitor credits for palette. That reference is named in
+  `paletteSource` (`<boardId>/<reference name>`, resolving like a
+  lead); the engine reads its URL (lens token clustering) or, failing a
+  URL, its shot on disk (lens pixel sampling). Derivation IS
+  measurement: a derived palette is `measured` by construction and
+  cites the engine JSON as evidence. `judged` stays legal only when
+  the credited reference has neither URL nor shot — memory-judgment,
+  the weaker evidence, flagged as such on the object. A remix clause
+  `palette from C` is a mechanical swap of the whole object, hexes and
+  all.
 - No layout sketches, no mockups — the moodboarder gathers and synthesizes;
   the designer designs (architecture §22).
 
@@ -44,6 +58,11 @@ check <intake-dir>` — the gate has teeth:
 
 - exactly three suitors labeled A/B/C; leads resolving to selected
   references; measured suitors carrying evidence that resolves on disk;
+- every suitor's palette object validating: a swatch of 5 valid hexes,
+  anchors complete (dark/accent/field/beige/paper, all valid hexes),
+  `paletteSource` resolving to a SELECTED reference, and palette
+  evidence files resolving on disk — a `measured` palette whose
+  derivation JSON is not on disk is a lie, not a measurement;
 - `suitorChoice` ordered after selection approval (a pending selection
   cannot audition) and remixing only the closed vocabulary, never the
   primary itself;
@@ -58,7 +77,17 @@ A record with suitors but no `suitorChoice` is a pending audition:
   { "id": "A", "name": "cinematic-minimal product stage",
     "spread": "owns the dark, scroll-scrubbed, product-as-hero register",
     "leads": ["main/Polestar", "motion/Apple product pages"],
-    "tokens": { "palette": "…", "type": "…", "motion": "…" },
+    "tokens": {
+      "palette": {
+        "name": "polestar night",
+        "swatch": ["#0a0a0a", "#1b3a4b", "#5b7a8c", "#c9d4d9", "#f2f4f5"],
+        "anchors": { "dark": "#0a0a0a", "accent": "#1b3a4b", "field": "#5b7a8c",
+                     "beige": "#c9d4d9", "paper": "#f2f4f5" },
+        "paletteSource": "main/Polestar",
+        "provenance": "measured",
+        "evidence": [ { "kind": "palette", "file": "evidence/polestar__palette.json" } ]
+      },
+      "type": "…", "motion": "…" },
     "provenance": "measured",
     "evidence": [ { "kind": "tokens", "file": "evidence/suitor-a__tokens.json" } ] }
 ],

@@ -2,7 +2,7 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "$id": "skills/arxa-moodboarder/moodboard.schema.json",
   "title": "arxa moodboard (intake/moodboard.json)",
-  "$comment": "DRAFT, Slice B1 (suitors/suitorChoice/evidence added in lockstep with emitMoodboard + moodboard_check). Describes what arxa/lib/intake_artifacts.dart emitMoodboard WRITES, not what any loader enforces: nothing reads this file at runtime, exactly like skills/arxa-intake/intake.schema.json (see the note at intake.dart:70) — so it can drift invisibly. Change emitMoodboard and you must change this by hand. Do NOT build a loader for it on the strength of its existing.",
+  "$comment": "DRAFT, Slice B1 (suitors/suitorChoice/evidence added in lockstep with emitMoodboard + moodboard_check; suitor palette OBJECTS added with the palette plane — Q7/Q9 of docs/plans/arxa-palette-plane-universal.md — validated by moodboard_check). Describes what arxa/lib/intake_artifacts.dart emitMoodboard WRITES, not what any loader enforces: nothing reads this file at runtime, exactly like skills/arxa-intake/intake.schema.json (see the note at intake.dart:70) — so it can drift invisibly. Change emitMoodboard and you must change this by hand. Do NOT build a loader for it on the strength of its existing.",
   "type": "object",
   "required": ["method", "boards", "counts"],
   "properties": {
@@ -149,7 +149,7 @@
         "tokens": {
           "type": "object",
           "additionalProperties": { "type": "string" },
-          "$comment": "Style tokens EXTRACTED from this reference at selection time: palette (hexes), type (register + pairing), radius, motion (driver). Present on SELECTED references — the fidelity-ladder upgrade over screenshots-as-vibes. Rides the reference spread through the emitter."
+          "$comment": "Style tokens EXTRACTED from this reference at selection time: palette (hexes — engine-derived via arxa palette derive wherever the reference has a URL or shot, judged only when it has neither, the weaker evidence), type (register + pairing), radius, motion (driver). Present on SELECTED references — the fidelity-ladder upgrade over screenshots-as-vibes — and the slot-fill bench behind the suitors. Rides the reference spread through the emitter."
         },
         "evidence": {
           "type": "array",
@@ -178,8 +178,11 @@
         },
         "tokens": {
           "type": "object",
+          "properties": {
+            "palette": { "$ref": "#/definitions/derivedPalette" }
+          },
           "additionalProperties": { "type": "string" },
-          "$comment": "The direction's token set (palette/type/radius/motion, at least one) — lens-measured where the reference is publicly reachable."
+          "$comment": "The direction's token set (type/radius/motion as strings, at least one) — lens-measured where the reference is publicly reachable. palette is the one non-string: since the palette plane it is a derivedPalette OBJECT, engine-measured over the reference this suitor credits for palette — never a prose description."
         },
         "provenance": {
           "type": "string",
@@ -193,13 +196,59 @@
       },
       "additionalProperties": true
     },
+    "derivedPalette": {
+      "type": "object",
+      "required": ["name", "swatch", "anchors", "paletteSource", "provenance"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "$comment": "Display name — the engine's suggestedName unless the audition renamed it."
+        },
+        "swatch": {
+          "type": "array",
+          "items": { "type": "string", "pattern": "^#[0-9a-fA-F]{6}$" },
+          "minItems": 5,
+          "maxItems": 5,
+          "$comment": "Exactly 5 '#'-prefixed hexes, verbatim from the engine. The plane's variable width (3-7, Q5) never reaches the moodboard side: url/image derivation decimates/interpolates to exactly 5, and a judged palette must still declare 5."
+        },
+        "anchors": {
+          "type": "object",
+          "required": ["dark", "accent", "field", "beige", "paper"],
+          "properties": {
+            "dark": { "type": "string", "pattern": "^#[0-9a-fA-F]{6}$" },
+            "accent": { "type": "string", "pattern": "^#[0-9a-fA-F]{6}$" },
+            "field": { "type": "string", "pattern": "^#[0-9a-fA-F]{6}$" },
+            "beige": { "type": "string", "pattern": "^#[0-9a-fA-F]{6}$" },
+            "paper": { "type": "string", "pattern": "^#[0-9a-fA-F]{6}$" }
+          },
+          "additionalProperties": true,
+          "$comment": "The five template-family roles, engine-assigned by the lightness-rank law. Complete or the object is invalid — a missing role fails the moodboard check."
+        },
+        "paletteSource": {
+          "type": "string",
+          "$comment": "'<boardId>/<reference name>' — the ONE reference this suitor credits for palette. Resolution law identical to leads: it must resolve to a SELECTED reference, and arxa moodboard check refuses one that does not. The engine input is that reference's URL (lens token clustering) or, failing a URL, its shot on disk (lens pixel sampling)."
+        },
+        "provenance": {
+          "type": "string",
+          "enum": ["measured", "judged"],
+          "$comment": "measured = produced by arxa palette derive over the paletteSource reference — derivation IS measurement, so a derived object is measured by construction and cites its evidence. judged is legal ONLY when the paletteSource reference has neither URL nor shot: memory-judgment, the weaker evidence, graded and visible as such — same object shape, no derivation evidence."
+        },
+        "evidence": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/evidence" },
+          "$comment": "Measured palettes cite the engine's --json output saved under moodboard/evidence/ (kind: palette); the check resolves every entry on disk, and an unresolved citation is a lie it catches."
+        }
+      },
+      "additionalProperties": true,
+      "$comment": "Q7: tokens.palette upgraded from prose string to this derived palette OBJECT. The commission renders the actual hexes; a remix clause 'palette from C' is a mechanical swap of this whole object. OPEN on purpose, same as every shape this skill owns."
+    },
     "evidence": {
       "type": "object",
       "required": ["kind", "file"],
       "properties": {
         "kind": {
           "type": "string",
-          "$comment": "tokens (extractTokens output) | motion (two settle states / burst frames) | capture (a plain shot backing a claim)."
+          "$comment": "tokens (extractTokens output) | motion (two settle states / burst frames) | capture (a plain shot backing a claim) | palette (engine derive --json output: swatch, anchors, and the selection trail — clusters, counts, source)."
         },
         "file": {
           "type": "string",

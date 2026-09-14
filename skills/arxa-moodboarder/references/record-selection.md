@@ -32,9 +32,19 @@ the founder and ask which are selected. Default proposal: every reference
    ONLY selected references** — via the commission, never the raw boards.
 
 After approval, close the fidelity ladder: extract **style tokens** for
-each selected reference into `tokens` (palette hexes, type register,
-radius vocabulary, motion driver — judgment from the board's annotations
-and the reference's public identity) and author one `tokenSynthesis`
-block (the cross-pollinated starting direction: layout from one, palette
-from another, motion from a third). Re-emit; the commission renders both
-as its token layer — tokens beat screenshots beat adjectives.
+each selected reference into `tokens`. Palette hexes are DERIVED, never
+judged, wherever the reference is reachable: run the engine —
+`arxa palette derive --from <url|shot-path> --json`, the URL clustered
+from lens tokens, the shot sampled by the lens pixel probe — record the
+swatch, and cite the engine JSON as `evidence` (kind `palette`,
+under `moodboard/evidence/…`); a reference with neither URL nor shot
+keeps judged hexes, the weaker evidence. Type register, radius
+vocabulary, and motion driver remain judgment from the board's
+annotations and the reference's public identity. Then author one
+`tokenSynthesis` block (the cross-pollinated starting direction:
+layout from one, palette from another, motion from a third). Re-emit;
+the commission renders both as its token layer — tokens beat
+screenshots beat adjectives. The derived per-reference palettes are
+also the slot-fill bench: behind the winning and declined suitors,
+remaining selected references fill the design's seeded five ranked by
+weighted score.

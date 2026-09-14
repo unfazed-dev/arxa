@@ -471,6 +471,41 @@ project files only through `POST /__project_write`.
 _Avoid_: sync, import, vendoring
 _Layer_: Pipeline
 
+**Slot-Fill Law**:
+The pecking order that decides which five palettes a new design is born with
+— the client's brand colors first, then the moodboard's winner, then the
+also-rans, then the starter set.
+The derivation law that fills a design's seeded five palette slots: the
+default slot is brandColors-derived, else the winning suitor (remix applied),
+else the Marine Blue fallback; slots 2–5 are the two declined suitors'
+palettes, then the remaining selected references ranked by weighted score,
+then fallback-five backfill; swatch sets dedup throughout, first wins.
+_Layer_: Pipeline
+
+**palette-index**:
+The tool that re-reads a design's stylesheets and rebuilds the palette
+machinery, so no color rule can hide from palette switching.
+The one template indexer (the Dart port of the retired genpalettes script —
+the change-one-change-both mirror law died with it): walks the artifact's
+stylesheets, indexes every color-bearing rule into the palette template
+(anchors/tokens/rules), and regenerates every seeded palette's override
+sheet and tokens block from the manifest — idempotent birth and repair, run
+after style edits. Its `--check` mode diffs live CSS against the template
+without writing (the P-gate's coverage engine). Run with `arxa design
+palette-index`.
+_Avoid_: genpalettes (the retired script)
+_Layer_: Pipeline
+
+**Template Coverage**:
+The proof that every color in a design's stylesheets goes through the
+palette system — nothing hand-painted outside it.
+The P-gate property that every color-bearing rule in the artifact's
+stylesheets is indexed in the palette template — the leak-killer, asserted
+by palette-index `--check`. Distinct from the advisory hardcoded-hex
+sweep, which runs with an allowlist on a notes channel and never fails hard
+(intentional non-palette colors exist by law).
+_Layer_: Pipeline
+
 ---
 
 ## Kit
@@ -1026,8 +1061,8 @@ _Avoid_: feedback dial (superseded — it was the Feedback-Mode-only ancestor), 
 _Layer_: Design medium
 
 **Design Mode**:
-The author-only side of the Arxa Dial: select a piece of the design, adjust its look or wording, and see the change live.
-The Arxa Dial mode available to the Author only, offering selection plus curated per-widget-kind facet editors (with a raw-CSS escape hatch) across three edit tiers — tokens, element style, text. Edits auto-save into the Draft Overlay; structure (add/move/reorder widgets) is never editable here.
+The author-only side of the Arxa Dial: fix the design's words and images live, on the canvas itself.
+The Arxa Dial mode available to the Author only (deployed author link or loopback, Supabase store required): double-click text to type in place, click an image to swap it — nothing else (the 2026-09-11 redesign deleted the facet editors, CSS escape hatch, resize handles and the studio handoff; color belongs to the palette plane). Every edit streams to all open dials in real time. Structure (add/move/reorder widgets) is never editable here.
 _Layer_: Design medium
 
 **Feedback Mode**:
@@ -1035,15 +1070,15 @@ The client side of the Arxa Dial: look at the shared design, drop Pins on it, an
 The Arxa Dial mode available over a Share Link: Pins with threaded replies and a kanban lifecycle (Open / Resolved / Won't do in the island; the API additionally accepts Triaged / In progress). Clients never edit the design. Freehand draw-over, per-layer toggles, and the Review Shade were DELETED by operator decision (the island's displaced-verbs list); `arxa_dial_drawings` survives only as dormant schema, no UI writes it.
 _Layer_: Design medium
 
-**Draft Overlay**:
-The author's unsent adjustments, saved automatically as they work — visible on their screen, invisible to clients until Publish.
-The auto-saved patch set layered over an artifact: token, element-style, and text patches recorded while designing, persisted server-side per artifact (one JSON file under `~/.arxa/drafts/`, keyed by the artifact's path — never in Supabase, never in the watched artifact tree), applied to served pages for the Author only, and never written into artifact source until committed. Clients always see the last published state, never the Draft Overlay. Patch keys ride machine identity (`data-arxa-id`) by default; when one machine id fans out to instances with DIFFERENT authored meanings (heterogeneous `data-el`), the patch binds to the authored identity instead — the key is `el:<data-el>` (amended 2026-08-24: authored identity wins on divergence; homogeneous loops keep every-row-at-once). Every open Author document applies draft changes live (same amendment: the ladder's rungs stay in sync); only guests wait for Publish.
-_Avoid_: autosave (the mechanism, not the thing), unpublished changes
+**Live Overlay**:
+The author's live edits, streamed to every open dial — clients watch the design change in real time.
+One Supabase row per design (`arxa_dial_overlays`: patches jsonb + rev) holding the author's text and image edits, applied client-side by every dial at boot and on every realtime frame (2026-09-11 redesign — the author-private file-backed Draft Overlay and its "never in Supabase" law were overturned). Writes ride the `save_overlay` RPC (author token or service role; guests are read-only). Undo is session-local; Revert-to-published empties the row; the next eject bakes the patches into source and clears it. Patch keys ride machine identity (`data-arxa-id`) by default; when one machine id fans out to instances with DIFFERENT authored meanings (heterogeneous `data-el`), the patch binds to the authored identity instead — the key is `el:<data-el>` (amended 2026-08-24: authored identity wins on divergence; homogeneous loops keep every-row-at-once).
+_Avoid_: draft overlay (superseded), autosave (the mechanism, not the thing)
 _Layer_: Design medium
 
 **Publish**:
-The author's manual button that makes the current design — with all committed adjustments — live at the one stable client link.
-The operator-triggered deploy of committed artifact source to the artifact's single stable share URL; never automatic, always from the Arxa Dial. Draft Overlay content reaches clients only through a commit followed by a Publish.
+The author's manual action that makes the current design live at the one stable client link.
+The operator-triggered deploy of committed artifact source to the artifact's single stable share URL; never automatic, always from the Arxa Dial. Live Overlay content reaches source through the eject bake (fetched, applied via the design-patch machinery, cleared) — clients see the overlay live the whole time.
 _Avoid_: deploy (the pipeline verb this rides), save, push (git)
 _Layer_: Design medium
 
@@ -1072,6 +1107,39 @@ _Layer_: Design medium
 The person whose design it is — the only one who can change it. Clients comment; the Author edits and publishes.
 The single editing identity on an artifact's Arxa Dial: holds Design Mode, resolves Pins, commits the Draft Overlay, and publishes. An artifact has exactly one Author.
 _Avoid_: owner (billing/tenancy), operator (the arxa persona running the pipeline), designer (a role, not the identity)
+_Layer_: Design medium
+
+**Palette Plane**:
+The five-color system every design is born with — a small set of named palettes, one of them the default the whole design is painted with, switchable live from the dial.
+The mandatory palette layer every designer artifact ships at birth: a declaration manifest of up to five seeded palettes over the five fixed **Role Anchors**, per-palette override sheets and token blocks, the boot script, and the dial axis that switches them. Switching works identically in kind:app prototypes; a Flutter app receives the chosen palette once, at scaffold time — apps never runtime-switch.
+_Avoid_: theme (a sibling dial axis, not the plane), skin, color scheme (bare — a palette is role-bound anchors, not a loose scheme)
+_Layer_: Design medium
+
+**Fallback Five**:
+The five starter palettes every new design ships with; they survive only until the project derives its own.
+The universal fallback palette set shipped verbatim by the starter — Marine Blue (default), Lavender Iris, Sunset Ember, Orchid Bloom, Forest Neon — all seeded; a project derivation reseeds ALL five slots wholesale, so the fallback survives only in projects that never derive. The five-seeded cap is law.
+_Layer_: Design medium
+
+**Role Anchors**:
+The five jobs a palette's colors do — the ink, the accent, and the three surface shades every template is painted from.
+The plane's fixed internal roles — dark, accent, field, beige, paper — the template families every color-bearing rule indexes against; a palette's declared hexes are assigned to roles by the **Variable-Width Declaration**'s lightness-rank law, and an intake role hint pins its hex to its role. The scaffolder maps them onto Flutter theme roles from the frozen default palette only.
+_Avoid_: color slots (a slot is one of the manifest's five palette places — see **Slot-Fill Law**), roles (bare)
+_Layer_: Design medium
+
+**Variable-Width Declaration**:
+A palette may be declared with three to seven colors; the system fits them onto the five fixed roles by lightness, with no taste judgments.
+The declaration law: a palette accepts 3–7 hexes over the five **Role Anchors** — N=5 keeps the verified lightness-rank law byte-for-byte; N<5 assigns what exists by lightness-rank and interpolates the missing mid-roles in HSL; N>5 sorts by lightness and evenly decimates. No saturation cleverness — the dial editor is the taste escape hatch. The manifest keeps the source hexes verbatim; Coolors ingestion stays exactly-5; the dial editor's add/remove is bounded 3–7.
+_Layer_: Design medium
+
+**One-Custom-Slot Law**:
+You get exactly one palette of your own; saving a new one replaces the old one.
+The dial's custom-palette invariant: a design carries at most one custom (unseeded) palette; a default-palette **Fork** creates or replaces it through the one-slot sweep, so published picks and palette links keep resolving. Seeded palettes are never displaced by it.
+_Layer_: Design medium
+
+**Fork**:
+Editing the default palette never changes it — your edit saves as your own custom palette instead.
+The default-palette edit path in the dial: editing the DEFAULT palette forks into the one custom slot (the **One-Custom-Slot Law** — it replaces the previous custom), publishable immediately, while the base corpus stays hand-owned. Editing a NON-default palette is the opposite path: in place, stable id, swatch/sheet/tokens re-derived atomically, published picks and palette links never break. Editing into a swatch set identical to another palette refuses, naming the conflict.
+_Avoid_: branch (git sense), duplicate, copy
 _Layer_: Design medium
 
 ---

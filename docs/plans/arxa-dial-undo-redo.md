@@ -3,6 +3,13 @@
 Grilled and confirmed 2026-08-26. Six decisions locked one-by-one; implementation
 calls flagged during the grill and accepted with the set.
 
+> ⚠ **SUPERSEDED 2026-09-11** by the grilled edit redesign (see
+> `arxa-dial-palettes.md` → "Addendum — the edit redesign"): the persistent
+> server-side journal is DELETED (decision 3 of the redesign — undo is a
+> session-local inverse stack in the island, depth ~50, dying on reload;
+> Revert-to-published is the only global reset). This plan stands as the
+> record of the 2026-08-26 decisions it replaced.
+
 ## Locked decisions
 
 1. **Scope — persistent draft journal, commit is the barrier.** A per-artifact

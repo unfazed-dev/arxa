@@ -17,16 +17,22 @@ with `--project <name>` writes ALL intake outputs there:
   map.json         the story map, ids content-derived, counts baked in
   moodboard.json   boards/references/shots, shot src precomputed
   direction.json   adjectives/avoids, field provenance promoted per item
+  brandcolors.json stated brand hexes + role hints ([] when none were stated)
 ```
 
-The last four are Slice B1. All four are pure functions of `answers.json` and
-all four degrade to their EMPTY shape when the answering group is absent — every
-project that existed before Slice B has all four groups missing, and re-emitting
-one of those must keep working rather than fail.
+The four Slice-B1 files (`personas`/`map`/`moodboard`/`direction`) are pure
+functions of `answers.json` and degrade to their EMPTY shape when the answering
+group is absent — every project that existed before Slice B has all four groups
+missing, and re-emitting one of those must keep working rather than fail.
+`brandcolors.json` (the palette plane, arxa-palette-plane-universal Q6) obeys
+the same law: a pure function of the `brandColors` group, `[]` when it is
+absent — absent is never an error. It is the machine-readable slot
+`arxa palette reseed` consumes as the default palette's first candidate.
 
-**Where the last three get their input.** `direction.json` and `personas.json`
-come from groups intake elicits itself (`direction`, `personas`). The other two
-come from documents intake does NOT own:
+**Where they get their input.** `direction.json`, `personas.json` and
+`brandcolors.json` come from groups intake elicits itself (`direction`,
+`personas`, `brandColors`). The other two come from documents intake does
+NOT own:
 
 | artifact | answers group | written by |
 |---|---|---|

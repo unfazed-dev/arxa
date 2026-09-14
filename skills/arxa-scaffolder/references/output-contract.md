@@ -37,6 +37,18 @@ l10n artifacts (backward compat). The pubspec side of l10n
 (`flutter_localizations`, `intl`, `flutter.generate: true`) is emitted
 unconditionally by `arxa/lib/blueprint.dart`.
 
+When the frozen `structure.json` carries the `palettes` block (the palette
+plane, `docs/plans/arxa-palette-plane-universal.md` Q8), the scaffold also
+emits — **once per app**, outside the per-surface counts above — the Tier-1
+color vocabulary `lib/ui/common/arxa_kit_app_colors.dart`, derived from the
+frozen DEFAULT palette only (`references/data-vocabulary-assets.md`). It joins
+the file-set contract: `--check` re-renders the expected tokens from the
+frozen default's anchors and diffs against disk, so a missing file, a stale
+palette, or a hand edit fails named — the same discipline as the factor-file
+diff, and the same assertion the coverage gate runs as its drift check (C6). A
+`structure.json` with no `palettes` block emits **no** vocabulary file
+(pre-law artifacts, backward compat).
+
 **You do not choose dependencies.** The scaffold never reads or writes a
 `pubspec.yaml`; the dependency set arrives from the kit and the app template.
 This holds for declared `kits` too — the stub header names them for the

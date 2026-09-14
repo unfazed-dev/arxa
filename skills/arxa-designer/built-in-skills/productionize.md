@@ -49,3 +49,78 @@ Auth, database provisioning/migrations, CI pipelines. Those are product decision
 ## Verify
 
 `arxa design lint .` clean, `arxa lens check http://localhost:<port>/` clean on the served eject, a final arxa-lens screenshot review of the key surfaces — and, after deploying, the live-URL verification above.
+
+## The palette plane + deployed dial (VERIFY ADDENDUM 17)
+
+When the design declares `palettes.json`, a cloudflare eject also bakes the
+palette plane and ships the Arxa Dial to the deployed worker:
+
+- **Bake inputs (env at eject time):** `ARXA_SUPABASE_URL` +
+  `ARXA_SUPABASE_SERVICE_KEY` (or the `~/.arxa/supabase` file) resolve the
+  registered design id + published palette; `ARXA_SUPABASE_PUBLISHABLE_KEY`
+  is the ONLY key that ships to browsers (RLS: read + insert-only);
+  `ARXA_DIAL_AUTHOR_TOKEN` sets a stable author token — without it the
+  first eject mints one and prints it ONCE (later ejects reuse the stored
+  hash). The service key never ships.
+- **What the worker does:** stamps `data-palette` (?palette= > baked
+  published > manifest default), serves `/palettes.json`, injects
+  palette.js's remote channel, and injects the dial ONLY when the URL
+  carries `?dial=` (guest share link — the island validates it via the
+  `resolve_guest_link` RPC) or `?dial-author=` (hash-verified in the
+  worker). No credential = no dial on the public site.
+- **What the static dial can do:** comments (pins/replies ride
+  PostgREST; Realtime repaints open dials), the Theme slide (palette
+  publishes go through the `publish_palette` RPC, which checks the
+  share-link/author capability in SQL — a guest's pick publishes for
+  everyone, the author can reset the default), and AUTHOR LIVE EDITING
+  (2026-09-11 redesign): the author link arms the Edit verb — double-click
+  text to type, click an image to swap (paste URL) — every debounced save
+  rides the `save_overlay` RPC into the `arxa_dial_overlays` row and
+  streams to every open client dial in real time (undo is session-local;
+  Revert-to-published empties the row). Design-time surfaces
+  (ship/media/roster) refuse cleanly — they need the local design server.
+- **Handing the client the themes (the two links):** the author link
+  (`https://<site>/?dial-author=<token>`) is the master key — minted once
+  at the first credentialed eject, printed ONCE; rotate with
+  `ARXA_DIAL_AUTHOR_TOKEN` + re-deploy. For clients prefer PERSONAL guest
+  links, minted on the LOCAL design server's dial (tray trim v2, grilled
+  2026-09-10): dial → Studio tray → **Access** slide → "Client access —
+  personal links" → client email → "Mint personal link" → copy the
+  `?dial=<token>` URL. Per-email attribution, revocable (comments
+  survive). The minted link works on the DEPLOYED site (the worker's
+  `resolve_guest_link` RPC validates it). Either way the client clicks a
+  palette card in the Theme slide and it publishes LIVE for every visitor
+  — the pick itself is the authorization. The Access slide is author- and
+  local-only: guests and the deployed dial get a one-slide tray, and the
+  static store refuses `/guests` outright.
+- **Automint at eject (grilled 2026-09-10):** a per-design toggle in the
+  arxa.json `dial` block — `"dial": {"automint": true, "clientEmail":
+  "client@co.com", "days": 90}` — mints the client link automatically at
+  every credentialed cloudflare eject (env overrides:
+  `ARXA_DIAL_AUTOMINT` 1/0 forces on/off, `ARXA_DIAL_CLIENT_EMAIL`,
+  `ARXA_DIAL_CLIENT_DAYS`). Idempotent per email: a live link means the
+  eject skips and says so; a NEW link prints ONCE like the author token.
+  Off by default — with the toggle off, minting happens on the dial.
+- **Schema (one-time, applied by the operator):** `arxa_dial_axes.palette`
+  column, `arxa_dial_designs.author_token_hash` column, the RPCs, the
+  anon RLS policies, and `arxa_dial_axes` + `arxa_dial_overlays` in the
+  supabase_realtime publication — all recorded in
+  `docs/plans/arxa-dial-palettes.md` and VERIFY ADDENDUM 17 in the
+  design's evidence ledger.
+- **The eject bake (2026-09-11):** every credentialed eject fetches the
+  design's live overlay row, applies each patch through the design-patch
+  machinery into artifact SOURCE, and clears the row on full success —
+  refused patches stay live in the overlay and retry at the next eject,
+  loudly. No commit ceremony ever; deploy is the checkpoint.
+- **The static dial refuses palette editing:** `POST
+  /__dial/palettes/update` answers the same clean refusal as the other
+  design-time surfaces — in-dial palette editing needs the local design
+  server; the deployed dial only switches and publishes.
+- **One custom slot:** the manifest carries the seeded five plus at most
+  ONE custom palette — editing the default forks into that slot and
+  replaces the previous custom; non-default palettes edit in place under
+  their stable id.
+- **3–7 declaration law:** every palette declares 3–7 source hexes mapped
+  over the five fixed roles (dark / accent / field / beige / paper) —
+  N=5 keeps the lightness-rank law byte-for-byte; fewer interpolate the
+  missing mid-roles in HSL, more decimate by lightness.

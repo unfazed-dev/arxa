@@ -142,6 +142,56 @@ the (project, artifact) unique constraint for upsert conflict resolution
 — both merge- and ignore-duplicates 409 on an existing row — so design
 registration is INSERT, and on 409, a deterministic read-back.)
 
+### The palette plane: declared, token-driven, dial-switchable (2026-09-10)
+
+Every artifact SHIPS the palette plane at birth — kind:site end-to-end,
+kind:app identically in the HTML artifact (the Flutter side receives the
+chosen palette at scaffold time through the DTCG path; apps never
+runtime-switch — that stays the style/theme axes' job). Four pieces, one
+law each:
+
+- **The declaration is `palettes.json` at the artifact root** — one
+  `default` plus the seeded five (the fallback five at birth: Marine
+  Blue default, Lavender Iris, Sunset Ember, Orchid Bloom, Forest Neon;
+  a project derivation reseeds all five wholesale), each declaring 3–7
+  source hexes verbatim over the five fixed roles (dark / accent /
+  field / beige / paper). N=5 keeps the lightness-rank law
+  byte-for-byte; N<5 interpolates the missing mid-roles in HSL, N>5
+  decimates by lightness.
+- **The base stylesheets ARE the default palette.** Base styles are
+  authored token-driven on the default palette's tokens; every
+  non-default palette is a GENERATED override sheet under
+  `assets/styles/palettes/` plus its `[data-palette="…"]` tokens
+  block — produced by `arxa design palette-index` from palettes.json
+  through `_template.json`, never hand-authored. All color flows
+  through tokens: a hardcoded hex outside tokens/palettes rides the
+  advisory sweep (allowlisted exceptions exist by law), never a hard
+  fail. After editing base styles the indexer re-runs — template
+  coverage (P4) fails lint otherwise.
+- **Application is serve-time.** The design server stamps
+  `html[data-palette]` per request — `?palette=` override once
+  (probes, guest previewing) > the published store pick > the manifest
+  default — and links the active palette's override sheet, inert until
+  the attribute selects it (the default needs no sheet: the base corpus
+  already is it). `assets/app/palette.js` owns the attribute,
+  theme-color, memory + broadcast on the client.
+- **The dial is the control surface.** Palette switching rides the Theme
+  slide in every artifact; in-dial editing is author-only — a
+  NON-default palette edits in place (stable id; swatch, themeColor,
+  sheet and tokens re-derived atomically, so published picks and
+  `?palette=` links never break), editing the DEFAULT forks into the
+  one custom slot (replacing the previous custom, publishable
+  immediately), and an edit landing on a swatch set identical to another
+  palette refuses, naming the conflict.
+
+The freeze threads `palettes.json` verbatim into `structure.json`'s
+optional top-level `palettes` block (absent = no plane, valid for
+pre-law artifacts) and warns — advisory, never blocking — when the dial
+store's published pick differs from the manifest default. The
+scaffolder emits the app's color vocabulary from the frozen DEFAULT
+palette only; the other four ride `structure.json` as audit trail.
+Binding spec: `docs/plans/arxa-palette-plane-universal.md`.
+
 ## Naming laws (locked)
 
 **No invented single-letter identifiers in generated code.** Every name the

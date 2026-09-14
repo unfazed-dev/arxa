@@ -42,6 +42,14 @@ moodboard references; it is the anti-blandness seam. Rules with teeth:
 - A missing or stale commission (moodboard unapproved, locked criterion
   unfed) means STOP and run the moodboard stage — designing without the
   mandate is how bland sites happen.
+- The commission carries the mandate's MEASURED colors — suitor palette
+  objects (actual hexes, never prose). The artifact's seeded five in
+  `palettes.json` is the slot-fill record of that mandate: the default
+  slot is the winning direction's palette (intake brand colors first,
+  else the winning suitor remix-applied, else the Marine Blue fallback);
+  slots 2–5 take the declined suitors, then score-ranked references,
+  then fallback backfill. Author base styles ON the default palette's
+  tokens — the base stylesheets ARE that palette.
 
 **0b. Load the structure contract and identify your input.**
 Two files govern everything below and win over any prose elsewhere in this
@@ -124,7 +132,22 @@ is the app dir's `design/` stage folder — `<app-dir>/design/` — never a fres
 `designs/<name>/` at the repo root (that layout is pre-law). Native mode
 (`~/.arxa` project): default `designs/<descriptive-project-name>/` as before.
 Start every artifact by copying `examples/hello-hda/` and renaming; never
-scatter design files in the repo root. Serve the artifact with the Dart
+scatter design files in the repo root. The starter ships the palette
+plane complete at birth — `palettes.json` at the artifact root (the
+fallback five, seeded, default `marine`), `assets/app/palette.js`,
+the per-palette tokens blocks, and
+`assets/styles/palettes/_template.json` with its generated seeded
+sheets, plus the template's CONTRAST CONTRACT (`pairs`/`surfaces` +
+rule `key`s): every override sheet renders through the contrast
+engine — its contracted pairs pass WCAG 2.2 AA by construction
+(4.5:1 body, 3:1 large/non-text; APCA advisory), polarity-inverting
+text on mid-dark surfaces instead of bleaching them, anchors verbatim,
+moves logged in the sheet header. The plane is never retrofitted: the
+base stylesheets ARE the default palette, authored token-driven, and
+every other palette is a generated override sheet the dial switches
+live; hand edits flip a palette to MANUAL (`auto: false`), Re-solve
+returns it to AUTO, and `arxa design lint` fails any shipped pair
+below target (P5). Serve the artifact with the Dart
 design server — `arxa design serve <artifact-dir> [--port N] [--json]`
 (`arxa/lib/design_server.dart`; artifact JS runs in a headless-Chrome
 worker over CDP) — which works without referencing the skill path. Older
@@ -161,9 +184,15 @@ passes (`{children}`), list maps, and grouping ride widgets or fragments
 
 Then build the artifact per the contract, serve it with
 `arxa design serve <artifact-dir> --port 4319` (background), then
-verify: `arxa design lint <artifact-dir>` (no-ad-hoc-JS / named-islands),
+verify: `arxa design lint <artifact-dir>` (no-ad-hoc-JS / named-islands;
+the P-gate: palette-plane completeness + template coverage — every
+color-bearing rule indexed in `_template.json` — plus P5 contrast:
+every contracted pair of every shipped sheet at WCAG 2.2 AA),
 `arxa lens check http://localhost:4319/…` (console
-clean), and `arxa lens shoot http://localhost:4319/<route>` (**every width in the active ladder**, plus overflow and failed-request checks). Fix
+clean), and `arxa lens shoot http://localhost:4319/<route>` (**every width in the active ladder**, plus overflow and failed-request checks). After
+editing base styles, re-run `arxa design palette-index <artifact-dir>`
+first — the template and the seeded sheets must track the corpus, or P4
+coverage fails lint. Fix
 before surfacing; give the user the served URL.
 
 **10. Productionize on request.** `arxa design eject <artifact-dir>

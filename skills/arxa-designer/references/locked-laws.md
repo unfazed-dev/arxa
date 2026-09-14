@@ -48,6 +48,30 @@ outside `ui/styles/`; rules consumed by two-plus owners promote to `common/`;
 dead selectors are deleted, not parked. Ruled 2026-08-09. See
 DESIGN-ARCHITECTURE "Styles (ui/styles)".
 
+**Palette law (locked).** Every artifact SHIPS the palette plane at
+birth — hello-hda carries it complete: `palettes.json` at the artifact
+root (the declaration: one `default` plus the fallback five — Marine
+Blue default, Lavender Iris, Sunset Ember, Orchid Bloom, Forest Neon;
+ids `marine`, `c-6f58c9`, `c-2e1f27`, `c-8e518d`, `c-293f14`,
+all `seeded: true`), `assets/app/palette.js`, the per-palette tokens
+blocks, and `assets/styles/palettes/_template.json` with its generated
+override sheets. A palette declares 3–7 hexes over the five fixed roles
+(dark / accent / field / beige / paper); the manifest keeps the source
+hexes verbatim. The base stylesheets ARE the default palette — the
+`:root` token block is the default's own render, so the default
+carries no override sheet — and all color flows through tokens: a
+hardcoded hex outside tokens/palettes rides the advisory sweep
+(allowlisted exceptions exist by law), never a hard fail. After editing
+base styles, `arxa design palette-index` regenerates the template and
+the seeded sheets — template coverage (P4) fails lint otherwise. The
+dial edits palettes author-only and in place — stable id; swatch,
+themeColor, sheet and tokens re-derived atomically, so published picks
+and `?palette=` links never break — except the DEFAULT, whose edit
+forks into the one custom slot (replacing the previous custom,
+publishable immediately); an edit landing on a swatch set identical to
+another palette refuses, naming the conflict. Ruled 2026-09-10;
+rationale trail in `docs/plans/arxa-palette-plane-universal.md`.
+
 **Widget barrel law (locked).** Every `ui/widgets/` leaf folder carries a
 `widgets.tsx` barrel; external consumers import through the barrel only.
 Folders are `<app>_<feature>_widgets/` named after the owning `ui/views/`

@@ -137,6 +137,8 @@ wave.
 | [plans/screen-reveal-drawer-composer-tools-logic.md](plans/screen-reveal-drawer-composer-tools-logic.md) | **shipped 2026-08-05** — per-screen reveal-drawer (Composer/Tools/Logic); components container removed |
 | [plans/viewer-theme-cluster-and-bg-fix.md](plans/viewer-theme-cluster-and-bg-fix.md) | topbar appearance cluster + canvas bg fix |
 | [plans/widget-editing-autolayout-and-manager.md](plans/widget-editing-autolayout-and-manager.md) | widget editing grill record (auto-layout resize, text/font/colour); 2-col-split section superseded by the reveal-drawer plan |
+| [plans/arxa-dial-palettes.md](plans/arxa-dial-palettes.md) | the palette plane (Q1–Q14, grilled 2026-09-09): dial-switchable color palettes on ANY kind declaring `palettes.json`; publication/transport law — **amended 2026-09-10** where the universal plane speaks |
+| [plans/arxa-palette-plane-universal.md](plans/arxa-palette-plane-universal.md) | decisions locked 2026-09-10 (Q1–Q12) — the palette plane is MANDATORY for every designer artifact: the fallback five at birth, one derivation engine (coolors/url/image/hexes), 3–7 variable width over five roles, in-dial editing (default edits fork), intake `brandColors`, suitor palette objects + the slot-fill law, scaffolder freeze/vocabulary/drift, the P-gate + template coverage |
 
 Non-doc artifacts in `docs/plans/` (working files of the scaffold-shell
 sessions, not decisions): `composer-action-check.js`, `handoff-l10n-w7.json`,

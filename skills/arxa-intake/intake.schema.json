@@ -41,6 +41,13 @@
       "$ref": "#/definitions/field",
       "description": "Name, colour, voice — only if the client stated one."
     },
+    "brandColors": {
+      "type": "array",
+      "description": "The brand's stated colors — VARIABLE N, like personas: one is a valid answer, so is seven. A BARE ARRAY with per-entry provenance, not a {value, provenance} field, because the client may state one color while the founder states another. Declared here for the same reason as `map`: the top level is additionalProperties:false. This is the ONE group with no inferred-placeholder escape — a placeholder hex would not sit flagged in the brief; it flows through intake/brandcolors.json into `arxa palette reseed` and becomes the site's DEFAULT palette (arxa-palette-plane-universal Q6-Q7). When no colors were stated or confirmed, OMIT the group; the emitted slot is [] and the fallback five survive. Optional.",
+      "items": {
+        "$ref": "#/definitions/brandColor"
+      }
+    },
     "direction": {
       "$ref": "#/definitions/directionField",
       "description": "Design direction: adjectives to aim for and anti-goals to avoid. Rendered after Brand. Optional."
@@ -220,6 +227,36 @@
               "description": "Anti-goals — what the design must NOT feel like."
             }
           }
+        },
+        "provenance": {
+          "$ref": "#/definitions/provenance"
+        }
+      }
+    },
+    "brandColor": {
+      "type": "object",
+      "description": "One stated brand color. The provenance doctrine, sharpened: a hex the CLIENT stated is 'client'; a hex extracted from the client's existing site, logo or a competitor by search or lens is NEVER 'client' until the client confirms it — unconfirmed it is 'inferred', the source cited in the conversation. And 'inferred' here never means placeholder: unstated colors omit the group entirely (see the brandColors property). CONTRACT PAIR: the hex pattern and the role enum mirror the brandColors validation in arxa/lib/intake.dart, which is what actually rejects a malformed entry — nothing loads this schema, so drift here is invisible. Change both together.",
+      "required": [
+        "hex",
+        "provenance"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "hex": {
+          "type": "string",
+          "pattern": "^#?[0-9a-fA-F]{6}$",
+          "description": "The six digits, recorded VERBATIM as stated — '#' optional, case kept; the derivation engine normalizes. Three-digit shorthand expands mechanically (each digit doubled) before recording — that is normalization, not rephrasing. Anything else (a named color, an rgb() string) is elicited to a hex or left out, never converted by guesswork."
+        },
+        "role": {
+          "type": "string",
+          "enum": [
+            "dark",
+            "accent",
+            "field",
+            "beige",
+            "paper"
+          ],
+          "description": "OPTIONAL. The plane role the client assigns this color ('the dark one', 'our accent'), mapped to the five template-family roles. A stated role PINS the hex to that role at derivation, even where lightness-rank would place it elsewhere, and the pinning is recorded (arxa-palette-plane-universal Q6). Absent = unhinted: the Q5 lightness-rank law assigns it."
         },
         "provenance": {
           "$ref": "#/definitions/provenance"

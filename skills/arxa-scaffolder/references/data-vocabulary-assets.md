@@ -43,23 +43,64 @@ If it doesn't, the manifest is wrong — not the showcase.
 ## Design vocabulary: copy from kit, never author (Q6, revised)
 
 Tier 1 — colors, spacing, glyphs, fonts, app constants, strings — is
-**kit-owned**: `kit/core/lib/common/` is the single SSOT. The stacked CLI
+**kit-owned**: `kit/core/lib/common/` is the single SSOT (one carve-out:
+colors under the palette plane, below). The stacked CLI
 generates `lib/ui/common/` (including its own `app_strings.dart`) in every new
 app; the scaffolder **deletes every stacked-generated file in that folder and
-replaces them with a verbatim copy of the kit common set**, plus one app-specific
-`arxa_kit_app_strings.dart` (`abxStr`-prefixed `const String` named copy,
-e.g. `abxStrNotesEmptyTitle` — the kit carries a generic template of the same
-file). App code imports its **own
+replaces them with a verbatim copy of the kit common set**, plus the app-owned
+files: one app-authored `arxa_kit_app_strings.dart` (`abxStr`-prefixed
+`const String` named copy, e.g. `abxStrNotesEmptyTitle` — the kit carries a
+generic template of the same file) and, when the frozen `structure.json`
+carries the palettes block, one scaffolder-emitted `arxa_kit_app_colors.dart`
+(Tier-1 colors, below). App code imports its **own
 copy**: `package:<app_package>/ui/common/…` — never
 `package:arxa_kit_core/common/…`. The registry keeps kit-canonical paths;
 rewrite the package prefix to the app's copy at emit time (one rule, no per-app
 registry churn). Showcase demonstrates this end-to-end.
 
 **Hand-authoring or hand-editing any copied vocabulary file is a FAIL** — the
-only file with app-authored content is `arxa_kit_app_strings.dart`. Emitting
-new `*_colors.dart`, `*_spacing.dart` or `*_ui_helpers.dart` variants is a
+only files with app-owned content are `arxa_kit_app_strings.dart`
+(app-authored) and `arxa_kit_app_colors.dart` (scaffolder-emitted from the
+frozen palette — never hand-authored, never hand-edited). Emitting new
+`*_colors.dart`, `*_spacing.dart` or `*_ui_helpers.dart` variants is a
 **FAIL**, not a style preference — duplicated vocabulary is how a design system
-silently forks. The copy is refreshed from kit, never edited in place.
+silently forks. **That law stands unchanged under the palette plane:** the
+emitted `arxa_kit_app_colors.dart` is the ONE legal colors file precisely
+because it is the single engine's output from the single frozen source — any
+second colors file remains the fork this law exists to kill. The copy is
+refreshed from kit, never edited in place.
+
+### Tier-1 colors: sourced from the frozen default palette (palette plane)
+
+Under the palette plane (`docs/plans/arxa-palette-plane-universal.md`, Q8) the
+colors member of Tier 1 stops being a kit copy. When the frozen
+`structure.json` carries the `palettes` block, the scaffold EMITS the app's
+color vocabulary from the frozen **DEFAULT** palette — and only the default;
+the other palettes ride `structure.json` as audit trail (apps never
+runtime-switch palettes — that stays the style/theme axes' job).
+
+The derivation is the plane's end to end, no new color science on this side of
+the freeze:
+
+- the default's five **role anchors** — `dark` / `accent` / `field` /
+  `beige` / `paper`, the lightness-rank law with one home in the derive
+  engine (`arxa/lib/palette_derive.dart`);
+- each anchor → an **HCT tonal ramp** (`arxa/lib/palette.dart`'s
+  `tonalRamp`, reused untouched);
+- ramps → **theme roles**: `accent`→primary seed, `dark`→ink/on-surface,
+  `paper`→background, `field`→surface, `beige`→card/secondary-surface —
+  with **APCA-picked on-colors**;
+- emitted as a **DTCG tree through `themeMap()`** into the Dart tree, landing
+  at `lib/ui/common/arxa_kit_app_colors.dart`.
+
+The file's header records provenance — the frozen palette id + its swatch —
+and carries the law verbatim: **do not hand-edit — re-freeze, re-scaffold.** A
+hand edit is drift; the coverage gate's drift check (C6) re-renders the
+expected vocabulary from the palettes block and fails the diff, naming the
+file.
+
+No `palettes` block (a pre-law design) means no emission: colors copy from kit
+exactly as above. Absent is valid — never an error, never an empty file.
 
 ### Assets (ratified v2)
 

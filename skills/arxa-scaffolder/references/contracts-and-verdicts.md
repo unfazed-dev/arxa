@@ -85,6 +85,60 @@ corroborate `application` / `startup` / `unknown`. `splashscreen` is **not a she
 is the mobile-device splash surface, brand logo only. After the spike passes, the rest
 of the arxa studio design refactor proceeds (Q13).
 
+## The frozen palettes block (palette plane)
+
+When the design ships the palette plane (`docs/plans/arxa-palette-plane-universal.md`,
+Q8), the freeze threads the design's `palettes.json` **verbatim** into
+`structure.json`:
+
+```json
+"palettes": {
+  "default": "<palette id>",
+  "palettes": [ { "id", "name", "swatch": ["#…", …], "themeColor", "seeded"? }, … ]
+}
+```
+
+The block is optional: absent = no plane, valid for pre-law artifacts — the same
+optionality contract as `flows` / `theme` / `fonts` (absent, not empty). The
+entry shape is the dial manifest's own (`arxa/lib/design_palettes.dart` is its
+SSOT): the freeze passes it through, never re-derives it. Validity — the default
+resolves, the 3–7 swatch law — is asserted upstream by the design lint's P-gate
+(the plan, Q9), not re-litigated here.
+
+**The skew warning.** At freeze time: *"Freeze WARNS (advisory, never blocks)
+when the dial store's published pick ≠ manifest default"* (the plan, Q8; the
+store row is `arxa_dial_axes.palette` per `docs/plans/arxa-dial-palettes.md`).
+Three properties, all law:
+
+- **best-effort** — it fires only when the store is configured; a store that
+  cannot be read warns nothing and fails nothing.
+- **never blocks** — the freeze's output is byte-identical whether or not the
+  warning fires; the warning rides stderr, never the document.
+- **read-only** — the freeze never writes the store. Repointing the publish to
+  match the manifest (or the manifest to match the publish) is a dial action,
+  not a freeze action.
+
+The warning exists because the two ids diverge in meaning: the live artifact
+shows the published pick, while the scaffolded app is built from the manifest
+default. Surfacing the skew at freeze time makes it a decision, not a surprise.
+
+**The vocabulary file.** The scaffold emits the app's Tier-1 color vocabulary
+from the frozen **DEFAULT** palette only, landing at
+`lib/ui/common/arxa_kit_app_colors.dart` — the `arxa_kit_app_strings.dart`
+pattern: one app-owned vocabulary file beside the verbatim kit copy. It is
+**scaffolder-owned** under the generation gap above: regenerated every run,
+byte-identical on unchanged inputs; a hand edit is drift. Its header records
+provenance — the frozen palette id + its swatch — and carries the law: do not
+hand-edit — re-freeze, re-scaffold. The remaining palettes ride
+`structure.json` as audit trail only.
+
+**The drift verdict.** The coverage gate's check series gains **C6 — drift**:
+re-render the expected vocabulary from `structure.json`'s palettes block and
+diff against disk — emitted color tokens must equal the frozen default's
+anchors, under the same `--check` discipline as the C1 file-set diff. A
+missing file, a stale palette, or a hand edit fails, named. C6 is a gate check,
+not a sixth run verdict — the five-verdict list above stays locked.
+
 ## Route table contract
 
 Besides the file tree, the scaffolder compiles **ONE go_router-shaped route

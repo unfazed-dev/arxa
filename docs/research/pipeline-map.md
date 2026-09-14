@@ -80,6 +80,19 @@ REJECT rewinds FSM to design"| p3`).
   criterion, weighted totals computed at emit); SELECTION is a human gate
   recorded as `selected` flags + `selectionStatus: approved`. The designer
   consumes only selected references, only via the commission.
+- Palette plane (`docs/plans/arxa-palette-plane-universal.md` Q3/Q7/Q9):
+  `tokens.palette` upgrades from prose string to an engine-derived palette
+  OBJECT `{name, swatch:[5], anchors:{dark,accent,field,beige,paper},
+  paletteSource:"<boardId>/<reference>", provenance, evidence}` — the engine
+  (`arxa/lib/palette_derive.dart`) run over the suitor's palette-credited
+  reference; `judged` stays legal only when the reference has neither URL
+  nor shot. The **slot-fill law** for the design's seeded five: default slot
+  = brandColors-derived → else winning suitor (remix applied — a mechanical
+  object swap) → else Marine Blue fallback; slots 2–5 = the two declined
+  suitors' palettes → remaining selected references ranked by weighted score
+  → fallback-five backfill; swatch-set dedup throughout. `arxa moodboard
+  check` gains the suitor-palette validation: 5 hexes, complete anchors,
+  paletteSource resolves to a selected reference, evidence resolves on disk.
 
 **1. Intake**
 - Skill: `skills/arxa-intake/SKILL.md`.
@@ -98,6 +111,13 @@ REJECT rewinds FSM to design"| p3`).
 - Hand-off: "The brief and the seed are the inputs to `arxa-designer`... The
   emitted `## Layout template` section is consumed by the designer
   **verbatim**" (SKILL.md "Procedure (2)").
+- Palette plane (Q6): `intake.schema.json` gains the optional structured
+  `brandColors: [{hex, role?, provenance}]` group (provenance ∈ client |
+  founder | inferred). Client-stated colors outrank references — the default
+  palette derives from brand colors FIRST, padding per the 3–7 law (Q5); a
+  role hint PINS that hex to that role even where lightness-rank would place
+  it elsewhere, and the pinning is recorded. The emitter carries the group
+  and writes the machine-readable slot the reseed consumes.
 
 **2. Prototype / Design**
 - Skill: `skills/arxa-designer/SKILL.md`, methodology in
@@ -134,12 +154,48 @@ REJECT rewinds FSM to design"| p3`).
                          ↓
   GENERATED     structure.json                        ← the freeze emits it
   ```
+- Palette plane (Q1/Q2/Q5): MANDATORY at birth — every artifact SHIPS the
+  plane: the palettes manifest (the fallback five verbatim, all `seeded:
+  true`, default `marine`, until a project derivation reseeds ALL five
+  slots wholesale), the boot script, and the per-palette tokens blocks. Base
+  styles are authored token-driven on the DEFAULT palette. Declarations
+  accept 3–7 hexes over the five fixed role anchors
+  (dark/accent/field/beige/paper; N=5 keeps the lightness-rank law
+  byte-for-byte, N<5 interpolates the missing mid-roles in HSL, N>5 decimates
+  by lightness). After style edits: `arxa design palette-index <dir>
+  [--check]` re-indexes every color-bearing rule into the palette template
+  and regenerates the seeded override sheets + tokens blocks (idempotent
+  birth + repair — `arxa/lib/design_palette_index.dart`, the Dart port;
+  one implementation, the mirror law dies). kind:app: dial switching works
+  identically in the prototype; the Flutter side receives the chosen palette
+  at SCAFFOLD time — apps never runtime-switch palettes.
+- Palette gates (Q9, wired into `arxa design lint` —
+  `arxa/lib/gate_design_palettes.dart`): P-gate completeness (valid
+  manifest — default resolves, 3–7 law; template + boot script exist; every
+  entry's override sheet + tokens block intact on disk) and P-gate template
+  coverage (every color-bearing rule in the artifact's stylesheets indexed
+  in the palette template — the leak-killer — via palette-index `--check`).
+  Advisory only: the hardcoded-hex sweep outside tokens/palettes with an
+  allowlist (intentional non-palette colors exist by law) — notes channel,
+  never a hard fail. No grandfathering: pre-law artifacts are MIGRATED, not
+  exempted.
 
 **3. Scaffold** — see §2 below for the full contract.
 - Skill: `skills/arxa-scaffolder/SKILL.md`, `skills/arxa-scaffolder/README.md`.
 - Engine: `arxa/lib/scaffold.dart` (`arxa emit scaffold`).
 - Gates: `scaffold S0–S10` (`arxa/lib/gate_scaffold.dart`) + `coverage
   C1–C5`.
+- Palette plane (Q8): freeze threads the optional `palettes` block verbatim
+  into `structure.json` (absent = no plane, valid for pre-law artifacts)
+  and WARNS — advisory, never blocks — when the dial store's published pick
+  ≠ manifest default. Scaffold emits the app's Tier-1 color vocabulary from
+  the frozen DEFAULT palette only: anchors → HCT tonalRamp → DTCG tree
+  through `themeMap()` into the Dart tree (`palette.dart` reuse; the
+  header records provenance — "do not hand-edit: re-freeze, re-scaffold");
+  the other four palettes ride `structure.json` as audit trail only. The
+  coverage gate gains the drift verdict: emitted color tokens must equal the
+  frozen default's anchors — the same `--check` discipline as the file-set
+  diff.
 
 **4. Build (widget implementation)**
 - Skill: `skills/arxa-builder/SKILL.md` ("builder — fill extension points by

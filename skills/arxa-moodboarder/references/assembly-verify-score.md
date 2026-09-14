@@ -24,9 +24,19 @@
 grep -o 'shots/[^)]*' moodboard/boards/*.md | while read -r p; do
   [ -f "moodboard/$p" ] || echo "MISSING: $p"
 done
+
+# every cited evidence file resolves — token captures, motion proofs,
+# palette derivations (paths in intake/answers.json are recorded
+# relative to moodboard/ per the evidence law)
+grep -o 'evidence/[^"]*' intake/answers.json | while read -r p; do
+  [ -f "moodboard/$p" ] || echo "MISSING: $p"
+done
 ```
 
-Zero MISSING lines = pass.
+Zero MISSING lines = pass. The evidence half carries the same teeth as
+the shot half: a palette object (or locked-criterion proof) citing
+`evidence/…` that is not on disk is an unresolved path — a lie
+`arxa moodboard check` catches, never a soft warning.
 
 ## Score (the selection seam — do not skip)
 

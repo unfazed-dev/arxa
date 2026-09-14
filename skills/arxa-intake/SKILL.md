@@ -64,8 +64,8 @@ The question set is a CONVERSATION, never a form dump:
   its nine decisions. Use the `ask_user_question` tool for closed picks
   (targets, locales, layout category/archetype, priority clashes); keep
   open fields (the JTBD audience sentence, `contentAnchors`) free-form.
-- **Variable N** — personas, surfaces, anchors: take as many as the client
-  names and stop. One is a valid answer; so is seven.
+- **Variable N** — personas, surfaces, anchors, brand colors: take as many
+  as the client names and stop. One is a valid answer; so is seven.
 - **Ground with search, attribute honestly.** When the client names a
   domain, brand or competitor you don't know, a web search may inform YOUR
   next question — but search results are never `client` provenance. Either
@@ -74,6 +74,18 @@ The question set is a CONVERSATION, never a form dump:
 - **Escape is the emitter's job, not yours.** Record client strings
   verbatim, markup included — `intake emit` neutralizes markdown/HTML in
   elicited values before they reach the brief.
+- **Brand colors are stated, or absent.** Ask once — does the brand have
+  set colors, and the exact hex values if the client has them? Record each
+  hex VERBATIM ('#' or not), one `brandColors` entry per stated hex with
+  its own provenance: client-stated is `client`; a hex you found by
+  search or lens is NEVER `client` until the client confirms it
+  (unconfirmed: `inferred`). A role the client names ('the dark one',
+  'our accent') rides the entry as `role` and PINS that hex to that plane
+  role at derivation, outranking lightness-rank. When the client has no
+  brand colors, OMIT the group — this is the one field with no
+  `inferred`-placeholder escape, because a placeholder hex would not sit
+  flagged in the brief: it would flow into the palette reseed and become
+  the site's DEFAULT palette (arxa-palette-plane-universal Q6–Q7).
 
 ## Procedure
 
@@ -81,7 +93,9 @@ The question set is a CONVERSATION, never a form dump:
    `intake.schema.json`) with the client or founder — one question at a
    time (see above). Capture answers verbatim — rephrase nothing. Where the
    client did not answer, leave the field absent or mark it `inferred` with
-   a placeholder value, never an invented one.
+   a placeholder value, never an invented one — `brandColors` excepted:
+   unstated brand colors are simply ABSENT (a placeholder hex becomes the
+   default palette; the elicitation law above).
 
 2. **Author the answers document.** One JSON object conforming to
    `intake.schema.json`. Each surface the client named becomes an entry with
@@ -90,7 +104,9 @@ The question set is a CONVERSATION, never a form dump:
    `requiresAuth` / `tab` booleans. Do not set `comp` or `surface` — the
    engine derives `comp` (and `route`) and forces `surface: null`. Record the
    optional groups when elicited: `direction` (`{adjectives, avoids}`),
-   `contentAnchors`, `locales`. Record the journeys the client described as
+   `brandColors` (`[{hex, role?, provenance}]` — stated hexes only; omitted,
+   never placeholdered, when none were stated), `contentAnchors`, `locales`.
+   Record the journeys the client described as
    the `flows` group (shape above — linear chains, typed actions); when the
    client did not describe journeys, omit `flows` and let the engine derive
    drafts marked `inferred` for the confirm step. Capture the audience in
@@ -121,6 +137,11 @@ The question set is a CONVERSATION, never a form dump:
    ```
    With `--project`, every output lands in the project's
    `~/.arxa/projects/<name>/intake/` dir (answers/brief/registry/flows).
+   Among them: `intake/brandcolors.json` — the machine-readable slot
+   `arxa palette reseed` consumes as the default palette's FIRST candidate
+   (client-stated colors outrank moodboard references; the fallback five
+   fill what they don't). An absent group emits `[]` — the same
+   degrade-empty law as the Slice-B1 artifacts, never an error.
    Without `--project`, `emit` **refuses to run** unless you pass an
    explicit `--brief-out` (or set `INTAKE_BRIEF_OUT`) — the old default
    silently overwrote the repo-root brief (then docs/design/brief.md), which inside any
@@ -149,7 +170,10 @@ The question set is a CONVERSATION, never a form dump:
    registry). That is not an error; intake is optional.
 
 6. **Hand off to design.** The brief and the seed are the inputs to
-   `arxa-designer`. The emitted `## Layout template` section is consumed by
+   `arxa-designer`. A non-empty `brandcolors.json` reseeds the design's
+   palette plane: the default slot derives from the stated brand colors
+   before any moodboard suitor, remaining slots per the Q7 slot-fill law.
+   The emitted `## Layout template` section is consumed by
    the designer **verbatim** — structure the designer starts from, never
    rewritten at design time. The traceability gate (plan 10.6 —
    `arxa gate intake`, pure Dart in `arxa/lib/gate_intake.dart`) then
@@ -161,5 +185,5 @@ The question set is a CONVERSATION, never a form dump:
 ## References
 
 - [`references/project-layout.md`](references/project-layout.md) — load when you're about to run `emit`/`seed` and need the exact `~/.arxa/projects/<name>/intake/` file layout, or need to trace which skill (`arxa-story-mapper` vs `arxa-moodboarder`) owns `map.json` / `moodboard.json`.
-- [`references/artifacts-and-flows.md`](references/artifacts-and-flows.md) — load while authoring the answers document: full schema detail for `product.kind`, the optional groups (`direction`, `contentAnchors`, `locales`, per-surface `states`/`requiresAuth`/`tab`), the full `personas` question text, registry-seeding rules (`comp`/`route`/`surface` derivation), and the `flows.json` shape (edges, typed actions, linear-chain rule, derive+confirm).
-- [`references/guardrail-and-mistakes.md`](references/guardrail-and-mistakes.md) — load before/after `emit` to run the `--self-test` guardrail checklist and cross-check against the named common mistakes (inventing fields, binding `surface`, rephrasing the client, skipping validate).
+- [`references/artifacts-and-flows.md`](references/artifacts-and-flows.md) — load while authoring the answers document: full schema detail for `product.kind`, the optional groups (`direction`, `brandColors`, `contentAnchors`, `locales`, per-surface `states`/`requiresAuth`/`tab`), the full `personas` question text, the brandColors → palette-reseed priority law, registry-seeding rules (`comp`/`route`/`surface` derivation), and the `flows.json` shape (edges, typed actions, linear-chain rule, derive+confirm).
+- [`references/guardrail-and-mistakes.md`](references/guardrail-and-mistakes.md) — load before/after `emit` to run the `--self-test` guardrail checklist and cross-check against the named common mistakes (inventing fields, binding `surface`, rephrasing the client, inventing a brand hex, skipping validate).
