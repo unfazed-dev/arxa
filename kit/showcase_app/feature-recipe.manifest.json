@@ -530,7 +530,11 @@
       "lib/**/*_colors.dart",
       "lib/**/*_spacing.dart",
       "lib/**/*_ui_helpers.dart"
-    ]
+    ],
+    "allowedLocalDuplicates": [
+      "lib/ui/common/arxa_kit_app_colors.dart"
+    ],
+    "allowedLocalDuplicatesNote": "The Q8 palette-plane carve-out (docs/plans/arxa-palette-plane-universal.md): when structure.json carries a palettes block, the scaffold EMITS exactly this one colors file from the frozen default palette (five anchors -> HCT ramps -> theme roles, APCA on-colors), and it SUPERSEDES the arxa_kit_colors.dart import for plane-carrying designs — two color vocabularies is the fork the prohibition exists to kill. Any other local colors file stays a FAIL."
   },
   "routeTable": {
     "_comment": "Unchanged by the grill and still binding. ONE go_router-shaped table compiled from intake/registry.json + intake/flows.json (exact shapes per arxa/lib/intake.dart), emitted as lib/app/app.router.dart.",

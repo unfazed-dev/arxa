@@ -43,8 +43,8 @@ fn loopback_addr(ep: &Endpoint) -> EndpointAddr {
 #[tokio::test(flavor = "multi_thread")]
 #[ignore = "long-running evidence harness, run explicitly with --ignored"]
 async fn host_pairing_for_smoke() {
-    let engine_hp = std::env::var("ARXA_SMOKE_ENGINE_HP")
-        .unwrap_or_else(|_| "127.0.0.1:7891".to_string());
+    let engine_hp =
+        std::env::var("ARXA_SMOKE_ENGINE_HP").unwrap_or_else(|_| "127.0.0.1:7891".to_string());
     let hold_secs: u64 = std::env::var("HOLD_SECS")
         .ok()
         .and_then(|s| s.parse().ok())

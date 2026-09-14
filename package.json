@@ -1,5 +1,6 @@
 {
   "devDependencies": {
+    "@wdio/cli": "^9.31.5",
     "hono": "^4.13.1",
     "typescript": "^7.0.2"
   }

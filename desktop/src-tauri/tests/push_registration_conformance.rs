@@ -60,7 +60,10 @@ impl Rig {
         let engine_listener = tokio::net::TcpListener::bind(("127.0.0.1", 0))
             .await
             .expect("engine bind");
-        let engine_hp = engine_listener.local_addr().expect("engine addr").to_string();
+        let engine_hp = engine_listener
+            .local_addr()
+            .expect("engine addr")
+            .to_string();
         let engine = tokio::spawn(async move {
             while let Ok((_sock, _)) = engine_listener.accept().await {
                 // One accept is enough for the auth stream's TCP side; the
@@ -95,7 +98,9 @@ impl Rig {
     }
 
     fn mint_local(&self) -> (MobilePairing, iroh_tickets::endpoint::EndpointTicket) {
-        let (ticket, _expires) = self.desktop.mint_ticket_for(loopback_addr(&self.desktop_ep));
+        let (ticket, _expires) = self
+            .desktop
+            .mint_ticket_for(loopback_addr(&self.desktop_ep));
         let pairing = parse_ticket(&ticket).expect("mobile parses a desktop ticket");
         let endpoint_ticket = pairing.node.parse().expect("EndpointTicket string");
         (pairing, endpoint_ticket)

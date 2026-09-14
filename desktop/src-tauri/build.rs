@@ -5,8 +5,8 @@ fn main() {
     // commands that a `remote` capability explicitly grants (webview/mod.rs ACL
     // gate). Side effect: once an app manifest exists, local windows are gated
     // too — capabilities/default.json grants them for main + pair.
-    tauri_build::try_build(
-        tauri_build::Attributes::new().app_manifest(tauri_build::AppManifest::new().commands(&[
+    tauri_build::try_build(tauri_build::Attributes::new().app_manifest(
+        tauri_build::AppManifest::new().commands(&[
             "studio_url",
             "open_studio",
             "open_pairing_window",
@@ -15,7 +15,7 @@ fn main() {
             "pairing_begin",
             "pairing_status",
             "pairing_revoke",
-        ])),
-    )
+        ]),
+    ))
     .expect("failed to run tauri-build");
 }

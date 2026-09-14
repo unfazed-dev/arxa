@@ -264,11 +264,7 @@ impl Pairing {
     /// PUSH registrations can forward into its registry (M7). Called by
     /// pushd::init once it knows where the daemon lives.
     pub fn attach_pushd(&self, handle: crate::pushd::PushdHandle) {
-        let _ = self
-            .0
-            .pushd
-            .lock()
-            .map(|mut guard| guard.replace(handle));
+        let _ = self.0.pushd.lock().map(|mut guard| guard.replace(handle));
     }
 
     /// Every stored device push token: (node_id, platform, token). pushd's
@@ -519,9 +515,9 @@ async fn handle_stream(
             .unwrap_or_else(|p| p.into_inner())
             .clone();
         if let Some(h) = pushd {
-            if let Err(e) =
-                crate::pushd::register_token_blocking(&h.bind, &h.key, platform, push_token, &remote)
-            {
+            if let Err(e) = crate::pushd::register_token_blocking(
+                &h.bind, &h.key, platform, push_token, &remote,
+            ) {
                 eprintln!("[arxa-desktop] push token forward to pushd deferred: {e}");
             }
         }
@@ -860,11 +856,8 @@ mod qr_logo_tests {
                 qrcode::types::Color::Light => 255,
             }
         };
-        let mut prepared = rqrr::PreparedImage::prepare_from_greyscale(
-            total as usize,
-            total as usize,
-            img,
-        );
+        let mut prepared =
+            rqrr::PreparedImage::prepare_from_greyscale(total as usize, total as usize, img);
         let grids = prepared.detect_grids();
         assert_eq!(grids.len(), 1, "QR grid not detected");
         let (_meta, content) = grids[0].decode().expect("decode");
@@ -908,11 +901,7 @@ pub struct StatusResponse {
 #[tauri::command]
 pub fn pairing_status(state: State<'_, Pairing>) -> StatusResponse {
     let inner = &state.0;
-    let endpoint_ready = inner
-        .endpoint
-        .lock()
-        .map(|g| g.is_some())
-        .unwrap_or(false);
+    let endpoint_ready = inner.endpoint.lock().map(|g| g.is_some()).unwrap_or(false);
     let ticket_expires_at_ms = inner.active.lock().ok().and_then(|g| {
         g.as_ref()
             .filter(|t| t.minted_at.elapsed() < TICKET_TTL)

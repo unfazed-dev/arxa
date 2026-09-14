@@ -105,10 +105,7 @@ pub fn init(app: &AppHandle) {
     };
     let child = Command::new(&bin)
         .env("CAIRN_PUSHD_BIND", &bind)
-        .env(
-            "CAIRN_PUSHD_DB",
-            data_dir.join("cairn-pushd.db"),
-        )
+        .env("CAIRN_PUSHD_DB", data_dir.join("cairn-pushd.db"))
         .envs(env.iter().map(|(k, v)| (k.as_str(), v.as_str())))
         .spawn();
     match child {
@@ -188,7 +185,9 @@ fn pushd_binary() -> Option<PathBuf> {
     }
     let candidates = [
         "cairn-pushd".to_string(),
-        dirs_home().map(|h| format!("{h}/.cargo/bin/cairn-pushd")).unwrap_or_default(),
+        dirs_home()
+            .map(|h| format!("{h}/.cargo/bin/cairn-pushd"))
+            .unwrap_or_default(),
     ];
     // Absolute candidate first; bare name resolves via PATH.
     if let Some(abs) = candidates.iter().find(|c| Path::new(c).is_file()) {
@@ -225,7 +224,10 @@ fn ensure_env_file(path: &Path) -> Vec<(String, String)> {
                     .unwrap_or_else(|| "cairn-pushd.db".to_string()),
             ),
         ),
-        ("CAIRN_PUSHD_API_KEYS", Some(format!("arxa:{}:rail", new_secret()))),
+        (
+            "CAIRN_PUSHD_API_KEYS",
+            Some(format!("arxa:{}:rail", new_secret())),
+        ),
     ];
     for (key, value) in owned {
         match (pairs.iter().position(|(k, _)| k == key), &value) {
@@ -259,7 +261,10 @@ pub fn parse_env(body: &str) -> Vec<(String, String)> {
     body.lines()
         .map(str::trim)
         .filter(|l| !l.is_empty() && !l.starts_with('#'))
-        .filter_map(|l| l.split_once('=').map(|(k, v)| (k.trim().to_string(), v.trim().to_string())))
+        .filter_map(|l| {
+            l.split_once('=')
+                .map(|(k, v)| (k.trim().to_string(), v.trim().to_string()))
+        })
         .collect()
 }
 
@@ -274,10 +279,7 @@ pub fn render_env(pairs: &[(String, String)]) -> String {
 }
 
 fn env_value(pairs: &[(String, String)], key: &str) -> Option<String> {
-    pairs
-        .iter()
-        .find(|(k, _)| k == key)
-        .map(|(_, v)| v.clone())
+    pairs.iter().find(|(k, _)| k == key).map(|(_, v)| v.clone())
 }
 
 /// GET /v1/status over loopback TCP (bearer-authed — pushd has no
@@ -302,7 +304,13 @@ fn healthy(bind: &str, key: &str) -> Option<String> {
 /// Register a device push token with the daemon (POST /v1/tokens,
 /// bearer-authed). Called from pairing.rs when a phone registers over the
 /// tunnel, and at pushd boot for every stored paired device.
-pub async fn register_token(bind: &str, key: &str, platform: &str, token: &str, tag: &str) -> Result<(), String> {
+pub async fn register_token(
+    bind: &str,
+    key: &str,
+    platform: &str,
+    token: &str,
+    tag: &str,
+) -> Result<(), String> {
     let body = serde_json::json!({
         "token": token,
         "platform": platform,
@@ -338,22 +346,33 @@ pub async fn register_token(bind: &str, key: &str, platform: &str, token: &str, 
 
 /// Best-effort synchronous wrapper for contexts without an async runtime
 /// handle (the pairing stream handler calls this through tauri's runtime).
-pub fn register_token_blocking(bind: &str, key: &str, platform: &str, token: &str, tag: &str) -> Result<(), String> {
+pub fn register_token_blocking(
+    bind: &str,
+    key: &str,
+    platform: &str,
+    token: &str,
+    tag: &str,
+) -> Result<(), String> {
     let body = serde_json::json!({
         "token": token,
         "platform": platform,
         "account_tag": tag,
     })
     .to_string();
-    let mut stream = std::net::TcpStream::connect(bind).map_err(|e| format!("pushd connect: {e}"))?;
+    let mut stream =
+        std::net::TcpStream::connect(bind).map_err(|e| format!("pushd connect: {e}"))?;
     use std::io::{Read, Write};
     let req = format!(
         "POST /v1/tokens HTTP/1.1\r\nHost: {bind}\r\nAuthorization: Bearer {key}\r\nContent-Type: application/json\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{body}",
         body.len()
     );
-    stream.write_all(req.as_bytes()).map_err(|e| format!("pushd write: {e}"))?;
+    stream
+        .write_all(req.as_bytes())
+        .map_err(|e| format!("pushd write: {e}"))?;
     let mut resp = String::new();
-    stream.read_to_string(&mut resp).map_err(|e| format!("pushd read: {e}"))?;
+    stream
+        .read_to_string(&mut resp)
+        .map_err(|e| format!("pushd read: {e}"))?;
     let status = resp.lines().next().unwrap_or_default().to_string();
     if status.contains("201") || status.contains("409") {
         Ok(())
@@ -394,7 +413,14 @@ mod tests {
         assert!(key.starts_with("arxa:") && key.ends_with(":rail"), "{key}");
         // A second run with an operator-added line preserves it and keeps
         // the SAME generated key (the file exists now).
-        std::fs::write(&path, format!("CAIRN_FCM_CREDENTIALS_JSON=x\n{}", std::fs::read_to_string(&path).unwrap())).unwrap();
+        std::fs::write(
+            &path,
+            format!(
+                "CAIRN_FCM_CREDENTIALS_JSON=x\n{}",
+                std::fs::read_to_string(&path).unwrap()
+            ),
+        )
+        .unwrap();
         let again = ensure_env_file(&path);
         assert_eq!(env_value(&again, "CAIRN_PUSHD_API_KEYS"), Some(key));
         assert!(env_value(&again, "CAIRN_FCM_CREDENTIALS_JSON").is_some());

@@ -41,13 +41,18 @@ pub fn plist_path() -> Option<PathBuf> {
 }
 
 fn esc(s: &str) -> String {
-    s.replace('&', "&amp;").replace('<', "&lt;").replace('>', "&gt;")
+    s.replace('&', "&amp;")
+        .replace('<', "&lt;")
+        .replace('>', "&gt;")
 }
 
 /// The plist body. The shell's own PATH and ARXA_* overrides are copied in so
 /// the agent's engine sees exactly the environment a shell-spawned one did.
 pub fn render(sidecar: &Path, log: &Path) -> String {
-    let mut env = vec![("PATH".to_string(), std::env::var("PATH").unwrap_or_default())];
+    let mut env = vec![(
+        "PATH".to_string(),
+        std::env::var("PATH").unwrap_or_default(),
+    )];
     for k in ["ARXA_PORT", "ARXA_DSH_HOME", "ARXA_HOME", "ARXA_STUDIO_URL"] {
         if let Ok(v) = std::env::var(k) {
             if !v.trim().is_empty() {
@@ -57,7 +62,13 @@ pub fn render(sidecar: &Path, log: &Path) -> String {
     }
     let env_xml: String = env
         .iter()
-        .map(|(k, v)| format!("\t\t<key>{}</key>\n\t\t<string>{}</string>\n", esc(k), esc(v)))
+        .map(|(k, v)| {
+            format!(
+                "\t\t<key>{}</key>\n\t\t<string>{}</string>\n",
+                esc(k),
+                esc(v)
+            )
+        })
         .collect();
     let s = esc(&sidecar.to_string_lossy());
     let l = esc(&log.to_string_lossy());
@@ -118,7 +129,9 @@ fn launchctl(args: &[&str]) -> Result<String, String> {
 
 /// True when the agent is registered in the user's gui domain.
 pub fn loaded() -> bool {
-    service().map(|s| launchctl(&["print", &s]).is_ok()).unwrap_or(false)
+    service()
+        .map(|s| launchctl(&["print", &s]).is_ok())
+        .unwrap_or(false)
 }
 
 /// Kill-and-restart the engine under launchd (Engine → Restart Engine, and

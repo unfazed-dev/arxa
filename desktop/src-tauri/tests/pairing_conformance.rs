@@ -95,7 +95,9 @@ fn loopback_addr(ep: &Endpoint) -> EndpointAddr {
 /// Serves a fixed response and echoes back the request path and the `Host`
 /// header it actually received, so the desktop's Host rewrite is observable.
 async fn spawn_dummy_engine() -> (String, tokio::task::JoinHandle<()>) {
-    let listener = TcpListener::bind(("127.0.0.1", 0)).await.expect("engine bind");
+    let listener = TcpListener::bind(("127.0.0.1", 0))
+        .await
+        .expect("engine bind");
     let host_port = listener.local_addr().expect("engine addr").to_string();
     let handle = tokio::spawn(async move {
         while let Ok((sock, _)) = listener.accept().await {
@@ -153,8 +155,7 @@ async fn serve_one(sock: TcpStream) {
 /// contractually required to rewrite it, and the engine echoes what it saw.
 async fn http_get_raw(proxy_port: u16, path: &str) -> std::io::Result<String> {
     let mut sock = TcpStream::connect(("127.0.0.1", proxy_port)).await?;
-    let request =
-        format!("GET {path} HTTP/1.1\r\nHost: phone.local\r\nConnection: close\r\n\r\n");
+    let request = format!("GET {path} HTTP/1.1\r\nHost: phone.local\r\nConnection: close\r\n\r\n");
     sock.write_all(request.as_bytes()).await?;
     // Half-close so the mobile proxy's uplink copy finishes and the desktop
     // sees a complete request.
@@ -221,7 +222,9 @@ impl Harness {
     /// Mint a ticket the mobile side can dial over loopback, and pre-chew the
     /// two forms every live test needs.
     fn mint_local(&self) -> (MobilePairing, EndpointTicket) {
-        let (ticket, _expires) = self.desktop.mint_ticket_for(loopback_addr(&self.desktop_ep));
+        let (ticket, _expires) = self
+            .desktop
+            .mint_ticket_for(loopback_addr(&self.desktop_ep));
         let pairing = parse_ticket(&ticket).expect("mobile parses a desktop ticket");
         let endpoint_ticket = pairing.node.parse().expect("EndpointTicket string");
         (pairing, endpoint_ticket)
@@ -483,7 +486,15 @@ async fn a_rejected_token_returns_the_mobile_session_to_not_paired() {
 
     let store = Arc::new(RecordingStore::default());
     let mobile_ep = hermetic_endpoint(None).await;
-    step(run_session(store.clone(), shared, epoch, pairing, 2, mobile_ep)).await;
+    step(run_session(
+        store.clone(),
+        shared,
+        epoch,
+        pairing,
+        2,
+        mobile_ep,
+    ))
+    .await;
 
     let status = manager.status();
     assert_eq!(status.state, ConnectionState::NotPaired);

@@ -106,10 +106,15 @@ pub fn init(app: &AppHandle) {
             if let Ok(mut guard) = app.state::<CairnServerState>().child.lock() {
                 guard.replace(c);
             }
-            eprintln!("[arxa-desktop] cairn-server: spawned {} at {bind}", bin.display());
+            eprintln!(
+                "[arxa-desktop] cairn-server: spawned {} at {bind}",
+                bin.display()
+            );
         }
         Err(e) => {
-            eprintln!("[arxa-desktop] cairn-server: spawn failed ({e}) - mirror disabled this session");
+            eprintln!(
+                "[arxa-desktop] cairn-server: spawn failed ({e}) - mirror disabled this session"
+            );
         }
     }
 }
@@ -138,8 +143,8 @@ pub fn kill_spawned(app: &AppHandle) {
 fn push_rail(data_dir: &Path) -> Option<(String, String)> {
     let body = std::fs::read_to_string(data_dir.join(PUSHD_ENV_FILE)).ok()?;
     let pairs = parse_env(&body);
-    let bind = env_value(&pairs, "CAIRN_PUSHD_BIND")
-        .unwrap_or_else(|| "127.0.0.1:8090".to_string());
+    let bind =
+        env_value(&pairs, "CAIRN_PUSHD_BIND").unwrap_or_else(|| "127.0.0.1:8090".to_string());
     let key = env_value(&pairs, "CAIRN_PUSHD_API_KEYS")
         .and_then(|raw| raw.split(',').next().map(str::to_string))
         .and_then(|first| first.split(':').nth(1).map(str::to_string))
@@ -221,10 +226,7 @@ fn ensure_env_file(path: &Path) -> Vec<(String, String)> {
 }
 
 fn env_value(pairs: &[(String, String)], key: &str) -> Option<String> {
-    pairs
-        .iter()
-        .find(|(k, _)| k == key)
-        .map(|(_, v)| v.clone())
+    pairs.iter().find(|(k, _)| k == key).map(|(_, v)| v.clone())
 }
 
 /// GET /healthz over loopback TCP (unauthenticated - cairn-server's
@@ -232,11 +234,13 @@ fn env_value(pairs: &[(String, String)], key: &str) -> Option<String> {
 fn healthy(bind: &str) -> Option<String> {
     let mut stream = std::net::TcpStream::connect(bind).ok()?;
     use std::io::{Read, Write};
-    let req = format!("GET /healthz HTTP/1.1
+    let req = format!(
+        "GET /healthz HTTP/1.1
 Host: {bind}
 Connection: close
 
-");
+"
+    );
     stream.write_all(req.as_bytes()).ok()?;
     let mut buf = String::new();
     stream.read_to_string(&mut buf).ok()?;
@@ -254,16 +258,29 @@ mod tests {
 
     #[test]
     fn ensure_env_file_creates_owned_keys_once() {
-        let dir = std::env::temp_dir().join(format!("arxa-cairn-server-test-{}", std::process::id()));
+        let dir =
+            std::env::temp_dir().join(format!("arxa-cairn-server-test-{}", std::process::id()));
         std::fs::create_dir_all(&dir).unwrap();
         let path = dir.join("cairn-server.env");
         let _ = std::fs::remove_file(&path);
         let pairs = ensure_env_file(&path);
-        assert_eq!(env_value(&pairs, "CAIRN_BIND").as_deref(), Some(DEFAULT_BIND));
-        assert_eq!(env_value(&pairs, "CAIRN_SYNC_AUTH").as_deref(), Some("none"));
-        assert_eq!(env_value(&pairs, "CAIRN_REPLICATOR").as_deref(), Some("mirror"));
+        assert_eq!(
+            env_value(&pairs, "CAIRN_BIND").as_deref(),
+            Some(DEFAULT_BIND)
+        );
+        assert_eq!(
+            env_value(&pairs, "CAIRN_SYNC_AUTH").as_deref(),
+            Some("none")
+        );
+        assert_eq!(
+            env_value(&pairs, "CAIRN_REPLICATOR").as_deref(),
+            Some("mirror")
+        );
         let token = env_value(&pairs, "CAIRN_ADMIN_TOKEN").unwrap();
-        assert!(token.len() >= 32, "admin token must clear the daemon minimum: {token}");
+        assert!(
+            token.len() >= 32,
+            "admin token must clear the daemon minimum: {token}"
+        );
         #[cfg(unix)]
         {
             use std::os::unix::fs::PermissionsExt;
@@ -283,7 +300,10 @@ mod tests {
         .unwrap();
         let again = ensure_env_file(&path);
         assert_eq!(env_value(&again, "CAIRN_ADMIN_TOKEN"), Some(token));
-        assert_eq!(env_value(&again, "CAIRN_LICENSE_SECRET").as_deref(), Some("op-secret"));
+        assert_eq!(
+            env_value(&again, "CAIRN_LICENSE_SECRET").as_deref(),
+            Some("op-secret")
+        );
         let _ = std::fs::remove_file(&path);
         let _ = std::fs::remove_dir(&dir);
     }
@@ -301,12 +321,16 @@ mod tests {
         );
         // No override, no HOME: PATH lookup is the only candidate. Blank
         // strings count as absent (same filter as the env reads).
-        assert_eq!(discovery_order(Some("  "), Some("")), vec![PathBuf::from("cairn-server")]);
+        assert_eq!(
+            discovery_order(Some("  "), Some("")),
+            vec![PathBuf::from("cairn-server")]
+        );
     }
 
     #[test]
     fn push_rail_reads_secret_only_from_pushd_env() {
-        let dir = std::env::temp_dir().join(format!("arxa-cairn-server-rail-{}", std::process::id()));
+        let dir =
+            std::env::temp_dir().join(format!("arxa-cairn-server-rail-{}", std::process::id()));
         std::fs::create_dir_all(&dir).unwrap();
         // Absent keystore means no rail (push never set up).
         assert!(push_rail(&dir).is_none());

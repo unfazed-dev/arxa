@@ -6,21 +6,15 @@ use tauri::Manager;
 
 fn open_pair(app: &tauri::AppHandle) -> Result<(), String> {
     if let Some(win) = app.get_webview_window("pair") {
-        return win
-            .set_focus()
-            .map_err(|e| format!("FOCUS-ERR: {e}"));
+        return win.set_focus().map_err(|e| format!("FOCUS-ERR: {e}"));
     }
-    tauri::WebviewWindowBuilder::new(
-        app,
-        "pair",
-        tauri::WebviewUrl::App("pair.html".into()),
-    )
-    .title("Pair Mobile Device")
-    .inner_size(420.0, 620.0)
-    .resizable(false)
-    .build()
-    .map(|_| ())
-    .map_err(|e| format!("BUILD-ERR: {e}"))
+    tauri::WebviewWindowBuilder::new(app, "pair", tauri::WebviewUrl::App("pair.html".into()))
+        .title("Pair Mobile Device")
+        .inner_size(420.0, 620.0)
+        .resizable(false)
+        .build()
+        .map(|_| ())
+        .map_err(|e| format!("BUILD-ERR: {e}"))
 }
 
 fn main() {

@@ -75,10 +75,12 @@ async fn main() {
         .and_then(|s| s.parse().ok())
         .or_else(lan_ip)
         .expect("no advertise ip given and no LAN interface found");
-    let store_dir = PathBuf::from(
-        args.next()
-            .unwrap_or_else(|| std::env::temp_dir().join("arxa-pairhost").to_string_lossy().into_owned()),
-    );
+    let store_dir = PathBuf::from(args.next().unwrap_or_else(|| {
+        std::env::temp_dir()
+            .join("arxa-pairhost")
+            .to_string_lossy()
+            .into_owned()
+    }));
     std::fs::create_dir_all(&store_dir).expect("create store dir");
 
     let (pairing, secret, secret_hex) =
@@ -91,7 +93,10 @@ async fn main() {
     // credential file: bind + the first tenant:secret key, same pick as the
     // engine's doorbell (push-doorbell/lib/index.js apiKeyFromEnv).
     if let Some((bind, key)) = read_pushd_env(store_dir.join("pushd.env")) {
-        pairing.attach_pushd(PushdHandle { bind: bind.clone(), key });
+        pairing.attach_pushd(PushdHandle {
+            bind: bind.clone(),
+            key,
+        });
         eprintln!("[pairhost] pushd forward wired: {bind}");
     }
 
