@@ -16,7 +16,7 @@ const int kContextImageQuality = 82;
 
 class ConversationMedia {
   ConversationMedia({ArxaKitMediaCaptureService? capture})
-      : _capture = capture ?? ArxaKitImagePickerMediaCaptureService();
+    : _capture = capture ?? ArxaKitImagePickerMediaCaptureService();
 
   final ArxaKitMediaCaptureService _capture;
   final ImagePicker _picker = ImagePicker();
@@ -27,9 +27,10 @@ class ConversationMedia {
   /// Shoot one bounded photo. null = the user backed out.
   Future<XFile?> capturePhoto() async {
     final result = await _capture.capturePhoto(
-        source: ArxaKitMediaSource.camera,
-        maxWidth: kContextImageMaxEdge.toDouble(),
-        imageQuality: kContextImageQuality);
+      source: ArxaKitMediaSource.camera,
+      maxWidth: kContextImageMaxEdge.toDouble(),
+      imageQuality: kContextImageQuality,
+    );
     final shot = switch (result) {
       ArxaKitMediaCaptured(:final media) => XFile(media.path),
       _ => null,
@@ -40,9 +41,10 @@ class ConversationMedia {
   /// Pick one bounded photo from the library (the system picker — no
   /// photo-library permission needed for this path).
   Future<XFile?> pickPhoto() => _picker.pickImage(
-      source: ImageSource.gallery,
-      maxWidth: kContextImageMaxEdge.toDouble(),
-      imageQuality: kContextImageQuality);
+    source: ImageSource.gallery,
+    maxWidth: kContextImageMaxEdge.toDouble(),
+    imageQuality: kContextImageQuality,
+  );
 
   /// Pick one file of any type (the system document picker).
   Future<XFile?> pickFile() async {
@@ -58,7 +60,10 @@ class ConversationMedia {
     final permission = await PhotoManager.requestPermissionExtend();
     if (!permission.hasAccess) return const [];
     final paths = await PhotoManager.getAssetPathList(
-        type: RequestType.image, onlyAll: true, filterOption: FilterOptionGroup());
+      type: RequestType.image,
+      onlyAll: true,
+      filterOption: FilterOptionGroup(),
+    );
     if (paths.isEmpty) return const [];
     return paths.first.getAssetListRange(start: 0, end: limit);
   }

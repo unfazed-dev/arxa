@@ -45,7 +45,9 @@ const phase = String.fromEnvironment('PHASE', defaultValue: 'smoke');
 /// device must reach the harness over the LAN (D68 runbook):
 ///   `--dart-define=TICKET_URL=http://<lan-ip>:8899/ticket.txt`
 const ticketUrl = String.fromEnvironment(
-    'TICKET_URL', defaultValue: 'http://127.0.0.1:8899/ticket.txt');
+  'TICKET_URL',
+  defaultValue: 'http://127.0.0.1:8899/ticket.txt',
+);
 
 /// main()'s body minus runApp — the real boot, in-process, ONCE: the kit
 /// refuses a second initialize and the locator is process-global, so every
@@ -95,11 +97,16 @@ Future<String> liveTicket() async {
 /// Raw JSON over the tunnel's loopback proxy — the same transport
 /// ApprovalsApiClient uses, for the engine /api contract and the gated test
 /// seam (D68 phone leg: the test raises its own pending in-process).
-Future<Map<String, dynamic>> tunnelJson(String method, Uri base, String path,
-    [Map<String, dynamic>? body]) async {
+Future<Map<String, dynamic>> tunnelJson(
+  String method,
+  Uri base,
+  String path, [
+  Map<String, dynamic>? body,
+]) async {
   final client = HttpClient();
   try {
-    final request = await client.openUrl(method, base.resolve(path))
+    final request = await client
+        .openUrl(method, base.resolve(path))
         .timeout(const Duration(seconds: 10));
     request.headers.set('accept', 'application/json');
     if (body != null) {
@@ -127,8 +134,10 @@ Future<Uri> pairThroughUi(WidgetTester tester) async {
   final deadline = DateTime.now().add(const Duration(seconds: 90));
   while (transport.current.state != ArxaConnectionState.connected) {
     if (DateTime.now().isAfter(deadline)) {
-      fail('pairing did not reach connected: '
-          '${transport.current.state} ${transport.current.error ?? ""}');
+      fail(
+        'pairing did not reach connected: '
+        '${transport.current.state} ${transport.current.error ?? ""}',
+      );
     }
     await tester.pump(const Duration(milliseconds: 200));
   }
@@ -162,9 +171,9 @@ void main() {
   /// The e2e app has no accent source wired — the theme keeps the kit
   /// default (the sync service is a main()-side concern).
   Widget app() => ArxaStudioMobileApp(
-        startsInStudio: false,
-        accentSync: AccentSync(FakeTransportService()),
-      );
+    startsInStudio: false,
+    accentSync: AccentSync(FakeTransportService()),
+  );
 
   testWidgets('smoke: boot, pair, approvals shell live', (tester) async {
     await bootRealApp();
@@ -179,8 +188,9 @@ void main() {
     expect(find.text('Approvals'), findsOneWidget);
   });
 
-  testWidgets('e2e: pending approvals list and answer on the phone',
-      (tester) async {
+  testWidgets('e2e: pending approvals list and answer on the phone', (
+    tester,
+  ) async {
     // smoke stops after its own leg; phone runs raise their OWN pending
     // in-test (below) — pre-raised cards would never appear here.
     if (phase == 'smoke' || phase == 'phone') return;
@@ -197,7 +207,9 @@ void main() {
     final cardMarker = find.byType(Card);
     var deadline = DateTime.now().add(const Duration(seconds: 45));
     while (cardMarker.evaluate().isEmpty) {
-      if (DateTime.now().isAfter(deadline)) fail('no pending approval card appeared');
+      if (DateTime.now().isAfter(deadline)) {
+        fail('no pending approval card appeared');
+      }
       try {
         await locator<ApprovalsRepository>().refresh();
       } on Exception catch (e) {
@@ -220,7 +232,9 @@ void main() {
     // The decided approval leaves the list (bounded).
     deadline = DateTime.now().add(const Duration(seconds: 30));
     while (find.byType(CircularProgressIndicator).evaluate().isNotEmpty) {
-      if (DateTime.now().isAfter(deadline)) fail('decided approval did not leave the list');
+      if (DateTime.now().isAfter(deadline)) {
+        fail('decided approval did not leave the list');
+      }
       await tester.pump(const Duration(milliseconds: 300));
     }
 
@@ -257,155 +271,182 @@ void main() {
   // ARXA_APPROVALS_TEST_SEAM=true and a REAL pushd holding the operator's
   // .p8 (CAIRN_APNS_SANDBOX=1 — development-signed build). Self-contained:
   // raises its own pending through the tunnel, no out-of-band driver.
-  testWidgets('phone: real APNs doorbell — buzz, list, decide, unblock',
-      (tester) async {
-    if (phase != 'phone') return;
-    await bootRealApp();
-    await tester.pumpWidget(app());
-    await tester.pump(const Duration(seconds: 1));
-    await pairThroughUi(tester);
+  testWidgets(
+    'phone: real APNs doorbell — buzz, list, decide, unblock',
+    (tester) async {
+      if (phase != 'phone') return;
+      await bootRealApp();
+      await tester.pumpWidget(app());
+      await tester.pump(const Duration(seconds: 1));
+      await pairThroughUi(tester);
 
-    // CELLULAR variant: the operator flips Wi-Fi off inside this window;
-    // from here everything rides the iroh tunnel (relay-traversing) + APNs.
-    if (const bool.fromEnvironment('CELLULAR')) {
-      debugPrint('CELLULAR: FLIP WI-FI OFF NOW — Control Center → Wi-Fi — resuming in 5 min');
-      await Future<void>.delayed(const Duration(seconds: 300));
-      // The iroh tunnel must re-dial over the cellular relay; wait until a
-      // cheap tunnel round-trip succeeds (up to 3 min) before resuming.
-      var reconnected = false;
-      // resume() supersedes the in-flight dial (fresh epoch), so re-issue it
-      // RARELY — each budget needs ~50s of room to dial over the relay.
-      for (var attempt = 0; attempt < 90 && !reconnected; attempt++) {
-        try {
-          final t = locator<TransportService>().current.studioUrl;
-          if (t == null) throw StateError('no tunnel yet');
-          await tunnelJson('GET', t, '/__arxa/approvals');
-          reconnected = true;
-          debugPrint('CELLULAR: tunnel re-established after $attempt probes');
-        } catch (_) {
-          if (attempt % 10 == 0) {
-            debugPrint('CELLULAR: issuing resume at attempt $attempt');
-            try { await locator<TransportService>().resume(); } catch (_) {}
-          } else {
-            debugPrint('CELLULAR: tunnel not ready (attempt $attempt)');
+      // CELLULAR variant: the operator flips Wi-Fi off inside this window;
+      // from here everything rides the iroh tunnel (relay-traversing) + APNs.
+      if (const bool.fromEnvironment('CELLULAR')) {
+        debugPrint(
+          'CELLULAR: FLIP WI-FI OFF NOW — Control Center → Wi-Fi — resuming in 5 min',
+        );
+        await Future<void>.delayed(const Duration(seconds: 300));
+        // The iroh tunnel must re-dial over the cellular relay; wait until a
+        // cheap tunnel round-trip succeeds (up to 3 min) before resuming.
+        var reconnected = false;
+        // resume() supersedes the in-flight dial (fresh epoch), so re-issue it
+        // RARELY — each budget needs ~50s of room to dial over the relay.
+        for (var attempt = 0; attempt < 90 && !reconnected; attempt++) {
+          try {
+            final t = locator<TransportService>().current.studioUrl;
+            if (t == null) throw StateError('no tunnel yet');
+            await tunnelJson('GET', t, '/__arxa/approvals');
+            reconnected = true;
+            debugPrint('CELLULAR: tunnel re-established after $attempt probes');
+          } catch (_) {
+            if (attempt % 10 == 0) {
+              debugPrint('CELLULAR: issuing resume at attempt $attempt');
+              try {
+                await locator<TransportService>().resume();
+              } catch (_) {}
+            } else {
+              debugPrint('CELLULAR: tunnel not ready (attempt $attempt)');
+            }
+            await Future<void>.delayed(const Duration(seconds: 5));
           }
-          await Future<void>.delayed(const Duration(seconds: 5));
+        }
+        if (!reconnected) {
+          fail('CELLULAR: tunnel never re-established over cellular');
         }
       }
-      if (!reconnected) fail('CELLULAR: tunnel never re-established over cellular');
-    }
 
-    // 1. Permission + the REAL APNs token. First run ever shows the OS
-    //    dialog — tap Allow on the phone. The bridge registers the token
-    //    over the tunnel (PUSH frame → pairing.json → pushd /v1/tokens).
-    final push = locator<PushTokenService>();
-    final permission = await push.requestPermission();
-    debugPrint('PHONE: permission=${permission.status}');
-    expect(permission.isGranted, isTrue,
-        reason: 'notification permission must be granted (tap Allow)');
-    final backend = locator<ArxaKitNotificationsService>();
-    final token = await backend.currentToken();
-    debugPrint('PHONE: apns token=${token?.value}');
-    expect(token, isNotNull,
-        reason: 'APNs device token must mint (entitlement + registration)');
-    // The PUSH registration needs a beat to land in pairing.json before
-    // anything rings (the doorbell reads its targets at send time).
-    await tester.pump(const Duration(seconds: 3));
+      // 1. Permission + the REAL APNs token. First run ever shows the OS
+      //    dialog — tap Allow on the phone. The bridge registers the token
+      //    over the tunnel (PUSH frame → pairing.json → pushd /v1/tokens).
+      final push = locator<PushTokenService>();
+      final permission = await push.requestPermission();
+      debugPrint('PHONE: permission=${permission.status}');
+      expect(
+        permission.isGranted,
+        isTrue,
+        reason: 'notification permission must be granted (tap Allow)',
+      );
+      final backend = locator<ArxaKitNotificationsService>();
+      final token = await backend.currentToken();
+      debugPrint('PHONE: apns token=${token?.value}');
+      expect(
+        token,
+        isNotNull,
+        reason: 'APNs device token must mint (entitlement + registration)',
+      );
+      // The PUSH registration needs a beat to land in pairing.json before
+      // anything rings (the doorbell reads its targets at send time).
+      await tester.pump(const Duration(seconds: 3));
 
-    // 2. Arm the buzz capture BEFORE raising: the doorbell fires on the mux
-    //    frame's FIRST sight — subscribe first or miss it.
-    final buzz = Completer<ArxaKitRemoteMessage>();
-    final sub = backend.foregroundMessages.listen((m) {
-      if (!buzz.isCompleted) buzz.complete(m);
-    });
+      // 2. Arm the buzz capture BEFORE raising: the doorbell fires on the mux
+      //    frame's FIRST sight — subscribe first or miss it.
+      final buzz = Completer<ArxaKitRemoteMessage>();
+      final sub = backend.foregroundMessages.listen((m) {
+        if (!buzz.isCompleted) buzz.complete(m);
+      });
 
-    // 3. Raise a real pending through the tunnel: session.create gives an
-    //    idle-but-live agent; the seam raises the ask through the real
-    //    provider (no LLM — the seam replaces the question source only).
-    final base = locator<TransportService>().current.studioUrl!;
-    final created = await tunnelJson('POST', base, '/api/session.create', {
-      'type': 'client-request',
-      'rpcId': 'phone-1',
-      'method': 'session.create',
-      'payload': <String, dynamic>{},
-    });
-    final sessionId = ((created['result'] as Map<String, dynamic>)['value']
-        as Map<String, dynamic>)['sessionId'] as String;
-    debugPrint('PHONE: session $sessionId');
-    final raised = await tunnelJson(
-        'POST', base, '/__arxa/approvals/__test_raise', {
-      'sessionId': sessionId,
-      'questions': [
+      // 3. Raise a real pending through the tunnel: session.create gives an
+      //    idle-but-live agent; the seam raises the ask through the real
+      //    provider (no LLM — the seam replaces the question source only).
+      final base = locator<TransportService>().current.studioUrl!;
+      final created = await tunnelJson('POST', base, '/api/session.create', {
+        'type': 'client-request',
+        'rpcId': 'phone-1',
+        'method': 'session.create',
+        'payload': <String, dynamic>{},
+      });
+      final sessionId =
+          ((created['result'] as Map<String, dynamic>)['value']
+                  as Map<String, dynamic>)['sessionId']
+              as String;
+      debugPrint('PHONE: session $sessionId');
+      final raised = await tunnelJson(
+        'POST',
+        base,
+        '/__arxa/approvals/__test_raise',
         {
-          'id': 'q1',
-          'question': 'Ship the release?',
-          'header': 'Release',
-          'options': [
-            {'label': 'Approve', 'description': 'ship it'},
-            {'label': 'Deny', 'description': 'hold'},
+          'sessionId': sessionId,
+          'questions': [
+            {
+              'id': 'q1',
+              'question': 'Ship the release?',
+              'header': 'Release',
+              'options': [
+                {'label': 'Approve', 'description': 'ship it'},
+                {'label': 'Deny', 'description': 'hold'},
+              ],
+            },
           ],
+        },
+      );
+      // The seam's counter is ENGINE-GLOBAL and survives app restarts (a
+      // prior run's raises count too) — assert the increment, not the total.
+      expect(
+        (raised['raised'] as int) > 0,
+        isTrue,
+        reason: 'seam must raise the ask',
+      );
+
+      // 4. THE BUZZ: cairn-pushd → APNs sandbox → system presentation while
+      //    foregrounded (native willPresent → channel event). The leg nothing
+      //    simulated — real network, real .p8, real device radio.
+      final message = await buzz.future.timeout(const Duration(seconds: 90));
+      await sub.cancel();
+      debugPrint('PHONE: BUZZ title=${message.title} body=${message.body}');
+      expect(message.title, 'Approval needed', reason: 'D65 content-free copy');
+      expect(message.body, contains('review'));
+
+      // 5. List → decide: the same rails as the e2e phase, on hardware.
+      await openApprovals(tester);
+      final cardMarker = find.byType(Card);
+      var deadline = DateTime.now().add(const Duration(seconds: 45));
+      while (cardMarker.evaluate().isEmpty) {
+        if (DateTime.now().isAfter(deadline)) {
+          fail('no pending approval card appeared');
         }
-      ],
-    });
-    // The seam's counter is ENGINE-GLOBAL and survives app restarts (a
-    // prior run's raises count too) — assert the increment, not the total.
-    expect((raised['raised'] as int) > 0, isTrue,
-        reason: 'seam must raise the ask');
+        try {
+          await locator<ApprovalsRepository>().refresh();
+        } on Exception catch (e) {
+          debugPrint('E2E: wait-refresh: $e');
+        }
+        await tester.pump(const Duration(milliseconds: 300));
+      }
+      final chips = find.byType(FilterChip);
+      expect(chips, findsWidgets);
+      await tester.tap(chips.first);
+      await tester.pump();
+      final send = find.text('Send answer');
+      expect(send, findsWidgets);
+      await tester.tap(send.first);
+      deadline = DateTime.now().add(const Duration(seconds: 30));
+      while (find.byType(CircularProgressIndicator).evaluate().isNotEmpty) {
+        if (DateTime.now().isAfter(deadline)) {
+          fail('decided approval did not leave the list');
+        }
+        await tester.pump(const Duration(milliseconds: 300));
+      }
 
-    // 4. THE BUZZ: cairn-pushd → APNs sandbox → system presentation while
-    //    foregrounded (native willPresent → channel event). The leg nothing
-    //    simulated — real network, real .p8, real device radio.
-    final message = await buzz.future.timeout(const Duration(seconds: 90));
-    await sub.cancel();
-    debugPrint('PHONE: BUZZ title=${message.title} body=${message.body}');
-    expect(message.title, 'Approval needed', reason: 'D65 content-free copy');
-    expect(message.body, contains('review'));
-
-    // 5. List → decide: the same rails as the e2e phase, on hardware.
-    await openApprovals(tester);
-    final cardMarker = find.byType(Card);
-    var deadline = DateTime.now().add(const Duration(seconds: 45));
-    while (cardMarker.evaluate().isEmpty) {
-      if (DateTime.now().isAfter(deadline)) {
-        fail('no pending approval card appeared');
+      // 6. Agent unblock: the seam's ask resolved with the phone's answer —
+      //    apiProxy.respond carried it to the live agent's ask().
+      Map<String, dynamic> seamState = const <String, dynamic>{};
+      deadline = DateTime.now().add(const Duration(seconds: 30));
+      while (true) {
+        seamState = await tunnelJson(
+          'GET',
+          base,
+          '/__arxa/approvals/__test_raised',
+        );
+        final answered =
+            (seamState['answered'] as List<dynamic>? ?? <dynamic>[]).length;
+        if (answered >= 1) break;
+        if (DateTime.now().isAfter(deadline)) {
+          fail('agent ask never resolved: $seamState');
+        }
+        await tester.pump(const Duration(milliseconds: 300));
       }
-      try {
-        await locator<ApprovalsRepository>().refresh();
-      } on Exception catch (e) {
-        debugPrint('E2E: wait-refresh: $e');
-      }
-      await tester.pump(const Duration(milliseconds: 300));
-    }
-    final chips = find.byType(FilterChip);
-    expect(chips, findsWidgets);
-    await tester.tap(chips.first);
-    await tester.pump();
-    final send = find.text('Send answer');
-    expect(send, findsWidgets);
-    await tester.tap(send.first);
-    deadline = DateTime.now().add(const Duration(seconds: 30));
-    while (find.byType(CircularProgressIndicator).evaluate().isNotEmpty) {
-      if (DateTime.now().isAfter(deadline)) {
-        fail('decided approval did not leave the list');
-      }
-      await tester.pump(const Duration(milliseconds: 300));
-    }
-
-    // 6. Agent unblock: the seam's ask resolved with the phone's answer —
-    //    apiProxy.respond carried it to the live agent's ask().
-    Map<String, dynamic> seamState = const <String, dynamic>{};
-    deadline = DateTime.now().add(const Duration(seconds: 30));
-    while (true) {
-      seamState = await tunnelJson(
-          'GET', base, '/__arxa/approvals/__test_raised');
-      final answered =
-          (seamState['answered'] as List<dynamic>? ?? <dynamic>[]).length;
-      if (answered >= 1) break;
-      if (DateTime.now().isAfter(deadline)) {
-        fail('agent ask never resolved: $seamState');
-      }
-      await tester.pump(const Duration(milliseconds: 300));
-    }
-    debugPrint('PHONE: AGENT UNBLOCKED ${seamState['answered']}');
-  }, timeout: const Timeout(Duration(minutes: 8)));
+      debugPrint('PHONE: AGENT UNBLOCKED ${seamState['answered']}');
+    },
+    timeout: const Timeout(Duration(minutes: 8)),
+  );
 }

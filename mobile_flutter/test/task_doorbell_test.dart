@@ -51,18 +51,25 @@ void main() {
     doorbell.dispose();
   });
 
-  test('failed outcome rings Task failed; dedupe holds across re-emits', () async {
-    final repo = _FakeTaskRepository();
-    final notifications = FakeArxaKitNotificationsService();
-    final doorbell = TaskDoorbell(repo, notifications)..listen();
-    repo.emit(const []);
-    await Future<void>.delayed(const Duration(milliseconds: 20));
-    repo.emit([task('f1', status: 'failed')]);
-    await Future<void>.delayed(const Duration(milliseconds: 20));
-    expect(notifications.shown.single.title, 'Task failed');
-    repo.emit([task('f1', status: 'failed')]);
-    await Future<void>.delayed(const Duration(milliseconds: 20));
-    expect(notifications.shown, hasLength(1), reason: 'known id never re-buzzes');
-    doorbell.dispose();
-  });
+  test(
+    'failed outcome rings Task failed; dedupe holds across re-emits',
+    () async {
+      final repo = _FakeTaskRepository();
+      final notifications = FakeArxaKitNotificationsService();
+      final doorbell = TaskDoorbell(repo, notifications)..listen();
+      repo.emit(const []);
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+      repo.emit([task('f1', status: 'failed')]);
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+      expect(notifications.shown.single.title, 'Task failed');
+      repo.emit([task('f1', status: 'failed')]);
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+      expect(
+        notifications.shown,
+        hasLength(1),
+        reason: 'known id never re-buzzes',
+      );
+      doorbell.dispose();
+    },
+  );
 }

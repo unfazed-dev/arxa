@@ -54,7 +54,7 @@ class ApprovalsRemoteException implements Exception {
 
 class ApprovalsApiClient {
   ApprovalsApiClient({required this.transport, HttpClient? httpClient})
-      : _httpClient = httpClient ?? HttpClient();
+    : _httpClient = httpClient ?? HttpClient();
 
   final TransportService transport;
   final HttpClient _httpClient;
@@ -73,16 +73,29 @@ class ApprovalsApiClient {
   /// Answer a pending approval. Throws [ApprovalsConflictException] on 409,
   /// [ApprovalsOfflineException] with no tunnel.
   Future<void> decide(String id, List<ApprovalAnswer> answers) async {
-    await _json('POST', '/__arxa/approvals/action',
-        body: {'action': 'decide', 'arg': {'id': id, 'answers': [for (final a in answers) a.toJson()]}});
+    await _json(
+      'POST',
+      '/__arxa/approvals/action',
+      body: {
+        'action': 'decide',
+        'arg': {
+          'id': id,
+          'answers': [for (final a in answers) a.toJson()],
+        },
+      },
+    );
   }
 
-  Future<Map<String, dynamic>> _json(String method, String path,
-      {Map<String, dynamic>? body}) async {
+  Future<Map<String, dynamic>> _json(
+    String method,
+    String path, {
+    Map<String, dynamic>? body,
+  }) async {
     final base = _base;
     if (base == null) throw ApprovalsOfflineException();
     try {
-      final request = await _httpClient.openUrl(method, base.resolve(path))
+      final request = await _httpClient
+          .openUrl(method, base.resolve(path))
           .timeout(const Duration(seconds: 10));
       request.headers.set('accept', 'application/json');
       if (body != null) {
@@ -91,12 +104,14 @@ class ApprovalsApiClient {
         request.headers.contentLength = utf8.encode(encoded).length;
         request.write(encoded);
       }
-      final response =
-          await request.close().timeout(const Duration(seconds: 10));
+      final response = await request.close().timeout(
+        const Duration(seconds: 10),
+      );
       final text = await response.transform(utf8.decoder).join();
       if (response.statusCode == 409) {
         throw ApprovalsConflictException(
-            (jsonDecode(text)['error'] as String?) ?? 'not-pending');
+          (jsonDecode(text)['error'] as String?) ?? 'not-pending',
+        );
       }
       if (response.statusCode != 200) {
         throw ApprovalsRemoteException(response.statusCode, text);

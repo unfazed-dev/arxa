@@ -236,9 +236,33 @@ with `createUpdaterArtifacts`, and publishes to the **public**
 
 Signing/notarization happen inside `tauri build`: Tauri codesigns when
 `APPLE_SIGNING_IDENTITY` is set and notarizes (notarytool) when the
-`APPLE_ID`/`APPLE_PASSWORD`/`APPLE_TEAM_ID` trio is set. Absent notary secrets
-⇒ signed-but-unnotarized build (warning, not failure); absent cert ⇒ ad-hoc
-signature. `scripts/sign-and-notarize.sh` remains the local/manual path.
+`APPLE_ID`/`APPLE_PASSWORD`/`APPLE_TEAM_ID` trio is set. **Channel policy
+(fail-closed stable):** a `studio-v*` tag refuses to build unless the Developer
+ID cert + identity + notary trio + updater key + release token are ALL set,
+then re-verifies the built app (codesign `Authority=Developer ID Application`,
+`stapler validate` on app and dmg, `spctl`) before anything publishes. A
+`studio-beta-v*` tag may ship unnotarized — with `::warning::` annotations and
+matching `latest.json` notes ("beta, UNNOTARIZED preview"), never labelled
+stable. `scripts/sign-and-notarize.sh` remains the local/manual path. macOS
+assets also get `.sha256` sidecars (like Linux) — `install-macos.sh` verifies
+them.
+
+### The macOS installer twin (`scripts/install-macos.sh`)
+
+Same contract as the Linux `install.sh`, served from the arxa-releases root by
+the release workflow: channel-manifest fetch, `.sha256` verification (plus the
+minisign `.sig` when `minisign` is installed — pubkey pinned in the script),
+per-user install to `~/Applications`, sticky channel in
+`~/.config/arxa-studio/channel`, `--uninstall` (keeps `~/.arxa`). Knobs:
+`ARXA_CHANNEL`, `ARXA_STUDIO_BUNDLE=<file|url>`, `ARXA_MANIFEST_BASE`
+(`file://` works, so the focused test — `sh desktop/scripts/test-install-macos.sh`
+— runs entirely offline against a scratch `$HOME`).
+
+Known gap: the shell reads its update channel from `ARXA_UPDATE_CHANNEL` (env)
+at runtime, not from the installer's channel file — a beta installed via the
+installer still updates from the stable feed in-app unless the env var is set.
+Fixing that means the shell reading `~/.config/arxa-studio/channel` (a
+`src-tauri` change, deliberately out of this round's scope).
 
 The job declares `environment: release` (D10 key custody): the two
 `TAURI_SIGNING_*` secrets live in that **protected GitHub environment**
@@ -277,9 +301,16 @@ are repo-level.
 
 ## Remaining work (tracked in arxa-studio docs/plans/desktop-shell-scaffold.md)
 
-- real icon assets (`icons/icon.png` is a solid-color placeholder; `.icns`/`.ico` set still needed)
 - shell should optionally auto-spawn the `arxa-studio` sidecar on launch
-- notarization credentials (see "Release CI" secrets) — signing itself is done
+- notarization credentials (see "Release CI" secrets) — signing itself is done.
+  Prep validated 2026-09-14: Developer ID identity present in the keychain,
+  `entitlements.plist` lints clean (JIT pair, no `get-task-allow`), hardened
+  runtime + `--timestamp` in `sign-and-notarize.sh`, updater key on disk
+  (mode 600) with the matching minisign pubkey in `tauri.conf.json`, and the
+  `notarytool submit --keychain-profile arxa-notary --wait` command shape
+  verified against the CLI. The one missing piece is the keychain profile
+  itself (`xcrun notarytool store-credentials arxa-notary …`, the operator's
+  app-specific password — never automated here; external AXS-019).
 
 
 ## Push sidecar (M7 — cairn-pushd supervision)

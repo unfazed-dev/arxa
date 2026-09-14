@@ -12,7 +12,6 @@ class SettingsHomeViewTablet extends ViewModelWidget<SettingsHomeViewModel> {
   const SettingsHomeViewTablet({super.key});
 
   @override
-  Widget build(context, viewModel) => const Scaffold(
-        body: Center(child: Text('settings.home · tablet')),
-      );
+  Widget build(context, viewModel) =>
+      const Scaffold(body: Center(child: Text('settings.home · tablet')));
 }

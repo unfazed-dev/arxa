@@ -8,11 +8,11 @@ import 'package:arxa_kit_ui_library/arxa_kit_ui_library.dart'
 
 import 'pairing_connecting_viewmodel.dart';
 
-class PairingConnectingViewTablet extends ViewModelWidget<PairingConnectingViewModel> {
+class PairingConnectingViewTablet
+    extends ViewModelWidget<PairingConnectingViewModel> {
   const PairingConnectingViewTablet({super.key});
 
   @override
-  Widget build(context, viewModel) => const Scaffold(
-        body: Center(child: Text('pairing.connecting · tablet')),
-      );
+  Widget build(context, viewModel) =>
+      const Scaffold(body: Center(child: Text('pairing.connecting · tablet')));
 }

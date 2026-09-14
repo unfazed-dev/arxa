@@ -8,11 +8,12 @@ import 'package:arxa_kit_ui_library/arxa_kit_ui_library.dart'
 
 import 'pairing_push_permission_viewmodel.dart';
 
-class PairingPushPermissionViewTablet extends ViewModelWidget<PairingPushPermissionViewModel> {
+class PairingPushPermissionViewTablet
+    extends ViewModelWidget<PairingPushPermissionViewModel> {
   const PairingPushPermissionViewTablet({super.key});
 
   @override
   Widget build(context, viewModel) => const Scaffold(
-        body: Center(child: Text('pairing.push_permission · tablet')),
-      );
+    body: Center(child: Text('pairing.push_permission · tablet')),
+  );
 }

@@ -12,7 +12,6 @@ class StudioSessionViewTablet extends ViewModelWidget<StudioSessionViewModel> {
   const StudioSessionViewTablet({super.key});
 
   @override
-  Widget build(context, viewModel) => const Scaffold(
-        body: Center(child: Text('studio.session · tablet')),
-      );
+  Widget build(context, viewModel) =>
+      const Scaffold(body: Center(child: Text('studio.session · tablet')));
 }

@@ -6,5 +6,5 @@ enum TapRoute { studioRoot, approvals }
 
 TapRoute routeForTap(String? collapseKey) =>
     (collapseKey ?? '').startsWith('task')
-        ? TapRoute.studioRoot
-        : TapRoute.approvals;
+    ? TapRoute.studioRoot
+    : TapRoute.approvals;

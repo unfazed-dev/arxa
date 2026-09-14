@@ -17,19 +17,14 @@ import 'transport_service.dart';
 
 /// The exact swatches the studio's Accent row offers (theme-accent
 /// client.js SWATCHES — keep in lockstep; anything else is rejected).
-const studioAccentSwatches = <String>{
-  '#0EBAE4',
-  '#0EE4E0',
-  '#12D49A',
-};
+const studioAccentSwatches = <String>{'#0EBAE4', '#0EE4E0', '#12D49A'};
 
 /// Cache key for the last synced accent (lowercase hex, no #).
 const accentCacheKey = 'ui.accentHex';
 
 class AccentSync {
-  AccentSync(this._transport, {SharedPreferences? prefs, HttpClient? httpClient})
-      : _prefs = prefs,
-        _httpClient = httpClient ?? HttpClient();
+  AccentSync(this._transport, {this._prefs, HttpClient? httpClient})
+    : _httpClient = httpClient ?? HttpClient();
 
   static const _cacheKey = accentCacheKey;
 

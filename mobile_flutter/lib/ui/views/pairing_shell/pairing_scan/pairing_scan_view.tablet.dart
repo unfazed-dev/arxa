@@ -12,7 +12,6 @@ class PairingScanViewTablet extends ViewModelWidget<PairingScanViewModel> {
   const PairingScanViewTablet({super.key});
 
   @override
-  Widget build(context, viewModel) => const Scaffold(
-        body: Center(child: Text('pairing.scan · tablet')),
-      );
+  Widget build(context, viewModel) =>
+      const Scaffold(body: Center(child: Text('pairing.scan · tablet')));
 }

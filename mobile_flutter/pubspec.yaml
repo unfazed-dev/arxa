@@ -4,7 +4,10 @@ publish_to: 'none'
 version: 0.1.0
 
 environment:
-  sdk: '>=3.0.3 <4.0.0'
+  # Match the kit packages (^3.12.0): the tall formatter style is gated on
+  # the language version, and the code is written tall — a lower bound of
+  # 3.0.3 would make `dart format` rewrite 59 files to short style.
+  sdk: ^3.12.0
 
 dependencies:
   flutter:

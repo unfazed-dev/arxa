@@ -1,5 +1,6 @@
 // arxa-builder: LIVE — mobile layout of the conversation.
-import 'package:arxa_kit_ui_library/arxa_kit_ui_library.dart' show ViewModelWidget;
+import 'package:arxa_kit_ui_library/arxa_kit_ui_library.dart'
+    show ViewModelWidget;
 import 'package:flutter/material.dart';
 
 import 'code_conversation_body.dart';

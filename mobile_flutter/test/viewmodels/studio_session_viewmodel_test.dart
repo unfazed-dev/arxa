@@ -26,7 +26,9 @@ void main() {
 
     test('pins the shell user agent', () {
       expect(
-          StudioSessionViewModel.userAgent, 'Mozilla/5.0 (Mobile) ArxaShell/0.1');
+        StudioSessionViewModel.userAgent,
+        'Mozilla/5.0 (Mobile) ArxaShell/0.1',
+      );
     });
 
     test('openSettings routes to settings', () async {

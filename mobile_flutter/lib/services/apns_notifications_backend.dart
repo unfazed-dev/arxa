@@ -46,7 +46,9 @@ class ApnsNotificationsBackend implements ArxaKitNotificationsService {
 
   Future<dynamic> _onNativeCall(MethodCall call) async {
     if (call.method != 'event') return null;
-    final args = (call.arguments as Map?)?.cast<String, dynamic>() ?? const <String, dynamic>{};
+    final args =
+        (call.arguments as Map?)?.cast<String, dynamic>() ??
+        const <String, dynamic>{};
     if (args['type'] == 'tap') {
       _emitTap(args);
       return null;
@@ -57,12 +59,14 @@ class ApnsNotificationsBackend implements ArxaKitNotificationsService {
     }
     // willPresent: the system presented a push while foregrounded — the
     // D68 buzz assert listens here.
-    _messages.add(ArxaKitRemoteMessage(
-      receivedAt: DateTime.now(),
-      title: args['title'] as String?,
-      body: args['body'] as String?,
-      data: args,
-    ));
+    _messages.add(
+      ArxaKitRemoteMessage(
+        receivedAt: DateTime.now(),
+        title: args['title'] as String?,
+        body: args['body'] as String?,
+        data: args,
+      ),
+    );
     return null;
   }
 
@@ -96,7 +100,8 @@ class ApnsNotificationsBackend implements ArxaKitNotificationsService {
   @override
   Future<ArxaKitNotificationPermissionResult> permissionStatus() async {
     return ArxaKitNotificationPermissionResult(
-        _auth(await _invoke<String>('permissionStatus')));
+      _auth(await _invoke<String>('permissionStatus')),
+    );
   }
 
   @override
@@ -120,7 +125,9 @@ class ApnsNotificationsBackend implements ArxaKitNotificationsService {
   Stream<ArxaKitRemoteMessage> get foregroundMessages => _messages.stream;
 
   @override
-  Future<void> showLocalNotification(ArxaKitLocalNotification notification) async {
+  Future<void> showLocalNotification(
+    ArxaKitLocalNotification notification,
+  ) async {
     await _invoke<void>('showLocalNotification', {
       'id': notification.id,
       'title': notification.title,
@@ -156,11 +163,11 @@ class ApnsNotificationsBackend implements ArxaKitNotificationsService {
   }
 
   static ArxaKitNotificationAuthorization _auth(String? raw) => switch (raw) {
-        'authorized' => ArxaKitNotificationAuthorization.authorized,
-        'provisional' => ArxaKitNotificationAuthorization.provisional,
-        'denied' => ArxaKitNotificationAuthorization.denied,
-        _ => ArxaKitNotificationAuthorization.notDetermined,
-      };
+    'authorized' => ArxaKitNotificationAuthorization.authorized,
+    'provisional' => ArxaKitNotificationAuthorization.provisional,
+    'denied' => ArxaKitNotificationAuthorization.denied,
+    _ => ArxaKitNotificationAuthorization.notDetermined,
+  };
 
   Future<T?> _invoke<T>(String method, [Object? arguments]) async {
     try {

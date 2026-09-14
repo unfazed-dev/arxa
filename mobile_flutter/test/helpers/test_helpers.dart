@@ -15,7 +15,8 @@ class MockRouterService extends Mock implements RouterService {}
   FakeTransportService transport,
   FakeArxaKitNotificationsService notifications,
   MockRouterService router,
-}) registerTestServices() {
+})
+registerTestServices() {
   registerFallbackValue(PairingScanViewRoute());
   final transport = FakeTransportService();
   final notifications = FakeArxaKitNotificationsService();

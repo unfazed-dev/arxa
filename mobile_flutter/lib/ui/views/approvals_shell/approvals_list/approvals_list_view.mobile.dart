@@ -12,7 +12,6 @@ class ApprovalsListViewMobile extends ViewModelWidget<ApprovalsListViewModel> {
   const ApprovalsListViewMobile({super.key});
 
   @override
-  Widget build(context, viewModel) => const Scaffold(
-        body: Center(child: Text('approvals.list · mobile')),
-      );
+  Widget build(context, viewModel) =>
+      const Scaffold(body: Center(child: Text('approvals.list · mobile')));
 }

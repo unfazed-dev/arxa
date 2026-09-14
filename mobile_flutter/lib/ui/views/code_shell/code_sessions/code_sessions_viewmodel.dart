@@ -24,8 +24,8 @@ class CodeSessionsViewModel extends BaseViewModel {
   CodeSessionsViewModel([
     ConversationRepository? repository,
     Future<void> Function()? dataReady,
-  ])  : _repository = repository ?? locator<ConversationRepository>(),
-        _dataReady = dataReady ?? (() => AppData.ready.future);
+  ]) : _repository = repository ?? locator<ConversationRepository>(),
+       _dataReady = dataReady ?? (() => AppData.ready.future);
 
   final ConversationRepository _repository;
 
@@ -55,7 +55,10 @@ class CodeSessionsViewModel extends BaseViewModel {
             if (session.parkedReason == null && !_isDone(session)) session,
         ];
       case CodeSessionsFilter.done:
-        return [for (final session in _sessions) if (_isDone(session)) session];
+        return [
+          for (final session in _sessions)
+            if (_isDone(session)) session,
+        ];
     }
   }
 
@@ -109,7 +112,8 @@ class CodeSessionsViewModel extends BaseViewModel {
     _repository.startLive();
     _stalenessTimer = Timer.periodic(const Duration(seconds: 10), (_) {
       final last = _repository.lastLiveAt;
-      final stale = last == null ||
+      final stale =
+          last == null ||
           DateTime.now().difference(last) > const Duration(seconds: 25);
       if (stale) _queueRefresh();
     });
@@ -125,11 +129,10 @@ class CodeSessionsViewModel extends BaseViewModel {
 
   /// Fold bursts of pings into one refresh.
   void _queueRefresh() {
-    _liveRefreshTimer ??=
-        Timer(const Duration(milliseconds: 400), () {
-          _liveRefreshTimer = null;
-          refresh();
-        });
+    _liveRefreshTimer ??= Timer(const Duration(milliseconds: 400), () {
+      _liveRefreshTimer = null;
+      refresh();
+    });
   }
 
   void setFilter(CodeSessionsFilter filter) {

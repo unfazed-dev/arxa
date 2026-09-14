@@ -6,8 +6,7 @@ import 'package:arxa_studio_mobile/services/transport_service.dart';
 
 void main() {
   group('PushTokenService', () {
-    test(
-        'requestPermission asks the OS and attaches the cairn bridge; '
+    test('requestPermission asks the OS and attaches the cairn bridge; '
         'token issues forward to the transport', () async {
       final notifications = FakeArxaKitNotificationsService();
       final transport = FakeTransportService();

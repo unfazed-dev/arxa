@@ -1,0 +1,16 @@
+# Shorebird OTA extension point (skills/arxa-deployer).
+#
+# Scope judgment (Task 12 Part A, 2026-09-14): the migration spec itself has
+# NO OTA rows — its distribution plan (M5) is TestFlight + APK sideload, with
+# production stores behind the human deploy gate. But inventory row AXS-011
+# names "Fastlane/Shorebird release automation" as this task's closure work,
+# so the extension point is accepted and created DORMANT, not active:
+#
+#   activate: `shorebird create-app` (dashboard) → paste the app_id below,
+#   then `shorebird release android/ios` and `shorebird release patch` after
+#   Dart-only fixes. Patches are bug-fixes only (Shorebird TOS); any native
+#   change goes through the fastlane full-release lanes instead.
+#
+# app_id is a public identifier, not a secret. Empty string = OTA inactive
+# (shorebird commands fail clearly rather than patching the wrong app).
+app_id: ""

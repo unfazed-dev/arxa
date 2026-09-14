@@ -1,8 +1,23 @@
+import java.io.FileInputStream
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id("dev.flutter.flutter-gradle-plugin")
 }
+
+// Release signing lives in a gitignored android/key.properties (written by
+// CI from secrets — see .github/workflows/mobile-release.yml). Debug builds
+// alone use the debug key; a release build with no signing inputs FAILS
+// (below) instead of silently falling back to the debug key.
+val keystoreProperties = Properties()
+val keystorePropertiesFile = rootProject.file("key.properties")
+if (keystorePropertiesFile.exists()) {
+    keystoreProperties.load(FileInputStream(keystorePropertiesFile))
+}
+val releaseSigningReady = keystorePropertiesFile.exists() &&
+    listOf("storeFile", "storePassword", "keyAlias", "keyPassword").all { keystoreProperties[it] != null }
 
 android {
     namespace = "solutions.arxadigital.arxa_studio_mobile"
@@ -25,11 +40,40 @@ android {
         versionName = flutter.versionName
     }
 
+    signingConfigs {
+        create("release") {
+            if (releaseSigningReady) {
+                keyAlias = keystoreProperties["keyAlias"] as String
+                keyPassword = keystoreProperties["keyPassword"] as String
+                storeFile = file(keystoreProperties["storeFile"] as String)
+                storePassword = keystoreProperties["storePassword"] as String
+            }
+        }
+    }
+
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig = signingConfigs.getByName("debug")
+            if (releaseSigningReady) {
+                signingConfig = signingConfigs.getByName("release")
+            }
+        }
+    }
+}
+
+// Clear failure (not a debug-signed or unsigned artifact) when a release
+// packaging task runs without signing inputs. Scoped to execution so debug
+// builds and plain `gradle help` never trip it.
+tasks.matching {
+    it.name.contains("Release", ignoreCase = true) &&
+        (it.name.contains("package", ignoreCase = true) || it.name.contains("bundle", ignoreCase = true))
+}.configureEach {
+    if (!releaseSigningReady) {
+        doFirst {
+            throw GradleException(
+                "release signing inputs absent: create android/key.properties " +
+                    "(storeFile/storePassword/keyAlias/keyPassword — gitignored) " +
+                    "or let CI write it from secrets; see docs/ci/setup.md",
+            )
         }
     }
 }

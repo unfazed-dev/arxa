@@ -8,10 +8,15 @@
 #
 # Required secrets are documented in desktop/README.md ("Release CI") and the
 # runbook is docs/ci/release-ops.md.
-# Notarization is optional: absent notary secrets yield a signed-but-unnotarized
-# build instead of a failure. Two lanes: macOS aarch64 (self-hosted) and Linux
-# x86_64 (GitHub-hosted ubuntu-22.04 — the AppImage + .deb; see the
-# `release-linux` job). A Windows/x64 lane would slot in the same way.
+# Notarization policy is channel-dependent (fail-closed stable): a studio-v*
+# tag REFUSES to build unless Developer ID signing AND notarization AND updater
+# signing AND the release credentials are all present, and re-verifies the
+# signature + stapled notary ticket on the built app before anything is
+# published. A studio-beta-v* tag may ship signed-but-unnotarized (or ad-hoc)
+# with a workflow warning and matching manifest metadata — never labelled
+# stable. Two lanes: macOS aarch64 (self-hosted) and Linux x86_64
+# (GitHub-hosted ubuntu-22.04 — the AppImage + .deb; see the `release-linux`
+# job). A Windows/x64 lane would slot in the same way.
 name: desktop-release
 
 on:
@@ -68,13 +73,34 @@ jobs:
               ;;
           esac
 
-      - name: Guard required secrets
+      - name: Guard required secrets (fail-closed on stable)
         env:
           TAURI_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           RELEASES_TOKEN: ${{ secrets.GH_RELEASES_TOKEN }}
+          CERT_P12: ${{ secrets.APPLE_CERTIFICATE_P12 }}
+          CERT_PW: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          SIGN_ID: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+          NOTARY_ID: ${{ secrets.APPLE_ID }}
+          NOTARY_PW: ${{ secrets.APPLE_APP_PASSWORD }}
+          NOTARY_TEAM: ${{ secrets.APPLE_TEAM_ID }}
         run: |
           [ -n "$TAURI_KEY" ] || { echo "::error::TAURI_SIGNING_PRIVATE_KEY is not set — updater artifacts cannot be signed"; exit 1; }
           [ -n "$RELEASES_TOKEN" ] || { echo "::error::GH_RELEASES_TOKEN is not set — cannot publish to $RELEASES_REPO"; exit 1; }
+          # Stable (studio-v*) is fail-closed: Developer ID cert + identity +
+          # notary trio must ALL be present before anything builds. Beta may
+          # ship without them, but only as a clearly-labelled unnotarized beta.
+          NOTARY_SET=1
+          for v in CERT_P12 CERT_PW SIGN_ID NOTARY_ID NOTARY_PW NOTARY_TEAM; do
+            eval "val=\${$v:-}"
+            [ -n "$val" ] && continue
+            if [ "$CHANNEL" = "stable" ]; then
+              echo "::error::$v is not set — a stable release must be Developer ID signed and notarized; tag studio-beta-v* for an unnotarized beta instead"
+              exit 1
+            fi
+            echo "::warning::$v is not set — this beta ships unnotarized and is labelled as such (never stable)"
+            NOTARY_SET=0
+          done
+          echo "NOTARY_SET=$NOTARY_SET" >> "$GITHUB_ENV"
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -142,7 +168,8 @@ jobs:
           APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
         run: |
           if [ -z "$APPLE_CERTIFICATE_P12" ]; then
-            echo "::warning::APPLE_CERTIFICATE_P12 not set — skipping cert import (ad-hoc signing)"
+            # unreachable on stable (the guard step failed first); beta only
+            echo "::warning::APPLE_CERTIFICATE_P12 not set — skipping cert import (ad-hoc signing, beta lane)"
             exit 0
           fi
           KEYCHAIN_PW="$(uuidgen)"
@@ -180,6 +207,23 @@ jobs:
           fi
           npx --yes @tauri-apps/cli@^2 build --target "$TARGET_TRIPLE"
 
+      - name: Verify Developer ID signing + notarization (stable lane — fail closed)
+        # Secrets being present is necessary but not sufficient: this checks
+        # the BUILT artifact. A stable release cannot publish unless Gatekeeper
+        # approves it offline — Developer ID authority + stapled notary ticket.
+        if: env.CHANNEL == 'stable'
+        run: |
+          APP="arxa/desktop/src-tauri/target/${TARGET_TRIPLE}/release/bundle/macos/Arxa Studio.app"
+          codesign --verify --deep --strict "$APP" || { echo "::error::codesign verification failed"; exit 1; }
+          codesign -dv "$APP" 2>&1 | grep -q "Authority=Developer ID Application" \
+            || { echo "::error::app is not Developer ID signed (ad-hoc?) — stable refuses to publish"; exit 1; }
+          xcrun stapler validate "$APP" || { echo "::error::no valid notary ticket stapled on the app — stable refuses to publish"; exit 1; }
+          DMG="$(find "arxa/desktop/src-tauri/target/${TARGET_TRIPLE}/release/bundle/dmg" -maxdepth 1 -name '*.dmg' 2>/dev/null | head -1)"
+          if [ -n "$DMG" ]; then
+            xcrun stapler validate "$DMG" || { echo "::error::dmg lacks a valid notary ticket"; exit 1; }
+          fi
+          spctl -a -t exec --verbose "$APP" || { echo "::error::Gatekeeper (spctl) rejected the app"; exit 1; }
+
       - name: Stage assets and generate latest.json
         run: |
           # VERSION/CHANNEL come from the "Derive channel and version" step.
@@ -191,6 +235,16 @@ jobs:
           cp "$BUNDLE_DIR/macos/Arxa Studio.app.tar.gz.sig" "staging/$ASSET.sig"
           DMG="$(find "$BUNDLE_DIR/dmg" -maxdepth 1 -name '*.dmg' 2>/dev/null | head -1)"
           if [ -n "$DMG" ]; then cp "$DMG" "staging/Arxa-Studio-${VERSION}-${TARGET_TRIPLE}.dmg"; fi
+          # install-macos.sh verifies <asset>.sha256 next to every asset
+          # (the same contract install.sh has on Linux).
+          (cd staging && for f in *.app.tar.gz *.dmg; do [ -e "$f" ] || continue; shasum -a 256 "$f" > "$f.sha256"; done)
+          # Manifest metadata must tell the truth about the lane: an
+          # unnotarized beta is labelled as one, never as stable.
+          NOTES="Arxa Studio ${VERSION} (${CHANNEL})"
+          if [ "$CHANNEL" = "beta" ] && [ "$NOTARY_SET" = "0" ]; then
+            NOTES="Arxa Studio ${VERSION} (beta, UNNOTARIZED preview — first launch needs right-click Open)"
+            echo "::warning::publishing an UNNOTARIZED beta manifest (never labelled stable)"
+          fi
           # Release tag = the triggering tag itself (studio-v1.2.3 /
           # studio-beta-v1.2.3-beta.1) — reconstructing "studio-v${VERSION}"
           # would mint a mismatched tag inside arxa-releases on beta lanes.
@@ -199,6 +253,7 @@ jobs:
             --bundle "staging/$ASSET" --sig "staging/$ASSET.sig" \
             --version "$VERSION" --channel "$CHANNEL" \
             --target "$TAURI_TARGET" --arch "$TAURI_ARCH" \
+            --notes "$NOTES" \
             --url "$URL" --out staging/latest.json
           node arxa/desktop/scripts/make-update-manifest.mjs --check staging/latest.json
 
@@ -207,8 +262,9 @@ jobs:
           GH_TOKEN: ${{ secrets.GH_RELEASES_TOKEN }}
         run: |
           ASSETS=(staging/"$ASSET" staging/"$ASSET".sig)
-          DMG="$(find staging -maxdepth 1 -name '*.dmg' | head -1)"
+          DMG="$(find staging -maxdepth 1 -name '*.dmg' ! -name '*.sha256' | head -1)"
           if [ -n "$DMG" ]; then ASSETS+=("$DMG"); fi
+          ASSETS+=(staging/*.sha256)
           gh release create "$GITHUB_REF_NAME" \
             --repo "$RELEASES_REPO" \
             --title "Arxa Studio ${VERSION}" \
@@ -223,10 +279,13 @@ jobs:
           MANIFEST_DIR="releases/desktop/${CHANNEL}/${TAURI_TARGET}/${TAURI_ARCH}"
           mkdir -p "$MANIFEST_DIR"
           cp staging/latest.json "$MANIFEST_DIR/latest.json"
+          # the macOS installer twin, served from the repo root (install.sh,
+          # the Linux one, is copied by the release-linux job)
+          cp arxa/desktop/scripts/install-macos.sh releases/install-macos.sh
           cd releases
           git config user.name "arxa-release-bot"
           git config user.email "noreply@arxadigital.solutions"
-          git add "desktop/${CHANNEL}/${TAURI_TARGET}/${TAURI_ARCH}/latest.json"
+          git add "desktop/${CHANNEL}/${TAURI_TARGET}/${TAURI_ARCH}/latest.json" install-macos.sh
           git commit -m "chore: publish ${CHANNEL} ${TAURI_TARGET}/${TAURI_ARCH} manifest for ${VERSION}"
           git push origin HEAD:main
 

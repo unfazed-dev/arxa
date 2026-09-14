@@ -1,0 +1,5 @@
+# actionlint config — the self-hosted macOS ARM64 runner that serves the
+# desktop jobs carries a custom label beyond the stock self-hosted ones.
+self-hosted-runner:
+  labels:
+    - arxa

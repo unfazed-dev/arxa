@@ -2,7 +2,11 @@
 // arxa-builder: the full studio via webview — navigates to the transport's
 // loopback studioUrl; whole-screen webview per the screen-level split rule.
 import 'package:arxa_kit_ui_library/arxa_kit_ui_library.dart'
-    show ArxaKitGlyphs, ArxaKitNativeAppBar, ArxaKitNativeIconButton, StackedView;
+    show
+        ArxaKitGlyphs,
+        ArxaKitNativeAppBar,
+        ArxaKitNativeIconButton,
+        StackedView;
 import 'package:flutter/material.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
@@ -15,7 +19,10 @@ class StudioSessionView extends StackedView<StudioSessionViewModel> {
 
   @override
   Widget builder(
-      BuildContext context, StudioSessionViewModel viewModel, Widget? child) {
+    BuildContext context,
+    StudioSessionViewModel viewModel,
+    Widget? child,
+  ) {
     final l10n = AppLocalizations.of(context);
     final controller = viewModel.controller;
     return Scaffold(

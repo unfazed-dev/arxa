@@ -12,7 +12,6 @@ class SettingsHomeViewMobile extends ViewModelWidget<SettingsHomeViewModel> {
   const SettingsHomeViewMobile({super.key});
 
   @override
-  Widget build(context, viewModel) => const Scaffold(
-        body: Center(child: Text('settings.home · mobile')),
-      );
+  Widget build(context, viewModel) =>
+      const Scaffold(body: Center(child: Text('settings.home · mobile')));
 }

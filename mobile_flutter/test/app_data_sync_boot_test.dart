@@ -26,27 +26,39 @@ void main() {
       expect(sw.elapsed, lessThan(const Duration(seconds: 2)));
     });
 
-    test('connected + bootstrap answers: sync config through the proxy path',
-        () async {
-      final server = await _spawnBootstrap(status: 200, body: {'token': 'tok-9'});
-      addTearDown(server.close);
-      final transport = FakeTransportService(port: server.port)
-        ..storedPairing = true;
-      final future = AppData.resolveSyncConfig(transport);
-      unawaited(transport.resume()); // the boot resume brings the link up
-      final record = await future;
-      expect(record, isNotNull);
-      expect(record!.config.mode, ArxaKitCairnMode.sync);
-      expect(
-        record.config.syncUrl,
-        'ws://127.0.0.1:${server.port}/__cairn/sync',
-      );
-      expect(record.config.push, isFalse, reason: 'no notifications seam here');
-      expect(await record.token(), 'tok-9');
-    });
+    test(
+      'connected + bootstrap answers: sync config through the proxy path',
+      () async {
+        final server = await _spawnBootstrap(
+          status: 200,
+          body: {'token': 'tok-9'},
+        );
+        addTearDown(server.close);
+        final transport = FakeTransportService(port: server.port)
+          ..storedPairing = true;
+        final future = AppData.resolveSyncConfig(transport);
+        unawaited(transport.resume()); // the boot resume brings the link up
+        final record = await future;
+        expect(record, isNotNull);
+        expect(record!.config.mode, ArxaKitCairnMode.sync);
+        expect(
+          record.config.syncUrl,
+          'ws://127.0.0.1:${server.port}/__cairn/sync',
+        );
+        expect(
+          record.config.push,
+          isFalse,
+          reason: 'no notifications seam here',
+        );
+        expect(await record.token(), 'tok-9');
+      },
+    );
 
     test('current status already connected wins without waiting', () async {
-      final server = await _spawnBootstrap(status: 200, body: {'token': 'tok-7'});
+      final server = await _spawnBootstrap(
+        status: 200,
+        body: {'token': 'tok-7'},
+      );
       addTearDown(server.close);
       final transport = FakeTransportService(port: server.port)
         ..storedPairing = true;

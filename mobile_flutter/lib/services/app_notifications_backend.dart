@@ -15,16 +15,16 @@ import 'apns_notifications_backend.dart';
 
 class AppNotificationsBackend implements ArxaKitNotificationsService {
   AppNotificationsBackend()
-      : _inner = Platform.isIOS
-            ? ApnsNotificationsBackend()
-            : ArxaKitFcmPushBackend();
+    : _inner = Platform.isIOS
+          ? ApnsNotificationsBackend()
+          : ArxaKitFcmPushBackend();
 
   final ArxaKitNotificationsService _inner;
 
   /// The iOS APNs backend when present — the phone leg subscribes its tap
   /// stream to route buzzes into the approvals shell.
   ApnsNotificationsBackend? get apns =>
-      _inner is ApnsNotificationsBackend ? _inner as ApnsNotificationsBackend : null;
+      _inner is ApnsNotificationsBackend ? _inner : null;
 
   @override
   Future<void> initialize() => _inner.initialize();
@@ -33,8 +33,7 @@ class AppNotificationsBackend implements ArxaKitNotificationsService {
   Future<ArxaKitNotificationPermissionResult> requestPermission([
     ArxaKitNotificationPermissionRequest request =
         const ArxaKitNotificationPermissionRequest(),
-  ]) =>
-      _inner.requestPermission(request);
+  ]) => _inner.requestPermission(request);
 
   @override
   Future<ArxaKitNotificationPermissionResult> permissionStatus() =>
@@ -47,7 +46,8 @@ class AppNotificationsBackend implements ArxaKitNotificationsService {
   Future<ArxaKitPushToken?> currentToken() => _inner.currentToken();
 
   @override
-  Stream<ArxaKitRemoteMessage> get foregroundMessages => _inner.foregroundMessages;
+  Stream<ArxaKitRemoteMessage> get foregroundMessages =>
+      _inner.foregroundMessages;
 
   @override
   Future<void> showLocalNotification(ArxaKitLocalNotification notification) =>

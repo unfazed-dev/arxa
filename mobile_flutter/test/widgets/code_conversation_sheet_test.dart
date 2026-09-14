@@ -6,7 +6,8 @@ import 'dart:async';
 import 'package:arxa_studio_mobile/data/approvals/approval.dart';
 import 'package:arxa_studio_mobile/data/approvals/approvals_repository.dart';
 import 'package:arxa_studio_mobile/data/conversation/conversation.dart';
-import 'package:arxa_kit_ui_library/arxa_kit_ui_library.dart' show ViewModelBuilder;
+import 'package:arxa_kit_ui_library/arxa_kit_ui_library.dart'
+    show ViewModelBuilder;
 import 'package:arxa_studio_mobile/data/conversation/conversation_repository.dart';
 import 'package:arxa_studio_mobile/l10n/app_localizations.dart';
 import 'package:arxa_studio_mobile/services/transport_service.dart';
@@ -34,13 +35,17 @@ class _FakeConversationRepository implements ConversationRepository {
 
   @override
   Future<Map<String, dynamic>> attachment(
-          String sessionId, String attachmentId) async =>
-      const {};
+    String sessionId,
+    String attachmentId,
+  ) async => const {};
 
   @override
-  Future<void> send(String sessionId, String text,
-      {String mode = 'queue',
-      List<({String mediaType, String data})> images = const []}) async {
+  Future<void> send(
+    String sessionId,
+    String text, {
+    String mode = 'queue',
+    List<({String mediaType, String data})> images = const [],
+  }) async {
     lastSendCall = (sessionId, text);
     lastImages = images;
   }
@@ -49,7 +54,11 @@ class _FakeConversationRepository implements ConversationRepository {
   List<({String mediaType, String data})> lastImages = const [];
 
   @override
-  Future<void> selectModel(String sessionId, String provider, String model) async {
+  Future<void> selectModel(
+    String sessionId,
+    String provider,
+    String model,
+  ) async {
     lastSelectCall = (sessionId, provider, model);
   }
 
@@ -62,8 +71,9 @@ class _FakeConversationRepository implements ConversationRepository {
 
   @override
   Future<({String kind, String text})> runCommand(
-          String sessionId, String line) async =>
-      (kind: 'success', text: '');
+    String sessionId,
+    String line,
+  ) async => (kind: 'success', text: '');
 
   @override
   Future<String> exportTranscript(String sessionId, String savePath) async =>
@@ -91,7 +101,8 @@ class _FakeConversationRepository implements ConversationRepository {
   Future<List<ConversationMessage>> transcript(String sessionId) async =>
       transcripts[sessionId] ?? const [];
   @override
-  Stream<List<ConversationMessage>> watchTranscript(String sessionId) => const Stream.empty();
+  Stream<List<ConversationMessage>> watchTranscript(String sessionId) =>
+      const Stream.empty();
   @override
   Future<void> refreshSessions() async {}
   @override
@@ -133,27 +144,30 @@ class _FakeApprovalsRepository implements ApprovalsRepository {
   Future<void> decide(String id, List<ApprovalAnswer> answers) async {}
 }
 
-Widget _host(CodeConversationViewModel viewModel) =>
-    MaterialApp(
-      locale: const Locale('en'),
-      localizationsDelegates: AppLocalizations.localizationsDelegates,
-      supportedLocales: AppLocalizations.supportedLocales,
-      home: ViewModelBuilder<CodeConversationViewModel>.reactive(
-        viewModelBuilder: () => viewModel,
-        builder: (context, vm, child) => Scaffold(
-          body: CodeConversationBody(viewModel: vm),
-        ),
-      ),
-    );
+Widget _host(CodeConversationViewModel viewModel) => MaterialApp(
+  locale: const Locale('en'),
+  localizationsDelegates: AppLocalizations.localizationsDelegates,
+  supportedLocales: AppLocalizations.supportedLocales,
+  home: ViewModelBuilder<CodeConversationViewModel>.reactive(
+    viewModelBuilder: () => viewModel,
+    builder: (context, vm, child) =>
+        Scaffold(body: CodeConversationBody(viewModel: vm)),
+  ),
+);
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  testWidgets('tapping a mode row posts the mode and closes the sheet',
-      (tester) async {
+  testWidgets('tapping a mode row posts the mode and closes the sheet', (
+    tester,
+  ) async {
     final repo = _FakeConversationRepository();
     final viewModel = CodeConversationViewModel(
-        's1', repo, _FakeApprovalsRepository(), () => Future.value());
+      's1',
+      repo,
+      _FakeApprovalsRepository(),
+      () => Future.value(),
+    );
     await tester.pumpWidget(_host(viewModel));
 
     // The mode pill opens the sheet.
@@ -166,15 +180,21 @@ void main() {
     await tester.tap(find.text('Workspace write'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Select mode'), findsNothing,
-        reason: 'the sheet pops when a row is tapped');
-    expect(repo.lastModeCall, ('s1', 'workspace-write'),
-        reason: 'the row posts the mode to the studio');
+    expect(
+      find.text('Select mode'),
+      findsNothing,
+      reason: 'the sheet pops when a row is tapped',
+    );
+    expect(repo.lastModeCall, (
+      's1',
+      'workspace-write',
+    ), reason: 'the row posts the mode to the studio');
     expect(viewModel.sessionMode, 'workspace-write');
   });
 
-  testWidgets('tapping a model row posts the selection and closes the sheet',
-      (tester) async {
+  testWidgets('tapping a model row posts the selection and closes the sheet', (
+    tester,
+  ) async {
     final repo = _FakeConversationRepository()
       ..directory = const {
         'current': {'provider': 'zai', 'model': 'glm-5.3-flash'},
@@ -192,7 +212,11 @@ void main() {
         ],
       };
     final viewModel = CodeConversationViewModel(
-        's1', repo, _FakeApprovalsRepository(), () => Future.value());
+      's1',
+      repo,
+      _FakeApprovalsRepository(),
+      () => Future.value(),
+    );
     await tester.pumpWidget(_host(viewModel));
 
     // The model pill (default label) opens the sheet; loadModels fills it.
@@ -204,47 +228,66 @@ void main() {
     await tester.tap(find.text('kimi-k3'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Select model'), findsNothing,
-        reason: 'the sheet pops when a row is tapped');
-    expect(repo.lastSelectCall, ('s1', 'zai', 'kimi-k3'),
-        reason: 'the row posts the model to the studio');
+    expect(
+      find.text('Select model'),
+      findsNothing,
+      reason: 'the sheet pops when a row is tapped',
+    );
+    expect(repo.lastSelectCall, (
+      's1',
+      'zai',
+      'kimi-k3',
+    ), reason: 'the row posts the model to the studio');
     expect(viewModel.currentModel, 'kimi-k3');
   });
 
-  testWidgets('thinking and tool rows open their content sheets',
-      (tester) async {
+  testWidgets('thinking and tool rows open their content sheets', (
+    tester,
+  ) async {
     final repo = _FakeConversationRepository()
       ..transcripts = {
         's1': [
           const ConversationMessage(
-              id: 's1:1', seq: 1, sessionId: 's1', role: 'user', text: 'go'),
+            id: 's1:1',
+            seq: 1,
+            sessionId: 's1',
+            role: 'user',
+            text: 'go',
+          ),
           const ConversationMessage(
-              id: 's1:2',
-              seq: 2,
-              sessionId: 's1',
-              role: 'assistant',
-              kind: 'thinking',
-              text: 'Let me check the gate.\n\nSecond thought.'),
+            id: 's1:2',
+            seq: 2,
+            sessionId: 's1',
+            role: 'assistant',
+            kind: 'thinking',
+            text: 'Let me check the gate.\n\nSecond thought.',
+          ),
           const ConversationMessage(
-              id: 's1:3',
-              seq: 3,
-              sessionId: 's1',
-              role: 'assistant',
-              kind: 'tool',
-              toolName: 'ctx_batch_execute',
-              toolInput: '{\n  "commands": [\n    "git status"\n  ]\n}',
-              text: 'On branch main'),
+            id: 's1:3',
+            seq: 3,
+            sessionId: 's1',
+            role: 'assistant',
+            kind: 'tool',
+            toolName: 'ctx_batch_execute',
+            toolInput: '{\n  "commands": [\n    "git status"\n  ]\n}',
+            text: 'On branch main',
+          ),
           const ConversationMessage(
-              id: 's1:4',
-              seq: 4,
-              sessionId: 's1',
-              role: 'assistant',
-              kind: 'text',
-              text: 'Done.'),
+            id: 's1:4',
+            seq: 4,
+            sessionId: 's1',
+            role: 'assistant',
+            kind: 'text',
+            text: 'Done.',
+          ),
         ],
       };
     final viewModel = CodeConversationViewModel(
-        's1', repo, _FakeApprovalsRepository(), () => Future.value());
+      's1',
+      repo,
+      _FakeApprovalsRepository(),
+      () => Future.value(),
+    );
     await tester.pumpWidget(_host(viewModel));
     await viewModel.refresh();
     await tester.pump();
@@ -260,41 +303,56 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Let me check the gate.'), findsOneWidget);
     expect(find.text('Second thought.'), findsOneWidget);
-    expect(find.text('Input'), findsNothing,
-        reason: 'the thinking sheet carries prose, not tool sections');
+    expect(
+      find.text('Input'),
+      findsNothing,
+      reason: 'the thinking sheet carries prose, not tool sections',
+    );
 
     // Close (the X), then the tool row opens Input + Output.
     await tester.tap(find.byIcon(LucideIcons.x));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Ran Ctx Batch Execute'));
     await tester.pumpAndSettle();
-    expect(find.text('Ctx Batch Execute'), findsOneWidget,
-        reason: 'the sheet title is the humanized tool name');
+    expect(
+      find.text('Ctx Batch Execute'),
+      findsOneWidget,
+      reason: 'the sheet title is the humanized tool name',
+    );
     expect(find.text('Input'), findsOneWidget);
     expect(find.text('Output'), findsOneWidget);
     expect(find.text('On branch main'), findsOneWidget);
-    expect(find.text('{\n  "commands": [\n    "git status"\n  ]\n}'), findsOneWidget,
-        reason: 'the pretty arguments render verbatim in the mono box');
+    expect(
+      find.text('{\n  "commands": [\n    "git status"\n  ]\n}'),
+      findsOneWidget,
+      reason: 'the pretty arguments render verbatim in the mono box',
+    );
   });
 
-  testWidgets('a tool row with no recorded output says so honestly',
-      (tester) async {
+  testWidgets('a tool row with no recorded output says so honestly', (
+    tester,
+  ) async {
     final repo = _FakeConversationRepository()
       ..transcripts = {
         's1': [
           const ConversationMessage(
-              id: 's1:1',
-              seq: 1,
-              sessionId: 's1',
-              role: 'assistant',
-              kind: 'tool',
-              toolName: 'read',
-              text: '',
-              toolInput: '{ "path": "x.ts" }'),
+            id: 's1:1',
+            seq: 1,
+            sessionId: 's1',
+            role: 'assistant',
+            kind: 'tool',
+            toolName: 'read',
+            text: '',
+            toolInput: '{ "path": "x.ts" }',
+          ),
         ],
       };
     final viewModel = CodeConversationViewModel(
-        's1', repo, _FakeApprovalsRepository(), () => Future.value());
+      's1',
+      repo,
+      _FakeApprovalsRepository(),
+      () => Future.value(),
+    );
     await tester.pumpWidget(_host(viewModel));
     await viewModel.refresh();
     await tester.pump();

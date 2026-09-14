@@ -22,11 +22,10 @@ import 'approvals_api_client.dart';
 
 class ApprovalsRepository {
   ApprovalsRepository({
-    required ArxaKitRepository<Approval> cache,
-    required ApprovalsApiClient api,
+    required this._cache,
+    required this._api,
     this.healWait = const Duration(seconds: 20),
-  })  : _cache = cache,
-        _api = api;
+  });
 
   final ArxaKitRepository<Approval> _cache;
   final ApprovalsApiClient _api;
@@ -46,9 +45,9 @@ class ApprovalsRepository {
 
   /// Live view of the cache for later reactive wiring (newest first, same
   /// as [list]).
-  Stream<List<Approval>> watch() => _cache
-      .watchAll()
-      .map((rows) => rows..sort((a, b) => b.raisedAt.compareTo(a.raisedAt)));
+  Stream<List<Approval>> watch() => _cache.watchAll().map(
+    (rows) => rows..sort((a, b) => b.raisedAt.compareTo(a.raisedAt)),
+  );
 
   /// Pull the engine's list and reconcile the cache. Throws
   /// [ApprovalsOfflineException] when the tunnel is unusable (after one
@@ -93,7 +92,8 @@ class ApprovalsRepository {
     final transport = _api.transport;
     final reconnected = Completer<void>();
     final sub = transport.status.listen((s) {
-      if (s.state == ArxaConnectionState.connected && !reconnected.isCompleted) {
+      if (s.state == ArxaConnectionState.connected &&
+          !reconnected.isCompleted) {
         reconnected.complete();
       }
     });

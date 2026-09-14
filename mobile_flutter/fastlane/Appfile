@@ -1,0 +1,11 @@
+# Fastlane Appfile (skills/arxa-deployer) — identity only, never secrets.
+# Values are read from the environment when operator-supplied (see Fastfile
+# credential checks + docs/ci/setup.md).
+app_identifier("solutions.arxadigital.arxa.mobile") # iOS bundle id == Android applicationId (parity-proven)
+android_package("solutions.arxadigital.arxa.mobile")
+
+# Apple side — operator-owned; unset in CI (the release workflow stops at
+# doctor and never calls the upload lanes).
+apple_id(ENV["APPLE_ID"]) # your Apple ID (App Store Connect)
+itc_team_id(ENV["ITC_TEAM_ID"]) # App Store Connect team id
+team_id("43GNRCGQXQ") # development team (matches ios/Runner.xcodeproj)

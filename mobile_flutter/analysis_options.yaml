@@ -4,3 +4,5 @@ analyzer:
   exclude:
     - build/**
     - lib/app/app.router.dart
+    - android/**
+    - ios/**
