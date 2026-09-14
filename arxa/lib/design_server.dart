@@ -24,11 +24,11 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:arxa/design_axes.dart';
+import 'package:arxa/design_fonts.dart';
+import 'package:arxa/design_palettes.dart';
 import 'package:arxa/arxa_dial.dart';
 import 'package:arxa/design_media.dart';
 import 'package:arxa/design_ship.dart';
-import 'package:arxa/design_draft.dart';
-import 'package:arxa/design_journal.dart';
 import 'package:arxa/design_server/browser_trust.dart';
 import 'package:arxa/design_server/l10n.dart';
 import 'package:arxa/design_server/worker.dart';
@@ -384,14 +384,6 @@ class DesignServer {
   /// The pure request core behind /__dial/* (see arxa_dial.dart).
   late final DialApi dialApi;
 
-  /// The Arxa Dial's Draft Overlay store (Design Mode): per-artifact local
-  /// file state, never Supabase (decisions 5/11). Null when the dial is off.
-  DraftFileStore? draftStore;
-
-  /// The Design Journal store (undo/redo, 2026-08-26): sits beside the
-  /// draft file, lives and dies with it. Null when the dial is off.
-  JournalFileStore? journalStore;
-
   /// The axes plane (arc 1, 2026-08-25): the dial's style/theme store —
   /// non-null only when the dial is on AND the nearest arxa.json marker
   /// says kind: app. Sites and markerless artifacts never see axes.
@@ -445,8 +437,6 @@ class DesignServer {
     Iterable<String> trustedOrigins = const [],
     bool dial = true,
     DialStore? dialStore,
-    DraftFileStore? draftStore,
-    JournalFileStore? journalStore,
     ArtifactMarker? marker,
     AxesStore? axesStore,
   }) async {
@@ -483,14 +473,17 @@ class DesignServer {
               project: resolvedMarker?.project,
               artifact: p.basename(artifactDir),
               author: authorIdentity) ??
-          MemoryDialStore()
-      ..draftStore = dial
-          ? (draftStore ?? DraftFileStore(artifactDir: artifactDir))
-          : null
-      ..journalStore = dial
-          ? (journalStore ?? JournalFileStore(artifactDir: artifactDir))
-          : null;
-    if (dial && resolvedMarker != null && resolvedMarker.kind == 'app') {
+          MemoryDialStore();
+    // The axes store gates on the artifact having SOMETHING to publish:
+    // style/theme axes are kind:app only (arc 1 law); the palette axis
+    // (ADDENDUM 17) and the font axis (grilled 2026-09-13) open the store
+    // to ANY kind declaring their manifest.
+    final declaresPalettes =
+        File(p.join(artifactDir, 'palettes.json')).existsSync();
+    final declaresFonts = File(p.join(artifactDir, 'fonts.json')).existsSync();
+    if (dial &&
+        resolvedMarker != null &&
+        (resolvedMarker.kind == 'app' || declaresPalettes || declaresFonts)) {
       if (authorIdentity == null) {
         stderr.writeln('[design-server] dial axes: ~/.arxa/identity.json '
             'missing — the design registers unattributed; add {"name", '
@@ -519,8 +512,6 @@ class DesignServer {
     srv.dialApi = DialApi(
         store: srv.dialStore,
         artifact: srv._dialArtifact,
-        draftStore: srv.draftStore,
-        journalStore: srv.journalStore,
         artifactDir: srv.artifactDir,
         media: DialMediaProxy(
           unsplashKey: Platform.environment['UNSPLASH_ACCESS_KEY'] ?? '',
@@ -1099,29 +1090,87 @@ class DesignServer {
         final grant = dialToken == null
             ? null
             : await dialStore.resolveShareLink(dialToken);
-        // Design Mode's Draft Overlay (decision 5): the Author's page carries
-        // the uncommitted patch set; any ?dial= path — guest or dead link —
-        // gets the last published state, i.e. source as-is. Stale and
-        // refused patches are reported through GET /__dial/draft consumers,
-        // not per-request stderr.
-        final ds = draftStore;
-        if (dialToken == null && ds != null) {
-          final draft = await ds.load();
-          if (draft != null && !draft.isEmpty) {
-            respBody = draft.apply(respBody).html;
-          }
-        }
+        // The Live Overlay (edit redesign, 2026-09-11): no serve-time
+        // injection anymore — the overlay row is Supabase state, read and
+        // applied CLIENT-SIDE at boot by every dial (author AND guest),
+        // so the served source is identical for everyone and the boot
+        // apply is one law on both surfaces.
         // The axes plane: apply the resolved pick (override > published >
         // shipped default) to the served head, and hand the island the
-        // declaration + both picks for the Style slide and the preview
+        // declaration + both picks for the Theme slide and the preview
         // badge. A page that declares nothing passes through untouched.
+        // The palette plane (ADDENDUM 17) rides the same store row and the
+        // same precedence law; its attribute is data-palette.
         ServedAxes? servedAxes;
+        ServedPalette? servedPalette;
+        ServedFont? servedFont;
         final axStore = axesStore;
+        final storedAxes = axStore == null ? null : await axStore.load();
         if (axStore != null) {
           servedAxes = applyAxesToServedHtml(respBody,
-              query: req.uri.queryParameters,
-              stored: await axStore.load());
+              query: req.uri.queryParameters, stored: storedAxes);
           if (servedAxes != null) respBody = servedAxes.html;
+        }
+        final paletteManifest = PaletteManifest.load(artifactDir);
+        if (paletteManifest != null) {
+          servedPalette = applyPaletteToServedHtml(respBody,
+              query: req.uri.queryParameters,
+              stored: storedAxes?.palette,
+              manifest: paletteManifest);
+          respBody = servedPalette.html;
+        }
+        // The font plane (grilled 2026-09-13): rides the same store row
+        // (the font cell) and the same precedence law; its attributes are
+        // data-font-<role>, one per declared role.
+        final fontManifest = FontPlaneManifest.load(artifactDir);
+        if (fontManifest != null) {
+          servedFont = applyFontToServedHtml(respBody,
+              query: req.uri.queryParameters,
+              stored: storedAxes?.font,
+              manifest: fontManifest);
+          respBody = servedFont.html;
+        }
+        // One axes block for the island: the style/theme declaration when
+        // present (apps), the palettes array when declared (any kind), and
+        // both picks carrying all three axes.
+        Map<String, Object?>? axesConfig = servedAxes?.config;
+        final sp = servedPalette;
+        if (sp != null) {
+          final activeBase = axesConfig?['active'];
+          final publishedBase = axesConfig?['published'];
+          axesConfig = {
+            'styles': axesConfig?['styles'] ?? const [],
+            'themes': axesConfig?['themes'] ?? const [],
+            'active': {
+              if (activeBase is Map) ...activeBase,
+              'palette': sp.active,
+            },
+            'published': {
+              if (publishedBase is Map) ...publishedBase,
+              'palette': sp.published,
+            },
+            'palettes': sp.palettesConfig,
+          };
+        }
+        final sf = servedFont;
+        if (sf != null) {
+          final activeBase = axesConfig?['active'];
+          final publishedBase = axesConfig?['published'];
+          axesConfig = {
+            'styles': axesConfig?['styles'] ?? const [],
+            'themes': axesConfig?['themes'] ?? const [],
+            if (axesConfig?['palettes'] != null)
+              'palettes': axesConfig!['palettes'],
+            'active': {
+              if (activeBase is Map) ...activeBase,
+              'font': sf.active,
+            },
+            'published': {
+              if (publishedBase is Map) ...publishedBase,
+              'font': sf.published,
+            },
+            'fonts': sf.fontsConfig,
+          };
         }
         final config = jsonEncode({
           'v': 1,
@@ -1131,7 +1180,7 @@ class DesignServer {
               ? 'author'
               : (grant == null ? 'invalid' : 'guest'),
           if (grant != null) 'token': dialToken,
-          if (servedAxes != null) 'axes': servedAxes.config,
+          'axes': ?axesConfig,
           // Arc 2: a personal link tells the island WHO the guest is, so
           // the composer attributes by construction and never asks for a
           // name the registry already knows.
@@ -1388,11 +1437,18 @@ class DesignServer {
         (sub == '/pins' || sub == '/pins/status' || sub == '/pins/reply')) {
       _broadcastDial();
     }
-    if (r.status < 300 && sub == '/draft' && method != 'GET') {
-      _broadcastDial('draft');
-    }
-    if (r.status < 300 && sub == '/commit') {
-      _broadcastDial('commit', r.json);
+    // The Live Overlay: a successful save carries the whole doc as a thin
+    // frame — open dials (author's other tabs, every guest) re-apply whole
+    // through the one dispatcher; the writer's own echo dies on the rev
+    // guard inside the island.
+    if (r.status < 300 && sub == '/overlay' && method == 'PUT') {
+      final payload = r.json;
+      if (payload is Map && payload['ok'] == true) {
+        final doc = await dialStore.readOverlay();
+        _broadcastDial('overlay', doc == null
+            ? {'patches': {}, 'rev': 0}
+            : {'patches': doc.patches, 'rev': doc.rev});
+      }
     }
     // The axes plane: one thin frame — the published pick — so open
     // islands (and the writer's own tabs) repaint without a refetch.
@@ -1400,6 +1456,30 @@ class DesignServer {
       final payload = r.json;
       if (payload is Map && payload['axes'] is Map) {
         _broadcastDial('axes', payload['axes']);
+      }
+    }
+    // The palette plane: ingestion/deletion/editing changes the LIST
+    // itself — islands holding the Theme slide rebuild their cards from
+    // the frame.
+    if (r.status < 300 &&
+        (sub == '/palettes' ||
+            sub == '/palettes/delete' ||
+            sub == '/palettes/update') &&
+        method == 'POST') {
+      final payload = r.json;
+      if (payload is Map && payload['palettes'] is List) {
+        _broadcastDial('palettes', payload['palettes']);
+      }
+    }
+    // The font plane (grilled 2026-09-13): ingestion/deletion changes the
+    // role/choice lists — islands holding the Fonts slide rebuild their
+    // dropdowns from the frame. Pick flips already ride the axes frame.
+    if (r.status < 300 &&
+        (sub == '/fonts' || sub == '/fonts/delete') &&
+        method == 'POST') {
+      final payload = r.json;
+      if (payload is Map && payload['fonts'] is Map) {
+        _broadcastDial('fonts', payload['fonts']);
       }
     }
     // The identity plane: roster changes are thin frames — authors holding

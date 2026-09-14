@@ -35,6 +35,7 @@
 import 'dart:io';
 
 import 'package:arxa/commission.dart';
+import 'package:arxa/design_palette_index.dart';
 import 'package:arxa/design_server.dart';
 import 'package:arxa/design_annotate.dart';
 import 'package:arxa/design_patch.dart';
@@ -51,6 +52,11 @@ Subcommands:
                                      from the intake chain — gates on the
                                      moodboard record (approved selection, every
                                      LOCKED criterion fed)
+  palette-index <artifact-dir> [--check]
+                                     (Re)index the palette corpus into
+                                     assets/styles/palettes/_template.json and
+                                     regenerate the seeded sheets + tokens
+                                     blocks; --check prints drift (P4)
   lint <artifact-dir>                Client-JS lint (ADR-0002 as amended
                                      by ADR-0009: vendored libs, first-party
                                      islands, artifact app modules) + the
@@ -112,6 +118,8 @@ Future<int> designMain(List<String> args) async {
       return commissionMain(rest);
     case 'lint':
       return _emit(designLint(rest));
+    case 'palette-index':
+      return paletteIndexMain(rest);
     case 'stamp':
       return _emit(stampMain(rest));
     case 'patch':

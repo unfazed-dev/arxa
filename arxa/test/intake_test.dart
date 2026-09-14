@@ -338,6 +338,47 @@ void main() {
     });
   });
 
+  group('brandColors — brief rendering (Q6)', () {
+    Map<String, dynamic> withColors() {
+      final a = goodAnswers(); // brand prose: 'none stated', inferred
+      a['brandColors'] = [
+        {'hex': '#1b3a4b', 'role': 'dark', 'provenance': 'client'},
+        {'hex': '#c9a227', 'provenance': 'inferred'},
+      ];
+      return a;
+    }
+
+    test('renders inside the Brand section, after the brand prose', () {
+      final brief = emitBrief(withColors());
+      final brand = brief.substring(
+          brief.indexOf('## Brand'), brief.indexOf('## Design direction'));
+      expect(brand.indexOf('none stated') < brand.indexOf('`#1b3a4b`'), isTrue,
+          reason: 'the group renders after the brand prose');
+      expect(brand.contains('`#1b3a4b` — dark'), isTrue,
+          reason: 'a role hint is shown with its hex');
+      expect(brand.contains('`#c9a227` [inferred]'), isTrue,
+          reason: "an inferred entry carries the brief's per-item mark");
+      expect(brand.contains('`#1b3a4b` — dark [inferred]'), isFalse,
+          reason: 'a client-stated entry is NOT marked');
+      // No table rows: the surface-table parsers (gate + seedFromBrief)
+      // must see nothing new in this section.
+      expect(brand.split('\n').every((l) => !l.trim().startsWith('|')), isTrue);
+    });
+
+    test('the group rides the UNIFIED brief too (one renderer)', () {
+      // renderBriefSections is the story-map chain's renderer; the colors
+      // must land there without story_map.dart knowing the group exists.
+      final sections = renderBriefSections(withColors()).join('\n');
+      expect(sections.contains('`#1b3a4b` — dark'), isTrue);
+    });
+
+    test('an absent group renders nothing — the golden holds', () {
+      expect(emitBrief(goodAnswers()), expectedBrief);
+      expect(emitBrief(goodAnswers()).contains('Brand colors'), isFalse,
+          reason: 'no lead-in without the group');
+    });
+  });
+
   group('seedFromBrief — hand-written brief (10.7)', () {
     test('parses a surface table into a registry seed; surface null', () {
       final seed = seedFromBrief(handwrittenBrief);
@@ -515,6 +556,68 @@ void main() {
       final errs = validateIntake(bad).errors;
       expect(errs.any((e) => e.contains('surfaces[0]') && e.contains('states')),
           isTrue);
+    });
+  });
+
+  group('brandColors — validation (palette-plane Q6)', () {
+    Map<String, dynamic> withColors(Object? colors) {
+      final a = goodAnswers();
+      a['brandColors'] = colors;
+      return a;
+    }
+
+    test('absent is valid; a well-formed group is valid', () {
+      expect(validateIntake(goodAnswers()).errors, isEmpty);
+      expect(validateIntake(withColors([
+        {'hex': '#1b3a4b', 'role': 'dark', 'provenance': 'client'},
+        {'hex': 'f5efe0', 'provenance': 'founder'}, // no '#', no role
+        {'hex': '#C9A227', 'role': 'paper', 'provenance': 'inferred'},
+      ])).errors, isEmpty);
+    });
+
+    test('a bad hex is rejected and named, in either spelling', () {
+      for (final bad in ['1b3a4', '#12345ff', 'gg0000', '##1b3a4b', 42]) {
+        final errs = validateIntake(withColors([
+          {'hex': bad, 'provenance': 'client'}
+        ])).errors;
+        expect(
+            errs.any((e) => e.contains('brandColors[0]') && e.contains('hex')),
+            isTrue,
+            reason: 'must reject hex: $bad');
+      }
+    });
+
+    test('a role outside the closed five is rejected and names the set', () {
+      final errs = validateIntake(withColors([
+        {'hex': '#1b3a4b', 'role': 'primary', 'provenance': 'client'}
+      ])).errors;
+      expect(errs.single, contains("role 'primary' is not one of"));
+      expect(errs.single, contains('dark'));
+    });
+
+    test('missing provenance is named; a fourth value is refused', () {
+      final missing = validateIntake(withColors([
+        {'hex': '#1b3a4b'}
+      ])).errors;
+      expect(missing.single, contains("missing 'provenance'"));
+      final bad = validateIntake(withColors([
+        {'hex': '#1b3a4b', 'provenance': 'guessed'}
+      ])).errors;
+      expect(bad.single, contains('is not one of'));
+    });
+
+    test('an unknown key is refused — the closed set pairs the spread', () {
+      final errs = validateIntake(withColors([
+        {'hex': '#1b3a4b', 'provenance': 'client', 'name': 'Marine'}
+      ])).errors;
+      expect(errs.single, contains("unknown key 'name'"));
+    });
+
+    test('a non-list group and a non-object entry are named', () {
+      expect(validateIntake(withColors('#1b3a4b')).errors.single,
+          contains('brandColors: must be a list'));
+      expect(validateIntake(withColors(['#1b3a4b'])).errors.single,
+          contains('brandColors[0]: expected an object'));
     });
   });
 
@@ -1223,6 +1326,33 @@ void main() {
       final action = props(feedback)['action'] as Map<String, dynamic>;
       expect(props(action).keys.toSet(), feedbackActionKeys.toSet());
       expect(action['additionalProperties'], isFalse);
+    });
+
+    test('brandColorRoles == brandColor.role.enum, in order', () {
+      // Ordered: the plane's five families are always listed in this order
+      // (Q5). A role the schema does not know would pin a hex the engine
+      // places by lightness-rank instead — silent drift, the bug this
+      // group exists to catch.
+      final brandColor = def('brandColor');
+      expect((props(brandColor)['role'] as Map)['enum'], brandColorRoles);
+    });
+
+    test("brandColorKeys == the brandColor object's properties", () {
+      final brandColor = def('brandColor');
+      expect(props(brandColor).keys.toSet(), brandColorKeys.toSet());
+      expect(brandColor['additionalProperties'], isFalse,
+          reason: 'a listed property set only closes the object when '
+              'additionalProperties is false');
+      expect((brandColor['required'] as List).toSet(), {'hex', 'provenance'},
+          reason: 'role stays OPTIONAL — absent = unhinted, the Q5 '
+              'lightness-rank law assigns it');
+    });
+
+    test('brandHexRe.pattern == brandColor.hex.pattern', () {
+      expect((props(def('brandColor'))['hex'] as Map)['pattern'],
+          brandHexRe.pattern,
+          reason: 'the hex grammar is one law with two spellings (Dart + '
+              'schema) — they must never drift');
     });
   });
 

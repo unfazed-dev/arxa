@@ -1,0 +1,58 @@
+{
+  "version": 1,
+  "comment": "Font plane declaration (grilled 2026-09-13). roles = this artifact's font roles; each role owns choices (the seeded five + catalog picks appended, the palette law). id = the html[data-font-<role>] value; family = the Google Fonts family; css2 = its css2 query segment (null = a system stack); stack = the fallback value. The DEFAULT choice per role is the base corpus (no sheet); every other choice ships a generated token override under /assets/styles/fonts/. Catalog picks append here with a generated sheet, persist, and ship on the next eject.",
+  "default": {
+    "body": "system"
+  },
+  "roles": [
+    {
+      "id": "body",
+      "name": "Body",
+      "token": "--c-font",
+      "choices": [
+        {
+          "id": "system",
+          "family": "System",
+          "stack": "ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif",
+          "seeded": true
+        },
+        {
+          "id": "inter",
+          "family": "Inter",
+          "category": "Sans Serif",
+          "css2": "family=Inter:wght@400;500;600;700",
+          "stack": "'Inter', 'Helvetica Neue', Arial, sans-serif",
+          "seeded": true,
+          "sheet": "/assets/styles/fonts/font-body-inter.css"
+        },
+        {
+          "id": "source-sans-3",
+          "family": "Source Sans 3",
+          "category": "Sans Serif",
+          "css2": "family=Source+Sans+3:ital,wght@0,200..900;1,200..900",
+          "stack": "'Source Sans 3', 'Helvetica Neue', Arial, sans-serif",
+          "seeded": true,
+          "sheet": "/assets/styles/fonts/font-body-source-sans-3.css"
+        },
+        {
+          "id": "dm-sans",
+          "family": "DM Sans",
+          "category": "Sans Serif",
+          "css2": "family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000",
+          "stack": "'DM Sans', 'Helvetica Neue', Arial, sans-serif",
+          "seeded": true,
+          "sheet": "/assets/styles/fonts/font-body-dm-sans.css"
+        },
+        {
+          "id": "instrument-sans",
+          "family": "Instrument Sans",
+          "category": "Sans Serif",
+          "css2": "family=Instrument+Sans:ital,wght@0,400..700;1,400..700",
+          "stack": "'Instrument Sans', 'Helvetica Neue', Arial, sans-serif",
+          "seeded": true,
+          "sheet": "/assets/styles/fonts/font-body-instrument-sans.css"
+        }
+      ]
+    }
+  ]
+}

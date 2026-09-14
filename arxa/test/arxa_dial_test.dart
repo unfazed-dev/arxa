@@ -3,11 +3,8 @@
 // Chrome — DialApi.handle is a pure function and MemoryDialStore is real.
 
 import 'dart:convert';
-import 'dart:io';
 
 import 'package:arxa/arxa_dial.dart';
-import 'package:arxa/design_draft.dart';
-import 'package:arxa/design_journal.dart';
 import 'package:test/test.dart';
 
 Map<String, dynamic> pinBody({
@@ -345,261 +342,118 @@ void main() {
     });
   });
 
-  group('draft overlay routes (decisions 5/11)', () {
-    late Directory home;
+  group('live overlay routes (edit redesign, grilled 2026-09-11)', () {
+    // The fake mirrors save_overlay's SQL semantics: author-only writes
+    // (enforced by DialApi), rev stale-guard, empty patches = revert.
+    late _OverlayFakeStore store;
     late DialApi api;
     setUp(() {
-      home = Directory.systemTemp.createTempSync('dial-draft-test');
-      api = DialApi(
-        store: MemoryDialStore(),
-        artifact: 'demo',
-        draftStore:
-            DraftFileStore(artifactDir: '/tmp/w/demo', home: home.path),
-        artifactDir: '/tmp/w/demo',
-      );
+      store = _OverlayFakeStore();
+      api = DialApi(store: store, artifact: 'demo', artifactDir: '/tmp/w/demo');
     });
-    tearDown(() => home.deleteSync(recursive: true));
 
-    test('author PUT → GET → DELETE roundtrip', () async {
-      final put = await api.handle('PUT', '/draft', {}, {
-        'tokens': {'--brand': '#0af'},
+    test('author PUT → GET roundtrip; guests read but never write',
+        () async {
+      final put = await api.handle('PUT', '/overlay', {}, {
+        'baseRev': 0,
         'patches': {
-          'e1': {'style': {'color': 'red'}, 'text': 'Hi'}
+          'e1': {
+            'text': 'Hi',
+            'was': 'Old',
+            'attrs': {'src': 'https://x.co/i.jpg'},
+          }
         },
       }, null);
       expect(put.status, 200, reason: jsonEncode(put.json));
-      expect((put.json as Map)['patches'], 1);
+      expect((put.json as Map)['ok'], true);
+      expect((put.json as Map)['rev'], 1);
 
-      final get = await api.handle('GET', '/draft', {}, null, null);
-      final draft = (get.json as Map)['draft'] as Map;
-      expect((draft['tokens'] as Map)['--brand'], '#0af');
-      expect(
-          ((draft['patches'] as Map)['e1'] as Map)['text'], 'Hi');
+      final get = await api.handle('GET', '/overlay', {}, null, null);
+      final overlay = (get.json as Map)['overlay'] as Map;
+      expect(overlay['rev'], 1);
+      expect(((overlay['patches'] as Map)['e1'] as Map)['text'], 'Hi');
 
-      final del = await api.handle('DELETE', '/draft', {}, null, null);
-      expect(del.status, 200);
-      final after = await api.handle('GET', '/draft', {}, null, null);
-      expect((after.json as Map)['draft'], isNull);
+      // A guest READS the overlay (decision 2: clients see live edits)…
+      final token = await store.mintShareLink('demo', const Duration(days: 1));
+      final grant = await store.resolveShareLink(token);
+      final guestGet =
+          await api.handle('GET', '/overlay', {'dial': token}, null, grant);
+      expect(guestGet.status, 200);
+      // …and can never write it.
+      final guestPut = await api.handle('PUT', '/overlay', {'dial': token},
+          {'baseRev': 1, 'patches': {}}, grant);
+      expect(guestPut.status, 403, reason: 'clients never edit text/media');
     });
 
-    test('guests and dead links are refused (dead links everywhere)', () async {
-      final store = MemoryDialStore();
-      final scoped = DialApi(
-          store: store,
-          artifact: 'demo',
-          draftStore:
-              DraftFileStore(artifactDir: '/tmp/w/demo', home: home.path));
-      final token = await scoped.store
-          .mintShareLink('demo', const Duration(days: 1));
-      final grant = await scoped.store.resolveShareLink(token);
-      final guest = await scoped.handle(
-          'GET', '/draft', {'dial': token}, null, grant);
-      expect(guest.status, 403);
-
-      // A token that resolves to nothing is a DEAD link — 403 on every
-      // route, including the ones that predate the guard.
-      final dead = await scoped.handle(
-          'GET', '/pins', {'dial': 'deadbeef'}, null, null);
-      expect(dead.status, 403);
-      final deadKanban = await scoped.handle(
-          'POST', '/pins/status', {'dial': 'deadbeef'},
-          {'id': 'x', 'status': 'resolved'}, null);
-      expect(deadKanban.status, 403);
+    test('a stale baseRev is refused with the fresh doc attached', () async {
+      await api.handle('PUT', '/overlay', {},
+          {'baseRev': 0, 'patches': {'e1': {'text': 'one'}}}, null);
+      // Simulate another surface writing ahead of us.
+      store.rev = 5;
+      store.patches = {'e9': {'text': 'newer'}};
+      final stale = await api.handle('PUT', '/overlay', {},
+          {'baseRev': 1, 'patches': {'e1': {'text': 'two'}}}, null);
+      expect(stale.status, 200);
+      final j = stale.json as Map;
+      expect(j['ok'], false);
+      expect(j['error'], 'stale');
+      expect(j['rev'], 5);
+      expect((j['patches'] as Map)['e9'], isNotNull,
+          reason: 'the caller resyncs from the fresh doc in one round trip');
     });
 
-    test('a malformed draft is a 400, never a 500', () async {
-      final r = await api.handle('PUT', '/draft', {}, {
-        'patches': {
-          'e1': {'style': {'bad name': 'x'}}
-        }
-      }, null);
+    test('empty patches revert: the row dies and rev resets', () async {
+      await api.handle('PUT', '/overlay', {},
+          {'baseRev': 0, 'patches': {'e1': {'text': 'Hi'}}}, null);
+      final revert = await api.handle(
+          'PUT', '/overlay', {}, {'baseRev': 1, 'patches': {}}, null);
+      expect((revert.json as Map)['ok'], true);
+      expect((revert.json as Map)['rev'], 0);
+      final after = await api.handle('GET', '/overlay', {}, null, null);
+      expect((after.json as Map)['overlay'], isNull);
+    });
+
+    test('a malformed body is a 400, never a 500', () async {
+      final r = await api.handle('PUT', '/overlay', {}, {'patches': 'x'}, null);
       expect(r.status, 400);
     });
 
-    test('commit: empty draft 400s; a filled draft hands structured ops',
-        () async {
-      final empty =
-          await api.handle('POST', '/commit', {}, null, null);
-      expect(empty.status, 400);
-
-      await api.handle('PUT', '/draft', {}, {
-        'tokens': {'--brand': '#0af'},
-        'patches': {
-          'e1': {'style': {'color': 'red'}, 'attrs': {'title': 't'}},
-          'e2': {'text': 'New label'},
-        },
-      }, null);
-      final r = await api.handle('POST', '/commit', {}, null, null);
+    test('the memory store answers null (no Edit verb law)', () async {
+      final mem = DialApi(store: MemoryDialStore(), artifact: 'demo');
+      final r = await mem.handle('GET', '/overlay', {}, null, null);
       expect(r.status, 200);
-      final j = r.json as Map;
-      expect(j['artifact'], 'demo');
-      expect(j['artifactDir'], '/tmp/w/demo');
-      expect((j['tokens'] as Map)['--brand'], '#0af');
-      final ops = j['ops'] as List;
-      expect(ops.length, 2);
-      final e1 = ops.singleWhere((o) => o['id'] == 'e1') as Map;
-      expect((e1['style'] as Map)['color'], 'red');
-      expect((e1['attrs'] as Map)['title'], 't');
-      final e2 = ops.singleWhere((o) => o['id'] == 'e2') as Map;
-      expect(e2['text'], 'New label');
-      // Commit is non-destructive: only the agent's DELETE clears.
-      final still = await api.handle('GET', '/draft', {}, null, null);
-      expect((still.json as Map)['draft'], isNotNull);
+      expect((r.json as Map)['overlay'], isNull);
+    });
+
+    test('dead links are refused everywhere (regression)', () async {
+      final dead =
+          await api.handle('GET', '/overlay', {'dial': 'deadbeef'}, null, null);
+      expect(dead.status, 403);
+      final deadPins =
+          await api.handle('GET', '/pins', {'dial': 'deadbeef'}, null, null);
+      expect(deadPins.status, 403);
     });
   });
 
-group('parity warnings on the draft surface (2026-08-24)', () {
-  late Directory phome;
-  late Directory part;
-  late DialApi papi;
-  setUp(() {
-    phome = Directory.systemTemp.createTempSync('parity-home');
-    part = Directory.systemTemp.createTempSync('parity-art');
-    File('${part.path}/w.tsx').writeAsStringSync(
-        '<Box name="solo-el">one</Box>\n<Box name="dup-el2">two</Box>\n');
-    File('${part.path}/v.tsx').writeAsStringSync(
-        '<Box name="dup-el2">three</Box>\n');
-    papi = DialApi(
-      store: MemoryDialStore(),
-      artifact: 'demo',
-      draftStore: DraftFileStore(artifactDir: part.path, home: phome.path),
-      artifactDir: part.path,
-    );
-  });
-  tearDown(() {
-    phome.deleteSync(recursive: true);
-    part.deleteSync(recursive: true);
-  });
+  group('the identity plane (arc 2)', () {
+    test('mint → attribute → roster → revoke: the personal-link lifecycle',
+        () async {
+      final store = MemoryDialStore();
+      final api = DialApi(store: store, artifact: 'demo');
 
-  test('single site: no warnings key anywhere', () async {
-    final put = await papi.handle('PUT', '/draft', {}, {
-      'patches': {'el:solo-el': {'style': {'color': 'red'}}},
-    }, null);
-    expect(put.status, 200, reason: jsonEncode(put.json));
-    expect((put.json as Map)['warnings'], isNull);
-    final get = await papi.handle('GET', '/draft', {}, null, null);
-    expect((get.json as Map)['warnings'], isNull);
-  });
+      final minted = await api.handle('POST', '/guests', {},
+          {'email': 'jane@client.com', 'name': 'Jane'}, null);
+      expect(minted.status, 201, reason: jsonEncode(minted.json));
+      final grant = await store.resolveShareLink(
+          (minted.json as Map)['token'] as String);
+      expect(grant!.guestEmail, 'jane@client.com');
 
-  test('ambiguous site count warns on load', () async {
-    await papi.handle('PUT', '/draft', {}, {
-      'patches': {'el:dup-el2': {'style': {'color': 'red'}}},
-    }, null);
-    final get = await papi.handle('GET', '/draft', {}, null, null);
-    final w = ((get.json as Map)['warnings'] as List).first as Map;
-    expect(w['sites'], 2);
-    expect(w['problem'], 'ambiguous');
-  });
+      final roster = await api.handle('GET', '/guests', {}, null, null);
+      final gs = (roster.json as Map)['guests'] as List;
+      expect(gs.single['email'], 'jane@client.com');
+    });
 
-  test('missing anchor warns as missing with zero sites', () async {
-    await papi.handle('PUT', '/draft', {}, {
-      'patches': {'el:nope-el': {'style': {'color': 'red'}}},
-    }, null);
-    final get = await papi.handle('GET', '/draft', {}, null, null);
-    final w = ((get.json as Map)['warnings'] as List).first as Map;
-    expect(w['sites'], 0);
-    expect(w['problem'], 'missing');
-  });
-
-  test('machine-id patches never warn', () async {
-    await papi.handle('PUT', '/draft', {}, {
-      'patches': {'some-stamp-e1': {'style': {'color': 'red'}}},
-    }, null);
-    final get = await papi.handle('GET', '/draft', {}, null, null);
-    expect((get.json as Map)['warnings'], isNull);
-  });
-});
-
-group('the identity plane (arc 2)', () {
-  test('mint → attribute → roster → revoke: the personal-link lifecycle',
-      () async {
-    final store = MemoryDialStore();
-    final api = DialApi(store: store, artifact: 'demo');
-
-    // The author registers the guest BEFORE the link exists; the email is
-    // normalized (lowercase) on the way in.
-    final minted = await api.handle('POST', '/guests', {},
-        {'email': 'Jane@Client.com', 'name': 'Jane'}, null);
-    expect(minted.status, 201, reason: jsonEncode(minted.json));
-    final mj = minted.json as Map;
-    expect(mj['email'], 'jane@client.com');
-    expect(mj['token'] as String, isNotEmpty);
-
-    // The link resolves to a grant that CARRIES the identity.
-    final grant = await store.resolveShareLink(mj['token'] as String);
-    expect(grant, isNotNull);
-    expect(grant!.guestEmail, 'jane@client.com');
-    expect(grant.guestName, 'Jane');
-
-    // A pin on the personal link attributes by construction — and a typed
-    // name cannot forge it: the registry label wins.
-    final pinned = await api.handle(
-        'POST', '/pins', {}, pinBody(name: 'IMPOSTOR'), grant);
-    expect(pinned.status, 201);
-    final pj = (pinned.json as Map)['pin'] as Map;
-    expect(pj['author'], 'guest');
-    expect(pj['name'], 'Jane');
-    expect(pj['guestEmail'], 'jane@client.com');
-
-    // Replies attribute identically.
-    final replied = await api.handle('POST', '/pins/reply', {},
-        {'id': pj['id'], 'body': 'also the spacing'}, grant);
-    expect(replied.status, 201);
-    expect(((replied.json as Map)['reply'] as Map)['guestEmail'],
-        'jane@client.com');
-
-    // The roster answers who holds live links.
-    final roster = await api.handle('GET', '/guests', {}, null, null);
-    final gs = (roster.json as Map)['guests'] as List;
-    expect(gs.single['email'], 'jane@client.com');
-    expect(gs.single['linksAlive'], 1);
-
-    // Guests touch none of it.
-    expect(
-        (await api.handle(
-                'POST', '/guests', {}, {'email': 'x@y.co'}, grant))
-            .status,
-        403);
-    expect((await api.handle('GET', '/guests', {}, null, grant)).status, 403);
-    expect(
-        (await api.handle('POST', '/guests/revoke', {},
-            {'email': 'jane@client.com'}, grant))
-            .status,
-        403);
-
-    // The email law.
-    for (final bad in ['not-an-email', '', 'a@b', 'a b@c.d']) {
-      expect(
-          (await api.handle('POST', '/guests', {}, {'email': bad}, null))
-              .status,
-          400,
-          reason: 'email must 400');
-    }
-
-    // Revoke is the PII path: links die, feedback survives de-attributed.
-    final revoked = await api.handle('POST', '/guests/revoke', {},
-        {'email': 'JANE@client.com'}, null);
-    expect(revoked.status, 200);
-    expect(await store.resolveShareLink(mj['token'] as String), isNull);
-
-    final after = await api.handle('GET', '/pins', {}, null, null);
-    final pins = (after.json as Map)['pins'] as List;
-    expect(pins.first['guestEmail'], isNull,
-        reason: 'the email copy must be scrubbed');
-    expect(pins.first['name'], 'Jane',
-        reason: 'the friendly label survives; the identity does not');
-    expect((pins.first['replies'] as List).single['guestEmail'], isNull);
-
-    final roster2 = await api.handle('GET', '/guests', {}, null, null);
-    expect((roster2.json as Map)['guests'] as List, isEmpty);
-    expect(
-        (await api.handle('POST', '/guests/revoke', {},
-            {'email': 'jane@client.com'}, null))
-            .status,
-        404);
-  });
-
-  test('re-minting converges on one guest, links stack', () async {
+    test('re-minting converges on one guest, links stack', () async {
     final store = MemoryDialStore();
     final api = DialApi(store: store, artifact: 'demo');
     await api.handle('POST', '/guests', {}, {'email': 'a@b.co'}, null);
@@ -613,116 +467,102 @@ group('the identity plane (arc 2)', () {
   });
 });
 
-group('undo/redo routes (Design Journal)', () {
-  late Directory home;
-  late DialApi api;
-  setUp(() {
-    home = Directory.systemTemp.createTempSync('dial-undo-test');
-    api = DialApi(
-      store: MemoryDialStore(),
-      artifact: 'demo',
-      draftStore:
-          DraftFileStore(artifactDir: '/tmp/w/demo', home: home.path),
-      journalStore:
-          JournalFileStore(artifactDir: '/tmp/w/demo', home: home.path),
-      artifactDir: '/tmp/w/demo',
-    );
+group('eject automint config (grilled 2026-09-10)', () {
+  test('no dial block and no env = automint off', () {
+    final c = dialAutomintConfig(null, const {});
+    expect(c.enabled, isFalse);
   });
-  tearDown(() => home.deleteSync(recursive: true));
 
-  Future<Map> put(Map body) async {
-    final r = await api.handle('PUT', '/draft', {}, body, null);
-    expect(r.status, 200, reason: jsonEncode(r.json));
-    return r.json as Map;
-  }
+  test('the arxa.json dial block carries email + days (90 default)', () {
+    final c = dialAutomintConfig(const {
+      'automint': true,
+      'clientEmail': 'client@co.com',
+    }, const {});
+    expect(c.enabled, isTrue);
+    expect(c.email, 'client@co.com');
+    expect(c.days, 90);
+  });
 
-  test('PUT journals a step and reports depths', () async {
-    final r = await put({
-      'gesture': 'g1',
-      'tokens': {'--brand': '#0af'},
+  test('env ARXA_DIAL_AUTOMINT forces on and off over the block', () {
+    expect(
+        dialAutomintConfig(null, const {'ARXA_DIAL_AUTOMINT': '1'}).enabled,
+        isTrue);
+    expect(
+        dialAutomintConfig(null, const {'ARXA_DIAL_AUTOMINT': 'true'}).enabled,
+        isTrue);
+    expect(
+        dialAutomintConfig(const {'automint': true},
+                const {'ARXA_DIAL_AUTOMINT': '0'})
+            .enabled,
+        isFalse);
+    expect(
+        dialAutomintConfig(const {'automint': true},
+                const {'ARXA_DIAL_AUTOMINT': 'false'})
+            .enabled,
+        isFalse);
+  });
+
+  test('env email wins over the block email; days clamp + override', () {
+    final c = dialAutomintConfig(const {
+      'automint': true,
+      'clientEmail': 'json@co.com',
+      'days': 30,
+    }, const {
+      'ARXA_DIAL_CLIENT_EMAIL': 'env@co.com',
+      'ARXA_DIAL_CLIENT_DAYS': '120',
     });
-    expect(r['undoDepth'], 1);
-    expect(r['redoDepth'], 0);
+    expect(c.email, 'env@co.com');
+    expect(c.days, 120);
+    final clamped = dialAutomintConfig(const {
+      'automint': true,
+      'clientEmail': 'a@b.co',
+      'days': 9999,
+    }, const {});
+    expect(clamped.days, 90);
+    final envOnly = dialAutomintConfig(
+        const {'automint': true, 'clientEmail': 'a@b.co'},
+        const {'ARXA_DIAL_CLIENT_DAYS': '7'});
+    expect(envOnly.days, 7);
   });
 
-  test('same-gesture writes coalesce into one step', () async {
-    await put({'gesture': 'drag', 'tokens': {'--brand': '#111'}});
-    final r =
-        await put({'gesture': 'drag', 'tokens': {'--brand': '#999'}});
-    expect(r['undoDepth'], 1, reason: 'one slider drag, one step');
-    final u = await api.handle('POST', '/undo', {}, null, null);
-    final draft = (u.json as Map)['draft'] as Map;
-    // Undone-to-empty tokens are omitted from toJson entirely.
-    expect((draft['tokens'] as Map?)?['--brand'], isNull,
-        reason: 'undo lands before the drag, not mid-drag');
-  });
-
-  test('undo → redo roundtrips the overlay', () async {
-    await put({'gesture': 'g1', 'tokens': {'--brand': '#0af'}});
-    await put({
-      'gesture': 'g2',
-      'tokens': {'--brand': '#0af'},
-      'patches': {
-        'e1': {'text': 'Hi'}
-      },
-    });
-    final u = await api.handle('POST', '/undo', {}, null, null);
-    final um = u.json as Map;
-    expect(um['applied'], true);
-    expect(um['undoDepth'], 1);
-    expect(um['redoDepth'], 1);
-    // An undone-to-empty patches map is omitted from toJson entirely.
-    final undonePatches = (um['draft'] as Map)['patches'] as Map?;
-    expect(undonePatches?['e1'], isNull);
-    final r = await api.handle('POST', '/redo', {}, null, null);
-    final rm = r.json as Map;
-    expect(rm['applied'], true);
-    expect((((rm['draft'] as Map)['patches'] as Map)['e1'] as Map)['text'],
-        'Hi');
-  });
-
-  test('undo at the barrier answers applied:false, never an error',
-      () async {
-    final u = await api.handle('POST', '/undo', {}, null, null);
-    expect(u.status, 200);
-    expect((u.json as Map)['applied'], false);
-  });
-
-  test('a write without a gesture is its own step', () async {
-    await put({'tokens': {'--a': '1'}});
-    await put({'tokens': {'--a': '2'}});
-    final g = await api.handle('GET', '/draft', {}, null, null);
-    expect((g.json as Map)['undoDepth'], 2);
-  });
-
-  test('DELETE /draft (commit landed) clears the journal too', () async {
-    await put({'gesture': 'g1', 'tokens': {'--brand': '#0af'}});
-    await api.handle('DELETE', '/draft', {}, null, null);
-    final g = await api.handle('GET', '/draft', {}, null, null);
-    expect((g.json as Map)['undoDepth'], 0);
-    expect((g.json as Map)['redoDepth'], 0);
-    final u = await api.handle('POST', '/undo', {}, null, null);
-    expect((u.json as Map)['applied'], false);
-  });
-
-  test('guests are refused on /undo and /redo', () async {
-    final token =
-        await api.store.mintShareLink('demo', const Duration(days: 1));
-    final grant = await api.store.resolveShareLink(token);
-    final u = await api.handle('POST', '/undo', {'dial': token}, null, grant);
-    expect(u.status, 403);
-    final r = await api.handle('POST', '/redo', {'dial': token}, null, grant);
-    expect(r.status, 403);
-  });
-
-  test('a new write after undo truncates the redo branch', () async {
-    await put({'gesture': 'g1', 'tokens': {'--a': '1'}});
-    await put({'gesture': 'g2', 'tokens': {'--a': '2'}});
-    await api.handle('POST', '/undo', {}, null, null);
-    final r = await put({'gesture': 'g3', 'tokens': {'--a': '3'}});
-    expect(r['redoDepth'], 0, reason: 'linear history, no forks');
-    expect(r['undoDepth'], 2);
+  test('enabled with a missing or malformed email reports email null', () {
+    expect(dialAutomintConfig(const {'automint': true}, const {}).email,
+        isNull);
+    expect(
+        dialAutomintConfig(
+            const {'automint': true, 'clientEmail': 'not-an-email'},
+            const {})
+            .email,
+        isNull);
   });
 });
 
+}
+/// The overlay fake: mirrors save_overlay's SQL semantics for DialApi
+/// route tests (author-only writes are DialApi's job; rev stale-guard and
+/// empty-patches-revert are the store's).
+class _OverlayFakeStore extends MemoryDialStore {
+  Map<String, dynamic> patches = {};
+  int rev = 0;
+
+  @override
+  Future<OverlayDoc?> readOverlay() async =>
+      patches.isEmpty ? null : OverlayDoc(patches: patches, rev: rev);
+
+  @override
+  Future<OverlayWriteResult> writeOverlay(
+      Map<String, dynamic> p, int baseRev) async {
+    if (p.isEmpty) {
+      patches = {};
+      rev = 0;
+      return const OverlayWriteResult(ok: true, rev: 0);
+    }
+    if (baseRev < rev) {
+      return OverlayWriteResult(
+          ok: false, error: 'stale', rev: rev, patches: patches);
+    }
+    patches = p;
+    rev += 1;
+    return OverlayWriteResult(ok: true, rev: rev);
+  }
 }

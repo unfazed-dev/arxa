@@ -231,6 +231,26 @@ PatchResult _patchAt(String src, String id, int at, PatchEdits edits) {
 
   var tag = src.substring(nameEnd, tagEnd); // attribute region of the open tag
 
+  // Media-attr guard (edit redesign, 2026-09-11): the live editor resolves
+  // src/srcset/poster through the ONE descent — a stamped wrapper's media
+  // attr lands on the img/video it carries. The SOURCE patcher cannot do
+  // that descent (the media tag lives inside the element's extent, often in
+  // a different expression), and baking a media attr onto the wrapper itself
+  // would claim success while the swap silently dies on the next deploy.
+  // Refuse: the eject bake's refused-patch law keeps the overlay row live.
+  final hostTag = src.substring(lt + 1, nameEnd).toLowerCase();
+  const mediaAttrs = {'src', 'srcset', 'poster'};
+  final mediaOnly = edits.attrs.isNotEmpty &&
+      edits.attrs.keys.every(mediaAttrs.contains);
+  if (mediaOnly &&
+      hostTag != 'img' &&
+      hostTag != 'video' &&
+      hostTag != 'source') {
+    return PatchResult(src,
+        error: 'media attrs on <$hostTag> ("$id") ride the live overlay — '
+            'source bake for wrapped media is not implemented');
+  }
+
   // ── attribute edits ──
   for (final e in edits.attrs.entries) {
     if (e.key.contains(_wsRe) || e.key.contains('=')) {

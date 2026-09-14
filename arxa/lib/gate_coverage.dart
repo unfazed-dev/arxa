@@ -20,6 +20,9 @@
 //   C3  declared — a shell with real surface dirs must be in selfContained
 //   C4  progress — unadopted shells REPORTED with counts, never silent
 //   C5  ceremonies — every active target's platform files/keys present (6.8)
+//   C6  palette  — the frozen default palette's color vocabulary re-rendered
+//                  from structure.json's palettes block byte-equals the emitted
+//                  file (the palette plane, Q8; absent block = no plane)
 //
 // Two producer shapes (dogfood P14): app.routes.js at the design root => htmx
 // producer — coverage derives + reports the form-factor set and DEFERS the
@@ -30,6 +33,8 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:arxa/gates.dart';
+import 'package:arxa/scaffold.dart'
+    show paletteVocabularyOf, paletteVocabularyPath, renderPaletteVocabulary;
 
 /// Directories under a shell that are NOT surfaces (matches freeze check 4's
 /// hard-coded index.html exclusion: a name-anything-you-like escape turns the
@@ -357,6 +362,31 @@ GateResult coverageGate(GateContext ctx) {
           fail("ceremony '$cid' ($cdesc): $p present but lacks key '$key'");
         }
       }
+    }
+  }
+
+  // ---- C6: palette vocabulary drift (the palette plane, Q8) ----
+  // Scaffolder-owned file byte-diffed against the re-render from
+  // structure.json's palettes block — the same --check discipline as the
+  // file-set diff; a hand edit here is drift, named by file. Absent block =
+  // no plane (pre-law artifact): nothing re-rendered, nothing checked.
+  final vocab = paletteVocabularyOf(structure);
+  if (vocab != null) {
+    final vf = File('$appRoot/$paletteVocabularyPath');
+    if (!vf.existsSync()) {
+      fail('$paletteVocabularyPath missing — structure.json freezes palette '
+          "'${vocab.id}' but the scaffold never emitted its color vocabulary");
+    } else if (vf.readAsStringSync() !=
+        renderPaletteVocabulary(
+            id: vocab.id,
+            name: vocab.name,
+            swatch: vocab.swatch,
+            anchors: vocab.anchors)) {
+      fail('$paletteVocabularyPath drifted from frozen palette '
+          "'${vocab.id}' — scaffolder-owned: do not hand-edit; re-freeze, "
+          're-scaffold');
+    } else {
+      ok("palette vocabulary matches frozen palette '${vocab.id}' (C6)");
     }
   }
 

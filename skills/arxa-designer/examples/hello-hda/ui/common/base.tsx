@@ -6,14 +6,12 @@ import { Fragment, type FC, type Child } from 'hono/jsx';
 interface BaseProps {
   title?: string;
   locale?: string;
-  accent?: string;
   children?: Child;
 }
 
 const Base: FC<BaseProps> = ({
   title = 'hello-hda',
   locale = 'en',
-  accent = 'blueviolet',
   children,
 }) => (
   <Fragment>
@@ -38,13 +36,23 @@ const Base: FC<BaseProps> = ({
           integrity="sha384-6lyVbhrs13b9z7mLOpt/N6R76rtkEBWgCjAXRs/DSWyi2AMnQSs10ijWk+PI8n7W"
           crossorigin="anonymous"
         ></script>
+        {/* the palette plane (docs/plans/arxa-palette-plane-universal.md):
+            tokens first — the corpus reads only these vars; palette.js owns
+            the attribute + theme-color live; the serve-time machinery stamps
+            data-palette and injects the generated sheet links. */}
+        <meta data-arxa-id="ui-common-base-e11" name="theme-color" content="#007EA7" />
+        <link data-arxa-id="ui-common-base-e12" rel="stylesheet" href="/assets/css/tokens.css" />
         <link data-arxa-id="ui-common-base-e8" rel="stylesheet" href="/assets/css/app.css" />
+        <script data-arxa-id="ui-common-base-e13" src="/assets/app/palette.js" defer></script>
+        {/* font.js owns the font plane (grilled 2026-09-13): the per-role
+            data-font-* attributes, the ONE css2 link, memory + broadcast. */}
+        <script data-arxa-id="ui-common-base-e13f" src="/assets/app/font.js" defer></script>
       </head>
       {/* hx-status:422 escapes the 4xx no-swap blackout (empty merge) so a
           validation response swaps in place — the old responseHandling
           `{"code":"422","swap":true}` rule restated for htmx 4. */}
       <body hx-boost="true" hx-sync="this:replace" {...{ 'hx-status:422': '{}' }}>
-        <div data-arxa-id="ui-common-base-e9" id="app" style={`--accent: ${accent}`}>
+        <div data-arxa-id="ui-common-base-e9" id="app">
           {children}
         </div>
         <div data-arxa-id="ui-common-base-e10" id="toasts"></div>

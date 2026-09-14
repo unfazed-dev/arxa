@@ -4,7 +4,9 @@
 ///   `<link rel="stylesheet" ... data-axes-style="glass" [disabled]>`
 ///   `<html data-axes-themes="system light dark">`
 /// and only when the nearest arxa.json marker (walk-up from the
-/// artifact dir) says kind: app. Sites never see the control.
+/// artifact dir) says kind: app. Sites never see the STYLE/THEME control —
+/// the palette axis (design_palettes.dart, VERIFY ADDENDUM 17) is the one
+/// exception: any kind declaring palettes.json gets it.
 ///
 /// The server applies the active pick to every served full page:
 ///   ?style=/?theme= (per-request override: probes, guest previewing)
@@ -36,38 +38,90 @@ import 'repo_project.dart' show repoMarkerFile, warnLegacyMarker;
 /// the declaration parser, the serve-time override, and the POST route.
 final axisValuePattern = RegExp(r'^[a-z0-9-]{1,40}$');
 
-/// One resolved style/theme pair.
+/// One resolved style/theme pair, plus the optional palette pick (the
+/// palette plane, design_palettes.dart: declared by palettes.json on ANY
+/// kind — sites included; null when the artifact has no palette axis) and
+/// the optional per-role font picks (the font plane, design_fonts.dart,
+/// grilled 2026-09-13: role id -> choice id; null/empty when the artifact
+/// has no font plane or nothing was published yet).
 class AxesPick {
-  const AxesPick({required this.style, required this.theme});
+  const AxesPick({required this.style, required this.theme, this.palette, this.font});
 
   final String style;
   final String theme;
+  final String? palette;
+  final Map<String, String>? font;
 
-  Map<String, String> toJson() => {'style': style, 'theme': theme};
+  Map<String, Object?> toJson() => {
+        'style': style,
+        'theme': theme,
+        'palette': ?palette,
+        if (font != null && font!.isNotEmpty) 'font': font,
+      };
 
+  /// Accepts a full style/theme pair, a palette-only pick, a font-only
+  /// pick, or any combination — at least one lawful axis is required.
   static AxesPick? fromJson(Object? json) {
     if (json is! Map) return null;
     final style = json['style'];
     final theme = json['theme'];
-    if (style is! String || theme is! String) return null;
-    if (!axisValuePattern.hasMatch(style) ||
-        !axisValuePattern.hasMatch(theme)) {
-      return null;
-    }
-    return AxesPick(style: style, theme: theme);
+    final palette = json['palette'];
+    final font = json['font'];
+    final hasPair = style is String &&
+        theme is String &&
+        axisValuePattern.hasMatch(style) &&
+        axisValuePattern.hasMatch(theme);
+    final hasPalette = palette is String && axisValuePattern.hasMatch(palette);
+    final hasFont = font is Map &&
+        font.isNotEmpty &&
+        font.entries.every((e) =>
+            e.key is String &&
+            e.value is String &&
+            axisValuePattern.hasMatch(e.key as String) &&
+            axisValuePattern.hasMatch(e.value as String));
+    if (!hasPair && !hasPalette && !hasFont) return null;
+    return AxesPick(
+      style: hasPair ? style : '',
+      theme: hasPair ? theme : '',
+      palette: hasPalette ? palette : null,
+      font: hasFont
+          ? font.map((k, v) => MapEntry(k as String, v as String))
+          : null,
+    );
   }
 
   @override
   bool operator ==(Object other) =>
-      other is AxesPick && other.style == style && other.theme == theme;
+      other is AxesPick &&
+      other.style == style &&
+      other.theme == theme &&
+      other.palette == palette &&
+      _mapEq(other.font, font);
+
+  static bool _mapEq(Object? a, Object? b) {
+    if (a == null && b == null) return true;
+    if (a is! Map || b is! Map) return false;
+    if (a.length != b.length) return false;
+    for (final e in a.entries) {
+      if (b[e.key] != e.value) return false;
+    }
+    return true;
+  }
 
   @override
-  int get hashCode => Object.hash(style, theme);
+  int get hashCode => Object.hash(
+      style,
+      theme,
+      palette,
+      font == null
+          ? null
+          : Object.hashAll(
+              font!.entries.map((e) => Object.hash(e.key, e.value))));
 }
 
 /// The artifact's pipeline identity, read from the arxa.json marker.
 class ArtifactMarker {
-  const ArtifactMarker({required this.project, required this.kind});
+  const ArtifactMarker({required this.project, required this.kind, this.dial});
 
   /// The marker's `name` (e.g. energize-studio) — the project dimension
   /// every dial store key carries.
@@ -75,6 +129,11 @@ class ArtifactMarker {
 
   /// The marker's `kind` — axes are a kind: app capability only.
   final String kind;
+
+  /// The marker's raw `dial` block (eject automint, grilled 2026-09-10):
+  /// {automint: bool, clientEmail: String, days: int}. Null/absent = the
+  /// design declares no dial config; the eject validates the fields.
+  final Map<String, dynamic>? dial;
 }
 
 /// The arxa.json marker nearest the artifact dir (walk-up — the project
@@ -92,7 +151,10 @@ ArtifactMarker? resolveArtifactMarker(String artifactDir) {
             parsed['kind'] is String) {
           return ArtifactMarker(
               project: parsed['name'] as String,
-              kind: parsed['kind'] as String);
+              kind: parsed['kind'] as String,
+              dial: parsed['dial'] is Map
+                  ? (parsed['dial'] as Map).cast<String, dynamic>()
+                  : null);
         }
       } catch (_) {
         // Fall through to null below.
@@ -152,6 +214,12 @@ abstract class AxesStore {
 
   /// Publish a pick. May throw — the API answers 502 honestly.
   Future<void> save(AxesPick pick);
+
+  /// Push the font-plane manifest onto the row (live-sync law,
+  /// 2026-09-13): the deployed worker merges this cell over its baked
+  /// manifest, so a choice ingested mid-session reaches every visitor
+  /// without a redeploy. No-op unless the store is Supabase.
+  Future<void> saveFontManifest(Map<String, Object?> manifest) async {}
 }
 
 /// The zero-config store: per-process. Correct for local solo use;
@@ -169,6 +237,9 @@ class MemoryAxesStore implements AxesStore {
   Future<void> save(AxesPick pick) async {
     _pick = pick;
   }
+
+  @override
+  Future<void> saveFontManifest(Map<String, Object?> manifest) async {}
 }
 
 /// Supabase-backed axes. Reads ride a short-TTL stale-while-revalidate
@@ -326,7 +397,8 @@ class SupabaseAxesStore implements AxesStore {
   Future<AxesPick?> _fetch() async {
     final designId = await _ensureDesignId();
     final response = await _request(
-        'GET', 'arxa_dial_axes?design_id=eq.$designId&select=style,theme');
+        'GET',
+        'arxa_dial_axes?design_id=eq.$designId&select=style,theme,palette,font');
     final text = await utf8.decoder.bind(response).join();
     if (response.statusCode >= 300) {
       throw StateError('axes read failed (${response.statusCode}): $text');
@@ -372,6 +444,14 @@ class SupabaseAxesStore implements AxesStore {
       'design_id': designId,
       'style': pick.style,
       'theme': pick.theme,
+      // The palette column is nullable; apps never set it, sites always
+      // do (design_palettes.dart). Requires the ADDENDUM 17 migration.
+      'palette': pick.palette,
+      // The font plane (grilled 2026-09-13): per-role picks, one jsonb
+      // cell — the 20260913 migration. Always sent (an empty object is
+      // the no-picks state) because the routes merge every other axis
+      // into the pick before it reaches here.
+      'font': pick.font ?? const <String, String>{},
       'updated_at': DateTime.now().toUtc().toIso8601String(),
     }, extraHeaders: {
       'Prefer': 'resolution=merge-duplicates'
@@ -382,6 +462,21 @@ class SupabaseAxesStore implements AxesStore {
     }
     _cache = pick;
     _cacheAt = DateTime.now();
+  }
+
+  @override
+  Future<void> saveFontManifest(Map<String, Object?> manifest) async {
+    final designId = await _ensureDesignId();
+    final response = await _request(
+        'PATCH', 'arxa_dial_axes?design_id=eq.' + designId, body: {
+      'font_manifest': manifest,
+      'updated_at': DateTime.now().toUtc().toIso8601String(),
+    });
+    final text = await utf8.decoder.bind(response).join();
+    if (response.statusCode >= 300) {
+      throw StateError(
+          'font manifest write failed (' + response.statusCode.toString() + '): ' + text);
+    }
   }
 
   @override

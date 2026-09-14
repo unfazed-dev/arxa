@@ -20,6 +20,10 @@
 ///     never leaves the server — clients (guest or author) talk ONLY to
 ///     this server / the deployed Worker, never to Supabase directly, so
 ///     the RLS posture is 'enabled, service-role only, no anon policies'.
+///     AMENDMENT (VERIFY ADDENDUM 17, grilled Q8 2026-09-09): the DEPLOYED
+///     static site is the one exception — its dial talks PostgREST +
+///     Realtime directly with the ANON key, hardened to insert-only,
+///     rate-limited policies; one shared board for design + prod.
 ///
 /// WHO MAY WHAT (locked decisions 1/7/9). The loopback server IS the Author
 /// (browser_trust.dart's threat model); a caller carrying a valid share
@@ -43,9 +47,19 @@ import 'dart:math';
 import 'package:crypto/crypto.dart' show sha256;
 
 import 'design_axes.dart';
-import 'design_draft.dart';
-import 'design_journal.dart';
-import 'design_patch.dart' show nameSiteLocations;
+import 'design_fonts.dart';
+import 'design_palettes.dart';
+
+/// Thrown when the remote store cannot be REACHED at all — DNS failure,
+/// refused socket, timeout. Connectivity, not an API answer: reads
+/// degrade (stale cache or empty) and DialApi answers a JSON 503, so a
+/// dead project ref can never serve an HTML 500 to a dial island.
+class DialStoreUnavailable implements Exception {
+  DialStoreUnavailable(this.message);
+  final String message;
+  @override
+  String toString() => 'DialStoreUnavailable: $message';
+}
 
 // ── vocabulary ───────────────────────────────────────────────────────────
 
@@ -322,6 +336,36 @@ abstract class DialStore {
   /// feedback (guest_id set-null), and scrubs the email copy off it.
   /// Returns the deleted guest, or null when no such email is registered.
   Future<DialGuest?> deleteGuest(String artifact, String email);
+
+  // ── the Live Overlay (edit redesign, grilled 2026-09-11) ───────────────
+  // One Supabase row per design: the author's text + image edits, read by
+  // every dial (guests included — decision 2 overturned the author-private
+  // draft), written only through the save_overlay RPC (author token or the
+  // service role — never anon). [readOverlay] answers null when no row (or
+  // no overlay capability); [writeOverlay] enforces the rev stale-guard in
+  // SQL and answers the parsed RPC result.
+
+  Future<OverlayDoc?> readOverlay();
+  Future<OverlayWriteResult> writeOverlay(
+      Map<String, dynamic> patches, int baseRev);
+}
+
+/// The overlay row's dial-side shape.
+class OverlayDoc {
+  const OverlayDoc({required this.patches, required this.rev});
+  final Map<String, dynamic> patches;
+  final int rev;
+}
+
+/// save_overlay's answer: ok + rev, or the stale refusal carrying the
+/// fresh doc so the caller resyncs in one round trip.
+class OverlayWriteResult {
+  const OverlayWriteResult(
+      {required this.ok, this.rev = 0, this.error, this.patches});
+  final bool ok;
+  final int rev;
+  final String? error;
+  final Map<String, dynamic>? patches;
 }
 
 String dialNewId() {
@@ -509,6 +553,19 @@ class MemoryDialStore implements DialStore {
     }
     return guest;
   }
+
+  // The Live Overlay needs the registered design row; the memory store has
+  // none and the island hides the Edit verb for memory-store designs
+  // (decision 4). Reads answer null (no overlay); writes are unreachable
+  // and refuse loudly if ever hit.
+  @override
+  Future<OverlayDoc?> readOverlay() async => null;
+
+  @override
+  Future<OverlayWriteResult> writeOverlay(
+      Map<String, dynamic> patches, int baseRev) async {
+    throw StateError('the memory store has no live overlay');
+  }
 }
 
 /// PostgREST against the operator-owned central project. Table shapes are
@@ -568,6 +625,20 @@ class SupabaseDialStore implements DialStore {
   final _pinsCache = <String, List<DialPin>>{};
   final _pinsCacheAt = <String, DateTime>{};
   final _pinsRefreshing = <String>{};
+  DateTime? _lastNoteAt;
+
+  /// One line per minute, not per request: a dead ref must degrade
+  /// quietly, but the operator must still learn WHY pins went empty.
+  void _noteUnreachable(DialStoreUnavailable e) {
+    final now = DateTime.now();
+    if (_lastNoteAt != null &&
+        now.difference(_lastNoteAt!) < const Duration(minutes: 1)) {
+      return;
+    }
+    _lastNoteAt = now;
+    stderr.writeln(
+        '[dial-store] unreachable: ${e.message} — serving degraded (stale/empty pins)');
+  }
 
   @override
   String get kind => 'supabase';
@@ -611,9 +682,16 @@ class SupabaseDialStore implements DialStore {
 
   Future<HttpClientResponse> _req(String method, String path,
       {Object? body, Map<String, String>? extraHeaders}) async {
-    final req = await _http
-        .openUrl(method, Uri.parse('$url/rest/v1/$path'))
-        .timeout(const Duration(seconds: 8));
+    HttpClientRequest req;
+    try {
+      req = await _http
+          .openUrl(method, Uri.parse('$url/rest/v1/$path'))
+          .timeout(const Duration(seconds: 8));
+    } on SocketException catch (e) {
+      throw DialStoreUnavailable('$method /$path: ${e.message}');
+    } on TimeoutException {
+      throw DialStoreUnavailable('$method /$path: no connection (8s)');
+    }
     req.headers.set('apikey', serviceKey);
     req.headers.set('Authorization', 'Bearer $serviceKey');
     extraHeaders?.forEach(req.headers.set);
@@ -628,7 +706,10 @@ class SupabaseDialStore implements DialStore {
       // timed-out dial call must answer fast, never hold a browser socket
       // hostage while TCP retries a corpse.
       req.abort();
-      rethrow;
+      throw DialStoreUnavailable('$method /$path: timed out (10s)');
+    } on SocketException catch (e) {
+      req.abort();
+      throw DialStoreUnavailable('$method /$path: ${e.message}');
     }
   }
 
@@ -732,6 +813,14 @@ class SupabaseDialStore implements DialStore {
     if (cached != null) {
       if (_pinsRefreshing.add(key)) {
         _fetchPins(key, q)
+            .catchError((Object e) {
+              // a dead remote refreshes nothing — keep serving stale
+              if (e is DialStoreUnavailable) {
+                _noteUnreachable(e);
+                return <DialPin>[];
+              }
+              throw e;
+            })
             .then((v) {
               _pinsCache[key] = v;
               _pinsCacheAt[key] = DateTime.now();
@@ -740,7 +829,18 @@ class SupabaseDialStore implements DialStore {
       }
       return cached;
     }
-    final v = await _fetchPins(key, q);
+    final List<DialPin> v;
+    try {
+      v = await _fetchPins(key, q);
+    } on DialStoreUnavailable catch (e) {
+      // Degraded read, the same philosophy as the cache above: a dead
+      // remote must not 500 the surface. Answer stale cache if any, else
+      // an empty board (MemoryDialStore's fresh-process shape). Writes
+      // still answer 503 through handle's mapping so nothing is silently
+      // lost.
+      _noteUnreachable(e);
+      return _pinsCache[key] ?? const <DialPin>[];
+    }
     _pinsCache[key] = v;
     _pinsCacheAt[key] = DateTime.now();
     return v;
@@ -1042,6 +1142,124 @@ class SupabaseDialStore implements DialStore {
         extraHeaders: {'Prefer': 'return=minimal'});
     return guest;
   }
+
+  // ── the Live Overlay (edit redesign, 2026-09-11) ──────────────────────
+
+  @override
+  Future<OverlayDoc?> readOverlay() async {
+    try {
+      final designId = await _ensureDesignId();
+      final r = await _req('GET',
+          'arxa_dial_overlays?design_id=eq.$designId&select=patches,rev');
+      final text = await utf8.decoder.bind(r).join();
+      if (r.statusCode >= 300) return null; // no capability — quiet
+      final rows = jsonDecode(text);
+      if (rows is! List || rows.isEmpty || rows.first is! Map) return null;
+      final row = rows.first as Map<String, dynamic>;
+      return OverlayDoc(
+        patches: (row['patches'] is Map)
+            ? Map<String, dynamic>.from(row['patches'] as Map)
+            : {},
+        rev: (row['rev'] is num) ? (row['rev'] as num).toInt() : 0,
+      );
+    } on StateError {
+      return null; // no registered design (no marker project) — no overlay
+    } on DialStoreUnavailable {
+      return null;
+    }
+  }
+
+  @override
+  Future<OverlayWriteResult> writeOverlay(
+      Map<String, dynamic> patches, int baseRev) async {
+    final designId = await _ensureDesignId();
+    final r = await _req('POST', 'rpc/save_overlay', body: {
+      'p_design_id': designId,
+      'p_link_token': '', // the service role IS the authorization here
+      'p_base_rev': baseRev,
+      'p_patches': patches,
+    });
+    final text = await utf8.decoder.bind(r).join();
+    if (r.statusCode >= 300) {
+      throw StateError('save_overlay failed (${r.statusCode}): $text');
+    }
+    final decoded = jsonDecode(text);
+    if (decoded is! Map) {
+      throw StateError('save_overlay returned no object: $text');
+    }
+    return OverlayWriteResult(
+      ok: decoded['ok'] == true,
+      rev: (decoded['rev'] is num) ? (decoded['rev'] as num).toInt() : 0,
+      error: decoded['error'] is String ? decoded['error'] as String : null,
+      patches: decoded['patches'] is Map
+          ? Map<String, dynamic>.from(decoded['patches'] as Map)
+          : null,
+    );
+  }
+}
+
+/// Eject automint config (grilled 2026-09-10): the arxa.json `dial` block
+/// {automint, clientEmail, days} with env overrides ARXA_DIAL_AUTOMINT /
+/// ARXA_DIAL_CLIENT_EMAIL / ARXA_DIAL_CLIENT_DAYS (env wins; AUTOMINT=1|true
+/// forces on, 0|false forces off). `enabled` with a null email means the
+/// toggle is on but unconfigured — the eject warns and skips.
+({bool enabled, String? email, int days}) dialAutomintConfig(
+    Map<String, dynamic>? dialBlock, Map<String, String> env) {
+  var on = dialBlock?['automint'] == true;
+  final envOn = env['ARXA_DIAL_AUTOMINT']?.trim().toLowerCase();
+  if (envOn == '1' || envOn == 'true') on = true;
+  if (envOn == '0' || envOn == 'false') on = false;
+  if (!on) return (enabled: false, email: null, days: 90);
+  final envEmail = env['ARXA_DIAL_CLIENT_EMAIL']?.trim();
+  final jsonEmail = dialBlock?['clientEmail'] is String
+      ? (dialBlock!['clientEmail'] as String).trim()
+      : null;
+  var email =
+      (envEmail != null && envEmail.isNotEmpty) ? envEmail : jsonEmail;
+  if (email != null && (email.isEmpty || !email.contains('@'))) {
+    email = null;
+  }
+  var days = 90;
+  final json = dialBlock?['days'];
+  if (json is int && json >= 1 && json <= 365) days = json;
+  final envDays = int.tryParse(env['ARXA_DIAL_CLIENT_DAYS'] ?? '');
+  if (envDays != null && envDays >= 1 && envDays <= 365) days = envDays;
+  return (enabled: true, email: email, days: days);
+}
+
+/// Idempotent client-link mint for the eject path (grilled 2026-09-10):
+/// mints through the SAME store law as the dial's /guests route, but only
+/// when the email has NO live link on the design — a re-deploy never
+/// spams the roster or orphans links. [onNote] receives the skip/store
+/// reason for the caller's stderr; the returned record is a NEW link.
+Future<({String token, String email})?> automintClientLink({
+  required String url,
+  required String serviceKey,
+  required String project,
+  required String artifact,
+  required String email,
+  required int days,
+  void Function(String note)? onNote,
+}) async {
+  final store = SupabaseDialStore(url: url, serviceKey: serviceKey, project: project);
+  store.bind(artifact);
+  try {
+    final guests = await store.listGuests(artifact);
+    final existing = guests.where((g) => g.email == email);
+    if (existing.any((g) => g.linksAlive > 0)) {
+      onNote?.call('live-link-exists');
+      return null;
+    }
+    final link = await store.mintGuestLink(
+        artifact, Duration(days: days), email, null);
+    return (token: link.token, email: email);
+  } on StateError catch (e) {
+    onNote?.call('store: ${e.message}');
+    return null;
+  } catch (error) {
+    onNote?.call('store: $error');
+    return null;
+  }
 }
 
 /// The ~/.arxa/supabase file, parsed. A line that is not key=value is
@@ -1131,8 +1349,6 @@ class DialApi {
   DialApi(
       {required this.store,
       required this.artifact,
-      this.draftStore,
-      this.journalStore,
       this.artifactDir,
       this.media,
       this.ship,
@@ -1143,17 +1359,8 @@ class DialApi {
   /// The artifact identity pins and links scope to (artifact dir basename).
   final String artifact;
 
-  /// The Draft Overlay's file store (decisions 5/11: local-server state,
-  /// never Supabase). Null disables the draft/commit routes (503).
-  final DraftFileStore? draftStore;
-
-  /// The Design Journal's file store (undo/redo plan, 2026-08-26): the
-  /// draft's per-artifact history, cleared when the draft is consumed.
-  /// Null disables /undo, /redo and depth reporting (503 / omitted).
-  final JournalFileStore? journalStore;
-
-  /// The artifact's absolute dir — reported by /commit so the studio agent
-  /// knows where to run `arxa design patch`.
+  /// The artifact's absolute dir — the palette/media routes read the tree
+  /// from here.
   final String? artifactDir;
 
   /// The media proxy (slice 4, 2026-08-24): server-side Unsplash/Pexels
@@ -1164,10 +1371,11 @@ class DialApi {
   /// null (not a git repo) disables the routes (503).
   final DialShip? ship;
 
-  /// The axes plane (arc 1, 2026-08-25): the published style/theme pick.
-  /// Author-only writes; guests preview via ?style/?theme URL overrides
-  /// and never reach this store. Null (no marker / kind not app / dial
-  /// off) disables the route (503).
+  /// The axes plane (arc 1, 2026-08-25): the published style/theme pick,
+  /// and (ADDENDUM 17) the published palette pick in the same row.
+  /// style/theme writes are author-only; palette writes accept guests too
+  /// (Q10). Null (no marker / no app-kind-or-palettes / dial off)
+  /// disables the route (503).
   final AxesStore? axes;
 
   /// Selection handoff registry (slice 7, 2026-08-24): the card's "Ask
@@ -1175,28 +1383,317 @@ class DialApi {
   /// fetches it by pointer id. Bounded: capped, TTL'd, author-only writes.
   final Map<String, (DateTime, Map<String, dynamic>)> _selections = {};
 
-  /// POST /__dial/axes — publish {style, theme}. Both required and both
-  /// axis-lawful: the island always sends the full pair it rendered, so a
-  /// flip can never half-apply.
-  Future<DialResponse> _setAxes(Object? body) async {
+  /// POST /__dial/axes — publish {style, theme} and/or {palette}. A pair
+  /// publish needs both lawful (the island always sends the full pair it
+  /// rendered, so a flip can never half-apply); a palette publish needs an
+  /// id the artifact's palettes.json declares. Guests publish ONLY the
+  /// palette (grilled Q10, 2026-09-09: the share link is the authorization
+  /// — a client flipping the palette flips it for everyone); style/theme
+  /// stays author-only, and a palette-only flip never blanks the stored
+  /// style/theme pair.
+  Future<DialResponse> _setAxes(Object? body, DialCaller caller) async {
     final store = axes;
     if (store == null) {
       return const DialResponse(503, {'error': 'axes unavailable'});
     }
     // _map throws FormatException on a non-object body — the handle's
     // catch answers the 400 for every route uniformly.
-    final pick = AxesPick.fromJson(_map(body, '/axes'));
+    var pick = AxesPick.fromJson(_map(body, '/axes'));
     if (pick == null) {
       return const DialResponse(400, {
-        'error': 'style and theme required (lowercase a-z0-9-, max 40)'
+        'error': 'style+theme, palette or font required '
+            '(lowercase a-z0-9-, max 40)'
       });
     }
+    if (caller != DialCaller.author) {
+      // Guests publish ONLY the palette and/or font picks — the share
+      // link is the authorization (palette Q10; font grill Q5, 2026-09-13:
+      // author + guests, parity). Style/theme stays author-only.
+      if (pick.style.isNotEmpty || pick.theme.isNotEmpty) {
+        return const DialResponse(403, {'error': 'author only'});
+      }
+      pick = AxesPick(
+          style: '', theme: '', palette: pick.palette, font: pick.font);
+    }
+    if (pick.palette != null) {
+      final dir = artifactDir;
+      final manifest = dir == null ? null : PaletteManifest.load(dir);
+      if (manifest == null || !manifest.declares(pick.palette!)) {
+        return const DialResponse(400, {'error': 'palette is not declared'});
+      }
+    }
+    if (pick.font != null && pick.font!.isNotEmpty) {
+      final dir = artifactDir;
+      final manifest = dir == null ? null : FontPlaneManifest.load(dir);
+      if (manifest == null || !manifest.declaresAll(pick.font!)) {
+        return const DialResponse(
+            400, {'error': 'font picks are not declared (ingest first)'});
+      }
+    }
+    // The merge law (font grill Q1 — independent per-role dropdowns):
+    // ANY publish preserves every axis it does not carry; a role flip
+    // never blanks the other roles, a palette flip never blanks fonts,
+    // and the table CHECKs style/theme against the axis-value law, so a
+    // site with no pair yet writes the documented sentinel ('site',
+    // 'system'), never an empty string. Serve-time ignores it: sites
+    // declare no style/theme axes, so the pair resolves nothing.
+    final current = await store.load();
+    final merged = AxesPick(
+      style: pick.style.isNotEmpty ? pick.style : (current?.style ?? 'site'),
+      theme:
+          pick.theme.isNotEmpty ? pick.theme : (current?.theme ?? 'system'),
+      palette: pick.palette ?? current?.palette,
+      font: {...?current?.font, ...?pick.font},
+    );
     try {
-      await store.save(pick);
+      await store.save(merged);
     } catch (error) {
       return DialResponse(502, {'error': 'axes store write failed: $error'});
     }
-    return DialResponse(200, {'ok': true, 'axes': pick.toJson()});
+    return DialResponse(200, {'ok': true, 'axes': merged.toJson()});
+  }
+
+  /// The live-sync law (operator, 2026-09-13: "in sync and live at all
+  /// times"): after an ingest/delete lands on disk, the manifest rides
+  /// onto the axes row so deployed workers merge the change without a
+  /// redeploy. Non-fatal by design - the disk write already succeeded
+  /// and the bake still answers if Supabase is unreachable.
+  Future<void> _pushFontManifest() async {
+    final dir = artifactDir;
+    final store = axes;
+    if (dir == null || store == null) return;
+    final manifest = FontPlaneManifest.load(dir);
+    if (manifest == null) return;
+    try {
+      await store.saveFontManifest(<String, Object?>{
+        'default': manifest.defaultPicks,
+        'roles': [for (final r in manifest.roles) r.toJson()],
+      });
+    } catch (error) {
+      stderr.writeln('[design-server] font manifest push failed: ' + error.toString());
+    }
+  }
+
+  /// POST /__dial/fonts — pick a Google Fonts family into a role (the
+  /// font plane's ingestion, grilled 2026-09-13): the server looks the
+  /// family up in the trimmed catalog, generates the token-override sheet
+  /// + manifest entry, and (Q5 parity) the CALLER then publishes the role
+  /// via /axes. Author-only — ingestion writes the artifact tree. The
+  /// catalog dedupes by family: an existing choice returns as-is.
+  Future<DialResponse> _ingestFont(Object? body) async {
+    final dir = artifactDir;
+    if (dir == null) {
+      return const DialResponse(503, {'error': 'fonts unavailable'});
+    }
+    final map = _map(body, '/fonts');
+    final role = map['role'];
+    final family = map['family'];
+    if (role is! String || family is! String || family.trim().isEmpty) {
+      return const DialResponse(400, {'error': 'role and family required'});
+    }
+    try {
+      final catalog = FontCatalog.loadCache() ?? await FontCatalog.fetch();
+      final entry = catalog.byFamily(family);
+      if (entry == null) {
+        return DialResponse(400, {
+          'error': 'family is not in the Google Fonts catalog: $family'
+        });
+      }
+      final choice = FontIngestion(artifactDir: dir).ingest(role, entry);
+      final manifest = FontPlaneManifest.load(dir);
+      await _pushFontManifest();
+      return DialResponse(200, {
+        'ok': true,
+        'choice': choice.toJson(),
+        'fonts': {
+          'default': manifest?.defaultPicks,
+          'roles': [
+            for (final r in manifest?.roles ?? <FontRole>[]) r.toJson()
+          ],
+        },
+      });
+    } on ArgumentError catch (e) {
+      return DialResponse(400, {'error': e.message});
+    } catch (error) {
+      return DialResponse(502, {'error': 'font ingestion failed: $error'});
+    }
+  }
+
+  /// POST /__dial/fonts/delete — remove an ingested choice (seeded and
+  /// default refuse — the palette delete law). Author-only.
+  Future<DialResponse> _deleteFont(Object? body) async {
+    final dir = artifactDir;
+    if (dir == null) {
+      return const DialResponse(503, {'error': 'fonts unavailable'});
+    }
+    final map = _map(body, '/fonts/delete');
+    final role = map['role'];
+    final id = map['id'];
+    if (role is! String || id is! String) {
+      return const DialResponse(400, {'error': 'role and id required'});
+    }
+    try {
+      final roles = FontIngestion(artifactDir: dir).delete(role, id);
+      await _pushFontManifest();
+      return DialResponse(200, {
+        'ok': true,
+        'fonts': {
+          'roles': [for (final r in roles) r.toJson()],
+        },
+      });
+    } on ArgumentError catch (e) {
+      return DialResponse(400, {'error': e.message});
+    } catch (error) {
+      return DialResponse(502, {'error': 'font delete failed: $error'});
+    }
+  }
+
+  /// GET /__dial/font-catalog?q= — the searchable dropdown's source
+  /// (grilled Q3): Google's metadata feed is same-site-only, so the
+  /// browser cannot fetch it; the server trims + caches and answers here.
+  /// Every caller — guests preview and pick declared choices too (Q5).
+  Future<DialResponse> _searchFontCatalog(Map<String, String> query) async {
+    try {
+      final catalog = FontCatalog.loadCache() ?? await FontCatalog.fetch();
+      final results = catalog.search(query['q'] ?? '');
+      return DialResponse(200, {
+        'ok': true,
+        'families': [for (final e in results) e.toJson()],
+      });
+    } catch (error) {
+      return DialResponse(502, {'error': 'font catalog unavailable: $error'});
+    }
+  }
+
+  /// POST /__dial/palettes — paste-a-Coolors-link ingestion (grilled Q5):
+  /// derive the palette (lightness-rank roles + transplant), generate its
+  /// override sheet + tokens.css block, extend palettes.json. Author-only,
+  /// design-time — the deployed static mode hides the control (there is no
+  /// server to derive against).
+  DialResponse _ingestPalette(Object? body) {
+    final dir = artifactDir;
+    if (dir == null) {
+      return const DialResponse(503, {'error': 'palettes unavailable'});
+    }
+    final url = _map(body, '/palettes')['url'];
+    if (url is! String || url.trim().isEmpty) {
+      return const DialResponse(400, {'error': 'url required'});
+    }
+    try {
+      final entry = PaletteIngestion(artifactDir: dir).ingest(url);
+      final manifest = PaletteManifest.load(dir);
+      return DialResponse(200, {
+        'ok': true,
+        'palette': entry.toJson(),
+        'palettes': [
+          for (final e in manifest?.palettes ?? <PaletteEntry>[]) e.toJson()
+        ],
+      });
+    } on ArgumentError catch (e) {
+      return DialResponse(400, {'error': e.message});
+    } catch (error) {
+      return DialResponse(502, {'error': 'palette ingestion failed: $error'});
+    }
+  }
+
+  /// POST /__dial/palettes/delete — remove a pasted palette (grilled Q13);
+  /// the seeded/shipped palettes refuse. Author-only.
+  DialResponse _deletePalette(Object? body) {
+    final dir = artifactDir;
+    if (dir == null) {
+      return const DialResponse(503, {'error': 'palettes unavailable'});
+    }
+    final id = _map(body, '/palettes/delete')['id'];
+    if (id is! String) {
+      return const DialResponse(400, {'error': 'id required'});
+    }
+    try {
+      final remaining = PaletteIngestion(artifactDir: dir).delete(id);
+      return DialResponse(200, {
+        'ok': true,
+        'palettes': [for (final e in remaining) e.toJson()],
+      });
+    } on ArgumentError catch (e) {
+      return DialResponse(400, {'error': e.message});
+    } catch (error) {
+      return DialResponse(502, {'error': 'palette delete failed: $error'});
+    }
+  }
+
+  /// POST /__dial/palettes/update — in-dial editing (grilled Q4): a
+  /// NON-default palette re-derives in place (stable id; published picks
+  /// and ?palette= links never break); editing the DEFAULT forks into the
+  /// one custom slot. Author-only — the artifact tree is the author's to
+  /// mutate. The 409 names the conflicting palette so the island can say
+  /// which card the edit duplicates.
+  DialResponse _updatePalette(Object? body) {
+    final dir = artifactDir;
+    if (dir == null) {
+      return const DialResponse(503, {'error': 'palettes unavailable'});
+    }
+    final m = _map(body, '/palettes/update');
+    final id = m['id'];
+    final hexes = m['hexes'];
+    final name = m['name'];
+    final auto = m['auto'];
+    if (id is! String) {
+      return const DialResponse(400, {'error': 'id required'});
+    }
+    if (hexes is! List || hexes.length < 3 || hexes.length > 7) {
+      return const DialResponse(400, {'error': 'hexes must be 3..7 colors'});
+    }
+    if (name != null && name is! String) {
+      return const DialResponse(400, {'error': 'name must be a string'});
+    }
+    if (auto != null && auto is! bool) {
+      return const DialResponse(400, {'error': 'auto must be a boolean'});
+    }
+    try {
+      final r = PaletteIngestion(artifactDir: dir)
+          .update(id, [for (final h in hexes) '$h'],
+              name: name as String?, auto: auto as bool?);
+      return DialResponse(200, {
+        'ok': true,
+        'palette': r.entry.toJson(),
+        'palettes': [for (final e in r.palettes) e.toJson()],
+        'forked': r.forked,
+      });
+    } on PaletteConflictError catch (e) {
+      return DialResponse(
+          409, {'error': e.message, 'conflictsWith': e.conflictsWith});
+    } on ArgumentError catch (e) {
+      return DialResponse(400, {'error': e.message});
+    } catch (error) {
+      return DialResponse(502, {'error': 'palette update failed: $error'});
+    }
+  }
+
+  /// POST /__dial/palettes/resolve — the editor's Re-solve button
+  /// (grilled Q5): re-render the palette through the contrast engine and
+  /// mark it AUTO. Author-only, design-time (the deployed static mode
+  /// hides the editor entirely).
+  DialResponse _resolvePalette(Object? body) {
+    final dir = artifactDir;
+    if (dir == null) {
+      return const DialResponse(503, {'error': 'palettes unavailable'});
+    }
+    final id = _map(body, '/palettes/resolve')['id'];
+    if (id is! String) {
+      return const DialResponse(400, {'error': 'id required'});
+    }
+    try {
+      final r = PaletteIngestion(artifactDir: dir).resolve(id);
+      return DialResponse(200, {
+        'ok': true,
+        'palette': r.entry.toJson(),
+        'palettes': [for (final e in r.palettes) e.toJson()],
+        if (r.unsolved.isNotEmpty) 'unsolved': r.unsolved,
+      });
+    } on ArgumentError catch (e) {
+      return DialResponse(400, {'error': e.message});
+    } catch (error) {
+      return DialResponse(502, {'error': 'palette resolve failed: $error'});
+    }
   }
 
   /// [grant] non-null means the caller arrived on a Share Link — a guest
@@ -1263,39 +1760,71 @@ class DialApi {
         }
         return await _revokeGuest(body);
       }
-      // The Draft Overlay (Design Mode; decisions 5/11). Author-only: the
-      // draft is the Author's uncommitted WIP — guests are served the last
-      // published state and never see it.
-      if (sub == '/draft') {
-        if (caller != DialCaller.author) {
-          return const DialResponse(403, {'error': 'author only'});
+      // The Live Overlay (edit redesign, grilled 2026-09-11). READS are
+      // for every dial (decision 2 — clients watch the author work);
+      // WRITES are author-only and ride the store's save_overlay call
+      // (service role server-side; the deployed dial calls the RPC with
+      // the author token instead — same SQL validation either way).
+      if (sub == '/overlay') {
+        if (method == 'GET') return await _readOverlay();
+        if (method == 'PUT') {
+          if (caller != DialCaller.author) {
+            return const DialResponse(403, {'error': 'author only'});
+          }
+          return await _writeOverlay(body);
         }
-        if (method == 'GET') return await _getDraft();
-        if (method == 'PUT') return await _putDraft(body);
-        if (method == 'DELETE') return await _clearDraft();
-      }
-      // The Design Journal (undo/redo plan, 2026-08-26). Author-only for
-      // the same reason as /draft: history over draft state IS draft state.
-      if (method == 'POST' && (sub == '/undo' || sub == '/redo')) {
-        if (caller != DialCaller.author) {
-          return const DialResponse(403, {'error': 'author only'});
-        }
-        return await _timeTravel(redo: sub == '/redo');
-      }
-      if (method == 'POST' && sub == '/commit') {
-        if (caller != DialCaller.author) {
-          return const DialResponse(403, {'error': 'author only'});
-        }
-        return await _commitDraft();
       }
       // The axes plane (arc 1, 2026-08-25): publish the style/theme pick.
-      // Author-only — a guest's flip rides the URL override, never the
-      // store; the serve seam applies both identically.
+      // Author-only for style/theme — the palette axis (ADDENDUM 17) is
+      // the grilled exception: a guest's palette pick publishes (Q10). The
+      // caller-aware split lives inside _setAxes.
       if (method == 'POST' && sub == '/axes') {
+        return await _setAxes(body, caller);
+      }
+      // The palette plane (ADDENDUM 17): Coolors ingestion + deletion.
+      // Author-only — ingestion writes the artifact tree (sheet, tokens
+      // block, manifest), which is the author's to mutate.
+      if (method == 'POST' && sub == '/palettes') {
         if (caller != DialCaller.author) {
           return const DialResponse(403, {'error': 'author only'});
         }
-        return await _setAxes(body);
+        return _ingestPalette(body);
+      }
+      if (method == 'POST' && sub == '/palettes/delete') {
+        if (caller != DialCaller.author) {
+          return const DialResponse(403, {'error': 'author only'});
+        }
+        return _deletePalette(body);
+      }
+      if (method == 'POST' && sub == '/palettes/update') {
+        if (caller != DialCaller.author) {
+          return const DialResponse(403, {'error': 'author only'});
+        }
+        return _updatePalette(body);
+      }
+      if (method == 'POST' && sub == '/palettes/resolve') {
+        if (caller != DialCaller.author) {
+          return const DialResponse(403, {'error': 'author only'});
+        }
+        return _resolvePalette(body);
+      }
+      // The font plane (grilled 2026-09-13): catalog search serves every
+      // caller; ingestion + deletion are author-only (they write the
+      // artifact tree); PUBLISHING rides /axes above (guests included).
+      if (method == 'GET' && sub == '/font-catalog') {
+        return await _searchFontCatalog(query);
+      }
+      if (method == 'POST' && sub == '/fonts') {
+        if (caller != DialCaller.author) {
+          return const DialResponse(403, {'error': 'author only'});
+        }
+        return await _ingestFont(body);
+      }
+      if (method == 'POST' && sub == '/fonts/delete') {
+        if (caller != DialCaller.author) {
+          return const DialResponse(403, {'error': 'author only'});
+        }
+        return await _deleteFont(body);
       }
       // The media proxy (slice 4): author-only — provider keys are
       // server-held secrets and the artifact tree is the author's.
@@ -1403,198 +1932,61 @@ class DialApi {
       return DialResponse(404, {'error': 'no such dial route: $sub'});
     } on FormatException catch (e) {
       return DialResponse(400, {'error': e.message});
+    } on DialStoreUnavailable catch (e) {
+      // Unreachable central store (dead project ref, offline) — JSON 503
+      // per the house convention (axes/journal/media), never an HTML 500.
+      return DialResponse(503, {'error': 'dial store unreachable: ${e.message}'});
     }
   }
 
-  // ── the Draft Overlay (Design Mode; decisions 5/11) ────────────────────
+  // ── the Live Overlay (edit redesign, grilled 2026-09-11) ──────────────
 
-  DialResponse _noDraftStore() => const DialResponse(
-      503, {'error': 'draft overlay is not configured on this server'});
+  /// GET /__dial/overlay — the live overlay row, for every dial. Null
+  /// overlay (no row / memory store) is a REAL answer: the page simply has
+  /// no live edits.
+  Future<DialResponse> _readOverlay() async {
+    try {
+      final doc = await store.readOverlay();
+      if (doc == null) return const DialResponse(200, {'overlay': null});
+      return DialResponse(200, {
+        'overlay': {'patches': doc.patches, 'rev': doc.rev},
+      });
+    } catch (error) {
+      return DialResponse(502, {'error': 'overlay read failed: $error'});
+    }
+  }
 
-  /// Preview-commit parity (2026-08-24): an el: patch whose authored name=
-  /// anchor does not resolve to exactly ONE source site previews fine but
-  /// is refused at commit - surface that as a warning so the dock can
-  /// badge it before the edit hardens. Machine-id patches are stamped by
-  /// the stamper and cannot collide, so they never warn.
-  List<Map<String, dynamic>>? _parityWarnings(DraftOverlay d) {
-    final base = artifactDir;
-    if (base == null) return null; // no source tree to scan - stay quiet
-    final warnings = <Map<String, dynamic>>[];
-    for (final e in d.patches.entries) {
-      final el = elKeyOf(e.key);
-      if (el == null) continue;
-      final sites = nameSiteLocations(Directory(base), el).length;
-      if (sites != 1) {
-        warnings.add({
-          'el': el,
-          'sites': sites,
-          'problem': sites == 0 ? 'missing' : 'ambiguous',
+  /// PUT /__dial/overlay {patches, baseRev} — the author's debounced save.
+  /// The rev stale-guard lives in SQL (save_overlay); a refused-behind
+  /// write returns the fresh doc so the island resyncs in one round trip.
+  Future<DialResponse> _writeOverlay(Object? body) async {
+    final m = body is Map ? body : const {};
+    final patches = m['patches'];
+    if (patches is! Map) {
+      return const DialResponse(400, {'error': 'patches (object) required'});
+    }
+    final baseRev = m['baseRev'] is num ? (m['baseRev'] as num).toInt() : -1;
+    try {
+      final r = await store.writeOverlay(
+          Map<String, dynamic>.from(patches), baseRev);
+      if (!r.ok && r.error == 'stale') {
+        return DialResponse(200, {
+          'ok': false,
+          'error': 'stale',
+          'rev': r.rev,
+          'patches': r.patches ?? {},
         });
       }
+      if (!r.ok) {
+        return DialResponse(403, {'ok': false, 'error': r.error});
+      }
+      return DialResponse(200, {'ok': true, 'rev': r.rev});
+    } on StateError catch (e) {
+      return DialResponse(503, {'ok': false, 'error': e.message});
+    } catch (error) {
+      return DialResponse(
+          502, {'ok': false, 'error': 'overlay write failed: $error'});
     }
-    return warnings.isEmpty ? null : warnings;
-  }
-
-  Future<DialResponse> _getDraft() async {
-    final ds = draftStore;
-    if (ds == null) return _noDraftStore();
-    final d = await ds.load();
-    final depths = await _depths();
-    if (d == null) {
-      return DialResponse(200, {'draft': null, ...?depths});
-    }
-    final warn = _parityWarnings(d);
-    return DialResponse(200, {
-      'draft': d.toJson(),
-      'warnings': ?warn,
-      ...?depths,
-    });
-  }
-
-  Future<DialResponse> _putDraft(Object? body) async {
-    final ds = draftStore;
-    if (ds == null) return _noDraftStore();
-    final d = DraftOverlay.fromJson(body, artifact: artifact);
-    // Journal the write BEFORE saving: the diff needs the old overlay.
-    // The island marks step boundaries with an opaque `gesture` id in the
-    // body (ignored by DraftOverlay.fromJson); a write without one is its
-    // own step — API callers get honest history for free.
-    final depths = await _journalPut(body, d);
-    await ds.save(d);
-    final warn = _parityWarnings(d);
-    return DialResponse(200, {
-      'ok': true,
-      'patches': d.patches.length,
-      'tokens': d.tokens.length,
-      'updatedAt': d.updatedAt,
-      'warnings': ?warn,
-      ...?depths,
-    });
-  }
-
-  Future<DialResponse> _clearDraft() async {
-    final ds = draftStore;
-    if (ds == null) return _noDraftStore();
-    await ds.clear();
-    // Clear-at-commit (undo/redo decision 4): the journal dies with the
-    // draft it shadows — this DELETE is the "commit landed" signal, and
-    // undo immediately after does nothing, honestly.
-    await journalStore?.clear();
-    return const DialResponse(200, {'ok': true});
-  }
-
-  /// Depth pair for dock arrows, or null when the journal is disabled.
-  Future<Map<String, int>?> _depths([DesignJournal? j]) async {
-    final js = journalStore;
-    if (js == null) return null;
-    final journal = j ?? await js.load();
-    return {'undoDepth': journal.undoDepth, 'redoDepth': journal.redoDepth};
-  }
-
-  /// Diffs the stored overlay against the incoming one and records a step
-  /// per changed key under the write's gesture id. Single-writer rule: the
-  /// server owns the journal; the island only minted the id.
-  Future<Map<String, int>?> _journalPut(Object? body, DraftOverlay next) async {
-    final js = journalStore;
-    final ds = draftStore;
-    if (js == null || ds == null) return null;
-    var gesture = body is Map ? '${body['gesture'] ?? ''}' : '';
-    if (gesture.isEmpty || gesture.length > JournalCaps.label) {
-      gesture = 'put-${DateTime.now().toUtc().microsecondsSinceEpoch}';
-    }
-    final prev = await ds.load() ?? DraftOverlay(artifact: artifact);
-    final journal = await js.load();
-    for (final key in {...prev.tokens.keys, ...next.tokens.keys}) {
-      final before = prev.tokens[key];
-      final after = next.tokens[key];
-      if (before == after) continue;
-      journal.record(
-          gesture: gesture,
-          scope: JournalScope.token,
-          key: key,
-          before: before,
-          after: after);
-    }
-    for (final key in {...prev.patches.keys, ...next.patches.keys}) {
-      final before = prev.patches[key]?.toJson();
-      final after = next.patches[key]?.toJson();
-      if (jsonEncode(before) == jsonEncode(after)) continue;
-      journal.record(
-          gesture: gesture,
-          scope: JournalScope.patch,
-          key: key,
-          before: before,
-          after: after);
-    }
-    await js.save(journal);
-    return _depths(journal);
-  }
-
-  /// POST /__dial/undo | /__dial/redo — move the cursor, write the step's
-  /// snapshot into the overlay, persist both files, and answer with the
-  /// full updated draft + depths so the island re-applies live (no reload —
-  /// the draft law about not fighting the Author holds). At the barrier the
-  /// draft comes back unchanged with `applied: false`; the dock arrow's
-  /// disabled state is the only toast this needs.
-  Future<DialResponse> _timeTravel({required bool redo}) async {
-    final ds = draftStore;
-    if (ds == null) return _noDraftStore();
-    final js = journalStore;
-    if (js == null) {
-      return const DialResponse(503, {'error': 'journal unavailable'});
-    }
-    final journal = await js.load();
-    final overlay = await ds.load() ?? DraftOverlay(artifact: artifact);
-    final step = redo ? journal.redo(overlay) : journal.undo(overlay);
-    if (step != null) {
-      await ds.save(overlay);
-      await js.save(journal);
-    }
-    final warn = _parityWarnings(overlay);
-    return DialResponse(200, {
-      'ok': true,
-      'applied': step != null,
-      'draft': overlay.toJson(),
-      'warnings': ?warn,
-      ...?await _depths(journal),
-    });
-  }
-
-  /// The studio-socket commit (decision 2): hand the studio agent the draft
-  /// as structured patch ops. The agent applies them to artifact source with
-  /// `arxa design patch` (tokens go to the token sheet's :root), re-runs
-  /// lint/gates, and clears the draft on success. Non-destructive by design:
-  /// only the agent's DELETE says the commit landed.
-  Future<DialResponse> _commitDraft() async {
-    final ds = draftStore;
-    if (ds == null) return _noDraftStore();
-    final d = await ds.load();
-    if (d == null || d.isEmpty) {
-      return const DialResponse(
-          400, {'error': 'draft is empty — nothing to commit'});
-    }
-    final ops = [
-      for (final e in d.patches.entries)
-        if (!e.value.isEmpty)
-          // el:-prefixed keys (authored identity wins on divergence) become
-          // --el ops; everything else rides the machine id.
-          elKeyOf(e.key) != null
-              ? {'el': elKeyOf(e.key), ...e.value.toJson()}
-              : {'id': e.key, ...e.value.toJson()},
-    ];
-    return DialResponse(200, {
-      'ok': true,
-      'artifact': artifact,
-      'artifactDir': artifactDir,
-      'tokens': d.tokens,
-      'ops': ops,
-      'note': 'apply each op with arxa design patch (id ops: positional '
-          'data-arxa-id; el ops: --el <data-el>; edits: --style/--set/--text; '
-          'seed-backed text ops also carry --was/--nth/--page/--locale from '
-          'the op json; --locale writes only that locale SSOT slice) '
-          'and the tokens to the token sheet; on success '
-          'DELETE /__dial/draft',
-    });
   }
 
   Future<DialResponse> _mediaSearch(Object? body) async {

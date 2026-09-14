@@ -45,7 +45,6 @@ const HomePage: FC<HomePageProps> = ({ translate, locale, locales = [], rail, ro
   <MainShell
     title={translate('home.pageTitle') as string}
     locale={locale}
-    accent={prefs?.accent ?? 'blueviolet'}
     locales={locales}
     translate={translate}
     rail={rail as { brand?: string; drawer?: boolean; items: NavItem[] }}

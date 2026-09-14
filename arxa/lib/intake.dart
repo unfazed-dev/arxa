@@ -96,6 +96,28 @@ const feedbackKeys = ['kind', 'text', 'inferred', 'action'];
 /// operation rather than navigating anywhere.
 const feedbackActionKeys = ['label', 'trigger'];
 
+/// The CLOSED vocabulary of palette roles a brand color may be pinned to
+/// (palette-plane Q6): the plane's five template families (Q5). A role hint
+/// PINS that hex to that role even where lightness-rank would place it
+/// elsewhere; palette_derive applies the pinning and records it. CONTRACT
+/// PAIR with `/definitions/brandColor/properties/role` in
+/// `skills/arxa-intake/intake.schema.json`, which nothing loads and so drifts
+/// invisibly — change one, change both.
+const brandColorRoles = ['dark', 'accent', 'field', 'beige', 'paper'];
+
+/// Every key a `brandColors` entry may carry. CLOSED, and it works as a PAIR
+/// with the spread in [emitBrandColors] — same contract as [edgeKeys]: the
+/// spread guarantees no authored key is ever dropped, and this set guarantees
+/// nothing unauthorised rides along on it. CONTRACT PAIR with
+/// `/definitions/brandColor` in `skills/arxa-intake/intake.schema.json`.
+const brandColorKeys = ['hex', 'role', 'provenance'];
+
+/// A brand color hex: six hex digits, `#` optional (Q6). Validation only —
+/// normalizing to '#'-prefixed is palette_derive's job (Q10's one
+/// normalization home); intake keeps source hexes verbatim (Q5). Public so
+/// the contract-pair test can twin it against the schema's pattern.
+final brandHexRe = RegExp(r'^#?[0-9a-fA-F]{6}$');
+
 /// The visible marker the emitted brief puts on any `inferred` field. A reader
 /// who skims must not miss it — that is the entire point of marking inference.
 const inferredMark = '> **[inferred]** — not stated by the client; confirm or correct.';
@@ -251,6 +273,11 @@ ValidationResult validateIntake(Map<String, dynamic> answers) {
   // order, and a list-shaped group there would be reported as a type error on
   // every valid answers document. Absent is valid — see [validatePersonas].
   errs.addAll(validatePersonas(answers));
+  // brandColors (palette-plane Q6) is checked on its own for the same reason
+  // personas is: the _fieldTitles loop demands {value, provenance}, and a
+  // list-shaped group there would be misreported as a type error. Absent is
+  // valid — see [validateBrandColors].
+  errs.addAll(validateBrandColors(answers));
 
   return ValidationResult(errs);
 }
@@ -414,6 +441,63 @@ List<String> _validateFeedbackAction(Object? val, String where) {
     if (!feedbackActionKeys.contains(k)) {
       errs.add("$where: feedback.action has unknown key '$k' — it carries "
           'only $feedbackActionKeys');
+    }
+  }
+  return errs;
+}
+
+/// Validate the optional `brandColors` group (palette-plane Q6): a list of
+/// `{hex, role?, provenance}` where `hex` is six hex digits (`#` optional),
+/// `role` — when present — pins the hex to one of [brandColorRoles], and
+/// `provenance` is required (who stated this color; there is no fourth
+/// value). Absent is VALID — every pre-plane project has no `brandColors`
+/// key, and re-emitting one must keep working.
+///
+/// NOT checked here, deliberately: the 3–7 count law (Q5 binds a palette
+/// DECLARATION; this group is a derivation SOURCE the engine pads/decimates
+/// to law) and duplicate-hex or duplicate-role conflicts (palette_derive's
+/// pinning law owns placement — intake validates shape, nothing else).
+List<String> validateBrandColors(Map<String, dynamic> answers) {
+  final colors = answers['brandColors'];
+  if (colors == null) return const []; // absent → the emitter yields []
+  if (colors is! List) {
+    return [
+      'brandColors: must be a list of {hex, role?, provenance} objects '
+          '(omit the key entirely if none were elicited)'
+    ];
+  }
+  final errs = <String>[];
+  for (var i = 0; i < colors.length; i++) {
+    final where = 'brandColors[$i]';
+    final c = colors[i];
+    if (c is! Map) {
+      errs.add('$where: expected an object');
+      continue;
+    }
+    final hex = c['hex'];
+    if (hex is! String || !brandHexRe.hasMatch(hex)) {
+      errs.add("$where: hex '$hex' must be six hex digits, '#' optional "
+          '(e.g. #1b3a4b or 1b3a4b)');
+    }
+    final role = c['role'];
+    if (role != null && !brandColorRoles.contains(role)) {
+      errs.add("$where: role '$role' is not one of $brandColorRoles — a role "
+          'hint pins the hex to one of the plane\'s five roles (Q6)');
+    }
+    if (!c.containsKey('provenance')) {
+      errs.add("$where: missing 'provenance' (who stated this color — "
+          "unstated means 'inferred')");
+    } else if (!provenance.contains(c['provenance'])) {
+      errs.add("$where: provenance '${c['provenance']}' is not one of $provenance");
+    }
+    // Closed, and the pair to the emitter's spread — same contract as
+    // [edgeKeys]: an unrecognised key refused HERE can never ride along
+    // into brandcolors.json honoured by nobody.
+    for (final k in c.keys) {
+      if (!brandColorKeys.contains(k)) {
+        errs.add("$where: unknown key '$k' — a brand color carries only "
+            '$brandColorKeys');
+      }
     }
   }
   return errs;
@@ -965,8 +1049,42 @@ List<String> renderBriefSections(Map<String, dynamic> answers) {
   final lines = <String>[];
   for (final (key, title) in _fieldTitles) {
     lines.addAll(_block(key, title, _asNode(answers[key])));
+    // Q6: the brandColors group rides the Brand section, rendered AFTER the
+    // brand prose and its provenance footer, so the field's own
+    // value→provenance adjacency is untouched.
+    if (key == 'brand') lines.addAll(_brandColorLines(answers));
   }
   return lines;
+}
+
+/// Render the `brandColors` group inside the Brand section (palette-plane
+/// Q6): one line per hex, the role hint where one pins it, and the brief's
+/// usual ` [inferred]` mark (the per-item form — see the states column) on
+/// any entry the client did not state. Hexes render VERBATIM — never
+/// normalized (Q5/Q10). Absent or empty group → no lines at all, so a
+/// pre-plane answers document renders byte-identically to before. No table
+/// rows: the surface-table parsers (gate + seedFromBrief) must see nothing
+/// new here.
+List<String> _brandColorLines(Map<String, dynamic> answers) {
+  final declared = answers['brandColors'];
+  if (declared is! List || declared.isEmpty) return const [];
+  final items = <String>[];
+  for (final c in declared) {
+    if (c is! Map) continue;
+    final hex = c['hex'];
+    if (hex is! String) continue;
+    final role = c['role'];
+    final mark = c['provenance'] == 'inferred' ? ' [inferred]' : '';
+    items.add('- `${mdEscape(hex)}`'
+        '${role is String ? ' — ${mdEscape(role)}' : ''}$mark');
+  }
+  if (items.isEmpty) return const [];
+  return [
+    'Brand colors — the default palette derives from these first:',
+    '',
+    ...items,
+    '',
+  ];
 }
 
 /// Render the brief markdown. Every `inferred` field is visibly marked; the
@@ -1242,6 +1360,12 @@ class IntakeEngine {
           '${json.convert(mergeStoryMap(emitStoryMap(answers), '$dir/map.json'))}\n');
       _write('$dir/moodboard.json', '${json.convert(emitMoodboard(answers))}\n');
       _write('$dir/direction.json', '${json.convert(emitDirection(answers))}\n');
+      // The palette-plane seam (Q6/Q7): brandcolors.json carries the
+      // validated brandColors group VERBATIM — hexes not normalized, that
+      // is palette_derive's one home — for `arxa palette reseed` to fill
+      // the default slot from. Project path only, for the same reason as
+      // the four above.
+      _write('$dir/brandcolors.json', '${json.convert(emitBrandColors(answers))}\n');
       // The PRD is a SECOND rendering of the same answers, not a second source:
       // [emitPrd] reads exactly what [emitBrief] reads and invents nothing the
       // brief would not also carry. It exists because a brief and a PRD are

@@ -29,7 +29,7 @@ export interface MainShellProps {
 }
 
 const MainShell: FC<MainShellProps> = (props) => (
-  <Base title={props.title} locale={props.locale} accent={props.accent}>
+  <Base title={props.title} locale={props.locale}>
     <ShellFrame>
       <Ladder desktop={<Desktop {...props} />} tablet={<Tablet {...props} />} mobile={<Mobile {...props} />} />
     </ShellFrame>

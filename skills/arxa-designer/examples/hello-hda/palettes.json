@@ -1,0 +1,81 @@
+{
+  "version": 1,
+  "comment": "Palette plane declaration (the universal palette plane — docs/plans/arxa-palette-plane-universal.md). id = html[data-palette] value; sheet = generated override under /assets/styles/palettes/ (the default palette is the base corpus, no sheet); swatch = 3..7 anchor hexes over the five fixed roles; themeColor = meta theme-color while the palette is active. Every artifact is born with these fallback five; a project derivation reseeds all five slots wholesale. The dial edits palettes in place (the default forks into the one custom slot); pasted Coolors palettes join by the same route.",
+  "default": "marine",
+  "palettes": [
+    {
+      "id": "marine",
+      "name": "Marine Blue",
+      "swatch": [
+        "#CCDBDC",
+        "#9AD1D4",
+        "#80CED7",
+        "#007EA7",
+        "#003249"
+      ],
+      "themeColor": "#007EA7",
+      "seeded": true,
+      "source": "https://coolors.co/ccdbdc-9ad1d4-80ced7-007ea7-003249"
+    },
+    {
+      "id": "c-6f58c9",
+      "name": "Lavender Iris",
+      "swatch": [
+        "#bdede0",
+        "#bbdbd1",
+        "#b6b8d6",
+        "#7e78d2",
+        "#6f58c9"
+      ],
+      "themeColor": "#7e78d2",
+      "seeded": true,
+      "source": "https://coolors.co/bdede0-bbdbd1-b6b8d6-7e78d2-6f58c9",
+      "sheet": "/assets/styles/palettes/palette-c-6f58c9.css"
+    },
+    {
+      "id": "c-2e1f27",
+      "name": "Sunset Ember",
+      "swatch": [
+        "#2e1f27",
+        "#854d27",
+        "#dd7230",
+        "#f4c95d",
+        "#e7e393"
+      ],
+      "themeColor": "#854d27",
+      "seeded": true,
+      "source": "https://coolors.co/2e1f27-854d27-dd7230-f4c95d-e7e393",
+      "sheet": "/assets/styles/palettes/palette-c-2e1f27.css"
+    },
+    {
+      "id": "c-8e518d",
+      "name": "Orchid Bloom",
+      "swatch": [
+        "#d7c0d0",
+        "#f7c7db",
+        "#f79ad3",
+        "#c86fc9",
+        "#8e518d"
+      ],
+      "themeColor": "#c86fc9",
+      "seeded": true,
+      "source": "https://coolors.co/d7c0d0-f7c7db-f79ad3-c86fc9-8e518d",
+      "sheet": "/assets/styles/palettes/palette-c-8e518d.css"
+    },
+    {
+      "id": "c-293f14",
+      "name": "Forest Neon",
+      "swatch": [
+        "#293f14",
+        "#386c0b",
+        "#38a700",
+        "#31d843",
+        "#3eff8b"
+      ],
+      "themeColor": "#386c0b",
+      "seeded": true,
+      "source": "https://coolors.co/293f14-386c0b-38a700-31d843-3eff8b",
+      "sheet": "/assets/styles/palettes/palette-c-293f14.css"
+    }
+  ]
+}

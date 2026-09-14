@@ -38,6 +38,7 @@ Web verbs (CDP — each captures at a viewport; console/page errors auto-fail):
                                       rung has console errors or horizontal overflow
   tokens <url> [w] [h] [--settle=Ms] [--out=path]
                                       Design-token scales (palette/type/spacing/radii)
+  pixels <image> [--out=path]         Dominant colour clusters of an image file
   dom <url> [--out=path] [--html]     DOMSnapshot (or outerHTML with --html)
   eval <url> <js-expr> [w] [h] [--settle=Ms] [--out=path] [--cookie=n=v]...
                                       Evaluate JS in the page, print the value
@@ -134,6 +135,8 @@ Future<int> runLensCli(List<String> args) async {
       return _shoot(a);
     case 'tokens':
       return _tokens(a);
+    case 'pixels':
+      return _pixels(a);
     case 'dom':
       return _dom(a);
     case 'eval':
@@ -458,6 +461,22 @@ Future<int> _tokens(_Args a) async {
     settleMs: a.intVal('settle') ?? 1500,
   );
   return _emitJson(result, a.value('out'), 'tokens');
+}
+
+/// `lens pixels` — the palette-plane image probe (plan §lens-pixel-probe).
+/// Mirrors _tokens: extract, emit the observation envelope, exit 1 when
+/// console/page errors poison the read. A missing image is env/usage (2).
+Future<int> _pixels(_Args a) async {
+  if (a.positional.isEmpty) {
+    return _usageErr('pixels <image> [--out=path]');
+  }
+  try {
+    final result = await extractPixels(a.positional[0]);
+    return _emitJson(result, a.value('out'), 'pixels');
+  } on ArgumentError catch (e) {
+    stderr.writeln('lens pixels: ${e.message}');
+    return 2;
+  }
 }
 
 Future<int> _dom(_Args a) async {

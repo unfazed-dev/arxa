@@ -640,5 +640,83 @@
         "license": "OFL-1.1"
       }
     ]
+  },
+  "palettes": {
+    "default": "studio-cyan",
+    "palettes": [
+      {
+        "id": "studio-cyan",
+        "name": "Studio Cyan",
+        "swatch": [
+          "#100F0F",
+          "#0C87A8",
+          "#E6E4D9",
+          "#FFFCF0"
+        ],
+        "themeColor": "#0C87A8",
+        "seeded": true,
+        "source": "arxa-studio models/theme.json + app.css :root (authored identity; accent role hint recorded)"
+      },
+      {
+        "id": "marine",
+        "name": "Marine Blue",
+        "swatch": [
+          "#CCDBDC",
+          "#9AD1D4",
+          "#80CED7",
+          "#007EA7",
+          "#003249"
+        ],
+        "themeColor": "#007EA7",
+        "seeded": true,
+        "source": "https://coolors.co/ccdbdc-9ad1d4-80ced7-007ea7-003249",
+        "sheet": "/assets/styles/palettes/palette-marine.css"
+      },
+      {
+        "id": "c-6f58c9",
+        "name": "Lavender Iris",
+        "swatch": [
+          "#bdede0",
+          "#bbdbd1",
+          "#b6b8d6",
+          "#7e78d2",
+          "#6f58c9"
+        ],
+        "themeColor": "#7e78d2",
+        "seeded": true,
+        "source": "https://coolors.co/bdede0-bbdbd1-b6b8d6-7e78d2-6f58c9",
+        "sheet": "/assets/styles/palettes/palette-c-6f58c9.css"
+      },
+      {
+        "id": "c-2e1f27",
+        "name": "Sunset Ember",
+        "swatch": [
+          "#2e1f27",
+          "#854d27",
+          "#dd7230",
+          "#f4c95d",
+          "#e7e393"
+        ],
+        "themeColor": "#854d27",
+        "seeded": true,
+        "source": "https://coolors.co/2e1f27-854d27-dd7230-f4c95d-e7e393",
+        "sheet": "/assets/styles/palettes/palette-c-2e1f27.css"
+      },
+      {
+        "id": "c-8e518d",
+        "name": "Orchid Bloom",
+        "swatch": [
+          "#d7c0d0",
+          "#f7c7db",
+          "#f79ad3",
+          "#c86fc9",
+          "#8e518d"
+        ],
+        "themeColor": "#c86fc9",
+        "seeded": true,
+        "source": "https://coolors.co/d7c0d0-f7c7db-f79ad3-c86fc9-8e518d",
+        "sheet": "/assets/styles/palettes/palette-c-8e518d.css"
+      }
+    ]
   }
 }

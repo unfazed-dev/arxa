@@ -30,6 +30,27 @@ const _animated = '''
 <div id=s></div>
 ''';
 
+/// The determinism-control page: a CSS animation started after a RANDOM
+/// 0-400ms delay, FINITE with no fill, so the page converges back to the
+/// unrotated base pose once it ends. The infinite [_animated] page could
+/// not serve as the control on a deterministic headless: with frame timing
+/// identical across launches (idle machine), four flat-timer captures at a
+/// fixed 1500ms offset rasterized the SAME phase every time and the
+/// control tripped on a quiet box (2026-09-12), not on a broken settle.
+/// The random start keeps flat-timer captures mid-flight at differing
+/// phases (the control MUST see >1 distinct image), while the capture path
+/// polls past the end state to one identical pose (MUST see exactly 1).
+const _converging = '''
+<!doctype html><meta charset=utf-8><title>converging</title>
+<style>body{margin:0;background:#111}
+@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+#s{width:160px;height:160px;margin:80px auto;background:linear-gradient(#e33,#3e3)}</style>
+<div id=s></div>
+<script>setTimeout(function(){
+  document.getElementById('s').style.animation='spin 2s linear';
+}, Math.floor(Math.random()*400));</script>
+''';
+
 /// Async work of variable duration AFTER the load event, then a transition.
 /// Pre-load slowness would NOT reproduce the defect: navigate() waits for
 /// `Page.loadEventFired` and the settle timer starts there, so a slow head just
@@ -191,6 +212,7 @@ void main() {
     setUp(() async {
       (server, base) = await _serve({
         '/animated': _animated,
+        '/converging': _converging,
         '/variable': _variableLoad,
         '/fill': _fillForwards,
         '/never': _neverSettles,
@@ -203,7 +225,7 @@ void main() {
 
     test('animated page: flat timer is nondeterministic, capture settle is not',
         () async {
-      final url = '$base/animated';
+      final url = '$base/converging';
       final old = await _capture(url, 4, useCaptureSettle: false);
       final now = await _capture(url, 4, useCaptureSettle: true);
 

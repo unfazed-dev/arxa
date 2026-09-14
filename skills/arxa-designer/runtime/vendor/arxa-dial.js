@@ -9,13 +9,14 @@
    the clicked element (dropdown-style flip/clamp, capability matrix per
    element kind, live apply, draft auto-save); Studio opens the TRAY, a
    glass bottom sheet (translucent, blurred, moss accent glow, close button
-   top-right, drag grabber + hairline divider + top bar with a contextual
-   CTA) holding a native scroll-snap carousel of five slides: Edit (element
-   outline + draft ledger, CTA Commit), Comments (pin board across routes,
-   3-state lifecycle, CTA Share), Settings (environment & session), Tweak
-   (theme tokens, motion, surface), Ship (branch/PR/gates autopilot, CTA
-   Deploy — lands with slice 5/6). Pins keep W7 data-el identity, rect
-   snapshots, orphan survival, threaded replies. The 6 displaced verbs
+   top-right, drag grabber + hairline divider + top bar) holding a native
+   scroll-snap carousel of exactly TWO slides (locked trim, grilled): Theme
+   (the palette plane — plus the style/theme pickers for app designs) and
+   Incoming (a placeholder for what ships next). The retired slides (Edit,
+   Comments, Settings, Tweak, Style, Ship) lost only their tray UI — their
+   client functions stay callable for the ongoing dial rewrite. Pins keep
+   W7 data-el identity, rect snapshots, orphan survival, threaded replies.
+   The 6 displaced verbs
    (pen/shade/layers/share-as-verb/tokens/design-as-verb) are DELETED —
    their capabilities moved into the tray or died by operator decision.
 
@@ -33,8 +34,8 @@
    guest identity (email) — attribution comes from the link, never a
    typed name, and revoking the guest deletes their email but keeps
    their feedback, de-attributed
-   trigger and a Comments-only tray; no Edit, no Studio slides beyond
-   Comments. 'invalid' (a dead token): the dock boots to say so, nothing
+   trigger and the same two-slide tray; no Edit Mode. 'invalid' (a dead
+   token): the dock boots to say so, nothing
    else. The store badge reads 'local' when the server runs its memory
    store, so nobody mistakes process-local pins for durable ones.
 
@@ -56,15 +57,35 @@
    its children — card + selection, thread popover, composer (2026-08-26):
    nothing floats on after the sheet.
 
-   EDIT MODE (Author only). The Edit trigger arms selection: hover outlines
-   the element under the cursor (data-arxa-id identity), click selects it
-   and opens the floating smart card — the capability matrix per kind
-   (content, curated facets, color swatches, CSS escape hatch), every edit
-   applied LIVE and auto-saved (debounced) into the server-side Draft
-   Overlay. Source is never touched by auto-save; guests always see the
-   last published state. Commit (tray Edit slide CTA) hands the patch set
-   to the studio agent over the dial event stream; the agent commits to
-   source with `design patch` and clears the draft. */
+   EDIT MODE (author only; redesigned 2026-09-11, nine grilled decisions —
+   the over-built inspector died). Editing is TEXT + IMAGE SWAP, nothing
+   else: hover outlines editable elements, click selects (amber outline +
+   a small chip), double-click text types in place (contenteditable). Every
+   edit lands in the LIVE OVERLAY — one Supabase row per design
+   (arxa_dial_overlays: patches jsonb + rev) — debounced-saved through the
+   save_overlay RPC (author-token or service-role validated; guests are
+   read-only) and streamed to EVERY open dial (local SSE 'overlay' frame,
+   static postgres_changes channel) so clients watch the author work in
+   real time (decision 5 of 2026-08-23 overturned). Undo/redo is a
+   session-local inverse stack (Cmd+Z / Shift+Cmd+Z, depth ~50 — decision
+   3); Revert-to-published empties the row and everyone snaps back. Source
+   is only ever touched by the EJECT BAKE (decision 7): the next eject
+   fetches the overlay, applies the patches through the design-patch
+   machinery, and clears the row. The dead machinery — facet rows, CSS
+   escape hatch, resize handles, the arxa-studio tab, the draft ledger,
+   the server-side journal, /draft /commit /undo /redo routes — is deleted,
+   not parked. Editing requires the Supabase store: a memory-store design
+   shows no Edit verb (decision 4).
+
+   PALETTE EDITOR (universal palette plane, Q4 — locked 2026-09-10). Every
+   Theme-slide card carries an author-only edit affordance: a NON-default
+   palette edits IN PLACE (stable id; swatch/sheet/tokens re-derived
+   server-side, published picks and ?palette= links never break); editing
+   the DEFAULT palette FORKS into the one custom slot (the base corpus
+   stays hand-owned), replacing the previous custom, and the fork previews
+   locally — publishing stays the author's explicit click. Deployed
+   static mode hides the affordance exactly like the paste row: there is
+   no server to derive against. */
 (() => {
   if (document._arxaDial) return; // guard against double-include
   document._arxaDial = 1;
@@ -83,12 +104,35 @@
     mode: cfg.mode, // 'author' | 'guest' | 'invalid'
     artifact: cfg.artifact,
     store: cfg.store, // 'memory' | 'supabase'
-    axes: cfg.axes // the style/theme plane (arc 1): null = undeclared or kind-gated off
+    // Deployed static mode (VERIFY ADDENDUM 17, locked Q8): when the worker
+    // bakes this block the artifact has NO /__dial/* server — the store is
+    // Supabase directly (PostgREST + RPC + Realtime over the anon key).
+    static: cfg.static || null, // {url, anonKey, designId} | null
+    // Palette-only axes (sites) omit style/theme entirely — normalize to
+    // '' / 'system' so the preview compare and the URL receipt never see
+    // undefined (probe-proved: ?style=undefined and a badge that would not
+    // clear after Reset to published).
+    axes: cfg.axes // the style/theme/palette/font plane: null = undeclared or kind-gated off
       ? {
           styles: cfg.axes.styles,
           themes: cfg.axes.themes || [],
-          published: cfg.axes.published,
-          current: cfg.axes.active,
+          palettes: cfg.axes.palettes || [],
+          // The font plane (grilled 2026-09-13): {default, roles} when the
+          // artifact declares fonts.json; current/published font are
+          // role -> choice-id objects (independent per-role picks).
+          fonts: cfg.axes.fonts || null,
+          published: {
+            style: (cfg.axes.published || {}).style || '',
+            theme: (cfg.axes.published || {}).theme || 'system',
+            palette: (cfg.axes.published || {}).palette || '',
+            font: (cfg.axes.published || {}).font || {},
+          },
+          current: {
+            style: (cfg.axes.active || {}).style || '',
+            theme: (cfg.axes.active || {}).theme || 'system',
+            palette: (cfg.axes.active || {}).palette || '',
+            font: (cfg.axes.active || {}).font || {},
+          },
         }
       : null,
     token: cfg.token || null,
@@ -96,7 +140,7 @@
     guests: null, // arc 2: author's roster cache (null = not loaded)
     pins: [],
     open: false, // radial fan expanded
-    tray: null, // null | 'edit' | 'comments' | 'settings' | 'tweak' | 'ship'
+    tray: null, // null | 'theme' | 'access' (author-local) | 'incoming' (retired)
     arming: false, // pin-placement armed
     activePin: null, // id whose thread popover is open
     name: '',
@@ -104,17 +148,22 @@
     deployReady: false, // /ship/deploy/ready answer
     deployBlockers: [],
     design: false, // Edit Mode armed (author only)
-    selected: null, // { id, el, label, group } — the element being edited
+    selected: null, // { id, el, key, label, group, route, nth } — the selected element
     selOutline: '', // inline outline the selection highlight borrowed
-    draft: { tokens: {}, patches: {} }, // the Draft Overlay (server-side)
-    draftWarnings: [], // preview-commit parity: el: keys whose name= is not exactly one source site
-    draftDirty: false,
+    // The Live Overlay (2026-09-11 redesign): one Supabase row per design,
+    // applied client-side at boot and on every realtime frame. rev is the
+    // stale-guard AND the own-echo suppressor — a frame with rev <= ours is
+    // ours (or older) and never re-applies.
+    overlay: { patches: {}, rev: 0 },
+    overlayReady: false, // boot read came back (author probe + guest apply)
     ownSave: 0, // suppress refetch loops on our own PUT's broadcast
     inlineEditing: null, // original text of the element being edited on-canvas
-    cardTab: 'customise', // the floating card's active tab
-    cardTabs: {}, // per-element tab memory (key -> 'customise' | 'arxa')
-    arxa: {}, // per-element handoff state (key -> {id, fetch, label, route,
-    //   kind, group, png, text, status}) — survives card close in-session
+    chipOpen: false, // the selection chip (the smart card's tiny successor)
+    undoStack: [], // session-local inverse ops (decision 3) — dies on reload
+    redoStack: [],
+    palEdit: null, // the palette editor session (Q4): null | {id, hexes,
+    //   name, error, busy} — kept in S so a slide re-render (an axes echo,
+    //   a live frame) never kills an in-flight edit
   };
   try {
     S.name = localStorage.getItem('arxa-dial-name') || '';
@@ -133,6 +182,13 @@
   // ── the shadow host ────────────────────────────────────────────────────
   const host = document.createElement('div');
   host.id = 'arxa-dial-host';
+  // Lenis escape hatch (operator, 2026-09-13): artifacts ship Lenis 1.3
+  // smooth scroll, whose page-level wheel listener preventDefaults every
+  // composed wheel it sees — including wheels over the dial's shadow
+  // scrollers (the fonts dropdown rows, tall tray slides) — unless the
+  // composedPath walk finds data-lenis-prevent below the root scroller.
+  // The dial is chrome, not content: native scroll inside it, always.
+  host.setAttribute('data-lenis-prevent', '');
   host.style.cssText =
     'position:fixed;inset:0;z-index:2147483000;pointer-events:none;' +
     'font-family:ui-sans-serif,system-ui,sans-serif;';
@@ -232,6 +288,13 @@
     '    0 -14px 56px rgba(110,136,76,var(--glow,.22)),',
     '    0 -24px 64px rgba(0,0,0,.5);max-height:70vh}',
     '#tray.open{display:flex}',
+    /* cursor law (operator, 2026-09-09): the site's custom cursor hides the
+       native cursor page-wide (html.arxa-cursor-on * — inherited through the
+       host into this shadow tree) while its dot/ring ride z 99998, UNDER the
+       dial host (z 2147483000) — without this rule the pointer VANISHES over
+       the open tray/card. Dial chrome always shows the native cursor;
+       elements with explicit cursors (pointer/copy/grab/text) keep theirs. */
+    '#dock,#tray,#card,#thread,#composer{cursor:auto}',
     '#grabber{display:flex;justify-content:center;padding:8px 0 4px;',
     '  cursor:grab;touch-action:none}',
     '#grabber .gbar{width:40px;height:4px;border-radius:2px;',
@@ -276,77 +339,65 @@
     '@media (min-width:1024px){#tray{max-width:880px;max-height:60vh}',
     '  .slide{flex-basis:calc(100% - 96px)}}',
     '@media (prefers-reduced-transparency:reduce){#tray{',
-    '  background:#14141c;backdrop-filter:none;-webkit-backdrop-filter:none}',
-    '  #card{background:rgb(106,133,74)}}',
+    '  background:#14141c;backdrop-filter:none;-webkit-backdrop-filter:none}}',
     '@media (prefers-reduced-motion:reduce){#track{scroll-behavior:auto}}',
-    /* the floating smart card — a card of the studio now (operator,
-       2026-08-26): the same arxa moss gradient the dock card won, the
-       off-white brand text, and a header that doubles as a grab handle
-       (drag law below). No more glass: the gradient is opaque, so the
-       blur/tint glass retired with the old background. */
-    '#card{position:fixed;width:300px;z-index:26;display:none;',
-    '  flex-direction:column;pointer-events:auto;color:rgb(243,246,238);',
-    '  background:linear-gradient(135deg,rgb(139,165,101) 0%,',
-    '  rgb(106,133,74) 55%,rgb(64,80,44) 100%);',
-    '  border:1px solid rgba(227,238,222,.4);border-radius:12px;',
-    '  box-shadow:0 12px 40px rgba(0,0,0,.5),',
-    '    0 0 32px rgba(110,136,76,var(--glow,.22));',
-    /* fixed dimensions law (operator, 2026-08-26): the card is one
-       constant size — it never grows or shrinks between tabs, states,
-       or content; the body alone scrolls inside the fixed frame. */
-    '  height:min(440px,62vh)}',
-    '#card.open{display:flex}',
-    '#chead{display:flex;align-items:center;gap:6px;padding:8px 10px;',
-    '  border-bottom:1px solid rgba(43,54,29,.35);flex:none;',
-    '  cursor:grab;user-select:none;-webkit-user-select:none;touch-action:none}',
-    '#chead:active{cursor:grabbing}',
-    '#chead button{cursor:pointer}',
-    /* the tab pair (operator, 2026-08-26): Customise + Arxa left, ×
-       right; the whole bar stays the drag handle and buttons never
-       start a drag (the closest('button') guard in the pointerdown). */
-    '#chead .tab{font-size:11.5px;font-weight:700;padding:5px 10px;',
-    '  border-radius:8px;background:transparent;color:rgba(243,246,238,.72);',
-    '  border:1px solid transparent}',
-    '#chead .tab.on{background:rgba(243,246,238,.16);color:rgb(243,246,238);',
-    '  border-color:rgba(227,238,222,.35)}',
-    /* the identity row: element label + kind chip + idline, shared by
-       both tabs, fixed above the scrolling body (the header is tabs). */
-    '#cidrow{display:flex;align-items:center;gap:8px;padding:9px 12px 0;',
-    '  flex:none;font-size:12.5px;font-weight:700;flex-wrap:wrap}',
-    '#cidrow .kchip{font-size:9.5px;font-weight:700;text-transform:uppercase;',
-    '  letter-spacing:.04em;background:rgba(243,246,238,.16);',
-    '  color:rgba(243,246,238,.85);padding:2px 7px;border-radius:8px}',
-    '#cidrow .idline{flex-basis:100%;margin-top:-2px}',
-    /* the bottom CTA bar (operator, 2026-08-26): fixed like the top
-       bar, per-tab actions; the body alone scrolls. */
-    '#cfoot{display:flex;gap:8px;align-items:center;padding:10px 12px;',
-    '  border-top:1px solid rgba(43,54,29,.35);flex:none}',
-    '#cfoot .btn{flex:none}',
-    '.tabpane{display:none}',
-    '.tabpane.on{display:block}',
-    '.arxaid{font-size:11px;font-weight:700;color:rgba(243,246,238,.85)}',
-    '.arxaline{font-size:10.5px;color:rgba(243,246,238,.78);',
-    '  padding:2px 10px;line-height:1.45}',
-    '.arxastatus{font-size:11px;font-weight:700;padding:6px 10px;',
-    '  border-radius:8px;background:rgba(243,246,238,.12);margin:6px 10px}',
-    '.arxastatus.ok{background:rgba(43,54,29,.45)}',
-    '#chead .kchip{font-size:9.5px;font-weight:700;text-transform:uppercase;',
-    '  letter-spacing:.04em;background:#2a2a35;color:#9aa0ab;',
-    '  padding:2px 7px;border-radius:8px}',
-    '#chead .cclose{background:#2a2a35;color:#FFFCF0;',
-    '  width:22px;height:22px;border-radius:50%;font-size:12px;',
-    '  line-height:1;display:flex;align-items:center;justify-content:center}',
-    /* the track-back button (operator, 2026-08-26): one tap returns
-       the author to the selected element — scrolled away on this page
-       or stranded by a boosted navigation to another route. It takes
-       the right-push; the close button sits beside it. */
-    '#chead .cgo{margin-left:auto;background:transparent;',
-    '  color:rgba(243,246,238,.72);width:22px;height:22px;border-radius:50%;',
-    '  display:flex;align-items:center;justify-content:center;padding:0}',
-    '#chead .cgo svg{width:13px;height:13px}',
-    '#chead .cgo:hover{background:rgba(243,246,238,.16);color:rgb(243,246,238)}',
-    '.cbody{overflow-y:auto;overscroll-behavior:contain;flex:1;',
-    '  scrollbar-width:thin;scrollbar-color:rgba(43,54,29,.55) transparent}',
+    /* the selection chip (2026-09-11 redesign): the floating smart
+       card's tiny successor. Text editing happens ON THE CANVAS; the
+       chip only says what the selection is, offers the rare actions
+       (swap image, revert element), and stays out of the way. Moss
+       gradient like the dock card, no drag, no tabs, no scrolling. */
+    '#echip{position:fixed;z-index:26;display:none;pointer-events:auto;',
+    '  color:rgb(243,246,238);background:linear-gradient(135deg,',
+    '  rgb(139,165,101) 0%,rgb(106,133,74) 55%,rgb(64,80,44) 100%);',
+    '  border:1px solid rgba(227,238,222,.4);border-radius:10px;',
+    '  padding:6px 8px;box-shadow:0 8px 24px rgba(0,0,0,.45),',
+    '    0 0 18px rgba(110,136,76,var(--glow,.22));',
+    '  max-width:280px;font-size:11.5px}',
+    '#echip.open{display:flex;align-items:center;gap:6px;flex-wrap:wrap}',
+    '#echip .elabel{font-weight:700;max-width:150px;overflow:hidden;',
+    '  text-overflow:ellipsis;white-space:nowrap}',
+    '#echip .hint{color:rgba(243,246,238,.78);font-size:10.5px}',
+    '#echip button{cursor:pointer;font-size:10.5px;font-weight:700;',
+    '  padding:4px 8px;border-radius:7px;border:1px solid transparent;',
+    '  background:rgba(243,246,238,.16);color:rgb(243,246,238)}',
+    '#echip button:hover{background:rgba(243,246,238,.3)}',
+    '#echip button.xbtn{padding:4px 6px;background:transparent;',
+    '  color:rgba(243,246,238,.72)}',
+    /* the swap panel: the chip's one popover (image swap: paste URL on
+       the deployed site, search + from-assets on the local designer). */
+    '#epanel{position:fixed;z-index:27;display:none;pointer-events:auto;',
+    '  width:280px;background:#14141c;color:#FFFCF0;border-radius:10px;',
+    '  border:1px solid #2a2a35;box-shadow:0 12px 40px rgba(0,0,0,.55);',
+    '  padding:10px}',
+    '#epanel.open{display:block}',
+    '#epanel .prow{display:flex;gap:6px;align-items:center;margin-bottom:6px}',
+    '#epanel .pgrid{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0;',
+    '  max-height:180px;overflow-y:auto}',
+    '#epanel .pgrid button{border-radius:8px;overflow:hidden;padding:0;',
+    '  border:1px solid #2a2a35;flex:none;cursor:pointer;background:none}',
+    '#epanel .pnote{font-size:10.5px;color:#9aa0ab}',
+    /* the edit bar (2026-09-11): one small row above the dock while
+       Edit Mode is armed — session undo/redo (decision 3) + Revert to
+       published (decision 2). Nothing else floats. */
+    '#editbar{position:fixed;right:16px;bottom:96px;z-index:12;display:none;',
+    '  gap:6px;align-items:center}',
+    '#editbar.open{display:flex}',
+    '#editbar button{cursor:pointer;font-size:11px;font-weight:700;',
+    '  padding:5px 10px;border-radius:8px;background:rgba(20,20,28,.9);',
+    '  color:#FFFCF0;border:1px solid #2a2a35}',
+    '#editbar button:hover:not(:disabled){border-color:#8fb35a}',
+    '#editbar button:disabled{opacity:.4;cursor:default}',
+    /* the live chip (decision 9): a client watching the author work sees
+       the page change under them — the transient "● live" note says why,
+       then fades. Never a toast per frame (typing would spam). */
+    '#livechip{position:fixed;bottom:96px;left:50%;transform:translateX(-50%);',
+    '  z-index:15;display:none;align-items:center;gap:6px;font-size:11px;',
+    '  font-weight:700;color:#FFFCF0;background:rgba(20,20,28,.92);',
+    '  border:1px solid #8fb35a;border-radius:10px;padding:6px 12px;',
+    '  pointer-events:none}',
+    '#livechip .dot{width:6px;height:6px;border-radius:50%;background:#8fb35a;',
+    '  animation:arxalive 1.6s ease-in-out infinite}',
+    '@keyframes arxalive{0%,100%{opacity:.35}50%{opacity:1}}',
     '.row{padding:8px 10px;border-radius:8px;cursor:pointer;',
     '  border:1px solid transparent;margin-bottom:4px}',
     '.row:hover{background:#1d1d27}',
@@ -354,25 +405,6 @@
     '.row .txt{font-size:12.5px;line-height:1.35;display:block}',
     '.row .meta{display:flex;gap:6px;align-items:center;margin-top:5px;',
     '  font-size:10.5px;color:#9aa0ab}',
-    /* on the moss card, chrome must read against green (operator,
-       2026-08-26): the dark-panel greys (#9aa0ab, #1d1d27, cyan) belong
-       to #thread/#composer — the card re-skins its rows and secondary
-       text in translucent off-whites so nothing goes grey-on-moss. */
-    '#card .row:hover{background:rgba(243,246,238,.14)}',
-    '#card .row.active{border-color:rgba(243,246,238,.75);',
-    '  background:rgba(243,246,238,.1)}',
-    '#card .row .meta,#card .sect,#card .facet label,',
-    '  #card .draftmeta{color:rgba(243,246,238,.78)}',
-    '#card .idline{color:rgba(243,246,238,.6)}',
-    /* card scrollbars in phase with the moss card (operator, 2026-08-26):
-       the track is NOTHING (the gradient shows through); the thumb is
-       DEEP moss — moss-on-moss, never grey-on-moss — darkening on
-       hover. The tray keeps its own glass-phase law above. */
-    '#card ::-webkit-scrollbar{width:6px;height:6px}',
-    '#card ::-webkit-scrollbar-track{background:transparent}',
-    '#card ::-webkit-scrollbar-thumb{background:rgba(43,54,29,.55);',
-    '  border-radius:3px}',
-    '#card ::-webkit-scrollbar-thumb:hover{background:rgba(43,54,29,.8)}',
     '.chip{font-size:10px;font-weight:700;padding:2px 7px;border-radius:8px;',
     '  text-transform:uppercase;letter-spacing:.03em}',
     '.chip.open{background:#7c2d12;color:#ffd9c2}',
@@ -421,6 +453,123 @@
     '.pvnote{display:flex;align-items:center;gap:10px;margin-top:12px;padding:8px 12px;border-radius:10px;background:rgba(243,180,76,.12);border:1px solid rgba(243,180,76,.4);color:#e8c98a;font-size:12px}',
     '.pvnote button{margin-left:auto;padding:4px 10px;border-radius:8px;border:1px solid rgba(243,180,76,.5);background:transparent;color:#e8c98a;cursor:pointer;white-space:nowrap}',
     '#dock.previewing #dockbtn{outline:2px solid rgba(243,180,76,.9);outline-offset:2px;border-radius:14px}',
+    /* the Theme slide's palette cards (operator, 2026-09-02): Coolors-style
+       5-stripe cards on a centered flex grid — the strip IS the card, name +
+       chips below. Card hover lifts; a stripe hover grows the stripe and
+       reveals its hex (stripe click copies, never applies); the card body
+       applies the palette. Moss ring + Active chip mark the pick; the
+       author's × deletes the one custom slot. */
+    '.palgrid{display:flex;flex-wrap:wrap;gap:14px;justify-content:center;',
+    '  margin:8px 0 4px}',
+    '.palcard{position:relative;display:block;flex:0 1 200px;min-width:170px;',
+    '  text-align:left;padding:0;background:transparent;border-radius:12px;',
+    '  border:1px solid transparent;cursor:pointer;transition:transform .18s}',
+    '.palcard:hover{transform:translateY(-2px)}',
+    '.palcard:focus-visible{outline:2px solid #8fb35a;outline-offset:3px}',
+    '.palcard .palstrip{display:flex;width:100%;aspect-ratio:16/5;',
+    '  border-radius:10px;overflow:hidden;',
+    '  box-shadow:0 1px 4px rgba(0,0,0,.35);transition:box-shadow .18s}',
+    '.palcard:hover .palstrip{box-shadow:0 8px 20px rgba(0,0,0,.5)}',
+    '.palcard.on .palstrip{outline:2px solid rgba(143,179,90,.95);',
+    '  outline-offset:2px}',
+    '.palstripe{position:relative;flex:1 1 0;min-width:0;cursor:copy;',
+    '  transition:flex .22s ease}',
+    '.palstripe:hover{flex:1.9 1 0}',
+    '.palstripe i{position:absolute;inset:0;display:flex;align-items:center;',
+    '  justify-content:center;font:600 9px ui-monospace,monospace;',
+    '  font-style:normal;letter-spacing:.02em;text-transform:uppercase;',
+    '  opacity:0;transition:opacity .15s;pointer-events:none;',
+    '  writing-mode:vertical-rl}',
+    '.palstripe:hover i{opacity:1}',
+    '.palmeta{display:flex;align-items:center;gap:6px;padding:7px 2px 0}',
+    '.palcard .palname{flex:1;font-size:12px;font-weight:600;color:#e8ebf0;',
+    '  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
+    '.palchip{display:none;font-size:9px;font-weight:700;letter-spacing:.08em;',
+    '  text-transform:uppercase;padding:2px 7px;border-radius:999px}',
+    '.palcard.on .palchip.onchip{display:block;',
+    '  background:rgba(143,179,90,.25);color:#b8d49a}',
+    '.palchip.cchip{display:block;background:rgba(255,255,255,.08);',
+    '  color:#9aa0ab}',
+    '.palcard .paldel{position:absolute;top:-6px;right:-6px;z-index:2;',
+    '  width:20px;height:20px;border-radius:50%;background:#2a2a35;',
+    '  border:1px solid rgba(255,255,255,.18);color:#9aa0ab;font-size:12px;',
+    '  line-height:1;display:flex;align-items:center;justify-content:center;',
+    '  opacity:.65;transition:opacity .15s}',
+    '.palcard .paldel:hover{opacity:1;color:#FFFCF0}',
+    /* the Fonts slide (grilled 2026-09-13): font cards reuse the palette
+       card geometry; the specimen strip is the font's own voice — live
+       css2 preview, not a swatch. The dropdown rows are compact list
+       rows with the same specimen law. */
+    '.fontcard{position:relative;display:block;flex:0 1 220px;min-width:180px;',
+    '  text-align:left;background:rgba(255,255,255,.05);',
+    '  border:1px solid rgba(255,255,255,.1);border-radius:10px;',
+    '  padding:10px 12px;cursor:pointer;transition:transform .15s}',
+    '.fontcard:hover{transform:translateY(-2px)}',
+    '.fontcard:focus-visible{outline:2px solid #8fb35a;outline-offset:3px}',
+    '.fontcard.on{outline:2px solid rgba(143,179,90,.95)}',
+    '.fontcard .fontspec{display:block;min-height:34px;font-size:17px;',
+    '  line-height:1.25;color:#FFFCF0;overflow:hidden;',
+    '  text-overflow:ellipsis;white-space:nowrap}',
+    '.fontcard .fontcat{font-size:9px;font-weight:700;letter-spacing:.08em;',
+    '  text-transform:uppercase;color:#9aa0ab;margin-right:6px}',
+    '.fontsearch{width:100%;box-sizing:border-box;background:rgba(255,255,255,.07);',
+    '  border:1px solid rgba(255,255,255,.14);border-radius:8px;',
+    '  color:#FFFCF0;font-size:13px;padding:8px 10px;margin-top:4px}',
+    '.fontrows{display:flex;flex-direction:column;gap:2px;margin-top:8px;',
+    '  max-height:220px;overflow-y:auto;scrollbar-width:thin}',
+    '.fontrow{display:flex;align-items:baseline;gap:8px;width:100%;',
+    '  text-align:left;background:transparent;border:0;',
+    '  border-radius:8px;padding:7px 9px;cursor:pointer;color:#e8ebf0}',
+    '.fontrow:hover{background:rgba(255,255,255,.08)}',
+    '.fontrow .rspec{flex:1;font-size:15px;color:#FFFCF0;overflow:hidden;',
+    '  text-overflow:ellipsis;white-space:nowrap}',
+    /* the palette editor (Q4, palette-plane-universal): the card's edit
+       affordance mirrors the × — top-left to its top-right, same hover
+       law, and like the × it must never fire the card's pick. The panel
+       is tray chrome: dark glass, moss accents, amber for the fork banner
+       and errors — hardcoded studio colors, NEVER the site's palette
+       (this dial does not ride the plane it edits). Everything lives
+       inside #tray, so the cursor:auto law above already owns the new
+       chrome; explicit cursors (pointer on buttons, text in inputs)
+       keep theirs. */
+    '.palcard .paledbtn{position:absolute;top:-6px;left:-6px;z-index:2;',
+    '  width:20px;height:20px;border-radius:50%;background:#2a2a35;',
+    '  border:1px solid rgba(255,255,255,.18);color:#9aa0ab;font-size:11px;',
+    '  line-height:1;display:flex;align-items:center;justify-content:center;',
+    '  opacity:.65;transition:opacity .15s}',
+    '.palcard .paledbtn:hover{opacity:1;color:#FFFCF0}',
+    '.paledit{margin:10px 0 4px;padding:10px 12px;border-radius:10px;',
+    '  border:1px solid rgba(110,136,76,.45);background:rgba(255,255,255,.04)}',
+    '.paledit .edbanner{font-size:11.5px;line-height:1.45;color:#e8c98a;',
+    '  background:rgba(243,180,76,.12);border:1px solid rgba(243,180,76,.4);',
+    '  border-radius:8px;padding:6px 10px;margin-bottom:8px}',
+    '.paledit .edrow{display:flex;align-items:center;gap:8px;',
+    '  margin-bottom:6px}',
+    '.paledit .edrow input[type=color]{width:30px;height:28px;padding:0;',
+    '  flex:none;border:1px solid #2a2a35;border-radius:6px;background:#0b0b10}',
+    '.paledit .edrow input[type=text]{flex:1;padding:5px 8px;font-size:12px;',
+    '  font-family:ui-monospace,monospace}',
+    '.paledit input[type=text].bad{border-color:rgba(243,180,76,.75)}',
+    '.paledit .edrem{width:22px;height:22px;border-radius:50%;flex:none;',
+    '  background:#2a2a35;color:#9aa0ab;font-size:12px;line-height:1;',
+    '  display:flex;align-items:center;justify-content:center}',
+    '.paledit .edrem:hover{color:#FFFCF0}',
+    '.paledit .edrem:disabled,.paledit .edadd:disabled{opacity:.35;',
+    '  cursor:not-allowed}',
+    '.paledit .edadd{font-size:11.5px;font-weight:700;color:#b8d49a;',
+    '  padding:5px 10px;border-radius:8px;background:rgba(143,179,90,.12);',
+    '  border:1px solid rgba(143,179,90,.4)}',
+    '.paledit .edname{margin-top:8px}',
+    '.paledit .edname input[type=text]{padding:5px 8px;font-size:12px}',
+    '.paledit .ederr{font-size:11.5px;line-height:1.45;color:#e8c98a;',
+    '  margin-top:8px}',
+    /* the Incoming slide: one centered placeholder block */
+    '.incoming{display:flex;flex-direction:column;align-items:center;',
+    '  justify-content:center;gap:8px;min-height:180px;height:100%;',
+    '  text-align:center}',
+    '.incoming .eye{font-size:10.5px;font-weight:700;letter-spacing:.14em;',
+    '  color:#8fb35a}',
+    '.incoming .sub{font-size:12.5px;color:#9aa0ab}',
     /* control rows (tray slides + card) */
     '.ctl{display:flex;align-items:center;gap:10px;padding:10px 12px;',
     '  font-size:12.5px}',
@@ -451,25 +600,22 @@
     '  border:1px solid #2a2a35;border-radius:6px;background:#0b0b10}',
     '.facet select{flex:1;background:#0b0b10;color:#FFFCF0;',
     '  border:1px solid #2a2a35;border-radius:8px;padding:5px;font-size:12px}',
-    '.draftmeta{font-size:10.5px;color:#6b7280;padding:8px 10px 0}',
-    /* Design Mode direct manipulation: resize handles on the selection and
-       the inline text-editing cue (locked decision 2). Handles live in the
-       shadow root so the design can never restyle them and the selection
-       walk never picks them (host children are skipped). */
-    '#handles{position:fixed;inset:0;pointer-events:none;z-index:15}',
-    '.hnd{position:absolute;width:10px;height:10px;background:#f59e0b;',
-    '  border:2px solid #0b0b10;border-radius:2px;pointer-events:auto;',
-    '  transform:translate(-50%,-50%);box-shadow:0 1px 4px rgba(0,0,0,.4)}',
-    '.hnd[data-d=n]{cursor:n-resize}.hnd[data-d=s]{cursor:s-resize}',
-    '.hnd[data-d=e]{cursor:e-resize}.hnd[data-d=w]{cursor:w-resize}',
-    '.hnd[data-d=ne]{cursor:ne-resize}.hnd[data-d=sw]{cursor:sw-resize}',
-    '.hnd[data-d=nw]{cursor:nw-resize}.hnd[data-d=se]{cursor:se-resize}',
-    '[data-arxa-inline-editing]{outline:2px dashed #f59e0b !important;',
-    '  cursor:text;caret-color:#f59e0b}',
   ];
   const style = document.createElement('style');
   style.textContent = CSS.join('\n');
   root.appendChild(style);
+  /* Design Mode: the inline text-editing cue lives at DOCUMENT level —
+     shadow styles never reach site elements (the old amber caret/outline
+     rule was dead code and the caret rode bare currentColor, invisible
+     wherever an uncontracted pair was low-contrast). The base rule rides
+     currentColor (contract-guaranteed against the surface); at edit-entry
+     pickCaretColor() refines it inline to clear BOTH the surface AND the
+     text glyphs — see the caret law v2 note at compositeJs. */
+  const pageStyle = document.createElement('style');
+  pageStyle.textContent =
+    '[data-arxa-inline-editing]{outline:2px dashed currentColor !important;' +
+    'outline-offset:2px;cursor:text;caret-color:currentColor}';
+  document.head.appendChild(pageStyle);
 
   // ── tiny DOM helper: text is textContent, always ───────────────────────
   function h(tag, attrs, kids) {
@@ -497,6 +643,7 @@
     // that leaves the verb silently stuck (smoke S9a: mint died mid-flight
     // and the button read 'Minting…' forever). Every caller already guards
     // on the fields it needs, so null degrades cleanly everywhere.
+    if (S.static) return staticApi(method, sub, body);
     try {
       const res = await fetch(apiUrl(sub), {
         method,
@@ -508,6 +655,249 @@
       return null;
     }
   }
+
+  // ── the deployed static store driver (VERIFY ADDENDUM 17, locked Q8) ───
+  // The deployed artifact talks Supabase directly: PostgREST for reads and
+  // comment writes, the security-definer RPCs for identity + the palette
+  // publish + the overlay save, Realtime for live frames (subscribeRealtime
+  // below). Request fields and response shapes mirror SupabaseDialStore +
+  // DialApi EXACTLY — the UI above cannot tell which store answered. RLS
+  // law (anon role): SELECT + INSERT only — no update, no delete. The
+  // overlay writes ride save_overlay (author-token validated in SQL — the
+  // author's raw token rides cfg.token, worker-side verified). Everything
+  // else design-time (status writes, guests + mint/revoke, media search,
+  // ship, palette CRUD) answers a LOCAL clean refusal: NO network, and the
+  // caller's existing error path takes it.
+  let sb = null; // the supabase-js client (the UMD loads before the dial)
+  function sbClient() {
+    if (!sb) sb = window.supabase.createClient(S.static.url, S.static.anonKey);
+    return sb;
+  }
+  function dialNewId() {
+    // Client-minted UUIDv4, the same shape the server's dialNewId returns —
+    // in static mode pin/reply ids are born here.
+    const b = crypto.getRandomValues(new Uint8Array(16));
+    b[6] = (b[6] & 0x0f) | 0x40;
+    b[8] = (b[8] & 0x3f) | 0x80;
+    const hex = [...b].map((x) => x.toString(16).padStart(2, '0')).join('');
+    return hex.slice(0, 8) + '-' + hex.slice(8, 12) + '-' + hex.slice(12, 16) +
+      '-' + hex.slice(16, 20) + '-' + hex.slice(20);
+  }
+  const STATIC_REFUSAL = { ok: false, error: 'design-time only' };
+  // Identity for writes: a static guest's attribution comes from
+  // resolve_guest_link at boot (the registry, never a typed name); the
+  // static author has no local identity file — 'Author' by locked decision.
+  function staticAuthor() {
+    if (S.mode === 'guest' && S.guest) {
+      return {
+        kind: 'guest',
+        name: S.guest.name || (S.guest.email.split('@')[0] || 'guest'),
+        guestId: S.guest.id,
+        guestEmail: S.guest.email,
+      };
+    }
+    return { kind: 'author', name: 'Author' };
+  }
+  // A DB row → the DialPin JSON shape (DialApi's toJson): the island
+  // renders THIS shape, whichever store answered. The embedded drawings
+  // row is an object when PostgREST detects the unique FK, a list when it
+  // doesn't, null when the pin carries no drawing.
+  function staticPinFromRow(r) {
+    const dw = r.arxa_dial_drawings;
+    const drawing = dw && !Array.isArray(dw) ? dw.strokes
+      : Array.isArray(dw) && dw.length ? dw[0].strokes : null;
+    const anchor = { el: r.anchor_el || null, rect: r.rect };
+    if (r.context_text) anchor.text = r.context_text;
+    const pin = {
+      id: r.id,
+      artifact: r.artifact,
+      route: r.route,
+      viewport: { w: r.viewport_w, h: r.viewport_h },
+      anchor: anchor,
+      status: r.status,
+      author: r.author_kind,
+      name: r.author_name,
+      body: r.body,
+      createdAt: r.created_at,
+      updatedAt: r.updated_at,
+      replies: (r.arxa_dial_replies || []).map((rr) => {
+        const reply = {
+          id: rr.id,
+          author: rr.author_kind,
+          name: rr.author_name,
+          body: rr.body,
+          createdAt: rr.created_at,
+        };
+        if (rr.guest_email) reply.guestEmail = rr.guest_email;
+        return reply;
+      }),
+    };
+    if (r.guest_email) pin.guestEmail = r.guest_email;
+    if (drawing) pin.drawing = drawing;
+    return pin;
+  }
+  async function staticListPins() {
+    const r = await sbClient()
+      .from('arxa_dial_pins')
+      .select('*,arxa_dial_replies(*),arxa_dial_drawings(strokes)')
+      .eq('design_id', S.static.designId)
+      .order('created_at', { ascending: true });
+    if (r.error) return null;
+    return { store: 'supabase', pins: (r.data || []).map(staticPinFromRow) };
+  }
+  async function staticCreatePin(body) {
+    const a = staticAuthor();
+    const now = new Date().toISOString();
+    const anchor = body.anchor || {};
+    const row = {
+      id: dialNewId(),
+      artifact: S.artifact,
+      design_id: S.static.designId,
+      route: String(body.route || '/'),
+      viewport_w: (body.viewport && body.viewport.w) | 0,
+      viewport_h: (body.viewport && body.viewport.h) | 0,
+      anchor_el: anchor.el || null,
+      rect: anchor.rect || { x: 0, y: 0, w: 0, h: 0 },
+      context_text: anchor.text || null,
+      status: 'open',
+      author_kind: a.kind,
+      author_name: a.name,
+      body: String(body.body || ''),
+      created_at: now,
+      updated_at: now,
+    };
+    if (a.guestId) row.guest_id = a.guestId;
+    if (a.guestEmail) row.guest_email = a.guestEmail;
+    const r = await sbClient().from('arxa_dial_pins').insert(row);
+    if (r.error) return { ok: false, error: r.error.message || 'pin refused' };
+    // The island never draws, but the shape parity costs one branch: a
+    // caller that sent strokes gets the 1:1 drawings row the server would
+    // have written.
+    if (body.drawing) {
+      await sbClient().from('arxa_dial_drawings')
+        .insert({ pin_id: row.id, strokes: body.drawing });
+    }
+    return {
+      pin: staticPinFromRow(Object.assign({}, row, {
+        arxa_dial_replies: [], arxa_dial_drawings: null,
+      })),
+    };
+  }
+  async function staticReply(body) {
+    const a = staticAuthor();
+    const row = {
+      id: dialNewId(),
+      pin_id: String(body.id || ''),
+      author_kind: a.kind,
+      author_name: a.name,
+      body: String(body.body || ''),
+      created_at: new Date().toISOString(),
+      design_id: S.static.designId,
+    };
+    if (a.guestId) row.guest_id = a.guestId;
+    if (a.guestEmail) row.guest_email = a.guestEmail;
+    const r = await sbClient().from('arxa_dial_replies').insert(row);
+    if (r.error) return { ok: false, error: r.error.message || 'reply refused' };
+    return {
+      reply: {
+        id: row.id, author: row.author_kind, name: row.author_name,
+        body: row.body, createdAt: row.created_at,
+      },
+    };
+  }
+  async function staticPublishAxes(body) {
+    // Palette and font are THE static axes: style/theme flips re-render
+    // source, which only the design-time pipeline can do — a palette id
+    // and the per-role font picks are what the deployed store can take,
+    // and each RPC validates the link token (share link OR author token)
+    // before upserting the shared row.
+    const palette = body && body.palette;
+    const font = body && body.font;
+    if (!palette && !font) return STATIC_REFUSAL;
+    const out = { style: 'site', theme: 'system' };
+    if (palette) {
+      const r = await sbClient().rpc('publish_palette', {
+        link_token: S.token, palette_id: palette,
+      });
+      if (r.error) return null; // transient — the caller's refusal toast owns it
+      if (!(r.data && r.data.ok)) {
+        return { ok: false, error: (r.data && r.data.error) || 'the axes store refused' };
+      }
+      out.palette = r.data.palette || palette;
+    }
+    if (font) {
+      // publish_font merges per-role over the stored cell — the grilled
+      // independent-dropdowns law, enforced in SQL.
+      const r = await sbClient().rpc('publish_font', {
+        p_design_id: S.static.designId, p_link_token: S.token, p_font: font,
+      });
+      if (r.error) return null;
+      if (!(r.data && r.data.ok)) {
+        return { ok: false, error: (r.data && r.data.error) || 'the font store refused' };
+      }
+      out.font = r.data.font || font;
+    }
+    // The same shape the local POST answers (its echo carries the site's
+    // 'site'/'system' pair); the Realtime frame settles published ==
+    // current exactly like the local SSE echo does.
+    return { ok: true, axes: out };
+  }
+  async function staticResolveGuest() {
+    // Boot validation (local parity: dead links boot 'invalid'): the RPC
+    // validates the raw token against the live-link hashes and answers WHO
+    // this guest is — the guests table itself is closed to anon.
+    try {
+      const r = await sbClient().rpc('resolve_guest_link', { link_token: S.token });
+      if (r.error || !r.data || !r.data.ok) return null;
+      return r.data;
+    } catch (_) { return null; }
+  }
+  async function staticSyncAxes() {
+    // The axes plane's resync READ (the SSE law's static half): realtime
+    // frames missed while the tab was hidden never replay, so on show the
+    // published row is read and treated as a frame — the truth, re-applied
+    // whole by the one dispatcher.
+    try {
+      const r = await sbClient().from('arxa_dial_axes')
+        .select('style,theme,palette,font')
+        .eq('design_id', S.static.designId)
+        .limit(1);
+      const row = r.data && r.data[0];
+      if (row && S.axes) onLiveFrame({ kind: 'axes', data: row });
+    } catch (_) {}
+  }
+  // The overlay write (2026-09-11): save_overlay validates the AUTHOR
+  // token hash in SQL — a guest ?dial= link is rejected there, so clients
+  // can never write text or media. Empty patches = revert (row deleted).
+  async function staticSaveOverlay(patches, baseRev) {
+    try {
+      const r = await sbClient().rpc('save_overlay', {
+        p_design_id: S.static.designId,
+        p_link_token: S.token,
+        p_base_rev: baseRev,
+        p_patches: patches,
+      });
+      if (r.error) return null; // transient — the caller's toast owns it
+      return r.data || { ok: false, error: 'the overlay RPC refused' };
+    } catch (_) {
+      return null;
+    }
+  }
+
+  async function staticApi(method, sub, body) {
+    // The same never-throw contract as api(): null degrades cleanly
+    // everywhere. Unmapped subs are design-time by construction.
+    try {
+      if (sub === '/pins' && method === 'GET') return await staticListPins();
+      if (sub === '/pins' && method === 'POST') return await staticCreatePin(body || {});
+      if (sub === '/pins/reply' && method === 'POST') return await staticReply(body || {});
+      if (sub === '/axes' && method === 'POST') return await staticPublishAxes(body || {});
+      return STATIC_REFUSAL;
+    } catch (_) {
+      return null;
+    }
+  }
+
   // One read in flight at a time: pins SSE frames can land while a previous
   // read is still out, and stacked reads multiply connection pressure for no
   // newer truth (the server broadcasts on mutations only — a read loop here
@@ -521,7 +911,6 @@
       if (r && r.pins) {
         S.pins = r.pins;
         renderPins();
-        if (S.tray === 'comments') renderTraySlide('comments');
         updateBadge();
       }
     } finally {
@@ -586,14 +975,21 @@
   // selection, Comment arms pin-drop, Studio opens the tray. Guests get
   // Comment + Studio(Comments-only tray); Edit is author-only.
   const VERBS = [
-    { id: 'edit', icon: 'design', tip: 'Edit — select & adjust elements', modes: ['author'] },
+    { id: 'edit', icon: 'design', tip: 'Edit — fix words & images live', modes: ['author'] },
     { id: 'comment', icon: 'comment', tip: 'Comment — drop a pin', modes: ['author', 'guest'] },
     { id: 'studio', icon: 'studio', tip: 'Studio — open the tray', modes: ['author', 'guest'] },
   ];
+  // Edit needs the Supabase store (2026-09-11 decision 4): the overlay is
+  // a Supabase row. Deployed static mode HAS it (the author token writes
+  // through save_overlay directly); the local designer has it when the
+  // store is supabase. A memory-store design shows no Edit verb — there
+  // is no overlay backend and none will be built.
+  const editCapable = S.mode === 'author' && (S.static || S.store === 'supabase');
   const verbEls = {};
   const verbOrder = [];
   VERBS.forEach((v, i) => {
     if (v.modes.indexOf(S.mode) === -1) return;
+    if (v.id === 'edit' && !editCapable) return;
     const el = h('button', { class: 'verb', 'data-verb': v.id, title: v.tip }, [
       icon(v.icon),
       h('span', { class: 'tip', text: v.tip }),
@@ -709,7 +1105,7 @@
     }, 2600);
   }
 
-  // ── comments board (tray slide body) ───────────────────────────────────
+  // ── comments board (retired tray slide body — kept callable) ──────────
   function chip(status) {
     return h('span', {
       class: 'chip ' + status.replace('_', ''),
@@ -778,7 +1174,7 @@
     if (pin) setTimeout(() => openThread(pin), 350); // let the page settle first
   }
 
-  // ── the identity plane: personal client links (arc 2, Comments slide) ──
+  // ── the identity plane: personal client links (arc 2, was Comments slide)
   // Anonymous tokens are gone from the UI: every minted link belongs to a
   // REGISTERED guest (email keyed), their pins/replies attribute by
   // construction, and revoke deletes the PII while keeping the feedback.
@@ -973,7 +1369,6 @@
     requestAnimationFrame(() => {
       rafPending = false;
       renderPins();
-      renderHandles();
     });
   }
   addEventListener('scroll', scheduleRepin, { passive: true, capture: true });
@@ -1160,8 +1555,9 @@
       );
     });
     thread.appendChild(replies);
-    // Kanban row — Author only (locked decision 1).
-    if (S.mode === 'author') {
+    // Kanban row — Author only (locked decision 1). Hidden in static mode:
+    // status writes are design-time (anon RLS grants no UPDATE).
+    if (S.mode === 'author' && !S.static) {
       const row = h('div', { id: 'statusrow' });
       KANBAN.forEach(([st, label]) => {
         const b = h('button', {
@@ -1204,22 +1600,12 @@
     renderPins();
   }
 
-  // ── Design Mode (author only; locked decisions 1-5) ────────────────────
-  // Selection walks data-arxa-id (the machine identity design patch rides),
-  // facet sets are curated per element kind, and every edit applies live,
-  // then auto-saves into the server-side Draft Overlay. Artifact source is
-  // only ever touched by the studio-socket commit — never from this island.
+  // ── Design Mode (author only; redesigned 2026-09-11) ────────────────────
+  // Selection walks data-arxa-id (the machine identity the overlay rides).
+  // The editor's vocabulary is text + images (decision 1); the kind table
+  // below only feeds selection labels — the curated facet sets, color
+  // chips, and CSS escape hatch died with the inspector.
 
-  const FACET_GROUPS = {
-    text: ['color', 'font-size', 'font-weight', 'line-height', 'letter-spacing', 'text-align'],
-    action: ['background', 'color', 'font-size', 'font-weight', 'padding', 'border-radius'],
-    surface: ['background', 'padding', 'gap', 'width', 'height', 'border-radius', 'border-color'],
-    field: ['background', 'color', 'font-size', 'padding', 'border-color', 'border-radius'],
-    media: ['width', 'height', 'opacity'],
-    generic: ['color', 'background', 'font-size', 'width', 'height', 'padding', 'margin', 'border-radius'],
-  };
-  // The 15-kind widget vocabulary plus the simple data-el names and tag
-  // kinds real artifacts carry; anything unlisted edits as 'generic'.
   const KIND_GROUP = {
     card: 'surface', 'panel-activity': 'surface', modal: 'surface', dialog: 'surface',
     'bottom-sheet': 'surface', 'empty-state': 'surface', toast: 'surface', panel: 'surface',
@@ -1236,11 +1622,6 @@
     img: 'image', svg: 'icon', input: 'input', textarea: 'input', select: 'input',
     nav: 'nav-rail', header: 'appbar', li: 'list-row',
   };
-  const COLOR_PROPS = { background: 1, color: 1, 'border-color': 1 };
-  const SELECT_OPTS = {
-    'font-weight': ['300', '400', '500', '600', '700', '800'],
-    'text-align': ['left', 'center', 'right', 'start', 'end'],
-  };
 
   function kindOf(el) {
     const de = el.getAttribute('data-el');
@@ -1253,7 +1634,16 @@
     return { kind: kind, group: KIND_GROUP[kind] || 'generic' };
   }
 
-  // The selection walk: data-arxa-id identity, SVG collapse, island skipped.
+  // The selection walk: NEAREST STAMP of either vocabulary, SVG collapse,
+  // island skipped. Artifacts differ in how they stamp authored text: some
+  // carry data-arxa-id on the text element itself, others (the live
+  // arxa-site artifact) stamp text carriers data-el-only under data-arxa-id
+  // composites. A data-arxa-id-only walk resolved every click to the
+  // composite wrapper — which the 2026-09-11 scope law then refuses — and
+  // left the whole page uneditable. The walk now binds to whichever stamp
+  // is nearest; a data-el hit carries the 'el:' identity bindingFor and
+  // targetsForKey already speak (live apply and the eject bake resolve the
+  // same key), a data-arxa-id hit keeps the machine-id fan-out.
   function designTargetAt(x, y) {
     const stack = document.elementsFromPoint(x, y);
     for (const el of stack) {
@@ -1262,11 +1652,12 @@
       if (node.namespaceURI && node.namespaceURI.indexOf('svg') !== -1 && node.tagName !== 'svg') {
         node = node.closest('svg') || node;
       }
-      const hit = node.closest && node.closest('[data-arxa-id]');
+      const hit = node.closest && node.closest('[data-arxa-id],[data-el]');
       if (hit) {
         const k = kindOf(hit);
+        const mid = hit.getAttribute('data-arxa-id');
         return {
-          id: hit.getAttribute('data-arxa-id'),
+          id: mid || ('el:' + (hit.getAttribute('data-el') || '')),
           el: hit,
           label: (hit.getAttribute('data-el') || hit.tagName.toLowerCase()) + ' · ' + k.kind,
           group: k.group,
@@ -1281,13 +1672,18 @@
     if (e.composedPath().indexOf(host) !== -1) { hover.style.display = 'none'; return; }
     // Hunt-freeze law (operator, 2026-08-25): once an element is
     // selected the cursor's hunting STOPS — focus belongs to the
-    // selected element (amber outline + handles + card); a second
+    // selected element (amber outline + chip); a second
     // highlight chasing the cursor is noise. Hunting is a DISCOVERY
     // affordance, and there is nothing left to discover mid-selection.
     // Deselected (outline cleared / mode re-armed) it resumes by
     // itself — this guard reads S.selected live.
     if (S.selected) { hover.style.display = 'none'; return; }
     const t = designTargetAt(e.clientX, e.clientY);
+    // The 2026-09-11 scope law: only EDITABLE elements highlight —
+    // text-editable elements and images/videos. Everything else is not
+    // editable anymore, and outlining it would promise an interaction
+    // the editor no longer has.
+    if (t && !isEditableTarget(t.el)) { hover.style.display = 'none'; return; }
     if (!t) { hover.style.display = 'none'; return; }
     hover.classList.add('design');
     hover.style.display = 'block';
@@ -1308,9 +1704,32 @@
     }
     const t = designTargetAt(e.clientX, e.clientY);
     if (!t) return; // unstamped spot — let the page have the click
+    // The 2026-09-11 scope law: a click on a non-editable element is the
+    // page's click — selecting it would open a chip with nothing to do.
+    if (!isEditableTarget(t.el)) return;
     e.preventDefault();
     e.stopPropagation();
     selectEl(t);
+  }
+
+  // The editor's whole target vocabulary (decision 1): text-bearing
+  // elements with no stamped descendants (isTextEditable below) and
+  // images/videos (the swap surface). Everything else is scenery. The media
+  // arm covers BOTH shapes artifacts stamp: the media element itself, and a
+  // stamped wrapper whose img/video it carries (the live artifact stamps
+  // wrappers only — an img-only law left every image unreachable).
+  function isEditableTarget(el) {
+    return isTextEditable(el) || el.tagName === 'IMG' || el.tagName === 'VIDEO'
+      || !!el.querySelector('img,video');
+  }
+  // The element a media attr actually lands on: the media inside a stamped
+  // wrapper. Live apply, the chip's swap, and the eject bake all resolve
+  // through this ONE descent so they can never disagree.
+  const MEDIA_ATTRS = ['src', 'srcset', 'poster'];
+  function mediaOf(el) {
+    if (!el) return null;
+    if (el.tagName === 'IMG' || el.tagName === 'VIDEO') return el;
+    return el.querySelector('img,video');
   }
 
   // Which identity a patch binds to (amended 2026-08-24 — authored identity
@@ -1384,104 +1803,17 @@
     } catch (_) {}
     S.selOutline = t.el.style.outline;
     t.el.style.outline = '2px solid #f59e0b';
-    renderHandles();
-    trackHandles();
-    openCard();
+    openChip();
     return true;
   }
   function clearSelOutline() {
     if (S.inlineEditing != null) inlineEditEnd(true);
     if (S.selected) S.selected.el.style.outline = S.selOutline || '';
     S.selected = null;
-    handlesLayer.textContent = '';
+    closeChip();
   }
 
-  // ── direct manipulation: resize handles + on-canvas text editing ─────
-  // Locked decision 2 ("direct manipulation + studio socket") read literally:
-  // the Author drags the selection's amber handles to resize it and
-  // double-clicks pure-text elements to type in place. Every change still
-  // flows through the SAME patch functions (setStyleProp / setTextContent),
-  // so live-apply, Draft Overlay auto-save, and the commit socket are
-  // identical to panel edits — the handles are a gesture, not a write path.
-  const handlesLayer = h('div', { id: 'handles' });
-  root.appendChild(handlesLayer);
-  const DIRS = ['nw', 'n', 'ne', 'e', 'se', 's', 'sw', 'w'];
-  function renderHandles() {
-    handlesLayer.textContent = '';
-    if (!S.selected || !S.design) return;
-    if (!document.contains(S.selected.el)) return; // hot-reload swapped the DOM
-    const r = S.selected.el.getBoundingClientRect();
-    if (r.width < 4 || r.height < 4) return;
-    const pts = {
-      nw: [r.left, r.top], n: [r.left + r.width / 2, r.top], ne: [r.right, r.top],
-      e: [r.right, r.top + r.height / 2], se: [r.right, r.bottom],
-      s: [r.left + r.width / 2, r.bottom], sw: [r.left, r.bottom],
-      w: [r.left, r.top + r.height / 2],
-    };
-    for (const d of DIRS) {
-      const hd = h('div', { class: 'hnd', 'data-d': d });
-      hd.style.left = pts[d][0] + 'px';
-      hd.style.top = pts[d][1] + 'px';
-      hd.addEventListener('pointerdown', (e) => startHandleDrag(e, d));
-      handlesLayer.appendChild(hd);
-    }
-  }
-  // Handles must TRACK the selection, not snapshot it: artifacts animate
-  // their own elements (this one's intro flies the wordmark in), and a
-  // render-at-click-time handle set freezes where the element WAS. A rAF
-  // loop repositions the existing handles every frame while a selection is
-  // live; it parks itself when the selection clears.
-  let handleRaf = 0;
-  function positionHandles() {
-    const kids = handlesLayer.children;
-    if (!S.selected || kids.length !== 8) return;
-    if (!document.contains(S.selected.el)) return;
-    const r = S.selected.el.getBoundingClientRect();
-    const pts = {
-      nw: [r.left, r.top], n: [r.left + r.width / 2, r.top], ne: [r.right, r.top],
-      e: [r.right, r.top + r.height / 2], se: [r.right, r.bottom],
-      s: [r.left + r.width / 2, r.bottom], sw: [r.left, r.bottom],
-      w: [r.left, r.top + r.height / 2],
-    };
-    for (let i = 0; i < DIRS.length; i++) {
-      kids[i].style.left = pts[DIRS[i]][0] + 'px';
-      kids[i].style.top = pts[DIRS[i]][1] + 'px';
-    }
-  }
-  function trackHandles() {
-    cancelAnimationFrame(handleRaf);
-    const tick = () => {
-      if (!S.selected || !S.design) return;
-      positionHandles();
-      handleRaf = requestAnimationFrame(tick);
-    };
-    handleRaf = requestAnimationFrame(tick);
-  }
-  function startHandleDrag(e, dir) {
-    e.preventDefault();
-    e.stopPropagation();
-    const sel = S.selected;
-    if (!sel) return;
-    const r0 = sel.el.getBoundingClientRect();
-    const x0 = e.clientX, y0 = e.clientY;
-    const w0 = r0.width, h0 = r0.height;
-    const move = (ev) => {
-      const dx = ev.clientX - x0, dy = ev.clientY - y0;
-      if (dir.indexOf('e') !== -1) setStyleProp(sel.key, 'width', Math.max(10, Math.round(w0 + dx)) + 'px');
-      if (dir.indexOf('w') !== -1) setStyleProp(sel.key, 'width', Math.max(10, Math.round(w0 - dx)) + 'px');
-      if (dir.indexOf('s') !== -1) setStyleProp(sel.key, 'height', Math.max(10, Math.round(h0 + dy)) + 'px');
-      if (dir.indexOf('n') !== -1) setStyleProp(sel.key, 'height', Math.max(10, Math.round(h0 - dy)) + 'px');
-      renderHandles();
-    };
-    const up = () => {
-      document.removeEventListener('pointermove', move, true);
-      document.removeEventListener('pointerup', up, true);
-      renderCardAgain(); // the facet inputs catch up with the dragged values
-    };
-    document.addEventListener('pointermove', move, true);
-    document.addEventListener('pointerup', up, true);
-  }
-
+  // ── on-canvas text editing (decision 1 — the primary edit gesture) ───
   // Text-editable means: no STAMPED descendant. Runtime line/word splitters
   // (the artifact's own intro animator wraps "SUCZKA" in unstamped .line
   // divs) nest markup the source never had — the text is still one authored
@@ -1502,6 +1834,12 @@
     S.inlineEditing = sel.el.textContent;
     sel.el.setAttribute('contenteditable', 'true');
     sel.el.setAttribute('data-arxa-inline-editing', '1');
+    var caret = pickCaretColor(sel.el);
+    if (caret) {
+      var caretCss = 'rgb(' + caret[0] + ',' + caret[1] + ',' + caret[2] + ')';
+      sel.el.style.caretColor = caretCss;
+      sel.el.style.outlineColor = caretCss;
+    }
     sel.el.focus();
     const range = document.createRange();
     range.selectNodeContents(sel.el);
@@ -1527,19 +1865,23 @@
     el.removeEventListener('focusout', onInlineFocusOut);
     el.removeAttribute('contenteditable');
     el.removeAttribute('data-arxa-inline-editing');
+    el.style.caretColor = '';
+    el.style.outlineColor = '';
     if (commit) {
       // setTextContent normalizes whatever markup contenteditable produced,
-      // patches the draft, and schedules the auto-save.
+      // patches the overlay, records the undo step, and schedules the save.
       setTextContent(sel.key, el.textContent, el);
     } else {
       el.textContent = original;
     }
-    renderCardAgain();
   }
   function onDesignDblClick(e) {
     if (e.composedPath().indexOf(host) !== -1) return;
     const t = designTargetAt(e.clientX, e.clientY);
     if (!t) return;
+    // The scope law again: double-click types TEXT; a non-text-editable
+    // target is the page's double-click, not an edit session.
+    if (!isTextEditable(t.el)) return;
     e.preventDefault();
     e.stopPropagation();
     if (!S.selected || S.selected.el !== t.el) selectEl(t);
@@ -1554,175 +1896,217 @@
   function designOn() {
     if (S.arming) disarm();
     S.design = true;
-    setDockMode('edit'); // the card flips to the edit face
+    setDockMode('edit'); // the dock flips to the edit face
     verbEls.edit.classList.add('on');
     document.addEventListener('pointermove', onDesignMove, true);
     document.addEventListener('click', onDesignClick, true);
     document.addEventListener('dblclick', onDesignDblClick, true);
-    say('Edit Mode — click any element to open its card; double-click text to type in place');
+    updateEditBar();
+    say('Edit Mode — double-click text to type; click an image to swap it');
   }
   function designOff() {
     S.design = false;
-    setDockMode(''); // the card returns to the arxa face
-    closeCard();
+    setDockMode(''); // the dock returns to the arxa face
+    closePanel();
+    clearSelOutline();
     if (verbEls.edit) verbEls.edit.classList.remove('on');
     hover.style.display = 'none';
     hover.classList.remove('design');
-    clearSelOutline();
+    updateEditBar();
     document.removeEventListener('pointermove', onDesignMove, true);
     document.removeEventListener('click', onDesignClick, true);
     document.removeEventListener('dblclick', onDesignDblClick, true);
   }
 
-  // ── the Draft Overlay: live apply + debounced auto-save ────────────────
+  // ── the Live Overlay: patch model + debounced save + session undo ────
   function patchFor(id) {
-    let p = S.draft.patches[id];
-    if (!p) { p = { style: {}, attrs: {} }; S.draft.patches[id] = p; }
-    if (!p.style) p.style = {};
+    let p = S.overlay.patches[id];
+    if (!p) { p = { attrs: {} }; S.overlay.patches[id] = p; }
     if (!p.attrs) p.attrs = {};
     return p;
   }
+  function dropPatchIfEmpty(key) {
+    const p = S.overlay.patches[key];
+    if (p && p.text == null && !Object.keys(p.attrs || {}).length) {
+      delete S.overlay.patches[key];
+    }
+  }
+
+  // Session-local undo/redo (decision 3, grilled 2026-09-11): an inverse
+  // stack in THIS tab, depth ~50, no server journal. Undo exists to fix
+  // the thing you just did — older than that is editing the text back or
+  // Revert-to-published, both of which already exist. "Session-local"
+  // means the TAB: the stack rides sessionStorage so the animator-converge
+  // reload (every text save triggers one ~1.4s later) does not silently
+  // erase the author's history — closing the tab still kills it, by design.
+  const UNDO_CAP = 50;
+  const UNDO_KEY = 'arxa-dial-undo';
+  function saveUndoState() {
+    try {
+      sessionStorage.setItem(UNDO_KEY, JSON.stringify({
+        u: S.undoStack, r: S.redoStack,
+      }));
+    } catch (_) {}
+  }
+  function restoreUndoState() {
+    try {
+      const d = JSON.parse(sessionStorage.getItem(UNDO_KEY) || 'null');
+      if (d && Array.isArray(d.u)) S.undoStack = d.u.slice(-UNDO_CAP);
+      if (d && Array.isArray(d.r)) S.redoStack = d.r.slice(-UNDO_CAP);
+    } catch (_) {}
+  }
+  function pushUndo(entry) {
+    S.undoStack.push(entry);
+    if (S.undoStack.length > UNDO_CAP) S.undoStack.shift();
+    S.redoStack.length = 0; // a new edit forks history
+    saveUndoState();
+    updateEditBar();
+  }
+  function doUndo() {
+    const e = S.undoStack.pop();
+    if (!e) return;
+    applyInverse(e, true);
+    S.redoStack.push(e);
+    saveUndoState();
+    updateEditBar();
+    refreshChipSafe();
+    scheduleSave();
+  }
+  function doRedo() {
+    const e = S.redoStack.pop();
+    if (!e) return;
+    applyInverse(e, false);
+    S.undoStack.push(e);
+    saveUndoState();
+    updateEditBar();
+    refreshChipSafe();
+    scheduleSave();
+  }
+  // Re-render the open chip (its Revert affordance depends on the patch
+  // set) — but never while the swap panel holds focus in its inputs.
+  function refreshChipSafe() {
+    if (S.chipOpen && !ePanelOpen()) renderChipBody();
+  }
+  // An inverse record is symmetric: {kind:'text', key, from, to} or
+  // {kind:'attr', key, attr, from, to} — undo applies from, redo applies
+  // to. from/to null on attrs means "attribute absent". A text record with
+  // from == null means the element had NO patch before the edit: undo
+  // removes the patch and restores the captured pre-edit text.
+  function applyInverse(e, undo) {
+    const v = undo ? e.from : e.to;
+    if (e.kind === 'text') {
+      if (v == null) {
+        const p = S.overlay.patches[e.key];
+        const was = p && p.was != null ? p.was : null;
+        delete S.overlay.patches[e.key];
+        for (const el of targetsForKey(e.key)) {
+          if (was != null && isTextEditable(el)) el.textContent = was;
+        }
+      } else {
+        setTextContent(e.key, v, null, { noUndo: true });
+      }
+    } else if (e.kind === 'attr') {
+      setAttrProp(e.key, e.attr, v, null, { noUndo: true });
+    }
+    dropPatchIfEmpty(e.key);
+  }
 
   let saveTimer = null;
-  // Undo journal (decisions 2026-08-26): edits carry a gesture id so a
-  // whole slider drag is ONE undo step. Rotate when the author moves to a
-  // different target+tier, or after ~1s idle on the same one — the same
-  // boundaries a human would call "that was one tweak".
-  const journal = { undo: 0, redo: 0 };
-  const gesture = { id: '', key: '', at: 0 };
-  function markGesture(gkey) {
-    const now = Date.now();
-    if (!gesture.id || gesture.key !== gkey || now - gesture.at > 1000) {
-      gesture.id = 'g-' + now.toString(36) + '-' + Math.random().toString(36).slice(2, 7);
-      gesture.key = gkey;
-    }
-    gesture.at = now;
-  }
-  function noteDepths(r) {
-    if (!r || typeof r.undoDepth !== 'number') return;
-    journal.undo = r.undoDepth;
-    journal.redo = typeof r.redoDepth === 'number' ? r.redoDepth : 0;
-    renderJournalUi();
-  }
-  function scheduleSave(gkey) {
-    markGesture(gkey || gesture.key || '*');
-    S.draftDirty = true;
+  function scheduleSave() {
     clearTimeout(saveTimer);
-    saveTimer = setTimeout(saveDraft, 700);
-    renderDraftMeta();
+    saveTimer = setTimeout(saveOverlay, 700);
   }
-  // The text patches' current signature — used to tell "this save changed
-  // text" apart from style-only saves, because only text changes need the
-  // reload converge (animator-owned nodes; see syncRemoteDraft).
-  function textSig(d) {
+  let saveInFlight = false;
+  async function saveOverlay() {
+    if (S.mode !== 'author') return;
+    if (saveInFlight) { scheduleSave(); return; } // retry after the round trip
+    saveInFlight = true;
+    S.ownSave = Date.now();
+    try {
+      const baseRev = S.overlay.rev;
+      const r = S.static
+        ? await staticSaveOverlay(S.overlay.patches, baseRev)
+        : await api('PUT', '/overlay', { patches: S.overlay.patches, baseRev: baseRev });
+      if (!r || !r.ok) {
+        if (r && r.error === 'stale') {
+          // Decision 5's stale-guard: another surface is ahead — adopt its
+          // doc whole instead of clobbering it. Our un-saved edit is lost;
+          // the toast says so honestly.
+          adoptOverlayDoc({ patches: r.patches || {}, rev: r.rev || 0 });
+          say('Newer edits exist from another surface — resynced; your last change was not saved');
+        } else {
+          say(r && r.error ? 'Save refused: ' + r.error : 'Save failed — retrying on the next edit');
+        }
+        return;
+      }
+      S.overlay.rev = r.rev || 0;
+      if (!Object.keys(S.overlay.patches).length) {
+        // Revert-to-published landed: the row is gone, everyone snaps back.
+        S.overlay.rev = 0;
+        S.undoStack.length = 0;
+        S.redoStack.length = 0;
+        saveUndoState(); // the cleared history must survive the reload too
+        updateEditBar();
+        resumeReload(); // the clean way to un-apply attrs we cannot restore
+      } else {
+        convergeAfterText();
+      }
+    } finally {
+      saveInFlight = false;
+    }
+  }
+
+  // Revert-to-published (decision 2): empty patches = the row dies. One
+  // action, one home — the edit bar's button.
+  async function revertPublished() {
+    S.overlay.patches = {};
+    await saveOverlay();
+  }
+  // Per-element revert: drop the element's patch; text restores live from
+  // its captured `was`, an attr change converges by reload.
+  async function revertElement(key) {
+    const p = S.overlay.patches[key];
+    if (!p) return;
+    if (p.text != null && p.was != null && !Object.keys(p.attrs || {}).length) {
+      const insts = targetsForKey(key);
+      const scoped = p.nth != null && insts[p.nth] ? [insts[p.nth]] : insts;
+      for (const el of scoped) { if (isTextEditable(el)) el.textContent = p.was; }
+      delete S.overlay.patches[key];
+      scheduleSave();
+    } else {
+      delete S.overlay.patches[key];
+      await saveOverlay();
+      resumeReload();
+    }
+    updateEditBar();
+    refreshChipSafe();
+  }
+
+  // The animator-converge law (2026-08-26, kept): artifact animators
+  // re-split their text from a boot capture and will fight a live
+  // textContent write within seconds. When the just-saved doc carries
+  // text patches, reload once typing pauses so everyone — author and
+  // watching clients — sees the animator render the NEW text.
+  let lastTextSig = null;
+  let textReloadTimer = null;
+  function overlayTextSig(patches) {
     const parts = [];
-    for (const k of Object.keys(d.patches).sort()) {
-      const t = (d.patches[k] || {}).text;
+    for (const k of Object.keys(patches).sort()) {
+      const t = (patches[k] || {}).text;
       if (t != null) parts.push(k + '=' + t);
     }
     return parts.join('|');
   }
-  let lastTextSig = null;
-  let textReloadTimer = null;
-
-  async function saveDraft() {
-    if (!S.draftDirty) return;
-    S.draftDirty = false;
-    S.ownSave = Date.now();
-    const r = await api('PUT', '/draft', { tokens: S.draft.tokens, patches: S.draft.patches, gesture: gesture.id });
-    if (r && r.ok) {
-      S.draftMeta = r;
-      S.draftWarnings = r.warnings || [];
-      noteDepths(r);
-      renderDraftMeta();
-    }
-    else say(r && r.error ? 'Draft refused: ' + r.error : 'Draft save failed');
-    // A text edit the author just committed will be fought by the artifact's
-    // own animator (it re-renders split text from its boot capture — the
-    // edit looks like it "did nothing" or duplicates). Once typing pauses,
-    // reload so the author sees the animator rendering the NEW text — the
-    // same converge the sibling rungs do. Style-only saves never reload.
-    const sig = textSig(S.draft);
-    if (r && r.ok && lastTextSig != null && sig !== lastTextSig) {
-      lastTextSig = sig;
+  function noteOverlaySig() {
+    lastTextSig = overlayTextSig(S.overlay.patches);
+  }
+  function convergeAfterText() {
+    const sig = overlayTextSig(S.overlay.patches);
+    if (sig !== lastTextSig) {
+      noteOverlaySig();
       clearTimeout(textReloadTimer);
       textReloadTimer = setTimeout(resumeReload, 1400);
-    } else {
-      lastTextSig = sig;
     }
-  }
-
-  // Undo/redo (decisions 2026-08-26). POST /undo|/redo returns the whole
-  // draft after the move; the island adopts it live — same muscle as
-  // syncRemoteDraft, but from the journal instead of another tab. Any
-  // property the incoming overlay no longer carries is un-applied from the
-  // DOM first (inline style/token removal reverts to the stylesheet); attr
-  // overrides that vanish have no captured original, so that one case
-  // converges by the session-preserving reload, like text.
-  let travelling = false;
-  async function timeTravel(redo) {
-    if (S.mode !== 'author' || travelling) return;
-    if (S.inlineEditing != null) return;
-    clearTimeout(saveTimer);
-    if (S.draftDirty) await saveDraft(); // flush first — step order stays honest
-    travelling = true;
-    try {
-      S.ownSave = Date.now(); // journal writes echo on SSE like our own saves
-      const r = await api('POST', redo ? '/redo' : '/undo');
-      if (!r || !r.ok) { say(r && r.error ? r.error : (redo ? 'Redo failed' : 'Undo failed')); return; }
-      gesture.id = ''; // next edit is a NEW gesture, never glued to a restored step
-      gesture.key = '';
-      noteDepths(r);
-      S.draftWarnings = r.warnings || [];
-      if (!r.applied) { renderDraftMeta(); return; } // barrier/empty — arrows already say so
-      adoptDraft(r.draft);
-    } finally { travelling = false; }
-  }
-  function adoptDraft(draft) {
-    const next = {
-      tokens: (draft && draft.tokens) || {},
-      patches: (draft && draft.patches) || {},
-    };
-    let needReload = false;
-    for (const key of Object.keys(S.draft.patches)) {
-      const prev = S.draft.patches[key] || {};
-      const np = next.patches[key] || {};
-      for (const prop of Object.keys(prev.style || {})) {
-        if (!np.style || !(prop in np.style)) {
-          for (const el of targetsForKey(key)) el.style.removeProperty(prop);
-        }
-      }
-      for (const name of Object.keys(prev.attrs || {})) {
-        if (!np.attrs || !(name in np.attrs)) needReload = true; // no pre-edit attr capture
-      }
-      if (prev.text != null && np.text == null) {
-        // the outgoing patch carries its own provenance: was = pre-edit text
-        if (prev.was != null) {
-          const insts = targetsForKey(key);
-          const scoped = prev.nth != null && insts[prev.nth] ? [insts[prev.nth]] : insts;
-          for (const el of scoped) { if (isTextEditable(el)) el.textContent = prev.was; }
-        } else needReload = true;
-      }
-    }
-    S.draft.tokens = next.tokens;
-    S.draft.patches = next.patches;
-    lastTextSig = textSig(S.draft); // travel is not typing — no converge fight
-    applyTokensLive();
-    applyPatchesLive();
-    renderDraftMeta();
-    if (S.tray === 'edit') renderTraySlide('edit');
-    if (S.tray === 'tweak') renderTraySlide('tweak');
-    if (needReload) resumeReload();
-  }
-  function renderJournalUi() {
-    root.querySelectorAll('.jundo').forEach((b) => {
-      b.disabled = !journal.undo;
-      b.textContent = '↺ Undo' + (journal.undo ? ' (' + journal.undo + ')' : '');
-    });
-    root.querySelectorAll('.jredo').forEach((b) => {
-      b.disabled = !journal.redo;
-      b.textContent = '↻ Redo' + (journal.redo ? ' (' + journal.redo + ')' : '');
-    });
   }
 
   // The editing rung's text-converge reload must not cost the author his
@@ -1768,7 +2152,7 @@
     try { t = JSON.parse(sessionStorage.getItem('arxa-dial-trackback') || 'null'); } catch (_) {}
     if (!t || !t.key || !t.route || t.route !== location.pathname) return;
     if (S.mode !== 'author') return;
-    if (S.selected && S.selected.key === t.key && S.card) return; // already there
+    if (S.selected && S.selected.key === t.key && S.chipOpen) return; // already there
     const insts = targetsForKey(t.key);
     if (!insts.length) return;
     const el = insts[Math.min(t.nth || 0, insts.length - 1)];
@@ -1776,154 +2160,147 @@
     if (!S.design) designOn();
     centerElement(el);
     const k = kindOf(el);
+    // the same identity derivation as designTargetAt — a data-el-only
+    // carrier has no machine id, and a null id would crash targetsForKey.
     selectEl({
-      id: el.getAttribute('data-arxa-id'), el: el,
+      id: el.getAttribute('data-arxa-id')
+        || (el.getAttribute('data-el') ? 'el:' + el.getAttribute('data-el') : null),
+      el: el,
       label: (el.getAttribute('data-el') || el.tagName.toLowerCase()) + ' · ' + k.kind,
       group: k.group,
     });
     try { sessionStorage.removeItem('arxa-dial-trackback'); } catch (_) {}
   }
-  document.body.addEventListener('htmx:afterSwap', () => maybeRestoreTrackback());
+  document.body.addEventListener('htmx:afterSwap', () => {
+    maybeRestoreTrackback();
+    // A boosted navigation swapped the body — the live overlay's patches
+    // died with the old DOM. Re-apply the whole doc to the fresh one (the
+    // local author used to get this from serve-time injection; the
+    // overlay is client-side everywhere now).
+    if (S.overlayReady) applyOverlayToDom(S.overlay.patches);
+  });
 
-  async function loadDraft() {
-    if (S.mode !== 'author') return false;
-    const r = await probeCapable('/draft');
-    // Capability, not content: {"draft":null} is a REAL author answer (no
-    // draft saved yet) and must boot the dock. Only the server's quiet
-    // mirror marker or a dead network means this context has no dial.
-    if (r == null || r.mirror === true) return false;
-    S.draftWarnings = r.warnings || []; // parity: computed server-side on every draft read
-    noteDepths(r); // journal depths ride every draft read
-    if (r.draft) {
-      S.draft.tokens = r.draft.tokens || {};
-      S.draft.patches = r.draft.patches || {};
-      lastTextSig = textSig(S.draft); // boot truth — only CHANGES reload
+  // Boot read (author AND guest — decision 2: clients see the overlay).
+  // Local: GET /__dial/overlay (also the author's capability probe — a
+  // quiet mirror marker or dead network means no dial here). Static: one
+  // PostgREST select on the row. The read is the LAST truth before the
+  // realtime frames take over.
+  async function loadOverlay() {
+    let doc = null;
+    if (S.static) {
+      try {
+        const r = await sbClient().from('arxa_dial_overlays')
+          .select('patches,rev').eq('design_id', S.static.designId).limit(1);
+        if (!r.error && r.data && r.data[0]) {
+          doc = { patches: r.data[0].patches || {}, rev: r.data[0].rev || 0 };
+        }
+      } catch (_) { return false; }
+    } else {
+      const r = await probeCapable('/overlay');
+      if (r == null || r.mirror === true) return false;
+      if (r && r.overlay) doc = { patches: r.overlay.patches || {}, rev: r.overlay.rev || 0 };
     }
+    if (doc) {
+      S.overlay = doc;
+      applyOverlayToDom(doc.patches);
+    }
+    S.overlayReady = true;
+    noteOverlaySig();
     return true;
   }
 
-  // Apply the CURRENT draft patch set to this document. The serve-time
-  // overlay does this for page loads; this is the live path for frames that
-  // are already open (the other rungs of the ladder, another author tab).
-  function applyPatchesLive() {
-    for (const key of Object.keys(S.draft.patches)) {
-      const p = S.draft.patches[key] || {};
+  // Apply a whole overlay doc to THIS document (boot, realtime frame,
+  // afterSwap re-apply). Text lands only on text-editable targets —
+  // composite instances are the eject bake's problem, loudly, by design.
+  function applyOverlayToDom(patches) {
+    for (const key of Object.keys(patches)) {
+      const p = patches[key] || {};
       const insts = targetsForKey(key);
       for (const el of insts) {
-        if (p.style) {
-          for (const prop of Object.keys(p.style)) {
-            const v = p.style[prop];
-            if (v == null) el.style.removeProperty(prop);
-            else el.style.setProperty(prop, v);
-          }
-        }
-        // Text lands only on text-editable targets; composite instances are
-        // the serve-time overlay's job (it refuses them loudly, by design).
         if (p.text != null && isTextEditable(el)) el.textContent = p.text;
         if (p.attrs) {
+          // media attrs land on the img/video inside (the one descent —
+          // setAttrProp records nth over the same mapped list, so the
+          // scoping comparison stays apples-to-apples)
+          const mediaNames = Object.keys(p.attrs).filter((n) => MEDIA_ATTRS.indexOf(n) >= 0);
+          const applyEl = mediaNames.length ? (mediaOf(el) || el) : el;
           for (const name of Object.keys(p.attrs)) {
             const v = p.attrs[name];
             // instance-scoped attrs (see setAttrProp) touch ONLY their
             // occurrence — the live twin of the overlay's onlyNth path.
             if (p.attrsNth && Object.prototype.hasOwnProperty.call(p.attrsNth, name)) {
               if (el === insts[p.attrsNth[name]]) {
-                if (v == null) el.removeAttribute(name);
-                else el.setAttribute(name, v);
+                if (v == null) applyEl.removeAttribute(name);
+                else applyEl.setAttribute(name, v);
               }
               continue;
             }
-            if (v == null) el.removeAttribute(name);
-            else el.setAttribute(name, v);
+            if (v == null) applyEl.removeAttribute(name);
+            else applyEl.setAttribute(name, v);
           }
         }
       }
     }
   }
 
-  // Another author context saved its draft (a sibling rung of the viewport
-  // ladder, a second tab): pull it and apply — the operator's law is that
-  // every platform the design was authored at shows the same thing LIVE
-  // (amended 2026-08-24). Removals can't be un-applied from a live DOM we
-  // never snapshotted, so a shrinking draft converges by reload — the same
-  // thing the resetting rung itself does.
-  let syncing = false;
-  // Per-PATCH prop count. renderLedger counts ONE patch entry; the
-  // 2026-08-26 sheet bug passed a patch to patchPropCount — which wants a
-  // whole draft — and Object.keys(undefined) threw, killing the render of
-  // every slide after Edit (Comments/Settings/Tweak/Ship stayed blank
-  // whenever a draft edit existed).
-  function patchProps(p) {
-    p = p || {};
-    return (p.style ? Object.keys(p.style).length : 0) +
-      (p.attrs ? Object.keys(p.attrs).length : 0) + (p.text != null ? 1 : 0);
-  }
-  function patchPropCount(d) {
-    let n = 0;
-    for (const k of Object.keys((d && d.patches) || {})) {
-      n += patchProps(d.patches[k]);
+  // The ONE overlay frame law (SSE + Realtime alike): a doc with a rev we
+  // already hold is our own echo (or older) — ignored; anything newer is
+  // adopted whole, applied live, and said so with the transient live chip.
+  function overlayFrame(doc) {
+    if (!doc || typeof doc.rev !== 'number') return;
+    if (doc.rev !== 0 && doc.rev <= S.overlay.rev) return;
+    const hadPatches = Object.keys(S.overlay.patches).length > 0;
+    const isRevert = doc.rev === 0 && hadPatches;
+    if (doc.rev === 0 && !hadPatches) return;
+    adoptOverlayDoc(doc);
+    liveChip();
+    if (isRevert) {
+      // Revert-to-published from another surface: snap back. Text with
+      // captured `was` restores live; attrs converge by reload.
+      resumeReload();
+      return;
     }
-    return n;
+    // The animator-converge law applies to viewers too: a frame carrying
+    // text settles by one reload; attr-only frames stay purely live.
+    convergeAfterText();
   }
-  async function syncRemoteDraft() {
-    if (syncing || S.mode !== 'author') return;
-    syncing = true;
-    try {
-      const r = await api('GET', '/draft');
-      if (!r || !r.draft) return;
-      const next = { tokens: r.draft.tokens || {}, patches: r.draft.patches || {} };
-      const had = Object.keys(S.draft.patches).length + Object.keys(S.draft.tokens).length;
-      const has = Object.keys(next.patches).length + Object.keys(next.tokens).length;
-      const shrink = has < had || patchPropCount(next) < patchPropCount(S.draft);
-      // Text patches converge ONLY by reload: artifact animators own their
-      // text nodes (this one's intro re-splits the wordmark every pass from
-      // its boot capture — a live textContent write is reverted, duplicated,
-      // or collapsed within seconds, worst on wide rungs). A reload re-serves
-      // with the overlay applied and the animator boots on the NEW text.
-      // Style/token patches have no such owner — they stay live.
-      //
-      // Reload only when the incoming TEXT SIGNATURE differs from the one
-      // this document rendered with (lastTextSig — set at boot and after own
-      // saves). The earlier "any text patch exists" test reloaded every rung
-      // on every frame — duplicate frames and style-only saves included —
-      // yet could still leave a rung that had MISSED frames stale forever,
-      // because nothing re-checked divergence. The signature check both
-      // spares the pointless reloads and catches the missed-frame rung.
-      if (shrink || textSig(next) !== lastTextSig) { location.reload(); return; }
-      S.draft.tokens = next.tokens;
-      S.draft.patches = next.patches;
-      applyTokensLive();
-      applyPatchesLive();
-      refreshOpenCard();
-      if (S.tray === 'edit') renderTraySlide('edit');
-      if (S.tray === 'tweak') renderTraySlide('tweak');
-    } finally {
-      syncing = false;
-    }
+  function adoptOverlayDoc(doc) {
+    S.overlay = { patches: (doc && doc.patches) || {}, rev: (doc && doc.rev) || 0 };
+    applyOverlayToDom(S.overlay.patches);
+    noteOverlaySig();
+    S.overlayReady = true;
   }
 
-  function renderDraftMeta() {
-    const els = root.querySelectorAll('.draftmeta');
-    if (!els.length) return;
-    const np = Object.keys(S.draft.patches).length;
-    const nt = Object.keys(S.draft.tokens).length;
-    const nw = (S.draftWarnings || []).filter(w =>
-      Object.keys(S.draft.patches).indexOf('el:' + w.el) >= 0).length;
-    let txt = S.draftDirty
-      ? 'unsaved changes…'
-      : np + ' patches · ' + nt + ' tokens' + (S.draftMeta ? ' · saved' : '');
-    let detail = '';
-    if (nw > 0) {
-      detail = S.draftWarnings
-        .map(w => w.el + ': ' + w.sites + ' name= sites (' + w.problem + ')')
-        .join('; ');
-      txt += ' · ⚠ ' + nw + ' uncommittable';
-    }
-    els.forEach((el) => {
-      el.textContent = txt;
-      if (detail) el.title = 'These el: edits cannot commit - ' + detail;
-      else el.removeAttribute('title');
-    });
-    updateTrayCta();
+  // The resync READ (the socket-pool law's other half): frames missed
+  // while hidden never replay, so on show the row is read and treated as
+  // a frame — the truth, re-applied whole by the one dispatcher.
+  async function syncOverlay() {
+    if (S.mode !== 'author' && S.mode !== 'guest') return;
+    try {
+      let doc = null;
+      if (S.static) {
+        const r = await sbClient().from('arxa_dial_overlays')
+          .select('patches,rev').eq('design_id', S.static.designId).limit(1);
+        if (!r.error && r.data && r.data[0]) {
+          doc = { patches: r.data[0].patches || {}, rev: r.data[0].rev || 0 };
+        }
+      } else {
+        const r = await api('GET', '/overlay');
+        if (r && r.overlay) doc = { patches: r.overlay.patches || {}, rev: r.overlay.rev || 0 };
+      }
+      if (doc) overlayFrame(doc);
+      else if (Object.keys(S.overlay.patches).length) overlayFrame({ patches: {}, rev: 0 });
+    } catch (_) {}
+  }
+
+  // The live chip (decision 9): transient, unobtrusive, never per-frame
+  // toast spam. Says WHY the page just changed under this viewer, fades.
+  let liveChipTimer = null;
+  function liveChip() {
+    liveChipEl.classList.add('open');
+    liveChipEl.style.display = 'flex';
+    clearTimeout(liveChipTimer);
+    liveChipTimer = setTimeout(() => { liveChipEl.style.display = 'none'; }, 4000);
   }
 
   // Every instance a patch key governs. el:-keys fan out over their data-el
@@ -1947,10 +2324,19 @@
   // serve-time overlay touch ONLY that occurrence. Homogeneous repeats
   // (same value everywhere) keep every-row semantics, exactly as text
   // does. [origin] is the tapped instance the edit is about.
-  function setAttrProp(key, name, value, origin) {
+  function setAttrProp(key, name, value, origin, opts) {
     const p = patchFor(key);
+    const prev = Object.prototype.hasOwnProperty.call(p.attrs, name)
+      ? p.attrs[name] : null;
     p.attrs[name] = value || null; // empty clears the attribute
-    const insts = targetsForKey(key);
+    // Media attrs resolve through the ONE descent: a stamped wrapper's src
+    // lands on the img/video it carries, and the origin instance is mapped
+    // the same way so per-instance scoping keeps pointing at the tapped one.
+    const mediaAttr = MEDIA_ATTRS.indexOf(name) >= 0;
+    const insts = mediaAttr
+      ? targetsForKey(key).map(mediaOf).filter(Boolean)
+      : targetsForKey(key);
+    if (mediaAttr && origin) origin = mediaOf(origin) || origin;
     let targets = insts;
     const vals = new Set(insts.map((el) => el.getAttribute(name)));
     if (insts.length > 1 && vals.size > 1) {
@@ -1969,25 +2355,20 @@
       if (value) el.setAttribute(name, value);
       else el.removeAttribute(name);
     }
-    scheduleSave(key + '/attr');
-  }
-  function setStyleProp(key, prop, value) {
-    const p = patchFor(key);
-    p.style[prop] = value || null; // empty clears the property (removal)
-    for (const el of targetsForKey(key)) {
-      if (value) el.style.setProperty(prop, value);
-      else el.style.removeProperty(prop);
+    dropPatchIfEmpty(key);
+    if (!(opts && opts.noUndo) && value !== prev) {
+      pushUndo({ kind: 'attr', key: key, attr: name, from: prev, to: value || null });
     }
-    scheduleSave(key + '/style:' + prop);
+    scheduleSave();
   }
-  function setTextContent(key, value, origin) {
+  function setTextContent(key, value, origin, opts) {
     const p = patchFor(key);
     const insts = targetsForKey(key);
     if (p.text == null && insts.length) {
       // First text edit captures seed-route provenance: was = this
-      // instance's pre-edit text (the commit-time value anchor); nth =
+      // instance's pre-edit text (the eject-bake value anchor); nth =
       // its occurrence index, recorded ONLY when instances diverge —
-      // data-backed rows get per-instance commits and per-instance live
+      // data-backed rows get per-instance bakes and per-instance live
       // apply, homogeneous repeats keep every-row semantics; page rides
       // for slug correlation.
       const o = origin && insts.indexOf(origin) >= 0 ? origin : insts[0];
@@ -1996,9 +2377,9 @@
         p.nth = Math.max(0, insts.indexOf(origin));
       }
       p.page = location.pathname;
-      // Locale targeting (2026-08-24): the commit writes ONLY the locale
+      // Locale targeting (2026-08-24): the bake writes ONLY the locale
       // being edited — <html lang> first, else the leading /xx/ pathname
-      // segment. Absent both, the commit updates every locale (old law).
+      // segment. Absent both, the bake updates every locale (old law).
       const hl = (document.documentElement.lang || '').toLowerCase().slice(0, 2);
       if (/^[a-z]{2}$/.test(hl)) p.locale = hl;
       else {
@@ -2006,768 +2387,231 @@
         if (/^[a-z]{2}$/.test(seg)) p.locale = seg;
       }
     }
+    const prev = p.text != null ? p.text : null;
     p.text = value;
     const scoped = p.nth != null && insts[p.nth] ? [insts[p.nth]] : insts;
     for (const el of scoped) {
       if (isTextEditable(el)) el.textContent = value;
     }
-    scheduleSave(key + '/text');
-  }
-
-  // Normalize-on-write (input[type=color] contract, MDN): the color
-  // input only accepts a simple lowercase #rrggbb and renders ANY
-  // other value as #000000 — its documented invalid-value default.
-  // So the chip is a display and this function is the translator:
-  // whatever the model holds (picked hex, typed 3/6-digit hex,
-  // computed rgb()/rgba() in comma OR space syntax, even buried in a
-  // computed shorthand) becomes canonical 7-char hex or null. Feeding
-  // the chip anything else is indistinguishable from black (the
-  // 2026-08-25 23:21 bug: a picked #ff0000 re-rendered through
-  // rgb-only parsing → black chip, red field).
-  function toHex6(v) {
-    const s = String(v == null ? '' : v).trim().toLowerCase();
-    let m = /^#([0-9a-f]{6})$/.exec(s);
-    if (m) return '#' + m[1];
-    m = /^#([0-9a-f]{3})$/.exec(s);
-    if (m) return '#' + m[1].split('').map((c) => c + c).join('');
-    m = /rgba?\(\s*(\d+)\s*[, ]\s*(\d+)\s*[, ]\s*(\d+)/.exec(s);
-    if (m) {
-      const to = (n) => ('0' + Math.min(255, Number(n)).toString(16)).slice(-2);
-      return '#' + to(m[1]) + to(m[2]) + to(m[3]);
+    if (!(opts && opts.noUndo) && value !== prev) {
+      pushUndo({ kind: 'text', key: key, from: prev, to: value });
     }
-    return null;
-  }
-  // The escape hatch parses declarations into STRUCTURED style patches —
-  // the grammar underneath stays the only write path.
-  function parseCss(text) {
-    const out = {};
-    text.split(';').forEach((decl) => {
-      const i = decl.indexOf(':');
-      if (i < 1) return;
-      const k = decl.slice(0, i).trim();
-      const v = decl.slice(i + 1).trim();
-      if (/^[a-zA-Z-]+$/.test(k) && v) out[k] = v;
-    });
-    return out;
+    scheduleSave();
   }
 
-  function requestCommit() {
-    return (async () => {
-      await saveDraft();
-      const r = await api('POST', '/commit', {});
-      if (r && r.ok) say('Commit requested — ' + r.ops.length + ' ops handed to the studio agent');
-      else say(r && r.error ? r.error : 'Commit request failed');
-    })();
-  }
-  // The Edit slide's ledger: one row per draft key with per-key revert, the
-  // parity line, and reset-all (the tray CTA reuses requestCommit — one
-  // action, one home, promoted to the bar).
-  function renderLedger(body) {
-    body.appendChild(h('div', { class: 'sect', text: 'History' }));
-    const ub = h('button', { class: 'btn jundo', text: '↺ Undo', title: 'Cmd+Z' });
-    const rb = h('button', { class: 'btn jredo', text: '↻ Redo', title: 'Shift+Cmd+Z' });
-    ub.addEventListener('click', () => timeTravel(false));
-    rb.addEventListener('click', () => timeTravel(true));
-    body.appendChild(h('div', { class: 'btnrow' }, [ub, rb]));
-    renderJournalUi();
-    body.appendChild(h('div', { class: 'sect', text: 'Draft ledger' }));
-    body.appendChild(h('div', { class: 'draftmeta' }));
-    const keys = Object.keys(S.draft.patches);
-    if (!keys.length && !Object.keys(S.draft.tokens).length) {
-      body.appendChild(h('div', { class: 'ctl', style: 'font-size:12px;color:#9aa0ab', text: 'No pending edits — every change you make in a card lands here first.' }));
-    }
-    keys.forEach((key) => {
-      const d = S.draft.patches[key];
-      const n = patchProps(d);
-      const row = h('div', { class: 'row' });
-      const txt = h('span', { class: 'txt', text: key });
-      const meta = h('div', { class: 'meta' }, [
-        h('span', { text: (d.text != null ? 'text + ' : '') + n + ' style props' }),
-      ]);
-      const x = h('button', { class: 'stbtn', text: 'revert', title: 'Drop this element pending edits' });
-      x.addEventListener('click', async (e) => {
-        e.stopPropagation();
-        delete S.draft.patches[key];
-        S.draftDirty = true;
-        await saveDraft();
-        location.reload(); // re-served without this patch — source state
-      });
-      meta.appendChild(x);
-      row.appendChild(txt);
-      row.appendChild(meta);
-      row.addEventListener('click', () => {
-        const el = targetsForKey(key)[0];
-        if (!el) return;
-        const id = el.getAttribute('data-arxa-id');
-        if (!id) return;
-        if (!S.design) designOn();
-        const k = kindOf(el);
-        // one-focus law: the jump is a selection request like any other
-        // — absorbed while another element holds the focus (the toast
-        // says why); the scroll rides WITH a selection, never alone.
-        if (!selectEl({ id: id, el: el, label: (el.getAttribute('data-el') || el.tagName.toLowerCase()) + ' · ' + k.kind, group: k.group })) return;
-        el.scrollIntoView({ block: 'center', behavior: 'smooth' });
-      });
-      body.appendChild(row);
-    });
-    const reset = h('button', { class: 'btn ghost', text: 'Reset all' });
-    reset.addEventListener('click', async () => {
-      await api('DELETE', '/draft');
-      S.draft.tokens = {};
-      S.draft.patches = {};
-      location.reload();
-    });
-    body.appendChild(h('div', { class: 'btnrow' }, [reset]));
-    renderDraftMeta();
+  // ── the edit bar: session undo/redo + Revert to published ────────────
+  const editBar = h('div', { id: 'editbar' });
+  const undoBtn = h('button', { class: 'ebundo', text: '↺ Undo', title: 'Cmd+Z' });
+  const redoBtn = h('button', { class: 'ebredo', text: '↻ Redo', title: 'Shift+Cmd+Z' });
+  const revertAllBtn = h('button', { class: 'ebrevert', text: 'Revert all', title: 'Drop every live edit — everyone back to the published page' });
+  undoBtn.addEventListener('click', () => { if (S.inlineEditing == null) doUndo(); });
+  redoBtn.addEventListener('click', () => { if (S.inlineEditing == null) doRedo(); });
+  revertAllBtn.addEventListener('click', () => revertPublished());
+  editBar.appendChild(undoBtn);
+  editBar.appendChild(redoBtn);
+  editBar.appendChild(revertAllBtn);
+  root.appendChild(editBar);
+  function updateEditBar() {
+    // Hidden while the tray is open (the sheet owns the corner; the bar
+    // would float over the sheet's glass).
+    editBar.classList.toggle('open', !!S.design && !S.tray);
+    undoBtn.disabled = !S.undoStack.length;
+    redoBtn.disabled = !S.redoStack.length;
+    undoBtn.textContent = '↺ Undo' + (S.undoStack.length ? ' (' + S.undoStack.length + ')' : '');
+    redoBtn.textContent = '↻ Redo' + (S.redoStack.length ? ' (' + S.redoStack.length + ')' : '');
+    revertAllBtn.disabled = !Object.keys(S.overlay.patches).length;
   }
 
-  function renderCardBody(body) {
+  // ── the live chip element (liveChip() paints it) ──────────────────────
+  const liveChipEl = h('div', { id: 'livechip' }, [
+    h('span', { class: 'dot' }),
+    h('span', { text: 'live — updated' }),
+  ]);
+  root.appendChild(liveChipEl);
+
+  // ── the selection chip (the smart card's tiny successor) ──────────────
+  // Text edits happen ON THE CANVAS; the chip anchors to the selection,
+  // says what it is, and carries the element's rare actions: Swap (media)
+  // and Revert (drop this element's edits). It tracks its anchor through
+  // scrolls/resizes/swaps via the float-tracking loop below.
+  const eChip = h('div', { id: 'echip' });
+  root.appendChild(eChip);
+  // The swap ePanel: the eChip's one popover.
+  const ePanel = h('div', { id: 'epanel' });
+  root.appendChild(ePanel);
+
+  function renderChipBody() {
+    eChip.textContent = '';
+    if (!S.selected) return;
     const sel = S.selected;
-    if (!sel) return;
-    const draft = S.draft.patches[sel.key] || {};
-
-    // Content facet — text-bearing elements with no stamped descendants
-    // (see isTextEditable: runtime splitter wrappers are not authored
-    // structure; genuine composites are refused like the grammar's --text).
+    const media = mediaOf(sel.el);
+    eChip.appendChild(h('span', { class: 'elabel', text: sel.label.split(' · ')[0] }));
+    // A stamped wrapper can carry BOTH surfaces (the hero stage holds text
+    // layers AND its video) — the hint and the Swap are not either/or.
     if (isTextEditable(sel.el)) {
-      body.appendChild(h('div', { class: 'sect', text: 'Content' }));
-      const ta = h('textarea', { rows: '2' });
-      ta.value = draft.text != null ? draft.text : sel.el.textContent;
-      ta.addEventListener('input', () => setTextContent(sel.key, ta.value, sel.el));
-      body.appendChild(h('div', { class: 'facet' }, [ta]));
+      eChip.appendChild(h('span', { class: 'hint', text: 'double-click to type' }));
     }
-
-    body.appendChild(h('div', { class: 'sect', text: 'Facets · ' + sel.group }));
-    const cs = getComputedStyle(sel.el);
-    const facets = FACET_GROUPS[sel.group] || FACET_GROUPS.generic;
-    for (const prop of facets) {
-      const has = draft.style && Object.prototype.hasOwnProperty.call(draft.style, prop);
-      const cur = has ? draft.style[prop] : null;
-      const row = h('div', { class: 'facet' }, [h('label', { text: prop })]);
-      let input;
-      if (SELECT_OPTS[prop]) {
-        input = h('select');
-        input.appendChild(h('option', { value: '', text: '—' }));
-        for (const o of SELECT_OPTS[prop]) input.appendChild(h('option', { value: o, text: o }));
-        input.value = cur || '';
-      } else {
-        input = h('input', { type: 'text', placeholder: cs.getPropertyValue(prop) || 'unset' });
-        input.value = cur || '';
-      }
-      input.addEventListener('input', () => setStyleProp(sel.key, prop, input.value.trim()));
-      if (COLOR_PROPS[prop]) {
-        const sw = h('input', { type: 'color', title: 'pick ' + prop });
-        sw.value = toHex6(cur) || toHex6(cs.getPropertyValue(prop)) || '#000000';
-        sw.addEventListener('input', () => {
-          input.value = sw.value;
-          setStyleProp(sel.key, prop, sw.value);
-        });
-        row.appendChild(sw);
-        // Chip-follows-field law (operator, 2026-08-25): a color TYPED
-        // in the hex field is the same edit as one picked in the chip —
-        // the chip must follow the field live, not freeze at its
-        // open-time value (report: green typed, page turned green, the
-        // chip stayed black through every later frame).
-        input.addEventListener('input', () => {
-          const hex = toHex6(input.value.trim());
-          if (hex) sw.value = hex;
-        });
-      }
-      row.appendChild(input);
-      body.appendChild(row);
+    if (media) {
+      const swap = h('button', { text: '⇄ Swap' + (media.tagName === 'VIDEO' ? ' video' : ' image'), title: 'Swap this media' });
+      swap.addEventListener('click', (e) => { e.stopPropagation(); openPanel(); });
+      eChip.appendChild(swap);
     }
-
-    // Media section (slice 4): img/video elements search Unsplash/Pexels
-    // server-side (keys never reach the browser) and pick swaps the src
-    // live — the committed op is an attrs src write through patchFor.
-    if (sel.group === 'media' || sel.el.tagName === 'IMG' || sel.el.tagName === 'VIDEO') {
-      body.appendChild(h('div', { class: 'sect', text: 'Media' }));
-      const isVideo = sel.el.tagName === 'VIDEO';
-      const mrow = h('div', { class: 'facet' });
-      const q = h('input', { type: 'text', placeholder: isVideo ? 'search Pexels video…' : 'search Unsplash + Pexels…' });
-      const go = h('button', { class: 'btn', text: 'Find' });
-      mrow.appendChild(q);
-      mrow.appendChild(go);
-      body.appendChild(mrow);
-      const grid = h('div', { style: 'display:flex;flex-wrap:wrap;gap:6px;padding:6px 10px' });
-      body.appendChild(grid);
-      const creditLine = h('div', { class: 'idline' });
-      body.appendChild(creditLine);
-      go.addEventListener('click', async () => {
-        grid.textContent = '';
-        creditLine.textContent = 'searching…';
-        const r = await api('POST', '/media/search', { q: q.value.trim(), kind: isVideo ? 'video' : 'photo' });
-        grid.textContent = '';
-        if (!r || !r.results) { creditLine.textContent = (r && r.error) || 'search failed'; return; }
-        if (!r.results.length) { creditLine.textContent = 'no results'; return; }
-        r.results.forEach((hit) => {
-          const b = h('button', {
-            title: hit.credit + ' · ' + hit.provider,
-            style: 'width:64px;height:64px;border-radius:8px;overflow:hidden;padding:0;border:1px solid #2a2a35;flex:none',
-          });
-          const im = h('img', { src: hit.thumb, alt: hit.credit, style: 'width:100%;height:100%;object-fit:cover;display:block' });
-          b.appendChild(im);
-          b.addEventListener('click', async () => {
-            creditLine.textContent = 'copying…';
-            const c = await api('POST', '/media/copy', {
-              url: hit.full, name: hit.provider + '-' + hit.id + (isVideo ? '.mp4' : '.jpg'),
-              credit: hit.credit, provider: hit.provider,
-            });
-            if (!c || !c.path) { creditLine.textContent = (c && c.error) || 'copy failed'; return; }
-            setAttrProp(sel.key, 'src', c.path, sel.el);
-            if (isVideo && hit.poster) setAttrProp(sel.key, 'poster', hit.poster, sel.el);
-            creditLine.textContent = '✓ ' + c.path + ' — ' + hit.credit;
-          });
-          grid.appendChild(b);
-        });
-        creditLine.textContent = r.results.length + ' results — tap to swap in';
+    if (S.overlay.patches[sel.key]) {
+      const rev = h('button', { text: 'Revert', title: 'Drop this element’s live edits' });
+      rev.addEventListener('click', (e) => {
+        e.stopPropagation();
+        revertElement(sel.key);
       });
-      // From assets: what the artifact already holds, one tap to reuse.
-      const assetsRow = h('div', { class: 'facet' });
-      const loadAssets = h('button', { class: 'btn ghost', text: 'From assets' });
-      loadAssets.addEventListener('click', async () => {
-        const r = await api('GET', '/media/assets');
-        grid.textContent = '';
-        if (!r || !r.assets) { creditLine.textContent = (r && r.error) || 'asset list failed'; return; }
-        if (!r.assets.length) { creditLine.textContent = 'no local assets yet'; return; }
-        r.assets.forEach((path) => {
-          const b = h('button', { title: path, text: path.split('/').pop(), style: 'font-size:10px;padding:4px 6px;border-radius:6px;border:1px solid #2a2a35;flex:none' });
-          b.addEventListener('click', () => { setAttrProp(sel.key, 'src', path, sel.el); creditLine.textContent = '✓ ' + path; });
-          grid.appendChild(b);
-        });
-      });
-      assetsRow.appendChild(loadAssets);
-      body.appendChild(assetsRow);
+      eChip.appendChild(rev);
     }
-    body.appendChild(h('div', { class: 'sect', text: 'CSS escape hatch' }));
-    const css = h('textarea', { rows: '3' });
-    css.placeholder = 'prop: value; prop: value;';
-    if (draft.style) {
-      css.value = Object.keys(draft.style)
-        .map((k) => k + ': ' + (draft.style[k] == null ? '' : draft.style[k]))
-        .join('; ');
-    }
-    cssEscapeEl = css; // the footer's Apply CSS reads this live
-    body.appendChild(h('div', { class: 'facet' }, [css]));
-  }
-  // the live CSS-escape textarea (owned by the body, read by the
-  // footer's Apply CSS button — the CTA bar is per-tab, not per-body)
-  let cssEscapeEl = null;
-
-  // ── the floating card's bottom CTA bar (operator, 2026-08-26) ────────
-  function renderCardFooter() {
-    cfoot.textContent = '';
-    if (!S.card || !S.selected) return;
-    if (S.cardTab === 'customise') {
-      const apply = h('button', { class: 'btn', text: 'Apply CSS' });
-      apply.addEventListener('click', () => {
-        if (!cssEscapeEl || !S.selected) return;
-        const parsed = parseCss(cssEscapeEl.value);
-        const keys = Object.keys(parsed);
-        if (!keys.length) { say('No valid declarations parsed'); return; }
-        for (const k of keys) setStyleProp(S.selected.key, k, parsed[k]);
-        say(keys.length + (keys.length === 1 ? ' property' : ' properties') + ' applied');
-        renderCardAgain();
-      });
-      cfoot.appendChild(apply);
-      return;
-    }
-    const a = S.arxa[S.selected.key];
-    if (!a || !a.id) {
-      const send = h('button', { class: 'btn', text: 'Send to arxa studio' });
-      send.addEventListener('click', () => sendArxa());
-      cfoot.appendChild(send);
-      return;
-    }
-    const comp = h('button', { class: 'btn', text: '→ composer' });
-    comp.addEventListener('click', () => composeArxa());
-    cfoot.appendChild(comp);
-    const copy = h('button', { class: 'btn ghost', text: 'copy line' });
-    copy.addEventListener('click', () => copyPointerLine());
-    cfoot.appendChild(copy);
-    const again = h('button', { class: 'btn ghost', text: 'send again' });
-    again.addEventListener('click', () => sendArxa());
-    cfoot.appendChild(again);
+    const x = h('button', { class: 'xbtn', text: '×', title: 'Deselect', 'aria-label': 'Deselect' });
+    x.addEventListener('click', (e) => { e.stopPropagation(); clearSelOutline(); });
+    eChip.appendChild(x);
   }
 
-  // ── the Arxa tab (operator, 2026-08-26): the studio handoff lives in
-  //    the floating card now — the panel's green card retired. The pane
-  //    shows everything the old card showed; the CTAs live in the
-  //    footer. No auto-send: viewing the tab sends nothing.
-  function renderArxaPane() {
-    paneArxa.textContent = '';
-    if (!S.selected) return;
-    const sel = S.selected;
-    const a = S.arxa[sel.key];
-    if (!a || !a.id) {
-      paneArxa.appendChild(h('div', { class: 'sect', text: 'arxa studio' }));
-      paneArxa.appendChild(h('div', { class: 'arxaline',
-        text: 'Send this element to the arxa studio composer. The agent receives an organized context — identity, computed styles, a snapshot — and edits ONLY this element via the design patch contract.' }));
-      return;
-    }
-    paneArxa.appendChild(h('div', { class: 'sect', text: 'arxa studio' }));
-    paneArxa.appendChild(h('div', { class: 'arxaid', text: '✨ design selection ' + a.id }));
-    const chips = h('div', { style: 'display:flex;gap:4px;flex-wrap:wrap;padding:4px 10px' });
-    chips.appendChild(h('span', { class: 'kchip', text: a.label || 'element' }));
-    chips.appendChild(h('span', { class: 'kchip', text: (a.kind || '') + ' · ' + (a.group || '') }));
-    chips.appendChild(h('span', { class: 'kchip', text: a.route || '/' }));
-    paneArxa.appendChild(chips);
-    if (a.png) paneArxa.appendChild(h('div', { class: 'arxaline',
-      text: '📸 snapshot captured — “→ composer” attaches it to the draft' }));
-    if (a.text) paneArxa.appendChild(h('div', { class: 'arxaline',
-      style: 'white-space:nowrap;overflow:hidden;text-overflow:ellipsis',
-      text: '“' + a.text.slice(0, 90) + '”' }));
-    paneArxa.appendChild(h('div', { class: 'arxaline',
-      text: 'the agent fetches the organized context (styles · law · screenshot) from the design server and edits ONLY this element' }));
-    if (a.status) {
-      const st = h('div', { class: 'arxastatus' + (a.statusOk ? ' ok' : ''), text: a.status });
-      paneArxa.appendChild(st);
-    }
+  function positionChip() {
+    if (!S.selected || !S.chipOpen) { return; }
+    const el = S.selected.el;
+    if (!el.isConnected) { closeChip(); return; }
+    eChip.classList.add('open');
+    S.chipOpen = true;
+    const r = el.getBoundingClientRect();
+    // anchor: centered under the element's top edge; flip above when the
+    // element hugs the top; clamp inside the viewport.
+    const cw = eChip.offsetWidth || 200;
+    let x = r.left + r.width / 2 - cw / 2;
+    x = Math.min(Math.max(8, x), Math.max(8, innerWidth - cw - 8));
+    const ch = eChip.offsetHeight || 34;
+    let y = r.top - ch - 8;
+    if (y < 8) y = Math.min(r.bottom + 8, Math.max(8, innerHeight - ch - 8));
+    eChip.style.left = x + 'px';
+    eChip.style.top = y + 'px';
+    if (ePanel.classList.contains('open')) positionPanel();
+  }
+  function openChip() {
+    S.chipOpen = true;
+    renderChipBody();
+    positionChip();
+    dialPanelChanged();
+  }
+  function closeChip() {
+    S.chipOpen = false;
+    eChip.classList.remove('open');
+    closePanel();
+    dialPanelChanged();
   }
 
-  // sendArxa = the old askArxa, relocated into the tab flow: capture +
-  // POST, then remember the handoff per element (in-session) so the
-  // pane keeps its sent state through card close/reopen.
-  async function sendArxa() {
+  function positionPanel() {
+    const cw = ePanel.offsetWidth || 280;
+    let x = eChip.offsetLeft;
+    x = Math.min(Math.max(8, x), Math.max(8, innerWidth - cw - 8));
+    let y = eChip.offsetTop + eChip.offsetHeight + 6;
+    const ph = ePanel.offsetHeight || 160;
+    if (y + ph > innerHeight - 8) y = Math.max(8, eChip.offsetTop - ph - 6);
+    ePanel.style.left = x + 'px';
+    ePanel.style.top = y + 'px';
+  }
+  function closePanel() {
+    ePanel.classList.remove('open');
+  }
+  function ePanelOpen() {
+    return ePanel.classList.contains('open');
+  }
+  function openPanel() {
+    renderPanelBody();
+    ePanel.classList.add('open');
+    positionPanel();
+  }
+
+  // The swap surface (decision 8): the local designer keeps its server-side
+  // search + from-assets (provider keys never reach the browser); the
+  // deployed site has no /__dial server, so it gets a paste-URL field. Both
+  // write the SAME attrs patch and stream like any other edit.
+  function renderPanelBody() {
+    ePanel.textContent = '';
     const sel = S.selected;
     if (!sel) return;
-    const a = S.arxa[sel.key] || (S.arxa[sel.key] = {});
-    a.status = 'capturing…'; a.statusOk = false;
-    renderArxaPane(); renderCardFooter();
-    const cs = getComputedStyle(sel.el);
-    const digest = {};
-    ['font-size', 'font-weight', 'line-height', 'color', 'background-color',
-      'padding', 'gap', 'border-radius'].forEach((p) => {
-      const v = cs.getPropertyValue(p);
-      if (v) digest[p] = v.trim();
-    });
-    say('Capturing selection…');
-    const png = await captureElement(sel.el);
-    const r = await api('POST', '/selection', {
-      // Protocol v2 (2026-08-26): the tabbed card's Send STORES the
-      // selection; only → composer inserts it (no auto-send law). The
-      // marker rides the broadcast frame so a v2-aware panel can tell
-      // this apart from a stale pre-tabs island whose ask WAS the whole
-      // flow — v-less frames still deliver straight to the composer.
-      v: 2,
-      key: sel.key,
-      label: sel.label,
-      kind: sel.el.tagName.toLowerCase(),
-      group: sel.group,
-      route: location.pathname,
-      text: sel.el.textContent.trim().slice(0, 400) || undefined,
-      styles: digest,
-      png: png || undefined,
-    });
-    if (r && r.id) {
-      a.id = r.id;
-      a.fetch = r.fetch;
-      a.label = sel.label.split(' · ')[0];
-      a.kind = sel.el.tagName.toLowerCase();
-      a.group = sel.group;
-      a.route = location.pathname;
-      a.png = !!png;
-      a.text = sel.el.textContent.trim().slice(0, 90);
-      a.status = ''; a.statusOk = false;
-      say('Sent to arxa studio — design selection ' + r.id);
-    } else {
-      a.status = (r && r.error) || 'send failed'; a.statusOk = false;
-      say((r && r.error) || 'handoff failed');
-    }
-    renderArxaPane(); renderCardFooter();
-  }
-
-  // → composer: POST /compose; the panel (always-on SSE) inserts the
-  // pointer line + snapshot into the composer and acks; the ack rides
-  // the same dial event stream back here. The button never fakes a ✓ —
-  // the status line waits for the REAL ack (4s budget).
-  let composeWaiter = null;
-  async function composeArxa() {
-    const sel = S.selected;
-    const a = sel && S.arxa[sel.key];
-    if (!a || !a.id) return;
-    a.status = 'sending to composer…'; a.statusOk = false; a.ackFalse = false;
-    renderArxaPane(); renderCardFooter();
-    // api() never throws and returns the parsed body — an error body
-    // carries {error}, a success carries {id}.
-    const r = await api('POST', '/compose', { id: a.id });
-    if (!r || !r.id) {
-      a.status = (r && r.error) || 'compose failed'; a.statusOk = false;
-      renderArxaPane(); renderCardFooter();
+    const isVideo = sel.el.tagName === 'VIDEO';
+    if (S.static) {
+      ePanel.appendChild(h('div', { class: 'sect', text: 'Swap ' + (isVideo ? 'video' : 'image') }));
+      const row = h('div', { class: 'prow' });
+      const url = h('input', { type: 'text', placeholder: 'https://… image url' });
+      const go = h('button', { class: 'btn', text: 'Swap' });
+      row.appendChild(url);
+      row.appendChild(go);
+      ePanel.appendChild(row);
+      const note = h('div', { class: 'pnote', text: 'Paste any image URL — it goes live for every viewer.' });
+      ePanel.appendChild(note);
+      const apply = () => {
+        const v = url.value.trim();
+        if (!/^https:\/\//.test(v)) { note.textContent = 'Only https:// URLs.'; return; }
+        setAttrProp(sel.key, 'src', v, sel.el);
+        note.textContent = '✓ swapped — live';
+        closePanel();
+      };
+      go.addEventListener('click', apply);
+      url.addEventListener('keydown', (e) => { if (e.key === 'Enter') apply(); e.stopPropagation(); });
       return;
     }
-    if (composeWaiter) clearTimeout(composeWaiter);
-    composeWaiter = setTimeout(() => {
-      composeWaiter = null;
-      const cur = S.selected && S.arxa[S.selected.key];
-      if (cur && cur.id === a.id && cur.status === 'sending to composer…') {
-        cur.status = cur.ackFalse
-          ? 'studio found no open composer — click into a session, '
-            + 'then → composer again'
-          : 'no studio answered — is arxa studio open AND reloaded?';
-        cur.ackFalse = false;
-        cur.statusOk = false;
-        if (S.card) { renderArxaPane(); }
-      }
-    }, 4000);
-  }
-
-  function pointerLineFor(a) {
-    return 'design selection #' + (a.id || '') + ' · ' + (a.label || 'element') +
-      ' · ' + (a.route || '/') +
-      ' · fetch ' + location.origin + (a.fetch || '/__dial/selection/' + (a.id || '')) +
-      ' — edit ONLY this element via the design patch contract; structure is locked.';
-  }
-  async function copyPointerLine() {
-    const sel = S.selected;
-    const a = sel && S.arxa[sel.key];
-    if (!a || !a.id) return;
-    const line = pointerLineFor(a);
-    try {
-      await navigator.clipboard.writeText(line);
-      say('Pointer line copied');
-      return;
-    } catch (_) {}
-    // clipboard API refused (iframe without clipboard-write, insecure
-    // context): deprecated-but-universal fallback, then honest failure.
-    try {
-      const ta = h('textarea', { style: 'position:fixed;left:-9999px' });
-      ta.value = line;
-      root.appendChild(ta);
-      ta.select();
-      document.execCommand('copy');
-      ta.remove();
-      say('Pointer line copied');
-    } catch (_) {
-      say('Copy blocked — line: ' + line);
-    }
-  }
-
-  // ── the token tier (global design tokens, decision 3) ──────────────────
-  function pageTokenNames() {
-    const names = [];
-    for (const sheet of document.styleSheets) {
-      let rules;
-      try { rules = sheet.cssRules; } catch (_) { continue; } // cross-origin sheet
-      for (const r of rules) {
-        if (r.selectorText && (r.selectorText === ':root' || r.selectorText === 'html')) {
-          for (const p of r.style) {
-            if (p.indexOf('--') === 0 && names.indexOf(p) === -1) names.push(p);
-          }
-        }
-      }
-    }
-    for (const k of Object.keys(S.draft.tokens)) if (names.indexOf(k) === -1) names.push(k);
-    return names.sort();
-  }
-
-  let tokenStyleEl = null;
-  function applyTokensLive() {
-    if (!tokenStyleEl) {
-      tokenStyleEl = document.createElement('style');
-      tokenStyleEl.id = 'arxa-draft-tokens-live';
-      document.head.appendChild(tokenStyleEl); // page-level: shadow styles cannot reach the design
-    }
-    const decls = Object.keys(S.draft.tokens).map((k) => k + ': ' + S.draft.tokens[k]).join('; ');
-    tokenStyleEl.textContent = ':root{' + decls + '}';
-  }
-
-  function renderTokensBody(body) {
-    body.appendChild(h('div', { class: 'ctl', style: 'font-size:12px;color:#9aa0ab', text: 'The design tokens this page declares (:root custom properties). Edits override live and auto-save to the Draft Overlay.' }));
-    const rootCs = getComputedStyle(document.documentElement);
-    const names = pageTokenNames();
-    if (!names.length) {
-      body.appendChild(h('div', { class: 'ctl', style: 'font-size:12px', text: 'No :root custom properties found — add an override below.' }));
-    }
-    for (const name of names) {
-      const row = h('div', { class: 'facet' }, [h('label', { text: name, title: name })]);
-      const input = h('input', { type: 'text', placeholder: rootCs.getPropertyValue(name).trim() || 'unset' });
-      input.value = S.draft.tokens[name] || '';
-      input.addEventListener('input', () => {
-        const v = input.value.trim();
-        if (v) S.draft.tokens[name] = v;
-        else delete S.draft.tokens[name];
-        applyTokensLive();
-        scheduleSave('tok:' + name);
+    // Local designer: the media proxy (unchanged law — keys server-side).
+    ePanel.appendChild(h('div', { class: 'sect', text: 'Swap ' + (isVideo ? 'video' : 'image') }));
+    const row = h('div', { class: 'prow' });
+    const q = h('input', { type: 'text', placeholder: isVideo ? 'search Pexels video…' : 'search Unsplash + Pexels…' });
+    const go = h('button', { class: 'btn', text: 'Find' });
+    row.appendChild(q);
+    row.appendChild(go);
+    ePanel.appendChild(row);
+    const grid = h('div', { class: 'pgrid' });
+    ePanel.appendChild(grid);
+    const creditLine = h('div', { class: 'pnote' });
+    ePanel.appendChild(creditLine);
+    go.addEventListener('click', async () => {
+      grid.textContent = '';
+      creditLine.textContent = 'searching…';
+      const r = await api('POST', '/media/search', { q: q.value.trim(), kind: isVideo ? 'video' : 'photo' });
+      grid.textContent = '';
+      if (!r || !r.results) { creditLine.textContent = (r && r.error) || 'search failed'; return; }
+      if (!r.results.length) { creditLine.textContent = 'no results'; return; }
+      r.results.forEach((hit) => {
+        const b = h('button', { title: hit.credit + ' · ' + hit.provider, style: 'width:64px;height:64px' });
+        const im = h('img', { src: hit.thumb, alt: hit.credit, style: 'width:100%;height:100%;object-fit:cover;display:block' });
+        b.appendChild(im);
+        b.addEventListener('click', async () => {
+          creditLine.textContent = 'copying…';
+          const c = await api('POST', '/media/copy', {
+            url: hit.full, name: hit.provider + '-' + hit.id + (isVideo ? '.mp4' : '.jpg'),
+            credit: hit.credit, provider: hit.provider,
+          });
+          if (!c || !c.path) { creditLine.textContent = (c && c.error) || 'copy failed'; return; }
+          setAttrProp(sel.key, 'src', c.path, sel.el);
+          if (isVideo && hit.poster) setAttrProp(sel.key, 'poster', hit.poster, sel.el);
+          creditLine.textContent = '✓ ' + c.path;
+          closePanel();
+        });
+        grid.appendChild(b);
       });
-      row.appendChild(input);
-      body.appendChild(row);
-    }
-    body.appendChild(h('div', { class: 'sect', text: 'New token override' }));
-    const nameIn = h('input', { type: 'text', placeholder: '--token-name' });
-    const valIn = h('input', { type: 'text', placeholder: 'value' });
-    const add = h('button', { class: 'btn', text: 'Add' });
-    add.addEventListener('click', () => {
-      const n = nameIn.value.trim();
-      const v = valIn.value.trim();
-      if (!/^--[a-zA-Z0-9-]+$/.test(n) || !v) { say('A token needs a --name and a value'); return; }
-      S.draft.tokens[n] = v;
-      applyTokensLive();
-      scheduleSave('tok:' + n);
-      renderTraySlide('tweak');
+      creditLine.textContent = r.results.length + ' results — tap to swap in';
     });
-    body.appendChild(h('div', { class: 'facet' }, [nameIn]));
-    body.appendChild(h('div', { class: 'facet' }, [valIn]));
-    body.appendChild(h('div', { class: 'btnrow' }, [add]));
-  }
-
-
-  // ── element capture (Ask arxa, slice 7): best-effort PNG of the
-  // selection for the composer's image rail. foreignObject rasterization
-  // with computed styles inlined and <img> swapped to same-origin data
-  // URLs; ANY failure returns null — the handoff proceeds without the
-  // image (the server context still carries text + styles).
-  async function captureElement(el) {
-    try {
-      const r = el.getBoundingClientRect();
-      const w = Math.min(480, Math.max(2, Math.round(r.width)));
-      const h = Math.max(2, Math.round(r.height * (w / r.width)));
-      const clone = el.cloneNode(true);
-      const cs = getComputedStyle(el);
-      const pick = ['font', 'color', 'background', 'padding', 'margin',
-        'display', 'flex-direction', 'gap', 'align-items', 'justify-content',
-        'border', 'border-radius', 'width', 'height', 'overflow'];
-      // Computed font families arrive double-quoted ("Inter") — inside the
-      // double-quoted style="..." XML attribute they would break the SVG
-      // parse and the raster load dies with onerror (measured). Single-
-      // quote them; CSS treats both as identical.
-      const decls = pick
-        .filter((p) => cs.getPropertyValue(p))
-        .map((p) => p + ':' + cs.getPropertyValue(p))
-        .join(';')
-        .replace(/"/g, "'");
-      // Same-origin imgs → data URLs or drop them (a tainted canvas would
-      // kill the whole export).
-      const imgs = [...clone.querySelectorAll('img')];
-      imgs.forEach((im) => {
-        try {
-          const c = document.createElement('canvas');
-          c.width = im.naturalWidth || 100; c.height = im.naturalHeight || 100;
-          c.getContext('2d').drawImage(im, 0, 0);
-          if (c.width && c.height) im.src = c.toDataURL('image/png');
-        } catch (_) { im.remove(); }
+    const assetsRow = h('div', { class: 'prow' });
+    const loadAssets = h('button', { class: 'btn ghost', text: 'From assets' });
+    loadAssets.addEventListener('click', async () => {
+      const r = await api('GET', '/media/assets');
+      grid.textContent = '';
+      if (!r || !r.assets) { creditLine.textContent = (r && r.error) || 'asset list failed'; return; }
+      if (!r.assets.length) { creditLine.textContent = 'no local assets yet'; return; }
+      r.assets.forEach((path) => {
+        const b = h('button', { title: path, text: path.split('/').pop(), style: 'font-size:10px;padding:4px 6px' });
+        b.addEventListener('click', () => { setAttrProp(sel.key, 'src', path, sel.el); closePanel(); });
+        grid.appendChild(b);
       });
-      const svg = '<svg xmlns="http://www.w3.org/2000/svg" width="' + w + '" height="' + h + '">' +
-        '<foreignObject width="100%" height="100%">' +
-        '<div xmlns="http://www.w3.org/1999/xhtml" style="' + decls + '">' +
-        new XMLSerializer().serializeToString(clone) + '</div></foreignObject></svg>';
-      const url = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
-      const img = new Image();
-      img.src = url;
-      // SVG data URLs decode asynchronously — drawing before load yields
-      // a blank raster. Wait it out; a decode failure is a null capture.
-      await new Promise((res, rej) => {
-        img.onload = res;
-        img.onerror = rej;
-        setTimeout(rej, 2500);
-      });
-      const canvas = document.createElement('canvas');
-      canvas.width = w; canvas.height = h;
-      const ctx = canvas.getContext('2d');
-      ctx.drawImage(img, 0, 0);
-      return canvas.toDataURL('image/png');
-    } catch (_) {
-      return null;
-    }
-  }
-
-  // ── the floating smart card (Edit Mode's inspector) ───────────────────
-  // Dropdown-style smart anchor: prefer the element's right, flip left on
-  // clip, clamp on both axes, vertical flip when the bottom would clip.
-  const card = h('div', { id: 'card' });
-  const chead = h('div', { id: 'chead' });
-  const cidrow = h('div', { id: 'cidrow' });
-  const cbodyEl = h('div', { class: 'cbody' });
-  const cfoot = h('div', { id: 'cfoot' });
-  card.appendChild(chead);
-  card.appendChild(cidrow);
-  card.appendChild(cbodyEl);
-  card.appendChild(cfoot);
-  root.appendChild(card);
-  // the two tab panes live inside the scrolling body; the identity row
-  // and both bars stay fixed. Toggling is display-only — a switch never
-  // re-renders inputs, so facet values and focus survive.
-  const paneCustomise = h('div', { class: 'tabpane' });
-  const paneArxa = h('div', { class: 'tabpane' });
-  cbodyEl.appendChild(paneCustomise);
-  cbodyEl.appendChild(paneArxa);
-
-  // CARD DRAG (operator, 2026-08-26): the card is anchored by default
-  // (dropdown anchor + float tracking) but the header is a grab handle —
-  // a manual drag OVERRIDES the anchor law. The drop point becomes a
-  // pin: positionCard honors it (clamped to the viewport) instead of
-  // re-deriving from the element, so a dragged card stays where it was
-  // dropped through scrolls and resizes. Opening the card again on a
-  // fresh selection clears the pin and re-anchors.
-  let cardPin = null;
-  chead.addEventListener('pointerdown', (e) => {
-    if (e.pointerType === 'mouse' && e.button !== 0) return;
-    if (e.target.closest('button')) return;
-    const grab = card.getBoundingClientRect();
-    const ox = e.clientX - grab.left, oy = e.clientY - grab.top;
-    const place = (cx, cy) => {
-      const x = Math.min(Math.max(8, cx - ox),
-        Math.max(8, innerWidth - grab.width - 8));
-      const y = Math.min(Math.max(8, cy - oy),
-        Math.max(8, innerHeight - grab.height - 8));
-      card.style.left = x + 'px';
-      card.style.top = y + 'px';
-      cardPin = { x, y };
-    };
-    const move = (ev) => place(ev.clientX, ev.clientY);
-    const done = () => {
-      chead.removeEventListener('pointermove', move);
-      chead.removeEventListener('pointerup', done);
-      chead.removeEventListener('pointercancel', done);
-    };
-    // Pointer capture keeps the drag alive when the cursor leaves the
-    // card and makes the post-drag click land on the header (never on
-    // a row the card happens to pass over).
-    try { chead.setPointerCapture(e.pointerId); } catch (_) {}
-    chead.addEventListener('pointermove', move);
-    chead.addEventListener('pointerup', done);
-    chead.addEventListener('pointercancel', done);
-    e.preventDefault();
-  });
-
-  function positionCard() {
-    if (!S.selected) return;
-    const W = 300, GAP = 12;
-    if (cardPin) { // manual drop wins over the anchor law
-      const ch = card.offsetHeight || 240;
-      const x = Math.min(Math.max(8, cardPin.x), Math.max(8, innerWidth - W - 8));
-      const y = Math.min(Math.max(8, cardPin.y), Math.max(8, innerHeight - ch - 8));
-      card.style.left = x + 'px';
-      card.style.top = y + 'px';
-      return;
-    }
-    const r = S.selected.el.getBoundingClientRect();
-    let x = r.right + GAP;
-    if (x + W > innerWidth - 8) x = r.left - W - GAP;
-    if (x < 8) x = Math.min(Math.max(8, r.left), Math.max(8, innerWidth - W - 8));
-    const ch = card.offsetHeight || 240;
-    let y = r.top;
-    if (y + ch > innerHeight - 8) y = r.top + r.height - ch;
-    y = Math.min(Math.max(8, y), Math.max(8, innerHeight - ch - 8));
-    card.style.left = x + 'px';
-    card.style.top = y + 'px';
-  }
-  function renderCardAgain() {
-    if (!S.card) return;
-    paneCustomise.textContent = '';
-    renderCardBody(paneCustomise);
-    positionCard();
-  }
-  // Reactivity law (operator, 2026-08-26): an OPEN card documents its
-  // element LIVE — every external restyle (a draft sync, an axes
-  // publish or preview pick) re-renders the facets so the swatch never
-  // lies about the page. Two guards: while the author is mid-edit
-  // inside the card a re-render would drop their cursor, so that beat
-  // is skipped (the next one catches up); and the CSS escape hatch is
-  // deferred-until-Apply by design, so its unapplied text survives
-  // every re-render instead of silently disappearing.
-  let cardRefreshPending = false;
-  function refreshOpenCard() {
-    if (!S.card || !S.selected) return;
-    // Shadow-retargeting law: document.activeElement returns the HOST
-    // when the focused element lives inside this shadow root, so the
-    // guard must ask the ROOT (ShadowRoot.activeElement is not
-    // retargeted) or every mid-edit frame would slip past the skip and
-    // re-render under the author's cursor.
-    const a = (root.activeElement || document.activeElement);
-    if (a && card.contains(a) &&
-        (a.tagName === 'INPUT' || a.tagName === 'TEXTAREA' ||
-         a.tagName === 'SELECT')) {
-      // The beat is DEFERRED, not dropped: when focus later leaves the
-      // card the deferred refresh runs (the focusout hook below). A
-      // dropped beat left the card stale forever — the report's chip
-      // stayed black through every frame after one guard fired.
-      cardRefreshPending = true;
-      return;
-    }
-    const unapplied = cssEscapeEl ? cssEscapeEl.value : '';
-    renderCardAgain();
-    if (cssEscapeEl && unapplied.trim()) cssEscapeEl.value = unapplied;
-    cardRefreshPending = false;
-  }
-  // Catch-up half of the reactivity law: focusout bubbles out of every
-  // card field; a tick later (focus has settled) a deferred refresh
-  // runs — unless focus moved to ANOTHER field inside the card (that
-  // field's own guard re-defers on its frames, and re-rendering under
-  // a fresh cursor is exactly what the guard exists to prevent).
-  card.addEventListener('focusout', () => {
-    setTimeout(() => {
-      if (!cardRefreshPending || !S.card) return;
-      const a = (root.activeElement || document.activeElement);
-      if (a && card.contains(a)) return;
-      refreshOpenCard();
-    }, 0);
-  });
-  function openCard() {
-    if (!S.selected) return;
-    S.card = S.selected.key;
-    cardPin = null; // a fresh open re-anchors (drag law above)
-    // TAB LAW (operator, 2026-08-26): Customise is the default; a
-    // different element never inherits the last tab; the SAME element
-    // restores the tab it had when the card closed.
-    S.cardTab = S.cardTabs[S.selected.key] === 'arxa' ? 'arxa' : 'customise';
-    chead.textContent = '';
-    for (const [tid, tlabel] of [['customise', 'Customise'], ['arxa', 'Arxa']]) {
-      const tb = h('button', { class: 'tab', 'data-tab': tid, text: tlabel });
-      tb.addEventListener('click', (e) => { e.stopPropagation(); setCardTab(tid); });
-      chead.appendChild(tb);
-    }
-    const go = h('button', {
-      class: 'cgo', title: 'Track back to the selected element',
-      'aria-label': 'Track back to the selected element',
     });
-    go.innerHTML = ICONS.dial; // the crosshair
-    go.addEventListener('click', (e) => { e.stopPropagation(); trackBack(); });
-    chead.appendChild(go);
-    const x = h('button', { class: 'cclose', title: 'Close card', 'aria-label': 'Close card', text: '×' });
-    x.addEventListener('click', (e) => { e.stopPropagation(); closeCard(); });
-    chead.appendChild(x);
-    cidrow.textContent = '';
-    cidrow.appendChild(h('span', { text: S.selected.label.split(' · ')[0] }));
-    cidrow.appendChild(h('span', { class: 'kchip', text: S.selected.group }));
-    cidrow.appendChild(h('div', { class: 'idline', text: S.selected.key === S.selected.id ? S.selected.id : S.selected.id + ' → ' + S.selected.key }));
-    card.classList.add('open');
-    paneCustomise.textContent = '';
-    renderCardBody(paneCustomise);
-    renderArxaPane();
-    setCardTab(S.cardTab);
-    positionCard();
-    dialPanelChanged();
+    assetsRow.appendChild(loadAssets);
+    ePanel.appendChild(assetsRow);
   }
-  function setCardTab(t) {
-    S.cardTab = t;
-    if (S.selected) S.cardTabs[S.selected.key] = t;
-    paneCustomise.classList.toggle('on', t === 'customise');
-    paneArxa.classList.toggle('on', t === 'arxa');
-    [...chead.querySelectorAll('.tab')].forEach((b) =>
-      b.classList.toggle('on', b.getAttribute('data-tab') === t));
-    renderCardFooter();
-  }
-  function closeCard() {
-    S.card = null;
-    cardPin = null;
-    card.classList.remove('open');
-    dialPanelChanged();
-  }
-  // TRACK-BACK (operator, 2026-08-26): "i want to get back to the
-  // selected element from the floating card ... even if scrolled or
-  // navigated between pages". Three tiers, one button: the element is
-  // still in this document → center it (BOTH axes — this design
-  // scrolls horizontally); a same-page swap killed the node but the
-  // identity lives here → rebind and center; the element lived on
-  // ANOTHER route (hx-boost wipes body children while the island,
-  // off-body, floats on) → stash {key, nth, route} and navigate home;
-  // the fresh boot's restoreTrackback rebuilds the selection centered.
-  // SMOOTH-SCROLL LAW: this artifact owns the wheel (a Lenis-style
-  // lerp on the GSAP ticker — window.NIBSmoothScroll). It resyncs on
-  // scrolls it did not drive, so scrollIntoView survives, but the
-  // page's own scrollTo is the first-class path: element at top +
-  // offset centers it, animated at the site's own easing.
+
+  // centerElement (kept from the card era): the smooth-scroll law — the
+  // artifact may own the wheel (NIBSmoothScroll); scrollIntoView survives,
+  // and the lib's scrollTo is the first-class path.
   function centerElement(el) {
     try {
       const lib = window.NIBSmoothScroll;
@@ -2781,38 +2625,13 @@
     } catch (_) {}
     el.scrollIntoView({ block: 'center', inline: 'center' });
   }
-  function trackBack() {
-    if (!S.selected) return;
-    const sel = S.selected;
-    if (sel.el && sel.el.isConnected) {
-      centerElement(sel.el);
-      return;
-    }
-    const insts = targetsForKey(sel.key).filter((x) => x.isConnected);
-    if (insts.length && sel.route === location.pathname) {
-      const el = insts[Math.min(sel.nth || 0, insts.length - 1)];
-      const k = kindOf(el);
-      selectEl({
-        id: el.getAttribute('data-arxa-id'), el: el,
-        label: (el.getAttribute('data-el') || el.tagName.toLowerCase()) + ' · ' + k.kind,
-        group: k.group,
-      });
-      centerElement(el);
-      return;
-    }
-    try {
-      sessionStorage.setItem('arxa-dial-trackback', JSON.stringify({
-        key: sel.key, nth: sel.nth || 0, route: sel.route || '/',
-      }));
-    } catch (_) {}
-    location.assign(sel.route || '/');
-  }
+
   // FLOAT TRACKING (improvement 2, floating-ui autoUpdate practice,
   // 2026-08-25): an anchored panel re-derives its position on every
   // frame-worthy signal — capture-phase scroll (scroll does not bubble,
   // capture still sees nested scroll containers), window resize, and one
   // rAF to coalesce bursts so a fast wheel never thrashes layout reads.
-  // Before this the card clamped ONCE at open and then sat still while
+  // Before this the chip clamped ONCE at open and then sat still while
   // its anchor scrolled out from under it.
   let floatTrackRaf = false;
   function trackFloats() {
@@ -2820,7 +2639,7 @@
     floatTrackRaf = true;
     requestAnimationFrame(() => {
       floatTrackRaf = false;
-      if (S.card) positionCard();
+      if (S.chipOpen) positionChip();
       if (threadPin) positionThread();
     });
   }
@@ -2852,17 +2671,36 @@
     host.classList.toggle('nomotion', !TWEAK.motion);
   }
 
-  // ── the axes plane (arc 1, 2026-08-25): style/theme, dial-owned ────────
+  // ── the axes plane: style/theme/palette, dial-owned ──────────────────
   // The server already rendered the active pick into the page; these flip
-  // it live in THIS document (link.disabled + the html data-theme attr) and
-  // keep the URL honest — the URL is the receipt (the Storybook-globals
-  // pattern). Authors publish via POST /__dial/axes; guests only ride the
-  // URL, and a persistent badge marks on-screen ≠ published.
+  // it live in THIS document (link.disabled + the html data-theme attr +
+  // the design's own palette.js) and keep the URL honest — the URL is the
+  // receipt (the Storybook-globals pattern). Authors publish via POST
+  // /__dial/axes; guests ride the URL for style/theme as before, but a
+  // PALETTE pick publishes for everyone — the share link is the
+  // authorization. A persistent badge marks on-screen ≠ published.
   function axesPreviewing() {
+    // In-flight publishes are not previews (operator, 2026-09-09): a palette
+    // pick IS a publish — without this gate the pvnote flashed in/out for
+    // the round-trip's duration and the bottom-anchored tray JUMPED ~55px
+    // on every pick. The note still appears the moment a publish FAILS
+    // (published stays stale) and for guest style/theme previews, which
+    // never enter flight at all.
+    if (S.publishing) return false;
     return !!S.axes && (S.axes.current.style !== S.axes.published.style ||
-      S.axes.current.theme !== S.axes.published.theme);
+      S.axes.current.theme !== S.axes.published.theme ||
+      S.axes.current.palette !== S.axes.published.palette ||
+      !fontPickEq(S.axes.current.font, S.axes.published.font));
   }
-  function applyAxes(style, theme) {
+  // role -> choice-id maps compare by key set + values (the independence
+  // law's preview compare: one role flipped = previewing).
+  function fontPickEq(a, b) {
+    a = a || {}; b = b || {};
+    const ka = Object.keys(a), kb = Object.keys(b);
+    if (ka.length !== kb.length) return false;
+    return ka.every((k) => a[k] === b[k]);
+  }
+  function applyAxes(style, theme, palette, font) {
     document.querySelectorAll('link[data-axes-style]').forEach((link) => {
       link.disabled = link.getAttribute('data-axes-style') !== style;
     });
@@ -2871,26 +2709,58 @@
     } else {
       document.documentElement.setAttribute('data-theme', theme);
     }
-    S.axes.current = { style: style, theme: theme || 'system' };
+    // The palette is the page's own plane: palette.js (a script the design
+    // ships) owns applying it — the dial only hands the id over, and a
+    // design without palette.js simply ignores the pick.
+    if (typeof palette === 'string' && palette &&
+        window.__arxaPalette && window.__arxaPalette.set) {
+      window.__arxaPalette.set(palette);
+    }
+    // The font plane is the page's own plane the same way: font.js owns
+    // the attributes + the css2 link; the dial only hands the picks over.
+    if (font && window.__arxaFont && window.__arxaFont.set) {
+      Object.keys(font).forEach((role) => window.__arxaFont.set(role, font[role]));
+    }
+    S.axes.current = {
+      style: style, theme: theme || 'system', palette: palette || '',
+      font: font || S.axes.current.font || {},
+    };
     syncAxesUrl();
     updatePreviewMark();
-    // An axes flip restyles every element at stylesheet level — an
-    // open card's facets must follow or its swatches go stale against
-    // the page (the reactivity law above; same guard applies).
-    refreshOpenCard();
-    if (S.tray === 'style') renderTraySlide('style');
+    if (S.tray === 'theme') renderTraySlide('theme');
+    if (S.tray === 'fonts') renderTraySlide('fonts');
   }
   function syncAxesUrl() {
     try {
       const url = new URL(location.href);
       const current = S.axes.current, published = S.axes.published;
+      const fontMatch = fontPickEq(current.font, published.font);
       if (current.style === published.style &&
-          current.theme === published.theme) {
+          current.theme === published.theme &&
+          current.palette === published.palette &&
+          fontMatch) {
         url.searchParams.delete('style');
         url.searchParams.delete('theme');
+        url.searchParams.delete('palette');
+        url.searchParams.delete('font');
       } else {
-        url.searchParams.set('style', current.style);
+        // style joins the receipt only when there IS one — palette-only
+        // site axes must not stamp an empty ?style= into the URL. Theme
+        // stays verbatim (the app law), palette deletes when cleared.
+        if (current.style) url.searchParams.set('style', current.style);
+        else url.searchParams.delete('style');
         url.searchParams.set('theme', current.theme);
+        if (current.palette) url.searchParams.set('palette', current.palette);
+        else url.searchParams.delete('palette');
+        // The font receipt rides comma-joined role:id pairs — the same
+        // shape the serve seam parses.
+        if (!fontMatch) {
+          const sig = Object.keys(current.font || {}).map((r) => r + ':' + current.font[r]).join(',');
+          if (sig) url.searchParams.set('font', sig);
+          else url.searchParams.delete('font');
+        } else {
+          url.searchParams.delete('font');
+        }
       }
       history.replaceState(null, '', url);
     } catch (_) { /* an unwritable URL just keeps its params */ }
@@ -2898,39 +2768,771 @@
   function updatePreviewMark() {
     dock.classList.toggle('previewing', axesPreviewing());
     dockBtn.title = axesPreviewing()
-      ? 'Arxa Dial — previewing unpublished style/theme'
+      ? 'Arxa Dial — previewing unpublished changes'
       : 'Arxa Dial — arxa';
   }
   async function flipAxes(patch) {
     if (!S.axes) return;
+    // The font patch is per-role (the independence law): merge over the
+    // current picks so one dropdown's flip never blanks the others.
+    const nextFont = patch.font
+      ? Object.assign({}, S.axes.current.font, patch.font)
+      : S.axes.current.font;
     const next = {
       style: patch.style || S.axes.current.style,
       theme: patch.theme || S.axes.current.theme,
+      // !== undefined, not ||: an explicit '' CLEARS the palette (the
+      // delete affordance relies on it); style/theme have no empty state
+      // to express, so their || merge stays.
+      palette: patch.palette !== undefined ? patch.palette : S.axes.current.palette,
     };
-    applyAxes(next.style, next.theme);
-    if (S.mode !== 'author') return; // guests ride the URL, never the store
-    const res = await api('POST', '/axes', next);
-    if (res && res.ok && res.axes) {
-      S.axes.published = { style: res.axes.style, theme: res.axes.theme };
-      syncAxesUrl();
-      updatePreviewMark();
-    } else {
-      say('Could not publish — the axes store refused');
+    // Publish law: style/theme flips stay author-only (guests ride the
+    // URL, never the store), but a palette pick and a font pick publish
+    // for EVERYONE, author or guest — the share link is the authorization
+    // (palette Q10; font grill Q5, 2026-09-13). The flight flag rises
+    // BEFORE applyAxes: its render must already see the flight, or the
+    // pvnote flashes for the round-trip and the tray jumps.
+    const willPublish = S.mode === 'author' ||
+      patch.palette !== undefined || patch.font !== undefined;
+    if (willPublish) S.publishing = (S.publishing || 0) + 1;
+    applyAxes(next.style, next.theme, next.palette, nextFont);
+    if (!willPublish) return;
+    // Only fields for axes the server DECLARED ride the POST: sites (no
+    // style/theme axes) send {palette}, apps send {style,theme} (+palette
+    // when picked) — empty values never ride. The font map rides whole
+    // (the server re-validates membership + merges per role).
+    const out = {};
+    if (S.axes.styles.length && next.style) out.style = next.style;
+    if (S.axes.themes.length && next.theme) out.theme = next.theme;
+    if (next.palette) out.palette = next.palette;
+    if (nextFont && Object.keys(nextFont).length) out.font = nextFont;
+    try {
+      const res = await api('POST', '/axes', out);
+      if (res && res.ok && res.axes) {
+        S.axes.published = {
+          style: res.axes.style ?? next.style,
+          theme: res.axes.theme ?? next.theme,
+          palette: res.axes.palette ?? '',
+          font: res.axes.font ?? S.axes.published.font,
+        };
+        syncAxesUrl();
+        updatePreviewMark();
+      } else {
+        say('Could not publish — the axes store refused');
+        // The pick is now a genuine unpublished preview — surface the note
+        // (the in-flight gate above kept the click-time render quiet).
+        if (S.tray === 'theme') renderTraySlide('theme');
+        updatePreviewMark();
+      }
+    } finally {
+      S.publishing--;
     }
   }
-  function renderStyleBody(body) {
-    if (!S.axes) return;
-    body.appendChild(h('div', { class: 'sect', text: 'Style' }));
-    const seg = h('div', { class: 'seg' });
-    S.axes.styles.forEach((id) => {
-      const btn = h('button', {
-        class: S.axes.current.style === id ? 'on' : '',
-        text: id,
+  // Delete affordance (author only — seeded palettes are immortal): POST
+  // the id, drop the card; a deleted CURRENT palette falls back to the
+  // published one, else the first remaining, else no palette at all.
+  async function deletePalette(id) {
+    const res = await api('POST', '/palettes/delete', { id: id });
+    if (!(res && res.ok)) {
+      say((res && res.error) || 'Could not delete the palette');
+      return;
+    }
+    S.axes.palettes = S.axes.palettes.filter((p) => p.id !== id);
+    if (S.axes.current.palette === id) {
+      flipAxes({
+        palette: S.axes.published.palette ||
+          (S.axes.palettes[0] && S.axes.palettes[0].id) || '',
       });
-      btn.addEventListener('click', () => flipAxes({ style: id }));
-      seg.appendChild(btn);
+    } else {
+      renderTraySlide('theme');
+    }
+  }
+  // ── the contrast readout (engine client, 2026-09-11) ────────────────
+  // The DIAL shows what the engine guarantees: every contracted pair of
+  // the APPLIED palette, measured off the page's own computed styles —
+  // tokens off the root, keyed rule slots off live elements — with WCAG
+  // ratio + APCA Lc (advisory). The Dart derivation stays the ONE home
+  // of solving; this is the honest gauge, never a fixer.
+  function parseColor(v) {
+    var s = String(v || '').trim();
+    var m = /^#([0-9a-f]{6})$/i.exec(s);
+    if (m) return [parseInt(m[1].slice(0, 2), 16), parseInt(m[1].slice(2, 4), 16), parseInt(m[1].slice(4, 6), 16), 1];
+    m = /^rgba?\(([^)]+)\)/i.exec(s);
+    if (m) {
+      // Computed styles arrive space-separated ('rgb(1 2 3)'); authored
+      // custom properties arrive comma-separated. Handle both, plus the
+      // modern '/ alpha' suffix.
+      var body = m[1], alpha = 1;
+      var slash = body.indexOf('/');
+      if (slash >= 0) {
+        alpha = parseFloat(body.slice(slash + 1));
+        body = body.slice(0, slash);
+      }
+      var parts = body.split(/[\s,]+/).filter(function (x) { return x.length > 0; })
+        .map(function (x) { return parseFloat(x); });
+      if (parts.length < 3 || parts.slice(0, 3).some(function (x) { return isNaN(x); })) return null;
+      // legacy comma serialization carries alpha as the 4th component
+      // (Chrome emits rgba(0, 0, 0, 0), not rgb(0 0 0 / 0)) — ignoring it
+      // made every transparent ancestor parse as OPAQUE BLACK, blinding
+      // effBgOf and the contrast readouts (2026-09-11)
+      if (parts.length >= 4 && isFinite(parts[3])) alpha = parts[3];
+      return [parts[0] | 0, parts[1] | 0, parts[2] | 0, isFinite(alpha) ? alpha : 1];
+    }
+    return null;
+  }
+  function wcagRatio(a, b) {
+    function lum(c) {
+      function ch(v) { v = v / 255; return v <= 0.04045 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); }
+      return 0.2126 * ch(c[0]) + 0.7152 * ch(c[1]) + 0.0722 * ch(c[2]);
+    }
+    var la = lum(a), lb = lum(b), hi = Math.max(la, lb), lo = Math.min(la, lb);
+    return (hi + 0.05) / (lo + 0.05);
+  }
+  function compositeJs(fg, bg, alpha) {
+    return [0, 1, 2].map(function (i) { return fg[i] * alpha + bg[i] * (1 - alpha); });
+  }
+  // ── caret law v2 (2026-09-11): a currentColor caret is AS VISIBLE AS
+  // the text — which means it blends INTO the text (a gray caret among
+  // gray glyphs reads as a character). MDN caret-color: user agents may
+  // pick a different caret color "to ensure good visibility and contrast
+  // with the surrounding content" — none do, so the dial does it at
+  // edit-entry: scan the text hue toward both poles and keep the first
+  // candidate clearing BOTH the effective surface (WCAG 1.4.11's 3:1
+  // input-indicator floor) and the text itself (1.5:1 — a cursor must
+  // read as a cursor, not a character). Null when nothing clears both:
+  // the caller keeps the currentColor base rule.
+  function effBgOf(el) {
+    var n = el, crossedFixed = false, anc = null;
+    while (n && n !== document.documentElement) {
+      var cs = getComputedStyle(n);
+      if (cs.position === 'fixed' || cs.position === 'sticky') crossedFixed = true;
+      var c = parseColor(cs.backgroundColor);
+      if (c && c[3] > 0.85) { anc = c; break; }
+      n = n.parentElement;
+    }
+    // overlays (fixed/sticky headers) paint over SIBLINGS — the ancestor
+    // answer there is whatever opaque ancestor lies below (often the dark
+    // body), so the PAINT STACK takes priority (energize's above-light-
+    // theme header reads dark to the walk but beige to the stack)
+    if (crossedFixed) {
+      var b = el.getBoundingClientRect();
+      if (b.bottom > 0 && b.top < window.innerHeight && b.right > 0 && b.left < window.innerWidth) {
+        var sx = Math.max(1, Math.min(window.innerWidth - 2, Math.round(b.left + b.width / 2)));
+        var sy = Math.max(1, Math.min(window.innerHeight - 2, Math.round(b.top + b.height / 2)));
+        var stack = document.elementsFromPoint(sx, sy);
+        for (var i = 0; i < stack.length; i++) {
+          var s = stack[i];
+          if (s === el || el.contains(s)) continue;
+          var cs2 = getComputedStyle(s);
+          var c2 = parseColor(cs2.backgroundColor);
+          if (c2 && c2[3] > 0.85) return c2[3] < 1 ? compositeJs(c2, [255, 255, 255], c2[3]) : c2;
+        }
+      }
+    }
+    if (anc) return anc[3] < 1 ? compositeJs(anc, [255, 255, 255], anc[3]) : anc;
+    return [255, 255, 255];
+  }
+  function pickCaretColor(el) {
+    var t = parseColor(getComputedStyle(el).color) || [0, 0, 0, 1];
+    var b = effBgOf(el);
+    var mixTo = function (o, k) {
+      return [0, 1, 2].map(function (i) { return Math.round(t[i] * k + o[i] * (1 - k)); });
+    };
+    var cands = [[255, 255, 255], [17, 17, 23]];
+    for (var k = 0.3; k <= 0.9; k += 0.15) {
+      cands.push(mixTo([255, 255, 255], k));
+      cands.push(mixTo([17, 17, 23], k));
+    }
+    var best = null, bestScore = -1;
+    for (var i = 0; i < cands.length; i++) {
+      var c = cands[i];
+      var rb = wcagRatio(c, b), rt = wcagRatio(c, t);
+      if (rb < 3 || rt < 1.5) continue;
+      var score = Math.min(rb, rt);
+      if (score > bestScore) { bestScore = score; best = c; }
+    }
+    return best;
+  }
+  document._arxaCaretPick = pickCaretColor; // probes audit the same law
+  var pairContract = null;
+  function loadPairContract() {
+    if (pairContract) return Promise.resolve(pairContract);
+    if (!window.fetch) return Promise.resolve(null);
+    return fetch('/assets/styles/palettes/_template.json').then(function (r) {
+      return r.ok ? r.json() : null;
+    }).then(function (t) {
+      pairContract = t && (t.pairs || []).length ? t : null;
+      return pairContract;
+    }).catch(function () { return null; });
+  }
+  function contractHex(side, kind) {
+    // Tokens off the root's computed custom properties; keyed rule slots
+    // off the live element the template's selector names.
+    if (/^--/.test(side)) {
+      var v = getComputedStyle(document.documentElement).getPropertyValue(side);
+      var c = parseColor(v);
+      return c || null;
+    }
+    if (!pairContract || kind !== 'fg') return null;
+    var rule = (pairContract.rules || []).filter(function (r) { return r.key === side; })[0];
+    if (!rule) return null;
+    var sel = String(rule.sel || '').replace('{id}', S.axes ? S.axes.current.palette : '');
+    var el = null;
+    try { el = document.querySelector(sel); } catch (e) { el = null; }
+    if (!el) return null;
+    var isColor = /^\s*color:/.test(String(rule.tpl || ''));
+    var cs = getComputedStyle(el);
+    return parseColor(isColor ? cs.color : cs.backgroundColor);
+  }
+  async function resolvePalette(id) {
+    var res = await api('POST', '/palettes/resolve', { id: id });
+    if (res && res.ok && res.palette) {
+      if (Array.isArray(res.palettes)) S.axes.palettes = res.palettes;
+      cacheBustPaletteSheet(S.axes.current.palette);
+      renderTraySlide('theme');
+      say(res.unsolved && res.unsolved.length
+        ? 'Re-solved — still failing: ' + res.unsolved.join('; ')
+        : 'Re-solved — every contracted pair passes');
+    } else {
+      say((res && res.error) || 'Could not re-solve');
+    }
+  }
+  async function renderContrastStrip(body) {
+    var t = await loadPairContract();
+    if (!t || !S.axes) return;
+    var rows = [];
+    for (var i = 0; i < t.pairs.length; i++) {
+      var pr = t.pairs[i];
+      var fg = contractHex(pr.fg, 'fg'), bg = contractHex(pr.bg, 'bg');
+      if (!fg || !bg) continue;
+      var eff = pr.alpha != null ? compositeJs(fg, bg, pr.alpha) : fg;
+      var ratio = wcagRatio(eff, bg);
+      var target = pr.level === 'body' ? 4.5 : 3.0;
+      rows.push(h('div', { style: 'display:flex;gap:8px;align-items:baseline;' +
+        'font-size:11px;color:' + (ratio >= target ? '#8fb35a' : '#ff8f8f') + ';' }, [
+        h('span', { text: (ratio >= target ? '\u2713 ' : '\u2717 ') + pr.fg + ' on ' + pr.bg }),
+        h('span', { text: ratio.toFixed(2) + ':1', style: 'font-weight:600' }),
+        h('span', { text: pr.level, style: 'opacity:.6' }),
+      ]));
+    }
+    if (!rows.length) return;
+    body.appendChild(h('div', { class: 'sect', text: 'Contrast — this page\u2019s palette' }));
+    var box = h('div', { class: 'ctl', style: 'display:grid;gap:3px;' });
+    rows.forEach(function (r) { box.appendChild(r); });
+    body.appendChild(box);
+  }
+
+  // Stripe ink: white or near-black label by relative luminance, so the
+  // hover hex stays readable on any pasted palette.
+  function stripeInk(hex) {
+    const m = /^#?([0-9a-f]{6})$/i.exec(hex || '');
+    if (!m) return '#FFFCF0';
+    const n = parseInt(m[1], 16);
+    const lum = 0.2126 * (n >> 16) + 0.7152 * ((n >> 8) & 255) +
+      0.0722 * (n & 255);
+    return lum > 150 ? '#14141c' : '#FFFCF0';
+  }
+  // Stripe click copies the hex (Coolors law); it never applies the palette.
+  function copyHex(hex) {
+    const plain = (hex || '').toLowerCase();
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(plain).then(
+        () => say('Copied ' + plain), () => say(plain));
+    } else {
+      say(plain);
+    }
+  }
+  // ── the palette editor (Q4, palette-plane-universal) ─────────────────
+  // Author-only, design-time: every card carries the affordance (the
+  // DEFAULT forks into the one custom slot, everything else edits in
+  // place with a stable id), and deployed static mode hides it exactly
+  // like the paste row — there is no server to derive against. The
+  // session lives in S.palEdit; renderThemeBody rebuilds the panel from
+  // it on every re-render, so live frames and axes echoes cost nothing.
+  function paletteById(id) {
+    if (!S.axes) return null;
+    const hit = S.axes.palettes.filter((p) => p.id === id);
+    return hit.length ? hit[0] : null;
+  }
+  function isDefaultPalette(p) {
+    // The manifest default IS the base corpus — the one entry carrying no
+    // override sheet (palettes.json's own schema law; the dial config
+    // never carries defaultId).
+    return !!p && !p.sheet;
+  }
+  function openPaletteEdit(id) {
+    const p = paletteById(id);
+    if (!p) return;
+    S.palEdit = {
+      id: p.id, hexes: (p.swatch || []).slice(), name: p.name,
+      error: null, busy: false,
+    };
+    renderTraySlide('theme');
+  }
+  // In-place edit of the ACTIVE palette: the dressed sheet is cached by
+  // href, so repoint its link with a cache-buster — the repaint is
+  // visible live (the override rules carry literal hexes, no var hop).
+  function cacheBustPaletteSheet(id) {
+    const link = document.querySelector('link[data-palette-sheet="' + id + '"]');
+    if (!link) return;
+    const href = (link.getAttribute('href') || '').split('?')[0];
+    if (href) link.setAttribute('href', href + '?v=' + Date.now());
+  }
+  async function savePaletteEdit() {
+    const ed = S.palEdit;
+    if (!ed || ed.busy) return; // one flight at a time, like pinsLoading
+    ed.busy = true;
+    ed.error = null;
+    renderTraySlide('theme');
+    // A hand edit flips the palette to MANUAL (grilled Q5): the hexes
+    // ship verbatim, the readout owns the visibility, Re-solve returns
+    // it to AUTO.
+    const body = { id: ed.id, hexes: ed.hexes.slice(), auto: false };
+    const orig = paletteById(ed.id);
+    const name = ed.name.trim();
+    // name? rides only when it carries intent — an untouched or emptied
+    // field never renames.
+    if (name && orig && name !== orig.name) body.name = name;
+    const res = await api('POST', '/palettes/update', body);
+    ed.busy = false;
+    if (res && res.palette && Array.isArray(res.palettes)) {
+      // The resync law (the ingest handler's, unchanged): a fork can
+      // REPLACE the previous custom server-side, so take the full list
+      // the server returns — never a blind push.
+      S.axes.palettes = res.palettes;
+      // Close only OUR session — a newer one the author opened mid-flight
+      // (another card's ✎) belongs to them, not to this response.
+      if (S.palEdit === ed) S.palEdit = null;
+      if (res.forked) {
+        // The fork law: editing the default saved AS the custom slot.
+        // Preview the new card locally — publishing stays the user's
+        // explicit click (applyAxes never publishes; the pvnote marks
+        // previewing, palette.js hot-dresses the newborn sheet).
+        applyAxes(S.axes.current.style, S.axes.current.theme, res.palette.id);
+        say('Forked to your custom palette — previewing');
+      } else {
+        if (S.axes.current.palette === ed.id) cacheBustPaletteSheet(ed.id);
+        renderTraySlide('theme');
+      }
+      return;
+    }
+    // 409 names its conflict, 400 carries the server's own message — both
+    // land inline, in the editor they belong to; the session survives.
+    let msg = (res && res.error) || 'Could not save the palette';
+    if (res && res.conflictsWith &&
+        String(msg).indexOf(String(res.conflictsWith)) === -1) {
+      msg += ' (' + res.conflictsWith + ')';
+    }
+    ed.error = String(msg);
+    renderTraySlide('theme');
+  }
+  // The editor panel: one row per swatch color (native picker <-> hex
+  // text, synced both ways, plus a remove ×), the add-color control, a
+  // name field, save/cancel. The 3..7 law (Q5) gates remove at 3 and add
+  // at 7. The default palette's panel opens with the fork-law banner.
+  function renderPaletteEditor(body) {
+    const ed = S.palEdit;
+    const p = ed && paletteById(ed.id);
+    if (!ed || !p) { S.palEdit = null; return; } // the id vanished under it
+    const panel = h('div', { class: 'paledit' });
+    if (isDefaultPalette(p)) {
+      // The fork law, stated where the edit happens: the base corpus
+      // stays hand-owned — saving the default writes the custom slot.
+      panel.appendChild(h('div', {
+        class: 'edbanner',
+        text: 'Editing the default palette — saving stores it as your ' +
+          'custom palette, replacing the current custom.',
+      }));
+    }
+    ed.hexes.forEach((hex, i) => {
+      const colorIn = h('input', {
+        type: 'color', 'aria-label': 'Color ' + (i + 1),
+      });
+      colorIn.value = /^#[0-9a-f]{6}$/i.test(hex) ? hex : '#808080';
+      const hexIn = h('input', {
+        type: 'text', 'aria-label': 'Hex ' + (i + 1), spellcheck: 'false',
+      });
+      hexIn.value = hex;
+      // Bidirectional sync, one law both ways: only a full #rrggbb may
+      // enter state — the picker always emits one, typed text earns it
+      // on parse, and unparseable text just marks the field (state keeps
+      // the last valid hex). Sibling inputs mutate directly — a re-render
+      // here would drop the picker's focus mid-drag.
+      colorIn.addEventListener('input', () => {
+        ed.hexes[i] = colorIn.value;
+        hexIn.value = colorIn.value;
+        hexIn.classList.remove('bad');
+      });
+      hexIn.addEventListener('input', () => {
+        const m = /^#?([0-9a-f]{6})$/i.exec(hexIn.value.trim());
+        if (m) {
+          ed.hexes[i] = '#' + m[1].toLowerCase();
+          colorIn.value = ed.hexes[i];
+          hexIn.classList.remove('bad');
+        } else {
+          hexIn.classList.add('bad');
+        }
+      });
+      const rem = h('button', {
+        class: 'edrem', title: 'Remove this color', text: '\u00d7',
+      });
+      rem.disabled = ed.hexes.length <= 3; // the 3..7 law (Q5)
+      rem.addEventListener('click', () => {
+        if (ed.hexes.length <= 3) return;
+        ed.hexes.splice(i, 1);
+        renderTraySlide('theme');
+      });
+      panel.appendChild(h('div', { class: 'edrow' }, [colorIn, hexIn, rem]));
     });
-    body.appendChild(seg);
+    const add = h('button', { class: 'edadd', text: '+ Add color' });
+    add.disabled = ed.hexes.length >= 7; // the 3..7 law (Q5)
+    add.addEventListener('click', () => {
+      if (ed.hexes.length >= 7) return;
+      ed.hexes.push('#808080'); // a neutral placeholder — the picker owns taste
+      renderTraySlide('theme');
+    });
+    panel.appendChild(add);
+    const nameIn = h('input', {
+      type: 'text', 'aria-label': 'Palette name', spellcheck: 'false',
+    });
+    nameIn.value = ed.name;
+    nameIn.addEventListener('input', () => { ed.name = nameIn.value; });
+    panel.appendChild(h('div', { class: 'edname' }, [nameIn]));
+    if (ed.error) {
+      panel.appendChild(h('div', { class: 'ederr', text: ed.error }));
+    }
+    const cancel = h('button', { class: 'btn ghost', text: 'Cancel' });
+    cancel.addEventListener('click', () => {
+      S.palEdit = null;
+      renderTraySlide('theme');
+    });
+    const save = h('button', {
+      class: 'btn', text: ed.busy ? 'Saving\u2026' : 'Save',
+    });
+    save.disabled = ed.busy;
+    save.addEventListener('click', savePaletteEdit);
+    panel.appendChild(h('div', { class: 'btnrow' }, [cancel, save]));
+    body.appendChild(panel);
+  }
+  // Theme slide: the palette plane first (when the server declared
+  // palettes), then the style/theme pickers for app designs — moved here
+  // unchanged, never deleted. The publish blast radius differs per plane
+  // (palette: everyone, author or guest; style/theme: author publishes,
+  // a guest previews via the URL), so each carries its own note line.
+  // ── the Fonts slide (grilled 2026-09-13) ───────────────────────────────
+  // Independent per-role dropdowns (Q1): each role publishes alone — the
+  // axes cell is an object role -> choice id. Specimens preview LIVE (Q4):
+  // families load from the Google Fonts css2 CDN (CORS-open, display=swap
+  // — the same law the site itself loads by) in batched preview links.
+  // The searchable catalog (Q3) is author + design-time only: ingestion
+  // writes the artifact tree; guests and the deployed dial pick from the
+  // declared choices.
+  let fontPreviewLinks = {};
+  function ensureFontPreview(segments) {
+    // One css2 request carries many families; browsers fetch only the
+    // faces they render, so batching by 8 keeps requests flat while every
+    // specimen gets its real face.
+    const pending = segments.filter((s) => s && !fontPreviewLinks[s]);
+    if (!pending.length) return;
+    for (let i = 0; i < pending.length; i += 8) {
+      const batch = pending.slice(i, i + 8);
+      batch.forEach((s) => { fontPreviewLinks[s] = true; });
+      const link = h('link', {
+        rel: 'stylesheet', 'data-font-preview': '1',
+        href: 'https://fonts.googleapis.com/css2?' + batch.join('&') + '&display=swap',
+      });
+      document.head.appendChild(link);
+    }
+  }
+  // The css2 segment law, mirrored from design_fonts.dart (parity: the
+  // dropdown's search results build the same segment the server would).
+  function css2SegmentForEntry(e) {
+    const fam = e.family.replace(/ /g, '+');
+    const v = e.variableWght;
+    const wght = () => {
+      if (v && v.length === 2) return v[0] + '..' + v[1];
+      const ws = (e.weights && e.weights.length ? e.weights : [400]).slice();
+      return Array.from(new Set(ws)).sort((a, b) => a - b).join(';');
+    };
+    const w = wght();
+    if (!e.italic) {
+      return (!v && (!e.weights || e.weights.length <= 1))
+        ? 'family=' + fam : 'family=' + fam + ':wght@' + w;
+    }
+    return 'family=' + fam + ':ital,wght@0,' + w + ';1,' + w;
+  }
+  function renderFontsBody(body) {
+    if (!S.axes || !S.axes.fonts || !S.axes.fonts.roles ||
+        !S.axes.fonts.roles.length) {
+      body.appendChild(h('div', {
+        class: 'ctl', style: 'font-size:12px;color:#9aa0ab',
+        text: 'This design declares no font plane.',
+      }));
+      return;
+    }
+    S.axes.fonts.roles.forEach((role) => renderFontRole(body, role));
+  }
+  function renderFontRole(body, role) {
+    body.appendChild(h('div', { class: 'sect', text: role.name || role.id }));
+    const current = S.axes.current.font || {};
+    const def = (S.axes.fonts.default || {})[role.id];
+    const activeId = current[role.id] || def ||
+      (role.choices[0] && role.choices[0].id);
+    ensureFontPreview(role.choices.filter((c) => c.css2).map((c) => c.css2));
+    const grid = h('div', { class: 'palgrid' });
+    role.choices.slice(0, 8).forEach((c) => {
+      const on = c.id === activeId;
+      const card = h('button', {
+        class: 'fontcard' + (on ? ' on' : ''),
+        title: 'Apply ' + c.family + ' to ' + (role.name || role.id),
+      });
+      const spec = role.id === 'body'
+        ? 'Pack my box with five dozen liquor jugs.'
+        : 'Arxa — quiet, deliberate craft.';
+      card.appendChild(h('span', {
+        class: 'fontspec', style: 'font-family:' + c.stack, text: spec,
+      }));
+      const meta = [h('span', { class: 'palname', text: c.family })];
+      if (c.category) meta.push(h('span', { class: 'fontcat', text: c.category }));
+      if (c.seeded !== true) {
+        meta.push(h('span', { class: 'palchip cchip', text: 'Custom' }));
+      }
+      if (on) meta.push(h('span', { class: 'palchip onchip', text: 'Active' }));
+      card.appendChild(h('span', { class: 'palmeta' }, meta));
+      card.addEventListener('click', () => {
+        const pick = {}; pick[role.id] = c.id;
+        flipAxes({ font: pick });
+      });
+      // Delete (author, design-time, ingested-only — the palette × law).
+      if (S.mode === 'author' && !S.static && c.seeded !== true) {
+        const del = h('span', {
+          class: 'paldel', title: 'Delete this choice', text: '×',
+        });
+        del.addEventListener('click', async (e) => {
+          e.stopPropagation(); // the × must never fire the card's pick
+          const res = await api('POST', '/fonts/delete', { role: role.id, id: c.id });
+          if (!(res && res.ok)) {
+            say((res && res.error) || 'Could not delete the choice');
+            return;
+          }
+          // The 'fonts' SSE frame rebuilds the slide; if the deleted
+          // choice was active, fall back to the role's default.
+          if (activeId === c.id) {
+            const back = {}; back[role.id] = def || '';
+            flipAxes({ font: back });
+          }
+        });
+        card.appendChild(del);
+      }
+      grid.appendChild(card);
+    });
+    body.appendChild(grid);
+    // The catalog dropdown (Q3 + Q4): author-only, design-time only.
+    if (S.mode === 'author' && !S.static) {
+      const input = h('input', {
+        type: 'text', class: 'fontsearch',
+        placeholder: 'Search Google Fonts for ' + (role.name || role.id) + '…',
+      });
+      const rows = h('div', { class: 'fontrows' });
+      let timer = null;
+      let seq = 0;
+      input.addEventListener('input', () => {
+        clearTimeout(timer);
+        timer = setTimeout(async () => {
+          const q = input.value.trim();
+          const mySeq = ++seq;
+          if (!q) { rows.textContent = ''; return; }
+          const res = await api('GET', '/font-catalog?q=' + encodeURIComponent(q));
+          if (mySeq !== seq) return; // a newer keystroke owns the box
+          rows.textContent = '';
+          if (!res || !res.ok || !res.families || !res.families.length) {
+            rows.appendChild(h('div', {
+              class: 'ctl', style: 'font-size:12px;color:#9aa0ab',
+              text: res && res.error ? res.error : 'No families matched.',
+            }));
+            return;
+          }
+          ensureFontPreview(res.families.map(css2SegmentForEntry));
+          res.families.slice(0, 20).forEach((e) => {
+            const stack = "'" + e.family.replace(/'/g, "\\'") + "', Georgia, serif";
+            const row = h('button', { class: 'fontrow', title: 'Pick ' + e.family });
+            row.appendChild(h('span', {
+              class: 'rspec', style: 'font-family:' + stack,
+              text: e.family + ' — The quick brown fox jumps over 1,284 lazy dogs.',
+            }));
+            row.appendChild(h('span', { class: 'fontcat', text: e.category }));
+            row.addEventListener('click', async () => {
+              const ing = await api('POST', '/fonts', { role: role.id, family: e.family });
+              if (ing && ing.ok && ing.choice) {
+                if (ing.fonts) S.axes.fonts = ing.fonts; // the SSE frame lands too
+                renderTraySlide('fonts');
+                const pick = {}; pick[role.id] = ing.choice.id;
+                flipAxes({ font: pick });
+              } else {
+                say((ing && ing.error) || 'That family did not ingest');
+              }
+            });
+            rows.appendChild(row);
+          });
+        }, 250);
+      });
+      body.appendChild(h('div', { class: 'facet' }, [input]));
+      body.appendChild(rows);
+    }
+  }
+  function renderThemeBody(body) {
+    if (!S.axes) {
+      body.appendChild(h('div', {
+        class: 'ctl', style: 'font-size:12px;color:#9aa0ab',
+        text: 'This design declares no theme axes.',
+      }));
+      return;
+    }
+    let paletteNoted = false;
+    if (S.axes.palettes.length) {
+      body.appendChild(h('div', { class: 'sect', text: 'Palette' }));
+      // The grid law (operator, 2026-09-02): at most SIX cards — the five
+      // seeded picks first (manifest order), the one custom slot last.
+      const seeded = S.axes.palettes.filter((p) => p.seeded === true);
+      const custom = S.axes.palettes.filter((p) => p.seeded !== true);
+      const grid = h('div', { class: 'palgrid' });
+      seeded.concat(custom).slice(0, 6).forEach((p) => {
+        const card = h('button', {
+          class: 'palcard' + (S.axes.current.palette === p.id ? ' on' : ''),
+          title: 'Apply ' + p.name,
+        });
+        const strip = h('span', { class: 'palstrip' });
+        (p.swatch || []).forEach((hex) => {
+          const stripe = h('span', {
+            class: 'palstripe', style: 'background:' + hex,
+          }, [h('i', { text: hex, style: 'color:' + stripeInk(hex) })]);
+          stripe.addEventListener('click', (e) => {
+            e.stopPropagation(); // a stripe copies its hex, never applies
+            copyHex(hex);
+          });
+          strip.appendChild(stripe);
+        });
+        card.appendChild(strip);
+        const chips = [];
+        if (p.seeded !== true) {
+          chips.push(h('span', { class: 'palchip cchip', text: 'Custom' }));
+        }
+        // The contrast law's editor face (2026-09-11): every card wears
+        // its solve state — AUTO (the engine guarantees the pairs) or
+        // MANUAL (the author's hexes ship verbatim; the gate will say
+        // so). One click re-solves either way.
+        chips.push(h('span', {
+          class: 'palchip',
+          style: 'background:' + (p.auto === false ? 'rgba(255,143,143,.2)' : 'rgba(143,179,90,.2)') +
+            ';color:' + (p.auto === false ? '#ff8f8f' : '#8fb35a'),
+          text: p.auto === false ? 'MANUAL' : 'AUTO',
+          title: p.auto === false
+            ? 'Hand-edited — ships verbatim; contrast not guaranteed'
+            : 'Contrast-solved — WCAG 2.2 AA by construction',
+        }));
+        chips.push(h('span', { class: 'palchip onchip', text: 'Active' }));
+        card.appendChild(h('span', { class: 'palmeta' },
+          [h('span', { class: 'palname', text: p.name })].concat(chips)));
+        card.addEventListener('click', () => flipAxes({ palette: p.id }));
+        // palette CRUD is design-time — the × never renders statically.
+        if (S.mode === 'author' && p.seeded !== true && !S.static) {
+          const del = h('span', {
+            class: 'paldel', title: 'Delete this palette', text: '×',
+          });
+          del.addEventListener('click', (e) => {
+            e.stopPropagation(); // the × must never fire the card's pick
+            deletePalette(p.id);
+          });
+          card.appendChild(del);
+        }
+        // The edit affordance (Q4): author-only, hidden in static EXACTLY
+        // like the paste row. EVERY card carries it — the default forks,
+        // the rest edit in place. Like the ×, it never fires the pick.
+        if (S.mode === 'author' && !S.static) {
+          const edbtn = h('span', {
+            class: 'paledbtn', title: 'Edit this palette', text: '\u270e',
+          });
+          edbtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            openPaletteEdit(p.id);
+          });
+          card.appendChild(edbtn);
+          // Re-solve (grilled Q5): back through the contrast engine, back
+          // to AUTO. Sits with the ✎ and never fires the pick.
+          const rsbtn = h('span', {
+            class: 'paledbtn', title: 'Re-solve contrast (back to AUTO)',
+            text: '\u26a1', style: 'left:-26px',
+          });
+          rsbtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            resolvePalette(p.id);
+          });
+          card.appendChild(rsbtn);
+        }
+        grid.appendChild(card);
+      });
+      body.appendChild(grid);
+      // The editor panel — the same gate as the affordance and the paste
+      // row; it renders directly under the grid it edits.
+      if (S.mode === 'author' && !S.static && S.palEdit) {
+        renderPaletteEditor(body);
+      }
+      // The contrast strip: the applied palette's contracted pairs, live
+      // off the rendered page. The gauge for every AUTO/MANUAL decision.
+      renderContrastStrip(body);
+      // The Coolors import: author-only, and never in deployed static mode
+      // (cfg.static — no live store to take the paste).
+      if (S.mode === 'author' && !cfg.static) {
+        const input = h('input', {
+          type: 'text', placeholder: 'Paste a Coolors link…',
+        });
+        const add = h('button', { class: 'btn', text: 'Add' });
+        const submit = async () => {
+          const url = input.value.trim();
+          if (!/coolors\.co\//.test(url)) { say('That link did not parse'); return; }
+          add.disabled = true;
+          const res = await api('POST', '/palettes', { url: url });
+          add.disabled = false;
+          if (res && res.ok && res.palette) {
+            // The one-custom-slot law can REPLACE the previous custom
+            // server-side — resync from the full list the server returns,
+            // never a blind push (a stale card renders dead: its sheet and
+            // tokens block were stripped by the sweep).
+            S.axes.palettes = Array.isArray(res.palettes) && res.palettes.length
+              ? res.palettes : S.axes.palettes.concat([res.palette]);
+            renderTraySlide('theme');
+            flipAxes({ palette: res.palette.id });
+          } else {
+            say((res && res.error) || 'That link did not parse');
+          }
+        };
+        add.addEventListener('click', submit);
+        input.addEventListener('keydown', (e) => { if (e.key === 'Enter') submit(); });
+        body.appendChild(h('div', { class: 'facet' }, [input]));
+        body.appendChild(h('div', { class: 'btnrow' }, [add]));
+      }
+      // A palette pick publishes for everyone, author OR guest.
+      body.appendChild(h('div', {
+        class: 'ctl', style: 'font-size:11px;color:#9aa0ab',
+        text: S.mode === 'author'
+          ? 'Your pick publishes for everyone viewing this design.'
+          : 'Your pick publishes for everyone on this design.',
+      }));
+      paletteNoted = true;
+    }
+    if (S.axes.styles.length) {
+      body.appendChild(h('div', { class: 'sect', text: 'Style' }));
+      const seg = h('div', { class: 'seg' });
+      S.axes.styles.forEach((id) => {
+        const btn = h('button', {
+          class: S.axes.current.style === id ? 'on' : '',
+          text: id,
+        });
+        btn.addEventListener('click', () => flipAxes({ style: id }));
+        seg.appendChild(btn);
+      });
+      body.appendChild(seg);
+    }
     if (S.axes.themes.length) {
       body.appendChild(h('div', { class: 'sect', text: 'Theme' }));
       const themeSeg = h('div', { class: 'seg' });
@@ -2944,12 +3546,17 @@
       });
       body.appendChild(themeSeg);
     }
-    body.appendChild(h('div', {
-      class: 'ctl', style: 'font-size:11px;color:#9aa0ab',
-      text: S.mode === 'author'
-        ? 'Your pick publishes for everyone viewing this design.'
-        : 'Preview applies to your view only — the URL carries it.',
-    }));
+    if ((S.axes.styles.length || S.axes.themes.length) &&
+        // The palette note above already says the author's line
+        // word-for-word — the same fact never appears twice on one slide.
+        !(paletteNoted && S.mode === 'author')) {
+      body.appendChild(h('div', {
+        class: 'ctl', style: 'font-size:11px;color:#9aa0ab',
+        text: S.mode === 'author'
+          ? 'Your pick publishes for everyone viewing this design.'
+          : 'Preview applies to your view only — the URL carries it.',
+      }));
+    }
     if (S.store === 'memory') {
       body.appendChild(h('div', {
         class: 'ctl', style: 'font-size:11px;color:#9aa0ab',
@@ -2962,25 +3569,53 @@
       ]);
       const reset = h('button', { text: 'Reset to published' });
       reset.addEventListener('click', () => {
-        applyAxes(S.axes.published.style, S.axes.published.theme);
+        applyAxes(S.axes.published.style, S.axes.published.theme,
+          S.axes.published.palette);
       });
       note.appendChild(reset);
       body.appendChild(note);
     }
   }
+  // Incoming slide: the placeholder for what ships next — one centered
+  // eyebrow over one muted line, nothing else.
+  function renderIncomingBody(body) {
+    body.appendChild(h('div', { class: 'incoming' }, [
+      h('div', { class: 'eye', text: 'INCOMING FEATURE' }),
+      h('div', { class: 'sub', text: 'Work in progress' }),
+    ]));
+  }
 
-  // ── the tray (Studio): glass bottom sheet, 5-slide snap carousel ──────
-  const SLIDES = [
-    ['edit', 'Edit'], ['comments', 'Comments'], ['settings', 'Settings'],
-    ['tweak', 'Tweak'], ['style', 'Style'], ['ship', 'Ship'],
-  ];
+  // Access slide (trim v2): the client-access panel lives HERE now —
+  // mint personal links, roster, revoke. Local author only: the slide
+  // never enters traySlideList() for guests or the deployed static dial,
+  // and the renderer re-checks before touching the API (defense in
+  // depth — the static store would refuse /guests anyway).
+  function renderAccessBody(body) {
+    if (S.mode !== 'author' || S.static) return;
+    const panel = ensureGuestShareUI(body, false);
+    loadGuests(true).then(() => renderGuestRoster(panel));
+  }
+
+  // ── the tray (Studio): glass bottom sheet, snap carousel ─────────────
+  // TRIM v2 (grilled 2026-09-10): Theme for EVERYONE, plus Access — the
+  // client-link mint/roster — for the LOCAL author only. Guests and the
+  // deployed static dial get a one-slide tray (minting is design-time:
+  // the static store refuses /guests, and clients never see the surface).
+  // The retired six (Edit / Comments / Settings / Tweak / Style / Ship)
+  // and the former 'Incoming' placeholder lost only their tray UI; their
+  // client functions below stay callable for the ongoing dial rewrite.
   function traySlideList() {
-    // Style rides the axes plane (arc 1): present only when the server
-    // declared axes for this artifact — and for guests too, whose flips
-    // ride the URL override and never touch the store.
-    return SLIDES.filter(([id]) =>
-      (id !== 'style' || !!S.axes) &&
-      (S.mode !== 'guest' || id === 'comments' || id === 'style'));
+    // The Fonts slide (grilled 2026-09-13): second, right after Theme —
+    // for everyone when the artifact declares the plane. Access stays
+    // author-local (minting is design-time).
+    const hasFonts = !!(S.axes && S.axes.fonts &&
+      S.axes.fonts.roles && S.axes.fonts.roles.length);
+    if (S.mode === 'author' && !S.static) {
+      return hasFonts
+        ? [['theme', 'Theme'], ['fonts', 'Fonts'], ['access', 'Access']]
+        : [['theme', 'Theme'], ['access', 'Access']];
+    }
+    return hasFonts ? [['theme', 'Theme'], ['fonts', 'Fonts']] : [['theme', 'Theme']];
   }
   const tray = h('div', { id: 'tray' });
   const grabber = h('div', { id: 'grabber' }, [h('div', { class: 'gbar' })]);
@@ -3018,6 +3653,8 @@
     trayBuiltFor = key;
     track.textContent = '';
     dots.textContent = '';
+    // A one-slide tray (guests, deployed) shows no pagination at all.
+    dots.style.display = list.length < 2 ? 'none' : '';
     slideBodies.bodies = {};
     list.forEach(([id, label], i) => {
       const body = h('div', { class: 'slidebody' });
@@ -3107,61 +3744,29 @@
   }
   function updateTrayCta() {
     if (!S.tray) return;
-    const id = currentSlideId();
-    ctaBtn.className = '';
+    // Neither remaining slide carries a bar action — the CTA stays hidden.
+    // (Commit / Share / Deploy retired with their slides; the 2026-09-11
+    // edit redesign deleted requestCommit outright — the eject bake owns
+    // source writes now. ensureGuestShareUI and shipVerb stay callable.)
+    ctaBtn.className = 'off';
     ctaBtn.disabled = false;
     ctaBtn.title = '';
-    if (id === 'edit') {
-      const n = Object.keys(S.draft.patches).length + Object.keys(S.draft.tokens).length;
-      ctaBtn.textContent = 'Commit · ' + n;
-      ctaBtn.disabled = n === 0;
-      ctaBtn.title = n === 0 ? 'Nothing to commit yet' : 'Hand the draft to the studio agent';
-    } else if (id === 'comments') {
-      ctaBtn.textContent = 'Share';
-      ctaBtn.title = 'Mint a personal client link (view + comment, 30 days)';
-    } else if (id === 'ship') {
-      ctaBtn.textContent = 'Deploy';
-      // Enabled only when the pipeline allows AND the server's deploy
-      // gates are satisfied (wrangler present, CF env, eject dir). The
-      // blockers render in the Ship slide.
-      const allowed = !shipSt?.pr && shipSt?.branch === 'main' && shipSt?.dirty === 0;
-      ctaBtn.disabled = !(allowed && S.deployReady);
-      ctaBtn.title = ctaBtn.disabled
-        ? 'Enabled when the tree is clean on main with no open PR and the deploy gates pass (see Ship slide)'
-        : 'wrangler → Cloudflare Pages — your tap is the approval';
-    } else {
-      ctaBtn.className = 'off';
-    }
+    ctaBtn.textContent = '';
   }
-  ctaBtn.addEventListener('click', () => {
-    const id = currentSlideId();
-    if (id === 'edit') return requestCommit();
-    if (id === 'comments') {
-      const body = slideBodies.comments;
-      if (body) ensureGuestShareUI(body, true);
-      return;
-    }
-    if (id === 'ship') return shipVerb('/ship/deploy');
-  });
   track.addEventListener('scroll', () => {
     if (!S.tray) return;
     S.tray = currentSlideId();
     syncTrayChrome();
-    // Landing on Ship by swipe/dot needs the live pipeline read too —
-    // only openTray's direct-open path covered it before.
-    if (S.tray === 'ship') refreshShip();
   }, { passive: true });
 
   function renderTraySlide(id) {
     const body = slideBodies[id];
     if (!body) return;
     body.textContent = '';
-    if (id === 'edit') return renderEditBody(body);
-    if (id === 'comments') return renderCommentsBody(body);
-    if (id === 'settings') return renderSettingsBody(body);
-    if (id === 'tweak') return renderTweakBody(body);
-    if (id === 'style') return renderStyleBody(body);
-    if (id === 'ship') return renderShipBody(body);
+    if (id === 'theme') return renderThemeBody(body);
+    if (id === 'fonts') return renderFontsBody(body);
+    if (id === 'access') return renderAccessBody(body);
+    if (id === 'incoming') return renderIncomingBody(body);
   }
   function openTray(id) {
     buildTraySlides();
@@ -3169,12 +3774,12 @@
     const want = list.find((s) => s[0] === id);
     S.tray = want ? want[0] : list[0][0];
     tray.classList.add('open');
+    updateEditBar(); // the bar yields the corner to the sheet
     // Tray swap law: park the dial outright; the timer suspends.
     dock.classList.remove('open');
     S.open = false;
     dialPark();
     list.forEach(([sid]) => renderTraySlide(sid));
-    if (S.tray === 'ship') refreshShip();
     const idx = list.findIndex((s) => s[0] === S.tray);
     requestAnimationFrame(() => {
       track.scrollLeft = idx * track.clientWidth;
@@ -3184,46 +3789,28 @@
   function closeTray() {
     S.tray = null;
     tray.classList.remove('open');
+    updateEditBar(); // the bar returns with the dial
     // SHEET-CHILDREN LAW (operator, 2026-08-26): whatever the sheet held
-    // open closes WITH it — the floating smart card (plus its selection:
-    // outline, handles, and the Edit Mode arming its outline rows imply),
+    // open closes WITH it — the selection chip (plus its selection:
+    // outline, and the Edit Mode arming its outline rows imply),
     // the pin thread popover, and the comment composer. The island returns
     // to its resting state: dial in, nothing else floating.
     if (S.arming) disarm();
-    if (S.design) designOff(); // closes the card, clears the selection
-    else if (S.card || S.selected) { closeCard(); clearSelOutline(); }
+    if (S.design) designOff(); // closes the chip, clears the selection
+    else if (S.selected) clearSelOutline();
     if (S.activePin) closeThread();
     composer.classList.remove('open');
     dialUnpark(); // spring back in + re-arm the 30s tuck-away fresh
   }
 
-  // Edit slide: the locked outline (navigation only) + the draft ledger.
-  function renderEditBody(body) {
-    body.appendChild(h('div', { class: 'sect', text: 'Outline' }));
-    body.appendChild(h('div', { class: 'ctl', style: 'font-size:11px;color:#9aa0ab', text: 'The locked structure, navigable. Tap an entry to select it and open its card.' }));
-    const els = document.querySelectorAll('[data-el]');
-    els.forEach((el) => {
-      let depth = 0, p = el.parentElement;
-      while (p) { if (p.getAttribute && p.getAttribute('data-el')) depth++; p = p.parentElement; }
-      const name = el.getAttribute('data-el');
-      const row = h('div', { class: 'row', style: 'margin-left:' + Math.min(depth, 6) * 14 + 'px' });
-      row.appendChild(h('span', { class: 'txt', text: name }));
-      const k = kindOf(el);
-      row.appendChild(h('div', { class: 'meta' }, [h('span', { text: k.kind })]));
-      row.addEventListener('click', () => {
-        const id = el.getAttribute('data-arxa-id');
-        if (!id) { say('This element has no patch identity (data-arxa-id)'); return; }
-        if (!S.design) designOn();
-        selectEl({ id: id, el: el, label: name + ' · ' + k.kind, group: k.group });
-        el.scrollIntoView({ block: 'center', behavior: TWEAK.motion ? 'smooth' : 'auto' });
-      });
-      body.appendChild(row);
-    });
-    if (!els.length) {
-      body.appendChild(h('div', { class: 'ctl', style: 'font-size:12px', text: 'No data-el identity on this page.' }));
-    }
-    renderLedger(body);
-  }
+  // ── retired slide bodies (kept callable for the ongoing dial rewrite) ──
+  // The locked trim above ended the tray's Edit / Comments / Settings /
+  // Tweak / Ship slides, but their renderers and API clients below are
+  // NOT deleted — the rewrite re-homes them, and nothing here may vanish
+  // under it. Unreferenced by the tray, referenced by the future.
+  // (The Edit slide's renderer DIED with the 2026-09-11 redesign — the
+  // outline's select-and-card law and the draft ledger have no successor
+  // UI to re-home; editing is on-canvas now.)
 
   // Settings slide: environment & session — describes, writes nothing.
   function renderSettingsBody(body) {
@@ -3386,8 +3973,8 @@
     row.appendChild(mk(canPr ? 'Branch + PR (' + st.dirty + ' dirty)' : 'Branch + PR', canPr, async () => {
       const title = 'arxa(dial): live edit batch';
       const bodyTxt = 'Committed from the Arxa Dial (Ship slide). ' +
-        Object.keys(S.draft.patches).length + ' element patch keys pending in the draft overlay; ' +
-        'run the commit ops via the Edit slide CTA first if the draft is still uncommitted.';
+        Object.keys(S.overlay.patches).length + ' element patch keys live in the overlay; ' +
+        'the next eject bakes them into source.';
       await shipVerb('/ship/pr', { title, body: bodyTxt });
     }, false, canPr ? '' : onMain ? (pr ? 'a PR is already open' : 'nothing dirty to ship') : 'not on main — merge or close first'));
     row.appendChild(mk('Pull & rebase', canSync, () => shipVerb('/ship/sync'), true));
@@ -3423,7 +4010,7 @@
       }
       return;
     }
-    if (id === 'studio') return openTray(S.tray || (S.mode === 'guest' ? 'comments' : 'edit'));
+    if (id === 'studio') return openTray(S.tray || 'theme');
   }
 
   // Outside click closes the thread; Escape disarms everything. "Outside"
@@ -3451,10 +4038,11 @@
       }
       return;
     }
-    // Cmd/Ctrl+Z undo, Shift+Cmd+Z / Cmd+Y redo (decisions 2026-08-26).
-    // Runs AFTER the inlineEditing branch, and yields to native undo when
-    // focus sits in any input/textarea/contenteditable (dial fields live in
-    // the shadow root — composedPath sees through the retargeting).
+    // Cmd/Ctrl+Z undo, Shift+Cmd+Z / Cmd+Y redo — the session-local stack
+    // (decision 3, 2026-09-11). Runs AFTER the inlineEditing branch, and
+    // yields to native undo when focus sits in any input/textarea/
+    // contenteditable (dial fields live in the shadow root — composedPath
+    // sees through the retargeting).
     const mod = e.metaKey || e.ctrlKey;
     const k = (e.key || '').toLowerCase();
     if (mod && !e.altKey && (k === 'z' || k === 'y')) {
@@ -3463,12 +4051,13 @@
       const tag = t && t.tagName ? t.tagName.toLowerCase() : '';
       if (tag === 'input' || tag === 'textarea' || (t && t.isContentEditable)) return;
       e.preventDefault();
-      timeTravel(k === 'y' || e.shiftKey);
+      if (k === 'y' || e.shiftKey) doRedo();
+      else doUndo();
       return;
     }
     if (e.key === 'Escape') {
       if (S.arming) disarm();
-      if (S.card) { closeCard(); return; }
+      if (S.chipOpen) { closePanel(); clearSelOutline(); return; }
       if (S.tray) { closeTray(); return; }
       if (S.design) designOff();
       closeThread();
@@ -3497,14 +4086,15 @@
   let swallowTimer = null; // a frame held back by the own-save window, re-checked once it closes
   let eventsAllowed = false; // capability proven at boot; mirrors never subscribe
   function subscribeEvents() {
+    if (S.static) return subscribeRealtime();
     if (liveEs || !eventsAllowed || document.hidden) return;
     try {
       const es = new EventSource(apiUrl('/events'));
       liveEs = es;
     // A RECONNECT is the certain sign frames were missed (socket-pool
     // starvation, a server restart, laptop sleep) — resync instead of
-    // trusting the stream. The first open is boot truth: loadDraft already
-    // read it, and the signature check makes a no-divergence resync a
+    // trusting the stream. The first open is boot truth: loadOverlay already
+    // read it, and the rev guard makes a no-divergence resync a
     // no-op, so a flapping connection never reload-loops.
     let esOpened = false;
     es.addEventListener('open', () => {
@@ -3512,86 +4102,136 @@
       // (Last-Event-ID), but a restart's log is empty — without this the
       // board stays stale until someone else acts. loadPins is a read;
       // reads never broadcast, so this cannot loop.
-      if (esOpened) { syncRemoteDraft(); loadPins(); }
+      if (esOpened) { syncOverlay(); loadPins(); }
       esOpened = true;
     });
     es.addEventListener('dial', (ev) => {
       let d = null;
       try { d = JSON.parse(ev.data); } catch (_) {}
+      if (d) onLiveFrame(d);
+    });
+    } catch (_) {}
+  }
+  // ONE frame law for SSE and Realtime alike: the design-time event stream
+  // and the static driver's Supabase channels feed THIS dispatcher — a
+  // 'pins' frame refetches the board, an 'axes' frame IS the published
+  // truth, an 'overlay' frame IS the live overlay doc (rev-guarded: our
+  // own echo never re-applies).
+  function onLiveFrame(d) {
       if (!d || d.kind === 'pins') return loadPins();
-      // Another author context saved its draft — sync it INTO this
-      // document, unless the frame was this document's own save. The
-      // own-save suppression is DEFERRED, never dropped (the reactivity
-      // law's sibling, 2026-08-25): a frame landing inside the 1500ms
-      // window is re-checked once the window closes. Before this, an
-      // external change arriving ~1s after our own save vanished from
-      // this page until some later frame — and a shrinking external
-      // cleanup never converged by reload (probe-proved: the next beat
-      // armed a dead surface on a page that silently skipped its
-      // reload). Our own echo re-checks too, but the resync is a read:
-      // store == S.draft after our save, so it no-ops (no refetch
-      // loop). Coalesced — a burst inside the window arms ONE recheck.
-      if (d.kind === 'draft') {
+      // The live overlay changed (author's own echo lands here too — the
+      // rev guard inside overlayFrame is the suppressor; the own-save
+      // window only defers the rare external frame that arrives while our
+      // save is still settling).
+      if (d.kind === 'overlay') {
         const since = Date.now() - S.ownSave;
-        if (since > 1500) syncRemoteDraft();
-        else {
-          clearTimeout(swallowTimer);
-          swallowTimer = setTimeout(syncRemoteDraft, 1600 - since);
+        const doc = (d.data && typeof d.data.rev === 'number')
+          ? d.data : null;
+        if (doc) {
+          if (since > 1500) overlayFrame(doc);
+          else {
+            clearTimeout(swallowTimer);
+            swallowTimer = setTimeout(() => overlayFrame(doc), 1600 - since);
+          }
         }
       }
       // The published axes changed (our own POST echoes here too — applying
       // the same pick is idempotent and settles the URL to published).
+      // Palette mirrors the style/theme law exactly: the frame is the
+      // truth, and the live page re-applies the whole triple at once.
       if (d.kind === 'axes' && d.data && S.axes) {
-        S.axes.published = { style: d.data.style, theme: d.data.theme };
-        applyAxes(d.data.style, d.data.theme);
+        S.axes.published = {
+          style: d.data.style,
+          theme: d.data.theme,
+          palette: d.data.palette || '',
+          font: d.data.font || {},
+        };
+        applyAxes(d.data.style, d.data.theme, d.data.palette || '', d.data.font || {});
+      }
+      // The font plane's LIST changed (ingestion/deletion): the Fonts
+      // slide rebuilds its cards + dropdowns from the frame.
+      if (d.kind === 'fonts' && d.data && S.axes) {
+        S.axes.fonts = d.data;
+        if (S.tray === 'fonts') renderTraySlide('fonts');
       }
       // The identity plane: someone minted or revoked — an author holding
-      // the comments slide refetches the roster (read; reads never
-      // broadcast, so no loop).
+      // a roster panel (retired Comments slide; kept callable below)
+      // refetches it (read; reads never broadcast, so no loop).
       if (d.kind === 'guests' && S.mode === 'author' && slideBodies.comments) {
         loadGuests(true).then(() => {
           const panel = slideBodies.comments.querySelector('.gstpanel');
           if (panel) renderGuestRoster(panel);
         });
       }
-      // 'commit' frames feed the studio agent — the requester already
-      // heard its toast, there is nothing for this page to do.
-      // 'compose-ack' (2026-08-26): the studio panel inserted the
-      // pointer line + snapshot and acked. The Arxa tab's status line
-      // shows a VERIFIED ✓ only from here — the button never fakes it.
-      if (d.kind === 'compose-ack' && d.data && d.data.id) {
-        // Multi-page ack truth (2026-08-26): EVERY connected studio page
-        // acks its own result. The ✓ means AT LEAST ONE page took the
-        // insert — a true ack wins at once; a false ack (that page had
-        // no open composer) is noted and the window runs out, so a true
-        // ack from another page can still arrive. Only an all-false or
-        // silent window becomes the honest failure (timeout branch).
-        for (const k of Object.keys(S.arxa)) {
-          const a = S.arxa[k];
-          if (a.id === d.data.id && a.status === 'sending to composer…') {
-            if (d.data.inserted === false) {
-              a.ackFalse = true;
-            } else {
-              if (composeWaiter) { clearTimeout(composeWaiter); composeWaiter = null; }
-              a.ackFalse = false;
-              a.status = '✓ inserted into the composer'; a.statusOk = true;
-              if (S.card && S.cardTab === 'arxa') renderArxaPane();
-            }
-          }
-        }
-      }
-    });
-    } catch (_) {}
+      // ('commit' and 'compose-ack' frames died with the arxa-studio
+      // handoff — the 2026-09-11 redesign deleted the Arxa tab; the eject
+      // bake replaced the commit loop.)
+    }
+
+  // ── realtime (static): Supabase channels feed the SAME frame law ──────
+  // One channel per dial table, filtered to this design: pins / replies
+  // refetch the board; an axes row change carries the row as the frame's
+  // data; an overlays row change carries the live overlay doc (UPDATE =
+  // the new patches+rev, DELETE = revert-to-published). The drawings
+  // channel retired with the 2026-09-11 edit redesign. The visibility
+  // law's static twin: hidden tabs hold no channel; pagehide
+  // unsubscribes. A channel failure arms a 30s visibility-gated pins
+  // poll — the board degrades to eventually-consistent instead of dying.
+  let rtChannels = [];
+  let rtPoll = null;
+  function subscribeRealtime() {
+    if (rtChannels.length || !eventsAllowed || document.hidden) return;
+    let c;
+    try { c = sbClient(); } catch (_) { armRtFallback(); return; }
+    const mk = (table, fn) => c.channel('dial-' + table)
+      .on('postgres_changes', {
+        event: '*', schema: 'public', table: table,
+        filter: 'design_id=eq.' + S.static.designId,
+      }, fn)
+      .subscribe((status) => {
+        if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') armRtFallback();
+      });
+    rtChannels = [
+      mk('arxa_dial_pins', () => onLiveFrame({ kind: 'pins' })),
+      mk('arxa_dial_replies', () => onLiveFrame({ kind: 'pins' })),
+      mk('arxa_dial_axes', (payload) =>
+        onLiveFrame({ kind: 'axes', data: payload && payload.new })),
+      mk('arxa_dial_overlays', (payload) => onLiveFrame({
+        kind: 'overlay',
+        data: payload && payload.new
+          ? { patches: payload.new.patches || {}, rev: payload.new.rev || 0 }
+          : { patches: {}, rev: 0 }, // DELETE — revert-to-published
+      })),
+    ];
   }
+  function unsubscribeRealtime() {
+    if (!rtChannels.length) return;
+    let c = null;
+    try { c = sbClient(); } catch (_) {}
+    rtChannels.forEach((ch) => {
+      try { if (c) c.removeChannel(ch); else ch.unsubscribe(); } catch (_) {}
+    });
+    rtChannels = [];
+  }
+  function armRtFallback() {
+    if (rtPoll) return;
+    rtPoll = setInterval(() => { if (!document.hidden) loadPins(); }, 30000);
+  }
+  document.addEventListener('pagehide', () => {
+    unsubscribeRealtime();
+    if (rtPoll) { clearInterval(rtPoll); rtPoll = null; }
+  });
   // The visibility half of the socket-pool law: release this tab's socket
   // the moment it hides, take it back (and catch up) the moment it shows.
   document.addEventListener('visibilitychange', () => {
     if (!eventsAllowed) return;
     if (document.hidden) {
       if (liveEs) { liveEs.close(); liveEs = null; }
+      unsubscribeRealtime(); // static twin of the socket-pool law
     } else {
-      syncRemoteDraft();
+      syncOverlay(); // missed overlay frames never replay — read the truth
       loadPins();
+      if (S.static) staticSyncAxes(); // missed axes frames never replay — read the truth
       subscribeEvents();
     }
   });
@@ -3707,7 +4347,7 @@
     // Never-hide law (operator 2026-08-24): fan open, Edit Mode armed,
     // pin-drop armed, the smart card up, or inline text editing active.
     // The TRAY is deliberately absent — it swaps the dial out entirely.
-    return !!(S.open || S.design || S.arming || S.card || S.inlineEditing != null);
+    return !!(S.open || S.design || S.arming || S.chipOpen || S.inlineEditing != null);
   }
   function dialHide() {
     clearTimeout(dialHideAt);
@@ -3768,6 +4408,7 @@
   function finishBoot() {
     mountHost();
     applyTweakPrefs();
+    restoreUndoState(); // the converge reload must not erase the session stack
     openPinnedOnArrival();
     resumeAfterReload(); // no-op unless the last text edit converged by reload
   maybeRestoreTrackback(); // no-op unless the last selection lived on this route
@@ -3779,10 +4420,55 @@
     say('This share link is expired or invalid');
     return;
   }
+  // Deployed static mode (VERIFY ADDENDUM 17): the worker gated injection
+  // itself — no credential, no dial — so the capability probes stay out
+  // (there is no /__dial/* to probe). A guest token still has to RESOLVE:
+  // resolve_guest_link validates it against the live-link hashes and
+  // answers the registered identity; a dead link boots 'invalid', the
+  // same surface a dead link boots locally, having made ZERO writes. The
+  // author link was hash-verified worker-side — it boots straight in.
+  if (S.static) {
+    if (S.mode === 'guest') {
+      staticResolveGuest().then(async (g) => {
+        if (!g) {
+          S.mode = 'invalid';
+          mountHost();
+          applyTweakPrefs();
+          say('This share link is expired or invalid');
+          return;
+        }
+        S.guest = { id: g.guest_id, email: g.email, name: g.name };
+        S.name = S.guest.name || (S.guest.email.split('@')[0] || 'guest');
+        // Guest ordering: pins first (openPinnedOnArrival reads them
+        // inside finishBoot), then the overlay read + apply (decision 2 —
+        // clients see the author's live edits), then mount, then channels.
+        const r = await api('GET', '/pins');
+        if (r && r.pins) S.pins = r.pins;
+        await loadOverlay();
+        finishBoot();
+        renderPins();
+        updateBadge();
+        eventsAllowed = true;
+        subscribeEvents();
+      });
+      return;
+    }
+    // Static author: the Edit verb is live here now (decision 4) — read
+    // pins + overlay, then subscribe to the channels.
+    finishBoot();
+    api('GET', '/pins').then(async (r) => {
+      if (r && r.pins) { S.pins = r.pins; renderPins(); updateBadge(); }
+      await loadOverlay();
+      eventsAllowed = true;
+      subscribeEvents();
+    });
+    return;
+  }
   if (S.mode === 'guest') {
-    probeCapable('/pins').then((r) => {
+    probeCapable('/pins').then(async (r) => {
       if (!(r && r.pins)) { mirrorNote(); return; }
       S.pins = r.pins;
+      await loadOverlay();
       finishBoot();
       renderPins();
       updateBadge();
@@ -3791,7 +4477,7 @@
     });
     return;
   }
-  loadDraft().then((ok) => {
+  loadOverlay().then((ok) => {
     if (!ok) { mirrorNote(); return; }
     finishBoot();
     api('GET', '/pins').then((r) => {

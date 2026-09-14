@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:arxa/emit_structure.dart';
+import 'package:arxa/project.dart' show arxaHomeOverride;
 import 'package:test/test.dart';
 
 void main() {
@@ -11,9 +12,15 @@ void main() {
 
   setUp(() {
     tmp = Directory.systemTemp.createTempSync('emit-struct-test-');
+    // The skew read must never reach a real credential store from a test:
+    // empty env + an empty machine home = unconfigured = silent.
+    paletteSkewEnvOverride = const {};
+    arxaHomeOverride = '${tmp.path}/.arxa';
   });
 
   tearDown(() {
+    paletteSkewEnvOverride = null;
+    arxaHomeOverride = null;
     tmp.deleteSync(recursive: true);
   });
 
@@ -61,14 +68,14 @@ void main() {
   const homeVm = "export const surfaceId = 'proj.home';\n"
       "import {list} from '../../../../../services/facades/project_facade.js';\n";
 
-  test('happy path — join on surfaceId, exclusions preserved, deps captured', () {
+  test('happy path — join on surfaceId, exclusions preserved, deps captured', () async {
     final a = '${tmp.path}/a';
     plant(a, reg, routes, {
       'ui/views/stage_shell/stage_shell_viewmodel.js': shellVm,
       'ui/views/stage_shell/proj/home/home_viewmodel.js': homeVm,
     });
 
-    final rc = emitStructure(a);
+    final rc = await emitStructure(a);
     expect(rc, 0, reason: 'registry root emits');
 
     final d = jsonDecode(File('$a/structure.json').readAsStringSync()) as Map<String, dynamic>;
@@ -88,60 +95,60 @@ void main() {
     expect(d['registry'], 'models/screens_model/registry.json');
   });
 
-  test('--check green in sync, RED on hand-edit', () {
+  test('--check green in sync, RED on hand-edit', () async {
     final a = '${tmp.path}/a';
     plant(a, reg, routes, {
       'ui/views/stage_shell/stage_shell_viewmodel.js': shellVm,
       'ui/views/stage_shell/proj/home/home_viewmodel.js': homeVm,
     });
-    emitStructure(a);
+    await emitStructure(a);
 
-    expect(emitStructure(a, check: true), 0, reason: '--check green when in sync');
+    expect(await emitStructure(a, check: true), 0, reason: '--check green when in sync');
 
     // Hand-edit
     final f = File('$a/structure.json');
     f.writeAsStringSync(f.readAsStringSync().replaceFirst('StageShell', 'StageShellX'));
-    expect(emitStructure(a, check: true), 1, reason: '--check RED on hand-edit');
+    expect(await emitStructure(a, check: true), 1, reason: '--check RED on hand-edit');
   });
 
-  test('missing surfaceId (declared surface, no viewmodel) fails', () {
+  test('missing surfaceId (declared surface, no viewmodel) fails', () async {
     final b = '${tmp.path}/b';
     plant(b, reg, routes, {
       'ui/views/stage_shell/stage_shell_viewmodel.js': shellVm,
       // Missing: home_viewmodel.js
     });
-    expect(emitStructure(b), 1, reason: 'missing surfaceId fails');
+    expect(await emitStructure(b), 1, reason: 'missing surfaceId fails');
   });
 
-  test('orphan viewmodel (unclaimed surfaceId) fails', () {
+  test('orphan viewmodel (unclaimed surfaceId) fails', () async {
     final c = '${tmp.path}/c';
     plant(c, reg, routes, {
       'ui/views/stage_shell/stage_shell_viewmodel.js': shellVm,
       'ui/views/stage_shell/proj/home/home_viewmodel.js': homeVm,
       'ui/views/stage_shell/ghost/ghost_viewmodel.js': "export const surfaceId = 'proj.ghost';\n",
     });
-    expect(emitStructure(c), 1, reason: 'orphan viewmodel fails');
+    expect(await emitStructure(c), 1, reason: 'orphan viewmodel fails');
   });
 
-  test('empty shellRoots fails', () {
+  test('empty shellRoots fails', () async {
     final e = '${tmp.path}/e';
     plant(e, reg, "export const shellRoots = {};\nexport default [];", {
       'ui/views/stage_shell/stage_shell_viewmodel.js': shellVm,
       'ui/views/stage_shell/proj/home/home_viewmodel.js': homeVm,
     });
-    expect(emitStructure(e), 1, reason: 'empty shellRoots fails');
+    expect(await emitStructure(e), 1, reason: 'empty shellRoots fails');
   });
 
-  test('viewmodel with no surfaceId fails', () {
+  test('viewmodel with no surfaceId fails', () async {
     final g = '${tmp.path}/g';
     plant(g, reg, routes, {
       'ui/views/stage_shell/stage_shell_viewmodel.js': shellVm,
       'ui/views/stage_shell/proj/home/home_viewmodel.js': "export const page = () => {};\n",
     });
-    expect(emitStructure(g), 1, reason: 'viewmodel with no surfaceId fails');
+    expect(await emitStructure(g), 1, reason: 'viewmodel with no surfaceId fails');
   });
 
-  test('v2 Map registry (stages/shells) derives screens from the authoring SSOT', () {
+  test('v2 Map registry (stages/shells) derives screens from the authoring SSOT', () async {
     final a = '${tmp.path}/v2';
     Directory('$a/models/screens_model').createSync(recursive: true);
     File('$a/models/screens_model/registry.json').writeAsStringSync(jsonEncode({
@@ -228,7 +235,7 @@ void main() {
       ..writeAsStringSync(
           "export const surfaceId = 'studio_intake';\nimport {ctx} from '../../../../../services/studio_intake_services/facades/studio_intake_facade_service.js';\n");
 
-    final rc = emitStructure(a);
+    final rc = await emitStructure(a);
     expect(rc, 0, reason: 'v2 Map projection emits via the authoring SSOT');
 
     final d = jsonDecode(File('$a/structure.json').readAsStringSync()) as Map<String, dynamic>;
@@ -243,14 +250,14 @@ void main() {
     expect(d['flows'], isNull, reason: 'no flows authored -> key omitted');
   });
 
-  test('failed run writes NO structure.json', () {
+  test('failed run writes NO structure.json', () async {
     final c = '${tmp.path}/c';
     plant(c, reg, routes, {
       'ui/views/stage_shell/stage_shell_viewmodel.js': shellVm,
       'ui/views/stage_shell/proj/home/home_viewmodel.js': homeVm,
       'ui/views/stage_shell/ghost/ghost_viewmodel.js': "export const surfaceId = 'proj.ghost';\n",
     });
-    emitStructure(c); // fails (orphan)
+    await emitStructure(c); // fails (orphan)
     expect(File('$c/structure.json').existsSync(), isFalse,
         reason: 'failed run leaves no structure.json');
   });
@@ -280,13 +287,13 @@ void main() {
         (d['screens'] as List).firstWhere((s) => (s as Map)['id'] == id)
             as Map<String, dynamic>;
 
-    test('kits pass through; absent -> key omitted; excluded screens unchanged', () {
+    test('kits pass through; absent -> key omitted; excluded screens unchanged', () async {
       final a = plantRepo('k1', jsonEncode([
         {'id': 'stage.shell', 'shell': 'stage', 'comp': 'StageShell', 'surface': 'stage_shell_view'},
         {'id': 'proj.home', 'shell': 'proj', 'comp': 'ProjHome', 'surface': 'stage_shell_proj_home_view', 'kits': ['maps', 'payments']},
         {'id': 'proj.splash', 'shell': 'proj', 'comp': 'ProjSplash', 'surface': null, 'kits': ['maps']},
       ]));
-      expect(emitStructure(a), 0);
+      expect(await emitStructure(a), 0);
 
       final d = jsonDecode(File('$a/structure.json').readAsStringSync())
           as Map<String, dynamic>;
@@ -300,33 +307,33 @@ void main() {
       expect(splash['surface'], isNull);
       expect(splash['viewmodel'], isNull);
 
-      expect(emitStructure(a, check: true), 0,
+      expect(await emitStructure(a, check: true), 0,
           reason: '--check stays a pure regeneration-compare (green)');
     });
 
-    test('unknown kit name -> hard fail naming the screen', () {
+    test('unknown kit name -> hard fail naming the screen', () async {
       final a = plantRepo('k2', jsonEncode([
         {'id': 'stage.shell', 'shell': 'stage', 'comp': 'StageShell', 'surface': 'stage_shell_view'},
         {'id': 'proj.home', 'shell': 'proj', 'comp': 'ProjHome', 'surface': 'stage_shell_proj_home_view', 'kits': ['maps', 'crypto']},
       ]));
-      expect(emitStructure(a), 1, reason: 'unknown kit name fails');
+      expect(await emitStructure(a), 1, reason: 'unknown kit name fails');
       expect(File('$a/structure.json').existsSync(), isFalse);
     });
 
-    test('non-list kits -> hard fail', () {
+    test('non-list kits -> hard fail', () async {
       final a = plantRepo('k3', jsonEncode([
         {'id': 'stage.shell', 'shell': 'stage', 'comp': 'StageShell', 'surface': 'stage_shell_view'},
         {'id': 'proj.home', 'shell': 'proj', 'comp': 'ProjHome', 'surface': 'stage_shell_proj_home_view', 'kits': 'maps'},
       ]));
-      expect(emitStructure(a), 1, reason: 'kits as a bare string fails');
+      expect(await emitStructure(a), 1, reason: 'kits as a bare string fails');
     });
 
-    test('wrong item type in kits -> hard fail', () {
+    test('wrong item type in kits -> hard fail', () async {
       final a = plantRepo('k4', jsonEncode([
         {'id': 'stage.shell', 'shell': 'stage', 'comp': 'StageShell', 'surface': 'stage_shell_view'},
         {'id': 'proj.home', 'shell': 'proj', 'comp': 'ProjHome', 'surface': 'stage_shell_proj_home_view', 'kits': ['maps', 7]},
       ]));
-      expect(emitStructure(a), 1, reason: 'non-string kit entry fails');
+      expect(await emitStructure(a), 1, reason: 'non-string kit entry fails');
     });
   });
 
@@ -340,7 +347,7 @@ void main() {
       File('$dir/models/screens_model/flows.json').writeAsStringSync(jsonEncode(flows));
     }
 
-    test('registry states and statesProvenance thread through to the screen', () {
+    test('registry states and statesProvenance thread through to the screen', () async {
       final a = '${tmp.path}/s1';
       plant(
           a,
@@ -365,7 +372,7 @@ void main() {
             'ui/views/stage_shell/stage_shell_viewmodel.js': shellVm,
             'ui/views/stage_shell/proj/home/home_viewmodel.js': homeVm,
           });
-      expect(emitStructure(a), 0);
+      expect(await emitStructure(a), 0);
       final d = jsonDecode(File('$a/structure.json').readAsStringSync())
           as Map<String, dynamic>;
       final screens = d['screens'] as List;
@@ -378,7 +385,7 @@ void main() {
           reason: 'no states declared -> no key (additive only)');
     });
 
-    test('an out-of-vocabulary state is a hard fail naming the allowed set', () {
+    test('an out-of-vocabulary state is a hard fail naming the allowed set', () async {
       final a = '${tmp.path}/s2';
       plant(
           a,
@@ -393,12 +400,12 @@ void main() {
           ]),
           routes,
           {'ui/views/stage_shell/stage_shell_viewmodel.js': shellVm});
-      expect(emitStructure(a), isNot(0));
+      expect(await emitStructure(a), isNot(0));
       expect(File('$a/structure.json').existsSync(), isFalse,
           reason: 'a hard fail writes nothing');
     });
 
-    test('a well-formed edge feedback threads through verbatim', () {
+    test('a well-formed edge feedback threads through verbatim', () async {
       final a = '${tmp.path}/s3';
       plant(a, reg, routes, {
         'ui/views/stage_shell/stage_shell_viewmodel.js': shellVm,
@@ -418,13 +425,13 @@ void main() {
         },
       ];
       plantFlows(a, flows);
-      expect(emitStructure(a), 0);
+      expect(await emitStructure(a), 0);
       final d = jsonDecode(File('$a/structure.json').readAsStringSync())
           as Map<String, dynamic>;
       expect(d['flows'], flows);
     });
 
-    test('a feedback.kind outside the enum is a hard fail', () {
+    test('a feedback.kind outside the enum is a hard fail', () async {
       final a = '${tmp.path}/s4';
       plant(a, reg, routes, {
         'ui/views/stage_shell/stage_shell_viewmodel.js': shellVm,
@@ -443,11 +450,11 @@ void main() {
           ],
         },
       ]);
-      expect(emitStructure(a), isNot(0));
+      expect(await emitStructure(a), isNot(0));
       expect(File('$a/structure.json').existsSync(), isFalse);
     });
 
-    test('feedback on a SCREEN is a hard fail — it is an edge key', () {
+    test('feedback on a SCREEN is a hard fail — it is an edge key', () async {
       final a = '${tmp.path}/s5';
       plant(
           a,
@@ -462,7 +469,7 @@ void main() {
           ]),
           routes,
           {'ui/views/stage_shell/stage_shell_viewmodel.js': shellVm});
-      expect(emitStructure(a), isNot(0));
+      expect(await emitStructure(a), isNot(0));
       expect(File('$a/structure.json').existsSync(), isFalse);
     });
   });
@@ -472,13 +479,13 @@ void main() {
       File('$dir/models/screens_model/flows.json').writeAsStringSync(jsonEncode(flows));
     }
 
-    test('absent flows.json -> no flows key; present -> threaded verbatim', () {
+    test('absent flows.json -> no flows key; present -> threaded verbatim', () async {
       final a = '${tmp.path}/f1';
       plant(a, reg, routes, {
         'ui/views/stage_shell/stage_shell_viewmodel.js': shellVm,
         'ui/views/stage_shell/proj/home/home_viewmodel.js': homeVm,
       });
-      expect(emitStructure(a), 0);
+      expect(await emitStructure(a), 0);
       var d = jsonDecode(File('$a/structure.json').readAsStringSync())
           as Map<String, dynamic>;
       expect(d.containsKey('flows'), isFalse,
@@ -495,16 +502,16 @@ void main() {
         },
       ];
       plantFlows(a, flows);
-      expect(emitStructure(a), 0);
+      expect(await emitStructure(a), 0);
       d = jsonDecode(File('$a/structure.json').readAsStringSync())
           as Map<String, dynamic>;
       expect(d['flows'], flows,
           reason: 'flows thread through verbatim (surface:null endpoints allowed)');
-      expect(emitStructure(a, check: true), 0,
+      expect(await emitStructure(a, check: true), 0,
           reason: '--check stays green with flows threaded');
     });
 
-    test('edge endpoint not in the registry -> hard fail, no structure.json', () {
+    test('edge endpoint not in the registry -> hard fail, no structure.json', () async {
       final a = '${tmp.path}/f2';
       plant(a, reg, routes, {
         'ui/views/stage_shell/stage_shell_viewmodel.js': shellVm,
@@ -518,7 +525,7 @@ void main() {
           ],
         },
       ]);
-      expect(emitStructure(a), 1, reason: 'unresolved edge endpoint fails');
+      expect(await emitStructure(a), 1, reason: 'unresolved edge endpoint fails');
       expect(File('$a/structure.json').existsSync(), isFalse);
     });
   });
@@ -557,51 +564,51 @@ void main() {
 
     const trio = ['app.splash', 'app.startup', 'app.unknown'];
 
-    test('a compliant roster passes (requiresAuth: false pulls nothing)', () {
+    test('a compliant roster passes (requiresAuth: false pulls nothing)', () async {
       final a = '${tmp.path}/r0';
       plantAppShell(a, [
         for (final id in trio) rosterEntry(id),
         {...rosterEntry('app.home'), 'requiresAuth': false},
       ]);
-      expect(emitStructure(a), 0, reason: 'full roster, no requiresAuth -> green');
+      expect(await emitStructure(a), 0, reason: 'full roster, no requiresAuth -> green');
     });
 
     for (final missing in trio) {
-      test('missing $missing fails the freeze, writes nothing', () {
+      test('missing $missing fails the freeze, writes nothing', () async {
         final a = '${tmp.path}/r-no-${missing.split('.').last}';
         plantAppShell(a, [
           for (final id in trio)
             if (id != missing) rosterEntry(id),
         ]);
-        expect(emitStructure(a), 1, reason: 'roster is hard-required');
+        expect(await emitStructure(a), 1, reason: 'roster is hard-required');
         expect(File('$a/structure.json').existsSync(), isFalse);
       });
     }
 
-    test('requiresAuth pulls app.access into the roster — both directions', () {
+    test('requiresAuth pulls app.access into the roster — both directions', () async {
       final dash = {...rosterEntry('app.dashboard'), 'requiresAuth': true};
 
       final noAccess = '${tmp.path}/r-auth-noaccess';
       plantAppShell(noAccess, [for (final id in trio) rosterEntry(id), dash]);
-      expect(emitStructure(noAccess), 1,
+      expect(await emitStructure(noAccess), 1,
           reason: 'requiresAuth with no app.access fails');
       expect(File('$noAccess/structure.json').existsSync(), isFalse);
 
       final withAccess = '${tmp.path}/r-auth-access';
       plantAppShell(withAccess,
           [for (final id in trio) rosterEntry(id), dash, rosterEntry('app.access')]);
-      expect(emitStructure(withAccess), 0,
+      expect(await emitStructure(withAccess), 0,
           reason: 'app.access satisfies the conditional roster');
     });
 
-    test('a surface:null roster entry does not satisfy the law', () {
+    test('a surface:null roster entry does not satisfy the law', () async {
       final a = '${tmp.path}/r-null';
       plantAppShell(a, [
         rosterEntry('app.splash'),
         rosterEntry('app.startup'),
         rosterEntry('app.unknown', nullSurface: true),
       ]);
-      expect(emitStructure(a), 1,
+      expect(await emitStructure(a), 1,
           reason: 'an excluded app.unknown routes to nothing');
       expect(File('$a/structure.json').existsSync(), isFalse);
     });
@@ -621,30 +628,30 @@ void main() {
       };
     }
 
-    test('per-entry role fields fill the roster without app.* ids', () {
+    test('per-entry role fields fill the roster without app.* ids', () async {
       final a = '${tmp.path}/r-roles';
       plantAppShell(a, [
         roleEntry('studio_startup.splash', 'splash'),
         roleEntry('studio_startup.home', 'startup'),
         roleEntry('studio_unknown.lost', 'unknown'),
       ]);
-      expect(emitStructure(a), 0,
+      expect(await emitStructure(a), 0,
           reason: 'role declarations satisfy the roster law via mapping');
     });
 
-    test('a surface:null entry does not fill its declared role', () {
+    test('a surface:null entry does not fill its declared role', () async {
       final a = '${tmp.path}/r-roles-null';
       plantAppShell(a, [
         roleEntry('studio_startup.splash', 'splash', nullSurface: true),
         roleEntry('studio_startup.home', 'startup'),
         roleEntry('studio_unknown.lost', 'unknown'),
       ]);
-      expect(emitStructure(a), 1,
+      expect(await emitStructure(a), 1,
           reason: 'an excluded splash routes to nothing, role or not');
       expect(File('$a/structure.json').existsSync(), isFalse);
     });
 
-    test('requiresAuth pulls the access role; a role field satisfies it', () {
+    test('requiresAuth pulls the access role; a role field satisfies it', () async {
       final a = '${tmp.path}/r-roles-access';
       plantAppShell(a, [
         roleEntry('studio_startup.splash', 'splash'),
@@ -657,8 +664,193 @@ void main() {
         {...roleEntry('studio_design.canvas', ''), 'requiresAuth': true}
           ..remove('role'),
       ]);
-      expect(emitStructure(a), 0,
+      expect(await emitStructure(a), 0,
           reason: 'role: access fills the conditional roster slot');
+    });
+  });
+
+  // ------------------------------------------- palette plane (Q8)
+  group('palette plane (Q8)', () {
+    const palettesJson = '{\n'
+        '  "version": 1,\n'
+        '  "comment": "Palette plane declaration (VERIFY ADDENDUM 17).",\n'
+        '  "default": "marine",\n'
+        '  "palettes": [\n'
+        '    {"id": "marine", "name": "Marine Blue", "swatch": ["#ccdbdc", "#9ad1d4", "#80ced7", "#007ea7", "#003249"], "themeColor": "#007EA7", "seeded": true},\n'
+        '    {"id": "c-6f58c9", "name": "Lavender Iris", "swatch": ["#bdede0", "#bbdbd1", "#b6b8d6", "#7e78d2", "#6f58c9"], "themeColor": "#7e78d2", "seeded": true, "provenance": "fixture-extra"}\n'
+        '  ]\n'
+        '}\n';
+
+    String plantPlane(String name, {String? palettes, bool marker = false}) {
+      final a = '${tmp.path}/$name';
+      plant(a, reg, routes, {
+        'ui/views/stage_shell/stage_shell_viewmodel.js': shellVm,
+        'ui/views/stage_shell/proj/home/home_viewmodel.js': homeVm,
+      });
+      if (palettes != null) {
+        File('$a/palettes.json').writeAsStringSync(palettes);
+      }
+      if (marker) {
+        File('$a/arxa.json').writeAsStringSync(
+            jsonEncode({'name': 'fixture-project', 'kind': 'app'}));
+      }
+      return a;
+    }
+
+    test('a valid palettes.json threads VERBATIM into structure.json', () async {
+      final a = plantPlane('p1', palettes: palettesJson);
+      expect(await emitStructure(a), 0);
+
+      final d = jsonDecode(File('$a/structure.json').readAsStringSync())
+          as Map<String, dynamic>;
+      final block = d['palettes'] as Map<String, dynamic>;
+      expect(block['default'], 'marine');
+      final entries = block['palettes'] as List;
+      expect(entries.length, 2);
+      final marine = entries[0] as Map<String, dynamic>;
+      expect(marine['swatch'],
+          ['#ccdbdc', '#9ad1d4', '#80ced7', '#007ea7', '#003249']);
+      expect((entries[1] as Map)['provenance'], 'fixture-extra',
+          reason: 'unknown entry keys ride through — verbatim, not re-serialized');
+      expect(block.containsKey('version'), isFalse,
+          reason: 'the block is {default, palettes} — manifest bookkeeping stays in the design dir');
+      expect(block.containsKey('comment'), isFalse);
+      expect(await emitStructure(a, check: true), 0,
+          reason: '--check stays a pure regeneration-compare with the plane aboard');
+    });
+
+    test('no palettes.json -> no palettes key (pre-law artifact)', () async {
+      final a = plantPlane('p2');
+      expect(await emitStructure(a), 0);
+      final d = jsonDecode(File('$a/structure.json').readAsStringSync())
+          as Map<String, dynamic>;
+      expect(d.containsKey('palettes'), isFalse,
+          reason: 'absent = no plane; valid for pre-law artifacts');
+    });
+
+    test('an unparsable palettes.json threads nothing and never fails the freeze', () async {
+      final a = plantPlane('p3', palettes: '{"default": 7, "palettes": []}');
+      expect(await emitStructure(a), 0,
+          reason: 'a broken declaration disables the axis, never guesses');
+      final d = jsonDecode(File('$a/structure.json').readAsStringSync())
+          as Map<String, dynamic>;
+      expect(d.containsKey('palettes'), isFalse,
+          reason: 'gate_design_palettes (P1) owns naming the malformed file');
+    });
+
+    test('paletteSkewLine is quiet on agreement or the unknown', () {
+      expect(paletteSkewLine(published: null, manifestDefault: 'marine'), isNull);
+      expect(paletteSkewLine(published: '', manifestDefault: 'marine'), isNull);
+      expect(paletteSkewLine(published: 'marine', manifestDefault: 'marine'), isNull);
+      expect(paletteSkewLine(published: 'c-6f58c9', manifestDefault: 'marine'),
+          'published is c-6f58c9, manifest default is marine — the scaffold '
+          'ships marine; update palettes.json or publish marine to change that.');
+    });
+
+    test('fires the advisory when the published pick disagrees', () async {
+      final a = plantPlane('p4', palettes: palettesJson, marker: true);
+      final lines = <String>[];
+      await warnPaletteSkew(a,
+          env: const {
+            'ARXA_SUPABASE_URL': 'https://fixture.supabase.co',
+            'ARXA_SUPABASE_SERVICE_KEY': 'service-key',
+          },
+          readPublished: (url, key, project, artifact) async {
+            expect(project, 'fixture-project',
+                reason: 'the arxa.json marker names the project dimension');
+            expect(artifact, 'p4',
+                reason: 'artifact = the design dir basename (design_server)');
+            return 'c-6f58c9';
+          },
+          out: lines.add);
+      expect(lines, [
+        'published is c-6f58c9, manifest default is marine — the scaffold '
+            'ships marine; update palettes.json or publish marine to change that.',
+      ]);
+    });
+
+    test('suppressed when unconfigured — no credentials, no read attempted', () async {
+      final a = plantPlane('p5', palettes: palettesJson, marker: true);
+      final lines = <String>[];
+      var attempted = false;
+      await warnPaletteSkew(a,
+          env: const {},
+          readPublished: (url, key, project, artifact) async {
+            attempted = true;
+            return 'c-6f58c9';
+          },
+          out: lines.add);
+      expect(attempted, isFalse, reason: 'unconfigured = no store read at all');
+      expect(lines, isEmpty);
+    });
+
+    test('suppressed without an arxa.json marker — no store identity', () async {
+      final a = plantPlane('p6', palettes: palettesJson);
+      var attempted = false;
+      await warnPaletteSkew(a,
+          env: const {
+            'ARXA_SUPABASE_URL': 'https://fixture.supabase.co',
+            'ARXA_SUPABASE_SERVICE_KEY': 'service-key',
+          },
+          readPublished: (url, key, project, artifact) async {
+            attempted = true;
+            return 'c-6f58c9';
+          },
+          out: (_) {});
+      expect(attempted, isFalse);
+    });
+
+    test('the credentials file fills when the env is absent', () async {
+      final a = plantPlane('p7', palettes: palettesJson, marker: true);
+      Directory('${tmp.path}/.arxa').createSync(recursive: true);
+      File('${tmp.path}/.arxa/supabase').writeAsStringSync(
+          '# machine credentials\nurl=https://file.supabase.co\nservice_key=file-key\n');
+      final lines = <String>[];
+      await warnPaletteSkew(a,
+          env: const {},
+          readPublished: (url, key, project, artifact) async {
+            expect(url, 'https://file.supabase.co');
+            expect(key, 'file-key');
+            return 'c-6f58c9';
+          },
+          out: lines.add);
+      expect(lines.length, 1, reason: 'file credentials configured -> the read runs');
+    });
+
+    test('a failing store read is swallowed — advisory never blocks', () async {
+      final a = plantPlane('p8', palettes: palettesJson, marker: true);
+      final lines = <String>[];
+      await warnPaletteSkew(a,
+          env: const {
+            'ARXA_SUPABASE_URL': 'https://fixture.supabase.co',
+            'ARXA_SUPABASE_SERVICE_KEY': 'service-key',
+          },
+          readPublished: (url, key, project, artifact) async =>
+              throw const HttpException('offline'),
+          out: lines.add);
+      expect(lines, isEmpty);
+    });
+
+    test('the freeze write path runs the skew read; --check never touches the store', () async {
+      final a = plantPlane('p9', palettes: palettesJson, marker: true);
+      var reads = 0;
+      paletteSkewEnvOverride = const {
+        'ARXA_SUPABASE_URL': 'https://fixture.supabase.co',
+        'ARXA_SUPABASE_SERVICE_KEY': 'service-key',
+      };
+      paletteSkewReaderOverride = (url, key, project, artifact) async {
+        reads++;
+        return 'c-6f58c9';
+      };
+      try {
+        expect(await emitStructure(a), 0,
+            reason: 'the advisory never blocks the freeze');
+        expect(reads, 1, reason: 'the write path performs one best-effort read');
+        expect(await emitStructure(a, check: true), 0);
+        expect(reads, 1, reason: '--check stays hermetic — no network');
+      } finally {
+        paletteSkewReaderOverride = null;
+      }
     });
   });
 }

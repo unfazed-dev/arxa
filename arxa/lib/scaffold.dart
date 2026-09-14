@@ -49,8 +49,12 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'design_palettes.dart' show anchorsFor;
 import 'mem_b.dart';
+import 'palette.dart' show apciLcSafe, canonHex, tonalRamp;
+import 'palette_derive.dart' show anchorsForN;
 import 'story_map.dart';
+import 'theme_map.dart' show themeMap;
 
 /// The gen-l10n config is a FIXED contract — gates assert it verbatim, so it is
 /// a constant, never templated. (synthetic-package deliberately absent: the SDK
@@ -622,6 +626,139 @@ void _emitL10n(String designRoot, String appRoot, List<String> files) {
   File('$appRoot/l10n.yaml').writeAsStringSync(l10nYaml);
 }
 
+// ----------------------------------------------------------- palette plane
+
+/// The app-relative path of the palette-derived Tier-1 color vocabulary
+/// file (the arxa_kit_app_* naming law: the one app-owned colors file
+/// beside the kit common set). For a plane-carrying design it SUPERSEDES
+/// the kit colors copy — two color vocabularies is the fork the
+/// proliferation law forbids; the rest of the kit common set copies
+/// unchanged. Once per app, outside the per-surface counts.
+const paletteVocabularyPath = 'lib/ui/common/arxa_kit_app_colors.dart';
+
+/// The frozen DEFAULT palette behind a structure.json `palettes` block:
+/// its id, display name, verbatim swatch, and the five role anchors.
+/// Null when the block is absent (no plane — valid for pre-law
+/// artifacts), when the default names no entry, or when the swatch
+/// breaks the 3–7 law (Q5) — a corrupted freeze emits no vocabulary;
+/// the structure/P gates own naming the malformed input.
+///
+/// Anchors: N=5 reuses [anchorsFor] (design_palettes.dart — the verified
+/// lightness-rank law, one home); N!=5 delegates to [anchorsForN]
+/// (palette_derive.dart — the one engine).
+({String id, String name, List<String> swatch, Map<String, String> anchors})?
+    paletteVocabularyOf(Map<String, dynamic> structure) {
+  final block = structure['palettes'];
+  if (block is! Map) return null;
+  final def = block['default'];
+  final list = block['palettes'];
+  if (def is! String || list is! List) return null;
+  for (final e in list) {
+    if (e is! Map || e['id'] != def) continue;
+    final swatch = e['swatch'];
+    if (swatch is! List) return null;
+    final hexes = [for (final s in swatch) '$s'];
+    if (hexes.length < 3 || hexes.length > 7) return null;
+    return (
+      id: def,
+      name: e['name'] is String ? e['name'] as String : def,
+      swatch: hexes,
+      anchors: hexes.length == 5 ? anchorsFor(hexes) : anchorsForN(hexes),
+    );
+  }
+  return null;
+}
+
+/// The five anchors as a W3C DTCG tree mirroring palette.dart generate()'s
+/// shape: one tonal-ramp group per role (dark/accent/field/beige/paper,
+/// 13 tones + the 500 anchor each) plus the four curated semantic
+/// roles — bg.surface = the paper anchor, bg.status-bar-bg = the dark
+/// anchor, fg.primary = the dark anchor, fg.on-accent = the APCA pick
+/// against the accent anchor (white at |Lc75|+, else the accent ramp's
+/// lightest tone — generate()'s own law). The per-tone oklch/platform
+/// $extensions garnish stays palette.dart-private; themeMap reads only
+/// $type/$value.
+Map<String, dynamic> paletteDtcgTree(Map<String, String> anchors) {
+  Map<String, dynamic> rampGroup(String hex) {
+    final ramp = tonalRamp(hex);
+    return <String, dynamic>{
+      for (final tone in ramp.keys.toList()..sort())
+        tone.toString(): <String, dynamic>{
+          r'$type': 'color',
+          r'$value': ramp[tone],
+        },
+    };
+  }
+
+  final dark = canonHex(anchors['dark']!);
+  final accent = canonHex(anchors['accent']!);
+  final onAccent =
+      apciLcSafe('#FFFFFF', accent) >= 75 ? '#FFFFFF' : tonalRamp(accent)[99]!;
+  return <String, dynamic>{
+    r'$schema': 'https://www.designtokens.org/TR/2025.10/format/',
+    r'$description': 'palette-plane vocabulary from the frozen default '
+        'palette (five anchors -> HCT tonal ramps; mirrors palette.dart '
+        'generate()).',
+    'color': <String, dynamic>{
+      'dark': rampGroup(dark),
+      'accent': rampGroup(accent),
+      'field': rampGroup(anchors['field']!),
+      'beige': rampGroup(anchors['beige']!),
+      'paper': rampGroup(anchors['paper']!),
+      'bg': <String, dynamic>{
+        'surface': <String, dynamic>{
+          r'$type': 'color',
+          r'$value': canonHex(anchors['paper']!),
+        },
+        'status-bar-bg': <String, dynamic>{
+          r'$type': 'color',
+          r'$value': dark,
+          r'$description': 'default = the dark anchor; override '
+              'per-screen (a dark screen needs the bar to match)',
+        },
+      },
+      'fg': <String, dynamic>{
+        'primary': <String, dynamic>{r'$type': 'color', r'$value': dark},
+        'on-accent': <String, dynamic>{r'$type': 'color', r'$value': onAccent},
+      },
+    },
+  };
+}
+
+/// The vocabulary file's bytes: the provenance header (frozen palette id
+/// + swatch + the scaffolder-owned law) over the themeMap() fragment.
+/// Same inputs -> same bytes, which is what makes the coverage gate's
+/// C6 drift check a byte diff.
+String renderPaletteVocabulary({
+  required String id,
+  required String name,
+  required List<String> swatch,
+  required Map<String, String> anchors,
+}) {
+  return '// arxa-scaffolder: Tier-1 color vocabulary derived from the frozen DEFAULT\n'
+      '// palette (the palette plane — docs/plans/arxa-palette-plane-universal.md, Q8).\n'
+      '// SCAFFOLDER-OWNED under the generation gap: regenerated on every scaffold;\n'
+      '// do not hand-edit — re-freeze, re-scaffold. Once per app, outside the\n'
+      '// per-surface counts; for a plane-carrying design this file SUPERSEDES\n'
+      '// the kit colors copy (arxa_kit_colors.dart).\n'
+      '//   palette:  $id — $name\n'
+      '//   swatch:   ${swatch.join(' ')} (${swatch.length} hexes, verbatim from palettes.json)\n'
+      '//   anchors:  dark ${anchors['dark']} · accent ${anchors['accent']} · field ${anchors['field']} · beige ${anchors['beige']} · paper ${anchors['paper']}\n'
+      '// Apps never runtime-switch palettes (Q1): the chosen palette is baked at\n'
+      '// scaffold time through the DTCG path (anchors -> tonalRamp -> DTCG ->\n'
+      '// themeMap). The coverage gate re-renders this file from structure.json\'s\n'
+      '// palettes block and names it on drift (C6).\n'
+      "import 'package:flutter/material.dart';\n"
+      '\n'
+      '/// The frozen palette as a ThemeData fragment (theme_map, ADR-0014 stage 4):\n'
+      '/// every derived token recorded for the operator wiring colorScheme /\n'
+      '/// extensions. The non-default palettes stay audit-trail only in\n'
+      '/// structure.json.\n'
+      'final arxaKitAppPaletteTheme =\n'
+      '    ${themeMap(paletteDtcgTree(anchors))}'
+      ';\n';
+}
+
 // ----------------------------------------------------------- manifest
 
 /// The .shell-structure.json the coverage gate reads: selfContained shells +
@@ -914,7 +1051,8 @@ int scaffold(
   final views = '$appRoot/lib/ui/views';
 
   if (check) {
-    return _check(views, frozen, factors, targets, appRoot, l10n, resolved);
+    return _check(
+        views, frozen, factors, targets, appRoot, l10n, resolved, loaded.data!);
   }
 
   final per = 2 + factors.length; // base + viewmodel + one per derived factor
@@ -961,6 +1099,23 @@ int scaffold(
     Directory(shDir).createSync(recursive: true);
     File('$shDir/design-system.md').writeAsStringSync(_shellDesignSystemDoc(sh, theme: themeBlock, fonts: fontsBlock));
     File('$shDir/${sh}_chrome.dart').writeAsStringSync(_shellChrome(sh));
+  }
+
+  // The palette plane (Q8): the frozen DEFAULT palette bakes the app's Tier-1
+  // color vocabulary. Silent no-op when structure.json carries no palettes
+  // block (pre-law artifacts ship no plane). One file per app, outside the
+  // per-surface counts; it SUPERSEDES the kit colors copy for a
+  // plane-carrying design (two color vocabularies is the fork the
+  // proliferation law forbids).
+  final vocab = paletteVocabularyOf(loaded.data!);
+  if (vocab != null) {
+    final vf = File('$appRoot/$paletteVocabularyPath');
+    vf.parent.createSync(recursive: true);
+    vf.writeAsStringSync(renderPaletteVocabulary(
+        id: vocab.id,
+        name: vocab.name,
+        swatch: vocab.swatch,
+        anchors: vocab.anchors));
   }
 
   final manifest = buildManifest(frozen, factors, targets, l10n, resolved);
@@ -1011,6 +1166,10 @@ int scaffold(
     print('  kit-manifest: ${resolved.length} resolved kit(s) from '
         '${_relPath(sidecarPath, appRoot)} (D8 picker-confirmed set)');
   }
+  if (vocab != null) {
+    print('  palette vocabulary -> $paletteVocabularyPath '
+        "(frozen palette '${vocab.id}')");
+  }
   print('  manifest -> ${_relPath(mfPath, appRoot)}');
   return 0;
 }
@@ -1025,6 +1184,7 @@ int _check(
   String appRoot,
   List<String>? l10n,
   List<dynamic>? resolved,
+  Map<String, dynamic> structure,
 ) {
   final problems = <String>[];
   for (final s in frozen) {
@@ -1099,6 +1259,27 @@ int _check(
     } else if (!yf.readAsStringSync().contains('template-arb-file: app_en.arb')) {
       problems.add('l10n.yaml template-arb-file drifted (contract: app_en.arb) — '
           're-run scaffold');
+    }
+  }
+  // The palette plane (Q8): the vocabulary is scaffolder-owned, so a byte
+  // diff against the re-render is the discipline — same as the manifest diff.
+  // Absent palettes block = no plane, nothing to check.
+  final vocab = paletteVocabularyOf(structure);
+  if (vocab != null) {
+    final vf = File('$appRoot/$paletteVocabularyPath');
+    if (!vf.existsSync()) {
+      problems.add('$paletteVocabularyPath missing — structure.json freezes '
+          "palette '${vocab.id}' but its color vocabulary was never scaffolded "
+          '(re-run scaffold)');
+    } else if (vf.readAsStringSync() !=
+        renderPaletteVocabulary(
+            id: vocab.id,
+            name: vocab.name,
+            swatch: vocab.swatch,
+            anchors: vocab.anchors)) {
+      problems.add('$paletteVocabularyPath drifted from frozen palette '
+          "'${vocab.id}' — scaffolder-owned: do not hand-edit; re-freeze, "
+          're-scaffold');
     }
   }
   if (problems.isNotEmpty) {

@@ -1,10 +1,12 @@
 // arxa intake artifacts — the four project-shell files intake emits BESIDES
-// brief.md / registry.json / flows.json (Slice B1).
+// brief.md / registry.json / flows.json (Slice B1), plus brandcolors.json
+// (the palette plane's intake seam, Q6).
 //
 //   intake/personas.json    who the app is for, one entry per elicited user type
 //   intake/map.json         releases / epics / features / stories + counts
 //   intake/moodboard.json   boards / references / shots, src precomputed
 //   intake/direction.json   adjectives / avoids, provenance promoted per item
+//   intake/brandcolors.json brandColors verbatim — the reseed's default-slot source
 //
 // THE CONTRACT THIS MODULE INHERITS FROM intake.dart
 //   Every emitter here is a PURE function of the answers document. No clock, no
@@ -19,10 +21,10 @@
 //   no goals. Manufacturing three personas from it is the confident fiction §22
 //   forbids — it would read as authoritative and nobody could tell it apart from
 //   an elicited one. So each emitter reads an OPTIONAL group off the answers
-//   (`personas`, `map`, `moodboard`, `direction`) and, when the group is absent,
-//   emits the empty shape. Absent must never be an error: every project that
-//   existed before Slice B has all four groups missing, and re-emitting one of
-//   those must keep working.
+//   (`personas`, `map`, `moodboard`, `direction`, `brandColors`) and, when the
+//   group is absent, emits the empty shape. Absent must never be an error:
+//   every project that existed before Slice B has every one of these groups
+//   missing, and re-emitting one of those must keep working.
 //
 // WHY THE EMITTERS SPREAD RATHER THAN ENUMERATE
 //   Task #29: an emitter that listed the keys it knew about silently dropped
@@ -491,6 +493,40 @@ Map<String, dynamic> emitDirection(Map<String, dynamic> answers) {
         .map((r) => r.cast<String, dynamic>())
         .toList(),
   };
+}
+
+// -------------------------------------------------------------- brand colors
+
+/// Emit `brandcolors.json` from the optional `brandColors` answer group —
+/// the palette plane's intake seam (Q6): client-stated colors outrank
+/// references, so the default palette slot derives from these first (Q7
+/// slot-fill), and `arxa palette reseed` reads this file to do it.
+///
+/// Hexes pass through VERBATIM — `#`-less stays `#`-less, case kept.
+/// Normalizing to '#'-prefixed here would fork the normalization law out of
+/// palette_derive (Q10's one home) and would break Q5's "manifest keeps
+/// source hexes verbatim" before the source ever reaches the engine.
+///
+/// Absent group → `[]`: every pre-plane project has no `brandColors` key,
+/// and re-emitting one must degrade to an empty list rather than an error.
+List<Map<String, dynamic>> emitBrandColors(Map<String, dynamic> answers) {
+  final declared = answers['brandColors'];
+  if (declared is! List) return const [];
+  final out = <Map<String, dynamic>>[];
+  for (final c in declared) {
+    if (c is! Map) continue;
+    final color = c.cast<String, dynamic>();
+    // A null role and an absent one both mean "no pin" — carry one
+    // spelling of it.
+    if (color['role'] == null) color.remove('role');
+    // The entry passes through whole (task #29's spread rule — no key
+    // enumeration here). intake.dart's [brandColorKeys] is the pairing
+    // half: it closes the group at VALIDATION, so a key that rides along
+    // is one the validator accepted, and a future legal key can never be
+    // silently dropped the way `element` and `feedback` were.
+    out.add(color);
+  }
+  return out;
 }
 
 // ---------------------------------------------------------------- validation

@@ -53,6 +53,7 @@ import 'package:arxa/gates.dart';
 import 'package:arxa/lens_cli.dart';
 import 'package:arxa/lint_conventions.dart';
 import 'package:arxa/palette.dart';
+import 'package:arxa/palette_cli.dart';
 import 'package:arxa/server.dart' as server;
 import 'package:arxa/scaffold_cli.dart';
 import 'package:arxa/story_map_cli.dart';
@@ -102,6 +103,8 @@ Future<void> main(List<String> args) async {
       exit(projectMain(rest));
     case 'moodboard':
       exit(moodboardCheckMain(rest));
+    case 'palette':
+      exit(await paletteCliMain(rest));
     case 'memory':
       exit(await memoryCli(rest));
     case 'credentials':
@@ -180,6 +183,10 @@ Commands:
   emit <name>    Run an emitter: structure, htmx, playground, transform_tokens,
                  synthesize, blueprint, emit_stage, generate_view, theme-map,
                  palette, story-map, scaffold
+  palette <verb> The palette engine — derive (a reference -> a 5-color palette
+                 from a Coolors link, a URL, an image, or raw hexes) and reseed
+                 (the slot-fill law over the intake chain: brandColors ->
+                 suitors -> references -> the fallback five)
   lint [root]    Scan for repo convention violations (R2, R3)
   docs [root]    Validate the docs/INDEX.md contract (dead links fail,
                  unindexed docs + KB-lint orphans warn)
@@ -685,7 +692,7 @@ void _runEmit(List<String> args) {
     case 'scaffold':
       exit(scaffoldMain(rest));
     case 'structure':
-      exit(emitStructure('$appRoot/$designDir', check: check));
+      emitStructure('$appRoot/$designDir', check: check).then((rc) => exit(rc));
     case 'transform_tokens':
       exit(transformTokens('$appRoot/$designDir/tokens.json', '$appRoot/$designDir'));
     case 'htmx':

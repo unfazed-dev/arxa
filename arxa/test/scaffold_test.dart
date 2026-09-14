@@ -894,6 +894,148 @@ void main() {
     });
   });
 
+  group('palette plane: the frozen default bakes the color vocabulary (Q8)', () {
+    Map<String, dynamic> planed() {
+      final st = baseStruct();
+      st['palettes'] = {
+        'default': 'marine',
+        'palettes': [
+          {
+            'id': 'marine',
+            'name': 'Marine Blue',
+            'swatch': ['#ccdbdc', '#9ad1d4', '#80ced7', '#007ea7', '#003249'],
+            'themeColor': '#007EA7',
+            'seeded': true,
+          },
+          {
+            'id': 'c-6f58c9',
+            'name': 'Lavender Iris',
+            'swatch': ['#bdede0', '#bbdbd1', '#b6b8d6', '#7e78d2', '#6f58c9'],
+            'themeColor': '#7e78d2',
+            'seeded': true,
+          },
+        ],
+      };
+      return st;
+    }
+
+    String vocabFile(String app) =>
+        '$app/lib/ui/common/arxa_kit_app_colors.dart';
+
+    test('anchors derive by the lightness-rank law; the tree pins the four roles', () {
+      final vocab = paletteVocabularyOf(planed())!;
+      expect(vocab.id, 'marine');
+      expect(vocab.anchors, {
+        'dark': '#003249',
+        'accent': '#007ea7',
+        'field': '#80ced7',
+        'beige': '#9ad1d4',
+        'paper': '#ccdbdc',
+      });
+      final tree = paletteDtcgTree(vocab.anchors);
+      final color = tree['color'] as Map<String, dynamic>;
+      expect(color.keys.toList(),
+          ['dark', 'accent', 'field', 'beige', 'paper', 'bg', 'fg'],
+          reason: 'five ramp groups + the two semantic groups, generate() order');
+      expect((color['dark'] as Map).length, 14,
+          reason: '13 tones + the 500 anchor, per group');
+      final bg = color['bg'] as Map<String, dynamic>;
+      expect((bg['surface'] as Map)[r'$value'], '#ccdbdc',
+          reason: 'bg.surface = the paper anchor');
+      expect((bg['status-bar-bg'] as Map)[r'$value'], '#003249',
+          reason: 'bg.status-bar-bg = the dark anchor');
+      final fg = color['fg'] as Map<String, dynamic>;
+      expect((fg['primary'] as Map)[r'$value'], '#003249',
+          reason: 'fg.primary = the dark anchor');
+      expect((fg['on-accent'] as Map)[r'$value'], '#FFFFFF',
+          reason: 'white hits |Lc75|+ on #007ea7 (APCA-picked, generate() law)');
+    });
+
+    test('N!=5 delegates to the engine (anchorsForN); the vocabulary still emits', () {
+      final st = planed();
+      final entries = (st['palettes'] as Map)['palettes'] as List;
+      (entries[0] as Map)['swatch'] =
+          ['#ccdbdc', '#80ced7', '#007ea7', '#003249'];
+      final vocab = paletteVocabularyOf(st)!;
+      expect(vocab.anchors, {
+        'dark': '#003249',
+        'accent': '#007ea7',
+        'field': '#80ced7',
+        'beige': '#a9d2d6',
+        'paper': '#ccdbdc',
+      }, reason: 'N=4: ranks assign what exists, beige interpolates (Q5 engine law)');
+      final des = plantDesign('${tmp.path}/d', struct: st);
+      final app = '${tmp.path}/app1';
+      expect(scaffold(des, app, ['macos'], derivationPath, configPath), 0);
+      expect(File(vocabFile(app)).existsSync(), isTrue,
+          reason: 'variable width threads the same emission path');
+    });
+
+    test('emission writes the vocabulary; a second run is byte-identical', () {
+      final des = plantDesign('${tmp.path}/d', struct: planed());
+      final app = '${tmp.path}/app1';
+      expect(scaffold(des, app, ['macos'], derivationPath, configPath), 0);
+      final f = File(vocabFile(app));
+      expect(f.existsSync(), isTrue,
+          reason: 'a plane-carrying design emits its Tier-1 vocabulary');
+      final body = f.readAsStringSync();
+      expect(body, contains('//   palette:  marine — Marine Blue'));
+      expect(body, contains('#ccdbdc #9ad1d4 #80ced7 #007ea7 #003249'),
+          reason: 'the frozen swatch, verbatim, in the header');
+      expect(body, contains('do not hand-edit — re-freeze, re-scaffold'));
+      expect(body, contains('dark #003249'));
+      expect(body, contains('paper #ccdbdc'));
+      expect(body, contains('// dark.500 → Color(0xFF003249)'),
+          reason: 'each anchor -> tonalRamp -> DTCG -> themeMap comment');
+      expect(body, contains('// bg.surface → Color(0xFFCCDBDC)'));
+      expect(body, contains('// fg.primary → Color(0xFF003249)'));
+      expect(body, contains('// fg.on-accent → Color(0xFFFFFFFF)'));
+      expect(body, isNot(contains('Lavender')),
+          reason: 'the non-default palettes stay audit-trail only');
+      expect(scaffold(des, app, ['macos'], derivationPath, configPath), 0);
+      expect(f.readAsStringSync(), body,
+          reason: 'deterministic: same frozen palette -> same bytes');
+    });
+
+    test('no palettes block -> no vocabulary file (silent no-op)', () {
+      final des = plantDesign('${tmp.path}/d');
+      final app = '${tmp.path}/app1';
+      expect(scaffold(des, app, ['macos'], derivationPath, configPath), 0);
+      expect(File(vocabFile(app)).existsSync(), isFalse);
+    });
+
+    test('--check names the file on a hand edit; re-scaffold goes green', () {
+      final des = plantDesign('${tmp.path}/d', struct: planed());
+      final app = '${tmp.path}/app1';
+      expect(scaffold(des, app, ['macos'], derivationPath, configPath), 0);
+      expect(
+          scaffold(des, app, ['macos'], derivationPath, configPath, check: true),
+          0);
+      final f = File(vocabFile(app));
+      f.writeAsStringSync(
+          f.readAsStringSync().replaceFirst('#003249', '#003250'));
+      expect(
+          scaffold(des, app, ['macos'], derivationPath, configPath, check: true),
+          1,
+          reason: 'a hand edit is drift');
+      expect(scaffold(des, app, ['macos'], derivationPath, configPath), 0,
+          reason: 're-scaffold repairs the scaffolder-owned file');
+      expect(
+          scaffold(des, app, ['macos'], derivationPath, configPath, check: true),
+          0);
+    });
+
+    test('a palettes block whose default names no entry emits nothing', () {
+      final st = planed();
+      (st['palettes'] as Map)['default'] = 'ghost';
+      final des = plantDesign('${tmp.path}/d', struct: st);
+      final app = '${tmp.path}/app1';
+      expect(scaffold(des, app, ['macos'], derivationPath, configPath), 0,
+          reason: 'an unresolvable block is no plane, not a scaffold failure');
+      expect(File(vocabFile(app)).existsSync(), isFalse);
+    });
+  });
+
   group('self-test', () {
     test('runSelfTest passes', () {
       expect(runSelfTest(), 0);

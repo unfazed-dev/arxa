@@ -139,6 +139,13 @@ List<({String imported, String local})> _importBindings(String? clause) {
   return out;
 }
 
+/// Top-level segments the authoring gates skip entirely: the tool-owned
+/// runtime an eject inlines (`runtime/*.tsx` ships from
+/// skills/arxa-designer/runtime/eject/ — the artifact author never writes it,
+/// and its `raw()` svg primitives are not view templates), plus dependency /
+/// infra dirs an ejected tree carries.
+const _gateSkipSegments = {'runtime', 'node_modules', '.wrangler', '.git'};
+
 /// Artifact-root-relative POSIX paths of every `.tsx` template under
 /// [artifactDir].
 List<String> _templateFiles(String artifactDir) {
@@ -148,7 +155,11 @@ List<String> _templateFiles(String artifactDir) {
   for (final e in dir.listSync(recursive: true)) {
     if (e is! File) continue;
     if (!e.path.endsWith('.tsx')) continue;
-    out.add(p.split(p.relative(e.path, from: artifactDir)).join('/'));
+    final rel = p.split(p.relative(e.path, from: artifactDir)).join('/');
+    if (_gateSkipSegments.any((s) => rel == s || rel.startsWith('$s/'))) {
+      continue;
+    }
+    out.add(rel);
   }
   out.sort();
   return out;

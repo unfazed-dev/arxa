@@ -1,6 +1,4 @@
 import 'dart:convert';
-import 'dart:io';
-
 import 'package:arxa/design_draft.dart';
 import 'package:test/test.dart';
 
@@ -165,61 +163,4 @@ void main() {
               '</style></body>'));
     });
   });
-
-  group('DraftFileStore', () {
-    late Directory home;
-    setUp(() =>
-        home = Directory.systemTemp.createTempSync('draft-store-test'));
-    tearDown(() => home.deleteSync(recursive: true));
-
-    test('save → load roundtrip; clear removes', () async {
-      final s = DraftFileStore(
-          artifactDir: '/tmp/some/where/hello-hda', home: home.path);
-      expect(s.file.path, contains('hello-hda-'));
-      expect(await s.load(), isNull);
-      await s.save(DraftOverlay(artifact: 'hello-hda', tokens: {
-        '--brand': '#0af'
-      }, patches: {
-        'e1': DraftPatch(style: {'color': 'red'})
-      }));
-      final back = await s.load();
-      expect(back!.tokens['--brand'], '#0af');
-      expect(back.patches['e1']!.style['color'], 'red');
-      await s.clear();
-      expect(await s.load(), isNull);
-    });
-
-    test('two checkouts sharing a basename never share a draft', () {
-      final a = DraftFileStore(
-          artifactDir: '/tmp/one/hello-hda', home: home.path);
-      final b = DraftFileStore(
-          artifactDir: '/tmp/two/hello-hda', home: home.path);
-      expect(a.file.path, isNot(b.file.path));
-    });
-
-    test('a corrupt file loads as no draft, never throws', () async {
-      final s = DraftFileStore(
-          artifactDir: '/tmp/some/hello-hda', home: home.path);
-      await s.file.parent.create(recursive: true);
-      await s.file.writeAsString('{not json');
-      expect(await s.load(), isNull);
-    });
-  });
-
-group('overlay parity across pages (2026-08-24)', () {
-  const pageA = '<div data-el="badge">A</div>';
-  const pageB = '<section><span data-el="badge">B</span></section>';
-  test('one el: patch converges every page carrying the anchor', () {
-    final d = DraftOverlay(artifact: 'a', patches: {
-      'el:badge': DraftPatch(style: {'color': 'red'}),
-    });
-    final ra = d.apply(pageA);
-    final rb = d.apply(pageB);
-    expect(ra.html, contains('style="color: red"'));
-    expect(rb.html, contains('style="color: red"'));
-    expect(ra.applied, 1);
-    expect(rb.applied, 1);
-  });
-});
-
 }

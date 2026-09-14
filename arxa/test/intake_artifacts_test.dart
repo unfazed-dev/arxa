@@ -439,6 +439,51 @@ void main() {
     });
   });
 
+  group('emitBrandColors — the reseed slot (palette-plane Q6)', () {
+    test('an absent group degrades to [], never an error', () {
+      expect(emitBrandColors(<String, dynamic>{}), isEmpty);
+      expect(validateBrandColors(<String, dynamic>{}), isEmpty);
+    });
+
+    test('entries pass through VERBATIM — no normalization, no re-stamping', () {
+      // '#'less stays '#'less, case kept: digit-level normalization is
+      // palette_derive's one home (Q10), and 3-digit doubling happened at
+      // ELICITATION, before the answers were recorded (the schema's hex law).
+      expect(emitBrandColors({
+        'brandColors': [
+          {'hex': '1b3a4b', 'role': 'dark', 'provenance': 'client'},
+          {'hex': '#F5EFE0', 'provenance': 'inferred'},
+        ]
+      }), [
+        {'hex': '1b3a4b', 'role': 'dark', 'provenance': 'client'},
+        {'hex': '#F5EFE0', 'provenance': 'inferred'},
+      ]);
+    });
+
+    test('an explicitly-null role is emitted as absent', () {
+      // One spelling of "no pin": the reseed treats absent role as
+      // "unhinted — the Q5 lightness-rank law assigns it".
+      expect(emitBrandColors({
+        'brandColors': [
+          {'hex': '#1b3a4b', 'role': null, 'provenance': 'client'}
+        ]
+      }).single.containsKey('role'), isFalse);
+    });
+
+    test('an authored key the emitter does not own still rides along', () {
+      // Task #29: the literal that enumerated keys dropped `element` and
+      // `feedback`. brandColorKeys closes the group at VALIDATION; passing
+      // the entry through whole keeps a future legal key from being
+      // silently dropped HERE.
+      final c = emitBrandColors({
+        'brandColors': [
+          {'hex': '#1b3a4b', 'provenance': 'client', 'note': 'from the logo'}
+        ]
+      }).single;
+      expect(c['note'], 'from the logo');
+    });
+  });
+
   group('registry — additive priority/release columns', () {
     Map<String, dynamic> answersWith(String priority) => <String, dynamic>{
           'surfaces': [
@@ -510,6 +555,7 @@ void main() {
       for (final f in const [
         'answers.json', 'brief.md', 'registry.json', 'flows.json',
         'personas.json', 'map.json', 'moodboard.json', 'direction.json',
+        'brandcolors.json',
       ]) {
         expect(File('$dir/$f').existsSync(), isTrue, reason: 'missing $f');
       }
@@ -518,6 +564,23 @@ void main() {
           (jsonDecode(File('$dir/map.json').readAsStringSync())
               as Map)['epics'],
           isEmpty);
+    });
+
+    test('brandcolors.json lands VERBATIM — hexes not normalized', () {
+      final answers = _preSliceB()
+        ..['brandColors'] = [
+          {'hex': '1b3a4b', 'role': 'dark', 'provenance': 'client'},
+          {'hex': '#C9A227', 'provenance': 'inferred'},
+        ];
+      final res = const IntakeEngine().emit(answers, project: 'brand');
+      expect(res.ok, isTrue, reason: res.errors.join('; '));
+      final slot = jsonDecode(File(
+              '${shellDir('brand', 'intake')}/brandcolors.json')
+          .readAsStringSync());
+      expect(slot, [
+        {'hex': '1b3a4b', 'role': 'dark', 'provenance': 'client'},
+        {'hex': '#C9A227', 'provenance': 'inferred'},
+      ], reason: "verbatim — normalization is palette_derive's one home (Q10)");
     });
 
     test('a status written between emits survives the next emit', () {
@@ -561,7 +624,7 @@ void main() {
               File('../skills/arxa-intake/intake.schema.json').readAsStringSync())
           as Map)['properties'] as Map;
       expect(schema['additionalProperties'], isNull);
-      for (final group in const ['personas', 'map', 'moodboard']) {
+      for (final group in const ['personas', 'map', 'moodboard', 'brandColors']) {
         expect(schema.containsKey(group), isTrue,
             reason: '$group is read by an emitter but undeclared in the schema');
       }
@@ -593,6 +656,7 @@ void main() {
             emitStoryMap(a),
             emitMoodboard(a),
             emitDirection(a),
+            emitBrandColors(a),
           ]);
       expect(bytes(answers), bytes(answers));
       // Idempotence over own output: feeding an emitted direction back in as

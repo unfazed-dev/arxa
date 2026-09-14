@@ -1,12 +1,10 @@
 // Operator launcher: serve the suczka-studio design artifact on
-// 127.0.0.1:4319 with watch ON and the Arxa Dial enabled. Draft overlay
-// state persists under ~/.arxa/drafts (the real store - this is the
-// operator-facing process, not a test).
+// 127.0.0.1:4319 with watch ON and the Arxa Dial enabled. The live edit
+// overlay is Supabase state (arxa_dial_overlays), not local files.
 //
 //   dart run tool/serve_suczka.dart
 import 'dart:io';
 
-import 'package:arxa/design_draft.dart';
 import 'package:arxa/design_server.dart';
 
 Future<void> main() async {
@@ -15,10 +13,6 @@ Future<void> main() async {
         '/Volumes/developer_ssd/Developer/totem_labs/clients/architect-gallore/design/suczka-studio',
     port: 4319,
     dial: true,
-    draftStore: DraftFileStore(
-      artifactDir:
-          '/Volumes/developer_ssd/Developer/totem_labs/clients/architect-gallore/design/suczka-studio',
-    ),
     // Dial store: NOT pinned here (was MemoryDialStore until 2026-08-25 —
     // the Supabase rewire). DesignServer.start resolves
     // SupabaseDialStore.fromConfig(~/.arxa/supabase) first and falls back

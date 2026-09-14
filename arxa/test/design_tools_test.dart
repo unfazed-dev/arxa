@@ -80,15 +80,18 @@ void main() {
       final r = designLint([d.path]);
       expect(r.exitCode, 0);
       expect(r.stderrLines, isEmpty);
-      // Three gates run under `design lint`, so a clean run says so three
+      // Four gates run under `design lint`, so a clean run says so four
       // times: the ADR-0002 client-JS lint (89e153c2: the three legal forms),
       // the W1–W9 widget/panel gate (13b90126 added W9; the sharpened law
-      // kept the range) and the S1–S4 style-placement gate. A silent gate is
-      // indistinguishable from a gate that never ran.
+      // kept the range), the S1–S4 style-placement gate and the P1–P5
+      // palette-plane gate (the universal palette plane 2026-09-10; P5
+      // contrast since 2026-09-11). A
+      // silent gate is indistinguishable from a gate that never ran.
       expect(r.stdoutLines, [
         'lint clean: every script resolves (vendor/island/app module), no inline handlers in ${d.path}',
         'widget/panel gate clean: W1–W9 in ${d.path}',
         'style gate clean: S1–S4 in ${d.path}',
+        'palette gate clean: P1–P5 in ${d.path}',
       ]);
     });
 

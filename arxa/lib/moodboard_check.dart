@@ -20,7 +20,16 @@
 //               directions labeled A/B/C, leads resolving to SELECTED
 //               references, measured suitors carrying evidence that resolves
 //               on disk, suitorChoice ordered after selection approval and
-//               remixing only the closed attribute vocabulary. Records
+//               remixing only the closed attribute vocabulary. A suitor's
+//               tokens.palette recorded as the derived OBJECT (the palette
+//               plane, Q7/Q9) validates whole: swatch exactly 5 valid
+//               hexes, anchors complete (dark/accent/field/beige/paper),
+//               paletteSource resolving to a SELECTED reference, provenance
+//               measured|judged with judged legal only when the credited
+//               reference has neither url nor shot, measured palettes citing
+//               at least one evidence entry (the derivation JSON), and
+//               palette evidence resolving on disk. A prose palette STRING is the pre-plane
+//               shape and stays legal under the law of its day. Records
 //               without suitors — everything recorded before the direction
 //               audition landed, energize included — are validated by the
 //               law of their day: the gate applies from its landing, never
@@ -247,11 +256,14 @@ List<String> _checkSuitors(List<Map> suitors,
   // Suitors lead only with references the human already selected — the
   // audition is built from the chosen material, never the boards' leftovers.
   final selectedRefs = <String>{};
+  final selectedRefObjects = <String, Map<String, dynamic>>{};
   for (final b in boards) {
     final boardId = (b['id'] ?? '?').toString();
     for (final r in (b['references'] as List? ?? const []).whereType<Map>()) {
       if (r['selected'] == true) {
-        selectedRefs.add('$boardId/${r['name'] ?? r['url'] ?? '?'}');
+        final key = '$boardId/${r['name'] ?? r['url'] ?? '?'}';
+        selectedRefs.add(key);
+        selectedRefObjects[key] = r.cast<String, dynamic>();
       }
     }
   }
@@ -280,11 +292,18 @@ List<String> _checkSuitors(List<Map> suitors,
     }
     final tokens = suitor['tokens'];
     final hasToken = tokens is Map &&
-        const ['palette', 'type', 'radius', 'motion'].any(
-            (k) => tokens[k] is String && (tokens[k] as String).isNotEmpty);
+        (const ['palette', 'type', 'radius', 'motion'].any(
+                (k) => tokens[k] is String && (tokens[k] as String).isNotEmpty) ||
+            tokens['palette'] is Map);
     if (!hasToken) {
       failures.add('suitor $id: no tokens — a direction without a token set '
           '(palette/type/radius/motion, at least one) cannot be auditioned');
+    }
+    if (tokens is Map) {
+      failures.addAll(_checkSuitorPalette(tokens['palette'],
+          id: '$id',
+          selectedRefs: selectedRefObjects,
+          moodboardDir: moodboardDir));
     }
     failures.addAll(_checkEvidence(suitor['evidence'],
         owner: 'suitor $id', moodboardDir: moodboardDir));
@@ -300,6 +319,92 @@ List<String> _checkSuitors(List<Map> suitors,
           'states / burst frames)');
     }
   }
+  return failures;
+}
+
+final _paletteHex = RegExp(r'^#[0-9a-fA-F]{6}$');
+
+/// The palette-plane law (Q7/Q9): a suitor's tokens.palette recorded as the
+/// derived OBJECT must validate whole — half an object is a prose string
+/// wearing new clothes. A prose palette STRING is the pre-plane shape and
+/// stays legal under the law of its day (the gate applies from its landing,
+/// never retroactively); anything else is neither law.
+List<String> _checkSuitorPalette(Object? palette,
+    {required String id,
+    required Map<String, Map<String, dynamic>> selectedRefs,
+    String? moodboardDir}) {
+  final failures = <String>[];
+  if (palette == null || palette is String) return failures;
+  if (palette is! Map) {
+    failures.add('suitor $id: tokens.palette must be the derived palette '
+        'object {name, swatch, anchors, paletteSource, provenance} — a prose '
+        'string is the pre-plane shape, anything else is neither law');
+    return failures;
+  }
+  final p = palette.cast<String, dynamic>();
+  // Exactly 5 — the plane's variable width (3–7) never reaches the
+  // moodboard side: derivation decimates/interpolates to the five roles,
+  // and a judged palette must still declare 5.
+  final swatch = p['swatch'];
+  if (swatch is! List || swatch.length != 5) {
+    failures.add('suitor $id: palette swatch must be exactly 5 hexes, got '
+        '${swatch is List ? swatch.length : 'none'} — the engine '
+        'decimates/interpolates every source to the plane\'s five roles');
+  } else {
+    for (final h in swatch) {
+      if (h is! String || !_paletteHex.hasMatch(h)) {
+        failures.add('suitor $id: palette swatch "$h" is not a valid '
+            'hex — 6-digit hexes with the # prefix, verbatim from the engine');
+      }
+    }
+  }
+  final anchors = p['anchors'];
+  const roles = ['dark', 'accent', 'field', 'beige', 'paper'];
+  if (anchors is! Map) {
+    failures.add('suitor $id: palette anchors must carry the five '
+        'template-family roles (${roles.join('/')}) — complete or the '
+        'object is invalid');
+  } else {
+    final bad = [
+      for (final r in roles)
+        if (anchors[r] is! String || !_paletteHex.hasMatch(anchors[r])) r
+    ];
+    if (bad.isNotEmpty) {
+      failures.add('suitor $id: palette anchors missing or not valid '
+          'hexes: ${bad.join(', ')} — the lightness-rank law assigns all '
+          'five roles, complete or the object is invalid');
+    }
+  }
+  // paletteSource resolves exactly like a lead: the SELECTED set only.
+  final source = p['paletteSource'];
+  final ref = source is String ? selectedRefs[source] : null;
+  if (source is! String || !selectedRefs.containsKey(source)) {
+    failures.add('suitor $id: paletteSource "$source" is not a selected '
+        'reference (format <boardId>/<reference name>; suitors derive '
+        'palette from the SELECTED set only)');
+  }
+  final provenance = p['provenance'];
+  if (provenance is! String || !['measured', 'judged'].contains(provenance)) {
+    failures.add('suitor $id: palette provenance must be measured|judged — '
+        'derivation IS measurement; memory-judgment must say so, not wear '
+        'measured clothes');
+  } else if (provenance == 'judged' && ref != null) {
+    final hasUrl = ref['url'] is String && (ref['url'] as String).isNotEmpty;
+    final hasShot = ref['shot'] != null;
+    if (hasUrl || hasShot) {
+      failures.add('suitor $id: palette judged but "$source" has '
+          '${hasUrl ? 'a url' : 'a shot'} — derivation was possible (arxa '
+          'palette derive over the reference); judged stays legal only when '
+          'the reference has neither');
+    }
+  } else if (provenance == 'measured' &&
+      (p['evidence'] as List? ?? const []).whereType<Map>().isEmpty) {
+    failures.add('suitor $id: palette provenance measured but no evidence — '
+        'derivation IS measurement and the engine JSON it produces is the '
+        'proof; measured with no citation is a lie-shaped record');
+  }
+  failures.addAll(_checkEvidence(p['evidence'],
+      owner: 'suitor $id palette', moodboardDir: moodboardDir));
   return failures;
 }
 

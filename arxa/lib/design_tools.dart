@@ -21,8 +21,17 @@ import 'dart:typed_data';
 
 import 'package:path/path.dart' as p;
 import 'package:arxa/cdp.dart';
+import 'package:arxa/design_axes.dart' show resolveArtifactMarker;
+import 'package:arxa/arxa_dial.dart'
+    show dialAutomintConfig, automintClientLink, parseSupabaseCredentials;
+import 'package:arxa/design_fonts.dart' show FontPlaneManifest;
+import 'package:arxa/gate_design_fonts.dart' show gateDesignFonts;
+import 'package:arxa/design_palettes.dart' show DeployedDialBake;
+import 'package:arxa/design_patch.dart' show patchMain;
+import 'package:arxa/project.dart' show arxaHome;
 import 'package:arxa/crypto_aead.dart';
 import 'package:arxa/design_server/l10n.dart';
+import 'package:arxa/gate_design_palettes.dart' show gateDesignPalettes;
 import 'package:arxa/gate_design_styles.dart' show gateDesignStyles;
 import 'package:arxa/gate_design_widgets.dart' show gateDesignWidgets;
 import 'package:arxa/scaffold.dart' show findRepoRoot;
@@ -404,6 +413,12 @@ List<File> _walk(Directory d) => d
     .whereType<File>()
     .toList();
 
+/// Directories the ADR-0009 lint never polices: ejected trees carry a real
+/// `node_modules/` (miniflare alone ships script-tagged .html) and wrangler
+/// state alongside the artifact; the rules exist for the artifact's authored
+/// markup, not for dependency internals.
+const _lintSkipDirs = {'node_modules', '.wrangler', '.git'};
+
 /// ADR-0009 form 3 — app-module references: `src="/assets/app/<name>.js"`
 /// must resolve to a real file under the artifact's assets/app/ carrying the
 /// island header (a leading /* or // comment — the "why this exists at all"
@@ -427,6 +442,7 @@ List<LintFinding> lintArtifact(String artifactDir,
   final vendorRefs = <String>{};
   for (final f in _walk(Directory(artifactDir))) {
     if (!f.path.endsWith('.html') && !f.path.endsWith('.tsx')) continue;
+    if (p.split(f.path).any(_lintSkipDirs.contains)) continue;
     final src = stripComments(f.readAsStringSync());
     for (final (re, msg) in _lintRules) {
       if (re.hasMatch(src)) {
@@ -559,10 +575,14 @@ CmdResult designLint(List<String> args) {
   final findings = lintArtifact(dir, coverageB: coverageB, notes: notes);
   final widgetFindings = gateDesignWidgets(dir, notes: notes);
   final styleFindings = gateDesignStyles(dir, notes: notes);
+  final paletteFindings = gateDesignPalettes(dir, notes: notes);
+  final fontFindings = gateDesignFonts(dir, notes: notes);
   final noteLines = notes.map((n) => 'note: $n').toList();
   if (findings.isNotEmpty ||
       widgetFindings.isNotEmpty ||
-      styleFindings.isNotEmpty) {
+      styleFindings.isNotEmpty ||
+      paletteFindings.isNotEmpty ||
+      fontFindings.isNotEmpty) {
     final lines = <String>[];
     if (findings.isNotEmpty) {
       lines.add('client-JS lint failed:');
@@ -576,12 +596,21 @@ CmdResult designLint(List<String> args) {
       lines.add('style gate failed (S1–S4):');
       lines.addAll(styleFindings.map((f) => f.toString()));
     }
+    if (paletteFindings.isNotEmpty) {
+      lines.add('palette gate failed (P1–P5):');
+      lines.addAll(paletteFindings.map((f) => f.toString()));
+    }
+    if (fontFindings.isNotEmpty) {
+      lines.add('font gate failed (F1–F3):');
+      lines.addAll(fontFindings.map((f) => f.toString()));
+    }
     return CmdResult(1, stdoutLines: noteLines, stderrLines: lines);
   }
   return CmdResult(0, stdoutLines: [
     'lint clean: every script resolves (vendor/island/app module), no inline handlers in $dir',
     'widget/panel gate clean: W1–W9 in $dir',
     'style gate clean: S1–S4 in $dir',
+    'palette gate clean: P1–P5 in $dir',
     ...noteLines,
   ]);
 }
@@ -1119,6 +1148,13 @@ const _lucidePin = '1.27.0';
 const _alpinePin = '3.16.1';
 const _gsapPin = '3.15.0';
 
+/// Lenis — the inertial smooth-scroll engine landing-replica commissions port
+/// from references that ship it (umanodesign.studio's bundle inits
+/// `new Lenis({duration: 1.2, easing: easeOutExpo})` + a raf loop). Pinned for
+/// the same reason as GSAP: an engine the choreography depends on must fail
+/// loudly, not drift. UMD build (`window.Lenis`) so it rides a plain script tag.
+const _lenisPin = '1.3.26';
+
 /// Order pins the manifest row order: re-running vendor-fetch must rewrite
 /// manifest.json + SRI.md byte-identically.
 const _packages = [
@@ -1187,6 +1223,10 @@ const _packages = [
       version: _gsapPin, category: 'motion-framework'),
   _Pkg('gsap', ['dist/SplitText.min.js'], 'SplitText.min.js',
       version: _gsapPin, category: 'motion-framework'),
+  // Lenis rides the motion-framework category (ADR-0009: a package inside an
+  // existing category is a vendor-fetch row, never an ADR-level decision).
+  _Pkg('lenis', ['dist/lenis.min.js'], 'lenis.min.js',
+      version: _lenisPin, category: 'motion-framework'),
 ];
 
 // ══ local patches on vendored files ════════════════════════════════════
@@ -1810,6 +1850,19 @@ void _copyJsTree(Directory srcDir, String dstDir) {
 /// `arxa design eject <artifact-dir> <out-dir>` — exit 2 usage / 1 vendor
 /// or htmx-required fail / 0 ejected. Ported from eject.mjs; the .mjs's
 /// node-runtime + package.json + smoke.test.mjs are replaced by a README.
+/// The dial store credentials (~/.arxa/supabase), read for the eject bake.
+/// design_server.dart owns the serving-side reader; design_tools cannot
+/// import it (design_server imports design_tools), so the tiny parse is
+/// mirrored here — same file, same key= lines, never written.
+String? _readSupabaseCredentialsText() {
+  try {
+    final f = File(p.join(arxaHome(), 'supabase'));
+    return f.existsSync() ? f.readAsStringSync() : null;
+  } catch (_) {
+    return null;
+  }
+}
+
 Future<CmdResult> designEject(List<String> args) async {
   // Parse --target=node|cloudflare|vercel (default node) and --kits=dir,dir.
   String? target;
@@ -2054,8 +2107,215 @@ Future<CmdResult> designEject(List<String> args) async {
       ? p.join(ejectSrc, 'worker.js')
       : p.join(ejectSrc, isVercel ? 'vercel.js' : 'server.js');
   if (File(entrySrc).existsSync()) {
+    var entryText = File(entrySrc).readAsStringSync();
+    if (isWorkers) {
+      // Palette plane + deployed dial (VERIFY ADDENDUM 17): bake the
+      // manifest + static channel into the worker's null constants and
+      // ship the dial island when the artifact declares palettes.
+      final marker = resolveArtifactMarker(artifact);
+      final hasManifest =
+          File(p.join(artifact, 'palettes.json')).existsSync();
+      if (hasManifest && marker == null) {
+        stderr.writeln('[eject] palettes.json declared but no arxa.json '
+            'marker resolves — the palette plane needs the registered '
+            'identity; baking a plain static site.');
+      }
+      final bake = !hasManifest || marker == null
+          ? null
+          : await DeployedDialBake.resolve(
+              artifactDir: artifact,
+              project: marker.project,
+              artifact: p.basename(artifact),
+              credentialsFileText: _readSupabaseCredentialsText());
+      if (bake != null) {
+        entryText = entryText
+            .replaceFirst('const ARXA_PALETTES = null;',
+                'const ARXA_PALETTES = ${jsonEncode(bake['manifest'])};')
+            .replaceFirst('const ARXA_DIAL_STATIC = null;',
+                'const ARXA_DIAL_STATIC = ${jsonEncode(bake['static'])};');
+        // The font plane (grilled 2026-09-13): bake fonts.json when the
+        // artifact declares it - null (the template default) otherwise,
+        // and the whole plane inerts worker-side.
+        final fontManifest = FontPlaneManifest.load(artifact);
+        if (fontManifest != null) {
+          final fontsJson = jsonEncode({
+            'version': 1,
+            'default': fontManifest.defaultPicks,
+            'roles': [for (final r in fontManifest.roles) r.toJson()],
+          });
+          entryText = entryText.replaceFirst(
+              'const ARXA_FONTS = null;',
+              'const ARXA_FONTS = ${fontsJson};');
+        }
+        // The dial island + its static driver's supabase-js (Q8).
+        for (final vendor in ['arxa-dial.js', 'supabase-js.min.js']) {
+          final vendored = File(p.join(repo, 'skills', 'arxa-designer',
+              'runtime', 'vendor', vendor));
+          if (vendored.existsSync()) {
+            Directory(p.join(out, 'assets', 'vendor'))
+                .createSync(recursive: true);
+            vendored.copySync(p.join(out, 'assets', 'vendor', vendor));
+          }
+        }
+        final minted = bake['mintedAuthorToken'];
+        if (minted is String && minted.isNotEmpty) {
+          stderr.writeln('[eject] deployed dial: author link minted — it '
+              'prints ONCE, save it:\n  ?dial-author=$minted');
+        }
+        // Automint (grilled 2026-09-10): arxa.json dial block + env; the
+        // mint is idempotent per email and prints ONCE, like the author
+        // link. Static-only: a dial-less bake never mints.
+        final mk = marker;
+        final auto = mk == null
+            ? (enabled: false, email: null, days: 90)
+            : dialAutomintConfig(mk.dial, Platform.environment);
+        if (auto.enabled && mk != null && bake['static'] != null) {
+          if (auto.email == null) {
+            stderr.writeln('[eject] deployed dial: automint is ON but no '
+                'client email — set dial.clientEmail in arxa.json or '
+                'ARXA_DIAL_CLIENT_EMAIL; skipping');
+          } else {
+            var aUrl = Platform.environment['ARXA_SUPABASE_URL'];
+            var aKey = Platform.environment['ARXA_SUPABASE_SERVICE_KEY'];
+            final creds = parseSupabaseCredentials(
+                _readSupabaseCredentialsText() ?? '');
+            aUrl ??= creds.url;
+            aKey ??= creds.key;
+            if (aUrl == null || aKey == null) {
+              stderr.writeln('[eject] deployed dial: automint skipped — '
+                  'no Supabase credentials resolved');
+            } else {
+              String? note;
+              final link = await automintClientLink(
+                url: aUrl,
+                serviceKey: aKey,
+                project: mk.project,
+                artifact: p.basename(artifact),
+                email: auto.email!,
+                days: auto.days,
+                onNote: (n) => note = n,
+              );
+              if (link != null) {
+                stderr.writeln('[eject] deployed dial: client link minted '
+                    'for ${link.email} (${auto.days}d) — it prints ONCE, '
+                    'send it:\n  ?dial=${link.token}');
+              } else if (note == 'live-link-exists') {
+                stderr.writeln('[eject] deployed dial: automint skipped — '
+                    'a live link already exists for ${auto.email}');
+              } else {
+                stderr.writeln('[eject] deployed dial: automint failed '
+                    '(${note ?? 'no link'}) — mint on the dial instead');
+              }
+            }
+          }
+        }
+        // The eject bake (decision 7, grilled 2026-09-11): live edits fold
+        // into SOURCE here — no commit ceremony ever. The overlay row (the
+        // author's text + image edits since the last eject) is read, each
+        // patch applied through the design-patch machinery, and the row
+        // cleared ONLY on full success; a refused patch stays live in the
+        // overlay (the Orphaned-Pin doctrine for edits) and retries at the
+        // next eject, loudly.
+        {
+          final designId = bake['static'] is Map
+              ? (bake['static'] as Map)['designId'] as String?
+              : null;
+          final bakeObj = bake['bake'];
+          if (designId != null && bakeObj is DeployedDialBake) {
+            Map<String, dynamic>? patches;
+            try {
+              patches = await bakeObj.readOverlay(designId);
+            } catch (_) {
+              patches = null;
+            }
+            if (patches != null && patches.isNotEmpty) {
+              var baked = 0;
+              final failed = <String>[];
+              for (final entry in patches.entries) {
+                final key = entry.key;
+                final patch = entry.value;
+                if (patch is! Map) {
+                  failed.add('$key (not an object)');
+                  continue;
+                }
+                final isEl = key.startsWith('el:');
+                final el = isEl ? key.substring(3) : null;
+                final attrs = patch['attrs'];
+                final attrsNth = patch['attrsNth'];
+                // A per-instance attr edit (attrsNth) cannot bake: source
+                // writes are every-row by construction — refuse loudly and
+                // keep the patch live.
+                if (attrsNth is Map && attrsNth.isNotEmpty) {
+                  failed.add('$key (per-instance attr edits cannot bake)');
+                  continue;
+                }
+                final args = <String>[
+                  artifact,
+                  if (isEl) ...['--el', el!] else key,
+                ];
+                if (patch['text'] is String) {
+                  args..add('--text')..add(patch['text'] as String);
+                }
+                if (attrs is Map) {
+                  for (final a in attrs.entries) {
+                    if (a.value == null) {
+                      args..add('--rm')..add('${a.key}');
+                    } else {
+                      args..add('--set')..add('${a.key}=${a.value}');
+                    }
+                  }
+                }
+                if (patch['was'] is String) {
+                  args..add('--was')..add(patch['was'] as String);
+                }
+                if (patch['nth'] is int) {
+                  args..add('--nth')..add('${patch['nth']}');
+                }
+                if (patch['page'] is String) {
+                  args..add('--page')..add(patch['page'] as String);
+                }
+                if (patch['locale'] is String) {
+                  args..add('--locale')..add(patch['locale'] as String);
+                }
+                final res = patchMain(args);
+                if (res.exitCode == 0) {
+                  baked++;
+                  for (final line in res.stdoutLines) {
+                    stderr.writeln('[eject] overlay bake: $line');
+                  }
+                } else {
+                  failed.add('$key (${res.exitCode}: '
+                      '${res.stderrLines.join(' / ')})');
+                }
+              }
+              if (failed.isEmpty) {
+                try {
+                  if (await bakeObj.clearOverlay(designId)) {
+                    stderr.writeln('[eject] overlay bake: $baked patch(es) '
+                        'baked into source — overlay cleared');
+                  } else {
+                    stderr.writeln('[eject] overlay bake: $baked patch(es) '
+                        'baked, but the overlay clear FAILED — the row '
+                        'stays live (harmless: re-applying is idempotent)');
+                  }
+                } catch (e) {
+                  stderr.writeln('[eject] overlay bake: clear failed: $e '
+                      '— the row stays live (harmless)');
+                }
+              } else {
+                stderr.writeln('[eject] overlay bake: $baked baked, '
+                    '${failed.length} refused (kept live in the overlay):');
+                for (final f in failed) {
+                  stderr.writeln('  - $f');
+                }
+              }
+            }
+          }
+        }
+      }
+    }
     File(p.join(out, isWorkers ? 'worker.js' : 'server.js'))
-        .writeAsStringSync(File(entrySrc).readAsStringSync());
+        .writeAsStringSync(entryText);
   }
 
   // 3c. package.json — target-specific deps.

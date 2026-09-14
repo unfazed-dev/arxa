@@ -1275,12 +1275,25 @@ class CdpSession {
         ? 'Space'
         : (key.length == 1 ? 'Key${key.toUpperCase()}' : key);
     for (final type in ['keyDown', 'keyUp']) {
-      await send('Input.dispatchKeyEvent', {
-        'type': type,
-        'key': key,
-        'code': code,
-      });
+      final params = <String, dynamic>{'type': type, 'key': key, 'code': code};
+      // Text insertion: a keyDown with only key+code fires the page's key
+      // listeners but inserts NO character into inputs/contenteditables —
+      // probes that type on-canvas typed into the void. `text` is what the
+      // editing pipeline consumes (Enter inserts a carriage return, matching
+      // a real press).
+      if (type == 'keyDown') {
+        if (key.length == 1) params['text'] = key;
+        if (key == 'Enter') params['text'] = '\r';
+      }
+      await send('Input.dispatchKeyEvent', params);
     }
+  }
+
+  /// Make this tab the browser's foreground tab. Realtime code (rightly)
+  /// refuses to stream for hidden tabs, so a probe that needs a watcher tab
+  /// to receive live frames must foreground it first.
+  Future<void> bringToFront() async {
+    await send('Page.bringToFront', {});
   }
 
   /// Click at viewport coordinates via Input.dispatchMouseEvent.
@@ -1292,6 +1305,27 @@ class CdpSession {
         'y': y,
         'button': 'left',
         'clickCount': 1,
+      });
+    }
+  }
+
+  /// Double-click at viewport coordinates. Chrome only fires the dblclick
+  /// event when the second press carries clickCount 2 — two plain click()
+  /// calls never compose one, and on-canvas editors keyed to dblclick stay
+  /// unreachable from probes.
+  Future<void> dblclick(int x, int y) async {
+    for (final entry in [
+      ['mousePressed', 1],
+      ['mouseReleased', 1],
+      ['mousePressed', 2],
+      ['mouseReleased', 2],
+    ]) {
+      await send('Input.dispatchMouseEvent', {
+        'type': entry[0] as String,
+        'x': x,
+        'y': y,
+        'button': 'left',
+        'clickCount': entry[1] as int,
       });
     }
   }

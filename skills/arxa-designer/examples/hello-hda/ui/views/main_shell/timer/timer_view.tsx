@@ -35,7 +35,6 @@ const TimerPage: FC<TimerPageProps> = ({ translate, locale, locales = [], rail, 
   <MainShell
     title={translate('timer.pageTitle') as string}
     locale={locale}
-    accent={prefs?.accent}
     locales={locales}
     translate={translate}
     rail={rail as { brand?: string; drawer?: boolean; items: NavItem[] }}

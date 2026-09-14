@@ -1,6 +1,9 @@
-// Pixel substrate: decode, per-pixel diff, SSIM, CIEDE2000.
+// Pixel substrate: decode, per-pixel diff, SSIM, CIEDE2000 — plus the
+// palette-plane pixel probe (pure bucketing law + daemon-driven decode).
 import 'dart:convert';
+import 'dart:io';
 
+import 'package:arxa/cdp.dart';
 import 'package:arxa/lens/pixels.dart';
 import 'package:image/image.dart' as img;
 import 'package:test/test.dart';
@@ -107,4 +110,94 @@ void main() {
       expect(lab[2], closeTo(point[2], 1e-6));
     });
   });
+
+  group('clusterPixels (pure law)', () {
+    List<int> rgba(List<List<int>> px) => [for (final p in px) ...p];
+
+    test('quantises >>5 to 8 bands, reports band centers, counts buckets', () {
+      final clusters = clusterPixels(rgba([
+        [230, 57, 70, 255],
+        [231, 56, 71, 255],
+        [229, 58, 69, 255], // one quantisation band (7,1,2) -> #f03050
+        [35, 40, 50, 255],
+        [36, 41, 51, 255], // one band (1,1,1) -> #303030
+      ]));
+      expect(clusters, hasLength(2));
+      expect(clusters.first.hex, '#f03050');
+      expect(clusters.first.count, 3);
+      expect(clusters.last.hex, '#303030');
+      expect(clusters.last.count, 2);
+    });
+
+    test('skips alpha < 128; 128 itself is kept', () {
+      final clusters = clusterPixels(rgba([
+        [230, 57, 70, 0],
+        [230, 57, 70, 127], // both skipped
+        [230, 57, 70, 128], // kept
+      ]));
+      expect(clusters, hasLength(1));
+      expect(clusters.single.count, 1);
+    });
+
+    test('count ties break by packed rgb, not scan position', () {
+      final a = clusterPixels(rgba([
+        [230, 57, 70, 255],
+        [29, 53, 87, 255],
+      ]));
+      final b = clusterPixels(rgba([
+        [29, 53, 87, 255],
+        [230, 57, 70, 255],
+      ]));
+      expect([for (final c in a) c.hex], [for (final c in b) c.hex],
+          reason: 'the order is a function of the colour set, not the layout');
+      expect(a.first.hex, '#103050');
+    });
+  });
+
+  group('extractPixelClusters pre-flight (no Chrome)', () {
+    test('a missing image fails with ArgumentError before launch', () {
+      expect(() => extractPixelClusters('/no/such/image.png'),
+          throwsA(isA<ArgumentError>()));
+      expect(() => extractPixels('/no/such/image.png'),
+          throwsA(isA<ArgumentError>()));
+    });
+  });
+
+  group('extractPixelClusters (daemon)', () {
+    // 8x8 RGB PNG, four 4x4 quadrants — #e63946 TL, #2a9d8f TR, #e9c46a BL,
+    // #1d3557 BR. Hand-rolled offline (zlib, no encoder dependency) and
+    // embedded so the suite stays hermetic.
+    const quadrantPngB64 =
+        'iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAIAAABLbSncAAAAIUlEQVR42mN4ZukGR1pz++GIgYoSL49kwZGsaTgcUVECAMrGV7FKwYmwAAAAAElFTkSuQmCC';
+
+    File writeFixture() {
+      final tmp = Directory.systemTemp.createTempSync('lens_pixels_');
+      addTearDown(() => tmp.deleteSync(recursive: true));
+      return File('${tmp.path}/quadrants.png')
+        ..writeAsBytesSync(base64Decode(quadrantPngB64));
+    }
+
+    test('four quadrant colours return with equal dominant counts', () async {
+      final clusters = await extractPixelClusters(writeFixture().path);
+      // 8x8 is under the 128 cap — no resampling, so the counts are exact
+      // (16 px per quadrant) and the hexes are the exact quantisation-band
+      // centers of the four source colours.
+      expect([for (final c in clusters) c.count], [16, 16, 16, 16]);
+      expect([for (final c in clusters) c.hex],
+          ['#103050', '#309090', '#f03050', '#f0d070'],
+          reason: 'count desc, packed-rgb asc on ties');
+    });
+
+    test('the envelope certifies a clean read', () async {
+      final result = await extractPixels(writeFixture().path);
+      expect(result['consoleErrors'], isEmpty);
+      expect(result['certified'], isTrue);
+      expect(result['sampled'], [8, 8]);
+      expect(result['clusters'], hasLength(4));
+    });
+  }, skip: _chromeOk ? null : 'requires Chrome');
 }
+
+/// Hermetic-suite idiom (cdp_teardown_test / lens_daemon_test): the daemon
+/// group skips where no Chrome exists instead of failing.
+bool get _chromeOk => File(CdpClient.defaultChromePath()).existsSync();

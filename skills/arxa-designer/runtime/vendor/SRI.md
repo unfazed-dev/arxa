@@ -27,6 +27,7 @@
 | gsap.min.js | gsap | 3.15.0 | motion-framework | `sha384-XmJ9SoHtVOHoQUcKvFAzVXwdkKo1Ie3bhmSoIAkcdsHGaIrVJIkmozyq0FJeb/Ly` |
 | ScrollTrigger.min.js | gsap | 3.15.0 | motion-framework | `sha384-wl5TeDVvOWt30Pbf8aSo2ZrzsOjddu3avOBvHe+p+OhJt9gP6w9YXmDkN5DK2/dF` |
 | SplitText.min.js | gsap | 3.15.0 | motion-framework | `sha384-SWJ0lLVRoipvHh59xj0pL7uC7Ih51F+5smaFtrG+2nr+TlDZU5SYJHmxfolbeNTr` |
+| lenis.min.js | lenis | 1.3.26 | motion-framework | `sha384-jqpi9VmOdhyLoLURgjCn7EpnG9BbnHW57ibIZoeaIU+erWDH3k8fQQg0xH2ySjnw` |
 
 `leaflet/images/*.png` (marker + layers control sprites, referenced by
 `leaflet.css` relative to itself) ride along unpinned — like the lucide SVGs

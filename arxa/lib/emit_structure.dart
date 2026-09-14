@@ -17,7 +17,10 @@ import 'dart:io';
 
 import 'package:path/path.dart' as p;
 
+import 'design_axes.dart' show resolveArtifactMarker;
+import 'design_palettes.dart' show PaletteManifest;
 import 'intake.dart' show feedbackKinds, surfaceStates;
+import 'project.dart' show arxaHome;
 import 'scaffold.dart' show findRepoRoot;
 
 /// The document's `$schema` stamp (emitted at `:462`). Provenance and version
@@ -47,6 +50,12 @@ const banner = 'arxa/structure@2';
 //              identity is (file, kind, occurrence index) — the same identity
 //              services/repositories/widget_repository.js resolves against, so
 //              a designer edit and a pipeline read name the same element.
+//   palettes — <design-dir>/palettes.json when it parses as a valid
+//              PaletteManifest (the palette plane, arxa-palette-plane-universal
+//              Q8): threaded VERBATIM as {default, palettes}. Absent or
+//              unparsable = no plane (valid for pre-law artifacts) — freeze
+//              never guesses at a broken declaration; gate_design_palettes
+//              (P1) owns naming the malformed file.
 //
 // Widget note: `widgets` is present only for design roots that ARE live-read
 // projects (~/.arxa/projects/<name>, which carry design/surfaces/). The
@@ -462,6 +471,7 @@ Map<String, dynamic>? buildStructure(String designRoot) {
     return null;
   }
   final widgets = scanWidgets(designRoot);
+  final palettes = loadPalettesBlock(designRoot);
 
   return {
     r'$schema': banner,
@@ -472,6 +482,7 @@ Map<String, dynamic>? buildStructure(String designRoot) {
     'theme': ?theme,
     'fonts': ?fonts,
     'widgets': ?widgets,
+    'palettes': ?palettes,
   };
 }
 
@@ -649,6 +660,32 @@ Map<String, dynamic>? loadFonts(String designRoot) {
     return null;
   }
   return {'default': def, 'families': out};
+}
+
+/// The palette plane (docs/plans/arxa-palette-plane-universal.md, Q8): when
+/// the design dir's palettes.json parses as a valid [PaletteManifest], its
+/// declaration threads VERBATIM into the document as
+/// `palettes: {default, palettes}` — the raw decoded entries, unknown keys
+/// and all, so a manifest extension never needs a freeze change to reach
+/// the document. Absent file = no plane (valid for pre-law artifacts); an
+/// UNPARSABLE declaration is the absent case here too —
+/// [PaletteManifest.load] is the one validator and answers null for both,
+/// and gate_design_palettes (P1) owns naming the malformed file, so
+/// freeze never guesses at a broken declaration.
+Map<String, dynamic>? loadPalettesBlock(String designRoot) {
+  final f = File('$designRoot/palettes.json');
+  if (!f.existsSync()) return null;
+  if (PaletteManifest.load(designRoot) == null) return null;
+  try {
+    final raw = jsonDecode(f.readAsStringSync());
+    if (raw is! Map<String, dynamic>) return null;
+    final def = raw['default'];
+    final list = raw['palettes'];
+    if (def is! String || list is! List) return null;
+    return {'default': def, 'palettes': list};
+  } catch (_) {
+    return null;
+  }
 }
 
 // Every open tag carrying data-el, in source order. Templated markup ({{ }}
@@ -847,9 +884,175 @@ String _serialize(Map<String, dynamic> data) {
   return '${const JsonEncoder.withIndent('  ').convert(data)}\n';
 }
 
+// ── the palette skew warning (advisory, never blocks) ────────────────────
+
+/// Test seam (the arxaHomeOverride pattern): when set, replaces the
+/// process environment for the skew read's credential resolution, so a
+/// hermetic test never touches a real ARXA_SUPABASE_* var. Null in
+/// production.
+Map<String, String>? paletteSkewEnvOverride;
+
+/// Test seam replacing the store read itself (no sockets in tests). Null
+/// in production, where [_readPublishedPalette] answers.
+Future<String?> Function(
+        String url, String serviceKey, String project, String artifact)?
+    paletteSkewReaderOverride;
+
+/// The advisory skew verdict as one line, or null when there is nothing
+/// to say: the store read is unknown, or the store and the manifest
+/// agree. Pure, so the wording is testable without capturing stderr.
+String? paletteSkewLine(
+    {required String? published, required String manifestDefault}) {
+  if (published == null ||
+      published.isEmpty ||
+      published == manifestDefault) {
+    return null;
+  }
+  return 'published is $published, manifest default is $manifestDefault '
+      '— the scaffold ships $manifestDefault; update palettes.json or '
+      'publish $manifestDefault to change that.';
+}
+
+/// The ~/.arxa/supabase credentials file text, or null when absent or
+/// unreadable. design_server.dart owns the canonical reader for the server
+/// boot; credential_cli.dart reads the file directly the same way, and the
+/// freeze follows THAT precedent rather than importing the server stack for
+/// one file read. Missing = unconfigured = no skew read, never a failure.
+String? _readSupabaseCredentials() {
+  final f = File(p.join(arxaHome(), 'supabase'));
+  if (!f.existsSync()) return null;
+  try {
+    return f.readAsStringSync();
+  } catch (_) {
+    return null;
+  }
+}
+
+/// The ~/.arxa/supabase file, parsed: `url=` + `service_key=` lines, `#`
+/// starts a comment, a `PASTE-` placeholder key counts as absent.
+///
+/// Canonical home: arxa_dial.dart's parseSupabaseCredentials — COPIED here
+/// (keep in step) because importing the dial stack would pull design_patch ->
+/// design_tools -> the design gates into a pipeline emit module; the skew
+/// read's whole contract is that a misconfigured store is indistinguishable
+/// from an absent one, so the parse must be reachable for free.
+({String? url, String? key}) _parseSupabaseCredentials(String text) {
+  String? url;
+  String? key;
+  for (final raw in text.split('\n')) {
+    final line = raw.split('#').first.trim();
+    if (line.isEmpty) continue;
+    final eq = line.indexOf('=');
+    if (eq < 1) continue;
+    final k = line.substring(0, eq).trim();
+    final v = line.substring(eq + 1).trim();
+    if (k == 'url') url = v;
+    if (k == 'service_key' && !v.startsWith('PASTE-')) key = v;
+  }
+  return (url: url, key: key);
+}
+
+/// Best-effort read of the dial store's published palette for the design
+/// at [designRoot]; prints the [paletteSkewLine] advisory when it
+/// disagrees with the manifest default. EVERY failure mode — no
+/// manifest, no arxa.json marker, no credentials, offline, 4xx/5xx, a
+/// malformed row — is the silent case: unconfigured means no warning
+/// and never a freeze failure.
+///
+/// Read-only by law: two GETs (the design row, then
+/// arxa_dial_axes.palette). DeployedDialBake is NOT this path — it
+/// mints author tokens and PATCHes the design row; freeze only reads.
+Future<void> warnPaletteSkew(
+  String designRoot, {
+  Map<String, String>? env,
+  String? credentialsFileText,
+  Future<String?> Function(
+          String url, String serviceKey, String project, String artifact)?
+      readPublished,
+  void Function(String line)? out,
+}) async {
+  try {
+    final manifest = PaletteManifest.load(designRoot);
+    if (manifest == null) return;
+    final marker = resolveArtifactMarker(designRoot);
+    if (marker == null || marker.project.isEmpty) return;
+    final environment = env ?? paletteSkewEnvOverride ?? Platform.environment;
+    var url = environment['ARXA_SUPABASE_URL'];
+    var key = environment['ARXA_SUPABASE_SERVICE_KEY'];
+    if (url == null || url.isEmpty || key == null || key.isEmpty) {
+      // The dial stores' precedence: env wins, ~/.arxa/supabase fills.
+      final text = credentialsFileText ?? _readSupabaseCredentials();
+      if (text != null) {
+        final parsed = _parseSupabaseCredentials(text);
+        if (url == null || url.isEmpty) url = parsed.url;
+        if (key == null || key.isEmpty) key = parsed.key;
+      }
+    }
+    if (url == null || url.isEmpty || key == null || key.isEmpty) return;
+    final published = await (readPublished ??
+        paletteSkewReaderOverride ??
+        _readPublishedPalette)(url, key, marker.project, p.basename(designRoot));
+    final line = paletteSkewLine(
+        published: published, manifestDefault: manifest.defaultId);
+    if (line != null) (out ?? stderr.writeln)(line);
+  } catch (_) {
+    // Advisory: a skew read that could not happen is indistinguishable
+    // from an unconfigured one — the freeze result stands either way.
+  }
+}
+
+/// The read-only store read: GET the (project, artifact) design row,
+/// then that row's arxa_dial_axes.palette. Null on any miss — the
+/// caller treats every miss identically (no warning). The dial's
+/// network discipline (arxa_dial.dart): capped timeouts turn a stall
+/// into a fast miss, never a held socket.
+Future<String?> _readPublishedPalette(
+    String url, String serviceKey, String project, String artifact) async {
+  final http = HttpClient()
+    ..connectionTimeout = const Duration(seconds: 5)
+    ..idleTimeout = const Duration(seconds: 30);
+  try {
+    Future<String?> get(String path) async {
+      final request = await http
+          .openUrl('GET', Uri.parse('$url/rest/v1/$path'))
+          .timeout(const Duration(seconds: 8));
+      request.headers.set('apikey', serviceKey);
+      request.headers.set('Authorization', 'Bearer $serviceKey');
+      final res = await request.close().timeout(const Duration(seconds: 10));
+      if (res.statusCode >= 300) return null;
+      return utf8.decoder.bind(res).join();
+    }
+
+    final design = await get(
+        'arxa_dial_designs?project=eq.${Uri.encodeComponent(project)}'
+        '&artifact=eq.${Uri.encodeComponent(artifact)}&select=id');
+    if (design == null) return null;
+    final rows = jsonDecode(design);
+    if (rows is! List || rows.isEmpty || rows.first is! Map) return null;
+    final id = (rows.first as Map)['id'];
+    if (id is! String || id.isEmpty) return null;
+    final axes = await get(
+        'arxa_dial_axes?design_id=eq.${Uri.encodeComponent(id)}&select=palette');
+    if (axes == null) return null;
+    final arows = jsonDecode(axes);
+    if (arows is! List || arows.isEmpty || arows.first is! Map) return null;
+    final palette = (arows.first as Map)['palette'];
+    return palette is String && palette.isNotEmpty ? palette : null;
+  } catch (_) {
+    return null;
+  } finally {
+    http.close();
+  }
+}
+
 /// Emit structure.json. Returns 0 on success, 1 on failure.
 /// When [check] is true, compares in-memory without writing.
-int emitStructure(String designRoot, {bool check = false}) {
+///
+/// A Future because the write path ends with the palette plane's
+/// advisory skew read ([warnPaletteSkew]) — a caller that does not
+/// await loses the warning to process exit. The --check path stays
+/// hermetic: no network, pure regeneration-compare.
+Future<int> emitStructure(String designRoot, {bool check = false}) async {
   final data = buildStructure(designRoot);
   if (data == null) return 1;
 
@@ -882,5 +1085,8 @@ int emitStructure(String designRoot, {bool check = false}) {
   if (excl.isNotEmpty) {
     print('  exclusions: ${excl.join(', ')}');
   }
+  // The palette plane's advisory skew warning: AFTER the document stands,
+  // never before — a slow or failed store read must not hold the freeze.
+  await warnPaletteSkew(designRoot);
   return 0;
 }

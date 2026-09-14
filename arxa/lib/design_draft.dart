@@ -4,11 +4,14 @@
 /// touching artifact source — touching source is what the studio-socket
 /// commit (decision 2) is for.
 ///
-/// Two locked facts shape this file:
-///   - decision 5: clients always see the last published state, so the
-///     overlay applies for the loopback Author only — the Share Link path
-///     serves source state;
-///   - decision 11: the overlay is local-server state, never in Supabase.
+/// ⚠ SUPERSEDED 2026-09-11 (the grilled edit redesign — see
+/// docs/plans/arxa-dial-palettes.md "Addendum — the edit redesign"):
+/// decisions 5 and 11 are OVERTURNED. The live overlay is a Supabase row
+/// (`arxa_dial_overlays`) applied CLIENT-SIDE by every dial; the file
+/// store, serve-time injection, and the studio-commit socket are deleted
+/// from the product. What survives in THIS file is the pure patch model
+/// (DraftPatch/Json + patchAllRendered application) — the eject bake and
+/// the rendered-patch tests still ride it. DraftFileStore is gone.
 ///
 /// Storage: one JSON file per artifact under ~/.arxa/drafts/, keyed by
 /// the artifact's absolute path (a moved checkout starts a fresh draft —
@@ -25,14 +28,7 @@
 /// island can say so.
 library;
 
-import 'dart:convert';
-import 'dart:io';
-
-import 'package:crypto/crypto.dart';
-import 'package:path/path.dart' as p;
-
-import 'design_patch.dart';
-import 'project.dart' show arxaHome;
+import 'design_patch.dart' show PatchEdits, patchAllRendered;
 
 /// Validation caps. Loose enough never to bite real design work, tight
 /// enough that a pasted stylesheet or a hostile blob cannot sit in the
@@ -431,58 +427,5 @@ class DraftOverlay {
     }
     return DraftApplyResult(out,
         applied: applied, stale: stale, refused: refused);
-  }
-}
-
-/// The overlay's home: one JSON file per artifact under
-/// `~/.arxa/drafts/`, named for the artifact and keyed by its absolute
-/// path so two checkouts sharing a basename never share a draft. Writes go
-/// through a temp file + rename — a reader never sees a half-written draft.
-class DraftFileStore {
-  DraftFileStore({required String artifactDir, String? home})
-      : artifact = p.basename(artifactDir),
-        file = File(p.join(
-            home ?? arxaHome(),
-            'drafts',
-            '${_safe(p.basename(artifactDir))}-${_key(artifactDir)}.json'));
-
-  final String artifact;
-  final File file;
-
-  static String _safe(String s) =>
-      s.replaceAll(RegExp(r'[^a-zA-Z0-9._-]'), '_');
-
-  static String _key(String dir) =>
-      sha256.convert(utf8.encode(p.normalize(dir))).toString().substring(0, 8);
-
-  Future<DraftOverlay?> load() async {
-    try {
-      if (!await file.exists()) return null;
-      return DraftOverlay.fromJson(jsonDecode(await file.readAsString()),
-          artifact: artifact);
-    } catch (e) {
-      // An unreadable draft must never break a serve — say so and start
-      // blank; the file stays on disk for forensics.
-      stderr.writeln('[design-server] draft overlay unreadable '
-          '(${file.path}): $e — serving without it');
-      return null;
-    }
-  }
-
-  Future<void> save(DraftOverlay draft) async {
-    await file.parent.create(recursive: true);
-    draft.updatedAt = DateTime.now().toUtc().toIso8601String();
-    final tmp = File('${file.path}.tmp');
-    await tmp.writeAsString(jsonEncode(draft.toJson()));
-    await tmp.rename(file.path);
-  }
-
-  Future<void> clear() async {
-    try {
-      if (await file.exists()) await file.delete();
-    } catch (_) {
-      // A draft that refuses deletion is reported on the next load's
-      // stderr line; a failed clear must not 500 the API.
-    }
   }
 }

@@ -19,7 +19,6 @@ import 'dart:io';
 
 import 'package:arxa/design_axes.dart';
 import 'package:arxa/arxa_dial.dart';
-import 'package:arxa/design_draft.dart';
 import 'package:arxa/design_server.dart';
 import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
@@ -45,20 +44,14 @@ void main() {
   group('arxa dial over a real server', () {
     late DesignServer srv;
     late DesignServer bare; // dial: false
-    late Directory draftHome;
     late String base;
     late String bareBase;
 
     setUpAll(() async {
-      // A temp-home draft store: the Draft Overlay is real file state, and a
-      // test must never write into the operator's ~/.arxa/drafts.
-      draftHome = Directory.systemTemp.createTempSync('dial-serve-draft');
       srv = await DesignServer.start(
           artifactDir: _fixture,
           noWatch: true,
-          dialStore: MemoryDialStore(),
-          draftStore:
-              DraftFileStore(artifactDir: _fixture, home: draftHome.path));
+          dialStore: _OverlayServeStore());
       bare = await DesignServer.start(
           artifactDir: _fixture,
           noWatch: true,
@@ -71,7 +64,6 @@ void main() {
     tearDownAll(() async {
       await srv.stop();
       await bare.stop();
-      draftHome.deleteSync(recursive: true);
     });
 
     test('every full page carries the dial; dial:false pages do not', () async {
@@ -121,7 +113,7 @@ void main() {
       expect(js, isNot(contains('dragStart')), reason: 'drag code removed');
     });
 
-    test('rework 2026-08-24: 3-trigger fan, tray + card, dead verbs gone',
+    test('rework 2026-08-24: 3-trigger fan, tray + chip, dead verbs gone',
         () async {
       final (code, js) = await _req('GET', '$base/assets/vendor/arxa-dial.js');
       expect(code, 200);
@@ -129,14 +121,28 @@ void main() {
       expect(js, contains("id: 'edit'"));
       expect(js, contains("id: 'comment'"));
       expect(js, contains("id: 'studio'"));
-      // The tray and the floating card ship.
+      // The tray and the selection chip ship.
       expect(js, contains('function openTray('));
-      expect(js, contains('function openCard('));
+      expect(js, contains('function openChip('));
       expect(js, contains('scroll-snap-type:x mandatory'));
       expect(js, contains('backdrop-filter'));
       // The tray swap law and the never-hide law are wired.
       expect(js, contains('function dialPark('));
       expect(js, contains('function dialUnpark('));
+      // The 2026-09-11 edit redesign killed the inspector outright: the
+      // card, its tabs, facets, CSS hatch, handles, journal, ledger and
+      // the studio-commit socket are gone from the island.
+      expect(js, isNot(contains('function openCard(')));
+      expect(js, isNot(contains('FACET_GROUPS')));
+      expect(js, isNot(contains('parseCss')));
+      expect(js, isNot(contains('renderHandles')));
+      expect(js, isNot(contains('timeTravel')));
+      expect(js, isNot(contains('renderLedger')));
+      expect(js, isNot(contains('sendArxa')));
+      // The overlay law ships instead.
+      expect(js, contains('save_overlay'));
+      expect(js, contains('arxa_dial_overlays'));
+      expect(js, contains('function overlayFrame('));
       // The six displaced verbs are deleted outright (operator decision):
       // pen/shade/layers/share/tokens/design-as-verb + their machinery.
       expect(js, isNot(contains('drawCanvas')));
@@ -226,8 +232,8 @@ void main() {
       expect(scode2, 403);
     });
 
-    test('draft overlay: author page carries it, guests never do (decision 5)',
-        () async {
+    test('live overlay: writes broadcast, reads are for every dial '
+        '(decision 2, 2026-09-11)', () async {
       // A real rendered id from the served page (the fixture is stamped).
       final (_, html) = await _req('GET', base);
       final idm =
@@ -236,61 +242,57 @@ void main() {
           reason: 'the stamped fixture must render data-arxa-id');
       final id = idm!.group(1)!;
 
-      final (pcode, pbody) = await _req('PUT', '$base/__dial/draft', body: {
-        'tokens': {'--arxa-test-token': '#123456'},
+      final (pcode, pbody) = await _req('PUT', '$base/__dial/overlay', body: {
+        'baseRev': 0,
         'patches': {
           id: {
-            'style': {'outline': '3px solid rgb(1, 2, 3)'},
-            'attrs': {'data-draft-test': 'yes'},
+            'text': 'Live edited',
+            'attrs': {'data-overlay-test': 'yes'},
           },
         },
       });
       expect(pcode, 200, reason: pbody);
+      expect((jsonDecode(pbody) as Map)['rev'], 1);
 
-      // Author page: the overlay is applied at the seam.
+      // The served page is IDENTICAL for author and guest: the overlay is
+      // applied client-side by the dial (the serve-time injection died with
+      // decision 5's overturn) — no style injection, no attr in the HTML.
       final (_, ahtml) = await _req('GET', base);
-      expect(ahtml, contains('data-draft-test="yes"'));
-      expect(
-          ahtml,
-          contains(
-              '<style id="arxa-draft-tokens">:root{--arxa-test-token: #123456}</style>'));
+      expect(ahtml, isNot(contains('data-overlay-test')));
+      expect(ahtml, isNot(contains('arxa-draft-tokens')));
 
-      // Guest page (Share Link): last published state — no overlay.
+      // Guests READ the overlay (they watch the author work)…
       final (mcode, mbody) =
           await _req('POST', '$base/__dial/share', body: {'days': 1});
       expect(mcode, 201);
       final token = (jsonDecode(mbody) as Map)['token'] as String;
-      final (_, ghtml) = await _req('GET', '$base?dial=$token');
-      expect(ghtml, isNot(contains('data-draft-test')));
-      expect(ghtml, isNot(contains('arxa-draft-tokens')));
+      final (gcode2, gbody2) =
+          await _req('GET', '$base/__dial/overlay?dial=$token');
+      expect(gcode2, 200);
+      final overlay = (jsonDecode(gbody2) as Map)['overlay'] as Map?;
+      expect(overlay, isNotNull);
+      expect(((overlay!['patches'] as Map)[id] as Map)['text'], 'Live edited');
 
-      // Guests cannot touch the draft API; dead links are refused outright.
+      // …and can never write it.
       final (gcode, _) = await _req(
-          'PUT', '$base/__dial/draft?dial=$token',
-          body: {'patches': {}});
+          'PUT', '$base/__dial/overlay?dial=$token',
+          body: {'baseRev': 1, 'patches': {}});
       expect(gcode, 403);
       final (dcode, _) =
           await _req('GET', '$base/__dial/pins?dial=deadbeef');
       expect(dcode, 403);
 
-      // Commit hands the studio agent structured ops, non-destructively.
-      final (kcode, kbody) =
-          await _req('POST', '$base/__dial/commit', body: {});
-      expect(kcode, 200, reason: kbody);
-      final commit = jsonDecode(kbody) as Map;
-      expect(commit['artifact'], 'hello-hda');
-      final ops = commit['ops'] as List;
-      expect(ops.single['id'], id);
-      expect((ops.single['style'] as Map)['outline'],
-          '3px solid rgb(1, 2, 3)');
-      expect((commit['tokens'] as Map)['--arxa-test-token'], '#123456');
+      // The studio-commit route is gone: the eject bake owns source writes.
+      final (kcode, _) = await _req('POST', '$base/__dial/commit', body: {});
+      expect(kcode, 404);
 
-      // Clear: the author page is source-clean again.
-      final (xcode, _) = await _req('DELETE', '$base/__dial/draft');
-      expect(xcode, 200);
-      final (_, chtml) = await _req('GET', base);
-      expect(chtml, isNot(contains('data-draft-test')));
-      expect(chtml, isNot(contains('arxa-draft-tokens')));
+      // Revert: empty patches kill the row (rev back to 0).
+      final (xcode, xbody) = await _req('PUT', '$base/__dial/overlay',
+          body: {'baseRev': 1, 'patches': {}});
+      expect(xcode, 200, reason: xbody);
+      expect((jsonDecode(xbody) as Map)['rev'], 0);
+      final (_, after) = await _req('GET', '$base/__dial/overlay');
+      expect((jsonDecode(after) as Map)['overlay'], isNull);
     });
 
     test('mutations broadcast on the dial SSE stream', () async {
@@ -392,14 +394,21 @@ void main() {
       expect(bcode, 400);
     });
 
-    test('a page that declares no axes serves no axes config', () async {
-      // hello-hda declares nothing — the control is capability-by-
-      // declaration, so the config carries no axes block even though the
-      // store is live and holds a pick.
+    test('a page that declares the palette + font planes serves those axes',
+        () async {
+      // hello-hda ships the palette AND font planes at birth (the
+      // universal law — palettes Q2, fonts grilled 2026-09-13): the config
+      // carries the palettes array + the fonts block — and no style/theme
+      // axes, since the artifact declares no data-axes-style links.
+      // Capability-by-declaration, both directions.
       final (code, html) = await _req('GET', axesBase);
       expect(code, 200);
       expect(html, contains('id="arxa-dial-config"'));
-      expect(html, isNot(contains('"axes"')));
+      expect(html, contains('"palettes"'));
+      expect(html, contains('"fonts"'));
+      expect(html, contains('data-font-body="system"'));
+      expect(html, contains('"styles":[]'));
+      expect(html, contains('"themes":[]'));
     });
 
     test('an axes publish broadcasts one thin frame', () async {
@@ -542,22 +551,15 @@ void main() {
   group('opaque-origin reads are mirrored, writes are still refused', () {
     late DesignServer mirrorSrv;
     late String mirrorBase;
-    late Directory mirrorHome;
 
     setUpAll(() async {
-      mirrorHome = Directory.systemTemp.createTempSync('dial-mirror-draft');
       mirrorSrv = await DesignServer.start(
-          artifactDir: _fixture,
-          noWatch: true,
-          dialStore: MemoryDialStore(),
-          draftStore:
-              DraftFileStore(artifactDir: _fixture, home: mirrorHome.path));
+          artifactDir: _fixture, noWatch: true, dialStore: MemoryDialStore());
       mirrorBase = 'http://127.0.0.1:${mirrorSrv.port}';
     });
 
     tearDownAll(() async {
       await mirrorSrv.stop();
-      if (mirrorHome.existsSync()) mirrorHome.deleteSync(recursive: true);
     });
 
     /// Like [_req], but hands back the CORS header too — the mirror answer is
@@ -580,7 +582,7 @@ void main() {
     // n-u-l-l. Testing one would leave the other free to regress.
     test('a GET with NO Origin header is mirrored, not refused', () async {
       final (status, body, cors) = await reqWithCors(
-          'GET', '$mirrorBase/__dial/draft',
+          'GET', '$mirrorBase/__dial/overlay',
           headers: {'Sec-Fetch-Site': 'cross-site', 'Sec-Fetch-Dest': 'empty'});
       expect(status, 200, reason: 'an opaque-origin read must not 4xx — a '
           'non-2xx is console-logged by Chrome and cannot be suppressed');
@@ -590,7 +592,7 @@ void main() {
 
     test('a GET with the literal Origin "null" is mirrored too', () async {
       final (status, body, cors) = await reqWithCors(
-          'GET', '$mirrorBase/__dial/draft',
+          'GET', '$mirrorBase/__dial/overlay',
           headers: {
             'Origin': 'null',
             'Sec-Fetch-Site': 'cross-site',
@@ -622,7 +624,7 @@ void main() {
     test('a WRITE from an opaque origin is still refused', () async {
       for (final method in ['PUT', 'POST']) {
         final (status, body, cors) = await reqWithCors(
-            method, '$mirrorBase/__dial/draft',
+            method, '$mirrorBase/__dial/overlay',
             headers: {
               'Origin': 'null',
               'Sec-Fetch-Site': 'cross-site',
@@ -697,4 +699,31 @@ void main() {
               '  ${offenders.join('\n  ')}');
     });
   });
+}
+/// The overlay fake for the wire tests: save_overlay's SQL semantics
+/// (rev stale-guard, empty-patches revert) in memory.
+class _OverlayServeStore extends MemoryDialStore {
+  Map<String, dynamic> patches = {};
+  int rev = 0;
+
+  @override
+  Future<OverlayDoc?> readOverlay() async =>
+      patches.isEmpty ? null : OverlayDoc(patches: patches, rev: rev);
+
+  @override
+  Future<OverlayWriteResult> writeOverlay(
+      Map<String, dynamic> p, int baseRev) async {
+    if (p.isEmpty) {
+      patches = {};
+      rev = 0;
+      return const OverlayWriteResult(ok: true, rev: 0);
+    }
+    if (baseRev < rev) {
+      return OverlayWriteResult(
+          ok: false, error: 'stale', rev: rev, patches: patches);
+    }
+    patches = p;
+    rev += 1;
+    return OverlayWriteResult(ok: true, rev: rev);
+  }
 }

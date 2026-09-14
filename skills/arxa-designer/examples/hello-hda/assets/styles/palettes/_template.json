@@ -1,0 +1,65 @@
+{
+ "comment": "Palette ingestion template (the universal palette plane): the dial server derives palettes by the transplant law — anchors by the variable-width role law (anchorsForN); per slot dh additive, s ratio capped [0.3,1.3], dL additive vs the family anchor. {id} in sel, {n} in tpl are substitution slots. Regenerate with \"arxa design palette-index\".",
+ "anchors": {
+  "accent": "#007ea7",
+  "dark": "#003249",
+  "paper": "#ccdbdc",
+  "beige": "#9ad1d4",
+  "field": "#80ced7"
+ },
+ "tokens": [
+  {
+   "name": "--dark",
+   "base": "#003249",
+   "family": "dark",
+   "form": "hex"
+  },
+  {
+   "name": "--accent",
+   "base": "#007ea7",
+   "family": "accent",
+   "form": "hex"
+  },
+  {
+   "name": "--field",
+   "base": "#80ced7",
+   "family": "field",
+   "form": "hex"
+  },
+  {
+   "name": "--beige",
+   "base": "#9ad1d4",
+   "family": "beige",
+   "form": "hex"
+  },
+  {
+   "name": "--paper",
+   "base": "#ccdbdc",
+   "family": "paper",
+   "form": "hex"
+  }
+ ],
+ "rules": [],
+ "pairs": [
+  {
+   "fg": "--dark",
+   "bg": "--paper",
+   "level": "body"
+  },
+  {
+   "fg": "--paper",
+   "bg": "--dark",
+   "level": "body"
+  },
+  {
+   "fg": "--paper",
+   "bg": "--accent",
+   "level": "body"
+  },
+  {
+   "fg": "--dark",
+   "bg": "--beige",
+   "level": "body"
+  }
+ ]
+}

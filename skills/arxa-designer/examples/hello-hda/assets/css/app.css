@@ -60,7 +60,7 @@ form { display: flex; gap: .5rem; align-items: end; margin: 1rem 0; }
 
 /* ── shared primitives: buttons + action rows ───────────────────────────── */
 .btn {
-  --btn-bg: var(--accent, #4f46e5);
+  --btn-bg: var(--accent);
   --btn-fg: #fff;
   display: inline-flex;
   align-items: center;
@@ -80,7 +80,7 @@ form { display: flex; gap: .5rem; align-items: end; margin: 1rem 0; }
 }
 .btn--ghost {
   --btn-bg: transparent;
-  --btn-fg: var(--accent, #4f46e5);
+  --btn-fg: var(--accent);
   box-shadow: inset 0 0 0 1px color-mix(in srgb, currentColor 30%, transparent);
 }
 
@@ -102,10 +102,10 @@ form { display: flex; gap: .5rem; align-items: end; margin: 1rem 0; }
 
 /* ── nav rail (ui/views/main_shell/shared/widgets/_nav-rail.html) ────────────────────── */
 .nav-rail {
-  --nr-bg: color-mix(in srgb, CanvasText 5%, Canvas);
-  --nr-dim: color-mix(in srgb, CanvasText 55%, Canvas);
-  --nr-active-bg: color-mix(in srgb, var(--accent, #4f46e5) 16%, transparent);
-  --nr-active-fg: var(--accent, #4f46e5);
+  --nr-bg: color-mix(in srgb, var(--dark) 5%, var(--paper));
+  --nr-dim: color-mix(in srgb, var(--dark) 55%, var(--paper));
+  --nr-active-bg: color-mix(in srgb, var(--accent) 16%, transparent);
+  --nr-active-fg: var(--accent);
   display: none; /* compact: bottom nav is primary (see _bottom-nav.html) */
   font-family: var(--c-font);
 }
@@ -172,16 +172,16 @@ form { display: flex; gap: .5rem; align-items: end; margin: 1rem 0; }
 
 /* ── bottom nav (ui/views/main_shell/shared/widgets/_bottom-nav.html) ────────────────── */
 .bottom-nav {
-  --bn-bg: color-mix(in srgb, CanvasText 4%, Canvas);
-  --bn-dim: color-mix(in srgb, CanvasText 55%, Canvas);
-  --bn-active: var(--accent, #4f46e5);
+  --bn-bg: color-mix(in srgb, var(--dark) 4%, var(--paper));
+  --bn-dim: color-mix(in srgb, var(--dark) 55%, var(--paper));
+  --bn-active: var(--accent);
   display: flex;
   position: sticky;
   bottom: 0;
   z-index: 40;
   padding-bottom: env(safe-area-inset-bottom, 0px);
   background: var(--bn-bg);
-  border-top: 1px solid color-mix(in srgb, CanvasText 12%, transparent);
+  border-top: 1px solid color-mix(in srgb, var(--dark) 12%, transparent);
   font-family: var(--c-font);
 }
 @media (min-width: 600px) {
@@ -213,15 +213,15 @@ form { display: flex; gap: .5rem; align-items: end; margin: 1rem 0; }
   font-weight: 600;
   letter-spacing: .02em;
   text-transform: uppercase;
-  color: color-mix(in srgb, CanvasText 55%, Canvas);
+  color: color-mix(in srgb, var(--dark) 55%, var(--paper));
 }
 .list-section__card {
-  background: color-mix(in srgb, CanvasText 4%, Canvas);
+  background: color-mix(in srgb, var(--dark) 4%, var(--paper));
   border-radius: 14px;
   overflow: hidden;
 }
 .list-row {
-  --row-dim: color-mix(in srgb, CanvasText 55%, Canvas);
+  --row-dim: color-mix(in srgb, var(--dark) 55%, var(--paper));
   display: flex;
   align-items: center;
   gap: 12px;
@@ -232,7 +232,7 @@ form { display: flex; gap: .5rem; align-items: end; margin: 1rem 0; }
   font-family: var(--c-font);
 }
 .list-section__card > .list-row:not(:first-child) {
-  border-top: 1px solid color-mix(in srgb, CanvasText 8%, transparent);
+  border-top: 1px solid color-mix(in srgb, var(--dark) 8%, transparent);
 }
 a.list-row:hover { background: color-mix(in srgb, currentColor 6%, transparent); }
 .list-row__leading {
@@ -243,8 +243,8 @@ a.list-row:hover { background: color-mix(in srgb, currentColor 6%, transparent);
   width: 36px;
   height: 36px;
   border-radius: 10px;
-  background: color-mix(in srgb, var(--accent, #4f46e5) 14%, transparent);
-  color: var(--accent, #4f46e5);
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+  color: var(--accent);
 }
 .list-row__text {
   flex: 1;
@@ -268,13 +268,13 @@ a.list-row:hover { background: color-mix(in srgb, currentColor 6%, transparent);
   text-overflow: ellipsis;
 }
 .list-row__detail { font-size: 14px; color: var(--row-dim); }
-.list-row__chevron { color: color-mix(in srgb, CanvasText 30%, Canvas); }
+.list-row__chevron { color: color-mix(in srgb, var(--dark) 30%, var(--paper)); }
 
 /* ── form field (ui/views/main_shell/shared/widgets/_form-field.html) ──────────────── */
 .field {
-  --field-border: color-mix(in srgb, CanvasText 25%, transparent);
+  --field-border: color-mix(in srgb, var(--dark) 25%, transparent);
   --field-error: #dc2626;
-  --field-dim: color-mix(in srgb, CanvasText 55%, Canvas);
+  --field-dim: color-mix(in srgb, var(--dark) 55%, var(--paper));
   display: flex;
   flex-direction: column;
   gap: 6px;
@@ -288,10 +288,10 @@ a.list-row:hover { background: color-mix(in srgb, currentColor 6%, transparent);
   padding: 10px 12px;
   border: 1px solid var(--field-border);
   border-radius: 10px;
-  background: Canvas;
+  background: var(--paper);
 }
 .field__input:focus {
-  outline: 2px solid var(--accent, #4f46e5);
+  outline: 2px solid var(--accent);
   outline-offset: 1px;
   border-color: transparent;
 }
@@ -320,7 +320,7 @@ a.list-row:hover { background: color-mix(in srgb, currentColor 6%, transparent);
 .lang-switcher__link {
   padding: 4px 8px;
   border-radius: 8px;
-  color: color-mix(in srgb, CanvasText 55%, Canvas);
+  color: color-mix(in srgb, var(--dark) 55%, var(--paper));
   text-decoration: none;
 }
 .lang-switcher__link:hover { background: color-mix(in srgb, currentColor 8%, transparent); }

@@ -3,12 +3,22 @@
 /// package:image; everything above this file works in decoded Image
 /// terms. SSIM parameters follow Wang et al.: 11x11 Gaussian window
 /// (sigma 1.5), K1=0.01, K2=0.03, luma channel.
+///
+/// The bottom section is the palette-plane pixel probe (plan
+/// arxa-palette-plane-universal §lens-pixel-probe) — NOT pure: it rides
+/// the lens daemon's headless Chrome to decode an image file and bucket
+/// its pixels into ColorClusters for palette_derive.
 library;
 
+import 'dart:convert';
+import 'dart:io';
 import 'dart:math' as math;
 import 'dart:typed_data';
 
 import 'package:image/image.dart' as img;
+
+import 'daemon.dart';
+import 'tokens.dart'; // ColorCluster — the probe returns tokens.dart's shape
 
 class LensPixelException implements Exception {
   LensPixelException(this.message);
@@ -282,4 +292,170 @@ double deltaE2000Lab(num l1, num a1, num b1, num l2, num a2, num b2) {
     }
   });
   return (pct: 100.0 * bestN / n, color: reps[bestK]!);
+}
+
+// --- palette-plane pixel probe (arxa-palette-plane-universal §lens-pixel-probe) ---
+
+/// The image probe injected into the page, as an async function taking the
+/// image as a data: URL (ridden through [CdpSession.evaluateFunction]).
+///
+/// Why data: and not the file:// document the tab is sitting on: current
+/// Chrome hands file: documents OPAQUE origins, so even the same file's
+/// pixels taint the canvas — measured 2026-09-10, getImageData throws
+/// SecurityError on a file:// ImageDocument reading its own image. A data:
+/// URL is origin-clean by HTML spec, the readback succeeds, and Chrome
+/// still performs the decode (every browser format free, zero native
+/// deps). The plan's file:// navigation is kept; only the byte transport
+/// changed.
+///
+/// Downscale cap: the longer side is brought to <= 128, so a sampled read
+/// never exceeds 128x128 = 16,384 pixels (~64K ints across the CDP
+/// boundary) no matter the source size. Palette derivation needs colour
+/// frequencies, not resolution.
+///
+/// Returns {width, height, pixels: [rgba...]} of the SAMPLED canvas. The
+/// bucketing law lives in Dart ([clusterPixels]) — the same probe-samples /
+/// Dart-clusters split as tokens.dart, so the law is unit-testable without
+/// Chrome. Kept as one evaluate() round-trip (tokens.dart's shape).
+const String pixelProbeJs = r'''
+async (src) => {
+  const MAX = 128;
+  const image = await new Promise((resolve, reject) => {
+    const im = new Image();
+    im.onload = () => resolve(im);
+    im.onerror = () =>
+        reject(new Error('lens pixels: image failed to decode'));
+    im.src = src;
+  });
+  const scale = Math.min(1, MAX / Math.max(image.naturalWidth, image.naturalHeight));
+  const w = Math.max(1, Math.round(image.naturalWidth * scale));
+  const h = Math.max(1, Math.round(image.naturalHeight * scale));
+  const canvas = document.createElement('canvas');
+  canvas.width = w;
+  canvas.height = h;
+  const ctx = canvas.getContext('2d', {willReadFrequently: true});
+  ctx.drawImage(image, 0, 0, w, h);
+  return {width: w, height: h, pixels: Array.from(ctx.getImageData(0, 0, w, h).data)};
+}
+''';
+
+/// Frequency-cluster raw RGBA bytes: pixels with alpha < 128 are skipped
+/// (translucent pixels pollute palettes with compositing noise), each
+/// remaining channel is quantised >>5 to 8 levels (32-wide bands), and a
+/// bucket reports its band CENTER ((q<<5)+16) — the least-biased
+/// representative for the <=12 RGB-euclidean merge, which lives downstream
+/// in palette_derive (one merge law, one home).
+///
+/// Sort: count desc, then packed-rgb asc. Dart's List.sort is unstable, so
+/// equal-count buckets would otherwise order by scan position — the output
+/// would depend on image LAYOUT, not the colour set. The tie-break makes it
+/// canonical (determinism law).
+List<ColorCluster> clusterPixels(List<int> rgba) {
+  final counts = <int, int>{};
+  for (var i = 0; i + 3 < rgba.length; i += 4) {
+    if (rgba[i + 3] < 128) continue;
+    final q =
+        ((rgba[i] >> 5) << 6) | ((rgba[i + 1] >> 5) << 3) | (rgba[i + 2] >> 5);
+    counts[q] = (counts[q] ?? 0) + 1;
+  }
+  final out = <ColorCluster>[];
+  for (final e in counts.entries) {
+    out.add(ColorCluster(
+      ((e.key >> 6) << 5) + 16,
+      (((e.key >> 3) & 7) << 5) + 16,
+      ((e.key & 7) << 5) + 16,
+      e.value,
+    ));
+  }
+  out.sort((a, b) => b.count != a.count
+      ? b.count.compareTo(a.count)
+      : (a.r << 16 | a.g << 8 | a.b).compareTo(b.r << 16 | b.g << 8 | b.b));
+  return out;
+}
+
+/// Extension → data: URL mime for the probe's transport. The browser's
+/// decoder sniffs magic bytes anyway (application/octet-stream still
+/// decodes); the precise type is courtesy, not load-bearing.
+String _mimeFor(String path) {
+  final dot = path.lastIndexOf('.');
+  final ext = dot < 0 ? '' : path.substring(dot + 1).toLowerCase();
+  return switch (ext) {
+    'png' => 'image/png',
+    'jpg' || 'jpeg' => 'image/jpeg',
+    'webp' => 'image/webp',
+    'gif' => 'image/gif',
+    'avif' => 'image/avif',
+    'bmp' => 'image/bmp',
+    'svg' => 'image/svg+xml',
+    _ => 'application/octet-stream',
+  };
+}
+
+/// Shared core behind [extractPixels] and [extractPixelClusters]: navigate
+/// the daemon's tab to the image's file:// document (plan §lens-pixel-probe),
+/// then run [pixelProbeJs] over the bytes as a data: URL (see the probe's
+/// doc for why the canvas cannot read the file:// document directly) and
+/// bucket the readback. Errors ride as data because the two wrappers
+/// disagree on what to do with them (extractPixels records, per the
+/// observation-JSON doctrine; extractPixelClusters fails).
+Future<({int width, int height, List<ColorCluster> clusters, List<String> errors})>
+    _readImagePixels(String imagePath, int settleMs) async {
+  final file = File(imagePath);
+  if (!file.existsSync()) {
+    throw ArgumentError('lens pixels: image not found: $imagePath');
+  }
+  final dataUrl =
+      'data:${_mimeFor(imagePath)};base64,${base64Encode(await file.readAsBytes())}';
+  final client = await LensDaemon.acquire();
+  try {
+    final tab = await client.newTab();
+    await tab.enable();
+    await tab.navigateAndSettle(file.absolute.uri.toString(),
+        settleMs: settleMs);
+    final raw = await tab.evaluateFunction(pixelProbeJs, dataUrl) as Map;
+    return (
+      width: (raw['width'] as num).toInt(),
+      height: (raw['height'] as num).toInt(),
+      clusters: clusterPixels(
+          [for (final n in (raw['pixels'] as List).cast<num>()) n.toInt()]),
+      errors: [...tab.consoleErrors, ...tab.pageErrors],
+    );
+  } finally {
+    await client.close();
+  }
+}
+
+/// Extract the dominant colour clusters of an image file as observation
+/// JSON (same envelope doctrine as extractTokens): the lens daemon's
+/// headless Chrome decodes the image (file:// URL — every browser format
+/// free), the probe samples it bounded, [clusterPixels] buckets. Console/
+/// page errors are returned in the result; the caller treats non-empty as
+/// a failure.
+///
+/// settleMs defaults low (300): the probe itself awaits the image's load
+/// event, so the settle window only covers the viewer document.
+Future<Map<String, dynamic>> extractPixels(String imagePath,
+    {int settleMs = 300}) async {
+  final r = await _readImagePixels(imagePath, settleMs);
+  return {
+    'image': imagePath,
+    'sampled': [r.width, r.height],
+    'clusters': [for (final c in r.clusters) c.toJson()],
+    'consoleErrors': r.errors,
+    'certified': r.errors.isEmpty,
+  };
+}
+
+/// The palette engine's contract (plan §lens-pixel-probe): clusters in
+/// tokens.dart's ColorCluster shape. Console/page errors FAIL the
+/// extraction (lens doctrine) — a throw, because a [List<ColorCluster>] has
+/// no in-band channel to carry them and a poisoned palette must never read
+/// as an empty one.
+Future<List<ColorCluster>> extractPixelClusters(String imagePath) async {
+  final r = await _readImagePixels(imagePath, 300);
+  if (r.errors.isNotEmpty) {
+    throw StateError('lens pixels: ${r.errors.length} console/page error(s) '
+        'reading $imagePath — ${r.errors.first}');
+  }
+  return r.clusters;
 }
