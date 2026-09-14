@@ -10,7 +10,7 @@ repo needs, plus the deferred Omarchy VM leg's runbook.
 Status: **stable and beta release lanes are wired** (`desktop-release.yml`:
 macOS lane fail-closed on stable, Linux lane builds AppImage + `.deb` on
 ubuntu-22.04); the first real runner pass of both is still external (see the
-studio repo's open-work inventory, AXS-019/AXS-043).
+studio repo's open-work inventory, AXS-019/AXS-053).
 
 ## Installing (users)
 
